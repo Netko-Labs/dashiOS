@@ -7,6 +7,9 @@
 #   vm/vm desktop         boot the installed VM
 #   vm/vm live [ISO]      boot the image alone, nothing kept
 #   vm/vm ssh [ARGS...]   ssh into the running VM (localhost:$DASHI_VM_SSH)
+#   vm/vm screenshot [PNG] save what the VM's screen shows (vm/images/screen.png)
+#   vm/vm type TEXT       type on the VM's keyboard; vm/vm key ctrl-alt-t ret
+#   vm/vm stop            ask the guest to shut down
 #
 # The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
 # (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
@@ -16,7 +19,7 @@
 #   sudo mount -t virtiofs developer /mnt/developer
 #
 # Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
-# DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none).
+# DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi).
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
@@ -26,6 +29,7 @@ images=$here/images
 disk=$images/dashi.qcow2
 vars=$images/OVMF_VARS.fd
 fs_sock=$images/virtiofs.sock
+qmp_sock=$images/qmp.sock
 
 cpus=${DASHI_VM_CPUS:-8}
 mem=${DASHI_VM_MEM:-8G}
@@ -71,6 +75,7 @@ qemu() {
     -device virtio-keyboard-pci -device virtio-tablet-pci \
     -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:"$ssh_port"-:22 \
     -device virtio-rng-pci \
+    -qmp unix:"$qmp_sock",server=on,wait=off \
     "$@"
 }
 
@@ -103,11 +108,23 @@ case $cmd in
     qemu -drive file="$iso",media=cdrom,readonly=on -boot order=d
     ;;
   ssh)
-    exec ssh -p "$ssh_port" -o StrictHostKeyChecking=accept-new \
-      -o UserKnownHostsFile="$images/known_hosts" localhost "$@"
+    # The VM's own key (made the first time, kept in vm/images/), not the host's agent.
+    exec ssh -p "$ssh_port" -i "$images/id_ed25519" -o IdentitiesOnly=yes -o IdentityAgent=none \
+      -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$images/known_hosts" \
+      "${DASHI_VM_USER:-dashi}"@localhost "$@"
+    ;;
+  screenshot)
+    out=$(readlink -f -- "${1:-$images/screen.png}")
+    python3 "$here/qmp.py" "$qmp_sock" screenshot "$out" && echo "$out"
+    ;;
+  type|key)
+    exec python3 "$here/qmp.py" "$qmp_sock" "$cmd" "$@"
+    ;;
+  stop)
+    exec python3 "$here/qmp.py" "$qmp_sock" powerdown
     ;;
   *)
-    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
     [ -z "$cmd" ] || exit 2
     ;;
 esac

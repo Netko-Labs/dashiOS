@@ -1,0 +1,60 @@
+# Architecture
+
+How Dashi's pieces start, what each owns, and how they talk. The rule they
+follow is in `docs/conventions.md`: Rust displays; TypeScript decides; the UI
+is defined in TypeScript and drawn by mirin Metal.
+
+## Processes
+
+```txt
+display manager (SDDM in 0.1.0; greetd + Dashi's greeter from 0.2.0)
+└─ dashi-session                    sh: the session's environment, then exec
+   └─ dashi-comp -c '<bun> packages/shell/src/session.ts'
+      │                             Rust: Wayland, DRM/KMS, libinput, Xwayland
+      └─ session supervisor         Bun: systemd --user/D-Bus activation, restarts the shell
+         └─ shell (src/main.tsx)    Bun: menu bar, Dock, sheets, Settings, system services
+            ├─ mirin-metal-host ×N  one per shell surface (layer-shell), draws React with GPUI
+            └─ apps/<name>/main.tsx Bun, one process per first-party app
+               └─ mirin-metal-host  its window
+```
+
+- **dashi-session** (`session/dashi-session`) sets the environment (toolkits,
+  locale, Flatpak exports, the user bus) and replaces itself with the
+  compositor. Paths come from where it lives: an install prefix or a checkout.
+- **dashi-comp** owns the screens and input and runs the supervisor as its
+  Wayland client (`-c`). When it exits, the session is over.
+- **The supervisor** (`src/session.ts`, `src/session/`) tells systemd and D-Bus
+  the display, starts `dashi-session.target` (and with it
+  `graphical-session.target`, which portals need), and restarts the shell when
+  it crashes.
+- **The shell** (`src/main.tsx`) is the desktop's logic: window placement,
+  shortcuts, Spaces, the overview's plan, displays, power, network, Bluetooth,
+  sound, notifications, accounts, polkit, Flathub, agents. Its UI is React,
+  each surface drawn by its own Metal host.
+- **Apps** (`apps/*`) are separate Bun processes on the app kit (`apps/kit`),
+  each with a Metal window, a control socket, and menus served to the shell.
+- **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
+  session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
+  screen consents before an agent sees or does anything.
+
+## Channels
+
+| Between | Channel | Doc |
+| --- | --- | --- |
+| shell ↔ dashi-comp | `$XDG_RUNTIME_DIR/dashi-comp.sock`, newline JSON | `docs/compositor-ipc.md` |
+| shell/apps ↔ Metal host | mirin's element-tree protocol over the host's pipes | `../mirin/docs/metal.md` |
+| Metal host ↔ dashi-comp | Wayland (xdg-shell for windows, layer-shell for shell surfaces) | |
+| app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/app-menus/protocol.ts` |
+| agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
+| shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
+
+## Installed Layout
+
+| Path | From |
+| --- | --- |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp` | `session/` |
+| `/usr/bin/dashi-comp` | `crates/dashi-comp` |
+| `/usr/share/dashi/shell/` | `packages/shell` (with its `node_modules`, `@dashi/ui` included) |
+| `/usr/libexec/dashi/mirin-metal-host` | `../mirin/crates/mirin-metal` |
+| `/usr/libexec/dashi/bin/bun` | `dashi-bun` |
+| everything else | `spin/<package>/` |

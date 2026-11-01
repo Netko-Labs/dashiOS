@@ -8,6 +8,9 @@ recoverable from disk. The repo had never been pushed.
 This tree was rebuilt from the installed packages, all built from commit
 `8ca85a9` on 2026-11-01 (`rpm -V` clean, so they match the build exactly).
 
+Paths below are 0.1.0's; since then `shell/` is `packages/shell/`, and its
+custom components moved to `packages/dashi-ui/`.
+
 ## Recovered as source
 
 - `shell/`: the whole TypeScript shell, session supervisor, first-party apps,
