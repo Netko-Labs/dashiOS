@@ -103,8 +103,9 @@ Each milestone ends with the shell running on it in the VM.
 
 - **greetd** runs the login: PAM, sessions, the user switch. Dashi does not
   write that part.
-- **dashi-comp in greeter mode** (`dashi-comp --greeter`) shows it: no
-  Xwayland, no shell IPC beyond what the greeter needs, no screencopy.
 - **The greeter** (`packages/greeter`, `@dashi/greeter`) is TypeScript drawn by
-  Metal: it talks to greetd's IPC (`$GREETD_SOCK`, JSON) and draws with
-  `@dashi/ui`, matching the lock screen.
+  Metal: it talks to greetd's IPC (`$GREETD_SOCK`) and draws `@dashi/ui`'s
+  `LoginScreen`, the same component as the lock screen. Done; it runs on
+  0.1.0's dashi-comp.
+- **dashi-comp in greeter mode** (`dashi-comp --greeter`, C1) will show it with
+  less: no Xwayland, no shell IPC, no screencopy, one surface per screen.

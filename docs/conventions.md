@@ -46,6 +46,7 @@ that creeps into Rust is a bug to move.
 | shell | `packages/shell` (`@dashi/shell`): the session supervisor, menu bar, Dock, sheets, System Settings, and the system services written in TypeScript. |
 | apps | `packages/shell/apps/*`: the first-party apps, one Bun process and one Metal window each, built on `apps/kit`. |
 | app kit | `packages/shell/apps/kit`: the runtime a first-party app runs on (window, menus, clipboard, control socket). Not components. |
+| greeter | `packages/greeter` (`@dashi/greeter`): the login screen, greetd's greeter. |
 | Dashi UI | `packages/dashi-ui` (`@dashi/ui`): Dashi's own components and palettes. |
 | metal-ui | `@mirinjs/metal-ui` (mirin): shadcn/ui ported to Metal. |
 | Metal host | `mirin-metal-host`: mirin's native process that draws a React tree with GPUI. |
@@ -68,6 +69,7 @@ crates/
   dashi-comp/       the Wayland compositor (Rust, smithay)
 packages/
   shell/            @dashi/shell: session supervisor, shell, system services, first-party apps
+  greeter/          @dashi/greeter: the login screen (greetd's greeter)
   dashi-ui/         @dashi/ui: Dashi's own components and palettes
 session/            dashi-session, dashi-mcp, the session target, portal and mime config
 spin/               packaging and image files, by package

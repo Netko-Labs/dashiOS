@@ -23,12 +23,19 @@ it in the VM.
 
 ## 3. Login screen
 
-greetd + `dashi-comp --greeter` + `packages/greeter` (`docs/compositor.md`,
-"Login Screen"). Replaces dashi-sddm.
+- [x] `packages/greeter`: greetd IPC, login flow, users, sessions, memory, power
+- [x] `@dashi/ui` `LoginScreen`, shared with the lock screen (which now uses it)
+- [x] `session/dashi-greeter`; `spin/dashi-greeter/etc/greetd/config.toml`
+- [x] In the VM: greetd → greeter → PAM → the chosen session; lock/unlock
+- [ ] One surface per screen (multi-monitor)
+- [ ] Account pictures (AccountsService) instead of initials
+- [ ] Keyboard layout and accessibility on the login screen
+- [ ] `dashi-comp --greeter` (C1)
 
 ## 4. Packaging 0.2.0
 
-- [ ] RPM specs (lost with 0.1.0): dashi, dashi-comp, dashi-greeter,
+- [ ] RPM specs (lost with 0.1.0): dashi, dashi-comp, dashi-greeter (replaces
+      dashi-sddm; requires greetd),
       dashi-release, dashi-logos, dashi-kernel, dashi-nvidia, dashi-helium,
       dashi-live, dashi-bun, mirin-metal-host
 - [ ] Build in the VM, install, boot into it

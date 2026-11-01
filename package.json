@@ -7,8 +7,8 @@
   "scripts": {
     "fmt-lint": "biome check .",
     "fmt-lint:fix": "biome check --fix .",
-    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/shell",
-    "test": "bun test packages/dashi-ui packages/shell",
+    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/greeter && tsc --noEmit -p packages/shell",
+    "test": "bun test packages/dashi-ui packages/greeter packages/shell",
     "shell": "bun run --cwd packages/shell start"
   },
   "devDependencies": {

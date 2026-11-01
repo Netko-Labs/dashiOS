@@ -56,8 +56,9 @@ the same change.
 - `crates/dashi-comp` - the Wayland compositor.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
   (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`).
+- `packages/greeter` - `@dashi/greeter`: the login screen, greetd's greeter.
 - `packages/dashi-ui` - `@dashi/ui`: Dashi's own components and palettes.
-- `session/` - `dashi-session`, `dashi-mcp`, session target, portal/mime config.
+- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, session target, portal/mime config.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).
 - `docs/` - architecture, compositor, IPC, and convention docs.
@@ -74,8 +75,11 @@ the same change.
 - VM: `vm/vm desktop` (boot), `vm/vm ssh` (shell in, user `dashi`), `vm/vm screenshot`,
   `vm/vm stop`; `vm/vm install` and `vm/vm live` boot an image. The VM sees
   `~/Developer` at `/home/dashi/Developer`.
-- Run the session from the checkout (in the VM): `session/dashi-session --print` to
-  see what would run.
+- VM checkout runs (`DASHI_VM_PASSWORD` for the guest's sudo): `vm/vm checkout-greeter on`
+  (greetd with this checkout's login screen; pick "Dashi (checkout)" there for this
+  checkout's session), `vm/vm checkout-session on` (SDDM autologin into it instead).
+- VM screenshots: QEMU reads the screen with `DASHI_VM_GPU=none`; with the default
+  Venus GPU, `vm/vm screenshot` needs a running session (it presses the shell's ⇧❖3).
 
 ## Verification
 

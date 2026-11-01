@@ -7,8 +7,11 @@ is defined in TypeScript and drawn by mirin Metal.
 ## Processes
 
 ```txt
-display manager (SDDM in 0.1.0; greetd + Dashi's greeter from 0.2.0)
-└─ dashi-session                    sh: the session's environment, then exec
+greetd
+├─ dashi-greeter (login)            sh, as the greetd user: the login screen
+│  └─ dashi-comp -c '<bun> packages/greeter/src/main.tsx'
+│     └─ greeter                    Bun: greetd IPC, LoginScreen drawn by one Metal host
+└─ dashi-session (after login)      sh: the session's environment, then exec
    └─ dashi-comp -c '<bun> packages/shell/src/session.ts'
       │                             Rust: Wayland, DRM/KMS, libinput, Xwayland
       └─ session supervisor         Bun: systemd --user/D-Bus activation, restarts the shell
@@ -18,6 +21,11 @@ display manager (SDDM in 0.1.0; greetd + Dashi's greeter from 0.2.0)
                └─ mirin-metal-host  its window
 ```
 
+- **The greeter** (`packages/greeter`, `session/dashi-greeter`) is Dashi's
+  login screen: greetd runs it in its own `dashi-comp`; it logs the person in
+  through greetd's IPC (PAM stays greetd's), starts the session they pick,
+  and ends its compositor so greetd can hand over the screen. 0.1.0 borrowed
+  SDDM in Weston's kiosk shell instead.
 - **dashi-session** (`session/dashi-session`) sets the environment (toolkits,
   locale, Flatpak exports, the user bus) and replaces itself with the
   compositor. Paths come from where it lives: an install prefix or a checkout.
@@ -41,6 +49,7 @@ display manager (SDDM in 0.1.0; greetd + Dashi's greeter from 0.2.0)
 
 | Between | Channel | Doc |
 | --- | --- | --- |
+| greeter ↔ greetd | `$GREETD_SOCK`, length-prefixed JSON (greetd-ipc(7)) | `packages/greeter/src/greetd/` |
 | shell ↔ dashi-comp | `$XDG_RUNTIME_DIR/dashi-comp.sock`, newline JSON | `docs/compositor-ipc.md` |
 | shell/apps ↔ Metal host | mirin's element-tree protocol over the host's pipes | `../mirin/docs/metal.md` |
 | Metal host ↔ dashi-comp | Wayland (xdg-shell for windows, layer-shell for shell surfaces) | |
@@ -52,7 +61,9 @@ display manager (SDDM in 0.1.0; greetd + Dashi's greeter from 0.2.0)
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
+| `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |
 | `/usr/share/dashi/shell/` | `packages/shell` (with its `node_modules`, `@dashi/ui` included) |
 | `/usr/libexec/dashi/mirin-metal-host` | `../mirin/crates/mirin-metal` |

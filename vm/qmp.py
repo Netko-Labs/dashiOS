@@ -4,6 +4,7 @@
     qmp.py SOCKET screenshot PATH.png   save what the VM's screen shows
     qmp.py SOCKET type TEXT             type TEXT on the VM's keyboard
     qmp.py SOCKET key COMBO...          press combos: ctrl-alt-t, ret, meta_l
+    qmp.py SOCKET click X Y W H         click at (X, Y) on a W×H screen (a screenshot's size)
     qmp.py SOCKET powerdown             ask the guest to shut down (ACPI)
 """
 
@@ -69,6 +70,17 @@ def main() -> None:
     elif command == "key" and args:
         for combo in args:
             qmp.keys([ALIASES.get(part, part) for part in combo.split("-")])
+    elif command == "click" and len(args) == 4:
+        x, y, width, height = (float(a) for a in args)
+        axes = [
+            {"type": "abs", "data": {"axis": "x", "value": int(x / width * 32767)}},
+            {"type": "abs", "data": {"axis": "y", "value": int(y / height * 32767)}},
+        ]
+        qmp.call("input-send-event", events=axes)
+        time.sleep(0.05)
+        for down in (True, False):
+            qmp.call("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": "left"}}])
+            time.sleep(0.05)
     elif command == "powerdown" and not args:
         qmp.call("system_powerdown")
     else:

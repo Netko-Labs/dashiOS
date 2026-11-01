@@ -20,3 +20,8 @@ export const SEARCH = svg(`<circle cx="7" cy="7" r="4.4" stroke="#000" stroke-wi
 /** A check mark: the chosen row in a menu, the connected network. */
 export const CHECK =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.5 8.5L6.6 11.6L12.5 4.6" stroke="#000" stroke-opacity="1" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/** Power: Sleep (a crescent), Restart (an arrow coming round), Shut Down (the power symbol). */
+export const SLEEP = svg(`<path d="M12.9 9.7A5.6 5.6 0 0 1 6.3 3.1a5.6 5.6 0 1 0 6.6 6.6z" fill="#000"/>`);
+export const RESTART = svg(stroke("M12.6 8.6A4.7 4.7 0 1 1 11.2 4.7", 1.6) + stroke("M11.6 2.2v2.8H8.8", 1.6));
+export const SHUT_DOWN = svg(stroke("M8 2.2v5.4", 1.6) + stroke("M4.9 4.4a4.8 4.8 0 1 0 6.2 0", 1.6));

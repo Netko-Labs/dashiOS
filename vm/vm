@@ -12,6 +12,8 @@
 #   vm/vm stop            ask the guest to shut down
 #   vm/vm checkout-session on|off   log the VM in to the session from the
 #                         shared checkout (vm/dev-session), or back to Dashi's
+#   vm/vm checkout-greeter on|off   greetd with the checkout's login screen
+#                         (session/dashi-greeter), or back to SDDM
 #
 # The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
 # (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
@@ -153,8 +155,26 @@ case $cmd in
     esac
     printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script && systemctl restart sddm'"
     ;;
+  checkout-greeter)
+    pass=${DASHI_VM_PASSWORD:?set DASHI_VM_PASSWORD to the VM user password, for sudo in the guest}
+    case ${1:-} in
+      # The checkout lives in dashi's home, so in the VM the greeter runs as dashi,
+      # and greetd's domain (xdm_t) is permissive: it may not run code from a home.
+      on) script='
+        semanage permissive -a xdm_t 2>/dev/null || true
+        rm -f /etc/sddm.conf.d/zz-dashi-checkout.conf
+        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=/home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
+        printf "[terminal]\nvt = 1\n\n[default_session]\ncommand = \"/home/dashi/Developer/dashiOS/session/dashi-greeter\"\nuser = \"dashi\"\n" > /etc/greetd/config.toml
+        systemctl disable sddm && systemctl enable --force greetd && systemctl stop sddm; systemctl restart greetd' ;;
+      off) script='
+        semanage permissive -d xdm_t 2>/dev/null || true
+        systemctl disable greetd && systemctl enable --force sddm && systemctl stop greetd; systemctl restart sddm' ;;
+      *) die "usage: vm/vm checkout-greeter on|off" ;;
+    esac
+    printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script'"
+    ;;
   *)
-    sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
     [ -z "$cmd" ] || exit 2
     ;;
 esac
