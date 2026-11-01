@@ -10,6 +10,8 @@
 #   vm/vm screenshot [PNG] save what the VM's screen shows (vm/images/screen.png)
 #   vm/vm type TEXT       type on the VM's keyboard; vm/vm key ctrl-alt-t ret
 #   vm/vm stop            ask the guest to shut down
+#   vm/vm checkout-session on|off   log the VM in to the session from the
+#                         shared checkout (vm/dev-session), or back to Dashi's
 #
 # The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
 # (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
@@ -19,7 +21,8 @@
 #   sudo mount -t virtiofs developer /mnt/developer
 #
 # Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
-# DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi).
+# DASHI_VM_RES (1920x1080), DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi),
+# DASHI_VM_PASSWORD (for sudo in the guest; checkout-session).
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
@@ -36,6 +39,7 @@ mem=${DASHI_VM_MEM:-8G}
 disk_size=${DASHI_VM_DISK_SIZE:-80G}
 ssh_port=${DASHI_VM_SSH:-2222}
 gpu=${DASHI_VM_GPU:-venus}
+res=${DASHI_VM_RES:-1920x1080}
 
 die() { echo "vm: $*" >&2; exit 1; }
 
@@ -53,10 +57,11 @@ ensure_disk() {
 }
 
 gpu_args() {
+  local size=",xres=${res%x*},yres=${res#*x}"
   case $gpu in
-    venus) echo "-device virtio-vga-gl,hostmem=4G,blob=true,venus=true -display gtk,gl=on" ;;
-    virgl) echo "-device virtio-vga-gl -display gtk,gl=on" ;;
-    none)  echo "-device virtio-vga -display gtk" ;;
+    venus) echo "-device virtio-vga-gl,hostmem=4G,blob=true,venus=true$size -display gtk,gl=on" ;;
+    virgl) echo "-device virtio-vga-gl$size -display gtk,gl=on" ;;
+    none)  echo "-device virtio-vga$size -display gtk" ;;
     *) die "DASHI_VM_GPU must be venus, virgl, or none" ;;
   esac
 }
@@ -115,7 +120,21 @@ case $cmd in
     ;;
   screenshot)
     out=$(readlink -f -- "${1:-$images/screen.png}")
-    python3 "$here/qmp.py" "$qmp_sock" screenshot "$out" && echo "$out"
+    if python3 "$here/qmp.py" "$qmp_sock" screenshot "$out" 2>/dev/null; then echo "$out"; exit 0; fi
+    # Venus scanouts are GPU memory QEMU cannot read, and the compositor
+    # captures only for the shell: press the shell's ⇧❖3 and copy its newest
+    # screenshot out (needs a running Dashi session in the VM).
+    shots='$HOME/Pictures/Screenshots'
+    before=$("$0" ssh -o BatchMode=yes "ls -t $shots 2>/dev/null | head -1" || true)
+    python3 "$here/qmp.py" "$qmp_sock" key meta_l-shift-3
+    for _ in $(seq 20); do
+      sleep 0.5
+      latest=$("$0" ssh -o BatchMode=yes "ls -t $shots 2>/dev/null | head -1" || true)
+      if [ -n "$latest" ] && [ "$latest" != "$before" ]; then
+        "$0" ssh -o BatchMode=yes "cat \"$shots/$latest\"" > "$out" && echo "$out" && exit 0
+      fi
+    done
+    die "no screenshot appeared in the VM (is a Dashi session running?)"
     ;;
   type|key)
     exec python3 "$here/qmp.py" "$qmp_sock" "$cmd" "$@"
@@ -123,8 +142,19 @@ case $cmd in
   stop)
     exec python3 "$here/qmp.py" "$qmp_sock" powerdown
     ;;
+  checkout-session)
+    pass=${DASHI_VM_PASSWORD:?set DASHI_VM_PASSWORD to the VM user password, for sudo in the guest}
+    case ${1:-} in
+      on) script='
+        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=/home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
+        printf "[Autologin]\nUser=dashi\nSession=dashi-checkout\n" > /etc/sddm.conf.d/zz-dashi-checkout.conf' ;;
+      off) script='rm -f /usr/share/wayland-sessions/dashi-checkout.desktop /etc/sddm.conf.d/zz-dashi-checkout.conf' ;;
+      *) die "usage: vm/vm checkout-session on|off" ;;
+    esac
+    printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script && systemctl restart sddm'"
+    ;;
   *)
-    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
     [ -z "$cmd" ] || exit 2
     ;;
 esac
