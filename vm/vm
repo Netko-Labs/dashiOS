@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# vm/vm: a Dashi VM for developing Dashi, so a broken compositor or shell
+# breaks a window and not the session you are working in.
+#
+#   vm/vm install [ISO]   boot the Dashi image with the VM's disk attached, to
+#                         install onto it (Anaconda); makes the disk if needed
+#   vm/vm desktop         boot the installed VM
+#   vm/vm live [ISO]      boot the image alone, nothing kept
+#   vm/vm ssh [ARGS...]   ssh into the running VM (localhost:$DASHI_VM_SSH)
+#
+# The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
+# (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
+# directory that holds this checkout and ../mirin (normally ~/Developer) over
+# virtiofs, tag "developer"; in the guest:
+#
+#   sudo mount -t virtiofs developer /mnt/developer
+#
+# Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
+# DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none).
+set -euo pipefail
+
+here=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
+repo=$(dirname -- "$here")
+share=$(dirname -- "$repo")
+images=$here/images
+disk=$images/dashi.qcow2
+vars=$images/OVMF_VARS.fd
+fs_sock=$images/virtiofs.sock
+
+cpus=${DASHI_VM_CPUS:-8}
+mem=${DASHI_VM_MEM:-8G}
+disk_size=${DASHI_VM_DISK_SIZE:-80G}
+ssh_port=${DASHI_VM_SSH:-2222}
+gpu=${DASHI_VM_GPU:-venus}
+
+die() { echo "vm: $*" >&2; exit 1; }
+
+default_iso() {
+  local iso
+  iso=$(ls -t "$images"/*.iso 2>/dev/null | head -1 || true)
+  [ -n "$iso" ] || die "no ISO in $images; pass one: vm/vm install path/to/dashi.iso"
+  echo "$iso"
+}
+
+ensure_disk() {
+  mkdir -p "$images"
+  [ -f "$disk" ] || qemu-img create -q -f qcow2 "$disk" "$disk_size"
+  [ -f "$vars" ] || cp /usr/share/edk2/ovmf/OVMF_VARS.fd "$vars"
+}
+
+gpu_args() {
+  case $gpu in
+    venus) echo "-device virtio-vga-gl,hostmem=4G,blob=true,venus=true -display gtk,gl=on" ;;
+    virgl) echo "-device virtio-vga-gl -display gtk,gl=on" ;;
+    none)  echo "-device virtio-vga -display gtk" ;;
+    *) die "DASHI_VM_GPU must be venus, virgl, or none" ;;
+  esac
+}
+
+qemu() {
+  [ -w /dev/kvm ] || die "/dev/kvm is not usable"
+  # Shared memory backs both Venus's blob resources and virtiofs.
+  # shellcheck disable=SC2046
+  exec qemu-system-x86_64 \
+    -name Dashi -machine q35,accel=kvm,memory-backend=mem -cpu host \
+    -smp "$cpus" -m "$mem" \
+    -object memory-backend-memfd,id=mem,size="$mem",share=on \
+    -drive if=pflash,format=raw,readonly=on,file=/usr/share/edk2/ovmf/OVMF_CODE.fd \
+    -drive if=pflash,format=raw,file="$vars" \
+    $(gpu_args) \
+    -device virtio-keyboard-pci -device virtio-tablet-pci \
+    -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:"$ssh_port"-:22 \
+    -device virtio-rng-pci \
+    "$@"
+}
+
+start_virtiofsd() {
+  rm -f "$fs_sock"
+  /usr/libexec/virtiofsd --socket-path="$fs_sock" --shared-dir="$share" \
+    --sandbox=none --cache=auto >"$images/virtiofsd.log" 2>&1 &
+  for _ in $(seq 50); do [ -S "$fs_sock" ] && return; sleep 0.1; done
+  die "virtiofsd did not start; see $images/virtiofsd.log"
+}
+
+cmd=${1:-}; [ $# -gt 0 ] && shift
+case $cmd in
+  install)
+    iso=${1:-$(default_iso)}
+    ensure_disk
+    qemu -drive file="$disk",if=virtio,format=qcow2 \
+      -drive file="$iso",media=cdrom,readonly=on -boot order=d,menu=on
+    ;;
+  desktop)
+    [ -f "$disk" ] || die "no VM disk yet; run vm/vm install first"
+    start_virtiofsd
+    qemu -drive file="$disk",if=virtio,format=qcow2 \
+      -chardev socket,id=fs0,path="$fs_sock" \
+      -device vhost-user-fs-pci,chardev=fs0,tag=developer
+    ;;
+  live)
+    iso=${1:-$(default_iso)}
+    ensure_disk
+    qemu -drive file="$iso",media=cdrom,readonly=on -boot order=d
+    ;;
+  ssh)
+    exec ssh -p "$ssh_port" -o StrictHostKeyChecking=accept-new \
+      -o UserKnownHostsFile="$images/known_hosts" localhost "$@"
+    ;;
+  *)
+    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+    [ -z "$cmd" ] || exit 2
+    ;;
+esac
