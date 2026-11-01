@@ -1,0 +1,203 @@
+/**
+ * The monitors dashi-comp reports (IPC `outputs`): who they are, what they
+ * run, what they could run. Includes the ones that are plugged in but turned
+ * off, which `parseScreens` (displays.ts) leaves out because they show
+ * nothing. The identity of a monitor is its EDID (make, model, serial), so a
+ * saved arrangement follows the monitor to another port; a monitor without
+ * one is known by its connector.
+ */
+
+import { type Frame, parseFrame } from "../compositor.ts";
+import { isBuiltIn } from "../displays.ts";
+
+export type Rotation = 0 | 90 | 180 | 270;
+export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
+
+export interface Mode {
+  width: number;
+  height: number;
+  /** Millihertz: 59940 is 59.94 Hz. */
+  refreshMhz: number;
+}
+
+export interface OfferedMode extends Mode {
+  /** The monitor's native mode. */
+  preferred: boolean;
+  current: boolean;
+}
+
+export interface Monitor {
+  /** The connector's name, "eDP-1". */
+  name: string;
+  make: string;
+  model: string;
+  serial: string;
+  builtIn: boolean;
+  /** Turned on (false: plugged in but off, with no frame or mode). */
+  enabled: boolean;
+  /** Showing something now. */
+  lit: boolean;
+  primary: boolean;
+  widthMm: number;
+  heightMm: number;
+  scale: number;
+  /** Points, global; absent for a monitor that is off. */
+  frame?: Frame;
+  /** What it runs, in pixels as the panel is wired (not turned with the rotation). */
+  mode?: Mode;
+  modes: OfferedMode[];
+  rotation: Rotation;
+  flipped: boolean;
+}
+
+const record = (value: unknown): Record<string, unknown> | null => (typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null);
+const finite = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
+const text = (value: unknown): string => (typeof value === "string" ? value : "");
+
+function parseMode(value: unknown): Mode | null {
+  const mode = record(value);
+  const width = finite(mode?.width);
+  const height = finite(mode?.height);
+  const refreshMhz = finite(mode?.refreshMhz);
+  return mode && width !== null && height !== null && refreshMhz !== null && width > 0 && height > 0 ? { width, height, refreshMhz } : null;
+}
+
+const isRotation = (value: unknown): value is Rotation => ROTATIONS.some((rotation) => rotation === value);
+
+/** The monitors in an `outputs` answer, malformed entries skipped. */
+export function parseMonitors(answer: unknown): Monitor[] {
+  const outputs = record(answer)?.outputs;
+  if (!Array.isArray(outputs)) return [];
+  return outputs.flatMap((entry: unknown): Monitor[] => {
+    const output = record(entry);
+    if (!output || typeof output.name !== "string" || output.name === "") return [];
+    const size = record(output.physicalMm);
+    const transform = record(output.transform);
+    const frame = parseFrame(output.frame);
+    const mode = parseMode(output.mode);
+    const enabled = output.enabled !== false;
+    // A monitor that is on but shows no mode is not one to work with.
+    if (enabled && !mode) return [];
+    const modes = Array.isArray(output.modes)
+      ? output.modes.flatMap((offered: unknown): OfferedMode[] => {
+          const parsed = parseMode(offered);
+          const flags = record(offered);
+          return parsed ? [{ ...parsed, preferred: flags?.preferred === true, current: flags?.current === true }] : [];
+        })
+      : [];
+    return [
+      {
+        name: output.name,
+        make: text(output.make),
+        model: text(output.model),
+        serial: text(output.serial),
+        builtIn: isBuiltIn(output.name),
+        enabled,
+        lit: output.lit !== false,
+        primary: output.primary === true,
+        widthMm: finite(size?.width) ?? 0,
+        heightMm: finite(size?.height) ?? 0,
+        scale: finite(output.scale) ?? 1,
+        ...(frame ? { frame } : {}),
+        ...(mode ? { mode } : {}),
+        modes,
+        rotation: isRotation(transform?.rotation) ? transform.rotation : 0,
+        flipped: transform?.flipped === true,
+      },
+    ];
+  });
+}
+
+/**
+ * A monitor's identity across ports and sessions: its EDID make, model, and
+ * serial. Two of the same model without serials differ by connector, and a
+ * monitor that reports no make (a VM, a projector) is its connector.
+ */
+export function identityOf(monitor: Pick<Monitor, "name" | "make" | "model" | "serial">): string {
+  const { name, make, model, serial } = monitor;
+  if (make === "") return `port:${name}`;
+  const base = `edid:${make}|${model}|${serial}`;
+  return serial === "" ? `${base}|${name}` : base;
+}
+
+/** The key of a set of connected monitors: order does not matter. */
+export function setKey(monitors: readonly Pick<Monitor, "name" | "make" | "model" | "serial">[]): string {
+  return monitors
+    .map(identityOf)
+    .sort()
+    .join("+");
+}
+
+/** "Dell U2720Q" or the connector when the monitor says nothing. */
+export function monitorLabel(monitor: Pick<Monitor, "name" | "make" | "model" | "builtIn">): string {
+  if (monitor.builtIn) return "Built-in Display";
+  const model = monitor.model.trim();
+  // Without an EDID the comp reports the connector as the model.
+  if (monitor.make === "" || model === "" || model === monitor.name) return monitor.name;
+  return model;
+}
+
+/** "2560 × 1440". */
+export const sizeLabel = (mode: Pick<Mode, "width" | "height">): string => `${mode.width} × ${mode.height}`;
+
+/** "59.94 Hz", "60 Hz". */
+export function refreshLabel(refreshMhz: number): string {
+  const hertz = Math.round(refreshMhz / 10) / 100;
+  return `${Number.isInteger(hertz) ? hertz : hertz.toFixed(2)} Hz`;
+}
+
+/** The size the monitor shows, turned with its rotation: what it looks like to a person, in pixels. */
+export function uprightSize(monitor: Pick<Monitor, "mode" | "rotation">): { width: number; height: number } | null {
+  const mode = monitor.mode;
+  if (!mode) return null;
+  return monitor.rotation === 90 || monitor.rotation === 270 ? { width: mode.height, height: mode.width } : { width: mode.width, height: mode.height };
+}
+
+/** The distinct sizes among the modes offered, biggest first. */
+export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: number }> {
+  const seen = new Map<string, { width: number; height: number }>();
+  for (const mode of modes) seen.set(`${mode.width}x${mode.height}`, { width: mode.width, height: mode.height });
+  return [...seen.values()].sort((a, b) => b.width * b.height - a.width * a.height || b.width - a.width);
+}
+
+/**
+ * The sizes worth offering first, largest first: the native one, the current
+ * one, and up to `limit` others of the native shape (within 2%) that are no
+ * larger than it. A monitor's EDID lists dozens, most of them odd shapes or
+ * modes the panel only scales; "Show All Resolutions" has the rest.
+ */
+export function commonSizes(
+  modes: readonly OfferedMode[],
+  current: { width: number; height: number },
+  limit = 6,
+): Array<{ width: number; height: number }> {
+  const all = sizesOf(modes);
+  const native = modes.find((mode) => mode.preferred) ?? all[0];
+  if (!native) return [];
+  const shape = native.width / native.height;
+  const same = (size: { width: number; height: number }) => size.width === current.width && size.height === current.height;
+  const isNative = (size: { width: number; height: number }) => size.width === native.width && size.height === native.height;
+  const fits = all.filter(
+    (size) => !isNative(size) && !same(size) && Math.abs(size.width / size.height - shape) / shape <= 0.02 && size.width <= native.width && size.height <= native.height,
+  );
+  const keep = new Set([...all.filter((size) => isNative(size) || same(size)), ...fits.slice(0, limit)]);
+  return all.filter((size) => keep.has(size));
+}
+
+/** The rates a size is offered at, fastest first. */
+export function ratesOf(modes: readonly Mode[], size: { width: number; height: number }): number[] {
+  return modes
+    .filter((mode) => mode.width === size.width && mode.height === size.height)
+    .map((mode) => mode.refreshMhz)
+    .sort((a, b) => b - a);
+}
+
+/** The mode of that size nearest `refreshMhz`, else the native one of that size, else the fastest. */
+export function modeFor(modes: readonly OfferedMode[], size: { width: number; height: number }, refreshMhz?: number): OfferedMode | undefined {
+  const same = modes.filter((mode) => mode.width === size.width && mode.height === size.height);
+  if (refreshMhz !== undefined) {
+    const near = [...same].sort((a, b) => Math.abs(a.refreshMhz - refreshMhz) - Math.abs(b.refreshMhz - refreshMhz))[0];
+    if (near && Math.abs(near.refreshMhz - refreshMhz) <= 600) return near;
+  }
+  return same.find((mode) => mode.preferred) ?? [...same].sort((a, b) => b.refreshMhz - a.refreshMhz)[0];
+}

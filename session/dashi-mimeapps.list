@@ -1,0 +1,12 @@
+[Default Applications]
+text/html=helium.desktop
+x-scheme-handler/http=helium.desktop
+x-scheme-handler/https=helium.desktop
+image/png=dev.dashi.preview.desktop;
+image/jpeg=dev.dashi.preview.desktop;
+image/webp=dev.dashi.preview.desktop;
+image/gif=dev.dashi.preview.desktop;
+image/bmp=dev.dashi.preview.desktop;
+image/svg+xml=dev.dashi.preview.desktop;
+image/tiff=dev.dashi.preview.desktop;
+application/pdf=dev.dashi.preview.desktop;

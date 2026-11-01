@@ -1,0 +1,21 @@
+{
+  "name": "@dashi/shell",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Dashi's shell: the menu bar and the Dock, as Metal apps on layer-shell surfaces.",
+  "scripts": {
+    "start": "bun src/main.tsx",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mirinjs/metal": "file:../../mirin/packages/mirin-metal",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,11 @@
+# The Dashi session as systemd --user sees it: started by the session
+# supervisor (shell/src/session/) once the display is known, stopped when the
+# session ends. It brings graphical-session.target up, which services such as
+# xdg-desktop-portal require: without it apps get no portal (no Dark Mode for
+# libadwaita, no file chooser, no screen sharing).
+[Unit]
+Description=Dashi session
+Documentation=file://README.md
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target

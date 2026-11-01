@@ -1,0 +1,27 @@
+[Plymouth Theme]
+Name=Dashi
+Description=Dashi's bowl on a dark background, with Fedora's spinner below it
+ModuleName=two-step
+
+# Laid out like Fedora's spinner theme (plymouth-theme-spinner), whose
+# animation, password field, and lock images this theme links to; only the
+# watermark (Dashi's bowl, centered) and the colors are Dashi's.
+[two-step]
+Font=Inter 12
+TitleFont=Inter Light 30
+ImageDir=/usr/share/plymouth/themes/dashi
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.382
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.382
+HorizontalAlignment=.5
+VerticalAlignment=.75
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.45
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=0x161618
+BackgroundEndColor=0x161618
+ProgressBarBackgroundColor=0x3a3a3c
+ProgressBarForegroundColor=0x5fae95
+MessageBelowAnimation=true

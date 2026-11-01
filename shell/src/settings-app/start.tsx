@@ -1,0 +1,136 @@
+/**
+ * Opens System Settings on demand (the Dashi menu, the launcher, ❖,) and
+ * keeps it to one window: asking again brings the window forward instead of
+ * opening a second. It runs inside the shell process, like Force Quit, so
+ * its panes use the shell's own stores (Dark Mode, Do Not Disturb, the
+ * agents' kept answers) directly; what must survive a restart goes to
+ * settings.json (store.ts), which the shell applies.
+ */
+
+import { homedir } from "node:os";
+import type { Grants } from "../agents/consent.ts";
+import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
+import type { Compositor } from "../compositor.ts";
+import type { FlagsStore } from "../control-center/flags.ts";
+import type { Arranger } from "./screens.ts";
+import { type OverlayHandle, openOverlay } from "../overlay.tsx";
+import type { RegionStore } from "../region/store.ts";
+import { readAbout } from "./about.ts";
+import type { PaneContext } from "./context.ts";
+import { loadLayouts } from "./layouts.ts";
+import { Nav, type PaneId } from "./panes.ts";
+import { ScreensStore } from "./screens.ts";
+import type { PaneServices } from "./services.ts";
+import type { SettingsStore } from "./store.ts";
+import { portalChooser } from "../wallpaper/chooser.ts";
+import { SETTINGS_WINDOW, SettingsWindow } from "./view.tsx";
+
+export interface SettingsApp {
+  /** Opens the window, or brings it forward when it is open; `pane` also switches to that pane. */
+  open(pane?: PaneId): void;
+  close(): void;
+}
+
+export interface SettingsAppOptions {
+  /** Null without dashi-comp: the window opens, but has no screens to list and cannot be found to raise. */
+  compositor: Compositor | null;
+  /** The arrangement service (display-config/); null without a compositor. */
+  displays?: Arranger | null;
+  settings: SettingsStore;
+  /** The system time zone, clock sync, and language. */
+  region: RegionStore;
+  flags: FlagsStore;
+  grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  lock(): void;
+  /** Opens the Setup Assistant (About has a button for it). */
+  openSetup(): void;
+
+  /** The machine panes' services; asked for when the window opens, since they come from stores made after Settings. */
+  services(): PaneServices;
+}
+
+interface Session {
+  surface: OverlayHandle | null;
+  stop: () => void;
+}
+
+export const SETTINGS_TITLE = "System Settings";
+
+export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
+  const { compositor } = options;
+  const nav = new Nav();
+  let session: Session | null = null;
+
+  const close = (): void => {
+    const current = session;
+    if (!current) return;
+    session = null;
+    current.stop();
+    current.surface?.close();
+  };
+
+  /** Raises the window: the compositor lists it by app id, and `focus` brings a minimized or hidden one back too. */
+  const raise = async (): Promise<void> => {
+    try {
+      const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETTINGS_APP_ID);
+      if (window) await compositor?.request("focus", { window: window.id });
+    } catch (error) {
+      console.error("dashi-shell: could not bring System Settings forward:", error);
+    }
+  };
+
+  const open = (pane?: PaneId): void => {
+    if (pane) nav.select(pane);
+    if (session) {
+      void raise();
+      return;
+    }
+    const screens = new ScreensStore(compositor, options.settings, options.displays ?? null);
+    const ctx: PaneContext = {
+      settings: options.settings,
+      region: options.region,
+      flags: options.flags,
+      screens,
+      grants: options.grants,
+      layouts: loadLayouts(),
+      chooser: portalChooser(),
+      services: options.services(),
+      about: readAbout,
+      lock: options.lock,
+      openSetup: options.openSetup,
+      home: homedir(),
+    };
+    const stopScreens = screens.start();
+    const stopWatching = options.settings.watch();
+    const current: Session = {
+      surface: null,
+      stop: () => {
+        stopScreens();
+        stopWatching();
+      },
+    };
+    session = current;
+    // No `surface`: an ordinary window with the compositor's window controls: over the content (the
+    // unified title bar, see view.tsx) where the compositor can draw them so, else in a title bar.
+    current.surface = openOverlay(
+      { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, width: SETTINGS_WINDOW.width, height: SETTINGS_WINDOW.height, titleBar: "unified" },
+      <SettingsWindow ctx={ctx} nav={nav} />,
+      () => {
+        // The window went (its close button, or its host died): forget the session.
+        if (session === current) session = null;
+        current.stop();
+      },
+    );
+  };
+
+  // The launcher and the Dock open Settings through the shell's own-app registry (apps.ts).
+  const unregister = registerShellApp(SETTINGS_APP_ID, () => open());
+
+  return {
+    open,
+    close() {
+      unregister();
+      close();
+    },
+  };
+}

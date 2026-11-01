@@ -1,0 +1,148 @@
+/**
+ * What the keys mean in Dashi (docs/design.html, Keyboard): ❖ plays ⌘. The
+ * shell sends this to dashi-comp at startup; the compositor matches each
+ * press against these rules on its own and replays translations, so typing
+ * never waits on Bun. Change a rule here and restart the shell to remap.
+ *
+ * A rule's `when` is modifiers (super, ctrl, alt, shift) and a key: an xkb
+ * keysym name ("q", "Left", "Tab|ISO_Left_Tab"), `letter` (a–z), or `*`.
+ * Super, Ctrl, and Alt must match exactly; Shift only when named. The first
+ * matching rule wins, and its action is one of:
+ *
+ *   bind     the key is the shell's: shortcuts.ts runs the named action
+ *   send     the app gets this chord instead, held like the key; Shift held
+ *            with it passes through ("key" means the pressed key)
+ *   tap      these chords, pressed and released at once
+ *   swallow  nothing happens (a reserved chord)
+ *
+ * Built into the compositor, whatever this says: Ctrl+Alt+F1..F12 (VTs),
+ * Ctrl+Alt+Backspace (leave the session), Ctrl+Super+Esc (stop agents).
+ * The full grammar is in comp/src/keys/keymap.rs.
+ */
+
+export type Rule = {
+  when: string;
+  /** An app class from `apps` the focused window must belong to. */
+  app?: string;
+  bind?: string;
+  send?: string;
+  tap?: string[];
+  swallow?: true;
+};
+
+export type Keymap = {
+  apps: Record<string, string[]>;
+  tapMs: number;
+  holdMs: number;
+  rules: Rule[];
+};
+
+/** Terminals keep plain Ctrl chords for the program inside (Ctrl+C interrupts). */
+export const TERMINALS = [
+  "foot",
+  "footclient",
+  "org.kde.konsole",
+  "Alacritty",
+  "kitty",
+  "org.gnome.Terminal",
+  "org.gnome.Console",
+  "org.gnome.Ptyxis",
+  "com.mitchellh.ghostty",
+  "org.wezfurlong.wezterm",
+  "xterm",
+];
+
+export const KEYMAP: Keymap = {
+  apps: {
+    terminal: TERMINALS,
+    // Metal apps don't bind Ctrl+W yet, so the shell closes for them.
+    metal: ["", "dev.dashi.*", "dev.mirin.*"],
+  },
+  // A ❖ tap opens the launcher; holding ❖ shows the shortcut sheet.
+  tapMs: 350,
+  holdMs: 800,
+  rules: [
+    // The hardware keys (system/keys.ts); they carry no modifiers, so their
+    // place in the list does not matter.
+    { when: "XF86AudioRaiseVolume", bind: "volume-up" },
+    { when: "XF86AudioLowerVolume", bind: "volume-down" },
+    { when: "XF86AudioMute", bind: "volume-mute" },
+    { when: "XF86AudioMicMute", bind: "mic-mute" },
+    { when: "XF86MonBrightnessUp", bind: "brightness-up" },
+    { when: "XF86MonBrightnessDown", bind: "brightness-down" },
+    { when: "XF86AudioPlay", bind: "media-play-pause" },
+    { when: "XF86AudioPause", bind: "media-pause" },
+    { when: "XF86AudioNext", bind: "media-next" },
+    { when: "XF86AudioPrev", bind: "media-previous" },
+    // The power key: the shell asks before shutting down (power/).
+    { when: "XF86PowerOff", bind: "power-key" },
+
+    // ⌃↑ is Overview (Mission Control: overview/), and so is the Mac's F3 key
+    // (the keymap calls it XF86LaunchA). Shift, if held, does not matter.
+    { when: "ctrl+Up", bind: "overview" },
+    { when: "XF86LaunchA", bind: "overview" },
+    // ⌃← ⌃→ move between Spaces and ⌃1…⌃9 jump to one (spaces/), as on a Mac.
+    { when: "ctrl+Left", bind: "space-left" },
+    { when: "ctrl+Right", bind: "space-right" },
+    ...Array.from({ length: 9 }, (_, index) => ({ when: `ctrl+${index + 1}`, bind: `space-${index + 1}` })),
+
+    // ⌃❖ arrows arrange the focused window.
+    { when: "super+ctrl+Left", bind: "tile-left" },
+    { when: "super+ctrl+Right", bind: "tile-right" },
+    { when: "super+ctrl+Up", bind: "tile-fill" },
+    { when: "super+ctrl+Down", bind: "tile-restore" },
+    // ⌃❖F: full screen (arrange.ts), for any window, as on the Mac.
+    { when: "super+ctrl+f", bind: "fullscreen" },
+    // ⌃❖Q: lock the screen, as on the Mac.
+    { when: "super+ctrl+q", bind: "lock-screen" },
+    // ⌥❖Esc: Force Quit Applications (force-quit/). Before the reserved ⌥❖ rule below.
+    { when: "super+alt+Escape", bind: "force-quit" },
+    // ⌥❖D: turn Dock autohide on or off (dock/prefs.ts), as on the Mac. Before the reserved ⌥❖ rule below.
+    { when: "super+alt+d", bind: "toggle-autohide" },
+    // Reserved for the lock screen, emoji, and Hide Others.
+    { when: "super+ctrl+*", swallow: true },
+    { when: "super+alt+*", swallow: true },
+    { when: "super+ctrl+alt+*", swallow: true },
+
+    // The shell's ❖ shortcuts.
+    { when: "super+q", bind: "quit-app" },
+    { when: "super+m", bind: "minimize-window" },
+    { when: "super+h", bind: "hide-app" },
+    { when: "super+shift+Tab|ISO_Left_Tab", bind: "switch-previous" },
+    { when: "super+Tab|ISO_Left_Tab", bind: "switch-next" },
+    { when: "super+Escape", bind: "switch-cancel" },
+    { when: "super+grave|asciitilde", bind: "next-window" },
+    { when: "super+space", bind: "launcher" },
+    // ❖, opens System Settings (settings-app/).
+    { when: "super+comma", bind: "settings" },
+    { when: "super+w", app: "metal", bind: "close-window" },
+    // ⇧❖3 captures the screen; ⇧❖4 an area dragged out, or with Space the
+    // focused window (screenshots.ts, screenshot-area.tsx).
+    { when: "super+shift+3", bind: "screenshot-screen" },
+    { when: "super+shift+4", bind: "screenshot-area" },
+
+    // Moving in text, Mac style; ⇧ with them selects.
+    { when: "super+Left", send: "Home" },
+    { when: "super+Right", send: "End" },
+    { when: "super+Up", send: "ctrl+Home" },
+    { when: "super+Down", send: "ctrl+End" },
+    // ❖⌫ deletes to the line start: readline's Ctrl+U in terminals.
+    { when: "super+BackSpace", app: "terminal", tap: ["ctrl+u"] },
+    { when: "super+BackSpace", tap: ["shift+Home", "BackSpace"] },
+
+    // In Dashi's own apps a ❖ chord is a menu shortcut first (the app's
+    // menus say which, app-menus/): the shell chooses the item, and sends
+    // the Ctrl chord below only when no item shows it.
+    { when: "super+*", app: "metal", bind: "app-chord" },
+    // Every other ❖ chord is the app's own Ctrl chord; terminals take
+    // their shortcuts on Ctrl+Shift.
+    { when: "super+letter", app: "terminal", send: "ctrl+shift+key" },
+    { when: "super+*", send: "ctrl+key" },
+
+    // ⌥ moves and deletes by word.
+    { when: "alt+Left", send: "ctrl+Left" },
+    { when: "alt+Right", send: "ctrl+Right" },
+    { when: "alt+BackSpace", send: "ctrl+BackSpace" },
+    { when: "alt+Delete", send: "ctrl+Delete" },
+  ],
+};

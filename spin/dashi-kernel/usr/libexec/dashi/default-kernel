@@ -1,0 +1,120 @@
+#!/usr/bin/bash
+# /usr/libexec/dashi/default-kernel: make the boot loader start the kernel
+# Dashi wants on this machine (dashi-kernel).
+#
+#   default-kernel [--except <version>] [--dry-run]
+#
+# Dashi ships two kernels: CachyOS's (kernel-cachyos, from CachyOS's COPR:
+# BORE scheduler, 1000 Hz, NTSync, sched-ext; the one for games) and
+# Fedora's (kernel-core, signed for Secure Boot, built for every x86-64 CPU).
+# The CachyOS build needs an x86-64-v3 CPU (Haswell, Excavator, or newer) and
+# is not signed with a key shim trusts, so it is the default only where it
+# boots: a v3 CPU, and Secure Boot off (or shim's validation turned off with
+# `mokutil --disable-validation`). Elsewhere Fedora's kernel stays the
+# default. Both stay in the boot menu either way.
+#
+# /etc/dashi/kernel.conf can say otherwise: DEFAULT_KERNEL=auto (the rule
+# above), cachyos, fedora, or keep (leave the default to the person and
+# `grubby --set-default`).
+#
+# Run at every boot (dashi-default-kernel.service: the installer leaves the
+# oldest kernel as the default, and Anaconda has no hook after it that runs
+# on a live install), and by kernel-install after every kernel is added or
+# removed (99-dashi-default-kernel.install), so a Fedora kernel update does
+# not take the default away from CachyOS's.
+set -euo pipefail
+
+conf=/etc/dashi/kernel.conf
+except=
+dry_run=0
+while (($#)); do
+  case $1 in
+    --except) except=${2:-}; shift 2 ;;
+    --dry-run) dry_run=1; shift ;;
+    *) echo "default-kernel: unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
+say() { echo "default-kernel: $*"; }
+
+choice=auto
+if [[ -r $conf ]]; then
+  value=$(sed -n 's/^[[:space:]]*DEFAULT_KERNEL=["'\'']\{0,1\}\([a-z]*\)["'\'']\{0,1\}[[:space:]]*$/\1/p' "$conf" | tail -n 1)
+  case $value in
+    '') ;;
+    auto | cachyos | fedora | keep) choice=$value ;;
+    *) say "ignoring DEFAULT_KERNEL=$value in $conf (auto, cachyos, fedora, or keep)" ;;
+  esac
+fi
+[[ $choice != keep ]] || exit 0
+
+# Whether this CPU runs x86-64-v3 code; the dynamic loader knows.
+has_v3() {
+  local loader=/lib64/ld-linux-x86-64.so.2
+  [[ -x $loader ]] && "$loader" --help 2>/dev/null | grep -q 'x86-64-v3 (supported'
+}
+
+# The one-byte value of an EFI variable (efivarfs puts four attribute bytes first), or nothing.
+efi_byte() {
+  local file=/sys/firmware/efi/efivars/$1
+  [[ -r $file ]] || return 0
+  od -An -tu1 -j4 -N1 -- "$file" 2>/dev/null | tr -d '[:space:]'
+}
+
+# Whether the firmware will only start signed kernels: Secure Boot on, and
+# shim not told to skip its checks (MokSBStateRT is 1 after `mokutil --disable-validation`).
+enforces_signatures() {
+  [[ $(efi_byte SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c) == 1 ]] || return 1
+  [[ $(efi_byte MokSBStateRT-605dab50-e046-4300-abb6-3dd810dd8b23) != 1 ]]
+}
+
+# The installed kernels with an image in /boot, newest last.
+cachyos=()
+fedora=()
+while IFS= read -r version; do
+  [[ -n $version && $version != "$except" ]] || continue
+  case $version in
+    *-rescue-*) ;;
+    *cachyos[0-9]*) cachyos+=("$version") ;;
+    *cachy*) ;; # CachyOS's LTS, real-time, and server kernels are picked only by hand.
+    *) fedora+=("$version") ;;
+  esac
+done < <(find /boot -maxdepth 1 -name 'vmlinuz-*' -printf '%f\n' 2>/dev/null | sed 's/^vmlinuz-//' | sort -V)
+
+want=fedora
+if [[ $choice == cachyos ]]; then
+  want=cachyos
+elif [[ $choice == auto ]]; then
+  if ! has_v3; then
+    say "this CPU is not x86-64-v3: Fedora's kernel"
+  elif enforces_signatures; then
+    say "Secure Boot is on: Fedora's kernel (CachyOS's is not signed for it)"
+  else
+    want=cachyos
+  fi
+fi
+
+if [[ $want == cachyos && ${#cachyos[@]} -eq 0 ]]; then
+  say "no CachyOS kernel is installed: Fedora's kernel"
+  want=fedora
+fi
+if [[ $want == cachyos ]]; then
+  version=${cachyos[-1]}
+elif ((${#fedora[@]})); then
+  version=${fedora[-1]}
+else
+  say "no Fedora kernel is installed; leaving the default alone"
+  exit 0
+fi
+
+current=$(grubby --default-kernel 2>/dev/null || true)
+if [[ $current == "/boot/vmlinuz-$version" ]]; then
+  say "already the default: $version"
+  exit 0
+fi
+if ((dry_run)); then
+  say "would make $version the default (now ${current:-none})"
+  exit 0
+fi
+grubby --set-default="/boot/vmlinuz-$version"
+say "the default is now $version"

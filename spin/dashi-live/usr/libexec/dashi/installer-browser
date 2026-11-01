@@ -1,0 +1,21 @@
+#!/usr/bin/sh
+# installer-browser URL: Anaconda's web UI in Helium, Dashi's browser, as an
+# app window. Anaconda's webui-desktop runs this as the live user
+# (webui_web_engine in /etc/anaconda/conf.d/90-dashi.conf) with the session's
+# environment, and stops it when the installer exits.
+#
+# A throwaway profile, no keyring (nothing is saved), and no GPU: the
+# installer is a form, and software drawing keeps it working on any graphics
+# driver the live image boots with.
+set -eu
+url=${1:?usage: installer-browser URL}
+helium=$(command -v helium || command -v helium-browser || true)
+[ -n "$helium" ] || { echo "installer-browser: Helium is not installed" >&2; exit 1; }
+platform=
+[ -z "${WAYLAND_DISPLAY:-}" ] || platform=--ozone-platform=wayland
+profile=$(mktemp -d "${TMPDIR:-/tmp}/dashi-installer.XXXXXX")
+trap 'rm -rf -- "$profile"' EXIT
+trap 'exit 0' INT TERM
+"$helium" --user-data-dir="$profile" --no-first-run --no-default-browser-check \
+  --disable-sync --password-store=basic --disable-gpu $platform \
+  --class=liveinst --app="$url"

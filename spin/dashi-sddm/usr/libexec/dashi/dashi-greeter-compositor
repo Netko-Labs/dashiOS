@@ -1,0 +1,12 @@
+#!/usr/bin/sh
+# dashi-greeter-compositor: the Wayland compositor SDDM's login screen runs
+# in (/usr/lib/sddm/sddm.conf.d/dashi.conf), Fedora's own `weston
+# --shell=kiosk` on the GPU Dashi itself would pick (shell/src/gpu.ts).
+# Weston's own guess is the boot display, else the first card: on a laptop
+# whose NVIDIA GPU is listed before the AMD or Intel one that drives the panel,
+# the login screen opened where there was no screen, and the boot splash stayed.
+self=$(readlink -f -- "$0")
+prefix=$(dirname -- "$(dirname -- "$(dirname -- "$self")")")
+bun=$prefix/libexec/dashi/bin/bun
+card=$("$bun" "$prefix/share/dashi/shell/bin/dashi-gpu.ts" --name 2>/dev/null || true)
+exec weston --shell=kiosk ${card:+--drm-device="$card"} "$@"

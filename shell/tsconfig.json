@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "types": ["bun"],
+    "lib": ["ESNext"]
+  },
+  "include": ["src", "apps", "test", "bin", "wallpapers"]
+}

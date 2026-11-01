@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+# kernel-install plugin (dashi-kernel): after a kernel is added or removed,
+# put the boot loader's default back on the kernel Dashi picks for this
+# machine (/usr/libexec/dashi/default-kernel). Without it, every Fedora
+# kernel update would make Fedora's kernel the default again. It never fails
+# the kernel's installation.
+command=${1:-}
+version=${2:-}
+case $command in
+  add) /usr/libexec/dashi/default-kernel || true ;;
+  remove) /usr/libexec/dashi/default-kernel --except "$version" || true ;;
+esac
+exit 0

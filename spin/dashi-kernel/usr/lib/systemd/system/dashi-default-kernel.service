@@ -1,0 +1,19 @@
+# dashi-kernel: at every boot, point the boot loader's default at the kernel
+# Dashi picks for this machine (/usr/libexec/dashi/default-kernel). The
+# installer leaves the oldest kernel as the default, so an installed system
+# boots Fedora's kernel once and CachyOS's from then on where it can; and
+# if Secure Boot is turned on later (CachyOS's kernel then won't start) and
+# Fedora's is picked from the boot menu, Fedora's becomes the default again.
+[Unit]
+Description=Choose the default kernel for this machine
+Documentation=file:///etc/dashi/kernel.conf
+After=local-fs.target
+# Not on the live image: its boot menu is the ISO's, not /boot's.
+ConditionKernelCommandLine=!rd.live.image
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/dashi/default-kernel
+
+[Install]
+WantedBy=multi-user.target

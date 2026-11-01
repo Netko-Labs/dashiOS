@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Dashi
+Comment=The Dashi desktop
+Exec=/usr/bin/dashi-session
+TryExec=/usr/bin/dashi-session
+Type=Application
+DesktopNames=Dashi

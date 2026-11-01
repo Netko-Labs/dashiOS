@@ -1,0 +1,195 @@
+#!/usr/bin/sh
+# dashi-session: the login entry point. A display manager (GDM, SDDM, greetd)
+# runs this for the "Dashi" session; so does `vm/vm desktop`. It sets up the
+# session's environment, sends everything it prints to a log, and replaces
+# itself with the compositor, which runs the session supervisor
+# (shell/src/session.ts) as its client; the supervisor starts the shell and
+# restarts it when it crashes.
+#
+#   dashi-session            start the session
+#   dashi-session --print    show what would run, without running it
+#
+# Paths come from where this script lives: an install prefix
+# (<prefix>/bin/dashi-session, <prefix>/share/dashi/shell,
+# <prefix>/libexec/dashi/mirin-metal-host) or a checkout
+# (<repo>/session/dashi-session, <repo>/shell, <repo>/comp/target/*/dashi-comp).
+# DASHI_COMP, DASHI_SHELL_DIR, DASHI_METAL_HOST, and DASHI_BUN override them.
+set -eu
+
+print_only=0
+case "${1:-}" in
+  --print) print_only=1 ;;
+  "") ;;
+  *) echo "usage: dashi-session [--print]" >&2; exit 2 ;;
+esac
+
+die() { echo "dashi-session: $*" >&2; exit 1; }
+
+# POSIX sh has no printf %q: wrap in single quotes, escaping the ones inside.
+quote() { printf "'%s'" "$(printf %s "$1" | sed "s/'/'\\\\''/g")"; }
+
+self=$(readlink -f -- "$0")
+base=$(dirname -- "$(dirname -- "$self")")
+
+# --- Where things are -------------------------------------------------------
+if [ -f "$base/share/dashi/shell/src/session.ts" ]; then
+  layout=installed
+  shell_dir=${DASHI_SHELL_DIR:-$base/share/dashi/shell}
+  comp=${DASHI_COMP:-$base/bin/dashi-comp}
+  host=${DASHI_METAL_HOST:-$base/libexec/dashi/mirin-metal-host}
+elif [ -f "$base/shell/src/session.ts" ]; then
+  layout=checkout
+  shell_dir=${DASHI_SHELL_DIR:-$base/shell}
+  comp=${DASHI_COMP:-}
+  if [ -z "$comp" ]; then
+    # Whichever build is newer: a stale release build must not hide a fresh debug one.
+    for profile in debug release; do
+      candidate=$base/comp/target/$profile/dashi-comp
+      if [ -x "$candidate" ] && { [ -z "$comp" ] || [ "$candidate" -nt "$comp" ]; }; then comp=$candidate; fi
+    done
+  fi
+  # Unset in a checkout: the shell looks for the sibling mirin checkout itself.
+  host=${DASHI_METAL_HOST:-}
+else
+  die "can't find the shell next to $self"
+fi
+[ -x "${comp:-}" ] || die "no dashi-comp to run (looked for ${comp:-a build in $base/comp/target}); build it or set DASHI_COMP"
+[ -f "$shell_dir/src/session.ts" ] || die "no shell at $shell_dir"
+
+# Bun is not packaged by Fedora. Installed from Dashi's packages, the session
+# runs its own (dashi-bun, <prefix>/libexec/dashi/bin/bun), the one it was
+# tested with, whatever bun a person has; otherwise it usually lives in the
+# user's own ~/.bun, which a display manager's PATH does not include.
+bun=${DASHI_BUN:-}
+if [ -z "$bun" ] && [ "$layout" = installed ] && [ -x "$base/libexec/dashi/bin/bun" ]; then
+  bun=$base/libexec/dashi/bin/bun
+fi
+if [ -z "$bun" ]; then
+  bun=$(command -v bun 2>/dev/null || true)
+fi
+if [ -z "$bun" ]; then
+  for candidate in "${HOME:-/nonexistent}/.bun/bin/bun" /usr/local/bin/bun /usr/bin/bun; do
+    [ -x "$candidate" ] && { bun=$candidate; break; }
+  done
+fi
+[ -x "${bun:-}" ] || die "bun not found; install it (https://bun.sh) or set DASHI_BUN"
+
+# --- The session's environment ----------------------------------------------
+# Nested inside another desktop (the way comp picks its winit backend), this
+# session does not own the display and must not publish it to systemd/D-Bus.
+if [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ] && [ "${DASHI_BACKEND:-}" != drm ]; then
+  nested=1
+else
+  nested=0
+fi
+
+export XDG_CURRENT_DESKTOP=Dashi
+export XDG_SESSION_DESKTOP=dashi
+export XDG_SESSION_TYPE=wayland
+export DESKTOP_SESSION=dashi
+
+# Flatpak apps: their desktop entries and icons are in flatpak's exports,
+# which /etc/profile.d/flatpak.sh adds only for a login shell; a display
+# manager's session may never run it, and then installed apps are missing
+# from the launcher. Same order as flatpak.sh: the user's, the system's, the rest.
+if command -v flatpak >/dev/null 2>&1; then
+  data=${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+  for dir in /var/lib/flatpak/exports/share "${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share"; do
+    case ":$data:" in
+      *":$dir:"*) ;;
+      *) data=$dir:$data ;;
+    esac
+  done
+  export XDG_DATA_DIRS=$data
+fi
+
+# Toolkits that default to X11 or guess wrong. GDK_BACKEND is left alone: GTK
+# picks Wayland by itself, and forcing it breaks X11-only GTK apps.
+export MOZ_ENABLE_WAYLAND=1
+export QT_QPA_PLATFORM="wayland;xcb"
+export SDL_VIDEODRIVER=wayland
+export _JAVA_AWT_WM_NONREPARENTING=1
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+# Qt 6.5+ reads Dark Mode from xdg-desktop-portal (org.freedesktop.appearance
+# color-scheme, which the shell sets through gsettings), so Qt and KDE apps go
+# dark without Plasma. A theme the person chose themselves (qt6ct, kde) wins.
+export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-xdgdesktopportal}"
+
+# A tty login has no locale; apps and the Metal host's text system want UTF-8.
+export LANG="${LANG:-C.UTF-8}"
+
+[ -n "${XDG_RUNTIME_DIR:-}" ] || {
+  XDG_RUNTIME_DIR=/run/user/$(id -u)
+  export XDG_RUNTIME_DIR
+}
+[ -d "$XDG_RUNTIME_DIR" ] || die "no runtime directory ($XDG_RUNTIME_DIR): the login was not set up by logind (pam_systemd)"
+
+# The user bus systemd starts lives here; D-Bus clients that were not told
+# (a bare tty login) would otherwise not find it.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -S "$XDG_RUNTIME_DIR/bus" ]; then
+  DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+  export DBUS_SESSION_BUS_ADDRESS
+fi
+
+# bun for the shell's own children (apps, the Dock), and the Metal host.
+PATH=$(dirname -- "$bun"):${PATH:-/usr/local/bin:/usr/bin:/bin}
+export PATH
+[ -z "$host" ] || export DASHI_METAL_HOST="$host"
+# The supervisor tells systemd --user and D-Bus activation about the display,
+# unless this session is nested. It also watches this pid (the compositor,
+# after the exec below) to learn when the session is over.
+[ "$nested" = 1 ] || export DASHI_IMPORT_ENVIRONMENT=1
+# A checkout has no installed systemd unit or portal config: the supervisor
+# links the ones in session/ into the user's config (a real session only).
+[ "$layout" = checkout ] && export DASHI_SESSION_FILES="$base/session"
+DASHI_COMP_PID=$$
+export DASHI_COMP_PID
+
+# What the compositor runs as its session client.
+client="$(quote "$bun") $(quote "$shell_dir/src/session.ts")"
+
+if [ "$print_only" = 1 ]; then
+  echo "layout:      $layout"
+  echo "compositor:  $comp"
+  echo "client (-c): $client"
+  echo "metal host:  ${DASHI_METAL_HOST:-(the shell's default)}"
+  echo "nested:      $nested"
+  echo "log:         ${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/dashi/dashi.log (linked from $XDG_RUNTIME_DIR/dashi.log)"
+  env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
+  exit 0
+fi
+
+# --- The log ------------------------------------------------------------------
+# $XDG_RUNTIME_DIR/dashi.log is where everyone looks, but logind removes that
+# directory at logout, and a session that failed is the one you want the log
+# of. So the log lives in the state directory (the last one kept as
+# dashi.log.old) and the runtime directory links to it.
+state=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/dashi
+log=$XDG_RUNTIME_DIR/dashi.log
+if mkdir -p "$state" 2>/dev/null && [ -w "$state" ]; then
+  [ ! -s "$state/dashi.log" ] || mv -f "$state/dashi.log" "$state/dashi.log.old"
+  : >"$state/dashi.log"
+  ln -sf "$state/dashi.log" "$XDG_RUNTIME_DIR/dashi.log"
+  if [ -e "$state/dashi.log.old" ]; then ln -sf "$state/dashi.log.old" "$XDG_RUNTIME_DIR/dashi.log.old"; fi
+else
+  [ ! -s "$log" ] || mv -f "$log" "$log.old"
+  : >"$log"
+fi
+exec >>"$log" 2>&1 </dev/null
+echo "=== dashi-session $(date -Iseconds) as $(id -un) (pid $$, $layout, nested=$nested)"
+echo "compositor: $comp"
+echo "client:     $client"
+
+# The GPU to run on: on a laptop with two, the one that drives the panel, not
+# whichever the kernel lists first (shell/src/gpu.ts). A nested session draws
+# in a window and opens no GPU. DASHI_DRM_DEVICE set by hand wins.
+if [ "$nested" != 1 ] && [ -z "${DASHI_DRM_DEVICE:-}" ]; then
+  gpu=$("$bun" "$shell_dir/bin/dashi-gpu.ts" || true)
+  if [ -n "$gpu" ]; then
+    DASHI_DRM_DEVICE=$gpu
+    export DASHI_DRM_DEVICE
+  fi
+fi
+echo "gpu:        ${DASHI_DRM_DEVICE:-(the compositor's own choice)}"
+
+exec "$comp" -c "$client"
