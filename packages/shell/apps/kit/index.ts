@@ -1,0 +1,6 @@
+// Dashi's app kit: the runtime a first-party Metal app runs on (README "First-party apps").
+// Its components are @dashi/ui's.
+export { followDarkMode } from "./appearance.ts";
+export { type Clipboard, systemClipboard } from "./clipboard.ts";
+export { enabledIds, type MenuItemSpec, MenusClient, type MenuSpec, menusClient, useAppMenus } from "./menus.ts";
+export { type AppOptions, hostBinary, type RunningApp, runApp, type Size } from "./run.tsx";

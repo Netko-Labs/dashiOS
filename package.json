@@ -1,0 +1,20 @@
+{
+  "name": "dashi-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "fmt-lint": "biome check .",
+    "fmt-lint:fix": "biome check --fix .",
+    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/shell",
+    "test": "bun test packages/dashi-ui packages/shell",
+    "shell": "bun run --cwd packages/shell start"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.9.0"
+  },
+  "packageManager": "bun@1.4.4"
+}

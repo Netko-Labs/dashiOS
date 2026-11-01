@@ -6,7 +6,7 @@
 #   claude mcp add dashi -- dashi-mcp
 #
 # Finds the shell next to itself, installed (<prefix>/share/dashi/shell) or in
-# a checkout (<repo>/shell), and bun next to itself (<prefix>/libexec/dashi/bin)
+# a checkout (<repo>/packages/shell), and bun next to itself (<prefix>/libexec/dashi/bin)
 # or in the usual places.
 set -eu
 
@@ -14,8 +14,8 @@ self=$(readlink -f -- "$0")
 base=$(dirname -- "$(dirname -- "$self")")
 if [ -f "$base/share/dashi/shell/bin/dashi-mcp.ts" ]; then
   script=$base/share/dashi/shell/bin/dashi-mcp.ts
-elif [ -f "$base/shell/bin/dashi-mcp.ts" ]; then
-  script=$base/shell/bin/dashi-mcp.ts
+elif [ -f "$base/packages/shell/bin/dashi-mcp.ts" ]; then
+  script=$base/packages/shell/bin/dashi-mcp.ts
 else
   echo "dashi-mcp: can't find the shell next to $self" >&2
   exit 1
