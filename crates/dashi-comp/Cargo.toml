@@ -1,0 +1,23 @@
+[package]
+name = "dashi-comp"
+version = "0.2.0"
+description = "Dashi's Wayland compositor"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+bitflags = "2"
+calloop = { version = "0.14", features = ["signals"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dependencies.smithay]
+version = "0.7.0"
+default-features = false
+features = ["backend_winit", "desktop", "renderer_gl", "wayland_frontend"]
+
+[dev-dependencies]
+tempfile = "3"

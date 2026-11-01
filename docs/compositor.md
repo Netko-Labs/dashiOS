@@ -6,7 +6,11 @@ calloop. It displays and routes input; the shell decides
 
 ## Status
 
-The 0.1.0 source was lost (`RECOVERY.md`); 0.2.0 is a rewrite. The 0.1.0
+The 0.1.0 source was lost (`RECOVERY.md`); 0.2.0 is a rewrite. **C0 is
+done**: nested (winit) and headless backends, xdg-shell with move and resize,
+the IPC socket with `subscribe`, `session`, `windows`, and `window-opened` /
+`window-closed`, and the `-c` session client; checked in the VM with foot,
+and by headless integration tests (`crates/dashi-comp/tests/`). The 0.1.0
 binary survives as a reference (outside the repo), and the shell's client,
 `packages/shell/src/compositor.ts`, is the contract the rewrite must keep:
 `docs/compositor-ipc.md`.
@@ -65,7 +69,7 @@ crates/dashi-comp/src/
 
 Each milestone ends with the shell running on it in the VM.
 
-- **C0, skeleton:** Cargo workspace, winit and headless backends, xdg-shell,
+- **C0, skeleton (done):** Cargo workspace, winit and headless backends, xdg-shell,
   rendering, IPC socket with `subscribe`, `session`, `windows`, window events.
 - **C1, the session boots:** layer-shell (menu bar, Dock, sheets), the udev
   backend on one GPU, keyboard and `keymap`/`binding`/`super`, `focus`,

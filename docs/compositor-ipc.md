@@ -12,7 +12,10 @@ them until the compositor side pins them down here.
 ## Transport
 
 - Unix socket `$XDG_RUNTIME_DIR/dashi-comp.sock`, owned by the session user,
-  mode 0600.
+  mode 0600. `DASHI_COMP_SOCKET` puts it elsewhere (a nested or test
+  compositor beside the session's); the compositor exports it to its `-c`
+  client, and the shell connects to it when set. A socket that still answers
+  is never taken over.
 - Newline-delimited JSON, UTF-8, one message per line.
 - Request: `{"id": <int>, "method": "<name>", "params": {...}}`.
 - Reply, exactly one per request: `{"id": <int>, "result": <any>}` or

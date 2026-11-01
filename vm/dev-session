@@ -1,14 +1,13 @@
 #!/usr/bin/sh
 # vm/dev-session: in the VM, the Dashi session from the shared checkout
-# (/home/dashi/Developer/dashiOS). It runs the checkout's own dashi-comp and
-# Metal host once they are built (target/*/dashi-comp,
-# ../mirin/crates/mirin-metal/target/release/mirin-metal-host), and the
-# installed ones until then. `vm/vm checkout-session on` makes SDDM log in to it.
+# (/home/dashi/Developer/dashiOS), on the installed dashi-comp (see below)
+# and on the checkout's Metal host once it is built
+# (../mirin/crates/mirin-metal/target/release/mirin-metal-host). `vm/vm checkout-session on` makes SDDM log in to it.
 set -eu
 repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
-if [ -z "${DASHI_COMP:-}" ] && ! ls "$repo"/target/*/dashi-comp >/dev/null 2>&1; then
-  export DASHI_COMP=/usr/bin/dashi-comp
-fi
+# The checkout's dashi-comp cannot drive screens until C1 (docs/compositor.md):
+# until then the session runs on the installed one. DASHI_COMP picks another.
+export DASHI_COMP=${DASHI_COMP:-/usr/bin/dashi-comp}
 if [ -z "${DASHI_METAL_HOST:-}" ] && [ ! -x "$repo/../mirin/crates/mirin-metal/target/release/mirin-metal-host" ]; then
   export DASHI_METAL_HOST=/usr/libexec/dashi/mirin-metal-host
 fi

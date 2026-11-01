@@ -21,6 +21,15 @@ checkout in the VM on 0.1.0's dashi-comp.
 Milestones C0–C4 in `docs/compositor.md`. Each ends with the shell running on
 it in the VM.
 
+- [x] C0: workspace, winit + headless backends, xdg-shell, IPC (`subscribe`,
+      `session`, `windows`, window events), `-c` client; 11 tests
+- [ ] C1: layer-shell, udev/DRM/libinput, keymap and bindings, window
+      requests, `window-placing`, outputs, title bars, cursor
+- [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
+      0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
+- [ ] The grabs (from smallvil) still `unwrap()` a window's toplevel; fine
+      for xdg-shell only, revisit with Xwayland (C3)
+
 ## 3. Login screen
 
 - [x] `packages/greeter`: greetd IPC, login flow, users, sessions, memory, power

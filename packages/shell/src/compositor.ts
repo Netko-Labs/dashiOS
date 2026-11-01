@@ -1,9 +1,9 @@
 /**
- * A client for dashi-comp's IPC (`$XDG_RUNTIME_DIR/dashi-comp.sock`): what
+ * A client for dashi-comp's IPC (`$DASHI_COMP_SOCKET`, else
+ * `$XDG_RUNTIME_DIR/dashi-comp.sock`): what
  * Bun asks of the compositor (windows, window actions, captures) and what it
  * hears back (windows opening and closing, shortcuts). Newline-delimited
- * JSON; requests are answered by id. The protocol is described in
- * comp/src/ipc/requests.rs.
+ * JSON; requests are answered by id. The protocol is docs/compositor-ipc.md.
  */
 
 import { join } from "node:path";
@@ -289,7 +289,8 @@ export class Compositor {
     let compositor: Compositor | null = null;
     try {
       const socket = await Bun.connect({
-        unix: join(dir, "dashi-comp.sock"),
+        // DASHI_COMP_SOCKET: a compositor beside the session's (nested, tests) says where its socket is.
+        unix: process.env.DASHI_COMP_SOCKET || join(dir, "dashi-comp.sock"),
         socket: {
           data: (_socket, data) => compositor?.receive(data),
           close: () => compositor?.closed(),

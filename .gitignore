@@ -1,5 +1,5 @@
 node_modules/
-comp/target/
+target/
 vm/images/
 *.qcow2
 *.iso

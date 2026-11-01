@@ -1,0 +1,11 @@
+[workspace]
+resolver = "3"
+members = ["crates/dashi-comp"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/Netko-Labs/dashiOS"
+
+[profile.release]
+debug = "line-tables-only"
