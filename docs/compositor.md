@@ -71,8 +71,10 @@ Each milestone ends with the shell running on it in the VM.
 
 - **C0, skeleton (done):** Cargo workspace, winit and headless backends, xdg-shell,
   rendering, IPC socket with `subscribe`, `session`, `windows`, window events.
-- **C1, the session boots:** layer-shell (menu bar, Dock, sheets), the udev
-  backend on one GPU, keyboard and `keymap`/`binding`/`super`, `focus`,
+- **C1, the session boots:** layer-shell (menu bar, Dock, sheets) *(done)*,
+  linux-dmabuf *(done: moved up from C3, Vulkan clients such as the Metal host
+  need it)*, the window requests and `window-placing` *(done)*, `outputs`
+  and `output` *(done)*; then the udev backend on one GPU, keyboard and `keymap`/`binding`/`super`, `focus`,
   `close`, `minimize`, `hide`, `frame`, `place`, `restore`,
   `window-placing`, `outputs`, `output`, `chrome` and server-side title bars,
   cursor, `send-keys`.

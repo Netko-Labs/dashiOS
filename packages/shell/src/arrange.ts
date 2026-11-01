@@ -86,7 +86,10 @@ export class Arranger {
 
   private async refresh(): Promise<void> {
     this.outputs = parseOutputs(await this.compositor.request("outputs"));
-    await this.compositor.request("layout", { zones: this.outputs.flatMap(dragZones), dwellMs: DWELL_MS });
+    // Drag-to-tile is the compositor's to offer; without it, windows still fit their screens.
+    await this.compositor
+      .request("layout", { zones: this.outputs.flatMap(dragZones), dwellMs: DWELL_MS })
+      .catch((error) => console.error("dashi-shell: drag-to-tile is off:", error instanceof Error ? error.message : error));
     await this.fitWindows();
   }
 

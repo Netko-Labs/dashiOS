@@ -2,5 +2,7 @@
 //! changes; none decides policy (docs/conventions.md, "The Rule").
 
 mod compositor;
+mod dmabuf;
+mod layer_shell;
 mod seat;
 mod xdg_shell;

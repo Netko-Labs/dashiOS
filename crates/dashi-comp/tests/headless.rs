@@ -55,6 +55,7 @@ impl Compositor {
             reader: BufReader::new(stream.try_clone().unwrap()),
             stream,
             next: 0,
+            events: Vec::new(),
         }
     }
 }
@@ -82,14 +83,24 @@ struct Ipc {
     stream: UnixStream,
     reader: BufReader<UnixStream>,
     next: u64,
+    /// Events that arrived while waiting for a reply.
+    events: Vec<Value>,
 }
 
 impl Ipc {
+    /// Send a line; the reply to it (events before it are kept in `events`).
     fn line(&mut self, text: &str) -> Value {
         writeln!(self.stream, "{text}").unwrap();
-        let mut reply = String::new();
-        self.reader.read_line(&mut reply).expect("a reply");
-        serde_json::from_str(&reply).expect("the reply is JSON")
+        loop {
+            let mut line = String::new();
+            self.reader.read_line(&mut line).expect("a reply");
+            let message: Value = serde_json::from_str(&line).expect("the reply is JSON");
+            if message.get("event").is_some() {
+                self.events.push(message);
+            } else {
+                return message;
+            }
+        }
     }
 
     fn request(&mut self, method: &str, params: Value) -> Value {
@@ -139,10 +150,27 @@ fn mistakes_get_errors_not_a_dropped_connection() {
             .contains("unknown method")
     );
     assert!(
-        ipc.request("focus", json!({ "window": 1 }))["error"]
+        ipc.request("gamma", json!({}))["error"]
             .as_str()
             .unwrap()
             .contains("not in this dashi-comp yet")
+    );
+    assert_eq!(
+        ipc.request("focus", json!({ "window": 1 }))["error"],
+        "no window 1"
+    );
+    assert!(
+        ipc.request("focus", json!({ "window": "1" }))["error"]
+            .as_str()
+            .unwrap()
+            .contains("window id")
+    );
+    assert!(
+        ipc.request(
+            "frame",
+            json!({ "window": 1, "x": 0, "y": 0, "width": 0, "height": 10 })
+        )["error"]
+            .is_string()
     );
     assert_eq!(
         ipc.line(r#"{"id":40,"method":"windows","params":[1]}"#)["id"],
@@ -202,4 +230,84 @@ fn a_live_socket_is_not_taken_over() {
     assert!(String::from_utf8_lossy(&second.stdout).contains("another dashi-comp"));
     // The first still answers.
     assert!(first.connect().request("windows", json!({}))["result"].is_object());
+}
+
+#[test]
+fn the_shells_configuration_is_kept_until_its_milestone() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    for method in [
+        "keymap",
+        "chrome",
+        "layout",
+        "gestures",
+        "idle",
+        "bars",
+        "animation-target",
+        "screencopy-clients",
+    ] {
+        assert_eq!(
+            ipc.request(method, json!({}))["result"],
+            json!({}),
+            "{method}"
+        );
+    }
+    assert_eq!(
+        ipc.request("edges", json!({ "bottom": 4 }))["result"],
+        json!({ "inside": false })
+    );
+    assert_eq!(
+        ipc.request("spaces", json!({}))["result"],
+        json!({ "count": 1, "current": 0 })
+    );
+}
+
+#[test]
+fn screens_are_described_as_the_shell_parses_them() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+
+    let outputs = ipc.request("outputs", json!({}))["result"]["outputs"].clone();
+    let screen = &outputs[0];
+    assert_eq!(screen["name"], "HEADLESS-1");
+    assert_eq!(
+        screen["mode"],
+        json!({ "width": 1920, "height": 1080, "refreshMhz": 60000 })
+    );
+    assert_eq!(screen["modes"][0]["current"], true);
+    assert_eq!(screen["scale"], 1.0);
+    assert_eq!(
+        screen["transform"],
+        json!({ "rotation": 0, "flipped": false })
+    );
+    assert_eq!(
+        screen["frame"],
+        json!({ "x": 0, "y": 0, "width": 1920, "height": 1080 })
+    );
+    // Nothing has claimed an edge yet: all of it is usable.
+    assert_eq!(screen["usable"], screen["frame"]);
+    assert_eq!(screen["primary"], true);
+
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    assert_eq!(
+        ipc.request("output", json!({ "name": "HEADLESS-1", "scale": 2.0 }))["result"],
+        json!({})
+    );
+    assert_eq!(ipc.events, vec![json!({ "event": "outputs-changed" })]);
+    let screen = &ipc.request("outputs", json!({}))["result"]["outputs"][0];
+    assert_eq!(screen["scale"], 2.0);
+    assert_eq!(
+        screen["frame"],
+        json!({ "x": 0, "y": 0, "width": 960, "height": 540 })
+    );
+
+    assert!(
+        ipc.request("output", json!({ "name": "HEADLESS-1", "scale": 9.0 }))["error"].is_string()
+    );
+    assert!(
+        ipc.request("output", json!({ "name": "nope", "scale": 1.0 }))["error"]
+            .as_str()
+            .unwrap()
+            .contains("nope")
+    );
 }

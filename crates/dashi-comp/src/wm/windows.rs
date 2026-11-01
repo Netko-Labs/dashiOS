@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use smithay::{
     desktop::Window,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
+    utils::{Logical, Point, Rectangle},
     wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData},
 };
 
@@ -12,11 +13,38 @@ use crate::state::Dashi;
 
 pub(crate) type WindowId = u64;
 
+/// Whether a window shows, as the shell sees it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Shown {
+    Normal,
+    Minimized,
+    Hidden,
+}
+
+impl Shown {
+    fn name(self) -> &'static str {
+        match self {
+            Shown::Normal => "normal",
+            Shown::Minimized => "minimized",
+            Shown::Hidden => "hidden",
+        }
+    }
+}
+
 pub(crate) struct Entry {
     pub id: WindowId,
     pub window: Window,
-    /// The shell has been told about it (`window-opened`): it has drawn something.
+    /// The shell has been told about it (`window-opened`): it is placed and has drawn something.
     pub announced: bool,
+    /// Placed on screen (by the shell's `place`, or the fallback); until then it is not mapped.
+    pub placed: bool,
+    /// `window-placing` went out; waiting for the shell's answer.
+    pub placing: bool,
+    pub shown: Shown,
+    /// Where its frame was when it last left the screen (minimized, hidden).
+    pub parked_at: Option<Point<i32, Logical>>,
+    /// The frame to go back to (`restore`) after a tile or zoom (`frame` with `remember`).
+    pub restore: Option<Rectangle<i32, Logical>>,
 }
 
 pub(crate) struct Windows {
@@ -41,12 +69,25 @@ impl Windows {
             id,
             window,
             announced: false,
+            placed: false,
+            placing: false,
+            shown: Shown::Normal,
+            parked_at: None,
+            restore: None,
         });
         id
     }
 
     pub(crate) fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    pub(crate) fn get(&self, id: WindowId) -> Option<&Entry> {
+        self.entries.iter().find(|entry| entry.id == id)
+    }
+
+    pub(crate) fn get_mut(&mut self, id: WindowId) -> Option<&mut Entry> {
+        self.entries.iter_mut().find(|entry| entry.id == id)
     }
 
     pub(crate) fn by_surface(&self, surface: &WlSurface) -> Option<&Entry> {
@@ -79,19 +120,17 @@ impl Windows {
     }
 }
 
-fn toplevel_surface(window: &Window) -> Option<WlSurface> {
+pub(crate) fn toplevel_surface(window: &Window) -> Option<WlSurface> {
     window
         .toplevel()
         .map(|toplevel| toplevel.wl_surface().clone())
 }
 
-/// A window in the IPC's `Window` shape.
-pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
-    let surface = toplevel_surface(&entry.window);
-    let (app_id, title) = surface
-        .as_ref()
+/// A window's app id and title, as its client last set them.
+pub(crate) fn names(window: &Window) -> (String, String) {
+    toplevel_surface(window)
         .map(|surface| {
-            with_states(surface, |states| {
+            with_states(&surface, |states| {
                 states
                     .data_map
                     .get::<XdgToplevelSurfaceData>()
@@ -105,7 +144,18 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
                     .unwrap_or_default()
             })
         })
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
+
+/// The window's frame on screen (global logical), None while it is not mapped.
+pub(crate) fn frame_of(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
+    state.space.element_geometry(window)
+}
+
+/// A window in the IPC's `Window` shape.
+pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
+    let surface = toplevel_surface(&entry.window);
+    let (app_id, title) = names(&entry.window);
     let pid = surface
         .as_ref()
         .and_then(|surface| state.display_handle.get_client(surface.id()).ok())
@@ -116,18 +166,20 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         .get_keyboard()
         .and_then(|keyboard| keyboard.current_focus())
         .is_some_and(|focus| Some(&focus) == surface.as_ref());
-    let frame = state.space.element_geometry(&entry.window).map(|geometry| {
-        json!({ "x": geometry.loc.x, "y": geometry.loc.y, "width": geometry.size.w, "height": geometry.size.h })
-    });
+    let frame = frame_of(state, &entry.window).map(rect_json);
     json!({
         "id": entry.id,
         "appId": app_id,
         "title": title,
         "pid": pid,
         "focused": focused,
-        "state": "normal",
-        "zoomed": false,
+        "state": entry.shown.name(),
+        "zoomed": entry.restore.is_some(),
         "frame": frame,
         "titleBar": 0,
     })
+}
+
+pub(crate) fn rect_json(rect: Rectangle<i32, Logical>) -> Value {
+    json!({ "x": rect.loc.x, "y": rect.loc.y, "width": rect.size.w, "height": rect.size.h })
 }

@@ -115,6 +115,11 @@ impl Ipc {
         self.connections.remove(&id);
     }
 
+    /// Someone hears events (the shell is there to decide).
+    pub(crate) fn has_subscribers(&self) -> bool {
+        self.connections.values().any(|c| c.subscribed)
+    }
+
     /// From now on, `id` hears events.
     pub(crate) fn subscribe(&mut self, id: ConnectionId) {
         if let Some(connection) = self.connections.get_mut(&id) {

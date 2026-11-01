@@ -6,7 +6,7 @@
 use std::{ffi::OsString, sync::Arc, time::Instant};
 
 use smithay::{
-    desktop::{PopupManager, Space, Window, WindowSurfaceType},
+    desktop::{LayerSurface, PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output},
     input::{Seat, SeatState},
     reexports::{
         calloop::{Interest, LoopHandle, LoopSignal, Mode, PostAction, generic::Generic},
@@ -19,15 +19,19 @@ use smithay::{
     utils::{Logical, Point},
     wayland::{
         compositor::{CompositorClientState, CompositorState},
+        dmabuf::{DmabufGlobal, DmabufState},
         output::OutputManagerState,
         selection::data_device::DataDeviceState,
-        shell::xdg::XdgShellState,
+        shell::{
+            wlr_layer::{Layer, WlrLayerShellState},
+            xdg::XdgShellState,
+        },
         shm::ShmState,
         socket::ListeningSocketSource,
     },
 };
 
-use crate::{ipc::Ipc, wm::Windows};
+use crate::{backend::Backend, ipc::Ipc, shell_config::ShellConfig, wm::Windows};
 
 pub(crate) struct Dashi {
     pub start_time: Instant,
@@ -40,9 +44,14 @@ pub(crate) struct Dashi {
     pub windows: Windows,
     pub popups: PopupManager,
     pub ipc: Ipc,
+    pub backend: Backend,
+    pub dmabuf_state: DmabufState,
+    pub dmabuf_global: Option<DmabufGlobal>,
+    pub shell_config: ShellConfig,
 
     pub compositor_state: CompositorState,
     pub xdg_shell_state: XdgShellState,
+    pub layer_shell_state: WlrLayerShellState,
     pub shm_state: ShmState,
     #[expect(dead_code, reason = "kept alive: it owns the xdg-output globals")]
     pub output_manager_state: OutputManagerState,
@@ -62,6 +71,7 @@ impl Dashi {
 
         let compositor_state = CompositorState::new::<Self>(&dh);
         let xdg_shell_state = XdgShellState::new::<Self>(&dh);
+        let layer_shell_state = WlrLayerShellState::new::<Self>(&dh);
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let output_manager_state = OutputManagerState::new_with_xdg_output::<Self>(&dh);
         let data_device_state = DataDeviceState::new::<Self>(&dh);
@@ -83,8 +93,13 @@ impl Dashi {
             windows: Windows::default(),
             popups: PopupManager::default(),
             ipc,
+            backend: Backend::None,
+            dmabuf_state: DmabufState::new(),
+            dmabuf_global: None,
+            shell_config: ShellConfig::default(),
             compositor_state,
             xdg_shell_state,
+            layer_shell_state,
             shm_state,
             output_manager_state,
             seat_state,
@@ -93,18 +108,53 @@ impl Dashi {
         })
     }
 
-    /// The surface under `pos`, and where that surface's origin is.
+    /// The surface under `pos`, and where that surface's origin is: the
+    /// overlay and top layers, then windows, then the bottom and background layers.
     pub(crate) fn surface_under(
         &self,
         pos: Point<f64, Logical>,
     ) -> Option<(WlSurface, Point<f64, Logical>)> {
-        self.space
-            .element_under(pos)
-            .and_then(|(window, location)| {
-                window
-                    .surface_under(pos - location.to_f64(), WindowSurfaceType::ALL)
-                    .map(|(surface, at)| (surface, (at + location).to_f64()))
-            })
+        let window = || {
+            self.space
+                .element_under(pos)
+                .and_then(|(window, location)| {
+                    window
+                        .surface_under(pos - location.to_f64(), WindowSurfaceType::ALL)
+                        .map(|(surface, at)| (surface, (at + location).to_f64()))
+                })
+        };
+        let Some(output) = self.space.output_under(pos).next() else {
+            return window();
+        };
+        let Some(origin) = self.space.output_geometry(output).map(|g| g.loc) else {
+            return window();
+        };
+        let layers = layer_map_for_output(output);
+        let in_layer = |layer: Layer| {
+            let local = pos - origin.to_f64();
+            let surface = layers.layer_under(layer, local)?;
+            let at = layers.layer_geometry(surface)?.loc;
+            surface
+                .surface_under(local - at.to_f64(), WindowSurfaceType::ALL)
+                .map(|(surface, loc)| (surface, (loc + at + origin).to_f64()))
+        };
+        in_layer(Layer::Overlay)
+            .or_else(|| in_layer(Layer::Top))
+            .or_else(window)
+            .or_else(|| in_layer(Layer::Bottom))
+            .or_else(|| in_layer(Layer::Background))
+    }
+
+    /// The layer surface under `pos` that takes the keyboard when pressed, if one is on top there.
+    pub(crate) fn focusable_layer_under(&self, pos: Point<f64, Logical>) -> Option<LayerSurface> {
+        let output = self.space.output_under(pos).next()?;
+        let origin = self.space.output_geometry(output)?.loc;
+        let layers = layer_map_for_output(output);
+        let local = pos - origin.to_f64();
+        [Layer::Overlay, Layer::Top]
+            .into_iter()
+            .find_map(|layer| layers.layer_under(layer, local).cloned())
+            .filter(LayerSurface::can_receive_keyboard_focus)
     }
 
     /// After each turn of the loop: settle the space and send what is queued.

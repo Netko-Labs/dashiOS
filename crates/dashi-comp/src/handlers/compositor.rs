@@ -1,7 +1,7 @@
 //! wl_compositor, wl_shm, and buffers: committing surfaces.
 
 use smithay::{
-    backend::renderer::utils::{on_commit_buffer_handler, with_renderer_surface_state},
+    backend::renderer::utils::on_commit_buffer_handler,
     delegate_compositor, delegate_shm,
     reexports::wayland_server::{
         Client,
@@ -17,10 +17,10 @@ use smithay::{
     },
 };
 
-use super::xdg_shell;
+use super::{layer_shell, xdg_shell};
 use crate::{
     state::{ClientState, Dashi},
-    wm::{describe, grabs::resize_grab},
+    wm::grabs::resize_grab,
 };
 
 impl CompositorHandler for Dashi {
@@ -46,30 +46,11 @@ impl CompositorHandler for Dashi {
             if let Some(entry) = self.windows.by_surface(&root) {
                 entry.window.on_commit();
             }
-            self.announce_if_drawn(&root);
+            self.place_when_drawn(&root);
         }
         xdg_shell::handle_commit(&mut self.popups, &self.space, surface);
+        layer_shell::handle_commit(self, surface);
         resize_grab::handle_commit(&mut self.space, surface);
-    }
-}
-
-impl Dashi {
-    /// A window is the shell's to know about once it has drawn something.
-    fn announce_if_drawn(&mut self, surface: &WlSurface) {
-        let drawn =
-            with_renderer_surface_state(surface, |state| state.buffer().is_some()).unwrap_or(false);
-        let Some(entry) = self.windows.by_surface_mut(surface) else {
-            return;
-        };
-        if entry.announced || !drawn {
-            return;
-        }
-        entry.announced = true;
-        if let Some(entry) = self.windows.by_surface(surface) {
-            let window = describe(entry, self);
-            self.ipc
-                .emit("window-opened", serde_json::json!({ "window": window }));
-        }
     }
 }
 

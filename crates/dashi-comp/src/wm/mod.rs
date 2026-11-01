@@ -1,8 +1,10 @@
-//! Window management mechanics: the registry, placement, grabs. Where a
-//! window goes is the shell's to decide (C1, `window-placing`); until then new
-//! windows cascade.
+//! Window management mechanics: the registry, placement, frames, grabs. What
+//! to do with a window is the shell's decision; this carries it out.
 
+mod actions;
 pub(crate) mod grabs;
+mod placement;
 mod windows;
 
-pub(crate) use windows::{Windows, describe};
+pub(crate) use actions::valid_frame;
+pub(crate) use windows::{Shown, Windows, rect_json};

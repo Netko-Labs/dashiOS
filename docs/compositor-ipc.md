@@ -32,7 +32,7 @@ them until the compositor side pins them down here.
 | Method | Params | Result |
 | --- | --- | --- |
 | `subscribe` | `{}` | `{}`; events start flowing to this connection |
-| `session` | `{}` | `{waylandDisplay, display: string\|null, xwayland: "off"\|"starting"\|"ready"\|"failed", pointer: {x,y}\|null}` |
+| `session` | `{}` | `{waylandDisplay, display: string\|null, xwayland: "off"\|"starting"\|"ready"\|"failed", pointer: {x,y}\|null, locked: bool}` |
 | `windows` | `{}` | `{windows: Window[]}` |
 | `focus` | `{window}` | `{}`; raises, unminimizes, unhides, switches to its Space |
 | `close` | `{window}` | `{}`; asks the client to close |
@@ -90,6 +90,20 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 | `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts` | the capture |
 | `screencopy-clients` | `{paths: string[]}`: executables allowed to use screencopy | `{}` |
 | `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}` |
+
+## In the 0.2.0 compositor
+
+Until each request's milestone (docs/compositor.md), the rewrite answers:
+
+- **Done:** `subscribe`, `session`, `windows`, `focus`, `close`, `minimize`,
+  `hide`, `restore`, `frame`, `place`, `outputs`, `output`; events
+  `window-opened`, `window-closed`, `window-placing`, `outputs-changed`.
+- **Kept, not acted on yet** (the shell is told yes and starts as with the
+  feature off; `crates/dashi-comp/src/shell_config.rs`): `keymap`, `chrome`
+  (C1), `layout`, `bars`, `edges` (answers `{inside: false}`), `gestures`,
+  `idle`, `animation-target` (C2), `screencopy-clients` (C3). `spaces`
+  answers one Space until C2.
+- **Not yet**, answered with an error saying so: everything else.
 
 ## Events
 

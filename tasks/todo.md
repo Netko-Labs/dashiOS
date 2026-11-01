@@ -23,8 +23,11 @@ it in the VM.
 
 - [x] C0: workspace, winit + headless backends, xdg-shell, IPC (`subscribe`,
       `session`, `windows`, window events), `-c` client; 11 tests
-- [ ] C1: layer-shell, udev/DRM/libinput, keymap and bindings, window
-      requests, `window-placing`, outputs, title bars, cursor
+- [x] C1a: layer-shell, linux-dmabuf, window requests, `window-placing`,
+      `outputs`/`output`, the shell's configuration kept; the real shell runs
+      on it nested (`vm/nested-session`)
+- [ ] C1b: keymap, bindings and ❖, `send-keys`, title bars (`chrome`), cursor
+- [ ] C1c: udev backend (DRM/KMS, GBM, libinput, libseat), one GPU
 - [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
       0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
 - [ ] The grabs (from smallvil) still `unwrap()` a window's toplevel; fine

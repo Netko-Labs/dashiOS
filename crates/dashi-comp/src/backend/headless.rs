@@ -42,6 +42,7 @@ pub(crate) fn init(
     );
     output.set_preferred(mode);
     state.space.map_output(&output, (0, 0));
+    state.backend = super::Backend::Headless;
 
     handle.insert_source(Timer::from_duration(FRAME), move |_, _, state| {
         let elapsed = state.start_time.elapsed();

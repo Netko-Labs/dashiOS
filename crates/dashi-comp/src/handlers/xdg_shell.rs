@@ -18,7 +18,7 @@ use smithay::{
             protocol::{wl_seat, wl_surface::WlSurface},
         },
     },
-    utils::{Rectangle, SERIAL_COUNTER, Serial},
+    utils::{Rectangle, Serial},
     wayland::{
         compositor::with_states,
         shell::xdg::{
@@ -39,33 +39,19 @@ impl XdgShellHandler for Dashi {
     }
 
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
-        let window = Window::new_wayland_window(surface.clone());
-        // Until the shell places windows (C1, `window-placing`), they cascade from the top left.
-        let step = 32 * (self.windows.len() % 8) as i32;
-        let origin = self
-            .space
-            .outputs()
-            .next()
-            .and_then(|output| self.space.output_geometry(output))
-            .map(|g| g.loc)
-            .unwrap_or_default();
-        self.windows.add(window.clone());
-        self.space
-            .map_element(window, (origin.x + 80 + step, origin.y + 60 + step), true);
-        if let Some(keyboard) = self.seat.get_keyboard() {
-            keyboard.set_focus(
-                self,
-                Some(surface.wl_surface().clone()),
-                SERIAL_COUNTER.next_serial(),
-            );
-        }
+        // Not on screen until placed: the shell decides where (wm/placement.rs).
+        self.windows.add(Window::new_wayland_window(surface));
     }
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
         let Some(entry) = self.windows.remove_surface(surface.wl_surface()) else {
             return;
         };
+        let was_focused = self.is_focused(&entry.window);
         self.space.unmap_elem(&entry.window);
+        if was_focused {
+            self.focus_topmost();
+        }
         if entry.announced {
             self.ipc
                 .emit("window-closed", serde_json::json!({ "id": entry.id }));

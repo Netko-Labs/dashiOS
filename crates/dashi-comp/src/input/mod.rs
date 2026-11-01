@@ -81,7 +81,12 @@ impl Dashi {
 
                 let button_state = event.state();
 
-                if ButtonState::Pressed == button_state && !pointer.is_grabbed() {
+                let layer = (ButtonState::Pressed == button_state && !pointer.is_grabbed())
+                    .then(|| self.focusable_layer_under(pointer.current_location()))
+                    .flatten();
+                if let Some(layer) = layer {
+                    keyboard.set_focus(self, Some(layer.wl_surface().clone()), serial);
+                } else if ButtonState::Pressed == button_state && !pointer.is_grabbed() {
                     if let Some((window, _loc)) = self
                         .space
                         .element_under(pointer.current_location())
