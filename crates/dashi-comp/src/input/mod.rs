@@ -49,6 +49,7 @@ impl Dashi {
                 );
                 pointer.frame(self);
                 self.watch_bars(to);
+                self.overview_motion(to);
             }
             InputEvent::PointerMotionAbsolute { event, .. } => {
                 let Some(output_geo) = self
@@ -81,6 +82,7 @@ impl Dashi {
                 );
                 pointer.frame(self);
                 self.watch_bars(pos);
+                self.overview_motion(pos);
             }
             InputEvent::PointerButton { event, .. } => {
                 let Some(pointer) = self.seat.get_pointer() else {
@@ -94,6 +96,14 @@ impl Dashi {
                     self.note_chord();
                 }
                 let at = pointer.current_location();
+                if self.overview_open() && !self.top_layer_at(at) {
+                    if pressed {
+                        self.overview_press(at);
+                    } else {
+                        self.overview_release(at);
+                    }
+                    return;
+                }
                 let free = pressed && !pointer.is_grabbed();
                 // A press on a title bar or a traffic light is the compositor's, not a client's.
                 let on_decoration = free && self.decoration_at(at).is_some();

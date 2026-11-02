@@ -687,3 +687,40 @@ fn spaces_keep_their_windows() {
     assert!(ipc.request("space-switch", json!({ "space": 5 }))["error"].is_string());
     assert!(ipc.request("spaces", json!({ "count": 0 }))["error"].is_string());
 }
+
+#[test]
+fn the_overview_opens_on_a_plan_and_closes() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Over");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+
+    let plan = json!({ "windows": [{ "id": id, "rect": { "x": 200, "y": 200, "width": 160, "height": 100 } }] });
+    assert_eq!(ipc.request("overview", plan.clone())["result"], json!({}));
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "overview"),
+        json!({ "event": "overview", "active": true })
+    );
+    // Laid out again while open: no second "opened".
+    assert_eq!(ipc.request("overview", plan)["result"], json!({}));
+    assert_eq!(
+        ipc.request("overview", json!({ "duration": 0 }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "overview"),
+        json!({ "event": "overview", "active": false })
+    );
+
+    assert!(ipc.request("overview", json!({ "windows": [{ "id": id }] }))["error"].is_string());
+    assert!(ipc.request("overview", json!({ "windows": 3 }))["error"].is_string());
+}

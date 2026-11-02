@@ -148,6 +148,22 @@ impl Dashi {
         }
     }
 
+    /// Whether a shown top or overlay layer surface is under `at` (the menu bar, the Dock, the shell's sheets).
+    pub(crate) fn top_layer_at(&self, at: Point<f64, Logical>) -> bool {
+        let Some(output) = self.space.output_under(at).next() else {
+            return false;
+        };
+        let Some(origin) = self.space.output_geometry(output).map(|g| g.loc.to_f64()) else {
+            return false;
+        };
+        let top = self.shows_top_layers(output);
+        let layers = layer_map_for_output(output);
+        [Layer::Overlay, Layer::Top]
+            .into_iter()
+            .filter(|layer| top || *layer == Layer::Overlay)
+            .any(|layer| layers.layer_under(layer, at - origin).is_some())
+    }
+
     fn start_move(
         &mut self,
         window: Window,

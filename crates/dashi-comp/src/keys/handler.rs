@@ -110,6 +110,12 @@ impl Dashi {
                 app_id: &app_id,
             })
             .cloned();
+        if self.overview_open() && !matches!(action, Some(Action::Bind(_))) {
+            self.keys.taken.insert(keycode, Taken::Swallowed);
+            let key = info.names.last().cloned().unwrap_or_default();
+            self.overview_key(&key);
+            return;
+        }
         match action {
             None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
             Some(Action::Swallow) => {

@@ -16,13 +16,7 @@ use crate::{
 };
 
 /// Methods the protocol has that this compositor does not do yet.
-const LATER: &[&str] = &[
-    "outputs-config",
-    "power",
-    "gamma",
-    "overview",
-    "agent-input",
-];
+const LATER: &[&str] = &["outputs-config", "power", "gamma", "agent-input"];
 
 pub(crate) fn handle(
     state: &mut Dashi,
@@ -92,6 +86,7 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "overview" => state.overview_request(params),
         "spaces" => {
             let count = match params.get("count") {
                 None => None,

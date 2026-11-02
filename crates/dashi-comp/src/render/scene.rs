@@ -101,6 +101,14 @@ where
         if let Some(offset) = state.slide_offset(state.spaces.current, output_geo.size.w) {
             frame_at += offset;
         }
+        if state.overview.is_some() {
+            if let Some(id) = state.windows.by_window(window).map(|e| e.id)
+                && let Some(rect) = state.overview_rect(id)
+            {
+                overview_window(state, renderer, window, rect, origin, scale, &mut elements);
+            }
+            continue;
+        }
         let entry = state.windows.by_window(window);
         let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
         let image = entry.and_then(|entry| entry.title_image.as_ref());
@@ -265,6 +273,58 @@ fn cursor_elements<R>(
             ) {
                 elements.push(DashiElement::Memory(element));
             }
+        }
+    }
+}
+
+/// A window drawn small where the overview puts it (`rect`: its outer frame there).
+fn overview_window<R>(
+    state: &Dashi,
+    renderer: &mut R,
+    window: &Window,
+    rect: Rectangle<f64, Logical>,
+    origin: Point<i32, Logical>,
+    scale: Scale<f64>,
+    elements: &mut Vec<DashiElement<R>>,
+) where
+    R: Renderer + ImportAll + ImportMem,
+    R::TextureId: Clone + Send + 'static,
+{
+    let geometry = window.geometry();
+    let bar = f64::from(state.bar_height(window));
+    let outer_w = f64::from(geometry.size.w.max(1));
+    let s = rect.size.w / outer_w;
+    let inner = rect.loc + Point::from((0.0, bar * s));
+    let surface_at = (inner - geometry.loc.to_f64().upscale(s) - origin.to_f64())
+        .to_physical(scale)
+        .to_i32_round();
+    let small = Scale::from(scale.x * s);
+    elements.extend(
+        window
+            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, small, 1.0)
+            .into_iter()
+            .map(DashiElement::Surface),
+    );
+    let image = state
+        .windows
+        .by_window(window)
+        .and_then(|entry| entry.title_image.as_ref());
+    if let Some(image) = image.filter(|_| bar > 0.0) {
+        let at = (rect.loc - origin.to_f64()).to_physical(scale);
+        let size = smithay::utils::Size::from((
+            (rect.size.w).round() as i32,
+            (bar * s).round().max(1.0) as i32,
+        ));
+        if let Ok(element) = MemoryRenderBufferRenderElement::from_buffer(
+            renderer,
+            at,
+            &image.buffer,
+            None,
+            None,
+            Some(size),
+            Kind::Unspecified,
+        ) {
+            elements.push(DashiElement::Memory(element));
         }
     }
 }

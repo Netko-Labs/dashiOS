@@ -57,6 +57,7 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub overview: Option<crate::wm::Overview>,
     pub spaces: crate::wm::Spaces,
     pub bars: crate::wm::Bars,
     pub wallpaper: crate::wallpaper::Wallpaper,
@@ -123,6 +124,7 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            overview: None,
             spaces: Default::default(),
             bars: Default::default(),
             wallpaper: Default::default(),
@@ -180,6 +182,10 @@ impl Dashi {
             in_layer(Layer::Overlay).or_else(|| top_shown.then(|| in_layer(Layer::Top)).flatten())
         {
             return Some(top);
+        }
+        // The overview's windows are the overview's, not their clients'.
+        if self.overview.is_some() {
+            return None;
         }
         // A title bar or the traffic lights: nothing a client gets.
         if self.decoration_at(pos).is_some() {
