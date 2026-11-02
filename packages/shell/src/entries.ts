@@ -20,6 +20,13 @@ export interface Entry extends App {
   wmClass?: string;
   /** One of the shell's own apps (System Settings): it wins ties in search over an installed app of the same words. */
   shell?: true;
+  /**
+   * `NoDisplay=true`: not listed (the launcher, search), but still the app its
+   * windows belong to. Apps often keep the entry that names their windows
+   * hidden beside a visible one (T3 Code's `com.t3tools.T3Code` beside
+   * `t3code-nightly`), as GNOME and KDE allow.
+   */
+  hidden?: true;
 }
 
 /**
@@ -61,7 +68,8 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   const name = fields.get("Name");
   const exec = fields.get("Exec");
   if (fields.get("Type") !== "Application" || !name || !exec) return null;
-  if (yes("NoDisplay") || yes("Hidden") || yes("Terminal")) return null;
+  // Hidden is the spec's "deleted"; NoDisplay only keeps it out of lists (`hidden` below).
+  if (yes("Hidden") || yes("Terminal")) return null;
   // Entries meant only for other desktops (KDE settings modules and such).
   if (fields.has("OnlyShowIn") && !splitList(fields.get("OnlyShowIn")).includes("Dashi")) return null;
   if (splitList(fields.get("NotShowIn")).includes("Dashi")) return null;
@@ -73,6 +81,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     exec: argv,
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
+    ...(yes("NoDisplay") ? { hidden: true as const } : {}),
     keywords: [...splitList(fields.get("Keywords")), ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : [])].map((word) =>
       word.toLowerCase(),
     ),
@@ -185,16 +194,18 @@ const OWN_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
  * apps, otherwise the last part of the app id ("Files (Nautilus)").
  */
 export function withDistinctNames(entries: Entry[]): Entry[] {
+  // Hidden entries are never listed beside the others, so they neither need a distinct name nor give one.
   const counts = new Map<string, number>();
-  for (const entry of entries) counts.set(entry.name, (counts.get(entry.name) ?? 0) + 1);
+  for (const entry of entries) if (!entry.hidden) counts.set(entry.name, (counts.get(entry.name) ?? 0) + 1);
   return entries.map((entry) => {
-    if ((counts.get(entry.name) ?? 0) < 2) return entry;
+    if (entry.hidden || (counts.get(entry.name) ?? 0) < 2) return entry;
     const tag = entry.id.startsWith("dev.dashi.") ? "Dashi" : displayName(entry.id.replace(/\.desktop$/, ""), entry.name);
     return tag === entry.name ? entry : { ...entry, name: `${entry.name} (${tag})` };
   });
 }
 
-export function loadEntries(): Entry[] {
+/** The installed apps; `withHidden` adds the `NoDisplay` ones, which only name windows (app-catalog.ts), never a list. */
+export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
   // A pinned app stands in for its desktop entry (the pinned Terminal is
   // foot.desktop), so it answers to that entry's id and command too.
   const entries: Entry[] = resolvePinned().map((app) => ({ ...app, keywords: pinnedKeywords(app) }));
@@ -225,7 +236,7 @@ export function loadEntries(): Entry[] {
         continue;
       }
       const parsed = parseDesktopEntry(id, text);
-      if (!parsed) continue;
+      if (!parsed || (parsed.hidden && !options.withHidden)) continue;
       const { iconName, ...entry } = parsed;
       entries.push({ ...entry, icon: resolveIcon(iconName, roots) });
     }

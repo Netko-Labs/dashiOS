@@ -20,7 +20,8 @@ export class AppCatalog {
   readonly entries: Entry[];
   private readonly looked = new Set<string>();
 
-  constructor(private readonly load: () => Entry[] = loadEntries) {
+  /** With the hidden entries: they name windows (an app's NoDisplay entry for its own app id), though nothing lists them. */
+  constructor(private readonly load: () => Entry[] = () => loadEntries({ withHidden: true })) {
     this.entries = load();
   }
 
