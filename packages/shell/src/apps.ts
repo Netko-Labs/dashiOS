@@ -79,6 +79,8 @@ const PINNED: readonly PinnedSpec[] = [
     name: "Terminal",
     icon: "terminal",
     choices: [
+      // Dashi's own (apps/terminal, on dashi-term and Ghostty's libghostty-vt); the others are fallbacks.
+      { id: "dev.dashi.terminal", exec: [process.execPath, `${shellRoot}apps/terminal/main.tsx`], cwd: shellRoot },
       { id: "foot", exec: ["foot"] },
       { id: "org.kde.konsole", exec: ["konsole"] },
       { id: "Alacritty", exec: ["alacritty"] },

@@ -47,6 +47,14 @@ export const PREVIEW_MIME_TYPES = [
 export const FIRST_PARTY: readonly FirstPartySpec[] = [
   { id: "dev.dashi.calculator", name: "Calculator", icon: "calculator", dir: "calculator", keywords: ["calc", "math", "arithmetic"] },
   {
+    id: "dev.dashi.terminal",
+    name: "Terminal",
+    icon: "terminal",
+    dir: "terminal",
+    keywords: ["terminal", "shell", "console", "command line", "zsh", "bash", "ghostty"],
+    categories: ["System", "TerminalEmulator"],
+  },
+  {
     id: "dev.dashi.activity-monitor",
     name: "Activity Monitor",
     icon: "activity-monitor",
