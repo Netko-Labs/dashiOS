@@ -138,7 +138,7 @@
     <table>
       <tr><th>Repository</th><th>For</th><th>State</th></tr>
       <tr><td>Fedora 44 + updates</td><td>Everything not Dashi's</td><td><span class="pill done">enabled</span></td></tr>
-      <tr><td>RPM Fusion free and nonfree</td><td>Codecs, NVIDIA's driver</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>RPM Fusion free and nonfree</td><td>Codecs, NVIDIA's driver. Not <code>libheif-freeworld</code>: it pins the exact libheif it was built for and held Fedora's updates back; HEIC decodes through Fedora's <code>libheif-ffmpeg</code> instead (<code>dashi-release</code> obsoletes freeworld)</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>COPR <code>bieszczaders/kernel-cachyos</code></td><td>The CachyOS kernel</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>COPR <code>imput/helium</code></td><td>The Helium browser</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>Terra (Fyra Labs)</td><td>Apps and tools Fedora doesn't carry; <code>terra-release</code>, recommended by <code>dashi-release</code> and in the image. Its optional subrepos (Mesa, NVIDIA, multimedia, extras) stay off: they can clash with RPM Fusion</td><td><span class="pill done">enabled</span></td></tr>

@@ -21,6 +21,12 @@ Requires:       zsh
 # key. Recommends, not Requires: a system without Terra configured can still
 # update this package, and someone who removes Terra keeps Dashi.
 Recommends:     terra-release
+# HEIC decodes through Fedora's FFmpeg plugin (H.265 from the FFmpeg the codecs
+# step installs); RPM Fusion's libheif-freeworld pins the exact libheif it was
+# built against and held back Fedora's libheif updates, security fixes too.
+# Obsoletes takes it off 0.2.0 installs on update.
+Obsoletes:      libheif-freeworld
+Recommends:     libheif-ffmpeg
 Provides:       system-release
 Provides:       system-release(44)
 Provides:       system-release(releasever) = 44
@@ -108,5 +114,9 @@ fi
 %{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
+* Mon Nov 02 2026 PejeDev <hi@peje.dev> - 44-0.3.0
+- Dashi 0.3 beta.
+- libheif-ffmpeg in place of libheif-freeworld, which held libheif's updates back.
+
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 44-0.2.0
 - Dashi 0.2 beta.

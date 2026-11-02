@@ -93,6 +93,12 @@ mirin-metal-host
 # The Terminal: its engine, on Ghostty's terminal core.
 dashi-term
 libghostty-vt
+# HEIC through Fedora's FFmpeg plugin, not RPM Fusion's libheif-freeworld
+# (which @multimedia pulls in once RPM Fusion is on): freeworld requires the
+# exact libheif it was built against and lags Fedora's, so every libheif
+# update (security fixes too) was held back until RPM Fusion caught up.
+libheif-ffmpeg
+-libheif-freeworld
 
 # Dashi's release replaces Fedora's.
 -fedora-release
