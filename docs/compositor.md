@@ -56,20 +56,32 @@ into state, IPC carries the shell's decisions in.
 ```txt
 crates/dashi-comp/src/
   main.rs           arguments, logging, picks a backend, runs the loop
+  cli.rs            the command line (--backend, --greeter, --no-xwayland, -c)
   state.rs          the compositor's state (one struct, on the loop)
   backend/
-    mod.rs          the Backend trait the rest of the compositor sees
-    udev/           DRM/KMS, GBM, libinput, libseat, hotplug, multi-GPU, gamma, EDID
+    mod.rs          the backend facade the rest of the compositor sees
+    udev/           DRM/KMS, GBM, libinput, libseat, hotplug, multi-GPU, gamma,
+                    EDID, keyboard lights (keyboards.rs), VRR (vrr.rs)
     winit.rs        nested in another compositor's window
     headless.rs     no screens: IPC and protocol tests
-  handlers/         one module per Wayland protocol
-  render/           scene, damage, title bars, cursor, wallpaper
+  handlers/         one module per Wayland protocol (or family): compositor,
+                    xdg_shell, layer_shell, seat (clipboard, primary selection,
+                    data-control), surface (viewporter, fractional scale, ...),
+                    pointer (constraints, relative, gestures, cursor-shape),
+                    inhibit, text (text-input, input-method, virtual keyboard),
+                    security (security-context), sync (explicit and implicit),
+                    toplevel_meta (icons, bell), activation (+ dialog, foreign)
+  protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
+                    toplevel, wlr-screencopy
+  render/           scene, title bars, cursor, capture, presentation (present.rs)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview, grabs
-  input/            keyboard, pointer, touch, gestures, keymap and bindings
-  motion/           animations
+  input/            keyboard and pointer routing, decorations, constraints, gestures
+  keys/             keymap, bindings, ❖ phases
   xwayland/         Xwayland and the X11 window manager
-  ipc/              socket, framing, requests by domain, events (outbox)
-  session/          lock, idle, power, agent seat, capture grants
+  ipc/              socket, framing, requests
+  outputs/          `outputs`, `output`, `outputs-config`, VRR modes
+  session/          the session client, trust, lock, idle, agent input
+  wallpaper/        pictures, video (GStreamer), live looks
 ```
 
 ## Milestones

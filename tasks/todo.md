@@ -68,10 +68,11 @@ it in the VM.
 
 ## 4. Packaging 0.2.0
 
-- [ ] RPM specs (lost with 0.1.0): dashi, dashi-comp, dashi-greeter (replaces
-      dashi-sddm; requires greetd),
-      dashi-release, dashi-logos, dashi-kernel, dashi-nvidia, dashi-helium,
-      dashi-live, dashi-bun, mirin-metal-host
+- [x] RPM specs for dashi, dashi-comp, dashi-greeter (replaces dashi-sddm;
+      greetd), dashi-release (0.2 beta); `spin/build-rpms`
+- [ ] Specs for the packages unchanged since 0.1.0 (still installed as 0.1.0):
+      dashi-logos, dashi-kernel, dashi-nvidia, dashi-helium, dashi-live,
+      dashi-bun, mirin-metal-host (built from mirin)
 - [ ] Build in the VM, install, boot into it
 - [ ] Image build (kickstart) and COPR publishing
 
