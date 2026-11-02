@@ -2,13 +2,14 @@
 //! smallvil example (MIT, github.com/Smithay/smithay, v0.7.0). C1 adds the
 //! keymap, bindings, and ❖ (docs/compositor.md).
 
+mod decorations;
+
 use smithay::{
     backend::input::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
         KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent,
     },
     input::pointer::{AxisFrame, ButtonEvent, MotionEvent},
-    reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::SERIAL_COUNTER,
 };
 
@@ -53,53 +54,23 @@ impl Dashi {
                 pointer.frame(self);
             }
             InputEvent::PointerButton { event, .. } => {
-                let (Some(pointer), Some(keyboard)) =
-                    (self.seat.get_pointer(), self.seat.get_keyboard())
-                else {
+                let Some(pointer) = self.seat.get_pointer() else {
                     return;
                 };
-
                 let serial = SERIAL_COUNTER.next_serial();
-
                 let button = event.button_code();
-
                 let button_state = event.state();
-                if button_state == ButtonState::Pressed {
+                let pressed = button_state == ButtonState::Pressed;
+                if pressed {
                     self.note_chord();
                 }
-
-                let layer = (ButtonState::Pressed == button_state && !pointer.is_grabbed())
-                    .then(|| self.focusable_layer_under(pointer.current_location()))
-                    .flatten();
-                if let Some(layer) = layer {
-                    keyboard.set_focus(self, Some(layer.wl_surface().clone()), serial);
-                } else if ButtonState::Pressed == button_state && !pointer.is_grabbed() {
-                    if let Some((window, _loc)) = self
-                        .space
-                        .element_under(pointer.current_location())
-                        .map(|(w, l)| (w.clone(), l))
-                    {
-                        self.space.raise_element(&window, true);
-                        if let Some(toplevel) = window.toplevel() {
-                            keyboard.set_focus(self, Some(toplevel.wl_surface().clone()), serial);
-                        }
-                        self.space
-                            .elements()
-                            .filter_map(|window| window.toplevel())
-                            .for_each(|toplevel| {
-                                toplevel.send_pending_configure();
-                            });
-                    } else {
-                        self.space.elements().for_each(|window| {
-                            window.set_activated(false);
-                            if let Some(toplevel) = window.toplevel() {
-                                toplevel.send_pending_configure();
-                            }
-                        });
-                        keyboard.set_focus(self, Option::<WlSurface>::None, serial);
-                    }
-                };
-
+                let at = pointer.current_location();
+                let free = pressed && !pointer.is_grabbed();
+                // A press on a title bar or a traffic light is the compositor's, not a client's.
+                let on_decoration = free && self.decoration_at(at).is_some();
+                if free && !on_decoration {
+                    self.focus_at(at, serial);
+                }
                 pointer.button(
                     self,
                     &ButtonEvent {
@@ -109,6 +80,10 @@ impl Dashi {
                         time: event.time_msec(),
                     },
                 );
+                if on_decoration {
+                    // After the button is down, so a move grab sees it held.
+                    self.press_decoration(at, button, serial);
+                }
                 pointer.frame(self);
             }
             InputEvent::PointerAxis { event, .. } => {

@@ -2,16 +2,11 @@
 //! Adapted from smithay's smallvil and anvil examples (MIT,
 //! github.com/Smithay/smithay, v0.7.0).
 
-use std::time::Duration;
-
 use smithay::{
     backend::{
         allocator::dmabuf::Dmabuf,
         egl::EGLDevice,
-        renderer::{
-            ImportDma, damage::OutputDamageTracker, element::surface::WaylandSurfaceRenderElement,
-            gles::GlesRenderer,
-        },
+        renderer::{ImportDma, damage::OutputDamageTracker, gles::GlesRenderer},
         winit::{self, WinitEvent, WinitGraphicsBackend},
     },
     output::{Mode, Output, PhysicalProperties, Subpixel},
@@ -24,7 +19,7 @@ use smithay::{
 };
 
 use super::{BACKGROUND, Backend};
-use crate::{outputs::ShownTransform, state::Dashi};
+use crate::{outputs::ShownTransform, render, state::Dashi};
 
 pub(crate) struct WinitData {
     backend: WinitGraphicsBackend<GlesRenderer>,
@@ -84,15 +79,13 @@ pub(crate) fn init(
     handle.insert_source(winit, move |event, _, state| match event {
         WinitEvent::Resized { size, .. } => {
             if let Backend::Winit(data) = &state.backend {
-                data.output.change_current_state(
-                    Some(Mode {
-                        size,
-                        refresh: 60_000,
-                    }),
-                    None,
-                    None,
-                    None,
-                );
+                let output = data.output.clone();
+                let mode = Mode {
+                    size,
+                    refresh: 60_000,
+                };
+                output.change_current_state(Some(mode), None, None, None);
+                state.output_changed(&output);
             }
         }
         WinitEvent::Input(event) => state.process_input_event(event),
@@ -130,34 +123,23 @@ fn advertise_dmabuf(state: &mut Dashi, backend: &mut WinitGraphicsBackend<GlesRe
 }
 
 fn redraw(state: &mut Dashi) {
-    let Backend::Winit(data) = &mut state.backend else {
+    // The scene needs the whole state (title bar and cursor caches); the backend is put back after.
+    let Backend::Winit(mut data) = std::mem::take(&mut state.backend) else {
         return;
     };
     let size = data.backend.window_size();
-    let rendered = data
-        .backend
-        .bind()
-        .map_err(|error| error.to_string())
-        .and_then(|(renderer, mut framebuffer)| {
-            smithay::desktop::space::render_output::<
-                _,
-                WaylandSurfaceRenderElement<GlesRenderer>,
-                _,
-                _,
-            >(
-                &data.output,
-                renderer,
-                &mut framebuffer,
-                1.0,
-                0,
-                [&state.space],
-                &[],
-                &mut data.damage_tracker,
-                BACKGROUND,
-            )
-            .map(|_| ())
-            .map_err(|error| error.to_string())
-        });
+    let output = data.output.clone();
+    let rendered = match data.backend.bind() {
+        Ok((renderer, mut framebuffer)) => {
+            // The host compositor draws the pointer over the nested window.
+            let elements = render::output_elements(state, renderer, &output, false);
+            data.damage_tracker
+                .render_output(renderer, &mut framebuffer, 0, &elements, BACKGROUND)
+                .map(|_| ())
+                .map_err(|error| format!("{error:?}"))
+        }
+        Err(error) => Err(error.to_string()),
+    };
     match rendered {
         Ok(()) => {
             if let Err(error) = data.backend.submit(Some(&[Rectangle::from_size(size)])) {
@@ -166,17 +148,7 @@ fn redraw(state: &mut Dashi) {
         }
         Err(error) => tracing::warn!(%error, "drawing the nested frame"),
     }
-    let elapsed = state.start_time.elapsed();
-    let output = data.output.clone();
-    state.space.elements().for_each(|window| {
-        window.send_frame(&output, elapsed, Some(Duration::ZERO), |_, _| {
-            Some(output.clone())
-        });
-    });
-    for layer in smithay::desktop::layer_map_for_output(&output).layers() {
-        layer.send_frame(&output, elapsed, Some(Duration::ZERO), |_, _| {
-            Some(output.clone())
-        });
-    }
     data.backend.window().request_redraw();
+    state.backend = Backend::Winit(data);
+    state.send_frames(&output);
 }

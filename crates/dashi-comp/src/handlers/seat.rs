@@ -27,8 +27,10 @@ impl SeatHandler for Dashi {
         &mut self.seat_state
     }
 
-    // C1 draws the cursor the client asks for (render/cursor).
-    fn cursor_image(&mut self, _seat: &Seat<Self>, _image: CursorImageStatus) {}
+    // The cursor the client asks for (render/cursor.rs draws it).
+    fn cursor_image(&mut self, _seat: &Seat<Self>, image: CursorImageStatus) {
+        self.cursor_status = image;
+    }
 
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
         let client = focused.and_then(|surface| self.display_handle.get_client(surface.id()).ok());

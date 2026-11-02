@@ -6,8 +6,8 @@
 use std::{ffi::OsString, sync::Arc, time::Instant};
 
 use smithay::{
-    desktop::{LayerSurface, PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output},
-    input::{Seat, SeatState},
+    desktop::{PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output},
+    input::{Seat, SeatState, pointer::CursorImageStatus},
     reexports::{
         calloop::{Interest, LoopHandle, LoopSignal, Mode, PostAction, generic::Generic},
         wayland_server::{
@@ -24,14 +24,22 @@ use smithay::{
         selection::data_device::DataDeviceState,
         shell::{
             wlr_layer::{Layer, WlrLayerShellState},
-            xdg::XdgShellState,
+            xdg::{XdgShellState, decoration::XdgDecorationState},
         },
         shm::ShmState,
         socket::ListeningSocketSource,
     },
 };
 
-use crate::{backend::Backend, ipc::Ipc, keys::Keys, shell_config::ShellConfig, wm::Windows};
+use crate::{
+    backend::Backend,
+    ipc::Ipc,
+    keys::Keys,
+    protocols::dashi_chrome::{self, ChromeObject},
+    render::{cursor::Cursors, text::Text},
+    shell_config::ShellConfig,
+    wm::{ChromeStyle, Windows},
+};
 
 pub(crate) struct Dashi {
     pub start_time: Instant,
@@ -49,6 +57,15 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub chrome_style: ChromeStyle,
+    pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
+    pub cursor_status: CursorImageStatus,
+    /// The last press on a title bar, for double-clicks.
+    pub last_bar_press: Option<(u64, std::time::Instant)>,
+    pub cursors: Cursors,
+    pub text: Text,
+    #[expect(dead_code, reason = "kept alive: it owns the xdg-decoration global")]
+    pub xdg_decoration_state: XdgDecorationState,
 
     pub compositor_state: CompositorState,
     pub xdg_shell_state: XdgShellState,
@@ -73,6 +90,8 @@ impl Dashi {
         let compositor_state = CompositorState::new::<Self>(&dh);
         let xdg_shell_state = XdgShellState::new::<Self>(&dh);
         let layer_shell_state = WlrLayerShellState::new::<Self>(&dh);
+        let xdg_decoration_state = XdgDecorationState::new::<Self>(&dh);
+        dashi_chrome::create_global(&dh);
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let output_manager_state = OutputManagerState::new_with_xdg_output::<Self>(&dh);
         let data_device_state = DataDeviceState::new::<Self>(&dh);
@@ -99,6 +118,13 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            chrome_style: ChromeStyle::default(),
+            chrome_objects: Vec::new(),
+            cursor_status: CursorImageStatus::default_named(),
+            last_bar_press: None,
+            cursors: Cursors::default(),
+            text: Text::default(),
+            xdg_decoration_state,
             compositor_state,
             xdg_shell_state,
             layer_shell_state,
@@ -140,23 +166,37 @@ impl Dashi {
                 .surface_under(local - at.to_f64(), WindowSurfaceType::ALL)
                 .map(|(surface, loc)| (surface, (loc + at + origin).to_f64()))
         };
-        in_layer(Layer::Overlay)
-            .or_else(|| in_layer(Layer::Top))
-            .or_else(window)
+        if let Some(top) = in_layer(Layer::Overlay).or_else(|| in_layer(Layer::Top)) {
+            return Some(top);
+        }
+        // A title bar or the traffic lights: nothing a client gets.
+        if self.decoration_at(pos).is_some() {
+            return None;
+        }
+        window()
             .or_else(|| in_layer(Layer::Bottom))
             .or_else(|| in_layer(Layer::Background))
     }
 
-    /// The layer surface under `pos` that takes the keyboard when pressed, if one is on top there.
-    pub(crate) fn focusable_layer_under(&self, pos: Point<f64, Logical>) -> Option<LayerSurface> {
-        let output = self.space.output_under(pos).next()?;
-        let origin = self.space.output_geometry(output)?.loc;
-        let layers = layer_map_for_output(output);
-        let local = pos - origin.to_f64();
-        [Layer::Overlay, Layer::Top]
-            .into_iter()
-            .find_map(|layer| layers.layer_under(layer, local).cloned())
-            .filter(LayerSurface::can_receive_keyboard_focus)
+    /// Tell every client shown on `output` that a frame went out, so it draws the next.
+    pub(crate) fn send_frames(&self, output: &smithay::output::Output) {
+        let elapsed = self.start_time.elapsed();
+        let throttle = Some(std::time::Duration::ZERO);
+        self.space.elements().for_each(|window| {
+            window.send_frame(output, elapsed, throttle, |_, _| Some(output.clone()));
+        });
+        for layer in layer_map_for_output(output).layers() {
+            layer.send_frame(output, elapsed, throttle, |_, _| Some(output.clone()));
+        }
+        if let smithay::input::pointer::CursorImageStatus::Surface(surface) = &self.cursor_status {
+            smithay::desktop::utils::send_frames_surface_tree(
+                surface,
+                output,
+                elapsed,
+                throttle,
+                |_, _| Some(output.clone()),
+            );
+        }
     }
 
     /// After each turn of the loop: settle the space and send what is queued.

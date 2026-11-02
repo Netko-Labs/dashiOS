@@ -87,6 +87,14 @@ fn rotation_of(transform: Transform) -> (u32, bool) {
     }
 }
 
+impl Dashi {
+    /// A screen's size or scale changed: lay its layers out again and tell the shell.
+    pub(crate) fn output_changed(&mut self, output: &Output) {
+        layer_map_for_output(output).arrange();
+        self.ipc.emit("outputs-changed", json!({}));
+    }
+}
+
 /// `output {name, scale}`.
 pub(crate) fn set_scale(state: &mut Dashi, name: &str, scale: f64) -> Result<(), String> {
     if !scale.is_finite() || !SCALES.contains(&scale) {
@@ -103,8 +111,7 @@ pub(crate) fn set_scale(state: &mut Dashi, name: &str, scale: f64) -> Result<(),
         .cloned()
         .ok_or_else(|| format!("no screen named {name:?}"))?;
     output.change_current_state(None, None, Some(Scale::Fractional(scale)), None);
-    layer_map_for_output(&output).arrange();
-    state.ipc.emit("outputs-changed", json!({}));
+    state.output_changed(&output);
     Ok(())
 }
 

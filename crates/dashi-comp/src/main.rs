@@ -8,6 +8,8 @@ mod input;
 mod ipc;
 mod keys;
 mod outputs;
+mod protocols;
+mod render;
 mod session;
 mod shell_config;
 mod state;

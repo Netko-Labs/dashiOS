@@ -5,7 +5,7 @@
 use smithay::{
     delegate_xdg_shell,
     desktop::{
-        PopupKind, PopupManager, Space, Window, find_popup_root_surface, get_popup_toplevel_coords,
+        PopupKind, PopupManager, Window, find_popup_root_surface, get_popup_toplevel_coords,
     },
     input::{
         Seat,
@@ -30,6 +30,7 @@ use smithay::{
 
 use crate::{
     state::Dashi,
+    wm::Windows,
     wm::grabs::{MoveSurfaceGrab, ResizeSurfaceGrab},
 };
 
@@ -190,13 +191,11 @@ fn check_grab(
 }
 
 /// Should be called on `WlSurface::commit`
-pub(crate) fn handle_commit(popups: &mut PopupManager, space: &Space<Window>, surface: &WlSurface) {
-    // Handle toplevel commits.
-    if let Some(window) = space
-        .elements()
-        .find(|w| w.toplevel().is_some_and(|t| t.wl_surface() == surface))
-        .cloned()
-    {
+/// Should be called on `WlSurface::commit`. New windows are not in the space
+/// until the shell places them, so toplevels are found in the registry.
+pub(crate) fn handle_commit(popups: &mut PopupManager, windows: &Windows, surface: &WlSurface) {
+    // Handle toplevel commits: the first configure, which lets the client draw.
+    if let Some(entry) = windows.by_surface(surface) {
         let initial_configure_sent = with_states(surface, |states| {
             states
                 .data_map
@@ -205,7 +204,7 @@ pub(crate) fn handle_commit(popups: &mut PopupManager, space: &Space<Window>, su
                 .is_some_and(|data| data.initial_configure_sent)
         });
 
-        if let Some(toplevel) = window.toplevel().filter(|_| !initial_configure_sent) {
+        if let Some(toplevel) = entry.window.toplevel().filter(|_| !initial_configure_sent) {
             toplevel.send_configure();
         }
     }

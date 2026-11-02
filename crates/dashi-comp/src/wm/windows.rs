@@ -9,7 +9,10 @@ use smithay::{
     wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData},
 };
 
-use crate::state::Dashi;
+use crate::{
+    render::titlebar::{self, Decor},
+    state::Dashi,
+};
 
 pub(crate) type WindowId = u64;
 
@@ -45,6 +48,12 @@ pub(crate) struct Entry {
     pub parked_at: Option<Point<i32, Logical>>,
     /// The frame to go back to (`restore`) after a tile or zoom (`frame` with `remember`).
     pub restore: Option<Rectangle<i32, Logical>>,
+    /// How it is framed: by the client, by dashi-comp's title bar, or unified.
+    pub decor: Decor,
+    /// The app asked for the unified style (dashi-chrome-v1).
+    pub unified: bool,
+    /// The title bar (or a unified window's lights) as last drawn.
+    pub title_image: Option<titlebar::Image>,
 }
 
 pub(crate) struct Windows {
@@ -74,6 +83,9 @@ impl Windows {
             shown: Shown::Normal,
             parked_at: None,
             restore: None,
+            decor: Decor::None,
+            unified: false,
+            title_image: None,
         });
         id
     }
@@ -100,6 +112,14 @@ impl Windows {
         self.entries
             .iter_mut()
             .find(|entry| toplevel_surface(&entry.window).as_ref() == Some(surface))
+    }
+
+    pub(crate) fn by_window(&self, window: &Window) -> Option<&Entry> {
+        self.entries.iter().find(|entry| &entry.window == window)
+    }
+
+    pub(crate) fn entries_mut(&mut self) -> impl Iterator<Item = &mut Entry> {
+        self.entries.iter_mut()
     }
 
     pub(crate) fn remove_surface(&mut self, surface: &WlSurface) -> Option<Entry> {
@@ -157,8 +177,23 @@ pub(crate) fn names(window: &Window) -> (String, String) {
 }
 
 /// The window's frame on screen (global logical), None while it is not mapped.
+/// The window's outer frame on screen (title bar included, global logical),
+/// None while it is not mapped.
 pub(crate) fn frame_of(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
-    state.space.element_geometry(window)
+    let mut frame = state.space.element_geometry(window)?;
+    let bar = bar_of(state, window);
+    frame.loc.y -= bar;
+    frame.size.h += bar;
+    Some(frame)
+}
+
+/// The height of the title bar dashi-comp draws above `window` (0 for none).
+pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
+    state
+        .windows
+        .by_window(window)
+        .map(|entry| entry.decor.bar_height())
+        .unwrap_or(0)
 }
 
 /// A window in the IPC's `Window` shape.
@@ -185,7 +220,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "state": entry.shown.name(),
         "zoomed": entry.restore.is_some(),
         "frame": frame,
-        "titleBar": 0,
+        "titleBar": entry.decor.bar_height(),
     })
 }
 

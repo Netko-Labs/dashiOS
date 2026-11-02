@@ -82,6 +82,20 @@ pub(crate) fn handle(
                 ))
             }
         }
+        "chrome" => {
+            if let Some(dark) = params.get("dark") {
+                state.chrome_style.dark = dark.as_bool().ok_or("`dark` must be true or false")?;
+            }
+            if params.contains_key("radius") {
+                state.chrome_style.radius = coord(params, "radius")?.clamp(0, 32);
+            }
+            if let Some(reduce) = params.get("reduceMotion") {
+                state.chrome_style.reduce_motion = reduce
+                    .as_bool()
+                    .ok_or("`reduceMotion` must be true or false")?;
+            }
+            Ok(json!({}))
+        }
         "outputs" => Ok(outputs::describe_all(state)),
         // One Space until C2.
         "spaces" => Ok(json!({ "count": 1, "current": 0 })),

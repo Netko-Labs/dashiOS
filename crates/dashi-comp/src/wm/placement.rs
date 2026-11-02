@@ -43,7 +43,8 @@ impl Dashi {
         entry.placing = true;
         let window = entry.window.clone();
         let (app_id, title) = names(&window);
-        let size = window.geometry().size;
+        let mut size = window.geometry().size;
+        size.h += super::windows::bar_of(self, &window);
         self.ipc.emit(
             "window-placing",
             json!({ "window": { "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h } }),
@@ -88,7 +89,9 @@ impl Dashi {
         let Some(entry) = self.windows.get(id) else {
             return;
         };
-        let size = entry.window.geometry().size;
+        let window = entry.window.clone();
+        let mut size = window.geometry().size;
+        size.h += super::windows::bar_of(self, &window);
         let area = self
             .usable_under_pointer()
             .unwrap_or_else(|| Rectangle::from_size((1280, 800).into()));

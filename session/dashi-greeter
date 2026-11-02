@@ -24,10 +24,13 @@ if [ -f "$base/share/dashi/greeter/src/main.tsx" ]; then
 elif [ -f "$base/packages/greeter/src/main.tsx" ]; then
   greeter=$base/packages/greeter
   comp=${DASHI_COMP:-}
-  for profile in debug release; do
-    candidate=$base/target/$profile/dashi-comp
-    if [ -x "$candidate" ] && { [ -z "$comp" ] || [ "$candidate" -nt "$comp" ]; }; then comp=$candidate; fi
-  done
+  if [ -z "$comp" ]; then
+    # Whichever build is newer: a stale release build must not hide a fresh debug one.
+    for profile in debug release; do
+      candidate=$base/target/$profile/dashi-comp
+      if [ -x "$candidate" ] && { [ -z "$comp" ] || [ "$candidate" -nt "$comp" ]; }; then comp=$candidate; fi
+    done
+  fi
   comp=${comp:-/usr/bin/dashi-comp}
   bun=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
   [ -x "$bun" ] || bun=$(command -v bun || true)

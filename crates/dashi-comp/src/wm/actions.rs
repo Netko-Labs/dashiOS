@@ -49,7 +49,9 @@ impl Dashi {
         at: Point<i32, Logical>,
         activate: bool,
     ) {
-        self.space.map_element(window.clone(), at, activate);
+        let bar = super::windows::bar_of(self, window);
+        self.space
+            .map_element(window.clone(), (at.x, at.y + bar), activate);
     }
 
     /// Raise it, give it the keyboard, and bring it back if it was minimized or hidden.
@@ -142,10 +144,12 @@ impl Dashi {
         Ok(())
     }
 
+    /// Size and place a window by its outer frame (title bar included).
     fn apply_frame(&mut self, window: &Window, frame: Rectangle<i32, Logical>, maximized: bool) {
+        let bar = super::windows::bar_of(self, window);
         if let Some(toplevel) = window.toplevel() {
             toplevel.with_pending_state(|state| {
-                state.size = Some(Size::from((frame.size.w, frame.size.h)));
+                state.size = Some(Size::from((frame.size.w, (frame.size.h - bar).max(1))));
                 if maximized {
                     state.states.set(xdg_toplevel::State::Maximized);
                 } else {

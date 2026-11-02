@@ -46,9 +46,10 @@ impl CompositorHandler for Dashi {
             if let Some(entry) = self.windows.by_surface(&root) {
                 entry.window.on_commit();
             }
+            self.update_decor(&root);
             self.place_when_drawn(&root);
         }
-        xdg_shell::handle_commit(&mut self.popups, &self.space, surface);
+        xdg_shell::handle_commit(&mut self.popups, &self.windows, surface);
         layer_shell::handle_commit(self, surface);
         resize_grab::handle_commit(&mut self.space, surface);
     }
