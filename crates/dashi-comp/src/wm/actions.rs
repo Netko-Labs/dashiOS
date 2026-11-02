@@ -92,6 +92,11 @@ impl Dashi {
             entry.shown = shown;
         }
         self.space.unmap_elem(&window);
+        if shown == Shown::Minimized
+            && let Some(frame) = frame
+        {
+            self.fly(id, frame, true);
+        }
         if was_focused {
             self.focus_topmost();
         }
@@ -118,6 +123,9 @@ impl Dashi {
             return;
         }
         self.map_frame_at(&window, at, true);
+        if let Some(frame) = frame_of(self, &window) {
+            self.fly(id, frame, false);
+        }
     }
 
     /// Move and size its frame. `remember` keeps the frame it had for `restore`

@@ -10,11 +10,7 @@ use std::collections::HashMap;
 use serde_json::{Map, Value};
 
 /// The requests whose params are kept, and the milestone that acts on them.
-pub(crate) const KEPT: &[(&str, &str)] = &[
-    ("layout", "C2"),
-    ("animation-target", "C2"),
-    ("screencopy-clients", "C3"),
-];
+pub(crate) const KEPT: &[(&str, &str)] = &[("screencopy-clients", "C3")];
 
 #[derive(Default)]
 pub(crate) struct ShellConfig {
@@ -58,9 +54,9 @@ mod tests {
         let mut config = ShellConfig::default();
         let first = json!({ "zones": [] }).as_object().cloned().unwrap();
         let second = json!({ "zones": [1] }).as_object().cloned().unwrap();
-        assert!(config.keep("layout", first));
-        assert!(config.keep("layout", second.clone()));
-        assert_eq!(config.get("layout"), Some(&second));
+        assert!(config.keep("screencopy-clients", first));
+        assert!(config.keep("screencopy-clients", second.clone()));
+        assert_eq!(config.get("screencopy-clients"), Some(&second));
         assert!(!config.keep("focus", Map::new()));
         assert_eq!(config.get("focus"), None);
     }

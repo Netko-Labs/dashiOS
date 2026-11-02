@@ -105,8 +105,10 @@ struct Screen {
     queued: bool,
     /// A render is already scheduled.
     scheduled: bool,
-    /// The screen is lit (`power`).
+    /// The screen is lit (`power`, and on in Displays).
     powered: bool,
+    /// The connector's modes, to switch to one (Displays).
+    modes: Vec<smithay::reexports::drm::control::Mode>,
 }
 
 /// Which device and CRTC an output is on.
@@ -142,6 +144,62 @@ impl UdevData {
             for crtc in device.screens.keys() {
                 apply_gamma(device.manager.device(), *crtc, tint);
             }
+        }
+    }
+
+    fn screen_of(&mut self, output: &Output) -> Option<&mut Screen> {
+        let id = *output.user_data().get::<ScreenId>()?;
+        self.devices.get_mut(&id.node)?.screens.get_mut(&id.crtc)
+    }
+
+    pub(crate) fn set_mode(&mut self, output: &Output, mode: WlMode) -> Result<(), String> {
+        let id = *output
+            .user_data()
+            .get::<ScreenId>()
+            .ok_or("not a screen of this GPU")?;
+        let device = self
+            .devices
+            .get_mut(&id.node)
+            .ok_or("not a screen of this GPU")?;
+        let render_node = device.render_node.unwrap_or(self.primary_gpu);
+        let screen = device
+            .screens
+            .get_mut(&id.crtc)
+            .ok_or("not a screen of this GPU")?;
+        let drm_mode = screen
+            .modes
+            .iter()
+            .find(|m| WlMode::from(**m) == mode)
+            .copied()
+            .ok_or("the screen does not offer that mode")?;
+        let mut renderer = self
+            .gpus
+            .single_renderer(&render_node)
+            .map_err(|error| format!("{error:?}"))?;
+        screen
+            .scanout
+            .use_mode::<_, render::DashiElement<UdevRenderer<'_>>>(
+                drm_mode,
+                &mut renderer,
+                &DrmOutputRenderElements::default(),
+            )
+            .map_err(|error| format!("the mode did not take: {error:?}"))?;
+        screen.queued = false;
+        Ok(())
+    }
+
+    pub(crate) fn set_enabled(&mut self, output: &Output, enabled: bool) {
+        let Some(screen) = self.screen_of(output) else {
+            return;
+        };
+        screen.powered = enabled;
+        screen.queued = false;
+        if !enabled
+            && let Err(error) = screen
+                .scanout
+                .with_compositor(|compositor| compositor.clear())
+        {
+            tracing::warn!(%error, "turning a screen off");
         }
     }
 
@@ -582,6 +640,7 @@ fn connector_connected(
                 queued: false,
                 scheduled: false,
                 powered: true,
+                modes: connector.modes().to_vec(),
             },
         );
         Some(output)

@@ -18,11 +18,22 @@ pub(crate) struct ShownTransform(pub Transform);
 const SCALES: std::ops::RangeInclusive<f64> = 0.5..=4.0;
 
 pub(crate) fn describe_all(state: &Dashi) -> Value {
+    let first = state.space.outputs().next().map(Output::name);
+    let primary = state
+        .primary_output
+        .clone()
+        .filter(|name| state.space.outputs().any(|o| &o.name() == name))
+        .or(first);
     let outputs: Vec<Value> = state
-        .space
-        .outputs()
-        .enumerate()
-        .map(|(index, output)| describe(state, output, index == 0))
+        .all_outputs()
+        .iter()
+        .map(|output| {
+            describe(
+                state,
+                output,
+                primary.as_deref() == Some(output.name().as_str()),
+            )
+        })
         .collect();
     json!({ "outputs": outputs })
 }
@@ -61,8 +72,8 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         "make": properties.make,
         "model": properties.model,
         "serial": output.user_data().get::<crate::backend::udev::Serial>().map(|s| s.0.clone()).unwrap_or_default(),
-        "enabled": true,
-        "lit": true,
+        "enabled": frame.is_some(),
+        "lit": frame.is_some(),
         "primary": primary,
         "physicalMm": { "width": properties.size.w, "height": properties.size.h },
         "scale": output.current_scale().fractional_scale(),

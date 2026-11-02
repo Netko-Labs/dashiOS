@@ -11,8 +11,8 @@ pub(crate) mod titlebar;
 use smithay::backend::renderer::{
     ImportAll, ImportMem,
     element::{
-        memory::MemoryRenderBufferRenderElement, surface::WaylandSurfaceRenderElement,
-        utils::RescaleRenderElement,
+        memory::MemoryRenderBufferRenderElement, solid::SolidColorRenderElement,
+        surface::WaylandSurfaceRenderElement, utils::RescaleRenderElement,
     },
 };
 
@@ -23,6 +23,8 @@ smithay::backend::renderer::element::render_elements! {
     pub(crate) DashiElement<R> where R: ImportAll + ImportMem;
     Surface=WaylandSurfaceRenderElement<R>,
     Memory=MemoryRenderBufferRenderElement<R>,
-    /// A window drawn small (the overview).
+    /// A window drawn small (the overview, a flight to the Dock).
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,
+    /// A plain shape (where a dragged window would tile).
+    Solid=SolidColorRenderElement,
 }

@@ -34,6 +34,7 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
         let new_location = self.initial_window_location.to_f64() + delta;
         data.space
             .map_element(self.window.clone(), new_location.to_i32_round(), true);
+        data.drag_moved(event.location);
     }
 
     fn relative_motion(
@@ -60,6 +61,7 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
 
         if !handle.current_pressed().contains(&BTN_LEFT) {
             // No more buttons are pressed, release the grab.
+            data.drag_released(&self.window);
             handle.unset_grab(self, data, event.serial, event.time, true);
         }
     }

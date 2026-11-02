@@ -199,6 +199,9 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
+        "layout" => done(state.set_zones(params)),
+        "animation-target" => done(state.set_animation_targets(params)),
+        "outputs-config" => done(state.configure_outputs(params)),
         method if state.shell_config.keep(method, request.params.clone()) => Ok(json!({})),
         "output" => {
             let name = text(params, "name")?.to_owned();

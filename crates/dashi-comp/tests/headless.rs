@@ -242,13 +242,7 @@ fn a_live_socket_is_not_taken_over() {
 fn the_shells_configuration_is_kept_until_its_milestone() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
-    for method in [
-        "chrome",
-        "layout",
-        "bars",
-        "animation-target",
-        "screencopy-clients",
-    ] {
+    for method in ["bars", "screencopy-clients"] {
         assert_eq!(
             ipc.request(method, json!({}))["result"],
             json!({}),
@@ -757,4 +751,77 @@ fn idle_is_told_and_the_claims_are_answered() {
         json!({})
     );
     assert!(ipc.request("gamma", json!({ "red": 1.0 }))["error"].is_string());
+}
+
+#[test]
+fn screens_are_arranged_and_windows_fly_to_their_tiles() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+
+    let arrangement = json!({ "outputs": [{ "name": "HEADLESS-1", "position": { "x": 100, "y": 0 }, "scale": 1.5 }], "primary": "HEADLESS-1" });
+    assert_eq!(
+        ipc.request("outputs-config", arrangement)["result"],
+        json!({})
+    );
+    let screen = ipc.request("outputs", json!({}))["result"]["outputs"][0].clone();
+    assert_eq!(
+        (
+            screen["frame"]["x"].as_i64(),
+            screen["scale"].as_f64(),
+            screen["primary"].as_bool()
+        ),
+        (Some(100), Some(1.5), Some(true))
+    );
+    assert!(
+        ipc.request("outputs-config", json!({ "outputs": [{ "name": "nope" }] }))["error"]
+            .is_string()
+    );
+    assert!(
+        ipc.request(
+            "outputs-config",
+            json!({ "outputs": [{ "name": "HEADLESS-1", "transform": { "rotation": 45 } }] })
+        )["error"]
+            .is_string()
+    );
+    let off = json!({ "outputs": [{ "name": "HEADLESS-1", "enabled": false }] });
+    assert!(
+        ipc.request("outputs-config", off)["error"]
+            .as_str()
+            .unwrap()
+            .contains("stay on")
+    );
+
+    let zones = json!({ "zones": [{ "area": { "x": 0, "y": 0, "width": 2, "height": 500 }, "frame": { "x": 0, "y": 0, "width": 640, "height": 720 } }], "dwellMs": 300 });
+    assert_eq!(ipc.request("layout", zones)["result"], json!({}));
+    assert!(ipc.request("layout", json!({ "zones": [{ "area": {} }] }))["error"].is_string());
+
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Fly");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 200, "y": 100 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+    let tile = json!({ "targets": [{ "window": id, "rect": { "x": 600, "y": 1000, "width": 48, "height": 48 } }] });
+    assert_eq!(ipc.request("animation-target", tile)["result"], json!({}));
+    assert_eq!(
+        ipc.request("minimize", json!({ "window": id }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        ipc.request("windows", json!({}))["result"]["windows"][0]["state"],
+        "minimized"
+    );
+    assert_eq!(
+        ipc.request("focus", json!({ "window": id }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        ipc.request("windows", json!({}))["result"]["windows"][0]["state"],
+        "normal"
+    );
 }

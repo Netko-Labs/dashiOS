@@ -51,6 +51,26 @@ impl Backend {
         }
     }
 
+    /// A screen's mode (Displays). Only screens the compositor drives have modes to choose.
+    pub(crate) fn set_mode(
+        &mut self,
+        output: &smithay::output::Output,
+        mode: smithay::output::Mode,
+    ) -> Result<(), String> {
+        match self {
+            Backend::Udev(data) => data.set_mode(output, mode),
+            Backend::Headless => Ok(()),
+            Backend::Winit(_) | Backend::None => Err("the nested window keeps its own size".into()),
+        }
+    }
+
+    /// A screen on or off (Displays).
+    pub(crate) fn set_enabled(&mut self, output: &smithay::output::Output, enabled: bool) {
+        if let Backend::Udev(data) = self {
+            data.set_enabled(output, enabled);
+        }
+    }
+
     /// Import a client's GPU buffer into the renderer: whether it can be drawn.
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         match self {

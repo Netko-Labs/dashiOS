@@ -57,6 +57,12 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub zones: crate::wm::Zones,
+    pub motion: crate::wm::Motion,
+    /// Screens turned off in Displays (not in the space).
+    pub disabled_outputs: Vec<smithay::output::Output>,
+    /// The primary screen's name, when one was chosen.
+    pub primary_output: Option<String>,
     pub idle: crate::session::idle::Idle,
     pub claims: crate::input::Claims,
     pub overview: Option<crate::wm::Overview>,
@@ -131,6 +137,10 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            zones: Default::default(),
+            motion: Default::default(),
+            disabled_outputs: Vec::new(),
+            primary_output: None,
             idle: Default::default(),
             claims: Default::default(),
             overview: None,

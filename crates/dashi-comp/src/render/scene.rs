@@ -20,7 +20,9 @@ use smithay::{
 
 use super::{DashiElement, titlebar::Decor};
 use crate::state::Dashi;
-use smithay::backend::renderer::element::utils::RescaleRenderElement;
+use smithay::backend::renderer::element::{
+    solid::SolidColorRenderElement, utils::RescaleRenderElement,
+};
 
 /// What to draw: an area of the space at a scale, with the layers of one
 /// output; for a window capture, that window alone.
@@ -91,6 +93,49 @@ where
         {
             layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
         }
+        // Where a dragged window would tile, over the windows.
+        if let Some(preview) = state.zones.preview {
+            let area = Rectangle::new(
+                (preview.loc - origin).to_physical_precise_round(scale),
+                preview.size.to_physical_precise_round(scale),
+            );
+            let shade = smithay::backend::renderer::element::solid::SolidColorBuffer::new(
+                area.size.to_logical(1),
+                [0.30, 0.45, 0.95, 0.28],
+            );
+            elements.push(DashiElement::Solid(SolidColorRenderElement::from_buffer(
+                &shade,
+                area.loc,
+                1.0,
+                1.0,
+                Kind::Unspecified,
+            )));
+        }
+        // Windows flying into the Dock: no longer on screen, still drawn.
+        let ghosts: Vec<_> = state
+            .motion
+            .flights
+            .iter()
+            .filter_map(|(id, flight)| {
+                let entry = state.windows.get(*id)?;
+                state
+                    .space
+                    .element_location(&entry.window)
+                    .is_none()
+                    .then(|| (entry.window.clone(), *flight))
+            })
+            .collect();
+        for (window, flight) in ghosts {
+            overview_window(
+                state,
+                renderer,
+                &window,
+                flight.now().0,
+                origin,
+                scale,
+                &mut elements,
+            );
+        }
     }
     for window in state.space.elements().rev() {
         if view.only.as_ref().is_some_and(|only| only != window) {
@@ -101,6 +146,20 @@ where
         };
         if let Some(offset) = state.slide_offset(state.spaces.current, output_geo.size.w) {
             frame_at += offset;
+        }
+        if let Some(id) = state.windows.by_window(window).map(|e| e.id)
+            && let Some(flight) = state.motion.flights.get(&id).copied()
+        {
+            overview_window(
+                state,
+                renderer,
+                window,
+                flight.now().0,
+                origin,
+                scale,
+                &mut elements,
+            );
+            continue;
         }
         if state.overview.is_some() {
             if let Some(id) = state.windows.by_window(window).map(|e| e.id)

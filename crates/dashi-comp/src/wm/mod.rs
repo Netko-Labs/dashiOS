@@ -4,7 +4,11 @@
 mod actions;
 mod decor;
 mod fullscreen;
+mod motion;
 mod overview;
+mod zones;
+pub(crate) use motion::Motion;
+pub(crate) use zones::Zones;
 mod spaces;
 pub(crate) use decor::ChromeStyle;
 pub(crate) use fullscreen::Bars;
