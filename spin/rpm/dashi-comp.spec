@@ -1,7 +1,9 @@
 # dashi-comp: Dashi's Wayland compositor (Rust, smithay). Built by
-# spin/build-rpms, which defines dashi_snapshot, dashi_source, and
-# cargo_target (where Cargo builds, outside the source tree).
+# spin/build-rpms, which sets dashi_snapshot and dashi_source in the SRPM's
+# spec, and may define cargo_target (where Cargo builds, outside the source
+# tree, so local builds reuse it); elsewhere (COPR) Cargo builds in the build dir.
 %global debug_package %{nil}
+%{!?cargo_target:%global cargo_target %{_builddir}/cargo-target}
 
 Name:           dashi-comp
 Version:        %{dashi_snapshot}

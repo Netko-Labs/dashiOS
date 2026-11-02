@@ -28,16 +28,24 @@ done < <(ls -t "${all[@]}")
 
 # Cargo fetches crates while building (dashi-comp, mirin-metal-host): the
 # builders need the network. The CachyOS kernel, Helium, and RPM Fusion come
-# from their own repositories.
-if ! copr-cli get "$project" >/dev/null 2>&1; then
-  copr-cli create "$project" \
-    --chroot fedora-44-x86_64 \
-    --enable-net on \
-    --repo 'copr://bieszczaders/kernel-cachyos' \
-    --repo 'copr://imput/helium' \
-    --repo 'https://mirrors.rpmfusion.org/mirrorlist?repo=free-fedora-$releasever&arch=$basearch' \
-    --repo 'https://mirrors.rpmfusion.org/mirrorlist?repo=nonfree-fedora-$releasever&arch=$basearch' \
-    --description "Dashi, a desktop on Fedora: the compositor, the shell, the login screen."
+# from their own repositories. COPR takes every repository as a baseurl (a
+# mirrorlist URL fails), and the settings are applied on every run so a
+# project made by an older copy of this script is corrected.
+rpmfusion=https://download1.rpmfusion.org
+settings=(
+  --enable-net on
+  --repo 'copr://bieszczaders/kernel-cachyos'
+  --repo 'copr://imput/helium'
+  --repo "$rpmfusion/free/fedora/releases/\$releasever/Everything/\$basearch/os/"
+  --repo "$rpmfusion/free/fedora/updates/\$releasever/\$basearch/"
+  --repo "$rpmfusion/nonfree/fedora/releases/\$releasever/Everything/\$basearch/os/"
+  --repo "$rpmfusion/nonfree/fedora/updates/\$releasever/\$basearch/"
+  --description "Dashi, a desktop on Fedora: the compositor, the shell, the login screen."
+)
+if copr-cli get "$project" >/dev/null 2>&1; then
+  copr-cli modify "$project" "${settings[@]}"
+else
+  copr-cli create "$project" --chroot fedora-44-x86_64 "${settings[@]}"
 fi
 for srpm in "${srpms[@]}"; do
   echo "copr-publish: $(basename "$srpm")"

@@ -1,7 +1,8 @@
 # mirin-metal-host: mirin's native host that draws a React tree with GPUI,
 # built from the sibling mirin checkout (spin/build-rpms makes the tarball
-# and defines mirin_snapshot and mirin_source).
+# and sets mirin_snapshot and mirin_source in the SRPM's spec).
 %global debug_package %{nil}
+%{!?cargo_target:%global cargo_target %{_builddir}/cargo-target}
 
 Name:           mirin-metal-host
 Version:        %{mirin_snapshot}

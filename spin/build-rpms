@@ -74,12 +74,19 @@ for package in "${packages[@]}"; do
   if grep -q '^Source[0-9]*:[[:space:]]*https://' "$spec"; then
     spectool -g -C "$top/SOURCES" "$spec"
   fi
-  rpmbuild -ba "$spec" \
-    --define "mirin_snapshot $mirin_snapshot" \
-    --define "mirin_source $mirin_name" \
+  # The snapshot and source names go into the spec itself, so the SRPM
+  # rebuilds anywhere (COPR) without these --defines.
+  staged=$top/SPECS/$package.spec
+  mkdir -p "$top/SPECS"
+  {
+    echo "%global dashi_snapshot $snapshot"
+    echo "%global dashi_source $name"
+    echo "%global mirin_snapshot $mirin_snapshot"
+    echo "%global mirin_source $mirin_name"
+    cat "$spec"
+  } > "$staged"
+  rpmbuild -ba "$staged" \
     --define "_topdir $top" \
-    --define "dashi_snapshot $snapshot" \
-    --define "dashi_source $name" \
     --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
 done
 echo "build-rpms: done; see $top/RPMS"
