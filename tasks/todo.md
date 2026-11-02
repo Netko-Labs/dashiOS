@@ -73,7 +73,11 @@ it in the VM.
 - [ ] Specs for the packages unchanged since 0.1.0 (still installed as 0.1.0):
       dashi-logos, dashi-kernel, dashi-nvidia, dashi-helium, dashi-live,
       dashi-bun, mirin-metal-host (built from mirin)
-- [ ] Build in the VM, install, boot into it
+- [x] Build in the VM, install, boot into it: 0.1.0 → 0.2.0 upgrade (dashi-sddm
+      obsoleted, greetd made the display manager, its stock config replaced),
+      the packaged greeter as the greetd user under enforcing SELinux (no
+      denials), login, the session on /usr/bin/dashi-comp with Xwayland
+- [x] dashi-live for 0.2.0 (it pins dashi's version); autologin through greetd
 - [ ] Image build (kickstart) and COPR publishing
 
 ## Later
