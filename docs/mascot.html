@@ -58,7 +58,7 @@
 
     <h2>Who Kombu is</h2>
     <div class="grid three">
-      <div class="card"><div class="eyebrow">Made of</div><p style="margin:0">A kombu leaf, the color of the accent, with ume blush and the mark's single wisp of steam as a cowlick.</p></div>
+      <div class="card"><div class="eyebrow">Made of</div><p style="margin:0">A kombu leaf, flat in the accent, with two dot eyes and the mark's single wisp of steam as a cowlick.</p></div>
       <div class="card"><div class="eyebrow">Personality</div><p style="margin:0">Quietly delighted. Patient with mistakes. Never smug, never loud, never in a hurry.</p></div>
       <div class="card"><div class="eyebrow">Job</div><p style="margin:0">Keeps people company where the OS is empty or new: first launch, empty states, the docs, release notes.</p></div>
     </div>
@@ -117,15 +117,14 @@
       <li><strong>Smallest:</strong> 24 px tall. Below that the face is unreadable; use the mark instead.</li>
       <li><strong>Clear space:</strong> a quarter of Kombu's width around it, and never cropped by an edge.</li>
       <li><strong>Ground:</strong> calm, light or dark. On a wallpaper, set Kombu on a glass card, not on the picture.</li>
-      <li><strong>Dark Mode:</strong> the body lightens a step (<code>#6CC0A5 → #357A64</code>) so it doesn't sink into dark glass. The drawing does this for you.</li>
+      <li><strong>Dark Mode:</strong> the body lightens a step (<code>#5FAE95</code>) so it doesn't sink into dark glass. The drawing does this for you.</li>
     </ul>
     <h3>Construction</h3>
     <ul>
-      <li>Body: one closed path on a 122 × 150 grid, filled top to bottom with the tile's gradient (<code>#5FAE95 → #2F6F5A</code>), a soft white highlight at the upper left.</li>
-      <li>Eyes: <code>#123A2F</code>, with a white catchlight up and to the right. Blush: ume at 42%.</li>
+      <li>Body: one closed drop-shaped path on a 122 × 150 grid, one flat fill in the accent (<code>#3E8A72</code>). No gradient, highlight, outline, or shadow.</li>
+      <li>Face: <code>#123A2F</code>. Eyes are dots (or 3-weight arcs when closed or smiling), the mouth one round 3-weight stroke. Nothing else: no blush, no catchlights.</li>
       <li>The wisp: the mark's wisp of steam, the body's top color, 3.2 strokes with round caps.</li>
-      <li>Arms: two short round strokes in the body's bottom color. They move with the face (up for cheer and surprise).</li>
-      <li>Source: <code>kombuSprite()</code> in <code>docs/assets/docs.js</code>; when Kombu lands in the OS, it moves to <code>@dashi/ui</code> and this page draws from there.</li>
+            <li>Source: <code>kombuSprite()</code> in <code>docs/assets/docs.js</code>; when Kombu lands in the OS, it moves to <code>@dashi/ui</code> and this page draws from there.</li>
     </ul>
 
     <h3>Motion</h3>
