@@ -111,6 +111,9 @@ export async function runBinding(name: string, window: number | null, compositor
       await actions.fullscreen?.(window);
       return;
     case "close-window":
+      // ❖W in one of Dashi's own apps: its own ❖W row first (Terminal's
+      // Close Tab), as any other ❖ chord there; the window closes when it has none.
+      if (await actions.appShortcut?.(window, "❖W")) return;
       await compositor.request("close", { window });
       return;
     case "minimize-window":

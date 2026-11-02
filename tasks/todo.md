@@ -112,6 +112,7 @@ it in the VM.
 - [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
 - [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
 - [ ] mirin: text selection in TextInput
+- [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences
 - [ ] A Dashi-native installer front end over Anaconda
