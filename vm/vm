@@ -25,7 +25,8 @@
 #   sudo mount -t virtiofs developer /mnt/developer
 #
 # Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
-# DASHI_VM_RES (1920x1080), DASHI_VM_SSH (2222), DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi),
+# DASHI_VM_RES (1920x1080), DASHI_VM_HEADS (1; 2 for a second screen), DASHI_VM_SSH (2222),
+# DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi),
 # DASHI_VM_PASSWORD (for sudo in the guest; checkout-session).
 set -euo pipefail
 
@@ -44,6 +45,7 @@ disk_size=${DASHI_VM_DISK_SIZE:-80G}
 ssh_port=${DASHI_VM_SSH:-2222}
 gpu=${DASHI_VM_GPU:-venus}
 res=${DASHI_VM_RES:-1920x1080}
+heads=${DASHI_VM_HEADS:-1}
 
 die() { echo "vm: $*" >&2; exit 1; }
 
@@ -61,7 +63,8 @@ ensure_disk() {
 }
 
 gpu_args() {
-  local size=",xres=${res%x*},yres=${res#*x}"
+  case $heads in 1|2|3|4) ;; *) die "DASHI_VM_HEADS must be 1 to 4" ;; esac
+  local size=",xres=${res%x*},yres=${res#*x},max_outputs=$heads"
   case $gpu in
     venus) echo "-device virtio-vga-gl,hostmem=4G,blob=true,venus=true$size -display gtk,gl=on" ;;
     virgl) echo "-device virtio-vga-gl$size -display gtk,gl=on" ;;
