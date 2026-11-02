@@ -85,6 +85,8 @@ pub(crate) struct UdevData {
     gpus: Gpus,
     devices: HashMap<DrmNode, Device>,
     libinput: Libinput,
+    /// The tint to keep on every screen (`gamma`), as red, green, blue factors.
+    gamma: Option<[f64; 3]>,
 }
 
 struct Device {
@@ -103,6 +105,8 @@ struct Screen {
     queued: bool,
     /// A render is already scheduled.
     scheduled: bool,
+    /// The screen is lit (`power`).
+    powered: bool,
 }
 
 /// Which device and CRTC an output is on.
@@ -131,10 +135,62 @@ impl UdevData {
         f(&mut renderer)
     }
 
+    /// `gamma`: each screen's ramps scaled by the tint (1, 1, 1 is none).
+    pub(crate) fn set_gamma(&mut self, tint: Option<[f64; 3]>) {
+        self.gamma = tint;
+        for device in self.devices.values() {
+            for crtc in device.screens.keys() {
+                apply_gamma(device.manager.device(), *crtc, tint);
+            }
+        }
+    }
+
+    /// `power`: screens dark or lit. Lighting them draws them again.
+    pub(crate) fn set_power(&mut self, on: bool, reset: bool) -> Vec<(DrmNode, crtc::Handle)> {
+        let mut lit = Vec::new();
+        for (node, device) in &mut self.devices {
+            if on
+                && reset
+                && let Err(error) = device.manager.device_mut().reset_state()
+            {
+                tracing::warn!(%error, "resetting a GPU's state");
+            }
+            for (crtc, screen) in &mut device.screens {
+                if on {
+                    screen.powered = true;
+                    screen.queued = false;
+                    lit.push((*node, *crtc));
+                } else if screen.powered {
+                    screen.powered = false;
+                    if let Err(error) = screen
+                        .scanout
+                        .with_compositor(|compositor| compositor.clear())
+                    {
+                        tracing::warn!(%error, "turning a screen off");
+                    }
+                }
+            }
+        }
+        if on && let Some(tint) = self.gamma {
+            self.set_gamma(Some(tint));
+        }
+        lit
+    }
+
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         self.gpus
             .single_renderer(&self.primary_gpu)
             .is_ok_and(|mut renderer| renderer.import_dmabuf(dmabuf, None).is_ok())
+    }
+}
+
+/// `power {on, reset?}`: the screens dark, or lit and drawn again.
+pub(crate) fn power(state: &mut Dashi, on: bool, reset: bool) {
+    let lit = with_udev(state, |_, data| data.set_power(on, reset)).unwrap_or_default();
+    for (node, crtc) in lit {
+        state
+            .loop_handle
+            .insert_idle(move |state| render_screen(state, node, crtc));
     }
 }
 
@@ -211,6 +267,7 @@ pub(crate) fn init(
         gpus,
         devices: HashMap::new(),
         libinput,
+        gamma: None,
     }));
 
     handle.insert_source(notifier, |event, _, state| match event {
@@ -515,6 +572,7 @@ fn connector_connected(
             )
             .inspect_err(|error| tracing::warn!(name, %error, "the screen could not be set up"))
             .ok()?;
+        apply_gamma(device.manager.device(), crtc, data.gamma);
         device.screens.insert(
             crtc,
             Screen {
@@ -523,6 +581,7 @@ fn connector_connected(
                 global,
                 queued: false,
                 scheduled: false,
+                powered: true,
             },
         );
         Some(output)
@@ -583,6 +642,28 @@ fn device_removed(state: &mut Dashi, node: DrmNode) {
 /// The serial an EDID gave a screen (outputs/report.rs reports it).
 pub(crate) struct Serial(pub String);
 
+/// Write a CRTC's gamma ramps: linear, scaled per channel.
+fn apply_gamma(device: &DrmDevice, crtc: crtc::Handle, tint: Option<[f64; 3]>) {
+    let Ok(info) = device.get_crtc(crtc) else {
+        return;
+    };
+    let length = info.gamma_length() as usize;
+    if length < 2 {
+        return;
+    }
+    let [r, g, b] = tint.unwrap_or([1.0, 1.0, 1.0]);
+    let ramp = |factor: f64| -> Vec<u16> {
+        (0..length)
+            .map(|i| {
+                ((i as f64 / (length - 1) as f64) * 65535.0 * factor.clamp(0.0, 1.0)).round() as u16
+            })
+            .collect()
+    };
+    if let Err(error) = device.set_gamma(crtc, &ramp(r), &ramp(g), &ramp(b)) {
+        tracing::warn!(%error, "setting a screen's gamma");
+    }
+}
+
 fn edid_of(device: &DrmDevice, connector: connector::Handle) -> Option<edid::Identity> {
     let properties = device.get_properties(connector).ok()?;
     let (handles, values) = properties.as_props_and_values();
@@ -614,7 +695,7 @@ fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
         let render_node = device.render_node.unwrap_or(primary_gpu);
         let screen = device.screens.get_mut(&crtc)?;
         screen.scheduled = false;
-        if screen.queued {
+        if screen.queued || !screen.powered {
             return None;
         }
         let output = screen.output.clone();

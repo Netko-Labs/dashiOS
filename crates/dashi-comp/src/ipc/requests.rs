@@ -86,6 +86,55 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "idle" => {
+            let timeouts = params
+                .get("timeouts")
+                .and_then(Value::as_array)
+                .ok_or("`timeouts` must be a list of seconds")?;
+            let timeouts = timeouts
+                .iter()
+                .map(|t| t.as_u64().ok_or("`timeouts` must be a list of seconds"))
+                .collect::<Result<_, _>>()?;
+            state.set_idle_timeouts(timeouts);
+            Ok(json!({}))
+        }
+        "power" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            backend::udev::power(state, on, flag(params, "reset"));
+            Ok(json!({}))
+        }
+        "gamma" => {
+            let channel = |key: &str| number(params, key).map(|v| v.clamp(0.1, 1.0));
+            let tint = [channel("red")?, channel("green")?, channel("blue")?];
+            let neutral = tint.iter().all(|c| *c >= 0.999);
+            state.backend.set_gamma((!neutral).then_some(tint));
+            Ok(json!({}))
+        }
+        "edges" => {
+            let band = coord(params, "bottom")?;
+            let output = params
+                .get("output")
+                .and_then(Value::as_str)
+                .map(str::to_owned);
+            Ok(json!({ "inside": state.claim_bottom(band, output) }))
+        }
+        "gestures" => {
+            let swipe = params
+                .get("swipe")
+                .and_then(Value::as_array)
+                .ok_or("`swipe` must be a list of finger counts")?;
+            state.claim_swipes(
+                swipe
+                    .iter()
+                    .filter_map(Value::as_u64)
+                    .map(|f| f as u32)
+                    .collect(),
+            );
+            Ok(json!({}))
+        }
         "overview" => state.overview_request(params),
         "spaces" => {
             let count = match params.get("count") {
@@ -150,11 +199,6 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
-        // The Dock's edge claim: kept, and not inside until edges work (C2).
-        "edges" => {
-            state.shell_config.keep("edges", request.params.clone());
-            Ok(json!({ "inside": false }))
-        }
         method if state.shell_config.keep(method, request.params.clone()) => Ok(json!({})),
         "output" => {
             let name = text(params, "name")?.to_owned();

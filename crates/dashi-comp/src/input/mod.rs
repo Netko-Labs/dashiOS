@@ -2,21 +2,39 @@
 //! smallvil example (MIT, github.com/Smithay/smithay, v0.7.0). C1 adds the
 //! keymap, bindings, and ❖ (docs/compositor.md).
 
+mod claims;
 mod decorations;
+
+pub(crate) use claims::Claims;
 
 use smithay::{
     backend::input::{
-        AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
-        KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
+        AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, GestureBeginEvent,
+        GestureEndEvent, GestureSwipeUpdateEvent as _, InputBackend, InputEvent, KeyboardKeyEvent,
+        PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
     },
-    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, RelativeMotionEvent},
+    input::pointer::{
+        AxisFrame, ButtonEvent, GestureSwipeBeginEvent, GestureSwipeEndEvent,
+        GestureSwipeUpdateEvent, MotionEvent, RelativeMotionEvent,
+    },
     utils::SERIAL_COUNTER,
 };
+
+use serde_json::json;
 
 use crate::state::Dashi;
 
 impl Dashi {
     pub(crate) fn process_input_event<I: InputBackend>(&mut self, event: InputEvent<I>) {
+        let deliberate = match &event {
+            InputEvent::Keyboard { event } => {
+                event.state() == smithay::backend::input::KeyState::Pressed
+            }
+            InputEvent::PointerButton { event } => event.state() == ButtonState::Pressed,
+            InputEvent::DeviceAdded { .. } | InputEvent::DeviceRemoved { .. } => return,
+            _ => false,
+        };
+        self.note_input(deliberate);
         match event {
             InputEvent::Keyboard { event, .. } => {
                 self.on_key(event.key_code(), event.state(), Event::time_msec(&event));
@@ -49,6 +67,7 @@ impl Dashi {
                 );
                 pointer.frame(self);
                 self.watch_bars(to);
+                self.watch_edges(to);
                 self.overview_motion(to);
             }
             InputEvent::PointerMotionAbsolute { event, .. } => {
@@ -82,6 +101,7 @@ impl Dashi {
                 );
                 pointer.frame(self);
                 self.watch_bars(pos);
+                self.watch_edges(pos);
                 self.overview_motion(pos);
             }
             InputEvent::PointerButton { event, .. } => {
@@ -165,6 +185,54 @@ impl Dashi {
                 };
                 pointer.axis(self, frame);
                 pointer.frame(self);
+            }
+            InputEvent::GestureSwipeBegin { event } => {
+                if self.claims_swipe(event.fingers()) {
+                    self.claims.swiping = true;
+                    self.ipc.emit(
+                        "gesture",
+                        json!({ "kind": "swipe", "phase": "begin", "fingers": event.fingers() }),
+                    );
+                } else if let Some(pointer) = self.seat.get_pointer() {
+                    let swipe = GestureSwipeBeginEvent {
+                        serial: SERIAL_COUNTER.next_serial(),
+                        time: event.time_msec(),
+                        fingers: event.fingers(),
+                    };
+                    pointer.gesture_swipe_begin(self, &swipe);
+                }
+            }
+            InputEvent::GestureSwipeUpdate { event } => {
+                if self.claims.swiping {
+                    let delta = event.delta();
+                    self.ipc.emit(
+                        "gesture",
+                        json!({ "kind": "swipe", "phase": "update", "dx": delta.x, "dy": delta.y }),
+                    );
+                } else if let Some(pointer) = self.seat.get_pointer() {
+                    pointer.gesture_swipe_update(
+                        self,
+                        &GestureSwipeUpdateEvent {
+                            time: event.time_msec(),
+                            delta: event.delta(),
+                        },
+                    );
+                }
+            }
+            InputEvent::GestureSwipeEnd { event } => {
+                if std::mem::take(&mut self.claims.swiping) {
+                    self.ipc.emit(
+                        "gesture",
+                        json!({ "kind": "swipe", "phase": "end", "cancelled": event.cancelled() }),
+                    );
+                } else if let Some(pointer) = self.seat.get_pointer() {
+                    let end = GestureSwipeEndEvent {
+                        serial: SERIAL_COUNTER.next_serial(),
+                        time: event.time_msec(),
+                        cancelled: event.cancelled(),
+                    };
+                    pointer.gesture_swipe_end(self, &end);
+                }
             }
             _ => {}
         }

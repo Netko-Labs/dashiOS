@@ -151,7 +151,7 @@ fn mistakes_get_errors_not_a_dropped_connection() {
             .contains("unknown method")
     );
     assert!(
-        ipc.request("gamma", json!({}))["error"]
+        ipc.request("agent-input", json!({}))["error"]
             .as_str()
             .unwrap()
             .contains("not in this dashi-comp yet")
@@ -245,8 +245,6 @@ fn the_shells_configuration_is_kept_until_its_milestone() {
     for method in [
         "chrome",
         "layout",
-        "gestures",
-        "idle",
         "bars",
         "animation-target",
         "screencopy-clients",
@@ -723,4 +721,40 @@ fn the_overview_opens_on_a_plan_and_closes() {
 
     assert!(ipc.request("overview", json!({ "windows": [{ "id": id }] }))["error"].is_string());
     assert!(ipc.request("overview", json!({ "windows": 3 }))["error"].is_string());
+}
+
+#[test]
+fn idle_is_told_and_the_claims_are_answered() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    assert_eq!(
+        ipc.request("idle", json!({ "timeouts": [1] }))["result"],
+        json!({})
+    );
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Idle");
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "idle"),
+        json!({ "event": "idle", "seconds": 1 })
+    );
+
+    assert_eq!(
+        ipc.request("gestures", json!({ "swipe": [3] }))["result"],
+        json!({})
+    );
+    assert!(ipc.request("idle", json!({}))["error"].is_string());
+    assert!(ipc.request("power", json!({}))["error"].is_string());
+    assert_eq!(
+        ipc.request("power", json!({ "on": false }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        ipc.request("gamma", json!({ "red": 1.0, "green": 0.8, "blue": 0.6 }))["result"],
+        json!({})
+    );
+    assert!(ipc.request("gamma", json!({ "red": 1.0 }))["error"].is_string());
 }

@@ -44,6 +44,13 @@ impl Backend {
         }
     }
 
+    /// `gamma`: the screens' tint (None: none).
+    pub(crate) fn set_gamma(&mut self, tint: Option<[f64; 3]>) {
+        if let Backend::Udev(data) = self {
+            data.set_gamma(tint);
+        }
+    }
+
     /// Import a client's GPU buffer into the renderer: whether it can be drawn.
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         match self {
