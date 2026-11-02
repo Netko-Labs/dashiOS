@@ -9,9 +9,10 @@
 - [x] `docs/conventions.md`, `CLAUDE.md`/`AGENTS.md`, `docs/architecture.md`,
       `docs/compositor.md`, `docs/compositor-ipc.md`
 - [x] VM: install, desktop, ssh, screenshot, type/key, stop (`vm/vm`)
-- [x] `bun run fmt-lint` clean (biome config from mirin; one formatting pass, (done: mirin's rules at 160 columns; fmt-lint is clean)
-      its own commit)
+- [x] `bun run fmt-lint` clean: biome.jsonc is mirin's rules at 160 columns;
+      the format pass is its own commit
 - [ ] Shell tests (`packages/shell/test/`, lost with 0.1.0): parsers first
+      (started: compositor IPC, display config, warm host)
 
 Acceptance: typecheck clean, every module loads, the shell runs from the
 checkout in the VM on 0.1.0's dashi-comp.
