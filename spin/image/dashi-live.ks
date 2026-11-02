@@ -37,6 +37,8 @@ kernel
 kernel-modules
 kernel-modules-extra
 dracut-live
+# checkisomd5, for GRUB's default "Test this media" entry (rd.live.check).
+isomd5sum
 # What lorax needs to make the ISO bootable (BIOS and UEFI).
 grub2-pc-modules
 grub2-efi-x64
@@ -80,6 +82,8 @@ systemctl enable livesys.service livesys-late.service
 echo 'livesys_session="dashi"' > /etc/sysconfig/livesys
 # Dashi's login screen and boot splash.
 systemctl enable greetd.service
+# greetd is wanted by graphical.target; the image otherwise boots to a text login.
+systemctl set-default graphical.target
 plymouth-set-default-theme dashi || :
 # The image boots the kernel Dashi prefers (dashi-kernel).
 /usr/libexec/dashi/default-kernel || :
