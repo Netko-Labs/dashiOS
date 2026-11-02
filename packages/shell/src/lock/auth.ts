@@ -7,6 +7,7 @@
  * Misses slow down: after three, each try waits longer (up to 30 s).
  */
 
+import { statSync } from "node:fs";
 import { userInfo } from "node:os";
 
 const HELPERS = ["/usr/sbin/unix_chkpwd", "/usr/bin/unix_chkpwd", "/sbin/unix_chkpwd"];
@@ -14,6 +15,22 @@ const HELPERS = ["/usr/sbin/unix_chkpwd", "/usr/bin/unix_chkpwd", "/sbin/unix_ch
 /** The account that is locked out. */
 export function lockedUser(): string {
   return process.env.USER || userInfo().username;
+}
+
+/** Where AccountsService keeps the pictures people chose (Settings sets it). */
+const PICTURES = "/var/lib/AccountsService/icons";
+const MAX_PICTURE_BYTES = 8 * 1024 * 1024;
+
+/** `user`'s account picture, if there is a reasonable one. */
+export function accountPicture(user: string, dir = PICTURES): string | undefined {
+  if (!/^[a-z_][a-z0-9_.-]*\$?$/i.test(user)) return undefined;
+  const path = `${dir}/${user}`;
+  try {
+    const stat = statSync(path);
+    return stat.isFile() && stat.size > 0 && stat.size <= MAX_PICTURE_BYTES ? path : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The name the lock screen greets: the account's full name, else its login. */

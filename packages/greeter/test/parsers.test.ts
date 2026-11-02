@@ -76,3 +76,19 @@ describe("what the screen says", () => {
     expect(formatTime(new Date(2026, 10, 1, 17, 4), "en-US")).toBe("5:04");
   });
 });
+
+test("an account picture is shown only when it is a reasonable file", async () => {
+  const { mkdtempSync, writeFileSync, mkdirSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { accountPicture } = await import("../src/users.ts");
+  const dir = mkdtempSync(join(tmpdir(), "pictures-"));
+  writeFileSync(join(dir, "ana"), "png bytes");
+  writeFileSync(join(dir, "empty"), "");
+  mkdirSync(join(dir, "folder"));
+  expect(accountPicture("ana", dir)).toBe(join(dir, "ana"));
+  expect(accountPicture("empty", dir)).toBeUndefined();
+  expect(accountPicture("folder", dir)).toBeUndefined();
+  expect(accountPicture("nobody", dir)).toBeUndefined();
+  expect(accountPicture("../etc/passwd", dir)).toBeUndefined();
+});

@@ -87,6 +87,7 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
       day={day}
       time={time}
       name={user.displayName}
+      picture={user.picture}
       value={value}
       onChangeText={setValue}
       onSubmit={() => {
@@ -122,6 +123,19 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
   );
 }
 
+/** What the screens without the login form show: the time, dimmed like the form's. */
+export function Backdrop(): ReactNode {
+  const now = useNow();
+  return (
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: "#140e22b8" }}>
+      <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{formatDay(now)}</Text>
+        <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{formatTime(now)}</Text>
+      </View>
+    </View>
+  );
+}
+
 function UserPicker(props: { day: string; time: string; users: User[]; onPick: (user: User) => void }): ReactNode {
   const { day, time, users, onPick } = props;
   return (
@@ -142,7 +156,7 @@ function UserPicker(props: { day: string; time: string; users: User[]; onPick: (
               onPress={() => onPick(user)}
               style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110 }}
             >
-              <Avatar name={user.displayName} size={72} />
+              <Avatar name={user.displayName} picture={user.picture} size={72} />
               <Text style={{ fontSize: 14, fontWeight: "semibold", color: TEXT }}>{user.displayName}</Text>
             </View>
           ))

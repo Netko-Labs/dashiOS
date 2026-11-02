@@ -11,7 +11,7 @@ import { METAL_HOST } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import { runPower } from "../menus/session.ts";
 import { Attempts, type Verdict } from "./attempts.ts";
-import { checkPassword, displayName, lockedUser } from "./auth.ts";
+import { accountPicture, checkPassword, displayName, lockedUser } from "./auth.ts";
 import { LockScreen } from "./screen.tsx";
 
 /** A lock screen that died comes back after this. */
@@ -58,6 +58,7 @@ export class LockController {
     this.root = render(
       <LockScreen
         name={this.name}
+        picture={accountPicture(this.user)}
         onSubmit={(password) => this.submit(password)}
         waitMs={() => this.attempts.waitMs()}
         // The Dashi menu's own path: logind on a real session, refused anywhere else.

@@ -10,7 +10,7 @@
  * the host's (the shell's lock controller, the greeter's greetd login).
  */
 
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
 
@@ -37,6 +37,8 @@ export interface LoginScreenProps {
   time: string;
   /** Who is signing in. */
   name: string;
+  /** Their account picture (an absolute path); initials without one. */
+  picture?: string;
   /** The field: its text, and what it asks for. */
   value: string;
   onChangeText: (text: string) => void;
@@ -56,7 +58,7 @@ export interface LoginScreenProps {
 }
 
 export function LoginScreen(props: LoginScreenProps): ReactNode {
-  const { day, time, name, value, onChangeText, onSubmit, placeholder = "Password", secure = true, hint, error, above, below, onPower } = props;
+  const { day, time, name, picture, value, onChangeText, onSubmit, placeholder = "Password", secure = true, hint, error, above, below, onPower } = props;
   const [arming, setArming] = useState<PowerAction | null>(null);
   useEffect(() => {
     if (!arming) return;
@@ -78,7 +80,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
       <View style={{ flex: 1, minHeight: 16 }} />
       <View style={{ flexDirection: "column", alignItems: "center", gap: 10 }}>
         {above}
-        <Avatar name={name} />
+        <Avatar name={name} picture={picture} />
         <Text style={{ fontSize: 16, fontWeight: "semibold", color: TEXT }}>{name}</Text>
         <View style={{ width: 220, height: 32, paddingLeft: 14, paddingRight: 14, borderRadius: 16, backgroundColor: "#ffffff26", justifyContent: "center" }}>
           <TextInput
@@ -122,7 +124,8 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
 }
 
 /** A person's initial in a circle (a picture, once accounts have them). */
-export function Avatar({ name, size = 64 }: { name: string; size?: number }): ReactNode {
+export function Avatar({ name, picture, size = 64 }: { name: string; picture?: string; size?: number }): ReactNode {
+  if (picture) return <Image source={picture} resizeMode="cover" style={{ width: size, height: size, borderRadius: size / 2 }} />;
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: "#ffffff2e", alignItems: "center", justifyContent: "center" }}>
       <Text style={{ fontSize: Math.round(size * 0.44), fontWeight: "semibold", color: TEXT }}>{(name[0] ?? "?").toUpperCase()}</Text>

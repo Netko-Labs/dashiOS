@@ -3,13 +3,32 @@
  * login.defs's UID_MIN and UID_MAX) and a shell that lets them in.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 export interface User {
   name: string;
   /** The full name from the account's comment field, or the user name. */
   displayName: string;
   uid: number;
+  /** Their account picture (AccountsService's), when they chose one. */
+  picture?: string;
+}
+
+/** Where AccountsService keeps the pictures people chose. */
+const PICTURES = "/var/lib/AccountsService/icons";
+/** A picture bigger than this is not shown (it would be read and decoded). */
+const MAX_PICTURE_BYTES = 8 * 1024 * 1024;
+
+/** `name`'s account picture, if there is a reasonable one. */
+export function accountPicture(name: string, dir = PICTURES): string | undefined {
+  if (!/^[a-z_][a-z0-9_.-]*\$?$/i.test(name)) return undefined;
+  const path = `${dir}/${name}`;
+  try {
+    const stat = statSync(path);
+    return stat.isFile() && stat.size > 0 && stat.size <= MAX_PICTURE_BYTES ? path : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 const NO_LOGIN = /(^|\/)(nologin|false)$/;
@@ -47,5 +66,8 @@ export function loadUsers(): User[] {
       return "";
     }
   };
-  return parseUsers(read("/etc/passwd"), uidRange(read("/etc/login.defs")));
+  return parseUsers(read("/etc/passwd"), uidRange(read("/etc/login.defs"))).map((user) => {
+    const picture = accountPicture(user.name);
+    return picture ? { ...user, picture } : user;
+  });
 }

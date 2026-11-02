@@ -22,6 +22,8 @@ function useNow(): Date {
 
 export interface LockScreenProps {
   name: string;
+  /** The account picture, when the person chose one. */
+  picture?: string;
   /** "right" when the password is (the screen then goes away); the controller enforces the waits. */
   onSubmit: (password: string) => Promise<Verdict>;
   /** Milliseconds to wait before the next try, after repeated misses. */
@@ -32,7 +34,7 @@ export interface LockScreenProps {
 
 const HINTS = { idle: "Enter your password", checking: "Checking…", wrong: "Wrong password. Try again.", waiting: "Wait a moment…" } as const;
 
-export function LockScreen({ name, onSubmit, waitMs, onPower }: LockScreenProps): ReactNode {
+export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScreenProps): ReactNode {
   const now = useNow();
   const clock = useClockPrefs();
   const [password, setPassword] = useState("");
@@ -61,6 +63,7 @@ export function LockScreen({ name, onSubmit, waitMs, onPower }: LockScreenProps)
       day={formatLongDay(now, clock)}
       time={formatTimeBare(now, clock)}
       name={name}
+      picture={picture}
       value={password}
       onChangeText={(text) => {
         setPassword(text);
