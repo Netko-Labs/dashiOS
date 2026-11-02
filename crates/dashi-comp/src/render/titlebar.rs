@@ -23,8 +23,21 @@ const LIGHT_STEP: f32 = 20.0;
 const LIGHT_REACH: f32 = 8.0;
 /// A hovered control grows by this much.
 const HOVER_SCALE: f32 = 1.18;
-/// The traffic lights and their margins: what a unified window keeps clear.
-pub(crate) const CONTROLS: (i32, i32, i32, i32) = (0, 0, 76, BAR_HEIGHT);
+/// A unified window's toolbar strip: the controls are centered in it, and
+/// the app lays its toolbar and sidebar top to it (@dashi/ui's AppWindow
+/// toolbar is 44 px), so the title and the controls share a center line.
+pub(crate) const UNIFIED_HEIGHT: i32 = 44;
+/// The window controls and their margins: what a unified window keeps clear.
+pub(crate) const CONTROLS: (i32, i32, i32, i32) = (0, 0, 76, UNIFIED_HEIGHT);
+
+/// The strip the controls are centered in: the bar, or a unified window's toolbar.
+fn strip_height(decor: Decor) -> i32 {
+    if decor == Decor::Unified {
+        UNIFIED_HEIGHT
+    } else {
+        BAR_HEIGHT
+    }
+}
 
 /// How a window is framed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,7 +75,7 @@ pub(crate) enum Part {
 pub(crate) fn part_at(x: f64, y: f64, width: i32, decor: Decor) -> Option<Part> {
     if decor == Decor::None
         || y < 0.0
-        || y >= f64::from(BAR_HEIGHT)
+        || y >= f64::from(strip_height(decor))
         || x < 0.0
         || x >= f64::from(width)
     {
@@ -71,7 +84,7 @@ pub(crate) fn part_at(x: f64, y: f64, width: i32, decor: Decor) -> Option<Part> 
     let lights = [Part::Close, Part::Minimize, Part::Zoom];
     let hit = lights.iter().enumerate().find(|(index, _)| {
         let cx = f64::from(FIRST_LIGHT_X + LIGHT_STEP * *index as f32);
-        let cy = f64::from(BAR_HEIGHT) / 2.0;
+        let cy = f64::from(strip_height(decor)) / 2.0;
         (x - cx).powi(2) + (y - cy).powi(2) <= f64::from(LIGHT_REACH).powi(2)
     });
     match (hit, decor) {
@@ -231,7 +244,12 @@ mod tests {
             None,
             "below the bar is the window"
         );
-        assert_eq!(part_at(20.0, 14.0, 600, Decor::Unified), Some(Part::Close));
+        assert_eq!(part_at(20.0, 22.0, 600, Decor::Unified), Some(Part::Close));
+        assert_eq!(
+            part_at(20.0, 10.0, 600, Decor::Unified),
+            None,
+            "lined up with a 44 px toolbar"
+        );
         assert_eq!(
             part_at(300.0, 10.0, 600, Decor::Unified),
             None,
