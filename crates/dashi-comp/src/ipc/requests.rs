@@ -8,6 +8,7 @@ use smithay::utils::Point;
 
 use super::{frame::Request, server::ConnectionId};
 use crate::{
+    keys::{Chord, Keymap},
     outputs,
     state::Dashi,
     wm::{Shown, valid_frame},
@@ -16,7 +17,6 @@ use crate::{
 /// Methods the protocol has that this compositor does not do yet.
 const LATER: &[&str] = &[
     "fullscreen",
-    "send-keys",
     "outputs-config",
     "power",
     "gamma",
@@ -63,6 +63,24 @@ pub(crate) fn handle(
             let remember = flag(params, "remember");
             let maximized = flag(params, "maximized");
             done(state.frame_window(window(params)?, frame, remember, maximized))
+        }
+        "keymap" => {
+            state.keys.keymap = Keymap::parse(params)?;
+            Ok(json!({}))
+        }
+        "send-keys" => {
+            let id = window(params)?;
+            let chord = Chord::parse(text(params, "chord")?)?;
+            state.focus_window(id)?;
+            let time = state.start_time.elapsed().as_millis() as u32;
+            if state.tap(&chord, None, false, time) {
+                Ok(json!({}))
+            } else {
+                Err(format!(
+                    "send-keys: {:?} cannot be typed on this keyboard",
+                    text(params, "chord")?
+                ))
+            }
         }
         "outputs" => Ok(outputs::describe_all(state)),
         // One Space until C2.

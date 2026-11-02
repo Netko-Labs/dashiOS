@@ -237,7 +237,6 @@ fn the_shells_configuration_is_kept_until_its_milestone() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
     for method in [
-        "keymap",
         "chrome",
         "layout",
         "gestures",
@@ -309,5 +308,34 @@ fn screens_are_described_as_the_shell_parses_them() {
             .as_str()
             .unwrap()
             .contains("nope")
+    );
+}
+
+#[test]
+fn the_keymap_is_checked_before_it_is_used() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let keymap = json!({
+        "apps": { "terminal": ["foot"] },
+        "tapMs": 350,
+        "holdMs": 800,
+        "rules": [
+            { "when": "super+q", "bind": "quit-app" },
+            { "when": "super+letter", "app": "terminal", "send": "ctrl+shift+key" },
+            { "when": "super+BackSpace", "tap": ["shift+Home", "BackSpace"] },
+            { "when": "super+ctrl+*", "swallow": true }
+        ]
+    });
+    assert_eq!(ipc.request("keymap", keymap)["result"], json!({}));
+    let refused = ipc.request(
+        "keymap",
+        json!({ "rules": [{ "when": "hyper+q", "bind": "x" }] }),
+    );
+    assert!(
+        refused["error"].as_str().unwrap().contains("hyper"),
+        "{refused}"
+    );
+    assert!(
+        ipc.request("send-keys", json!({ "window": 9, "chord": "ctrl+z" }))["error"].is_string()
     );
 }

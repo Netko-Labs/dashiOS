@@ -24,6 +24,15 @@ pub(crate) enum Backend {
 }
 
 impl Backend {
+    /// Switch to virtual terminal `vt` (Ctrl+Alt+F1…F12): only a session on a seat of its own can.
+    pub(crate) fn change_vt(&mut self, vt: u32) {
+        match self {
+            Backend::Winit(_) | Backend::Headless | Backend::None => {
+                tracing::debug!(vt, "not switching VTs: this compositor does not own a seat");
+            }
+        }
+    }
+
     /// Import a client's GPU buffer into the renderer: whether it can be drawn.
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         match self {

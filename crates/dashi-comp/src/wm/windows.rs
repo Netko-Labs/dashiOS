@@ -126,6 +126,15 @@ pub(crate) fn toplevel_surface(window: &Window) -> Option<WlSurface> {
         .map(|toplevel| toplevel.wl_surface().clone())
 }
 
+/// The id of the window whose toplevel is `surface`, if it is one the shell knows.
+pub(crate) fn window_id_for_surface(state: &Dashi, surface: &WlSurface) -> Option<WindowId> {
+    state
+        .windows
+        .by_surface(surface)
+        .filter(|entry| entry.announced)
+        .map(|entry| entry.id)
+}
+
 /// A window's app id and title, as its client last set them.
 pub(crate) fn names(window: &Window) -> (String, String) {
     toplevel_surface(window)

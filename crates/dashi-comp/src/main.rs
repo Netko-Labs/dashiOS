@@ -6,6 +6,7 @@ mod cli;
 mod handlers;
 mod input;
 mod ipc;
+mod keys;
 mod outputs;
 mod session;
 mod shell_config;

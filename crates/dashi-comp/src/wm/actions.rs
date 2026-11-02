@@ -41,16 +41,15 @@ impl Dashi {
             .ok_or_else(|| format!("no window {id}"))
     }
 
-    /// Put `window`'s frame (not its surface, which may carry a shadow) at `at`.
+    /// Put `window`'s frame (its geometry, not its surface, which may carry a
+    /// shadow) at `at`: a Space places elements by their geometry's origin.
     pub(crate) fn map_frame_at(
         &mut self,
         window: &Window,
         at: Point<i32, Logical>,
         activate: bool,
     ) {
-        let offset = window.geometry().loc;
-        self.space
-            .map_element(window.clone(), at - offset, activate);
+        self.space.map_element(window.clone(), at, activate);
     }
 
     /// Raise it, give it the keyboard, and bring it back if it was minimized or hidden.

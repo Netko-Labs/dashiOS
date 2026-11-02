@@ -11,7 +11,6 @@ use serde_json::{Map, Value};
 
 /// The requests whose params are kept, and the milestone that acts on them.
 pub(crate) const KEPT: &[(&str, &str)] = &[
-    ("keymap", "C1"),
     ("chrome", "C1"),
     ("layout", "C2"),
     ("bars", "C2"),

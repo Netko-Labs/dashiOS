@@ -31,7 +31,7 @@ use smithay::{
     },
 };
 
-use crate::{backend::Backend, ipc::Ipc, shell_config::ShellConfig, wm::Windows};
+use crate::{backend::Backend, ipc::Ipc, keys::Keys, shell_config::ShellConfig, wm::Windows};
 
 pub(crate) struct Dashi {
     pub start_time: Instant,
@@ -48,6 +48,7 @@ pub(crate) struct Dashi {
     pub dmabuf_state: DmabufState,
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
+    pub keys: Keys,
 
     pub compositor_state: CompositorState,
     pub xdg_shell_state: XdgShellState,
@@ -97,6 +98,7 @@ impl Dashi {
             dmabuf_state: DmabufState::new(),
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
+            keys: Keys::default(),
             compositor_state,
             xdg_shell_state,
             layer_shell_state,

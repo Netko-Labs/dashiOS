@@ -7,4 +7,4 @@ mod placement;
 mod windows;
 
 pub(crate) use actions::valid_frame;
-pub(crate) use windows::{Shown, Windows, rect_json};
+pub(crate) use windows::{Shown, Windows, names, rect_json, window_id_for_surface};

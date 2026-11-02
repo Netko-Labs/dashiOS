@@ -7,10 +7,7 @@ use smithay::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
         KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent,
     },
-    input::{
-        keyboard::FilterResult,
-        pointer::{AxisFrame, ButtonEvent, MotionEvent},
-    },
+    input::pointer::{AxisFrame, ButtonEvent, MotionEvent},
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::SERIAL_COUNTER,
 };
@@ -21,20 +18,7 @@ impl Dashi {
     pub(crate) fn process_input_event<I: InputBackend>(&mut self, event: InputEvent<I>) {
         match event {
             InputEvent::Keyboard { event, .. } => {
-                let serial = SERIAL_COUNTER.next_serial();
-                let time = Event::time_msec(&event);
-
-                let Some(keyboard) = self.seat.get_keyboard() else {
-                    return;
-                };
-                keyboard.input::<(), _>(
-                    self,
-                    event.key_code(),
-                    event.state(),
-                    serial,
-                    time,
-                    |_, _, _| FilterResult::Forward,
-                );
+                self.on_key(event.key_code(), event.state(), Event::time_msec(&event));
             }
             InputEvent::PointerMotion { .. } => {}
             InputEvent::PointerMotionAbsolute { event, .. } => {
@@ -80,6 +64,9 @@ impl Dashi {
                 let button = event.button_code();
 
                 let button_state = event.state();
+                if button_state == ButtonState::Pressed {
+                    self.note_chord();
+                }
 
                 let layer = (ButtonState::Pressed == button_state && !pointer.is_grabbed())
                     .then(|| self.focusable_layer_under(pointer.current_location()))
