@@ -217,6 +217,8 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "layout" => done(state.set_zones(params)),
+        "keyboard" => done(state.set_keyboard(params)),
+        "input" => done(state.set_input(params)),
         "animation-target" => done(state.set_animation_targets(params)),
         "outputs-config" => done(state.configure_outputs(params)),
         "output" => {

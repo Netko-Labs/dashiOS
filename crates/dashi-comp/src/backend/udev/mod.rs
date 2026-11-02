@@ -18,7 +18,7 @@ pub(crate) use start::init;
 use devices::{advertise_formats, device_added, device_removed, offer_explicit_sync};
 use frame::{frame_finished, render_device, render_screen};
 use screens::{apply_gamma, connector_disconnected, scan_connectors};
-mod keyboards;
+mod input_devices;
 mod vrr;
 
 pub(crate) use vrr::VrrReport;
@@ -120,7 +120,7 @@ pub(crate) struct UdevData {
     gpus: Gpus,
     devices: HashMap<DrmNode, Device>,
     libinput: Libinput,
-    keyboards: keyboards::Keyboards,
+    input_devices: input_devices::InputDevices,
     /// The tint to keep on every screen (`gamma`), as red, green, blue factors.
     gamma: Option<[f64; 3]>,
 }
@@ -160,7 +160,11 @@ struct ScreenId {
 
 impl UdevData {
     pub(crate) fn set_leds(&mut self, leds: smithay::input::keyboard::LedState) {
-        self.keyboards.set_leds(leds);
+        self.input_devices.set_leds(leds);
+    }
+
+    pub(crate) fn apply_input(&mut self, settings: &crate::input::settings::InputSettings) {
+        self.input_devices.apply_input(settings);
     }
 
     pub(crate) fn change_vt(&mut self, vt: u32) {

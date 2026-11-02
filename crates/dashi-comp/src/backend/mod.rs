@@ -72,6 +72,13 @@ impl Backend {
         }
     }
 
+    /// Configure the pointer devices (libinput) with the shell's settings.
+    pub(crate) fn apply_input(&mut self, settings: &crate::input::settings::InputSettings) {
+        if let Backend::Udev(data) = self {
+            data.apply_input(settings);
+        }
+    }
+
     /// A screen on or off (Displays).
     pub(crate) fn set_enabled(&mut self, output: &smithay::output::Output, enabled: bool) {
         if let Backend::Udev(data) = self {

@@ -77,6 +77,8 @@ pub(crate) struct Dashi {
     pub motion: crate::wm::Motion,
     /// Screens turned off in Displays (not in the space).
     pub disabled_outputs: Vec<smithay::output::Output>,
+    /// Touchpad and mouse settings (input/settings.rs), for devices plugged in later too.
+    pub input_settings: crate::input::settings::InputSettings,
     /// Variable refresh rate per screen name, as the shell chose (outputs/vrr.rs).
     pub vrr_modes: std::collections::HashMap<String, crate::outputs::VrrMode>,
     /// The primary screen's name, when one was chosen.
@@ -246,6 +248,7 @@ impl Dashi {
             disabled_outputs: Vec::new(),
             primary_output: None,
             vrr_modes: Default::default(),
+            input_settings: Default::default(),
             idle: Default::default(),
             claims: Default::default(),
             overview: None,

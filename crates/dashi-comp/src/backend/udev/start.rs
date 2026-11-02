@@ -49,7 +49,7 @@ pub(crate) fn init(
                 event,
                 InputEvent::DeviceAdded { .. } | InputEvent::DeviceRemoved { .. }
             ) {
-                with_udev(state, |_, data| data.keyboards.device_event(&event));
+                with_udev(state, |_, data| data.input_devices.device_event(&event));
             } else {
                 state.process_input_event(event);
             }
@@ -63,7 +63,7 @@ pub(crate) fn init(
         gpus,
         devices: HashMap::new(),
         libinput,
-        keyboards: Default::default(),
+        input_devices: Default::default(),
         gamma: None,
     }));
 

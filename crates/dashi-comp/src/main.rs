@@ -60,6 +60,7 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
         args.greeter,
     )?;
 
+    state.apply_system_layout();
     let backend = backend_for(args.backend)?;
     match backend {
         BackendChoice::Udev => backend::udev::init(&handle, &mut state)?,

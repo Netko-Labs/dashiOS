@@ -76,6 +76,8 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | `layout` | `{zones, dwellMs}`: drag-to-tile zones; *see* `dragZones`, `src/arrange.ts` | `{}` |
 | `gestures` | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events |
 | `idle` | `{timeouts: number[]}` (seconds) | `{}`; `idle` / `active` events |
+| `keyboard` | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
+| `input` | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings.ts` | `{}`; devices plugged in later get them too |
 
 ### Spaces and overview
 

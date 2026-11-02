@@ -977,3 +977,30 @@ fn without_its_own_seat_an_agent_waits_for_the_person() {
         "the person is using the desktop"
     );
 }
+
+#[test]
+fn keyboard_layouts_and_pointer_settings_are_checked_then_used() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let german =
+        json!({ "layout": "de", "variant": "nodeadkeys", "repeatRate": 30, "repeatDelay": 250 });
+    assert_eq!(ipc.request("keyboard", german)["result"], json!({}));
+    // A layout xkb does not know is refused, and the keyboard keeps the last.
+    let unknown = json!({ "layout": "no-such-layout" });
+    assert!(ipc.request("keyboard", unknown)["error"].is_string());
+    let odd = json!({ "layout": "us; rm" });
+    assert!(ipc.request("keyboard", odd)["error"].is_string());
+    // Back to the system's own.
+    assert_eq!(
+        ipc.request("keyboard", json!({ "layout": "", "variant": "" }))["result"],
+        json!({})
+    );
+
+    let input = json!({
+        "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "clickMethod": "clickfinger", "scrollSpeed": 1.5 },
+        "mouse": { "accelProfile": "flat" }
+    });
+    assert_eq!(ipc.request("input", input)["result"], json!({}));
+    let wrong = json!({ "mouse": { "accelSpeed": 3 } });
+    assert!(ipc.request("input", wrong)["error"].is_string());
+}

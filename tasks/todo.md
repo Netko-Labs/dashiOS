@@ -71,9 +71,14 @@ it in the VM.
 - [x] `@dashi/ui` `LoginScreen`, shared with the lock screen (which now uses it)
 - [x] `session/dashi-greeter`; `spin/dashi-greeter/etc/greetd/config.toml`
 - [x] In the VM: greetd → greeter → PAM → the chosen session; lock/unlock
-- [ ] One surface per screen (multi-monitor)
-- [ ] Account pictures (AccountsService) instead of initials
-- [ ] Keyboard layout and accessibility on the login screen
+- [x] One surface per screen: the form on the main screen, a backdrop on the
+      others (verify with two heads in the VM)
+- [x] Account pictures (AccountsService) instead of initials, greeter and lock
+- [x] Keyboard layout on the login screen: dashi-comp starts in the system's
+      layout (localed's 00-keyboard.conf); `keyboard` and `input` were missing
+      from the new compositor altogether (layouts, repeat, touchpad settings
+      silently not applied): implemented
+- [ ] Accessibility on the login screen (larger text, a screen reader)
 - [x] `dashi-comp --greeter` (session/dashi-greeter passes it when supported)
 
 ## 4. Packaging 0.2.0

@@ -2,6 +2,7 @@
 
 mod handler;
 mod keymap;
+mod layout;
 
 pub(crate) use handler::Keys;
 pub(crate) use keymap::{Chord, Keymap};

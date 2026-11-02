@@ -27,6 +27,8 @@ const SUPER_KEYCODES: [u32; 2] = [133, 134];
 #[derive(Default)]
 pub(crate) struct Keys {
     pub keymap: Keymap,
+    /// The xkb layout and key repeat (layout.rs).
+    pub layout: super::layout::KeyboardLayout,
     super_down: Option<SuperPress>,
     /// Bumped on every ❖ press, so a hold timer knows whether its press is still the one held.
     super_generation: u64,

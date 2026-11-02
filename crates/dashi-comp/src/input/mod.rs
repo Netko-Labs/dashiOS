@@ -6,6 +6,7 @@ mod claims;
 mod constraints;
 mod decorations;
 mod gestures;
+pub(crate) mod settings;
 
 pub(crate) use claims::Claims;
 
@@ -151,15 +152,21 @@ impl Dashi {
             }
             InputEvent::PointerAxis { event, .. } => {
                 let source = event.source();
+                // The person's scroll speed for this kind of device (input/settings.rs).
+                let factor = self.scroll_factor(source);
 
-                let horizontal_amount = event.amount(Axis::Horizontal).unwrap_or_else(|| {
-                    event.amount_v120(Axis::Horizontal).unwrap_or(0.0) * 15.0 / 120.
-                });
-                let vertical_amount = event.amount(Axis::Vertical).unwrap_or_else(|| {
-                    event.amount_v120(Axis::Vertical).unwrap_or(0.0) * 15.0 / 120.
-                });
-                let horizontal_amount_discrete = event.amount_v120(Axis::Horizontal);
-                let vertical_amount_discrete = event.amount_v120(Axis::Vertical);
+                let horizontal_amount = factor
+                    * event.amount(Axis::Horizontal).unwrap_or_else(|| {
+                        event.amount_v120(Axis::Horizontal).unwrap_or(0.0) * 15.0 / 120.
+                    });
+                let vertical_amount = factor
+                    * event.amount(Axis::Vertical).unwrap_or_else(|| {
+                        event.amount_v120(Axis::Vertical).unwrap_or(0.0) * 15.0 / 120.
+                    });
+                let horizontal_amount_discrete =
+                    event.amount_v120(Axis::Horizontal).map(|v| v * factor);
+                let vertical_amount_discrete =
+                    event.amount_v120(Axis::Vertical).map(|v| v * factor);
 
                 let mut frame = AxisFrame::new(event.time_msec()).source(source);
                 if horizontal_amount != 0.0 {
