@@ -34,3 +34,10 @@ a chained build is queued stops it, and the chain's next step then runs on
 old packages. Commit before starting a chained build, and give each step an
 exit check. livemedia-creator's Anaconda moves /tmp/*.log into the image's
 anaconda/ folder: write build logs under the home directory.
+
+## Test VMs' disks don't go in /tmp
+
+/tmp is a RAM-backed tmpfs here. An install-test VM's disk image there grew
+to 12 GB while Steam downloaded, filled it, and the VM died mid-write
+(Steam's half-written files then failed with "Exec format error"). Put
+throwaway VM disks under ~/.cache.
