@@ -6,7 +6,7 @@
 # packages are copied from node_modules), ../mirin checked out, and the
 # build dependencies the specs name (`dnf builddep spin/rpm/*.spec`).
 #
-#   spin/build-rpms [package...]   default: dashi dashi-comp dashi-greeter dashi-release
+#   spin/build-rpms [package...]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
 #
 # The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
 set -euo pipefail
@@ -23,7 +23,7 @@ fi
 sha=$(git rev-parse --short=7 HEAD)
 snapshot="$version~beta.$(git log -1 --format=%cd --date=format:%Y%m%d).$sha"
 packages=("$@")
-[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release)
+[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release dashi-live)
 
 top=${RPMBUILD_TOP:-$HOME/rpmbuild}
 mkdir -p "$top"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}

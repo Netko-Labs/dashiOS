@@ -5,13 +5,21 @@
 # session gets these; the installed system is the image as built, with a
 # login screen.
 
-# SDDM logs liveuser into Dashi.
-mkdir -p /etc/sddm.conf.d
-cat > /etc/sddm.conf.d/zz-livesys-dashi.conf << SDDM_EOF
-[Autologin]
-User=liveuser
-Session=dashi.desktop
-SDDM_EOF
+# greetd logs liveuser into Dashi once (initial_session); after a logout the
+# login screen (dashi-greeter) shows.
+mkdir -p /etc/greetd
+cat > /etc/greetd/config.toml << GREETD_EOF
+[terminal]
+vt = 1
+
+[initial_session]
+command = "/usr/bin/dashi-session"
+user = "liveuser"
+
+[default_session]
+command = "/usr/bin/dashi-greeter"
+user = "greetd"
+GREETD_EOF
 
 # The installer starts without a password prompt (liveuser has none), as on
 # Fedora's GNOME live image.
