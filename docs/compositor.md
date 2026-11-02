@@ -120,6 +120,9 @@ Each milestone ends with the shell running on it in the VM.
   async page flips in smithay's DRM compositor.
 - **Explicit sync (done):** linux-drm-syncobj when the drawing GPU can wait on
   syncobjs; otherwise commits wait for their dmabufs (implicit sync).
+- **Software rendering (done):** when the GPU chosen to draw has only a
+  software EGL driver (a VM without 3D, `nomodeset`), it draws on its card
+  node with llvmpipe into linear buffers, so the live image starts anywhere.
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the

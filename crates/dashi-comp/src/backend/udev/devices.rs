@@ -66,11 +66,19 @@ pub(super) fn device_added(
         })?;
 
         // SAFETY: the GBM device outlives the display, which the GPU manager keeps with it.
-        let render_node = unsafe { EGLDisplay::new(gbm.clone()) }
+        let egl_device = unsafe { EGLDisplay::new(gbm.clone()) }
             .ok()
-            .and_then(|display| EGLDevice::device_for_display(&display).ok())
-            .filter(|device| !device.is_software())
-            .map(|device| device.try_get_render_node().ok().flatten().unwrap_or(node))
+            .and_then(|display| EGLDevice::device_for_display(&display).ok());
+        let is_software = egl_device.as_ref().is_some_and(EGLDevice::is_software);
+        // The GPU chosen to draw, with only a software driver (a VM without
+        // 3D, basic graphics mode), draws on its card node with llvmpipe.
+        let software = is_software && is_drawing_gpu(node, data.primary_gpu);
+        let render_node = egl_device
+            .filter(|_| !is_software || software)
+            .map(|device| match software {
+                true => node,
+                false => device.try_get_render_node().ok().flatten().unwrap_or(node),
+            })
             .and_then(|render_node| {
                 data.gpus
                     .as_mut()
@@ -78,6 +86,10 @@ pub(super) fn device_added(
                     .ok()
                     .map(|()| render_node)
             });
+        if software && render_node.is_some() {
+            tracing::warn!(%node, "no hardware rendering: drawing in software (llvmpipe)");
+            data.primary_gpu = node;
+        }
 
         let allocator = match render_node {
             Some(_) => GbmAllocator::new(
@@ -101,7 +113,7 @@ pub(super) fn device_added(
             .dmabuf_render_formats()
             .iter()
             .filter(|format| {
-                render_node.is_some()
+                (render_node.is_some() && !software)
                     || format.modifier == smithay::backend::allocator::Modifier::Linear
             })
             .copied()
@@ -129,6 +141,11 @@ pub(super) fn device_added(
     .ok_or("the udev backend is gone")??;
     scan_connectors(state, node);
     Ok(())
+}
+
+/// Whether `node` is the GPU chosen to draw (`primary`, by its render node or itself).
+fn is_drawing_gpu(node: DrmNode, primary: DrmNode) -> bool {
+    node == primary || node.node_with_type(NodeType::Render).and_then(Result::ok) == Some(primary)
 }
 
 pub(super) fn device_removed(state: &mut Dashi, node: DrmNode) {
