@@ -396,6 +396,7 @@ pub(crate) fn init(
         }
     }
     advertise_formats(state)?;
+    offer_explicit_sync(state);
 
     handle.insert_source(udev, |event, _, state| match event {
         UdevEvent::Added { device_id, path } => {
@@ -420,6 +421,25 @@ pub(crate) fn init(
 }
 
 /// shm and dmabuf formats from the drawing GPU.
+/// linux-drm-syncobj, on the drawing GPU's device, if it can wait on syncobjs.
+fn offer_explicit_sync(state: &mut Dashi) {
+    let device = with_udev(state, |_, data| {
+        let primary = data.primary_gpu;
+        data.devices
+            .iter()
+            .find(|(node, device)| {
+                device.render_node == Some(primary)
+                    || node.node_with_type(NodeType::Render).and_then(Result::ok) == Some(primary)
+            })
+            .map(|(_, device)| device.manager.device().device_fd().clone())
+    })
+    .flatten();
+    if let Some(device) = device {
+        let dh = state.display_handle.clone();
+        crate::handlers::sync::offer_explicit_sync(state, &dh, device);
+    }
+}
+
 fn advertise_formats(state: &mut Dashi) -> Result<(), Box<dyn std::error::Error>> {
     let formats = with_udev(
         state,

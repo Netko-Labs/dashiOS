@@ -116,6 +116,8 @@ pub(crate) struct Dashi {
         smithay::wayland::selection::wlr_data_control::DataControlState,
     )>,
     pub xdg_foreign_state: smithay::wayland::xdg_foreign::XdgForeignState,
+    /// Explicit sync, when the drawing GPU supports it (handlers/sync.rs).
+    pub syncobj_state: Option<smithay::wayland::drm_syncobj::DrmSyncobjState>,
     pub shortcuts_inhibit_state:
         smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
     pub xwayland_shell_state: smithay::wayland::xwayland_shell::XWaylandShellState,
@@ -255,6 +257,7 @@ impl Dashi {
             data_control,
             shortcuts_inhibit_state,
             xdg_foreign_state,
+            syncobj_state: None,
             xwayland_shell_state,
             xwayland: Default::default(),
             seat,

@@ -28,6 +28,10 @@ impl CompositorHandler for Dashi {
         &mut self.compositor_state
     }
 
+    fn new_surface(&mut self, surface: &WlSurface) {
+        super::sync::watch_surface(surface);
+    }
+
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
         if let Some(data) = client.get_data::<ClientState>() {
             return &data.compositor_state;

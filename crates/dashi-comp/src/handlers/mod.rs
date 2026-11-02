@@ -11,6 +11,7 @@ pub(crate) mod pointer;
 mod seat;
 pub(crate) mod security;
 pub(crate) mod surface;
+pub(crate) mod sync;
 pub(crate) mod text;
 pub(crate) mod toplevel_meta;
 mod xdg_shell;
