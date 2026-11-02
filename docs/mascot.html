@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kombu, the mascot · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    .intro { display: grid; grid-template-columns: 1fr 260px; gap: 32px; align-items: center; }
+    .intro .big { width: 240px; justify-self: center; animation: bob 3.2s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .faces { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .face {
+      border: 1px solid var(--line); border-radius: 14px; background: var(--bg-raised); cursor: pointer;
+      padding: 12px 8px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; text-align: center; font: 600 12.5px var(--font); color: var(--ink);
+      transition: transform 120ms ease-out, border-color 120ms;
+    }
+    .face:hover { transform: translateY(-2px); }
+    .face[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+    .face > div { width: 64px; margin: 0 auto 6px; }
+    .face small { display: block; font-weight: 400; color: var(--ink-muted); font-size: 11.5px; line-height: 1.35; margin-top: 2px; }
+    .play-stage { min-height: 320px; transition: background 200ms; }
+    .play-stage.light { background: #f5f5f7; }
+    .play-stage.dark { background: #161617; }
+    #sprite-holder { width: 180px; }
+    .scene { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .mock {
+      border-radius: 14px; border: 1px solid var(--line); background: var(--bg-raised); overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .mock .bar { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--wash); }
+    .mock .bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); display: block; }
+    .mock .body { padding: 22px 16px; text-align: center; font-size: 13px; }
+    .mock .body > div[data-sprite] { width: 70px; margin: 0 auto 10px; }
+    .mock .body b { display: block; font-size: 14px; margin-bottom: 2px; }
+    .mock .body span { color: var(--ink-muted); }
+    .size-row { display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap; }
+    .size-row figure { margin: 0; text-align: center; font-size: 12px; color: var(--ink-muted); }
+    @media (max-width: 860px) { .intro { grid-template-columns: 1fr; } .faces { grid-template-columns: repeat(3, 1fr); } .scene { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="intro">
+      <div>
+        <div class="eyebrow">The mascot</div>
+        <h1>Meet Kombu</h1>
+        <p class="lede">A small sprite of kelp, the leaf that dashi is simmered from, with the logo's wisp of steam curling above it. Kombu is curious, patient, and a little shy: it shows up when the OS has a moment to be warm, then gets out of your way.</p>
+      </div>
+      <div class="big" data-sprite="happy"></div>
+    </div>
+
+    <h2>Who Kombu is</h2>
+    <div class="grid three">
+      <div class="card"><div class="eyebrow">Made of</div><p style="margin:0">A kombu leaf, the color of the accent, with ume blush and the mark's single wisp of steam as a cowlick.</p></div>
+      <div class="card"><div class="eyebrow">Personality</div><p style="margin:0">Quietly delighted. Patient with mistakes. Never smug, never loud, never in a hurry.</p></div>
+      <div class="card"><div class="eyebrow">Job</div><p style="margin:0">Keeps people company where the OS is empty or new: first launch, empty states, the docs, release notes.</p></div>
+    </div>
+    <div class="callout open"><span>◇</span><p><strong>Open:</strong> the name. "Kombu" shares its name with the accent color, which is the point (the sprite <em>is</em> the accent), but a separate given name may read better in copy. Decide before Kombu appears in the shipped UI.</p></div>
+
+    <h2>Faces</h2>
+    <p>One body, six faces. Each has a job; don't invent new ones without adding them here.</p>
+    <div class="faces" id="faces"></div>
+
+    <h3>Try it</h3>
+    <div class="controls-row">
+      <div class="segmented" id="play-bg">
+        <button data-value="light" aria-pressed="true">Light</button>
+        <button data-value="dark" aria-pressed="false">Dark</button>
+        <button data-value="dusk" aria-pressed="false">Wallpaper</button>
+      </div>
+      <label>Size <input type="range" id="play-size" min="24" max="260" value="180"> <span id="play-size-label">180 px</span></label>
+      <label><input type="checkbox" id="play-bob" checked> Idle motion</label>
+      <button class="button" id="play-download">Download SVG</button>
+    </div>
+    <div class="stage play-stage light" id="play-stage"><div id="sprite-holder"></div></div>
+    <p class="small muted" id="play-note"></p>
+
+    <h2>Where Kombu appears</h2>
+    <div class="scene">
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="cheer"></div><b>You're all set</b><span>The last page of Setup Assistant.</span></div></div>
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="sleepy"></div><b>No notes yet</b><span>An empty state, in an app's own window.</span></div></div>
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="thinking"></div><b>Looking for updates…</b><span>A wait long enough to need company.</span></div></div>
+    </div>
+    <div class="do-dont">
+      <div class="do"><ul>
+        <li>Setup Assistant's welcome and its last page</li>
+        <li>Empty states in first-party apps (no notes, no files, no results)</li>
+        <li>Long, friendly waits (updates, installing)</li>
+        <li>The docs, release notes, the website, stickers</li>
+        <li>An error page that isn't urgent ("This page couldn't load")</li>
+      </ul></div>
+      <div class="dont"><ul>
+        <li>System chrome: the menu bar, the Dock, window controls, menus</li>
+        <li>The login and lock screens: they belong to the person</li>
+        <li>Alerts about data loss, security, or consent (agents use shiso, never Kombu)</li>
+        <li>As an app icon or in place of the mark</li>
+        <li>Anywhere Reduce Motion is on, animated</li>
+      </ul></div>
+    </div>
+
+    <h2>Drawing rules</h2>
+    <h3>Sizes</h3>
+    <div class="size-row card">
+      <figure><div data-sprite="happy" style="width:24px"></div>24 · smallest; one face only</figure>
+      <figure><div data-sprite="happy" style="width:48px"></div>48 · inline</figure>
+      <figure><div data-sprite="happy" style="width:72px"></div>72 · empty states</figure>
+      <figure><div data-sprite="happy" style="width:120px"></div>120 · Setup, docs</figure>
+    </div>
+    <ul>
+      <li><strong>Smallest:</strong> 24 px tall. Below that the face is unreadable; use the mark instead.</li>
+      <li><strong>Clear space:</strong> a quarter of Kombu's width around it, and never cropped by an edge.</li>
+      <li><strong>Ground:</strong> calm, light or dark. On a wallpaper, set Kombu on a glass card, not on the picture.</li>
+      <li><strong>Dark Mode:</strong> the body lightens a step (<code>#6CC0A5 → #357A64</code>) so it doesn't sink into dark glass. The drawing does this for you.</li>
+    </ul>
+    <h3>Construction</h3>
+    <ul>
+      <li>Body: one closed path on a 122 × 150 grid, filled top to bottom with the tile's gradient (<code>#5FAE95 → #2F6F5A</code>), a soft white highlight at the upper left.</li>
+      <li>Eyes: <code>#123A2F</code>, with a white catchlight up and to the right. Blush: ume at 42%.</li>
+      <li>The wisp: the mark's wisp of steam, the body's top color, 3.2 strokes with round caps.</li>
+      <li>Arms: two short round strokes in the body's bottom color. They move with the face (up for cheer and surprise).</li>
+      <li>Source: <code>kombuSprite()</code> in <code>docs/assets/docs.js</code>; when Kombu lands in the OS, it moves to <code>@dashi/ui</code> and this page draws from there.</li>
+    </ul>
+
+    <h3>Motion</h3>
+    <p>Kombu idles with a slow bob (8 px over 3.2 s, ease-in-out) and changes face with a quick 120 ms cross-fade. It never bounces, spins, or moves across the screen, and with Reduce Motion it holds still.</p>
+
+    <div class="do-dont">
+      <div class="do"><ul>
+        <li>Use the faces as drawn</li>
+        <li>Keep it small next to text, larger on its own</li>
+        <li>Let it react to what the person did (cheer when setup finishes)</li>
+      </ul></div>
+      <div class="dont"><ul>
+        <li>Recolor it, outline it, or give it props and outfits (seasonal art may, in the docs and website only)</li>
+        <li>Make it speak in the first person in system UI</li>
+        <li>Use it to soften bad news that needs the person's full attention</li>
+      </ul></div>
+    </div>
+  </main>
+</div>
+<script>
+const FACES = {
+  happy: "The default. Greetings, empty states.",
+  wink: "Tips and small surprises.",
+  thinking: "Waiting with you: searching, updating.",
+  surprised: "Something unexpected, not urgent.",
+  sleepy: "Nothing here yet; quiet.",
+  cheer: "Done: setup finished, installed.",
+};
+const facesEl = document.getElementById("faces");
+const holder = document.getElementById("sprite-holder");
+const stage = document.getElementById("play-stage");
+const sizeEl = document.getElementById("play-size");
+let face = "happy";
+let bg = "light";
+
+function drawFaces() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  facesEl.innerHTML = EXPRESSIONS.map((e) => `<button class="face" data-face="${e}" aria-pressed="${e === face}"><div>${kombuSprite(e, { dark })}</div>${e}<small>${FACES[e]}</small></button>`).join("");
+}
+function drawSprite() {
+  holder.innerHTML = kombuSprite(face, { dark: bg !== "light" });
+  const px = Number(sizeEl.value);
+  holder.style.width = `${px}px`;
+  document.getElementById("play-size-label").textContent = `${px} px`;
+  document.getElementById("play-note").textContent = px < 32 ? "Below 32 px, keep to the happy face: the others lose their detail." : "";
+}
+facesEl.addEventListener("click", (e) => {
+  const b = e.target.closest(".face");
+  if (!b) return;
+  face = b.dataset.face;
+  holder.animate([{ opacity: 0.2 }, { opacity: 1 }], { duration: 120, easing: "ease-out" });
+  drawFaces();
+  drawSprite();
+});
+segmented(document.getElementById("play-bg"), (v) => {
+  bg = v;
+  stage.classList.remove("light", "dark", "dusk");
+  stage.classList.add(v);
+  drawSprite();
+});
+sizeEl.addEventListener("input", drawSprite);
+const bob = document.getElementById("play-bob");
+const applyBob = () => { holder.style.animation = bob.checked ? "bob 3.2s ease-in-out infinite" : "none"; };
+bob.addEventListener("change", applyBob);
+document.getElementById("play-download").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([holder.innerHTML], { type: "image/svg+xml" }));
+  a.download = `kombu-${face}.svg`;
+  a.click();
+});
+document.addEventListener("themechange", drawFaces);
+document.addEventListener("DOMContentLoaded", () => { drawFaces(); drawSprite(); applyBob(); });
+</script>
+</body>
+</html>

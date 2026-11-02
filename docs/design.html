@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design guidelines · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    .principles { counter-reset: p; display: grid; gap: 12px; }
+    .principles .card { display: grid; grid-template-columns: 40px 1fr; gap: 6px 14px; }
+    .principles .card::before {
+      counter-increment: p; content: counter(p); grid-row: span 2;
+      width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+      background: var(--accent-wash); color: var(--accent); font-weight: 700;
+    }
+    .principles h3 { margin: 4px 0 0; font-size: 16px; }
+    .principles p { margin: 0; color: var(--ink-muted); font-size: 14.5px; }
+
+    /* Live type specimens */
+    .type-row { display: grid; grid-template-columns: 170px 1fr; gap: 18px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .type-row .meta { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+    .type-row .meta b { color: var(--ink); font-weight: 600; display: block; font-size: 13px; }
+    .type-row [contenteditable] { outline: none; overflow-wrap: anywhere; }
+
+    /* Measured mocks */
+    .measured { position: relative; }
+    .show-measures .measure { display: block; }
+    .measure {
+      display: none; position: absolute; font: 600 10px var(--mono); color: #fff; background: var(--ume);
+      padding: 1px 5px; border-radius: 4px; white-space: nowrap; z-index: 2; pointer-events: none;
+    }
+    .group-mock { width: 100%; max-width: 520px; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; }
+    .row-mock { min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; position: relative; }
+    .row-mock + .row-mock::before { content: ""; position: absolute; top: 0; left: 12px; right: 0; border-top: 1px solid var(--line); }
+    .row-mock .lab { flex: 1; font-size: 13px; }
+    .row-mock .lab small { display: block; font-size: 11px; color: var(--ink-muted); }
+    .switch { width: 38px; height: 22px; border-radius: 11px; background: var(--kombu); position: relative; cursor: pointer; border: 0; flex: none; transition: background 150ms; }
+    .switch::after { content: ""; position: absolute; top: 2px; left: 18px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px #0003; transition: left 150ms ease-out; }
+    .switch[aria-checked="false"] { background: var(--line-strong); }
+    .switch[aria-checked="false"]::after { left: 2px; }
+    .pills { display: flex; gap: 6px; }
+    .pills button { height: 26px; padding: 0 12px; border-radius: 13px; border: 1px solid var(--line); background: var(--bg-raised); color: var(--ink); font: 500 12.5px var(--font); cursor: pointer; }
+    .pills button[aria-pressed="true"] { background: var(--kombu); color: #fff; border-color: var(--kombu); }
+
+    /* Window mock with live radius and Shapes controls */
+    .win {
+      width: min(460px, 100%); background: var(--win-bg, #fff); border-radius: var(--r, 12px); overflow: hidden;
+      box-shadow: 0 20px 25px -5px #0000002a, 0 8px 10px -6px #0000002a; transition: border-radius 180ms ease-out;
+    }
+    .win .tb { height: 28px; display: flex; align-items: center; position: relative; background: var(--tb-bg); border-bottom: 1px solid var(--tb-line); }
+    .win.unified .tb { height: 44px; }
+    .win .tb .title { position: absolute; left: 84px; right: 84px; text-align: center; font: 600 13px var(--font); color: var(--tb-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .win.unified .tb .title { left: 90px; text-align: left; font-size: 14px; font-weight: 700; }
+    .win .body { height: 150px; background: var(--win-bg); display: grid; place-items: center; color: var(--tb-ink); opacity: .55; font-size: 13px; }
+    .shapes { position: absolute; left: 0; top: 0; bottom: 0; width: 76px; }
+    .shapes span {
+      position: absolute; top: 50%; transform: translate(-50%, -50%) scale(1); transition: transform 120ms ease-out, background 120ms;
+      cursor: pointer; display: block;
+    }
+    .shapes:hover span, .shapes span.hover { transform: translate(-50%, -50%) scale(1.18); }
+    .shapes .close { left: 20px; width: 12px; height: 12px; border-radius: 6px; background: var(--c-close); }
+    .shapes .min { left: 40px; width: 14px; height: 5px; border-radius: 2.5px; background: var(--c-min); }
+    .shapes .zoom { left: 60px; width: 11px; height: 11px; border-radius: 3px; background: var(--c-zoom); }
+    .win.light { --win-bg: #fff; --tb-bg: #EEEBE4; --tb-line: #D9D5CC; --tb-ink: #262B28; --c-close: #D0596F; --c-min: #E5B13F; --c-zoom: #4A9A7E; }
+    .win.light.inactive { --tb-bg: #F6F4EF; --tb-ink: #9B9890; --c-close: #CECBC6; --c-min: #CECBC6; --c-zoom: #CECBC6; }
+    .win.dark { --win-bg: #1e1e20; --tb-bg: #2C2C2E; --tb-line: #ffffff14; --tb-ink: #E6E6E8; --c-close: #D0596F; --c-min: #E5B13F; --c-zoom: #4A9A7E; }
+    .win.dark.inactive { --tb-bg: #242426; --tb-ink: #8A8A8F; --c-close: #525256; --c-min: #525256; --c-zoom: #525256; }
+    .win.light.inactive .shapes:hover .close, .win.dark.inactive .shapes:hover .close { background: #D0596F; }
+    .win.light.inactive .shapes:hover .min, .win.dark.inactive .shapes:hover .min { background: #E5B13F; }
+    .win.light.inactive .shapes:hover .zoom, .win.dark.inactive .shapes:hover .zoom { background: #4A9A7E; }
+
+    /* Glass over the wallpaper */
+    .desk { position: relative; height: 340px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
+    .desk .menubar { position: absolute; top: 0; left: 0; right: 0; height: 28px; display: flex; align-items: center; gap: 16px; padding: 0 14px; font-size: 13px; border-bottom: 1px solid var(--edge); background: var(--mb); color: var(--ink2); }
+    .desk .menubar b { font-weight: 700; }
+    .desk .menubar .r { margin-left: auto; }
+    .desk .menu { position: absolute; top: 32px; left: 70px; width: 200px; padding: 5px; border-radius: 9px; background: var(--mn); color: var(--ink2); font-size: 13px; box-shadow: 0 20px 25px -5px #0003, 0 8px 10px -6px #0003; border: 1px solid var(--edge); }
+    .desk .menu div { height: 24px; display: flex; align-items: center; padding: 0 9px; border-radius: 5px; justify-content: space-between; }
+    .desk .menu div.sel { background: var(--kombu); color: #fff; }
+    .desk .menu hr { margin: 4px 6px; border-top-color: var(--edge); }
+    .desk .menu kbd { font: 12px var(--font); opacity: .6; }
+    .desk .osd { position: absolute; right: 40px; top: 110px; width: 170px; padding: 14px; border-radius: 14px; background: var(--osd); color: var(--ink2); font-size: 12px; text-align: center; }
+    .desk .osd .seg { display: flex; gap: 3px; margin-top: 10px; }
+    .desk .osd .seg i { flex: 1; height: 6px; border-radius: 2px; background: var(--on); }
+    .desk .osd .seg i.off { background: var(--off); }
+    .desk .dock {
+      position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px;
+      padding: 6px 8px 4px; border-radius: 18px; background: var(--dk); border: 1px solid var(--dkb);
+      transition: transform 180ms cubic-bezier(.455,.03,.515,.955);
+    }
+    .desk .dock.hidden { transform: translate(-50%, 90px); }
+    .desk .dock .app { width: 48px; height: 48px; display: grid; place-items: center; position: relative; padding-bottom: 7px; height: 59px; }
+    .desk .dock .app .t { width: 44px; height: 44px; border-radius: 10.5px; }
+    .desk .dock .app.run::after { content: ""; position: absolute; bottom: 0; width: 4px; height: 4px; border-radius: 2px; background: var(--ink2); opacity: .8; }
+    .desk.taskbar .dock { left: 0; right: 0; bottom: 0; transform: none; border-radius: 0; height: 48px; padding: 5px 8px; align-items: center; gap: 4px; }
+    .desk.taskbar .dock.hidden { transform: translateY(60px); }
+    .desk.taskbar .dock .app { height: 38px; width: auto; min-width: 38px; max-width: 180px; padding: 0 10px; border-radius: 8px; display: flex; gap: 8px; font-size: 12.5px; color: var(--ink2); }
+    .desk.taskbar .dock .app .t { width: 24px; height: 24px; border-radius: 6px; }
+    .desk.taskbar .dock .app.run { background: var(--hov); }
+    .desk.taskbar .dock .app.run::after { bottom: 2px; width: 14px; }
+    .desk .lbl { display: none; }
+    .desk.taskbar .lbl { display: inline; }
+    .desk.light { --mb: #f5f5f7c7; --edge: #0000002b; --mn: #f6f6f8f7; --osd: #f5f5f7e0; --dk: #f5f5f799; --dkb: #ffffff73; --ink2: #1d1d1f; --on: #1d1d1fd9; --off: #1d1d1f26; --hov: #ffffff59; }
+    .desk.dark { --mb: #1e1e1ecc; --edge: #ffffff1f; --mn: #232325f7; --osd: #1e1e1ee0; --dk: #1e1e1e99; --dkb: #ffffff26; --ink2: #f5f5f7; --on: #f5f5f7d9; --off: #f5f5f726; --hov: #ffffff1a; }
+
+    /* Motion */
+    .motion-stage { height: 230px; position: relative; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); }
+    .motion-stage .space { position: absolute; inset: 0; display: grid; place-items: start; padding: 12px 18px; }
+    .motion-stage .mini-win { width: 180px; height: 110px; border-radius: 10px; background: #ffffffe8; box-shadow: 0 12px 20px -6px #0005; position: absolute; left: calc(50% - 90px); top: 40px; transform-origin: 50% 100%; }
+    .motion-stage .mini-win::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 18px; background: #EEEBE4; border-radius: 10px 10px 0 0; }
+    .motion-stage .mini-dock { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 200px; height: 34px; border-radius: 12px; background: #f5f5f799; border: 1px solid #ffffff73; }
+    .motion-stage .space-label { color: #fff; font-weight: 700; font-size: 34px; opacity: .85; }
+    canvas.curve { width: 100%; max-width: 260px; height: 150px; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 12px; }
+
+    /* Icons */
+    .icon-lab { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center; }
+    #icon-out { width: 200px; height: 200px; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 16px; display: grid; place-items: center; }
+    #icon-out svg { width: 160px; height: 160px; }
+    .icon-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .icon-row img { width: 48px; height: 48px; }
+
+    /* Shortcuts */
+    .keys { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 6px; background: var(--wash); border: 1px solid var(--line); font-size: 13px; height: 26px; }
+    .keys svg { width: 13px; height: 13px; display: block; }
+    .keys svg path[fill="#000"] { fill: currentColor; }
+    .keys svg path[stroke="#000"] { stroke: currentColor; }
+
+    .wall { border-radius: 12px; height: 92px; position: relative; overflow: hidden; border: 1px solid var(--line); }
+    .wall span { position: absolute; left: 10px; bottom: 8px; color: #fff; font-weight: 600; font-size: 13px; text-shadow: 0 1px 3px #0006; }
+    @keyframes drift { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+    @media (max-width: 760px) { .type-row, .icon-lab { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Design guidelines</div>
+    <h1>How Dashi looks and moves</h1>
+    <p class="lede">Every value here is read from the code: <code>@dashi/ui</code>'s theme, the shell's <code>theme.ts</code>, and the compositor's renderer. Change one, and change it here in the same commit.</p>
+
+    <h2>Principles</h2>
+    <div class="principles">
+      <div class="card"><h3 class="notoc">Calm by default</h3><p>Nothing moves, flashes, or asks for attention unless the person needs it now. Quiet surfaces, one accent, gentle motion.</p></div>
+      <div class="card"><h3 class="notoc">Content first, chrome recedes</h3><p>Glass and hairlines instead of heavy frames. Toolbars merge into windows; the menu bar and Dock let the wallpaper through.</p></div>
+      <div class="card"><h3 class="notoc">Familiar, then delightful</h3><p>Start from what people know from macOS and Windows, so nothing has to be learned. Then add the touches that make it Dashi's: the Shapes, the ingredients, Kombu.</p></div>
+      <div class="card"><h3 class="notoc">One color, one job</h3><p>Kombu means "yours, selected"; ume means "close or destroy"; broth means "set aside or careful"; shiso means "an agent is acting". Never reuse a color for a second meaning.</p></div>
+      <div class="card"><h3 class="notoc">Everything from the same tokens</h3><p>Shell, apps, the login screen, and GTK apps all draw from one palette and one set of measures. Rust draws chrome from the same values the shell sends; no surface invents its own.</p></div>
+      <div class="card"><h3 class="notoc">Motion explains</h3><p>A window flies to the Dock tile it went to; a Space slides the way it lies. Motion shows where things went, quickly, and stops entirely with Reduce Motion.</p></div>
+    </div>
+
+    <h2 id="color">Color</h2>
+    <p>Two sets, light and dark, that fill the same names (<code>packages/dashi-ui/src/theme/palette.ts</code>). Translucent values are glass: they assume a wallpaper or window behind. Select a swatch to copy its value.</p>
+    <div class="controls-row">
+      <div class="segmented" id="palette-mode">
+        <button data-value="light" aria-pressed="true">Light</button>
+        <button data-value="dark" aria-pressed="false">Dark</button>
+      </div>
+      <span>Translucent swatches show a checkerboard through them.</span>
+    </div>
+    <div class="swatches" id="palette"></div>
+
+    <h3>Title bars</h3>
+    <p>Drawn by the compositor for windows it frames (<code>crates/dashi-comp/src/render/titlebar.rs</code>), and given to GTK apps through <code>appearance/gtk-css.ts</code> so both match.</p>
+    <table>
+      <tr><th></th><th>Light, active</th><th>Light, inactive</th><th>Dark, active</th><th>Dark, inactive</th></tr>
+      <tr><td>Bar</td><td><code>#EEEBE4</code></td><td><code>#F6F4EF</code></td><td><code>#2C2C2E</code></td><td><code>#242426</code></td></tr>
+      <tr><td>Title</td><td><code>#262B28</code></td><td><code>#9B9890</code></td><td><code>#E6E6E8</code></td><td><code>#8A8A8F</code></td></tr>
+      <tr><td>Bottom line</td><td><code>#D9D5CC</code></td><td colspan="3" class="muted">as active</td></tr>
+      <tr><td>Controls</td><td colspan="2">ume, broth, kombu · gray <code>#CECBC6</code> when inactive</td><td colspan="2">ume, broth, kombu · gray <code>#525256</code> when inactive</td></tr>
+    </table>
+
+    <h2>Typography</h2>
+    <p><strong>Inter</strong> everywhere (<code>INTERFACE_FAMILY</code>, <code>appearance/look.ts</code>), with Noto Sans for scripts Inter lacks and Noto Sans Mono for code. GTK apps get "Inter 11". The compositor's window titles are SemiBold 13. Every specimen below is editable.</p>
+    <div id="type-scale"></div>
+    <ul class="small">
+      <li>Weights: Regular for reading, SemiBold (600) for labels that head something, Bold (700) for titles and the menu bar's app name. No Light, except the boot splash's title.</li>
+      <li>Muted text is the ink at 60% (<code>textMuted</code>), not a separate gray, so it works on any glass.</li>
+    </ul>
+
+    <h2>Layout and spacing</h2>
+    <p>Settings and app panes are built from grouped rows (<code>@dashi/ui</code>'s Group and Row). Turn on the measurements to see the numbers.</p>
+    <div class="controls-row"><label><input type="checkbox" id="measure-toggle"> Show measurements</label></div>
+    <div class="stage measured" id="group-stage" style="background:var(--bg);place-items:center">
+      <div class="group-mock">
+        <div class="row-mock">
+          <span class="measure" style="left:-2px;top:14px;transform:translateX(-100%)">44 min</span>
+          <span class="lab">Dark Mode<small>Use a dark appearance for windows and the menu bar.</small></span>
+          <div class="pills" id="appearance-pills"><button aria-pressed="false">Light</button><button aria-pressed="true">Auto</button><button aria-pressed="false">Dark</button></div>
+        </div>
+        <div class="row-mock">
+          <span class="measure" style="left:0;top:-8px">12 pad</span>
+          <span class="lab">Reduce motion<small>Windows appear and leave without animating.</small></span>
+          <button class="switch" role="switch" aria-checked="false"></button>
+        </div>
+        <div class="row-mock">
+          <span class="measure" style="right:-2px;top:14px;transform:translateX(100%)">radius 10</span>
+          <span class="lab">Window corners</span>
+          <div class="pills" id="corner-pills"><button data-r="0" aria-pressed="false">None</button><button data-r="8" aria-pressed="false">Small</button><button data-r="12" aria-pressed="true">Medium</button><button data-r="16" aria-pressed="false">Large</button></div>
+        </div>
+      </div>
+    </div>
+    <table>
+      <tr><th>Element</th><th>Measure</th><th>Source</th></tr>
+      <tr><td>Row</td><td>min height 44 · padding 8 × 12 · gap 12 · label 13 · detail 11</td><td><code>dashi-ui/src/controls.tsx</code></td></tr>
+      <tr><td>Group</td><td>radius 10 · 1 px border · separators inset 12 · caption padding 16</td><td><code>controls.tsx</code></td></tr>
+      <tr><td>Choice pill</td><td>height 26 · padding 12 · radius 13</td><td><code>controls.tsx</code></td></tr>
+      <tr><td>Button</td><td>height 28 · padding 14 · radius 7</td><td><code>controls.tsx</code></td></tr>
+      <tr><td>Sidebar</td><td>width 200 · rows 32 (28 compact) · padding 8 · gap 9 · radius 7 · heading 11 SemiBold muted</td><td><code>sidebar.tsx</code>, <code>window.tsx</code></td></tr>
+      <tr><td>Unified toolbar</td><td>height 44 · title 14 Bold · subtitle 11 · left inset clears the controls + 14</td><td><code>window.tsx</code></td></tr>
+      <tr><td>Sheet</td><td>padding 20 · radius 12 · gap 10 · icon 40 at radius 10 · title 13 Bold · message 12/16 · shadow xl</td><td><code>sheet.tsx</code></td></tr>
+      <tr><td>Menu</td><td>padding 5 · radius 9 · rows 24 at radius 5</td><td><code>sheet.tsx</code></td></tr>
+    </table>
+
+    <h2>Corners</h2>
+    <p>Windows Dashi frames are rounded at the person's choice, <em>Window corners</em> in Settings → Appearance: None 0, Small 8, <strong>Medium 12 (default)</strong>, Large 16 (<code>shell/src/corners.ts</code>). The compositor rounds the bottom under Dashi's title bar and all four corners of a unified window, with a shader. Try the pills above, or:</p>
+    <div class="controls-row">
+      <label>Radius <input type="range" id="radius" min="0" max="20" value="12"> <span id="radius-label">12 px</span></label>
+    </div>
+    <div class="stage dusk" style="min-height:260px"><div class="win light" id="radius-win" style="--r:12px"><div class="tb"><div class="shapes"><span class="close"></span><span class="min"></span><span class="zoom"></span></div><div class="title">Notes</div></div><div class="body">Window content</div></div></div>
+    <p class="small muted">Nested radii follow the outer one: a group inside a 12 px window is 10, a button 7, a menu row 5. The Dock is 18, app icons 10.5 on a 44 tile.</p>
+
+    <h2>Materials</h2>
+    <p>Glass is a translucent fill over the wallpaper, with a hairline edge where it meets windows. Menus and Control Center are nearly opaque, because nothing blurs what is behind them yet.</p>
+    <div class="controls-row">
+      <div class="segmented" id="desk-mode"><button data-value="light" aria-pressed="true">Light</button><button data-value="dark" aria-pressed="false">Dark</button></div>
+      <div class="segmented" id="desk-style"><button data-value="dock" aria-pressed="true">Dock</button><button data-value="taskbar" aria-pressed="false">Taskbar</button></div>
+      <label><input type="checkbox" id="desk-hide"> Autohide</label>
+    </div>
+    <div class="desk stage dusk light" id="desk" style="padding:0;display:block">
+      <div class="menubar"><span data-mark="glyph" data-ink="currentColor" style="width:16px;display:inline-block"></span><b>Notes</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span class="r">Mon Nov 2&nbsp; 9:41 AM</span></div>
+      <div class="menu"><div class="sel">New Note <kbd>❖N</kbd></div><div>New Folder <kbd>⇧❖N</kbd></div><hr><div>Move to Trash… <kbd>❖⌫</kbd></div><div>Close Window <kbd>❖W</kbd></div></div>
+      <div class="osd">Volume<div class="seg"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="off"></i><i class="off"></i><i class="off"></i></div></div>
+      <div class="dock" id="dock"></div>
+    </div>
+    <table>
+      <tr><th>Surface</th><th>Light</th><th>Dark</th><th>Notes</th></tr>
+      <tr><td>Menu bar</td><td><code>#F5F5F7C7</code></td><td><code>#1E1E1ECC</code></td><td>28 tall; text 13, app name Bold; edge <code>#0000002B</code> / <code>#FFFFFF1F</code></td></tr>
+      <tr><td>Dock</td><td><code>#F5F5F799</code></td><td><code>#1E1E1E99</code></td><td>Icons 48, gap 6, radius 18, 6 above the edge; running dot 4. No magnification.</td></tr>
+      <tr><td>Taskbar</td><td colspan="2">Dock's glass</td><td>48 tall; buttons 38 tall, up to 180 wide; icons 24; radius 8</td></tr>
+      <tr><td>Launcher, shortcut sheet</td><td><code>#F5F5F7EB</code></td><td><code>#1E1E1EEB</code></td><td>More tint: they hold text</td></tr>
+      <tr><td>Menus, Control Center</td><td><code>#F6F6F8F7</code></td><td><code>#232325F7</code></td><td>Nearly opaque until blur exists</td></tr>
+      <tr><td>On-screen display</td><td><code>#F5F5F7E0</code></td><td><code>#1E1E1EE0</code></td><td>Ink segments, on and off</td></tr>
+    </table>
+    <h3>Shadows</h3>
+    <p>Two, from mirin Metal's presets: <code>sm</code> (0 1 3 0 and 0 1 2 −1, both 10%) for controls and cards, <code>xl</code> (0 20 25 −5 and 0 8 10 −6, both 10%) for sheets and menus. Windows don't cast a shadow yet <span class="pill open">open</span>.</p>
+
+    <h2>Window chrome</h2>
+    <p>Dashi's window controls are <strong>the Shapes</strong>: a circle closes, a bar minimizes, a rounded square zooms. Each shape says what it does even without color, and the colors are the ingredients. Hover over them, and switch the window's state.</p>
+    <div class="controls-row">
+      <div class="segmented" id="chrome-mode"><button data-value="light" aria-pressed="true">Light</button><button data-value="dark" aria-pressed="false">Dark</button></div>
+      <div class="segmented" id="chrome-focus"><button data-value="active" aria-pressed="true">Focused</button><button data-value="inactive" aria-pressed="false">Unfocused</button></div>
+      <div class="segmented" id="chrome-kind"><button data-value="standard" aria-pressed="true">Title bar · 28</button><button data-value="unified" aria-pressed="false">Unified · 44</button></div>
+    </div>
+    <div class="stage dusk" style="min-height:270px"><div class="win light" id="chrome-win"><div class="tb"><div class="shapes"><span class="close" title="Close"></span><span class="min" title="Minimize"></span><span class="zoom" title="Zoom"></span></div><div class="title">Document.txt</div></div><div class="body">Hover the controls</div></div></div>
+    <table>
+      <tr><th>Control</th><th>Shape</th><th>Color</th><th>Center x</th></tr>
+      <tr><td>Close</td><td>circle 12, radius 6</td><td>ume <code>#D0596F</code></td><td>20</td></tr>
+      <tr><td>Minimize</td><td>bar 14 × 5, radius 2.5</td><td>broth <code>#E5B13F</code></td><td>40</td></tr>
+      <tr><td>Zoom</td><td>square 11, radius 3</td><td>kombu <code>#4A9A7E</code></td><td>60</td></tr>
+    </table>
+    <ul>
+      <li>Controls are vertically centered in the bar; a press within 8 px of one counts; under the pointer the group lights and the hovered control grows 1.18×.</li>
+      <li>Unfocused windows show gray controls, lit again on hover.</li>
+      <li>Standard bar 28 with a centered SemiBold 13 title, clear of 84 px each side. A unified window gives the app a 44 px toolbar strip and keeps a 76 × 44 corner for the controls.</li>
+      <li>The zoom control uses a lighter kombu (<code>#4A9A7E</code>) than the accent so an 11 px square reads on the bar.</li>
+      <li>Windows resize from any edge: 6 px outside and 3 px inside the frame.</li>
+    </ul>
+
+    <h2>Motion</h2>
+    <p>Short, decelerating, and purposeful. The compositor's curve is ease-out cubic, <code>1 − (1 − t)³</code>; the shell's Dock slide is ease-in-out quad. Play one:</p>
+    <div class="controls-row">
+      <button class="button" data-anim="minimize">Minimize · 300 ms</button>
+      <button class="button" data-anim="space">Switch Space · 250 ms</button>
+      <button class="button" data-anim="overview">Overview · 220 / 250 ms</button>
+      <label><input type="checkbox" id="reduce"> Reduce motion</label>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 260px;align-items:start">
+      <div class="motion-stage dusk stage" id="motion" style="padding:0;display:block">
+        <div class="space" id="space-a"><span class="space-label">1</span></div>
+        <div class="space" id="space-b" style="transform:translateX(100%)"><span class="space-label">2</span></div>
+        <div class="mini-win" id="mini-win"></div>
+        <div class="mini-dock"></div>
+      </div>
+      <canvas class="curve" id="curve" width="520" height="300"></canvas>
+    </div>
+    <table>
+      <tr><th>Motion</th><th>Duration</th><th>Curve</th><th>Source</th></tr>
+      <tr><td>Minimize and restore (flight to the Dock tile)</td><td>300 ms</td><td>ease-out cubic</td><td><code>wm/motion.rs</code></td></tr>
+      <tr><td>Space switch (slide)</td><td>250 ms</td><td>ease-out cubic</td><td><code>wm/spaces.rs</code></td></tr>
+      <tr><td>Overview open / close</td><td>220 / 250 ms</td><td>ease-out cubic</td><td><code>wm/overview.rs</code></td></tr>
+      <tr><td>Dock autohide slide</td><td>180 ms (reveal after 120 at the edge, hide 600 after leaving)</td><td>ease-in-out quad</td><td><code>dock/autohide.ts</code></td></tr>
+      <tr><td>Switcher appears</td><td>after 150 ms held</td><td>—</td><td><code>switcher.tsx</code></td></tr>
+      <tr><td>Scroll bars</td><td>shown 0.9 s after scrolling, fade 0.3 s</td><td>linear</td><td>mirin <code>scrollbar.rs</code></td></tr>
+      <tr><td>Night Shift</td><td>1500 ms</td><td>fade</td><td><code>night-shift.ts</code></td></tr>
+    </table>
+    <ul>
+      <li>Nothing longer than 300 ms on the way to something the person asked for.</li>
+      <li>No springs, bounces, or overshoot in system UI. Kombu's idle bob is the only loop, and only where Kombu appears.</li>
+      <li>Reduce Motion turns the flights and slides off; things simply appear where they go.</li>
+      <li>Windows open and close without animation today <span class="pill open">open</span>.</li>
+    </ul>
+
+    <h2 id="icons">Icons</h2>
+    <p>App icons share one recipe (<code>packages/shell/icons/</code>): a 44 tile on a 48 grid, radius 10.5, a top-to-bottom gradient lighter on top, an optional white inner line, and a flat near-white glyph with round caps. Build one:</p>
+    <div class="icon-lab">
+      <div id="icon-out"></div>
+      <div>
+        <div class="controls-row" style="margin-top:0">
+          <div class="segmented" id="icon-color">
+            <button data-value="kombu" aria-pressed="true">Kombu</button>
+            <button data-value="ume" aria-pressed="false">Ume</button>
+            <button data-value="broth" aria-pressed="false">Broth</button>
+            <button data-value="shiso" aria-pressed="false">Shiso</button>
+            <button data-value="ink" aria-pressed="false">Ink</button>
+          </div>
+        </div>
+        <div class="controls-row">
+          <div class="segmented" id="icon-glyph">
+            <button data-value="bowl" aria-pressed="true">Bowl</button>
+            <button data-value="note" aria-pressed="false">Note</button>
+            <button data-value="folder" aria-pressed="false">Folder</button>
+            <button data-value="gear" aria-pressed="false">Gear</button>
+          </div>
+          <label><input type="checkbox" id="icon-line" checked> Inner line</label>
+          <label><input type="checkbox" id="icon-grid"> Grid</label>
+        </div>
+        <p class="small muted" style="margin:0">Glyphs sit in the middle 30 of the 48, drawn at 1.3–2 stroke on their own 16-unit grid. One idea per icon, no text, no perspective.</p>
+      </div>
+    </div>
+    <h3>The set</h3>
+    <div class="icon-row card" id="icon-set"></div>
+
+    <h2>Keyboard</h2>
+    <p>❖ is Dashi's command key (the Super key), in the role ⌘ has on a Mac. Shortcuts are written in Mac order, ⌃ ⌥ ⇧ ❖ then the key, and drawn with <code>@dashi/ui</code>'s Shortcut glyphs, never typed: fonts don't have ❖.</p>
+    <table id="shortcuts"></table>
+
+    <h2>Wallpapers</h2>
+    <p>Drawn from formulas, not photographs (<code>packages/shell/wallpapers/generate.ts</code>): 3840 × 2160 with a 2 × 2 Bayer dither, about 1.5 MB each. Dusk is the default and matches the compositor's built-in gradient, so a fresh session never flashes.</p>
+    <div class="grid four">
+      <div class="wall dusk stage" style="padding:0;min-height:0"><span>Dusk · default</span></div>
+      <div class="wall" style="background:linear-gradient(160deg,#05060f,#141a3a 55%,#2a2050)"><span>Midnight</span></div>
+      <div class="wall" style="background:linear-gradient(170deg,#f7c9b0,#f2a3a0 40%,#9a8fd8)"><span>Dawn</span></div>
+      <div class="wall" style="background:linear-gradient(170deg,#e9eef0,#c9d6dc 50%,#a9bcc6)"><span>Mist</span></div>
+    </div>
+    <ul>
+      <li><strong>Live wallpapers</strong> are shaders: Northern Lights, Drift, and Tide, drawn at 320 × 180 and scaled up, at 15, 30, or 60 fps.</li>
+      <li><strong>Video wallpapers</strong> loop muted, pause on battery by default, and leave the still picture for the lock screen.</li>
+      <li>New wallpapers are generated too, and keep the dusk family's quiet: soft gradients, no subjects, no text.</li>
+    </ul>
+
+    <h2>Open questions</h2>
+    <table>
+      <tr><th>Question</th><th>Today</th></tr>
+      <tr><td>Default window radius</td><td>The shell's default is Medium (12) and allows 0–20; the compositor starts at 10 and accepts 0–32 until the shell speaks. Make them agree.</td></tr>
+      <tr><td>Blur behind glass</td><td>None; menus compensate by being nearly opaque. Needs a compositor blur pass.</td></tr>
+      <tr><td>Window shadows</td><td>None from the compositor.</td></tr>
+      <tr><td>Open and close animation</td><td>Windows appear and vanish.</td></tr>
+      <tr><td>Accent choices</td><td>Kombu only. More accents would each need an ingredient and to stay clear of ume, broth, and shiso.</td></tr>
+      <tr><td>The Metal host's font</td><td>Inter is used because fontconfig's sans-serif resolves to it; the shell doesn't set <code>MIRIN_METAL_FONT</code>.</td></tr>
+      <tr><td>Kombu's name</td><td>See <a href="mascot.html">the mascot page</a>.</td></tr>
+    </table>
+  </main>
+</div>
+<script>
+/* ── Palette ── */
+const PALETTE = {
+  light: { text: "#1d1d1f", textMuted: "#1d1d1f99", textDisabled: "#1d1d1f55", menuBar: "#f5f5f7c7", menuBarEdge: "#0000002b", dock: "#f5f5f799", dockBorder: "#ffffff73", hover: "#ffffff59", separator: "#1d1d1f26", dot: "#1d1d1fcc", launcher: "#f5f5f7eb", menu: "#f6f6f8f7", osd: "#f5f5f7e0", osdOn: "#1d1d1fd9", osdOff: "#1d1d1f26", batteryLow: "#d7352b", selection: "#3E8A72", switcherSelection: "#1d1d1f24", button: "#1d1d1f12", checkbox: "#1d1d1f66", critical: "#d4483b", tile: "#ffffffb8", tileHover: "#ffffffe6", track: "#1d1d1f1f", agent: "#6E56CF", agentInk: "#3B2A8A", agentWash: "#6E56CF24", captureWash: "#d4483b24" },
+  dark: { text: "#f5f5f7", textMuted: "#f5f5f799", textDisabled: "#f5f5f755", menuBar: "#1e1e1ecc", menuBarEdge: "#ffffff1f", dock: "#1e1e1e99", dockBorder: "#ffffff26", hover: "#ffffff1a", separator: "#ffffff1a", dot: "#f5f5f7cc", launcher: "#1e1e1eeb", menu: "#232325f7", osd: "#1e1e1ee0", osdOn: "#f5f5f7d9", osdOff: "#f5f5f726", batteryLow: "#ff5a4f", selection: "#3E8A72", switcherSelection: "#ffffff24", button: "#ffffff1f", checkbox: "#f5f5f766", critical: "#ff5a4f", tile: "#ffffff17", tileHover: "#ffffff29", track: "#ffffff2e", agent: "#8B76E8", agentInk: "#cfc6f7", agentWash: "#8B76E83d", captureWash: "#ff5a4f3d" },
+};
+const USE = {
+  text: "Primary ink", textMuted: "Details, secondary labels", textDisabled: "What can't be used now", menuBar: "Menu bar glass", menuBarEdge: "Menu bar's bottom hairline",
+  dock: "Dock glass", dockBorder: "Dock's edge", hover: "Under the pointer", separator: "Separators", dot: "Running-app dot", launcher: "Launcher, shortcut sheet",
+  menu: "Menus, Control Center", osd: "Volume and brightness", osdOn: "Lit segment", osdOff: "Unlit segment", batteryLow: "Last few percent", selection: "Kombu: the selected row",
+  switcherSelection: "Switcher pick, open menu item", button: "Secondary buttons", checkbox: "Checkbox outline", critical: "Critical notifications", tile: "Control Center tiles",
+  tileHover: "Tile under the pointer", track: "Empty slider track, off switch", agent: "Shiso: agents", agentInk: "Text on shiso", agentWash: "Agent pill fill", captureWash: "Screen being shared",
+};
+const paletteEl = document.getElementById("palette");
+function drawPalette(mode) {
+  const set = PALETTE[mode];
+  paletteEl.style.background = mode === "dark" ? "#161617" : "transparent";
+  paletteEl.style.padding = mode === "dark" ? "14px" : "0";
+  paletteEl.style.borderRadius = "16px";
+  paletteEl.innerHTML = Object.entries(set).map(([name, hex]) => `<button class="swatch" data-copy="${hex}" style="${mode === "dark" ? "background:#1f1f21;color:#f5f5f7;border-color:#ffffff1a" : ""}"><div class="chip" style="--c:${hex}"></div><div class="meta"><span class="name">${name}</span><span class="hex">${hex}</span><span class="use" style="${mode === "dark" ? "color:#f5f5f799" : ""}">${USE[name]}</span></div></button>`).join("");
+}
+segmented(document.getElementById("palette-mode"), drawPalette);
+drawPalette("light");
+
+/* ── Type ── */
+const TYPE = [
+  ["Clock", "88 · Bold", "Lock screen and greeter", 88, 700, "9:41"],
+  ["Page title", "20 · Bold", "Settings panes", 20, 700, "Appearance"],
+  ["Toolbar title", "14 · Bold", "Unified toolbar", 14, 700, "Quarterly Notes"],
+  ["Body", "13 · Regular", "Rows, menus, menu bar", 13, 400, "The quick brown fox jumps over the lazy dog."],
+  ["Window title", "13 · SemiBold", "Compositor title bar", 13, 600, "Document.txt"],
+  ["Message", "12 · Regular, 16 line", "Sheet messages", 12, 400, "You can't undo this action. The folder and everything in it will be deleted."],
+  ["Detail", "11 · Regular", "Under a row's label", 11, 400, "Use a dark appearance for windows and the menu bar."],
+  ["Section", "11 · SemiBold, muted", "Sidebar headings", 11, 600, "Favorites"],
+];
+document.getElementById("type-scale").innerHTML = TYPE.map(([n, spec, use, size, weight, sample]) => `<div class="type-row"><div class="meta"><b>${n}</b>${spec}<br>${use}</div><div contenteditable spellcheck="false" style="font-size:${size}px;font-weight:${weight};line-height:${size > 30 ? 1 : size === 12 ? "16px" : 1.35};${n === "Section" ? "color:var(--ink-muted)" : ""};${size > 30 ? "letter-spacing:-0.03em" : ""}">${sample}</div></div>`).join("");
+
+/* ── Group mock ── */
+document.getElementById("measure-toggle").addEventListener("change", (e) => document.getElementById("group-stage").classList.toggle("show-measures", e.target.checked));
+document.querySelectorAll(".switch").forEach((s) => s.addEventListener("click", () => s.setAttribute("aria-checked", String(s.getAttribute("aria-checked") !== "true"))));
+const pillGroup = (el, on) => el.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  for (const x of el.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x === b));
+  on?.(b);
+});
+pillGroup(document.getElementById("appearance-pills"));
+
+/* ── Radius ── */
+const radius = document.getElementById("radius");
+const radiusWin = document.getElementById("radius-win");
+function setRadius(r) {
+  radius.value = r;
+  radiusWin.style.setProperty("--r", `${r}px`);
+  document.getElementById("radius-label").textContent = `${r} px`;
+}
+radius.addEventListener("input", () => setRadius(radius.value));
+pillGroup(document.getElementById("corner-pills"), (b) => {
+  setRadius(b.dataset.r);
+  radiusWin.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+/* ── Desk ── */
+const desk = document.getElementById("desk");
+const APPS = [["Files", "#6aa9e8", "#2f6cb3"], ["Browser", "#7cc0e8", "#2a79b0"], ["Notes", "#f0c35e", "#c8901c"], ["Terminal", "#3a3a3c", "#1c1c1e"], ["Settings", "#9a9aa0", "#5c5c62"], ["Dashi", "#5fae95", "#2f6f5a"]];
+document.getElementById("dock").innerHTML = APPS.map(([n, a, b], i) => `<div class="app${i === 2 || i === 3 ? " run" : ""}"><div class="t" style="background:linear-gradient(${a},${b})"></div><span class="lbl">${n}</span></div>`).join("");
+segmented(document.getElementById("desk-mode"), (v) => { desk.classList.remove("light", "dark"); desk.classList.add(v); });
+segmented(document.getElementById("desk-style"), (v) => desk.classList.toggle("taskbar", v === "taskbar"));
+document.getElementById("desk-hide").addEventListener("change", (e) => document.getElementById("dock").classList.toggle("hidden", e.target.checked));
+
+/* ── Chrome ── */
+const chrome = document.getElementById("chrome-win");
+const chromeState = { mode: "light", focus: "active", kind: "standard" };
+function drawChrome() {
+  chrome.className = `win ${chromeState.mode}${chromeState.focus === "inactive" ? " inactive" : ""}${chromeState.kind === "unified" ? " unified" : ""}`;
+  chrome.querySelector(".title").textContent = chromeState.kind === "unified" ? "Quarterly Notes" : "Document.txt";
+}
+segmented(document.getElementById("chrome-mode"), (v) => { chromeState.mode = v; drawChrome(); });
+segmented(document.getElementById("chrome-focus"), (v) => { chromeState.focus = v; drawChrome(); });
+segmented(document.getElementById("chrome-kind"), (v) => { chromeState.kind = v; drawChrome(); });
+
+/* ── Motion ── */
+const easeOutCubic = (t) => 1 - (1 - t) ** 3;
+const easeInOutQuad = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+const canvas = document.getElementById("curve");
+function drawCurve(fn, progress = null, label = "ease-out cubic") {
+  const c = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 34;
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim();
+  c.clearRect(0, 0, w, h);
+  c.strokeStyle = ink + "22"; c.lineWidth = 2;
+  c.strokeRect(pad, pad / 2, w - pad * 1.5, h - pad * 1.5);
+  c.strokeStyle = "#3e8a72"; c.lineWidth = 5; c.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100, x = pad + t * (w - pad * 1.5), y = h - pad - fn(t) * (h - pad * 1.5);
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.stroke();
+  c.fillStyle = ink + "99"; c.font = "600 22px Inter, sans-serif"; c.fillText(label, pad + 8, pad + 14);
+  if (progress !== null) {
+    const x = pad + progress * (w - pad * 1.5), y = h - pad - fn(progress) * (h - pad * 1.5);
+    c.fillStyle = "#d0596f"; c.beginPath(); c.arc(x, y, 9, 0, Math.PI * 2); c.fill();
+  }
+}
+drawCurve(easeOutCubic);
+document.addEventListener("themechange", () => drawCurve(easeOutCubic));
+
+const win = document.getElementById("mini-win");
+const spaceA = document.getElementById("space-a"), spaceB = document.getElementById("space-b");
+let minimized = false, onB = false, inOverview = false;
+function animate(duration, fn, step) {
+  if (document.getElementById("reduce").checked) { step(1); drawCurve(fn, 1); return; }
+  const start = performance.now();
+  const frame = (now) => {
+    const t = Math.min(1, (now - start) / duration);
+    step(fn(t)); drawCurve(fn, t);
+    if (t < 1) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+document.querySelectorAll("[data-anim]").forEach((b) => b.addEventListener("click", () => {
+  const kind = b.dataset.anim;
+  if (kind === "minimize") {
+    const from = minimized ? 1 : 0; minimized = !minimized;
+    animate(300, easeOutCubic, (p) => {
+      const k = from + (minimized ? p : -p);
+      win.style.transform = `translateY(${k * 120}px) scale(${1 - k * 0.85})`;
+      win.style.opacity = String(1 - k * 0.6);
+    });
+  } else if (kind === "space") {
+    const dir = onB ? 1 : -1; onB = !onB;
+    animate(250, easeOutCubic, (p) => {
+      const a = onB ? -p * 100 : -100 + p * 100;
+      spaceA.style.transform = `translateX(${a}%)`;
+      spaceB.style.transform = `translateX(${a + 100}%)`;
+      win.style.transform = `translateX(${a * 4.6}px)${minimized ? " translateY(120px) scale(.15)" : ""}`;
+    });
+  } else {
+    inOverview = !inOverview;
+    animate(inOverview ? 220 : 250, easeOutCubic, (p) => {
+      const k = inOverview ? p : 1 - p;
+      win.style.transform = `translateY(${-k * 18}px) scale(${1 - k * 0.35})`;
+      win.style.boxShadow = `0 0 0 ${k * 3}px #ffffffaa, 0 12px 20px -6px #0005`;
+    });
+  }
+}));
+
+/* ── Icons ── */
+const TILES = { kombu: ["#5fae95", "#2f6f5a"], ume: ["#e2728a", "#b4435d"], broth: ["#f0c35e", "#c8901c"], shiso: ["#8b76e8", "#5a43b8"], ink: ["#4a4a4e", "#1c1c1e"] };
+const GLYPHS = {
+  bowl: `<path d="M1.5 8.25h13a6.5 6 0 0 1-13 0z" fill="#f4f4f6"/><path d="M5 1.75c-.9 1 .9 1.9 0 2.9M8 1.25c-.9 1 .9 1.9 0 2.9M11 1.75c-.9 1 .9 1.9 0 2.9" stroke="#f4f4f6" stroke-width="1.3" fill="none" stroke-linecap="round"/>`,
+  note: `<rect x="2.5" y="1.5" width="11" height="13" rx="2" fill="#f4f4f6"/><path d="M5 5.5h6M5 8h6M5 10.5h4" stroke="#00000055" stroke-width="1.1" stroke-linecap="round"/>`,
+  folder: `<path d="M1.5 4.5a1.5 1.5 0 0 1 1.5-1.5h3l1.5 1.5h5.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H3a1.5 1.5 0 0 1-1.5-1.5z" fill="#f4f4f6"/>`,
+  gear: `<circle cx="8" cy="8" r="4.2" stroke="#f4f4f6" stroke-width="2" fill="none"/><path d="M8 1.2v2.2M8 12.6v2.2M1.2 8h2.2M12.6 8h2.2M3.2 3.2l1.6 1.6M11.2 11.2l1.6 1.6M3.2 12.8l1.6-1.6M11.2 4.8l1.6-1.6" stroke="#f4f4f6" stroke-width="2" stroke-linecap="round"/>`,
+};
+const iconState = { color: "kombu", glyph: "bowl" };
+function drawIcon() {
+  const [a, b] = TILES[iconState.color];
+  const line = document.getElementById("icon-line").checked;
+  const grid = document.getElementById("icon-grid").checked;
+  const gridLines = grid ? `<g stroke="#d0596f" stroke-width=".15" opacity=".9">${Array.from({ length: 13 }, (_, i) => `<path d="M${i * 4} 0V48M0 ${i * 4}H48"/>`).join("")}<rect x="9" y="9" width="30" height="30" fill="none" stroke-width=".35" stroke-dasharray="1 1"/></g>` : "";
+  document.getElementById("icon-out").innerHTML = `<svg viewBox="0 0 48 48"><defs><linearGradient id="ig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="10.5" fill="url(#ig)"/>${line ? `<rect x="2.75" y="2.75" width="42.5" height="42.5" rx="9.8" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>` : ""}<g transform="translate(9 9) scale(1.875)">${GLYPHS[iconState.glyph]}</g>${gridLines}</svg>`;
+}
+segmented(document.getElementById("icon-color"), (v) => { iconState.color = v; drawIcon(); });
+segmented(document.getElementById("icon-glyph"), (v) => { iconState.glyph = v; drawIcon(); });
+document.getElementById("icon-line").addEventListener("change", drawIcon);
+document.getElementById("icon-grid").addEventListener("change", drawIcon);
+drawIcon();
+const SET = ["files", "browser", "notes", "calendar", "calculator", "editor", "terminal", "preview", "software", "activity-monitor", "settings", "setup"];
+document.getElementById("icon-set").innerHTML = SET.map((n) => `<img src="../packages/shell/icons/${n}.svg" alt="${n}" title="${n}" onerror="this.remove()">`).join("");
+
+/* ── Shortcuts ── */
+const stroke = (d) => `<svg viewBox="0 0 16 16"><path d="${d}" stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const diamond = (cx, cy) => `M${cx} ${cy - 2.7}L${cx + 2.7} ${cy}L${cx} ${cy + 2.7}L${cx - 2.7} ${cy}Z`;
+const KEY = {
+  "❖": `<svg viewBox="0 0 16 16"><path d="${[diamond(8, 4.2), diamond(11.8, 8), diamond(8, 11.8), diamond(4.2, 8)].join("")}" fill="#000"/></svg>`,
+  "⌃": stroke("M4 9.5L8 5.5L12 9.5"), "⌥": stroke("M2.5 5h3.5l4 7h3.5M10 5h3.5"), "⇧": stroke("M8 2.5L13 8H10.5V13.5H5.5V8H3Z"),
+  "←": stroke("M12.5 8H3.5M7 4.5L3.5 8L7 11.5"), "→": stroke("M3.5 8H12.5M9 4.5L12.5 8L9 11.5"), "↑": stroke("M8 12.5V3.5M4.5 7L8 3.5L11.5 7"), "↓": stroke("M8 3.5V12.5M4.5 9L8 12.5L11.5 9"),
+};
+const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓]|[^❖⌃⌥⇧←→↑↓]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
+const SHORTCUTS = [
+  ["❖Space", "Launcher"], ["❖Tab, ⇧❖Tab", "Switch apps"], ["❖`", "Next window of the app"], ["❖Q", "Quit the app"], ["❖W", "Close the window (Dashi's apps)"],
+  ["❖M", "Minimize"], ["❖H", "Hide the app"], ["❖,", "System Settings"], ["⇧❖3", "Screenshot of the screen"], ["⇧❖4", "Screenshot of an area (Space: a window)"],
+  ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Space"], ["⌃❖←, ⌃❖→", "Tile left and right"], ["⌃❖↑", "Fill the screen"], ["⌃❖↓", "Restore"],
+  ["⌃❖F", "Full screen"], ["⌃❖Q", "Lock the screen"], ["⌥❖Esc", "Force Quit"], ["⌥❖D", "Dock autohide on or off"],
+];
+document.getElementById("shortcuts").innerHTML = `<tr><th style="width:38%">Keys</th><th>Does</th></tr>` + SHORTCUTS.map(([k, d]) => `<tr><td>${k.split(", ").map(keys).join(" ")}</td><td>${d}</td></tr>`).join("") + `<tr><td colspan="2" class="small muted">From <code>packages/shell/src/keymap.ts</code>. ⌃❖, ⌥❖, and ⌃⌥❖ combinations not listed are reserved for Dashi.</td></tr>`;
+</script>
+</body>
+</html>

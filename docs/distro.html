@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distro spec · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    .pkg-map { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .pkg {
+      text-align: left; font: inherit; color: inherit; cursor: pointer;
+      background: var(--bg-raised); border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px 14px; transition: border-color 120ms, box-shadow 120ms, opacity 120ms;
+    }
+    .pkg:hover { box-shadow: var(--shadow-sm); }
+    .pkg .n { font: 600 13px var(--mono); display: block; }
+    .pkg .s { font-size: 12.5px; color: var(--ink-muted); display: block; margin-top: 2px; line-height: 1.4; }
+    .pkg[data-layer="desktop"] { border-left: 3px solid var(--kombu); }
+    .pkg[data-layer="system"] { border-left: 3px solid var(--broth); }
+    .pkg[data-layer="image"] { border-left: 3px solid var(--shiso); }
+    .pkg.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+    .pkg.related { border-color: var(--accent); }
+    .pkg-map.focus .pkg:not(.selected):not(.related) { opacity: .38; }
+    #pkg-detail { margin-top: 14px; min-height: 120px; }
+    #pkg-detail h3 { margin-top: 0; font-family: var(--mono); font-size: 16px; }
+    #pkg-detail dl { display: grid; grid-template-columns: 120px 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
+    #pkg-detail dt { color: var(--ink-muted); }
+    #pkg-detail dd { margin: 0; }
+    .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-muted); margin: 8px 0 14px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+    .boot { display: flex; flex-direction: column; gap: 0; position: relative; margin: 18px 0; }
+    .boot .step {
+      display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 10px 0; cursor: pointer;
+    }
+    .boot .dot {
+      width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--wash); border: 1px solid var(--line-strong); font: 600 12px var(--mono); color: var(--ink-muted);
+      position: relative; z-index: 1; transition: background 150ms, color 150ms;
+    }
+    .boot .step:not(:last-child) .dot::after {
+      content: ""; position: absolute; top: 34px; left: 16px; width: 2px; height: calc(100% + 0px); background: var(--line-strong);
+      height: 40px;
+    }
+    .boot .step .t { font-weight: 600; }
+    .boot .step .d { color: var(--ink-muted); font-size: 14px; display: none; margin-top: 4px; }
+    .boot .step.open .d { display: block; }
+    .boot .step.open .dot, .boot .step.lit .dot { background: var(--kombu); color: #fff; border-color: var(--kombu); }
+    .boot-modes { margin-bottom: 4px; }
+
+    .tree { font: 13px/1.7 var(--mono); background: var(--code-bg); border-radius: var(--radius); padding: 16px 18px; overflow-x: auto; white-space: pre; }
+    .tree b { color: var(--accent); font-weight: 600; }
+    .tree i { color: var(--ink-muted); font-style: normal; }
+    @media (max-width: 760px) { .pkg-map { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Distro spec</div>
+    <h1>What Dashi is made of</h1>
+    <p class="lede">Dashi is Fedora Linux 44 with its own desktop on top: a Rust Wayland compositor, a TypeScript shell on Bun, and a native UI drawn by mirin Metal. This page is the spec of the system, from GRUB to the first window.</p>
+
+    <h2>At a glance</h2>
+    <table>
+      <tr><th style="width:32%">Item</th><th>Value</th></tr>
+      <tr><td>Name</td><td><strong>Dashi</strong> (<code>ID=dashi</code>, <code>ID_LIKE=fedora</code>)</td></tr>
+      <tr><td>Current release</td><td>0.2 beta <span class="pill wip">in progress</span></td></tr>
+      <tr><td>Base</td><td>Fedora Linux 44 (<code>VERSION_ID=44</code>, <code>PLATFORM_ID=platform:f44</code>); support ends with Fedora 44, 2027-05-19</td></tr>
+      <tr><td>Architecture</td><td>x86_64 (Bun ships for aarch64 too; no aarch64 image yet)</td></tr>
+      <tr><td>Kernel</td><td>CachyOS's kernel (<code>kernel-cachyos</code>), made the default by <code>dashi-kernel</code>; Fedora's kernel stays installed as a fallback</td></tr>
+      <tr><td>Display server</td><td>Wayland only: <code>dashi-comp</code> (smithay), with Xwayland for X11 apps</td></tr>
+      <tr><td>Login</td><td>greetd with Dashi's own greeter (<code>dashi-greeter</code>)</td></tr>
+      <tr><td>Session runtime</td><td>Bun 1.4.4 at <code>/usr/libexec/dashi/bin/bun</code> (<code>dashi-bun</code>); no Node</td></tr>
+      <tr><td>UI toolkit</td><td>React through <code>@mirinjs/metal</code>, drawn by <code>mirin-metal-host</code> (GPUI, Vulkan)</td></tr>
+      <tr><td>Interface font</td><td>Inter (<code>rsms-inter-fonts</code>), with Noto Sans, Noto Sans Mono, and Noto Sans Symbols 2</td></tr>
+      <tr><td>Default shell</td><td>zsh, for every new account (<code>dashi-release</code> sets <code>useradd</code>'s default)</td></tr>
+      <tr><td>Browser</td><td>Helium (<code>helium-bin</code>), with Dashi's defaults (<code>dashi-helium</code>)</td></tr>
+      <tr><td>Installer</td><td>Anaconda's web UI, opened from the live session's Setup Assistant ("Install Dashi…")</td></tr>
+      <tr><td>Boot splash</td><td>Plymouth theme <code>dashi</code> (two-step), Inter type</td></tr>
+      <tr><td>Graphics</td><td>Any GPU with GLES 2 and GBM; a GPU with only a software driver draws with llvmpipe (VMs without 3D, <code>nomodeset</code>). NVIDIA through <code>dashi-nvidia</code> (akmod, RPM Fusion)</td></tr>
+    </table>
+
+    <h2>Packages</h2>
+    <p>Eleven packages, built from this repository by <code>spin/build-rpms</code> (specs in <code>spin/rpm/</code>). Select one to see what it carries and what it pulls in.</p>
+    <div class="legend">
+      <span><i style="background:var(--kombu)"></i>Desktop</span>
+      <span><i style="background:var(--broth)"></i>System and branding</span>
+      <span><i style="background:var(--shiso)"></i>Image and hardware</span>
+    </div>
+    <div class="pkg-map" id="pkg-map"></div>
+    <div class="card" id="pkg-detail"><p class="muted" style="margin:0">Select a package.</p></div>
+
+    <h2>From power button to desktop</h2>
+    <div class="controls-row boot-modes">
+      <div class="segmented" id="boot-mode">
+        <button data-value="installed" aria-pressed="true">Installed</button>
+        <button data-value="live" aria-pressed="false">Live image</button>
+      </div>
+      <button class="button" id="boot-play">▶ Play</button>
+      <span>Select a step for detail.</span>
+    </div>
+    <div class="boot" id="boot"></div>
+
+    <h2>The session</h2>
+    <p>One login is one process tree. <code>dashi-session</code> picks the GPU, then starts the compositor with the shell as its client; the shell supervises everything else. When the compositor exits, the whole tree goes with it (its own process group, and <code>PR_SET_PDEATHSIG</code>).</p>
+    <div class="tree"><b>dashi-session</b>                      <i>picks the GPU (dashi-gpu), logs to ~/.local/state/dashi/dashi.log</i>
+└─ <b>dashi-comp</b> -c bun session.ts      <i>the compositor: screens, input, windows, Xwayland</i>
+   └─ <b>bun</b> session.ts                 <i>the session supervisor (packages/shell/src/session.ts)</i>
+      ├─ <b>bun</b> main.tsx                <i>the shell: menu bar, Dock, sheets, services, policy</i>
+      │  ├─ <b>mirin-metal-host</b>         <i>one per surface: menu bar, Dock, overlays…</i>
+      │  └─ <i>IPC ⇄ $XDG_RUNTIME_DIR/dashi-comp.sock (newline JSON)</i>
+      ├─ <b>bun</b> apps/settings …         <i>first-party apps: one Bun process + one Metal window each</i>
+      ├─ <b>Xwayland</b>                    <i>started and restarted by dashi-comp</i>
+      └─ <i>xdg-desktop-portal (gtk, wlr) · dashi-mcp for agents, with consent</i></div>
+
+    <h3>Where things live</h3>
+    <table>
+      <tr><th>Path</th><th>What</th><th>Package</th></tr>
+      <tr><td><code>/usr/bin/dashi-comp</code></td><td>The compositor</td><td>dashi-comp</td></tr>
+      <tr><td><code>/usr/bin/dashi-session</code>, <code>dashi-mcp</code></td><td>Session entry point; the agents' MCP bridge</td><td>dashi</td></tr>
+      <tr><td><code>/usr/share/dashi/shell/</code></td><td>The shell and first-party apps (TypeScript, run from source by Bun)</td><td>dashi</td></tr>
+      <tr><td><code>/usr/share/dashi/node_modules/</code></td><td>The shell's runtime packages, vendored at build time</td><td>dashi</td></tr>
+      <tr><td><code>/usr/bin/dashi-greeter</code>, <code>/usr/share/dashi/greeter/</code></td><td>The login screen</td><td>dashi-greeter</td></tr>
+      <tr><td><code>/usr/libexec/dashi/bin/bun</code></td><td>The session's runtime</td><td>dashi-bun</td></tr>
+      <tr><td><code>/usr/libexec/dashi/mirin-metal-host</code></td><td>The Metal host that draws every surface</td><td>mirin-metal-host</td></tr>
+      <tr><td><code>/usr/lib/os-release</code></td><td>Identity, with <code>DASHI_BUILD</code> and <code>DASHI_BASED_ON</code></td><td>dashi-release</td></tr>
+      <tr><td><code>/usr/share/dashi/zsh/dashi.zshrc</code></td><td>Dashi's zsh defaults, sourced from <code>/etc/zshrc</code></td><td>dashi-release</td></tr>
+      <tr><td><code>~/.config/dashi/settings.json</code></td><td>The person's settings (appearance, displays, Dock…)</td><td>the shell writes it</td></tr>
+      <tr><td><code>~/.local/state/dashi/dashi.log</code></td><td>The session's log</td><td>dashi-session writes it</td></tr>
+      <tr><td><code>$XDG_RUNTIME_DIR/dashi-comp.sock</code></td><td>Compositor ⇄ shell IPC</td><td>dashi-comp</td></tr>
+    </table>
+
+    <h2>Repositories</h2>
+    <table>
+      <tr><th>Repository</th><th>For</th><th>State</th></tr>
+      <tr><td>Fedora 44 + updates</td><td>Everything not Dashi's</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>RPM Fusion free and nonfree</td><td>Codecs, NVIDIA's driver</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>COPR <code>bieszczaders/kernel-cachyos</code></td><td>The CachyOS kernel</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>COPR <code>imput/helium</code></td><td>The Helium browser</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>COPR <code>pejedev/dashi</code></td><td>Dashi's own packages (<code>spin/copr-publish</code>)</td><td><span class="pill done">enabled</span></td></tr>
+    </table>
+    <h3>Publishing to COPR</h3>
+    <ol>
+      <li>Once: a Fedora account, logged in at <a href="https://copr.fedorainfracloud.org">copr.fedorainfracloud.org</a>; the API token from <code>/api/</code> in <code>~/.config/copr</code>; <code>copr-cli whoami</code> prints the owner.</li>
+      <li>Build every package from a clean, committed tree: <code>spin/build-rpms all</code> (in the VM). Each SRPM's spec carries its snapshot, so it rebuilds anywhere.</li>
+      <li><code>spin/copr-publish</code> (the project defaults to <code>pejedev/dashi</code>). It creates or corrects the project (the network on for Cargo; CachyOS, Helium, and RPM Fusion as extra repositories, as baseurls) and submits the newest SRPM of each package.</li>
+      <li>Publish all of them together: <code>dashi</code>, <code>dashi-comp</code>, <code>dashi-greeter</code>, and <code>dashi-live</code> require each other at the exact same snapshot.</li>
+      <li>Watch <a href="https://copr.fedorainfracloud.org/coprs/pejedev/dashi/builds/">the builds</a>. COPR builds in a clean root: a macro or tool the VM happens to have needs a <code>BuildRequires</code>.</li>
+    </ol>
+    <div class="callout open"><span>◇</span><p><strong>Open:</strong> Terra (Fyra Labs) as a second home for the packages. It needs specs written by hand under Terra's AI policy, and answers from Fyra on replacing <code>fedora-release</code>, RPM Fusion dependencies, and kernel packages.</p></div>
+
+    <h2>Versions and releases</h2>
+    <ul>
+      <li><strong>Release:</strong> Dashi's own number (0.1, 0.2…), shown as <code>VERSION="0.2 beta"</code>. It is independent of Fedora's; <code>VERSION_ID</code> stays Fedora's (44) so Fedora tooling keeps working.</li>
+      <li><strong>Snapshots:</strong> every package built from the tree is <code>0.2.0~beta.YYYYMMDD.SHA</code>, the commit's date and short hash (<code>~</code> sorts before the final 0.2.0). Packages that track Fedora's number (<code>dashi-release</code>, <code>-logos</code>, <code>-kernel</code>, <code>-nvidia</code>) are version 44 with the snapshot as their release.</li>
+      <li><strong>mirin:</strong> <code>mirin-metal-host</code> is <code>0.1.0~beta.YYYYMMDD.SHA</code> of the mirin commit it was built from; <code>/usr/share/dashi/MIRIN_COMMIT</code> records the one the shell was built against.</li>
+      <li><strong>Build identity:</strong> <code>DASHI_BUILD</code> in os-release is the snapshot, so a bug report can name the exact tree.</li>
+    </ul>
+
+    <h2>The image</h2>
+    <p>One live ISO, <code>Dashi-0.2.0-x86_64.iso</code>, made by <code>spin/build-image</code> (livemedia-creator) from <code>spin/image/dashi-live.ks</code>. It boots BIOS and UEFI, starts straight into a live session, and installs from there.</p>
+    <ul>
+      <li>Default boot entry: "Test this media &amp; start Dashi 44" (checks the medium with <code>checkisomd5</code>, then boots).</li>
+      <li>Boots to <code>graphical.target</code>; greetd's first session logs in <code>liveuser</code> automatically.</li>
+      <li>Installing copies the live system, so the installed system boots exactly what the image showed.</li>
+      <li>Before an image is called done, it is booted in QEMU with a plain <code>virtio-vga</code> (no 3D) through the default entry, all the way to the desktop.</li>
+    </ul>
+
+    <h2>Hardware</h2>
+    <table>
+      <tr><th>Area</th><th>Support</th></tr>
+      <tr><td>GPU</td><td>Intel, AMD (Mesa); NVIDIA (proprietary, through <code>dashi-nvidia</code>); multi-GPU (one draws, others scan out); software fallback</td></tr>
+      <tr><td>Screens</td><td>Hotplug, fractional scale (0.5–4), rotation, VRR (off, on, or full screen only), gamma (Night Shift), per-screen modes</td></tr>
+      <tr><td>Input</td><td>libinput: keyboards (layout from the system), pointers, touchpads with gestures (swipe between Spaces, pinch and hold to apps)</td></tr>
+      <tr><td>Firmware</td><td>BIOS and UEFI, Secure Boot through shim</td></tr>
+    </table>
+  </main>
+</div>
+<script>
+const PACKAGES = [
+  { n: "dashi", layer: "desktop", s: "The desktop: session, shell, and apps",
+    carries: "dashi-session, dashi-mcp, the shell and every first-party app (/usr/share/dashi/shell), the vendored runtime packages, the session target, portal and mime config.",
+    needs: ["dashi-comp", "dashi-bun", "mirin-metal-host"], ext: "polkit, xdg-desktop-portal (gtk, wlr), wl-clipboard, Inter and Noto fonts, Adwaita cursors" },
+  { n: "dashi-comp", layer: "desktop", s: "The Wayland compositor (Rust, smithay)",
+    carries: "/usr/bin/dashi-comp: DRM/KMS, libinput, Xwayland, rendering, window mechanics, the IPC server.",
+    needs: [], ext: "Mesa (DRI, GBM, EGL), xkeyboard-config; recommends Xwayland and GStreamer (video wallpapers)" },
+  { n: "dashi-greeter", layer: "desktop", s: "The login screen, greetd's greeter",
+    carries: "/usr/bin/dashi-greeter and /usr/share/dashi/greeter; greetd's config (replacing only the stock one).",
+    needs: ["dashi"], ext: "greetd. Replaces the old dashi-sddm." },
+  { n: "mirin-metal-host", layer: "desktop", s: "mirin's native host: React drawn with GPUI",
+    carries: "/usr/libexec/dashi/mirin-metal-host, built from the mirin checkout it is versioned by.",
+    needs: [], ext: "vulkan-loader, mesa-vulkan-drivers, libwayland-client" },
+  { n: "dashi-bun", layer: "desktop", s: "The Bun runtime the session runs on",
+    carries: "/usr/libexec/dashi/bin/bun (Bun 1.4.4, Oven's release build) and its license.",
+    needs: [], ext: "none" },
+  { n: "dashi-release", layer: "system", s: "Release files: Dashi's identity",
+    carries: "os-release, system-release, the dashi.repo for COPR, zsh as useradd's default shell, Dashi's zshrc.",
+    needs: [], ext: "Provides and replaces fedora-release; requires fedora-repos(44) and zsh" },
+  { n: "dashi-logos", layer: "system", s: "Logo, icon, and the boot splash",
+    carries: "dashi-logo.png, the Plymouth theme 'dashi' (two-step, animated bowl).",
+    needs: [], ext: "generic-logos, plymouth two-step and spinner" },
+  { n: "dashi-kernel", layer: "system", s: "CachyOS's kernel, made the default",
+    carries: "dashi-default-kernel: a service that keeps the CachyOS kernel first in GRUB on installed systems.",
+    needs: [], ext: "kernel-cachyos (COPR), kernel-core as a fallback, grubby" },
+  { n: "dashi-nvidia", layer: "image", s: "NVIDIA's driver, built for every kernel",
+    carries: "A metapackage: the akmod and the kernel headers for each installed kernel, CachyOS's included.",
+    needs: ["dashi-kernel"], ext: "RPM Fusion nonfree: akmod-nvidia, xorg-x11-drv-nvidia(-power)" },
+  { n: "dashi-helium", layer: "image", s: "Helium's defaults on Dashi",
+    carries: "Helium's policies: its GTK title bar and the one-row layout, matching Dashi's windows.",
+    needs: [], ext: "helium-bin (COPR imput/helium)" },
+  { n: "dashi-live", layer: "image", s: "The live image's session and installer entry",
+    carries: "livesys-dashi: autologin into Dashi (greetd's initial session), the Install Dashi… entry, the installer's browser.",
+    needs: ["dashi", "dashi-greeter"], ext: "anaconda-live, livesys-scripts, helium-bin" },
+];
+
+const map = document.getElementById("pkg-map");
+const detail = document.getElementById("pkg-detail");
+map.innerHTML = PACKAGES.map((p) => `<button class="pkg" data-layer="${p.layer}" data-n="${p.n}"><span class="n">${p.n}</span><span class="s">${p.s}</span></button>`).join("");
+map.addEventListener("click", (e) => {
+  const b = e.target.closest(".pkg");
+  if (!b) return;
+  const p = PACKAGES.find((x) => x.n === b.dataset.n);
+  const neededBy = PACKAGES.filter((x) => x.needs.includes(p.n)).map((x) => x.n);
+  const related = new Set([...p.needs, ...neededBy]);
+  map.classList.add("focus");
+  for (const el of map.querySelectorAll(".pkg")) {
+    el.classList.toggle("selected", el === b);
+    el.classList.toggle("related", related.has(el.dataset.n));
+  }
+  const list = (xs) => (xs.length ? xs.map((x) => `<code>${x}</code>`).join(", ") : "<span class='muted'>none</span>");
+  detail.innerHTML = `<h3>${p.n}</h3><dl>
+    <dt>Summary</dt><dd>${p.s}</dd>
+    <dt>Carries</dt><dd>${p.carries}</dd>
+    <dt>Needs (Dashi)</dt><dd>${list(p.needs)}</dd>
+    <dt>Needed by</dt><dd>${list(neededBy)}</dd>
+    <dt>Needs (other)</dt><dd>${p.ext}</dd>
+    <dt>Spec</dt><dd><code>spin/rpm/${p.n}.spec</code></dd></dl>`;
+});
+
+const BOOT = {
+  installed: [
+    ["Firmware → GRUB", "BIOS or UEFI (shim for Secure Boot) loads GRUB. dashi-default-kernel has made CachyOS's kernel the default entry; Fedora's kernel stays as a fallback."],
+    ["Kernel + initramfs", "The kernel brings up the GPU's DRM driver; Plymouth shows the 'dashi' splash, the animated bowl."],
+    ["systemd → graphical.target", "Services start; greetd is wanted by graphical.target."],
+    ["greetd → dashi-greeter", "greetd runs the greeter as the greetd user: dashi-comp --greeter and the login screen (packages/greeter). The form is on the main screen, backdrops on the others."],
+    ["Log in", "The password goes from the greeter process to greetd and PAM, nowhere else. greetd starts the chosen session as the person."],
+    ["dashi-session", "Picks the GPU that drives a connected screen, opens the log, and starts dashi-comp with the shell as its client."],
+    ["dashi-comp + shell", "The compositor takes the seat and the screens; the shell connects over IPC, sends the person's settings (displays, keyboard, corners, wallpaper), and draws the menu bar and Dock through Metal."],
+    ["The desktop", "Autostart apps open; the person is at their desktop."],
+  ],
+  live: [
+    ["Firmware → GRUB", "The ISO's GRUB; the default entry checks the medium (checkisomd5), then boots with rd.live.image."],
+    ["Kernel + live root", "dracut's live module finds the medium by its label and mounts the compressed root with a writable overlay."],
+    ["livesys", "livesys-scripts runs livesys-dashi (dashi-live): it creates liveuser and points greetd's initial session at it."],
+    ["greetd → autologin", "greetd's first session logs liveuser into Dashi with no greeter; later sessions get the login screen."],
+    ["dashi-session", "As installed: the GPU (or software rendering in a VM without 3D), the compositor, the shell."],
+    ["Setup Assistant", "Opens with \"Install Dashi…\": You are trying Dashi from a USB drive. Install it to keep it."],
+    ["Install", "Anaconda's web UI in Helium copies the live system to disk; the installed system boots what the image showed."],
+  ],
+};
+
+const boot = document.getElementById("boot");
+let mode = "installed";
+function drawBoot() {
+  boot.innerHTML = BOOT[mode].map(([t, d], i) => `<div class="step"><div class="dot">${i + 1}</div><div><div class="t">${t}</div><div class="d">${d}</div></div></div>`).join("");
+}
+drawBoot();
+segmented(document.getElementById("boot-mode"), (v) => { mode = v; drawBoot(); });
+boot.addEventListener("click", (e) => e.target.closest(".step")?.classList.toggle("open"));
+document.getElementById("boot-play").addEventListener("click", () => {
+  const steps = [...boot.querySelectorAll(".step")];
+  steps.forEach((s) => s.classList.remove("lit", "open"));
+  steps.forEach((s, i) => setTimeout(() => {
+    steps.forEach((x) => x.classList.remove("open"));
+    s.classList.add("lit", "open");
+  }, i * 900));
+});
+</script>
+</body>
+</html>
