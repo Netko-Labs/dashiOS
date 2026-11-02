@@ -11,6 +11,10 @@ Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
 
 Requires:       fedora-repos(44)
+# zsh is Dashi's shell: new accounts get it (%post).
+Requires:       zsh
+Requires(post): zsh
+Requires(post): shadow-utils
 Provides:       system-release
 Provides:       system-release(44)
 Provides:       system-release(releasever) = 44
@@ -27,7 +31,8 @@ Conflicts:      generic-release-common
 
 %description
 Dashi's os-release, release files, RPM dist macros, systemd presets, and
-package repositories.
+package repositories; and zsh as the shell new accounts get, with Dashi's defaults for it
+(history, completion, a prompt, aliases).
 
 %prep
 %autosetup -n %{dashi_source}
@@ -47,6 +52,24 @@ ln -s ../usr/lib/system-release-cpe %{buildroot}%{_sysconfdir}/system-release-cp
 ln -s ../usr/lib/issue %{buildroot}%{_sysconfdir}/issue
 ln -s ../usr/lib/issue.net %{buildroot}%{_sysconfdir}/issue.net
 install -d %{buildroot}%{_sysconfdir}/issue.d
+
+%post
+# New accounts (the installer's, the live user, Users & Accounts) get zsh:
+# useradd's default, while it is still the stock bash.
+if [ -f %{_sysconfdir}/default/useradd ] && grep -q '^SHELL=/bin/bash$' %{_sysconfdir}/default/useradd; then
+  sed -i 's|^SHELL=/bin/bash$|SHELL=/bin/zsh|' %{_sysconfdir}/default/useradd
+fi
+
+# Every interactive zsh starts from Dashi's defaults: one marked line in
+# /etc/zshrc (zsh's own config file) sources them.
+if [ -f %{_sysconfdir}/zshrc ] && ! grep -q 'dashi.zshrc' %{_sysconfdir}/zshrc; then
+  printf '\n# Dashi defaults (dashi-release)\n[ -r %{_datadir}/dashi/zsh/dashi.zshrc ] && . %{_datadir}/dashi/zsh/dashi.zshrc\n' >> %{_sysconfdir}/zshrc
+fi
+
+%postun
+if [ $1 -eq 0 ] && [ -f %{_sysconfdir}/zshrc ]; then
+  sed -i '/# Dashi defaults (dashi-release)/d; /dashi\/zsh\/dashi.zshrc/d' %{_sysconfdir}/zshrc
+fi
 
 %files
 %{_datadir}/licenses/dashi-release
@@ -73,6 +96,9 @@ install -d %{buildroot}%{_sysconfdir}/issue.d
 %dir %{_sysconfdir}/anaconda/profile.d
 %{_sysconfdir}/anaconda/profile.d/dashi.conf
 %config(noreplace) %{_sysconfdir}/yum.repos.d/*.repo
+%dir %{_datadir}/dashi
+%dir %{_datadir}/dashi/zsh
+%{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 44-0.2.0

@@ -54,6 +54,7 @@ bluez
 NetworkManager-wifi
 flatpak
 xdg-user-dirs
+zsh
 
 dashi
 dashi-greeter
