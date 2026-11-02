@@ -94,7 +94,7 @@ it in the VM.
       denials), login, the session on /usr/bin/dashi-comp with Xwayland
 - [x] dashi-live for 0.2.0 (it pins dashi's version); autologin through greetd
 - [ ] Image build: spin/image/dashi-live.ks and spin/build-image (livemedia-creator)
-- [ ] COPR publishing: needs the owner's Fedora account and API token; then
+- [ ] COPR publishing (spin/copr-publish ready): needs the owner's Fedora account and API token; then
       enable spin/dashi-release/etc/yum.repos.d/dashi.repo
 
 ## Later
