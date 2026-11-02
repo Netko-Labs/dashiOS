@@ -101,7 +101,7 @@ done | awk '!seen[$1]++ {print $2}')
 clashes=$(for rpm in $newest; do
   name=$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)
   rpm -qp --qf '[%{FILEMODES:perms} %{FILENAMES}\n]' "$rpm" 2>/dev/null | awk -v n="$name" '$1 !~ /^d/ {print $2, n}'
-done | sort | awk '{ if ($1 == last) print $1": "owner" and "$2; last = $1; owner = $2 }' | grep -v '/usr/lib/.build-id/')
+done | sort | awk '{ if ($1 == last) print $1": "owner" and "$2; last = $1; owner = $2 }' | grep -v '/usr/lib/.build-id/' || true)
 if [ -n "$clashes" ]; then
   echo "build-rpms: files in two packages:" >&2
   echo "$clashes" >&2
