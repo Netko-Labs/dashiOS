@@ -50,15 +50,18 @@ export async function trashFile(call: { path: string }, ctx: RunContext): Promis
   const name = clean(plan.name, 80);
   const yes = await ctx.confirm({
     summary: `move “${name}” to the Trash`,
-    detail: plan.kind === "folder" ? `The folder and everything in it go to the Trash. You can put it back from there.` : `It goes to the Trash. You can put it back from there.`,
+    detail:
+      plan.kind === "folder"
+        ? `The folder and everything in it go to the Trash. You can put it back from there.`
+        : `It goes to the Trash. You can put it back from there.`,
     action: "Move to Trash",
   });
   if (!yes) return toolError("The person did not allow that file to be moved to the Trash. Don't ask again unless they agree.");
   ctx.status("Moving a file to the Trash");
   // They may have taken a while: look again, and trash only what they were shown.
   const again = await planTrash(call.path, policy);
-  if ("error" in again || again.path !== plan.path) return toolError("The file changed while the person was deciding, so nothing was moved. List the folder and try again.");
+  if ("error" in again || again.path !== plan.path)
+    return toolError("The file changed while the person was deciding, so nothing was moved. List the folder and try again.");
   const problem = await trashForAgent(again, quietContext());
   return problem ? toolError(`It couldn't be moved to the Trash: ${problem}`) : text("It is in the Trash.", { trashed: true });
 }
-

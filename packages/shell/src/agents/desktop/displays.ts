@@ -40,8 +40,15 @@ export async function listDisplays(ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking at your screens");
   const answer = await ctx.compositor.request("outputs");
   const monitors = parseMonitors(answer);
-  const off = monitors.filter((monitor) => !monitor.enabled).map((monitor) => ({ name: monitor.name, enabled: false, builtIn: monitor.builtIn, ...describeMonitor(monitor) }));
-  const displays = parseScreens(answer).map((screen) => describeScreen(screen, monitors.find((monitor) => monitor.name === screen.name)));
+  const off = monitors
+    .filter((monitor) => !monitor.enabled)
+    .map((monitor) => ({ name: monitor.name, enabled: false, builtIn: monitor.builtIn, ...describeMonitor(monitor) }));
+  const displays = parseScreens(answer).map((screen) =>
+    describeScreen(
+      screen,
+      monitors.find((monitor) => monitor.name === screen.name),
+    ),
+  );
   return json({ displays: [...displays, ...off] });
 }
 
@@ -122,5 +129,8 @@ export async function arrangeDisplay(name: string, x: number, y: number, ctx: Ru
   const result = await displays.arrange({ [monitor.name]: { x, y } });
   if (result.error !== undefined) return toolError(result.error);
   const landed = parseMonitors(await ctx.compositor.request("outputs")).find((candidate) => candidate.name === monitor.name)?.frame;
-  return text(landed ? `${monitor.name} is at ${landed.x}, ${landed.y} now.` : `${monitor.name} was moved.`, landed ? { name: monitor.name, x: landed.x, y: landed.y } : { name: monitor.name });
+  return text(
+    landed ? `${monitor.name} is at ${landed.x}, ${landed.y} now.` : `${monitor.name} was moved.`,
+    landed ? { name: monitor.name, x: landed.x, y: landed.y } : { name: monitor.name },
+  );
 }

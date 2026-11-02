@@ -61,7 +61,9 @@ export function advance(state: MonitorState, prev: Snapshot | null, next: Snapsh
     disk: {
       totals: next.disk,
       perSecond: disk,
-      history: first ? state.disk.history : { read: pushHistory(state.disk.history.read, disk.readBytes), write: pushHistory(state.disk.history.write, disk.writeBytes) },
+      history: first
+        ? state.disk.history
+        : { read: pushHistory(state.disk.history.read, disk.readBytes), write: pushHistory(state.disk.history.write, disk.writeBytes) },
     },
     net: {
       totals: next.net,

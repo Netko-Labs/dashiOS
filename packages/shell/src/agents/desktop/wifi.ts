@@ -57,7 +57,8 @@ export async function joinWifi(ssid: string, ctx: RunContext): Promise<ToolResul
   const matches = [...(state.current ? [state.current] : []), ...state.networks].filter((network) => network.ssid === ssid);
   if (matches.length === 0) return toolError(`No network called “${ssid}” is in range; list_wifi_networks shows what is.`);
   const [network, ...others] = matches;
-  if (!network || others.length > 0) return toolError(`More than one network in range is called “${ssid}”; the person can pick the right one in the Wi-Fi menu.`);
+  if (!network || others.length > 0)
+    return toolError(`More than one network in range is called “${ssid}”; the person can pick the right one in the Wi-Fi menu.`);
   ctx.status(`Joining “${network.ssid}”`);
   if (state.current?.key === network.key) return text(`Already connected to “${network.ssid}”.`, { ssid: network.ssid, joined: false });
   if (!agentMayJoin(network)) {

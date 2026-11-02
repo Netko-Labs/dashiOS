@@ -32,7 +32,11 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
   const surface = useSurface();
   const inset = useTitleBarInset();
   return (
-    <View occlude testID={`${testID}:scrim`} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", backgroundColor: "#00000026" }}>
+    <View
+      occlude
+      testID={`${testID}:scrim`}
+      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", backgroundColor: "#00000026" }}
+    >
       {(onCancel || onConfirm) && (
         <KeySink
           testID={`${testID}:keys`}
@@ -84,7 +88,16 @@ export function ConfirmSheet({ title, message, confirmLabel, danger, onConfirm, 
   return (
     <Sheet testID={testID} onCancel={onCancel} onConfirm={onConfirm}>
       <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        <View style={{ width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: danger ? `${colors.critical}24` : colors.button }}>
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: danger ? `${colors.critical}24` : colors.button,
+          }}
+        >
           <Svg markup={glyph} size={22} color={danger ? colors.critical : colors.textMuted} />
         </View>
         <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
@@ -111,7 +124,19 @@ export interface MenuItem {
 }
 
 /** A menu at a point (a right-click): a click on a row or anywhere else closes it. */
-export function PopupMenu({ x, y, items, onClose, testID = "menu" }: { x: number; y: number; items: readonly MenuItem[]; onClose: () => void; testID?: string }) {
+export function PopupMenu({
+  x,
+  y,
+  items,
+  onClose,
+  testID = "menu",
+}: {
+  x: number;
+  y: number;
+  items: readonly MenuItem[];
+  onClose: () => void;
+  testID?: string;
+}) {
   const colors = useColors();
   const ticks = items.some((item) => item.checked !== undefined);
   const [hovered, setHovered] = useState<number | null>(null);
@@ -121,7 +146,19 @@ export function PopupMenu({ x, y, items, onClose, testID = "menu" }: { x: number
       <View
         occlude
         testID={testID}
-        style={{ position: "absolute", left: x, top: y, minWidth: 160, flexDirection: "column", padding: 5, borderRadius: 9, backgroundColor: colors.menu, borderWidth: 1, borderColor: colors.separator, shadow: "lg" }}
+        style={{
+          position: "absolute",
+          left: x,
+          top: y,
+          minWidth: 160,
+          flexDirection: "column",
+          padding: 5,
+          borderRadius: 9,
+          backgroundColor: colors.menu,
+          borderWidth: 1,
+          borderColor: colors.separator,
+          shadow: "lg",
+        }}
       >
         {items.map((item, index) => {
           const lit = !item.disabled && index === hovered;
@@ -135,13 +172,24 @@ export function PopupMenu({ x, y, items, onClose, testID = "menu" }: { x: number
                 onClose();
                 if (!item.disabled) item.onPress();
               }}
-              style={{ height: 24, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 18, paddingHorizontal: 8, borderRadius: 5, backgroundColor: lit ? colors.selection : "#00000000" }}
+              style={{
+                height: 24,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 18,
+                paddingHorizontal: 8,
+                borderRadius: 5,
+                backgroundColor: lit ? colors.selection : "#00000000",
+              }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
                 <Text style={{ fontSize: 13, color: ink }}>{item.label}</Text>
               </View>
-              {item.keys !== undefined && <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />}
+              {item.keys !== undefined && (
+                <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />
+              )}
             </View>
           );
         })}
@@ -151,7 +199,19 @@ export function PopupMenu({ x, y, items, onClose, testID = "menu" }: { x: number
 }
 
 /** Nothing to show: a glyph, a line, a quieter line, maybe a way out. */
-export function EmptyState({ title, message, glyph, action, testID = "empty" }: { title: string; message?: string; glyph?: string; action?: ReactNode; testID?: string }) {
+export function EmptyState({
+  title,
+  message,
+  glyph,
+  action,
+  testID = "empty",
+}: {
+  title: string;
+  message?: string;
+  glyph?: string;
+  action?: ReactNode;
+  testID?: string;
+}) {
   const colors = useColors();
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: 24 }}>

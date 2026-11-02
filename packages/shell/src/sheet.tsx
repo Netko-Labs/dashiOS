@@ -17,9 +17,21 @@ export const SHEET = { width: 720, height: 380 } as const;
 type Rows = ReadonlyArray<[string, string]>;
 
 /** The app column for an app that publishes no menus: the standard keys. */
-const STANDARD_APP: Rows = [["New window", "❖N"], ["Close window", "❖W"], ["Settings", "❖,"], ["Minimize", "❖M"], ["Hide", "❖H"], ["Quit", "❖Q"]];
+const STANDARD_APP: Rows = [
+  ["New window", "❖N"],
+  ["Close window", "❖W"],
+  ["Settings", "❖,"],
+  ["Minimize", "❖M"],
+  ["Hide", "❖H"],
+  ["Quit", "❖Q"],
+];
 /** What the shell does for every window, whatever its menus say. */
-const WINDOW_KEYS: Rows = [["Close window", "❖W"], ["Minimize", "❖M"], ["Hide", "❖H"], ["Quit", "❖Q"]];
+const WINDOW_KEYS: Rows = [
+  ["Close window", "❖W"],
+  ["Minimize", "❖M"],
+  ["Hide", "❖H"],
+  ["Quit", "❖Q"],
+];
 /** Rows a column holds at most: the System column's length, so the sheet never grows. */
 export const MAX_ROWS = 11;
 
@@ -43,9 +55,45 @@ export function appRows(published: PublishedMenus | null): Rows {
 }
 
 const GROUPS: ReadonlyArray<[string, Rows]> = [
-  ["Editing", [["Copy", "❖C"], ["Cut", "❖X"], ["Paste", "❖V"], ["Undo", "❖Z"], ["Redo", "⇧❖Z"], ["Select all", "❖A"], ["Find", "❖F"]]],
-  ["Moving in text", [["Line start", "❖←"], ["Line end", "❖→"], ["Previous word", "⌥←"], ["Next word", "⌥→"], ["Top", "❖↑"], ["Delete word", "⌥⌫"]]],
-  ["System", [["Launcher", "❖Space"], ["Next app", "❖Tab"], ["Next window", "❖`"], ["Overview", "⌃↑"], ["Spaces", "⌃← ⌃→"], ["Tile left", "⌃❖←"], ["Tile right", "⌃❖→"], ["Fill", "⌃❖↑"], ["Restore", "⌃❖↓"], ["Force Quit", "⌥❖Esc"], ["Dock hiding", "⌥❖D"]]],
+  [
+    "Editing",
+    [
+      ["Copy", "❖C"],
+      ["Cut", "❖X"],
+      ["Paste", "❖V"],
+      ["Undo", "❖Z"],
+      ["Redo", "⇧❖Z"],
+      ["Select all", "❖A"],
+      ["Find", "❖F"],
+    ],
+  ],
+  [
+    "Moving in text",
+    [
+      ["Line start", "❖←"],
+      ["Line end", "❖→"],
+      ["Previous word", "⌥←"],
+      ["Next word", "⌥→"],
+      ["Top", "❖↑"],
+      ["Delete word", "⌥⌫"],
+    ],
+  ],
+  [
+    "System",
+    [
+      ["Launcher", "❖Space"],
+      ["Next app", "❖Tab"],
+      ["Next window", "❖`"],
+      ["Overview", "⌃↑"],
+      ["Spaces", "⌃← ⌃→"],
+      ["Tile left", "⌃❖←"],
+      ["Tile right", "⌃❖→"],
+      ["Fill", "⌃❖↑"],
+      ["Restore", "⌃❖↓"],
+      ["Force Quit", "⌥❖Esc"],
+      ["Dock hiding", "⌥❖D"],
+    ],
+  ],
 ];
 
 export function ShortcutSheet({ appName, published = null, onClose }: { appName: string; published?: PublishedMenus | null; onClose?: () => void }) {

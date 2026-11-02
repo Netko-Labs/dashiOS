@@ -146,13 +146,7 @@ export class SwitcherStore {
   getSnapshot = (): SwitcherState => this.state;
 }
 
-export function SwitcherPanel({
-  store,
-  identify,
-}: {
-  store: SwitcherStore;
-  identify: (app: SwitcherApp) => { name: string; icon: string };
-}) {
+export function SwitcherPanel({ store, identify }: { store: SwitcherStore; identify: (app: SwitcherApp) => { name: string; icon: string } }) {
   const colors = useColors();
   const { selected, apps } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const current = apps[selected];
@@ -188,9 +182,7 @@ export function SwitcherPanel({
             </View>
           ))}
         </View>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-          {current ? identify(current).name : ""}
-        </Text>
+        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{current ? identify(current).name : ""}</Text>
       </View>
     </View>
   );

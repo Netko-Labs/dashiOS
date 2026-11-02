@@ -58,7 +58,8 @@ export class Operations {
     this.store.patch({ clipboard: { paths, cut } });
     // The desktop's clipboard gets the files too, when wl-clipboard is there, so other apps can paste them.
     void this.store.env.clipboard.write(paths).then((shared) => {
-      if (!shared && !this.store.env.clipboard.canWrite) this.store.say(`${cut ? "Cut" : "Copied"} ${what(paths)} for pasting in Files. Install wl-clipboard to paste into other apps.`);
+      if (!shared && !this.store.env.clipboard.canWrite)
+        this.store.say(`${cut ? "Cut" : "Copied"} ${what(paths)} for pasting in Files. Install wl-clipboard to paste into other apps.`);
     });
   }
 
@@ -83,26 +84,28 @@ export class Operations {
   async transfer(paths: readonly string[], dest: string, mode: "copy" | "move"): Promise<string[]> {
     const created: string[] = [];
     const verb = mode === "copy" ? "Copying" : "Moving";
-    await this.jobs.run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
-      if (mode === "copy") {
-        let total = 0;
-        for (const path of paths) total += (await measure(path, ctx.signal)).bytes;
-        job.total = total;
-      }
-      const failures: string[] = [];
-      for (const path of paths) {
-        try {
-          const made = mode === "copy" ? await copyInto(path, dest, ctx) : await moveInto(path, dest, ctx);
-          if (made) created.push(made);
-        } catch (error) {
-          if (!(error instanceof OpError)) throw error;
-          failures.push(`${quote(baseName(path))}: ${error.message}`);
+    await this.jobs
+      .run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
+        if (mode === "copy") {
+          let total = 0;
+          for (const path of paths) total += (await measure(path, ctx.signal)).bytes;
+          job.total = total;
         }
-        if (mode === "move") ctx.advance(1);
-      }
-      if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
-      return `${mode === "copy" ? "Copied" : "Moved"} ${what(paths)}.`;
-    }).then((job) => this.finished(job.state, job.message, created));
+        const failures: string[] = [];
+        for (const path of paths) {
+          try {
+            const made = mode === "copy" ? await copyInto(path, dest, ctx) : await moveInto(path, dest, ctx);
+            if (made) created.push(made);
+          } catch (error) {
+            if (!(error instanceof OpError)) throw error;
+            failures.push(`${quote(baseName(path))}: ${error.message}`);
+          }
+          if (mode === "move") ctx.advance(1);
+        }
+        if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
+        return `${mode === "copy" ? "Copied" : "Moved"} ${what(paths)}.`;
+      })
+      .then((job) => this.finished(job.state, job.message, created));
     return created;
   }
 
@@ -148,7 +151,11 @@ export class Operations {
     const paths = this.paths(items);
     const { home, dirs } = this.store.env;
     for (const path of paths) {
-      const reason = protectedReason(path, home, dirs.map((dir) => dir.path));
+      const reason = protectedReason(
+        path,
+        home,
+        dirs.map((dir) => dir.path),
+      );
       if (reason) {
         this.store.say(reason, true);
         return;
@@ -235,7 +242,8 @@ export class Operations {
     });
     this.finished(job.state, job.message, []);
     const { location } = this.store.getSnapshot();
-    if (volume.mountPoint && location.kind === "folder" && isInside(volume.mountPoint, location.path)) this.store.go({ kind: "folder", path: this.store.env.home });
+    if (volume.mountPoint && location.kind === "folder" && isInside(volume.mountPoint, location.path))
+      this.store.go({ kind: "folder", path: this.store.env.home });
     void this.store.refreshVolumes();
   }
 

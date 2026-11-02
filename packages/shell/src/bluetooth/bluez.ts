@@ -56,7 +56,11 @@ export class BluezBackend implements BluetoothBackend {
     const pending: Promise<Session> = this.openBus().then(
       (connection) => {
         const client = new BluezClient(connection);
-        const agent = new AgentRegistration(client, () => this.handler, this.options.askTimeoutMs === undefined ? {} : { askTimeoutMs: this.options.askTimeoutMs });
+        const agent = new AgentRegistration(
+          client,
+          () => this.handler,
+          this.options.askTimeoutMs === undefined ? {} : { askTimeoutMs: this.options.askTimeoutMs },
+        );
         const session: Session = { client, agent, agentStarted: false };
         connection.onClose(() => {
           agent.stop();
@@ -87,7 +91,10 @@ export class BluezBackend implements BluetoothBackend {
 
   setPairingHandler(handler: PairingHandler | null): void {
     this.handler = handler;
-    if (handler) void this.bluez().then((session) => this.startAgent(session)).catch(() => {});
+    if (handler)
+      void this.bluez()
+        .then((session) => this.startAgent(session))
+        .catch(() => {});
   }
 
   async read(): Promise<BluetoothReading> {
@@ -148,7 +155,8 @@ export class BluezBackend implements BluetoothBackend {
   private failed(what: string, error: unknown): ActionResult {
     const outcome: Outcome = classify(error);
     if (outcome === "already") return { ok: true };
-    if (outcome === "unreachable" || outcome === "failed") console.error(`dashi-shell: Bluetooth: ${what} failed:`, error instanceof Error ? error.name : "error");
+    if (outcome === "unreachable" || outcome === "failed")
+      console.error(`dashi-shell: Bluetooth: ${what} failed:`, error instanceof Error ? error.name : "error");
     return { ok: false, reason: outcome === "unreachable" ? "failed" : outcome };
   }
 
@@ -208,7 +216,10 @@ export class BluezBackend implements BluetoothBackend {
     };
     // Devices appearing and going (the object manager lives at "/", outside /org/bluez).
     subscribe({ type: "signal", sender: BLUEZ, interface: OBJECT_MANAGER });
-    subscribe({ type: "signal", sender: BLUEZ, interface: PROPERTIES, member: "PropertiesChanged", pathNamespace: "/org/bluez" }, ([iface]) => typeof iface === "string" && WATCHED.has(iface));
+    subscribe(
+      { type: "signal", sender: BLUEZ, interface: PROPERTIES, member: "PropertiesChanged", pathNamespace: "/org/bluez" },
+      ([iface]) => typeof iface === "string" && WATCHED.has(iface),
+    );
     // bluetoothd restarting takes every object with it.
     subscribe({ type: "signal", sender: BUS_NAME, interface: BUS_NAME, member: "NameOwnerChanged", path: "/org/freedesktop/DBus", args: { 0: BLUEZ } });
     return () => {

@@ -29,12 +29,15 @@ export const regionTools: readonly ToolDef[] = [
     properties: { time_zone: { type: "string", description: "An IANA time zone name, like America/New_York." } },
     required: ["time_zone"],
     parse: (args) =>
-      isTimezoneName(args.time_zone) ? { name: "set_time_zone", timeZone: args.time_zone } : fail("`time_zone` must be an IANA time zone name such as Europe/Berlin."),
+      isTimezoneName(args.time_zone)
+        ? { name: "set_time_zone", timeZone: args.time_zone }
+        : fail("`time_zone` must be an IANA time zone name such as Europe/Berlin."),
   },
   {
     name: "set_clock_24_hour",
     title: "Switch between 12-hour and 24-hour time",
-    description: "Turn 24-hour time on (18:05) or off (6:05 PM) for the menu bar, the lock screen, and the other clocks of the desktop. This is the person's own setting, not the computer's.",
+    description:
+      "Turn 24-hour time on (18:05) or off (6:05 PM) for the menu bar, the lock screen, and the other clocks of the desktop. This is the person's own setting, not the computer's.",
     scope: "settings",
     readOnly: false,
     destructive: false,
@@ -56,14 +59,15 @@ export const regionTools: readonly ToolDef[] = [
     required: ["locale"],
     parse: (args) => {
       if (args.locale === null) return { name: "set_region_formats", locale: null };
-      return isFormatsLocale(args.locale) ? { name: "set_region_formats", locale: args.locale } : fail("`locale` must be a locale name such as de_DE.UTF-8, or null.");
+      return isFormatsLocale(args.locale)
+        ? { name: "set_region_formats", locale: args.locale }
+        : fail("`locale` must be a locale name such as de_DE.UTF-8, or null.");
     },
   },
   {
     name: "open_setup_assistant",
     title: "Open the Setup Assistant",
-    description:
-      `Show the Setup Assistant window to the person (language, keyboard, Wi-Fi, time zone, appearance, agents): they make the choices, you do not. Optionally start on one page: ${PAGES.join(", ")}. It cannot be driven with click or type_text.`,
+    description: `Show the Setup Assistant window to the person (language, keyboard, Wi-Fi, time zone, appearance, agents): they make the choices, you do not. Optionally start on one page: ${PAGES.join(", ")}. It cannot be driven with click or type_text.`,
     scope: "settings",
     readOnly: false,
     destructive: false,

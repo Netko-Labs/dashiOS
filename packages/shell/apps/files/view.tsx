@@ -44,12 +44,31 @@ function Empty({ store }: { store: FilesStore }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   if (state.loading) return <EmptyState title="Loading…" testID="empty" />;
   if (state.error) {
-    return <EmptyState testID="empty" title="This folder can’t be shown" message={state.error} glyph={glyphs.WARNING} action={<Button label="Go to Home" testID="empty:home" onPress={() => store.go(folderAt(store.env.home))} />} />;
+    return (
+      <EmptyState
+        testID="empty"
+        title="This folder can’t be shown"
+        message={state.error}
+        glyph={glyphs.WARNING}
+        action={<Button label="Go to Home" testID="empty:home" onPress={() => store.go(folderAt(store.env.home))} />}
+      />
+    );
   }
-  if (state.found !== null) return state.searching ? <EmptyState testID="empty" title="Searching…" /> : <EmptyState testID="empty" title="No Results" message={`Nothing named “${state.query.trim()}”.`} glyph={glyphs.SEARCH} />;
+  if (state.found !== null)
+    return state.searching ? (
+      <EmptyState testID="empty" title="Searching…" />
+    ) : (
+      <EmptyState testID="empty" title="No Results" message={`Nothing named “${state.query.trim()}”.`} glyph={glyphs.SEARCH} />
+    );
   if (state.location.kind === "trash") return <EmptyState testID="empty" title="The Trash is empty" />;
   if (state.location.kind === "recents") return <EmptyState testID="empty" title="No recent files" message="Files you open will show up here." />;
-  return <EmptyState testID="empty" title="This folder is empty" message={state.showHidden || !state.items.some((item) => item.hidden) ? undefined : "Hidden files are not shown."} />;
+  return (
+    <EmptyState
+      testID="empty"
+      title="This folder is empty"
+      message={state.showHidden || !state.items.some((item) => item.hidden) ? undefined : "Hidden files are not shown."}
+    />
+  );
 }
 
 function SearchBar({ store }: { store: FilesStore }) {
@@ -57,7 +76,19 @@ function SearchBar({ store }: { store: FilesStore }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   if (state.query === "") return null;
   return (
-    <View testID="searchbar" style={{ height: 34, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderColor: colors.separator }}>
+    <View
+      testID="searchbar"
+      style={{
+        height: 34,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingHorizontal: 14,
+        borderBottomWidth: 1,
+        borderColor: colors.separator,
+      }}
+    >
       <Text style={{ fontSize: 12, color: colors.textMuted }}>Search:</Text>
       <Segmented
         testID="scope"
@@ -128,7 +159,8 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
 
   const items = store.visible();
   const deps = { store, ops, actions };
-  const menuItems = (kind: MenuState["kind"]): MenuItem[] => (kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps));
+  const menuItems = (kind: MenuState["kind"]): MenuItem[] =>
+    kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps);
 
   const onKey = (key: KeyInput): void => {
     switch (key.kind) {
@@ -155,22 +187,93 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
 
   const overlay = (() => {
     if (sheet?.kind === "new-folder") {
-      return <NameSheet title="New Folder" message="Name of the new folder:" initial="untitled folder" action="Create" onCancel={close} onSubmit={async (name) => { const problem = await ops.newFolder(name); if (problem === null) close(); return problem; }} />;
+      return (
+        <NameSheet
+          title="New Folder"
+          message="Name of the new folder:"
+          initial="untitled folder"
+          action="Create"
+          onCancel={close}
+          onSubmit={async (name) => {
+            const problem = await ops.newFolder(name);
+            if (problem === null) close();
+            return problem;
+          }}
+        />
+      );
     }
     if (sheet?.kind === "rename") {
-      return <NameSheet title={`Rename “${sheet.item.name}”`} initial={sheet.item.name} action="Rename" onCancel={close} onSubmit={async (name) => { const problem = await ops.rename(sheet.item.path, name); if (problem === null) close(); return problem; }} />;
+      return (
+        <NameSheet
+          title={`Rename “${sheet.item.name}”`}
+          initial={sheet.item.name}
+          action="Rename"
+          onCancel={close}
+          onSubmit={async (name) => {
+            const problem = await ops.rename(sheet.item.path, name);
+            if (problem === null) close();
+            return problem;
+          }}
+        />
+      );
     }
     if (sheet?.kind === "go") {
-      return <PathSheet onCancel={close} onSubmit={async (text) => { const problem = store.goToPath(text); if (problem === null) close(); return problem; }} />;
+      return (
+        <PathSheet
+          onCancel={close}
+          onSubmit={async (text) => {
+            const problem = store.goToPath(text);
+            if (problem === null) close();
+            return problem;
+          }}
+        />
+      );
     }
     if (sheet?.kind === "info") return <InfoSheet item={sheet.item} home={store.env.home} onClose={close} />;
-    if (sheet?.kind === "open-with") return <OpenWithSheet item={sheet.item} apps={sheet.apps} onCancel={close} onChoose={(app) => { void ops.openWith(app, sheet.item); close(); }} />;
+    if (sheet?.kind === "open-with")
+      return (
+        <OpenWithSheet
+          item={sheet.item}
+          apps={sheet.apps}
+          onCancel={close}
+          onChoose={(app) => {
+            void ops.openWith(app, sheet.item);
+            close();
+          }}
+        />
+      );
     if (sheet?.kind === "empty-trash") {
-      return <ConfirmSheet testID="empty-trash" title="Empty the Trash?" message={`${formatCount(state.items.length)} will be deleted for good. This can’t be undone.`} confirmLabel="Empty Trash" danger onCancel={close} onConfirm={() => { void ops.emptyTrash(); close(); }} />;
+      return (
+        <ConfirmSheet
+          testID="empty-trash"
+          title="Empty the Trash?"
+          message={`${formatCount(state.items.length)} will be deleted for good. This can’t be undone.`}
+          confirmLabel="Empty Trash"
+          danger
+          onCancel={close}
+          onConfirm={() => {
+            void ops.emptyTrash();
+            close();
+          }}
+        />
+      );
     }
     if (sheet?.kind === "delete") {
       const names = sheet.items.length === 1 ? `“${sheet.items[0]?.name}”` : formatCount(sheet.items.length);
-      return <ConfirmSheet testID="delete-forever" title={`Delete ${names} immediately?`} message="It will be deleted for good. This can’t be undone." confirmLabel="Delete" danger onCancel={close} onConfirm={() => { void ops.deleteForever(sheet.items); close(); }} />;
+      return (
+        <ConfirmSheet
+          testID="delete-forever"
+          title={`Delete ${names} immediately?`}
+          message="It will be deleted for good. This can’t be undone."
+          confirmLabel="Delete"
+          danger
+          onCancel={close}
+          onConfirm={() => {
+            void ops.deleteForever(sheet.items);
+            close();
+          }}
+        />
+      );
     }
     if (menu) {
       const entries = menuItems(menu.kind);
@@ -216,4 +319,3 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
     </Files.Provider>
   );
 }
-

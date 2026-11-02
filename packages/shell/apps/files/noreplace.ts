@@ -38,7 +38,19 @@ function load(): { renameat2: Renameat2; errno: Errno } | null {
 
 const cstring = (text: string): Uint8Array => new TextEncoder().encode(`${text}\0`);
 
-const ERRNO_CODES: Record<number, string> = { 1: "EPERM", 2: "ENOENT", 13: "EACCES", 17: "EEXIST", 18: "EXDEV", 20: "ENOTDIR", 21: "EISDIR", 22: "EINVAL", 28: "ENOSPC", 30: "EROFS", 39: "ENOTEMPTY" };
+const ERRNO_CODES: Record<number, string> = {
+  1: "EPERM",
+  2: "ENOENT",
+  13: "EACCES",
+  17: "EEXIST",
+  18: "EXDEV",
+  20: "ENOTDIR",
+  21: "EISDIR",
+  22: "EINVAL",
+  28: "ENOSPC",
+  30: "EROFS",
+  39: "ENOTEMPTY",
+};
 const ENOSYS = 38;
 
 /** Moves `from` to `to`; throws an error with `code` `EEXIST` if `to` exists, and `EXDEV` across disks. */
@@ -53,7 +65,10 @@ export async function renameNoReplace(from: string, to: string): Promise<void> {
       throw Object.assign(new Error(`rename ${from}: errno ${errno}`), { code: ERRNO_CODES[errno] ?? `E${errno}`, errno });
     }
   }
-  const exists = await lstat(to).then(() => true, () => false);
+  const exists = await lstat(to).then(
+    () => true,
+    () => false,
+  );
   if (exists) throw Object.assign(new Error(`${to} exists`), { code: "EEXIST" });
   await rename(from, to);
 }

@@ -15,13 +15,18 @@ import { useSurface } from "./theme/index.ts";
 /** A heading over a group, or a sentence under it; `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useColors();
-  const text = (
-    <Text style={{ fontSize: above ? 12 : 11, fontWeight: above ? "semibold" : "normal", color: colors.textMuted }}>{children}</Text>
-  );
+  const text = <Text style={{ fontSize: above ? 12 : 11, fontWeight: above ? "semibold" : "normal", color: colors.textMuted }}>{children}</Text>;
   // A shortcut is drawn after the text, not typed into it: text fonts don't reliably carry ❖.
   return (
     // With keys, a row the width of its content, so the shortcut sits right after the text (keep such captions to one line).
-    <View style={{ flexShrink: 0, paddingHorizontal: 4, marginTop: above ? 4 : -8, ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}) }}>
+    <View
+      style={{
+        flexShrink: 0,
+        paddingHorizontal: 4,
+        marginTop: above ? 4 : -8,
+        ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
+      }}
+    >
       {text}
       {keys ? <Shortcut keys={keys} color={colors.textMuted} size={11} /> : null}
     </View>
@@ -34,7 +39,18 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
   const surface = useSurface();
   const rows = Children.toArray(children);
   return (
-    <View testID={testID} style={{ flexShrink: 0, flexDirection: "column", borderRadius: 10, backgroundColor: surface.card, borderWidth: 1, borderColor: colors.separator, overflow: "hidden" }}>
+    <View
+      testID={testID}
+      style={{
+        flexShrink: 0,
+        flexDirection: "column",
+        borderRadius: 10,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        overflow: "hidden",
+      }}
+    >
       {rows.map((row, index) => (
         // The rows of a group never reorder.
         <Fragment key={index}>
@@ -160,7 +176,9 @@ export function Button({
         hoverBackgroundColor: strong || disabled ? fill : colors.separator,
       }}
     >
-      <Text style={{ fontSize: 13, fontWeight: strong ? "semibold" : "normal", color: disabled ? colors.textDisabled : strong ? "#ffffff" : colors.text }}>{label}</Text>
+      <Text style={{ fontSize: 13, fontWeight: strong ? "semibold" : "normal", color: disabled ? colors.textDisabled : strong ? "#ffffff" : colors.text }}>
+        {label}
+      </Text>
     </View>
   );
 }

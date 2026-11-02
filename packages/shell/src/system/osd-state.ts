@@ -6,10 +6,7 @@
 
 import { useSyncExternalStore } from "react";
 
-export type OsdState =
-  | { kind: "volume"; level: number; muted: boolean }
-  | { kind: "brightness"; level: number }
-  | { kind: "mic"; muted: boolean };
+export type OsdState = { kind: "volume"; level: number; muted: boolean } | { kind: "brightness"; level: number } | { kind: "mic"; muted: boolean };
 
 /** The HUD's measures, in px. */
 export const OSD = {

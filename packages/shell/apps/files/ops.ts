@@ -39,7 +39,11 @@ function checkCancelled(ctx: OpContext): void {
   if (ctx.signal.aborted) throw new Cancelled();
 }
 
-const exists = (path: string): Promise<boolean> => lstat(path).then(() => true, () => false);
+const exists = (path: string): Promise<boolean> =>
+  lstat(path).then(
+    () => true,
+    () => false,
+  );
 const codeOf = (error: unknown): string | undefined => (error as { code?: string } | null)?.code;
 
 /** Files at least this big are copied in chunks (cancellable, no symlink on open); smaller ones by the kernel's copy (reflinks where the disk can). */

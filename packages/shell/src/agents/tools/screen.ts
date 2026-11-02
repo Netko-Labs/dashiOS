@@ -7,16 +7,14 @@ import type { CallError, Rect } from "./types.ts";
 /** Screen points are whole numbers well inside this; the compositor takes 32-bit ones. */
 const POINTS_MAX = 100_000;
 
-const RECT_HELP =
-  "`rect` needs whole-number x, y, width, and height in screen points, width and height at least 1; list_displays gives each screen's frame.";
+const RECT_HELP = "`rect` needs whole-number x, y, width, and height in screen points, width and height at least 1; list_displays gives each screen's frame.";
 
 function parseRect(value: unknown): Rect | CallError {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return fail(RECT_HELP);
   const fields = value as Record<string, unknown>;
   const extra = Object.keys(fields).find((key) => !["x", "y", "width", "height"].includes(key));
   if (extra) return fail(`\`rect\` has no \`${extra}\`; it is x, y, width, and height.`);
-  const within = (n: unknown, min: number): number | null =>
-    typeof n === "number" && Number.isInteger(n) && n >= min && n <= POINTS_MAX ? n : null;
+  const within = (n: unknown, min: number): number | null => (typeof n === "number" && Number.isInteger(n) && n >= min && n <= POINTS_MAX ? n : null);
   const x = within(fields.x, -POINTS_MAX);
   const y = within(fields.y, -POINTS_MAX);
   const width = within(fields.width, 1);
@@ -73,7 +71,7 @@ export const screenTools: readonly ToolDef[] = [
     title: "List screens",
     description:
       "Every screen: name, whether it is the laptop's own panel, its frame in points (where it sits and how big it is, the coordinates screenshot's `rect` uses), its size in pixels, its scale, and the scales it can take. " +
-      "Screens that have an EDID also say make and model; `primary` marks the main display (menu bar and Dock), `rotation` a screen turned on its side, `refreshHz` its rate, and `modes` the resolutions and rates it can run (\"2560x1440@59.95\"). A monitor that is off is listed with enabled false.",
+      'Screens that have an EDID also say make and model; `primary` marks the main display (menu bar and Dock), `rotation` a screen turned on its side, `refreshHz` its rate, and `modes` the resolutions and rates it can run ("2560x1440@59.95"). A monitor that is off is listed with enabled false.',
     scope: "see",
     readOnly: true,
     destructive: false,
@@ -96,7 +94,7 @@ export const screenTools: readonly ToolDef[] = [
     required: ["name", "scale"],
     parse: (args) => {
       const display = typeof args.name === "string" ? args.name : "";
-      if (display === "" || display.length > 64) return fail("`name` is required: a screen name from list_displays, like \"eDP-1\".");
+      if (display === "" || display.length > 64) return fail('`name` is required: a screen name from list_displays, like "eDP-1".');
       const scale = SCALES.find((candidate) => candidate === args.scale);
       return scale === undefined ? fail(`\`scale\` must be one of: ${SCALES.join(", ")}.`) : { name: "set_display_scale", display, scale };
     },
@@ -126,7 +124,8 @@ export const screenTools: readonly ToolDef[] = [
       if (width === null || height === null) return fail("`width` and `height` must be whole numbers of pixels, like 2560 and 1440.");
       if (args.refresh_hz === undefined) return { name: "set_display_mode", display, width, height };
       const hertz = args.refresh_hz;
-      if (typeof hertz !== "number" || !Number.isFinite(hertz) || hertz < 1 || hertz > 1000) return fail("`refresh_hz` must be a number of hertz from 1 to 1000, like 59.94.");
+      if (typeof hertz !== "number" || !Number.isFinite(hertz) || hertz < 1 || hertz > 1000)
+        return fail("`refresh_hz` must be a number of hertz from 1 to 1000, like 59.94.");
       return { name: "set_display_mode", display, width, height, refreshMhz: Math.round(hertz * 1000) };
     },
   },

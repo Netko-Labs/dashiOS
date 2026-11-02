@@ -34,11 +34,13 @@ export interface EventInput {
 /** The repeat as it is kept, or a CalendarError saying what is wrong. */
 export function checkRepeat(repeat: Repeat, start: Local): Repeat {
   if (!(FREQUENCIES as readonly string[]).includes(repeat.freq)) throw new CalendarError("The repeat must be daily, weekly, monthly, or yearly.");
-  if (!Number.isInteger(repeat.interval) || repeat.interval < 1 || repeat.interval > 999) throw new CalendarError("The repeat interval must be a whole number from 1 to 999.");
+  if (!Number.isInteger(repeat.interval) || repeat.interval < 1 || repeat.interval > 999)
+    throw new CalendarError("The repeat interval must be a whole number from 1 to 999.");
   const out: Repeat = { freq: repeat.freq, interval: repeat.interval };
   if (repeat.count !== undefined && repeat.until !== undefined) throw new CalendarError("A repeat ends after a number of times or on a day, not both.");
   if (repeat.count !== undefined) {
-    if (!Number.isInteger(repeat.count) || repeat.count < 1 || repeat.count > 9999) throw new CalendarError("The repeat count must be a whole number from 1 to 9999.");
+    if (!Number.isInteger(repeat.count) || repeat.count < 1 || repeat.count > 9999)
+      throw new CalendarError("The repeat count must be a whole number from 1 to 9999.");
     out.count = repeat.count;
   }
   if (repeat.until !== undefined) {
@@ -62,7 +64,10 @@ function clip(value: string | undefined, max: number, what: string): string {
 
 /** The event `input` describes; `existing` is the event being edited, whose uid and untouched parts it keeps. */
 export function makeEvent(input: EventInput, existing?: CalEvent): CalEvent {
-  const title = clip(input.title, MAX_TITLE, "A title").replace(/\s*\n\s*/g, " ").trim() || "New Event";
+  const title =
+    clip(input.title, MAX_TITLE, "A title")
+      .replace(/\s*\n\s*/g, " ")
+      .trim() || "New Event";
   if (!isLocal(input.start) || !isLocal(input.end)) throw new CalendarError("An event needs a start and an end time like 2026-11-05T14:00.");
   let { start, end } = input;
   if (input.allDay) {
@@ -77,7 +82,8 @@ export function makeEvent(input: EventInput, existing?: CalEvent): CalEvent {
 
   const repeat = input.repeat === undefined ? (existing?.repeat ?? null) : input.repeat === null ? null : checkRepeat(input.repeat, start);
   const alert = input.alert === undefined ? (existing?.alert ?? null) : input.alert;
-  if (alert !== null && (!Number.isInteger(alert) || alert < -MAX_ALERT_MINUTES || alert > MAX_ALERT_MINUTES)) throw new CalendarError("An alert is a whole number of minutes, up to 30 days before.");
+  if (alert !== null && (!Number.isInteger(alert) || alert < -MAX_ALERT_MINUTES || alert > MAX_ALERT_MINUTES))
+    throw new CalendarError("An alert is a whole number of minutes, up to 30 days before.");
 
   // A deleted occurrence is named by its start, which an edit that moves the time makes meaningless.
   const sameClock = existing !== undefined && existing.allDay === input.allDay && existing.start.slice(10) === start.slice(10);
@@ -88,7 +94,9 @@ export function makeEvent(input: EventInput, existing?: CalEvent): CalEvent {
     allDay: input.allDay,
     start,
     end,
-    location: clip(input.location, MAX_LOCATION, "A location").replace(/\s*\n\s*/g, " ").trim(),
+    location: clip(input.location, MAX_LOCATION, "A location")
+      .replace(/\s*\n\s*/g, " ")
+      .trim(),
     notes: clip(input.notes, MAX_NOTES, "Notes"),
     repeat,
     rawRule: replacedRepeat ? null : (existing?.rawRule ?? null),

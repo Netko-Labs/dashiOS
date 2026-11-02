@@ -41,7 +41,8 @@ export const spaceTools: readonly ToolDef[] = [
   {
     name: "move_window_to_space",
     title: "Move a window to a Space",
-    description: "Put a window on another Space. Moved off the Space that shows, it leaves the screen until that Space is shown (switch_space, or focus_window, which goes to its Space).",
+    description:
+      "Put a window on another Space. Moved off the Space that shows, it leaves the screen until that Space is shown (switch_space, or focus_window, which goes to its Space).",
     scope: "act",
     readOnly: false,
     destructive: false,

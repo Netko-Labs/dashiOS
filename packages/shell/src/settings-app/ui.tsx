@@ -40,7 +40,19 @@ const SETTLE_MS = 300;
  * value; the value is handed to `onCommit` when the button lifts (or the
  * pointer rests), not on every move, so a drag is one write to the file.
  */
-export function Slider({ value, range, width = 220, testID, onCommit }: { value: number; range: Range; width?: number; testID: string; onCommit: (value: number) => void }) {
+export function Slider({
+  value,
+  range,
+  width = 220,
+  testID,
+  onCommit,
+}: {
+  value: number;
+  range: Range;
+  width?: number;
+  testID: string;
+  onCommit: (value: number) => void;
+}) {
   const colors = useColors();
   const [dragging, setDragging] = useState<number | null>(null);
   // Pointer events carry the bar's bounds; the last layout stands in for one that does not.
@@ -72,10 +84,23 @@ export function Slider({ value, range, width = 220, testID, onCommit }: { value:
       }}
       style={{ width, height: KNOB + 4, position: "relative" }}
     >
-      <View style={{ position: "absolute", left: 0, top: (KNOB + 4 - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }} />
-      <View style={{ position: "absolute", left: 0, top: (KNOB + 4 - TRACK) / 2, width: knobLeft + KNOB / 2, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.selection }} />
-      <View style={{ position: "absolute", left: knobLeft, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }} />
+      <View
+        style={{ position: "absolute", left: 0, top: (KNOB + 4 - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          top: (KNOB + 4 - TRACK) / 2,
+          width: knobLeft + KNOB / 2,
+          height: TRACK,
+          borderRadius: TRACK / 2,
+          backgroundColor: colors.selection,
+        }}
+      />
+      <View
+        style={{ position: "absolute", left: knobLeft, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }}
+      />
     </View>
   );
 }
-

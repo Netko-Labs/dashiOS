@@ -27,7 +27,18 @@ export function AppCard({ app }: { app: AppSummary }) {
     <View
       testID={`card:${app.id}`}
       onPress={() => actions.openApp(app.id)}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, minWidth: 0, borderRadius: 10, backgroundColor: surface.card, borderWidth: 1, borderColor: colors.separator, hoverBackgroundColor: colors.tileHover }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        padding: 12,
+        minWidth: 0,
+        borderRadius: 10,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        hoverBackgroundColor: colors.tileHover,
+      }}
     >
       <AppIcon url={app.icon} name={app.name} size={52} />
       <View onLayout={(bounds) => setRoom(bounds.width)} style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>

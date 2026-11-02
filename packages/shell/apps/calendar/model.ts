@@ -150,7 +150,10 @@ export class CalendarModel {
 
   /** Adds an event to `calendarId`, or edits `uid` there (moving it to `moveTo` when that differs). True when it was saved. */
   saveEvent(calendarId: string, uid: string | null, input: EventInput, moveTo?: string): boolean {
-    return this.attempt("Saving the event", () => (uid === null ? this.store.add(calendarId, input) : this.store.update(calendarId, uid, input, moveTo))) !== undefined;
+    return (
+      this.attempt("Saving the event", () => (uid === null ? this.store.add(calendarId, input) : this.store.update(calendarId, uid, input, moveTo))) !==
+      undefined
+    );
   }
 
   deleteEvent(calendarId: string, uid: string): boolean {

@@ -25,7 +25,7 @@ export const softwareTools: readonly ToolDef[] = [
     readOnly: true,
     destructive: false,
     properties: {
-      query: { type: "string", description: "Words to search for, like \"music player\"." },
+      query: { type: "string", description: 'Words to search for, like "music player".' },
       limit: { type: "integer", minimum: 1, maximum: SEARCH_MAX, description: `How many results (default ${SEARCH_LIMIT}).` },
     },
     required: ["query"],
@@ -80,7 +80,8 @@ export const softwareTools: readonly ToolDef[] = [
     destructive: false,
     properties: { app: idProp },
     required: ["app"],
-    parse: (args) => (isAppId(args.app) ? { name: "request_software_install", app: args.app } : fail("`app` is required: an application id from search_software.")),
+    parse: (args) =>
+      isAppId(args.app) ? { name: "request_software_install", app: args.app } : fail("`app` is required: an application id from search_software."),
   },
   {
     name: "request_software_update",
@@ -96,7 +97,9 @@ export const softwareTools: readonly ToolDef[] = [
     parse: (args) => {
       const target = args.target;
       if (target === "apps" || target === "system") return { name: "request_software_update", target };
-      return isAppId(target) ? { name: "request_software_update", target: { app: target } } : fail('`target` must be "apps", "system", or an application id from list_software_updates.');
+      return isAppId(target)
+        ? { name: "request_software_update", target: { app: target } }
+        : fail('`target` must be "apps", "system", or an application id from list_software_updates.');
     },
   },
 ];

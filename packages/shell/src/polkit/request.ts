@@ -40,7 +40,10 @@ export const isCookie = (value: unknown): value is string => typeof value === "s
 
 /** Text for the sheet: control characters become spaces, runs of space fold, and the length is bounded. */
 export function plainText(text: string, limit = MAX_MESSAGE): string {
-  const clean = text.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ").replace(/\s+/g, " ").trim();
+  const clean = text
+    .replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return clean.length > limit ? `${clean.slice(0, limit - 1)}…` : clean;
 }
 

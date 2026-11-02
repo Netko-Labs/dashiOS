@@ -68,7 +68,10 @@ export async function setSoundOutput(call: Extract<Call, { name: "set_sound_outp
 export async function setVolume(call: Extract<Call, { name: "set_volume" }>, ctx: RunContext): Promise<ToolResult> {
   const what = call.target === "output" ? "the volume" : "the microphone volume";
   ctx.status(call.level !== undefined ? `Setting ${what}` : `${call.muted ? "Muting" : "Unmuting"} ${call.target === "output" ? "sound" : "the microphone"}`);
-  const volume = await ctx.desktop.machine.setVolume(call.target, { ...(call.level === undefined ? {} : { level: call.level }), ...(call.muted === undefined ? {} : { muted: call.muted }) });
+  const volume = await ctx.desktop.machine.setVolume(call.target, {
+    ...(call.level === undefined ? {} : { level: call.level }),
+    ...(call.muted === undefined ? {} : { muted: call.muted }),
+  });
   if (volume === null) return toolError(call.target === "output" ? "There is no sound output to set." : "There is no microphone to set.");
   const level = Math.round(volume.level * 100) / 100;
   return text(`The ${call.target} volume is ${level}${volume.muted ? " and muted" : ""}.`, { target: call.target, level, muted: volume.muted });
@@ -79,7 +82,9 @@ export async function getPower(ctx: RunContext): Promise<ToolResult> {
   const power = await ctx.desktop.machine.power();
   return json({
     battery: power.battery,
-    power_mode: power.powerMode ? { active: power.powerMode.active, label: power.powerMode.label, available: power.powerMode.available.map((mode) => mode.id) } : null,
+    power_mode: power.powerMode
+      ? { active: power.powerMode.active, label: power.powerMode.label, available: power.powerMode.available.map((mode) => mode.id) }
+      : null,
     display_off_after_minutes: power.displayOffAfterMinutes,
     sleep_after_minutes: power.sleepAfterMinutes,
     lid: power.lid ? { on_battery: power.lid.onBattery, on_power: power.lid.onPower, with_display: power.lid.withDisplay } : null,

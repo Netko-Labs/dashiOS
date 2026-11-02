@@ -46,5 +46,8 @@ if (import.meta.main) {
   const ops = new Operations(store);
   store.start();
   if (start.select) store.select([start.select]);
-  runApp({ id: "dev.dashi.files", title: "Files", size: FILES_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST }, <FilesWindow store={store} ops={ops} />);
+  runApp(
+    { id: "dev.dashi.files", title: "Files", size: FILES_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
+    <FilesWindow store={store} ops={ops} />,
+  );
 }

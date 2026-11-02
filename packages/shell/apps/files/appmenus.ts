@@ -13,7 +13,12 @@ import type { Operations } from "./operations.ts";
 import type { FilesState, FilesStore } from "./store.ts";
 
 const SEPARATOR = { type: "separator" } as const;
-const SORTS = [["name", "Name"], ["modified", "Date Modified"], ["size", "Size"], ["kind", "Kind"]] as const;
+const SORTS = [
+  ["name", "Name"],
+  ["modified", "Date Modified"],
+  ["size", "Size"],
+  ["kind", "Kind"],
+] as const;
 
 export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations): MenuSpec[] {
   const selected = store.selectedItems();
@@ -152,4 +157,3 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
     if (place) store.go(place.location);
   }
 }
-

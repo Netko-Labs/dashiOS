@@ -37,5 +37,7 @@ export async function moveWindowToSpace(id: number, space: number, ctx: RunConte
   if (!state || space >= state.count) return toolError(`There is no Space ${space + 1}; list_spaces shows the ${state?.count ?? 1} there are.`);
   ctx.status(`Moving ${subject(window, ctx)} to ${spaceLabel(space)}`);
   await ctx.compositor.request("space-move", { window: id, space });
-  return text(`w${id}${ctx.mayName() ? ` (“${window.title}”)` : ""} is on ${spaceLabel(space)}${space === state.current ? "" : ", off screen until that Space shows"}.`);
+  return text(
+    `w${id}${ctx.mayName() ? ` (“${window.title}”)` : ""} is on ${spaceLabel(space)}${space === state.current ? "" : ", off screen until that Space shows"}.`,
+  );
 }

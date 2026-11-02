@@ -44,7 +44,14 @@ export function Sidebar({
   return (
     <>
       <SidebarSection>
-        <SidebarItem testID="source:all" label="All Notes" glyph={NOTES} badge={String(counts.all)} selected={source.kind === "all"} onPress={() => onSource({ kind: "all" })} />
+        <SidebarItem
+          testID="source:all"
+          label="All Notes"
+          glyph={NOTES}
+          badge={String(counts.all)}
+          selected={source.kind === "all"}
+          onPress={() => onSource({ kind: "all" })}
+        />
       </SidebarSection>
       <SidebarSection title="Folders">
         {folder("", DEFAULT_FOLDER_NAME, false)}
@@ -62,7 +69,16 @@ export function Sidebar({
       <View
         testID="new-folder"
         onPress={onNewFolder}
-        style={{ height: 30, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 8, borderRadius: 7, hoverBackgroundColor: colors.button }}
+        style={{
+          height: 30,
+          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 9,
+          paddingHorizontal: 8,
+          borderRadius: 7,
+          hoverBackgroundColor: colors.button,
+        }}
       >
         <Svg markup={FOLDER_PLUS} size={16} color={colors.textMuted} />
         <Text style={{ fontSize: 13, color: colors.textMuted }}>New Folder</Text>

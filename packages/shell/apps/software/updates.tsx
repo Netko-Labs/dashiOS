@@ -59,7 +59,10 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
     .filter((part): part is string => !!part)
     .join(" · ");
   return (
-    <View testID={`app-update:${update.id}`} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}>
+    <View
+      testID={`app-update:${update.id}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+    >
       <View onPress={() => actions.openApp(update.id)} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}>
         <AppIcon url={icon} name={update.name} size={40} />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
@@ -99,8 +102,11 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
   const restartLikely = (state.system?.restartCauses.length ?? 0) > 0;
 
   if (state.checkedAt === null && state.checking) return <Loading what="Checking for updates…" />;
-  const errors = [state.appUpdatesError && `Apps: ${state.appUpdatesError}`, state.systemError && `System: ${state.systemError}`].filter((line): line is string => !!line);
-  const appsOp = (installation: string): Operation | undefined => state.operations.find((operation) => operation.kind === "update" && operation.id === undefined && operation.key === `update:${installation}:*`);
+  const errors = [state.appUpdatesError && `Apps: ${state.appUpdatesError}`, state.systemError && `System: ${state.systemError}`].filter(
+    (line): line is string => !!line,
+  );
+  const appsOp = (installation: string): Operation | undefined =>
+    state.operations.find((operation) => operation.kind === "update" && operation.id === undefined && operation.key === `update:${installation}:*`);
   const nothing = appUpdates.length === 0 && system.length === 0;
   const installations = [...new Set(appUpdates.map((update) => update.installation))];
 
@@ -128,18 +134,27 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
             testID="up-to-date"
             glyph={errors.length > 0 ? glyphs.WARNING : UPDATES}
             title={errors.length > 0 ? "Updates couldn't be checked" : "Everything is up to date"}
-            message={errors.length > 0 ? undefined : `Checked ${ago(state.checkedAt, Date.now())}. Updates never install on their own: they wait here until you choose them.`}
+            message={
+              errors.length > 0
+                ? undefined
+                : `Checked ${ago(state.checkedAt, Date.now())}. Updates never install on their own: they wait here until you choose them.`
+            }
           />
         </View>
       )}
       {system.length > 0 && (
         <>
-          <Heading title="System" detail={`${system.length} ${system.length === 1 ? "update" : "updates"} to the system's own software${restartLikely ? ", including the kernel or core libraries" : ""}`} />
+          <Heading
+            title="System"
+            detail={`${system.length} ${system.length === 1 ? "update" : "updates"} to the system's own software${restartLikely ? ", including the kernel or core libraries" : ""}`}
+          />
           <Group testID="system-updates">
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}>
               <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
                 <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>System Software</Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>You'll be asked for your password. {restartLikely ? "A restart finishes the update." : ""}</Text>
+                <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                  You'll be asked for your password. {restartLikely ? "A restart finishes the update." : ""}
+                </Text>
               </View>
               {systemOp ? <Busy operation={systemOp} /> : <Button label="Update All" testID="update-system" primary onPress={onUpdateSystem} />}
             </View>

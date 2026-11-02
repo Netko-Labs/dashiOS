@@ -12,7 +12,7 @@ export const GIVE_UP_AFTER = 5;
 export const CRASH_WINDOW_MS = 60_000;
 
 export type CrashVerdict =
-  | { kind: "restart"; delayMs: number; /** Crashes inside the window, this one included. */ crashes: number }
+  | { kind: "restart"; delayMs: number /** Crashes inside the window, this one included. */; crashes: number }
   | { kind: "give-up"; crashes: number };
 
 export interface CrashPolicyOptions {

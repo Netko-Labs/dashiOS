@@ -158,8 +158,7 @@ const fullScreenItem = (ctx: MenuContext): MenuEntry =>
 const viewMenu = (ctx: MenuContext): MenuEntry[] => [fullScreenItem(ctx), zoomItem(ctx)];
 
 /** The app published menus but no View of its own: Dashi's View is gone from the bar, so Full Screen moves to Window. */
-const lacksViewMenu = (ctx: MenuContext): boolean =>
-  !!ctx.app && !ctx.app.menus.some((menu) => menu.id === "view" && menu.items.length > 0);
+const lacksViewMenu = (ctx: MenuContext): boolean => !!ctx.app && !ctx.app.menus.some((menu) => menu.id === "view" && menu.items.length > 0);
 
 /** The focused app's windows in a steady order (not the stacking order). */
 export function appWindows(ctx: MenuContext): CompositorWindow[] {
@@ -211,16 +210,17 @@ const helpMenu = (ctx: MenuContext): MenuEntry[] => [
 /** The rows of the app's menu `menuId`; empty when it has none. */
 function appRows(published: PublishedMenus, menuId: string): MenuEntry[] {
   const menu = published.menus.find((each) => each.id === menuId);
-  return (menu?.items ?? []).map((row): MenuEntry =>
-    row.kind === "separator"
-      ? SEPARATOR
-      : {
-          kind: "item",
-          label: row.label,
-          ...(row.shortcut === undefined ? {} : { keys: row.shortcut }),
-          ...(row.checked === undefined ? {} : { checked: row.checked }),
-          action: row.enabled ? { kind: "app-item", pid: published.pid, id: row.id, ...(row.agents === false ? { personOnly: true as const } : {}) } : null,
-        },
+  return (menu?.items ?? []).map(
+    (row): MenuEntry =>
+      row.kind === "separator"
+        ? SEPARATOR
+        : {
+            kind: "item",
+            label: row.label,
+            ...(row.shortcut === undefined ? {} : { keys: row.shortcut }),
+            ...(row.checked === undefined ? {} : { checked: row.checked }),
+            action: row.enabled ? { kind: "app-item", pid: published.pid, id: row.id, ...(row.agents === false ? { personOnly: true as const } : {}) } : null,
+          },
   );
 }
 

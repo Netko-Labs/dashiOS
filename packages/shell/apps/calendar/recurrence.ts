@@ -7,7 +7,20 @@
  * change never moves a daily 9:00 to 8:00.
  */
 
-import { addDays, addMinutes, type Day, daysBetween, daysInMonth, dayPart, firstOfMonth, type Local, minutesBetween, monthOf, startOfWeek, weekday } from "./dates.ts";
+import {
+  addDays,
+  addMinutes,
+  type Day,
+  daysBetween,
+  daysInMonth,
+  dayPart,
+  firstOfMonth,
+  type Local,
+  minutesBetween,
+  monthOf,
+  startOfWeek,
+  weekday,
+} from "./dates.ts";
 import type { CalEvent, Calendar, Occurrence, Repeat } from "./types.ts";
 
 /** The most occurrences one expansion yields; a rule that goes on past this is cut. */

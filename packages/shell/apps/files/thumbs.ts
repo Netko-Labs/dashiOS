@@ -19,9 +19,17 @@ export function thumbName(path: string): string {
 
 /** Sizes to try for a tile of `pixels`, the first big enough first. */
 export function sizesFor(pixels: number): ThumbSize[] {
-  const all: Array<[ThumbSize, number]> = [["normal", 128], ["large", 256], ["x-large", 512], ["xx-large", 1024]];
+  const all: Array<[ThumbSize, number]> = [
+    ["normal", 128],
+    ["large", 256],
+    ["x-large", 512],
+    ["xx-large", 1024],
+  ];
   const enough = all.filter(([, size]) => size >= pixels).map(([name]) => name);
-  const smaller = all.filter(([, size]) => size < pixels).map(([name]) => name).reverse();
+  const smaller = all
+    .filter(([, size]) => size < pixels)
+    .map(([name]) => name)
+    .reverse();
   return [...enough, ...smaller];
 }
 
@@ -64,7 +72,13 @@ function head(path: string, bytes = 4096): Uint8Array | null {
 }
 
 /** The cached thumbnail for `path` (modified at `mtimeMs`) of about `pixels`, or null. */
-export function findThumbnail(path: string, mtimeMs: number, pixels: number, cacheDir: string, read: (file: string) => Uint8Array | null = head): string | null {
+export function findThumbnail(
+  path: string,
+  mtimeMs: number,
+  pixels: number,
+  cacheDir: string,
+  read: (file: string) => Uint8Array | null = head,
+): string | null {
   const name = thumbName(path);
   const seconds = Math.floor(mtimeMs / 1000);
   for (const size of sizesFor(pixels)) {

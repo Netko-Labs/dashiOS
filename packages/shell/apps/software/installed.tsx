@@ -23,8 +23,15 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
   const remote = useCatalogIcon(app.id, file === null);
   const detail = [app.version, app.size === null ? null : formatBytes(app.size), whereInstalled(app)].filter((part): part is string => !!part).join(" · ");
   return (
-    <View testID={`installed:${app.id}`} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60, paddingHorizontal: 12, paddingVertical: 8 }}>
-      <View testID={`installed:${app.id}:open-page`} onPress={() => actions.openApp(app.id)} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}>
+    <View
+      testID={`installed:${app.id}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60, paddingHorizontal: 12, paddingVertical: 8 }}
+    >
+      <View
+        testID={`installed:${app.id}:open-page`}
+        onPress={() => actions.openApp(app.id)}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+      >
         <AppIcon file={file} url={remote} name={app.name} size={44} />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
@@ -55,7 +62,13 @@ export function Installed({ query }: { query: string }) {
   const { store } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   if (!state.hasFlatpak) {
-    return <EmptyState title="Flatpak isn't installed" message="Software installs apps with Flatpak. Install the flatpak package, then open Software again." glyph={glyphs.WARNING} />;
+    return (
+      <EmptyState
+        title="Flatpak isn't installed"
+        message="Software installs apps with Flatpak. Install the flatpak package, then open Software again."
+        glyph={glyphs.WARNING}
+      />
+    );
   }
   if (state.installed === null) return <Loading what="Looking at your apps…" />;
   const needle = query.trim().toLowerCase();

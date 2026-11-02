@@ -8,8 +8,7 @@ import type { CompositorWindow, Frame } from "../compositor.ts";
 import type { Output } from "../layout.ts";
 import { layoutOverview, type Placed } from "./layout.ts";
 
-const contains = (frame: Frame, x: number, y: number) =>
-  x >= frame.x && x < frame.x + frame.width && y >= frame.y && y < frame.y + frame.height;
+const contains = (frame: Frame, x: number, y: number) => x >= frame.x && x < frame.x + frame.width && y >= frame.y && y < frame.y + frame.height;
 
 /** The screen a window belongs to: the one under its center, else the first. */
 export function screenOf(frame: Frame, outputs: readonly Output[]): Output | undefined {

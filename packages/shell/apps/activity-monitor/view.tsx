@@ -11,7 +11,22 @@
 import { Text, View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
-import { AppWindow, Button, EmptyState, glyphs, moveSelection, PopupMenu, SearchField, Segmented, Sheet, sortRows, type SortState, Table, ToolbarButton, useColors } from "@dashi/ui";
+import {
+  AppWindow,
+  Button,
+  EmptyState,
+  glyphs,
+  moveSelection,
+  PopupMenu,
+  SearchField,
+  Segmented,
+  Sheet,
+  sortRows,
+  type SortState,
+  Table,
+  ToolbarButton,
+  useColors,
+} from "@dashi/ui";
 import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
 import { monitorMenus, TABS } from "./menus.ts";
 import type { Monitor, Tab } from "./monitor.ts";
@@ -144,7 +159,13 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
         autoFocus
         onKeyPress={(key) => {
           if (key === "ArrowUp" || key === "ArrowDown") {
-            setSelected(moveSelection(shown.map((row) => row.pid), selectedRow?.pid ?? null, key === "ArrowUp" ? "up" : "down"));
+            setSelected(
+              moveSelection(
+                shown.map((row) => row.pid),
+                selectedRow?.pid ?? null,
+                key === "ArrowUp" ? "up" : "down",
+              ),
+            );
           }
         }}
         onSubmit={() => stop()}
@@ -175,7 +196,13 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
     ) : undefined;
 
   return (
-    <AppWindow title="Activity Monitor" subtitle={scopeLabel} toolbar={toolbar} overlay={overlay} footer={<Summary tab={tab} state={state} processes={state.rows.filter((row) => !row.kernel).length} />}>
+    <AppWindow
+      title="Activity Monitor"
+      subtitle={scopeLabel}
+      toolbar={toolbar}
+      overlay={overlay}
+      footer={<Summary tab={tab} state={state} processes={state.rows.filter((row) => !row.kernel).length} />}
+    >
       <Table
         testID="processes"
         columns={columns}

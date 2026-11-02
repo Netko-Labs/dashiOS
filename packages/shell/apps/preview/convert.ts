@@ -34,22 +34,38 @@ export const convertible = (format: Format): boolean => FORMATS[format].coder !=
 export function magickArgs(request: ConvertRequest): string[] | null {
   const coder = FORMATS[request.format].coder;
   if (!coder) return null;
-  const degrees = ((Math.trunc(request.turns) % 4) + 4) % 4 * 90;
+  const degrees = (((Math.trunc(request.turns) % 4) + 4) % 4) * 90;
   return [
     "magick",
-    "-limit", "memory", "1GiB",
-    "-limit", "map", "2GiB",
-    "-limit", "disk", "0",
-    "-limit", "time", "50",
-    "-limit", "area", "700MP",
-    "-limit", "width", "65000",
-    "-limit", "height", "65000",
+    "-limit",
+    "memory",
+    "1GiB",
+    "-limit",
+    "map",
+    "2GiB",
+    "-limit",
+    "disk",
+    "0",
+    "-limit",
+    "time",
+    "50",
+    "-limit",
+    "area",
+    "700MP",
+    "-limit",
+    "width",
+    "65000",
+    "-limit",
+    "height",
+    "65000",
     // The first frame of an animation or a multi-page file.
     `${coder}:-[0]`,
     "-auto-orient",
     ...(degrees ? ["-rotate", String(degrees)] : []),
-    "-resize", `${request.maxPixels}@>`,
-    "-define", "png:compression-level=1",
+    "-resize",
+    `${request.maxPixels}@>`,
+    "-define",
+    "png:compression-level=1",
     `png:${request.output}`,
   ];
 }
@@ -73,13 +89,21 @@ export const canSaveCopy = (format: Format): boolean => SAVEABLE.has(format);
 export function saveCopyArgs(format: Format, turns: number, output: string): string[] | null {
   const coder = FORMATS[format].coder;
   if (!coder || !SAVEABLE.has(format)) return null;
-  const degrees = ((Math.trunc(turns) % 4) + 4) % 4 * 90;
+  const degrees = (((Math.trunc(turns) % 4) + 4) % 4) * 90;
   return [
     "magick",
-    "-limit", "memory", "1GiB",
-    "-limit", "map", "2GiB",
-    "-limit", "disk", "0",
-    "-limit", "time", "50",
+    "-limit",
+    "memory",
+    "1GiB",
+    "-limit",
+    "map",
+    "2GiB",
+    "-limit",
+    "disk",
+    "0",
+    "-limit",
+    "time",
+    "50",
     `${coder}:-[0]`,
     "-auto-orient",
     ...(degrees ? ["-rotate", String(degrees)] : []),

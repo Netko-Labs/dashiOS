@@ -29,14 +29,20 @@ export const fileTools: readonly ToolDef[] = [
     scope: "files",
     readOnly: true,
     destructive: false,
-    properties: { path: pathProp, hidden: { type: "boolean", description: "Include hidden files (names starting with a dot). Default false." }, limit: limitProp },
+    properties: {
+      path: pathProp,
+      hidden: { type: "boolean", description: "Include hidden files (names starting with a dot). Default false." },
+      limit: limitProp,
+    },
     required: ["path"],
     parse: (args) => {
       const path = pathArg(args.path);
       if (path === null) return fail("`path` is required: an absolute path to a folder, like /home/me/Documents.");
       if (args.hidden !== undefined && typeof args.hidden !== "boolean") return fail("`hidden` must be true or false.");
       const limit = args.limit === undefined ? DEFAULT_LIMIT : whole(args.limit, 1, MAX_LIMIT);
-      return limit === null ? fail(`\`limit\` must be a whole number from 1 to ${MAX_LIMIT}.`) : { name: "list_folder", path, hidden: args.hidden === true, limit };
+      return limit === null
+        ? fail(`\`limit\` must be a whole number from 1 to ${MAX_LIMIT}.`)
+        : { name: "list_folder", path, hidden: args.hidden === true, limit };
     },
   },
   {

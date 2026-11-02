@@ -20,7 +20,10 @@ export function parseStartTime(stat: string): bigint | null {
   const close = stat.lastIndexOf(")");
   if (close < 0) return null;
   // After "(comm)": state is field 3, so field 22 is the 20th word.
-  const field = stat.slice(close + 1).trim().split(" ")[19];
+  const field = stat
+    .slice(close + 1)
+    .trim()
+    .split(" ")[19];
   return field !== undefined && /^[0-9]+$/.test(field) ? BigInt(field) : null;
 }
 
@@ -39,7 +42,13 @@ export function sessionSubject(
   if (session && SESSION_ID.test(session)) return ["unix-session", new Map([["session-id", variant("s", session)]])];
   const start = parseStartTime(readStat(pid) ?? "");
   if (start === null) return null;
-  return ["unix-process", new Map([["pid", variant("u", pid)], ["start-time", variant("t", start)]])];
+  return [
+    "unix-process",
+    new Map([
+      ["pid", variant("u", pid)],
+      ["start-time", variant("t", start)],
+    ]),
+  ];
 }
 
 /** polkitd translates its messages by this; anything odd falls back to a locale every system has. */

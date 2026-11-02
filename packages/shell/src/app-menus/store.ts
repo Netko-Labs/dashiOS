@@ -89,7 +89,7 @@ export class AppMenuStore {
 
   private update(): void {
     // The held menus follow their app's updates, and go if it does.
-    const next = this.held ? (this.active && (this.byPid.get(this.active.pid)?.published ?? null)) : this.menusFor(this.focus);
+    const next = this.held ? this.active && (this.byPid.get(this.active.pid)?.published ?? null) : this.menusFor(this.focus);
     if (next === this.active) return;
     this.active = next;
     for (const listener of this.listeners) listener();

@@ -44,5 +44,6 @@ export class WallpaperSync {
 
 /** Logs a wallpaper that could not be loaded, for whoever reads the session log. */
 export function reportWallpaper(event: { ok: boolean; path: string | null; error?: string }): void {
-  if (!event.ok) console.error(`dashi-shell: the wallpaper ${event.path ?? ""} did not load (${event.error ?? "unknown reason"}); the wallpaper stays as it was`);
+  if (!event.ok)
+    console.error(`dashi-shell: the wallpaper ${event.path ?? ""} did not load (${event.error ?? "unknown reason"}); the wallpaper stays as it was`);
 }

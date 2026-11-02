@@ -34,9 +34,7 @@ export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer
       >
         <AgentMark size={46} />
         <View style={{ marginTop: 8 }}>
-          <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text, textAlign: "center" }}>
-            {`${subject} wants to ${confirm.summary}`}
-          </Text>
+          <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{`${subject} wants to ${confirm.summary}`}</Text>
         </View>
         <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{origin}</Text>
         <View style={{ marginTop: 10 }}>

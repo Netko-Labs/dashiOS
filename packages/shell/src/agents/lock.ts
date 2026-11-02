@@ -10,8 +10,7 @@ import type { Compositor } from "../compositor.ts";
 /** What a tool call is told while the screen is locked. */
 export const LOCKED = "The screen is locked. Nothing on the desktop can be seen or done until the person unlocks it.";
 /** …and one that was already running when the screen locked. */
-export const LOCKED_WHILE_RUNNING =
-  "The screen locked while this ran, so what it did or saw is not reported. Check again once the person has unlocked it.";
+export const LOCKED_WHILE_RUNNING = "The screen locked while this ran, so what it did or saw is not reported. Check again once the person has unlocked it.";
 
 /** The answer to `session`: `{locked}`. */
 export function parseSession(value: unknown): boolean | null {

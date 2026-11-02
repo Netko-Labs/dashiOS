@@ -35,7 +35,9 @@ async function loadSections(catalog: Flathub): Promise<Answer<Loaded>> {
   const results = await Promise.allSettled(SECTIONS.map((section) => catalog.collection(section.kind, 1, SHOWN)));
   const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
   if (failed && results.every((result) => result.status === "rejected")) throw failed.reason;
-  const value: Loaded = results.map((result, index) => (result.status === "fulfilled" && SECTIONS[index] ? { section: SECTIONS[index], page: result.value.value } : null));
+  const value: Loaded = results.map((result, index) =>
+    result.status === "fulfilled" && SECTIONS[index] ? { section: SECTIONS[index], page: result.value.value } : null,
+  );
   return { value, stale: results.some((result) => result.status === "fulfilled" && result.value.stale) };
 }
 

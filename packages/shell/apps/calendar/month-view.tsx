@@ -74,15 +74,33 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                     <View
                       testID={`day-number:${day}`}
                       onPress={() => openDay(day)}
-                      style={{ minWidth: 20, height: 20, paddingHorizontal: 4, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: isToday ? colors.selection : "#00000000", hoverBackgroundColor: isToday ? colors.selection : colors.button }}
+                      style={{
+                        minWidth: 20,
+                        height: 20,
+                        paddingHorizontal: 4,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: isToday ? colors.selection : "#00000000",
+                        hoverBackgroundColor: isToday ? colors.selection : colors.button,
+                      }}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted }}>
+                      <Text
+                        style={{ fontSize: 12, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted }}
+                      >
                         {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
                       </Text>
                     </View>
                   </View>
                   {shown.map((occurrence) => (
-                    <EventChip key={`${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`} occurrence={occurrence} color={colorOf(occurrence.calendarId)} day={day} prefs={prefs} onOpen={onOpen} />
+                    <EventChip
+                      key={`${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`}
+                      occurrence={occurrence}
+                      color={colorOf(occurrence.calendarId)}
+                      day={day}
+                      prefs={prefs}
+                      onOpen={onOpen}
+                    />
                   ))}
                   {more > 0 && <MoreChip testID={`more:${day}`} count={more} onPress={() => openDay(day)} />}
                 </View>

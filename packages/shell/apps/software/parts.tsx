@@ -74,7 +74,17 @@ export function ProgressBar({ fraction, width = 120 }: { fraction: number | null
   const left = fraction === null ? Math.round(((width - segment) * (tick <= 10 ? tick : 20 - tick)) / 10) : 0;
   return (
     <View style={{ width, height: 4, borderRadius: 2, backgroundColor: colors.track, overflow: "hidden", position: "relative" }}>
-      <View style={{ position: "absolute", left, top: 0, height: 4, borderRadius: 2, width: fraction === null ? segment : Math.max(4, Math.round(width * fraction)), backgroundColor: colors.selection }} />
+      <View
+        style={{
+          position: "absolute",
+          left,
+          top: 0,
+          height: 4,
+          borderRadius: 2,
+          width: fraction === null ? segment : Math.max(4, Math.round(width * fraction)),
+          backgroundColor: colors.selection,
+        }}
+      />
     </View>
   );
 }
@@ -110,7 +120,17 @@ export function ActionPill({ state, onGet, testID, wide }: { state: AppState; on
     <View
       testID={testID}
       onPress={press}
-      style={{ minWidth, height: 26, flexShrink: 0, paddingHorizontal: 12, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: colors.button, hoverBackgroundColor: colors.separator }}
+      style={{
+        minWidth,
+        height: 26,
+        flexShrink: 0,
+        paddingHorizontal: 12,
+        borderRadius: 13,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.button,
+        hoverBackgroundColor: colors.separator,
+      }}
     >
       <Text style={{ fontSize: 12, fontWeight: "bold", color: ink }}>{label}</Text>
     </View>

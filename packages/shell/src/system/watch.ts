@@ -20,8 +20,7 @@ export function watchLines(command: readonly string[], onLine: (line: string) =>
   const { restartMs = 2000, maxDelayMs = 60_000, healthyMs = 30_000 } = options;
   const which = options.which ?? ((program: string) => Bun.which(program));
   const spawn =
-    options.spawn ??
-    ((cmd: string[]) => Bun.spawn(cmd, { stdin: "ignore", stdout: "pipe", stderr: "ignore", env: { ...process.env, LC_ALL: "C" } }));
+    options.spawn ?? ((cmd: string[]) => Bun.spawn(cmd, { stdin: "ignore", stdout: "pipe", stderr: "ignore", env: { ...process.env, LC_ALL: "C" } }));
   const [program] = command;
   if (program === undefined || which(program) === null) return () => {};
 

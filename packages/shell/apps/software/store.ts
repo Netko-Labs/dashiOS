@@ -45,7 +45,20 @@ export class SoftwareStore {
   private readonly queue: OperationQueue;
 
   constructor(
-    private readonly software: Pick<Software, "hasFlatpak" | "hasPackageKit" | "installed" | "flatpakUpdates" | "systemUpdates" | "needsRestart" | "install" | "remove" | "updateFlatpak" | "updateSystem" | "open">,
+    private readonly software: Pick<
+      Software,
+      | "hasFlatpak"
+      | "hasPackageKit"
+      | "installed"
+      | "flatpakUpdates"
+      | "systemUpdates"
+      | "needsRestart"
+      | "install"
+      | "remove"
+      | "updateFlatpak"
+      | "updateSystem"
+      | "open"
+    >,
     private readonly now: () => number = Date.now,
   ) {
     this.state = {
@@ -153,7 +166,12 @@ export class SoftwareStore {
   private async finished(operation: Omit<Operation, "status" | "progress">, outcome: Outcome): Promise<void> {
     if (!outcome.ok && !outcome.cancelled) {
       const verb = { install: "installed", remove: "removed", update: "updated", "system-update": "updated" }[operation.kind];
-      this.set({ failure: { title: operation.kind === "system-update" ? "The system could not be updated" : `“${operation.name}” could not be ${verb}`, message: outcome.message } });
+      this.set({
+        failure: {
+          title: operation.kind === "system-update" ? "The system could not be updated" : `“${operation.name}” could not be ${verb}`,
+          message: outcome.message,
+        },
+      });
     }
     await this.refreshInstalled();
     if (operation.kind === "update" || operation.kind === "system-update") {

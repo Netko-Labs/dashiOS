@@ -45,7 +45,24 @@ export interface EditorProps {
 }
 
 export function Editor(props: EditorProps) {
-  const { draft, row, mode, session, focusTitle, onEdit, onToggleCheck, onLeave, follow, onRestore, onNew, bodyFocus, onFocusBody, emptyMessage, hasNotes, formatDate } = props;
+  const {
+    draft,
+    row,
+    mode,
+    session,
+    focusTitle,
+    onEdit,
+    onToggleCheck,
+    onLeave,
+    follow,
+    onRestore,
+    onNew,
+    bodyFocus,
+    onFocusBody,
+    emptyMessage,
+    hasNotes,
+    formatDate,
+  } = props;
   const colors = useColors();
   const surface = useSurface();
   const [height, setHeight] = useState(480);
@@ -102,7 +119,13 @@ export function Editor(props: EditorProps) {
         {hasNotes ? (
           <EmptyState testID="no-selection" title="No Note Selected" glyph={NOTE} />
         ) : (
-          <EmptyState testID="no-notes" title="No Notes" message={emptyMessage} glyph={NOTE} action={<Button label="New Note" testID="empty-new" primary onPress={onNew} />} />
+          <EmptyState
+            testID="no-notes"
+            title="No Notes"
+            message={emptyMessage}
+            glyph={NOTE}
+            action={<Button label="New Note" testID="empty-new" primary onPress={onNew} />}
+          />
         )}
       </View>
     );
@@ -119,7 +142,9 @@ export function Editor(props: EditorProps) {
       <ScrollView testID="editor" onLayout={(b) => setHeight(b.height)} style={{ flex: 1, backgroundColor: surface.card }}>
         <View style={{ padding: 28, paddingTop: 16, gap: 14, flexDirection: "column", flexShrink: 0, minHeight: height }}>
           {dated}
-          <Text style={{ fontSize: TITLE_SIZE, fontWeight: "bold", color: draft.title === "" ? colors.textDisabled : colors.text, lineHeight: TITLE_SIZE + 8 }}>{draft.title === "" ? "New Note" : draft.title}</Text>
+          <Text style={{ fontSize: TITLE_SIZE, fontWeight: "bold", color: draft.title === "" ? colors.textDisabled : colors.text, lineHeight: TITLE_SIZE + 8 }}>
+            {draft.title === "" ? "New Note" : draft.title}
+          </Text>
           <Preview body={draft.body} onToggle={onToggleCheck} />
         </View>
       </ScrollView>
@@ -140,7 +165,14 @@ export function Editor(props: EditorProps) {
             onChangeText={(title) => onEdit({ title: title.replace(/\n/g, " ") })}
             onSubmitEditing={onFocusBody}
             onKeyPress={(key) => key === "Escape" && onLeave()}
-            style={{ height: TITLE_SIZE + 12, fontSize: TITLE_SIZE, padding: 0, color: colors.text, placeholderColor: colors.textDisabled, backgroundColor: "#00000000" }}
+            style={{
+              height: TITLE_SIZE + 12,
+              fontSize: TITLE_SIZE,
+              padding: 0,
+              color: colors.text,
+              placeholderColor: colors.textDisabled,
+              backgroundColor: "#00000000",
+            }}
           />
         </View>
         <View style={{ position: "relative", flexDirection: "column", flexShrink: 0, width: "100%" }}>
@@ -166,7 +198,15 @@ export function Editor(props: EditorProps) {
               onEdit({ body });
             }}
             onKeyPress={(key) => key === "Escape" && onLeave()}
-            style={{ width: "100%", height: Math.max(200, height - 130, Math.ceil(measured) + 4), fontSize: BODY_SIZE, padding: 0, color: colors.text, placeholderColor: colors.textDisabled, backgroundColor: "#00000000" }}
+            style={{
+              width: "100%",
+              height: Math.max(200, height - 130, Math.ceil(measured) + 4),
+              fontSize: BODY_SIZE,
+              padding: 0,
+              color: colors.text,
+              placeholderColor: colors.textDisabled,
+              backgroundColor: "#00000000",
+            }}
           />
         </View>
       </View>

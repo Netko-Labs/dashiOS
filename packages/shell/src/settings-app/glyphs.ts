@@ -1,21 +1,28 @@
 /** The sidebar's glyphs, drawn on a 16-unit grid and tinted by the Svg `color`. */
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
-const stroke = (d: string, width = 1.4) =>
-  `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+const stroke = (d: string, width = 1.4) => `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-export const DISPLAY = svg(`${stroke("M2.4 3h11.2a.8.8 0 0 1 .8.8v6.4a.8.8 0 0 1-.8.8H2.4a.8.8 0 0 1-.8-.8V3.8a.8.8 0 0 1 .8-.8z")}${stroke("M6 13.4h4M8 11v2.4")}`);
+export const DISPLAY = svg(
+  `${stroke("M2.4 3h11.2a.8.8 0 0 1 .8.8v6.4a.8.8 0 0 1-.8.8H2.4a.8.8 0 0 1-.8-.8V3.8a.8.8 0 0 1 .8-.8z")}${stroke("M6 13.4h4M8 11v2.4")}`,
+);
 
 export const KEYBOARD = svg(
   `${stroke("M2.2 4h11.6a.8.8 0 0 1 .8.8v6.4a.8.8 0 0 1-.8.8H2.2a.8.8 0 0 1-.8-.8V4.8a.8.8 0 0 1 .8-.8z", 1.3)}` +
     `<g fill="#000"><rect x="3.4" y="5.9" width="1.5" height="1.3" rx=".3"/><rect x="6" y="5.9" width="1.5" height="1.3" rx=".3"/><rect x="8.6" y="5.9" width="1.5" height="1.3" rx=".3"/><rect x="11.2" y="5.9" width="1.5" height="1.3" rx=".3"/><rect x="4.6" y="9.1" width="6.8" height="1.3" rx=".3"/></g>`,
 );
 
-export const TRACKPAD = svg(`${stroke("M3 2.4h10a1.4 1.4 0 0 1 1.4 1.4v8.4A1.4 1.4 0 0 1 13 13.6H3a1.4 1.4 0 0 1-1.4-1.4V3.8A1.4 1.4 0 0 1 3 2.4z", 1.3)}${stroke("M1.8 10h12.4", 1.2)}`);
+export const TRACKPAD = svg(
+  `${stroke("M3 2.4h10a1.4 1.4 0 0 1 1.4 1.4v8.4A1.4 1.4 0 0 1 13 13.6H3a1.4 1.4 0 0 1-1.4-1.4V3.8A1.4 1.4 0 0 1 3 2.4z", 1.3)}${stroke("M1.8 10h12.4", 1.2)}`,
+);
 
-export const MOUSE = svg(`${stroke("M8 1.8c2.6 0 4 1.6 4 3.8v4.8c0 2.2-1.6 3.8-4 3.8s-4-1.6-4-3.8V5.6c0-2.2 1.4-3.8 4-3.8z", 1.3)}${stroke("M8 1.9v4.4M4.1 6.4h7.8", 1.2)}`);
+export const MOUSE = svg(
+  `${stroke("M8 1.8c2.6 0 4 1.6 4 3.8v4.8c0 2.2-1.6 3.8-4 3.8s-4-1.6-4-3.8V5.6c0-2.2 1.4-3.8 4-3.8z", 1.3)}${stroke("M8 1.9v4.4M4.1 6.4h7.8", 1.2)}`,
+);
 
-export const BELL = svg(`${stroke("M3.6 11.2c.9-.9 1.2-1.9 1.2-3.2V6.6a3.2 3.2 0 0 1 6.4 0V8c0 1.3.3 2.3 1.2 3.2z", 1.4)}${stroke("M6.6 13.4a1.6 1.6 0 0 0 2.8 0", 1.3)}`);
+export const BELL = svg(
+  `${stroke("M3.6 11.2c.9-.9 1.2-1.9 1.2-3.2V6.6a3.2 3.2 0 0 1 6.4 0V8c0 1.3.3 2.3 1.2 3.2z", 1.4)}${stroke("M6.6 13.4a1.6 1.6 0 0 0 2.8 0", 1.3)}`,
+);
 
 /** Agents: a four-point sparkle and a small one. */
 export const SPARKLE = svg(

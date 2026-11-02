@@ -54,10 +54,7 @@ export function summarizeBattery(supplies: readonly PowerSupply[]): Battery | nu
   const statuses = batteries.map((battery) => battery.status);
   // Chargers: the wall adapter (Mains) or a USB-C source (USB, USB_PD, ...).
   const onCharger = supplies.some(
-    (supply) =>
-      supply.online === "1" &&
-      supply.scope !== "Device" &&
-      (supply.type === "Mains" || (supply.type?.startsWith("USB") ?? false)),
+    (supply) => supply.online === "1" && supply.scope !== "Device" && (supply.type === "Mains" || (supply.type?.startsWith("USB") ?? false)),
   );
 
   let state: BatteryState;
@@ -88,9 +85,7 @@ export async function readPowerSupplies(root: string = POWER_SUPPLY): Promise<Po
   return Promise.all(
     names.map(async (name) => {
       const read = (file: string) => readText(`${root}/${name}/${file}`);
-      const [type, status, capacity, online, present, scope] = await Promise.all(
-        ["type", "status", "capacity", "online", "present", "scope"].map(read),
-      );
+      const [type, status, capacity, online, present, scope] = await Promise.all(["type", "status", "capacity", "online", "present", "scope"].map(read));
       return {
         name,
         type: type ?? null,

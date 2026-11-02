@@ -115,7 +115,8 @@ export function buildZones(ids: readonly string[], tables: ZoneTables, at: Date 
 }
 
 /** The areas that have zones, in the order they sort. */
-export const zoneAreas = (zones: readonly Zone[]): string[] => [...new Set(zones.map((zone) => zone.area))].sort((a, b) => (a === "Other" ? 1 : b === "Other" ? -1 : a.localeCompare(b)));
+export const zoneAreas = (zones: readonly Zone[]): string[] =>
+  [...new Set(zones.map((zone) => zone.area))].sort((a, b) => (a === "Other" ? 1 : b === "Other" ? -1 : a.localeCompare(b)));
 
 const fold = (text: string): string => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 

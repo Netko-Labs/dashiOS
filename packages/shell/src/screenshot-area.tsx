@@ -236,4 +236,3 @@ export function chooseCaptureScreen(answer: unknown, options: { near?: Area | nu
   const chosen = holding || screens.find(({ name }) => name === options.prefer) || screens[0];
   return chosen ? { output: chosen.name, origin: { x: chosen.frame.x, y: chosen.frame.y } } : { origin: { x: 0, y: 0 } };
 }
-

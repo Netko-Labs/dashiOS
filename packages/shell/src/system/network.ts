@@ -10,10 +10,7 @@ import { parseTerse } from "./terse.ts";
 /** Wi-Fi arcs lit, 0 (just the dot) to 3. */
 export type Bars = 0 | 1 | 2 | 3;
 
-export type Network =
-  | { kind: "offline" }
-  | { kind: "wired" }
-  | { kind: "wifi"; ssid: string; signal: number | null; bars: Bars };
+export type Network = { kind: "offline" } | { kind: "wired" } | { kind: "wifi"; ssid: string; signal: number | null; bars: Bars };
 
 /** The arcs for a signal strength (percent, as NetworkManager reports it). */
 export function barsFor(signal: number | null): Bars {

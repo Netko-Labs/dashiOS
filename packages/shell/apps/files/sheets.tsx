@@ -10,7 +10,21 @@ import type { OpenWithApp } from "./open.ts";
 import { checkName } from "./paths.ts";
 import { measure } from "./size.ts";
 
-export function NameSheet({ title, message, initial, action, onSubmit, onCancel }: { title: string; message?: string; initial: string; action: string; onSubmit: (name: string) => Promise<string | null>; onCancel: () => void }) {
+export function NameSheet({
+  title,
+  message,
+  initial,
+  action,
+  onSubmit,
+  onCancel,
+}: {
+  title: string;
+  message?: string;
+  initial: string;
+  action: string;
+  onSubmit: (name: string) => Promise<string | null>;
+  onCancel: () => void;
+}) {
   const colors = useColors();
   const [name, setName] = useState(initial);
   const [problem, setProblem] = useState<string | null>(null);
@@ -88,7 +102,10 @@ const exactSize = (bytes: number): string => (bytes >= 1000 ? `${formatSize(byte
 function Line({ label, value, testID }: { label: string; value: string; testID?: string }) {
   const colors = useColors();
   return (
-    <View {...(testID ? { testID } : {})} style={{ height: 24, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+    <View
+      {...(testID ? { testID } : {})}
+      style={{ height: 24, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16 }}
+    >
       <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text, textAlign: "right" }}>
@@ -110,7 +127,11 @@ export function InfoSheet({ item, home, onClose }: { item: FileItem; home: strin
       if (controller.signal.aborted) return;
       setInfo(loaded);
       if (typeof loaded === "string" || !loaded.isFolder) return;
-      const result = await measure(item.path, controller.signal, (so_far) => !controller.signal.aborted && setFolder({ bytes: so_far.bytes, files: so_far.files, done: false }));
+      const result = await measure(
+        item.path,
+        controller.signal,
+        (so_far) => !controller.signal.aborted && setFolder({ bytes: so_far.bytes, files: so_far.files, done: false }),
+      );
       if (!controller.signal.aborted) setFolder({ bytes: result.bytes, files: result.files, done: true });
     });
     return () => controller.abort();
@@ -152,7 +173,17 @@ export function InfoSheet({ item, home, onClose }: { item: FileItem; home: strin
   );
 }
 
-export function OpenWithSheet({ item, apps, onChoose, onCancel }: { item: FileItem; apps: readonly OpenWithApp[] | null; onChoose: (app: OpenWithApp) => void; onCancel: () => void }) {
+export function OpenWithSheet({
+  item,
+  apps,
+  onChoose,
+  onCancel,
+}: {
+  item: FileItem;
+  apps: readonly OpenWithApp[] | null;
+  onChoose: (app: OpenWithApp) => void;
+  onCancel: () => void;
+}) {
   const colors = useColors();
   return (
     <Sheet testID="openwith-sheet" width={380} onCancel={onCancel}>
@@ -164,7 +195,12 @@ export function OpenWithSheet({ item, apps, onChoose, onCancel }: { item: FileIt
       ) : (
         <Group testID="openwith">
           {apps.map((app) => (
-            <View key={app.id} testID={`openwith:${app.id}`} onPress={() => onChoose(app)} style={{ height: 34, justifyContent: "center", paddingHorizontal: 12, hoverBackgroundColor: colors.button }}>
+            <View
+              key={app.id}
+              testID={`openwith:${app.id}`}
+              onPress={() => onChoose(app)}
+              style={{ height: 34, justifyContent: "center", paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
+            >
               <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
                 {app.name}
               </Text>

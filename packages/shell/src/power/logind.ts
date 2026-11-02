@@ -49,12 +49,9 @@ export class Logind {
 
   /** `PrepareForSleep`: true just before the machine sleeps, false once it is awake. */
   async onPrepareForSleep(handler: (sleeping: boolean) => void): Promise<() => Promise<void>> {
-    return this.connection.subscribe(
-      { type: "signal", sender: LOGIND, interface: MANAGER, member: "PrepareForSleep", path: MANAGER_PATH },
-      (message) => {
-        if (typeof message.body[0] === "boolean") handler(message.body[0]);
-      },
-    );
+    return this.connection.subscribe({ type: "signal", sender: LOGIND, interface: MANAGER, member: "PrepareForSleep", path: MANAGER_PATH }, (message) => {
+      if (typeof message.body[0] === "boolean") handler(message.body[0]);
+    });
   }
 
   /** This process's session: the one it belongs to, else `XDG_SESSION_ID`'s. Null when logind does not know it. */
@@ -74,10 +71,7 @@ export class Logind {
 
   /** `Lock` on the session: someone ran `loginctl lock-session`. (`Unlock` is deliberately not offered: only the password unlocks.) */
   async onSessionLock(session: string, handler: () => void): Promise<() => Promise<void>> {
-    return this.connection.subscribe(
-      { type: "signal", sender: LOGIND, interface: SESSION, member: "Lock", path: session },
-      () => handler(),
-    );
+    return this.connection.subscribe({ type: "signal", sender: LOGIND, interface: SESSION, member: "Lock", path: session }, () => handler());
   }
 
   /** Tells logind and everything watching it whether the screen is locked. */

@@ -30,8 +30,7 @@ export function iconPath(name: string): string {
 }
 
 /** The Metal host binary every Metal app (and the shell) runs on. */
-export const METAL_HOST =
-  process.env.DASHI_METAL_HOST ?? `${mirin}crates/mirin-metal/target/release/mirin-metal-host`;
+export const METAL_HOST = process.env.DASHI_METAL_HOST ?? `${mirin}crates/mirin-metal/target/release/mirin-metal-host`;
 
 interface Choice {
   id: string;
@@ -108,9 +107,7 @@ function isInstalled(exec: readonly string[], which: (program: string) => string
   return !script?.endsWith(".tsx") || existsSync(script);
 }
 
-export function resolvePinned(
-  which: (program: string) => string | null = (program) => Bun.which(program),
-): App[] {
+export function resolvePinned(which: (program: string) => string | null = (program) => Bun.which(program)): App[] {
   return PINNED.flatMap((spec) => {
     const choice = spec.choices.find((candidate) => isInstalled(candidate.exec, which));
     if (!choice) return [];

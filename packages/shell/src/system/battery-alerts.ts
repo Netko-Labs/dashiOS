@@ -68,10 +68,7 @@ export function readingOf(battery: Battery | null): BatteryReading | null {
  * both this poll and the last reached it, so the shallower of the two is what
  * is confirmed. A jump past several levels posts only the deepest.
  */
-export function decideBatteryAlert(
-  state: AlertState,
-  reading: BatteryReading | null,
-): { state: AlertState; decision: AlertDecision } {
+export function decideBatteryAlert(state: AlertState, reading: BatteryReading | null): { state: AlertState; decision: AlertDecision } {
   if (reading === null || reading.charging) {
     return { state: FRESH, decision: state.posted > 0 ? { kind: "clear" } : NONE };
   }

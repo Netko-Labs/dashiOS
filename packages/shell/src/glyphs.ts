@@ -34,10 +34,7 @@ export function wifiGlyph(bars: Bars | "offline"): string {
 }
 
 /** A wired connection: an Ethernet port. */
-export const ETHERNET = svg(
-  "0 0 16 16",
-  stroke("M2.5 4.5h11v6.2h-2.3v2.3H4.8v-2.3H2.5z", 1.4) + stroke("M5.6 7v1.9M8 7v1.9M10.4 7v1.9", 1.2),
-);
+export const ETHERNET = svg("0 0 16 16", stroke("M2.5 4.5h11v6.2h-2.3v2.3H4.8v-2.3H2.5z", 1.4) + stroke("M5.6 7v1.9M8 7v1.9M10.4 7v1.9", 1.2));
 
 /** The glyph for what the network is doing. */
 export function networkGlyph(network: Network): string {
@@ -55,10 +52,7 @@ export function networkGlyph(network: Network): string {
 export function speakerGlyph(level: number, muted: boolean): string {
   const body = `<path d="M2 6h2.6L8 3v10L4.6 10H2z" fill="#000"/>`;
   if (muted) return svg("0 0 16 16", body + stroke("M10.8 6.2l3.6 3.6M14.4 6.2l-3.6 3.6", 1.4));
-  const waves = [
-    level > 0 ? stroke("M10.4 5.6a3.4 3.4 0 0 1 0 4.8", 1.4) : "",
-    level >= 1 / 3 ? stroke("M12.3 3.8a6 6 0 0 1 0 8.4", 1.4) : "",
-  ];
+  const waves = [level > 0 ? stroke("M10.4 5.6a3.4 3.4 0 0 1 0 4.8", 1.4) : "", level >= 1 / 3 ? stroke("M12.3 3.8a6 6 0 0 1 0 8.4", 1.4) : ""];
   return svg("0 0 16 16", body + waves.join(""));
 }
 

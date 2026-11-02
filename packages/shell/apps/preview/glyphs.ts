@@ -3,7 +3,8 @@
 export { INFO } from "@dashi/ui";
 
 const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
-const stroke = (d: string, width = 1.5): string => `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+const stroke = (d: string, width = 1.5): string =>
+  `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
 export const CHEVRON_LEFT = svg(stroke("M10 3 5 8l5 5", 1.7));
 export const CHEVRON_RIGHT = svg(stroke("M6 3l5 5-5 5", 1.7));
@@ -16,9 +17,13 @@ export const ACTUAL = svg(`${stroke("M3 3h10v10H3z", 1.4)}<circle cx="8" cy="8" 
 const turn = stroke("M3.2 8.2A4.9 4.9 0 1 0 5 4.4") + stroke("M3 2.2v3.4h3.4", 1.5);
 export const ROTATE_LEFT = svg(turn);
 export const ROTATE_RIGHT = svg(`<g transform="translate(16 0) scale(-1 1)">${turn}</g>`);
-export const MORE = svg('<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>');
+export const MORE = svg(
+  '<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>',
+);
 /** A page with a folded corner: an empty state. */
-export const PICTURE = svg(`${stroke("M2.5 3.5h11v9h-11z", 1.2)}<circle cx="10.6" cy="6.4" r="1.2" fill="#000"/>${stroke("M2.8 12l3.6-3.8 2.4 2.4 1.6-1.6 2.8 3", 1.2)}`);
+export const PICTURE = svg(
+  `${stroke("M2.5 3.5h11v9h-11z", 1.2)}<circle cx="10.6" cy="6.4" r="1.2" fill="#000"/>${stroke("M2.8 12l3.6-3.8 2.4 2.4 1.6-1.6 2.8 3", 1.2)}`,
+);
 export const DOCUMENT = svg(stroke("M4 1.8h5.4L12.2 4.6V14.2H4z", 1.3) + stroke("M9.2 1.9v2.9h2.9M6 8h4M6 10.4h4", 1.2));
 /** A bin: Move to Trash. */
 export const TRASH = svg(stroke("M2.8 4.2h10.4M6.2 4.2V2.8h3.6v1.4M4 4.2l.6 9h6.8l.6-9", 1.4) + stroke("M6.6 6.6v4.4M9.4 6.6v4.4", 1.3));

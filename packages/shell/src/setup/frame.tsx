@@ -55,10 +55,23 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, onCont
           </View>
         </View>
       )}
-      <ScrollView testID={`setup-page:${info.id}`} style={{ flex: 1, flexDirection: "column", gap: 14, paddingHorizontal: 56, paddingTop: 18, paddingBottom: 12 }}>
+      <ScrollView
+        testID={`setup-page:${info.id}`}
+        style={{ flex: 1, flexDirection: "column", gap: 14, paddingHorizontal: 56, paddingTop: 18, paddingBottom: 12 }}
+      >
         {children}
       </ScrollView>
-      <View style={{ flexShrink: 0, height: 64, flexDirection: "row", alignItems: "center", paddingHorizontal: 28, borderTopWidth: 1, borderColor: colors.separator }}>
+      <View
+        style={{
+          flexShrink: 0,
+          height: 64,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 28,
+          borderTopWidth: 1,
+          borderColor: colors.separator,
+        }}
+      >
         <View style={{ width: 210, flexDirection: "row", alignItems: "center" }}>
           {!view.last && <Button testID="setup-skip" label="Skip Setup" onPress={onSkip} />}
         </View>

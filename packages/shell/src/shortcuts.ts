@@ -58,13 +58,7 @@ export function sameApp(a: CompositorWindow, b: CompositorWindow): boolean {
 }
 
 /** Run a binding; `window` is the window focused when it was pressed. */
-export async function runBinding(
-  name: string,
-  window: number | null,
-  compositor: Requests,
-  actions: ShellActions,
-  chord?: PressedChord,
-): Promise<void> {
+export async function runBinding(name: string, window: number | null, compositor: Requests, actions: ShellActions, chord?: PressedChord): Promise<void> {
   // The hardware keys act on the system, whatever window has focus.
   if (await actions.hardware.run(name)) return;
   if (actions.spaces?.binding(name)) return;
@@ -171,9 +165,7 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
           break;
       }
     } else if (event.event === "binding") {
-      runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) =>
-        console.error(`dashi-shell: “${event.name}” failed:`, error),
-      );
+      runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));
     }
   });
 }

@@ -72,7 +72,9 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
           <Text style={{ fontSize: 11, color: colors.critical }}>{describeFailure(state.error)}</Text>
         </View>
       )}
-      <Caption>The language applies to apps you open after you log in again. Dashi's own menus are English for now. Region formats apply to apps you open from now on.</Caption>
+      <Caption>
+        The language applies to apps you open after you log in again. Dashi's own menus are English for now. Region formats apply to apps you open from now on.
+      </Caption>
     </Page>
   );
 }

@@ -172,7 +172,9 @@ export function syncDesktopEntries(specs: readonly FirstPartySpec[], dir: string
   }
   let names: string[] = [];
   try {
-    names = readdirSync(dir).filter((name) => name.startsWith(ID_PREFIX) && name.endsWith(".desktop")).slice(0, MAX_FILES);
+    names = readdirSync(dir)
+      .filter((name) => name.startsWith(ID_PREFIX) && name.endsWith(".desktop"))
+      .slice(0, MAX_FILES);
   } catch {
     // Unreadable: nothing stale to find.
   }

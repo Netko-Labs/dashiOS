@@ -165,13 +165,21 @@ export function machineDesktop(services: () => PaneServices, settings: SettingsS
       const state = energy.getSnapshot();
       const { idle, menuBar } = settings.getSnapshot().data;
       return {
-        battery: state.battery ? { percent: state.battery.percent, state: describeBattery(state.battery), health: state.battery.health, cycles: state.battery.cycles } : null,
+        battery: state.battery
+          ? { percent: state.battery.percent, state: describeBattery(state.battery), health: state.battery.health, cycles: state.battery.cycles }
+          : null,
         powerMode: state.profiles
-          ? { active: state.profiles.active, label: PROFILE_LABEL[state.profiles.active], available: state.profiles.available.map((id) => ({ id, label: PROFILE_LABEL[id] })) }
+          ? {
+              active: state.profiles.active,
+              label: PROFILE_LABEL[state.profiles.active],
+              available: state.profiles.available.map((id) => ({ id, label: PROFILE_LABEL[id] })),
+            }
           : null,
         displayOffAfterMinutes: minutes(idle.blankAfterSeconds ?? DEFAULT_BLANK_AFTER),
         sleepAfterMinutes: minutes(idle.sleepAfterSeconds ?? 0),
-        lid: state.lid ? { onBattery: describeAction(state.lid.lid), onPower: describeAction(state.lid.lidExternalPower), withDisplay: describeAction(state.lid.lidDocked) } : null,
+        lid: state.lid
+          ? { onBattery: describeAction(state.lid.lid), onPower: describeAction(state.lid.lidExternalPower), withDisplay: describeAction(state.lid.lidDocked) }
+          : null,
         percentageInMenuBar: menuBar.batteryPercent ?? false,
       };
     },

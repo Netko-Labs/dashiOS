@@ -25,7 +25,19 @@ export function Value({ children, testID }: { children: string | readonly string
 }
 
 /** A compact button for a row: Join, Forget, Connect. */
-export function MiniButton({ label, onPress, testID, tone, disabled }: { label: string; onPress: () => void; testID: string; tone?: "critical" | "primary"; disabled?: boolean }) {
+export function MiniButton({
+  label,
+  onPress,
+  testID,
+  tone,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  testID: string;
+  tone?: "critical" | "primary";
+  disabled?: boolean;
+}) {
   const colors = useColors();
   const ink = disabled ? colors.textDisabled : tone === "critical" ? colors.critical : tone === "primary" ? "#ffffff" : colors.text;
   return (
@@ -70,7 +82,15 @@ export function ListRow({
     <View
       testID={testID}
       onPress={onPress}
-      style={{ flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44, paddingHorizontal: 12, paddingVertical: 6, hoverBackgroundColor: onPress ? colors.button : "#00000000" }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        minHeight: 44,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        hoverBackgroundColor: onPress ? colors.button : "#00000000",
+      }}
     >
       {leading}
       <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
@@ -98,7 +118,16 @@ export function CheckSlot({ on }: { on: boolean }) {
 export function RoundIcon({ glyph, lit, size = 28 }: { glyph: string; lit: boolean; size?: number }) {
   const colors = useColors();
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", backgroundColor: lit ? colors.selection : colors.track }}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: lit ? colors.selection : colors.track,
+      }}
+    >
       <Svg markup={glyph} size={Math.round(size * 0.52)} color={lit ? "#ffffff" : colors.text} />
     </View>
   );

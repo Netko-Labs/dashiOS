@@ -37,7 +37,15 @@ export function listCalendars(ctx: RunContext): ToolResult {
   return attempt((store) => {
     const hidden = new Set(readSidecar(store.root).hidden);
     const { calendars } = store.scan();
-    return json({ calendars: calendars.map((calendar) => ({ id: calendar.id, name: calendar.name, color: calendar.color, hidden: hidden.has(calendar.id), events: calendar.events.length })) });
+    return json({
+      calendars: calendars.map((calendar) => ({
+        id: calendar.id,
+        name: calendar.name,
+        color: calendar.color,
+        hidden: hidden.has(calendar.id),
+        events: calendar.events.length,
+      })),
+    });
   });
 }
 
@@ -55,7 +63,11 @@ function describe(occurrence: Occurrence, name: string) {
     end: event.allDay ? addDays(dayPart(occurrence.end), -1) : occurrence.end,
     location: event.location,
     notes,
-    repeats: event.repeat ? `${event.repeat.freq}${event.repeat.interval > 1 ? ` every ${event.repeat.interval}` : ""}` : event.rawRule !== null ? "custom" : null,
+    repeats: event.repeat
+      ? `${event.repeat.freq}${event.repeat.interval > 1 ? ` every ${event.repeat.interval}` : ""}`
+      : event.rawRule !== null
+        ? "custom"
+        : null,
     alert: event.alert === null ? null : event.alert >= 0 ? `${formatDuration(event.alert)} before` : `${formatDuration(-event.alert)} after`,
   };
 }
@@ -72,7 +84,10 @@ export function listEvents(call: { from: string; to: string; calendar: string | 
     }
     const names = new Map(calendars.map((calendar) => [calendar.id, calendar.name]));
     const found = occurrencesIn(chosen, call.from, addDays(call.to, 1));
-    return json({ events: found.slice(0, call.limit).map((occurrence) => describe(occurrence, names.get(occurrence.calendarId) ?? occurrence.calendarId)), total: found.length });
+    return json({
+      events: found.slice(0, call.limit).map((occurrence) => describe(occurrence, names.get(occurrence.calendarId) ?? occurrence.calendarId)),
+      total: found.length,
+    });
   });
 }
 
@@ -112,6 +127,10 @@ export function createEvent(
       repeat: call.repeat,
       alert: call.alert,
     });
-    return text(`Added “${event.title}” (${allDay ? dayPart(start) : start}) to ${target.name}.`, { uid: event.uid, calendar: target.name, calendarId: target.id });
+    return text(`Added “${event.title}” (${allDay ? dayPart(start) : start}) to ${target.name}.`, {
+      uid: event.uid,
+      calendar: target.name,
+      calendarId: target.id,
+    });
   });
 }

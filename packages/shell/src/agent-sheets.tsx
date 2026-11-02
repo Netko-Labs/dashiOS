@@ -76,9 +76,7 @@ export function createAgentUi(): AgentUi & { close(): void } {
       return new Promise((resolve) =>
         sheets.enqueue({
           agent: confirm.agent,
-          view: (answer) => (
-            <ConfirmSheet confirm={confirm} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />
-          ),
+          view: (answer) => <ConfirmSheet confirm={confirm} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />,
           resolve: (answer) => resolve(answer.allow !== "deny"),
         }),
       );

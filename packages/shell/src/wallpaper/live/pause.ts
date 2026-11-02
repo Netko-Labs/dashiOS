@@ -57,7 +57,7 @@ function asFrame(value: unknown): Frame | null {
   const { x, y, width, height } = value as Record<string, unknown>;
   const numbers = [x, y, width, height];
   if (!numbers.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
-  return width as number > 0 && (height as number) > 0 ? ({ x, y, width, height } as Frame) : null;
+  return (width as number) > 0 && (height as number) > 0 ? ({ x, y, width, height } as Frame) : null;
 }
 
 /** How much of the usable area windows must hide before the wallpaper counts as hidden. */
@@ -72,7 +72,9 @@ export const COVERED_FRACTION = 0.97;
 export function isCovered(screen: ScreenArea, windows: readonly Pick<CompositorWindow, "state" | "frame" | "fullscreen">[]): boolean {
   const shown = windows.filter((window) => window.state === "normal" && window.frame !== null);
   const rects = shown.flatMap((window) => (window.frame ? [window.frame] : []));
-  const full = shown.some((window) => window.fullscreen === true && window.frame !== null && overlap(window.frame, screen.frame) >= area(screen.frame) * COVERED_FRACTION);
+  const full = shown.some(
+    (window) => window.fullscreen === true && window.frame !== null && overlap(window.frame, screen.frame) >= area(screen.frame) * COVERED_FRACTION,
+  );
   if (full) return true;
   const total = area(screen.usable);
   return total > 0 && unionArea(rects.map((rect) => clip(rect, screen.usable))) >= total * COVERED_FRACTION;

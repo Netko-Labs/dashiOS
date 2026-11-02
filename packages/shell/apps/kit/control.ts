@@ -18,13 +18,7 @@
 import { unlinkSync } from "node:fs";
 import type { NativeHostTransport, NativeRoot, SimCommand } from "@mirinjs/metal";
 
-export type ControlRequest =
-  | { click: string }
-  | { contextmenu: string }
-  | { key: string }
-  | { type: string }
-  | { sim: SimCommand }
-  | { tree: true };
+export type ControlRequest = { click: string } | { contextmenu: string } | { key: string } | { type: string } | { sim: SimCommand } | { tree: true };
 
 /** One line as a request, or null when it is not one. */
 export function parseControl(line: string): ControlRequest | null {
@@ -48,7 +42,11 @@ export function parseControl(line: string): ControlRequest | null {
 }
 
 /** Carries out one request; the reply to write back. */
-export function handleControl(request: ControlRequest, host: Pick<NativeHostTransport, "simulate">, root: Pick<NativeRoot, "nodeId" | "lastTree">): Record<string, unknown> {
+export function handleControl(
+  request: ControlRequest,
+  host: Pick<NativeHostTransport, "simulate">,
+  root: Pick<NativeRoot, "nodeId" | "lastTree">,
+): Record<string, unknown> {
   if ("click" in request) {
     const id = root.nodeId(request.click);
     if (!id) return { error: `no node with testID ${request.click}` };

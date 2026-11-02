@@ -8,11 +8,12 @@ export interface RecentFile {
   time: number;
 }
 
-const decode = (text: string): string => text.replace(/&(amp|lt|gt|quot|apos);|&#(\d+);|&#x([0-9a-f]+);/gi, (_, name: string | undefined, dec: string | undefined, hex: string | undefined) => {
-  if (name) return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[name.toLowerCase()] ?? "";
-  const code = dec ? Number(dec) : Number.parseInt(hex ?? "", 16);
-  return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : "";
-});
+const decode = (text: string): string =>
+  text.replace(/&(amp|lt|gt|quot|apos);|&#(\d+);|&#x([0-9a-f]+);/gi, (_, name: string | undefined, dec: string | undefined, hex: string | undefined) => {
+    if (name) return { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" }[name.toLowerCase()] ?? "";
+    const code = dec ? Number(dec) : Number.parseInt(hex ?? "", 16);
+    return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : "";
+  });
 
 /** The files in an xbel document, most recently used first; the same file appears once. Not a general XML parser: `<bookmark href=… modified=… visited=…>` is all it reads. */
 export function parseRecentlyUsed(xml: string): RecentFile[] {

@@ -35,9 +35,7 @@ export function archiveName(names: readonly string[]): string {
 /** The command that makes `archive` (a file name in `cwd`) from `names` (plain names in `cwd`). */
 export function archiveCommand(archiver: Archiver, archive: string, names: readonly string[]): string[] {
   const items = names.map((name) => `./${name}`);
-  return archiver.tool === "zip"
-    ? [archiver.path, "-r", "-y", "-q", archive, ...items]
-    : [archiver.path, "--format", "zip", "-cf", archive, ...items];
+  return archiver.tool === "zip" ? [archiver.path, "-r", "-y", "-q", archive, ...items] : [archiver.path, "--format", "zip", "-cf", archive, ...items];
 }
 
 /** Compresses `paths` (all in one folder) into a new zip there; its path. */

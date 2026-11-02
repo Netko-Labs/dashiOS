@@ -103,7 +103,9 @@ export function parseDetails(value: unknown): AppDetails {
     category: summary.category ?? null,
     license: text(value, "project_license", 80),
     description: typeof value.description === "string" ? descriptionBlocks(value.description) : [],
-    screenshots: list(value, "screenshots", 12).map(parseScreenshot).filter((shot): shot is Screenshot => shot !== null),
+    screenshots: list(value, "screenshots", 12)
+      .map(parseScreenshot)
+      .filter((shot): shot is Screenshot => shot !== null),
     homepage: displayUrl(urls.homepage),
     version,
     released,

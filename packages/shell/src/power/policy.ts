@@ -11,7 +11,18 @@ import { DBusConnection } from "../dbus/index.ts";
 import { propertyMap } from "../dbus/properties.ts";
 import { LOGIND, MANAGER, MANAGER_PATH } from "./logind.ts";
 
-export const POWER_ACTIONS = ["ignore", "poweroff", "reboot", "halt", "kexec", "suspend", "hibernate", "hybrid-sleep", "suspend-then-hibernate", "lock"] as const;
+export const POWER_ACTIONS = [
+  "ignore",
+  "poweroff",
+  "reboot",
+  "halt",
+  "kexec",
+  "suspend",
+  "hibernate",
+  "hybrid-sleep",
+  "suspend-then-hibernate",
+  "lock",
+] as const;
 export type PowerAction = (typeof POWER_ACTIONS)[number];
 
 export interface LidPolicy {

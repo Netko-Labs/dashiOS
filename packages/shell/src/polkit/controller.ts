@@ -107,7 +107,11 @@ export class PolkitController {
     }
     if (this.resolving.size + this.queue.length + (this.active ? 1 : 0) >= MAX_PENDING) throw failed("too many authentications are waiting");
     this.resolving.add(cookie);
-    const found = await Promise.all(orderUids(request.uids, this.me).slice(0, MAX_USERS).map((uid) => this.lookup(uid)));
+    const found = await Promise.all(
+      orderUids(request.uids, this.me)
+        .slice(0, MAX_USERS)
+        .map((uid) => this.lookup(uid)),
+    );
     // A CancelAuthentication (or closing) while the names were being looked up.
     if (!this.resolving.delete(cookie) || this.closed) throw cancelled("cancelled before it started");
     const users = found.filter((user): user is PolkitUser => user !== null);

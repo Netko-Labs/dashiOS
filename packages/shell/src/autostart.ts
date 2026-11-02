@@ -145,7 +145,10 @@ export function planAutostart(dirs: readonly string[], probe: Probe = machine): 
   for (const dir of dirs) {
     let names: string[];
     try {
-      names = readdirSync(dir).filter((name) => name.endsWith(".desktop")).sort().slice(0, MAX_FILES_PER_DIR);
+      names = readdirSync(dir)
+        .filter((name) => name.endsWith(".desktop"))
+        .sort()
+        .slice(0, MAX_FILES_PER_DIR);
     } catch {
       continue;
     }
@@ -238,7 +241,9 @@ export function startAutostart(options: AutostartOptions): Autostart {
     if (entry.delayMs > 0) cancels.push(schedule(() => run(entry), entry.delayMs));
     else run(entry);
   }
-  console.error(`dashi-shell: autostart: starting ${names(plan.start)}${plan.skipped.length ? ` (${plan.skipped.length} entries are not for Dashi or are turned off)` : ""}`);
+  console.error(
+    `dashi-shell: autostart: starting ${names(plan.start)}${plan.skipped.length ? ` (${plan.skipped.length} entries are not for Dashi or are turned off)` : ""}`,
+  );
   return {
     plan,
     ran: true,

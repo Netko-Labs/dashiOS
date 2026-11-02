@@ -12,16 +12,35 @@ const MAX_INPUT = 60_000;
 const MAX_BLOCKS = 40;
 const MAX_BLOCK = 1_500;
 
-const NAMED: Readonly<Record<string, string>> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "–", mdash: "—", hellip: "…", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", copy: "©", bull: "•" };
+const NAMED: Readonly<Record<string, string>> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  ndash: "–",
+  mdash: "—",
+  hellip: "…",
+  rsquo: "’",
+  lsquo: "‘",
+  rdquo: "”",
+  ldquo: "“",
+  copy: "©",
+  bull: "•",
+};
 
 /** `&amp;`, `&#39;`, `&#x2019;` as text; an entity it does not know stays as written. */
 export function decodeEntities(text: string): string {
-  return text.replace(/&(?:#(\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]{2,8}));/g, (whole, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
-    if (name !== undefined) return NAMED[name] ?? whole;
-    const code = dec !== undefined ? Number(dec) : Number.parseInt(hex ?? "", 16);
-    if (!Number.isInteger(code) || code < 32 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return " ";
-    return String.fromCodePoint(code);
-  });
+  return text.replace(
+    /&(?:#(\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]{2,8}));/g,
+    (whole, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
+      if (name !== undefined) return NAMED[name] ?? whole;
+      const code = dec !== undefined ? Number(dec) : Number.parseInt(hex ?? "", 16);
+      if (!Number.isInteger(code) || code < 32 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return " ";
+      return String.fromCodePoint(code);
+    },
+  );
 }
 
 type Token = { tag: string; closing: boolean } | { text: string };

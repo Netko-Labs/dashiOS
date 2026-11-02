@@ -145,31 +145,53 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     <>
       <ToolbarButton testID="restore" glyph={RESTORE} label="Restore" disabled={!row} onPress={() => model.restoreSelected()} />
       <ToolbarButton testID="purge" glyph={TRASH} label="Delete" disabled={!row} onPress={() => row && setSheet({ kind: "purge", title: row.title })} />
-      <ToolbarButton testID="empty-trash" glyph={TRASH} label="Delete All" disabled={state.deleted.length === 0} onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })} />
+      <ToolbarButton
+        testID="empty-trash"
+        glyph={TRASH}
+        label="Delete All"
+        disabled={state.deleted.length === 0}
+        onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
+      />
       <View style={{ width: 8 }} />
-      <SearchField key={`search:${searching}`} testID="search" value={state.query} onChangeText={(q) => model.setQuery(q)} width={170} autoFocus={searching > 0} onKeyPress={(key) => key !== "Escape" && model.moveSelection(key === "ArrowUp" ? -1 : 1)} />
+      <SearchField
+        key={`search:${searching}`}
+        testID="search"
+        value={state.query}
+        onChangeText={(q) => model.setQuery(q)}
+        width={170}
+        autoFocus={searching > 0}
+        onKeyPress={(key) => key !== "Escape" && model.moveSelection(key === "ArrowUp" ? -1 : 1)}
+      />
     </>
   ) : (
     <>
       <ToolbarButton testID="new-note" glyph={COMPOSE} onPress={() => model.newNote()} />
       <ToolbarButton testID="delete" glyph={TRASH} disabled={!row} onPress={() => model.trashSelected()} />
-      <ToolbarButton testID="pin" glyph={state.notes.find((n) => n.id === row?.id)?.pinned ? PIN_FILLED : PIN} disabled={!row} onPress={() => model.togglePin()} />
+      <ToolbarButton
+        testID="pin"
+        glyph={state.notes.find((n) => n.id === row?.id)?.pinned ? PIN_FILLED : PIN}
+        disabled={!row}
+        onPress={() => model.togglePin()}
+      />
       <ToolbarButton
         testID="move"
         glyph={FOLDER_MOVE}
         disabled={!row}
         onPress={() => row && setMenu({ x: 330, y: 44, items: moveItems(row.id, row.folder) })}
       />
-      <ToolbarButton
-        testID="checklist"
-        glyph={CHECKLIST}
-        disabled={!row}
-        onPress={addChecklistItem}
-      />
+      <ToolbarButton testID="checklist" glyph={CHECKLIST} disabled={!row} onPress={addChecklistItem} />
       <View style={{ width: 4 }} />
       <Segmented testID="mode" options={MODES} value={state.mode} onChange={(mode) => model.setMode(mode)} segmentWidth={58} />
       <View style={{ width: 4 }} />
-      <SearchField key={`search:${searching}`} testID="search" value={state.query} onChangeText={(q) => model.setQuery(q)} width={170} autoFocus={searching > 0} onKeyPress={(key) => key !== "Escape" && model.moveSelection(key === "ArrowUp" ? -1 : 1)} />
+      <SearchField
+        key={`search:${searching}`}
+        testID="search"
+        value={state.query}
+        onChangeText={(q) => model.setQuery(q)}
+        width={170}
+        autoFocus={searching > 0}
+        onKeyPress={(key) => key !== "Escape" && model.moveSelection(key === "ArrowUp" ? -1 : 1)}
+      />
     </>
   );
 
@@ -195,7 +217,16 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
   const footer = (
     <View
       testID="footer"
-      style={{ height: 26, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, borderTopWidth: 1, borderColor: colors.separator }}
+      style={{
+        height: 26,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        borderTopWidth: 1,
+        borderColor: colors.separator,
+      }}
     >
       <Text style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>{state.error ?? noteCount(rows.length)}</Text>
       {row && <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${words} ${words === 1 ? "word" : "words"}`}</Text>}
@@ -271,7 +302,15 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
           onNew={() => model.newNote()}
           bodyFocus={bodyFocus}
           onFocusBody={() => setBodyFocus((n) => n + 1)}
-          emptyMessage={searchingNow ? "Nothing matches your search." : counts.all === 0 ? "Notes are Markdown files in your Documents folder." : inTrash ? "Deleted notes stay here for 30 days." : "This folder has no notes yet."}
+          emptyMessage={
+            searchingNow
+              ? "Nothing matches your search."
+              : counts.all === 0
+                ? "Notes are Markdown files in your Documents folder."
+                : inTrash
+                  ? "Deleted notes stay here for 30 days."
+                  : "This folder has no notes yet."
+          }
           hasNotes={rows.length > 0}
           formatDate={formatEdited}
         />

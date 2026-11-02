@@ -52,7 +52,9 @@ export const machineTools: readonly ToolDef[] = [
     parse: (args) => {
       const device = name(args.device);
       if (device === null) return fail("`device` is required: a name from list_bluetooth_devices.");
-      return typeof args.connected === "boolean" ? { name: "set_bluetooth_connection", device, connected: args.connected } : fail("`connected` must be true or false.");
+      return typeof args.connected === "boolean"
+        ? { name: "set_bluetooth_connection", device, connected: args.connected }
+        : fail("`connected` must be true or false.");
     },
   },
   {
@@ -85,7 +87,7 @@ export const machineTools: readonly ToolDef[] = [
     name: "set_volume",
     title: "Set the volume or mute",
     description:
-      "Set the volume of the default output (target \"output\", the default) or of the default input (\"input\") to a level from 0 to 1, and/or mute or unmute it. Raising the level unmutes. Raising the output volume suddenly can be startling: change it by moderate steps unless asked.",
+      'Set the volume of the default output (target "output", the default) or of the default input ("input") to a level from 0 to 1, and/or mute or unmute it. Raising the level unmutes. Raising the output volume suddenly can be startling: change it by moderate steps unless asked.',
     scope: "settings",
     readOnly: false,
     destructive: false,
@@ -99,7 +101,8 @@ export const machineTools: readonly ToolDef[] = [
       const target = args.target === undefined ? "output" : args.target === "output" || args.target === "input" ? args.target : null;
       if (target === null) return fail('`target` must be "output" or "input".');
       const level = args.level;
-      if (level !== undefined && !(typeof level === "number" && Number.isFinite(level) && level >= 0 && level <= 1)) return fail("`level` must be a number from 0 to 1.");
+      if (level !== undefined && !(typeof level === "number" && Number.isFinite(level) && level >= 0 && level <= 1))
+        return fail("`level` must be a number from 0 to 1.");
       if (args.muted !== undefined && typeof args.muted !== "boolean") return fail("`muted` must be true or false.");
       if (level === undefined && args.muted === undefined) return fail("Give `level` (0 to 1), `muted`, or both.");
       return { name: "set_volume", target, ...(level === undefined ? {} : { level }), ...(args.muted === undefined ? {} : { muted: args.muted }) };
@@ -126,7 +129,8 @@ export const machineTools: readonly ToolDef[] = [
     idempotent: true,
     properties: { profile: { type: "string", enum: [...PROFILE_IDS], description: "power-saver, balanced, or performance." } },
     required: ["profile"],
-    parse: (args) => (isProfileId(args.profile) ? { name: "set_power_profile", profile: args.profile } : fail(`\`profile\` must be one of: ${PROFILE_IDS.join(", ")}.`)),
+    parse: (args) =>
+      isProfileId(args.profile) ? { name: "set_power_profile", profile: args.profile } : fail(`\`profile\` must be one of: ${PROFILE_IDS.join(", ")}.`),
   },
   {
     name: "get_account",

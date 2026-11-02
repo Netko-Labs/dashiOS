@@ -17,7 +17,11 @@ const MARGIN = 14;
 
 /** The screens that are on and say where they are, as boxes in points. */
 export function boxesOf(monitors: readonly Monitor[]): Box[] {
-  return monitors.flatMap((monitor) => (monitor.enabled && monitor.frame ? [{ name: monitor.name, x: monitor.frame.x, y: monitor.frame.y, width: monitor.frame.width, height: monitor.frame.height }] : []));
+  return monitors.flatMap((monitor) =>
+    monitor.enabled && monitor.frame
+      ? [{ name: monitor.name, x: monitor.frame.x, y: monitor.frame.y, width: monitor.frame.width, height: monitor.frame.height }]
+      : [],
+  );
 }
 
 /** The view's size: the pane's content width at the Settings window's opening size (760 less the sidebar and padding). */
@@ -54,66 +58,76 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
   // Wrapped: the host reports a view's bounds from its parent's painting, which a page's scroll list does not do.
   return (
     <View testID="display-arrangement-frame" style={{ flexShrink: 0, flexDirection: "column" }}>
-    <View
-      testID="display-arrangement"
-      onLayout={(bounds) => {
-        laid.current = bounds;
-      }}
-      onPointer={(event) => {
-        const at = pixel(event);
-        if (!at) return;
-        if (event.phase === "down") {
-          const started = beginDrag(boxes, view, at);
-          dragging.current = started;
-          setDrag(started);
-        } else if (dragging.current) {
-          const next = moveDrag(dragging.current, boxes, view, at);
-          dragging.current = next;
-          if (event.phase === "move") {
-            setDrag(next);
-          } else {
-            const spot = dropSpot(next);
-            dragging.current = null;
-            setDrag(null);
-            if (spot) {
-              setDropped({ name: next.name, spot });
-              onMove(next.name, spot);
+      <View
+        testID="display-arrangement"
+        onLayout={(bounds) => {
+          laid.current = bounds;
+        }}
+        onPointer={(event) => {
+          const at = pixel(event);
+          if (!at) return;
+          if (event.phase === "down") {
+            const started = beginDrag(boxes, view, at);
+            dragging.current = started;
+            setDrag(started);
+          } else if (dragging.current) {
+            const next = moveDrag(dragging.current, boxes, view, at);
+            dragging.current = next;
+            if (event.phase === "move") {
+              setDrag(next);
+            } else {
+              const spot = dropSpot(next);
+              dragging.current = null;
+              setDrag(null);
+              if (spot) {
+                setDropped({ name: next.name, spot });
+                onMove(next.name, spot);
+              }
             }
           }
-        }
-      }}
-      style={{ width: ARRANGEMENT_WIDTH, height: ARRANGEMENT_HEIGHT, flexShrink: 0, position: "relative", overflow: "hidden", borderRadius: 8, backgroundColor: surface.field }}
-    >
-      {boxes.map((box) => {
-        const shown = place(box);
-        const monitor = monitors.find((candidate) => candidate.name === box.name);
-        const lifted = drag?.name === box.name;
-        return (
-          <View
-            key={box.name}
-            testID={`arrangement:${box.name}`}
-            style={{
-              position: "absolute",
-              left: view.originX + shown.x * view.scale,
-              top: view.originY + shown.y * view.scale,
-              width: shown.width * view.scale,
-              height: shown.height * view.scale,
-              borderRadius: 4,
-              borderWidth: lifted ? 2 : 1,
-              borderColor: lifted ? colors.selection : colors.separator,
-              backgroundColor: surface.card,
-              overflow: "hidden",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {monitor?.primary && <View style={{ position: "absolute", left: 0, top: 0, width: shown.width * view.scale, height: 5, backgroundColor: colors.selection }} />}
-            <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{box.name}</Text>
-          </View>
-        );
-      })}
-    </View>
+        }}
+        style={{
+          width: ARRANGEMENT_WIDTH,
+          height: ARRANGEMENT_HEIGHT,
+          flexShrink: 0,
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 8,
+          backgroundColor: surface.field,
+        }}
+      >
+        {boxes.map((box) => {
+          const shown = place(box);
+          const monitor = monitors.find((candidate) => candidate.name === box.name);
+          const lifted = drag?.name === box.name;
+          return (
+            <View
+              key={box.name}
+              testID={`arrangement:${box.name}`}
+              style={{
+                position: "absolute",
+                left: view.originX + shown.x * view.scale,
+                top: view.originY + shown.y * view.scale,
+                width: shown.width * view.scale,
+                height: shown.height * view.scale,
+                borderRadius: 4,
+                borderWidth: lifted ? 2 : 1,
+                borderColor: lifted ? colors.selection : colors.separator,
+                backgroundColor: surface.card,
+                overflow: "hidden",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {monitor?.primary && (
+                <View style={{ position: "absolute", left: 0, top: 0, width: shown.width * view.scale, height: 5, backgroundColor: colors.selection }} />
+              )}
+              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{box.name}</Text>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }

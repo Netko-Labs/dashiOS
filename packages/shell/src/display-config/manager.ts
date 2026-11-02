@@ -156,7 +156,11 @@ export class DisplayManager {
   // The changes people and agents make, each as a request over the current state.
 
   /** Run another resolution and refresh rate; the scale is kept if the screen still has room at it. */
-  async setMode(name: string, mode: Pick<Mode, "width" | "height"> & { refreshMhz?: number }, options: ChangeOptions = { confirm: true }): Promise<ApplyResult> {
+  async setMode(
+    name: string,
+    mode: Pick<Mode, "width" | "height"> & { refreshMhz?: number },
+    options: ChangeOptions = { confirm: true },
+  ): Promise<ApplyResult> {
     const monitor = await this.find(name);
     if (typeof monitor === "string") return refused(monitor);
     if (!monitor.enabled) return refused(`${monitor.name} is off`);
@@ -164,7 +168,15 @@ export class DisplayManager {
     if (!offered) return refused(`${monitor.name} has no ${mode.width} × ${mode.height} mode`);
     const scale = this.scaleAfter(monitor, offered, monitor.rotation);
     return this.apply(
-      { outputs: [{ name: monitor.name, mode: { width: offered.width, height: offered.height, refreshMhz: offered.refreshMhz }, ...(scale !== monitor.scale ? { scale } : {}) }] },
+      {
+        outputs: [
+          {
+            name: monitor.name,
+            mode: { width: offered.width, height: offered.height, refreshMhz: offered.refreshMhz },
+            ...(scale !== monitor.scale ? { scale } : {}),
+          },
+        ],
+      },
       `Resolution of ${monitor.name}`,
       options,
     );
@@ -264,4 +276,3 @@ export class DisplayManager {
 }
 
 const refused = (error: string): ApplyResult => ({ kept: false, reverted: false, error });
-

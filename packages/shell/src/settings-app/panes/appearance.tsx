@@ -23,7 +23,9 @@ function MiniDesktop({ palette }: { palette: Palette }) {
   return (
     <View style={{ width: 126, height: 78, backgroundColor: "#3E8A72" }}>
       <View style={{ height: 8, backgroundColor: palette.menuBar }} />
-      <View style={{ position: "absolute", left: 18, top: 20, width: 82, height: 40, borderRadius: 5, padding: 6, gap: 4, backgroundColor: ground, shadow: "sm" }}>
+      <View
+        style={{ position: "absolute", left: 18, top: 20, width: 82, height: 40, borderRadius: 5, padding: 6, gap: 4, backgroundColor: ground, shadow: "sm" }}
+      >
         <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: palette.text }} />
         <View style={{ width: 60, height: 3, borderRadius: 2, backgroundColor: palette.textMuted }} />
         <View style={{ width: 50, height: 3, borderRadius: 2, backgroundColor: palette.textMuted }} />
@@ -33,7 +35,19 @@ function MiniDesktop({ palette }: { palette: Palette }) {
 }
 
 /** A preview to pick from: one palette, or (`auto`) light on the left and dark on the right. */
-function Preview({ palette, label, selected, testID, onPress }: { palette: Palette | "auto"; label: string; selected: boolean; testID: string; onPress: () => void }) {
+function Preview({
+  palette,
+  label,
+  selected,
+  testID,
+  onPress,
+}: {
+  palette: Palette | "auto";
+  label: string;
+  selected: boolean;
+  testID: string;
+  onPress: () => void;
+}) {
   const colors = useColors();
   return (
     <View testID={testID} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -110,7 +124,10 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         </Row>
         <Row label="Accent color" detail="Selections, switches, and sliders.">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View testID="appearance-accent" style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }} />
+            <View
+              testID="appearance-accent"
+              style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
+            />
             <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
           </View>
         </Row>
@@ -118,7 +135,11 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
           <CornerChoices settings={settings} />
         </Row>
         <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
-          <Switch testID="appearance-reduce-motion" on={appearance.reduceMotion === true} onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })} />
+          <Switch
+            testID="appearance-reduce-motion"
+            on={appearance.reduceMotion === true}
+            onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })}
+          />
         </Row>
       </Group>
       <Caption>Dark Mode is the same switch as in Control Center. Auto turns it on at 7 PM and off at 7 AM.</Caption>

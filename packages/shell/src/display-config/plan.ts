@@ -146,7 +146,9 @@ export function toWire(request: ConfigRequest): Record<string, unknown> {
       ...(config.enabled !== undefined ? { enabled: config.enabled } : {}),
       ...(config.position ? { position: config.position } : {}),
       ...(config.mode ? { mode: { width: config.mode.width, height: config.mode.height, refreshMhz: config.mode.refreshMhz } } : {}),
-      ...(config.rotation !== undefined || config.flipped !== undefined ? { transform: { rotation: config.rotation ?? 0, flipped: config.flipped ?? false } } : {}),
+      ...(config.rotation !== undefined || config.flipped !== undefined
+        ? { transform: { rotation: config.rotation ?? 0, flipped: config.flipped ?? false } }
+        : {}),
       ...(config.scale !== undefined ? { scale: config.scale } : {}),
       ...(config.vrr !== undefined ? { vrr: config.vrr } : {}),
     })),

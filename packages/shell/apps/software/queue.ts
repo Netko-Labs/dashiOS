@@ -28,7 +28,10 @@ export class OperationQueue {
   constructor(private readonly events: QueueEvents) {}
 
   get operations(): readonly Operation[] {
-    return [...(this.current ? [{ ...this.current.operation }] : []), ...this.waiting.map((job) => ({ ...job.operation, status: "queued" as const, progress: null }))];
+    return [
+      ...(this.current ? [{ ...this.current.operation }] : []),
+      ...this.waiting.map((job) => ({ ...job.operation, status: "queued" as const, progress: null })),
+    ];
   }
 
   has(key: string): boolean {

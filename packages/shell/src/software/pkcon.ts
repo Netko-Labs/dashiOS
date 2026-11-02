@@ -63,7 +63,7 @@ const STATUS: Readonly<Record<string, string>> = {
   "refreshing software list": "Checking",
   installing: "Installing",
   "installing updates": "Installing",
-  "running": "Working",
+  running: "Working",
   finished: "Finishing",
   "waiting for authentication": "Waiting for your password",
   "loading cache": "Preparing",
@@ -83,7 +83,14 @@ export function parseSystemProgress(output: string): SystemProgress | null {
     if (p?.[1]) percent = Math.min(Number(p[1]), 100);
   }
   if (status === null && percent === null) return null;
-  const label = (status !== null && STATUS[status]) || (status !== null ? tidy(status.replace(/^./, (c) => c.toUpperCase()), 40) : "Working");
+  const label =
+    (status !== null && STATUS[status]) ||
+    (status !== null
+      ? tidy(
+          status.replace(/^./, (c) => c.toUpperCase()),
+          40,
+        )
+      : "Working");
   return { fraction: percent === null || (percent === 0 && status === "waiting in queue") ? null : percent / 100, label };
 }
 
@@ -93,19 +100,26 @@ export function parseSystemProgress(output: string): SystemProgress | null {
  * null when it reports none.
  */
 export function pkconError(output: string): string | null {
-  const line = output.split(/[\r\n]+/).map((each) => each.trim()).find((each) => /^(Failed to |Command failed|Transaction failed|Error:)/i.test(each));
+  const line = output
+    .split(/[\r\n]+/)
+    .map((each) => each.trim())
+    .find((each) => /^(Failed to |Command failed|Transaction failed|Error:)/i.test(each));
   return line === undefined ? null : tidy(line, 300);
 }
 
 /** The first `Command failed:` or error line of pkcon's output, else its last lines. */
 export function systemFailure(output: string): string {
-  const lines = output.split(/[\r\n]+/).map((line) => line.trim()).filter((line) => line !== "");
+  const lines = output
+    .split(/[\r\n]+/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
   const failed = lines.filter((line) => /^(Command failed|Error|Failed|error:)/i.test(line) || /not authorized|authentication|denied/i.test(line));
   return tidy((failed.length > 0 ? failed.slice(-2) : lines.slice(-3)).join(" "), 400) || "The update did not finish.";
 }
 
 /** Package names whose update only takes hold after a restart: the kernel and the system's core libraries and services. */
-const NEEDS_RESTART = /^(kernel(-core|-modules.*)?|kernel-.*|glibc(-.*)?|systemd(-.*)?|dbus(-broker|-daemon|-libs)?|linux-firmware|microcode_ctl|openssl-libs|gnutls)$/;
+const NEEDS_RESTART =
+  /^(kernel(-core|-modules.*)?|kernel-.*|glibc(-.*)?|systemd(-.*)?|dbus(-broker|-daemon|-libs)?|linux-firmware|microcode_ctl|openssl-libs|gnutls)$/;
 
 /** The updates after which the system should restart to finish. */
 export function restartCauses(updates: readonly SystemUpdate[]): SystemUpdate[] {

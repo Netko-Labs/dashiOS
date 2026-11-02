@@ -67,5 +67,19 @@ export function pdftoppmArgs(pdf: string, page: number, dpi: number, outputBase:
 
 /** `pdftoppm` for a page's thumbnail, `THUMBNAIL_WIDTH` pixels wide. */
 export function thumbnailArgs(pdf: string, page: number, outputBase: string): string[] {
-  return ["pdftoppm", "-png", "-singlefile", "-scale-to-x", String(THUMBNAIL_WIDTH), "-scale-to-y", "-1", "-f", String(page), "-l", String(page), pdf, outputBase];
+  return [
+    "pdftoppm",
+    "-png",
+    "-singlefile",
+    "-scale-to-x",
+    String(THUMBNAIL_WIDTH),
+    "-scale-to-y",
+    "-1",
+    "-f",
+    String(page),
+    "-l",
+    String(page),
+    pdf,
+    outputBase,
+  ];
 }

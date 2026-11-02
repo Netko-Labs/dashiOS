@@ -30,7 +30,10 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
             onChange={(style) => settings.patch("dock", { style })}
           />
         </Row>
-        <Row label="Automatically hide and show" detail="The Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back.">
+        <Row
+          label="Automatically hide and show"
+          detail="The Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back."
+        >
           <Switch testID="dock-autohide" on={dock.autohide} onChange={(autohide) => settings.patch("dock", { autohide })} />
         </Row>
         <Row label="Show the Dock" detail="Turned off, there is no Dock at all.">
@@ -39,11 +42,16 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
       </Group>
       <Caption keys="⌥❖D">Hiding is also in the Dock's right-click menu, and on</Caption>
       <Group testID="spaces-settings">
-        <Row label="When switching to an application, switch to a Space with open windows for the application" detail="Turned off, the window comes to the Space you are on instead.">
+        <Row
+          label="When switching to an application, switch to a Space with open windows for the application"
+          detail="Turned off, the window comes to the Space you are on instead."
+        >
           <Switch testID="spaces-switch-on-activate" on={switchOnActivate} onChange={(on) => settings.patch("spaces", { switchOnActivate: on })} />
         </Row>
       </Group>
-      <Caption>Move between Spaces with ⌃← and ⌃→, jump with ⌃1 to ⌃9, or swipe sideways with three fingers. Mission Control (⌃↑) shows them at the top.</Caption>
+      <Caption>
+        Move between Spaces with ⌃← and ⌃→, jump with ⌃1 to ⌃9, or swipe sideways with three fingers. Mission Control (⌃↑) shows them at the top.
+      </Caption>
     </Page>
   );
 }

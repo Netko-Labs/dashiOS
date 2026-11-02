@@ -105,47 +105,47 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
         <Text style={{ fontSize: 12, color: colors.textMuted }}>{origin}</Text>
         <ScrollView style={{ alignSelf: "stretch", marginTop: 12, ...(more ? { height: MORE_HEIGHT } : {}) }}>
           <View style={{ flexDirection: "column", flexShrink: 0 }}>
-          {shown.map((scope, index) => {
-            const on = checked.has(scope.id);
-            return (
-              <View
-                key={scope.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  gap: 10,
-                  paddingTop: 6,
-                  paddingBottom: 6,
-                  borderTopWidth: index === 0 ? 0 : 1,
-                  borderColor: colors.separator,
-                }}
-                onPress={() => toggle(scope.id)}
-              >
+            {shown.map((scope, index) => {
+              const on = checked.has(scope.id);
+              return (
                 <View
+                  key={scope.id}
                   style={{
-                    width: 16,
-                    height: 16,
-                    marginTop: 1,
-                    borderRadius: 4,
-                    borderWidth: on ? 0 : 1.5,
-                    borderColor: colors.checkbox,
-                    backgroundColor: on ? colors.selection : "#00000000",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                    borderTopWidth: index === 0 ? 0 : 1,
+                    borderColor: colors.separator,
                   }}
+                  onPress={() => toggle(scope.id)}
                 >
-                  {on && <Svg markup={CHECK} size={12} color="#ffffff" />}
-                </View>
-                <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{scope.label}</Text>
-                    {scope.needed && <Text style={{ fontSize: 11, color: colors.agentInk }}>needed now</Text>}
+                  <View
+                    style={{
+                      width: 16,
+                      height: 16,
+                      marginTop: 1,
+                      borderRadius: 4,
+                      borderWidth: on ? 0 : 1.5,
+                      borderColor: colors.checkbox,
+                      backgroundColor: on ? colors.selection : "#00000000",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {on && <Svg markup={CHECK} size={12} color="#ffffff" />}
                   </View>
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>{scope.detail}</Text>
+                  <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{scope.label}</Text>
+                      {scope.needed && <Text style={{ fontSize: 11, color: colors.agentInk }}>needed now</Text>}
+                    </View>
+                    <Text style={{ fontSize: 12, color: colors.textMuted }}>{scope.detail}</Text>
+                  </View>
                 </View>
-              </View>
-            );
-          })}
+              );
+            })}
           </View>
         </ScrollView>
         {others.length > 0 && (

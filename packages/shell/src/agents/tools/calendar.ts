@@ -76,7 +76,8 @@ export const calendarTools: readonly ToolDef[] = [
       const to = args.to === undefined ? from : parseDay(args.to);
       if (to === null) return fail("`to` must be a day like 2026-11-05.");
       if (to < from) return fail("`to` is before `from`.");
-      if ((Date.parse(`${to}T00:00Z`) - Date.parse(`${from}T00:00Z`)) / 86_400_000 >= MAX_RANGE_DAYS) return fail(`The range can be at most ${MAX_RANGE_DAYS} days.`);
+      if ((Date.parse(`${to}T00:00Z`) - Date.parse(`${from}T00:00Z`)) / 86_400_000 >= MAX_RANGE_DAYS)
+        return fail(`The range can be at most ${MAX_RANGE_DAYS} days.`);
       const limit = args.limit === undefined ? DEFAULT_LIMIT : whole(args.limit, 1, MAX_LIMIT);
       if (limit === null) return fail(`\`limit\` must be a whole number from 1 to ${MAX_LIMIT}.`);
       const calendar = args.calendar === undefined ? null : text(args.calendar, 100);
@@ -106,7 +107,12 @@ export const calendarTools: readonly ToolDef[] = [
       repeat_every: { type: "integer", minimum: 1, maximum: 999, description: "Every N days, weeks, months, or years; 1 by default." },
       repeat_count: { type: "integer", minimum: 1, maximum: 9999, description: "Stops after this many times." },
       repeat_until: { type: "string", description: "Stops after this day, like 2026-12-24 (not with repeat_count)." },
-      alert_minutes: { type: "integer", minimum: 0, maximum: 43_200, description: "Notify this many minutes before it starts; 0 at the start. None by default. For an all-day event it counts from midnight." },
+      alert_minutes: {
+        type: "integer",
+        minimum: 0,
+        maximum: 43_200,
+        description: "Notify this many minutes before it starts; 0 at the start. None by default. For an all-day event it counts from midnight.",
+      },
     },
     required: ["title", "start"],
     parse: parseCreate,
@@ -135,7 +141,8 @@ function parseCreate(args: Args) {
 
   let repeat: { freq: (typeof FREQUENCIES)[number]; interval: number; count?: number; until?: Day } | null = null;
   if (args.repeat !== undefined) {
-    if (typeof args.repeat !== "string" || !(FREQUENCIES as readonly string[]).includes(args.repeat)) return fail(`\`repeat\` must be one of ${FREQUENCIES.join(", ")}.`);
+    if (typeof args.repeat !== "string" || !(FREQUENCIES as readonly string[]).includes(args.repeat))
+      return fail(`\`repeat\` must be one of ${FREQUENCIES.join(", ")}.`);
     const interval = args.repeat_every === undefined ? 1 : whole(args.repeat_every, 1, 999);
     if (interval === null) return fail("`repeat_every` must be a whole number from 1 to 999.");
     repeat = { freq: args.repeat as (typeof FREQUENCIES)[number], interval };

@@ -17,7 +17,17 @@ function Big({ shot }: { shot: Screenshot }) {
     <View
       testID="shot-big"
       onLayout={(bounds) => setWidth(Math.max(200, Math.floor(bounds.width)))}
-      style={{ height: BIG_HEIGHT, flexShrink: 0, borderRadius: 10, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: surface.field, borderWidth: 1, borderColor: colors.separator }}
+      style={{
+        height: BIG_HEIGHT,
+        flexShrink: 0,
+        borderRadius: 10,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: surface.field,
+        borderWidth: 1,
+        borderColor: colors.separator,
+      }}
     >
       {file ? (
         <Image source={file} resizeMode="contain" style={{ width: Math.max(width - 2, 100), height: BIG_HEIGHT - 2 }} />
@@ -36,7 +46,18 @@ function Thumb({ shot, chosen, onPress, index }: { shot: Screenshot; chosen: boo
     <View
       testID={`shot:${index}`}
       onPress={onPress}
-      style={{ width: 120, height: 76, flexShrink: 0, borderRadius: 8, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: surface.field, borderWidth: chosen ? 2 : 1, borderColor: chosen ? colors.selection : colors.separator }}
+      style={{
+        width: 120,
+        height: 76,
+        flexShrink: 0,
+        borderRadius: 8,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: surface.field,
+        borderWidth: chosen ? 2 : 1,
+        borderColor: chosen ? colors.selection : colors.separator,
+      }}
     >
       {file && <Image source={file} resizeMode="contain" style={{ width: 114, height: 70 }} />}
     </View>
@@ -51,9 +72,7 @@ export function Gallery({ shots }: { shots: readonly Screenshot[] }) {
   return (
     <View testID="gallery" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
       <Big shot={shot} />
-      {shot.caption !== null && (
-        <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{shot.caption}</Text>
-      )}
+      {shot.caption !== null && <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{shot.caption}</Text>}
       {shots.length > 1 && (
         <View style={{ flexDirection: "row", gap: 8, overflow: "scroll-x", flexShrink: 0 }}>
           {shots.map((each, i) => (

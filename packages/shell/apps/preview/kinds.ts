@@ -83,6 +83,7 @@ export function sniff(head: Uint8Array): Format | null {
   }
   if ((head[0] === 0xff && head[1] === 0x0a) || ascii(head, 0, "\0\0\0\fJXL ")) return "jxl";
   const text = new TextDecoder("utf-8", { fatal: false }).decode(head.subarray(0, 2048));
-  if (/<svg[\s>]/i.test(text) && /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*(?:<!DOCTYPE[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(text)) return "svg";
+  if (/<svg[\s>]/i.test(text) && /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*(?:<!DOCTYPE[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(text))
+    return "svg";
   return null;
 }

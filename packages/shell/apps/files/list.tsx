@@ -22,7 +22,16 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
           ? {
               ...column,
               cell: (item, selected) => (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 7, minWidth: 0, flex: 1, opacity: cut.has(item.path) ? 0.45 : item.hidden ? 0.65 : 1 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 7,
+                    minWidth: 0,
+                    flex: 1,
+                    opacity: cut.has(item.path) ? 0.45 : item.hidden ? 0.65 : 1,
+                  }}
+                >
                   <Image source={iconFor(item)} resizeMode="contain" style={{ width: 16, height: 16 }} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? "#ffffff" : colors.text }}>
@@ -64,4 +73,3 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
     />
   );
 }
-

@@ -86,7 +86,9 @@ export class Software {
     const each = await Promise.all(
       (["user", "system"] as const).map(async (installation) => {
         const result = await this.run(cmd.updatesAvailable(installation), { timeoutMs: 120_000 });
-        return result.code === 0 ? { ok: true as const, updates: parseUpdates(result.output, installation) } : { ok: false as const, message: failureMessage(result.output) };
+        return result.code === 0
+          ? { ok: true as const, updates: parseUpdates(result.output, installation) }
+          : { ok: false as const, message: failureMessage(result.output) };
       }),
     );
     const failed = each.find((entry) => !entry.ok);
@@ -124,7 +126,12 @@ export class Software {
 
   remove(id: string, installation: Installation, signal?: AbortSignal): Promise<Outcome> {
     this.need("flatpak");
-    return this.flatpak(() => cmd.uninstall(id, installation), () => {}, signal, false);
+    return this.flatpak(
+      () => cmd.uninstall(id, installation),
+      () => {},
+      signal,
+      false,
+    );
   }
 
   /** Updates one app, or all of an installation's. */

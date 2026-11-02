@@ -80,11 +80,7 @@ export function parseBattery(properties: ReadonlyMap<string, unknown> | undefine
 }
 
 /** The device at `path` from its `org.bluez.Device1` properties and, if it has one, its battery's. */
-export function parseDevice(
-  path: string,
-  properties: ReadonlyMap<string, unknown>,
-  battery?: ReadonlyMap<string, unknown>,
-): RawDevice | null {
+export function parseDevice(path: string, properties: ReadonlyMap<string, unknown>, battery?: ReadonlyMap<string, unknown>): RawDevice | null {
   if (!DEVICE_PATH.test(path)) return null;
   const address = properties.get("Address");
   const paired = properties.get("Paired");

@@ -41,7 +41,11 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick 
   const names = weekdayNames(prefs.locale, firstDay);
 
   const arrow = (markup: string, by: number, testID: string) => (
-    <View testID={testID} onPress={() => setPage(addMonths(page, by))} style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}>
+    <View
+      testID={testID}
+      onPress={() => setPage(addMonths(page, by))}
+      style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+    >
       <Svg markup={markup} size={11} color={colors.textMuted} />
     </View>
   );
@@ -73,13 +77,39 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick 
                 key={day}
                 testID={`mini:${day}`}
                 onPress={() => onPick(day)}
-                style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: lit && !isToday ? colors.button : "#00000000", borderRadius: 6 }}
+                style={{
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: lit && !isToday ? colors.button : "#00000000",
+                  borderRadius: 6,
+                }}
               >
-                <View style={{ width: CELL - 2, height: CELL - 2, borderRadius: (CELL - 2) / 2, alignItems: "center", justifyContent: "center", backgroundColor: isToday ? colors.selection : "#00000000" }}>
-                  <Text style={{ fontSize: 11, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted, opacity: inMonth || isToday ? 1 : 0.55 }}>
+                <View
+                  style={{
+                    width: CELL - 2,
+                    height: CELL - 2,
+                    borderRadius: (CELL - 2) / 2,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isToday ? colors.selection : "#00000000",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: isToday ? "bold" : "normal",
+                      color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted,
+                      opacity: inMonth || isToday ? 1 : 0.55,
+                    }}
+                  >
                     {String(Number(day.slice(8, 10)))}
                   </Text>
-                  {dots.has(day) && <View style={{ position: "absolute", bottom: 1, width: 3, height: 3, borderRadius: 2, backgroundColor: isToday ? "#ffffff" : colors.selection }} />}
+                  {dots.has(day) && (
+                    <View
+                      style={{ position: "absolute", bottom: 1, width: 3, height: 3, borderRadius: 2, backgroundColor: isToday ? "#ffffff" : colors.selection }}
+                    />
+                  )}
                 </View>
               </View>
             );

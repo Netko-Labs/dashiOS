@@ -20,7 +20,7 @@ const noun = (items: readonly FileItem[]): string => (items.length === 1 ? "Item
 export function itemMenu({ store, ops, actions }: Deps, items: readonly FileItem[]): MenuItem[] {
   const state = store.getSnapshot();
   const only = items.length === 1 ? (items[0] as FileItem) : null;
-  const inTrash = state.location.kind === "trash" || (only !== null && only.path.startsWith(`${store.env.trash.files}/`)) ;
+  const inTrash = state.location.kind === "trash" || (only !== null && only.path.startsWith(`${store.env.trash.files}/`));
   const paths = items.map((item) => item.path);
   if (inTrash) {
     return [
@@ -71,7 +71,12 @@ export function backgroundMenu({ store, ops, actions }: Deps): MenuItem[] {
 export function actionMenu({ store, ops, actions }: Deps): MenuItem[] {
   const state = store.getSnapshot();
   const writable = ops.writable;
-  const sorts = [["name", "Name"], ["modified", "Date Modified"], ["size", "Size"], ["kind", "Kind"]] as const;
+  const sorts = [
+    ["name", "Name"],
+    ["modified", "Date Modified"],
+    ["size", "Size"],
+    ["kind", "Kind"],
+  ] as const;
   return [
     { label: "New Folder…", onPress: () => actions.newFolder(), disabled: !writable },
     { label: "Go to Folder…", onPress: () => actions.goToFolder() },

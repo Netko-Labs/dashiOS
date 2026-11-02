@@ -40,7 +40,11 @@ export function parseUserDirs(text: string, home: string): Partial<Record<UserDi
 }
 
 /** The user dirs that exist here, in `USER_DIR_NAMES` order. The home folder itself never counts as one (xdg-user-dirs points unset dirs at it). */
-export function userDirs(env: Record<string, string | undefined> = process.env, home: string = homedir(), exists: (path: string) => boolean = existsSync): Array<{ name: UserDirName; path: string }> {
+export function userDirs(
+  env: Record<string, string | undefined> = process.env,
+  home: string = homedir(),
+  exists: (path: string) => boolean = existsSync,
+): Array<{ name: UserDirName; path: string }> {
   const config = env.XDG_CONFIG_HOME || join(home, ".config");
   let parsed: Partial<Record<UserDirName, string>> = {};
   try {

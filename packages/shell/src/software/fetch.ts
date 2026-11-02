@@ -37,7 +37,12 @@ export async function getBytes(url: string, options: GetOptions): Promise<Uint8A
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     let response: Response;
     try {
-      response = await fetcher(target, { ...options.init, redirect: "manual", signal, headers: { accept: "*/*", ...(options.init?.headers as Record<string, string> | undefined) } });
+      response = await fetcher(target, {
+        ...options.init,
+        redirect: "manual",
+        signal,
+        headers: { accept: "*/*", ...(options.init?.headers as Record<string, string> | undefined) },
+      });
     } catch (error) {
       throw new NetworkError("offline", error instanceof Error ? error.message : "no connection");
     }

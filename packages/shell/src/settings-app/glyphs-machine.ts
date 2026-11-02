@@ -3,11 +3,12 @@
 import { BLUETOOTH } from "../control-center/glyphs.ts";
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
-const stroke = (d: string, width = 1.4) =>
-  `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+const stroke = (d: string, width = 1.4) => `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
 /** Network: Wi-Fi arcs over a dot. */
-export const NETWORK = svg(`${stroke("M1.8 6.2a8.4 8.4 0 0 1 12.4 0", 1.5)}${stroke("M3.9 8.7a5.4 5.4 0 0 1 8.2 0", 1.5)}${stroke("M6 11.1a2.4 2.4 0 0 1 4 0", 1.5)}<circle cx="8" cy="13" r="1.1" fill="#000"/>`);
+export const NETWORK = svg(
+  `${stroke("M1.8 6.2a8.4 8.4 0 0 1 12.4 0", 1.5)}${stroke("M3.9 8.7a5.4 5.4 0 0 1 8.2 0", 1.5)}${stroke("M6 11.1a2.4 2.4 0 0 1 4 0", 1.5)}<circle cx="8" cy="13" r="1.1" fill="#000"/>`,
+);
 
 export { BLUETOOTH };
 
@@ -25,4 +26,6 @@ export const BATTERY = svg(
 export const PERSON = svg(`<circle cx="8" cy="5.4" r="2.6" fill="#000"/><path d="M2.8 13.6c0-2.9 2.3-4.6 5.2-4.6s5.2 1.7 5.2 4.6z" fill="#000"/>`);
 
 /** A microphone, for the Sound pane's inputs. */
-export const MICROPHONE = svg(`<rect x="5.8" y="1.8" width="4.4" height="7.6" rx="2.2" fill="#000"/>${stroke("M3.6 7.6a4.4 4.4 0 0 0 8.8 0M8 12v2.4M5.6 14.4h4.8", 1.3)}`);
+export const MICROPHONE = svg(
+  `<rect x="5.8" y="1.8" width="4.4" height="7.6" rx="2.2" fill="#000"/>${stroke("M3.6 7.6a4.4 4.4 0 0 0 8.8 0M8 12v2.4M5.6 14.4h4.8", 1.3)}`,
+);

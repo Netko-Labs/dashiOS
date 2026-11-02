@@ -31,8 +31,7 @@ function resolve(windows: readonly CompositorWindow[], target: Target): number |
   return window.pid ?? toolError(`w${window.id} has no process id to end.`);
 }
 
-const REFUSED = (name: string) =>
-  `${name} can't be force quit: it is not an app with a window, or it belongs to the shell or the session.`;
+const REFUSED = (name: string) => `${name} can't be force quit: it is not an app with a window, or it belongs to the shell or the session.`;
 
 export async function forceQuitApp(target: Target, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking at a stuck app");

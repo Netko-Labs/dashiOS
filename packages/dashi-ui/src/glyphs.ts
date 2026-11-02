@@ -13,7 +13,9 @@ export const STOP = svg(`${stroke("M5.5 1.8h5l3.7 3.7v5l-3.7 3.7h-5l-3.7-3.7v-5z
 export const WARNING = svg(`${stroke("M8 2.2l6.2 11H1.8z", 1.4)}${stroke("M8 6.4v3.2", 1.6)}<circle cx="8" cy="11.5" r=".9" fill="#000"/>`);
 export const LOCK = svg(`${stroke("M4.6 7.2V5.4a3.4 3.4 0 0 1 6.8 0v1.8", 1.4)}<rect x="3.4" y="7.2" width="9.2" height="6.8" rx="1.6" fill="#000"/>`);
 
-export const INFO = svg(`<circle cx="8" cy="8" r="6" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M8 7.2v3.8", 1.5)}<circle cx="8" cy="5" r=".95" fill="#000"/>`);
+export const INFO = svg(
+  `<circle cx="8" cy="8" r="6" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M8 7.2v3.8", 1.5)}<circle cx="8" cy="5" r=".95" fill="#000"/>`,
+);
 
 export const SEARCH = svg(`<circle cx="7" cy="7" r="4.4" stroke="#000" stroke-width="1.5" fill="none"/>${stroke("M10.4 10.4l3.2 3.2", 1.6)}`);
 

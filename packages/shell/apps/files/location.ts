@@ -19,7 +19,20 @@ export function locationTitle(location: Location, home: string): string {
   return location.path === "/" ? "Computer" : baseName(location.path);
 }
 
-export type GlyphName = "recents" | "home" | "desktop" | "documents" | "downloads" | "pictures" | "music" | "videos" | "drive" | "usb" | "trash" | "network" | "folder";
+export type GlyphName =
+  | "recents"
+  | "home"
+  | "desktop"
+  | "documents"
+  | "downloads"
+  | "pictures"
+  | "music"
+  | "videos"
+  | "drive"
+  | "usb"
+  | "trash"
+  | "network"
+  | "folder";
 
 export interface Place {
   id: string;

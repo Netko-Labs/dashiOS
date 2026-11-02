@@ -33,7 +33,10 @@ export function parseCpuinfo(text: string): Processor | null {
 
 /** "Intel(R) Core(TM) i7-1165G7 @ 2.80GHz" → "Intel Core i7-1165G7 @ 2.80GHz": no trademark marks, single spaces. */
 export function tidyCpuName(name: string): string {
-  return name.replace(/\((?:R|TM)\)/gi, "").replace(/\s+/g, " ").trim();
+  return name
+    .replace(/\((?:R|TM)\)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Disk space for `df`-style numbers: total and free, in bytes. */

@@ -54,7 +54,17 @@ export function InfoSheet({ rows, onClose }: { rows: readonly InfoRow[]; onClose
   );
 }
 
-export function OpenWithSheet({ handlers, loading, onPick, onClose }: { handlers: readonly Handler[]; loading: boolean; onPick: (handler: Handler) => void; onClose: () => void }) {
+export function OpenWithSheet({
+  handlers,
+  loading,
+  onPick,
+  onClose,
+}: {
+  handlers: readonly Handler[];
+  loading: boolean;
+  onPick: (handler: Handler) => void;
+  onClose: () => void;
+}) {
   const colors = useColors();
   const [hovered, setHovered] = useState<string | null>(null);
   return (
@@ -74,7 +84,16 @@ export function OpenWithSheet({ handlers, loading, onPick, onClose }: { handlers
                 testID={`open-with:${handler.id}`}
                 onHoverChange={(over) => setHovered((now) => (over ? handler.id : now === handler.id ? null : now))}
                 onPress={() => onPick(handler)}
-                style={{ height: 30, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, borderRadius: 6, backgroundColor: lit ? colors.selection : "#00000000" }}
+                style={{
+                  height: 30,
+                  flexShrink: 0,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingHorizontal: 8,
+                  borderRadius: 6,
+                  backgroundColor: lit ? colors.selection : "#00000000",
+                }}
               >
                 <Svg markup={DOCUMENT} size={15} color={lit ? "#ffffff" : colors.textMuted} />
                 <View style={{ flex: 1, minWidth: 0 }}>

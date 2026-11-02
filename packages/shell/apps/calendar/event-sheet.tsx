@@ -57,7 +57,19 @@ function FormRow({ label, children, top }: { label: string; children: ReactNode;
 function Arrow({ glyph, onPress, testID }: { glyph: "‹" | "›"; onPress: () => void; testID: string }) {
   const colors = useColors();
   return (
-    <View testID={testID} onPress={onPress} style={{ width: 22, height: 26, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: colors.button, hoverBackgroundColor: colors.separator }}>
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{
+        width: 22,
+        height: 26,
+        borderRadius: 6,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.button,
+        hoverBackgroundColor: colors.separator,
+      }}
+    >
       <Text style={{ fontSize: 14, color: colors.text }}>{glyph}</Text>
     </View>
   );
@@ -137,7 +149,8 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
   };
   const alerts = draft.allDay ? ALL_DAY_ALERTS : TIMED_ALERTS;
   const alertChoices = alerts.map(([value, label]) => ({ value: value === null ? "none" : String(value), label }));
-  if (draft.alert !== null && !alerts.some(([value]) => value === draft.alert)) alertChoices.push({ value: String(draft.alert), label: alertLabel(draft.alert, draft.allDay) });
+  if (draft.alert !== null && !alerts.some(([value]) => value === draft.alert))
+    alertChoices.push({ value: String(draft.alert), label: alertLabel(draft.alert, draft.allDay) });
   const repeatChoices = editing?.custom ? [...REPEATS, { value: "custom" as RepeatChoice, label: "Custom (kept)" }] : REPEATS;
   const repeats = draft.repeat !== "none" && draft.repeat !== "custom";
 
@@ -146,7 +159,15 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
       <ScrollView testID="event-form" style={{ maxHeight: 540 }}>
         <View style={{ flexDirection: "column", gap: 10, paddingBottom: 2 }}>
           <FormRow label="Title">
-            <TextField testID="event-title" value={draft.title} placeholder="New Event" autoFocus onChangeText={(title) => change({ title })} onSubmit={save} onKeyPress={(key) => key === "Escape" && onCancel()} />
+            <TextField
+              testID="event-title"
+              value={draft.title}
+              placeholder="New Event"
+              autoFocus
+              onChangeText={(title) => change({ title })}
+              onSubmit={save}
+              onKeyPress={(key) => key === "Escape" && onCancel()}
+            />
           </FormRow>
           <FormRow label="Calendar">
             <View testID="event-calendar" style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -157,9 +178,19 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
                     key={calendar.id}
                     testID={`event-calendar:${calendar.id}`}
                     onPress={() => change({ calendarId: calendar.id })}
-                    style={{ height: 26, paddingHorizontal: 10, borderRadius: 13, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: chosen ? colors.selection : colors.button }}
+                    style={{
+                      height: 26,
+                      paddingHorizontal: 10,
+                      borderRadius: 13,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                      backgroundColor: chosen ? colors.selection : colors.button,
+                    }}
                   >
-                    <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: calendar.color, borderWidth: chosen ? 1 : 0, borderColor: "#ffffff" }} />
+                    <View
+                      style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: calendar.color, borderWidth: chosen ? 1 : 0, borderColor: "#ffffff" }}
+                    />
                     <Text style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>{calendar.name}</Text>
                   </View>
                 );
@@ -171,14 +202,23 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
           </FormRow>
           <FormRow label="Starts">
             <DayField id="start" value={draft.startDay} prefs={prefs} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
-            {!draft.allDay && <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />}
+            {!draft.allDay && (
+              <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
+            )}
           </FormRow>
           <FormRow label="Ends">
             <DayField id="end" value={draft.endDay} prefs={prefs} onChange={(endDay) => change({ endDay })} />
             {!draft.allDay && <TimeField id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => change({ endMinutes })} />}
           </FormRow>
           <FormRow label="Location">
-            <TextField testID="event-location" value={draft.location} placeholder="Add a place" onChangeText={(location) => change({ location })} onSubmit={save} onKeyPress={(key) => key === "Escape" && onCancel()} />
+            <TextField
+              testID="event-location"
+              value={draft.location}
+              placeholder="Add a place"
+              onChangeText={(location) => change({ location })}
+              onSubmit={save}
+              onKeyPress={(key) => key === "Escape" && onCancel()}
+            />
           </FormRow>
           <FormRow label="Repeat" top>
             <Choices testID="event-repeat" options={repeatChoices} value={draft.repeat} onChange={(repeat) => change({ repeat })} />
@@ -199,7 +239,14 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
                           key={index}
                           testID={`event-weekday:${index}`}
                           onPress={() => change({ weekdays: on ? draft.weekdays.filter((each) => each !== index) : [...draft.weekdays, index] })}
-                          style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: on ? colors.selection : colors.button }}
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 13,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backgroundColor: on ? colors.selection : colors.button,
+                          }}
                         >
                           <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? "#ffffff" : colors.text }}>{letter}</Text>
                         </View>
@@ -236,12 +283,25 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
               placeholder="Add notes"
               onChangeText={(notes) => change({ notes })}
               onKeyPress={(key) => key === "Escape" && onCancel()}
-              style={{ width: "100%", height: 64, padding: 6, fontSize: 13, borderRadius: 7, color: colors.text, placeholderColor: colors.textDisabled, backgroundColor: surface.card, borderColor: colors.separator, focusBorderColor: colors.selection }}
+              style={{
+                width: "100%",
+                height: 64,
+                padding: 6,
+                fontSize: 13,
+                borderRadius: 7,
+                color: colors.text,
+                placeholderColor: colors.textDisabled,
+                backgroundColor: surface.card,
+                borderColor: colors.separator,
+                focusBorderColor: colors.selection,
+              }}
             />
           </FormRow>
         </View>
       </ScrollView>
-      {editing?.repeating === true && <Text style={{ fontSize: 11, color: colors.textMuted }}>This event repeats: changes apply to every time it happens.</Text>}
+      {editing?.repeating === true && (
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>This event repeats: changes apply to every time it happens.</Text>
+      )}
       {problem !== null && (
         <View testID="event-problem">
           <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>

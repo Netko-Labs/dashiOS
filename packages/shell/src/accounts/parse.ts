@@ -64,5 +64,8 @@ export function iconProblem(path: string, size: number | null): string | null {
 export function initialsOf(account: Pick<Account, "realName" | "userName">): string {
   const words = (account.realName.trim() || account.userName).split(/\s+/).filter((word) => word !== "");
   const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]];
-  return letters.map((word) => [...(word ?? "")][0] ?? "").join("").toUpperCase();
+  return letters
+    .map((word) => [...(word ?? "")][0] ?? "")
+    .join("")
+    .toUpperCase();
 }

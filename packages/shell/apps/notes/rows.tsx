@@ -30,7 +30,21 @@ function Caption({ children }: { children: string }) {
   );
 }
 
-function NoteRow({ row, chosen, onSelect, onMenu, folder, now }: { row: Row; chosen: boolean; onSelect: () => void; onMenu: (x: number, y: number) => void; folder: string | null; now: number }) {
+function NoteRow({
+  row,
+  chosen,
+  onSelect,
+  onMenu,
+  folder,
+  now,
+}: {
+  row: Row;
+  chosen: boolean;
+  onSelect: () => void;
+  onMenu: (x: number, y: number) => void;
+  folder: string | null;
+  now: number;
+}) {
   const colors = useColors();
   const ink = chosen ? "#ffffff" : colors.text;
   const quiet = chosen ? "#ffffffcc" : colors.textMuted;
@@ -103,7 +117,16 @@ export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderL
   return (
     <ScrollView
       testID="note-list"
-      style={{ width: LIST_WIDTH, flexShrink: 0, flexDirection: "column", paddingVertical: 6, gap: 1, backgroundColor: surface.window, borderRightWidth: 1, borderColor: colors.separator }}
+      style={{
+        width: LIST_WIDTH,
+        flexShrink: 0,
+        flexDirection: "column",
+        paddingVertical: 6,
+        gap: 1,
+        backgroundColor: surface.window,
+        borderRightWidth: 1,
+        borderColor: colors.separator,
+      }}
     >
       {pinned.length > 0 && <Caption>Pinned</Caption>}
       {pinned.map(render)}

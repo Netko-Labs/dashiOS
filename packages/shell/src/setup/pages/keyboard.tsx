@@ -12,7 +12,18 @@ export function KeyboardPage({ ctx }: { ctx: SetupContext }) {
   const [typed, setTyped] = useState("");
   return (
     <>
-      <View style={{ flexShrink: 0, height: 34, justifyContent: "center", paddingHorizontal: 10, borderRadius: 8, backgroundColor: surface.card, borderWidth: 1, borderColor: colors.separator }}>
+      <View
+        style={{
+          flexShrink: 0,
+          height: 34,
+          justifyContent: "center",
+          paddingHorizontal: 10,
+          borderRadius: 8,
+          backgroundColor: surface.card,
+          borderWidth: 1,
+          borderColor: colors.separator,
+        }}
+      >
         <TextInput
           testID="setup-keyboard-test"
           value={typed}

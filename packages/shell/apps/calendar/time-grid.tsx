@@ -35,7 +35,19 @@ export interface TimeGridProps {
   scroll: (testID: string, dy: number) => void;
 }
 
-function EventBlock({ placed, color, width, prefs, onOpen }: { placed: Placed; color: string; width: number; prefs: ClockPrefs; onOpen: (occurrence: Occurrence) => void }) {
+function EventBlock({
+  placed,
+  color,
+  width,
+  prefs,
+  onOpen,
+}: {
+  placed: Placed;
+  color: string;
+  width: number;
+  prefs: ClockPrefs;
+  onOpen: (occurrence: Occurrence) => void;
+}) {
   const colors = useColors();
   const { occurrence } = placed;
   const { event } = occurrence;
@@ -111,9 +123,23 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
         {days.map((day) => {
           const isToday = day === today;
           return (
-            <View key={day} testID={`head:${day}`} onPress={() => onDay(day)} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }}>
+            <View
+              key={day}
+              testID={`head:${day}`}
+              onPress={() => onDay(day)}
+              style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }}
+            >
               <Text style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.selection : colors.textMuted }}>{weekdayShort(day, prefs)}</Text>
-              <View style={{ minWidth: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: isToday ? colors.selection : "#00000000" }}>
+              <View
+                style={{
+                  minWidth: 26,
+                  height: 26,
+                  borderRadius: 13,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isToday ? colors.selection : "#00000000",
+                }}
+              >
                 <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : colors.text }}>{dayNumber(day)}</Text>
               </View>
             </View>
@@ -132,7 +158,16 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
               key={day}
               testID={`allday:${day}`}
               onPress={() => onNew(day, null)}
-              style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1, padding: 3, borderLeftWidth: 1, borderColor: colors.separator, overflow: "hidden" }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                flexDirection: "column",
+                gap: 1,
+                padding: 3,
+                borderLeftWidth: 1,
+                borderColor: colors.separator,
+                overflow: "hidden",
+              }}
             >
               {shown.map((occurrence) => {
                 const color = colorOf(occurrence.calendarId);
@@ -141,7 +176,14 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
                     key={`${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`}
                     testID={`chip:${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`}
                     onPress={() => onOpen(occurrence)}
-                    style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0, paddingHorizontal: 5, borderRadius: 4, justifyContent: "center", backgroundColor: color }}
+                    style={{
+                      height: MONTH_CHIP_HEIGHT - 1,
+                      flexShrink: 0,
+                      paddingHorizontal: 5,
+                      borderRadius: 4,
+                      justifyContent: "center",
+                      backgroundColor: color,
+                    }}
                   >
                     <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inkOn(color) }}>
                       {titleOf(occurrence.event)}
@@ -150,7 +192,11 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
                 );
               })}
               {all.length > shown.length && (
-                <View testID={`more:${day}`} onPress={() => onDay(day)} style={{ height: MONTH_CHIP_HEIGHT - 1, justifyContent: "center", paddingHorizontal: 5 }}>
+                <View
+                  testID={`more:${day}`}
+                  onPress={() => onDay(day)}
+                  style={{ height: MONTH_CHIP_HEIGHT - 1, justifyContent: "center", paddingHorizontal: 5 }}
+                >
                   <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${all.length - shown.length} more`}</Text>
                 </View>
               )}
@@ -181,11 +227,24 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
                     key={slot}
                     testID={`slot:${day}:${slot * 30}`}
                     onPress={() => onNew(day, slot * 30)}
-                    style={{ height: HALF, flexShrink: 0, borderBottomWidth: slot % 2 === 1 ? 1 : 0, borderColor: colors.separator, hoverBackgroundColor: tint(colors.selection, 0.07) }}
+                    style={{
+                      height: HALF,
+                      flexShrink: 0,
+                      borderBottomWidth: slot % 2 === 1 ? 1 : 0,
+                      borderColor: colors.separator,
+                      hoverBackgroundColor: tint(colors.selection, 0.07),
+                    }}
                   />
                 ))}
                 {placed.map((each) => (
-                  <EventBlock key={`${each.occurrence.calendarId}:${each.occurrence.event.uid}:${each.occurrence.start}`} placed={each} color={colorOf(each.occurrence.calendarId)} width={columnWidth} prefs={prefs} onOpen={onOpen} />
+                  <EventBlock
+                    key={`${each.occurrence.calendarId}:${each.occurrence.event.uid}:${each.occurrence.start}`}
+                    placed={each}
+                    color={colorOf(each.occurrence.calendarId)}
+                    width={columnWidth}
+                    prefs={prefs}
+                    onOpen={onOpen}
+                  />
                 ))}
                 {day === today && (
                   <View testID="now" style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(nowMinutes) - 5, height: 10, justifyContent: "center" }}>

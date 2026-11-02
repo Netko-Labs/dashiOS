@@ -58,17 +58,10 @@ export async function importSessionEnvironment(deps: ImportDeps): Promise<void> 
 }
 
 /** Run a command to completion with a deadline, keeping what it printed. */
-export async function captureWithTimeout(
-  command: readonly string[],
-  timeoutMs = 10_000,
-): Promise<{ stdout: string; failure: string | null }> {
+export async function captureWithTimeout(command: readonly string[], timeoutMs = 10_000): Promise<{ stdout: string; failure: string | null }> {
   try {
     const child = Bun.spawn([...command], { stdin: "ignore", stdout: "pipe", stderr: "pipe", timeout: timeoutMs });
-    const [code, stdout, stderr] = await Promise.all([
-      child.exited,
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-    ]);
+    const [code, stdout, stderr] = await Promise.all([child.exited, new Response(child.stdout).text(), new Response(child.stderr).text()]);
     if (code === 0) return { stdout, failure: null };
     const detail = stderr.trim().split("\n")[0] ?? "";
     return { stdout, failure: `exit ${code}${detail ? `: ${detail}` : ""}` };

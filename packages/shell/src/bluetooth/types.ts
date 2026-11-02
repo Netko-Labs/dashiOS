@@ -37,8 +37,7 @@ export interface AdapterReading {
 /** What a backend knows right now. */
 export type BluetoothReading =
   /** No Bluetooth adapter (BlueZ is there, but there is nothing to talk to). */
-  | { kind: "unavailable" }
-  | { kind: "ready"; adapter: AdapterReading; devices: readonly RawDevice[] };
+  { kind: "unavailable" } | { kind: "ready"; adapter: AdapterReading; devices: readonly RawDevice[] };
 
 /** One row of either list. */
 export interface BluetoothDevice {
@@ -72,8 +71,8 @@ interface Subject {
 
 /** Questions the person answers on a sheet. */
 export type AskRequest = Subject &
+  /** Numeric comparison: do both sides show this code? */
   (
-    /** Numeric comparison: do both sides show this code? */
     | { kind: "confirm"; passkey: string }
     /** A device that wants to pair with this computer (the "just works" model). */
     | { kind: "authorize" }
@@ -85,10 +84,7 @@ export type AskRequest = Subject &
 
 /** Codes to read and type on the device, which may change as the device's keys are pressed. */
 export type ShowRequest = Subject &
-  (
-    | { kind: "show-passkey"; passkey: string; /** How many digits the device has taken so far. */ entered: number }
-    | { kind: "show-pin"; pin: string }
-  );
+  ({ kind: "show-passkey"; passkey: string /** How many digits the device has taken so far. */; entered: number } | { kind: "show-pin"; pin: string });
 
 export type PairingRequest = AskRequest | ShowRequest;
 

@@ -21,8 +21,7 @@ import type { Call, Rect } from "./tools/index.ts";
 const LAUNCH_WAIT_MS = 10_000;
 
 const owns = (entry: Entry, appId: string) =>
-  appId !== "" &&
-  [entry.id, entry.wmClass].some((id) => id !== undefined && id.toLowerCase() === appId.toLowerCase());
+  appId !== "" && [entry.id, entry.wmClass].some((id) => id !== undefined && id.toLowerCase() === appId.toLowerCase());
 
 function describe(window: CompositorWindow, entries: readonly Entry[]) {
   return {
@@ -139,7 +138,11 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
     case "set_display_scale":
       return desktop.setDisplayScale(call.display, call.scale, ctx);
     case "set_display_mode":
-      return desktop.setDisplayMode(call.display, { width: call.width, height: call.height, ...(call.refreshMhz !== undefined ? { refreshMhz: call.refreshMhz } : {}) }, ctx);
+      return desktop.setDisplayMode(
+        call.display,
+        { width: call.width, height: call.height, ...(call.refreshMhz !== undefined ? { refreshMhz: call.refreshMhz } : {}) },
+        ctx,
+      );
     case "set_display_rotation":
       return desktop.setDisplayRotation(call.display, call.rotation, ctx);
     case "set_primary_display":
@@ -229,9 +232,7 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
 async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
   const query = wanted.replace(/\.desktop$/, "").toLowerCase();
   const entries = loadEntries();
-  const entry =
-    entries.find((candidate) => candidate.id.toLowerCase() === query) ??
-    entries.find((candidate) => candidate.name.toLowerCase() === query);
+  const entry = entries.find((candidate) => candidate.id.toLowerCase() === query) ?? entries.find((candidate) => candidate.name.toLowerCase() === query);
   if (!entry) return toolError(`No installed app is called “${wanted}”; list_apps shows what is installed.`);
   return startAndWait(entry, entries, ctx);
 }

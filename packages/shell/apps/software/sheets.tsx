@@ -64,4 +64,3 @@ export function FailureSheet({ failure, onClose }: { failure: Failure; onClose: 
     </Sheet>
   );
 }
-

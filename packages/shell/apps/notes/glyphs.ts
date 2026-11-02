@@ -19,16 +19,24 @@ export const PIN = svg(`${stroke("M6 2.4h4l-.5 3.3 2.2 2.1H4.3l2.2-2.1z", 1.3)}$
 export const PIN_FILLED = svg(`<path d="M6 2.4h4l-.5 3.3 2.2 2.1H4.3l2.2-2.1z" fill="#000"/>${stroke("M8 7.8v5.8")}`);
 
 export const FOLDER = svg(stroke("M1.8 4.4V12a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.6 3.4H2.8a1 1 0 0 0-1 1z", 1.3));
-export const FOLDER_PLUS = svg(`${stroke("M1.8 4.4V12a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.6 3.4H2.8a1 1 0 0 0-1 1z", 1.3)}${stroke("M8 7.4v3.6M6.2 9.2h3.6", 1.3)}`);
+export const FOLDER_PLUS = svg(
+  `${stroke("M1.8 4.4V12a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.6 3.4H2.8a1 1 0 0 0-1 1z", 1.3)}${stroke("M8 7.4v3.6M6.2 9.2h3.6", 1.3)}`,
+);
 /** Folder with an arrow: Move to. */
-export const FOLDER_MOVE = svg(`${stroke("M1.8 4.4V12a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.6 3.4H2.8a1 1 0 0 0-1 1z", 1.3)}${stroke("M5.6 9.2h4.6M8.6 7.6l1.6 1.6-1.6 1.6", 1.3)}`);
+export const FOLDER_MOVE = svg(
+  `${stroke("M1.8 4.4V12a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H8L6.6 3.4H2.8a1 1 0 0 0-1 1z", 1.3)}${stroke("M5.6 9.2h4.6M8.6 7.6l1.6 1.6-1.6 1.6", 1.3)}`,
+);
 
 /** All Notes: a stack of pages. */
-export const NOTES = svg(`${stroke("M3.4 2.2h7.8a1.2 1.2 0 0 1 1.2 1.2v9.2a1.2 1.2 0 0 1-1.2 1.2H3.4a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2z", 1.3)}${stroke("M5 5.4h4.6M5 8h4.6M5 10.6h2.6", 1.2)}`);
+export const NOTES = svg(
+  `${stroke("M3.4 2.2h7.8a1.2 1.2 0 0 1 1.2 1.2v9.2a1.2 1.2 0 0 1-1.2 1.2H3.4a1.2 1.2 0 0 1-1.2-1.2V3.4a1.2 1.2 0 0 1 1.2-1.2z", 1.3)}${stroke("M5 5.4h4.6M5 8h4.6M5 10.6h2.6", 1.2)}`,
+);
 export const NOTE = NOTES;
 
 /** A checklist: a box with a tick, and a line. */
-export const CHECKLIST = svg(`${stroke("M2.2 3.4h3.4v3.4H2.2zM2.2 9.4h3.4v3.4H2.2z", 1.2)}${stroke("M2.8 5l.8.8 1.3-1.5", 1.1)}${stroke("M8 5h5.6M8 11h5.6", 1.4)}`);
+export const CHECKLIST = svg(
+  `${stroke("M2.2 3.4h3.4v3.4H2.2zM2.2 9.4h3.4v3.4H2.2z", 1.2)}${stroke("M2.8 5l.8.8 1.3-1.5", 1.1)}${stroke("M8 5h5.6M8 11h5.6", 1.4)}`,
+);
 
 /** Eye, Pencil: the Edit and Preview toggle. */
 export const RESTORE = svg(`${stroke("M3 8a5 5 0 1 0 1.6-3.7")}${stroke("M3 2.6v2.8h2.8", 1.4)}`);

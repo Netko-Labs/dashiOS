@@ -34,12 +34,29 @@ function Battery({ percent, name }: { percent: number; name: string }) {
   );
 }
 
-function MyDevice({ device, state, confirming, onConfirm, services }: { device: BluetoothDevice; state: BluetoothState; confirming: boolean; onConfirm: (asking: boolean) => void; services: PaneServices }) {
+function MyDevice({
+  device,
+  state,
+  confirming,
+  onConfirm,
+  services,
+}: {
+  device: BluetoothDevice;
+  state: BluetoothState;
+  confirming: boolean;
+  onConfirm: (asking: boolean) => void;
+  services: PaneServices;
+}) {
   const { bluetooth } = services;
   const busy = state.busy[device.path];
   const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not Connected";
   return (
-    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail} leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={device.connected} />}>
+    <ListRow
+      testID={`bt-device:${device.name}`}
+      name={device.name}
+      detail={detail}
+      leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={device.connected} />}
+    >
       {device.battery !== null && !busy && <Battery percent={device.battery} name={device.name} />}
       {confirming ? (
         <>
@@ -82,7 +99,14 @@ function Devices({ services }: { services: PaneServices }) {
           <Caption above>My Devices</Caption>
           <Group testID="bt-mine">
             {state.mine.map((device) => (
-              <MyDevice key={device.path} device={device} state={state} services={services} confirming={asking === device.path} onConfirm={(on) => setAsking(on ? device.path : null)} />
+              <MyDevice
+                key={device.path}
+                device={device}
+                state={state}
+                services={services}
+                confirming={asking === device.path}
+                onConfirm={(on) => setAsking(on ? device.path : null)}
+              />
             ))}
           </Group>
         </>
@@ -90,13 +114,23 @@ function Devices({ services }: { services: PaneServices }) {
       <Caption above>{searching ? "Nearby Devices — Searching…" : "Nearby Devices"}</Caption>
       <Group testID="bt-nearby">
         {state.nearby.map((device) => (
-          <ListRow key={device.path} testID={`bt-nearby:${device.name}`} name={device.name} detail={state.busy[device.path] ? BUSY[state.busy[device.path] as keyof typeof BUSY] : undefined} leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={false} />}>
-            <MiniButton testID={`bt-pair:${device.name}`} label="Connect" tone="primary" disabled={state.busy[device.path] !== undefined} onPress={() => void bluetooth.pair(device)} />
+          <ListRow
+            key={device.path}
+            testID={`bt-nearby:${device.name}`}
+            name={device.name}
+            detail={state.busy[device.path] ? BUSY[state.busy[device.path] as keyof typeof BUSY] : undefined}
+            leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={false} />}
+          >
+            <MiniButton
+              testID={`bt-pair:${device.name}`}
+              label="Connect"
+              tone="primary"
+              disabled={state.busy[device.path] !== undefined}
+              onPress={() => void bluetooth.pair(device)}
+            />
           </ListRow>
         ))}
-        {state.nearby.length === 0 && (
-          <Note testID="bt-none">{searching ? "Looking for devices…" : "No devices found."}</Note>
-        )}
+        {state.nearby.length === 0 && <Note testID="bt-none">{searching ? "Looking for devices…" : "No devices found."}</Note>}
       </Group>
       {!searching && (
         <Group>

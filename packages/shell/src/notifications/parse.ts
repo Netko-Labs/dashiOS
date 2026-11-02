@@ -59,7 +59,14 @@ export function uriToPath(value: string): string {
 
 export function parseNotify(args: readonly unknown[]): NotifyCall {
   const [appName, replacesId, appIcon, summary, body, actions, hints, expireTimeout] = args as [
-    string, number, string, string, string, string[], Hints, number,
+    string,
+    number,
+    string,
+    string,
+    string,
+    string[],
+    Hints,
+    number,
   ];
   return {
     replacesId,

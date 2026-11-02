@@ -71,7 +71,14 @@ export class AccountsServiceBackend implements AccountsBackend {
   }
 
   private async userPath(bus: DBusConnection): Promise<string> {
-    const [path] = await bus.call({ destination: ACCOUNTS, path: ACCOUNTS_PATH, interface: ACCOUNTS, member: "FindUserById", signature: "x", body: [BigInt(this.uid)] });
+    const [path] = await bus.call({
+      destination: ACCOUNTS,
+      path: ACCOUNTS_PATH,
+      interface: ACCOUNTS,
+      member: "FindUserById",
+      signature: "x",
+      body: [BigInt(this.uid)],
+    });
     if (typeof path !== "string" || !USER_PATH.test(path)) throw new TypeError("AccountsService answered with something that is not a user");
     return path;
   }

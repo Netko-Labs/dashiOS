@@ -173,7 +173,12 @@ export function moveDrag(drag: Drag, boxes: readonly Box[], view: View, pixel: S
   const moving = boxes.find((box) => box.name === drag.name);
   if (!moving) return drag;
   const at = toPoints(view, pixel);
-  const spot = snapDrag(moving, boxes.filter((box) => box.name !== drag.name), { x: at.x - drag.offsetX, y: at.y - drag.offsetY }, SNAP_DISTANCE);
+  const spot = snapDrag(
+    moving,
+    boxes.filter((box) => box.name !== drag.name),
+    { x: at.x - drag.offsetX, y: at.y - drag.offsetY },
+    SNAP_DISTANCE,
+  );
   return { ...drag, spot };
 }
 

@@ -119,7 +119,8 @@ export function inputOf(draft: Draft): EventInput {
 export function problemWith(draft: Draft): string | null {
   const { start, end } = timesOf(draft);
   if (end < start) return "The event ends before it starts.";
-  if (draft.repeat !== "none" && draft.repeat !== "custom" && draft.ends === "until" && draft.until < draft.startDay) return "The repeat ends before the event starts.";
+  if (draft.repeat !== "none" && draft.repeat !== "custom" && draft.ends === "until" && draft.until < draft.startDay)
+    return "The repeat ends before the event starts.";
   return null;
 }
 

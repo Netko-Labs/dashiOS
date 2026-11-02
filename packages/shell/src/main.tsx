@@ -34,7 +34,18 @@ import { Compositor } from "./compositor.ts";
 import { controlFlags } from "./control-center/index.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { parseScreens, startDisplays } from "./displays.ts";
-import { AnimationTargets, AttentionStore, bottomInset, DockController, DockPrefs, matchEntry, PinStore, resolveDock, startDock, TileStore } from "./dock/index.ts";
+import {
+  AnimationTargets,
+  AttentionStore,
+  bottomInset,
+  DockController,
+  DockPrefs,
+  matchEntry,
+  PinStore,
+  resolveDock,
+  startDock,
+  TileStore,
+} from "./dock/index.ts";
 import { type Entry, fileIcon, launchEntry, loadEntries } from "./entries.ts";
 import { iconNamesFor, searchFiles } from "./file-search.ts";
 import { run } from "./system/exec.ts";
@@ -81,14 +92,7 @@ import { startSystem } from "./system/start.ts";
 import { isDevelopmentRun } from "./system/stand-in.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { chooseWifi, WifiStore } from "./wifi/index.ts";
-import {
-  type SwitcherApp,
-  SwitcherController,
-  SwitcherPanel,
-  type SwitcherState,
-  SwitcherStore,
-  switcherSize,
-} from "./switcher.tsx";
+import { type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore, switcherSize } from "./switcher.tsx";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
 import { ToplevelStore } from "./toplevels.ts";
 
@@ -101,9 +105,7 @@ process.on("unhandledRejection", (reason) => console.error("dashi-shell: unhandl
 process.on("uncaughtException", (error) => console.error("dashi-shell: uncaught exception:", error));
 
 if (!existsSync(METAL_HOST)) {
-  console.error(
-    `dashi-shell: no Metal host at ${METAL_HOST}; build it (cargo build --release in mirin/crates/mirin-metal) or set DASHI_METAL_HOST`,
-  );
+  console.error(`dashi-shell: no Metal host at ${METAL_HOST}; build it (cargo build --release in mirin/crates/mirin-metal) or set DASHI_METAL_HOST`);
   process.exit(1);
 }
 
@@ -349,7 +351,8 @@ const agents = compositor
         scrollSpeed: {
           get: (device) => settingsStore.getSnapshot().data[device === "trackpad" ? "touchpad" : "mouse"].scrollSpeed ?? SCROLL_SPEED_DEFAULT,
           // 1 is no setting, as the panes' slider middle is.
-          set: (device, factor) => settingsStore.patch(device === "trackpad" ? "touchpad" : "mouse", { scrollSpeed: factor === SCROLL_SPEED_DEFAULT ? undefined : factor }),
+          set: (device, factor) =>
+            settingsStore.patch(device === "trackpad" ? "touchpad" : "mouse", { scrollSpeed: factor === SCROLL_SPEED_DEFAULT ? undefined : factor }),
         },
         lock: () => lockScreen?.lock(),
         region: regionDesktop(region.store, settingsStore),
@@ -484,7 +487,8 @@ const stopAnimationTargets = compositor
       placement: async () => {
         const screens = parseScreens(await compositor.request("outputs"));
         const home = menuBars.primaryName ?? primaryScreen;
-        const screen = screens.find((candidate) => candidate.name === home) ?? screens.find((candidate) => candidate.name === choosePrimary(screens.map((s) => s.name)));
+        const screen =
+          screens.find((candidate) => candidate.name === home) ?? screens.find((candidate) => candidate.name === choosePrimary(screens.map((s) => s.name)));
         return screen?.frame ? { screen: screen.frame, style: dockPrefs.snapshot.style } : null;
       },
     }).start()
@@ -643,9 +647,7 @@ function identifier(): (app: SwitcherApp) => { name: string; icon: string } {
   const entries = loadEntries();
   return (app) => {
     const entry = matchEntry(entries, app.appId);
-    return entry
-      ? { name: entry.name, icon: entry.icon }
-      : { name: displayName(app.appId, app.title), icon: iconPath("generic") };
+    return entry ? { name: entry.name, icon: entry.icon } : { name: displayName(app.appId, app.title), icon: iconPath("generic") };
   };
 }
 
@@ -699,8 +701,7 @@ const stopShortcuts = compositor
             return chooseCaptureScreen(answer, { near: focused, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
           },
           captureArea: (rect) => takeScreenshot(compositor, { rect }),
-          captureWindow: async () =>
-            focusedAtCapture === null ? undefined : takeScreenshot(compositor, { window: focusedAtCapture }),
+          captureWindow: async () => (focusedAtCapture === null ? undefined : takeScreenshot(compositor, { window: focusedAtCapture })),
         });
         captureArea();
       },
@@ -788,10 +789,13 @@ const quit = () => {
     ["settings services", () => paneServices?.close()],
     ["overlays", () => overlays.closeAll()],
     ["screens", stopFollowingScreens],
-    ["display arrangement", () => {
-      stopArrangements();
-      displayLid?.close();
-    }],
+    [
+      "display arrangement",
+      () => {
+        stopArrangements();
+        displayLid?.close();
+      },
+    ],
     ["menu bars", () => menuBars.close()],
     ["dock", () => dockRuntime.close()],
   ]);

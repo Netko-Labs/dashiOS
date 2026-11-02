@@ -30,7 +30,19 @@ export function Failed({ state, onRetry }: { state: Extract<Load<unknown>, { sta
 export function StaleNote() {
   const colors = useColors();
   return (
-    <View testID="stale" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.button }}>
+    <View
+      testID="stale"
+      style={{
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: colors.button,
+      }}
+    >
       <Text style={{ fontSize: 11, color: colors.textMuted }}>Flathub can't be reached, so these are saved results from earlier.</Text>
     </View>
   );

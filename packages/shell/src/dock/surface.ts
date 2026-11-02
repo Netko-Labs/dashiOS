@@ -57,12 +57,16 @@ export class DockSurface {
     this.retire();
     const shown: Shown = { output, variant, handle: null, alive: true };
     this.current = shown;
-    shown.handle = this.options.open(output, () => {
-      // A Dock we replaced or closed reports its end too; only the current one counts.
-      if (this.closed || this.current !== shown || !shown.alive) return;
-      shown.alive = false;
-      this.options.onLost(output);
-    }, variant);
+    shown.handle = this.options.open(
+      output,
+      () => {
+        // A Dock we replaced or closed reports its end too; only the current one counts.
+        if (this.closed || this.current !== shown || !shown.alive) return;
+        shown.alive = false;
+        this.options.onLost(output);
+      },
+      variant,
+    );
   }
 
   /** Take the Dock off the screen; `show` brings it back. */

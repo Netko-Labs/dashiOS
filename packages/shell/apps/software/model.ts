@@ -28,7 +28,10 @@ export type AppState =
 
 /** The operation touching `id` now, if any: an install, remove, or update of that app (or an "update all" that covers it). */
 export function operationFor(operations: readonly Operation[], id: string, covered: ReadonlySet<string> = new Set()): Operation | undefined {
-  return operations.find((operation) => operation.id === id) ?? operations.find((operation) => operation.kind === "update" && operation.id === undefined && covered.has(id));
+  return (
+    operations.find((operation) => operation.id === id) ??
+    operations.find((operation) => operation.kind === "update" && operation.id === undefined && covered.has(id))
+  );
 }
 
 export function appState(id: string, installed: readonly InstalledApp[], updates: readonly FlatpakUpdate[], operations: readonly Operation[]): AppState {

@@ -49,7 +49,12 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
           <Group testID="battery-status">
             <Row label="Battery" detail={describeBattery(battery)}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Svg markup={batteryGlyph(battery.percent, battery.state === "charging")} width={30} height={15} color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text} />
+                <Svg
+                  markup={batteryGlyph(battery.percent, battery.state === "charging")}
+                  width={30}
+                  height={15}
+                  color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
+                />
                 <View testID="battery-percent">
                   <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.text }}>{`${battery.percent}%`}</Text>
                 </View>
@@ -66,7 +71,11 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
               </Row>
             )}
             <Row label="Show percentage in menu bar">
-              <Switch testID="battery-menubar" on={menuBar.batteryPercent ?? false} onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })} />
+              <Switch
+                testID="battery-menubar"
+                on={menuBar.batteryPercent ?? false}
+                onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
+              />
             </Row>
           </Group>
         </>
@@ -89,10 +98,20 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
       <Caption above>Sleep</Caption>
       <Group testID="power-timers">
         <Row stack label="Turn display off after" detail="The screens go dark when you have been away this long.">
-          <Choices testID="power-blank" options={BLANK_CHOICES} value={blankChoice(blank)} onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })} />
+          <Choices
+            testID="power-blank"
+            options={BLANK_CHOICES}
+            value={blankChoice(blank)}
+            onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
+          />
         </Row>
         <Row stack label="Put computer to sleep after" detail="The screen locks, then the computer sleeps. Playing video or a presentation holds it off.">
-          <Choices testID="power-sleep" options={SLEEP_CHOICES} value={sleepChoice(sleep)} onChange={(sleepAfterSeconds) => settings.patch("idle", { sleepAfterSeconds })} />
+          <Choices
+            testID="power-sleep"
+            options={SLEEP_CHOICES}
+            value={sleepChoice(sleep)}
+            onChange={(sleepAfterSeconds) => settings.patch("idle", { sleepAfterSeconds })}
+          />
         </Row>
       </Group>
       <Caption above>{lid ? "Lid and Power Button" : "Power Button"}</Caption>
@@ -114,7 +133,9 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
           <Value testID="power-button">Asks before shutting down</Value>
         </Row>
       </Group>
-      <Caption>{lid ? "The lid is set by the system (logind.conf), not per user. The power button always asks first." : "The power button always asks first."}</Caption>
+      <Caption>
+        {lid ? "The lid is set by the system (logind.conf), not per user. The power button always asks first." : "The power button always asks first."}
+      </Caption>
     </Page>
   );
 }

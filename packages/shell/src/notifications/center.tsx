@@ -81,9 +81,7 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 24, paddingLeft: 4 }}>
-          <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-            {dateHeading(now)}
-          </Text>
+          <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>{dateHeading(now)}</Text>
           {groups.length > 0 && <TextButton testID="nc-clear-all" label="Clear All" onPress={() => store.remove()} />}
         </View>
         <MonthCard
@@ -113,9 +111,7 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
         )}
         {groups.length === 0 ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.textMuted }}>
-              No Notifications
-            </Text>
+            <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.textMuted }}>No Notifications</Text>
           </View>
         ) : (
           <ScrollView testID="nc-list" style={{ flex: 1 }}>
@@ -143,11 +139,7 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
                     ))}
                     {older.length > 0 && (
                       <View style={{ flexDirection: "row", justifyContent: "center" }}>
-                        <TextButton
-                          testID={`nc-more:${group.key}`}
-                          label={isOpen ? "Show Less" : `${older.length} more`}
-                          onPress={() => toggle(group.key)}
-                        />
+                        <TextButton testID={`nc-more:${group.key}`} label={isOpen ? "Show Less" : `${older.length} more`} onPress={() => toggle(group.key)} />
                       </View>
                     )}
                   </View>

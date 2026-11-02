@@ -24,7 +24,6 @@ import { type MatchRule, SignalRouter } from "./signals.ts";
 import { subscribeTo } from "./subscribe.ts";
 import type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";
 
-
 export interface ConnectOptions {
   /** A bus address (`unix:path=…`). Overrides `bus`. */
   address?: string;
@@ -111,10 +110,7 @@ export class DBusConnection {
       });
       this.write(this.auth.start());
       await authenticated;
-      const [name] = await this.call(
-        { destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "Hello" },
-        timeoutMs,
-      );
+      const [name] = await this.call({ destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "Hello" }, timeoutMs);
       if (typeof name !== "string") throw new ProtocolError("Hello did not return a name");
       this.uniqueName = name;
     } finally {

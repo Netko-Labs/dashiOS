@@ -54,7 +54,7 @@ export function desktopFields(text: string): Map<string, string> {
 const PLUMBING = new Set(["footclient", "foot-server"]);
 
 /** Parse the `[Desktop Entry]` group of a .desktop file, or null to skip it. */
-export function parseDesktopEntry(id: string, text: string): Omit<Entry, "icon"> & { iconName: string } | null {
+export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"> & { iconName: string }) | null {
   if (PLUMBING.has(id)) return null;
   const fields = desktopFields(text);
   const yes = (key: string) => fields.get(key)?.toLowerCase() === "true";
@@ -73,15 +73,17 @@ export function parseDesktopEntry(id: string, text: string): Omit<Entry, "icon">
     exec: argv,
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
-    keywords: [
-      ...splitList(fields.get("Keywords")),
-      ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : []),
-    ].map((word) => word.toLowerCase()),
+    keywords: [...splitList(fields.get("Keywords")), ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : [])].map((word) =>
+      word.toLowerCase(),
+    ),
   };
 }
 
 export function splitList(value: string | undefined): string[] {
-  return (value ?? "").split(";").map((item) => item.trim()).filter(Boolean);
+  return (value ?? "")
+    .split(";")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -172,7 +174,9 @@ export function pinnedKeywords(app: Pick<App, "id" | "exec">): string[] {
 /** What else the shell's own apps are found by ("preferences" finds System Settings). */
 const SHELL_KEYWORDS = ["settings", "preferences", "system", "options", "configuration"];
 /** And what only one of them answers to ("welcome" finds the Setup Assistant). */
-const OWN_KEYWORDS: Readonly<Record<string, readonly string[]>> = { [SETUP_APP_ID]: ["setup", "assistant", "welcome", "first run", "language", "region", "time zone"] };
+const OWN_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
+  [SETUP_APP_ID]: ["setup", "assistant", "welcome", "first run", "language", "region", "time zone"],
+};
 
 /** Every launchable app: Dashi's pinned apps first, then the shell's own and the first-party ones, then the installed ones. */
 /**

@@ -79,11 +79,7 @@ export function Card({
         hoverBackgroundColor: colors.tileHover,
       }}
     >
-      <View
-        testID={`nc-open:${id}`}
-        onPress={onOpen}
-        style={{ flex: 1, flexDirection: "column", gap: 2, padding: CARD.padding, paddingRight: 0, minWidth: 0 }}
-      >
+      <View testID={`nc-open:${id}`} onPress={onOpen} style={{ flex: 1, flexDirection: "column", gap: 2, padding: CARD.padding, paddingRight: 0, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: CARD.summaryLine }}>
           {urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -92,9 +88,7 @@ export function Card({
             </Text>
           </View>
         </View>
-        {body !== "" && (
-          <Text style={{ fontSize: 12, lineHeight: CARD.bodyLine, color: colors.textMuted }}>{ellipsize(body, CARD.bodyChars)}</Text>
-        )}
+        {body !== "" && <Text style={{ fontSize: 12, lineHeight: CARD.bodyLine, color: colors.textMuted }}>{ellipsize(body, CARD.bodyChars)}</Text>}
       </View>
       <View
         style={{

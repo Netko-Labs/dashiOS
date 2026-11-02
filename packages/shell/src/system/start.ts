@@ -26,9 +26,7 @@ export interface SystemOptions {
 
 export function startSystem(options: SystemOptions = {}): System {
   const { network } = options;
-  const store = network
-    ? new SystemStore({ ...systemSources(), network: async () => network() }, options.monitor ?? (() => () => {}))
-    : new SystemStore();
+  const store = network ? new SystemStore({ ...systemSources(), network: async () => network() }, options.monitor ?? (() => () => {})) : new SystemStore();
   const osd = new OsdController(openOsdSurface);
   const hardware = new HardwareKeys({ osd, volumeChanged: (volume) => store.publish("volume", volume) });
   store.start();

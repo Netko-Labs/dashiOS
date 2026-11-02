@@ -65,10 +65,7 @@ export interface LiveKeys {
 }
 
 /** What is running behind the windows: the one thing a choice comes to. */
-export type LiveWallpaper =
-  | { kind: "picture" }
-  | { kind: "shader"; shader: LiveShader }
-  | { kind: "video"; video: string };
+export type LiveWallpaper = { kind: "picture" } | { kind: "shader"; shader: LiveShader } | { kind: "video"; video: string };
 
 export interface LiveChoice {
   wallpaper: LiveWallpaper;

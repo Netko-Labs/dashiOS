@@ -53,7 +53,15 @@ export function itemCategory(item: Pick<FileItem, "kind" | "mime">): ReturnType<
   return item.kind === "folder" ? "folder" : categoryOf(item.mime);
 }
 
-function toItem(dir: string, name: string, lst: Stats | null, target: Stats | null, index: MimeIndex, hiddenNames: ReadonlySet<string>, linkName?: string): FileItem | null {
+function toItem(
+  dir: string,
+  name: string,
+  lst: Stats | null,
+  target: Stats | null,
+  index: MimeIndex,
+  hiddenNames: ReadonlySet<string>,
+  linkName?: string,
+): FileItem | null {
   if (!lst) return null;
   const isLink = lst.isSymbolicLink();
   const real = isLink ? target : lst;
@@ -100,7 +108,12 @@ export async function itemAt(path: string, index: MimeIndex): Promise<FileItem |
 async function hiddenList(dir: string): Promise<Set<string>> {
   try {
     const text = await readFile(join(dir, ".hidden"), "utf8");
-    return new Set(text.split("\n").map((line) => line.trim()).filter((line) => line !== "" && checkName(line) === null));
+    return new Set(
+      text
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "" && checkName(line) === null),
+    );
   } catch {
     return new Set();
   }

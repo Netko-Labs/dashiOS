@@ -97,4 +97,3 @@ export function rowTarget(layout: RowLayout, x: number, y: number, slack = 8): {
 
 /** The row's place on a screen whose usable area (below the menu bar) is `usable`, in global pixels. */
 export const rowFrame = (usable: Rect): Rect => ({ x: usable.x, y: usable.y, width: usable.width, height: ROW.height });
-

@@ -91,10 +91,7 @@ export class AppThemeSync {
  * rewritten when either changes; the commands run when Dark Mode does.
  * Returns the function that stops following.
  */
-export function startAppearance(
-  flags: Pick<FlagsStore, "subscribe" | "getSnapshot">,
-  deps: AppearanceDeps = sessionDeps(),
-): () => void {
+export function startAppearance(flags: Pick<FlagsStore, "subscribe" | "getSnapshot">, deps: AppearanceDeps = sessionDeps()): () => void {
   if (!deps.gate.on) {
     console.log(`dashi-shell: apps keep their own appearance (${deps.gate.why})`);
     return () => {};

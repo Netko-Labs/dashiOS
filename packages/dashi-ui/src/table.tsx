@@ -54,7 +54,21 @@ function cellBox(width: number | undefined, align: "left" | "right" | undefined)
   };
 }
 
-export function Table<T, K extends string | number>({ columns, rows, rowKey, selected, onSelect, sort, onSort, testID, muted, selectedKeys, onContextMenu, rowHeight = 24, empty }: TableProps<T, K>) {
+export function Table<T, K extends string | number>({
+  columns,
+  rows,
+  rowKey,
+  selected,
+  onSelect,
+  sort,
+  onSort,
+  testID,
+  muted,
+  selectedKeys,
+  onContextMenu,
+  rowHeight = 24,
+  empty,
+}: TableProps<T, K>) {
   const colors = useColors();
   const surface = useSurface();
   return (
@@ -67,7 +81,13 @@ export function Table<T, K extends string | number>({ columns, rows, rowKey, sel
               key={column.key}
               testID={`${testID}:sort:${column.key}`}
               onPress={() => onSort(nextSort(sort, column))}
-              style={{ ...cellBox(column.width, column.align), gap: 3, borderLeftWidth: index > 0 ? 1 : 0, borderColor: colors.separator, hoverBackgroundColor: colors.button }}
+              style={{
+                ...cellBox(column.width, column.align),
+                gap: 3,
+                borderLeftWidth: index > 0 ? 1 : 0,
+                borderColor: colors.separator,
+                hoverBackgroundColor: colors.button,
+              }}
             >
               <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>
                 {column.title}

@@ -64,7 +64,10 @@ describe("memory", () => {
 describe("what the screen says", () => {
   const session = { id: "dashi", name: "Dashi", cmd: ["x"], desktopNames: ["Dashi"] };
   test("each moment has its line", () => {
-    expect(hintFor({ kind: "prompt", message: "Password", secret: true, notice: null, wrong: false }, session)).toEqual({ hint: "Enter your password", error: false });
+    expect(hintFor({ kind: "prompt", message: "Password", secret: true, notice: null, wrong: false }, session)).toEqual({
+      hint: "Enter your password",
+      error: false,
+    });
     expect(hintFor({ kind: "prompt", message: "Password", secret: true, notice: null, wrong: true }, session).error).toBe(true);
     expect(hintFor({ kind: "started" }, session).hint).toBe("Starting Dashi…");
   });

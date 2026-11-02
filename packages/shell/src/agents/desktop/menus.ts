@@ -20,7 +20,8 @@ type Item = Extract<MenuEntry, { kind: "item" }>;
 /** Rows an agent can't choose here, and what to use instead. */
 export function refusal(action: MenuAction | null): string | null {
   if (action?.kind === "edit") return "That item stands for a keystroke in the app; use press_keys (❖Z, ❖C, ❖V, …) in the window instead.";
-  if (action?.kind === "app-item" && action.personOnly) return "The app keeps that item for the person; use its own tool, which asks them first (Software: request_software_install, request_software_update).";
+  if (action?.kind === "app-item" && action.personOnly)
+    return "The app keeps that item for the person; use its own tool, which asks them first (Software: request_software_install, request_software_update).";
   return null;
 }
 
@@ -58,7 +59,8 @@ export async function listMenus(id: number | null, ctx: RunContext): Promise<Too
 export async function chooseMenuItem(id: number, menuTitle: string, label: string, ctx: RunContext): Promise<ToolResult> {
   const menus = ctx.desktop.menus;
   if (!menus) return toolError("There is no menu bar in this session.");
-  if (!ctx.mayName()) return toolError("Menu items are named by what list_menus shows, which needs the “See windows and apps” permission; call list_menus first.");
+  if (!ctx.mayName())
+    return toolError("Menu items are named by what list_menus shows, which needs the “See windows and apps” permission; call list_menus first.");
   const window = await named(ctx.compositor, id);
   if (!window) return noWindow(id);
   const built = await menus.of(window);

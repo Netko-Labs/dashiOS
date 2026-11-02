@@ -115,7 +115,14 @@ export function Dock({
   return (
     <View
       // An autohiding Dock slides down out of its surface, which clips it.
-      style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "flex-end", position: "relative", top: Math.round(slid * (DOCK_HEIGHT + DOCK.margin)) }}
+      style={{
+        flex: 1,
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        position: "relative",
+        top: Math.round(slid * (DOCK_HEIGHT + DOCK.margin)),
+      }}
     >
       <Painted slide={slide} />
       <View

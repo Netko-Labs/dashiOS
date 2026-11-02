@@ -75,10 +75,15 @@ export async function searchFolder(
 
 /** LocalSearch's hits for `query` as items (newest first). Empty for a short query or when LocalSearch isn't there. */
 export async function searchComputer(query: string, home: string, index: MimeIndex, run: Exec = exec, limit = 100): Promise<FileItem[]> {
-  const hits = await searchFiles(query, async (command) => {
+  const hits = await searchFiles(
+    query,
+    async (command) => {
       const outcome = await run(command);
       return outcome.ok ? outcome.stdout : null;
-    }, home, limit);
+    },
+    home,
+    limit,
+  );
   const items = await Promise.all(hits.map(async (hit) => ({ hit, item: await itemAt(hit.path, index) })));
   return items.flatMap(({ hit, item }) => (item ? [{ ...item, where: hit.folder }] : []));
 }

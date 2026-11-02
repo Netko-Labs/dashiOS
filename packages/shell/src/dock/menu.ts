@@ -49,9 +49,7 @@ export function buildDockMenu(entry: DockEntry): MenuEntry<DockMenuAction>[] {
           SEPARATOR,
         ]
       : []),
-    entry.pinned
-      ? item("Remove from Dock", { kind: "unpin", appId: app.id })
-      : item("Keep in Dock", startable ? { kind: "pin", appId: app.id } : null),
+    entry.pinned ? item("Remove from Dock", { kind: "unpin", appId: app.id }) : item("Keep in Dock", startable ? { kind: "pin", appId: app.id } : null),
     SEPARATOR,
     ...(running
       ? [

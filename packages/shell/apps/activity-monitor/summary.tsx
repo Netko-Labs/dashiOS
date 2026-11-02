@@ -51,9 +51,23 @@ function Graph({ title, series, max }: { title: string; series: readonly Series[
   return (
     <View style={{ width: GRAPH.width + 2, flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 4 }}>
       <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
-      <View style={{ width: GRAPH.width + 2, height: GRAPH.height + 2, position: "relative", borderWidth: 1, borderColor: colors.separator, borderRadius: 4, backgroundColor: surface.field, overflow: "hidden" }}>
+      <View
+        style={{
+          width: GRAPH.width + 2,
+          height: GRAPH.height + 2,
+          position: "relative",
+          borderWidth: 1,
+          borderColor: colors.separator,
+          borderRadius: 4,
+          backgroundColor: surface.field,
+          overflow: "hidden",
+        }}
+      >
         {[0.25, 0.5, 0.75].map((at) => (
-          <View key={at} style={{ position: "absolute", left: 0, right: 0, top: Math.round(GRAPH.height * at), height: 1, backgroundColor: colors.separator }} />
+          <View
+            key={at}
+            style={{ position: "absolute", left: 0, right: 0, top: Math.round(GRAPH.height * at), height: 1, backgroundColor: colors.separator }}
+          />
         ))}
         {series.map((each, index) => (
           <View key={index} style={{ position: "absolute", left: 0, top: 0 }}>
@@ -159,7 +173,20 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
     }
   }
   return (
-    <View testID="summary" style={{ height: SUMMARY_HEIGHT, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 28, paddingHorizontal: 24, borderTopWidth: 1, borderColor: colors.separator, backgroundColor: surface.window }}>
+    <View
+      testID="summary"
+      style={{
+        height: SUMMARY_HEIGHT,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 28,
+        paddingHorizontal: 24,
+        borderTopWidth: 1,
+        borderColor: colors.separator,
+        backgroundColor: surface.window,
+      }}
+    >
       <Figures figures={left} testID="summary-left" />
       <Graph title={graph.title} series={graph.series} max={graph.max} />
       <Figures figures={right} testID="summary-right" />

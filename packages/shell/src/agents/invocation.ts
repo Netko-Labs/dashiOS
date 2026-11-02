@@ -98,10 +98,7 @@ export function parseCmdline(bytes: Uint8Array, limit = MAX_CMDLINE): string[] |
   return args.slice(0, MAX_ARGS);
 }
 
-export type Invocation =
-  | { kind: "file"; path: string }
-  | { kind: "module"; name: string; cwd: string }
-  | { kind: "code"; digest: string };
+export type Invocation = { kind: "file"; path: string } | { kind: "module"; name: string; cwd: string } | { kind: "code"; digest: string };
 
 const hasControl = (value: string) => /\p{Cc}/u.test(value);
 

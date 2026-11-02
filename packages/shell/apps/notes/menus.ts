@@ -72,7 +72,12 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       { id: "note:pin", label: context.pinned ? "Unpin Note" : "Pin Note", enabled: hasNote },
       { id: "note:checklist", label: "Add Checklist Item", shortcut: "⇧❖L", enabled: hasNote },
       { type: "separator" },
-      ...places.map((place, index) => ({ id: `move:${index}`, label: `Move to ${place === "" ? DEFAULT_FOLDER_NAME : place}`, enabled: hasNote, checked: hasNote ? place === context.noteFolder : false })),
+      ...places.map((place, index) => ({
+        id: `move:${index}`,
+        label: `Move to ${place === "" ? DEFAULT_FOLDER_NAME : place}`,
+        enabled: hasNote,
+        checked: hasNote ? place === context.noteFolder : false,
+      })),
     ],
   };
   const view: MenuSpec = {
@@ -82,7 +87,11 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       { id: "mode:preview", label: "Preview", checked: context.mode === "preview" },
       { type: "separator" },
       { id: "show:all", label: "All Notes", checked: source.kind === "all" },
-      ...places.map((place, index) => ({ id: `show:${index}`, label: place === "" ? DEFAULT_FOLDER_NAME : place, checked: source.kind === "folder" && source.name === place })),
+      ...places.map((place, index) => ({
+        id: `show:${index}`,
+        label: place === "" ? DEFAULT_FOLDER_NAME : place,
+        checked: source.kind === "folder" && source.name === place,
+      })),
       { id: "show:trash", label: "Recently Deleted", checked: inTrash },
       { type: "separator" },
       { id: "search", label: "Search", shortcut: "❖F" },

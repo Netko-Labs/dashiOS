@@ -26,7 +26,17 @@ export interface AgentPolicy {
 }
 
 /** Folders under home whose names, contents, and presence are not an agent's business. */
-export const OFF_LIMITS = [".ssh", ".gnupg", ".password-store", ".aws", ".kube", ".local/share/keyrings", ".local/state/dashi", ".config/dashi", ".config/1Password"] as const;
+export const OFF_LIMITS = [
+  ".ssh",
+  ".gnupg",
+  ".password-store",
+  ".aws",
+  ".kube",
+  ".local/share/keyrings",
+  ".local/state/dashi",
+  ".config/dashi",
+  ".config/1Password",
+] as const;
 
 const PATH_MAX = 4096;
 
@@ -37,7 +47,8 @@ export type Resolved = { ok: true; path: string } | { ok: false; error: string }
 
 /** The real path an agent's `path` stands for, or why it can't be used. */
 export async function resolveForAgent(input: unknown, policy: AgentPolicy): Promise<Resolved> {
-  if (typeof input !== "string" || input === "" || input.length > PATH_MAX) return { ok: false, error: "`path` must be an absolute path, like /home/me/Documents, on one line." };
+  if (typeof input !== "string" || input === "" || input.length > PATH_MAX)
+    return { ok: false, error: "`path` must be an absolute path, like /home/me/Documents, on one line." };
   if (/[\0-\x1f\x7f]/.test(input)) return { ok: false, error: "`path` must be on one line, with no control characters." };
   const normalized = normalizePath(expandHome(input, policy.home));
   if (normalized === null) return { ok: false, error: "`path` must be absolute: start with / or ~." };
@@ -88,7 +99,11 @@ export interface Deps {
   run?: Exec;
 }
 
-export async function listFolder(path: string, options: { hidden: boolean; limit: number }, deps: Deps): Promise<{ error: string } | { path: string; entries: ReturnType<typeof describeItem>[]; total: number }> {
+export async function listFolder(
+  path: string,
+  options: { hidden: boolean; limit: number },
+  deps: Deps,
+): Promise<{ error: string } | { path: string; entries: ReturnType<typeof describeItem>[]; total: number }> {
   const resolved = await resolveForAgent(path, deps.policy);
   if (!resolved.ok) return { error: resolved.error };
   const info = await stat(resolved.path).catch(() => null);
@@ -99,11 +114,17 @@ export async function listFolder(path: string, options: { hidden: boolean; limit
     .filter((item) => options.hidden || !item.hidden)
     // The off-limits folders don't appear even when their parent is listed.
     .filter((item) => mayShow(item.path, deps.policy))
-    .sort((a, b) => Number(b.kind === "folder") - Number(a.kind === "folder") || a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    .sort(
+      (a, b) => Number(b.kind === "folder") - Number(a.kind === "folder") || a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
+    );
   return { path: resolved.path, entries: shown.slice(0, options.limit).map((item) => describeItem(item, deps.policy.home)), total: shown.length };
 }
 
-export async function searchFor(query: string, options: { folder: string | null; limit: number }, deps: Deps): Promise<{ error: string } | { results: Array<ReturnType<typeof describeItem> & { path: string }>; total: number; truncated: boolean }> {
+export async function searchFor(
+  query: string,
+  options: { folder: string | null; limit: number },
+  deps: Deps,
+): Promise<{ error: string } | { results: Array<ReturnType<typeof describeItem> & { path: string }>; total: number; truncated: boolean }> {
   const { policy, index } = deps;
   let items: FileItem[];
   let truncated = false;

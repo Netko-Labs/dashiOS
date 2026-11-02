@@ -14,8 +14,7 @@ export const notificationTools: readonly ToolDef[] = [
   {
     name: "list_notifications",
     title: "List notifications",
-    description:
-      `Recent notifications from the notification center, newest first: id, app, summary, body (cut short), when it arrived, and whether it is still showing. ${WARNING}`,
+    description: `Recent notifications from the notification center, newest first: id, app, summary, body (cut short), when it arrived, and whether it is still showing. ${WARNING}`,
     scope: "notifications",
     readOnly: true,
     destructive: false,

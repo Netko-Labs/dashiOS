@@ -127,7 +127,11 @@ export function PolkitSheet({ store, actions }: { store: SheetStore; actions: Sh
       <View testID="polkit-status" style={{ alignSelf: "stretch", height: 16 }}>
         {status !== "" && <Text style={{ fontSize: 12, color: hintColor }}>{status}</Text>}
       </View>
-      <View testID="polkit-details-toggle" onPress={actions.toggleDetails} style={{ alignSelf: "stretch", height: DETAILS_ROW, flexDirection: "row", alignItems: "center", gap: 4 }}>
+      <View
+        testID="polkit-details-toggle"
+        onPress={actions.toggleDetails}
+        style={{ alignSelf: "stretch", height: DETAILS_ROW, flexDirection: "row", alignItems: "center", gap: 4 }}
+      >
         <Svg markup={chevron(state.detailsOpen)} size={10} color={colors.textMuted} />
         <Text style={{ fontSize: 12, color: colors.textMuted }}>Details</Text>
       </View>

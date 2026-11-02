@@ -26,7 +26,10 @@ export function listNotifications(limit: number, ctx: RunContext): ToolResult {
   ctx.status("Reading your notifications");
   const { history } = ctx.desktop.notifications.getSnapshot();
   const now = Date.now();
-  const notifications = history.slice(-limit).reverse().map((entry) => describeNotification(entry, now));
+  const notifications = history
+    .slice(-limit)
+    .reverse()
+    .map((entry) => describeNotification(entry, now));
   return json({ notifications, total: history.length });
 }
 

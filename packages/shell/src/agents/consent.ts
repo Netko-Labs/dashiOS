@@ -17,13 +17,15 @@ export const SCOPES = [
   {
     id: "act",
     label: "Manage windows and apps",
-    detail: "Open apps; bring forward, arrange, minimize, or close windows; choose items in their menus; click and type in them with its own pointer and keyboard; lock the screen. Force quitting an app always asks you first",
+    detail:
+      "Open apps; bring forward, arrange, minimize, or close windows; choose items in their menus; click and type in them with its own pointer and keyboard; lock the screen. Force quitting an app always asks you first",
   },
   { id: "notifications", label: "See notifications", detail: "Read your recent notifications, and dismiss them" },
   {
     id: "files",
     label: "Browse your files",
-    detail: "List and search your folders by name (your home folder and removable drives, not folders that hold secrets), and open files in their apps. Moving a file to the Trash always asks you first. It can't read, change, or delete the files",
+    detail:
+      "List and search your folders by name (your home folder and removable drives, not folders that hold secrets), and open files in their apps. Moving a file to the Trash always asks you first. It can't read, change, or delete the files",
   },
   { id: "notes", label: "Read your notes", detail: "List, search, and read your notes" },
   { id: "notes_write", label: "Add to your notes", detail: "Create notes, and add lines to the end of them" },
@@ -32,7 +34,8 @@ export const SCOPES = [
   {
     id: "settings",
     label: "Change settings",
-    detail: "Dark Mode, Do Not Disturb, window corners, screen scaling, Wi-Fi, the time zone, 24-hour time, region formats, the sound output and volume, the power mode, and the menu bar's battery percentage and speaker: it can read them (with your network, Bluetooth, power, and account details), join networks and connect Bluetooth devices you have used before. It never gets a password",
+    detail:
+      "Dark Mode, Do Not Disturb, window corners, screen scaling, Wi-Fi, the time zone, 24-hour time, region formats, the sound output and volume, the power mode, and the menu bar's battery percentage and speaker: it can read them (with your network, Bluetooth, power, and account details), join networks and connect Bluetooth devices you have used before. It never gets a password",
   },
 ] as const;
 

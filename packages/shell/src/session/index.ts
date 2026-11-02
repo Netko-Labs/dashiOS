@@ -29,10 +29,7 @@ export function sessionServices(): ServiceSpec[] {
 }
 
 /** Run the session to its end; resolves with the exit code. */
-export async function runSession(
-  specs: readonly ServiceSpec[] = sessionServices(),
-  deps: ServiceDeps = systemDeps,
-): Promise<number> {
+export async function runSession(specs: readonly ServiceSpec[] = sessionServices(), deps: ServiceDeps = systemDeps): Promise<number> {
   log(`session starting (pid ${process.pid}, WAYLAND_DISPLAY=${process.env.WAYLAND_DISPLAY ?? "unset"})`);
   // Only a session that owns the display may publish it or start its keyring:
   // a nested one would point the host desktop's portals and D-Bus-activated
@@ -65,10 +62,7 @@ export async function runSession(
     services.map(async (service) => {
       if ((await service.start()) === "gave-up" && service.spec.essential) {
         code = 1;
-        log(
-          `the ${service.spec.name} cannot be kept running, so the session is over: ` +
-            `press Ctrl+Alt+Backspace to leave it, or Ctrl+Alt+F3 for a console`,
-        );
+        log(`the ${service.spec.name} cannot be kept running, so the session is over: ` + `press Ctrl+Alt+Backspace to leave it, or Ctrl+Alt+F3 for a console`);
         end(`${service.spec.name} gave up`);
       }
     }),

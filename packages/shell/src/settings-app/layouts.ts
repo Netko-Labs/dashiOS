@@ -122,6 +122,9 @@ export function primaryLayout(list: string | undefined): string {
 
 /** A name for a (possibly several) layouts value, for the pane's caption ("German", "us,de"). */
 export function describeLayout(layouts: readonly XkbLayout[], list: string | undefined): string {
-  const ids = (list || "us").split(",").map((id) => id.trim()).filter(Boolean);
+  const ids = (list || "us")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   return ids.map((id) => layouts.find((layout) => layout.id === id)?.name ?? id).join(", ");
 }

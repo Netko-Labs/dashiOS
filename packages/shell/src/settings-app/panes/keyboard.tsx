@@ -89,7 +89,12 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
             <Note>No variants</Note>
           ) : (
             <>
-              <ListRow testID="keyboard-variant:default" label="Default" chosen={!keyboard.variant} onPress={() => settings.patch("keyboard", { variant: undefined })} />
+              <ListRow
+                testID="keyboard-variant:default"
+                label="Default"
+                chosen={!keyboard.variant}
+                onPress={() => settings.patch("keyboard", { variant: undefined })}
+              />
               {variants.map((variant) => (
                 <ListRow
                   key={variant.id}

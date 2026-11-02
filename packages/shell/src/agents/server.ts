@@ -136,7 +136,7 @@ export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOpti
       offShortcuts();
       offGrants();
       lock.close();
-        hands.close();
+      hands.close();
       for (const session of sessions.values()) session.stop("disconnected");
       server.stop(true);
       if (existsSync(path)) unlinkSync(path);

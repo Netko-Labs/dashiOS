@@ -25,7 +25,14 @@ function ViewSwitch() {
     <View
       testID={`view:${value}`}
       onPress={() => store.setView(value)}
-      style={{ width: 34, borderRadius: 6, alignItems: "center", justifyContent: "center", backgroundColor: view === value ? surface.card : "#00000000", ...(view === value ? { shadow: "xs" as const } : {}) }}
+      style={{
+        width: 34,
+        borderRadius: 6,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: view === value ? surface.card : "#00000000",
+        ...(view === value ? { shadow: "xs" as const } : {}),
+      }}
     >
       <Svg markup={glyph} size={15} color={view === value ? colors.text : colors.textMuted} />
     </View>
@@ -48,12 +55,26 @@ export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onM
       <View
         testID="multi"
         onPress={() => store.toggleMulti()}
-        style={{ height: 28, minWidth: 32, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: state.multi ? colors.selection : "#00000000", hoverBackgroundColor: state.multi ? colors.selection : colors.button }}
+        style={{
+          height: 28,
+          minWidth: 32,
+          borderRadius: 7,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: state.multi ? colors.selection : "#00000000",
+          hoverBackgroundColor: state.multi ? colors.selection : colors.button,
+        }}
       >
         <Svg markup={CHECKED} size={16} color={state.multi ? "#ffffff" : colors.textMuted} />
       </View>
       {state.location.kind === "trash" ? (
-        <ToolbarButton glyph={sidebarGlyph("trash")} testID="empty-trash" label="Empty" disabled={state.items.length === 0} onPress={actions.confirmEmptyTrash} />
+        <ToolbarButton
+          glyph={sidebarGlyph("trash")}
+          testID="empty-trash"
+          label="Empty"
+          disabled={state.items.length === 0}
+          onPress={actions.confirmEmptyTrash}
+        />
       ) : (
         <ToolbarButton glyph={FOLDER_PLUS} testID="new-folder" disabled={!ops.writable} onPress={onNewFolder} />
       )}

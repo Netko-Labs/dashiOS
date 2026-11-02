@@ -102,16 +102,10 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
         onHoverChange={(hovered) => store.hold(id, hovered)}
       >
         <View style={{ flexDirection: "row", gap: BANNER.gap, flex: 1 }}>
-          <Image
-            source={notificationIcon(notification)}
-            resizeMode="contain"
-            style={{ width: BANNER.icon, height: BANNER.icon, borderRadius: 8 }}
-          />
+          <Image source={notificationIcon(notification)} resizeMode="contain" style={{ width: BANNER.icon, height: BANNER.icon, borderRadius: 8 }} />
           <View style={{ flex: 1, flexDirection: "column", gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: BANNER.summaryLine }}>
-              {notification.urgency === "critical" && (
-                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />
-              )}
+              {notification.urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                   {notification.summary || notification.appName}
@@ -121,9 +115,7 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
             </View>
             {notification.body !== "" && (
               <View style={{ height: BANNER.bodyLines * BANNER.bodyLine, overflow: "hidden" }}>
-                <Text style={{ fontSize: 12, lineHeight: BANNER.bodyLine, color: colors.textMuted }}>
-                  {ellipsize(notification.body, BANNER.bodyChars)}
-                </Text>
+                <Text style={{ fontSize: 12, lineHeight: BANNER.bodyLine, color: colors.textMuted }}>{ellipsize(notification.body, BANNER.bodyChars)}</Text>
               </View>
             )}
           </View>

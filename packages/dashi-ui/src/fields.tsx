@@ -119,7 +119,20 @@ export function SearchField({
 }) {
   const colors = useColors();
   return (
-    <View style={{ width, height: 28, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 4, paddingLeft: 8, paddingRight: 4, borderRadius: 7, backgroundColor: colors.button }}>
+    <View
+      style={{
+        width,
+        height: 28,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingLeft: 8,
+        paddingRight: 4,
+        borderRadius: 7,
+        backgroundColor: colors.button,
+      }}
+    >
       <Svg markup={SEARCH} size={13} color={colors.textMuted} />
       <TextInput
         testID={testID}

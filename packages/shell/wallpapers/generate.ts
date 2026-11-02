@@ -106,7 +106,10 @@ if (import.meta.main) {
   const wanted = process.argv.slice(2);
   for (const [name, paint] of Object.entries(WALLPAPERS)) {
     if (wanted.length > 0 && !wanted.includes(name)) continue;
-    for (const [suffix, width, height] of [["", 3840, 2160], [".thumb", 320, 180]] as const) {
+    for (const [suffix, width, height] of [
+      ["", 3840, 2160],
+      [".thumb", 320, 180],
+    ] as const) {
       const png = encodePng(width, height, render(paint, width, height));
       await Bun.write(join(dir, `${name}${suffix}.png`), png);
       console.log(`${name}${suffix}.png ${width}x${height} ${(png.length / 1024).toFixed(0)} KiB`);

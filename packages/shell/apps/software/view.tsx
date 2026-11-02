@@ -49,7 +49,8 @@ function pageLabel(page: Page): string {
   }
 }
 
-const inSidebar = (nav: Nav, page: Page): boolean => nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
+const inSidebar = (nav: Nav, page: Page): boolean =>
+  nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
 
 export function SoftwareWindow() {
   const { store, restart } = useServices();
@@ -145,8 +146,20 @@ export function SoftwareWindow() {
   const sidebar = (
     <>
       <SidebarSection>
-        <SidebarItem testID="nav:discover" label="Discover" glyph={DISCOVER} selected={inSidebar(nav, { kind: "discover" })} onPress={() => go({ kind: "discover" })} />
-        <SidebarItem testID="nav:installed" label="Installed" glyph={INSTALLED} selected={inSidebar(nav, { kind: "installed" })} onPress={() => go({ kind: "installed" })} />
+        <SidebarItem
+          testID="nav:discover"
+          label="Discover"
+          glyph={DISCOVER}
+          selected={inSidebar(nav, { kind: "discover" })}
+          onPress={() => go({ kind: "discover" })}
+        />
+        <SidebarItem
+          testID="nav:installed"
+          label="Installed"
+          glyph={INSTALLED}
+          selected={inSidebar(nav, { kind: "installed" })}
+          onPress={() => go({ kind: "installed" })}
+        />
         <SidebarItem
           testID="nav:updates"
           label="Updates"
@@ -175,7 +188,13 @@ export function SoftwareWindow() {
     <>
       {canGoBack(nav) && <ToolbarButton testID="back" glyph={BACK} onPress={goBack} />}
       {nav.page.kind === "updates" && (
-        <ToolbarButton testID="check-updates" glyph={REFRESH} label={state.checking ? "Checking…" : "Check for Updates"} disabled={state.checking} onPress={() => void store.checkUpdates(true)} />
+        <ToolbarButton
+          testID="check-updates"
+          glyph={REFRESH}
+          label={state.checking ? "Checking…" : "Check for Updates"}
+          disabled={state.checking}
+          onPress={() => void store.checkUpdates(true)}
+        />
       )}
       <SearchField
         key={focus}
@@ -190,17 +209,22 @@ export function SoftwareWindow() {
     </>
   );
 
-  const overlay = ask ? <Question ask={ask} onAnswer={answer} /> : state.failure ? <FailureSheet failure={state.failure} onClose={() => { store.dismissFailure(); setFocus((n) => n + 1); }} /> : undefined;
+  const overlay = ask ? (
+    <Question ask={ask} onAnswer={answer} />
+  ) : state.failure ? (
+    <FailureSheet
+      failure={state.failure}
+      onClose={() => {
+        store.dismissFailure();
+        setFocus((n) => n + 1);
+      }}
+    />
+  ) : undefined;
 
   return (
     <ActionsContext.Provider value={actions}>
       <AppWindow title="Software" subtitle={pageLabel(nav.page) || undefined} sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
-        <PageView
-          nav={nav}
-          query={query}
-          onRestart={() => setAsk({ kind: "restart" })}
-          onUpdateSystem={askSystem}
-        />
+        <PageView nav={nav} query={query} onRestart={() => setAsk({ kind: "restart" })} onUpdateSystem={askSystem} />
       </AppWindow>
     </ActionsContext.Provider>
   );
@@ -213,7 +237,12 @@ function PageView({ nav, query, onRestart, onUpdateSystem }: { nav: Nav; query: 
   const browsing = page.kind === "discover" || page.kind === "category" || page.kind === "search" || page.kind === "app";
   if (browsing && !state.hasFlatpak) {
     return (
-      <EmptyState testID="no-flatpak" glyph={glyphs.WARNING} title="Flatpak isn't installed" message="Software installs apps with Flatpak. Install the flatpak package, then open Software again." />
+      <EmptyState
+        testID="no-flatpak"
+        glyph={glyphs.WARNING}
+        title="Flatpak isn't installed"
+        message="Software installs apps with Flatpak. Install the flatpak package, then open Software again."
+      />
     );
   }
   switch (page.kind) {

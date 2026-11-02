@@ -110,7 +110,9 @@ function Key({ spec, look, onPress }: { spec: KeySpec; look: KeyLook; onPress: (
         hoverBackgroundColor: look.hover,
       }}
     >
-      <Text style={{ fontSize: symbol ? 26 : spec.kind === "fn" ? 19 : 24, fontWeight: spec.kind === "op" ? "medium" : "normal", color: look.ink }}>{spec.label}</Text>
+      <Text style={{ fontSize: symbol ? 26 : spec.kind === "fn" ? 19 : 24, fontWeight: spec.kind === "op" ? "medium" : "normal", color: look.ink }}>
+        {spec.label}
+      </Text>
     </View>
   );
 }
@@ -149,7 +151,16 @@ export function CalculatorWindow({ clipboard = systemClipboard() }: { clipboard?
           testID="display"
           dragRegion
           onContextMenu={(point) => setMenu(point)}
-          style={{ height: DISPLAY, flexShrink: 0, flexDirection: "column", justifyContent: "flex-end", alignItems: "flex-end", paddingHorizontal: PAD + 6, paddingTop: inset.top, paddingBottom: 6 }}
+          style={{
+            height: DISPLAY,
+            flexShrink: 0,
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            alignItems: "flex-end",
+            paddingHorizontal: PAD + 6,
+            paddingTop: inset.top,
+            paddingBottom: 6,
+          }}
         >
           <Text numberOfLines={1} style={{ fontSize: displayFontSize(text, width - 12), color: colors.text, textAlign: "right" }}>
             {text}

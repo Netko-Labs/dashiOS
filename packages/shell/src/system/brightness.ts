@@ -66,9 +66,7 @@ export async function readBacklight(root: string = BACKLIGHT): Promise<Backlight
   }
   const devices = await Promise.all(
     names.map(async (name): Promise<BacklightFiles> => {
-      const [type, brightness, max] = await Promise.all(
-        ["type", "brightness", "max_brightness"].map((file) => readText(`${root}/${name}/${file}`)),
-      );
+      const [type, brightness, max] = await Promise.all(["type", "brightness", "max_brightness"].map((file) => readText(`${root}/${name}/${file}`)));
       return { name, type: type ?? null, brightness: brightness ?? null, max: max ?? null };
     }),
   );

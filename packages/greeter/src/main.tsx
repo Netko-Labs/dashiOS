@@ -57,7 +57,14 @@ const store: LoginStore = {
 const host = spawnNativeHost(metalHost(), {
   title: "Login",
   appId: "dev.dashi.greeter",
-  surface: { role: "layer", layer: "overlay", anchor: ["top", "bottom", "left", "right"], exclusiveZone: -1, keyboard: "exclusive", namespace: "dashi-greeter" },
+  surface: {
+    role: "layer",
+    layer: "overlay",
+    anchor: ["top", "bottom", "left", "right"],
+    exclusiveZone: -1,
+    keyboard: "exclusive",
+    namespace: "dashi-greeter",
+  },
 });
 const root = render(
   <Greeter users={users} sessions={sessions} initialUser={initialUser} initialSession={initialSession} login={store} onPower={power} />,

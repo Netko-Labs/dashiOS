@@ -25,9 +25,7 @@ export function WelcomePage() {
       {installer && (
         <View style={{ flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 8 }}>
           <Button testID="setup-install" label="Install Dashi…" onPress={() => startInstaller(installer)} />
-          <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>
-            You are trying Dashi from a USB drive. Install it to keep it.
-          </Text>
+          <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>You are trying Dashi from a USB drive. Install it to keep it.</Text>
         </View>
       )}
     </View>

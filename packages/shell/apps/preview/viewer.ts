@@ -12,7 +12,17 @@
 import { closeSync, existsSync, linkSync, openSync, readSync, statSync, unlinkSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { cacheFile, cacheKey, cacheRoot, ensureCache, partialName, publish, type Stamp } from "./cache.ts";
-import { canSaveCopy, CONVERT_MEMORY_MIB, CONVERT_TIMEOUT_MS, convertible, copyName, MAX_NATIVE_PIXELS, magickArgs, REDUCED_PIXELS, saveCopyArgs } from "./convert.ts";
+import {
+  canSaveCopy,
+  CONVERT_MEMORY_MIB,
+  CONVERT_TIMEOUT_MS,
+  convertible,
+  copyName,
+  MAX_NATIVE_PIXELS,
+  magickArgs,
+  REDUCED_PIXELS,
+  saveCopyArgs,
+} from "./convert.ts";
 import { HEADER_BYTES, jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
 import { FORMATS, type Format, formatFromName, type Kind, sniff } from "./kinds.ts";
 import { chooseDpi, MAX_PAGES, parsePdfInfo, pdfinfoArgs, pdftoppmArgs, thumbnailArgs, wantsPassword } from "./pdf.ts";
@@ -137,7 +147,23 @@ export class Viewer {
     this.thumbQueue = [];
     this.thumbs.clear();
     this.pagePoints = null;
-    this.set({ phase: "loading", error: null, path, name: basename(path), picture: null, pdf: null, turns: 0, busy: true, note: null, natural: null, canTurn: false, canSave: false, exifTurn: false, kind: null, format: null });
+    this.set({
+      phase: "loading",
+      error: null,
+      path,
+      name: basename(path),
+      picture: null,
+      pdf: null,
+      turns: 0,
+      busy: true,
+      note: null,
+      natural: null,
+      canTurn: false,
+      canSave: false,
+      exifTurn: false,
+      kind: null,
+      format: null,
+    });
     const fail = (message: string): void => {
       if (generation === this.generation) this.set({ phase: "error", error: message, busy: false, picture: null, pdf: null });
     };
@@ -195,7 +221,11 @@ export class Viewer {
     const needsWork = !FORMATS[format].native || this.orientation !== 1 || turns !== 0 || pixels > MAX_NATIVE_PIXELS || format === "gif";
     const { magick } = this.snapshot.tools;
     if (!needsWork || !convertible(format) || !magick) {
-      if (!FORMATS[format].native) return this.fail(generation, `${FORMATS[format].label.replace(" image", "")} files need ImageMagick with ${format.toUpperCase()} support, which is not installed.`);
+      if (!FORMATS[format].native)
+        return this.fail(
+          generation,
+          `${FORMATS[format].label.replace(" image", "")} files need ImageMagick with ${format.toUpperCase()} support, which is not installed.`,
+        );
       if (pixels > MAX_NATIVE_PIXELS) return this.fail(generation, "This picture is too large to show without ImageMagick (install it to see a reduced copy).");
       const size = natural ?? this.storedSize;
       if (!size) return this.fail(generation, "The picture's size could not be read.");
@@ -220,7 +250,8 @@ export class Viewer {
     if (!made) return this.fail(generation, "The picture could not be converted (it may be damaged).");
     const size = pngSize(made);
     if (!size) return this.fail(generation, "The converted picture could not be read.");
-    const reduced = natural && (size.width < (mod4(turns) % 2 ? natural.height : natural.width) || size.height < (mod4(turns) % 2 ? natural.width : natural.height));
+    const reduced =
+      natural && (size.width < (mod4(turns) % 2 ? natural.height : natural.width) || size.height < (mod4(turns) % 2 ? natural.width : natural.height));
     this.set({
       phase: "ready",
       busy: false,
@@ -284,7 +315,25 @@ export class Viewer {
     this.generation++;
     this.thumbQueue = [];
     this.thumbs.clear();
-    this.set({ phase: "empty", error: null, path: null, name: "", kind: null, format: null, picture: null, natural: null, turns: 0, canTurn: false, canSave: false, exifTurn: false, folder: EMPTY_FOLDER, pdf: null, busy: false, note: null, stamp: null });
+    this.set({
+      phase: "empty",
+      error: null,
+      path: null,
+      name: "",
+      kind: null,
+      format: null,
+      picture: null,
+      natural: null,
+      turns: 0,
+      canTurn: false,
+      canSave: false,
+      exifTurn: false,
+      folder: EMPTY_FOLDER,
+      pdf: null,
+      busy: false,
+      note: null,
+      stamp: null,
+    });
   }
 
   /** Step through the folder's images; false at an end. */
@@ -303,7 +352,11 @@ export class Viewer {
     const info = await runTool(pdfinfoArgs(path), { timeoutMs: INFO_TIMEOUT_MS, memoryMiB: 1024, maxOutput: 256 * 1024 });
     if (generation !== this.generation) return;
     const parsed = info.ok ? parsePdfInfo(info.stdout) : null;
-    if (!parsed) return this.fail(generation, wantsPassword(info.stderr) ? "This PDF is locked with a password, which Preview cannot enter yet." : "This PDF could not be read (it may be damaged).");
+    if (!parsed)
+      return this.fail(
+        generation,
+        wantsPassword(info.stderr) ? "This PDF is locked with a password, which Preview cannot enter yet." : "This PDF could not be read (it may be damaged).",
+      );
     if (parsed.encrypted && !parsed.pageSize) return this.fail(generation, "This PDF is locked with a password, which Preview cannot enter yet.");
     this.pagePoints = parsed.pageSize;
     this.set({ pdf: { pages: parsed.pages, page: 1, title: parsed.title, thumbs: new Map() } });

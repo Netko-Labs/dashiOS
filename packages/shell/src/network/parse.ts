@@ -100,7 +100,9 @@ export function parseDevices(text: string): NetDevice[] {
         connection: connection === "" || connection === "--" ? null : connection,
         ipv4: current["IP4.ADDRESS"] ?? [],
         gateway: IPV4.test(gateway) ? gateway : null,
-        dns: [...(current["IP4.DNS"] ?? []), ...(current["IP6.DNS"] ?? [])].filter((address) => IPV4.test(address) || (address.includes(":") && IPV6.test(address))),
+        dns: [...(current["IP4.DNS"] ?? []), ...(current["IP6.DNS"] ?? [])].filter(
+          (address) => IPV4.test(address) || (address.includes(":") && IPV6.test(address)),
+        ),
       });
     }
     current = {};

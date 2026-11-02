@@ -39,7 +39,9 @@ export function PasswordSheet({ network, wifi, onClose }: { network: WifiNetwork
   return (
     <Panel>
       <Svg markup={wifiGlyph(network.bars)} size={30} color={colors.text} />
-      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{`The Wi-Fi network “${network.ssid}” requires a password.`}</Text>
+      <Text
+        style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}
+      >{`The Wi-Fi network “${network.ssid}” requires a password.`}</Text>
       <View
         style={{
           alignSelf: "stretch",
@@ -68,7 +70,11 @@ export function PasswordSheet({ network, wifi, onClose }: { network: WifiNetwork
           style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
         />
       </View>
-      <View testID="wifi-show-password" onPress={() => setShown(!shown)} style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View
+        testID="wifi-show-password"
+        onPress={() => setShown(!shown)}
+        style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
+      >
         <View
           style={{
             width: 15,

@@ -87,10 +87,22 @@ export class SystemdBackend implements RegionBackend {
     return this.connection;
   }
 
-  private async call(target: { name: string; path: string }, interfaceName: string, member: string, signature?: string, body?: readonly unknown[]): Promise<unknown[]> {
+  private async call(
+    target: { name: string; path: string },
+    interfaceName: string,
+    member: string,
+    signature?: string,
+    body?: readonly unknown[],
+  ): Promise<unknown[]> {
     try {
       const bus = await this.bus();
-      return await bus.call({ destination: target.name, path: target.path, interface: interfaceName, member, ...(signature === undefined ? {} : { signature, body: body ?? [] }) });
+      return await bus.call({
+        destination: target.name,
+        path: target.path,
+        interface: interfaceName,
+        member,
+        ...(signature === undefined ? {} : { signature, body: body ?? [] }),
+      });
     } catch (error) {
       throw failure(error);
     }
@@ -148,7 +160,10 @@ export class SystemdBackend implements RegionBackend {
     void this.bus()
       .then(async (bus) => {
         for (const target of [TIMEDATE, LOCALE]) {
-          const stop = await bus.subscribe({ type: "signal", sender: target.name, path: target.path, interface: PROPERTIES, member: "PropertiesChanged" }, () => !stopped && onChange());
+          const stop = await bus.subscribe(
+            { type: "signal", sender: target.name, path: target.path, interface: PROPERTIES, member: "PropertiesChanged" },
+            () => !stopped && onChange(),
+          );
           if (stopped) void stop().catch(() => {});
           else stops.push(stop);
         }

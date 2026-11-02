@@ -25,7 +25,17 @@ function LiveTileView({ tile, selected, onPress }: { tile: LiveTile; selected: b
   return (
     <View testID={`live:${tile.ref}`} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8 }}>
       <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
-        <View style={{ width: TILE.width, height: TILE.height, borderRadius: 6, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: surface.field }}>
+        <View
+          style={{
+            width: TILE.width,
+            height: TILE.height,
+            borderRadius: 6,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: surface.field,
+          }}
+        >
           {tile.image !== null ? (
             <Image source={tile.image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
           ) : (
@@ -133,7 +143,11 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
           </Row>
         )}
         <Row label="Pause on battery" detail="Live wallpapers also stop while a window covers the screen, and while the screen is locked or off.">
-          <Switch testID="live-pause-battery" on={wallpaper.pauseOnBattery ?? true} onChange={(pauseOnBattery) => settings.patch("wallpaper", { pauseOnBattery })} />
+          <Switch
+            testID="live-pause-battery"
+            on={wallpaper.pauseOnBattery ?? true}
+            onChange={(pauseOnBattery) => settings.patch("wallpaper", { pauseOnBattery })}
+          />
         </Row>
         <Row stack label="Frame rate" detail="Higher is smoother and uses more power.">
           <Choices

@@ -24,7 +24,19 @@ const MAX_STRUCT_DEPTH = 32;
 const BASIC: ReadonlySet<string> = new Set("ybnqiuxtdsogh");
 
 const BASIC_ALIGN: Readonly<Record<BasicCode, number>> = {
-  y: 1, b: 4, n: 2, q: 2, i: 4, u: 4, x: 8, t: 8, d: 8, s: 4, o: 4, g: 1, h: 4,
+  y: 1,
+  b: 4,
+  n: 2,
+  q: 2,
+  i: 4,
+  u: 4,
+  x: 8,
+  t: 8,
+  d: 8,
+  s: 4,
+  o: 4,
+  g: 1,
+  h: 4,
 };
 
 /** The alignment of a value of this type on the wire. */

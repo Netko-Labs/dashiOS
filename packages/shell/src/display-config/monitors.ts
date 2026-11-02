@@ -68,7 +68,8 @@ function parseVrr(value: unknown): MonitorVrr {
   return { supported: vrr?.supported === true, active: vrr?.active === true, mode: isVrrMode(vrr?.mode) ? vrr.mode : "off" };
 }
 
-const record = (value: unknown): Record<string, unknown> | null => (typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null);
+const record = (value: unknown): Record<string, unknown> | null =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 const finite = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -141,10 +142,7 @@ export function identityOf(monitor: Pick<Monitor, "name" | "make" | "model" | "s
 
 /** The key of a set of connected monitors: order does not matter. */
 export function setKey(monitors: readonly Pick<Monitor, "name" | "make" | "model" | "serial">[]): string {
-  return monitors
-    .map(identityOf)
-    .sort()
-    .join("+");
+  return monitors.map(identityOf).sort().join("+");
 }
 
 /** "Dell U2720Q" or the connector when the monitor says nothing. */
@@ -185,11 +183,7 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
  * larger than it. A monitor's EDID lists dozens, most of them odd shapes or
  * modes the panel only scales; "Show All Resolutions" has the rest.
  */
-export function commonSizes(
-  modes: readonly OfferedMode[],
-  current: { width: number; height: number },
-  limit = 6,
-): Array<{ width: number; height: number }> {
+export function commonSizes(modes: readonly OfferedMode[], current: { width: number; height: number }, limit = 6): Array<{ width: number; height: number }> {
   const all = sizesOf(modes);
   const native = modes.find((mode) => mode.preferred) ?? all[0];
   if (!native) return [];
@@ -197,7 +191,12 @@ export function commonSizes(
   const same = (size: { width: number; height: number }) => size.width === current.width && size.height === current.height;
   const isNative = (size: { width: number; height: number }) => size.width === native.width && size.height === native.height;
   const fits = all.filter(
-    (size) => !isNative(size) && !same(size) && Math.abs(size.width / size.height - shape) / shape <= 0.02 && size.width <= native.width && size.height <= native.height,
+    (size) =>
+      !isNative(size) &&
+      !same(size) &&
+      Math.abs(size.width / size.height - shape) / shape <= 0.02 &&
+      size.width <= native.width &&
+      size.height <= native.height,
   );
   const keep = new Set([...all.filter((size) => isNative(size) || same(size)), ...fits.slice(0, limit)]);
   return all.filter((size) => keep.has(size));

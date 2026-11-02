@@ -15,12 +15,7 @@
 
 export type KeyInput =
   /** Characters typed or pasted. */
-  | { kind: "text"; text: string }
-  | { kind: "backspace" }
-  | { kind: "enter" }
-  | { kind: "escape" }
-  | { kind: "up" }
-  | { kind: "down" };
+  { kind: "text"; text: string } | { kind: "backspace" } | { kind: "enter" } | { kind: "escape" } | { kind: "up" } | { kind: "down" };
 
 const FILLERS = [" ", " "] as const;
 const RUN = 8;

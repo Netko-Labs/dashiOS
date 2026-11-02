@@ -74,12 +74,7 @@ export function iconNamesFor(hit: Pick<FileHit, "mime">): string[] {
 }
 
 /** Ask LocalSearch for files named like `query`; empty for a short query or when it cannot be asked. */
-export async function searchFiles(
-  query: string,
-  run: (command: readonly string[]) => Promise<string | null>,
-  home: string,
-  limit = 4,
-): Promise<FileHit[]> {
+export async function searchFiles(query: string, run: (command: readonly string[]) => Promise<string | null>, home: string, limit = 4): Promise<FileHit[]> {
   const text = query.trim();
   if (text.length < MIN_QUERY) return [];
   const output = await run(fileSearchCommand(text, limit));

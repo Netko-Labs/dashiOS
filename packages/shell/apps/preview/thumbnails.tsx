@@ -36,7 +36,9 @@ export function Thumbnails({ pdf, pageSize, onPage }: { pdf: PdfState; pageSize:
                 <View style={{ width: THUMB_WIDTH, height, backgroundColor: "#ffffff", opacity: 0.6, borderRadius: 2 }} />
               )}
             </View>
-            <Text style={{ fontSize: 11, fontWeight: current ? "semibold" : "normal", color: current ? colors.selection : colors.textMuted }}>{String(page)}</Text>
+            <Text style={{ fontSize: 11, fontWeight: current ? "semibold" : "normal", color: current ? colors.selection : colors.textMuted }}>
+              {String(page)}
+            </Text>
           </View>
         );
       })}

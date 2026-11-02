@@ -132,7 +132,15 @@ export class CalendarStore {
     const base = idFor(clean);
     let id = base;
     for (let n = 2; taken.has(id.toLowerCase()); n++) id = `${base.slice(0, 70)} ${n}`;
-    const calendar: Calendar = { id, name: clean, color: color !== undefined && isColor(color) ? color.toLowerCase() : (PALETTE[taken.size % PALETTE.length] as string), events: [], headerExtra: [], preserved: [], problems: [] };
+    const calendar: Calendar = {
+      id,
+      name: clean,
+      color: color !== undefined && isColor(color) ? color.toLowerCase() : (PALETTE[taken.size % PALETTE.length] as string),
+      events: [],
+      headerExtra: [],
+      preserved: [],
+      problems: [],
+    };
     this.write(calendar, true);
     return calendar;
   }

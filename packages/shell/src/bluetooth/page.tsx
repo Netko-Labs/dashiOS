@@ -58,7 +58,14 @@ function DeviceIcon({ device }: { device: BluetoothDevice }) {
   const colors = useColors();
   return (
     <View
-      style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: device.connected ? colors.selection : colors.track }}
+      style={{
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: device.connected ? colors.selection : colors.track,
+      }}
     >
       <Svg markup={deviceGlyph(device.kind)} size={14} color={device.connected ? "#ffffff" : colors.text} />
     </View>
@@ -135,11 +142,27 @@ function Row({
 }
 
 /** What opens under a device of yours: Forget This Device, then an are-you-sure. */
-function ForgetStrip({ device, confirming, onAsk, onCancel, onForget }: { device: BluetoothDevice; confirming: boolean; onAsk: () => void; onCancel: () => void; onForget: () => void }) {
+function ForgetStrip({
+  device,
+  confirming,
+  onAsk,
+  onCancel,
+  onForget,
+}: {
+  device: BluetoothDevice;
+  confirming: boolean;
+  onAsk: () => void;
+  onCancel: () => void;
+  onForget: () => void;
+}) {
   const colors = useColors();
   if (!confirming) {
     return (
-      <View testID={`bt-forget:${device.name}`} onPress={onAsk} style={{ height: 28, justifyContent: "center", paddingLeft: 40, borderRadius: 8, hoverBackgroundColor: colors.button }}>
+      <View
+        testID={`bt-forget:${device.name}`}
+        onPress={onAsk}
+        style={{ height: 28, justifyContent: "center", paddingLeft: 40, borderRadius: 8, hoverBackgroundColor: colors.button }}
+      >
         <Text style={{ fontSize: 12, color: colors.critical }}>Forget This Device</Text>
       </View>
     );
@@ -191,9 +214,7 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
       ))}
       <Caption
         trailing={
-          searching
-            ? { text: "Searching…", testID: "bt-searching" }
-            : { text: "Search Again", testID: "bt-search-again", onPress: () => store.searchAgain() }
+          searching ? { text: "Searching…", testID: "bt-searching" } : { text: "Search Again", testID: "bt-search-again", onPress: () => store.searchAgain() }
         }
       >
         Nearby Devices

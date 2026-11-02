@@ -10,7 +10,20 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { commonSizes, type Monitor, monitorLabel, ratesOf, refreshLabel, ROTATIONS, type Rotation, sizeLabel, sizesOf, modeFor, VRR_MODES, type VrrMode } from "../../display-config/monitors.ts";
+import {
+  commonSizes,
+  type Monitor,
+  monitorLabel,
+  ratesOf,
+  refreshLabel,
+  ROTATIONS,
+  type Rotation,
+  sizeLabel,
+  sizesOf,
+  modeFor,
+  VRR_MODES,
+  type VrrMode,
+} from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { FlagsStore } from "../../control-center/flags.ts";
 import { useColors } from "@dashi/ui";
@@ -27,15 +40,21 @@ const VRR_LABELS: Record<VrrMode, string> = { off: "Off", on: "On", fullscreen: 
 
 function Heading({ monitor }: { monitor: Monitor }) {
   const colors = useColors();
-  const size = monitor.mode ? sizeLabel(monitor.rotation === 90 || monitor.rotation === 270 ? { width: monitor.mode.height, height: monitor.mode.width } : monitor.mode) : "Off";
+  const size = monitor.mode
+    ? sizeLabel(monitor.rotation === 90 || monitor.rotation === 270 ? { width: monitor.mode.height, height: monitor.mode.width } : monitor.mode)
+    : "Off";
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
       <Svg markup={DISPLAY} size={30} color={colors.textMuted} />
       <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
         <Text style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>{monitor.name}</Text>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{[size, monitor.primary ? "Main display" : "", monitor.builtIn ? "Built-in display" : ""].filter((part) => part !== "").join(" · ")}</Text>
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+          {[size, monitor.primary ? "Main display" : "", monitor.builtIn ? "Built-in display" : ""].filter((part) => part !== "").join(" · ")}
+        </Text>
       </View>
-      {monitor.model !== "" && !monitor.builtIn && monitor.model !== monitor.name && <Text style={{ fontSize: 11, color: colors.textMuted }}>{monitorLabel(monitor)}</Text>}
+      {monitor.model !== "" && !monitor.builtIn && monitor.model !== monitor.name && (
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>{monitorLabel(monitor)}</Text>
+      )}
     </View>
   );
 }
@@ -69,7 +88,12 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
         <Row stack label="Resolution" detail={`${sizeLabel(here)} now`}>
           <Choices
             testID={`display-resolution:${name}`}
-            options={sizes.map((size) => ({ value: sizeLabel(size), label: monitor.modes.some((offered) => offered.preferred && offered.width === size.width && offered.height === size.height) ? `${sizeLabel(size)} (native)` : sizeLabel(size) }))}
+            options={sizes.map((size) => ({
+              value: sizeLabel(size),
+              label: monitor.modes.some((offered) => offered.preferred && offered.width === size.width && offered.height === size.height)
+                ? `${sizeLabel(size)} (native)`
+                : sizeLabel(size),
+            }))}
             value={sizeLabel(here)}
             onChange={(label) => {
               const size = sizes.find((candidate) => sizeLabel(candidate) === label);
@@ -99,7 +123,11 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
         </Row>
       )}
       {monitor.vrr.supported && (
-        <Row stack label="Variable refresh rate" detail={monitor.vrr.active ? "Following the frames now." : "Smoother games and video where the screen allows it."}>
+        <Row
+          stack
+          label="Variable refresh rate"
+          detail={monitor.vrr.active ? "Following the frames now." : "Smoother games and video where the screen allows it."}
+        >
           <Choices
             testID={`display-vrr:${name}`}
             options={VRR_MODES.map((mode) => ({ value: mode, label: VRR_LABELS[mode] }))}
@@ -153,14 +181,23 @@ export function DisplaysPane({ screens, settings, flags }: { screens: ScreensSto
         </>
       )}
       {sorted.map((monitor) => (
-        <ScreenCard key={monitor.name} monitor={monitor} screen={state.screens.find((screen) => screen.name === monitor.name)} store={screens} canTurnOff={on.length > 1} />
+        <ScreenCard
+          key={monitor.name}
+          monitor={monitor}
+          screen={state.screens.find((screen) => screen.name === monitor.name)}
+          store={screens}
+          canTurnOff={on.length > 1}
+        />
       ))}
       {state.error !== null && (
         <View testID="displays-error" style={{ flexShrink: 0 }}>
           <Text style={{ fontSize: 11, color: colors.critical }}>{`Could not change the display: ${state.error}`}</Text>
         </View>
       )}
-      <Caption>Windows move with the screen when its scale changes. The choice is kept for the next login. A new resolution or rotation goes back by itself unless you keep it.</Caption>
+      <Caption>
+        Windows move with the screen when its scale changes. The choice is kept for the next login. A new resolution or rotation goes back by itself unless you
+        keep it.
+      </Caption>
       <NightShiftSection settings={settings} flags={flags} />
     </Page>
   );

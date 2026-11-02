@@ -34,7 +34,10 @@ export function parseStat(text: string): { comm: string; ppid: number } | null {
   const open = text.indexOf("(");
   const close = text.lastIndexOf(")");
   if (open < 0 || close < open) return null;
-  const rest = text.slice(close + 1).trim().split(" ");
+  const rest = text
+    .slice(close + 1)
+    .trim()
+    .split(" ");
   const ppid = Number(rest[1]);
   return Number.isInteger(ppid) && ppid >= 0 ? { comm: text.slice(open + 1, close), ppid } : null;
 }
@@ -99,15 +102,13 @@ export function planPower(what: "sleep" | PowerKind, real: boolean): "machine" |
  * Runs a power action now (the sheet already asked). `machine` asks logind;
  * it is only called for a real session.
  */
-export function runPower(
-  what: "sleep" | PowerKind,
-  above: Above = compositorAbove(),
-  machine: (what: MachineAction) => Promise<void> = powerMachine,
-): void {
+export function runPower(what: "sleep" | PowerKind, above: Above = compositorAbove(), machine: (what: MachineAction) => Promise<void> = powerMachine): void {
   const { compositor, nested } = above;
   switch (planPower(what, isRealSession(above))) {
     case "refuse":
-      console.error(`dashi-shell: not asking logind to ${what}: this is not a Dashi session of its own (nested, run by hand, or dashi-comp unreadable), so this machine is someone's desktop`);
+      console.error(
+        `dashi-shell: not asking logind to ${what}: this is not a Dashi session of its own (nested, run by hand, or dashi-comp unreadable), so this machine is someone's desktop`,
+      );
       return;
     case "machine":
       if (what !== "logout") {

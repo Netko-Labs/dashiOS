@@ -29,7 +29,15 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
       <Group>
         <Row
           label="Set time and date automatically"
-          detail={state.canNtp ? (state.ntp ? (state.ntpSynced ? "Synchronized with a time server." : "Waiting for a time server.") : "The clock is set by hand.") : "No time service is installed on this computer."}
+          detail={
+            state.canNtp
+              ? state.ntp
+                ? state.ntpSynced
+                  ? "Synchronized with a time server."
+                  : "Waiting for a time server."
+                : "The clock is set by hand."
+              : "No time service is installed on this computer."
+          }
         >
           <Switch testID="datetime-ntp" on={state.ntp} onChange={(on) => state.canNtp && void region.setNtp(on)} />
         </Row>

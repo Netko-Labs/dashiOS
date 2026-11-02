@@ -62,7 +62,17 @@ export function AppWindow({ title, subtitle, leading, toolbar, sidebar, sidebarW
       {sidebar !== undefined && (
         <View
           testID="window-sidebar"
-          style={{ width: sidebarWidth, flexShrink: 0, flexDirection: "column", gap: 2, paddingHorizontal: 10, paddingBottom: 10, backgroundColor: surface.sidebar, borderRightWidth: 1, borderColor: colors.separator }}
+          style={{
+            width: sidebarWidth,
+            flexShrink: 0,
+            flexDirection: "column",
+            gap: 2,
+            paddingHorizontal: 10,
+            paddingBottom: 10,
+            backgroundColor: surface.sidebar,
+            borderRightWidth: 1,
+            borderColor: colors.separator,
+          }}
         >
           <View dragRegion style={{ height: inset.unified ? height : 10, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
           {sidebar}
@@ -126,7 +136,19 @@ export function SidebarSection({ title, children }: { title?: string; children: 
 }
 
 /** A glyph button in a toolbar: square, quiet until hovered. */
-export function ToolbarButton({ glyph, onPress, testID, disabled, label }: { glyph: string; onPress: () => void; testID: string; disabled?: boolean; label?: string }) {
+export function ToolbarButton({
+  glyph,
+  onPress,
+  testID,
+  disabled,
+  label,
+}: {
+  glyph: string;
+  onPress: () => void;
+  testID: string;
+  disabled?: boolean;
+  label?: string;
+}) {
   const colors = useColors();
   return (
     <View

@@ -194,7 +194,12 @@ export class BluetoothStore implements PairingHandler {
     if (!result.ok && !result.paired && this.declined.delete(device.path)) result = { ok: false, reason: "cancelled", paired: false };
     this.declined.delete(device.path);
     await this.refresh();
-    this.end(device.path, result.ok || result.reason === "cancelled" ? null : { path: device.path, name: device.name, action: "pair", reason: result.reason, paired: result.paired });
+    this.end(
+      device.path,
+      result.ok || result.reason === "cancelled"
+        ? null
+        : { path: device.path, name: device.name, action: "pair", reason: result.reason, paired: result.paired },
+    );
     return result;
   }
 
@@ -262,7 +267,10 @@ export class BluetoothStore implements PairingHandler {
       result = { ok: false, reason: "failed" };
     }
     await this.refresh();
-    this.end(device.path, result.ok || result.reason === "cancelled" ? null : { path: device.path, name: device.name, action, reason: result.reason, paired: device.paired });
+    this.end(
+      device.path,
+      result.ok || result.reason === "cancelled" ? null : { path: device.path, name: device.name, action, reason: result.reason, paired: device.paired },
+    );
     return result;
   }
 

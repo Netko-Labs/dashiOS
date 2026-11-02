@@ -133,7 +133,16 @@ function zoneFormatter(zone: string): Intl.DateTimeFormat | null {
   let found = formatters.get(zone);
   if (found === undefined) {
     try {
-      found = new Intl.DateTimeFormat("en-US", { timeZone: zone, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      found = new Intl.DateTimeFormat("en-US", {
+        timeZone: zone,
+        hourCycle: "h23",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
     } catch {
       found = null;
     }
@@ -177,7 +186,10 @@ export function parseTime(line: Pick<ContentLine, "params" | "value">, value = l
   if (utc) {
     const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/.exec(utc[1] ?? "");
     if (!match || fromBasicLocal(utc[1] ?? "") === null) return null;
-    return { local: localOf(new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6])))), allDay: false };
+    return {
+      local: localOf(new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4]), Number(match[5]), Number(match[6])))),
+      allDay: false,
+    };
   }
   const local = fromBasicLocal(text);
   if (local === null) return null;
@@ -240,7 +252,7 @@ export function parseRule(value: string): Repeat | null {
   }
   const until = fields.get("UNTIL");
   if (until !== undefined) {
-    const day = /^\d{8}$/.test(until) ? fromBasicDay(until) : parseTime({ params: new Map(), value: until })?.local.slice(0, 10) ?? null;
+    const day = /^\d{8}$/.test(until) ? fromBasicDay(until) : (parseTime({ params: new Map(), value: until })?.local.slice(0, 10) ?? null);
     if (day === null) return null;
     repeat.until = day;
   }
@@ -307,9 +319,16 @@ function alarmOf(children: readonly Component[]): { alert: number | null; rawAla
   const rawAlarms: string[] = [];
   for (const alarm of children.filter((child) => child.name === "VALARM")) {
     const trigger = alarm.lines.filter((line) => line.name === "TRIGGER");
-    const action = alarm.lines.find((line) => line.name === "ACTION")?.value.trim().toUpperCase();
-    const minutes = trigger.length === 1 && trigger[0] && !trigger[0].params.has("VALUE") && (trigger[0].params.get("RELATED") ?? "START").toUpperCase() === "START" ? parseDuration(trigger[0].value) : null;
-    const editable = alert === null && minutes !== null && action === "DISPLAY" && !alarm.lines.some((line) => line.name === "REPEAT" || line.name === "DURATION");
+    const action = alarm.lines
+      .find((line) => line.name === "ACTION")
+      ?.value.trim()
+      .toUpperCase();
+    const minutes =
+      trigger.length === 1 && trigger[0] && !trigger[0].params.has("VALUE") && (trigger[0].params.get("RELATED") ?? "START").toUpperCase() === "START"
+        ? parseDuration(trigger[0].value)
+        : null;
+    const editable =
+      alert === null && minutes !== null && action === "DISPLAY" && !alarm.lines.some((line) => line.name === "REPEAT" || line.name === "DURATION");
     if (editable) alert = 0 - (minutes as number);
     else rawAlarms.push(...alarm.raw);
   }
@@ -387,7 +406,11 @@ export function stampNow(now: Date = new Date()): string {
 }
 
 export function cleanName(value: string): string {
-  return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, MAX_NAME);
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_NAME);
 }
 
 export const isColor = (value: unknown): value is string => typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
@@ -454,7 +477,8 @@ function writeEvent(event: CalEvent): string[] {
   else if (event.rawRule !== null) lines.push(`RRULE:${event.rawRule}`);
   for (const exdate of event.exdates) lines.push(timeProperty("EXDATE", exdate, event.allDay));
   lines.push(...event.extra);
-  if (event.alert !== null) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${escapeText(event.title || "Event")}`, `TRIGGER:${formatDuration(-event.alert)}`, "END:VALARM");
+  if (event.alert !== null)
+    lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${escapeText(event.title || "Event")}`, `TRIGGER:${formatDuration(-event.alert)}`, "END:VALARM");
   lines.push(...event.rawAlarms, "END:VEVENT");
   return lines;
 }
@@ -464,7 +488,15 @@ const escapeUid = (uid: string): string => uid.replace(/[\u0000-\u001f\u007f]/g,
 
 /** The file's text: CRLF lines folded at 75 octets. */
 export function writeIcs(file: Pick<IcsFile, "events" | "headerExtra" | "preserved"> & { name: string; color: string }): string {
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", `PRODID:${PRODID}`, "CALSCALE:GREGORIAN", `X-WR-CALNAME:${escapeText(cleanName(file.name))}`, `X-APPLE-CALENDAR-COLOR:${file.color}`, ...file.headerExtra];
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    `PRODID:${PRODID}`,
+    "CALSCALE:GREGORIAN",
+    `X-WR-CALNAME:${escapeText(cleanName(file.name))}`,
+    `X-APPLE-CALENDAR-COLOR:${file.color}`,
+    ...file.headerExtra,
+  ];
   for (const event of file.events) lines.push(...writeEvent(event));
   lines.push(...file.preserved, "END:VCALENDAR");
   return `${lines.flatMap(fold).join("\r\n")}\r\n`;

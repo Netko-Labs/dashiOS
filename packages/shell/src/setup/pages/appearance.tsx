@@ -20,7 +20,9 @@ export function AppearancePage({ ctx }: { ctx: SetupContext }) {
         </Row>
       </Group>
       <View style={{ flexShrink: 0 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>Auto turns Dark Mode on at 7 PM and off at 7 AM. Accent color is Kombu, a green from Japanese cooking.</Text>
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+          Auto turns Dark Mode on at 7 PM and off at 7 AM. Accent color is Kombu, a green from Japanese cooking.
+        </Text>
       </View>
     </>
   );

@@ -13,7 +13,7 @@ const INDEX: Record<FirstWeekday, number> = { sunday: 0, monday: 1, saturday: 6 
 /** The region's own first day (0 Sunday … 6 Saturday); Monday when ICU does not say. */
 export function localeFirstDay(locale: string): number {
   try {
-    const info = (new Intl.Locale(locale) as { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } });
+    const info = new Intl.Locale(locale) as { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } };
     const first = (info.getWeekInfo?.() ?? info.weekInfo)?.firstDay;
     // ICU counts 1 Monday … 7 Sunday.
     return typeof first === "number" ? first % 7 : 1;

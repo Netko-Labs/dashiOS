@@ -8,7 +8,25 @@ import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, KEYBOARD, MOUSE, PICTURE, SPAR
 import { INFO } from "@dashi/ui";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
 
-export type PaneId = "appearance" | "wallpaper" | "displays" | "desktop-dock" | "keyboard" | "trackpad" | "mouse" | "date-time" | "language-region" | "lock-screen" | "notifications" | "agents" | "about" | "network" | "bluetooth" | "sound" | "battery" | "users";
+export type PaneId =
+  | "appearance"
+  | "wallpaper"
+  | "displays"
+  | "desktop-dock"
+  | "keyboard"
+  | "trackpad"
+  | "mouse"
+  | "date-time"
+  | "language-region"
+  | "lock-screen"
+  | "notifications"
+  | "agents"
+  | "about"
+  | "network"
+  | "bluetooth"
+  | "sound"
+  | "battery"
+  | "users";
 
 export interface PaneInfo {
   id: PaneId;

@@ -108,14 +108,20 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   const openWithSheet = (): void => {
     if (!snap.path || !snap.format) return;
     setSheet({ kind: "open-with", handlers: null });
-    void handlersFor(FORMATS[snap.format].mime, [SELF_ID]).then((handlers) => setSheet((now) => (now?.kind === "open-with" ? { kind: "open-with", handlers } : now)));
+    void handlersFor(FORMATS[snap.format].mime, [SELF_ID]).then((handlers) =>
+      setSheet((now) => (now?.kind === "open-with" ? { kind: "open-with", handlers } : now)),
+    );
   };
   const reveal = (): void => {
     if (!snap.path) return;
-    void showInFiles(snap.folder.dir).then((ok) => ok || message("Files could not be opened", "No file manager answered. Install one, or open the folder yourself."));
+    void showInFiles(snap.folder.dir).then(
+      (ok) => ok || message("Files could not be opened", "No file manager answered. Install one, or open the folder yourself."),
+    );
   };
   const saveCopy = (): void => {
-    void viewer.saveTurnedCopy().then((result) => ("saved" in result ? message("Copy saved", `“${result.saved}” is next to the original.`) : message("Not saved", result.error)));
+    void viewer
+      .saveTurnedCopy()
+      .then((result) => ("saved" in result ? message("Copy saved", `“${result.saved}” is next to the original.`) : message("Not saved", result.error)));
   };
   const copyPath = (): void => {
     if (!snap.path) return;
@@ -228,7 +234,8 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
         onClose={() => setSheet(null)}
         onPick={(handler) => {
           setSheet(null);
-          if (snap.path) void openWith(handler, snap.path).then((ok) => ok || message(`${handler.name} did not open it`, "The app could not be started with this file."));
+          if (snap.path)
+            void openWith(handler, snap.path).then((ok) => ok || message(`${handler.name} did not open it`, "The app could not be started with this file."));
         }}
       />
     ) : sheet?.kind === "trash" ? (

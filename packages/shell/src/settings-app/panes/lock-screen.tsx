@@ -11,7 +11,11 @@ export function LockScreenPane({ settings, lock }: { settings: SettingsStore; lo
   return (
     <Page title="Lock Screen">
       <Group>
-        <Row stack label="Turn display off after" detail="The screens go dark when you have been away this long. Moving the pointer or pressing a key wakes them.">
+        <Row
+          stack
+          label="Turn display off after"
+          detail="The screens go dark when you have been away this long. Moving the pointer or pressing a key wakes them."
+        >
           <Choices
             testID="lock-blank"
             options={BLANK_CHOICES}

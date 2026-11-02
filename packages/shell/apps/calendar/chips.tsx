@@ -9,7 +9,19 @@ import { clockShort, titleOf } from "./format.ts";
 import { MONTH_CHIP_HEIGHT } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
 
-export function EventChip({ occurrence, color, day, prefs, onOpen }: { occurrence: Occurrence; color: string; day: string; prefs: ClockPrefs; onOpen: (occurrence: Occurrence) => void }) {
+export function EventChip({
+  occurrence,
+  color,
+  day,
+  prefs,
+  onOpen,
+}: {
+  occurrence: Occurrence;
+  color: string;
+  day: string;
+  prefs: ClockPrefs;
+  onOpen: (occurrence: Occurrence) => void;
+}) {
   const colors = useColors();
   const { event } = occurrence;
   const title = titleOf(event);
@@ -18,7 +30,11 @@ export function EventChip({ occurrence, color, day, prefs, onOpen }: { occurrenc
   const testID = `chip:${occurrence.calendarId}:${event.uid}:${occurrence.start}`;
   if (bar) {
     return (
-      <View testID={testID} onPress={() => onOpen(occurrence)} style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0, paddingHorizontal: 5, borderRadius: 4, justifyContent: "center", backgroundColor: color }}>
+      <View
+        testID={testID}
+        onPress={() => onOpen(occurrence)}
+        style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0, paddingHorizontal: 5, borderRadius: 4, justifyContent: "center", backgroundColor: color }}
+      >
         <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inkOn(color) }}>
           {title}
         </Text>
@@ -29,7 +45,16 @@ export function EventChip({ occurrence, color, day, prefs, onOpen }: { occurrenc
     <View
       testID={testID}
       onPress={() => onOpen(occurrence)}
-      style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 3, borderRadius: 4, hoverBackgroundColor: tint(color, 0.18) }}
+      style={{
+        height: MONTH_CHIP_HEIGHT - 1,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 3,
+        borderRadius: 4,
+        hoverBackgroundColor: tint(color, 0.18),
+      }}
     >
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, flexShrink: 0 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -49,7 +74,18 @@ export function EventChip({ occurrence, color, day, prefs, onOpen }: { occurrenc
 export function MoreChip({ count, onPress, testID }: { count: number; onPress: () => void; testID: string }) {
   const colors = useColors();
   return (
-    <View testID={testID} onPress={onPress} style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0, paddingHorizontal: 5, justifyContent: "center", borderRadius: 4, hoverBackgroundColor: colors.button }}>
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{
+        height: MONTH_CHIP_HEIGHT - 1,
+        flexShrink: 0,
+        paddingHorizontal: 5,
+        justifyContent: "center",
+        borderRadius: 4,
+        hoverBackgroundColor: colors.button,
+      }}
+    >
       <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${count} more`}</Text>
     </View>
   );

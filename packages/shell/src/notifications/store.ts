@@ -28,14 +28,7 @@
 
 import { useSyncExternalStore } from "react";
 import { displayTime, HOVER_GRACE_MS, type Scheduler, timeoutScheduler } from "./timing.ts";
-import {
-  CloseReason,
-  type HistoryEntry,
-  type Notification,
-  type NotifyInput,
-  type StoreEvent,
-  type StoreSnapshot,
-} from "./types.ts";
+import { CloseReason, type HistoryEntry, type Notification, type NotifyInput, type StoreEvent, type StoreSnapshot } from "./types.ts";
 
 export const MAX_BANNERS = 3;
 /** The `sender` of a notification the shell posts itself (no app on the bus to ask): a click in the center always runs its action. */
@@ -273,11 +266,7 @@ export class NotificationStore {
 
   /** A banner that shows, or that DND hides: either way its time is running. */
   private isCounting(entry: Live, banners: ReadonlySet<number>): boolean {
-    return (
-      !entry.held &&
-      displayTime(entry.notification) !== null &&
-      (!this.shown(entry) || banners.has(entry.notification.id))
-    );
+    return !entry.held && displayTime(entry.notification) !== null && (!this.shown(entry) || banners.has(entry.notification.id));
   }
 
   private banners(): Notification[] {

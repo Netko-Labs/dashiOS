@@ -61,12 +61,24 @@ function Devices({ store, side, testID }: { store: SoundStore; side: "output" | 
           ))
         )}
       </Group>
-      {state.failed !== null && <Failure testID={`${side}-failure`}>{`Couldn’t make “${state.failed}” the ${side === "output" ? "output" : "input"}.`}</Failure>}
+      {state.failed !== null && (
+        <Failure testID={`${side}-failure`}>{`Couldn’t make “${state.failed}” the ${side === "output" ? "output" : "input"}.`}</Failure>
+      )}
     </>
   );
 }
 
-function VolumeRow({ side, volume, onLevel, onMute }: { side: "output" | "input"; volume: Volume | null; onLevel: (level: number) => void; onMute: (muted: boolean) => void }) {
+function VolumeRow({
+  side,
+  volume,
+  onLevel,
+  onMute,
+}: {
+  side: "output" | "input";
+  volume: Volume | null;
+  onLevel: (level: number) => void;
+  onMute: (muted: boolean) => void;
+}) {
   const colors = useColors();
   if (volume === null) return null;
   const shown = volume.muted ? 0 : Math.min(volume.level, 1);
@@ -103,7 +115,10 @@ function InputMeter({ meter }: { meter: LevelMeter }) {
   const width = 200;
   return (
     <View testID="input-meter" style={{ width, height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.track }}>
-      <View testID="input-meter-fill" style={{ width: Math.round(width * level), height: 8, borderRadius: 4, backgroundColor: level > 0.85 ? colors.critical : colors.selection }} />
+      <View
+        testID="input-meter-fill"
+        style={{ width: Math.round(width * level), height: 8, borderRadius: 4, backgroundColor: level > 0.85 ? colors.critical : colors.selection }}
+      />
     </View>
   );
 }
@@ -120,10 +135,20 @@ export function SoundPane({ services, settings }: { services: PaneServices; sett
     <Page title="Sound">
       <Caption above>Output</Caption>
       <Devices store={sound} side="output" testID="sound-outputs" />
-      <VolumeRow side="output" volume={volumes.output} onLevel={(level) => void levels.setLevel("output", level)} onMute={(muted) => void levels.setMuted("output", muted)} />
+      <VolumeRow
+        side="output"
+        volume={volumes.output}
+        onLevel={(level) => void levels.setLevel("output", level)}
+        onMute={(muted) => void levels.setMuted("output", muted)}
+      />
       <Caption above>Input</Caption>
       <Devices store={inputs} side="input" testID="sound-inputs" />
-      <VolumeRow side="input" volume={volumes.input} onLevel={(level) => void levels.setLevel("input", level)} onMute={(muted) => void levels.setMuted("input", muted)} />
+      <VolumeRow
+        side="input"
+        volume={volumes.input}
+        onLevel={(level) => void levels.setLevel("input", level)}
+        onMute={(muted) => void levels.setMuted("input", muted)}
+      />
       {volumes.input !== null && !volumes.input.muted && (
         <Group testID="input-level-group">
           <Row label="Input level" detail="Speak to see the meter move. Nothing is recorded.">

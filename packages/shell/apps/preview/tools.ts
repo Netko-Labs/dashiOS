@@ -28,11 +28,25 @@ export interface RunResult {
 /** The environment helpers get: where programs are and how text is spoken, nothing else of ours. */
 export function toolEnv(extra: Record<string, string> = {}, env: Record<string, string | undefined> = process.env): Record<string, string> {
   const pick = (name: string): Record<string, string> => (env[name] ? { [name]: env[name] as string } : {});
-  return { ...pick("PATH"), ...pick("HOME"), ...pick("XDG_CACHE_HOME"), ...pick("XDG_DATA_DIRS"), ...pick("XDG_DATA_HOME"), ...pick("XDG_RUNTIME_DIR"), ...pick("DBUS_SESSION_BUS_ADDRESS"), LANG: "C.UTF-8", ...extra };
+  return {
+    ...pick("PATH"),
+    ...pick("HOME"),
+    ...pick("XDG_CACHE_HOME"),
+    ...pick("XDG_DATA_DIRS"),
+    ...pick("XDG_DATA_HOME"),
+    ...pick("XDG_RUNTIME_DIR"),
+    ...pick("DBUS_SESSION_BUS_ADDRESS"),
+    LANG: "C.UTF-8",
+    ...extra,
+  };
 }
 
 /** The command line with its limits: `prlimit --as=… --cpu=… -- argv`. */
-export function limited(argv: readonly string[], options: Pick<RunOptions, "timeoutMs" | "memoryMiB">, prlimit: string | null = Bun.which("prlimit")): string[] {
+export function limited(
+  argv: readonly string[],
+  options: Pick<RunOptions, "timeoutMs" | "memoryMiB">,
+  prlimit: string | null = Bun.which("prlimit"),
+): string[] {
   if (!prlimit || options.memoryMiB === undefined) return [...argv];
   const cpu = Math.max(1, Math.ceil(options.timeoutMs / 1000));
   return [prlimit, `--as=${options.memoryMiB * 1024 * 1024}`, `--cpu=${cpu}`, "--", ...argv];
@@ -71,7 +85,11 @@ export async function runTool(argv: readonly string[], options: RunOptions): Pro
     child.kill("SIGKILL");
   }, options.timeoutMs);
   try {
-    const [stdout, stderr, code] = await Promise.all([readCapped(child.stdout, cap, () => child.kill("SIGKILL")), readCapped(child.stderr, 64 * 1024, () => {}), child.exited]);
+    const [stdout, stderr, code] = await Promise.all([
+      readCapped(child.stdout, cap, () => child.kill("SIGKILL")),
+      readCapped(child.stderr, 64 * 1024, () => {}),
+      child.exited,
+    ]);
     return { ok: code === 0 && !timedOut, code, stdout, stderr, timedOut };
   } finally {
     clearTimeout(timer);

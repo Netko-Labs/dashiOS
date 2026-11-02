@@ -96,7 +96,13 @@ export async function putBack(path: string, places: TrashPlaces, home: string): 
   const back = parentOf(info.originalPath);
   // Folders it was in are made again under the home folder; elsewhere the folder has to be there.
   if (isInside(home, back)) await mkdir(back, { recursive: true });
-  else if (!(await stat(back).then((info) => info.isDirectory(), () => false))) throw new OpError("The folder it came from is gone.");
+  else if (
+    !(await stat(back).then(
+      (info) => info.isDirectory(),
+      () => false,
+    ))
+  )
+    throw new OpError("The folder it came from is gone.");
   const restored = await moveInto(join(places.files, name), back, quietContext(), baseName(info.originalPath));
   if (restored === null) throw new OpError("It couldn’t be put back.");
   await rm(join(places.info, `${name}.trashinfo`), { force: true });

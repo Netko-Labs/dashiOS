@@ -15,18 +15,46 @@ export interface SidebarProps extends MiniMonthProps {
   onImport: () => void;
 }
 
-function CalendarRow({ calendar, visible, onToggle, onMenu }: { calendar: Calendar; visible: boolean; onToggle: () => void; onMenu: (x: number, y: number) => void }) {
+function CalendarRow({
+  calendar,
+  visible,
+  onToggle,
+  onMenu,
+}: {
+  calendar: Calendar;
+  visible: boolean;
+  onToggle: () => void;
+  onMenu: (x: number, y: number) => void;
+}) {
   const colors = useColors();
   return (
     <View
       testID={`calendar-row:${calendar.id}`}
       onPress={onToggle}
       onContextMenu={(event) => onMenu(event.x, event.y)}
-      style={{ height: 28, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, borderRadius: 7, hoverBackgroundColor: colors.button }}
+      style={{
+        height: 28,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 8,
+        borderRadius: 7,
+        hoverBackgroundColor: colors.button,
+      }}
     >
       <View
         testID={`calendar-check:${calendar.id}`}
-        style={{ width: 14, height: 14, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: visible ? calendar.color : "#00000000", borderWidth: 1.5, borderColor: calendar.color }}
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: visible ? calendar.color : "#00000000",
+          borderWidth: 1.5,
+          borderColor: calendar.color,
+        }}
       >
         {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
       </View>
@@ -49,7 +77,20 @@ function CalendarRow({ calendar, visible, onToggle, onMenu }: { calendar: Calend
 export function Sidebar({ calendars, hidden, onToggle, onMenu, onNewCalendar, onImport, ...month }: SidebarProps) {
   const colors = useColors();
   const action = (testID: string, glyph: string, label: string, onPress: () => void) => (
-    <View testID={testID} onPress={onPress} style={{ height: 28, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 8, borderRadius: 7, hoverBackgroundColor: colors.button }}>
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{
+        height: 28,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 9,
+        paddingHorizontal: 8,
+        borderRadius: 7,
+        hoverBackgroundColor: colors.button,
+      }}
+    >
       <Svg markup={glyph} size={14} color={colors.textMuted} />
       <Text style={{ fontSize: 13, color: colors.textMuted }}>{label}</Text>
     </View>
@@ -59,7 +100,13 @@ export function Sidebar({ calendars, hidden, onToggle, onMenu, onNewCalendar, on
       <MiniMonth {...month} />
       <SidebarSection title="Calendars">
         {calendars.map((calendar) => (
-          <CalendarRow key={calendar.id} calendar={calendar} visible={!hidden.includes(calendar.id)} onToggle={() => onToggle(calendar.id)} onMenu={(x, y) => onMenu(calendar, x, y)} />
+          <CalendarRow
+            key={calendar.id}
+            calendar={calendar}
+            visible={!hidden.includes(calendar.id)}
+            onToggle={() => onToggle(calendar.id)}
+            onMenu={(x, y) => onMenu(calendar, x, y)}
+          />
         ))}
       </SidebarSection>
       <View style={{ flex: 1 }} />

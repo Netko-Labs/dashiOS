@@ -39,12 +39,33 @@ const VIEW_OPTIONS = [
 
 type Menu = { x: number; y: number; items: MenuItem[] };
 /** The event sheet's draft, and which event it edits (null for a new one). */
-type Editing = { draft: Draft; target: { calendarId: string; uid: string; repeating: boolean; custom: boolean; /** The time that was clicked, for deleting just that one. */ occurrenceStart: string } | null };
+type Editing = {
+  draft: Draft;
+  target: {
+    calendarId: string;
+    uid: string;
+    repeating: boolean;
+    custom: boolean /** The time that was clicked, for deleting just that one. */;
+    occurrenceStart: string;
+  } | null;
+};
 
 function TodayButton({ onPress }: { onPress: () => void }) {
   const colors = useColors();
   return (
-    <View testID="today" onPress={onPress} style={{ height: 28, paddingHorizontal: 12, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: colors.button, hoverBackgroundColor: colors.separator }}>
+    <View
+      testID="today"
+      onPress={onPress}
+      style={{
+        height: 28,
+        paddingHorizontal: 12,
+        borderRadius: 7,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.button,
+        hoverBackgroundColor: colors.separator,
+      }}
+    >
       <Text style={{ fontSize: 12, color: colors.text }}>Today</Text>
     </View>
   );
@@ -74,7 +95,8 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   // New events go where the last one did, else to Home, else to the first calendar that shows.
   const [lastUsed, setLastUsed] = useState<string | null>(null);
   const visible = calendars.filter((calendar) => !hidden.includes(calendar.id));
-  const defaultCalendar = (visible.find((calendar) => calendar.id === lastUsed) ?? visible.find((calendar) => calendar.name === "Home") ?? visible[0] ?? calendars[0])?.id ?? "";
+  const defaultCalendar =
+    (visible.find((calendar) => calendar.id === lastUsed) ?? visible.find((calendar) => calendar.name === "Home") ?? visible[0] ?? calendars[0])?.id ?? "";
   const modal = sheet !== null || editing !== null;
 
   const takeKeys = (): void => setKeys((n) => n + 1);
@@ -96,7 +118,16 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const openEvent = (occurrence: Occurrence): void => {
     const event = occurrence.event;
     model.dismissMessages();
-    setEditing({ draft: draftOf(event, occurrence.calendarId), target: { calendarId: occurrence.calendarId, uid: event.uid, repeating: event.repeat !== null || event.rawRule !== null, custom: event.rawRule !== null, occurrenceStart: occurrence.start } });
+    setEditing({
+      draft: draftOf(event, occurrence.calendarId),
+      target: {
+        calendarId: occurrence.calendarId,
+        uid: event.uid,
+        repeating: event.repeat !== null || event.rawRule !== null,
+        custom: event.rawRule !== null,
+        occurrenceStart: occurrence.start,
+      },
+    });
   };
   const saveEvent = (draft: Draft): void => {
     const target = editing?.target ?? null;
@@ -113,7 +144,14 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     const event = model.calendar(target.calendarId)?.events.find((each) => each.uid === target.uid);
     if (!event) return closeOverlay();
     setEditing(null);
-    setSheet({ kind: "delete-event", calendarId: target.calendarId, uid: target.uid, title: event.title, start: target.occurrenceStart, repeating: target.repeating });
+    setSheet({
+      kind: "delete-event",
+      calendarId: target.calendarId,
+      uid: target.uid,
+      title: event.title,
+      start: target.occurrenceStart,
+      repeating: target.repeating,
+    });
   };
 
   // ---- Calendars -----------------------------------------------------------------------
@@ -124,7 +162,10 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       y,
       items: [
         { label: "Edit Calendar…", onPress: () => setSheet({ kind: "edit-calendar", id: calendar.id, name: calendar.name, color: calendar.color }) },
-        { label: "Delete Calendar…", onPress: () => setSheet({ kind: "delete-calendar", id: calendar.id, name: calendar.name, events: calendar.events.length }) },
+        {
+          label: "Delete Calendar…",
+          onPress: () => setSheet({ kind: "delete-calendar", id: calendar.id, name: calendar.name, events: calendar.events.length }),
+        },
       ],
     });
 
@@ -185,7 +226,20 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const message = state.error ?? state.notice ?? (state.problems.length > 0 ? state.problems[0] : null);
   const footer =
     message === null ? undefined : (
-      <View testID="footer" style={{ minHeight: 26, flexShrink: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, paddingHorizontal: 16, borderTopWidth: 1, borderColor: colors.separator }}>
+      <View
+        testID="footer"
+        style={{
+          minHeight: 26,
+          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          paddingHorizontal: 16,
+          borderTopWidth: 1,
+          borderColor: colors.separator,
+        }}
+      >
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>
             {message}
@@ -212,7 +266,9 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     <CalendarSheet
       title="New Calendar"
       initialName=""
-      initialColor={calendars.length === 0 ? "#0a84ff" : (["#0a84ff", "#34c759", "#ff9500", "#af52de", "#ff3b30", "#a2845e", "#ffcc00"][calendars.length % 7] as string)}
+      initialColor={
+        calendars.length === 0 ? "#0a84ff" : (["#0a84ff", "#34c759", "#ff9500", "#af52de", "#ff3b30", "#a2845e", "#ffcc00"][calendars.length % 7] as string)
+      }
       confirmLabel="Create"
       onCancel={closeOverlay}
       onSubmit={(name, color) => {

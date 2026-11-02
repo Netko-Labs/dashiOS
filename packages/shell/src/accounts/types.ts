@@ -36,7 +36,13 @@ export interface AccountsBackend {
 
 export type PasswordFailure = "wrong-current" | "rejected" | "failed" | "timeout";
 
-export type PasswordResult = { ok: true } | { ok: false; reason: PasswordFailure; /** A line from the system's password rules ("The password is too short."), never the password. */ message: string | null };
+export type PasswordResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: PasswordFailure /** A line from the system's password rules ("The password is too short."), never the password. */;
+      message: string | null;
+    };
 
 export interface PasswordChanger {
   /** `current` is empty for an account that has no password yet. Never rejects. */

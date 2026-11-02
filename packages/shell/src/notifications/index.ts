@@ -44,7 +44,9 @@ export function startNotifications(store = new NotificationStore(), options: Not
       })
       .catch((error) => console.error("dashi-shell: notifications are off:", error));
   } else {
-    console.error("dashi-shell: not serving org.freedesktop.Notifications (this is a development run; DASHI_NOTIFICATIONS=1 serves it on the bus you point DBUS_SESSION_BUS_ADDRESS at)");
+    console.error(
+      "dashi-shell: not serving org.freedesktop.Notifications (this is a development run; DASHI_NOTIFICATIONS=1 serves it on the bus you point DBUS_SESSION_BUS_ADDRESS at)",
+    );
   }
   return {
     store,

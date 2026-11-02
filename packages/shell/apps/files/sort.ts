@@ -21,9 +21,24 @@ export function fileColumns(mode: ColumnMode | boolean): FileColumn[] {
   return [
     { key: "name", title: "Name", text: (item) => item.name },
     kind === "trash"
-      ? { key: "deleted", title: "Date Deleted", width: 150, text: (item) => formatDate(item.deleted ?? item.mtime), sortValue: (item) => item.deleted ?? item.mtime, descendingFirst: true }
+      ? {
+          key: "deleted",
+          title: "Date Deleted",
+          width: 150,
+          text: (item) => formatDate(item.deleted ?? item.mtime),
+          sortValue: (item) => item.deleted ?? item.mtime,
+          descendingFirst: true,
+        }
       : { key: "modified", title: "Date Modified", width: 150, text: (item) => formatDate(item.mtime), sortValue: (item) => item.mtime, descendingFirst: true },
-    { key: "size", title: "Size", width: 88, align: "right", text: (item) => (item.kind === "folder" || item.broken ? "—" : formatSize(item.size)), sortValue: (item) => (item.kind === "folder" || item.broken ? -1 : item.size), descendingFirst: true },
+    {
+      key: "size",
+      title: "Size",
+      width: 88,
+      align: "right",
+      text: (item) => (item.kind === "folder" || item.broken ? "—" : formatSize(item.size)),
+      sortValue: (item) => (item.kind === "folder" || item.broken ? -1 : item.size),
+      descendingFirst: true,
+    },
     inLocations
       ? { key: "where", title: "Where", width: 190, text: (item) => item.where ?? "" }
       : { key: "kind", title: "Kind", width: 180, text: (item) => kindText(item) },
@@ -47,7 +62,13 @@ export function sortItems(items: readonly FileItem[], columns: readonly FileColu
 export function findByPrefix(items: readonly FileItem[], prefix: string, from: string | null): FileItem | null {
   const lower = prefix.toLowerCase();
   if (!lower) return null;
-  const start = from === null ? 0 : Math.max(0, items.findIndex((item) => item.path === from));
+  const start =
+    from === null
+      ? 0
+      : Math.max(
+          0,
+          items.findIndex((item) => item.path === from),
+        );
   const ordered = [...items.slice(start), ...items.slice(0, start)];
   // A repeated single letter cycles through the matches; a longer prefix stays on the current match if it still fits.
   const current = from === null ? undefined : ordered[0];

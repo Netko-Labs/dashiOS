@@ -28,36 +28,56 @@ export function passwordProblem(current: string, next: string, again: string, ne
   return null;
 }
 
-function Field({ label, testID, placeholder, value, onChange, onSubmit, onCancel, autoFocus, invalid }: { label: string; testID: string; placeholder: string; value: string; onChange: (text: string) => void; onSubmit: () => void; onCancel: () => void; autoFocus?: boolean; invalid?: boolean }) {
+function Field({
+  label,
+  testID,
+  placeholder,
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+  autoFocus,
+  invalid,
+}: {
+  label: string;
+  testID: string;
+  placeholder: string;
+  value: string;
+  onChange: (text: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  autoFocus?: boolean;
+  invalid?: boolean;
+}) {
   const colors = useColors();
   return (
     <View style={{ alignSelf: "stretch", flexDirection: "column", gap: 3 }}>
       <Text style={{ fontSize: 11, color: colors.textMuted }}>{label}</Text>
-    <View
-      style={{
-        alignSelf: "stretch",
-        height: 30,
-        justifyContent: "center",
-        paddingLeft: 10,
-        paddingRight: 10,
-        borderRadius: 7,
-        backgroundColor: colors.tile,
-        borderWidth: 1,
-        borderColor: invalid ? colors.critical : colors.separator,
-      }}
-    >
-      <TextInput
-        testID={testID}
-        value={value}
-        {...(autoFocus ? { autoFocus: true } : {})}
-        secureTextEntry
-        placeholder={placeholder}
-        onChangeText={onChange}
-        onSubmitEditing={onSubmit}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-        style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-      />
-    </View>
+      <View
+        style={{
+          alignSelf: "stretch",
+          height: 30,
+          justifyContent: "center",
+          paddingLeft: 10,
+          paddingRight: 10,
+          borderRadius: 7,
+          backgroundColor: colors.tile,
+          borderWidth: 1,
+          borderColor: invalid ? colors.critical : colors.separator,
+        }}
+      >
+        <TextInput
+          testID={testID}
+          value={value}
+          {...(autoFocus ? { autoFocus: true } : {})}
+          secureTextEntry
+          placeholder={placeholder}
+          onChangeText={onChange}
+          onSubmitEditing={onSubmit}
+          onKeyPress={(key) => key === "Escape" && onCancel()}
+          style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
+        />
+      </View>
     </View>
   );
 }
@@ -88,12 +108,36 @@ export function PasswordChangeSheet({ changer, needsCurrent, onClose }: { change
   };
 
   const refused = refusal ? `${FAILURE[refusal.reason]}${refusal.message ? ` ${refusal.message}.` : ""}` : null;
-  const hint = working ? "Changing the password…" : (refused ?? (problem !== null && (next !== "" || current !== "") ? problem : "Choose a password you will remember."));
+  const hint = working
+    ? "Changing the password…"
+    : (refused ?? (problem !== null && (next !== "" || current !== "") ? problem : "Choose a password you will remember."));
   return (
     <Panel>
       <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>Change Password</Text>
-      {needsCurrent && <Field label="Current password" testID="pw-current" placeholder="" value={current} onChange={edit(setCurrent)} onSubmit={submit} onCancel={onClose} autoFocus invalid={refusal?.reason === "wrong-current"} />}
-      <Field label="New password" testID="pw-new" placeholder="" value={next} onChange={edit(setNext)} onSubmit={submit} onCancel={onClose} {...(needsCurrent ? {} : { autoFocus: true })} invalid={refusal?.reason === "rejected"} />
+      {needsCurrent && (
+        <Field
+          label="Current password"
+          testID="pw-current"
+          placeholder=""
+          value={current}
+          onChange={edit(setCurrent)}
+          onSubmit={submit}
+          onCancel={onClose}
+          autoFocus
+          invalid={refusal?.reason === "wrong-current"}
+        />
+      )}
+      <Field
+        label="New password"
+        testID="pw-new"
+        placeholder=""
+        value={next}
+        onChange={edit(setNext)}
+        onSubmit={submit}
+        onCancel={onClose}
+        {...(needsCurrent ? {} : { autoFocus: true })}
+        invalid={refusal?.reason === "rejected"}
+      />
       <Field label="Verify new password" testID="pw-again" placeholder="" value={again} onChange={edit(setAgain)} onSubmit={submit} onCancel={onClose} />
       <View testID="pw-hint" style={{ alignSelf: "stretch" }}>
         <Text style={{ fontSize: 12, color: refusal ? colors.critical : colors.textMuted }}>{hint}</Text>

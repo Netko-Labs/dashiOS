@@ -21,7 +21,9 @@ import { Failed, Loading, StaleNote } from "./states.tsx";
 function Fact({ label, value }: { label: string; value: string }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12, paddingVertical: 6 }}>
+    <View
+      style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12, paddingVertical: 6 }}
+    >
       <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
@@ -77,7 +79,8 @@ function Buttons({ id, name }: { id: string; name: string }) {
 function Page({ app, stale }: { app: AppDetails; stale: boolean }) {
   const colors = useColors();
   const state = useAppState(app.id);
-  const installedNote = state.kind === "open" || state.kind === "update" ? (state.installed.installation === "system" ? "Installed for everyone" : "Installed for you") : null;
+  const installedNote =
+    state.kind === "open" || state.kind === "update" ? (state.installed.installation === "system" ? "Installed for everyone" : "Installed for you") : null;
   const sections: ReactNode[] = [];
   if (app.screenshots.length > 0) sections.push(<Gallery key="gallery" shots={app.screenshots} />);
   if (app.description.length > 0) {

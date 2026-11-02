@@ -23,7 +23,18 @@ const AVATAR = 72;
 function Avatar({ account }: { account: Account }) {
   const colors = useColors();
   return (
-    <View testID="account-avatar" style={{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: colors.selection }}>
+    <View
+      testID="account-avatar"
+      style={{
+        width: AVATAR,
+        height: AVATAR,
+        borderRadius: AVATAR / 2,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.selection,
+      }}
+    >
       {account.iconFile !== null ? (
         <Image source={account.iconFile} resizeMode="cover" style={{ width: AVATAR, height: AVATAR }} />
       ) : (
@@ -115,14 +126,22 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
           <Value testID="account-login">{account.userName}</Value>
         </Row>
         <Row label="Picture" detail="A PNG or JPEG under 1 MB.">
-          <Button testID="account-picture" label={state.busy === "picture" ? "Changing…" : "Change Picture…"} disabled={state.busy !== null} onPress={changePicture} />
+          <Button
+            testID="account-picture"
+            label={state.busy === "picture" ? "Changing…" : "Change Picture…"}
+            disabled={state.busy !== null}
+            onPress={changePicture}
+          />
         </Row>
       </Group>
       <Group testID="account-security">
         <Row label="Password" detail="Asked for on a sheet of its own, which agents can't see or type into.">
           <Button testID="account-password" label="Change Password…" onPress={() => services.changePassword(account.hasPassword)} />
         </Row>
-        <Row label="Log in automatically" detail={state.busy === "login" ? "Waiting for permission…" : "Skips the password at the login screen. Needs an administrator's password to change."}>
+        <Row
+          label="Log in automatically"
+          detail={state.busy === "login" ? "Waiting for permission…" : "Skips the password at the login screen. Needs an administrator's password to change."}
+        >
           <Switch testID="account-autologin" on={account.automaticLogin} onChange={(on) => state.busy === null && void store.setAutomaticLogin(on)} />
         </Row>
       </Group>

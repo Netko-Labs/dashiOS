@@ -44,15 +44,7 @@ export const defaultSources: IconSources = {
   },
 };
 
-export function notificationIcon(
-  notification: Pick<Notification, "imagePath" | "appIcon" | "desktopEntry">,
-  sources: IconSources = defaultSources,
-): string {
+export function notificationIcon(notification: Pick<Notification, "imagePath" | "appIcon" | "desktopEntry">, sources: IconSources = defaultSources): string {
   const { imagePath, appIcon, desktopEntry } = notification;
-  return (
-    (imagePath && sources.resolve(imagePath)) ||
-    (appIcon && sources.resolve(appIcon)) ||
-    (desktopEntry && sources.entryIcon(desktopEntry)) ||
-    generic
-  );
+  return (imagePath && sources.resolve(imagePath)) || (appIcon && sources.resolve(appIcon)) || (desktopEntry && sources.entryIcon(desktopEntry)) || generic;
 }

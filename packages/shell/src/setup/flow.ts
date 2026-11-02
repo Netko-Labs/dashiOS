@@ -17,9 +17,17 @@ export interface PageInfo {
 }
 
 export const PAGE_INFO: Readonly<Record<PageId, PageInfo>> = {
-  welcome: { id: "welcome", title: "Welcome to Dashi", subtitle: "A few quick choices to make this computer yours. You can skip any of them and change them later in System Settings." },
+  welcome: {
+    id: "welcome",
+    title: "Welcome to Dashi",
+    subtitle: "A few quick choices to make this computer yours. You can skip any of them and change them later in System Settings.",
+  },
   language: { id: "language", title: "Language & Region", subtitle: "Pick a language for your apps, and the region whose dates and numbers you are used to." },
-  keyboard: { id: "keyboard", title: "Keyboard", subtitle: "Try your keyboard in the box, and choose a layout if it is not the right one. A new layout applies in a moment." },
+  keyboard: {
+    id: "keyboard",
+    title: "Keyboard",
+    subtitle: "Try your keyboard in the box, and choose a layout if it is not the right one. A new layout applies in a moment.",
+  },
   wifi: { id: "wifi", title: "Wi-Fi", subtitle: "Join a network to get online. You can do this later from the menu bar." },
   timezone: { id: "timezone", title: "Time Zone", subtitle: "Pick the city you are in, so your clock reads right." },
   appearance: { id: "appearance", title: "Appearance", subtitle: "Light, dark, or following the time of day, and how round your windows are." },
@@ -99,7 +107,9 @@ export class Flow {
 
   back(): void {
     const at = PAGES.indexOf(this.current);
-    const page = PAGES.slice(0, at).reverse().find((candidate) => applies(candidate, this.machine));
+    const page = PAGES.slice(0, at)
+      .reverse()
+      .find((candidate) => applies(candidate, this.machine));
     if (page) this.go(page);
   }
 

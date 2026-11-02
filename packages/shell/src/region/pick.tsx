@@ -9,11 +9,32 @@ import type { ReactNode } from "react";
 import { SEARCH, useColors } from "@dashi/ui";
 import { useSurface } from "../settings-app/ui.tsx";
 
-export function SearchField({ value, onChange, placeholder, testID }: { value: string; onChange: (text: string) => void; placeholder: string; testID: string }) {
+export function SearchField({
+  value,
+  onChange,
+  placeholder,
+  testID,
+}: {
+  value: string;
+  onChange: (text: string) => void;
+  placeholder: string;
+  testID: string;
+}) {
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
+    <View
+      style={{
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        height: 28,
+        paddingHorizontal: 8,
+        borderRadius: 8,
+        backgroundColor: surface.field,
+      }}
+    >
       <Svg markup={SEARCH} size={13} color={colors.textMuted} />
       <TextInput
         testID={testID}

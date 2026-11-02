@@ -98,13 +98,7 @@ async function activate(
   return { active, created: typeof profile === "string" ? profile : null };
 }
 
-export async function joinNetwork(
-  nm: NmClient,
-  device: string,
-  network: WifiNetwork,
-  password: string | null,
-  timeoutMs: number,
-): Promise<JoinResult> {
+export async function joinNetwork(nm: NmClient, device: string, network: WifiNetwork, password: string | null, timeoutMs: number): Promise<JoinResult> {
   if (!network.profile && !canJoinNew(network.security)) return { ok: false, reason: "unsupported" };
   if (!network.profile && needsPassword(network.security) && password === null) return { ok: false, reason: "wrong-password" };
 

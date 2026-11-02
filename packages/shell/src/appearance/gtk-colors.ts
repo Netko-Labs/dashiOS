@@ -30,10 +30,7 @@ export const DEFAULT_STYLE: GtkStyle = { dark: false, radius: CORNER_RADIUS[DEFA
 /** The libadwaita named colors Dashi sets; the custom property is the same name with dashes. */
 type Surface = "window" | "view" | "headerbar" | "sidebar" | "secondary_sidebar" | "card" | "dialog" | "popover" | "thumbnail";
 type Status = "accent" | "destructive" | "warning" | "success" | "error";
-type ColorName =
-  | `${Status}_${"bg" | "fg"}_color`
-  | `${Surface}_${"bg" | "fg"}_color`
-  | `${"headerbar" | "sidebar" | "secondary_sidebar"}_backdrop_color`;
+type ColorName = `${Status}_${"bg" | "fg"}_color` | `${Surface}_${"bg" | "fg"}_color` | `${"headerbar" | "sidebar" | "secondary_sidebar"}_backdrop_color`;
 export type NamedColors = Readonly<Record<ColorName, string>>;
 type StatusColors = Pick<NamedColors, `${Status}_${"bg" | "fg"}_color`>;
 

@@ -27,7 +27,9 @@ export function powerOffReason(
 ): string | null {
   if (env.DASHI_POWER === "0") return "DASHI_POWER=0";
   if (env.DASHI_POWER === "1") return null;
-  return isRealSession(compositorAbove(read, pid)) ? null : "not a Dashi session of its own: nested, run by hand, or dashi-comp unreadable (set DASHI_POWER=1 to override)";
+  return isRealSession(compositorAbove(read, pid))
+    ? null
+    : "not a Dashi session of its own: nested, run by hand, or dashi-comp unreadable (set DASHI_POWER=1 to override)";
 }
 
 /**

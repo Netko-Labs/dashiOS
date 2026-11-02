@@ -89,7 +89,8 @@ export class FakeWifi implements WifiBackend {
     if (!this.on) return { ok: false, reason: "failed" };
     if (!network.known && password !== null && password.includes("wrong")) return { ok: false, reason: "wrong-password" };
     this.active = network.apId;
-    if (!network.known) this.known.set(network.key, { id: `/fake/profile/${this.known.size}`, ssid: encode(network.ssid), lastUsed: Math.floor(Date.now() / 1000) });
+    if (!network.known)
+      this.known.set(network.key, { id: `/fake/profile/${this.known.size}`, ssid: encode(network.ssid), lastUsed: Math.floor(Date.now() / 1000) });
     this.changed();
     return { ok: true };
   }

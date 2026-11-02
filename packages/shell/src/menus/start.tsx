@@ -200,8 +200,7 @@ export function startMenus(options: MenusOptions): Menus {
       const entry = entryFor(appId);
       return entry ? launchEntry(entry) !== null : false;
     },
-    showAbout: (target) =>
-      dialogs.about(aboutInfo(target, target.kind === "app" ? entryFor(target.appId)?.icon : undefined)),
+    showAbout: (target) => dialogs.about(aboutInfo(target, target.kind === "app" ? entryFor(target.appId)?.icon : undefined)),
     confirmPower,
     suspend: () => void setTimeout(options.sleep, SETTLE_MS),
     openHelp: () => {

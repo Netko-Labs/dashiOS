@@ -112,7 +112,11 @@ function Tile({
         <>
           {circle}
           {/* A press on the circle toggles; one anywhere else on the tile opens the page. */}
-          <View testID={`${testID}-open`} onPress={onOpen} style={{ flex: 1, height: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 8, minWidth: 0 }}>
+          <View
+            testID={`${testID}-open`}
+            onPress={onOpen}
+            style={{ flex: 1, height: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 8, minWidth: 0 }}
+          >
             {labels}
             <Svg markup={CHEVRON_RIGHT} size={12} color={colors.textMuted} />
           </View>
@@ -154,7 +158,19 @@ export function pairs<T>(items: readonly T[]): T[][] {
   return rows;
 }
 
-export function ControlCenterPanel({ flags, devices, system, wifi, sound, bluetooth: bluetoothStore, page, onPage, onJoin, onLock, onClose }: ControlCenterProps) {
+export function ControlCenterPanel({
+  flags,
+  devices,
+  system,
+  wifi,
+  sound,
+  bluetooth: bluetoothStore,
+  page,
+  onPage,
+  onJoin,
+  onLock,
+  onClose,
+}: ControlCenterProps) {
   const colors = useColors();
   const { dnd, dark, night } = useFlags(flags);
   const { wifi: radio, bluetooth, brightness, volume } = useDevices(devices);
@@ -224,13 +240,7 @@ export function ControlCenterPanel({ flags, devices, system, wifi, sound, blueto
         {page === "wifi" ? (
           <WifiPage wifi={wifi} radio={radio} onRadio={(on) => void devices.setWifi(on)} onChoose={onJoin} onBack={() => onPage("main")} />
         ) : page === "sound" ? (
-          <SoundPage
-            sound={sound}
-            volume={volume}
-            onVolume={(level) => devices.setVolumeLevel(level)}
-            sliderWidth={SLIDER}
-            onBack={() => onPage("main")}
-          />
+          <SoundPage sound={sound} volume={volume} onVolume={(level) => devices.setVolumeLevel(level)} sliderWidth={SLIDER} onBack={() => onPage("main")} />
         ) : page === "bluetooth" ? (
           <BluetoothPage bluetooth={bluetoothStore} radio={bluetooth} onRadio={(on) => void devices.setBluetooth(on)} onBack={() => onPage("main")} />
         ) : (

@@ -17,7 +17,11 @@ describe("framing", () => {
 
   test("responses parse; anything else is null", () => {
     expect(parseResponse('{"type":"success"}')).toEqual({ type: "success" });
-    expect(parseResponse('{"type":"error","error_type":"auth_error","description":"nope"}')).toEqual({ type: "error", errorType: "auth_error", description: "nope" });
+    expect(parseResponse('{"type":"error","error_type":"auth_error","description":"nope"}')).toEqual({
+      type: "error",
+      errorType: "auth_error",
+      description: "nope",
+    });
     expect(parseResponse('{"type":"auth_message","auth_message_type":"secret","auth_message":"Password: "}')).toEqual({
       type: "auth_message",
       messageType: "secret",
@@ -52,7 +56,11 @@ describe("Login", () => {
 
   test("password wrong: a fresh session for the same person, marked wrong", async () => {
     const greetd = fakeGreetd((r) =>
-      r.type === "post_auth_message_response" ? { type: "error", errorType: "auth_error", description: "auth" } : r.type === "cancel_session" ? { type: "success" } : PASSWORD,
+      r.type === "post_auth_message_response"
+        ? { type: "error", errorType: "auth_error", description: "auth" }
+        : r.type === "cancel_session"
+          ? { type: "success" }
+          : PASSWORD,
     );
     const login = new Login(greetd, () => {});
     await login.begin("dashi", SESSION);

@@ -53,9 +53,7 @@ export class NmClient {
   /** The Wi-Fi device to scan and join with: the first that is managed, else the first. */
   async wifiDevice(): Promise<string | null> {
     const devices = await this.paths(NM_PATH, IFACE.manager, "GetDevices");
-    const found = await Promise.allSettled(
-      devices.map(async (path) => ({ path, properties: await this.properties(path, IFACE.device) })),
-    );
+    const found = await Promise.allSettled(devices.map(async (path) => ({ path, properties: await this.properties(path, IFACE.device) })));
     const wifi = found.flatMap((result) =>
       result.status === "fulfilled" && result.value.properties.get("DeviceType") === DEVICE_TYPE_WIFI ? [result.value] : [],
     );

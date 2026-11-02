@@ -131,8 +131,7 @@ export const windowTools: readonly ToolDef[] = [
   {
     name: "lock_screen",
     title: "Lock the screen",
-    description:
-      "Lock the screen, as the person would. Every tool is refused until they unlock it with their password; agents cannot unlock it.",
+    description: "Lock the screen, as the person would. Every tool is refused until they unlock it with their password; agents cannot unlock it.",
     scope: "act",
     readOnly: false,
     destructive: false,

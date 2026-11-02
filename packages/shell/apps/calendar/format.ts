@@ -67,7 +67,8 @@ export function timeSpan(event: Pick<CalEvent, "allDay">, start: Local, end: Loc
     const last = addDays(dayPart(end), -1);
     return last > dayPart(start) ? `${shortDay(dayPart(start), prefs)} – ${shortDay(last, prefs)}` : "all day";
   }
-  if (dayPart(end) !== dayPart(start)) return `${shortDay(dayPart(start), prefs)}, ${clock(start, prefs)} – ${shortDay(dayPart(end), prefs)}, ${clock(end, prefs)}`;
+  if (dayPart(end) !== dayPart(start))
+    return `${shortDay(dayPart(start), prefs)}, ${clock(start, prefs)} – ${shortDay(dayPart(end), prefs)}, ${clock(end, prefs)}`;
   return end === start ? clock(start, prefs) : `${clock(start, prefs)} – ${clock(end, prefs)}`;
 }
 

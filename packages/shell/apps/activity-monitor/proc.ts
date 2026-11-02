@@ -30,7 +30,10 @@ export function parseStat(text: string): ProcStat | null {
   const close = text.lastIndexOf(")");
   if (open < 0 || close < open) return null;
   const pid = Number(text.slice(0, open).trim());
-  const rest = text.slice(close + 1).trim().split(/\s+/);
+  const rest = text
+    .slice(close + 1)
+    .trim()
+    .split(/\s+/);
   // rest[0] is field 3 (state); field n is rest[n - 3].
   const field = (n: number): number => Number(rest[n - 3]);
   const stat: ProcStat = {
@@ -207,7 +210,11 @@ export function parseNetDev(text: string): NetCounters {
     if (colon < 0) continue;
     const name = line.slice(0, colon).trim();
     if (name === "lo" || name.includes("|")) continue;
-    const f = line.slice(colon + 1).trim().split(/\s+/).map(Number);
+    const f = line
+      .slice(colon + 1)
+      .trim()
+      .split(/\s+/)
+      .map(Number);
     if (f.length < 16) continue;
     sum.bytesIn += f[0] || 0;
     sum.packetsIn += f[1] || 0;

@@ -44,8 +44,7 @@ export interface CallContext {
   member: string;
 }
 
-const escapeXml = (text: string): string =>
-  text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+const escapeXml = (text: string): string => text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 
 const args = (signature: string | undefined, direction: "in" | "out" | null): string =>
   splitSignature(signature ?? "")

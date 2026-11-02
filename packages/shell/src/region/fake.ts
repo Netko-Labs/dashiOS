@@ -23,7 +23,28 @@ export interface FakeRegionOptions {
   unavailable?: boolean;
 }
 
-const SOME_LOCALES = ["en_US.UTF-8", "en_GB.UTF-8", "en_CA.UTF-8", "en_AU.UTF-8", "de_DE.UTF-8", "de_CH.UTF-8", "fr_FR.UTF-8", "fr_CA.UTF-8", "es_ES.UTF-8", "es_MX.UTF-8", "it_IT.UTF-8", "pt_BR.UTF-8", "pt_PT.UTF-8", "nl_NL.UTF-8", "sv_SE.UTF-8", "ja_JP.UTF-8", "ko_KR.UTF-8", "zh_CN.UTF-8", "ru_RU.UTF-8", "pl_PL.UTF-8"];
+const SOME_LOCALES = [
+  "en_US.UTF-8",
+  "en_GB.UTF-8",
+  "en_CA.UTF-8",
+  "en_AU.UTF-8",
+  "de_DE.UTF-8",
+  "de_CH.UTF-8",
+  "fr_FR.UTF-8",
+  "fr_CA.UTF-8",
+  "es_ES.UTF-8",
+  "es_MX.UTF-8",
+  "it_IT.UTF-8",
+  "pt_BR.UTF-8",
+  "pt_PT.UTF-8",
+  "nl_NL.UTF-8",
+  "sv_SE.UTF-8",
+  "ja_JP.UTF-8",
+  "ko_KR.UTF-8",
+  "zh_CN.UTF-8",
+  "ru_RU.UTF-8",
+  "pl_PL.UTF-8",
+];
 
 /** What `locale -a` lists on this machine, so a nested run's pickers look as long as the real ones; a short list when it cannot run. */
 function machineLocales(): string[] {

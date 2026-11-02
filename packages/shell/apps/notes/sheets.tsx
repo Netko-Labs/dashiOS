@@ -11,7 +11,21 @@ export type SheetState =
   | { kind: "purge"; title: string }
   | { kind: "empty-trash"; count: number };
 
-function NameSheet({ title, message, initial, confirmLabel, onSubmit, onCancel }: { title: string; message: string; initial: string; confirmLabel: string; onSubmit: (name: string) => void; onCancel: () => void }) {
+function NameSheet({
+  title,
+  message,
+  initial,
+  confirmLabel,
+  onSubmit,
+  onCancel,
+}: {
+  title: string;
+  message: string;
+  initial: string;
+  confirmLabel: string;
+  onSubmit: (name: string) => void;
+  onCancel: () => void;
+}) {
   const colors = useColors();
   const [name, setName] = useState(initial);
   const submit = (): void => {
@@ -37,7 +51,13 @@ export function NotesSheet({
 }: {
   sheet: SheetState;
   onClose: () => void;
-  actions: { createFolder(name: string): void; renameFolder(from: string, to: string): void; deleteFolder(name: string): void; purge(): void; emptyTrash(): void };
+  actions: {
+    createFolder(name: string): void;
+    renameFolder(from: string, to: string): void;
+    deleteFolder(name: string): void;
+    purge(): void;
+    emptyTrash(): void;
+  };
 }) {
   const done = (action: () => void) => () => {
     action();
@@ -45,15 +65,37 @@ export function NotesSheet({
   };
   switch (sheet.kind) {
     case "new-folder":
-      return <NameSheet title="New Folder" message="Name this folder." initial="" confirmLabel="Create" onCancel={onClose} onSubmit={(name) => done(() => actions.createFolder(name))()} />;
+      return (
+        <NameSheet
+          title="New Folder"
+          message="Name this folder."
+          initial=""
+          confirmLabel="Create"
+          onCancel={onClose}
+          onSubmit={(name) => done(() => actions.createFolder(name))()}
+        />
+      );
     case "rename-folder":
-      return <NameSheet title="Rename Folder" message={`Enter a new name for “${sheet.name}”.`} initial={sheet.name} confirmLabel="Rename" onCancel={onClose} onSubmit={(name) => done(() => actions.renameFolder(sheet.name, name))()} />;
+      return (
+        <NameSheet
+          title="Rename Folder"
+          message={`Enter a new name for “${sheet.name}”.`}
+          initial={sheet.name}
+          confirmLabel="Rename"
+          onCancel={onClose}
+          onSubmit={(name) => done(() => actions.renameFolder(sheet.name, name))()}
+        />
+      );
     case "delete-folder":
       return (
         <ConfirmSheet
           testID="delete-folder"
           title={`Delete the folder “${sheet.name}”?`}
-          message={sheet.count === 0 ? "The folder is empty." : `Its ${sheet.count === 1 ? "note moves" : `${sheet.count} notes move`} to Recently Deleted, where ${sheet.count === 1 ? "it stays" : "they stay"} for 30 days.`}
+          message={
+            sheet.count === 0
+              ? "The folder is empty."
+              : `Its ${sheet.count === 1 ? "note moves" : `${sheet.count} notes move`} to Recently Deleted, where ${sheet.count === 1 ? "it stays" : "they stay"} for 30 days.`
+          }
           confirmLabel="Delete"
           danger
           onConfirm={done(() => actions.deleteFolder(sheet.name))}

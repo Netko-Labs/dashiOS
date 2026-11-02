@@ -39,7 +39,11 @@ const startOfDay = (time: number): number => {
 export function formatDate(time: number, options: DateFormat = {}): string {
   if (!Number.isFinite(time) || time <= 0) return "—";
   const now = options.now ?? Date.now();
-  const clock = new Date(time).toLocaleTimeString(options.locale, { hour: options.hour12 === false ? "2-digit" : "numeric", minute: "2-digit", ...(options.hour12 !== undefined ? { hour12: options.hour12 } : {}) });
+  const clock = new Date(time).toLocaleTimeString(options.locale, {
+    hour: options.hour12 === false ? "2-digit" : "numeric",
+    minute: "2-digit",
+    ...(options.hour12 !== undefined ? { hour12: options.hour12 } : {}),
+  });
   const today = startOfDay(now);
   const day = startOfDay(time);
   const days = Math.round((today - day) / 86_400_000);

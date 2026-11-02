@@ -34,7 +34,18 @@ function Tile({ item, selected, dimmed, height }: { item: FileItem; selected: bo
         store.contextOn(item);
         actions.menu(point, "item");
       }}
-      style={{ width: TILE_WIDTH, height, flexShrink: 0, alignItems: "center", paddingTop: 6, gap: 4, borderRadius: 8, opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1, backgroundColor: selected ? `${colors.selection}33` : "#00000000", hoverBackgroundColor: selected ? `${colors.selection}33` : `${colors.button}` }}
+      style={{
+        width: TILE_WIDTH,
+        height,
+        flexShrink: 0,
+        alignItems: "center",
+        paddingTop: 6,
+        gap: 4,
+        borderRadius: 8,
+        opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1,
+        backgroundColor: selected ? `${colors.selection}33` : "#00000000",
+        hoverBackgroundColor: selected ? `${colors.selection}33` : `${colors.button}`,
+      }}
     >
       <View style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center" }}>
         {picture ? (
@@ -43,13 +54,35 @@ function Tile({ item, selected, dimmed, height }: { item: FileItem; selected: bo
           <Image source={iconFor(item)} resizeMode="contain" style={{ width: PICTURE, height: PICTURE }} />
         )}
         {item.isLink && (
-          <View style={{ position: "absolute", left: 0, bottom: 0, width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", backgroundColor: colors.menu, borderWidth: 1, borderColor: colors.separator }}>
+          <View
+            style={{
+              position: "absolute",
+              left: 0,
+              bottom: 0,
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.menu,
+              borderWidth: 1,
+              borderColor: colors.separator,
+            }}
+          >
             <Svg markup={LINK_BADGE} size={11} color={colors.text} />
           </View>
         )}
       </View>
       <View style={{ width: TILE_WIDTH - 10, alignItems: "center" }}>
-        <View style={{ maxWidth: TILE_WIDTH - 10, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5, backgroundColor: selected ? colors.selection : "#00000000" }}>
+        <View
+          style={{
+            maxWidth: TILE_WIDTH - 10,
+            paddingHorizontal: 5,
+            paddingVertical: 1,
+            borderRadius: 5,
+            backgroundColor: selected ? colors.selection : "#00000000",
+          }}
+        >
           <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? "#ffffff" : colors.text, textAlign: "center" }}>{middleEllipsis(item.name, 24)}</Text>
         </View>
         {item.where !== undefined && (
@@ -100,4 +133,3 @@ export function Grid({ items, onColumns, empty }: { items: readonly FileItem[]; 
     </View>
   );
 }
-

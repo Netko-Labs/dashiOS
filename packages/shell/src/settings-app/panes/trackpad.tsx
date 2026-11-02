@@ -24,9 +24,17 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
           <Switch testID="trackpad-natural" on={touchpad.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("touchpad", { naturalScroll })} />
         </Row>
         <Row label="Ignore the pad while typing" detail="Keeps a resting palm from moving the pointer.">
-          <Switch testID="trackpad-dwt" on={touchpad.disableWhileTyping ?? true} onChange={(disableWhileTyping) => settings.patch("touchpad", { disableWhileTyping })} />
+          <Switch
+            testID="trackpad-dwt"
+            on={touchpad.disableWhileTyping ?? true}
+            onChange={(disableWhileTyping) => settings.patch("touchpad", { disableWhileTyping })}
+          />
         </Row>
-        <SpeedRow testID="trackpad-speed" value={touchpad.accelSpeed ?? DEFAULTS.accelSpeed} onCommit={(accelSpeed) => settings.patch("touchpad", { accelSpeed })} />
+        <SpeedRow
+          testID="trackpad-speed"
+          value={touchpad.accelSpeed ?? DEFAULTS.accelSpeed}
+          onCommit={(accelSpeed) => settings.patch("touchpad", { accelSpeed })}
+        />
         <ScrollSpeedRow testID="trackpad-scroll-speed" value={touchpad.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("touchpad", { scrollSpeed })} />
         <Row stack label="Click" detail="How the pad tells a left click from a right click.">
           <Choices

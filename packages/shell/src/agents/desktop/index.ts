@@ -11,5 +11,15 @@ export { getSettings, setSetting } from "./settings.ts";
 export { listSpaces, moveWindowToSpace, switchSpace } from "./spaces.ts";
 export type { Desktop } from "./types.ts";
 export { joinWifi, listWifi } from "./wifi.ts";
-export { getAccount, getNetwork, getPower, getSound, listBluetoothDevices, setBluetoothConnection, setPowerProfile, setSoundOutput, setVolume } from "./machine.ts";
+export {
+  getAccount,
+  getNetwork,
+  getPower,
+  getSound,
+  listBluetoothDevices,
+  setBluetoothConnection,
+  setPowerProfile,
+  setSoundOutput,
+  setVolume,
+} from "./machine.ts";
 export { getSoftware, listInstalledSoftware, listSoftwareUpdates, requestInstall, requestUpdate, searchSoftware } from "./software.ts";

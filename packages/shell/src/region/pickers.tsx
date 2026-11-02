@@ -48,10 +48,23 @@ export function TimezonePicker({
         {zones.length === 0 && <PickNote testID="timezone-none">The list of time zones is not available on this system.</PickNote>}
         {searching && shown.length === 0 && <PickNote testID="timezone-no-match">No time zone matches.</PickNote>}
         {!searching && currentZone && (
-          <PickRow testID={`timezone:${currentZone.id}`} label={`${currentZone.city}, ${currentZone.area}`} detail={describeZone(currentZone)} chosen onPress={() => onPick(currentZone.id)} />
+          <PickRow
+            testID={`timezone:${currentZone.id}`}
+            label={`${currentZone.city}, ${currentZone.area}`}
+            detail={describeZone(currentZone)}
+            chosen
+            onPress={() => onPick(currentZone.id)}
+          />
         )}
         {shown.map((zone) => (
-          <PickRow key={zone.id} testID={`timezone:${zone.id}`} label={searching ? `${zone.city}, ${zone.area}` : zone.city} detail={describeZone(zone)} chosen={zone.id === current} onPress={() => onPick(zone.id)} />
+          <PickRow
+            key={zone.id}
+            testID={`timezone:${zone.id}`}
+            label={searching ? `${zone.city}, ${zone.area}` : zone.city}
+            detail={describeZone(zone)}
+            chosen={zone.id === current}
+            onPress={() => onPick(zone.id)}
+          />
         ))}
         {rows.length > shown.length && <PickNote>{`${rows.length - shown.length} more: type to narrow the list.`}</PickNote>}
       </PickList>
@@ -97,7 +110,9 @@ export function LocalePickers({
           <PickList testID="locale-languages" height={height}>
             {locales.length === 0 && <PickNote testID="locale-none">No languages are installed on this system.</PickNote>}
             {searching && shown.length === 0 && <PickNote>No language matches.</PickNote>}
-            {currentLanguage && <PickRow testID={`language:${currentLanguage.id}`} label={currentLanguage.label} chosen onPress={() => onLanguage(currentLanguage.id)} />}
+            {currentLanguage && (
+              <PickRow testID={`language:${currentLanguage.id}`} label={currentLanguage.label} chosen onPress={() => onLanguage(currentLanguage.id)} />
+            )}
             {shown.map((entry) => (
               <PickRow key={entry.id} testID={`language:${entry.id}`} label={entry.label} chosen={entry.id === language} onPress={() => onLanguage(entry.id)} />
             ))}
@@ -108,14 +123,16 @@ export function LocalePickers({
           <PickList testID="locale-regions" height={height}>
             {!searching && <PickRow testID="region:follow" label="Same as language" chosen={formats === undefined} onPress={() => onFormats(undefined)} />}
             {searching && regions.length === 0 && <PickNote>No region matches.</PickNote>}
-            {currentRegion && <PickRow testID={`region:${currentRegion.id}`} label={currentRegion.region as string} chosen onPress={() => onFormats(formats)} />}
+            {currentRegion && (
+              <PickRow testID={`region:${currentRegion.id}`} label={currentRegion.region as string} chosen onPress={() => onFormats(formats)} />
+            )}
             {regions.map((entry) => (
               <PickRow
                 key={entry.region}
                 testID={`region:${entry.id}`}
                 label={entry.region as string}
                 chosen={formats !== undefined && isRegionOf(locales, entry.region as string, formats)}
-                onPress={() => onFormats((formatsForRegion(locales, entry.region as string, formats ?? language)?.id ?? entry.id))}
+                onPress={() => onFormats(formatsForRegion(locales, entry.region as string, formats ?? language)?.id ?? entry.id)}
               />
             ))}
           </PickList>

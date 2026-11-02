@@ -10,7 +10,19 @@ import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { useColors } from "@dashi/ui";
 import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
-import { clockLabel, clockText, DEFAULT_SCHEDULE, DEFAULT_WARMTH, describeWarmth, FROM_HOURS, minutesOf, scheduleOf, timeChoices, TO_HOURS, WARMTH } from "../night.ts";
+import {
+  clockLabel,
+  clockText,
+  DEFAULT_SCHEDULE,
+  DEFAULT_WARMTH,
+  describeWarmth,
+  FROM_HOURS,
+  minutesOf,
+  scheduleOf,
+  timeChoices,
+  TO_HOURS,
+  WARMTH,
+} from "../night.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Row, Slider } from "../ui.tsx";
 
@@ -27,7 +39,11 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
         <Row label="Night Shift" detail="Warms the colors of the screens, easier on the eyes in the evening.">
           <Switch testID="night-switch" on={night} onChange={(on) => flags.set({ night: on })} />
         </Row>
-        <Row stack label="Schedule" detail={schedule ? `On from ${clockLabel(schedule.from)} to ${clockLabel(schedule.to)}, every day.` : "Night Shift only changes when you switch it."}>
+        <Row
+          stack
+          label="Schedule"
+          detail={schedule ? `On from ${clockLabel(schedule.from)} to ${clockLabel(schedule.to)}, every day.` : "Night Shift only changes when you switch it."}
+        >
           <Choices
             testID="night-schedule"
             value={schedule ? "custom" : "off"}
@@ -35,18 +51,26 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
               { value: "off", label: "Off" },
               { value: "custom", label: "Custom" },
             ]}
-            onChange={(choice) =>
-              settings.patch("nightShift", choice === "custom" ? { ...DEFAULT_SCHEDULE } : { from: undefined, to: undefined })
-            }
+            onChange={(choice) => settings.patch("nightShift", choice === "custom" ? { ...DEFAULT_SCHEDULE } : { from: undefined, to: undefined })}
           />
         </Row>
         {schedule && (
           <>
             <Row stack label="From">
-              <Choices testID="night-from" value={clockText(schedule.from)} options={timeChoices(FROM_HOURS, schedule.from)} onChange={(from) => settings.patch("nightShift", { from })} />
+              <Choices
+                testID="night-from"
+                value={clockText(schedule.from)}
+                options={timeChoices(FROM_HOURS, schedule.from)}
+                onChange={(from) => settings.patch("nightShift", { from })}
+              />
             </Row>
             <Row stack label="To">
-              <Choices testID="night-to" value={clockText(schedule.to)} options={timeChoices(TO_HOURS, schedule.to)} onChange={(to) => settings.patch("nightShift", { to })} />
+              <Choices
+                testID="night-to"
+                value={clockText(schedule.to)}
+                options={timeChoices(TO_HOURS, schedule.to)}
+                onChange={(to) => settings.patch("nightShift", { to })}
+              />
             </Row>
           </>
         )}

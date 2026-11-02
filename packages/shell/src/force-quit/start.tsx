@@ -92,8 +92,7 @@ export function startForceQuit(compositor: Compositor | null): ForceQuit {
     void controller.refresh();
   };
 
-  const apps = (windows: readonly CompositorWindow[]): AppGroup[] =>
-    appGroups(windows, protectedSet, identifierFor(loadEntries()));
+  const apps = (windows: readonly CompositorWindow[]): AppGroup[] => appGroups(windows, protectedSet, identifierFor(loadEntries()));
 
   const end = (pid: number, windows: readonly CompositorWindow[]): Outcome =>
     terminate(pid, {

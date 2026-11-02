@@ -24,10 +24,7 @@ export function useImage(url: string | null): string | null {
   return file;
 }
 
-export type Load<T> =
-  | { status: "loading" }
-  | { status: "ready"; value: T; stale: boolean }
-  | { status: "failed"; offline: boolean; message: string };
+export type Load<T> = { status: "loading" } | { status: "ready"; value: T; stale: boolean } | { status: "failed"; offline: boolean; message: string };
 
 /** Runs `load` when `key` changes (and on `reload`); late answers for an earlier key are dropped. */
 export function useLoad<T>(key: string, load: () => Promise<Answer<T>>): { state: Load<T>; reload: () => void } {

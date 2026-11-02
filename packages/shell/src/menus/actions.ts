@@ -127,11 +127,7 @@ async function typeEdit(deps: ActionDeps, window: number, command: EditCommand):
   await compositor.request("send-keys", { window, chord: editChord(command, target.appId) });
 }
 
-async function forEachWindowOfApp(
-  compositor: ActionDeps["compositor"],
-  window: number,
-  each: (window: CompositorWindow) => Promise<void>,
-): Promise<void> {
+async function forEachWindowOfApp(compositor: ActionDeps["compositor"], window: number, each: (window: CompositorWindow) => Promise<void>): Promise<void> {
   if (!compositor) return;
   const windows = await compositor.windows();
   const focused = windows.find((candidate) => candidate.id === window);

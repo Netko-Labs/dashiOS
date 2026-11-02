@@ -34,7 +34,8 @@ export async function setTimeZone(call: Extract<Call, { name: "set_time_zone" }>
   if (before === call.timeZone) return text(`The time zone is ${call.timeZone} already.`, { name: "time_zone", value: call.timeZone, changed: false });
   ctx.status(`Changing the time zone to ${call.timeZone}`);
   const failure = await region.setTimeZone(call.timeZone);
-  if (failure === "unknown") return toolError(`${call.timeZone} is not a time zone this computer knows; get_region_settings shows the current one, and names look like Europe/Berlin.`);
+  if (failure === "unknown")
+    return toolError(`${call.timeZone} is not a time zone this computer knows; get_region_settings shows the current one, and names look like Europe/Berlin.`);
   if (failure !== null) return toolError(describeFailure(failure));
   return text(`The time zone is ${call.timeZone}.`, { name: "time_zone", value: call.timeZone, changed: true });
 }
@@ -54,11 +55,16 @@ export function setRegionFormats(call: Extract<Call, { name: "set_region_formats
   const before = region.read().regionFormats;
   if (!region.setRegionFormats(call.locale)) return toolError(`${call.locale} is not an installed locale; get_region_settings lists installed_locales.`);
   const changed = before !== call.locale;
-  return text(call.locale === null ? `The region formats follow the language${changed ? "" : " already"}.` : `The region formats are ${call.locale}${changed ? "" : " already"}.`, {
-    name: "region_formats",
-    value: call.locale,
-    changed,
-  });
+  return text(
+    call.locale === null
+      ? `The region formats follow the language${changed ? "" : " already"}.`
+      : `The region formats are ${call.locale}${changed ? "" : " already"}.`,
+    {
+      name: "region_formats",
+      value: call.locale,
+      changed,
+    },
+  );
 }
 
 export function openSetupAssistant(call: Extract<Call, { name: "open_setup_assistant" }>, ctx: RunContext): ToolResult {

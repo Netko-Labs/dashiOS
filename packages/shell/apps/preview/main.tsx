@@ -14,7 +14,10 @@ import { Viewer } from "./viewer.ts";
 
 const args = parseArgs(Bun.argv.slice(2));
 const viewer = new Viewer();
-runApp({ id: "dev.dashi.preview", title: "Preview", size: PREVIEW_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST }, <PreviewWindow viewer={viewer} />);
+runApp(
+  { id: "dev.dashi.preview", title: "Preview", size: PREVIEW_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
+  <PreviewWindow viewer={viewer} />,
+);
 
 const first = args.files[0];
 if (first) void viewer.open(first);

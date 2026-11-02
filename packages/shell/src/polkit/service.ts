@@ -12,14 +12,7 @@
  */
 
 import { BUS_PATH } from "../dbus/bus.ts";
-import {
-  BUS_NAME,
-  DBusConnection,
-  DBusError,
-  ERRORS,
-  getNameOwner,
-  type InterfaceSpec,
-} from "../dbus/index.ts";
+import { BUS_NAME, DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec } from "../dbus/index.ts";
 import type { PolkitController } from "./controller.ts";
 import { parseBegin } from "./request.ts";
 import type { Subject } from "./subject.ts";
@@ -100,7 +93,10 @@ export function serveAgent(options: ServeOptions): AgentService {
     try {
       return await getNameOwner(on, AUTHORITY_NAME);
     } catch {
-      await on.call({ destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "StartServiceByName", signature: "su", body: [AUTHORITY_NAME, 0] }, CALL_TIMEOUT_MS);
+      await on.call(
+        { destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "StartServiceByName", signature: "su", body: [AUTHORITY_NAME, 0] },
+        CALL_TIMEOUT_MS,
+      );
       return getNameOwner(on, AUTHORITY_NAME);
     }
   };
@@ -167,7 +163,15 @@ export function serveAgent(options: ServeOptions): AgentService {
       const on = connection;
       connection = null;
       // Best effort: polkitd drops the registration by itself when the connection closes.
-      on?.call({ destination: AUTHORITY_NAME, path: AUTHORITY_PATH, interface: AUTHORITY_INTERFACE, member: "UnregisterAuthenticationAgent", signature: "(sa{sv})s", body: [subject, AGENT_PATH], noReply: true }).catch(() => {});
+      on?.call({
+        destination: AUTHORITY_NAME,
+        path: AUTHORITY_PATH,
+        interface: AUTHORITY_INTERFACE,
+        member: "UnregisterAuthenticationAgent",
+        signature: "(sa{sv})s",
+        body: [subject, AGENT_PATH],
+        noReply: true,
+      }).catch(() => {});
       on?.close();
     },
   };

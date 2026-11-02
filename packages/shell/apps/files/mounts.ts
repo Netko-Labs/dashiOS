@@ -115,7 +115,34 @@ export interface Volume {
 }
 
 /** Filesystems that are not drives. */
-const VIRTUAL = new Set(["tmpfs", "devtmpfs", "proc", "sysfs", "cgroup2", "devpts", "securityfs", "pstore", "bpf", "autofs", "mqueue", "hugetlbfs", "fusectl", "debugfs", "tracefs", "configfs", "binfmt_misc", "efivarfs", "overlay", "squashfs", "ramfs", "nsfs", "rpc_pipefs", "fuse.portal", "fuse.gvfsd-fuse", "fuse.gvfs-fuse-daemon"]);
+const VIRTUAL = new Set([
+  "tmpfs",
+  "devtmpfs",
+  "proc",
+  "sysfs",
+  "cgroup2",
+  "devpts",
+  "securityfs",
+  "pstore",
+  "bpf",
+  "autofs",
+  "mqueue",
+  "hugetlbfs",
+  "fusectl",
+  "debugfs",
+  "tracefs",
+  "configfs",
+  "binfmt_misc",
+  "efivarfs",
+  "overlay",
+  "squashfs",
+  "ramfs",
+  "nsfs",
+  "rpc_pipefs",
+  "fuse.portal",
+  "fuse.gvfsd-fuse",
+  "fuse.gvfs-fuse-daemon",
+]);
 const SYSTEM_MOUNTS = ["/boot", "/home", "/var", "/usr", "/etc", "/opt", "/srv", "/efi"];
 /** Where udisks and the usual tools put removable drives. */
 const MEDIA_ROOTS = (user: string): string[] => [`/run/media/${user}`, `/media/${user}`, "/media", "/mnt"];
@@ -147,9 +174,19 @@ export function volumesFrom(mounts: readonly MountEntry[], devices: readonly Blo
   const seen = new Set<string>();
   for (const mount of mounts) {
     if (mount.mountPoint === "/" || VIRTUAL.has(mount.fstype) || isSystemMount(mount.mountPoint)) continue;
-    if (mount.mountPoint.startsWith("/run/credentials") || mount.mountPoint.startsWith("/run/user") || mount.mountPoint.startsWith("/proc") || mount.mountPoint.startsWith("/sys") || mount.mountPoint.startsWith("/dev") || mount.mountPoint.startsWith("/tmp")) continue;
+    if (
+      mount.mountPoint.startsWith("/run/credentials") ||
+      mount.mountPoint.startsWith("/run/user") ||
+      mount.mountPoint.startsWith("/proc") ||
+      mount.mountPoint.startsWith("/sys") ||
+      mount.mountPoint.startsWith("/dev") ||
+      mount.mountPoint.startsWith("/tmp")
+    )
+      continue;
     const device = byPath.get(mount.source);
-    const removable = device ? device.removable || device.hotplug || (device.parent !== null && (byName.get(device.parent)?.removable || byName.get(device.parent)?.hotplug) === true) : false;
+    const removable = device
+      ? device.removable || device.hotplug || (device.parent !== null && (byName.get(device.parent)?.removable || byName.get(device.parent)?.hotplug) === true)
+      : false;
     if (!removable && !isMedia(mount.mountPoint, user)) continue;
     const key = device?.path ?? mount.mountPoint;
     if (seen.has(key)) continue;

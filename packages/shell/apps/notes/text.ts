@@ -40,9 +40,7 @@ export function serializeNote(note: NoteText): string {
 /** The list's second line: the body's first line with something in it, markers and all trimmed off. */
 export function preview(body: string): string {
   for (const line of body.split("\n")) {
-    const text = line
-      .replace(/^\s*(?:[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|>\s*|#{1,6}\s+|\d+\.\s+)/, "")
-      .trim();
+    const text = line.replace(/^\s*(?:[-*+]\s+\[[ xX]\]\s+|[-*+]\s+|>\s*|#{1,6}\s+|\d+\.\s+)/, "").trim();
     if (text !== "" && !/^(?:[-*_]\s*){3,}$/.test(text) && !text.startsWith("```")) return text.length > 160 ? text.slice(0, 160) : text;
   }
   return "";
@@ -75,9 +73,7 @@ export function searchNotes<T extends Searchable>(notes: readonly T[], query: st
     const all = `${title}\n${fold(note.body)}`;
     if (words.every((word) => all.includes(word))) scored.push({ note, inTitle: words.some((word) => title.includes(word)) });
   }
-  return scored
-    .sort((a, b) => Number(b.inTitle) - Number(a.inTitle) || b.note.modified - a.note.modified)
-    .map((entry) => entry.note);
+  return scored.sort((a, b) => Number(b.inTitle) - Number(a.inTitle) || b.note.modified - a.note.modified).map((entry) => entry.note);
 }
 
 /** Pinned first, then the most recently modified. */
@@ -87,7 +83,10 @@ export function listOrder<T extends Searchable>(notes: readonly T[]): T[] {
 
 /** Lowercase, without accents. */
 export function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}+/gu, "").toLowerCase();
+  return text
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .toLowerCase();
 }
 
 const DAY = 86_400_000;

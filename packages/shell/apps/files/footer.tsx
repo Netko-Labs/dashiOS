@@ -18,9 +18,14 @@ function JobRow({ job }: { job: Job }) {
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>{`${job.label}…`}</Text>
       </View>
       <View style={{ width: 160, height: 6, borderRadius: 3, backgroundColor: colors.button, overflow: "hidden" }}>
-        <View testID={`job:${job.id}:bar`} style={{ width: ratio === null ? "35%" : `${Math.round(ratio * 100)}%`, height: 6, borderRadius: 3, backgroundColor: colors.selection }} />
+        <View
+          testID={`job:${job.id}:bar`}
+          style={{ width: ratio === null ? "35%" : `${Math.round(ratio * 100)}%`, height: 6, borderRadius: 3, backgroundColor: colors.selection }}
+        />
       </View>
-      {ratio !== null && job.total !== null && job.total > 1000 && <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>}
+      {ratio !== null && job.total !== null && job.total > 1000 && (
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>
+      )}
       <View
         testID={`job:${job.id}:cancel`}
         onPress={() => ops.jobs.cancel(job.id)}
@@ -42,7 +47,11 @@ function NoticeRow() {
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontSize: 12, color: notice.error ? colors.critical : colors.textMuted }}>{notice.text}</Text>
       </View>
-      <View testID="notice:close" onPress={() => store.dismissNotice()} style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}>
+      <View
+        testID="notice:close"
+        onPress={() => store.dismissNotice()}
+        style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+      >
         <Svg markup={CLOSE} size={11} color={colors.textMuted} />
       </View>
     </View>
@@ -78,7 +87,10 @@ export function Footer() {
       <View style={{ height: 28, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12 }}>
         <View testID="pathbar" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 2, overflow: "hidden" }}>
           {segments.map((segment, index) => (
-            <View key={`${index}:${segment.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 2, flexShrink: index === segments.length - 1 ? 1 : 0 }}>
+            <View
+              key={`${index}:${segment.name}`}
+              style={{ flexDirection: "row", alignItems: "center", gap: 2, flexShrink: index === segments.length - 1 ? 1 : 0 }}
+            >
               {index > 0 && <Svg markup={CHEVRON} size={10} color={colors.textDisabled} />}
               <View
                 testID={`path:${index}`}
@@ -94,7 +106,7 @@ export function Footer() {
         </View>
         <View testID="status" style={{ flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-            {statusLine(visible.length, picked, search ? null : state.free?.free ?? null)}
+            {statusLine(visible.length, picked, search ? null : (state.free?.free ?? null))}
           </Text>
         </View>
       </View>

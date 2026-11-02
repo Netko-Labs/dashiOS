@@ -50,7 +50,10 @@ export function parseStat(stat: string): { comm: string; ppid: number } | null {
   const open = stat.indexOf("(");
   const close = stat.lastIndexOf(")");
   if (open < 0 || close < open) return null;
-  const [, ppid] = stat.slice(close + 1).trim().split(/\s+/);
+  const [, ppid] = stat
+    .slice(close + 1)
+    .trim()
+    .split(/\s+/);
   const parent = Number(ppid);
   return Number.isInteger(parent) ? { comm: stat.slice(open + 1, close), ppid: parent } : null;
 }

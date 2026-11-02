@@ -19,8 +19,26 @@ export interface Row {
   deletedAt: number;
 }
 
-const live = (note: Note): Row => ({ id: note.id, title: note.title, body: note.body, modified: note.modified, pinned: note.pinned, folder: note.folder, deleted: false, deletedAt: 0 });
-const gone = (note: DeletedNote): Row => ({ id: note.id, title: note.title, body: note.body, modified: note.modified, pinned: false, folder: "", deleted: true, deletedAt: note.deletedAt });
+const live = (note: Note): Row => ({
+  id: note.id,
+  title: note.title,
+  body: note.body,
+  modified: note.modified,
+  pinned: note.pinned,
+  folder: note.folder,
+  deleted: false,
+  deletedAt: 0,
+});
+const gone = (note: DeletedNote): Row => ({
+  id: note.id,
+  title: note.title,
+  body: note.body,
+  modified: note.modified,
+  pinned: false,
+  folder: "",
+  deleted: true,
+  deletedAt: note.deletedAt,
+});
 
 /**
  * The rows to show. A search looks at every note, wherever the sidebar is

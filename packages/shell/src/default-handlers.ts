@@ -44,7 +44,11 @@ function locate(text: string): Located {
   return { lines, start, end };
 }
 
-const listOf = (value: string): string[] => value.split(";").map((id) => id.trim()).filter(Boolean);
+const listOf = (value: string): string[] =>
+  value
+    .split(";")
+    .map((id) => id.trim())
+    .filter(Boolean);
 const join = (ids: readonly string[]): string => `${ids.join(";")};`;
 
 /** `text` with each wanted handler first in its MIME type's default list; nothing else changes, and applying it twice is the same as once. */

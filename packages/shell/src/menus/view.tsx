@@ -140,9 +140,7 @@ export function DropdownMenu<A>({
         panel
       ) : (
         // A box as wide as the widest panel, so the panel centers on `x` without knowing its own width.
-        <View
-          style={{ position: "absolute", left: Math.max(8, x - DROPDOWN.maxWidth / 2), width: DROPDOWN.maxWidth, bottom: above, alignItems: "center" }}
-        >
+        <View style={{ position: "absolute", left: Math.max(8, x - DROPDOWN.maxWidth / 2), width: DROPDOWN.maxWidth, bottom: above, alignItems: "center" }}>
           {panel}
         </View>
       )}

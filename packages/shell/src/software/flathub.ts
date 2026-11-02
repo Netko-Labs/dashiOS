@@ -130,8 +130,12 @@ export class Flathub {
           // Nothing usable cached either.
         }
       }
-      if (error instanceof NetworkError && error.kind === "offline") throw new CatalogError("offline", "Flathub can't be reached. Check the network connection.");
-      throw new CatalogError("failed", error instanceof NetworkError ? `Flathub gave an unexpected answer (${error.message}).` : "Flathub gave an answer Software could not read.");
+      if (error instanceof NetworkError && error.kind === "offline")
+        throw new CatalogError("offline", "Flathub can't be reached. Check the network connection.");
+      throw new CatalogError(
+        "failed",
+        error instanceof NetworkError ? `Flathub gave an unexpected answer (${error.message}).` : "Flathub gave an answer Software could not read.",
+      );
     }
   }
 }

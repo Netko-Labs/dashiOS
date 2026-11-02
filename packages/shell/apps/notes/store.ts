@@ -246,7 +246,8 @@ export class NotesStore {
   }
 
   private trashPath(file: string): string {
-    if (file.includes("/") || file.includes("\u0000") || file.startsWith(".") || !/\.md$/i.test(file)) throw new NotesError(`${JSON.stringify(file)} is not in Recently Deleted.`);
+    if (file.includes("/") || file.includes("\u0000") || file.startsWith(".") || !/\.md$/i.test(file))
+      throw new NotesError(`${JSON.stringify(file)} is not in Recently Deleted.`);
     const path = join(this.root, TRASH_DIR, file);
     if (!isRegularFile(path)) throw new NotesError(`${file} is not in Recently Deleted.`);
     return path;
@@ -262,12 +263,15 @@ export class NotesStore {
 
   /** Names a new folder must not take: the folders there are, and the default folder's own name. */
   private folderNames(): string[] {
-    const here = readdirSync(this.root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+    const here = readdirSync(this.root, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
     return [...here, DEFAULT_FOLDER_NAME, TRASH_DIR];
   }
 
   private requireFolder(name: string): void {
-    if (name === "" || name.startsWith(".") || name.includes("/") || !isRealDirectory(join(this.root, name))) throw new NotesError(`There is no folder ${JSON.stringify(name)}.`);
+    if (name === "" || name.startsWith(".") || name.includes("/") || !isRealDirectory(join(this.root, name)))
+      throw new NotesError(`There is no folder ${JSON.stringify(name)}.`);
   }
 
   /** The folder to write into: "" or an existing folder, or one made from `folder`'s sanitized name. */
@@ -317,7 +321,16 @@ export class NotesStore {
     }
     const id = noteId(folder, file);
     const { title, body, heading } = cached.text;
-    return { id, folder, title, body, heading, modified: stat.mtimeMs, created: stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs, pinned: pinned.has(id) };
+    return {
+      id,
+      folder,
+      title,
+      body,
+      heading,
+      modified: stat.mtimeMs,
+      created: stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs,
+      pinned: pinned.has(id),
+    };
   }
 
   private collect(into: Note[], folder: string, file: string, pinned: ReadonlySet<string>): void {
@@ -336,7 +349,13 @@ export class NotesStore {
         const stat = statSync(path);
         if (stat.size > MAX_NOTE_BYTES) continue;
         const meta = sidecar.trash[entry.name];
-        out.push({ id: entry.name, ...parseNote(readFileSync(path, "utf8")), modified: stat.mtimeMs, from: meta?.from ?? entry.name, deletedAt: meta?.at ?? stat.ctimeMs });
+        out.push({
+          id: entry.name,
+          ...parseNote(readFileSync(path, "utf8")),
+          modified: stat.mtimeMs,
+          from: meta?.from ?? entry.name,
+          deletedAt: meta?.at ?? stat.ctimeMs,
+        });
       } catch {
         // Gone while reading.
       }

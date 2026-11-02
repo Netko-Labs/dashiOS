@@ -108,7 +108,11 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
       }
       below={
         sessions.length > 1 ? (
-          <View testID="greeter-session" onPress={nextSession} style={{ marginTop: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: "#ffffff1a" }}>
+          <View
+            testID="greeter-session"
+            onPress={nextSession}
+            style={{ marginTop: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: "#ffffff1a" }}
+          >
             <Text style={{ fontSize: 12, color: MUTED }}>{session.name}</Text>
           </View>
         ) : undefined
@@ -132,7 +136,12 @@ function UserPicker(props: { day: string; time: string; users: User[]; onPick: (
           <Text style={{ fontSize: 14, color: MUTED }}>No one can log in on this computer.</Text>
         ) : (
           users.map((user) => (
-            <View key={user.name} testID={`greeter-user-${user.name}`} onPress={() => onPick(user)} style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110 }}>
+            <View
+              key={user.name}
+              testID={`greeter-user-${user.name}`}
+              onPress={() => onPick(user)}
+              style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110 }}
+            >
               <Avatar name={user.displayName} size={72} />
               <Text style={{ fontSize: 14, fontWeight: "semibold", color: TEXT }}>{user.displayName}</Text>
             </View>

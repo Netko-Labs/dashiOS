@@ -27,7 +27,11 @@ export function exportRoots(env: Readonly<Record<string, string | undefined>> = 
 }
 
 /** The PNG icon an installed app exported, the largest reasonable one; null when it has none (the id is already checked, so it can't climb out of the folder). */
-export function localIcon(app: Pick<InstalledApp, "id" | "installation">, roots = exportRoots(), exists: (path: string) => boolean = existsSync): string | null {
+export function localIcon(
+  app: Pick<InstalledApp, "id" | "installation">,
+  roots = exportRoots(),
+  exists: (path: string) => boolean = existsSync,
+): string | null {
   const root = roots[app.installation];
   for (const size of SIZES) {
     const path = join(root, size, "apps", `${app.id}.png`);

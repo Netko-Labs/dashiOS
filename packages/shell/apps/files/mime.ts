@@ -129,7 +129,8 @@ export type Category = "folder" | "image" | "audio" | "video" | "archive" | "cod
 
 const ARCHIVES = /(zip|tar|gzip|x-7z|x-rar|compress|x-xz|x-bzip|zstd|x-cpio|x-iso|x-raw-disk|x-lzma)/;
 const DOCUMENTS = /(pdf|msword|officedocument|opendocument|rtf|epub|postscript|x-abiword|vnd\.ms-)/;
-const CODE = /(javascript|json|typescript|xml|x-shellscript|x-python|x-csrc|x-chdr|x-c\+\+|x-rust|x-java|x-php|x-ruby|yaml|toml|x-sql|x-perl|html|css|x-desktop|x-meson|markdown|x-go)/;
+const CODE =
+  /(javascript|json|typescript|xml|x-shellscript|x-python|x-csrc|x-chdr|x-c\+\+|x-rust|x-java|x-php|x-ruby|yaml|toml|x-sql|x-perl|html|css|x-desktop|x-meson|markdown|x-go)/;
 
 export function categoryOf(type: string): Category {
   if (type === INODE_DIRECTORY) return "folder";

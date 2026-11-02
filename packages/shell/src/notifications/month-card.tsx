@@ -45,10 +45,7 @@ export function MonthCard({ now, onOpenDay }: { now: Date; onOpenDay?: (day: str
   );
 
   return (
-    <View
-      testID="nc-month"
-      style={{ flexDirection: "column", gap: 4, padding: 10, borderRadius: 14, backgroundColor: colors.tile, flexShrink: 0 }}
-    >
+    <View testID="nc-month" style={{ flexDirection: "column", gap: 4, padding: 10, borderRadius: 14, backgroundColor: colors.tile, flexShrink: 0 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 24, paddingLeft: 4 }}>
         <View testID="nc-month-title" onPress={() => setView(current)}>
           <Text style={{ fontSize: 13, fontWeight: "semibold", color: isCurrent ? colors.text : colors.selection }}>{monthTitle(view, prefs.locale)}</Text>

@@ -40,13 +40,9 @@ export class Dialogs {
 
   private show(title: string, height: number, element: ReactElement): void {
     this.close();
-    const handle = this.open(
-      { title, width: WIDTH, height, surface: { layer: "overlay", keyboard: "exclusive", namespace: "dashi.dialog" } },
-      element,
-      () => {
-        if (this.current === handle) this.current = null;
-      },
-    );
+    const handle = this.open({ title, width: WIDTH, height, surface: { layer: "overlay", keyboard: "exclusive", namespace: "dashi.dialog" } }, element, () => {
+      if (this.current === handle) this.current = null;
+    });
     this.current = handle;
   }
 }

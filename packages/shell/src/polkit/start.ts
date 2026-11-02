@@ -54,10 +54,7 @@ export function isMachineBus(address: string): boolean {
  * real session uses the system bus; a development run only an address it was
  * explicitly given that is not the machine's.
  */
-export function agentBus(
-  env: Record<string, string | undefined>,
-  developmentRun: boolean,
-): { address?: string; off?: string } {
+export function agentBus(env: Record<string, string | undefined>, developmentRun: boolean): { address?: string; off?: string } {
   const given = env.DBUS_SYSTEM_BUS_ADDRESS;
   if (!developmentRun) return given ? { address: given } : {};
   if (!given || given.startsWith("disabled:")) return { off: "this is a development run" };

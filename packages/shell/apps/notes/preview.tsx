@@ -46,7 +46,16 @@ function BlockView({ block, onToggle }: { block: Block; onToggle: (line: number)
         <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-start" }}>
           <Box checked={block.checked} testID={`check:${block.line}`} onPress={() => onToggle(block.line)} />
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: block.checked ? colors.textMuted : colors.text, textDecorationLine: block.checked ? "line-through" : "none" }}>{block.text}</Text>
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: block.checked ? colors.textMuted : colors.text,
+                textDecorationLine: block.checked ? "line-through" : "none",
+              }}
+            >
+              {block.text}
+            </Text>
           </View>
         </View>
       );

@@ -7,12 +7,21 @@ import { ejectCommands, mountCommand, mountedAt, parseLsblk, parseMountinfo, typ
 
 const LSBLK = ["lsblk", "-J", "-b", "-o", "NAME,PATH,LABEL,UUID,SIZE,FSTYPE,MOUNTPOINTS,RM,HOTPLUG,TYPE,MODEL,PKNAME,RO"];
 
-export async function loadVolumes(user: string, run: Exec = exec, readMounts: () => Promise<string> = () => readFile("/proc/self/mountinfo", "utf8")): Promise<Volume[]> {
+export async function loadVolumes(
+  user: string,
+  run: Exec = exec,
+  readMounts: () => Promise<string> = () => readFile("/proc/self/mountinfo", "utf8"),
+): Promise<Volume[]> {
   const [mounts, blocks] = await Promise.all([readMounts().catch(() => ""), run(LSBLK).catch(() => null)]);
   return volumesFrom(parseMountinfo(mounts), blocks?.ok ? parseLsblk(blocks.stdout) : [], user);
 }
 
-const first = (text: string): string => text.trim().split("\n")[0]?.replace(/^.*?:\s*/, "").trim() || "";
+const first = (text: string): string =>
+  text
+    .trim()
+    .split("\n")[0]
+    ?.replace(/^.*?:\s*/, "")
+    .trim() || "";
 
 /** Unmounts a volume and powers off its disk; an error to show, or null. */
 export async function eject(volume: Volume, run: Exec = exec): Promise<string | null> {

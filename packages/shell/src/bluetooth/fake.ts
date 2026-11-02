@@ -11,14 +11,7 @@
  */
 
 import { type Entry, makeEntries } from "./fake-devices.ts";
-import type {
-  ActionResult,
-  AdapterReading,
-  BluetoothBackend,
-  BluetoothReading,
-  PairingHandler,
-  PairResult,
-} from "./types.ts";
+import type { ActionResult, AdapterReading, BluetoothBackend, BluetoothReading, PairingHandler, PairResult } from "./types.ts";
 import type { Radio } from "../control-center/radios.ts";
 
 export interface FakeBluetoothOptions {

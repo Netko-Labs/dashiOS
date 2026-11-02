@@ -35,7 +35,7 @@ export const menuTools: readonly ToolDef[] = [
     title: "Choose a menu item",
     description:
       "Choose an item of a window's menus, as clicking it in the menu bar does, by the menu's title and the item's label as list_menus gives them " +
-      '(the app menu\'s title is the app\'s name, like "Calculator"). The window need not be focused; an app\'s own item goes to the app, which may ' +
+      "(the app menu's title is the app's name, like \"Calculator\"). The window need not be focused; an app's own item goes to the app, which may " +
       "change or delete something, or ask the person on a sheet. Edit's Undo, Copy, Paste and the like are keystrokes: use press_keys for those.",
     scope: "act",
     readOnly: false,

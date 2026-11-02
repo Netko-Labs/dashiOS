@@ -104,7 +104,14 @@ export async function listInstalledSoftware(ctx: RunContext): Promise<ToolResult
   try {
     const apps = await backend(ctx).manager.installed();
     return json({
-      apps: apps.map((app) => ({ id: app.id, name: person(app.name), version: app.version, installation: app.installation, source: app.origin, size: app.size })),
+      apps: apps.map((app) => ({
+        id: app.id,
+        name: person(app.name),
+        version: app.version,
+        installation: app.installation,
+        source: app.origin,
+        size: app.size,
+      })),
     });
   } catch (error) {
     return unavailable(error);
@@ -119,11 +126,11 @@ export async function listSoftwareUpdates(ctx: RunContext): Promise<ToolResult> 
   if (apps.status === "rejected") notes.push(`App updates could not be checked: ${reason(apps.reason)}`);
   if (system.status === "rejected") notes.push(`System updates could not be checked: ${reason(system.reason)}`);
   return json({
-    apps: apps.status === "fulfilled" ? apps.value.map((u) => ({ id: u.id, name: person(u.name), version: u.version, installation: u.installation, downloadSize: u.downloadSize })) : [],
-    system:
-      system.status === "fulfilled"
-        ? system.value.updates.slice(0, 100).map((u) => ({ package: u.name, version: u.version, kind: u.kind }))
+    apps:
+      apps.status === "fulfilled"
+        ? apps.value.map((u) => ({ id: u.id, name: person(u.name), version: u.version, installation: u.installation, downloadSize: u.downloadSize }))
         : [],
+    system: system.status === "fulfilled" ? system.value.updates.slice(0, 100).map((u) => ({ package: u.name, version: u.version, kind: u.kind })) : [],
     restartLikelyNeeded: system.status === "fulfilled" ? system.value.restartCauses.length > 0 : false,
     ...(notes.length > 0 ? { notes } : {}),
   });
@@ -167,7 +174,9 @@ export async function requestInstall(call: Extract<Call, { name: "request_softwa
   if (!yes) return toolError(`The person did not allow “${name}” to be installed. Don't ask again unless they agree.`);
   working = true;
   ctx.status(`Installing ${name}`);
-  const job = b.manager.install(app.id, (progress) => ctx.status(progress.fraction === null ? `Installing ${name}` : `Installing ${name}, ${Math.round(progress.fraction * 100)}%`));
+  const job = b.manager.install(app.id, (progress) =>
+    ctx.status(progress.fraction === null ? `Installing ${name}` : `Installing ${name}, ${Math.round(progress.fraction * 100)}%`),
+  );
   const finished = job.finally(() => {
     working = false;
   });
@@ -187,9 +196,13 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
     if (call.target === "system") return await updateSystem(b, ctx);
     const waiting = await b.manager.flatpakUpdates();
     const chosen = call.target === "apps" ? waiting : waiting.filter((update) => update.id === (call.target as { app: string }).app);
-    if (chosen.length === 0) return text(call.target === "apps" ? "No app updates are waiting." : "That app has no update waiting; list_software_updates shows what does.");
+    if (chosen.length === 0)
+      return text(call.target === "apps" ? "No app updates are waiting." : "That app has no update waiting; list_software_updates shows what does.");
     if (working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
-    const names = chosen.slice(0, 4).map((update) => `“${person(update.name, 40)}”`).join(", ");
+    const names = chosen
+      .slice(0, 4)
+      .map((update) => `“${person(update.name, 40)}”`)
+      .join(", ");
     const yes = await ctx.confirm({
       summary: chosen.length === 1 ? `update “${person(chosen[0]?.name ?? "", 60)}”` : `update ${chosen.length} apps`,
       detail: `${names}${chosen.length > 4 ? ` and ${chosen.length - 4} more` : ""}. The apps keep their data. System-wide apps ask for your password.`,
@@ -210,7 +223,9 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
     };
     const result = await bounded(run().finally(() => (working = false)));
     if (!result.done) return text("The person said yes and the updates are still going; list_software_updates shows what is left.");
-    return result.value.length === 0 ? text(`${chosen.length === 1 ? "The app is" : "The apps are"} updated.`) : toolError(`Some updates failed: ${result.value.join(" ")}`);
+    return result.value.length === 0
+      ? text(`${chosen.length === 1 ? "The app is" : "The apps are"} updated.`)
+      : toolError(`Some updates failed: ${result.value.join(" ")}`);
   } catch (error) {
     return unavailable(error);
   }
@@ -220,7 +235,13 @@ async function updateSystem(b: SoftwareBackend, ctx: RunContext): Promise<ToolRe
   const { updates, restartCauses } = await b.manager.systemUpdates();
   if (updates.length === 0) return text("The system is up to date.");
   if (working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
-  const restart = restartCauses.length > 0 ? ` A restart will be needed afterwards (${restartCauses.slice(0, 3).map((u) => tidy(u.name, 30)).join(", ")}).` : "";
+  const restart =
+    restartCauses.length > 0
+      ? ` A restart will be needed afterwards (${restartCauses
+          .slice(0, 3)
+          .map((u) => tidy(u.name, 30))
+          .join(", ")}).`
+      : "";
   const yes = await ctx.confirm({
     summary: `install ${updates.length} system update${updates.length === 1 ? "" : "s"}`,
     detail: `They change the system's own software, and you will be asked for your password.${restart}`,

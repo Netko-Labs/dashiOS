@@ -38,8 +38,7 @@ export function monthGrid(view: MonthView, firstDay: number, today: Date): Day[]
       return {
         day: date.getDate(),
         inMonth: date.getMonth() === view.month,
-        today:
-          date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate(),
+        today: date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate(),
       };
     }),
   );

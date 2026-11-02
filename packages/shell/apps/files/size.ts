@@ -18,7 +18,12 @@ export interface Measure {
  * the running totals about every `every` entries. Stops (returning what it
  * has, `cancelled` true) when `signal` aborts.
  */
-export async function measure(path: string, signal?: AbortSignal, onProgress?: (so_far: Measure) => void, every = 500): Promise<Measure & { cancelled: boolean }> {
+export async function measure(
+  path: string,
+  signal?: AbortSignal,
+  onProgress?: (so_far: Measure) => void,
+  every = 500,
+): Promise<Measure & { cancelled: boolean }> {
   const total: Measure = { bytes: 0, files: 0, folders: 0, unreadable: 0 };
   let seen = 0;
   const stack: string[] = [path];

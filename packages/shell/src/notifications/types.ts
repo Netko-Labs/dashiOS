@@ -50,9 +50,7 @@ export interface HistoryEntry extends Notification {
   closed?: { reason: CloseReason; time: number };
 }
 
-export type StoreEvent =
-  | { type: "closed"; id: number; reason: CloseReason }
-  | { type: "action"; id: number; key: string };
+export type StoreEvent = { type: "closed"; id: number; reason: CloseReason } | { type: "action"; id: number; key: string };
 
 export interface StoreSnapshot {
   /** Not yet closed, oldest first. */

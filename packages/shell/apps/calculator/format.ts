@@ -69,7 +69,10 @@ export function copyText(state: CalcState): string {
  * (letters, two numbers) is not a number.
  */
 export function parsePasted(text: string): number | null {
-  const cleaned = text.trim().replace(/[\s,_]/g, "").replace(/^[−–]/, "-");
+  const cleaned = text
+    .trim()
+    .replace(/[\s,_]/g, "")
+    .replace(/^[−–]/, "-");
   if (!/^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(cleaned)) return null;
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;

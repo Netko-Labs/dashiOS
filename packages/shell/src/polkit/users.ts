@@ -19,7 +19,11 @@ export function parsePasswd(line: string, uid: number): PolkitUser | null {
   const fields = line.trim().split(":");
   const login = fields[0] ?? "";
   if (fields.length < 7 || !LOGIN.test(login) || Number(fields[2]) !== uid) return null;
-  const full = (fields[4] ?? "").split(",")[0]?.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 80);
+  const full = (fields[4] ?? "")
+    .split(",")[0]
+    ?.replace(/[\u0000-\u001f\u007f]/g, " ")
+    .trim()
+    .slice(0, 80);
   return { uid, login, label: full || login };
 }
 

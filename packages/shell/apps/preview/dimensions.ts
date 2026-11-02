@@ -150,7 +150,10 @@ export function svgSize(text: string): Size {
     const unit = { px: 1, pt: 4 / 3, pc: 16, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 }[(match[2] ?? "px").toLowerCase()] ?? 1;
     return Number(match[1]) * unit;
   };
-  const box = attr("viewBox")?.trim().split(/[\s,]+/).map(Number);
+  const box = attr("viewBox")
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
   const boxSize = box && box.length === 4 && box.every(Number.isFinite) ? { width: box[2] as number, height: box[3] as number } : null;
   let width = length(attr("width"));
   let height = length(attr("height"));

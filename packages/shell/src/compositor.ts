@@ -163,8 +163,7 @@ export function parseFrame(value: unknown): Frame | null {
 }
 
 const MAX_ICON_TEXT = 4096;
-const iconText = (value: unknown): string | null =>
-  typeof value === "string" && value.length > 0 && value.length <= MAX_ICON_TEXT ? value : null;
+const iconText = (value: unknown): string | null => (typeof value === "string" && value.length > 0 && value.length <= MAX_ICON_TEXT ? value : null);
 
 /** A window icon as the compositor sends it; null when it names neither a theme icon nor a picture. */
 export function parseWindowIcon(value: unknown): WindowIcon | null {
@@ -175,8 +174,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } =
-    value;
+  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -237,7 +235,9 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return isNumber(value.window) && typeof value.on === "boolean" ? { event: "fullscreen", window: value.window, on: value.on } : null;
     case "bars-edge":
       if (typeof value.inside !== "boolean") return null;
-      return typeof value.output === "string" ? { event: "bars-edge", inside: value.inside, output: value.output } : { event: "bars-edge", inside: value.inside };
+      return typeof value.output === "string"
+        ? { event: "bars-edge", inside: value.inside, output: value.output }
+        : { event: "bars-edge", inside: value.inside };
     case "gesture": {
       if (value.kind !== "swipe") return null;
       if (value.phase === "begin") return isNumber(value.fingers) ? { event: "gesture", kind: "swipe", phase: "begin", fingers: value.fingers } : null;
@@ -275,9 +275,7 @@ export function parseEvent(value: unknown): CompositorEvent | null {
     case "overview-key":
       return typeof value.key === "string" ? { event: "overview-key", key: value.key } : null;
     case "overview-drop":
-      return isNumber(value.window) && isNumber(value.x) && isNumber(value.y)
-        ? { event: "overview-drop", window: value.window, x: value.x, y: value.y }
-        : null;
+      return isNumber(value.window) && isNumber(value.x) && isNumber(value.y) ? { event: "overview-drop", window: value.window, x: value.x, y: value.y } : null;
     case "space":
       return isNumber(value.current) && isNumber(value.previous) && isNumber(value.count)
         ? { event: "space", current: value.current, previous: value.previous, count: value.count }
@@ -298,9 +296,7 @@ export function parseEvent(value: unknown): CompositorEvent | null {
           }
         : null;
     case "super":
-      return value.phase === "tap" || value.phase === "hold" || value.phase === "chord" || value.phase === "up"
-        ? { event: "super", phase: value.phase }
-        : null;
+      return value.phase === "tap" || value.phase === "hold" || value.phase === "chord" || value.phase === "up" ? { event: "super", phase: value.phase } : null;
     default:
       return null;
   }

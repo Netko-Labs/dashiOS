@@ -77,7 +77,11 @@ export class FilesStore {
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private volumeTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(readonly env: Env, start: Location, private readonly options: { watch?: boolean } = {}) {
+  constructor(
+    readonly env: Env,
+    start: Location,
+    private readonly options: { watch?: boolean } = {},
+  ) {
     this.state = {
       location: start,
       canBack: false,
@@ -160,7 +164,15 @@ export class FilesStore {
       this.forward = [];
     }
     this.clearSearch();
-    this.patch({ location, canBack: this.back.length > 0, canForward: this.forward.length > 0, selection: options.select ? [options.select] : [], items: [], error: null, loading: true });
+    this.patch({
+      location,
+      canBack: this.back.length > 0,
+      canForward: this.forward.length > 0,
+      selection: options.select ? [options.select] : [],
+      items: [],
+      error: null,
+      loading: true,
+    });
     void this.load(options.select);
   }
 
@@ -208,7 +220,9 @@ export class FilesStore {
       items = result.items;
       error = result.error;
     } else if (location.kind === "trash") {
-      items = (await listTrash(this.env.trash, this.env.mime)).map((item) => (item.original ? { ...item, where: tilde(parentOf(item.original), this.env.home) } : item));
+      items = (await listTrash(this.env.trash, this.env.mime)).map((item) =>
+        item.original ? { ...item, where: tilde(parentOf(item.original), this.env.home) } : item,
+      );
     } else {
       items = await this.recentItems();
     }
@@ -419,7 +433,11 @@ export class FilesStore {
     if (location.kind !== "folder") {
       // Recents and the Trash are lists already: filter them in place.
       const lower = query.toLowerCase();
-      apply(this.state.items.filter((item) => item.name.toLowerCase().includes(lower)), false, false);
+      apply(
+        this.state.items.filter((item) => item.name.toLowerCase().includes(lower)),
+        false,
+        false,
+      );
       return;
     }
     const result = await searchFolder(location.path, query, {

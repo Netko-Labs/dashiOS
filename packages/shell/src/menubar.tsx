@@ -76,7 +76,11 @@ function Title({
  */
 function StatusItem({ testID, onPress, children }: { testID: string; onPress: () => void; children: ReactNode }) {
   return (
-    <View testID={testID} onPress={onPress} style={{ height: 22, paddingLeft: 7, paddingRight: 7, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{ height: 22, paddingLeft: 7, paddingRight: 7, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+    >
       {children}
     </View>
   );
@@ -184,7 +188,9 @@ export function MenuBar({
               <StatusItem testID="status-battery" onPress={openControlCenter}>
                 {menuBar.batteryPercent === true && (
                   <View testID="status-battery-percent" style={{ marginRight: 5 }}>
-                    <Text style={{ fontSize: 12, color: battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text }}>{`${battery.percent}%`}</Text>
+                    <Text
+                      style={{ fontSize: 12, color: battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text }}
+                    >{`${battery.percent}%`}</Text>
                   </View>
                 )}
                 <Svg

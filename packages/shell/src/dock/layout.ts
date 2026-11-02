@@ -82,10 +82,10 @@ export function dockLayout(pinnedIds: readonly string[], catalog: readonly Entry
     if (kept.has(key) || !first) continue;
     const app: App = installed.get(key) ??
       ownApp(first.appId) ?? {
-      id: first.appId,
-      name: displayName(first.appId, first.title),
-      icon: iconPath("generic"),
-    };
+        id: first.appId,
+        name: displayName(first.appId, first.title),
+        icon: iconPath("generic"),
+      };
     running.push({ key, app, windows: group, pinned: false });
   }
 

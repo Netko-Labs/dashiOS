@@ -95,9 +95,7 @@ export function dragZones(output: Output): Zone[] {
     [right.middle, "right"],
     [menuBar, "fill"],
   ];
-  return zones
-    .filter(([area]) => area.width > 0 && area.height > 0)
-    .map(([area, tile]) => ({ area, frame: tileFrame(tile, usable) }));
+  return zones.filter(([area]) => area.width > 0 && area.height > 0).map(([area, tile]) => ({ area, frame: tileFrame(tile, usable) }));
 }
 
 /** Where the `count`th new window's frame goes: centered across, a third of

@@ -125,10 +125,7 @@ export class Service {
     const { name } = this.spec;
     const verdict = this.policy.record(this.deps.now());
     if (verdict.kind === "give-up") {
-      this.deps.log(
-        `${name}: GIVING UP: ${verdict.crashes} crashes within a minute. ` +
-          `It will not be restarted again; read the lines above for why.`,
-      );
+      this.deps.log(`${name}: GIVING UP: ${verdict.crashes} crashes within a minute. ` + `It will not be restarted again; read the lines above for why.`);
       return "gave-up";
     }
     this.deps.log(`${name}: crash ${verdict.crashes}; restarting in ${verdict.delayMs} ms`);

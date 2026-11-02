@@ -51,7 +51,11 @@ export function Listing({ source }: { source: Source }) {
         testID="no-results"
         glyph={glyphs.SEARCH}
         title="No Results"
-        message={source.kind === "search" ? `Nothing in Flathub matches “${source.query}”. Check the spelling or try fewer words.` : "There are no apps in this category yet."}
+        message={
+          source.kind === "search"
+            ? `Nothing in Flathub matches “${source.query}”. Check the spelling or try fewer words.`
+            : "There are no apps in this category yet."
+        }
       />
     );
   }

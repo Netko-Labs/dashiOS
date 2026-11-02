@@ -22,8 +22,7 @@ export type Incoming =
   | { kind: "response" }
   | { kind: "invalid"; id: Id | null; code: number; message: string };
 
-const isId = (value: unknown): value is Id =>
-  typeof value === "string" || (typeof value === "number" && Number.isInteger(value));
+const isId = (value: unknown): value is Id => typeof value === "string" || (typeof value === "number" && Number.isInteger(value));
 
 export function parse(line: string): Incoming {
   let value: unknown;
@@ -42,9 +41,8 @@ export function parse(line: string): Incoming {
   if (typeof message.method === "string") {
     if (!hasId) return { kind: "notification", method: message.method };
     if (id === null) return invalid(null);
-    const params = typeof message.params === "object" && message.params !== null && !Array.isArray(message.params)
-      ? (message.params as Record<string, unknown>)
-      : {};
+    const params =
+      typeof message.params === "object" && message.params !== null && !Array.isArray(message.params) ? (message.params as Record<string, unknown>) : {};
     return { kind: "request", id, method: message.method, params };
   }
   if (hasId && ("result" in message || "error" in message)) return { kind: "response" };

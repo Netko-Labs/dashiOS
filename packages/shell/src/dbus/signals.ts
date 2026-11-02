@@ -44,8 +44,7 @@ export function matchRuleString(rule: MatchRule): string {
   return parts.join(",");
 }
 
-const underNamespace = (path: string, namespace: string): boolean =>
-  namespace === "/" || path === namespace || path.startsWith(`${namespace}/`);
+const underNamespace = (path: string, namespace: string): boolean => namespace === "/" || path === namespace || path.startsWith(`${namespace}/`);
 
 /**
  * Does `message` satisfy `rule`? `senderOwner` stands in for `rule.sender`

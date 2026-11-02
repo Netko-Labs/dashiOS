@@ -19,13 +19,23 @@ export interface OpenCheck {
 }
 
 /** Types that are programs or launchers: opening one runs it. */
-const PROGRAMS = new Set(["application/x-executable", "application/x-pie-executable", "application/vnd.appimage", "application/x-sharedlib", "application/x-desktop", "application/x-ms-dos-executable", "application/x-msi", "application/x-flatpak-ref"]);
+const PROGRAMS = new Set([
+  "application/x-executable",
+  "application/x-pie-executable",
+  "application/vnd.appimage",
+  "application/x-sharedlib",
+  "application/x-desktop",
+  "application/x-ms-dos-executable",
+  "application/x-msi",
+  "application/x-flatpak-ref",
+]);
 
 /** Whether Files opens an item: a folder always; a file unless it is a launcher or program. */
 export function mayOpen(item: { kind: string; name: string; mime: string }): OpenCheck {
   if (item.kind === "folder") return { ok: true };
   if (item.kind !== "file") return { ok: false, reason: "That kind of item can’t be opened." };
-  if (/\.(desktop|appimage)$/i.test(item.name) || PROGRAMS.has(item.mime)) return { ok: false, reason: "Programs and launchers aren’t run from Files. Start it from the launcher or a terminal." };
+  if (/\.(desktop|appimage)$/i.test(item.name) || PROGRAMS.has(item.mime))
+    return { ok: false, reason: "Programs and launchers aren’t run from Files. Start it from the launcher or a terminal." };
   return { ok: true };
 }
 

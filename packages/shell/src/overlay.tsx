@@ -5,15 +5,7 @@
  * host that dies by itself is the same close.
  */
 
-import {
-  type NativeHostOptions,
-  type NativeHostTransport,
-  type NativeWindowOptions,
-  render,
-  spawnNativeHost,
-  TextInput,
-  View,
-} from "@mirinjs/metal";
+import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./apps.ts";
 import { WarmHost } from "./warm-host.ts";

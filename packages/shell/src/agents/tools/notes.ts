@@ -66,7 +66,7 @@ export const noteTools: readonly ToolDef[] = [
     destructive: false,
     properties: { id: idProp },
     required: ["id"],
-    parse: (args) => (isNoteId(args.id) ? { name: "read_note", id: args.id } : fail("`id` is required: a note id from list_notes, like \"Work/Plan.md\".")),
+    parse: (args) => (isNoteId(args.id) ? { name: "read_note", id: args.id } : fail('`id` is required: a note id from list_notes, like "Work/Plan.md".')),
   },
   {
     name: "create_note",
@@ -105,7 +105,9 @@ export const noteTools: readonly ToolDef[] = [
     parse: (args) => {
       if (!isNoteId(args.id)) return fail('`id` is required: a note id from list_notes, like "Work/Plan.md".');
       const added = text(args.text, MAX_TEXT);
-      return added === null || added.trim() === "" ? fail(`\`text\` is required: what to add, at most ${MAX_TEXT} characters.`) : { name: "append_to_note", id: args.id, text: added };
+      return added === null || added.trim() === ""
+        ? fail(`\`text\` is required: what to add, at most ${MAX_TEXT} characters.`)
+        : { name: "append_to_note", id: args.id, text: added };
     },
   },
 ];

@@ -32,11 +32,26 @@ export interface FlatpakUpdate {
   downloadSize: number | null;
 }
 
-const UNITS: Readonly<Record<string, number>> = { bytes: 1, byte: 1, B: 1, kB: 1e3, KB: 1e3, MB: 1e6, GB: 1e9, TB: 1e12, KiB: 1024, MiB: 1024 ** 2, GiB: 1024 ** 3 };
+const UNITS: Readonly<Record<string, number>> = {
+  bytes: 1,
+  byte: 1,
+  B: 1,
+  kB: 1e3,
+  KB: 1e3,
+  MB: 1e6,
+  GB: 1e9,
+  TB: 1e12,
+  KiB: 1024,
+  MiB: 1024 ** 2,
+  GiB: 1024 ** 3,
+};
 
 /** "5.1 MB" (flatpak puts a no-break space in), "< 1.7 MB", "340 bytes" as bytes; null for anything else. */
 export function parseSize(text: string): number | null {
-  const match = text.replace(/[\u00a0\u202f]/g, " ").trim().match(/^[<~]?\s*(\d+(?:[.,]\d+)?)\s*([A-Za-z]+)$/);
+  const match = text
+    .replace(/[\u00a0\u202f]/g, " ")
+    .trim()
+    .match(/^[<~]?\s*(\d+(?:[.,]\d+)?)\s*([A-Za-z]+)$/);
   const unit = match?.[2] ? UNITS[match[2]] : undefined;
   if (!match?.[1] || unit === undefined) return null;
   const bytes = Number(match[1].replace(",", ".")) * unit;
@@ -140,7 +155,10 @@ export function parseProgress(output: string): Progress | null {
  * else the last lines of output.
  */
 export function failureMessage(output: string): string {
-  const lines = stripTerminal(output).split("\n").map((line) => line.trim()).filter((line) => line !== "");
+  const lines = stripTerminal(output)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
   const errors = lines.filter((line) => /^(?:flatpak: )?error:/i.test(line)).map((line) => line.replace(/^(?:flatpak: )?error:\s*/i, ""));
   const picked = errors.length > 0 ? errors.slice(-3) : lines.slice(-3);
   return tidy(picked.join(" "), 400) || "The command failed without saying why.";

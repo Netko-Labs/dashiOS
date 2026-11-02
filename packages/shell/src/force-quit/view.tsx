@@ -19,19 +19,7 @@ const PANEL_WIDTH = FORCE_QUIT.width - FORCE_QUIT.margin * 2;
 const ROW_HEIGHT = 32;
 /** Muted ink for a button that cannot be pressed. */
 
-function Button({
-  label,
-  primary,
-  disabled,
-  testID,
-  onPress,
-}: {
-  label: string;
-  primary?: boolean;
-  disabled?: boolean;
-  testID: string;
-  onPress: () => void;
-}) {
+function Button({ label, primary, disabled, testID, onPress }: { label: string; primary?: boolean; disabled?: boolean; testID: string; onPress: () => void }) {
   const colors = useColors();
   return (
     <View
@@ -112,9 +100,7 @@ function AppList({ state, onSelect }: { state: ForceQuitState; onSelect: (pid: n
         borderColor: colors.separator,
       }}
     >
-      {state.loaded && state.groups.length === 0 && (
-        <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center" }}>No apps are open.</Text>
-      )}
+      {state.loaded && state.groups.length === 0 && <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center" }}>No apps are open.</Text>}
       {visible.map((group) => (
         <Row key={group.pid} group={group} selected={group.pid === state.selected} onPress={() => onSelect(group.pid)} />
       ))}
@@ -128,9 +114,7 @@ function Question({ group, onCancel, onConfirm }: { group: AppGroup; onCancel: (
   return (
     <>
       <Image source={group.icon} style={{ width: 48, height: 48 }} />
-      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>
-        {`Do you want to force “${group.name}” to quit?`}
-      </Text>
+      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{`Do you want to force “${group.name}” to quit?`}</Text>
       <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>You will lose any unsaved changes.</Text>
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignSelf: "stretch", gap: 10, marginTop: 6 }}>
         <Button testID="force-quit-cancel" label="Cancel" onPress={onCancel} />

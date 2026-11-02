@@ -9,14 +9,7 @@
  * is not claimed; sounds, persistence, and image data are not either.
  */
 
-import {
-  DBusConnection,
-  type ConnectOptions,
-  type InterfaceSpec,
-  NameFlags,
-  nameHasOwner,
-  requestName,
-} from "../dbus/index.ts";
+import { DBusConnection, type ConnectOptions, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../dbus/index.ts";
 import { parseNotify } from "./parse.ts";
 import type { NotificationStore } from "./store.ts";
 import { CloseReason } from "./types.ts";
@@ -63,10 +56,7 @@ export interface NotificationsService {
  * saying why, when there is no bus or another notification daemon owns the
  * name: the shell goes on without notifications.
  */
-export async function serveNotifications(
-  store: NotificationStore,
-  options: ConnectOptions = {},
-): Promise<NotificationsService | null> {
+export async function serveNotifications(store: NotificationStore, options: ConnectOptions = {}): Promise<NotificationsService | null> {
   let connection: DBusConnection;
   try {
     connection = await DBusConnection.connect(options);

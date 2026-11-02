@@ -54,7 +54,8 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   const window = await named(ctx.compositor, call.window);
   if (!window) return noWindow(call.window);
   // The Setup Assistant is the person's: its pages change the whole computer's settings, one of them behind a password sheet.
-  if (window.appId === SETUP_APP_ID) return toolError(`w${window.id} is the Setup Assistant, which is for the person to use; open_setup_assistant only shows it.`);
+  if (window.appId === SETUP_APP_ID)
+    return toolError(`w${window.id} is the Setup Assistant, which is for the person to use; open_setup_assistant only shows it.`);
   const size = content(window);
   if (isResult(size)) return size;
   const where = subject(window, ctx);
@@ -83,7 +84,9 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const problem = inside(window, size, [call.from, call.to]);
         if (problem) return problem;
         if (borrowsPersonSeat(window)) {
-          return toolError(`w${window.id} only listens to the person's pointer, so it can't be dragged without taking it over; use click, type_text, or press_keys there.`);
+          return toolError(
+            `w${window.id} only listens to the person's pointer, so it can't be dragged without taking it over; use click, type_text, or press_keys there.`,
+          );
         }
         say(`Dragging in ${where}`);
         return await drag(call, window.id, send, ctx);
@@ -104,7 +107,12 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   }
 }
 
-async function drag(call: Extract<InputCall, { name: "drag" }>, id: number, send: (payload: Record<string, unknown>) => Promise<void>, ctx: RunContext): Promise<ToolResult> {
+async function drag(
+  call: Extract<InputCall, { name: "drag" }>,
+  id: number,
+  send: (payload: Record<string, unknown>) => Promise<void>,
+  ctx: RunContext,
+): Promise<ToolResult> {
   const { from, to } = call;
   const move = (x: number, y: number, action: "move" | "press" | "release") => send({ pointer: { x, y }, action });
   try {

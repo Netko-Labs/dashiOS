@@ -41,7 +41,13 @@ export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (
   const views: MenuSpec = {
     id: "view",
     items: [
-      ...(["day", "week", "month"] as const).map((each, index) => ({ id: `view:${each}`, label: `by ${LABELS[each]}`, shortcut: `❖${index + 1}`, enabled: free, checked: view === each })),
+      ...(["day", "week", "month"] as const).map((each, index) => ({
+        id: `view:${each}`,
+        label: `by ${LABELS[each]}`,
+        shortcut: `❖${index + 1}`,
+        enabled: free,
+        checked: view === each,
+      })),
       { type: "separator" },
       { id: "today", label: "Go to Today", shortcut: "❖T", enabled: free },
       { id: "previous", label: `Previous ${LABELS[view]}`, shortcut: "❖[", enabled: free },

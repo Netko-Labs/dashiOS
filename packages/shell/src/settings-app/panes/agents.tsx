@@ -35,7 +35,11 @@ function AgentRow({ entry, home, onRevoke }: { entry: { key: string; scopes: Sco
           {name.detail}
         </Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-          {entry.scopes.length === 0 ? <Text style={{ fontSize: 11, color: colors.textMuted }}>Nothing allowed</Text> : entry.scopes.map((scope) => <ScopeChip key={scope} scope={scope} />)}
+          {entry.scopes.length === 0 ? (
+            <Text style={{ fontSize: 11, color: colors.textMuted }}>Nothing allowed</Text>
+          ) : (
+            entry.scopes.map((scope) => <ScopeChip key={scope} scope={scope} />)
+          )}
         </View>
       </View>
       <Button testID={`agent-revoke:${entry.key}`} label="Revoke" onPress={onRevoke} />

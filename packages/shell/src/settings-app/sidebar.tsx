@@ -18,7 +18,14 @@ export function Sidebar({ current, onSelect }: { current: PaneId; onSelect: (pan
   return (
     <View
       testID="settings-sidebar"
-      style={{ width: SIDEBAR_WIDTH, flexShrink: 0, flexDirection: "column", backgroundColor: surface.sidebar, borderRightWidth: 1, borderColor: colors.separator }}
+      style={{
+        width: SIDEBAR_WIDTH,
+        flexShrink: 0,
+        flexDirection: "column",
+        backgroundColor: surface.sidebar,
+        borderRightWidth: 1,
+        borderColor: colors.separator,
+      }}
     >
       {controls && <View testID="settings-sidebar-top" dragRegion style={{ height: strip, flexShrink: 0 }} />}
       {/* The panes fit the window at its default size, so a pane opened from outside (an agent, a deep link) is in view; a smaller window scrolls the list. */}

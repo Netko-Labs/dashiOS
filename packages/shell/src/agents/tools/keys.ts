@@ -130,14 +130,15 @@ function parseChord(text: string): Chord | string {
     rest = chars.join("");
   }
   const key = keyName(rest);
-  if (key === null) return `\`${rest}\` in ${text} is not a key I know: a letter, digit, punctuation mark, arrow (←↑↓→), or a name like Return, Tab, Escape, F5.`;
+  if (key === null)
+    return `\`${rest}\` in ${text} is not a key I know: a letter, digit, punctuation mark, arrow (←↑↓→), or a name like Return, Tab, Escape, F5.`;
   return { mods, key };
 }
 
 /** "❖S", "⌥←", "⌃⇧Tab", "❖A ❖C" as chords, or what is wrong with it. */
 export function parseKeys(text: string): Chord[] | string {
   const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "`keys` is empty; try \"❖S\" or \"⌥←\".";
+  if (words.length === 0) return '`keys` is empty; try "❖S" or "⌥←".';
   if (words.length > MAX_CHORDS) return `\`keys\` holds at most ${MAX_CHORDS} chords.`;
   const chords: Chord[] = [];
   for (const word of words) {
