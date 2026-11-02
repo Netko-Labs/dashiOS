@@ -9,6 +9,7 @@ License:        MIT
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
+BuildRequires:  systemd-rpm-macros
 
 Requires:       dashi-comp = %{version}-%{release}
 Requires:       dashi-bun
