@@ -901,7 +901,7 @@ fn a_plain_client_sees_no_privileged_protocols() {
             "zwp_keyboard_shortcuts_inhibit_manager_v1",
             "zwp_text_input_manager_v3",
             "wp_security_context_manager_v1",
-            "xdg_toplevel_icon_manager_v1",
+            // xdg_toplevel_icon_manager_v1 is off for now (handlers/toplevel_meta.rs).
             "xdg_system_bell_v1",
             "zxdg_exporter_v2",
         ] {

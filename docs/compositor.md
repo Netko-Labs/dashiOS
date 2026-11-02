@@ -140,7 +140,9 @@ Each milestone ends with the shell running on it in the VM.
   the shell claims goes to it), idle-inhibit (while its surface is on
   screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
   stay Dashi's), text-input and input-method, virtual keyboard (the shell's
-  processes only), xdg-toplevel-icon (`window-icon`), xdg-system-bell
+  processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
+  disconnects Chromium for destroying an icon's buffer after the icon),
+  xdg-system-bell
   (`bell`), xdg-foreign, ext-image-copy-capture with ext-image-capture-source
   and ext-foreign-toplevel-list (screen and window sharing through newer
   portals; shm buffers, paced to 60 frames a second).

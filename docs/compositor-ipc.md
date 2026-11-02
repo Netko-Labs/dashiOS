@@ -142,5 +142,5 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | `idle` | `seconds` |
 | `active` | |
 | `wallpaper` | `path: string\|null, ok, error?` |
-| `window-icon` | `window, name: string\|null, path: string\|null` |
+| `window-icon` | `window, name: string\|null, path: string\|null` (not sent while xdg-toplevel-icon is off; docs/compositor.md) |
 | `bell` | `window: int\|null` (xdg-system-bell) |

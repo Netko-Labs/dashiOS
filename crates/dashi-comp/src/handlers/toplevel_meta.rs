@@ -32,10 +32,20 @@ use crate::{state::Dashi, wm::WindowId};
 /// The largest icon kept (edge, pixels); bigger pictures are skipped.
 const MAX_EDGE: u32 = 1024;
 
+/// Whether xdg-toplevel-icon is offered. Off: smithay 0.7 keeps a destruction
+/// hook on an icon's buffer after the client destroyed the icon, so a client
+/// that sets an icon, destroys it, then destroys the buffer (legal, and what
+/// Chromium does: Helium, the installer's browser) gets a no_buffer protocol
+/// error and is disconnected. Windows show their desktop entry's icon until
+/// smithay is fixed (or patched here).
+const OFFER_TOPLEVEL_ICONS: bool = false;
+
 pub(crate) fn create_globals(dh: &DisplayHandle) {
-    let mut icons = XdgToplevelIconManager::new::<Dashi>(dh);
-    for size in [32, 64, 128, 256] {
-        icons.add_icon_size(size);
+    if OFFER_TOPLEVEL_ICONS {
+        let mut icons = XdgToplevelIconManager::new::<Dashi>(dh);
+        for size in [32, 64, 128, 256] {
+            icons.add_icon_size(size);
+        }
     }
     XdgSystemBellState::new::<Dashi>(dh);
 }
