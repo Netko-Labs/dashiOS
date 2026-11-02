@@ -618,3 +618,72 @@ fn full_screen_covers_the_screen_and_gives_the_frame_back() {
     );
     assert!(ipc.request("fullscreen", json!({ "window": id }))["error"].is_string());
 }
+
+#[test]
+fn spaces_keep_their_windows() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Spaced");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+
+    assert_eq!(
+        ipc.request("spaces", json!({ "follow": false }))["result"],
+        json!({ "count": 1, "current": 0 })
+    );
+    let added = ipc.request("space-add", json!({}))["result"].clone();
+    assert_eq!(added, json!({ "count": 2, "current": 0, "space": 1 }));
+    // Adding one says so: the count changed.
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "space"),
+        json!({ "event": "space", "current": 0, "previous": 0, "count": 2 })
+    );
+
+    assert_eq!(
+        ipc.request("space-move", json!({ "window": id, "space": 1 }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 1 })
+    );
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert_eq!(
+        (window["space"].as_u64(), window["frame"].is_null()),
+        (Some(1), true),
+        "off screen on another Space"
+    );
+
+    assert_eq!(
+        ipc.request("space-switch", json!({ "space": 1 }))["result"]["count"],
+        2
+    );
+    let event = wait_event(&mut ipc, &mut client, "space");
+    assert_eq!(
+        event,
+        json!({ "event": "space", "current": 1, "previous": 0, "count": 2 })
+    );
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert_eq!(window["frame"]["x"], 100, "back where it was");
+
+    // Fewer Spaces: windows on the ones that go join the last one left.
+    assert_eq!(
+        ipc.request("spaces", json!({ "count": 1 }))["result"],
+        json!({ "count": 1, "current": 0 })
+    );
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert_eq!(
+        (window["space"].as_u64(), window["frame"]["x"].as_i64()),
+        (Some(0), Some(100))
+    );
+    assert!(ipc.request("space-switch", json!({ "space": 5 }))["error"].is_string());
+    assert!(ipc.request("spaces", json!({ "count": 0 }))["error"].is_string());
+}

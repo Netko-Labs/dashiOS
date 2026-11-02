@@ -57,6 +57,7 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub spaces: crate::wm::Spaces,
     pub bars: crate::wm::Bars,
     pub wallpaper: crate::wallpaper::Wallpaper,
     /// The session's client (`-c`): it and the processes under it are the shell.
@@ -122,6 +123,7 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            spaces: Default::default(),
             bars: Default::default(),
             wallpaper: Default::default(),
             session_client: None,

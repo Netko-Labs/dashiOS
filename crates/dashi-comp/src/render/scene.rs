@@ -95,9 +95,12 @@ where
         if view.only.as_ref().is_some_and(|only| only != window) {
             continue;
         }
-        let Some(frame_at) = state.space.element_location(window) else {
+        let Some(mut frame_at) = state.space.element_location(window) else {
             continue;
         };
+        if let Some(offset) = state.slide_offset(state.spaces.current, output_geo.size.w) {
+            frame_at += offset;
+        }
         let entry = state.windows.by_window(window);
         let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
         let image = entry.and_then(|entry| entry.title_image.as_ref());
@@ -117,6 +120,29 @@ where
         if let (Decor::Standard, Some(image)) = (decor, image) {
             let bar_at = Point::from((frame_at.x, frame_at.y - state.bar_height(window)));
             push_memory(renderer, on_view(bar_at), &image.buffer, &mut elements);
+        }
+    }
+    // The Space sliding in from beside: its windows, from where they wait.
+    if let Some(slide) = state.spaces.slide.filter(|_| view.only.is_none())
+        && let Some(offset) = state.slide_offset(slide.to, output_geo.size.w)
+    {
+        let arriving: Vec<_> = state
+            .windows
+            .entries()
+            .filter(|e| e.space == slide.to && e.shown == crate::wm::Shown::Normal)
+            .filter_map(|e| e.away_at.map(|at| (e.window.clone(), at)))
+            .collect();
+        for (window, at) in arriving.into_iter().rev() {
+            let surface_at =
+                ((at + offset - window.geometry().loc) - origin).to_physical_precise_round(scale);
+            elements.extend(
+                window
+                    .render_elements::<WaylandSurfaceRenderElement<R>>(
+                        renderer, surface_at, scale, 1.0,
+                    )
+                    .into_iter()
+                    .map(DashiElement::Surface),
+            );
         }
     }
     if view.only.is_some() {

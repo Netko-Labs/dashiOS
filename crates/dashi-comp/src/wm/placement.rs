@@ -107,6 +107,7 @@ impl Dashi {
         };
         entry.placed = true;
         entry.placing = false;
+        entry.space = self.spaces.current;
         let window = entry.window.clone();
         self.map_frame_at(&window, at, true);
         if let (Some(keyboard), Some(surface)) =

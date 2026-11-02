@@ -57,7 +57,11 @@ impl Dashi {
     /// Raise it, give it the keyboard, and bring it back if it was minimized or hidden.
     pub(crate) fn focus_window(&mut self, id: WindowId) -> Result<(), String> {
         let window = self.window_of(id)?;
+        self.reach_space_of(id);
         self.show_window(id);
+        if !self.on_current_space(id) {
+            return Ok(());
+        }
         self.space.raise_element(&window, true);
         if let (Some(keyboard), Some(surface)) =
             (self.seat.get_keyboard(), toplevel_surface(&window))
@@ -105,6 +109,14 @@ impl Dashi {
         entry.shown = Shown::Normal;
         let window = entry.window.clone();
         let at = entry.parked_at.take().unwrap_or_default();
+        if entry.space != self.spaces.current {
+            // Back, but on a Space that is not shown: it waits there.
+            let bar = super::windows::bar_of(self, &window);
+            if let Some(entry) = self.windows.get_mut(id) {
+                entry.away_at = Some((at.x, at.y + bar).into());
+            }
+            return;
+        }
         self.map_frame_at(&window, at, true);
     }
 

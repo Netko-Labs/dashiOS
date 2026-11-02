@@ -56,6 +56,10 @@ pub(crate) struct Entry {
     pub title_image: Option<titlebar::Image>,
     /// Full screen on this output, and the outer frame to go back to.
     pub fullscreen: Option<(String, Rectangle<i32, Logical>)>,
+    /// The Space it is on.
+    pub space: usize,
+    /// Where it was while its Space is not shown.
+    pub away_at: Option<Point<i32, Logical>>,
 }
 
 pub(crate) struct Windows {
@@ -89,8 +93,22 @@ impl Windows {
             unified: false,
             title_image: None,
             fullscreen: None,
+            space: 0,
+            away_at: None,
         });
         id
+    }
+
+    pub(crate) fn ids(&self) -> impl Iterator<Item = WindowId> + use<> {
+        self.entries
+            .iter()
+            .map(|entry| entry.id)
+            .collect::<Vec<_>>()
+            .into_iter()
+    }
+
+    pub(crate) fn entries(&self) -> impl Iterator<Item = &Entry> {
+        self.entries.iter()
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -221,6 +239,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "frame": frame,
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),
+        "space": entry.space,
     })
 }
 

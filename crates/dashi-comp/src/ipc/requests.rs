@@ -20,9 +20,6 @@ const LATER: &[&str] = &[
     "outputs-config",
     "power",
     "gamma",
-    "space-add",
-    "space-switch",
-    "space-move",
     "overview",
     "agent-input",
 ];
@@ -95,6 +92,41 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "spaces" => {
+            let count = match params.get("count") {
+                None => None,
+                Some(value) => Some(value.as_u64().ok_or("`count` must be a number")? as usize),
+            };
+            let follow = match params.get("follow") {
+                None => None,
+                Some(value) => Some(value.as_bool().ok_or("`follow` must be true or false")?),
+            };
+            state.configure_spaces(count, follow)
+        }
+        "space-add" => state.add_space(),
+        "space-switch" => {
+            let space = params
+                .get("space")
+                .and_then(Value::as_u64)
+                .ok_or("`space` must be a Space's index")? as usize;
+            let progress = match params.get("progress") {
+                None => None,
+                Some(value) => Some(
+                    value
+                        .as_f64()
+                        .filter(|p| p.is_finite())
+                        .ok_or("`progress` must be a number")?,
+                ),
+            };
+            state.switch_space(space, progress)
+        }
+        "space-move" => {
+            let space = params
+                .get("space")
+                .and_then(Value::as_u64)
+                .ok_or("`space` must be a Space's index")? as usize;
+            done(state.move_to_space(window(params)?, space))
+        }
         "fullscreen" => {
             let on = params
                 .get("on")
@@ -123,8 +155,6 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
-        // One Space until C2.
-        "spaces" => Ok(json!({ "count": 1, "current": 0 })),
         // The Dock's edge claim: kept, and not inside until edges work (C2).
         "edges" => {
             state.shell_config.keep("edges", request.params.clone());
