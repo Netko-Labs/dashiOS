@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# spin/build-image: Dashi's live ISO from the packages spin/build-rpms made
+# (~/rpmbuild/RPMS), with livemedia-creator (lorax). Run in the VM; needs
+# sudo (or root, with RPMBUILD_TOP), network for Fedora's repositories, and lorax, lorax-lmc-novirt,
+# pykickstart, and createrepo_c (it installs them).
+#
+#   spin/build-image            the ISO in ~/rpmbuild/image/Dashi-<version>-x86_64.iso
+set -euo pipefail
+SUDO=sudo
+[ "$(id -u)" -eq 0 ] && SUDO=
+
+repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
+top=${RPMBUILD_TOP:-$HOME/rpmbuild}
+out=$top/image
+version=$(rpm -qp --qf '%{VERSION}' "$top"/RPMS/noarch/dashi-0*.rpm | head -1)
+[ -n "$version" ] || { echo "build-image: no dashi package in $top/RPMS; run spin/build-rpms all" >&2; exit 1; }
+
+$SUDO dnf install -y -q lorax lorax-lmc-novirt pykickstart createrepo_c
+createrepo_c -q "$top/RPMS"
+mkdir -p "$out"
+ks=$(mktemp --suffix=.ks)
+trap 'rm -f "$ks"' EXIT
+sed "s|@DASHI_REPO@|file://$top/RPMS|" "$repo/spin/image/dashi-live.ks" > "$ks"
+ksvalidator "$ks"
+
+iso=Dashi-${version%%~*}-x86_64.iso
+$SUDO rm -rf /var/tmp/lmc-dashi
+$SUDO livemedia-creator --make-iso --no-virt --ks "$ks" \
+  --project Dashi --releasever 44 --volid "Dashi-${version%%~*}" \
+  --iso-only --iso-name "$iso" --resultdir /var/tmp/lmc-dashi \
+  --logfile "$out/livemedia.log" --nomacboot
+$SUDO mv "/var/tmp/lmc-dashi/$iso" "$out/$iso"
+$SUDO chown "$(stat -c %u:%g "$top")" "$out/$iso"
+echo "build-image: $out/$iso"
