@@ -93,4 +93,18 @@ for package in "${packages[@]}"; do
     --define "_topdir $top" \
     --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
 done
+# No file may belong to two of Dashi's packages (the newest build of each):
+# dnf refuses such a pair, and the image build would fail far later.
+newest=$(ls -t "$top"/RPMS/*/*.rpm | grep -v -- '-debug' | while read -r rpm; do
+  printf '%s %s\n' "$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)" "$rpm"
+done | awk '!seen[$1]++ {print $2}')
+clashes=$(for rpm in $newest; do
+  name=$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)
+  rpm -qp --qf '[%{FILEMODES:perms} %{FILENAMES}\n]' "$rpm" 2>/dev/null | awk -v n="$name" '$1 !~ /^d/ {print $2, n}'
+done | sort | awk '{ if ($1 == last) print $1": "owner" and "$2; last = $1; owner = $2 }' | grep -v '/usr/lib/.build-id/')
+if [ -n "$clashes" ]; then
+  echo "build-rpms: files in two packages:" >&2
+  echo "$clashes" >&2
+  exit 1
+fi
 echo "build-rpms: done; see $top/RPMS"

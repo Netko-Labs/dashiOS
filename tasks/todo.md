@@ -93,9 +93,27 @@ it in the VM.
       the packaged greeter as the greetd user under enforcing SELinux (no
       denials), login, the session on /usr/bin/dashi-comp with Xwayland
 - [x] dashi-live for 0.2.0 (it pins dashi's version); autologin through greetd
-- [ ] Image build: spin/image/dashi-live.ks and spin/build-image (livemedia-creator)
-- [ ] COPR publishing (spin/copr-publish ready): needs the owner's Fedora account and API token; then
-      enable spin/dashi-release/etc/yum.repos.d/dashi.repo
+- [x] Image build: spin/image/dashi-live.ks and spin/build-image (livemedia-creator);
+      boots to the desktop on a plain virtio-vga (software rendering)
+- [x] COPR publishing: pejedev/dashi builds every package in a clean root;
+      dashi.repo enabled
+- [ ] Install test of every new image: install to a fresh disk, reboot, Setup
+      Assistant with extras, the Terminal, Steam
+
+## 5. System apps and first boot
+
+- [x] Terminal: dashi-term (PTY + libghostty-vt, Ghostty 1.4.0 with Zig 0.17)
+      drawn by a Metal app; keys, scrollback, selection, copy/paste, resize
+- [x] Text Editor (dev.dashi.editor), Software's Recommended shelf
+- [x] dashi-gaming; Setup Assistant extras (codecs, NVIDIA, gaming, Flathub
+      and apps) through dashi-extras and pkexec
+- [x] Anaconda profile for Dashi (the installer creates the account)
+- [ ] mirin: a clipboard API (wl-copy shows up as an app for a moment)
+- [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
+- [ ] mirin: dynamic window titles; text selection in TextInput
+- [ ] Terminal: wide-character width check, mouse reporting to programs,
+      Kitty graphics, cursor blink, URL detection, preferences
+- [ ] A Dashi-native installer front end over Anaconda
 
 ## Later
 
