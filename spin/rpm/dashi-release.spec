@@ -11,10 +11,12 @@ Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
 
 Requires:       fedora-repos(44)
-# zsh is Dashi's shell: new accounts get it (%post).
+# zsh is Dashi's shell: new accounts get it (%posttrans). A plain Requires,
+# not Requires(post): setup requires system-release (this package), so a
+# scriptlet dependency on zsh or shadow-utils (which need filesystem, which
+# needs setup) made a loop rpm could only break by installing filesystem
+# late, and a fresh install root then had no /bin/sh for the first %pre.
 Requires:       zsh
-Requires(post): zsh
-Requires(post): shadow-utils
 Provides:       system-release
 Provides:       system-release(44)
 Provides:       system-release(releasever) = 44
@@ -53,9 +55,10 @@ ln -s ../usr/lib/issue %{buildroot}%{_sysconfdir}/issue
 ln -s ../usr/lib/issue.net %{buildroot}%{_sysconfdir}/issue.net
 install -d %{buildroot}%{_sysconfdir}/issue.d
 
-%post
-# New accounts (the installer's, the live user, Users & Accounts) get zsh:
-# useradd's default, while it is still the stock bash.
+%posttrans
+# At the end of the transaction, when zsh, shadow-utils, and the tools here
+# are installed. New accounts (the installer's, the live user, Users &
+# Accounts) get zsh: useradd's default, while it is still the stock bash.
 if [ -f %{_sysconfdir}/default/useradd ] && grep -q '^SHELL=/bin/bash$' %{_sysconfdir}/default/useradd; then
   sed -i 's|^SHELL=/bin/bash$|SHELL=/bin/zsh|' %{_sysconfdir}/default/useradd
 fi

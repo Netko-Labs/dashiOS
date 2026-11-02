@@ -24,7 +24,10 @@ sed "s|@DASHI_REPO@|file://$top/RPMS|" "$repo/spin/image/dashi-live.ks" > "$ks"
 ksvalidator "$ks"
 
 iso=Dashi-${version%%~*}-x86_64.iso
-$SUDO rm -rf /var/tmp/lmc-dashi
+# An interrupted build leaves its disk image mounted on /mnt/sysroot, and
+# the next one would install onto it.
+while mountpoint -q /mnt/sysroot; do $SUDO umount /mnt/sysroot || break; done
+$SUDO rm -rf /var/tmp/lmc-dashi /var/tmp/lmc-work-*
 # livemedia-creator installs into a chroot, which SELinux in enforcing mode
 # gets in the way of; it is put back however the build ends.
 enforcing=$(getenforce)
