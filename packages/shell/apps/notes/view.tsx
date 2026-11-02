@@ -48,6 +48,7 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     return () => clearInterval(tick);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the model is mutable; these say when its rows changed
   const rows = useMemo(() => model.rows(), [model, state.notes, state.deleted, state.source, state.query]);
   const row = rows.find((each) => each.id === state.selected) ?? null;
   const inTrash = state.source.kind === "trash";

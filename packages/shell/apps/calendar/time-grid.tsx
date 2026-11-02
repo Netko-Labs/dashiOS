@@ -106,6 +106,7 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
 
   // The hours scroll to the working day when the view opens.
   const top = HOUR_HEIGHT * firstHour(days.includes(today), now.getHours()) - 14;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours be
   useEffect(() => {
     // The scroll offset outlives a switch between Day and Week, and a scroll is relative: back to the top first.
     const timer = setTimeout(() => {
@@ -114,7 +115,7 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, onNew,
     }, 80);
     return () => clearTimeout(timer);
     // Only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours where they are.
-  }, [scroll, days.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scroll, days.length]);
 
   return (
     <View testID="time-grid" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>

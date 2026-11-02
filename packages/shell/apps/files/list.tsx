@@ -15,6 +15,7 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
   const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
   const mode = columnMode(state);
   const cut = new Set(state.clipboard?.cut ? state.clipboard.paths : []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `cut` is made from the clipboard each render; the clipboard says when it changed
   const columns = useMemo<Column<FileItem>[]>(
     () =>
       fileColumns(mode).map((column) =>

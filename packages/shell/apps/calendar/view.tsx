@@ -89,6 +89,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   }, [model]);
 
   const { view, anchor, today, calendars, hidden } = state;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the model is mutable; these say when its occurrences changed
   const occurrences = useMemo(() => model.occurrences(firstDay), [model, state.calendars, state.hidden, state.view, state.anchor, firstDay]);
   const days = useMemo(() => viewDays(view, anchor, firstDay), [view, anchor, firstDay]);
   const colorOf = (id: string): string => calendars.find((calendar) => calendar.id === id)?.color ?? colors.selection;

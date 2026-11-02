@@ -123,6 +123,7 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
   }, [refocus]);
 
   const find = (path: string): FileItem | undefined => store.visible().find((item) => item.path === path);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `find` reads the store's latest list when called; the store is what changes
   const actions = useMemo<WindowActions>(
     () => ({
       rename: (path) => {

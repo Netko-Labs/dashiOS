@@ -55,10 +55,12 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   const scale = scaleOf(mode, fitted);
 
   // A different file starts fitted and centred; a different page keeps the zoom.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a different file resets the zoom and the pan
   useEffect(() => {
     setMode(FIT);
     setPan({ x: 0, y: 0 });
   }, [snap.path]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a different page or turn re-centres
   useEffect(() => {
     setPan({ x: 0, y: 0 });
   }, [pdf?.page, snap.turns]);

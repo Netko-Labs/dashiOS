@@ -30,5 +30,6 @@ const never = (): (() => void) => () => {};
 export function useBusyDays(from: Day, to: Day): ReadonlySet<Day> {
   const bridge = current;
   const version = useSyncExternalStore(bridge?.subscribe ?? never, bridge?.getVersion ?? (() => 0));
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `version` is the bridge's change counter
   return useMemo(() => bridge?.busyDays(from, to) ?? NO_DAYS, [bridge, version, from, to]);
 }

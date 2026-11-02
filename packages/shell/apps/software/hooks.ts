@@ -32,6 +32,7 @@ export function useLoad<T>(key: string, load: () => Promise<Answer<T>>): { state
   const [round, setRound] = useState(0);
   const loader = useRef(load);
   loader.current = load;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` and `round` ask for a reload; the loader is a ref
   useEffect(() => {
     let current = true;
     setState({ status: "loading" });

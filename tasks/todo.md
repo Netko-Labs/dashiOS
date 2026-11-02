@@ -9,7 +9,7 @@
 - [x] `docs/conventions.md`, `CLAUDE.md`/`AGENTS.md`, `docs/architecture.md`,
       `docs/compositor.md`, `docs/compositor-ipc.md`
 - [x] VM: install, desktop, ssh, screenshot, type/key, stop (`vm/vm`)
-- [ ] `bun run fmt-lint` clean (biome config from mirin; one formatting pass,
+- [x] `bun run fmt-lint` clean (biome config from mirin; one formatting pass, (done: mirin's rules at 160 columns; fmt-lint is clean)
       its own commit)
 - [ ] Shell tests (`packages/shell/test/`, lost with 0.1.0): parsers first
 

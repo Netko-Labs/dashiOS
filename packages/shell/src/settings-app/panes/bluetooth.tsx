@@ -155,6 +155,7 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
     return () => bluetooth.close();
   }, [devices, bluetooth]);
   // The switch moving is the moment to look again.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the radio switching is the moment to look again
   useEffect(() => {
     if (loaded) void bluetooth.refresh();
   }, [radios.bluetooth, loaded, bluetooth]);
