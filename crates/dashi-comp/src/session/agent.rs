@@ -1,9 +1,12 @@
-//! An agent's hands (`agent-input`): a second seat, "agent", whose pointer and
-//! keyboard reach only the window the shell named, so the agent never takes
-//! the person's focus or pointer. Its pointer is drawn with the agent's name.
-//! For apps that read one seat only (and X11 apps), the shell asks to borrow
-//! the person's seat (`borrow {idleMs}`): allowed only once the person has
-//! left it alone that long. Consent and policy are the shell's
+//! An agent's hands (`agent-input`): with `DASHI_AGENT_SEAT=1`, a second seat,
+//! "agent", whose pointer and keyboard reach only the window the shell named,
+//! so the agent never takes the person's focus or pointer. It is opt-in: a
+//! toolkit that reads one seat (GPUI, so the shell itself, and others)
+//! follows the last seat announced and would stop hearing the person's
+//! keyboard. Without it, and for apps that read one seat only (and X11
+//! apps, `borrow {idleMs}`), an action borrows the person's seat, allowed
+//! only once the person has left it alone that long. The agent's pointer is
+//! drawn with its name. Consent and policy are the shell's
 //! (packages/shell/src/agents/); this carries the input out.
 
 use std::time::Duration;
@@ -29,8 +32,13 @@ const BTN_MIDDLE: u32 = 0x112;
 /// The longest text typed in one request.
 const MAX_TEXT: usize = 4096;
 
+/// How long the person must have left the desktop alone before an action
+/// borrows their seat, when the shell does not say.
+const BORROW_AFTER_MS: u64 = 3000;
+
 pub(crate) struct Agent {
-    pub seat: Seat<Dashi>,
+    /// The agent's own seat, when it has one (`DASHI_AGENT_SEAT=1`).
+    pub seat: Option<Seat<Dashi>>,
     /// Where the agent's pointer is (global logical) and whose it is; None while hidden.
     pub pointer: Option<(Point<f64, Logical>, String)>,
     pressed_buttons: Vec<u32>,
@@ -38,7 +46,7 @@ pub(crate) struct Agent {
 }
 
 impl Agent {
-    pub(crate) fn new(seat: Seat<Dashi>) -> Self {
+    pub(crate) fn new(seat: Option<Seat<Dashi>>) -> Self {
         Self {
             seat,
             pointer: None,
@@ -90,19 +98,19 @@ impl Dashi {
             .collect::<String>();
 
         // The person's seat, borrowed, only when they have left it alone long enough.
-        let seat = match params.get("borrow") {
-            Some(borrow) => {
+        let seat = match (params.get("borrow"), &self.agent.seat) {
+            (None, Some(agent)) => agent.clone(),
+            (borrow, _) => {
                 let idle = borrow
-                    .get("idleMs")
+                    .and_then(|borrow| borrow.get("idleMs"))
                     .and_then(Value::as_u64)
-                    .unwrap_or(3000)
+                    .unwrap_or(BORROW_AFTER_MS)
                     .min(60_000);
                 if self.idle_for() < Duration::from_millis(idle) {
                     return Err("the person is using the desktop".into());
                 }
                 self.seat.clone()
             }
-            None => self.agent.seat.clone(),
         };
 
         if let Some(at) = params.get("pointer") {
@@ -300,7 +308,8 @@ impl Dashi {
     /// Let go of everything the agent holds and hide its pointer.
     pub(crate) fn agent_release(&mut self) {
         let time = self.start_time.elapsed().as_millis() as u32;
-        if let Some(pointer) = self.agent.seat.get_pointer() {
+        let seat = self.agent.seat.clone();
+        if let Some(pointer) = seat.as_ref().and_then(Seat::get_pointer) {
             for button in std::mem::take(&mut self.agent.pressed_buttons) {
                 let event = ButtonEvent {
                     serial: SERIAL_COUNTER.next_serial(),
@@ -312,7 +321,7 @@ impl Dashi {
             }
             pointer.frame(self);
         }
-        if let Some(keyboard) = self.agent.seat.get_keyboard() {
+        if let Some(keyboard) = seat.as_ref().and_then(Seat::get_keyboard) {
             for code in std::mem::take(&mut self.agent.pressed_keys) {
                 keyboard.input::<(), _>(
                     self,

@@ -93,7 +93,7 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | --- | --- | --- |
 | `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts` | the capture |
 | `screencopy-clients` | `{paths: string[]}`: executables allowed to use screencopy | `{}` |
-| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}` |
+| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default) |
 
 ## In the 0.2.0 compositor
 

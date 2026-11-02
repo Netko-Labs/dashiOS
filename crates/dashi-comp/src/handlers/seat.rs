@@ -47,6 +47,17 @@ impl SeatHandler for Dashi {
     }
 
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            let layer = focused.and_then(|surface| {
+                self.space.outputs().find_map(|output| {
+                    smithay::desktop::layer_map_for_output(output)
+                        .layer_for_surface(surface, smithay::desktop::WindowSurfaceType::ALL)
+                        .map(|layer| layer.namespace().to_owned())
+                })
+            });
+            let window = focused.and_then(|surface| crate::wm::window_id_for_surface(self, surface));
+            tracing::debug!(seat = seat.name(), ?layer, ?window, "keyboard focus");
+        }
         if let Some(entry) = focused.and_then(|surface| self.windows.by_surface_mut(surface)) {
             entry.attention = false;
         }

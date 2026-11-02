@@ -25,13 +25,22 @@ struct Compositor {
 
 impl Compositor {
     fn start(extra: &[&str]) -> Self {
-        let compositor = Self::spawn(extra);
+        Self::start_with(extra, &[])
+    }
+
+    /// Started with these environment variables set too.
+    fn start_with(extra: &[&str], env: &[(&str, &str)]) -> Self {
+        let compositor = Self::spawn_with(extra, env);
         wait_for(&compositor.socket);
         compositor
     }
 
     /// Started, without waiting for its socket (a session that may already be over).
     fn spawn(extra: &[&str]) -> Self {
+        Self::spawn_with(extra, &[])
+    }
+
+    fn spawn_with(extra: &[&str], env: &[(&str, &str)]) -> Self {
         let dir = tempfile::tempdir().expect("a temporary runtime folder");
         let socket = dir.path().join("dashi-comp.sock");
         let child = Command::new(env!("CARGO_BIN_EXE_dashi-comp"))
@@ -42,6 +51,8 @@ impl Compositor {
             .env_remove("DISPLAY")
             .env_remove("DASHI_COMP_SOCKET")
             .env("RUST_LOG", "warn")
+            .env_remove("DASHI_AGENT_SEAT")
+            .envs(env.iter().copied())
             .spawn()
             .expect("dashi-comp starts");
         Self { child, dir, socket }
@@ -830,7 +841,7 @@ fn screens_are_arranged_and_windows_fly_to_their_tiles() {
 
 #[test]
 fn an_agent_acts_in_one_window_with_its_own_seat() {
-    let compositor = Compositor::start(&[]);
+    let compositor = Compositor::start_with(&[], &[("DASHI_AGENT_SEAT", "1")]);
     let mut ipc = compositor.connect();
     assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
     let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
@@ -932,4 +943,33 @@ fn variable_refresh_rate_is_the_shells_choice() {
     assert_eq!(screen["vrr"]["mode"], "fullscreen");
     let wrong = json!({ "outputs": [{ "name": "HEADLESS-1", "vrr": "sometimes" }] });
     assert!(ipc.request("outputs-config", wrong)["error"].is_string());
+}
+
+#[test]
+fn without_its_own_seat_an_agent_waits_for_the_person() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // One wl_seat: a second would take single-seat toolkits' keyboards away.
+    let seats = globals(compositor.dir.path(), &display)
+        .into_iter()
+        .filter(|g| g == "wl_seat")
+        .count();
+    assert_eq!(seats, 1);
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Agent");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+    // Just started counts as the person being there: the agent must wait.
+    let click = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "action": "click" });
+    assert_eq!(
+        ipc.request("agent-input", click)["error"],
+        "the person is using the desktop"
+    );
 }

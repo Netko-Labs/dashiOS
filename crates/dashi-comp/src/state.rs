@@ -200,9 +200,17 @@ impl Dashi {
         seat.add_keyboard(Default::default(), 200, 25)?;
         seat.add_pointer();
         // The agent's hands: a seat of their own (session/agent.rs).
-        let mut agent_seat: Seat<Self> = seat_state.new_wl_seat(&dh, "agent");
-        agent_seat.add_keyboard(Default::default(), 200, 25)?;
-        agent_seat.add_pointer();
+        // A second wl_seat only when asked for: toolkits that read one seat
+        // (GPUI, so the shell itself) follow the last one announced and would
+        // lose the person's keyboard (session/agent.rs).
+        let agent_seat = if std::env::var_os("DASHI_AGENT_SEAT").is_some_and(|v| v == "1") {
+            let mut seat: Seat<Self> = seat_state.new_wl_seat(&dh, "agent");
+            seat.add_keyboard(Default::default(), 200, 25)?;
+            seat.add_pointer();
+            Some(seat)
+        } else {
+            None
+        };
 
         let socket_name = listen(display, &loop_handle)?;
 

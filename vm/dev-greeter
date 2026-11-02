@@ -1,9 +1,14 @@
 #!/usr/bin/sh
 # vm/dev-greeter: in the VM, the checkout's login screen (session/dashi-greeter),
-# as greetd runs it (`vm/vm checkout-greeter on`). The checkout's dashi-comp
-# cannot drive screens until C1 (docs/compositor.md), so until then the login
-# screen runs on the installed one. DASHI_COMP picks another.
+# as greetd runs it (`vm/vm checkout-greeter on`), on the checkout's dashi-comp
+# (cargo build) in greeter mode, else the installed one. DASHI_COMP picks another.
 set -eu
 repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
-export DASHI_COMP=${DASHI_COMP:-/usr/bin/dashi-comp}
+if [ -z "${DASHI_COMP:-}" ]; then
+  DASHI_COMP=/usr/bin/dashi-comp
+  for build in "$repo/target/release/dashi-comp" "$repo/target/debug/dashi-comp"; do
+    [ -x "$build" ] && { DASHI_COMP=$build; break; }
+  done
+fi
+export DASHI_COMP
 exec "$repo/session/dashi-greeter" "$@"

@@ -46,9 +46,12 @@ it in the VM.
       direct scanout, VRR (shell's choice, Displays pane), keyboard LEDs
 - [ ] C4c: ext-image-copy-capture, rounded window corners, per-surface
       dmabuf feedback (scanout tranches), tearing (needs smithay async flips)
-- [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
-      0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
+- [x] `vm/dev-session` and `vm/dev-greeter` run on the checkout's dashi-comp
+      (the greeter in `--greeter` mode); login through it verified in the VM
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel
+- [x] The agent seat is opt-in (`DASHI_AGENT_SEAT=1`): as a second wl_seat it
+      took GPUI's keyboard (the greeter and every Metal surface stopped typing)
+- [ ] The launcher takes about 3 s to show after ❖ (a Metal host per overlay?)
 - [ ] Dock icons pressed by QMP clicks in the VM don't launch (0.1.0's
       compositor too): shell/Metal side, likely the drag guard (`swallows`)
 
