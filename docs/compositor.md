@@ -100,12 +100,19 @@ Each milestone ends with the shell running on it in the VM.
 - **Explicit sync** (linux-drm-syncobj): correct frames on NVIDIA.
 - **Games:** direct scanout for fullscreen windows, VRR (adaptive sync),
   tearing control, pointer constraints and relative pointer.
-- **Modern protocols:** fractional scale and viewporter, presentation time,
-  cursor-shape, ext-image-copy-capture (screen sharing through the portal),
-  idle-inhibit, keyboard-shortcuts-inhibit, text-input and input-method,
-  xdg-toplevel-icon.
-- **Sandboxing:** security-context, so a Flatpak app never reaches a
-  privileged protocol even if granted to its executable path.
+- **Modern protocols (done):** fractional scale (each surface hears the
+  scale of the screen it is mostly on) and viewporter, single-pixel buffers,
+  alpha modifier, content type, cursor-shape, pointer constraints and
+  relative pointer, pointer gestures (pinch and hold go to clients; a swipe
+  the shell claims goes to it), idle-inhibit (while its surface is on
+  screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
+  stay Dashi's), text-input and input-method, virtual keyboard (the shell's
+  processes only), xdg-toplevel-icon (`window-icon`), xdg-system-bell
+  (`bell`), xdg-foreign. Still to come: presentation time,
+  ext-image-copy-capture (screen sharing through the portal).
+- **Sandboxing (done):** security-context, so a Flatpak app never reaches a
+  privileged protocol even though it runs under the shell, nor screencopy
+  even if granted to its executable path.
 - **Tests:** the headless backend runs IPC and protocol tests in CI without a
   GPU.
 - **A greeter mode** for Dashi's own login screen (below).

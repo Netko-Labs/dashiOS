@@ -62,6 +62,8 @@ pub(crate) struct Entry {
     pub away_at: Option<Point<i32, Logical>>,
     /// It asked for focus and was refused; cleared when it gets the keyboard.
     pub attention: bool,
+    /// Its icon (xdg-toplevel-icon), as last told.
+    pub icon: crate::handlers::toplevel_meta::Icon,
 }
 
 pub(crate) struct Windows {
@@ -98,6 +100,7 @@ impl Windows {
             space: 0,
             away_at: None,
             attention: false,
+            icon: Default::default(),
         });
         id
     }
@@ -249,6 +252,8 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "space": entry.space,
         "attention": entry.attention,
         "x11": entry.window.x11_surface().is_some(),
+        "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
+            .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
     })
 }
 

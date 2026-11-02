@@ -41,6 +41,14 @@ export interface CompositorWindow {
   x11?: boolean;
   /** The Space it is on, from 0 (comp/src/spaces/); its frame is null while that Space is not shown. Absent from older compositors. */
   space?: number;
+  /** The icon the app gave (xdg-toplevel-icon): a theme name, and/or a PNG the compositor saved. */
+  icon?: WindowIcon;
+}
+
+/** A window's own icon: an icon theme name, a picture on disk, or both. */
+export interface WindowIcon {
+  name: string | null;
+  path: string | null;
 }
 
 /** A new window waiting to be placed: its id and outer size. */
@@ -138,6 +146,10 @@ export type CompositorEvent =
   | { event: "active" }
   /** Xwayland came up or failed; ask `session()` again. */
   | { event: "session-changed" }
+  /** A window's icon changed (xdg-toplevel-icon). */
+  | { event: "window-icon"; window: number; icon: WindowIcon }
+  /** An app rang the system bell (xdg-system-bell); window is null when it named no surface. */
+  | { event: "bell"; window: number | null }
   /** A wallpaper finished loading (`path`, null for the built-in gradient) or could not be (comp/src/wallpaper/). */
   | { event: "wallpaper"; path: string | null; ok: boolean; error?: string };
 
@@ -150,9 +162,21 @@ export function parseFrame(value: unknown): Frame | null {
   return isNumber(x) && isNumber(y) && isNumber(width) && isNumber(height) ? { x, y, width, height } : null;
 }
 
+const MAX_ICON_TEXT = 4096;
+const iconText = (value: unknown): string | null =>
+  typeof value === "string" && value.length > 0 && value.length <= MAX_ICON_TEXT ? value : null;
+
+/** A window icon as the compositor sends it; null when it names neither a theme icon nor a picture. */
+export function parseWindowIcon(value: unknown): WindowIcon | null {
+  if (!isRecord(value)) return null;
+  const icon = { name: iconText(value.name), path: iconText(value.path) };
+  return icon.name === null && icon.path === null ? null : icon;
+}
+
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space } = value;
+  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } =
+    value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -170,8 +194,11 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     ...(x11 === true ? { x11 } : {}),
     ...(fullscreen === true ? { fullscreen } : {}),
     ...(isNumber(space) && Number.isInteger(space) && space >= 0 ? { space } : {}),
+    ...withIcon(parseWindowIcon(icon)),
   };
 }
+
+const withIcon = (icon: WindowIcon | null): { icon?: WindowIcon } => (icon ? { icon } : {});
 
 export function parseEvent(value: unknown): CompositorEvent | null {
   if (!isRecord(value)) return null;
@@ -224,6 +251,13 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return value.edge === "bottom" && typeof value.inside === "boolean" ? { event: "edge", edge: "bottom", inside: value.inside } : null;
     case "window-attention":
       return isNumber(value.window) ? { event: "window-attention", window: value.window } : null;
+    case "window-icon": {
+      if (!isNumber(value.window)) return null;
+      const icon = parseWindowIcon(value) ?? { name: null, path: null };
+      return { event: "window-icon", window: value.window, icon };
+    }
+    case "bell":
+      return value.window === null || isNumber(value.window) ? { event: "bell", window: value.window } : null;
     case "outputs-changed":
       return { event: "outputs-changed" };
     case "session-changed":

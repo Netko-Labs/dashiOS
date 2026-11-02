@@ -65,14 +65,7 @@ impl GlobalDispatch<ZwlrForeignToplevelManagerV1, GlobalData> for Dashi {
     }
 
     fn can_view(client: Client, data: &GlobalData) -> bool {
-        let shell = data.shell.load(std::sync::atomic::Ordering::Relaxed);
-        let Some(pid) = client
-            .get_data::<crate::state::ClientState>()
-            .and_then(|data| data.pid)
-        else {
-            return false;
-        };
-        shell > 0 && trust::descends_from(pid, shell)
+        trust::is_shell_client(&client, &data.shell)
     }
 }
 

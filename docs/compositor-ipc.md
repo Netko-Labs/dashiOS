@@ -47,7 +47,11 @@ them until the compositor side pins them down here.
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
 "normal"|"minimized"|"hidden", zoomed, frame: Frame|null, titleBar: int,
-attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
+attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
+string|null, path: string|null}}`; `icon` is what the app gave
+(xdg-toplevel-icon): a theme icon name and/or a PNG the compositor saved under
+`$XDG_RUNTIME_DIR/dashi-comp-icons/`; an X11 window's `pid` is its own
+(`_NET_WM_PID`); `Frame` is
 `{x, y, width, height}` (outer frame, title bar included).
 
 ### Screens
@@ -135,3 +139,5 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 | `idle` | `seconds` |
 | `active` | |
 | `wallpaper` | `path: string\|null, ok, error?` |
+| `window-icon` | `window, name: string\|null, path: string\|null` |
+| `bell` | `window: int\|null` (xdg-system-bell) |

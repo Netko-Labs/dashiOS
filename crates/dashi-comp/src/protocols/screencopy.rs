@@ -62,6 +62,7 @@ fn may_copy(client: &Client, grants: &Grants) -> bool {
     }
     let Some(pid) = client
         .get_data::<crate::state::ClientState>()
+        .filter(|data| data.sandbox.is_none())
         .and_then(|data| data.pid)
     else {
         return false;

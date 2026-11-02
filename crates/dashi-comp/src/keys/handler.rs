@@ -104,6 +104,10 @@ impl Dashi {
         if self.lock.locked {
             return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
         }
+        // A remote desktop or VM with the keyboard gets the keys the keymap would take.
+        if self.shortcuts_inhibited() {
+            return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
+        }
         let app_id = self.focused_app_id();
         let action = self
             .keys

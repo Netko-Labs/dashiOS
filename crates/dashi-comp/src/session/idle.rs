@@ -2,6 +2,7 @@
 //! some seconds (`idle {timeouts}`), and when they are back (`active`). What
 //! idling means (blank the screens, lock, sleep) is the shell's to decide.
 //! Also `person-input`: the person used the desktop, in a window or not.
+//! While an idle inhibitor's surface is on screen, the person counts as there.
 
 use std::time::{Duration, Instant};
 
@@ -20,6 +21,8 @@ pub(crate) struct Idle {
     fired: Vec<u64>,
     watching: bool,
     last_person: Option<(Option<u64>, Instant)>,
+    /// Surfaces asking to keep the screen on (idle-inhibit, handlers/inhibit.rs).
+    pub inhibitors: Vec<smithay::reexports::wayland_server::protocol::wl_surface::WlSurface>,
 }
 
 impl Default for Idle {
@@ -30,6 +33,7 @@ impl Default for Idle {
             fired: Vec::new(),
             watching: false,
             last_person: None,
+            inhibitors: Vec::new(),
         }
     }
 }
@@ -53,6 +57,10 @@ impl Dashi {
                 if state.idle.timeouts.is_empty() {
                     state.idle.watching = false;
                     return TimeoutAction::Drop;
+                }
+                // A video on screen counts as the person being there.
+                if state.idle_inhibited() {
+                    state.idle.last_input = Instant::now();
                 }
                 let idle_for = state.idle.last_input.elapsed().as_secs();
                 let due: Vec<u64> = state

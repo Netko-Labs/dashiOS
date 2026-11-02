@@ -52,9 +52,10 @@ export LANG=${LANG:-C.UTF-8}
 export DASHI_GREETER_COMPOSITOR=$$
 
 # 0.2.0's compositor has a greeter mode (no Xwayland, no window list or screen
-# copying); 0.1.0's does not take the flag.
+# copying); 0.1.0's does not take the flag, and starts on any argument, so its
+# usage text is looked for in the binary rather than asked for.
 mode=
-"$comp" --help 2>/dev/null | grep -q -- --greeter && mode=--greeter
+grep -aqF -- "--greeter         the login screen" "$comp" && mode=--greeter
 
 cd "$greeter"
 exec "$comp" $mode -c "$(quote "$bun") $(quote "$greeter/src/main.tsx")"

@@ -112,6 +112,9 @@ pub(crate) struct Dashi {
         smithay::wayland::selection::ext_data_control::DataControlState,
         smithay::wayland::selection::wlr_data_control::DataControlState,
     )>,
+    pub xdg_foreign_state: smithay::wayland::xdg_foreign::XdgForeignState,
+    pub shortcuts_inhibit_state:
+        smithay::wayland::keyboard_shortcuts_inhibit::KeyboardShortcutsInhibitState,
     pub xwayland_shell_state: smithay::wayland::xwayland_shell::XWaylandShellState,
     pub xwayland: crate::xwayland::Xwayland,
     pub seat: Seat<Dashi>,
@@ -174,6 +177,13 @@ impl Dashi {
                 ),
             )
         });
+        crate::handlers::surface::create_globals(&dh);
+        crate::handlers::pointer::create_globals(&dh);
+        let shortcuts_inhibit_state = crate::handlers::inhibit::create_globals(&dh);
+        crate::handlers::text::create_globals(&dh, &shell_pid, greeter);
+        crate::handlers::security::create_global(&dh);
+        crate::handlers::toplevel_meta::create_globals(&dh);
+        let xdg_foreign_state = smithay::wayland::xdg_foreign::XdgForeignState::new::<Self>(&dh);
         let xwayland_shell_state =
             smithay::wayland::xwayland_shell::XWaylandShellState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
@@ -239,6 +249,8 @@ impl Dashi {
             data_device_state,
             primary_selection_state,
             data_control,
+            shortcuts_inhibit_state,
+            xdg_foreign_state,
             xwayland_shell_state,
             xwayland: Default::default(),
             seat,
@@ -310,6 +322,7 @@ impl Dashi {
 
     /// Tell every client shown on `output` that a frame went out, so it draws the next.
     pub(crate) fn send_frames(&self, output: &smithay::output::Output) {
+        self.send_preferred_scales(output);
         let elapsed = self.start_time.elapsed();
         let throttle = Some(std::time::Duration::ZERO);
         self.space.elements().for_each(|window| {
@@ -412,6 +425,8 @@ pub(crate) struct ClientState {
     pub compositor_state: CompositorClientState,
     /// The client's process (SO_PEERCRED), for protocols only the shell may bind.
     pub pid: Option<i32>,
+    /// The sandbox it connected through (security-context), if any.
+    pub sandbox: Option<smithay::wayland::security_context::SecurityContext>,
 }
 
 impl ClientData for ClientState {

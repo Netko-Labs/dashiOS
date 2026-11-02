@@ -877,16 +877,36 @@ fn a_plain_client_sees_no_privileged_protocols() {
         assert_eq!(session["display"], Value::Null);
         let display = session["waylandDisplay"].as_str().unwrap().to_owned();
         let seen = globals(compositor.dir.path(), &display);
-        assert!(
-            seen.iter()
-                .any(|g| g == "zwp_primary_selection_device_manager_v1")
-        );
+        for modern in [
+            "zwp_primary_selection_device_manager_v1",
+            "wp_viewporter",
+            "wp_fractional_scale_manager_v1",
+            "wp_single_pixel_buffer_manager_v1",
+            "wp_cursor_shape_manager_v1",
+            "zwp_pointer_constraints_v1",
+            "zwp_relative_pointer_manager_v1",
+            "zwp_pointer_gestures_v1",
+            "zwp_idle_inhibit_manager_v1",
+            "zwp_keyboard_shortcuts_inhibit_manager_v1",
+            "zwp_text_input_manager_v3",
+            "wp_security_context_manager_v1",
+            "xdg_toplevel_icon_manager_v1",
+            "xdg_system_bell_v1",
+            "zxdg_exporter_v2",
+        ] {
+            assert!(
+                seen.iter().any(|g| g == modern),
+                "{modern} is missing in {mode:?}"
+            );
+        }
         for privileged in [
             "zwlr_foreign_toplevel_manager_v1",
             "zwlr_screencopy_manager_v1",
             "ext_data_control_manager_v1",
             "zwlr_data_control_manager_v1",
             "ext_session_lock_manager_v1",
+            "zwp_input_method_manager_v2",
+            "zwp_virtual_keyboard_manager_v1",
         ] {
             assert!(
                 !seen.iter().any(|g| g == privileged),

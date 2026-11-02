@@ -3,24 +3,20 @@
 //! keymap, bindings, and ❖ (docs/compositor.md).
 
 mod claims;
+mod constraints;
 mod decorations;
+mod gestures;
 
 pub(crate) use claims::Claims;
 
 use smithay::{
     backend::input::{
-        AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, GestureBeginEvent,
-        GestureEndEvent, GestureSwipeUpdateEvent as _, InputBackend, InputEvent, KeyboardKeyEvent,
-        PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
+        AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
+        KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
     },
-    input::pointer::{
-        AxisFrame, ButtonEvent, GestureSwipeBeginEvent, GestureSwipeEndEvent,
-        GestureSwipeUpdateEvent, MotionEvent, RelativeMotionEvent,
-    },
+    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, RelativeMotionEvent},
     utils::SERIAL_COUNTER,
 };
-
-use serde_json::json;
 
 use crate::state::Dashi;
 
@@ -44,8 +40,24 @@ impl Dashi {
                     return;
                 };
                 let from = pointer.current_location();
+                let under_from = self.surface_under(from);
+                let hold = self.hold_at(&pointer, under_from.as_ref(), from);
+                pointer.relative_motion(
+                    self,
+                    under_from,
+                    &RelativeMotionEvent {
+                        delta: event.delta(),
+                        delta_unaccel: event.delta_unaccel(),
+                        utime: event.time(),
+                    },
+                );
                 let to = self.clamp_to_screens(from + event.delta());
                 let under = self.surface_under(to);
+                // A locked or confined pointer goes nowhere it may not.
+                if !Self::hold_allows(&hold, to, under.as_ref()) {
+                    pointer.frame(self);
+                    return;
+                }
                 let serial = SERIAL_COUNTER.next_serial();
                 pointer.motion(
                     self,
@@ -56,16 +68,8 @@ impl Dashi {
                         time: event.time_msec(),
                     },
                 );
-                pointer.relative_motion(
-                    self,
-                    under,
-                    &RelativeMotionEvent {
-                        delta: event.delta(),
-                        delta_unaccel: event.delta_unaccel(),
-                        utime: event.time(),
-                    },
-                );
                 pointer.frame(self);
+                self.activate_hold(&pointer, under.as_ref(), to);
                 self.watch_bars(to);
                 self.watch_edges(to);
                 self.overview_motion(to);
@@ -186,54 +190,14 @@ impl Dashi {
                 pointer.axis(self, frame);
                 pointer.frame(self);
             }
-            InputEvent::GestureSwipeBegin { event } => {
-                if self.claims_swipe(event.fingers()) {
-                    self.claims.swiping = true;
-                    self.ipc.emit(
-                        "gesture",
-                        json!({ "kind": "swipe", "phase": "begin", "fingers": event.fingers() }),
-                    );
-                } else if let Some(pointer) = self.seat.get_pointer() {
-                    let swipe = GestureSwipeBeginEvent {
-                        serial: SERIAL_COUNTER.next_serial(),
-                        time: event.time_msec(),
-                        fingers: event.fingers(),
-                    };
-                    pointer.gesture_swipe_begin(self, &swipe);
-                }
-            }
-            InputEvent::GestureSwipeUpdate { event } => {
-                if self.claims.swiping {
-                    let delta = event.delta();
-                    self.ipc.emit(
-                        "gesture",
-                        json!({ "kind": "swipe", "phase": "update", "dx": delta.x, "dy": delta.y }),
-                    );
-                } else if let Some(pointer) = self.seat.get_pointer() {
-                    pointer.gesture_swipe_update(
-                        self,
-                        &GestureSwipeUpdateEvent {
-                            time: event.time_msec(),
-                            delta: event.delta(),
-                        },
-                    );
-                }
-            }
-            InputEvent::GestureSwipeEnd { event } => {
-                if std::mem::take(&mut self.claims.swiping) {
-                    self.ipc.emit(
-                        "gesture",
-                        json!({ "kind": "swipe", "phase": "end", "cancelled": event.cancelled() }),
-                    );
-                } else if let Some(pointer) = self.seat.get_pointer() {
-                    let end = GestureSwipeEndEvent {
-                        serial: SERIAL_COUNTER.next_serial(),
-                        time: event.time_msec(),
-                        cancelled: event.cancelled(),
-                    };
-                    pointer.gesture_swipe_end(self, &end);
-                }
-            }
+            InputEvent::GestureSwipeBegin { event } => self.on_swipe_begin::<I>(&event),
+            InputEvent::GestureSwipeUpdate { event } => self.on_swipe_update::<I>(&event),
+            InputEvent::GestureSwipeEnd { event } => self.on_swipe_end::<I>(&event),
+            InputEvent::GesturePinchBegin { event } => self.on_pinch_begin::<I>(&event),
+            InputEvent::GesturePinchUpdate { event } => self.on_pinch_update::<I>(&event),
+            InputEvent::GesturePinchEnd { event } => self.on_pinch_end::<I>(&event),
+            InputEvent::GestureHoldBegin { event } => self.on_hold_begin::<I>(&event),
+            InputEvent::GestureHoldEnd { event } => self.on_hold_end::<I>(&event),
             _ => {}
         }
     }

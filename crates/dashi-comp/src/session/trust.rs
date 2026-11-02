@@ -34,10 +34,11 @@ pub(crate) fn is_shell_client(
     shell: &std::sync::atomic::AtomicI32,
 ) -> bool {
     let shell = shell.load(std::sync::atomic::Ordering::Relaxed);
-    let pid = client
-        .get_data::<crate::state::ClientState>()
-        .and_then(|data| data.pid);
-    shell > 0 && pid.is_some_and(|pid| descends_from(pid, shell))
+    let Some(data) = client.get_data::<crate::state::ClientState>() else {
+        return false;
+    };
+    // A sandboxed app runs under the shell too, but is never trusted as it.
+    data.sandbox.is_none() && shell > 0 && data.pid.is_some_and(|pid| descends_from(pid, shell))
 }
 
 #[cfg(test)]

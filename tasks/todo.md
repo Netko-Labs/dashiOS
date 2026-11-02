@@ -37,10 +37,13 @@ it in the VM.
       screencopy with grants, agent seat and `agent-input`, xdg-activation and
       attention, session lock, xdg-dialog, `--greeter`, primary selection,
       ext/wlr-data-control (shell only)
-- [ ] C4: explicit sync, VRR/tearing, direct scanout, fractional scale,
-      viewporter, presentation time, cursor-shape, ext-image-copy-capture,
-      idle-inhibit, shortcuts-inhibit, text-input/IME, toplevel icons,
-      security-context, pointer constraints, gestures
+- [x] C4a: fractional scale, viewporter, single-pixel buffer, alpha
+      modifier, content type, cursor-shape, pointer constraints and relative
+      pointer, pointer gestures, idle-inhibit, shortcuts-inhibit,
+      text-input/IME, virtual keyboard, toplevel icons, system bell,
+      xdg-foreign, security-context
+- [ ] C4b: presentation time, explicit sync, direct scanout, VRR/tearing,
+      ext-image-copy-capture, keyboard LEDs, rounded window corners
 - [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
       0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel

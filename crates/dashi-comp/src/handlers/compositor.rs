@@ -51,6 +51,7 @@ impl CompositorHandler for Dashi {
                 entry.window.on_commit();
             }
             self.update_decor(&root);
+            self.update_icon(&root);
             self.place_when_drawn(&root);
         }
         xdg_shell::handle_commit(&mut self.popups, &self.windows, surface);

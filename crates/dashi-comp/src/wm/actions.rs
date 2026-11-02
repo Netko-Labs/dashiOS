@@ -84,6 +84,7 @@ impl Dashi {
             self.focus_topmost();
         }
         self.foreign_closed(entry.id);
+        crate::handlers::toplevel_meta::forget_icon_file(entry.icon.path.clone());
         if entry.announced {
             self.ipc
                 .emit("window-closed", serde_json::json!({ "id": entry.id }));

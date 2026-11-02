@@ -3,19 +3,21 @@
 //! no surface at all (a launcher handing it over). Otherwise it is refused and
 //! wants attention: the shell hears `window-attention` (the Dock can show it),
 //! and the window says `attention` until it gets the keyboard.
-//! Also xdg-dialog, so toolkits know a dialog can be modal.
+//! Also xdg-dialog, so toolkits know a dialog can be modal, and xdg-foreign,
+//! so a portal's dialog can be the child of the app window that asked for it.
 
 use std::time::Duration;
 
 use serde_json::json;
 use smithay::{
-    delegate_xdg_activation, delegate_xdg_dialog,
+    delegate_xdg_activation, delegate_xdg_dialog, delegate_xdg_foreign,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
     wayland::{
         shell::xdg::{ToplevelSurface, dialog::XdgDialogHandler},
         xdg_activation::{
             XdgActivationHandler, XdgActivationState, XdgActivationToken, XdgActivationTokenData,
         },
+        xdg_foreign::{XdgForeignHandler, XdgForeignState},
     },
 };
 
@@ -78,3 +80,11 @@ impl XdgDialogHandler for Dashi {
 }
 
 delegate_xdg_dialog!(Dashi);
+
+impl XdgForeignHandler for Dashi {
+    fn xdg_foreign_state(&mut self) -> &mut XdgForeignState {
+        &mut self.xdg_foreign_state
+    }
+}
+
+delegate_xdg_foreign!(Dashi);
