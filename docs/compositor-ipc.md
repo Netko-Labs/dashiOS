@@ -60,6 +60,7 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | --- | --- | --- |
 | `outputs` | `{}` | the screens and their usable areas; *see* `src/displays.ts`, `src/active-screen.ts`; each has `vrr: {supported, active, mode: "off"\|"on"\|"fullscreen"}` |
 | `output` | `{name, scale}` | `{}` |
+| `xwayland-scale` | `{scale}`, 1 to 4 | `{}`; X11 pixels per logical pixel (Xwayland's client scale, kept across its restarts). Above 1, X11 apps see the screens that much bigger and draw sharp if they size themselves from `Xft.dpi`, which the shell sets |
 | `outputs-config` | a full arrangement; *see* `toWire` in `src/display-config/plan.ts`; an entry may set `vrr: "off"\|"on"\|"fullscreen"` (only while a window is full screen there) | `{}`; the shell reverts on its own timer if not kept |
 | `power` | `{on: bool, reset?: bool}` | `{}`; screens on/off (DPMS) |
 | `gamma` | the Night Shift tint; *see* `tintFor` in `src/night-shift.ts` | `{}` |
