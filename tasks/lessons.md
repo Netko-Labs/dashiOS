@@ -17,3 +17,20 @@ never ran), GRUB's default "Test this media" entry failed without `isomd5sum`,
 and dashi-comp skipped a GPU with only a software EGL driver. Before calling
 an image done, boot it headless (`-device virtio-vga -display none`, QMP
 `screendump`) through GRUB's default entry to the desktop.
+
+## Look for a file's owner before adding it to another package
+
+An Anaconda profile was added to dashi-live while dashi-release already
+shipped one at the same path; nothing complained until the image build's
+package transaction, twenty minutes in. Before adding a file under /etc or
+/usr, search spin/ for the path (`grep -r` the path across spin/rpm and the
+spin/<package> trees). spin/build-rpms now refuses packages that share a
+file.
+
+## Overnight runs: the clean-tree check and swept logs
+
+spin/build-rpms builds from HEAD and refuses a dirty tree; an edit made while
+a chained build is queued stops it, and the chain's next step then runs on
+old packages. Commit before starting a chained build, and give each step an
+exit check. livemedia-creator's Anaconda moves /tmp/*.log into the image's
+anaconda/ folder: write build logs under the home directory.
