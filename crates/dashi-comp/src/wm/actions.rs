@@ -114,6 +114,12 @@ impl Dashi {
             entry.shown = shown;
         }
         self.space.unmap_elem(&window);
+        // X11 apps read it back (_NET_WM_STATE_HIDDEN) and can stop drawing.
+        if shown == Shown::Minimized
+            && let Some(x11) = window.x11_surface()
+        {
+            let _ = x11.set_suspended(true);
+        }
         if shown == Shown::Minimized
             && let Some(frame) = frame
         {
@@ -136,6 +142,9 @@ impl Dashi {
         entry.shown = Shown::Normal;
         let window = entry.window.clone();
         let at = entry.parked_at.take().unwrap_or_default();
+        if let Some(x11) = window.x11_surface() {
+            let _ = x11.set_suspended(false);
+        }
         if entry.space != self.spaces.current {
             // Back, but on a Space that is not shown: it waits there.
             let bar = super::windows::bar_of(self, &window);

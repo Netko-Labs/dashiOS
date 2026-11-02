@@ -1,3 +1,27 @@
+# Dashi 0.3.0 (`release/0.3.0`)
+
+Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
++ AMD laptop). Each is checked in the VM before the host gets 0.3.0 packages.
+
+- [x] mirin v0.1.0-alpha.28 merged into `feat/metal-linux` (zbus 6 dialogs)
+- [x] libheif: Fedora's `libheif-ffmpeg`, not `libheif-freeworld` (held
+      libheif security updates back); `dashi-release` obsoletes freeworld
+- [x] Apps' own minimize buttons (xdg `set_minimized`, X11 `WM_CHANGE_STATE`)
+      were ignored; they park the window like the yellow light
+- [ ] Steam and other X11 apps blurry at fractional scale: compositor
+      `xwayland-scale` (smithay client scale) done; shell side to do: send the
+      screens' scale, `Xft.dpi` and `Xcursor.size` through xrdb
+- [ ] Steam's maximize button does nothing: reproduce in the VM
+- [ ] ❖C/❖V ignored in Electron, Chromium, GTK, and X11 apps: reproduce in
+      the VM (suspect: a focus the compositor can't name falls to `app-chord`,
+      which drops the chord when the window is null)
+- [ ] The login screen comes up at scale 1 on a HiDPI panel: the greeter
+      should pick the screen's scale as the shell does (`initialScale`)
+- [ ] `space-remove` is unknown to dashi-comp (the shell asks for it)
+- [ ] Apps are slow to open the first time after login: measure
+- [ ] First boot after install waits ~30 s on akmods building nvidia-kmod
+      (once per new kernel): consider building it in the image
+
 # Dashi 0.2.0
 
 ## 1. Monorepo and docs (`feat/monorepo`)

@@ -174,6 +174,22 @@ impl XdgShellHandler for Dashi {
         surface.send_configure();
     }
 
+    /// An app's own minimize button (client-side decorations): what the yellow
+    /// light does.
+    fn minimize_request(&mut self, surface: ToplevelSurface) {
+        let Some(id) = self
+            .windows
+            .by_surface(surface.wl_surface())
+            .filter(|e| e.announced)
+            .map(|e| e.id)
+        else {
+            return;
+        };
+        if let Err(error) = self.park_window(id, crate::wm::Shown::Minimized) {
+            tracing::warn!("minimizing window {id}: {error}");
+        }
+    }
+
     fn grab(&mut self, _surface: PopupSurface, _seat: wl_seat::WlSeat, _serial: Serial) {
         // TODO popup grabs
     }

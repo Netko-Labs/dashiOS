@@ -163,6 +163,27 @@ impl XwmHandler for Dashi {
         self.ask_shell_x11(&surface, "zoom", false);
     }
 
+    /// An X11 app's own minimize button (`WM_CHANGE_STATE` to iconic): what the
+    /// yellow light does.
+    fn minimize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
+        let Some(id) = self.x11_announced(&surface) else {
+            return;
+        };
+        if let Err(error) = self.park_window(id, crate::wm::Shown::Minimized) {
+            tracing::warn!("minimizing X11 window {id}: {error}");
+        }
+    }
+
+    /// The app asked to be shown again (`WM_CHANGE_STATE` to normal).
+    fn unminimize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
+        let Some(id) = self.x11_announced(&surface) else {
+            return;
+        };
+        if let Err(error) = self.focus_window(id) {
+            tracing::warn!("showing X11 window {id}: {error}");
+        }
+    }
+
     fn fullscreen_request(&mut self, _xwm: XwmId, surface: X11Surface) {
         self.ask_shell_x11(&surface, "fullscreen", true);
     }
@@ -281,11 +302,14 @@ impl XwmHandler for Dashi {
 }
 
 impl Dashi {
-    fn ask_shell_x11(&mut self, surface: &X11Surface, event: &str, on: bool) {
-        let Some(id) = self
-            .x11_id(surface)
+    /// Its id, once the shell has been told about it.
+    fn x11_announced(&self, surface: &X11Surface) -> Option<crate::wm::WindowId> {
+        self.x11_id(surface)
             .filter(|id| self.windows.get(*id).is_some_and(|e| e.announced))
-        else {
+    }
+
+    fn ask_shell_x11(&mut self, surface: &X11Surface, event: &str, on: bool) {
+        let Some(id) = self.x11_announced(surface) else {
             return;
         };
         let payload = if event == "fullscreen" {

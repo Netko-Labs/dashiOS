@@ -225,6 +225,7 @@ pub(crate) fn handle(
             let name = text(params, "name")?.to_owned();
             done(outputs::set_scale(state, &name, number(params, "scale")?))
         }
+        "xwayland-scale" => done(state.set_xwayland_scale(number(params, "scale")?)),
         method => Err(format!("unknown method: {method}")),
     }
 }

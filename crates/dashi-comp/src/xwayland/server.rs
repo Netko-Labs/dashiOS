@@ -35,6 +35,9 @@ impl Dashi {
             }
         };
         self.xwayland.state = XState::Starting;
+        // Before Xwayland binds the outputs, so it sees them at its scale.
+        self.xwayland.client = Some(client.clone());
+        self.apply_xwayland_scale();
         // The socket is listening already: X clients may connect before it is ready.
         self.xwayland.number = Some(xwayland.display_number());
         self.xwayland.display = self.xwayland.number;
@@ -74,6 +77,7 @@ impl Dashi {
     /// Xwayland died: say so, and start it again a little later.
     fn xwayland_gone(&mut self) {
         self.xwayland.wm = None;
+        self.xwayland.client = None;
         self.xwayland.display = None;
         self.xwayland.state = XState::Failed;
         self.ipc.emit("session-changed", json!({}));
