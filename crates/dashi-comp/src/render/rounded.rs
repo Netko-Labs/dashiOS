@@ -1,5 +1,6 @@
-//! Windows with Dashi's title bar get rounded bottom corners, matching the
-//! bar's top ones: the window's main surface is drawn through a texture
+//! Windows Dashi frames get rounded corners at the Appearance radius: under
+//! Dashi's title bar the bottom ones (the bar rounds the top), on a unified
+//! window all four. The window's main surface is drawn through a texture
 //! shader that fades the pixels outside each corner's arc (antialiased).
 //! The GLES frame is reached through `GlesAccess`, for the nested renderer
 //! and the multi-GPU one alike. A rounded surface is never scanned out
@@ -40,6 +41,8 @@ uniform float tint;
 // The surface's size and the corner radius, in the frame's pixels.
 uniform vec2 size;
 uniform float radius;
+// 1.0: the top corners are cut too (a unified window has no bar above it).
+uniform float top;
 
 void main() {
     vec4 color = texture2D(tex, v_coords);
@@ -49,8 +52,10 @@ void main() {
     color = color * alpha;
 #endif
     vec2 p = v_coords * size;
-    if (p.y > size.y - radius && (p.x < radius || p.x > size.x - radius)) {
-        vec2 center = vec2(p.x < radius ? radius : size.x - radius, size.y - radius);
+    bool bottom = p.y > size.y - radius;
+    bool upper = top > 0.5 && p.y < radius;
+    if ((bottom || upper) && (p.x < radius || p.x > size.x - radius)) {
+        vec2 center = vec2(p.x < radius ? radius : size.x - radius, bottom ? size.y - radius : radius);
         color *= clamp(radius - distance(p, center) + 0.5, 0.0, 1.0);
     }
 #if defined(DEBUG_FLAGS)
@@ -95,6 +100,7 @@ pub(crate) fn program(renderer: &mut GlesRenderer) -> Option<GlesTexProgram> {
             &[
                 UniformName::new("size", UniformType::_2f),
                 UniformName::new("radius", UniformType::_1f),
+                UniformName::new("top", UniformType::_1f),
             ],
         )
         .inspect_err(|error| {
@@ -114,6 +120,8 @@ pub(crate) struct RoundedElement<R: Renderer> {
     program: GlesTexProgram,
     /// The radius in physical pixels.
     radius: f32,
+    /// The top corners too (a unified window).
+    top: bool,
 }
 
 impl<R: Renderer> RoundedElement<R> {
@@ -121,11 +129,13 @@ impl<R: Renderer> RoundedElement<R> {
         inner: WaylandSurfaceRenderElement<R>,
         program: GlesTexProgram,
         radius: f32,
+        top: bool,
     ) -> Self {
         Self {
             inner,
             program,
             radius,
+            top,
         }
     }
 }
@@ -193,6 +203,7 @@ where
         let uniforms = vec![
             Uniform::new("size", (dst.size.w as f32, dst.size.h as f32)),
             Uniform::new("radius", self.radius),
+            Uniform::new("top", if self.top { 1.0f32 } else { 0.0 }),
         ];
         R::gles_frame(frame).override_default_tex_program(self.program.clone(), uniforms);
         let drawn = self.inner.draw(frame, src, dst, damage, opaque_regions);

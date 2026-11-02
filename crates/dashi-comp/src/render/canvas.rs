@@ -71,20 +71,34 @@ impl Canvas {
     }
 
     /// A filled, anti-aliased circle.
-    pub(crate) fn circle(&mut self, cx: f32, cy: f32, radius: f32, color: Rgba) {
+    /// A rounded rectangle centered on (cx, cy), antialiased.
+    pub(crate) fn rounded_rect(
+        &mut self,
+        cx: f32,
+        cy: f32,
+        width: f32,
+        height: f32,
+        radius: f32,
+        color: Rgba,
+    ) {
+        let (hw, hh) = (width / 2.0, height / 2.0);
+        let radius = radius.min(hw).min(hh);
         let (x0, x1) = (
-            (cx - radius - 1.0).floor() as i32,
-            (cx + radius + 1.0).ceil() as i32,
+            (cx - hw - 1.0).floor() as i32,
+            (cx + hw + 1.0).ceil() as i32,
         );
         let (y0, y1) = (
-            (cy - radius - 1.0).floor() as i32,
-            (cy + radius + 1.0).ceil() as i32,
+            (cy - hh - 1.0).floor() as i32,
+            (cy + hh + 1.0).ceil() as i32,
         );
         for y in y0..=y1 {
             for x in x0..=x1 {
-                let distance =
-                    ((x as f32 + 0.5 - cx).powi(2) + (y as f32 + 0.5 - cy).powi(2)).sqrt();
-                self.blend(x, y, color, (radius - distance + 0.5).clamp(0.0, 1.0));
+                // The signed distance to the rounded box's edge.
+                let qx = (x as f32 + 0.5 - cx).abs() - (hw - radius);
+                let qy = (y as f32 + 0.5 - cy).abs() - (hh - radius);
+                let outside = (qx.max(0.0).powi(2) + qy.max(0.0).powi(2)).sqrt();
+                let distance = outside + qx.max(qy).min(0.0) - radius;
+                self.blend(x, y, color, (0.5 - distance).clamp(0.0, 1.0));
             }
         }
     }
@@ -115,7 +129,7 @@ mod tests {
     #[test]
     fn circles_are_solid_inside_and_premultiplied_at_the_edge() {
         let mut canvas = Canvas::new(20, 20);
-        canvas.circle(10.0, 10.0, 6.0, Rgba(255, 0, 0, 255));
+        canvas.rounded_rect(10.0, 10.0, 12.0, 12.0, 6.0, Rgba(255, 0, 0, 255));
         assert_eq!(pixel(&canvas, 10, 10), [255, 0, 0, 255]);
         assert_eq!(pixel(&canvas, 0, 0), [0, 0, 0, 0]);
         let edge = pixel(&canvas, 14, 14);

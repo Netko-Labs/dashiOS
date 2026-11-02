@@ -122,9 +122,14 @@ Each milestone ends with the shell running on it in the VM.
   syncobjs; otherwise commits wait for their dmabufs (implicit sync).
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
-- **Rounded corners (done):** a window under Dashi's title bar has its bottom
-  corners rounded to the bar's radius, by a texture shader on its main
-  surface (render/rounded.rs); such a surface is never scanned out directly.
+- **Rounded corners (done):** windows Dashi frames are rounded at the
+  Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title
+  bar, all four on a unified window; a texture shader on the main surface
+  (render/rounded.rs), so such a surface is never scanned out directly.
+- **Window controls:** 0.1.0's "Shapes": a circle closes, a bar minimizes, a
+  rounded square zooms (ume #D0596F, broth #E5B13F, kombu #4A9A7E), gray on an
+  unfocused window, lit and the hovered one grown 1.18× under the pointer;
+  the same as the shell gives GTK apps (appearance/gtk-css.ts).
 - **Modern protocols (done):** fractional scale (each surface hears the
   scale of the screen it is mostly on) and viewporter, single-pixel buffers,
   alpha modifier, content type, cursor-shape, pointer constraints and

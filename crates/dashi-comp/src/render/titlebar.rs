@@ -14,9 +14,15 @@ use super::{
 };
 
 pub(crate) const BAR_HEIGHT: i32 = 28;
-const LIGHT_RADIUS: f32 = 6.0;
-const FIRST_LIGHT_X: f32 = 18.0;
+/// Dashi's window controls ("Shapes", as 0.1.0 drew them, and as
+/// packages/shell/src/appearance/gtk-css.ts gives GTK apps): a circle closes,
+/// a bar minimizes, a rounded square zooms; centers 20 px apart from 20 px in.
+const FIRST_LIGHT_X: f32 = 20.0;
 const LIGHT_STEP: f32 = 20.0;
+/// How far from a control's center a press still lands on it.
+const LIGHT_REACH: f32 = 8.0;
+/// A hovered control grows by this much.
+const HOVER_SCALE: f32 = 1.18;
 /// The traffic lights and their margins: what a unified window keeps clear.
 pub(crate) const CONTROLS: (i32, i32, i32, i32) = (0, 0, 76, BAR_HEIGHT);
 
@@ -66,7 +72,7 @@ pub(crate) fn part_at(x: f64, y: f64, width: i32, decor: Decor) -> Option<Part> 
     let hit = lights.iter().enumerate().find(|(index, _)| {
         let cx = f64::from(FIRST_LIGHT_X + LIGHT_STEP * *index as f32);
         let cy = f64::from(BAR_HEIGHT) / 2.0;
-        (x - cx).powi(2) + (y - cy).powi(2) <= f64::from(LIGHT_RADIUS + 2.0).powi(2)
+        (x - cx).powi(2) + (y - cy).powi(2) <= f64::from(LIGHT_REACH).powi(2)
     });
     match (hit, decor) {
         (Some((_, part)), _) => Some(*part),
@@ -86,6 +92,9 @@ pub(crate) struct Look {
     pub dark: bool,
     pub radius: i32,
     pub scale: i32,
+    /// The control under the pointer: the controls take their colors (even on
+    /// an unfocused window) and that one grows.
+    pub hover: Option<Part>,
 }
 
 pub(crate) struct Image {
@@ -103,35 +112,47 @@ struct Palette {
 fn palette(dark: bool, active: bool) -> Palette {
     match (dark, active) {
         (false, true) => Palette {
-            bar: Rgba::hex(0xe9e9eb),
-            line: Rgba::hex(0xd1d1d4),
-            text: Rgba::hex(0x3a3a3c),
-            idle_light: Rgba::hex(0xcfcfd2),
+            bar: Rgba::hex(0xeeebe4),
+            line: Rgba::hex(0xd9d5cc),
+            text: Rgba::hex(0x262b28),
+            idle_light: INACTIVE_LIGHT,
         },
         (false, false) => Palette {
-            bar: Rgba::hex(0xf4f4f5),
-            line: Rgba::hex(0xdedee0),
-            text: Rgba::hex(0x9a9a9e),
-            idle_light: Rgba::hex(0xd8d8db),
+            bar: Rgba::hex(0xf6f4ef),
+            line: Rgba::hex(0xe4e0d8),
+            text: Rgba::hex(0x9b9890),
+            idle_light: INACTIVE_LIGHT,
         },
         (true, true) => Palette {
-            bar: Rgba::hex(0x2c2c2f),
+            bar: Rgba::hex(0x2c2c2e),
             line: Rgba::hex(0x1c1c1e),
             text: Rgba::hex(0xe6e6e8),
-            idle_light: Rgba::hex(0x4b4b4f),
+            idle_light: INACTIVE_DARK,
         },
         (true, false) => Palette {
-            bar: Rgba::hex(0x232326),
+            bar: Rgba::hex(0x242426),
             line: Rgba::hex(0x18181a),
             text: Rgba::hex(0x8a8a8f),
-            idle_light: Rgba::hex(0x3d3d41),
+            idle_light: INACTIVE_DARK,
         },
     }
 }
 
-const RED: Rgba = Rgba::hex(0xff5f57);
-const YELLOW: Rgba = Rgba::hex(0xfebc2e);
-const GREEN: Rgba = Rgba::hex(0x28c840);
+/// ume, broth, and kombu: close, minimize, zoom.
+const CLOSE: Rgba = Rgba::hex(0xd0596f);
+const MINIMIZE: Rgba = Rgba::hex(0xe5b13f);
+const ZOOM: Rgba = Rgba::hex(0x4a9a7e);
+const INACTIVE_LIGHT: Rgba = Rgba::hex(0xcecbc6);
+const INACTIVE_DARK: Rgba = Rgba::hex(0x525256);
+
+/// A control's shape: width, height, corner radius (logical px).
+fn shape(part: Part) -> (f32, f32, f32) {
+    match part {
+        Part::Close => (12.0, 12.0, 6.0),
+        Part::Minimize => (14.0, 5.0, 2.5),
+        _ => (11.0, 11.0, 3.0),
+    }
+}
 
 /// Draw `look` (a bar, or a unified window's lights).
 pub(crate) fn draw(look: &Look, text: &mut Text) -> MemoryRenderBuffer {
@@ -146,17 +167,27 @@ pub(crate) fn draw(look: &Look, text: &mut Text) -> MemoryRenderBuffer {
         canvas.fill_top_rounded(colors.bar, (look.radius * s) as f32);
         canvas.bottom_line(colors.line);
     }
-    for (index, color) in [RED, YELLOW, GREEN].into_iter().enumerate() {
-        let color = if look.active {
-            color
+    let lit = look.active || look.hover.is_some();
+    let controls = [
+        (Part::Close, CLOSE),
+        (Part::Minimize, MINIMIZE),
+        (Part::Zoom, ZOOM),
+    ];
+    for (index, (part, color)) in controls.into_iter().enumerate() {
+        let color = if lit { color } else { colors.idle_light };
+        let grow = if look.hover == Some(part) {
+            HOVER_SCALE
         } else {
-            colors.idle_light
+            1.0
         };
-        let cx = (FIRST_LIGHT_X + LIGHT_STEP * index as f32) * s as f32;
-        canvas.circle(
-            cx,
+        let (w, h, r) = shape(part);
+        let px = s as f32 * grow;
+        canvas.rounded_rect(
+            (FIRST_LIGHT_X + LIGHT_STEP * index as f32) * s as f32,
             (height * s) as f32 / 2.0,
-            LIGHT_RADIUS * s as f32,
+            w * px,
+            h * px,
+            r * px,
             color,
         );
     }
@@ -188,25 +219,25 @@ mod tests {
 
     #[test]
     fn presses_find_the_lights_then_the_bar() {
-        assert_eq!(part_at(18.0, 14.0, 600, Decor::Standard), Some(Part::Close));
+        assert_eq!(part_at(20.0, 14.0, 600, Decor::Standard), Some(Part::Close));
         assert_eq!(
-            part_at(38.0, 14.0, 600, Decor::Standard),
+            part_at(40.0, 14.0, 600, Decor::Standard),
             Some(Part::Minimize)
         );
-        assert_eq!(part_at(58.0, 15.0, 600, Decor::Standard), Some(Part::Zoom));
+        assert_eq!(part_at(60.0, 15.0, 600, Decor::Standard), Some(Part::Zoom));
         assert_eq!(part_at(300.0, 10.0, 600, Decor::Standard), Some(Part::Bar));
         assert_eq!(
             part_at(300.0, 30.0, 600, Decor::Standard),
             None,
             "below the bar is the window"
         );
-        assert_eq!(part_at(18.0, 14.0, 600, Decor::Unified), Some(Part::Close));
+        assert_eq!(part_at(20.0, 14.0, 600, Decor::Unified), Some(Part::Close));
         assert_eq!(
             part_at(300.0, 10.0, 600, Decor::Unified),
             None,
             "a unified window's top is the app's"
         );
-        assert_eq!(part_at(18.0, 14.0, 600, Decor::None), None);
+        assert_eq!(part_at(20.0, 14.0, 600, Decor::None), None);
     }
 
     #[test]

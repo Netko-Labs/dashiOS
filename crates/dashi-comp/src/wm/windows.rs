@@ -62,6 +62,8 @@ pub(crate) struct Entry {
     pub away_at: Option<Point<i32, Logical>>,
     /// It asked for focus and was refused; cleared when it gets the keyboard.
     pub attention: bool,
+    /// The title bar control under the pointer, if any (the controls light up).
+    pub hover: Option<crate::render::titlebar::Part>,
     /// Its icon (xdg-toplevel-icon), as last told.
     pub icon: crate::handlers::toplevel_meta::Icon,
 }
@@ -101,6 +103,7 @@ impl Windows {
             away_at: None,
             attention: false,
             icon: Default::default(),
+            hover: None,
         });
         id
     }

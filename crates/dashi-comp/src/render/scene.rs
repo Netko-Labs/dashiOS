@@ -207,8 +207,10 @@ where
         let surface_at = on_view(frame_at - window.geometry().loc);
         let surfaces = window
             .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0);
-        // Under a title bar, the bottom corners are rounded to match its top ones.
-        let rounded = (decor == Decor::Standard && state.chrome_style.radius > 0)
+        // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window.
+        let framed =
+            matches!(decor, Decor::Standard | Decor::Unified) && state.chrome_style.radius > 0;
+        let rounded = framed
             .then(|| super::rounded::program(renderer.gles()))
             .flatten()
             .zip(
@@ -217,9 +219,10 @@ where
                     .map(|surface| Id::from_wayland_resource(&*surface)),
             );
         let radius = (f64::from(state.chrome_style.radius) * scale.x) as f32;
+        let top = decor == Decor::Unified;
         elements.extend(surfaces.into_iter().map(|element| match &rounded {
             Some((program, root)) if element.id() == root => DashiElement::Rounded(
-                super::rounded::RoundedElement::new(element, program.clone(), radius),
+                super::rounded::RoundedElement::new(element, program.clone(), radius, top),
             ),
             _ => DashiElement::Surface(element),
         }));

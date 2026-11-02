@@ -23,6 +23,20 @@ use crate::{
 const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 
 impl Dashi {
+    /// The pointer moved: the title bar controls under it light up (and only those).
+    pub(crate) fn hover_controls(&mut self, pos: Point<f64, Logical>) {
+        let over = self
+            .decoration_at(pos)
+            .filter(|(_, _, part)| *part != Part::Bar)
+            .map(|(id, _, part)| (id, part));
+        for entry in self.windows.entries_mut() {
+            let hover = over.filter(|(id, _)| *id == entry.id).map(|(_, part)| part);
+            if entry.hover != hover {
+                entry.hover = hover;
+            }
+        }
+    }
+
     /// The window decoration at `pos`, when it is the topmost thing there.
     pub(crate) fn decoration_at(&self, pos: Point<f64, Logical>) -> Option<(u64, Window, Part)> {
         if self.lock.locked {

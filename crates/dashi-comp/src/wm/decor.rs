@@ -106,6 +106,7 @@ impl Dashi {
                 dark: style.dark,
                 radius: style.radius,
                 scale: scale.max(1),
+                hover: entry.hover,
             };
             if entry
                 .title_image
