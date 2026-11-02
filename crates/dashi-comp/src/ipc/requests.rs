@@ -15,9 +15,6 @@ use crate::{
     wm::{Shown, frame_of, valid_frame},
 };
 
-/// Methods the protocol has that this compositor does not do yet.
-const LATER: &[&str] = &["outputs-config", "power", "gamma", "agent-input"];
-
 pub(crate) fn handle(
     state: &mut Dashi,
     connection: ConnectionId,
@@ -86,6 +83,7 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "agent-input" => done(state.agent_input(params)),
         "idle" => {
             let timeouts = params
                 .get("timeouts")
@@ -225,7 +223,6 @@ pub(crate) fn handle(
             let name = text(params, "name")?.to_owned();
             done(outputs::set_scale(state, &name, number(params, "scale")?))
         }
-        method if LATER.contains(&method) => Err(format!("{method}: not in this dashi-comp yet")),
         method => Err(format!("unknown method: {method}")),
     }
 }

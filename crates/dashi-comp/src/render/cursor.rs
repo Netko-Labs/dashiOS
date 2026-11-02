@@ -119,3 +119,63 @@ fn arrow(scale: i32) -> CursorImage {
         hotspot: Point::from((1, 1)),
     }
 }
+
+/// The agent's pointer: a violet arrow and the agent's name beside it.
+pub(crate) fn agent_pointer(
+    label: &str,
+    scale: i32,
+    text: &mut super::text::Text,
+) -> MemoryRenderBuffer {
+    let s = scale.max(1);
+    let label_w = 14 + 7 * label.chars().count().min(40) as i32;
+    let mut canvas = Canvas::new((18 + label_w) * s, 26 * s);
+    let violet = Rgba::hex(0x8b5cf6);
+    for y in 0..18 * s {
+        let row = y as f32 / s as f32;
+        let reach = (row * 0.62).min(11.0);
+        for x in 0..12 * s {
+            let col = x as f32 / s as f32;
+            if col <= reach {
+                let edge = col >= reach - 1.2 || col < 1.2;
+                canvas.blend(x, y, if edge { Rgba::hex(0xffffff) } else { violet }, 1.0);
+            }
+        }
+    }
+    // The name in a pill below and to the right of the tip.
+    for y in 12 * s..26 * s {
+        for x in 14 * s..canvas.width {
+            canvas.blend(x, y, violet, 0.92);
+        }
+    }
+    let mut pill = Canvas::new(label_w * s, 14 * s);
+    text.draw_centered(
+        &mut pill,
+        label,
+        10.0 * s as f32,
+        Rgba::hex(0xffffff),
+        4 * s,
+        label_w * s - 4 * s,
+    );
+    for y in 0..pill.height {
+        for x in 0..pill.width {
+            let at = ((y * pill.width + x) * 4) as usize;
+            let alpha = pill.pixels[at + 3];
+            if alpha > 0 {
+                canvas.blend(
+                    14 * s + x + 2 * s,
+                    12 * s + y,
+                    Rgba::hex(0xffffff),
+                    f32::from(alpha) / 255.0,
+                );
+            }
+        }
+    }
+    MemoryRenderBuffer::from_slice(
+        &canvas.pixels,
+        Fourcc::Abgr8888,
+        (canvas.width, canvas.height),
+        s,
+        Transform::Normal,
+        None,
+    )
+}

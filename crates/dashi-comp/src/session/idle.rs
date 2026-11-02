@@ -70,6 +70,11 @@ impl Dashi {
             });
     }
 
+    /// How long since the person last touched anything.
+    pub(crate) fn idle_for(&self) -> Duration {
+        self.idle.last_input.elapsed()
+    }
+
     /// The person touched something: idle ends (`active`), and the shell may hear where.
     pub(crate) fn note_input(&mut self, deliberate: bool) {
         self.idle.last_input = Instant::now();

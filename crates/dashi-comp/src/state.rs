@@ -55,6 +55,13 @@ pub(crate) struct Dashi {
     pub dmabuf_state: DmabufState,
     pub dmabuf_global: Option<DmabufGlobal>,
     pub keys: Keys,
+    pub agent: crate::session::agent::Agent,
+    /// The agent's pointer as last drawn: its label, scale, and image.
+    pub agent_cursor: Option<(
+        String,
+        i32,
+        smithay::backend::renderer::element::memory::MemoryRenderBuffer,
+    )>,
     /// Executables the shell lets copy the screen (`screencopy-clients`).
     pub screencopy_paths: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>>,
     pub capture_activity: crate::protocols::screencopy::Activity,
@@ -142,6 +149,10 @@ impl Dashi {
         // C1 follows keyboards and pointers as they come and go (libinput).
         seat.add_keyboard(Default::default(), 200, 25)?;
         seat.add_pointer();
+        // The agent's hands: a seat of their own (session/agent.rs).
+        let mut agent_seat: Seat<Self> = seat_state.new_wl_seat(&dh, "agent");
+        agent_seat.add_keyboard(Default::default(), 200, 25)?;
+        agent_seat.add_pointer();
 
         let socket_name = listen(display, &loop_handle)?;
 
@@ -159,6 +170,8 @@ impl Dashi {
             dmabuf_state: DmabufState::new(),
             dmabuf_global: None,
             keys: Keys::default(),
+            agent: crate::session::agent::Agent::new(agent_seat),
+            agent_cursor: None,
             screencopy_paths,
             capture_activity: Default::default(),
             activation_state,

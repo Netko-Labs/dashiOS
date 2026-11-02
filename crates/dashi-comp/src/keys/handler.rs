@@ -222,6 +222,17 @@ impl Dashi {
         Some((target, mods))
     }
 
+    /// The key (and whether it needs Shift) that types keysym `name` in the person's layout.
+    pub(crate) fn keycode_named(&mut self, name: &str) -> Option<(Keycode, bool)> {
+        let keyboard = self.seat.get_keyboard()?;
+        keyboard.with_xkb_state(self, |context| {
+            let xkb = context.xkb().lock().ok()?;
+            // SAFETY: the keymap and state are only read while the Xkb lock is held.
+            let (keymap, state) = unsafe { (xkb.keymap(), xkb.state()) };
+            keycode_for(keymap, state, name)
+        })
+    }
+
     /// Keys the compositor keeps whatever the keymap says.
     fn built_in(&mut self, info: &KeyInfo, mods: Mods) -> bool {
         let name = info.names.first().map(String::as_str).unwrap_or_default();

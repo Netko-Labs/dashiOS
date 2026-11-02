@@ -313,6 +313,34 @@ fn cursor_elements<R>(
     R: Renderer + ImportAll + ImportMem,
     R::TextureId: Clone + Send + 'static,
 {
+    // The agent's pointer, over everything, while it acts.
+    if let Some((at, label)) = state.agent.pointer.clone()
+        && output_geo.to_f64().contains(at)
+    {
+        let s = scale.x.ceil() as i32;
+        let fresh = state
+            .agent_cursor
+            .as_ref()
+            .is_none_or(|(l, sc, _)| l != &label || *sc != s);
+        if fresh {
+            let image = super::cursor::agent_pointer(&label, s, &mut state.text);
+            state.agent_cursor = Some((label, s, image));
+        }
+        if let Some((_, _, image)) = &state.agent_cursor {
+            let origin = (at - output_geo.loc.to_f64()).to_physical(scale);
+            if let Ok(element) = MemoryRenderBufferRenderElement::from_buffer(
+                renderer,
+                origin,
+                image,
+                None,
+                None,
+                None,
+                Kind::Cursor,
+            ) {
+                elements.push(DashiElement::Memory(element));
+            }
+        }
+    }
     let Some(pointer) = state.seat.get_pointer() else {
         return;
     };

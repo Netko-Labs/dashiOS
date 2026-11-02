@@ -154,7 +154,7 @@ fn mistakes_get_errors_not_a_dropped_connection() {
         ipc.request("agent-input", json!({}))["error"]
             .as_str()
             .unwrap()
-            .contains("not in this dashi-comp yet")
+            .contains("window id")
     );
     assert_eq!(
         ipc.request("focus", json!({ "window": 1 }))["error"],
@@ -825,5 +825,43 @@ fn screens_are_arranged_and_windows_fly_to_their_tiles() {
     assert_eq!(
         ipc.request("windows", json!({}))["result"]["windows"][0]["state"],
         "normal"
+    );
+}
+
+#[test]
+fn an_agent_acts_in_one_window_with_its_own_seat() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Agent");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+
+    let click = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "action": "click", "button": "left" });
+    assert_eq!(ipc.request("agent-input", click)["result"], json!({}));
+    let typed = json!({ "window": id, "label": "Claude", "keys": [{ "text": "Hi!" }, { "name": "Control_L", "state": "down" }, { "name": "a" }, { "name": "Control_L", "state": "up" }] });
+    assert_eq!(ipc.request("agent-input", typed)["result"], json!({}));
+    let outside = json!({ "window": id, "label": "Claude", "pointer": { "x": 5000, "y": 30 }, "action": "click" });
+    assert!(
+        ipc.request("agent-input", outside)["error"]
+            .as_str()
+            .unwrap()
+            .contains("outside")
+    );
+    let busy = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "borrow": { "idleMs": 60000 } });
+    assert_eq!(
+        ipc.request("agent-input", busy)["error"],
+        "the person is using the desktop"
+    );
+    assert_eq!(
+        ipc.request("agent-input", json!({ "release": true }))["result"],
+        json!({})
     );
 }
