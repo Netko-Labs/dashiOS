@@ -30,20 +30,19 @@ install -d %{buildroot}%{_datadir}/dashi
 cp -a packages/greeter %{buildroot}%{_datadir}/dashi/greeter
 rm -rf %{buildroot}%{_datadir}/dashi/greeter/node_modules %{buildroot}%{_datadir}/dashi/greeter/test
 install -Dm0755 session/dashi-greeter %{buildroot}%{_bindir}/dashi-greeter
-# greetd's own config stays greetd's: the service is pointed at Dashi's.
+# /etc/greetd/config.toml is greetd's (a config file): %post puts Dashi's in
+# its place only while it is greetd's stock one, so local edits stand.
 install -Dm0644 spin/dashi-greeter/etc/greetd/config.toml %{buildroot}%{_datadir}/dashi/greetd/config.toml
-install -d %{buildroot}%{_unitdir}/greetd.service.d
-cat > %{buildroot}%{_unitdir}/greetd.service.d/dashi.conf <<'CONF'
-# Dashi's login screen (dashi-greeter).
-[Service]
-ExecStart=
-ExecStart=/usr/bin/greetd --config /usr/share/dashi/greetd/config.toml
-CONF
 install -d %{buildroot}%{_presetdir}
 echo "enable greetd.service" > %{buildroot}%{_presetdir}/80-dashi-greeter.preset
 
 %post
 %systemd_post greetd.service
+config=%{_sysconfdir}/greetd/config.toml
+if [ ! -e "$config" ] || grep -q agreety "$config"; then
+  [ -e "$config" ] && cp -p "$config" "$config.greetd-default"
+  install -Dm0644 %{_datadir}/dashi/greetd/config.toml "$config"
+fi
 # Installed over 0.1.0 (SDDM was the display manager): the login screen is Dashi's now.
 if [ $1 -eq 1 ] && [ "$(readlink /etc/systemd/system/display-manager.service 2>/dev/null)" != "%{_unitdir}/greetd.service" ]; then
   systemctl enable --force greetd.service >/dev/null 2>&1 || :
@@ -57,7 +56,6 @@ fi
 %{_datadir}/dashi/greeter
 %dir %{_datadir}/dashi/greetd
 %{_datadir}/dashi/greetd/config.toml
-%{_unitdir}/greetd.service.d/dashi.conf
 %{_presetdir}/80-dashi-greeter.preset
 
 %changelog
