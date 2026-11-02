@@ -29,12 +29,12 @@ repo --name=dashi-image-local --baseurl=@DASHI_REPO@ --cost=10
 # Fedora 44's crypto-policies has a /bin/sh %pre, and rpm can order it before
 # glibc in a fresh root (its loop breaking shifts with every update; it did
 # on 2026-11-02 and the image stopped building), so the shell can't run yet.
-# Seed the empty root (livemedia-creator --no-virt installs into
-# /mnt/sysroot, and %pre runs on the build host) with the host's bash and
-# the libraries it loads; bash, glibc, ncurses-libs, and filesystem replace
-# them all during the transaction.
-%pre --erroronfail
-root=/mnt/sysroot
+# Seed the empty root with the build host's bash and the libraries it loads,
+# in %pre-install (on the build host, once the root is mounted; a %pre runs
+# before that and its files end up hidden under the mount); bash, glibc,
+# ncurses-libs, and filesystem replace them all during the transaction.
+%pre-install --erroronfail
+root=${ANA_INSTALL_PATH:-/mnt/sysimage}
 mkdir -p "$root/usr/bin" "$root/usr/lib64"
 [ -e "$root/bin" ] || ln -s usr/bin "$root/bin"
 [ -e "$root/lib64" ] || ln -s usr/lib64 "$root/lib64"
