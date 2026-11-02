@@ -90,6 +90,8 @@ const PINNED: readonly PinnedSpec[] = [
     name: "Text Editor",
     icon: "editor",
     choices: [
+      // Dashi's own Text Editor (apps/editor); the others only where it isn't here.
+      { id: "dev.dashi.editor", exec: [process.execPath, `${shellRoot}apps/editor/main.tsx`], cwd: shellRoot },
       { id: "org.gnome.TextEditor", exec: ["gnome-text-editor"] },
       { id: "org.kde.kate", exec: ["kate"] },
     ],

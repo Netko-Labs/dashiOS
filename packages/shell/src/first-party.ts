@@ -44,6 +44,32 @@ export const PREVIEW_MIME_TYPES = [
   "application/pdf",
 ] as const;
 
+/** What Text Editor opens: plain text and the text formats nothing else in Dashi edits (config, scripts, data, source). */
+export const EDITOR_MIME_TYPES = [
+  "text/plain",
+  "text/markdown",
+  "text/x-log",
+  "text/csv",
+  "text/tab-separated-values",
+  "text/x-readme",
+  "application/json",
+  "application/yaml",
+  "application/x-yaml",
+  "application/toml",
+  "application/xml",
+  "text/xml",
+  "application/x-shellscript",
+  "text/x-python",
+  "application/javascript",
+  "text/javascript",
+  "application/x-desktop",
+  "text/x-csrc",
+  "text/x-chdr",
+  "text/x-rust",
+  "text/x-go",
+  "text/css",
+] as const;
+
 export const FIRST_PARTY: readonly FirstPartySpec[] = [
   { id: "dev.dashi.calculator", name: "Calculator", icon: "calculator", dir: "calculator", keywords: ["calc", "math", "arithmetic"] },
   {
@@ -96,6 +122,16 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
     // It opens folders: a folder on its command line, as `gio open` passes it. Not yet the default handler (defaultHandler): Nautilus keeps that.
     mimeTypes: ["inode/directory"],
     categories: ["Utility", "FileManager"],
+  },
+  {
+    id: "dev.dashi.editor",
+    name: "Text Editor",
+    icon: "editor",
+    dir: "editor",
+    keywords: ["text editor", "editor", "text", "plain text", "notepad", "txt", "code", "config", "gedit", "kate"],
+    mimeTypes: EDITOR_MIME_TYPES,
+    defaultHandler: true,
+    categories: ["Utility", "TextEditor"],
   },
 ];
 
