@@ -41,3 +41,12 @@ anaconda/ folder: write build logs under the home directory.
 to 12 GB while Steam downloaded, filled it, and the VM died mid-write
 (Steam's half-written files then failed with "Exec format error"). Put
 throwaway VM disks under ~/.cache.
+
+## Keys sent to the VM go to whatever has focus
+
+The person may be using the VM too. `vm/vm key` presses keys on the VM's
+keyboard, so a chord goes to the focused window, whoever opened it: testing
+Terminal's ❖W closed their own Terminal (with their work in it) once mine
+was gone. Before sending keys, screenshot and list the windows; leave
+windows that aren't yours alone, and prefer a check that targets your own
+window (its control socket, a click inside it).
