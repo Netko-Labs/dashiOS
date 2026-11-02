@@ -57,6 +57,9 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub activation_state: smithay::wayland::xdg_activation::XdgActivationState,
+    #[expect(dead_code, reason = "kept alive: it owns the xdg-dialog global")]
+    pub dialog_state: smithay::wayland::shell::xdg::dialog::XdgDialogState,
     pub lock: crate::session::lock::Lock,
     pub session_lock_state: smithay::wayland::session_lock::SessionLockManagerState,
     pub zones: crate::wm::Zones,
@@ -112,6 +115,9 @@ impl Dashi {
         let xdg_decoration_state = XdgDecorationState::new::<Self>(&dh);
         dashi_chrome::create_global(&dh);
         let shell_pid = Arc::new(std::sync::atomic::AtomicI32::new(0));
+        let activation_state =
+            smithay::wayland::xdg_activation::XdgActivationState::new::<Self>(&dh);
+        let dialog_state = smithay::wayland::shell::xdg::dialog::XdgDialogState::new::<Self>(&dh);
         crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
         let lock_shell = shell_pid.clone();
         let session_lock_state =
@@ -145,6 +151,8 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            activation_state,
+            dialog_state,
             lock: Default::default(),
             session_lock_state,
             zones: Default::default(),

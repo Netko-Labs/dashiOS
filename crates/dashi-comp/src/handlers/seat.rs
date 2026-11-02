@@ -33,6 +33,9 @@ impl SeatHandler for Dashi {
     }
 
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
+        if let Some(entry) = focused.and_then(|surface| self.windows.by_surface_mut(surface)) {
+            entry.attention = false;
+        }
         let client = focused.and_then(|surface| self.display_handle.get_client(surface.id()).ok());
         set_data_device_focus(&self.display_handle, seat, client);
     }

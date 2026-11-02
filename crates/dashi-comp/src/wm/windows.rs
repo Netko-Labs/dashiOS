@@ -60,6 +60,8 @@ pub(crate) struct Entry {
     pub space: usize,
     /// Where it was while its Space is not shown.
     pub away_at: Option<Point<i32, Logical>>,
+    /// It asked for focus and was refused; cleared when it gets the keyboard.
+    pub attention: bool,
 }
 
 pub(crate) struct Windows {
@@ -95,6 +97,7 @@ impl Windows {
             fullscreen: None,
             space: 0,
             away_at: None,
+            attention: false,
         });
         id
     }
@@ -240,6 +243,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),
         "space": entry.space,
+        "attention": entry.attention,
     })
 }
 
