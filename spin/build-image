@@ -25,6 +25,13 @@ ksvalidator "$ks"
 
 iso=Dashi-${version%%~*}-x86_64.iso
 $SUDO rm -rf /var/tmp/lmc-dashi
+# livemedia-creator installs into a chroot, which SELinux in enforcing mode
+# gets in the way of; it is put back however the build ends.
+enforcing=$(getenforce)
+if [ "$enforcing" = Enforcing ]; then
+  $SUDO setenforce 0
+  trap 'rm -f "$ks"; $SUDO setenforce 1' EXIT
+fi
 $SUDO livemedia-creator --make-iso --no-virt --ks "$ks" \
   --project Dashi --releasever 44 --volid "Dashi-${version%%~*}" \
   --iso-only --iso-name "$iso" --resultdir /var/tmp/lmc-dashi \
