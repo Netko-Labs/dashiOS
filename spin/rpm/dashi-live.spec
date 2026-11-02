@@ -29,13 +29,11 @@ systems keep the files, which do nothing there.
 %install
 cd spin/dashi-live
 install -Dm0644 etc/anaconda/conf.d/90-dashi.conf %{buildroot}%{_sysconfdir}/anaconda/conf.d/90-dashi.conf
-install -Dm0644 etc/anaconda/profile.d/dashi.conf %{buildroot}%{_sysconfdir}/anaconda/profile.d/dashi.conf
 install -Dm0755 usr/libexec/dashi/installer-browser %{buildroot}%{_libexecdir}/dashi/installer-browser
 install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %files
 %config(noreplace) %{_sysconfdir}/anaconda/conf.d/90-dashi.conf
-%config(noreplace) %{_sysconfdir}/anaconda/profile.d/dashi.conf
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/installer-browser
 %{_libexecdir}/livesys/sessions.d/livesys-dashi
