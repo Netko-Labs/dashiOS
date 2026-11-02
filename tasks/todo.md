@@ -8,6 +8,8 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       libheif security updates back); `dashi-release` obsoletes freeworld
 - [x] Apps' own minimize buttons (xdg `set_minimized`, X11 `WM_CHANGE_STATE`)
       were ignored; they park the window like the yellow light
+- [x] ❖Tab showed the generic icon for T3 Code: the switcher read entries
+      without the hidden (NoDisplay) ones; it uses the Dock's catalog now
 - [ ] Steam and other X11 apps blurry at fractional scale: compositor
       `xwayland-scale` (smithay client scale) done; shell side to do: send the
       screens' scale, `Xft.dpi` and `Xcursor.size` through xrdb

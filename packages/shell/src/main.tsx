@@ -669,10 +669,10 @@ function openSheet(pinned = false, appName?: string): void {
 const switcher = new SwitcherStore();
 
 /** A name and icon for a switcher entry: the installed app, else a stand-in. */
+/** The switcher names apps as the Dock does: the shared catalog, hidden entries included (T3 Code's window matches its NoDisplay entry). */
 function identifier(): (app: SwitcherApp) => { name: string; icon: string } {
-  const entries = loadEntries();
   return (app) => {
-    const entry = matchEntry(entries, app.appId);
+    const entry = installedApp(app.appId);
     return entry ? { name: entry.name, icon: entry.icon } : { name: displayName(app.appId, app.title), icon: iconPath("generic") };
   };
 }
