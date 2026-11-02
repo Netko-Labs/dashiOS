@@ -93,17 +93,11 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 
 ## In the 0.2.0 compositor
 
-Until each request's milestone (docs/compositor.md), the rewrite answers:
-
-- **Done:** `subscribe`, `session`, `windows`, `focus`, `close`, `minimize`,
-  `hide`, `restore`, `frame`, `place`, `outputs`, `output`; events
-  `window-opened`, `window-closed`, `window-placing`, `outputs-changed`.
-- **Kept, not acted on yet** (the shell is told yes and starts as with the
-  feature off; `crates/dashi-comp/src/shell_config.rs`): `keymap`, `chrome`
-  (C1), `layout`, `bars`, `edges` (answers `{inside: false}`), `gestures`,
-  `idle`, `animation-target` (C2), `screencopy-clients` (C3). `spaces`
-  answers one Space until C2.
-- **Not yet**, answered with an error saying so: everything else.
+- **Done:** every request above except `agent-input` (C3), with every event;
+  `wallpaper` also takes `{video, mode}`, played by the compositor.
+- **Kept, not acted on yet** (`crates/dashi-comp/src/shell_config.rs`):
+  `screencopy-clients` (C3).
+- **Not yet**, answered with an error saying so: `agent-input` (C3).
 
 ## Events
 

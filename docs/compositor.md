@@ -78,7 +78,7 @@ Each milestone ends with the shell running on it in the VM.
   `close`, `minimize`, `hide`, `frame`, `place`, `restore`,
   `window-placing`, `outputs`, `output`, `chrome` and server-side title bars,
   cursor, `send-keys`.
-- **C2, the desktop:** Spaces, overview, `fullscreen` and `bars`, `edges`,
+- **C2, the desktop (done):** Spaces, overview, `fullscreen` and `bars`, `edges`,
   `gestures`, animations (`animation-target`), `idle`, `power`, `gamma`,
   `outputs-config`, `wallpaper`, `layout` zones, `zoom`.
 - **C3, the rest of 0.1.0:** Xwayland, screencopy with grants and `capture`,

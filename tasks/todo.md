@@ -26,8 +26,18 @@ it in the VM.
 - [x] C1a: layer-shell, linux-dmabuf, window requests, `window-placing`,
       `outputs`/`output`, the shell's configuration kept; the real shell runs
       on it nested (`vm/nested-session`)
-- [ ] C1b: keymap, bindings and ❖, `send-keys`, title bars (`chrome`), cursor
-- [ ] C1c: udev backend (DRM/KMS, GBM, libinput, libseat), one GPU
+- [x] C1b: keymap, bindings and ❖, `send-keys`, title bars (`chrome`,
+      dashi-chrome-v1, xdg-decoration), cursor, `capture` (shell only)
+- [x] C1c: udev backend (DRM/KMS, GBM, libinput, libseat), EDID, hotplug
+- [x] C2: wallpapers (pictures, native video, live looks), full screen and
+      bars, Spaces, overview, wlr-foreign-toplevel (shell only), idle,
+      power, gamma, edges, gestures, outputs-config, drag-to-tile, Dock flights
+- [ ] C3: Xwayland, screencopy with grants, agent seat and `agent-input`,
+      xdg-activation and attention, session lock, xdg-dialog, `--greeter`
+- [ ] C4: explicit sync, VRR/tearing, direct scanout, fractional scale,
+      viewporter, presentation time, cursor-shape, ext-image-copy-capture,
+      idle-inhibit, shortcuts-inhibit, text-input/IME, toplevel icons,
+      security-context, primary selection, pointer constraints, gestures
 - [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
       0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
 - [ ] The grabs (from smallvil) still `unwrap()` a window's toplevel; fine
