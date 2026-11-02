@@ -7,4 +7,4 @@ pub(crate) mod idle;
 pub(crate) mod lock;
 pub(crate) mod trust;
 
-pub(crate) use child::spawn;
+pub(crate) use child::{end_session, spawn};

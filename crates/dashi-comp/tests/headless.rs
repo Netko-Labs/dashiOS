@@ -1004,3 +1004,54 @@ fn keyboard_layouts_and_pointer_settings_are_checked_then_used() {
     let wrong = json!({ "mouse": { "accelSpeed": 3 } });
     assert!(ipc.request("input", wrong)["error"].is_string());
 }
+
+#[test]
+fn nothing_of_a_session_outlives_its_compositor() {
+    let out = tempfile::tempdir().unwrap();
+    let pid_file = out.path().join("pid");
+    // The client starts something in the background (as the shell starts its
+    // own processes), then waits.
+    let command = format!("sleep 300 & echo $! > '{}'; wait", pid_file.display());
+    let mut compositor = Compositor::start(&["-c", &command]);
+    let start = Instant::now();
+    while !pid_file.exists()
+        || std::fs::read_to_string(&pid_file)
+            .unwrap()
+            .trim()
+            .is_empty()
+    {
+        assert!(
+            start.elapsed() < Duration::from_secs(10),
+            "the client never started"
+        );
+        sleep(Duration::from_millis(20));
+    }
+    let pid: i32 = std::fs::read_to_string(&pid_file)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+    let alive = |pid: i32| {
+        std::path::Path::new(&format!("/proc/{pid}")).exists()
+            && !std::fs::read_to_string(format!("/proc/{pid}/stat"))
+                .unwrap_or_default()
+                .contains(") Z ")
+    };
+    assert!(alive(pid));
+
+    // The compositor stops (as at logout): the background process goes with it.
+    rustix::process::kill_process(
+        rustix::process::Pid::from_raw(compositor.child.id() as i32).unwrap(),
+        rustix::process::Signal::TERM,
+    )
+    .unwrap();
+    let _ = compositor.child.wait();
+    let start = Instant::now();
+    while alive(pid) {
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "a session process outlived the compositor"
+        );
+        sleep(Duration::from_millis(20));
+    }
+}

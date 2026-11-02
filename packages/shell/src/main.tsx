@@ -114,6 +114,12 @@ const apps = resolvePinned();
 // The shell's logic runs here, in Bun; dashi-comp offers windows, captures,
 // and key events over its IPC, and matches keys against our keymap.
 const compositor = await Compositor.connect();
+// A shell outlives nothing: without its compositor it ends, so it never
+// reopens its surfaces on the next session's (which reuses the socket names).
+compositor?.onClosed(() => {
+  console.error("dashi-shell: dashi-comp went away; the shell ends with it");
+  process.exit(1);
+});
 compositor?.request("keymap", KEYMAP).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 
 // A menu bar goes on every screen, the Dock on the primary one (menubars.ts).

@@ -308,6 +308,7 @@ export class Compositor {
   private nextId = 0;
   private readonly pending = new Map<number, Pending>();
   private readonly listeners = new Set<(event: CompositorEvent) => void>();
+  private readonly closeListeners = new Set<() => void>();
   private readonly lines = new LineBuffer();
 
   private constructor(private readonly socket: Bun.Socket<undefined>) {}
@@ -411,8 +412,16 @@ export class Compositor {
     }
   }
 
+  /** The compositor went away (it exited or crashed); runs once. */
+  onClosed(listener: () => void): () => void {
+    this.closeListeners.add(listener);
+    return () => this.closeListeners.delete(listener);
+  }
+
   private closed(): void {
     for (const pending of this.pending.values()) pending.reject(new Error("dashi-comp closed the connection"));
     this.pending.clear();
+    for (const listener of [...this.closeListeners]) listener();
+    this.closeListeners.clear();
   }
 }

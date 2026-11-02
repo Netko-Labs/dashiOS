@@ -46,6 +46,12 @@ fn main() {
 }
 
 fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
+    // First of all, before any thread exists: SIGTERM and SIGINT are blocked
+    // here and in every thread made later, so they arrive only as events and
+    // the compositor ends its session and puts the screens back. (A thread
+    // made before this would take them and the process would just die.) The
+    // session client unblocks them again (session/child.rs).
+    let signals = Signals::new(&[Signal::SIGTERM, Signal::SIGINT])?;
     let mut event_loop: EventLoop<'static, Dashi> = EventLoop::try_new()?;
     let handle = event_loop.handle();
 
@@ -73,7 +79,6 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
         state.start_xwayland();
     }
 
-    // Before the signal source: it blocks SIGTERM/SIGINT on this thread, and a child would inherit that.
     if let Some(command) = &args.command {
         let x_display = state.xwayland.display.map(|n| format!(":{n}"));
         let pid = session::spawn(
@@ -88,15 +93,15 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
             .shell_pid
             .store(pid, std::sync::atomic::Ordering::Relaxed);
     }
-    handle.insert_source(
-        Signals::new(&[Signal::SIGTERM, Signal::SIGINT])?,
-        |event, _, state| {
-            tracing::info!(signal = ?event.signal(), "stopping");
-            state.loop_signal.stop();
-        },
-    )?;
+    handle.insert_source(signals, |event, _, state| {
+        tracing::info!(signal = ?event.signal(), "stopping");
+        state.loop_signal.stop();
+    })?;
 
     event_loop.run(None, &mut state, Dashi::after_dispatch)?;
+    if let Some(pid) = state.session_client {
+        session::end_session(pid);
+    }
     Ok(())
 }
 
