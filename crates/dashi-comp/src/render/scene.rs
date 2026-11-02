@@ -83,7 +83,11 @@ where
     let layers = layer_map_for_output(output);
     let layer_offset = output_geo.loc - origin;
     if view.only.is_none() {
-        for layer in [Layer::Overlay, Layer::Top] {
+        let top = state.shows_top_layers(output);
+        for layer in [Layer::Overlay, Layer::Top]
+            .into_iter()
+            .filter(|layer| top || *layer == Layer::Overlay)
+        {
             layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
         }
     }
@@ -111,7 +115,7 @@ where
                 .map(DashiElement::Surface),
         );
         if let (Decor::Standard, Some(image)) = (decor, image) {
-            let bar_at = Point::from((frame_at.x, frame_at.y - decor.bar_height()));
+            let bar_at = Point::from((frame_at.x, frame_at.y - state.bar_height(window)));
             push_memory(renderer, on_view(bar_at), &image.buffer, &mut elements);
         }
     }

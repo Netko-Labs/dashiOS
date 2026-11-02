@@ -48,6 +48,7 @@ impl Dashi {
                     },
                 );
                 pointer.frame(self);
+                self.watch_bars(to);
             }
             InputEvent::PointerMotionAbsolute { event, .. } => {
                 let Some(output_geo) = self
@@ -79,6 +80,7 @@ impl Dashi {
                     },
                 );
                 pointer.frame(self);
+                self.watch_bars(pos);
             }
             InputEvent::PointerButton { event, .. } => {
                 let Some(pointer) = self.seat.get_pointer() else {

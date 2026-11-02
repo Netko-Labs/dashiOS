@@ -93,7 +93,7 @@ impl Dashi {
         let style = self.chrome_style;
         let Dashi { windows, text, .. } = self;
         for entry in windows.entries_mut() {
-            if entry.decor == Decor::None {
+            if entry.decor == Decor::None || entry.fullscreen.is_some() {
                 entry.title_image = None;
                 continue;
             }

@@ -570,3 +570,51 @@ fn a_video_plays_as_the_wallpaper() {
         json!({ "event": "wallpaper", "path": video, "ok": true })
     );
 }
+
+#[test]
+fn full_screen_covers_the_screen_and_gives_the_frame_back() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Full");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+
+    assert_eq!(
+        ipc.request("fullscreen", json!({ "window": id, "on": true }))["result"],
+        json!({})
+    );
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert_eq!(window["fullscreen"], true);
+    assert_eq!(window["titleBar"], 0);
+    assert_eq!(window["frame"]["x"], 0);
+    assert_eq!(window["frame"]["y"], 0);
+
+    assert_eq!(
+        ipc.request("fullscreen", json!({ "window": id, "on": false }))["result"],
+        json!({})
+    );
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert_eq!(window["fullscreen"], false);
+    assert_eq!(
+        (window["frame"]["x"].as_i64(), window["frame"]["y"].as_i64()),
+        (Some(100), Some(50))
+    );
+
+    assert_eq!(
+        ipc.request("bars", json!({ "top": 1 }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        ipc.request("bars", json!({ "show": true, "output": "HEADLESS-1" }))["result"],
+        json!({})
+    );
+    assert!(ipc.request("fullscreen", json!({ "window": id }))["error"].is_string());
+}

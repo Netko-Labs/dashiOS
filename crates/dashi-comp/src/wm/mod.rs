@@ -3,7 +3,9 @@
 
 mod actions;
 mod decor;
+mod fullscreen;
 pub(crate) use decor::ChromeStyle;
+pub(crate) use fullscreen::Bars;
 pub(crate) mod grabs;
 mod placement;
 mod windows;

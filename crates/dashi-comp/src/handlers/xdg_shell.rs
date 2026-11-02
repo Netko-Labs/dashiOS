@@ -15,7 +15,7 @@ use smithay::{
         wayland_protocols::xdg::shell::server::xdg_toplevel,
         wayland_server::{
             Resource,
-            protocol::{wl_seat, wl_surface::WlSurface},
+            protocol::{wl_output, wl_seat, wl_surface::WlSurface},
         },
     },
     utils::{Rectangle, Serial},
@@ -159,6 +159,30 @@ impl XdgShellHandler for Dashi {
         }
     }
 
+    // An app's own full screen and maximize are requests to the shell, which decides (arrange.ts).
+    fn fullscreen_request(
+        &mut self,
+        surface: ToplevelSurface,
+        _output: Option<wl_output::WlOutput>,
+    ) {
+        self.ask_shell(&surface, "fullscreen", true);
+    }
+
+    fn unfullscreen_request(&mut self, surface: ToplevelSurface) {
+        self.ask_shell(&surface, "fullscreen", false);
+    }
+
+    fn maximize_request(&mut self, surface: ToplevelSurface) {
+        self.ask_shell(&surface, "zoom", true);
+        // The protocol wants a configure in answer, whatever the shell does.
+        surface.send_configure();
+    }
+
+    fn unmaximize_request(&mut self, surface: ToplevelSurface) {
+        self.ask_shell(&surface, "zoom", false);
+        surface.send_configure();
+    }
+
     fn grab(&mut self, _surface: PopupSurface, _seat: wl_seat::WlSeat, _serial: Serial) {
         // TODO popup grabs
     }
@@ -166,6 +190,25 @@ impl XdgShellHandler for Dashi {
 
 // Xdg Shell
 delegate_xdg_shell!(Dashi);
+
+impl Dashi {
+    fn ask_shell(&mut self, surface: &ToplevelSurface, event: &str, on: bool) {
+        let Some(id) = self
+            .windows
+            .by_surface(surface.wl_surface())
+            .filter(|e| e.announced)
+            .map(|e| e.id)
+        else {
+            return;
+        };
+        let payload = if event == "fullscreen" {
+            serde_json::json!({ "window": id, "on": on })
+        } else {
+            serde_json::json!({ "window": id })
+        };
+        self.ipc.emit(event, payload);
+    }
+}
 
 fn check_grab(
     seat: &Seat<Dashi>,

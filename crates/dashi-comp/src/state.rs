@@ -57,6 +57,7 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub bars: crate::wm::Bars,
     pub wallpaper: crate::wallpaper::Wallpaper,
     /// The session's client (`-c`): it and the processes under it are the shell.
     pub session_client: Option<i32>,
@@ -121,6 +122,7 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            bars: Default::default(),
             wallpaper: Default::default(),
             session_client: None,
             chrome_style: ChromeStyle::default(),
@@ -171,7 +173,10 @@ impl Dashi {
                 .surface_under(local - at.to_f64(), WindowSurfaceType::ALL)
                 .map(|(surface, loc)| (surface, (loc + at + origin).to_f64()))
         };
-        if let Some(top) = in_layer(Layer::Overlay).or_else(|| in_layer(Layer::Top)) {
+        let top_shown = self.shows_top_layers(output);
+        if let Some(top) =
+            in_layer(Layer::Overlay).or_else(|| top_shown.then(|| in_layer(Layer::Top)).flatten())
+        {
             return Some(top);
         }
         // A title bar or the traffic lights: nothing a client gets.

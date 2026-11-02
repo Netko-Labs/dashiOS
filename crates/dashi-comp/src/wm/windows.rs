@@ -54,6 +54,8 @@ pub(crate) struct Entry {
     pub unified: bool,
     /// The title bar (or a unified window's lights) as last drawn.
     pub title_image: Option<titlebar::Image>,
+    /// Full screen on this output, and the outer frame to go back to.
+    pub fullscreen: Option<(String, Rectangle<i32, Logical>)>,
 }
 
 pub(crate) struct Windows {
@@ -86,6 +88,7 @@ impl Windows {
             decor: Decor::None,
             unified: false,
             title_image: None,
+            fullscreen: None,
         });
         id
     }
@@ -189,11 +192,7 @@ pub(crate) fn frame_of(state: &Dashi, window: &Window) -> Option<Rectangle<i32, 
 
 /// The height of the title bar dashi-comp draws above `window` (0 for none).
 pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
-    state
-        .windows
-        .by_window(window)
-        .map(|entry| entry.decor.bar_height())
-        .unwrap_or(0)
+    state.bar_height(window)
 }
 
 /// A window in the IPC's `Window` shape.
@@ -220,7 +219,8 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "state": entry.shown.name(),
         "zoomed": entry.restore.is_some(),
         "frame": frame,
-        "titleBar": entry.decor.bar_height(),
+        "titleBar": state.bar_height(&entry.window),
+        "fullscreen": entry.fullscreen.is_some(),
     })
 }
 

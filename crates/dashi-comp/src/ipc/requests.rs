@@ -17,7 +17,6 @@ use crate::{
 
 /// Methods the protocol has that this compositor does not do yet.
 const LATER: &[&str] = &[
-    "fullscreen",
     "outputs-config",
     "power",
     "gamma",
@@ -96,6 +95,32 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "fullscreen" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            done(state.set_fullscreen(window(params)?, on))
+        }
+        "bars" => {
+            let top = params
+                .contains_key("top")
+                .then(|| coord(params, "top"))
+                .transpose()?;
+            let show = match params.get("show") {
+                None => None,
+                Some(show) => {
+                    let show = show.as_bool().ok_or("`show` must be true or false")?;
+                    let output = params
+                        .get("output")
+                        .and_then(Value::as_str)
+                        .map(str::to_owned);
+                    Some((show, output))
+                }
+            };
+            state.set_bars(top, show);
+            Ok(json!({}))
+        }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
         // One Space until C2.
