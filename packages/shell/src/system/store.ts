@@ -21,6 +21,9 @@ export interface SystemSnapshot {
 }
 
 /** How often each is read; the network also refreshes when it changes. */
+/** Power-supply events come in bursts (the charger, then each battery); one read after the last. */
+const POWER_DEBOUNCE_MS = 250;
+
 export const INTERVALS = { battery: 30_000, network: 10_000, volume: 3000 } as const;
 
 /** A burst of NetworkManager events is one refresh. */
@@ -50,6 +53,9 @@ export class SystemStore {
   constructor(
     private readonly sources: SystemSources = systemSources(),
     private readonly monitor: (onEvent: () => void) => () => void = (onEvent) => watchLines(["nmcli", "monitor"], onEvent),
+    /** The kernel's power-supply events (a charger plugged in or out), so the bar answers at once instead of at the next poll. */
+    private readonly powerMonitor: (onEvent: () => void) => () => void = (onEvent) =>
+      watchLines(["udevadm", "monitor", "--kernel", "--subsystem-match=power_supply"], onEvent),
   ) {}
 
   subscribe = (listener: () => void): (() => void) => {
@@ -77,6 +83,14 @@ export class SystemStore {
         debounce = setTimeout(() => void this.refresh("network"), NETWORK_DEBOUNCE_MS);
       }),
       () => clearTimeout(debounce),
+    );
+    let powerDebounce: ReturnType<typeof setTimeout> | undefined;
+    this.stops.push(
+      this.powerMonitor(() => {
+        clearTimeout(powerDebounce);
+        powerDebounce = setTimeout(() => void this.refresh("battery"), POWER_DEBOUNCE_MS);
+      }),
+      () => clearTimeout(powerDebounce),
     );
     return () => this.stop();
   }

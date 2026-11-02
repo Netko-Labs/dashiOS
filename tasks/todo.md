@@ -112,6 +112,11 @@ it in the VM.
 - [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
 - [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
 - [ ] mirin: text selection in TextInput
+- [x] Menu bar extras: the tray (StatusNotifierItem host + dbusmenu, src/tray/), the applets
+      channel (docs/applets.md, src/applets/, apps/kit/applet.ts), the battery menu, plug glyph,
+      time left, and the charging HUD
+- [ ] Extras: tooltips (Metal has none), nested submenus, middle click (SecondaryActivate),
+      XEmbed tray icons, Bluetooth device batteries in the battery menu, reordering/hiding extras
 - [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences

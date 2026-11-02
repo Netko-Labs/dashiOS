@@ -34,6 +34,7 @@ import { type MenuAction, type MenuContext, type PowerKind, type WindowMenu, win
 import { PopoverRoot, popoverSurface } from "./popover.tsx";
 import { runPower } from "./session.ts";
 import type { AboutInfo } from "./sheets.tsx";
+import type { StatusMenuAction } from "./status-menu.ts";
 
 /** The popover is gone this long before the lock screen or a sleep starts, so neither shows it. */
 const SETTLE_MS = 150;
@@ -64,6 +65,10 @@ export interface MenusOptions {
   openSettings?(): void;
   /** Carries out a chosen row of a Dock icon's menu (dock/). */
   runDock(action: DockMenuAction): void;
+  /** Carries out a chosen row of a status item's menu (an extra's or the battery's). */
+  runStatus(action: StatusMenuAction): void;
+  /** A status item's menu closed. */
+  statusClosed?(key: string): void;
   /** How much of that screen's bottom the Dock takes now (dock/presenter.ts `bottomInset`); the notification center stops above it. */
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
@@ -182,6 +187,8 @@ export function startMenus(options: MenusOptions): Menus {
             run(action);
           }}
           onDockChoose={options.runDock}
+          onStatusChoose={options.runStatus}
+          onStatusClosed={(key) => options.statusClosed?.(key)}
         />,
         onClosed,
       ),

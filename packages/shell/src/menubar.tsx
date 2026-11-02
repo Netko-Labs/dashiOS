@@ -2,8 +2,9 @@
  * The menu bar: the Dashi menu and the focused app's name and menus on the
  * left, status and the clock on the right. A click opens a title's menu (the
  * pointer then moves between menus without clicking), a click on the status
- * area opens Control Center, and a click on the clock the notification
- * center (menus/). An app that published its own menus (app-menus/) has
+ * area opens Control Center (the battery has its own menu), and a click on
+ * the clock the notification center (menus/). Programs' own items, tray
+ * icons and applets, sit left of the status glyphs (extras/). An app that published its own menus (app-menus/) has
  * them here while one of its windows is focused, in place of File, Edit,
  * and View.
  */
@@ -18,8 +19,11 @@ import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { AgentPill } from "./consent.tsx";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
 import { MOON } from "./control-center/glyphs.ts";
+import type { ExtrasStore, MenuBarExtra } from "./extras/index.ts";
+import { ExtraItems } from "./extras/view.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
+import { batteryEntries, extraEntries } from "./menus/status-menu.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
@@ -74,12 +78,34 @@ function Title({
  * side with no gaps, so every pixel of the area is some item's: the network
  * glyph opens the Wi-Fi page, the rest open Control Center.
  */
-function StatusItem({ testID, onPress, children }: { testID: string; onPress: () => void; children: ReactNode }) {
+function StatusItem({
+  testID,
+  onPress,
+  open = false,
+  children,
+}: {
+  testID: string;
+  /** With the item's bounds in the bar, when the event carries them. */
+  onPress: (bounds?: Bounds) => void;
+  /** Its own menu is open: the item's pill is drawn pressed. */
+  open?: boolean;
+  children: ReactNode;
+}) {
+  const colors = useColors();
   return (
     <View
       testID={testID}
-      onPress={onPress}
-      style={{ height: 22, paddingLeft: 7, paddingRight: 7, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+      onPress={({ bounds }) => onPress(bounds)}
+      style={{
+        height: 22,
+        paddingLeft: 7,
+        paddingRight: 7,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 5,
+        backgroundColor: open ? colors.switcherSelection : "#00000000",
+      }}
     >
       {children}
     </View>
@@ -94,6 +120,7 @@ export function MenuBar({
   system,
   menus,
   appMenus,
+  extras,
   settings,
   output,
   onStopAgent,
@@ -107,6 +134,8 @@ export function MenuBar({
   menus: MenuController;
   /** The menus apps published; the focused app's replace File, Edit, and View. */
   appMenus: AppMenuStore;
+  /** Tray icons and applets (extras/). */
+  extras: ExtrasStore;
   /** settings.json: what the status area shows (`menuBar`, set in System Settings). */
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
@@ -136,6 +165,19 @@ export function MenuBar({
   const titles = barMenus(useAppMenus(appMenus));
   const openControlCenter = () => void menus.toggleControlCenter(appName, "main", output);
   const openWifi = () => void menus.toggleControlCenter(appName, "wifi", output);
+  const statusMenuKey = popover?.kind === "status-menu" ? popover.key : null;
+  const openBattery = (bounds?: Bounds) => {
+    if (battery && bounds) void menus.toggleStatusMenu("battery", bounds.x + bounds.width, batteryEntries(battery), appName, output);
+  };
+  const openExtraMenu = (extra: MenuBarExtra, right: number) => {
+    if (statusMenuKey === extra.key) {
+      menus.close();
+      return;
+    }
+    void extras.menu(extra.key).then((rows) => {
+      if (rows.length > 0) void menus.toggleStatusMenu(extra.key, right, extraEntries(extra.key, rows), appName, output);
+    });
+  };
   const menu = (id: BarMenuId, children: ReactNode) => (
     <Title
       key={id}
@@ -168,15 +210,17 @@ export function MenuBar({
         {menu("app", <Text style={{ ...label, fontWeight: "bold" }}>{appName}</Text>)}
         {titles.map(({ id, title }) => menu(id, <Text style={label}>{title}</Text>))}
       </View>
-      <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16 }}>
+      <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16, flexShrink: 1, minWidth: 0 }}>
         <CapturePill store={capture} />
         {connected.map((agent) => (
           <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
         ))}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
+          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y)} />
           <View
             testID="status-area"
             style={{
+              flexShrink: 0,
               flexDirection: "row",
               alignItems: "center",
               height: 22,
@@ -185,7 +229,7 @@ export function MenuBar({
             }}
           >
             {battery && (
-              <StatusItem testID="status-battery" onPress={openControlCenter}>
+              <StatusItem testID="status-battery" onPress={openBattery} open={statusMenuKey === "battery"}>
                 {menuBar.batteryPercent === true && (
                   <View testID="status-battery-percent" style={{ marginRight: 5 }}>
                     <Text
@@ -194,7 +238,7 @@ export function MenuBar({
                   </View>
                 )}
                 <Svg
-                  markup={batteryGlyph(battery.percent, battery.state === "charging")}
+                  markup={batteryGlyph(battery.percent, battery.state === "charging" ? true : battery.state === "discharging" ? false : "plugged")}
                   width={24}
                   height={12}
                   color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
@@ -225,6 +269,7 @@ export function MenuBar({
             testID="clock"
             onPress={() => void menus.toggleNotificationCenter(appName, output)}
             style={{
+              flexShrink: 0,
               justifyContent: "center",
               height: 22,
               paddingLeft: 8,

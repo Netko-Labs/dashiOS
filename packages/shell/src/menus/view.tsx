@@ -68,12 +68,15 @@ export function DropdownMenu<A>({
   entries,
   x,
   above,
+  alignRight = false,
   onChoose,
   onClose,
 }: {
   entries: readonly MenuEntry<A>[];
-  /** The panel's left edge, in screen pixels (its center with `above`). */
+  /** The panel's left edge, in screen pixels (its center with `above`, its right edge with `alignRight`). */
   x: number;
+  /** Ends at `x` instead of starting there: a status item's menu, which opens from the right of the bar. */
+  alignRight?: boolean;
   /**
    * Opens upward instead of down from the menu bar, centered on `x`, with
    * its bottom edge this far above the screen's bottom edge (the Dock's menus).
@@ -91,7 +94,7 @@ export function DropdownMenu<A>({
   };
 
   // Below the menu bar the panel sits at `x`; upward it is centered in the box below.
-  const placement = above === undefined ? ({ position: "absolute", left: x, top: 2 } as const) : {};
+  const placement = above === undefined && !alignRight ? ({ position: "absolute", left: x, top: 2 } as const) : {};
   const panel = (
     <View
       occlude
@@ -136,7 +139,10 @@ export function DropdownMenu<A>({
         }}
         onSubmit={choose}
       />
-      {above === undefined ? (
+      {alignRight ? (
+        // A box from the left edge to `x`, so the panel ends at `x` without knowing its own width.
+        <View style={{ position: "absolute", left: 0, width: Math.max(x, DROPDOWN.minWidth + 8), top: 2, alignItems: "flex-end" }}>{panel}</View>
+      ) : above === undefined ? (
         panel
       ) : (
         // A box as wide as the widest panel, so the panel centers on `x` without knowing its own width.

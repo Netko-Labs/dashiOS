@@ -28,6 +28,8 @@ the same change.
 - `docs/compositor.md` - dashi-comp's design, module map, and milestones.
 - `docs/compositor-ipc.md` - the compositor/shell IPC protocol; both sides and
   this doc change together.
+- `docs/applets.md` - the applets channel (programs' items in the menu bar,
+  beside tray icons); the protocol, its limits, and examples.
 - `docs/conventions.md` - shared code-style, structure, safety, and verification
   rules.
 - `RECOVERY.md` - what was recovered from 0.1.0 and what was lost.

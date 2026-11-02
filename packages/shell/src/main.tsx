@@ -20,6 +20,7 @@ import { AutoAppearance } from "./appearance/auto.ts";
 import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
+import { appletsSocketPath, serveApplets } from "./applets/index.ts";
 import { appFor, displayName, iconPath, launch, METAL_HOST, resolvePinned } from "./apps.ts";
 import { Arranger } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
@@ -46,6 +47,7 @@ import {
   TileStore,
 } from "./dock/index.ts";
 import { type Entry, fileIcon, launchEntry, loadEntries } from "./entries.ts";
+import { ExtrasStore } from "./extras/index.ts";
 import { iconNamesFor, searchFiles } from "./file-search.ts";
 import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
@@ -87,10 +89,11 @@ import { startSpaces } from "./spaces/index.ts";
 import { type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore, switcherSize } from "./switcher.tsx";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { run } from "./system/exec.ts";
-import { isDevelopmentRun } from "./system/stand-in.ts";
+import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
 import { startSystem } from "./system/start.ts";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
 import { ToplevelStore } from "./toplevels.ts";
+import { startTray } from "./tray/index.ts";
 import type { WallpaperChoice } from "./wallpaper/catalog.ts";
 import { LiveWallpaperController } from "./wallpaper/live/controller.ts";
 import { reportWallpaper, WallpaperSync } from "./wallpaper/sync.ts";
@@ -434,6 +437,12 @@ const appMenus = startAppMenus({
   subscribe: toplevels.subscribe,
 });
 
+// Menu bar extras (extras/): programs' own items in the status area, from the applets socket
+// ($XDG_RUNTIME_DIR/dashi-applets.sock, applets/) and the tray over D-Bus (tray/).
+const extras = new ExtrasStore();
+const stopApplets = serveApplets({ path: appletsSocketPath(), extras });
+const tray = mayServeTray(process.env) ? startTray(extras) : Promise.resolve(null);
+
 // The menu bar's menus and Control Center (menus/, control-center/).
 const menus = startMenus({
   appMenus: appMenus.store,
@@ -457,6 +466,8 @@ const menus = startMenus({
       ? bottomInset({ ...dockPrefs.snapshot, autohide: dockPrefs.snapshot.autohide && compositor !== null })
       : 0,
   runDock: (action) => dock.run(action).catch((error) => console.error(`dashi-shell: Dock “${action.kind}” failed:`, error)),
+  runStatus: (action) => (action.kind === "extra" ? extras.choose(action.key, action.id) : settingsApp.open("battery")),
+  statusClosed: (key) => extras.menuClosed(key),
   showShortcuts: (appName) => {
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
@@ -547,6 +558,7 @@ const menuBars = new MenuBars({
         system={system.store}
         menus={menus.controller}
         appMenus={appMenus.store}
+        extras={extras}
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
         onStopAgent={(id) => agents?.stop(id)}
@@ -804,6 +816,8 @@ const quit = () => {
     ["notifications", () => notifications.close()],
     ["menus", () => menus.close()],
     ["app menus", () => appMenus.close()],
+    ["applets", stopApplets],
+    ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],
     ["force quit", () => forceQuit.close()],

@@ -6,7 +6,12 @@
 
 import { useSyncExternalStore } from "react";
 
-export type OsdState = { kind: "volume"; level: number; muted: boolean } | { kind: "brightness"; level: number } | { kind: "mic"; muted: boolean };
+export type OsdState =
+  | { kind: "volume"; level: number; muted: boolean }
+  | { kind: "brightness"; level: number }
+  | { kind: "mic"; muted: boolean }
+  /** A charger was plugged in: charging (`true`) or holding its charge (`"plugged"`). */
+  | { kind: "power"; percent: number; charge: true | "plugged" };
 
 /** The HUD's measures, in px. */
 export const OSD = {
@@ -34,6 +39,7 @@ export function litSegments(state: OsdState): number {
     case "brightness":
       return filledSegments(state.level);
     case "mic":
+    case "power":
       return 0;
   }
 }

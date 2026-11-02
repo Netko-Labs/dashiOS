@@ -12,8 +12,28 @@ import type { DockMenuAction } from "../dock/menu.ts";
 import { NotificationCenterPanel, type NotificationStore } from "../notifications/index.ts";
 import { DOCK, DOCK_HEIGHT, MENU_BAR_HEIGHT } from "../theme.ts";
 import { type MenuController, useMenus } from "./controller.ts";
-import { buildMenu, type MenuAction } from "./model.ts";
+import { buildMenu, type MenuAction, type MenuEntry } from "./model.ts";
+import type { StatusMenuAction } from "./status-menu.ts";
 import { DropdownMenu } from "./view.tsx";
+
+/** A status item's menu: the dropdown, telling its owner when it goes, however it went. */
+function StatusMenu({
+  entries,
+  right,
+  onClosed,
+  onClose,
+  onChoose,
+}: {
+  entries: readonly MenuEntry<StatusMenuAction>[];
+  right: number;
+  onClosed: () => void;
+  onClose: () => void;
+  onChoose: (action: StatusMenuAction) => void;
+}) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, when this menu goes.
+  useEffect(() => onClosed, []);
+  return <DropdownMenu entries={entries} x={right} alignRight onClose={onClose} onChoose={onChoose} />;
+}
 
 type LayerSurface = Exclude<NonNullable<NativeHostOptions["surface"]>, { role: "lock" }>;
 
@@ -45,6 +65,8 @@ export function PopoverRoot({
   dockInset,
   onChoose,
   onDockChoose,
+  onStatusChoose,
+  onStatusClosed,
 }: {
   controller: MenuController;
   /** The menus apps published; the open app menu follows its updates. */
@@ -57,6 +79,10 @@ export function PopoverRoot({
   onChoose: (action: MenuAction, appName: string) => void;
   /** Runs a chosen row of a Dock icon's menu (the popover closes first). */
   onDockChoose: (action: DockMenuAction) => void;
+  /** Runs a chosen row of a status item's menu (the popover closes first). */
+  onStatusChoose: (action: StatusMenuAction) => void;
+  /** A status item's menu closed, chosen from or not (a tray icon's dbusmenu wants to know). */
+  onStatusClosed?: (key: string) => void;
 }) {
   const { popover, context, appName, output } = useMenus(controller);
   const app = useAppMenus(appMenus);
@@ -91,6 +117,19 @@ export function PopoverRoot({
           onChoose={(action) => {
             close();
             onDockChoose(action);
+          }}
+        />
+      )}
+      {popover?.kind === "status-menu" && (
+        <StatusMenu
+          key={popover.key}
+          entries={popover.entries}
+          right={popover.right}
+          onClosed={() => onStatusClosed?.(popover.key)}
+          onClose={close}
+          onChoose={(action) => {
+            close();
+            onStatusChoose(action);
           }}
         />
       )}

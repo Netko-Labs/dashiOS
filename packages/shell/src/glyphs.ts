@@ -57,7 +57,8 @@ export function speakerGlyph(level: number, muted: boolean): string {
 }
 
 /** The battery, filled to `percent`; a bolt is cut out of it while charging. */
-export function batteryGlyph(percent: number, charging: boolean): string {
+/** `charge`: true draws the bolt (charging), "plugged" a plug (on power, holding its charge). */
+export function batteryGlyph(percent: number, charge: boolean | "plugged"): string {
   const x = 2.4;
   const y = 2.4;
   const height = 7.2;
@@ -69,7 +70,12 @@ export function batteryGlyph(percent: number, charging: boolean): string {
     : "";
   // With even-odd filling the bolt is a hole where it crosses the fill and
   // solid where it does not, so it reads at every level.
-  const bolt = charging ? "M12.6 2.6L8.3 6.6h2.5l-.9 2.9 4.4-4.5h-2.6z" : "";
+  const bolt =
+    charge === true
+      ? "M12.6 2.6L8.3 6.6h2.5l-.9 2.9 4.4-4.5h-2.6z"
+      : charge === "plugged"
+        ? "M9.5 2.4h.9v2h-.9zM11.6 2.4h.9v2h-.9zM8.8 4.4h4.4v1.8a2.2 2.2 0 0 1-1.6 2.1v1.4h-1.2V8.3a2.2 2.2 0 0 1-1.6-2.1z"
+        : "";
   return svg(
     "0 0 24 12",
     `<rect x="0.75" y="0.75" width="20" height="10.5" rx="2.6" stroke="#000" stroke-opacity="0.45" stroke-width="1.2" fill="none"/>` +

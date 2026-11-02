@@ -96,11 +96,12 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
 // Control characters, and the bidi overrides that could make a label read as another.
 const UNSAFE = /[\p{Cc}‪-‮⁦-⁩]/u;
 
-type Refusal = { error: string };
-const refuse = (error: string): Refusal => ({ error });
-const isRefusal = (value: unknown): value is Refusal => typeof value === "object" && value !== null && "error" in value;
+/** A message, or part of one, that was refused, and why (shared with applets/protocol.ts). */
+export type Refusal = { error: string };
+export const refuse = (error: string): Refusal => ({ error });
+export const isRefusal = (value: unknown): value is Refusal => typeof value === "object" && value !== null && "error" in value;
 
-function record(value: unknown, what: string, allowed: readonly string[]): Record<string, unknown> | Refusal {
+export function record(value: unknown, what: string, allowed: readonly string[]): Record<string, unknown> | Refusal {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return refuse(`${what} must be an object`);
   const stray = Object.keys(value).find((key) => !allowed.includes(key));
   return stray === undefined ? (value as Record<string, unknown>) : refuse(`${what} has an unknown field “${stray}”`);
@@ -108,7 +109,7 @@ function record(value: unknown, what: string, allowed: readonly string[]): Recor
 
 const length = (text: string): number => [...text].length;
 
-function text(value: unknown, what: string, max: number): string | Refusal {
+export function text(value: unknown, what: string, max: number): string | Refusal {
   if (typeof value !== "string") return refuse(`${what} must be a string`);
   const trimmed = value.trim();
   if (trimmed === "") return refuse(`${what} is empty`);
@@ -117,17 +118,17 @@ function text(value: unknown, what: string, max: number): string | Refusal {
   return trimmed;
 }
 
-function id(value: unknown, what: string): string | Refusal {
+export function id(value: unknown, what: string): string | Refusal {
   if (typeof value !== "string" || !ID.test(value)) return refuse(`${what} must be letters, digits, and . _ : -, starting with a letter or digit`);
   return value.length > LIMITS.id ? refuse(`${what} is longer than ${LIMITS.id} characters`) : value;
 }
 
-function optionalBoolean(value: unknown, what: string): boolean | undefined | Refusal {
+export function optionalBoolean(value: unknown, what: string): boolean | undefined | Refusal {
   if (value === undefined || typeof value === "boolean") return value;
   return refuse(`${what} must be true or false`);
 }
 
-function parseRow(value: unknown, where: string): AppMenuRow | Refusal {
+export function parseRow(value: unknown, where: string): AppMenuRow | Refusal {
   if (typeof value === "object" && value !== null && (value as Record<string, unknown>).type === "separator") {
     const separator = record(value, where, ["type"]);
     return isRefusal(separator) ? separator : { kind: "separator" };
@@ -159,7 +160,7 @@ function parseRow(value: unknown, where: string): AppMenuRow | Refusal {
 }
 
 /** Separators only between items: none first, last, or twice in a row. */
-function tidy(rows: readonly AppMenuRow[]): AppMenuRow[] {
+export function tidy(rows: readonly AppMenuRow[]): AppMenuRow[] {
   const out: AppMenuRow[] = [];
   for (const row of rows) {
     if (row.kind === "separator" && (out.length === 0 || out.at(-1)?.kind === "separator")) continue;

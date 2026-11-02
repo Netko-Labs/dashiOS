@@ -1,5 +1,6 @@
 /** Starts the system services the shell shows: the status store and the hardware keys. */
 
+import { watchCharger } from "./charger.ts";
 import { HardwareKeys } from "./keys.ts";
 import type { Network } from "./network.ts";
 import { openOsdSurface } from "./osd-panel.tsx";
@@ -29,11 +30,13 @@ export function startSystem(options: SystemOptions = {}): System {
   const store = network ? new SystemStore({ ...systemSources(), network: async () => network() }, options.monitor ?? (() => () => {})) : new SystemStore();
   const osd = new OsdController(openOsdSurface);
   const hardware = new HardwareKeys({ osd, volumeChanged: (volume) => store.publish("volume", volume) });
+  const stopCharger = watchCharger(store, osd);
   store.start();
   return {
     store,
     hardware,
     close() {
+      stopCharger();
       store.stop();
       osd.hide();
     },

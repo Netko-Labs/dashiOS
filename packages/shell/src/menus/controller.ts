@@ -19,13 +19,16 @@ import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import type { OverlayHandle } from "../overlay.tsx";
 import type { BarMenuId, MenuContext, MenuEntry } from "./model.ts";
+import type { StatusMenuAction } from "./status-menu.ts";
 
 export type Popover =
   | { kind: "menu"; id: BarMenuId; x: number }
   /** An app's menu in the Dock: its rows were built when it opened; `x` is the icon's center. */
   | { kind: "dock-menu"; x: number; entries: readonly MenuEntry<DockMenuAction>[]; above?: number }
   | { kind: "control-center"; page: ControlPage }
-  | { kind: "notification-center" };
+  | { kind: "notification-center" }
+  /** A status item's menu (an extra's or the battery's), its right edge at `right` (screen pixels); `key` says whose. */
+  | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] };
 
 export interface MenuState {
   popover: Popover | null;
@@ -106,6 +109,20 @@ export class MenuController {
   setControlPage(page: ControlPage): void {
     const open = this.state.popover;
     if (open?.kind === "control-center" && open.page !== page) this.set({ ...this.state, popover: { kind: "control-center", page } });
+  }
+
+  /**
+   * A click on a status item with a menu: opens it below the item (its right
+   * edge at `right`), or closes it if it is the one open. `key` names the
+   * item ("battery", or an extra's key).
+   */
+  toggleStatusMenu(key: string, right: number, entries: readonly MenuEntry<StatusMenuAction>[], appName: string, output?: string): Promise<void> {
+    const open = this.state.popover;
+    if (open?.kind === "status-menu" && open.key === key && this.isOn(output)) {
+      this.close();
+      return Promise.resolve();
+    }
+    return this.show({ kind: "status-menu", key, right, entries }, appName, output);
   }
 
   /** A click on the clock. */

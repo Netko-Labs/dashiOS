@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { render, Svg, spawnNativeHost, Text, View } from "@mirinjs/metal";
 import { METAL_HOST } from "../apps.ts";
-import { micGlyph, SUN, speakerGlyph } from "../glyphs.ts";
+import { batteryGlyph, micGlyph, SUN, speakerGlyph } from "../glyphs.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "./osd-state.ts";
 
 const SEGMENT = { width: 8, height: 6, gap: 2 } as const;
@@ -20,7 +20,16 @@ function glyphOf(state: OsdState): string {
       return SUN;
     case "mic":
       return micGlyph(state.muted);
+    case "power":
+      return batteryGlyph(state.percent, state.charge);
   }
+}
+
+/** The words under a HUD that shows no level. */
+function caption(state: OsdState): string | null {
+  if (state.kind === "mic") return state.muted ? "Microphone off" : "Microphone on";
+  if (state.kind === "power") return `${state.charge === true ? "Charging" : "Plugged In"} · ${state.percent}%`;
+  return null;
 }
 
 function LevelBar({ lit }: { lit: number }) {
@@ -64,13 +73,14 @@ export function OsdPanel({ store }: { store: OsdStore }) {
         }}
       >
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Svg markup={glyphOf(state)} size={96} color={colors.text} />
+          {/* The battery is twice as wide as it is tall; the other glyphs are square. */}
+          {state.kind === "power" ? (
+            <Svg markup={glyphOf(state)} width={112} height={56} color={colors.text} />
+          ) : (
+            <Svg markup={glyphOf(state)} size={96} color={colors.text} />
+          )}
         </View>
-        {state.kind === "mic" ? (
-          <Text style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>{state.muted ? "Microphone off" : "Microphone on"}</Text>
-        ) : (
-          <LevelBar lit={lit} />
-        )}
+        {caption(state) !== null ? <Text style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>{caption(state)}</Text> : <LevelBar lit={lit} />}
       </View>
     </View>
   );

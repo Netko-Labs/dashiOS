@@ -23,6 +23,8 @@
  *    the radios and sound that follow them) on or off, and nothing else.
  *  - `DASHI_NOTIFICATIONS=1` or `0` does the same for claiming the
  *    notification name (a nested run pointed at a private bus sets `1`).
+ *  - `DASHI_TRAY=1` or `0` does the same for hosting the tray
+ *    (`org.kde.StatusNotifierWatcher`).
  *  - Power has its own: `DASHI_POWER` (`power/nested.ts`).
  */
 
@@ -48,5 +50,16 @@ export function standsIn(env: Env, nesting: Nesting = compositorAbove): boolean 
 export function mayServeNotifications(env: Env, nesting: Nesting = compositorAbove): boolean {
   if (env.DASHI_NOTIFICATIONS === "1") return true;
   if (env.DASHI_NOTIFICATIONS === "0") return false;
+  return !isDevelopmentRun(env, nesting);
+}
+
+/**
+ * Whether the shell may host the tray on the session bus (tray/): claiming
+ * `org.kde.StatusNotifierWatcher`, or following another desktop's, would
+ * take the tray icons of the machine the developer is using.
+ */
+export function mayServeTray(env: Env, nesting: Nesting = compositorAbove): boolean {
+  if (env.DASHI_TRAY === "1") return true;
+  if (env.DASHI_TRAY === "0") return false;
   return !isDevelopmentRun(env, nesting);
 }
