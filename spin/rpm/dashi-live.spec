@@ -11,6 +11,8 @@ BuildArch:      noarch
 Requires:       dashi = %{version}-%{release}
 Requires:       dashi-greeter = %{version}-%{release}
 Requires:       anaconda-live
+# Installing a live image copies the running system with rsync.
+Requires:       rsync
 Requires:       livesys-scripts
 Requires:       helium-bin
 
