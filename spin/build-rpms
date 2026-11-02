@@ -6,7 +6,9 @@
 # packages are copied from node_modules), ../mirin checked out, and the
 # build dependencies the specs name (`dnf builddep spin/rpm/*.spec`).
 #
-#   spin/build-rpms [package...]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
+#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
+#   all: every spec in spin/rpm (mirin-metal-host from ../mirin's HEAD; dashi-bun
+#   downloads Bun's release, with spectool)
 #
 # The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
 set -euo pipefail
@@ -24,6 +26,10 @@ sha=$(git rev-parse --short=7 HEAD)
 snapshot="$version~beta.$(git log -1 --format=%cd --date=format:%Y%m%d).$sha"
 packages=("$@")
 [ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release dashi-live)
+if [ "${packages[0]}" = all ]; then
+  packages=()
+  for spec in "$repo"/spin/rpm/*.spec; do packages+=("$(basename "$spec" .spec)"); done
+fi
 
 top=${RPMBUILD_TOP:-$HOME/rpmbuild}
 mkdir -p "$top"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}
@@ -52,11 +58,25 @@ cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$mod
 git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
 tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 
+# mirin's source, for mirin-metal-host: its HEAD, as Dashi's tree pins it by commit.
+mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
+mirin_snapshot="0.1.0~beta.$(git -C "$mirin" log -1 --format=%cd --date=format:%Y%m%d).$mirin_sha"
+mirin_name=mirin-$mirin_snapshot
+if [[ " ${packages[*]} " == *" mirin-metal-host "* ]]; then
+  git -C "$mirin" archive --format=tar.gz --prefix="$mirin_name/" -o "$top/SOURCES/$mirin_name.tar.gz" HEAD
+fi
+
 for package in "${packages[@]}"; do
   spec=$repo/spin/rpm/$package.spec
   [ -f "$spec" ] || { echo "build-rpms: no spec for $package" >&2; exit 1; }
   echo "build-rpms: $package $snapshot"
+  # Sources at URLs (dashi-bun's release) are fetched first.
+  if grep -q '^Source[0-9]*:[[:space:]]*https://' "$spec"; then
+    spectool -g -C "$top/SOURCES" "$spec"
+  fi
   rpmbuild -ba "$spec" \
+    --define "mirin_snapshot $mirin_snapshot" \
+    --define "mirin_source $mirin_name" \
     --define "_topdir $top" \
     --define "dashi_snapshot $snapshot" \
     --define "dashi_source $name" \
