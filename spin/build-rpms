@@ -23,7 +23,11 @@ if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   exit 1
 fi
 sha=$(git rev-parse --short=7 HEAD)
-snapshot="$version~beta.$(git log -1 --format=%cd --date=format:%Y%m%d).$sha"
+# The commit's UTC date and time, then its hash: two builds of one day sort by
+# time (a hash alone sorted them at random), and a numeric time sorts above
+# the hashes the older DATE.SHA snapshots had there.
+stamp() { TZ=UTC git -C "$1" log -1 --format=%cd --date=format-local:%Y%m%d.%H%M%S; }
+snapshot="$version~beta.$(stamp "$repo").$sha"
 packages=("$@")
 [ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release dashi-live)
 if [ "${packages[0]}" = all ]; then
@@ -60,7 +64,7 @@ tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 
 # mirin's source, for mirin-metal-host: its HEAD, as Dashi's tree pins it by commit.
 mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
-mirin_snapshot="0.1.0~beta.$(git -C "$mirin" log -1 --format=%cd --date=format:%Y%m%d).$mirin_sha"
+mirin_snapshot="0.1.0~beta.$(stamp "$mirin").$mirin_sha"
 mirin_name=mirin-$mirin_snapshot
 if [[ " ${packages[*]} " == *" mirin-metal-host "* ]]; then
   git -C "$mirin" archive --format=tar.gz --prefix="$mirin_name/" -o "$top/SOURCES/$mirin_name.tar.gz" HEAD
