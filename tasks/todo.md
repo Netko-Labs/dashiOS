@@ -110,7 +110,8 @@ it in the VM.
 - [x] Anaconda profile for Dashi (the installer creates the account)
 - [ ] mirin: a clipboard API (wl-copy shows up as an app for a moment)
 - [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
-- [ ] mirin: dynamic window titles; text selection in TextInput
+- [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
+- [ ] mirin: text selection in TextInput
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences
 - [ ] A Dashi-native installer front end over Anaconda

@@ -1,7 +1,7 @@
 /**
- * The Terminal's window: Dashi's unified toolbar (the running program's title
- * and the grid's size), then the grid dashi-term describes, drawn in the
- * monospace face. The grid takes the keyboard raw (Metal's `onKeyDown`) and
+ * The Terminal's window: the compositor's slim title bar (the running
+ * program's title and the grid's size, one line, through `setTitle`), then
+ * the grid dashi-term describes, drawn in the monospace face. The grid takes the keyboard raw (Metal's `onKeyDown`) and
  * sends every key to the engine, which encodes it the way the program asked
  * (libghostty-vt). The wheel scrolls back; dragging selects (two clicks a
  * word, three a line); the menu bar's Edit menu copies and pastes on ❖C/❖V.
@@ -13,7 +13,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { type Engine, startEngine } from "./engine.ts";
 import { terminalMenus } from "./menus.ts";
-import { applyFrame, cellAt, EMPTY_SCREEN, gridFor, type Screen, type Span } from "./screen.ts";
+import { applyFrame, cellAt, EMPTY_SCREEN, gridFor, type Screen, type Span, terminalTitle } from "./screen.ts";
 
 export const TERMINAL_SIZE = { width: 760, height: 480 } as const;
 const FONT_SIZE = 13;
@@ -73,10 +73,12 @@ export interface TerminalWindowProps {
   binary: string;
   onExit(): void;
   newWindow(): void;
+  /** Retitle the window (the compositor draws the title bar). */
+  setTitle(title: string): void;
   clipboard?: Clipboard;
 }
 
-export function TerminalWindow({ binary, onExit, newWindow, clipboard = systemClipboard() }: TerminalWindowProps) {
+export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboard = systemClipboard() }: TerminalWindowProps) {
   const colors = useColors();
   const look = lookFor(useDark(), colors.selection);
   const [screen, setScreen] = useState<Screen>(EMPTY_SCREEN);
@@ -108,6 +110,8 @@ export function TerminalWindow({ binary, onExit, newWindow, clipboard = systemCl
   // biome-ignore lint/correctness/useExhaustiveDependencies: fit reads refs; it runs when the cell is first measured.
   useEffect(fit, [cell]);
   useEffect(() => () => engine.current?.stop(), []);
+  const windowTitle = terminalTitle(title, screen.cols, screen.rows);
+  useEffect(() => setWindowTitle(windowTitle), [windowTitle, setWindowTitle]);
 
   const { menus, run } = terminalMenus({
     canCopy: clipboard.canWrite,
@@ -147,7 +151,7 @@ export function TerminalWindow({ binary, onExit, newWindow, clipboard = systemCl
 
   const { cursor } = screen;
   return (
-    <AppWindow title={title} subtitle={screen.cols > 0 ? `${screen.cols} × ${screen.rows}` : undefined}>
+    <AppWindow title={windowTitle}>
       <View style={{ flex: 1, backgroundColor: look.ground, paddingLeft: 8, paddingTop: 6 }}>
         <View
           testID="terminal-grid"

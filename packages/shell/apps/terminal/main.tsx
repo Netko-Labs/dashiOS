@@ -22,8 +22,14 @@ function newWindow(): void {
 }
 
 let quit = (): void => process.exit(0);
+let setTitle = (_title: string): void => {};
+/** Stable across renders, so the view retitles only when the title changes. */
+const retitle = (title: string): void => setTitle(title);
+// The standard title bar: one slim line the compositor draws, like a
+// terminal's anywhere else; the window has no toolbar to put in it.
 const app = runApp(
-  { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE },
-  <TerminalWindow binary={binary} onExit={() => quit()} newWindow={newWindow} />,
+  { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE, titleBar: "standard" },
+  <TerminalWindow binary={binary} onExit={() => quit()} newWindow={newWindow} setTitle={retitle} />,
 );
 quit = app.quit;
+setTitle = (title) => app.host.setTitle(title);

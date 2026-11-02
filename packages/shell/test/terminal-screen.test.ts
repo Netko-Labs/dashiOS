@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyFrame, cellAt, EMPTY_SCREEN, type Frame, gridFor, parseEngineLine } from "../apps/terminal/screen.ts";
+import { applyFrame, cellAt, EMPTY_SCREEN, type Frame, gridFor, parseEngineLine, terminalTitle } from "../apps/terminal/screen.ts";
 
 const frame = (overrides: Partial<Frame>): Frame => ({
   cols: 4,
@@ -93,4 +93,9 @@ describe("the screen", () => {
     expect(cellAt(17, 40, 8, 18, 80, 24)).toEqual({ x: 2, y: 2 });
     expect(cellAt(-5, 9999, 8, 18, 80, 24)).toEqual({ x: 0, y: 23 });
   });
+});
+
+test("the title bar names the program, then the grid once it is known", () => {
+  expect(terminalTitle("dashi@dashi:~", 96, 24)).toBe("dashi@dashi:~ — 96×24");
+  expect(terminalTitle("Terminal", 0, 0)).toBe("Terminal");
 });

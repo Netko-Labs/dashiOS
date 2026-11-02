@@ -265,6 +265,7 @@
       <li>Controls are vertically centered in the bar; a press within 8 px of one counts; under the pointer the group lights and the hovered control grows 1.18×.</li>
       <li>Unfocused windows show gray controls, lit again on hover.</li>
       <li>Standard bar 28 with a centered SemiBold 13 title, clear of 84 px each side. A unified window gives the app a 38 px toolbar strip and keeps a 76 × 38 corner for the controls.</li>
+      <li>An app with no toolbar controls (Terminal) takes the standard bar, not a unified one, and keeps it current with the window title (<code>setTitle</code>): one slim line, "dashi@dashi:~ — 96×26".</li>
       <li>The zoom control uses a lighter kombu (<code>#4A9A7E</code>) than the accent so an 11 px square reads on the bar.</li>
       <li>Windows resize from any edge: 6 px outside and 3 px inside the frame.</li>
     </ul>
@@ -392,7 +393,7 @@ drawPalette("light");
 const TYPE = [
   ["Clock", "88 · Bold", "Lock screen and greeter", 88, 700, "9:41"],
   ["Page title", "20 · Bold", "Settings panes", 20, 700, "Appearance"],
-  ["Toolbar title", "14 · Bold", "Unified toolbar", 14, 700, "Quarterly Notes"],
+  ["Toolbar title", "13 · Bold", "Unified toolbar", 13, 700, "Quarterly Notes"],
   ["Body", "13 · Regular", "Rows, menus, menu bar", 13, 400, "The quick brown fox jumps over the lazy dog."],
   ["Window title", "13 · SemiBold", "Compositor title bar", 13, 600, "Document.txt"],
   ["Message", "12 · Regular, 16 line", "Sheet messages", 12, 400, "You can't undo this action. The folder and everything in it will be deleted."],

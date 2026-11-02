@@ -28,6 +28,7 @@ function fakeHosts() {
       onToplevel() {},
       toplevel() {},
       unlock() {},
+      setTitle() {},
       open: (window) => record.opened.push(window),
     };
   };

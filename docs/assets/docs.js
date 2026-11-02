@@ -52,7 +52,10 @@ function kombuSprite(expression = "happy", { dark = false } = {}) {
       extra = `<text x="90" y="54" font-family="Inter, sans-serif" font-weight="700" font-size="15" ${faint}>z</text><text x="101" y="40" font-family="Inter, sans-serif" font-weight="700" font-size="11" ${faint}>z</text>`;
       break;
     case "cheer":
-      face = line("M45 99q5 -5 10 0") + line("M67 99q5 -5 10 0") + `<path d="M55 106h12q0 7 -6 7q-6 0 -6 -7z" fill="${ink}" stroke="${ink}" stroke-width="1.5" stroke-linejoin="round"/>`;
+      face =
+        line("M45 99q5 -5 10 0") +
+        line("M67 99q5 -5 10 0") +
+        `<path d="M55 106h12q0 7 -6 7q-6 0 -6 -7z" fill="${ink}" stroke="${ink}" stroke-width="1.5" stroke-linejoin="round"/>`;
       extra = `<path d="M16 64l1.6 -4.6 1.6 4.6 4.6 1.6 -4.6 1.6 -1.6 4.6 -1.6 -4.6 -4.6 -1.6z" fill="#e5b13f"/><path d="M103 60l1.2 -3.6 1.2 3.6 3.6 1.2 -3.6 1.2 -1.2 3.6 -1.2 -3.6 -3.6 -1.2z" fill="#e5b13f"/>`;
       break;
     default:

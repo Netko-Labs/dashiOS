@@ -148,3 +148,8 @@ export function cellAt(x: number, y: number, cellWidth: number, cellHeight: numb
   const clamp = (n: number, max: number): number => Math.min(Math.max(n, 0), Math.max(max - 1, 0));
   return { x: clamp(Math.floor(x / cellWidth), cols), y: clamp(Math.floor(y / cellHeight), rows) };
 }
+
+/** What the title bar says: the program's title and, once it is known, the grid ("dashi@dashi:~ — 96×24"). */
+export function terminalTitle(title: string, cols: number, rows: number): string {
+  return cols > 0 ? `${title} — ${cols}×${rows}` : title;
+}
