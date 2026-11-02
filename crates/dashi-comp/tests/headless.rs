@@ -12,9 +12,14 @@ use std::{
 
 use serde_json::{Value, json};
 
+mod support {
+    pub mod client;
+}
+use support::client::Client;
+
 struct Compositor {
     child: Child,
-    _dir: tempfile::TempDir,
+    dir: tempfile::TempDir,
     socket: PathBuf,
 }
 
@@ -39,11 +44,7 @@ impl Compositor {
             .env("RUST_LOG", "warn")
             .spawn()
             .expect("dashi-comp starts");
-        Self {
-            child,
-            _dir: dir,
-            socket,
-        }
+        Self { child, dir, socket }
     }
 
     fn connect(&self) -> Ipc {
@@ -338,4 +339,109 @@ fn the_keymap_is_checked_before_it_is_used() {
     assert!(
         ipc.request("send-keys", json!({ "window": 9, "chord": "ctrl+z" }))["error"].is_string()
     );
+}
+
+/// Read events until one named `name` arrives (or give up after a while).
+fn wait_event(ipc: &mut Ipc, client: &mut Client, name: &str) -> Value {
+    if let Some(at) = ipc.events.iter().position(|e| e["event"] == name) {
+        return ipc.events.remove(at);
+    }
+    ipc.stream
+        .set_read_timeout(Some(Duration::from_millis(50)))
+        .unwrap();
+    let start = Instant::now();
+    loop {
+        client.dispatch();
+        let mut line = String::new();
+        if ipc.reader.read_line(&mut line).is_ok() && !line.is_empty() {
+            let event: Value = serde_json::from_str(&line).unwrap();
+            if event["event"] == name {
+                ipc.stream
+                    .set_read_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                return event;
+            }
+        }
+        assert!(start.elapsed() < Duration::from_secs(10), "no {name} event");
+    }
+}
+
+#[test]
+fn a_window_waits_for_the_shell_to_place_it() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "A test");
+    let placing = wait_event(&mut ipc, &mut client, "window-placing");
+    let window = &placing["window"];
+    assert_eq!(window["appId"], "dev.dashi.test");
+    assert_eq!(window["title"], "A test");
+    assert_eq!(
+        (window["width"].as_i64(), window["height"].as_i64()),
+        (Some(320), Some(200))
+    );
+    let id = window["id"].as_u64().unwrap();
+    assert!(
+        ipc.request("windows", json!({}))["result"]["windows"]
+            .as_array()
+            .unwrap()
+            .is_empty(),
+        "not shown until placed"
+    );
+
+    assert_eq!(
+        ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }))["result"],
+        json!({})
+    );
+    let opened = wait_event(&mut ipc, &mut client, "window-opened");
+    assert_eq!(opened["window"]["id"], id);
+    assert_eq!(
+        opened["window"]["frame"],
+        json!({ "x": 100, "y": 50, "width": 320, "height": 200 })
+    );
+    assert_eq!(opened["window"]["focused"], true);
+
+    assert_eq!(
+        ipc.request("close", json!({ "window": id }))["result"],
+        json!({})
+    );
+    let start = Instant::now();
+    while !client.state.closed {
+        client.dispatch();
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "the client was not asked to close"
+        );
+    }
+}
+
+#[test]
+fn with_no_shell_a_window_places_itself() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "foot", "foot");
+    let start = Instant::now();
+    loop {
+        client.dispatch();
+        let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+        if let Some(window) = windows.as_array().and_then(|w| w.first()) {
+            assert_eq!(window["appId"], "foot");
+            assert!(window["frame"].is_object());
+            break;
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(10),
+            "the window was never shown"
+        );
+        sleep(Duration::from_millis(20));
+    }
 }
