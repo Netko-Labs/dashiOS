@@ -57,10 +57,11 @@ it in the VM.
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel
 - [x] The agent seat is opt-in (`DASHI_AGENT_SEAT=1`): as a second wl_seat it
       took GPUI's keyboard (the greeter and every Metal surface stopped typing)
-- [ ] The launcher takes about 3 s to show after ❖: every overlay is a new
-      Metal host, and each spends 0.4 s starting, 2.5 s creating its Vulkan
-      device (the VM's Venus GPU; far less on hardware), and 0.76 s loading
-      every system font. mirin: load only the UI's fonts, or keep a warm host
+- [x] The launcher took about 3.8 s to show after ❖ (a new Metal host each:
+      0.4 s starting, 2.5 s of Vulkan device in the VM, 0.8 s of fonts). The
+      shell keeps a warm deferred host (warm-host.ts, mirin `dd637f2`):
+      under 0.7 s. An overlay opened within ~5 s of the last still starts cold
+- [ ] mirin: load only the UI's fonts (every host loads all system fonts)
 - [x] Dock clicks didn't launch: the agent seat again (GPUI took its pointer)
 
 ## 3. Login screen
