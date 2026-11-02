@@ -6,7 +6,7 @@ use smithay::{
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
-            AsRenderElements, Kind,
+            AsRenderElements, Element, Id, Kind,
             memory::MemoryRenderBufferRenderElement,
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
         },
@@ -15,10 +15,10 @@ use smithay::{
     input::pointer::{CursorImageStatus, CursorImageSurfaceData},
     output::Output,
     utils::{Logical, Physical, Point, Rectangle, Scale},
-    wayland::{compositor::with_states, shell::wlr_layer::Layer},
+    wayland::{compositor::with_states, seat::WaylandFocus, shell::wlr_layer::Layer},
 };
 
-use super::{DashiElement, titlebar::Decor};
+use super::{DashiElement, rounded::GlesAccess, titlebar::Decor};
 use crate::state::Dashi;
 use smithay::backend::renderer::element::{
     solid::SolidColorRenderElement, utils::RescaleRenderElement,
@@ -42,7 +42,7 @@ pub(crate) fn output_elements<R>(
     with_cursor: bool,
 ) -> Vec<DashiElement<R>>
 where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     let Some(area) = state.space.output_geometry(output) else {
@@ -68,7 +68,7 @@ pub(crate) fn view_elements<R>(
     view: &View<'_>,
 ) -> Vec<DashiElement<R>>
 where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     let output = view.output;
@@ -205,12 +205,24 @@ where
             push_memory(renderer, on_view(frame_at), &image.buffer, &mut elements);
         }
         let surface_at = on_view(frame_at - window.geometry().loc);
-        elements.extend(
-            window
-                .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
-                .into_iter()
-                .map(DashiElement::Surface),
-        );
+        let surfaces = window
+            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0);
+        // Under a title bar, the bottom corners are rounded to match its top ones.
+        let rounded = (decor == Decor::Standard && state.chrome_style.radius > 0)
+            .then(|| super::rounded::program(renderer.gles()))
+            .flatten()
+            .zip(
+                window
+                    .wl_surface()
+                    .map(|surface| Id::from_wayland_resource(&*surface)),
+            );
+        let radius = (f64::from(state.chrome_style.radius) * scale.x) as f32;
+        elements.extend(surfaces.into_iter().map(|element| match &rounded {
+            Some((program, root)) if element.id() == root => DashiElement::Rounded(
+                super::rounded::RoundedElement::new(element, program.clone(), radius),
+            ),
+            _ => DashiElement::Surface(element),
+        }));
         if let (Decor::Standard, Some(image)) = (decor, image) {
             let bar_at = Point::from((frame_at.x, frame_at.y - state.bar_height(window)));
             push_memory(renderer, on_view(bar_at), &image.buffer, &mut elements);
@@ -261,7 +273,7 @@ fn push_memory<R>(
     buffer: &smithay::backend::renderer::element::memory::MemoryRenderBuffer,
     elements: &mut Vec<DashiElement<R>>,
 ) where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     match MemoryRenderBufferRenderElement::from_buffer(
@@ -286,7 +298,7 @@ fn layer_elements<R>(
     scale: Scale<f64>,
     elements: &mut Vec<DashiElement<R>>,
 ) where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     for surface in layers.layers_on(layer).rev() {
@@ -310,7 +322,7 @@ fn cursor_elements<R>(
     scale: Scale<f64>,
     elements: &mut Vec<DashiElement<R>>,
 ) where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     // The agent's pointer, over everything, while it acts.
@@ -401,7 +413,7 @@ fn overview_window<R>(
     scale: Scale<f64>,
     elements: &mut Vec<DashiElement<R>>,
 ) where
-    R: Renderer + ImportAll + ImportMem,
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
     let geometry = window.geometry();

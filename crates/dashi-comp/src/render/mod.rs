@@ -5,6 +5,7 @@ pub(crate) mod canvas;
 pub(crate) mod capture;
 pub(crate) mod cursor;
 pub(crate) mod present;
+pub(crate) mod rounded;
 mod scene;
 pub(crate) mod text;
 pub(crate) mod titlebar;
@@ -17,12 +18,15 @@ use smithay::backend::renderer::{
     },
 };
 
+pub(crate) use rounded::GlesAccess;
 pub(crate) use scene::{View, output_elements};
 
 smithay::backend::renderer::element::render_elements! {
     /// Everything on a screen: client surfaces, and images the compositor drew.
-    pub(crate) DashiElement<R> where R: ImportAll + ImportMem;
+    pub(crate) DashiElement<R> where R: ImportAll + ImportMem + GlesAccess;
     Surface=WaylandSurfaceRenderElement<R>,
+    /// A window's main surface with rounded bottom corners (under a title bar).
+    Rounded=rounded::RoundedElement<R>,
     Memory=MemoryRenderBufferRenderElement<R>,
     /// A window drawn small (the overview, a flight to the Dock).
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,

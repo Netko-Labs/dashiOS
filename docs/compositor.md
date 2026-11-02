@@ -73,7 +73,8 @@ crates/dashi-comp/src/
                     toplevel_meta (icons, bell), activation (+ dialog, foreign)
   protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
                     toplevel, wlr-screencopy
-  render/           scene, title bars, cursor, capture, presentation (present.rs)
+  render/           scene, title bars, cursor, capture, presentation (present.rs),
+                    rounded corners (rounded.rs)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview, grabs
   input/            keyboard and pointer routing, decorations, constraints, gestures
   keys/             keymap, bindings, ❖ phases
@@ -120,6 +121,9 @@ Each milestone ends with the shell running on it in the VM.
   syncobjs; otherwise commits wait for their dmabufs (implicit sync).
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
+- **Rounded corners (done):** a window under Dashi's title bar has its bottom
+  corners rounded to the bar's radius, by a texture shader on its main
+  surface (render/rounded.rs); such a surface is never scanned out directly.
 - **Modern protocols (done):** fractional scale (each surface hears the
   scale of the screen it is mostly on) and viewporter, single-pixel buffers,
   alpha modifier, content type, cursor-shape, pointer constraints and

@@ -79,6 +79,18 @@ type UdevRenderer<'a> = MultiRenderer<
     GbmGlesBackend<GlesRenderer, DrmDeviceFd>,
     GbmGlesBackend<GlesRenderer, DrmDeviceFd>,
 >;
+impl<'a> render::rounded::GlesAccess for UdevRenderer<'a> {
+    fn gles(&mut self) -> &mut GlesRenderer {
+        self.as_mut()
+    }
+
+    fn gles_frame<'f, 'frame, 'buffer>(
+        frame: &'f mut <Self as smithay::backend::renderer::RendererSuper>::Frame<'frame, 'buffer>,
+    ) -> &'f mut smithay::backend::renderer::gles::GlesFrame<'frame, 'buffer> {
+        frame.as_mut()
+    }
+}
+
 /// What a queued frame carries to its vblank: the clients to tell it was shown.
 type FrameData = Option<OutputPresentationFeedback>;
 type OutputManager = DrmOutputManager<

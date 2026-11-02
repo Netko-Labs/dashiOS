@@ -16,7 +16,10 @@ use smithay::{
     utils::{Rectangle, Transform},
 };
 
-use super::scene::{View, view_elements};
+use super::{
+    GlesAccess,
+    scene::{View, view_elements},
+};
 use crate::state::Dashi;
 
 /// Pixels, straight RGBA, row by row from the top.
@@ -33,7 +36,13 @@ pub(crate) fn render_view<R>(
     view: &View<'_>,
 ) -> Result<Picture, String>
 where
-    R: Renderer + ImportAll + ImportMem + ExportMem + Offscreen<GlesTexture> + Bind<GlesTexture>,
+    R: Renderer
+        + ImportAll
+        + ImportMem
+        + GlesAccess
+        + ExportMem
+        + Offscreen<GlesTexture>
+        + Bind<GlesTexture>,
     R::TextureId: Clone + Send + 'static,
 {
     let size = view
