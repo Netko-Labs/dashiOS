@@ -1,16 +1,14 @@
-# Dashi's own packages (dashi, dashi-comp, mirin-metal-host, dashi-bun,
-# dashi-release), from a COPR. PLACEHOLDER: the project does not exist yet.
-# Publishing needs the owner's Fedora account (spin/README.md, "Publishing to
-# COPR"); once the project is up, check that the owner and project name below
-# match it and set enabled=1 here, in dashi-release, so installed systems get
-# Dashi's updates through dnf. Until then Dashi updates only with a new image.
+# Dashi's own packages (dashi, dashi-comp, dashi-greeter, mirin-metal-host,
+# dashi-bun, dashi-release, ...), from COPR pejedev/dashi, published by
+# spin/copr-publish. Installed systems get Dashi's updates through dnf; if
+# COPR is down, dnf skips this repository rather than failing.
 [copr:copr.fedorainfracloud.org:pejedev:dashi]
-name=Copr repo for dashi owned by pejedev (placeholder, not published yet)
+name=Dashi (COPR pejedev/dashi)
 baseurl=https://download.copr.fedorainfracloud.org/results/pejedev/dashi/fedora-$releasever-$basearch/
 type=rpm-md
 skip_if_unavailable=True
 gpgcheck=1
 gpgkey=https://download.copr.fedorainfracloud.org/results/pejedev/dashi/pubkey.gpg
 repo_gpgcheck=0
-enabled=0
+enabled=1
 enabled_metadata=1
