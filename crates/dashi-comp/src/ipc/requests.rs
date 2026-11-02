@@ -199,10 +199,28 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
+        "screencopy-clients" => {
+            let paths = params
+                .get("paths")
+                .and_then(Value::as_array)
+                .ok_or("`paths` must be a list")?;
+            let paths: Vec<std::path::PathBuf> = paths
+                .iter()
+                .map(|p| {
+                    p.as_str()
+                        .map(std::path::PathBuf::from)
+                        .filter(|p| p.is_absolute())
+                        .ok_or("`paths` must be absolute paths")
+                })
+                .collect::<Result<_, _>>()?;
+            if let Ok(mut granted) = state.screencopy_paths.lock() {
+                *granted = paths;
+            }
+            Ok(json!({}))
+        }
         "layout" => done(state.set_zones(params)),
         "animation-target" => done(state.set_animation_targets(params)),
         "outputs-config" => done(state.configure_outputs(params)),
-        method if state.shell_config.keep(method, request.params.clone()) => Ok(json!({})),
         "output" => {
             let name = text(params, "name")?.to_owned();
             done(outputs::set_scale(state, &name, number(params, "scale")?))

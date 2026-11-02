@@ -37,7 +37,6 @@ use crate::{
     keys::Keys,
     protocols::dashi_chrome::{self, ChromeObject},
     render::{cursor::Cursors, text::Text},
-    shell_config::ShellConfig,
     wm::{ChromeStyle, Windows},
 };
 
@@ -55,8 +54,10 @@ pub(crate) struct Dashi {
     pub backend: Backend,
     pub dmabuf_state: DmabufState,
     pub dmabuf_global: Option<DmabufGlobal>,
-    pub shell_config: ShellConfig,
     pub keys: Keys,
+    /// Executables the shell lets copy the screen (`screencopy-clients`).
+    pub screencopy_paths: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>>,
+    pub capture_activity: crate::protocols::screencopy::Activity,
     pub activation_state: smithay::wayland::xdg_activation::XdgActivationState,
     #[expect(dead_code, reason = "kept alive: it owns the xdg-dialog global")]
     pub dialog_state: smithay::wayland::shell::xdg::dialog::XdgDialogState,
@@ -119,6 +120,14 @@ impl Dashi {
             smithay::wayland::xdg_activation::XdgActivationState::new::<Self>(&dh);
         let dialog_state = smithay::wayland::shell::xdg::dialog::XdgDialogState::new::<Self>(&dh);
         crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
+        let screencopy_paths = Arc::new(std::sync::Mutex::new(Vec::new()));
+        crate::protocols::screencopy::create_global(
+            &dh,
+            crate::protocols::screencopy::Grants {
+                shell: shell_pid.clone(),
+                paths: screencopy_paths.clone(),
+            },
+        );
         let lock_shell = shell_pid.clone();
         let session_lock_state =
             smithay::wayland::session_lock::SessionLockManagerState::new::<Self, _>(
@@ -149,8 +158,9 @@ impl Dashi {
             backend: Backend::None,
             dmabuf_state: DmabufState::new(),
             dmabuf_global: None,
-            shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            screencopy_paths,
+            capture_activity: Default::default(),
             activation_state,
             dialog_state,
             lock: Default::default(),

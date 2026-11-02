@@ -239,16 +239,18 @@ fn a_live_socket_is_not_taken_over() {
 }
 
 #[test]
-fn the_shells_configuration_is_kept_until_its_milestone() {
+fn the_shells_configuration_is_answered() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
-    for method in ["bars", "screencopy-clients"] {
-        assert_eq!(
-            ipc.request(method, json!({}))["result"],
-            json!({}),
-            "{method}"
-        );
-    }
+    assert_eq!(ipc.request("bars", json!({}))["result"], json!({}));
+    let portal = json!({ "paths": ["/usr/libexec/xdg-desktop-portal-wlr"] });
+    assert_eq!(
+        ipc.request("screencopy-clients", portal)["result"],
+        json!({})
+    );
+    assert!(
+        ipc.request("screencopy-clients", json!({ "paths": ["relative"] }))["error"].is_string()
+    );
     assert_eq!(
         ipc.request("edges", json!({ "bottom": 4 }))["result"],
         json!({ "inside": false })

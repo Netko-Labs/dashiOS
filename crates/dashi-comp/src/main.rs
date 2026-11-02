@@ -11,7 +11,6 @@ mod outputs;
 mod protocols;
 mod render;
 mod session;
-mod shell_config;
 mod state;
 mod wallpaper;
 mod wm;

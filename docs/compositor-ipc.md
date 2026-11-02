@@ -95,8 +95,6 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 
 - **Done:** every request above except `agent-input` (C3), with every event;
   `wallpaper` also takes `{video, mode}`, played by the compositor.
-- **Kept, not acted on yet** (`crates/dashi-comp/src/shell_config.rs`):
-  `screencopy-clients` (C3).
 - **Not yet**, answered with an error saying so: `agent-input` (C3).
 
 ## Events
