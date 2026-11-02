@@ -42,7 +42,7 @@ export function socketPaths(address: string): string[] {
       const eq = pair.indexOf("=");
       if (eq < 0 || pair.slice(0, eq) !== "path") continue;
       const path = unescape(pair.slice(eq + 1));
-      if (path && path.startsWith("/") && !path.includes("\0")) paths.push(path);
+      if (path?.startsWith("/") && !path.includes("\0")) paths.push(path);
     }
   }
   return paths;

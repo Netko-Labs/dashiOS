@@ -37,13 +37,13 @@ export class FullscreenBars {
     const stop = this.compositor.on((event) => this.heard(event));
     return () => {
       stop();
-      this.then(() => this.release());
+      this.enqueue(() => this.release());
     };
   }
 
   /** A window entered or left full screen, or closed: watch the edge only while one is there. */
   sync(): Promise<void> {
-    return this.then(async () => {
+    return this.enqueue(async () => {
       const windows = await this.compositor.windows().catch(() => []);
       const any = windows.some((window) => window.fullscreen === true && window.state === "normal");
       if (any && !this.watching) {
@@ -59,13 +59,13 @@ export class FullscreenBars {
   hold(open: boolean): void {
     if (this.held === open) return;
     this.held = open;
-    if (!open) this.then(() => (this.out === undefined ? undefined : this.hide()));
+    if (!open) this.enqueue(() => (this.out === undefined ? undefined : this.hide()));
   }
 
   private heard(event: CompositorEvent): void {
     if (event.event === "window-closed") void this.sync();
     else if (event.event === "bars-edge" && this.watching) {
-      this.then(() => (event.inside ? this.reveal(event.output) : this.held ? undefined : this.hide()));
+      this.enqueue(() => (event.inside ? this.reveal(event.output) : this.held ? undefined : this.hide()));
     }
   }
 
@@ -97,7 +97,7 @@ export class FullscreenBars {
     });
   }
 
-  private then(work: () => Promise<void> | void): Promise<void> {
+  private enqueue(work: () => Promise<void> | void): Promise<void> {
     const next = this.queue.then(work, work);
     this.queue = next.catch(() => {});
     return next;

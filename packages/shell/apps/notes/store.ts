@@ -303,7 +303,7 @@ export class NotesStore {
 
   private load(folder: string, file: string, pinned: ReadonlySet<string>): Note | null {
     const path = join(this.dir(folder), file);
-    let stat;
+    let stat: ReturnType<typeof statSync>;
     try {
       stat = statSync(path);
     } catch {

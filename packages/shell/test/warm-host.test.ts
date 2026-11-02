@@ -14,7 +14,9 @@ function fakeHosts() {
     const record = {
       options,
       opened: [] as NativeWindowOptions[],
-      close: () => closers.forEach((c) => c()),
+      close: () => {
+        for (const closer of closers) closer();
+      },
     };
     spawned.push(record);
     return {

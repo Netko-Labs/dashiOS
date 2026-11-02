@@ -23,6 +23,7 @@ function load(): { renameat2: Renameat2; errno: Errno } | null {
   try {
     const libc = dlopen("libc.so.6", {
       renameat2: { args: [FFIType.i32, FFIType.ptr, FFIType.i32, FFIType.ptr, FFIType.u32], returns: FFIType.i32 },
+      // biome-ignore lint/style/useNamingConvention: libc's symbol
       __errno_location: { args: [], returns: FFIType.ptr },
     });
     const location = libc.symbols.__errno_location() as number;

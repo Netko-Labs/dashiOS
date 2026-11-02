@@ -20,7 +20,7 @@ const noun = (items: readonly FileItem[]): string => (items.length === 1 ? "Item
 export function itemMenu({ store, ops, actions }: Deps, items: readonly FileItem[]): MenuItem[] {
   const state = store.getSnapshot();
   const only = items.length === 1 ? (items[0] as FileItem) : null;
-  const inTrash = state.location.kind === "trash" || (only !== null && only.path.startsWith(`${store.env.trash.files}/`));
+  const inTrash = state.location.kind === "trash" || only?.path.startsWith(`${store.env.trash.files}/`);
   const paths = items.map((item) => item.path);
   if (inTrash) {
     return [
@@ -86,7 +86,7 @@ export function actionMenu({ store, ops, actions }: Deps): MenuItem[] {
     ...sorts.map(([key, title]) => ({
       label: `Sort by ${title}`,
       checked: state.sort.key === key,
-      onPress: () => store.setSort({ key, ascending: key === "name" || key === "kind" ? true : false }),
+      onPress: () => store.setSort({ key, ascending: key === "name" || key === "kind" }),
     })),
     ...(state.location.kind === "trash" ? [{ label: "Empty Trash…", onPress: () => actions.confirmEmptyTrash(), disabled: state.items.length === 0 }] : []),
   ];

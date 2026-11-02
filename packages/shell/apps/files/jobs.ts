@@ -40,6 +40,7 @@ export class Jobs {
   getSnapshot = (): readonly Job[] => this.snapshot;
 
   /** Starts `work`; the job ends `done`, `failed` (with the error's words), or `cancelled`. Resolves with the job when it ends. */
+  // biome-ignore lint/suspicious/noConfusingVoidType: most work returns nothing; some returns the path it made.
   run(label: string, total: number | null, work: (ctx: OpContext, job: Job) => Promise<string | void>): Promise<Job> {
     const controller = new AbortController();
     const job: Job = { id: this.nextId++, label, state: "running", done: 0, total, message: null };

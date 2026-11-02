@@ -26,24 +26,45 @@ const RULE = /^\s{0,3}(?:(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,})$/;
 export function parseBlocks(body: string): Block[] {
   const blocks: Block[] = [];
   let fenced = false;
-  body.split("\n").forEach((line, index) => {
+  for (const [index, line] of body.split("\n").entries()) {
     if (/^\s*(```|~~~)/.test(line)) {
       fenced = !fenced;
-      return;
+      continue;
     }
-    if (fenced) return void blocks.push({ kind: "code", text: line });
+    if (fenced) {
+      blocks.push({ kind: "code", text: line });
+      continue;
+    }
     const check = CHECK.exec(line);
-    if (check) return void blocks.push({ kind: "check", checked: check[2] !== " ", text: check[3] ?? "", line: index });
-    if (RULE.test(line)) return void blocks.push({ kind: "rule" });
+    if (check) {
+      blocks.push({ kind: "check", checked: check[2] !== " ", text: check[3] ?? "", line: index });
+      continue;
+    }
+    if (RULE.test(line)) {
+      blocks.push({ kind: "rule" });
+      continue;
+    }
     const heading = HEADING.exec(line);
-    if (heading) return void blocks.push({ kind: "heading", level: heading[1]?.length ?? 1, text: heading[2] ?? "" });
+    if (heading) {
+      blocks.push({ kind: "heading", level: heading[1]?.length ?? 1, text: heading[2] ?? "" });
+      continue;
+    }
     const bullet = BULLET.exec(line);
-    if (bullet) return void blocks.push({ kind: "bullet", text: bullet[2] ?? "", indent: Math.floor((bullet[1]?.length ?? 0) / 2) });
+    if (bullet) {
+      blocks.push({ kind: "bullet", text: bullet[2] ?? "", indent: Math.floor((bullet[1]?.length ?? 0) / 2) });
+      continue;
+    }
     const number = NUMBER.exec(line);
-    if (number) return void blocks.push({ kind: "number", label: number[2] ?? "", text: number[3] ?? "", indent: Math.floor((number[1]?.length ?? 0) / 2) });
-    if (line.startsWith(">")) return void blocks.push({ kind: "quote", text: line.replace(/^>\s?/, "") });
+    if (number) {
+      blocks.push({ kind: "number", label: number[2] ?? "", text: number[3] ?? "", indent: Math.floor((number[1]?.length ?? 0) / 2) });
+      continue;
+    }
+    if (line.startsWith(">")) {
+      blocks.push({ kind: "quote", text: line.replace(/^>\s?/, "") });
+      continue;
+    }
     blocks.push(line.trim() === "" ? { kind: "blank" } : { kind: "text", text: line });
-  });
+  }
   return blocks;
 }
 

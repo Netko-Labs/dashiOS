@@ -91,8 +91,22 @@ function DayField({ id, value, onChange, prefs }: { id: string; value: Day; onCh
           if (day !== null) onChange(day);
         }}
       />
-      <Arrow glyph="‹" testID={`${id}-day-previous`} onPress={() => (setTyped(null), onChange(addDays(value, -1)))} />
-      <Arrow glyph="›" testID={`${id}-day-next`} onPress={() => (setTyped(null), onChange(addDays(value, 1)))} />
+      <Arrow
+        glyph="‹"
+        testID={`${id}-day-previous`}
+        onPress={() => {
+          setTyped(null);
+          onChange(addDays(value, -1));
+        }}
+      />
+      <Arrow
+        glyph="›"
+        testID={`${id}-day-next`}
+        onPress={() => {
+          setTyped(null);
+          onChange(addDays(value, 1));
+        }}
+      />
       <View style={{ width: 30 }}>
         <Text style={{ fontSize: 12, color: colors.textMuted }}>{weekdayShort(value, prefs)}</Text>
       </View>

@@ -110,7 +110,11 @@ function keyName(token: string): string | null {
 
 function parseChord(text: string): Chord | string {
   const mods: Modifier[] = [];
-  const add = (mod: Modifier): string | null => (mods.includes(mod) ? `${text} names ${mod} twice.` : (mods.push(mod), null));
+  const add = (mod: Modifier): string | null => {
+    if (mods.includes(mod)) return `${text} names ${mod} twice.`;
+    mods.push(mod);
+    return null;
+  };
   let rest = text;
   if (text.length > 1 && text.includes("+") && !text.endsWith("+")) {
     const words = text.split("+");

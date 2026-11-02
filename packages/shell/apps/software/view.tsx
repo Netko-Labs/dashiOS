@@ -8,7 +8,6 @@
  */
 
 import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
-import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { CATEGORIES, type CategoryId } from "../../src/software/flathub.ts";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";

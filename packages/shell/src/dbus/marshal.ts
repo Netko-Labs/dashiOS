@@ -233,7 +233,7 @@ function writeValue(w: Writer, type: DBusType, value: unknown): void {
         throw new TypeError(`struct must be an Array of ${type.fields.length} values`);
       }
       w.align(alignOf(type));
-      type.fields.forEach((field, index) => writeValue(w, field, value[index]));
+      for (const [index, field] of type.fields.entries()) writeValue(w, field, value[index]);
     }
   }
 }
@@ -244,6 +244,6 @@ export function marshal(signature: string, values: readonly unknown[], into = ne
   if (types.length !== values.length) {
     throw new TypeError(`signature "${signature}" takes ${types.length} values, got ${values.length}`);
   }
-  types.forEach((type, index) => writeValue(into, type, values[index]));
+  for (const [index, type] of types.entries()) writeValue(into, type, values[index]);
   return into;
 }

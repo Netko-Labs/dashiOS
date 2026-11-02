@@ -8,7 +8,7 @@
 import { mkdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { kindOf } from "../../apps/preview/kinds.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";

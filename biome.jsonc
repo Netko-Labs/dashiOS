@@ -15,9 +15,17 @@
       "recommended": true,
       "correctness": {
         "noUnusedImports": "error",
-        "useUniqueElementIds": "off"
+        "useUniqueElementIds": "off",
+        // `return close();` in a function typed void: Dashi's early-return idiom.
+        "noVoidTypeReturn": "off"
       },
       "suspicious": {
+        // Dashi strips and refuses control characters in untrusted text on
+        // purpose (docs/conventions.md, "Security Boundaries").
+        "noControlCharactersInRegex": "off",
+        // `cache ??= load()` and `(this.run = new AbortController())`: lazy and
+        // held values, as docs/conventions.md prefers them.
+        "noAssignInExpressions": "off",
         "noArrayIndexKey": "off",
         "noShadowRestrictedNames": "off",
         "noUnknownAtRules": "off"

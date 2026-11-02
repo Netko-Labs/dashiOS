@@ -35,7 +35,14 @@ describe("framing", () => {
 /** A greetd that answers from a script and records what it was asked. */
 function fakeGreetd(answer: (request: Request) => Response): Greetd & { sent: Request[] } {
   const sent: Request[] = [];
-  return { sent, send: async (request) => (sent.push(request), answer(request)), close: () => {} };
+  return {
+    sent,
+    send: async (request) => {
+      sent.push(request);
+      return answer(request);
+    },
+    close: () => {},
+  };
 }
 
 const SESSION = { cmd: ["/usr/bin/dashi-session"], env: ["XDG_SESSION_TYPE=wayland"] };

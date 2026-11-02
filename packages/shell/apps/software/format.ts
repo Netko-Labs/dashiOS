@@ -22,7 +22,7 @@ const SIZES = ["128x128", "256x256", "64x64", "512x512", "48x48"];
 
 /** The folders flatpak exports an installation's icons to. */
 export function exportRoots(env: Readonly<Record<string, string | undefined>> = process.env, home: string = homedir()): Record<"user" | "system", string> {
-  const data = env.XDG_DATA_HOME && env.XDG_DATA_HOME.startsWith("/") ? env.XDG_DATA_HOME : join(home, ".local/share");
+  const data = env.XDG_DATA_HOME?.startsWith("/") ? env.XDG_DATA_HOME : join(home, ".local/share");
   return { user: join(data, "flatpak/exports/share/icons/hicolor"), system: "/var/lib/flatpak/exports/share/icons/hicolor" };
 }
 

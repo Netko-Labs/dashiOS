@@ -32,6 +32,7 @@ const KEY_GLYPHS: Readonly<Record<string, string>> = {
   bracketright: "]",
   space: "Space",
   Return: "↩",
+  // biome-ignore lint/style/useNamingConvention: an xkb keysym name
   KP_Enter: "↩",
   BackSpace: "⌫",
   Delete: "⌦",
@@ -43,7 +44,9 @@ const KEY_GLYPHS: Readonly<Record<string, string>> = {
   Down: "↓",
   Home: "↖",
   End: "↘",
+  // biome-ignore lint/style/useNamingConvention: an xkb keysym name
   Page_Up: "⇞",
+  // biome-ignore lint/style/useNamingConvention: an xkb keysym name
   Page_Down: "⇟",
 };
 

@@ -47,7 +47,7 @@ export function encodeScmRights(fds: readonly number[]): Uint8Array {
   view.setBigUint64(0, BigInt(CMSG_HEADER + fds.length * 4), true);
   view.setInt32(8, SOL_SOCKET, true);
   view.setInt32(12, SCM_RIGHTS, true);
-  fds.forEach((fd, index) => view.setInt32(CMSG_HEADER + index * 4, fd, true));
+  for (const [index, fd] of fds.entries()) view.setInt32(CMSG_HEADER + index * 4, fd, true);
   return out;
 }
 
@@ -87,6 +87,7 @@ function open() {
     poll: { args: [FFIType.ptr, FFIType.u64, FFIType.i32], returns: FFIType.i32 },
     sendmsg: { args: [FFIType.i32, FFIType.ptr, FFIType.i32], returns: FFIType.i64_fast },
     recvmsg: { args: [FFIType.i32, FFIType.ptr, FFIType.i32], returns: FFIType.i64_fast },
+    // biome-ignore lint/style/useNamingConvention: libc's symbol
     __errno_location: { args: [], returns: FFIType.ptr },
   }).symbols;
 }

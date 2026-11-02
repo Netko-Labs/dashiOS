@@ -9,7 +9,7 @@ import { CHECK, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { KeyCatcher } from "../overlay.tsx";
-import { isEnabled, type MenuAction, type MenuEntry, stepHighlight } from "./model.ts";
+import { isEnabled, type MenuEntry, stepHighlight } from "./model.ts";
 
 export const DROPDOWN = { minWidth: 230, maxWidth: 360, rowHeight: 22, radius: 10, padding: 5, gutter: 18 } as const;
 

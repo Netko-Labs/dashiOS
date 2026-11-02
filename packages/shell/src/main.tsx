@@ -748,7 +748,13 @@ const quit = () => {
     ["autostart timer", () => clearTimeout(autostartTimer)],
     ["setup timer", () => clearTimeout(setupTimer)],
     ["setup assistant", () => setupAssistant.close()],
-    ["auto appearance", () => (stopFollowingAuto(), stopAutoAppearance())],
+    [
+      "auto appearance",
+      () => {
+        stopFollowingAuto();
+        stopAutoAppearance();
+      },
+    ],
     ["region", () => region.close()],
     ["autostart", () => autostart?.close()],
     ["lock watch", stopClosingOnLock],
@@ -767,7 +773,13 @@ const quit = () => {
     ["live wallpaper", () => liveWallpaper?.stop()],
     ["idle", () => idle?.stop()],
     ["arranging", stopArranging],
-    ["full screen", () => (stopHoldingBars(), stopFullscreenBars())],
+    [
+      "full screen",
+      () => {
+        stopHoldingBars();
+        stopFullscreenBars();
+      },
+    ],
     ["system", () => system.close()],
     ["power", () => power.close()],
     ["agents", () => agents?.close()],

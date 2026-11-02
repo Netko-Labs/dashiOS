@@ -88,14 +88,20 @@ export function removeDefaults(text: string, ids: readonly string[]): string {
   const { lines, start, end } = locate(text);
   if (start < 0) return text;
   const kept: string[] = [];
-  lines.forEach((line, index) => {
-    if (index <= start || index >= end) return void kept.push(line);
+  for (const [index, line] of lines.entries()) {
+    if (index <= start || index >= end) {
+      kept.push(line);
+      continue;
+    }
     const eq = line.indexOf("=");
-    if (eq <= 0 || line.trim().startsWith("#")) return void kept.push(line);
+    if (eq <= 0 || line.trim().startsWith("#")) {
+      kept.push(line);
+      continue;
+    }
     const current = listOf(line.slice(eq + 1));
     const remaining = current.filter((id) => !ids.includes(id));
     if (remaining.length === current.length) kept.push(line);
     else if (remaining.length > 0) kept.push(`${line.slice(0, eq)}=${join(remaining)}`);
-  });
+  }
   return kept.length === 0 ? "" : `${kept.join("\n")}\n`;
 }

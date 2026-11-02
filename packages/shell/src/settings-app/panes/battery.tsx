@@ -45,40 +45,38 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
   return (
     <Page title="Battery & Power">
       {battery && (
-        <>
-          <Group testID="battery-status">
-            <Row label="Battery" detail={describeBattery(battery)}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Svg
-                  markup={batteryGlyph(battery.percent, battery.state === "charging")}
-                  width={30}
-                  height={15}
-                  color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
-                />
-                <View testID="battery-percent">
-                  <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.text }}>{`${battery.percent}%`}</Text>
-                </View>
-              </View>
-            </Row>
-            {battery.health !== null && (
-              <Row label="Battery health" detail="How much charge it holds compared with when it was new.">
-                <Value testID="battery-health">{`${battery.health}%`}</Value>
-              </Row>
-            )}
-            {battery.cycles !== null && (
-              <Row label="Cycle count">
-                <Value testID="battery-cycles">{String(battery.cycles)}</Value>
-              </Row>
-            )}
-            <Row label="Show percentage in menu bar">
-              <Switch
-                testID="battery-menubar"
-                on={menuBar.batteryPercent ?? false}
-                onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
+        <Group testID="battery-status">
+          <Row label="Battery" detail={describeBattery(battery)}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Svg
+                markup={batteryGlyph(battery.percent, battery.state === "charging")}
+                width={30}
+                height={15}
+                color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
               />
+              <View testID="battery-percent">
+                <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.text }}>{`${battery.percent}%`}</Text>
+              </View>
+            </View>
+          </Row>
+          {battery.health !== null && (
+            <Row label="Battery health" detail="How much charge it holds compared with when it was new.">
+              <Value testID="battery-health">{`${battery.health}%`}</Value>
             </Row>
-          </Group>
-        </>
+          )}
+          {battery.cycles !== null && (
+            <Row label="Cycle count">
+              <Value testID="battery-cycles">{String(battery.cycles)}</Value>
+            </Row>
+          )}
+          <Row label="Show percentage in menu bar">
+            <Switch
+              testID="battery-menubar"
+              on={menuBar.batteryPercent ?? false}
+              onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
+            />
+          </Row>
+        </Group>
       )}
       {profiles && (
         <>

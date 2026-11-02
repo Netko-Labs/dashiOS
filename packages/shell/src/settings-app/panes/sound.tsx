@@ -7,7 +7,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { BLUETOOTH } from "../../control-center/glyphs.ts";
 import { speakerGlyph } from "../../glyphs.ts";
