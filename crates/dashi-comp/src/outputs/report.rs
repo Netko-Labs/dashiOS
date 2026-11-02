@@ -62,6 +62,7 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         .unwrap_or_else(|| output.current_transform());
     let (rotation, flipped) = rotation_of(transform);
     let frame = state.space.output_geometry(output);
+    let vrr = state.backend.vrr_report(output);
     let usable = frame.map(|frame| {
         let mut zone = layer_map_for_output(output).non_exclusive_zone();
         zone.loc += frame.loc;
@@ -82,6 +83,11 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         "modes": modes,
         "frame": frame.map(rect_json),
         "usable": usable.map(rect_json),
+        "vrr": {
+            "supported": vrr.as_ref().is_some_and(|v| v.supported),
+            "active": vrr.as_ref().is_some_and(|v| v.active),
+            "mode": state.vrr_mode(output).name(),
+        },
     })
 }
 

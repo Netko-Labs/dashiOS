@@ -157,7 +157,13 @@ const spaces = compositor
       saveCount: (count) => settingsStore.patch("spaces", { count }),
     })
   : null;
-const stopDisplays = compositor ? startDisplays(compositor, (name) => settingsStore.displayScale(name)) : () => {};
+const stopDisplays = compositor
+  ? startDisplays(
+      compositor,
+      (name) => settingsStore.displayScale(name),
+      (name) => settingsStore.displayVrr(name),
+    )
+  : () => {};
 // Where each screen sits, what it runs, and which is the main display: saved per set of connected
 // monitors and restored when they are plugged in; the lid shut with a monitor attached turns the
 // built-in panel off (display-config/). Resolution and rotation changes are asked about, and go

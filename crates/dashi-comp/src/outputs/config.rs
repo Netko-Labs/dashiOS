@@ -19,6 +19,7 @@ struct Change {
     mode: Option<Mode>,
     transform: Option<Transform>,
     scale: Option<f64>,
+    vrr: Option<super::VrrMode>,
 }
 
 fn transform_for(rotation: u64, flipped: bool) -> Option<Transform> {
@@ -116,6 +117,14 @@ impl Dashi {
                         .ok_or("`scale` must be 0.5–4")?,
                 ),
             };
+            let vrr = match entry.get("vrr") {
+                None => None,
+                Some(v) => Some(
+                    v.as_str()
+                        .and_then(super::VrrMode::parse)
+                        .ok_or("`vrr` must be off, on, or fullscreen")?,
+                ),
+            };
             changes.push(Change {
                 output,
                 enabled,
@@ -123,6 +132,7 @@ impl Dashi {
                 mode,
                 transform,
                 scale,
+                vrr,
             });
         }
         let primary = match params.get("primary") {
@@ -163,7 +173,11 @@ impl Dashi {
             mode,
             transform,
             scale,
+            vrr,
         } = change;
+        if let Some(vrr) = vrr {
+            self.vrr_modes.insert(output.name(), vrr);
+        }
         if let Some(mode) = mode {
             self.backend.set_mode(&output, mode)?;
         }

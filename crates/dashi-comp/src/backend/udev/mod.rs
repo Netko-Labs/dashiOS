@@ -7,6 +7,10 @@
 //! drives a screen, packages/shell/bin/dashi-gpu.ts), else the seat's primary.
 
 mod edid;
+mod keyboards;
+mod vrr;
+
+pub(crate) use vrr::VrrReport;
 
 use std::{collections::HashMap, path::Path, time::Duration};
 
@@ -93,6 +97,7 @@ pub(crate) struct UdevData {
     gpus: Gpus,
     devices: HashMap<DrmNode, Device>,
     libinput: Libinput,
+    keyboards: keyboards::Keyboards,
     /// The tint to keep on every screen (`gamma`), as red, green, blue factors.
     gamma: Option<[f64; 3]>,
 }
@@ -117,6 +122,8 @@ struct Screen {
     powered: bool,
     /// The connector's modes, to switch to one (Displays).
     modes: Vec<smithay::reexports::drm::control::Mode>,
+    /// Whether it can change its refresh rate as frames come (vrr.rs).
+    vrr: smithay::backend::drm::VrrSupport,
 }
 
 /// Which device and CRTC an output is on.
@@ -127,6 +134,10 @@ struct ScreenId {
 }
 
 impl UdevData {
+    pub(crate) fn set_leds(&mut self, leds: smithay::input::keyboard::LedState) {
+        self.keyboards.set_leds(leds);
+    }
+
     pub(crate) fn change_vt(&mut self, vt: u32) {
         if let Err(error) = self.session.change_vt(vt as i32) {
             tracing::warn!(vt, %error, "switching VT");
@@ -317,10 +328,12 @@ pub(crate) fn init(
     handle.insert_source(
         LibinputInputBackend::new(libinput.clone()),
         |event, _, state| {
-            if !matches!(
+            if matches!(
                 event,
                 InputEvent::DeviceAdded { .. } | InputEvent::DeviceRemoved { .. }
             ) {
+                with_udev(state, |_, data| data.keyboards.device_event(&event));
+            } else {
                 state.process_input_event(event);
             }
         },
@@ -333,6 +346,7 @@ pub(crate) fn init(
         gpus,
         devices: HashMap::new(),
         libinput,
+        keyboards: Default::default(),
         gamma: None,
     }));
 
@@ -659,6 +673,9 @@ fn connector_connected(
             .inspect_err(|error| tracing::warn!(name, %error, "the screen could not be set up"))
             .ok()?;
         apply_gamma(device.manager.device(), crtc, data.gamma);
+        let vrr = scanout
+            .with_compositor(|compositor| compositor.vrr_supported(connector.handle()))
+            .unwrap_or(smithay::backend::drm::VrrSupport::NotSupported);
         device.screens.insert(
             crtc,
             Screen {
@@ -669,6 +686,7 @@ fn connector_connected(
                 scheduled: false,
                 powered: true,
                 modes: connector.modes().to_vec(),
+                vrr,
             },
         );
         Some(output)
@@ -786,6 +804,8 @@ fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
             return None;
         }
         let output = screen.output.clone();
+        let fullscreen = state.fullscreen_on(&output).is_some();
+        vrr::follow(screen, state.vrr_mode(&output), fullscreen);
         let renderer = if render_node == primary_gpu {
             data.gpus.single_renderer(&render_node)
         } else {

@@ -64,6 +64,14 @@ impl Backend {
         }
     }
 
+    /// What a screen can do with variable refresh rate, where the backend knows.
+    pub(crate) fn vrr_report(&self, output: &smithay::output::Output) -> Option<udev::VrrReport> {
+        match self {
+            Backend::Udev(data) => data.vrr_report(output),
+            _ => None,
+        }
+    }
+
     /// A screen on or off (Displays).
     pub(crate) fn set_enabled(&mut self, output: &smithay::output::Output, enabled: bool) {
         if let Backend::Udev(data) = self {

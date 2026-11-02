@@ -48,6 +48,24 @@ export interface Monitor {
   modes: OfferedMode[];
   rotation: Rotation;
   flipped: boolean;
+  /** Variable refresh rate: whether the screen can, whether it does now, and the person's choice. */
+  vrr: MonitorVrr;
+}
+
+/** Variable refresh rate: off, on, or only while a window is full screen there. */
+export type VrrMode = "off" | "on" | "fullscreen";
+export const VRR_MODES: readonly VrrMode[] = ["off", "on", "fullscreen"];
+export const isVrrMode = (value: unknown): value is VrrMode => VRR_MODES.some((mode) => mode === value);
+
+export interface MonitorVrr {
+  supported: boolean;
+  active: boolean;
+  mode: VrrMode;
+}
+
+function parseVrr(value: unknown): MonitorVrr {
+  const vrr = record(value);
+  return { supported: vrr?.supported === true, active: vrr?.active === true, mode: isVrrMode(vrr?.mode) ? vrr.mode : "off" };
 }
 
 const record = (value: unknown): Record<string, unknown> | null => (typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null);
@@ -103,6 +121,7 @@ export function parseMonitors(answer: unknown): Monitor[] {
         modes,
         rotation: isRotation(transform?.rotation) ? transform.rotation : 0,
         flipped: transform?.flipped === true,
+        vrr: parseVrr(output.vrr),
       },
     ];
   });

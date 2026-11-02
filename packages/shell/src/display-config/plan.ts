@@ -7,7 +7,7 @@
  */
 
 import { choosePrimary } from "../menubars.ts";
-import { identityOf, type Monitor, type Mode, modeFor, type Rotation } from "./monitors.ts";
+import { identityOf, type Monitor, type Mode, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";
 
 /** What one monitor should be; a field left out is left alone. Names are the compositor's connectors. */
@@ -20,6 +20,7 @@ export interface MonitorConfig {
   rotation?: Rotation;
   flipped?: boolean;
   scale?: number;
+  vrr?: VrrMode;
 }
 
 export interface ConfigRequest {
@@ -147,6 +148,7 @@ export function toWire(request: ConfigRequest): Record<string, unknown> {
       ...(config.mode ? { mode: { width: config.mode.width, height: config.mode.height, refreshMhz: config.mode.refreshMhz } } : {}),
       ...(config.rotation !== undefined || config.flipped !== undefined ? { transform: { rotation: config.rotation ?? 0, flipped: config.flipped ?? false } } : {}),
       ...(config.scale !== undefined ? { scale: config.scale } : {}),
+      ...(config.vrr !== undefined ? { vrr: config.vrr } : {}),
     })),
     ...(request.primary !== undefined ? { primary: request.primary } : {}),
   };

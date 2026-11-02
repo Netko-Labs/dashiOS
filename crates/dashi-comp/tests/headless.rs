@@ -915,3 +915,21 @@ fn a_plain_client_sees_no_privileged_protocols() {
         }
     }
 }
+
+#[test]
+fn variable_refresh_rate_is_the_shells_choice() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let screen = ipc.request("outputs", json!({}))["result"]["outputs"][0].clone();
+    // No screen to drive headless: it cannot, and it is off.
+    assert_eq!(
+        screen["vrr"],
+        json!({ "supported": false, "active": false, "mode": "off" })
+    );
+    let choice = json!({ "outputs": [{ "name": "HEADLESS-1", "vrr": "fullscreen" }] });
+    assert_eq!(ipc.request("outputs-config", choice)["result"], json!({}));
+    let screen = ipc.request("outputs", json!({}))["result"]["outputs"][0].clone();
+    assert_eq!(screen["vrr"]["mode"], "fullscreen");
+    let wrong = json!({ "outputs": [{ "name": "HEADLESS-1", "vrr": "sometimes" }] });
+    assert!(ipc.request("outputs-config", wrong)["error"].is_string());
+}

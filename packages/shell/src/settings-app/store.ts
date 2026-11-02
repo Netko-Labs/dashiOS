@@ -36,6 +36,7 @@ import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
 import { isFormatsLocale } from "../region/locale.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
+import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
   FRAME_RATES,
@@ -150,6 +151,8 @@ export interface SpacesSettings {
 export interface DisplaySettings {
   /** The scale the person chose; it wins over the one picked from the pixel density. */
   scale?: number;
+  /** Variable refresh rate as the person chose it (off when unset). */
+  vrr?: VrrMode;
 }
 
 /** The file as Settings understands it; anything else in the file is kept but not read. */
@@ -319,7 +322,11 @@ export function readSettings(raw: unknown): SettingsData {
   const saved = dig(root, ["displays"]) ?? {};
   for (const [name, entry] of Object.entries(saved)) {
     if (!isOutputName(name) || !isRaw(entry)) continue;
-    if (isScale(entry.scale)) displays[name] = { scale: entry.scale as number };
+    const display: DisplaySettings = {
+      ...(isScale(entry.scale) ? { scale: entry.scale as number } : {}),
+      ...(isVrrMode(entry.vrr) ? { vrr: entry.vrr } : {}),
+    };
+    if (Object.keys(display).length > 0) displays[name] = display;
   }
   return {
     touchpad: readSection(root, "touchpad") as TouchpadSettings,
@@ -424,6 +431,23 @@ export class SettingsStore {
         else target[key] = value;
       }
       prune(root, spec.path);
+    });
+  }
+
+  /** The variable refresh rate saved for a screen, if the person chose one. */
+  displayVrr(name: string): VrrMode | undefined {
+    return this.snapshot.data.displays[name]?.vrr;
+  }
+
+  /** Remember the variable refresh rate chosen for a screen (`undefined` forgets it). */
+  setDisplayVrr(name: string, vrr: VrrMode | undefined): void {
+    if (!isOutputName(name)) throw new TypeError(`bad screen name: ${JSON.stringify(name)}`);
+    if (vrr !== undefined && !isVrrMode(vrr)) throw new TypeError(`bad refresh rate mode: ${JSON.stringify(vrr)}`);
+    this.update((root) => {
+      const screen = ensure(ensure(root, ["displays"]), [name]);
+      if (vrr === undefined) delete screen.vrr;
+      else screen.vrr = vrr;
+      prune(root, ["displays", name]);
     });
   }
 

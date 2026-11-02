@@ -37,6 +37,15 @@ impl SeatHandler for Dashi {
         self.cursor_status = image;
     }
 
+    // Caps Lock and friends light up on the keyboards.
+    fn led_state_changed(&mut self, seat: &Seat<Self>, leds: smithay::input::keyboard::LedState) {
+        if seat == &self.seat
+            && let crate::backend::Backend::Udev(data) = &mut self.backend
+        {
+            data.set_leds(leds);
+        }
+    }
+
     fn focus_changed(&mut self, seat: &Seat<Self>, focused: Option<&WlSurface>) {
         if let Some(entry) = focused.and_then(|surface| self.windows.by_surface_mut(surface)) {
             entry.attention = false;

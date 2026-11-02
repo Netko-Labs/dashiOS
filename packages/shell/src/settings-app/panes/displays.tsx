@@ -10,7 +10,7 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { commonSizes, type Monitor, monitorLabel, ratesOf, refreshLabel, ROTATIONS, type Rotation, sizeLabel, sizesOf, modeFor } from "../../display-config/monitors.ts";
+import { commonSizes, type Monitor, monitorLabel, ratesOf, refreshLabel, ROTATIONS, type Rotation, sizeLabel, sizesOf, modeFor, VRR_MODES, type VrrMode } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { FlagsStore } from "../../control-center/flags.ts";
 import { useColors } from "@dashi/ui";
@@ -23,6 +23,7 @@ import { ArrangementView } from "./arrangement.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
 
 const ROTATION_LABELS: Record<Rotation, string> = { 0: "Standard", 90: "90°", 180: "180°", 270: "270°" };
+const VRR_LABELS: Record<VrrMode, string> = { off: "Off", on: "On", fullscreen: "Full Screen Only" };
 
 function Heading({ monitor }: { monitor: Monitor }) {
   const colors = useColors();
@@ -94,6 +95,16 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
             options={rates.map((rate) => ({ value: rate, label: refreshLabel(rate) }))}
             value={rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz}
             onChange={(rate) => void store.setMode(name, { ...here, refreshMhz: rate })}
+          />
+        </Row>
+      )}
+      {monitor.vrr.supported && (
+        <Row stack label="Variable refresh rate" detail={monitor.vrr.active ? "Following the frames now." : "Smoother games and video where the screen allows it."}>
+          <Choices
+            testID={`display-vrr:${name}`}
+            options={VRR_MODES.map((mode) => ({ value: mode, label: VRR_LABELS[mode] }))}
+            value={monitor.vrr.mode}
+            onChange={(mode) => void store.setVrr(name, mode)}
           />
         </Row>
       )}

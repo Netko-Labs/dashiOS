@@ -97,9 +97,15 @@ Each milestone ends with the shell running on it in the VM.
 
 - **The session lock is the compositor's guarantee:** ext-session-lock, so a
   crashed shell leaves the screen locked, not open.
-- **Explicit sync** (linux-drm-syncobj): correct frames on NVIDIA.
-- **Games:** direct scanout for fullscreen windows, VRR (adaptive sync),
-  tearing control, pointer constraints and relative pointer.
+- **Games:** direct scanout (done: smithay's DRM compositor puts a client
+  buffer on a plane when it can, and presentation feedback says zero-copy),
+  VRR (done: off, on, or full screen only, the shell's choice per screen),
+  pointer constraints and relative pointer (done). Tearing control waits on
+  async page flips in smithay's DRM compositor.
+- **Explicit sync (done):** linux-drm-syncobj when the drawing GPU can wait on
+  syncobjs; otherwise commits wait for their dmabufs (implicit sync).
+- **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
+- **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Modern protocols (done):** fractional scale (each surface hears the
   scale of the screen it is mostly on) and viewporter, single-pixel buffers,
   alpha modifier, content type, cursor-shape, pointer constraints and
@@ -108,8 +114,8 @@ Each milestone ends with the shell running on it in the VM.
   screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
   stay Dashi's), text-input and input-method, virtual keyboard (the shell's
   processes only), xdg-toplevel-icon (`window-icon`), xdg-system-bell
-  (`bell`), xdg-foreign. Still to come: presentation time,
-  ext-image-copy-capture (screen sharing through the portal).
+  (`bell`), xdg-foreign. Still to come: ext-image-copy-capture (screen
+  sharing through newer portals; wlr-screencopy serves them now).
 - **Sandboxing (done):** security-context, so a Flatpak app never reaches a
   privileged protocol even though it runs under the shell, nor screencopy
   even if granted to its executable path.

@@ -10,6 +10,8 @@
  */
 
 import { type Compositor, type Frame, parseFrame } from "./compositor.ts";
+import { parseMonitors, type VrrMode } from "./display-config/monitors.ts";
+import { toWire } from "./display-config/plan.ts";
 
 export interface ScreenInfo {
   name: string;
@@ -116,13 +118,22 @@ export function initialScale(screen: ScreenInfo, saved: (name: string) => number
 export function startDisplays(
   compositor: Pick<Compositor, "request" | "on">,
   saved: (name: string) => number | undefined = () => undefined,
+  savedVrr: (name: string) => VrrMode | undefined = () => undefined,
 ): () => void {
   const seen = new Set<string>();
   const apply = async () => {
-    const screens = parseScreens(await compositor.request("outputs"));
+    const answer = await compositor.request("outputs");
+    const screens = parseScreens(answer);
+    const monitors = parseMonitors(answer);
     for (const screen of screens) {
       if (seen.has(screen.name)) continue;
       seen.add(screen.name);
+      const vrr = savedVrr(screen.name);
+      const monitor = monitors.find((candidate) => candidate.name === screen.name);
+      if (vrr && monitor?.vrr.supported && monitor.vrr.mode !== vrr) {
+        await compositor.request("outputs-config", toWire({ outputs: [{ name: screen.name, vrr }] }));
+        console.log(`dashi-shell: ${screen.name} variable refresh rate ${vrr}`);
+      }
       const scale = initialScale(screen, saved);
       if (scale === screen.scale) continue;
       await compositor.request("output", { name: screen.name, scale });

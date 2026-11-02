@@ -7,7 +7,8 @@
 
 import type { Compositor } from "../compositor.ts";
 import type { ApplyResult, DisplayManager } from "../display-config/manager.ts";
-import { type Mode, type Monitor, parseMonitors, type Rotation } from "../display-config/monitors.ts";
+import { type Mode, type Monitor, parseMonitors, type Rotation, type VrrMode } from "../display-config/monitors.ts";
+import { toWire } from "../display-config/plan.ts";
 import { parseScreens, SCALES, type ScreenInfo } from "../displays.ts";
 import type { SettingsStore } from "./store.ts";
 
@@ -57,7 +58,7 @@ export class ScreensStore {
   /** `compositor` null is a run without dashi-comp: no screens. */
   constructor(
     private readonly compositor: Pick<Compositor, "request" | "on"> | null,
-    private readonly settings: Pick<SettingsStore, "setDisplayScale">,
+    private readonly settings: Pick<SettingsStore, "setDisplayScale" | "setDisplayVrr">,
     /** Null without the arrangement service: the pane shows the screens and their scales only. */
     private readonly displays: Arranger | null = null,
   ) {}
@@ -100,6 +101,20 @@ export class ScreensStore {
       return;
     }
     this.settings.setDisplayScale(name, scale);
+    this.set({ ...this.snapshot, error: null });
+    await this.refresh();
+  }
+
+  /** Variable refresh rate for a screen, now and at the next login. A refusal is shown and nothing is saved. */
+  async setVrr(name: string, vrr: VrrMode): Promise<void> {
+    if (!this.compositor) return;
+    try {
+      await this.compositor.request("outputs-config", toWire({ outputs: [{ name, vrr }] }));
+    } catch (error) {
+      this.set({ ...this.snapshot, error: message(error) });
+      return;
+    }
+    this.settings.setDisplayVrr(name, vrr === "off" ? undefined : vrr);
     this.set({ ...this.snapshot, error: null });
     await this.refresh();
   }

@@ -42,8 +42,10 @@ it in the VM.
       pointer, pointer gestures, idle-inhibit, shortcuts-inhibit,
       text-input/IME, virtual keyboard, toplevel icons, system bell,
       xdg-foreign, security-context
-- [ ] C4b: presentation time, explicit sync, direct scanout, VRR/tearing,
-      ext-image-copy-capture, keyboard LEDs, rounded window corners
+- [x] C4b: presentation time, explicit sync (and implicit dmabuf waits),
+      direct scanout, VRR (shell's choice, Displays pane), keyboard LEDs
+- [ ] C4c: ext-image-copy-capture, rounded window corners, per-surface
+      dmabuf feedback (scanout tranches), tearing (needs smithay async flips)
 - [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
       0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel
