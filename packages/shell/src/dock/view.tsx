@@ -24,7 +24,7 @@ import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
 import { type PinStore, usePins } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, usePress } from "./press.ts";
-import { Painted, Slide, useSlide } from "./slide.tsx";
+import { iconRise, Painted, panelOpacity, Slide, useSlide } from "./slide.tsx";
 import type { TileStore } from "./tiles.ts";
 
 /** Distance between neighboring icons' left edges. */
@@ -121,7 +121,7 @@ export function Dock({
         alignItems: "center",
         justifyContent: "flex-end",
         position: "relative",
-        top: Math.round(slid * (DOCK_HEIGHT + DOCK.margin)),
+        top: Math.round(slid.position * (DOCK_HEIGHT + DOCK.margin)),
       }}
     >
       <Painted slide={slide} />
@@ -130,6 +130,7 @@ export function Dock({
         onContextMenu={(event) => openOptions(event.x)}
         // Past the Dock's edge Metal reports nothing more, not even the release.
         style={{
+          opacity: panelOpacity(slid),
           flexDirection: "row",
           alignItems: "flex-start",
           gap: DOCK.gap,
@@ -154,11 +155,12 @@ export function Dock({
             onPointer={(event, centerX) => pointer(entry, index, centerX, event)}
             onMenu={(centerX) => openMenu(entry.key, centerX)}
             onTile={(bounds) => tiles?.set(entry.key, bounds)}
+            rise={iconRise(slid.rise, index)}
             testID={`dock-${entry.app.name}`}
           />
         ))}
         {running.length > 0 && <Divider />}
-        {running.map((entry) => (
+        {running.map((entry, index) => (
           <DockIcon
             key={entry.key}
             icon={entry.app.icon}
@@ -168,17 +170,19 @@ export function Dock({
             onPointer={(event, centerX) => pointer(entry, null, centerX, event)}
             onMenu={(centerX) => openMenu(entry.key, centerX)}
             onTile={(bounds) => tiles?.set(entry.key, bounds)}
+            rise={iconRise(slid.rise, pinned.length + index)}
             testID={`dock-${entry.app.name}`}
           />
         ))}
         {minimized.length > 0 && <Divider />}
-        {minimized.map(({ window, app }) => (
+        {minimized.map(({ window, app }, index) => (
           <DockIcon
             key={`minimized:${window.id}`}
             icon={app.icon}
             running={false}
             opacity={0.82}
             onPress={() => toplevels.act(window.id, "activate")}
+            rise={iconRise(slid.rise, pinned.length + running.length + index)}
             testID={`dock-minimized-${window.id}`}
           />
         ))}
@@ -186,6 +190,8 @@ export function Dock({
     </View>
   );
 }
+
+const SETTLED = { offset: 0, opacity: 1 } as const;
 
 function Divider() {
   const colors = useColors();
@@ -212,6 +218,7 @@ function DockIcon({
   onPointer,
   onMenu,
   onTile,
+  rise = SETTLED,
   testID,
 }: {
   icon: string;
@@ -226,6 +233,8 @@ function DockIcon({
   onMenu?: (centerX: number) => void;
   /** Where the icon was laid out (on the Dock's surface). */
   onTile?: (bounds: Bounds) => void;
+  /** Its part of the Dock's entrance (slide.tsx `iconRise`): below its place, and how opaque. */
+  rise?: { offset: number; opacity: number };
   testID: string;
 }) {
   const colors = useColors();
@@ -247,7 +256,8 @@ function DockIcon({
       onContextMenu={onMenu && (() => onMenu(centerOf()))}
       testID={testID}
     >
-      <View style={{ width: DOCK.icon, height: DOCK.icon }}>
+      {/* The entrance moves the picture, not the icon's box: the minimize animation aims at the box. */}
+      <View style={{ width: DOCK.icon, height: DOCK.icon, position: "relative", top: rise.offset, opacity: rise.opacity }}>
         <Image source={icon} style={{ width: DOCK.icon, height: DOCK.icon, opacity }} />
         {attention && (
           <View

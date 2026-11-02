@@ -292,15 +292,16 @@
       <tr><td>Minimize and restore (flight to the Dock tile)</td><td>300 ms</td><td>ease-out cubic</td><td><code>wm/motion.rs</code></td></tr>
       <tr><td>Space switch (slide)</td><td>250 ms</td><td>ease-out cubic</td><td><code>wm/spaces.rs</code></td></tr>
       <tr><td>Overview open / close</td><td>220 / 250 ms</td><td>ease-out cubic</td><td><code>wm/overview.rs</code></td></tr>
-      <tr><td>Dock autohide slide</td><td>180 ms (reveal after 120 at the edge, hide 600 after leaving)</td><td>ease-in-out quad</td><td><code>dock/autohide.ts</code></td></tr>
+      <tr><td>Dock and taskbar entrance (login, turned on, a new style or screen, autohide reveal after 120 at the edge)</td><td>panel 420 ms rising and fading in (80% up by ~115); icons 380 ms each, 22 ms apart, starting a third of the way; 640 ms in all</td><td>panel ease-out quint; icons a damped spring, ~2 px past their place</td><td><code>dock/slide.tsx</code></td></tr>
+      <tr><td>Dock and taskbar exit (autohide, 600 after leaving)</td><td>180 ms; the icons stay put</td><td>ease-in cubic</td><td><code>dock/slide.tsx</code></td></tr>
       <tr><td>Switcher appears</td><td>after 150 ms held</td><td>—</td><td><code>switcher.tsx</code></td></tr>
       <tr><td>Scroll bars</td><td>shown 0.9 s after scrolling, fade 0.3 s</td><td>linear</td><td>mirin <code>scrollbar.rs</code></td></tr>
       <tr><td>Night Shift</td><td>1500 ms</td><td>fade</td><td><code>night-shift.ts</code></td></tr>
     </table>
     <ul>
       <li>Nothing longer than 300 ms on the way to something the person asked for.</li>
-      <li>No springs, bounces, or overshoot in system UI. Kombu's idle bob is the only loop, and only where Kombu appears.</li>
-      <li>Reduce Motion turns the flights and slides off; things simply appear where they go.</li>
+      <li>No springs, bounces, or overshoot in system UI, with one exception: the Dock's icons settle with a ~2 px spring as it comes in, while the panel is already in place and every icon already takes a press. Kombu's idle bob is the only loop, and only where Kombu appears.</li>
+      <li>Reduce Motion turns the flights, slides, and the Dock's entrance off; things simply appear where they go.</li>
       <li>Windows open and close without animation today <span class="pill open">open</span>.</li>
     </ul>
 

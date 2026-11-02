@@ -205,8 +205,11 @@ const stopWallpaperEvents = compositor?.on((event) => event.event === "wallpaper
 // controller starts after it; until then a choice goes to the plain sync (wallpaper/live/).
 let liveWallpaper: LiveWallpaperController | null = null;
 let wallpaperChoice: WallpaperChoice | null = null;
+/** Settings → Appearance → Reduce Motion, for what the shell itself animates (the Dock's entrance). */
+let reduceMotion = false;
 const stopSettings = compositor
   ? startSettings(compositor, (settings) => {
+      reduceMotion = settings.appearance.reduceMotion;
       void idle?.blankAfter(settings.idle.blankAfterSeconds);
       void idle?.sleepAfter(settings.idle.sleepAfterSeconds);
       chromeStyle?.setCorners(settings.appearance.cornerRadius);
@@ -482,6 +485,7 @@ const dockRuntime = startDock({
   attention,
   compositor,
   onLost: (output) => void primaryHostLost(output),
+  reduceMotion: () => reduceMotion,
 });
 dockRuntime.place(primaryScreen);
 // Windows minimize toward their Dock tiles: the compositor draws it, the Dock knows where the tiles are (dock/animation-targets.ts).

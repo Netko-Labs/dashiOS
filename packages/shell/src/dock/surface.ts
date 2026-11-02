@@ -45,6 +45,11 @@ export class DockSurface {
     return this.current?.output;
   }
 
+  /** The look of the Dock host that is up; undefined when none is. */
+  get variant(): string | undefined {
+    return this.current?.alive ? this.current.variant : undefined;
+  }
+
   /** Whether a Dock host is up. */
   get shown(): boolean {
     return this.current?.alive === true;

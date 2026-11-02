@@ -17,8 +17,6 @@ export const AUTOHIDE = {
   revealMs: 120,
   /** The pointer must be away this long before the Dock goes (a slip off the Dock's top does not hide it). */
   hideMs: 600,
-  /** The Dock's slide, in or out. */
-  slideMs: 180,
 } as const;
 
 export interface AutohideClock {

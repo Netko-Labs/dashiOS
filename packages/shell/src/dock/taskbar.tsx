@@ -27,7 +27,7 @@ import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
 import { type PinStore, usePins } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, type PressSetup, usePress } from "./press.ts";
-import { Painted, Slide, useSlide } from "./slide.tsx";
+import { iconRise, Painted, panelOpacity, Slide, useSlide } from "./slide.tsx";
 import { type TaskbarButton, taskbarButtons, taskbarCenters } from "./taskbar-model.ts";
 import type { TileStore } from "./tiles.ts";
 
@@ -136,14 +136,16 @@ export function Taskbar({
         borderTopWidth: 1,
         borderColor: colors.dockBorder,
         position: "relative",
-        top: Math.round(slid * TASKBAR.height),
+        top: Math.round(slid.position * TASKBAR.height),
+        opacity: panelOpacity(slid),
       }}
     >
       <Painted slide={slide} />
-      {buttons.map((button) => (
+      {buttons.map((button, index) => (
         <TaskbarItem
           key={button.key}
           button={button}
+          rise={iconRise(slid.rise, index)}
           running={button.window !== null || starting.has(button.entry.key)}
           lit={button.window?.activated === true}
           attention={wanting.has(button.entry.key)}
@@ -173,6 +175,7 @@ function TaskbarItem({
   onPointer,
   onLayout,
   onMenu,
+  rise,
 }: {
   button: TaskbarButton;
   running: boolean;
@@ -186,6 +189,8 @@ function TaskbarItem({
   onLayout: (bounds: Bounds) => void;
   /** A right-click, at that x. */
   onMenu: (x: number) => void;
+  /** Its part of the bar's entrance (slide.tsx `iconRise`): below its place, and how opaque. */
+  rise: { offset: number; opacity: number };
 }) {
   const colors = useColors();
   const minimized = button.window?.minimized === true;
@@ -210,7 +215,17 @@ function TaskbarItem({
         hoverBackgroundColor: lit ? colors.switcherSelection : colors.hover,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, opacity: (minimized ? 0.6 : 1) * dim }}>
+      {/* The entrance moves the content, not the button's box: the minimize animation aims at the box. */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          opacity: (minimized ? 0.6 : 1) * dim * rise.opacity,
+          position: "relative",
+          top: rise.offset,
+        }}
+      >
         <Image source={button.entry.app.icon} style={{ width: TASKBAR.icon, height: TASKBAR.icon }} />
         {button.label !== "" && (
           <View style={{ flexShrink: 1, minWidth: 0 }}>

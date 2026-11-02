@@ -42,6 +42,8 @@ export interface StartDockOptions {
   compositor: Pick<Compositor, "request" | "on"> | null;
   /** A Dock surface's host died by itself (on `output`): the shell decides whether the screen went with it. */
   onLost(output: string | undefined): void;
+  /** Reduce Motion is on: the Dock appears and leaves without its entrance and exit. */
+  reduceMotion?(): boolean;
 }
 
 export interface DockRuntime {
@@ -75,7 +77,7 @@ export function viewSurface(variant: string, output: string | undefined): { heig
 export function startDock(options: StartDockOptions): DockRuntime {
   const { prefs, toplevels } = options;
   const autohide = new Autohide();
-  const slide = new Slide();
+  const slide = new Slide(0, () => options.reduceMotion?.() ?? false);
 
   /** Opens `element` on a new host; `onClosed` runs once, however it ended. */
   const open = (hostOptions: NativeHostOptions, element: ReactElement, onClosed: () => void): DockHandle => {

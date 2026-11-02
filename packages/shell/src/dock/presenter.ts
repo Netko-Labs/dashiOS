@@ -18,11 +18,11 @@
  */
 
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
-import { AUTOHIDE, type Autohide } from "./autohide.ts";
+import type { Autohide } from "./autohide.ts";
 import type { EdgeClaim } from "./edges.ts";
 import type { DockPrefs } from "./prefs.ts";
 import type { DockSettings, DockStyle } from "./settings.ts";
-import type { Slide } from "./slide.tsx";
+import { DOCK_MOTION, type Slide } from "./slide.tsx";
 import type { DockSurface } from "./surface.ts";
 
 export interface ViewSpec {
@@ -73,7 +73,7 @@ export interface PresenterDeps {
   prefs: Pick<DockPrefs, "snapshot" | "subscribe">;
   autohide: Autohide;
   slide: Slide;
-  view: Pick<DockSurface, "show" | "hide" | "close" | "shown">;
+  view: Pick<DockSurface, "show" | "hide" | "close" | "shown" | "variant" | "output">;
   /** Where the pointer is along the bottom edge; null without a compositor, where autohide cannot work and the Dock stays. */
   edges: EdgeClaim | null;
   /** Runs `fn` later; returns the way to cancel it. */
@@ -147,34 +147,26 @@ export class DockPresenter {
       this.cancelHide?.();
       this.cancelHide = null;
       const variant = variantOf(spec);
-      const fresh = !view.shown;
-      // A floating Dock slides in from below; one with a zone is simply there.
-      if (spec.exclusive) {
-        slide.jump(0);
-        this.slideTarget = 0;
-      } else if (fresh) {
-        // Out of sight until the new host has painted (the view calls `slide.ready()`).
-        slide.jump(1);
-        slide.arm(0, AUTOHIDE.slideMs);
-        this.slideTarget = 0;
-      }
+      // A new host (at login, turned on, another style, another screen, an autohidden Dock coming
+      // out) makes its entrance once it has painted (the view calls `slide.ready()`); one already
+      // there that was going out turns around.
+      const fresh = !view.shown || view.variant !== variant || view.output !== this.output;
+      if (fresh) slide.armEntrance();
+      else if (this.slideTarget !== 0) slide.show();
+      this.slideTarget = 0;
       view.show(this.output, variant);
-      if (!spec.exclusive && this.slideTarget !== 0) {
-        this.slideTarget = 0;
-        slide.animateTo(0, AUTOHIDE.slideMs);
-      }
       return;
     }
     if (!view.shown) return;
     if (settings.visible && settings.autohide) {
-      // Slide out, then end the host (it was kept to show the slide).
+      // Drop out of view, then end the host (it was kept to show the motion).
       if (this.cancelHide) return;
       this.slideTarget = 1;
-      slide.animateTo(1, AUTOHIDE.slideMs);
+      slide.hide();
       this.cancelHide = this.later(() => {
         this.cancelHide = null;
         view.hide();
-      }, AUTOHIDE.slideMs + 40);
+      }, DOCK_MOTION.hideMs + 40);
       return;
     }
     this.cancelHide?.();
