@@ -27,6 +27,8 @@ pub(crate) type ConnectionId = u64;
 
 struct Connection {
     writer: UnixStream,
+    /// The process on the other end (SO_PEERCRED), when the kernel says.
+    pid: Option<i32>,
     subscribed: bool,
     backlog: Vec<u8>,
 }
@@ -100,10 +102,14 @@ impl Ipc {
     fn add(&mut self, writer: UnixStream) -> ConnectionId {
         let id = self.next_id;
         self.next_id += 1;
+        let pid = rustix::net::sockopt::socket_peercred(&writer)
+            .ok()
+            .map(|cred| cred.pid.as_raw_nonzero().get());
         self.connections.insert(
             id,
             Connection {
                 writer,
+                pid,
                 subscribed: false,
                 backlog: Vec::new(),
             },
@@ -113,6 +119,11 @@ impl Ipc {
 
     pub(crate) fn remove(&mut self, id: ConnectionId) {
         self.connections.remove(&id);
+    }
+
+    /// The process on the other end of `id`.
+    pub(crate) fn peer_pid(&self, id: ConnectionId) -> Option<i32> {
+        self.connections.get(&id).and_then(|c| c.pid)
     }
 
     /// Someone hears events (the shell is there to decide).

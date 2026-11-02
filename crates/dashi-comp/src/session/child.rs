@@ -20,7 +20,7 @@ pub(crate) fn spawn(
     wayland_display: &OsString,
     ipc_socket: &Path,
     handle: &LoopHandle<'static, Dashi>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<u32, Box<dyn std::error::Error>> {
     let mut child = Command::new("/bin/sh")
         .arg("-c")
         .arg(command)
@@ -51,5 +51,5 @@ pub(crate) fn spawn(
             state.loop_signal.stop();
         }
     })?;
-    Ok(())
+    Ok(pid)
 }

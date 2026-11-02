@@ -160,6 +160,11 @@ fn mistakes_get_errors_not_a_dropped_connection() {
         ipc.request("focus", json!({ "window": 1 }))["error"],
         "no window 1"
     );
+    // Only the shell (the session client and what runs under it) may capture the screen.
+    assert_eq!(
+        ipc.request("capture", json!({ "path": "/tmp/x.png" }))["error"],
+        "capture is only for the shell"
+    );
     assert!(
         ipc.request("focus", json!({ "window": "1" }))["error"]
             .as_str()

@@ -119,6 +119,18 @@ impl UdevData {
         }
     }
 
+    /// Run `f` with the drawing GPU's renderer.
+    pub(crate) fn with_renderer<T>(
+        &mut self,
+        f: impl FnOnce(&mut UdevRenderer<'_>) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let mut renderer = self
+            .gpus
+            .single_renderer(&self.primary_gpu)
+            .map_err(|error| format!("{error:?}"))?;
+        f(&mut renderer)
+    }
+
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         self.gpus
             .single_renderer(&self.primary_gpu)

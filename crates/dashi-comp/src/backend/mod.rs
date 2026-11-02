@@ -11,6 +11,14 @@ pub(crate) mod winit;
 
 use smithay::backend::allocator::dmabuf::Dmabuf;
 
+use crate::{
+    render::{
+        View,
+        capture::{Picture, render_view},
+    },
+    state::Dashi,
+};
+
 /// Dashi's evening purple behind the windows, until wallpapers (C2).
 pub(crate) const BACKGROUND: [f32; 4] = [0.106, 0.082, 0.188, 1.0];
 
@@ -44,4 +52,16 @@ impl Backend {
             Backend::None | Backend::Headless => false,
         }
     }
+}
+
+/// Render `view` offscreen with the backend's renderer (`capture`).
+pub(crate) fn capture(state: &mut Dashi, view: &View<'_>) -> Result<Picture, String> {
+    let mut backend = std::mem::take(&mut state.backend);
+    let result = match &mut backend {
+        Backend::Winit(data) => render_view(state, data.renderer(), view),
+        Backend::Udev(data) => data.with_renderer(|renderer| render_view(state, renderer, view)),
+        Backend::Headless | Backend::None => Err("nothing renders here (headless)".into()),
+    };
+    state.backend = backend;
+    result
 }

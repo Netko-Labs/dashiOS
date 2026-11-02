@@ -57,6 +57,8 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    /// The session's client (`-c`): it and the processes under it are the shell.
+    pub session_client: Option<i32>,
     pub chrome_style: ChromeStyle,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
@@ -118,6 +120,7 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            session_client: None,
             chrome_style: ChromeStyle::default(),
             chrome_objects: Vec::new(),
             cursor_status: CursorImageStatus::default_named(),

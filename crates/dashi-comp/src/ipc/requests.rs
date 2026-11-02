@@ -8,10 +8,11 @@ use smithay::utils::Point;
 
 use super::{frame::Request, server::ConnectionId};
 use crate::{
+    backend,
     keys::{Chord, Keymap},
-    outputs,
+    outputs, render, session,
     state::Dashi,
-    wm::{Shown, valid_frame},
+    wm::{Shown, frame_of, valid_frame},
 };
 
 /// Methods the protocol has that this compositor does not do yet.
@@ -25,7 +26,6 @@ const LATER: &[&str] = &[
     "space-switch",
     "space-move",
     "overview",
-    "capture",
     "agent-input",
 ];
 
@@ -96,6 +96,7 @@ pub(crate) fn handle(
             }
             Ok(json!({}))
         }
+        "capture" => capture(state, connection, params),
         "outputs" => Ok(outputs::describe_all(state)),
         // One Space until C2.
         "spaces" => Ok(json!({ "count": 1, "current": 0 })),
@@ -112,6 +113,80 @@ pub(crate) fn handle(
         method if LATER.contains(&method) => Err(format!("{method}: not in this dashi-comp yet")),
         method => Err(format!("unknown method: {method}")),
     }
+}
+
+/// `capture {path, window?, rect?}`: only the shell may.
+fn capture(
+    state: &mut Dashi,
+    connection: ConnectionId,
+    params: &Map<String, Value>,
+) -> Result<Value, String> {
+    let from_shell = match (state.ipc.peer_pid(connection), state.session_client) {
+        (Some(peer), Some(shell)) => session::trust::descends_from(peer, shell),
+        _ => false,
+    };
+    if !from_shell {
+        return Err("capture is only for the shell".into());
+    }
+    let path = render::capture::check_path(text(params, "path")?)?.to_owned();
+    let (area, output, only) = if params.contains_key("window") {
+        let id = window(params)?;
+        let window = state
+            .windows
+            .get(id)
+            .filter(|entry| entry.announced)
+            .map(|entry| entry.window.clone())
+            .ok_or_else(|| format!("no window {id}"))?;
+        let frame = frame_of(state, &window).ok_or("that window is not on screen")?;
+        let output = state
+            .space
+            .output_under(frame.loc.to_f64() + frame.size.to_f64().downscale(2.0).to_point())
+            .next()
+            .or_else(|| state.space.outputs().next())
+            .cloned()
+            .ok_or("no screen")?;
+        (frame, output, Some(window))
+    } else if let Some(Value::Object(rect)) = params.get("rect") {
+        let rect = valid_frame(
+            int(rect, "x")?,
+            int(rect, "y")?,
+            int(rect, "width")?,
+            int(rect, "height")?,
+        )
+        .ok_or("`rect` needs x, y, and a positive width and height")?;
+        let center = rect.loc.to_f64() + rect.size.to_f64().downscale(2.0).to_point();
+        let output = state
+            .space
+            .output_under(center)
+            .next()
+            .cloned()
+            .ok_or("`rect` is not on a screen")?;
+        let screen = state.space.output_geometry(&output).ok_or("no screen")?;
+        (
+            rect.intersection(screen)
+                .ok_or("`rect` is not on a screen")?,
+            output,
+            None,
+        )
+    } else {
+        let output = state.output_under_pointer().ok_or("no screen")?;
+        (
+            state.space.output_geometry(&output).ok_or("no screen")?,
+            output,
+            None,
+        )
+    };
+    let scale = output.current_scale().fractional_scale();
+    let view = render::View {
+        area,
+        scale: scale.into(),
+        output: &output,
+        cursor: false,
+        only,
+    };
+    let picture = backend::capture(state, &view)?;
+    render::capture::save_png(&path, &picture)?;
+    Ok(json!({ "width": picture.width, "height": picture.height, "scale": scale }))
 }
 
 fn session(state: &Dashi) -> Value {

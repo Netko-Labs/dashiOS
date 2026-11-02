@@ -63,7 +63,8 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
 
     // Before the signal source: it blocks SIGTERM/SIGINT on this thread, and a child would inherit that.
     if let Some(command) = &args.command {
-        session::spawn(command, &state.socket_name, state.ipc.path(), &handle)?;
+        state.session_client =
+            Some(session::spawn(command, &state.socket_name, state.ipc.path(), &handle)? as i32);
     }
     handle.insert_source(
         Signals::new(&[Signal::SIGTERM, Signal::SIGINT])?,

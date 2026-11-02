@@ -2,6 +2,7 @@
 //! it draws itself (title bars, cursors, text).
 
 pub(crate) mod canvas;
+pub(crate) mod capture;
 pub(crate) mod cursor;
 mod scene;
 pub(crate) mod text;
@@ -12,7 +13,7 @@ use smithay::backend::renderer::{
     element::{memory::MemoryRenderBufferRenderElement, surface::WaylandSurfaceRenderElement},
 };
 
-pub(crate) use scene::output_elements;
+pub(crate) use scene::{View, output_elements};
 
 smithay::backend::renderer::element::render_elements! {
     /// Everything on a screen: client surfaces, and images the compositor drew.

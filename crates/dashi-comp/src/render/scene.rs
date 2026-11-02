@@ -11,7 +11,7 @@ use smithay::{
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
         },
     },
-    desktop::layer_map_for_output,
+    desktop::{Window, layer_map_for_output},
     input::pointer::{CursorImageStatus, CursorImageSurfaceData},
     output::Output,
     utils::{Logical, Physical, Point, Rectangle, Scale},
@@ -21,6 +21,17 @@ use smithay::{
 use super::{DashiElement, titlebar::Decor};
 use crate::state::Dashi;
 
+/// What to draw: an area of the space at a scale, with the layers of one
+/// output; for a window capture, that window alone.
+pub(crate) struct View<'a> {
+    pub area: Rectangle<i32, Logical>,
+    pub scale: Scale<f64>,
+    pub output: &'a Output,
+    pub cursor: bool,
+    pub only: Option<Window>,
+}
+
+/// A whole screen, as it is shown.
 pub(crate) fn output_elements<R>(
     state: &mut Dashi,
     renderer: &mut R,
@@ -31,34 +42,68 @@ where
     R: Renderer + ImportAll + ImportMem,
     R::TextureId: Clone + Send + 'static,
 {
-    let Some(output_geo) = state.space.output_geometry(output) else {
+    let Some(area) = state.space.output_geometry(output) else {
         return Vec::new();
     };
     let scale = Scale::from(output.current_scale().fractional_scale());
-    state.refresh_decorations(output.current_scale().integer_scale());
+    view_elements(
+        state,
+        renderer,
+        &View {
+            area,
+            scale,
+            output,
+            cursor: with_cursor,
+            only: None,
+        },
+    )
+}
+
+pub(crate) fn view_elements<R>(
+    state: &mut Dashi,
+    renderer: &mut R,
+    view: &View<'_>,
+) -> Vec<DashiElement<R>>
+where
+    R: Renderer + ImportAll + ImportMem,
+    R::TextureId: Clone + Send + 'static,
+{
+    let output = view.output;
+    let Some(output_geo) = state.space.output_geometry(output) else {
+        return Vec::new();
+    };
+    let scale = view.scale;
+    let origin = view.area.loc;
+    state.refresh_decorations(scale.x.ceil() as i32);
 
     let mut elements = Vec::new();
-    if with_cursor {
-        cursor_elements(state, renderer, output_geo, scale, &mut elements);
+    if view.cursor {
+        cursor_elements(state, renderer, view.area, scale, &mut elements);
     }
     let layers = layer_map_for_output(output);
-    for layer in [Layer::Overlay, Layer::Top] {
-        layer_elements(&layers, layer, renderer, scale, &mut elements);
+    let layer_offset = output_geo.loc - origin;
+    if view.only.is_none() {
+        for layer in [Layer::Overlay, Layer::Top] {
+            layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
+        }
     }
     for window in state.space.elements().rev() {
+        if view.only.as_ref().is_some_and(|only| only != window) {
+            continue;
+        }
         let Some(frame_at) = state.space.element_location(window) else {
             continue;
         };
         let entry = state.windows.by_window(window);
         let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
         let image = entry.and_then(|entry| entry.title_image.as_ref());
-        let on_output = |at: Point<i32, Logical>| -> Point<i32, Physical> {
-            (at - output_geo.loc).to_physical_precise_round(scale)
+        let on_view = |at: Point<i32, Logical>| -> Point<i32, Physical> {
+            (at - origin).to_physical_precise_round(scale)
         };
         if let (Decor::Unified, Some(image)) = (decor, image) {
-            push_memory(renderer, on_output(frame_at), &image.buffer, &mut elements);
+            push_memory(renderer, on_view(frame_at), &image.buffer, &mut elements);
         }
-        let surface_at = on_output(frame_at - window.geometry().loc);
+        let surface_at = on_view(frame_at - window.geometry().loc);
         elements.extend(
             window
                 .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
@@ -67,11 +112,14 @@ where
         );
         if let (Decor::Standard, Some(image)) = (decor, image) {
             let bar_at = Point::from((frame_at.x, frame_at.y - decor.bar_height()));
-            push_memory(renderer, on_output(bar_at), &image.buffer, &mut elements);
+            push_memory(renderer, on_view(bar_at), &image.buffer, &mut elements);
         }
     }
+    if view.only.is_some() {
+        return elements;
+    }
     for layer in [Layer::Bottom, Layer::Background] {
-        layer_elements(&layers, layer, renderer, scale, &mut elements);
+        layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
     }
     elements
 }
@@ -103,6 +151,7 @@ fn layer_elements<R>(
     layers: &smithay::desktop::LayerMap,
     layer: Layer,
     renderer: &mut R,
+    offset: Point<i32, Logical>,
     scale: Scale<f64>,
     elements: &mut Vec<DashiElement<R>>,
 ) where
@@ -113,7 +162,7 @@ fn layer_elements<R>(
         let Some(geometry) = layers.layer_geometry(surface) else {
             continue;
         };
-        let at = geometry.loc.to_physical_precise_round(scale);
+        let at = (geometry.loc + offset).to_physical_precise_round(scale);
         elements.extend(
             surface
                 .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, at, scale, 1.0)

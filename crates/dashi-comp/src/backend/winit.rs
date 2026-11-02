@@ -28,6 +28,10 @@ pub(crate) struct WinitData {
 }
 
 impl WinitData {
+    pub(crate) fn renderer(&mut self) -> &mut GlesRenderer {
+        self.backend.renderer()
+    }
+
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         self.backend.renderer().import_dmabuf(dmabuf, None).is_ok()
     }
