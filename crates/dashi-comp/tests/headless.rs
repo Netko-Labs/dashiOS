@@ -450,3 +450,123 @@ fn with_no_shell_a_window_places_itself() {
         sleep(Duration::from_millis(20));
     }
 }
+
+/// Wait for the `wallpaper` event (the compositor tells when one is shown or failed).
+fn wallpaper_event(ipc: &mut Ipc) -> Value {
+    if let Some(at) = ipc.events.iter().position(|e| e["event"] == "wallpaper") {
+        return ipc.events.remove(at);
+    }
+    let mut line = String::new();
+    loop {
+        line.clear();
+        ipc.reader.read_line(&mut line).expect("a wallpaper event");
+        let event: Value = serde_json::from_str(&line).unwrap();
+        if event["event"] == "wallpaper" {
+            return event;
+        }
+    }
+}
+
+#[test]
+fn wallpapers_are_checked_then_shown() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+
+    assert!(
+        ipc.request(
+            "wallpaper",
+            json!({ "path": "/no/such.png", "mode": "fill" })
+        )["error"]
+            .as_str()
+            .unwrap()
+            .contains("no such file")
+    );
+    assert!(
+        ipc.request("wallpaper", json!({ "path": "relative.png" }))["error"]
+            .as_str()
+            .unwrap()
+            .contains("absolute")
+    );
+    assert!(
+        ipc.request("wallpaper", json!({ "gradient": true, "mode": "tile" }))["error"].is_string()
+    );
+    assert!(
+        ipc.request("wallpaper", json!({ "shader": "plasma", "fps": 30 }))["error"].is_string()
+    );
+
+    assert_eq!(
+        ipc.request("wallpaper", json!({ "gradient": true, "mode": "fill" }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        wallpaper_event(&mut ipc),
+        json!({ "event": "wallpaper", "path": null, "ok": true })
+    );
+    assert_eq!(
+        ipc.request(
+            "wallpaper",
+            json!({ "shader": "tide", "fps": 30, "mode": "fill" })
+        )["result"],
+        json!({})
+    );
+    assert_eq!(wallpaper_event(&mut ipc)["ok"], true);
+    assert_eq!(
+        ipc.request("wallpaper", json!({ "paused": true }))["result"],
+        json!({})
+    );
+
+    // A real picture decodes on a thread and is announced.
+    let picture = compositor.dir.path().join("wall.png");
+    let mut encoder = png::Encoder::new(std::fs::File::create(&picture).unwrap(), 4, 2);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder
+        .write_header()
+        .unwrap()
+        .write_image_data(&[200u8; 4 * 2 * 4])
+        .unwrap();
+    assert_eq!(
+        ipc.request("wallpaper", json!({ "path": picture, "mode": "fit" }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        wallpaper_event(&mut ipc),
+        json!({ "event": "wallpaper", "path": picture, "ok": true })
+    );
+}
+
+#[test]
+fn a_video_plays_as_the_wallpaper() {
+    let compositor = Compositor::start(&[]);
+    let video = compositor.dir.path().join("loop.webm");
+    let made = Command::new("gst-launch-1.0")
+        .args([
+            "-q",
+            "videotestsrc",
+            "num-buffers=20",
+            "!",
+            "video/x-raw,width=320,height=180",
+            "!",
+            "vp8enc",
+            "!",
+            "webmmux",
+            "!",
+            "filesink",
+        ])
+        .arg(format!("location={}", video.display()))
+        .status();
+    if !made.is_ok_and(|status| status.success()) {
+        eprintln!("skipping: gst-launch-1.0 with vp8enc is not here to make a test video");
+        return;
+    }
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    assert_eq!(
+        ipc.request("wallpaper", json!({ "video": video, "mode": "fill" }))["result"],
+        json!({})
+    );
+    assert_eq!(
+        wallpaper_event(&mut ipc),
+        json!({ "event": "wallpaper", "path": video, "ok": true })
+    );
+}

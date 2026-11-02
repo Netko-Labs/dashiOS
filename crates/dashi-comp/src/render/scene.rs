@@ -121,6 +121,13 @@ where
     for layer in [Layer::Bottom, Layer::Background] {
         layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
     }
+    // Behind everything: the wallpaper, across this screen.
+    if let Some(wallpaper) = state
+        .wallpaper
+        .element(renderer, layer_offset, output_geo.size, scale)
+    {
+        elements.push(DashiElement::Memory(wallpaper));
+    }
     elements
 }
 

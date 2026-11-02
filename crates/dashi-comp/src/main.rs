@@ -13,6 +13,7 @@ mod render;
 mod session;
 mod shell_config;
 mod state;
+mod wallpaper;
 mod wm;
 
 use std::path::PathBuf;

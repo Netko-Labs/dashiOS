@@ -21,7 +21,6 @@ const LATER: &[&str] = &[
     "outputs-config",
     "power",
     "gamma",
-    "wallpaper",
     "space-add",
     "space-switch",
     "space-move",
@@ -97,6 +96,7 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
+        "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
         // One Space until C2.
         "spaces" => Ok(json!({ "count": 1, "current": 0 })),
