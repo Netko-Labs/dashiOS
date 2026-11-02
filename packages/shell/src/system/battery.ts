@@ -6,7 +6,12 @@
 
 import { readdir } from "node:fs/promises";
 
-export const POWER_SUPPLY = "/sys/class/power_supply";
+/**
+ * Where the batteries and chargers are. `DASHI_POWER_SUPPLY` points it at a
+ * directory laid out the same way: a development VM has no battery, and a
+ * made-up one shows the battery's menu, its monitor, and its insights.
+ */
+export const POWER_SUPPLY = process.env.DASHI_POWER_SUPPLY || "/sys/class/power_supply";
 
 export type BatteryState = "charging" | "discharging" | "full" | "plugged";
 
@@ -39,6 +44,8 @@ export interface PowerSupply {
   chargeNow?: string | null;
   chargeFull?: string | null;
   currentNow?: string | null;
+  /** µV: with the current, the draw of a battery that reports no power. */
+  voltageNow?: string | null;
 }
 
 /** Longer than this is a rate too small to mean anything (a battery at rest). */
@@ -141,10 +148,10 @@ export async function readPowerSupplies(root: string = POWER_SUPPLY): Promise<Po
         "charge_now",
         "charge_full",
         "current_now",
+        "voltage_now",
       ];
-      const [type, status, capacity, online, present, scope, energyNow, energyFull, powerNow, chargeNow, chargeFull, currentNow] = await Promise.all(
-        files.map(read),
-      );
+      const [type, status, capacity, online, present, scope, energyNow, energyFull, powerNow, chargeNow, chargeFull, currentNow, voltageNow] =
+        await Promise.all(files.map(read));
       return {
         name,
         type: type ?? null,
@@ -159,6 +166,7 @@ export async function readPowerSupplies(root: string = POWER_SUPPLY): Promise<Po
         chargeNow: chargeNow ?? null,
         chargeFull: chargeFull ?? null,
         currentNow: currentNow ?? null,
+        voltageNow: voltageNow ?? null,
       };
     }),
   );

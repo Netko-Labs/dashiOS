@@ -1,6 +1,7 @@
 /**
  * Battery & Power: the battery (level, state, health, cycles), whether the
- * menu bar shows its percentage, the power mode (Low Power, Balanced, High
+ * menu bar shows its percentage, its usage (the draw, the last day's charts,
+ * insights, the apps using energy: battery-usage.tsx), the power mode (Low Power, Balanced, High
  * Performance, through power-profiles-daemon), when the display turns off and
  * the computer sleeps, and what the lid and power button do. Parts that do not
  * apply are left out: a desktop has no battery, and a machine without the
@@ -22,6 +23,7 @@ import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { BatteryUsage } from "./battery-usage.tsx";
 import { Failure, Value } from "./parts.tsx";
 
 const MODE_DETAIL = {
@@ -49,7 +51,7 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
           <Row label="Battery" detail={describeBattery(battery)}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Svg
-                markup={batteryGlyph(battery.percent, battery.state === "charging")}
+                markup={batteryGlyph(battery.percent, battery.state === "charging" ? true : battery.state === "discharging" ? false : "plugged")}
                 width={30}
                 height={15}
                 color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
@@ -78,6 +80,7 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
           </Row>
         </Group>
       )}
+      {battery && services.battery && <BatteryUsage monitor={services.battery} />}
       {profiles && (
         <>
           <Group testID="power-mode">

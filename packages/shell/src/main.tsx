@@ -24,6 +24,7 @@ import { appletsSocketPath, serveApplets } from "./applets/index.ts";
 import { appFor, displayName, iconPath, launch, METAL_HOST, resolvePinned } from "./apps.ts";
 import { Arranger } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
+import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
 import { Compositor } from "./compositor.ts";
@@ -338,7 +339,7 @@ const forceQuit = startForceQuit(compositor);
 // agent first needs them, from the stores the menus run (menus/start.tsx).
 let paneServices: PaneServices | undefined;
 function paneServicesOf(): PaneServices {
-  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store }));
+  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor }));
 }
 
 // Agents reach the same stores and controllers the menus use (agents/desktop/).
@@ -440,6 +441,8 @@ const appMenus = startAppMenus({
 // Menu bar extras (extras/): programs' own items in the status area, from the applets socket
 // ($XDG_RUNTIME_DIR/dashi-applets.sock, applets/) and the tray over D-Bus (tray/).
 const extras = new ExtrasStore();
+// The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
+const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
 const stopApplets = serveApplets({ path: appletsSocketPath(), extras });
 const tray = mayServeTray(process.env) ? startTray(extras) : Promise.resolve(null);
 
@@ -559,6 +562,7 @@ const menuBars = new MenuBars({
         menus={menus.controller}
         appMenus={appMenus.store}
         extras={extras}
+        batteryMonitor={batteryMonitor}
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
         onStopAgent={(id) => agents?.stop(id)}
@@ -817,6 +821,7 @@ const quit = () => {
     ["menus", () => menus.close()],
     ["app menus", () => appMenus.close()],
     ["applets", stopApplets],
+    ["battery monitor", () => batteryMonitor.stop()],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],

@@ -15,6 +15,7 @@ import { type ReactNode, useRef } from "react";
 import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
+import type { BatteryMonitor } from "./battery/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { AgentPill } from "./consent.tsx";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
@@ -121,6 +122,7 @@ export function MenuBar({
   menus,
   appMenus,
   extras,
+  batteryMonitor,
   settings,
   output,
   onStopAgent,
@@ -136,6 +138,8 @@ export function MenuBar({
   appMenus: AppMenuStore;
   /** Tray icons and applets (extras/). */
   extras: ExtrasStore;
+  /** The battery's draw and heavy apps, for its menu (battery/). */
+  batteryMonitor?: BatteryMonitor;
   /** settings.json: what the status area shows (`menuBar`, set in System Settings). */
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
@@ -167,7 +171,11 @@ export function MenuBar({
   const openWifi = () => void menus.toggleControlCenter(appName, "wifi", output);
   const statusMenuKey = popover?.kind === "status-menu" ? popover.key : null;
   const openBattery = (bounds?: Bounds) => {
-    if (battery && bounds) void menus.toggleStatusMenu("battery", bounds.x + bounds.width, batteryEntries(battery), appName, output);
+    if (!battery || !bounds) return;
+    // The monitor knows the draw and the heavy apps; without it the menu has the battery alone.
+    const use = batteryMonitor?.getSnapshot();
+    const entries = batteryEntries(battery, { watts: use?.watts ?? null, apps: use?.significant ?? [] });
+    void menus.toggleStatusMenu("battery", bounds.x + bounds.width, entries, appName, output);
   };
   const openExtraMenu = (extra: MenuBarExtra, right: number) => {
     if (statusMenuKey === extra.key) {

@@ -115,6 +115,10 @@ it in the VM.
 - [x] Menu bar extras: the tray (StatusNotifierItem host + dbusmenu, src/tray/), the applets
       channel (docs/applets.md, src/applets/, apps/kit/applet.ts), the battery menu, plug glyph,
       time left, and the charging HUD
+- [x] Battery monitor (src/battery/): a week's history (charge, state, watts) in
+      ~/.local/state/dashi, the draw, per-app processor use, insights; Settings' Battery
+      Usage (charts, insights, energy by app) and the battery menu's draw and heavy apps
+- [ ] Battery monitor: screen-on time, per-app history beyond ten minutes, the GPU's share
 - [ ] Extras: tooltips (Metal has none), nested submenus, middle click (SecondaryActivate),
       XEmbed tray icons, Bluetooth device batteries in the battery menu, reordering/hiding extras
 - [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)

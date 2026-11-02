@@ -10,7 +10,10 @@ const put = (path: string, text: string) => {
   mkdirSync(join(root, path, ".."), { recursive: true });
   writeFileSync(join(root, path), text);
 };
-put("Adwaita/symbolic/status/audio-volume-high-symbolic.svg", '<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 1h14v14H1z"/></svg>');
+put(
+  "Adwaita/symbolic/status/audio-volume-high-symbolic.svg",
+  '<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 1h14v14H1z"/></svg>',
+);
 put("AdwaitaLegacy/22x22/legacy/network-idle.png", "png");
 
 test("a status icon a theme keeps only as symbolic is found, and drawn as a glyph in the bar's ink", () => {

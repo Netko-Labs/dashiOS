@@ -187,7 +187,7 @@ export function startMenus(options: MenusOptions): Menus {
             run(action);
           }}
           onDockChoose={options.runDock}
-          onStatusChoose={options.runStatus}
+          onStatusChoose={(action) => (action.kind === "activity-monitor" ? void deps.launchApp("dev.dashi.activity-monitor") : options.runStatus(action))}
           onStatusClosed={(key) => options.statusClosed?.(key)}
         />,
         onClosed,

@@ -8,6 +8,7 @@
  */
 
 import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
+import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { DeviceStore } from "../control-center/devices.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
@@ -42,6 +43,8 @@ export interface PaneServices extends SharedStores {
   levels: LevelsStore;
   meter: LevelMeter;
   energy: EnergyStore;
+  /** The battery's history, draw, energy users, and insights (battery/); null without one. */
+  battery: BatteryMonitor | null;
   account: AccountStore;
   /** Opens the password sheet; `needsCurrent` asks for the current password first. */
   changePassword(needsCurrent: boolean): void;
@@ -55,6 +58,8 @@ export interface ServicesOptions {
   nesting?: Nesting;
   /** The accounts to use in place of the chosen ones (tests). */
   accounts?: AccountsSetup;
+  /** The shell's battery monitor. */
+  battery?: BatteryMonitor | null;
 }
 
 export function createPaneServices(options: ServicesOptions): PaneServices {
@@ -70,6 +75,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
   const prompt = new PasswordChangePrompt(openOverlay, accounts.passwords);
   return {
     ...shared,
+    battery: options.battery ?? null,
     netinfo: new NetInfoStore(fake ? fakeNetInfo() : nmcliNetInfo(run)),
     inputs: new SoundStore(inputsOf(shared.audio)),
     levels: new LevelsStore(fake ? shadowLevels(real) : real, (volume) => system.publish("volume", volume)),
