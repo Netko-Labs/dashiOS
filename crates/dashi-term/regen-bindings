@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Regenerate src/ffi_generated.rs from the installed libghostty-vt headers
+# (libghostty-vt-devel) with bindgen-cli. Run it when the pinned Ghostty
+# version in spin/rpm/libghostty-vt.spec changes, and review the diff.
+set -euo pipefail
+here=$(cd -- "$(dirname -- "$0")" && pwd)
+bindgen /usr/include/ghostty/vt.h \
+  --allowlist-function 'ghostty_.*' --allowlist-type 'Ghostty.*' --allowlist-var 'GHOSTTY_.*' \
+  --no-layout-tests --no-doc-comments --default-enum-style consts \
+  -o "$here/src/ffi_generated.rs"
+rustfmt --edition 2024 "$here/src/ffi_generated.rs"

@@ -1,0 +1,22 @@
+# dashi-term: the engine behind Dashi's Terminal app. It owns the PTY and a
+# libghostty-vt terminal, and streams what to draw to the app (a Bun/Metal
+# process) as JSON lines; the app sends keys, paste, resize, scroll, and
+# selection back. A workspace of its own: it links libghostty-vt
+# (libghostty-vt-devel), which the rest of the tree must not need.
+[package]
+name = "dashi-term"
+version = "0.2.0"
+description = "Dashi's terminal engine: a PTY and Ghostty's terminal core"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/Netko-Labs/dashiOS"
+
+[workspace]
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+debug = "line-tables-only"
