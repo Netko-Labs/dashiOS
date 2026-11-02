@@ -142,7 +142,7 @@ fn redraw(state: &mut Dashi) {
             let elements = render::output_elements(state, renderer, &output, false);
             data.damage_tracker
                 .render_output(renderer, &mut framebuffer, 0, &elements, BACKGROUND)
-                .map(|result| state.after_render(&output, &result.states))
+                .map(|result| state.after_render(&output, &result.states, None))
                 .map_err(|error| format!("{error:?}"))
         }
         Err(error) => Err(error.to_string()),

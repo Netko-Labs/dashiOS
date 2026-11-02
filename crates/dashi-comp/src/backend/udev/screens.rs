@@ -119,6 +119,9 @@ fn connector_connected(
         let vrr = scanout
             .with_compositor(|compositor| compositor.vrr_supported(connector.handle()))
             .unwrap_or(smithay::backend::drm::VrrSupport::NotSupported);
+        let feedback = scanout.with_compositor(|compositor| {
+            feedback::for_screen(&mut data.gpus, primary_gpu, node, compositor.surface())
+        });
         device.screens.insert(
             crtc,
             Screen {
@@ -130,6 +133,7 @@ fn connector_connected(
                 powered: true,
                 modes: connector.modes().to_vec(),
                 vrr,
+                feedback,
             },
         );
         Some(output)

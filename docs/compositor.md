@@ -110,7 +110,9 @@ Each milestone ends with the shell running on it in the VM.
 - **The session lock is the compositor's guarantee:** ext-session-lock, so a
   crashed shell leaves the screen locked, not open.
 - **Games:** direct scanout (done: smithay's DRM compositor puts a client
-  buffer on a plane when it can, and presentation feedback says zero-copy),
+  buffer on a plane when it can, presentation feedback says zero-copy, and
+  per-surface dmabuf feedback offers a scanned-out surface the formats its
+  plane takes),
   VRR (done: off, on, or full screen only, the shell's choice per screen),
   pointer constraints and relative pointer (done). Tearing control waits on
   async page flips in smithay's DRM compositor.

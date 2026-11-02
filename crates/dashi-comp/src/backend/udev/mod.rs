@@ -8,6 +8,7 @@
 
 mod devices;
 mod edid;
+mod feedback;
 mod frame;
 mod screens;
 mod start;
@@ -134,6 +135,8 @@ struct Screen {
     modes: Vec<smithay::reexports::drm::control::Mode>,
     /// Whether it can change its refresh rate as frames come (vrr.rs).
     vrr: smithay::backend::drm::VrrSupport,
+    /// What its surfaces hear about buffer formats (feedback.rs).
+    feedback: Option<feedback::ScreenFeedback>,
 }
 
 /// Which device and CRTC an output is on.

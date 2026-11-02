@@ -47,19 +47,22 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
             BACKGROUND,
             FrameFlags::DEFAULT,
         ) {
-            Ok(result) if !result.is_empty => match screen
-                .scanout
-                .queue_frame(Some(state.after_render(&output, &result.states)))
-            {
-                Ok(()) => {
-                    screen.queued = true;
-                    true
+            Ok(result) if !result.is_empty => {
+                match screen.scanout.queue_frame(Some(state.after_render(
+                    &output,
+                    &result.states,
+                    screen.feedback.as_ref().map(|f| (&f.render, &f.scanout)),
+                ))) {
+                    Ok(()) => {
+                        screen.queued = true;
+                        true
+                    }
+                    Err(error) => {
+                        tracing::warn!(?error, "queueing a frame");
+                        false
+                    }
                 }
-                Err(error) => {
-                    tracing::warn!(?error, "queueing a frame");
-                    false
-                }
-            },
+            }
             Ok(_) => false,
             Err(error) => {
                 tracing::warn!(?error, "drawing a frame");

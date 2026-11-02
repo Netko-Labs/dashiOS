@@ -44,8 +44,11 @@ it in the VM.
       xdg-foreign, security-context
 - [x] C4b: presentation time, explicit sync (and implicit dmabuf waits),
       direct scanout, VRR (shell's choice, Displays pane), keyboard LEDs
-- [ ] C4c: ext-image-copy-capture, rounded window corners, per-surface
-      dmabuf feedback (scanout tranches), tearing (needs smithay async flips)
+- [x] Per-surface dmabuf feedback with scanout tranches (backend/udev/feedback.rs);
+      the VM's virtio-gpu never scans a client buffer out, so the scanout
+      tranche is unverified there: check on hardware with a full-screen game
+- [ ] C4c: ext-image-copy-capture, rounded window corners, tearing (needs
+      smithay async flips)
 - [x] `vm/dev-session` and `vm/dev-greeter` run on the checkout's dashi-comp
       (the greeter in `--greeter` mode); login through it verified in the VM
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel
