@@ -9,11 +9,10 @@
  */
 
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useColors } from "@dashi/ui";
 import { DEFAULT_WALLPAPER_MODE, selectedRef, type WallpaperMode } from "../../wallpaper/catalog.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
-import { scanLive } from "../../wallpaper/live/tiles.ts";
 import { pathFor, photoProblem, type WallpaperTile, wallpaperTiles, withPhoto } from "../../wallpaper/tiles.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
@@ -44,15 +43,13 @@ function Tile({ tile, selected, onPress }: { tile: WallpaperTile; selected: bool
   );
 }
 
-export function WallpaperPane({ settings, chooser, home }: { settings: SettingsStore; chooser: PhotoChooser; home?: string }) {
+export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
   const colors = useColors();
   const surface = useSurface();
   const { wallpaper } = useSettings(settings).data;
   const mode = wallpaper.mode ?? DEFAULT_WALLPAPER_MODE;
   // A picture is selected only while no live wallpaper is.
   const selected = wallpaper.kind === undefined || wallpaper.kind === "picture" ? selectedRef({ path: wallpaper.path, mode }) : null;
-  // Steam is looked at when the pane opens, not on every redraw.
-  const scan = useMemo(() => scanLive(home), [home]);
   const tiles = wallpaperTiles(wallpaper.photos ?? []);
   // The path field takes over when there is no chooser to ask.
   const [typing, setTyping] = useState(false);
@@ -117,7 +114,7 @@ export function WallpaperPane({ settings, chooser, home }: { settings: SettingsS
           <Text style={{ fontSize: 12, color: colors.critical }}>{note}</Text>
         </View>
       )}
-      <LiveSection settings={settings} chooser={chooser} scan={scan} />
+      <LiveSection settings={settings} chooser={chooser} />
       <Caption>The lock screen shows the still wallpaper behind its tint, never a live one.</Caption>
     </Page>
   );

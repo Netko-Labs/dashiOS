@@ -53,21 +53,23 @@ export interface WallpaperChoice extends LiveKeys {
   mode: WallpaperMode;
 }
 
-/** IPC `wallpaper`: an image file, the built-in gradient, or one of the compositor's animated shaders. */
+/** IPC `wallpaper`: an image file, the built-in gradient, one of the compositor's animated shaders, or a video it plays. */
 export type WallpaperRequest =
   | { path: string; mode: WallpaperMode }
   | { gradient: true; mode: WallpaperMode }
-  | { shader: LiveShader; fps: FrameRate; mode: WallpaperMode };
+  | { shader: LiveShader; fps: FrameRate; mode: WallpaperMode }
+  | { video: string; mode: WallpaperMode };
 
 /**
- * The compositor's `wallpaper` request for `choice`: the animated shader when
- * one is chosen, else the still wallpaper (which a video or Wallpaper Engine
- * item runs on top of). An unknown bundled name is the default.
+ * The compositor's `wallpaper` request for `choice`: the animated shader or
+ * the video when one is chosen, else the still wallpaper. An unknown bundled
+ * name is the default.
  */
 export function wallpaperRequest(choice: WallpaperChoice, dir: string = WALLPAPER_DIR): WallpaperRequest {
   const { path, mode } = choice;
   const live = resolveLive(choice);
   if (live.wallpaper.kind === "shader") return { shader: live.wallpaper.shader, fps: live.fps, mode };
+  if (live.wallpaper.kind === "video") return { video: live.wallpaper.video, mode };
   if (path === undefined || path === DEFAULT_WALLPAPER || !isWallpaperRef(path)) return { gradient: true, mode };
   if (isPhotoPath(path)) return { path, mode };
   return isBundled(path) ? { path: join(dir, `${path}.png`), mode } : { gradient: true, mode };

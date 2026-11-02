@@ -59,7 +59,7 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 | `outputs-config` | a full arrangement; *see* `toWire` in `src/display-config/manager.ts` | `{}`; the shell reverts on its own timer if not kept |
 | `power` | `{on: bool, reset?: bool}` | `{}`; screens on/off (DPMS) |
 | `gamma` | the Night Shift tint; *see* `tintFor` in `src/night-shift.ts` | `{}` |
-| `wallpaper` | a `WallpaperRequest` (*see* `src/wallpaper/catalog.ts`) or `{paused: bool}` | `{}`, or an error if the file is refused; `wallpaper` event when loaded |
+| `wallpaper` | a `WallpaperRequest` (*see* `src/wallpaper/catalog.ts`; `{video, mode}` plays a video, looped and muted) or `{paused: bool}` | `{}`, or an error if the file is refused; `wallpaper` event when loaded |
 
 ### Shell chrome and input claims
 

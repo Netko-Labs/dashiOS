@@ -16,8 +16,9 @@ export class WallpaperSync {
   constructor(private readonly compositor: Pick<Compositor, "wallpaper">) {}
 
   /**
-   * Stop or resume the compositor's own animated wallpaper (IPC `wallpaper
-   * {paused}`; a paused one schedules no frames). Sent when it changes.
+   * Stop or resume whatever the compositor animates, a shader or a video
+   * (IPC `wallpaper {paused}`; a paused one schedules no frames). Sent when
+   * it changes.
    */
   pause(paused: boolean): void {
     if (paused === this.paused) return;

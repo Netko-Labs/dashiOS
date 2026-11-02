@@ -1,8 +1,8 @@
 /**
- * The Wallpaper pane's Live section: Dashi's own animated wallpapers,
- * Wallpaper Engine's items from Steam, and videos the person adds, then
- * "Pause on battery" and the frame rate. Choosing one writes `kind` and its
- * item to `appearance.wallpaper`; the shell starts it (wallpaper/live/).
+ * The Wallpaper pane's Live section: Dashi's own animated wallpapers and
+ * videos the person adds, then "Pause on battery" and the frame rate.
+ * Choosing one writes `kind` and its item to `appearance.wallpaper`; the
+ * shell sends it to the compositor, which draws or plays it (wallpaper/live/).
  */
 
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
@@ -12,17 +12,7 @@ import { useColors } from "@dashi/ui";
 import { Switch } from "../../wifi/switch.tsx";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { FRAME_RATES, isVideoPath } from "../../wallpaper/live/choice.ts";
-import {
-  chosenRef,
-  engineHint,
-  engineTiles,
-  type LiveScan,
-  type LiveTile,
-  patchFor,
-  shaderTiles,
-  videoTiles,
-  withVideo,
-} from "../../wallpaper/live/tiles.ts";
+import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../wallpaper/live/tiles.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Row, useSurface } from "../ui.tsx";
@@ -32,13 +22,8 @@ const TILE = { width: 148, height: 83 };
 function LiveTileView({ tile, selected, onPress }: { tile: LiveTile; selected: boolean; onPress: () => void }) {
   const colors = useColors();
   const surface = useSurface();
-  const blocked = tile.problem !== null;
   return (
-    <View
-      testID={`live:${tile.ref}`}
-      onPress={blocked ? undefined : onPress}
-      style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8, opacity: blocked ? 0.5 : 1 }}
-    >
+    <View testID={`live:${tile.ref}`} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8 }}>
       <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
         <View style={{ width: TILE.width, height: TILE.height, borderRadius: 6, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: surface.field }}>
           {tile.image !== null ? (
@@ -51,11 +36,6 @@ function LiveTileView({ tile, selected, onPress }: { tile: LiveTile; selected: b
       <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: selected ? "semibold" : "normal", color: colors.text }}>
         {tile.title}
       </Text>
-      {tile.problem !== null && (
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
-          {tile.problem}
-        </Text>
-      )}
     </View>
   );
 }
@@ -77,7 +57,7 @@ export function videoProblem(typed: string, exists: (path: string) => boolean = 
   return exists(path) ? null : "There is no such file.";
 }
 
-export function LiveSection({ settings, chooser, scan }: { settings: SettingsStore; chooser: PhotoChooser; scan: LiveScan }) {
+export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
   const colors = useColors();
   const surface = useSurface();
   const { wallpaper } = useSettings(settings).data;
@@ -112,9 +92,7 @@ export function LiveSection({ settings, chooser, scan }: { settings: SettingsSto
   };
 
   const shaders = shaderTiles();
-  const engine = engineTiles(scan);
-  const clips = videoTiles(videos, isFile, scan.hasRenderer);
-  const hint = engineHint(scan);
+  const clips = videoTiles(videos, isFile);
   const grid = (tiles: LiveTile[], testID: string) => (
     <Group testID={testID}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
@@ -129,13 +107,6 @@ export function LiveSection({ settings, chooser, scan }: { settings: SettingsSto
     <>
       <Caption above>Live</Caption>
       {grid(shaders, "live-shaders")}
-      {engine.length > 0 && (
-        <>
-          <Caption above>Wallpaper Engine</Caption>
-          {grid(engine, "live-engine")}
-        </>
-      )}
-      {hint !== null && <Caption>{hint}</Caption>}
       {clips.length > 0 && (
         <>
           <Caption above>Videos</Caption>
@@ -143,7 +114,7 @@ export function LiveSection({ settings, chooser, scan }: { settings: SettingsSto
         </>
       )}
       <Group>
-        <Row label="Add Video…" detail="An MP4 or WebM from your files; it plays muted, in a loop, and stays where it is.">
+        <Row label="Add Video…" detail="An MP4, WebM, MKV, or MOV from your files; it plays muted, in a loop, and stays where it is.">
           <Button testID="live-add-video" label="Add Video…" onPress={addVideo} />
         </Row>
         {typing && (

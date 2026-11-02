@@ -45,7 +45,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "appearance":
       return <AppearancePane flags={ctx.flags} settings={ctx.settings} />;
     case "wallpaper":
-      return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} home={ctx.home} />;
+      return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
       return <DisplaysPane screens={ctx.screens} settings={ctx.settings} flags={ctx.flags} />;
     case "desktop-dock":

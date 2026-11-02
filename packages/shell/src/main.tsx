@@ -23,8 +23,6 @@ import { SCROLL_SPEED_DEFAULT } from "./scroll-speed.ts";
 import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
 import type { WallpaperChoice } from "./wallpaper/catalog.ts";
 import { LiveWallpaperController } from "./wallpaper/live/controller.ts";
-import { bunSpawner } from "./wallpaper/live/supervisor.ts";
-import { realWorld } from "./wallpaper/live/world.ts";
 import { reportWallpaper, WallpaperSync } from "./wallpaper/sync.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
@@ -189,8 +187,8 @@ const gtkCorners = new CornerFeed();
 // The wallpaper behind the windows and the lock screen (IPC `wallpaper`; wallpaper/).
 const wallpaper = compositor ? new WallpaperSync(compositor) : null;
 const stopWallpaperEvents = compositor?.on((event) => event.event === "wallpaper" && reportWallpaper(event));
-// Live wallpapers (video, Wallpaper Engine, the compositor's shaders) are started after the system
-// store they need; until then a choice goes to the plain sync (wallpaper/live/).
+// Live wallpapers (the compositor's shaders and videos) pause by the system store, so their
+// controller starts after it; until then a choice goes to the plain sync (wallpaper/live/).
 let liveWallpaper: LiveWallpaperController | null = null;
 let wallpaperChoice: WallpaperChoice | null = null;
 const stopSettings = compositor
@@ -201,7 +199,7 @@ const stopSettings = compositor
       gtkCorners.set(settings.appearance.cornerRadius);
       chromeStyle?.setReduceMotion(settings.appearance.reduceMotion);
       wallpaperChoice = settings.appearance.wallpaper;
-      if (liveWallpaper) void liveWallpaper.apply(wallpaperChoice);
+      if (liveWallpaper) liveWallpaper.apply(wallpaperChoice);
       else wallpaper?.apply(wallpaperChoice);
       dockPrefs.apply(settings.dock);
       void spaces?.controller.apply(settings.spaces);
@@ -243,14 +241,12 @@ if (compositor && wallpaper) {
   const controller = new LiveWallpaperController({
     compositor,
     sync: wallpaper,
-    world: () => realWorld(),
-    spawn: bunSpawner(),
     battery: () => system.store.getSnapshot().battery,
   });
   liveWallpaper = controller;
   if (idle) idle.onBlanked = (blanked) => controller.screensBlanked(blanked);
   system.store.subscribe(() => controller.powerChanged());
-  if (wallpaperChoice) void controller.apply(wallpaperChoice);
+  if (wallpaperChoice) controller.apply(wallpaperChoice);
   void controller.start().catch((error) => console.error("dashi-shell: live wallpapers did not start:", error));
 }
 // The Wi-Fi list and joins: the menu and Control Center read it, and so do agents.
@@ -761,7 +757,7 @@ const quit = () => {
     ["settings", stopSettings],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],
-    ["live wallpaper", () => liveWallpaper?.killNow()],
+    ["live wallpaper", () => liveWallpaper?.stop()],
     ["idle", () => idle?.stop()],
     ["arranging", stopArranging],
     ["full screen", () => (stopHoldingBars(), stopFullscreenBars())],

@@ -39,9 +39,10 @@
  * window animations off. `wallpaper.path` is a bundled wallpaper's id or an
  * absolute path to a PNG or JPEG (none is the built-in gradient);
  * `wallpaper.mode` is "fill" (the default), "fit", or "center"
- * (wallpaper/catalog.ts). `wallpaper.kind` ("picture", "shader", "video", or
- * "wallpaperengine") chooses a live wallpaper, with `shader`, `video`,
- * `workshop`, `fps` (15, 30, 60), and `pauseOnBattery` (wallpaper/live/choice.ts).
+ * (wallpaper/catalog.ts). `wallpaper.kind` ("picture", "shader", or "video")
+ * chooses a live wallpaper, with `shader`, `video`, `fps` (15, 30, 60), and
+ * `pauseOnBattery` (wallpaper/live/choice.ts); an older file's
+ * "wallpaperengine" reads as a picture.
  * `clock` (`hour24`, `showDate`) and `region` (`formats`, `firstWeekday`) are the person's
  * date and time habits (clock.ts, region/); the shell reads them through
  * settings-app/store.ts, which holds their keys.
@@ -56,7 +57,7 @@ import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, type DockSettings, DOCK_STYLES, resolveDock } from "./dock/settings.ts";
 import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
-import { FRAME_RATES, isVideoPath, isWorkshopId, LIVE_SHADERS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
+import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
 
 export interface TouchpadSettings {
   tap?: boolean;
@@ -276,21 +277,21 @@ export function parseSettings(value: unknown): Loaded {
     "shader",
     "video",
     "videos",
-    "workshop",
     "fps",
     "pauseOnBattery",
+    ...RETIRED_KEYS,
   ]);
   // A file from before live wallpapers has none of the live keys, and means a picture (wallpaper/live/choice.ts).
   settings.appearance.wallpaper = defined({
     path: wallpaper.ref("path"),
     mode: wallpaper.choice("mode", WALLPAPER_MODES) ?? DEFAULT_WALLPAPER_MODE,
-    kind: wallpaper.choice("kind", WALLPAPER_KINDS),
+    // A retired kind is a picture, quietly: the still `path` beside it stays.
+    kind: RETIRED_KINDS.some((kind) => kind === wallpaper.get("kind")) ? "picture" : wallpaper.choice("kind", WALLPAPER_KINDS),
     shader: wallpaper.choice(
       "shader",
       LIVE_SHADERS.map((shader) => shader.id),
     ),
-    video: wallpaper.text("video", isVideoPath, "an absolute path to an MP4 or WebM file"),
-    workshop: wallpaper.text("workshop", isWorkshopId, "a Steam Workshop id (digits)"),
+    video: wallpaper.text("video", isVideoPath, "an absolute path to an MP4, WebM, MKV, or MOV file"),
     fps: wallpaper.numberChoice("fps", FRAME_RATES),
     pauseOnBattery: wallpaper.boolean("pauseOnBattery"),
   }) as WallpaperChoice;

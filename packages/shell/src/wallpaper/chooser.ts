@@ -19,7 +19,7 @@ export interface PhotoChooser {
 /** The portal's title and filter for each kind of file. */
 const DIALOGS = {
   photo: { title: "Choose a Photo", filter: { name: "Images", types: ["image/png", "image/jpeg"] } },
-  video: { title: "Choose a Video", filter: { name: "Videos", types: ["video/mp4", "video/webm"] } },
+  video: { title: "Choose a Video", filter: { name: "Videos", types: ["video/mp4", "video/webm", "video/x-matroska", "video/quicktime"] } },
 } as const;
 
 /** The photo path a `file://` URI names (percent-decoded), or null for anything else. */

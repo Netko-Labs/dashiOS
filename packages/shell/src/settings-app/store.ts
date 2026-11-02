@@ -42,7 +42,6 @@ import {
   type FrameRate,
   isVideoList,
   isVideoPath,
-  isWorkshopId,
   LIVE_SHADERS,
   type LiveShader,
   WALLPAPER_KINDS,
@@ -110,8 +109,6 @@ export interface WallpaperSettings {
   /** The video playing, and the videos added in System Settings, most recent first. */
   video?: string;
   videos?: string[];
-  /** The Wallpaper Engine item (its Steam Workshop id). */
-  workshop?: string;
   fps?: FrameRate;
   /** Live wallpapers stop on battery unless this is false. */
   pauseOnBattery?: boolean;
@@ -237,7 +234,6 @@ const SECTIONS = {
       shader: oneOf(...LIVE_SHADERS.map((shader) => shader.id)),
       video: isVideoPath,
       videos: isVideoList,
-      workshop: isWorkshopId,
       fps: (value) => FRAME_RATES.some((rate) => rate === value),
       pauseOnBattery: isBoolean,
     },

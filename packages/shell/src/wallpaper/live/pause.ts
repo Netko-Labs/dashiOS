@@ -2,8 +2,8 @@
  * When a live wallpaper should stand still. This is a laptop: a wallpaper
  * nobody can see, or that the battery pays for, should draw nothing. Pure
  * functions; controller.ts feeds them what the desktop reports and applies
- * the answer (SIGSTOP for a renderer, IPC `wallpaper {paused}` for the
- * compositor's own shaders).
+ * the answer with IPC `wallpaper {paused}`, which stops the compositor's
+ * shader or video.
  */
 
 import type { CompositorWindow, Frame } from "../../compositor.ts";
