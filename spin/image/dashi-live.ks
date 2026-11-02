@@ -26,6 +26,25 @@ repo --name=dashi-image-cachyos --baseurl=https://download.copr.fedorainfracloud
 repo --name=dashi-image-helium --baseurl=https://download.copr.fedorainfracloud.org/results/imput/helium/fedora-$releasever-$basearch/
 repo --name=dashi-image-local --baseurl=@DASHI_REPO@ --cost=10
 
+# Fedora 44's crypto-policies has a /bin/sh %pre, and rpm can order it before
+# glibc in a fresh root (its loop breaking shifts with every update; it did
+# on 2026-11-02 and the image stopped building), so the shell can't run yet.
+# Seed the empty root (livemedia-creator --no-virt installs into
+# /mnt/sysroot, and %pre runs on the build host) with the host's bash and
+# the libraries it loads; bash, glibc, ncurses-libs, and filesystem replace
+# them all during the transaction.
+%pre --erroronfail
+root=/mnt/sysroot
+mkdir -p "$root/usr/bin" "$root/usr/lib64"
+[ -e "$root/bin" ] || ln -s usr/bin "$root/bin"
+[ -e "$root/lib64" ] || ln -s usr/lib64 "$root/lib64"
+cp -p /usr/bin/bash "$root/usr/bin/bash"
+[ -e "$root/usr/bin/sh" ] || ln -s bash "$root/usr/bin/sh"
+for lib in ld-linux-x86-64.so.2 libc.so.6 libtinfo.so.6; do
+  cp -pL "/usr/lib64/$lib" "$root/usr/lib64/$lib"
+done
+%end
+
 %packages
 @core
 @hardware-support
