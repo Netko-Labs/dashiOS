@@ -1,4 +1,4 @@
-/** Discover: Trending, Popular, and Recently Updated apps from Flathub, a few of each. */
+/** Discover: Dashi's recommended apps, then Trending, Popular, and Recently Updated from Flathub, a few of each. */
 
 import { useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
@@ -7,6 +7,7 @@ import type { Answer, Collection, Flathub } from "../../src/software/flathub.ts"
 import type { Page } from "../../src/software/flathub-types.ts";
 import { CardGrid } from "./cards.tsx";
 import { useLoad } from "./hooks.ts";
+import { RecommendedCards } from "./recommended.tsx";
 import { useServices } from "./services.ts";
 import { Failed, Loading, StaleNote } from "./states.tsx";
 
@@ -50,6 +51,10 @@ export function Discover({ banner }: { banner?: ReactNode }) {
     <ScrollView testID="discover" style={{ flex: 1, flexDirection: "column", gap: 18, padding: 22 }}>
       {banner}
       {state.stale && <StaleNote />}
+      <View testID="section:recommended" style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
+        <SectionHeader title="Recommended for Dashi" detail="Apps that work well here, picked by Dashi" />
+        <RecommendedCards />
+      </View>
       {state.value.map((entry) =>
         entry === null ? null : (
           <View key={entry.section.kind} testID={`section:${entry.section.kind}`} style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
