@@ -72,7 +72,8 @@ crates/dashi-comp/src/
                     security (security-context), sync (explicit and implicit),
                     toplevel_meta (icons, bell), activation (+ dialog, foreign)
   protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
-                    toplevel, wlr-screencopy
+                    toplevel, wlr-screencopy, ext-image-copy-capture
+                    (image_capture.rs), ext-foreign-toplevel-list
   render/           scene, title bars, cursor, capture, presentation (present.rs),
                     rounded corners (rounded.rs)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview, grabs
@@ -132,8 +133,9 @@ Each milestone ends with the shell running on it in the VM.
   screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
   stay Dashi's), text-input and input-method, virtual keyboard (the shell's
   processes only), xdg-toplevel-icon (`window-icon`), xdg-system-bell
-  (`bell`), xdg-foreign. Still to come: ext-image-copy-capture (screen
-  sharing through newer portals; wlr-screencopy serves them now).
+  (`bell`), xdg-foreign, ext-image-copy-capture with ext-image-capture-source
+  and ext-foreign-toplevel-list (screen and window sharing through newer
+  portals; shm buffers, paced to 60 frames a second).
 - **Sandboxing (done):** security-context, so a Flatpak app never reaches a
   privileged protocol even though it runs under the shell, nor screencopy
   even if granted to its executable path.

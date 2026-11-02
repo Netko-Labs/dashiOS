@@ -103,8 +103,9 @@ string|null, path: string|null}}`; `icon` is what the app gave
 - **The shell's own Wayland protocols:** wlr-foreign-toplevel, ext- and
   wlr-data-control (clipboard without focus), ext-session-lock, and
   `capture` are for the session client and the processes under it only;
-  screencopy also for the executables in `screencopy-clients`. None of them
-  exist in greeter mode.
+  screencopy, ext-image-copy-capture (screens, and windows named through
+  ext-foreign-toplevel-list) also for the executables in
+  `screencopy-clients`. None of them exist in greeter mode.
 - **Xwayland:** `session.display` is set from the start (the X socket listens
   before the server is ready); `session-changed` follows when it is ready or
   fails.

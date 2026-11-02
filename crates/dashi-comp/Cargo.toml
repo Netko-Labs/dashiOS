@@ -20,7 +20,7 @@ png = "0.17"
 rustix = { version = "1", features = ["net", "process"] }
 smithay-drm-extras = { version = "0.1", default-features = false }
 wayland-backend = "0.3"
-wayland-protocols = { version = "0.32", features = ["server"] }
+wayland-protocols = { version = "0.32", features = ["server", "staging"] }
 wayland-scanner = "0.31"
 wayland-server = "0.31"
 xcursor = "0.3"

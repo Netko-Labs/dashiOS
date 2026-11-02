@@ -118,6 +118,8 @@ pub(crate) struct Dashi {
         smithay::wayland::selection::wlr_data_control::DataControlState,
     )>,
     pub xdg_foreign_state: smithay::wayland::xdg_foreign::XdgForeignState,
+    /// ext-foreign-toplevel-list, for capture pickers (protocols/toplevel_list.rs).
+    pub toplevel_list: Option<crate::protocols::toplevel_list::ToplevelList>,
     /// Explicit sync, when the drawing GPU supports it (handlers/sync.rs).
     pub syncobj_state: Option<smithay::wayland::drm_syncobj::DrmSyncobjState>,
     pub shortcuts_inhibit_state:
@@ -147,16 +149,19 @@ impl Dashi {
             smithay::wayland::xdg_activation::XdgActivationState::new::<Self>(&dh);
         let dialog_state = smithay::wayland::shell::xdg::dialog::XdgDialogState::new::<Self>(&dh);
         let screencopy_paths = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let mut toplevel_list = None;
         // The login screen shows no one the window list or the screen.
         if !greeter {
             crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
-            crate::protocols::screencopy::create_global(
-                &dh,
-                crate::protocols::screencopy::Grants {
-                    shell: shell_pid.clone(),
-                    paths: screencopy_paths.clone(),
-                },
-            );
+            let grants = crate::protocols::screencopy::Grants {
+                shell: shell_pid.clone(),
+                paths: screencopy_paths.clone(),
+            };
+            crate::protocols::screencopy::create_global(&dh, grants.clone());
+            crate::protocols::image_capture::create_globals(&dh, &grants);
+            toplevel_list = Some(crate::protocols::toplevel_list::ToplevelList::new(
+                &dh, grants,
+            ));
         }
         let lock_shell = shell_pid.clone();
         let session_lock_state =
@@ -268,6 +273,7 @@ impl Dashi {
             data_control,
             shortcuts_inhibit_state,
             xdg_foreign_state,
+            toplevel_list,
             syncobj_state: None,
             xwayland_shell_state,
             xwayland: Default::default(),
@@ -400,6 +406,7 @@ impl Dashi {
         self.space.refresh();
         self.popups.cleanup();
         self.foreign_refresh();
+        self.toplevel_list_refresh();
         if let Err(error) = self.display_handle.flush_clients() {
             tracing::warn!(%error, "flushing Wayland clients");
         }

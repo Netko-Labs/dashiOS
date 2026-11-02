@@ -48,7 +48,10 @@ it in the VM.
       the VM's virtio-gpu never scans a client buffer out, so the scanout
       tranche is unverified there: check on hardware with a full-screen game
 - [x] Rounded bottom corners under Dashi's title bars (render/rounded.rs)
-- [ ] C4c: ext-image-copy-capture, tearing (needs smithay async flips)
+- [x] ext-image-copy-capture: screens and windows (grim 1.5 verified, with -T)
+- [ ] Tearing control: needs async page flips in smithay's DRM compositor
+- [ ] ext-image-copy-capture with dmabuf buffers (shm only now) and cursor
+      sessions (refused now: clients paint the cursor in)
 - [x] `vm/dev-session` and `vm/dev-greeter` run on the checkout's dashi-comp
       (the greeter in `--greeter` mode); login through it verified in the VM
 - [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel

@@ -12,7 +12,7 @@ use crate::{
     keys::{Chord, Keymap},
     outputs, render, session,
     state::Dashi,
-    wm::{Shown, frame_of, valid_frame},
+    wm::{Shown, valid_frame},
 };
 
 pub(crate) fn handle(
@@ -249,14 +249,7 @@ fn capture(
             .filter(|entry| entry.announced)
             .map(|entry| entry.window.clone())
             .ok_or_else(|| format!("no window {id}"))?;
-        let frame = frame_of(state, &window).ok_or("that window is not on screen")?;
-        let output = state
-            .space
-            .output_under(frame.loc.to_f64() + frame.size.to_f64().downscale(2.0).to_point())
-            .next()
-            .or_else(|| state.space.outputs().next())
-            .cloned()
-            .ok_or("no screen")?;
+        let (frame, output) = render::capture::window_area(state, &window)?;
         (frame, output, Some(window))
     } else if let Some(Value::Object(rect)) = params.get("rect") {
         let rect = valid_frame(

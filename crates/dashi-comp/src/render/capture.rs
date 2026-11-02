@@ -154,6 +154,69 @@ pub(crate) fn save_png(path: &Path, picture: &Picture) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
+/// Copy `picture` into a client's shm buffer (Xrgb8888 or Argb8888, which is
+/// B, G, R, A in memory); false when the buffer does not fit it.
+pub(crate) fn copy_to_shm(
+    picture: &Picture,
+    buffer: &smithay::reexports::wayland_server::protocol::wl_buffer::WlBuffer,
+) -> bool {
+    use smithay::{
+        reexports::wayland_server::protocol::wl_shm, wayland::shm::with_buffer_contents_mut,
+    };
+    let copied = with_buffer_contents_mut(buffer, |ptr, len, info| {
+        let (w, h, stride) = (info.width, info.height, info.stride);
+        if w != picture.width
+            || h != picture.height
+            || info.format != wl_shm::Format::Xrgb8888 && info.format != wl_shm::Format::Argb8888
+            || w <= 0
+            || h <= 0
+            || stride < w * 4
+        {
+            return false;
+        }
+        let needed = (info.offset + stride * (h - 1) + w * 4) as usize;
+        if needed > len {
+            return false;
+        }
+        // SAFETY: the pool is mapped for `len` bytes and only written within `needed`.
+        let pool = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
+        for y in 0..h as usize {
+            let row = info.offset as usize + y * stride as usize;
+            for x in 0..w as usize {
+                let src = (y * w as usize + x) * 4;
+                let rgba = &picture.rgba[src..src + 4];
+                pool[row + x * 4..row + x * 4 + 4]
+                    .copy_from_slice(&[rgba[2], rgba[1], rgba[0], rgba[3]]);
+            }
+        }
+        true
+    });
+    matches!(copied, Ok(true))
+}
+
+/// Where a window is (its outer frame) and the screen whose scale it is drawn at.
+pub(crate) fn window_area(
+    state: &Dashi,
+    window: &smithay::desktop::Window,
+) -> Result<
+    (
+        smithay::utils::Rectangle<i32, smithay::utils::Logical>,
+        smithay::output::Output,
+    ),
+    String,
+> {
+    let frame = crate::wm::frame_of(state, window).ok_or("that window is not on screen")?;
+    let center = frame.loc.to_f64() + frame.size.to_f64().downscale(2.0).to_point();
+    let output = state
+        .space
+        .output_under(center)
+        .next()
+        .or_else(|| state.space.outputs().next())
+        .cloned()
+        .ok_or("no screen")?;
+    Ok((frame, output))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

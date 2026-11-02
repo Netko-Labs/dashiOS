@@ -26,7 +26,6 @@ use smithay::{
         },
     },
     utils::{Logical, Rectangle},
-    wayland::shm::with_buffer_contents_mut,
 };
 
 use crate::{backend, render::View, session::trust, state::Dashi};
@@ -35,6 +34,7 @@ use crate::{backend, render::View, session::trust, state::Dashi};
 const QUIET: Duration = Duration::from_secs(2);
 
 /// Who may copy the screen: the shell, and these executables.
+#[derive(Clone)]
 pub(crate) struct Grants {
     pub shell: Arc<AtomicI32>,
     pub paths: Arc<Mutex<Vec<PathBuf>>>,
@@ -56,7 +56,7 @@ pub(crate) fn create_global(dh: &DisplayHandle, grants: Grants) {
     dh.create_global::<Dashi, ZwlrScreencopyManagerV1, Grants>(3, grants);
 }
 
-fn may_copy(client: &Client, grants: &Grants) -> bool {
+pub(crate) fn may_copy(client: &Client, grants: &Grants) -> bool {
     if trust::is_shell_client(client, &grants.shell) {
         return true;
     }
@@ -200,34 +200,7 @@ impl Dispatch<ZwlrScreencopyFrameV1, Option<FrameData>> for Dashi {
                 return frame.failed();
             }
         };
-        let copied = with_buffer_contents_mut(&buffer, |ptr, len, info| {
-            let (w, h, stride) = (info.width, info.height, info.stride);
-            if w != picture.width
-                || h != picture.height
-                || info.format != wl_shm::Format::Xrgb8888
-                    && info.format != wl_shm::Format::Argb8888
-            {
-                return false;
-            }
-            let needed = (info.offset + stride * (h - 1) + w * 4) as usize;
-            if needed > len {
-                return false;
-            }
-            // SAFETY: the pool is mapped for `len` bytes and only written within `needed`.
-            let pool = unsafe { std::slice::from_raw_parts_mut(ptr, len) };
-            for y in 0..h as usize {
-                let row = info.offset as usize + y * stride as usize;
-                for x in 0..w as usize {
-                    let src = (y * w as usize + x) * 4;
-                    let rgba = &picture.rgba[src..src + 4];
-                    // Xrgb/Argb8888 is B, G, R, A in memory.
-                    pool[row + x * 4..row + x * 4 + 4]
-                        .copy_from_slice(&[rgba[2], rgba[1], rgba[0], rgba[3]]);
-                }
-            }
-            true
-        });
-        if !matches!(copied, Ok(true)) {
+        if !crate::render::capture::copy_to_shm(&picture, &buffer) {
             return frame.failed();
         }
         frame.flags(frame_v1::Flags::empty());
@@ -245,7 +218,7 @@ impl Dispatch<ZwlrScreencopyFrameV1, Option<FrameData>> for Dashi {
 
 impl Dashi {
     /// A copy went out: the shell hears a capture started, and later that it stopped.
-    fn note_capture(&mut self) {
+    pub(crate) fn note_capture(&mut self) {
         self.capture_activity.last_copy = Some(Instant::now());
         if self.capture_activity.watching {
             return;

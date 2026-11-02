@@ -918,6 +918,10 @@ fn a_plain_client_sees_no_privileged_protocols() {
             "ext_session_lock_manager_v1",
             "zwp_input_method_manager_v2",
             "zwp_virtual_keyboard_manager_v1",
+            "ext_image_copy_capture_manager_v1",
+            "ext_output_image_capture_source_manager_v1",
+            "ext_foreign_toplevel_image_capture_source_manager_v1",
+            "ext_foreign_toplevel_list_v1",
         ] {
             assert!(
                 !seen.iter().any(|g| g == privileged),
