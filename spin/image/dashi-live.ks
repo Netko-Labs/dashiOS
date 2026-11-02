@@ -24,6 +24,8 @@ repo --name=dashi-image-rpmfusion-nonfree --mirrorlist=https://mirrors.rpmfusion
 repo --name=dashi-image-rpmfusion-nonfree-updates --mirrorlist=https://mirrors.rpmfusion.org/mirrorlist?repo=nonfree-fedora-updates-released-$releasever&arch=$basearch
 repo --name=dashi-image-cachyos --baseurl=https://download.copr.fedorainfracloud.org/results/bieszczaders/kernel-cachyos/fedora-$releasever-$basearch/
 repo --name=dashi-image-helium --baseurl=https://download.copr.fedorainfracloud.org/results/imput/helium/fedora-$releasever-$basearch/
+# Terra (Fyra Labs): on by default on Dashi; terra-release below installs its repo file and key.
+repo --name=dashi-image-terra --baseurl=https://repos.fyralabs.com/terra$releasever
 repo --name=dashi-image-local --baseurl=@DASHI_REPO@ --cost=10
 
 # Fedora 44's crypto-policies has a /bin/sh %pre, and rpm can order it before
@@ -81,6 +83,7 @@ dashi
 dashi-greeter
 dashi-live
 dashi-release
+terra-release
 dashi-logos
 dashi-kernel
 dashi-nvidia

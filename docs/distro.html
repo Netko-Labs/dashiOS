@@ -141,6 +141,7 @@
       <tr><td>RPM Fusion free and nonfree</td><td>Codecs, NVIDIA's driver</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>COPR <code>bieszczaders/kernel-cachyos</code></td><td>The CachyOS kernel</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>COPR <code>imput/helium</code></td><td>The Helium browser</td><td><span class="pill done">enabled</span></td></tr>
+      <tr><td>Terra (Fyra Labs)</td><td>Apps and tools Fedora doesn't carry; <code>terra-release</code>, recommended by <code>dashi-release</code> and in the image. Its optional subrepos (Mesa, NVIDIA, multimedia, extras) stay off: they can clash with RPM Fusion</td><td><span class="pill done">enabled</span></td></tr>
       <tr><td>COPR <code>pejedev/dashi</code></td><td>Dashi's own packages (<code>spin/copr-publish</code>)</td><td><span class="pill done">enabled</span></td></tr>
     </table>
     <h3>Publishing to COPR</h3>
@@ -151,7 +152,7 @@
       <li>Publish all of them together: <code>dashi</code>, <code>dashi-comp</code>, <code>dashi-greeter</code>, and <code>dashi-live</code> require each other at the exact same snapshot.</li>
       <li>Watch <a href="https://copr.fedorainfracloud.org/coprs/pejedev/dashi/builds/">the builds</a>. COPR builds in a clean root: a macro or tool the VM happens to have needs a <code>BuildRequires</code>.</li>
     </ol>
-    <div class="callout open"><span>◇</span><p><strong>Open:</strong> Terra (Fyra Labs) as a second home for the packages. It needs specs written by hand under Terra's AI policy, and answers from Fyra on replacing <code>fedora-release</code>, RPM Fusion dependencies, and kernel packages.</p></div>
+    <div class="callout open"><span>◇</span><p><strong>Open:</strong> Terra (Fyra Labs), already enabled as a repository, as a second home for Dashi's own packages. It needs specs written by hand under Terra's AI policy, and answers from Fyra on replacing <code>fedora-release</code>, RPM Fusion dependencies, and kernel packages.</p></div>
 
     <h2>Versions and releases</h2>
     <ul>
@@ -208,7 +209,7 @@ const PACKAGES = [
     needs: [], ext: "RPM Fusion nonfree (steam)" },
   { n: "dashi-release", layer: "system", s: "Release files: Dashi's identity",
     carries: "os-release, system-release, the dashi.repo for COPR, zsh as useradd's default shell, Dashi's zshrc.",
-    needs: [], ext: "Provides and replaces fedora-release; requires fedora-repos(44) and zsh" },
+    needs: [], ext: "Provides and replaces fedora-release; requires fedora-repos(44) and zsh; recommends terra-release (Terra on by default)" },
   { n: "dashi-logos", layer: "system", s: "Logo, icon, and the boot splash",
     carries: "dashi-logo.png, the Plymouth theme 'dashi' (two-step, animated bowl).",
     needs: [], ext: "generic-logos, plymouth two-step and spinner" },

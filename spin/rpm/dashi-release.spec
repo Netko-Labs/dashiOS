@@ -17,6 +17,10 @@ Requires:       fedora-repos(44)
 # needs setup) made a loop rpm could only break by installing filesystem
 # late, and a fresh install root then had no /bin/sh for the first %pre.
 Requires:       zsh
+# Terra (Fyra Labs) is on by default: terra-release owns its repo file and
+# key. Recommends, not Requires: a system without Terra configured can still
+# update this package, and someone who removes Terra keeps Dashi.
+Recommends:     terra-release
 Provides:       system-release
 Provides:       system-release(44)
 Provides:       system-release(releasever) = 44
