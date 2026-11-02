@@ -296,8 +296,7 @@ fn session(state: &Dashi) -> Value {
         "display": null,
         "xwayland": "off",
         "pointer": pointer,
-        // The session lock arrives in C3; until then the screen is never locked.
-        "locked": false,
+        "locked": state.lock.locked,
     })
 }
 

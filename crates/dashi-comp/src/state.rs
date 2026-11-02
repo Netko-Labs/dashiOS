@@ -57,6 +57,8 @@ pub(crate) struct Dashi {
     pub dmabuf_global: Option<DmabufGlobal>,
     pub shell_config: ShellConfig,
     pub keys: Keys,
+    pub lock: crate::session::lock::Lock,
+    pub session_lock_state: smithay::wayland::session_lock::SessionLockManagerState,
     pub zones: crate::wm::Zones,
     pub motion: crate::wm::Motion,
     /// Screens turned off in Displays (not in the space).
@@ -111,6 +113,12 @@ impl Dashi {
         dashi_chrome::create_global(&dh);
         let shell_pid = Arc::new(std::sync::atomic::AtomicI32::new(0));
         crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
+        let lock_shell = shell_pid.clone();
+        let session_lock_state =
+            smithay::wayland::session_lock::SessionLockManagerState::new::<Self, _>(
+                &dh,
+                move |client| crate::session::trust::is_shell_client(client, &lock_shell),
+            );
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let output_manager_state = OutputManagerState::new_with_xdg_output::<Self>(&dh);
         let data_device_state = DataDeviceState::new::<Self>(&dh);
@@ -137,6 +145,8 @@ impl Dashi {
             dmabuf_global: None,
             shell_config: ShellConfig::default(),
             keys: Keys::default(),
+            lock: Default::default(),
+            session_lock_state,
             zones: Default::default(),
             motion: Default::default(),
             disabled_outputs: Vec::new(),
@@ -183,6 +193,18 @@ impl Dashi {
                         .map(|(surface, at)| (surface, (at + location).to_f64()))
                 })
         };
+        if self.lock.locked {
+            let output = self.space.output_under(pos).next()?;
+            let origin = self.space.output_geometry(output)?.loc;
+            let lock = self.lock_surface_on(output)?;
+            return smithay::desktop::utils::under_from_surface_tree(
+                lock.wl_surface(),
+                pos - origin.to_f64(),
+                (0, 0),
+                WindowSurfaceType::ALL,
+            )
+            .map(|(surface, at)| (surface, (at + origin).to_f64()));
+        }
         let Some(output) = self.space.output_under(pos).next() else {
             return window();
         };
@@ -228,6 +250,15 @@ impl Dashi {
         });
         for layer in layer_map_for_output(output).layers() {
             layer.send_frame(output, elapsed, throttle, |_, _| Some(output.clone()));
+        }
+        if let Some(lock) = self.lock_surface_on(output) {
+            smithay::desktop::utils::send_frames_surface_tree(
+                lock.wl_surface(),
+                output,
+                elapsed,
+                throttle,
+                |_, _| Some(output.clone()),
+            );
         }
         if let smithay::input::pointer::CursorImageStatus::Surface(surface) = &self.cursor_status {
             smithay::desktop::utils::send_frames_surface_tree(

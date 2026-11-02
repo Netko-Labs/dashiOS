@@ -28,6 +28,18 @@ pub(crate) fn descends_from(pid: i32, ancestor: i32) -> bool {
     false
 }
 
+/// Whether a Wayland client runs under the session client (`shell`: its pid, 0 before it starts).
+pub(crate) fn is_shell_client(
+    client: &smithay::reexports::wayland_server::Client,
+    shell: &std::sync::atomic::AtomicI32,
+) -> bool {
+    let shell = shell.load(std::sync::atomic::Ordering::Relaxed);
+    let pid = client
+        .get_data::<crate::state::ClientState>()
+        .and_then(|data| data.pid);
+    shell > 0 && pid.is_some_and(|pid| descends_from(pid, shell))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

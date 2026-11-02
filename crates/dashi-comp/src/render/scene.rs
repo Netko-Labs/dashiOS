@@ -83,8 +83,34 @@ where
     if view.cursor {
         cursor_elements(state, renderer, view.area, scale, &mut elements);
     }
-    let layers = layer_map_for_output(output);
     let layer_offset = output_geo.loc - origin;
+    // Locked: the lock screen over the wallpaper, and nothing of the session.
+    if state.lock.locked {
+        if let Some(lock) = state.lock_surface_on(output) {
+            let at = layer_offset.to_physical_precise_round(scale);
+            elements.extend(
+                render_elements_from_surface_tree::<_, WaylandSurfaceRenderElement<R>>(
+                    renderer,
+                    lock.wl_surface(),
+                    at,
+                    scale,
+                    1.0,
+                    Kind::Unspecified,
+                )
+                .into_iter()
+                .map(DashiElement::Surface),
+            );
+        }
+        if let Some(wallpaper) =
+            state
+                .wallpaper
+                .element(renderer, layer_offset, output_geo.size, scale)
+        {
+            elements.push(DashiElement::Memory(wallpaper));
+        }
+        return elements;
+    }
+    let layers = layer_map_for_output(output);
     if view.only.is_none() {
         let top = state.shows_top_layers(output);
         for layer in [Layer::Overlay, Layer::Top]

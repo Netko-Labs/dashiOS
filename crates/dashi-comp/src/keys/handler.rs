@@ -100,6 +100,10 @@ impl Dashi {
             return;
         }
 
+        // Locked: keys go to the lock screen, and nothing else hears them.
+        if self.lock.locked {
+            return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
+        }
         let app_id = self.focused_app_id();
         let action = self
             .keys
@@ -226,7 +230,7 @@ impl Dashi {
                 self.backend.change_vt(vt);
                 return true;
             }
-            if name == "BackSpace" {
+            if name == "BackSpace" && !self.lock.locked {
                 tracing::info!("Ctrl+Alt+Backspace: leaving the session");
                 self.loop_signal.stop();
                 return true;

@@ -25,6 +25,9 @@ const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 impl Dashi {
     /// The window decoration at `pos`, when it is the topmost thing there.
     pub(crate) fn decoration_at(&self, pos: Point<f64, Logical>) -> Option<(u64, Window, Part)> {
+        if self.lock.locked {
+            return None;
+        }
         if let Some(output) = self.space.output_under(pos).next() {
             let origin = self.space.output_geometry(output)?.loc.to_f64();
             let layers = layer_map_for_output(output);
@@ -112,6 +115,18 @@ impl Dashi {
         let Some(keyboard) = self.seat.get_keyboard() else {
             return;
         };
+        if self.lock.locked {
+            let lock = self
+                .space
+                .output_under(at)
+                .next()
+                .and_then(|o| self.lock_surface_on(o))
+                .map(|s| s.wl_surface().clone());
+            if lock.is_some() {
+                keyboard.set_focus(self, lock, serial);
+            }
+            return;
+        }
         let top_layer = self
             .space
             .output_under(at)
