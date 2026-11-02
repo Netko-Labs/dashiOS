@@ -1,13 +1,14 @@
 //! The command line: `dashi-comp [--backend winit|headless] [-c COMMAND]`.
 
 pub(crate) const USAGE: &str = "\
-usage: dashi-comp [--backend auto|winit|headless] [-c COMMAND]
+usage: dashi-comp [--backend auto|udev|winit|headless] [-c COMMAND]
 
   -c COMMAND        run COMMAND (a shell command line) as the session's client;
                     the compositor ends when it does
-  --backend NAME    winit: in a window of the session this runs in;
+  --backend NAME    udev: the screens and input of this seat (DRM, libinput);
+                    winit: in a window of the session this runs in;
                     headless: no screens drawn (tests);
-                    auto (default): winit when nested, else the DRM backend (C1)
+                    auto (default): winit when nested, else udev
   -h, --help        this
   -V, --version     the version
 ";
@@ -15,6 +16,7 @@ usage: dashi-comp [--backend auto|winit|headless] [-c COMMAND]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) enum BackendChoice {
     Auto,
+    Udev,
     Winit,
     Headless,
 }
@@ -45,6 +47,7 @@ pub(crate) fn parse(mut args: impl Iterator<Item = String>) -> Result<Parsed, St
             "--backend" => {
                 parsed.backend = match args.next().as_deref() {
                     Some("auto") => BackendChoice::Auto,
+                    Some("udev") => BackendChoice::Udev,
                     Some("winit") => BackendChoice::Winit,
                     Some("headless") => BackendChoice::Headless,
                     Some(other) => return Err(format!("unknown backend {other:?}")),

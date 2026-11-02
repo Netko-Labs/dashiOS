@@ -13,7 +13,9 @@
 #   vm/vm checkout-session on|off   log the VM in to the session from the
 #                         shared checkout (vm/dev-session), or back to Dashi's
 #   vm/vm checkout-greeter on|off   greetd with the checkout's login screen
-#                         (session/dashi-greeter), or back to SDDM
+#                         (session/dashi-greeter), or back to SDDM; it offers
+#                         "Dashi (new compositor)": the session on the
+#                         checkout's dashi-comp (target/debug)
 #
 # The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
 # (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
@@ -164,6 +166,7 @@ case $cmd in
         semanage permissive -a xdm_t 2>/dev/null || true
         rm -f /etc/sddm.conf.d/zz-dashi-checkout.conf
         printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=/home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
+        printf "[Desktop Entry]\nName=Dashi (new compositor)\nExec=env DASHI_COMP=/home/dashi/Developer/dashiOS/target/debug/dashi-comp /home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout-comp.desktop
         printf "[terminal]\nvt = 1\n\n[default_session]\ncommand = \"/home/dashi/Developer/dashiOS/vm/dev-greeter\"\nuser = \"dashi\"\n" > /etc/greetd/config.toml
         systemctl disable sddm && systemctl enable --force greetd && systemctl stop sddm; systemctl restart greetd' ;;
       off) script='

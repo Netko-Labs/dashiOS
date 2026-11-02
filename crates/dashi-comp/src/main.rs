@@ -54,6 +54,7 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut state = Dashi::new(display, handle.clone(), event_loop.get_signal(), ipc)?;
 
     match backend_for(args.backend)? {
+        BackendChoice::Udev => backend::udev::init(&handle, &mut state)?,
         BackendChoice::Winit => backend::winit::init(&handle, &mut state)?,
         BackendChoice::Headless => backend::headless::init(&handle, &mut state)?,
         BackendChoice::Auto => unreachable!("backend_for resolves Auto"),
@@ -93,9 +94,7 @@ fn backend_for(choice: BackendChoice) -> Result<BackendChoice, String> {
         {
             Ok(BackendChoice::Winit)
         }
-        BackendChoice::Auto => Err(
-            "the DRM backend arrives in C1; nested (winit) or --backend headless for now".into(),
-        ),
+        BackendChoice::Auto => Ok(BackendChoice::Udev),
         chosen => Ok(chosen),
     }
 }

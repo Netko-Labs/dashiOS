@@ -7,9 +7,9 @@ mod decorations;
 use smithay::{
     backend::input::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
-        KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent,
+        KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
     },
-    input::pointer::{AxisFrame, ButtonEvent, MotionEvent},
+    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, RelativeMotionEvent},
     utils::SERIAL_COUNTER,
 };
 
@@ -21,7 +21,34 @@ impl Dashi {
             InputEvent::Keyboard { event, .. } => {
                 self.on_key(event.key_code(), event.state(), Event::time_msec(&event));
             }
-            InputEvent::PointerMotion { .. } => {}
+            InputEvent::PointerMotion { event, .. } => {
+                let Some(pointer) = self.seat.get_pointer() else {
+                    return;
+                };
+                let from = pointer.current_location();
+                let to = self.clamp_to_screens(from + event.delta());
+                let under = self.surface_under(to);
+                let serial = SERIAL_COUNTER.next_serial();
+                pointer.motion(
+                    self,
+                    under.clone(),
+                    &MotionEvent {
+                        location: to,
+                        serial,
+                        time: event.time_msec(),
+                    },
+                );
+                pointer.relative_motion(
+                    self,
+                    under,
+                    &RelativeMotionEvent {
+                        delta: event.delta(),
+                        delta_unaccel: event.delta_unaccel(),
+                        utime: event.time(),
+                    },
+                );
+                pointer.frame(self);
+            }
             InputEvent::PointerMotionAbsolute { event, .. } => {
                 let Some(output_geo) = self
                     .space

@@ -60,7 +60,7 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         "name": output.name(),
         "make": properties.make,
         "model": properties.model,
-        "serial": "",
+        "serial": output.user_data().get::<crate::backend::udev::Serial>().map(|s| s.0.clone()).unwrap_or_default(),
         "enabled": true,
         "lit": true,
         "primary": primary,

@@ -3,9 +3,10 @@
 //!
 //! - `winit`: a window in another compositor (development, `vm/nested-session`)
 //! - `headless`: no screens drawn; IPC and protocol tests
-//! - `udev`: DRM/KMS and libinput on a real seat (C1)
+//! - `udev`: DRM/KMS and libinput on a seat of its own
 
 pub(crate) mod headless;
+pub(crate) mod udev;
 pub(crate) mod winit;
 
 use smithay::backend::allocator::dmabuf::Dmabuf;
@@ -20,6 +21,7 @@ pub(crate) enum Backend {
     #[default]
     None,
     Winit(Box<winit::WinitData>),
+    Udev(Box<udev::UdevData>),
     Headless,
 }
 
@@ -27,6 +29,7 @@ impl Backend {
     /// Switch to virtual terminal `vt` (Ctrl+Alt+F1…F12): only a session on a seat of its own can.
     pub(crate) fn change_vt(&mut self, vt: u32) {
         match self {
+            Backend::Udev(data) => data.change_vt(vt),
             Backend::Winit(_) | Backend::Headless | Backend::None => {
                 tracing::debug!(vt, "not switching VTs: this compositor does not own a seat");
             }
@@ -37,6 +40,7 @@ impl Backend {
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
         match self {
             Backend::Winit(data) => data.import_dmabuf(dmabuf),
+            Backend::Udev(data) => data.import_dmabuf(dmabuf),
             Backend::None | Backend::Headless => false,
         }
     }

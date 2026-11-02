@@ -199,6 +199,31 @@ impl Dashi {
         }
     }
 
+    /// `at`, kept on a screen: the nearest point of the nearest screen when it leaves them.
+    pub(crate) fn clamp_to_screens(&self, at: Point<f64, Logical>) -> Point<f64, Logical> {
+        let screens: Vec<_> = self
+            .space
+            .outputs()
+            .filter_map(|o| self.space.output_geometry(o))
+            .collect();
+        if screens.iter().any(|g| g.to_f64().contains(at)) || screens.is_empty() {
+            return at;
+        }
+        screens
+            .iter()
+            .map(|g| {
+                let g = g.to_f64();
+                let x = at.x.clamp(g.loc.x, g.loc.x + g.size.w - 1.0);
+                let y = at.y.clamp(g.loc.y, g.loc.y + g.size.h - 1.0);
+                Point::from((x, y))
+            })
+            .min_by(|a, b| {
+                let d = |p: &Point<f64, Logical>| (p.x - at.x).powi(2) + (p.y - at.y).powi(2);
+                d(a).total_cmp(&d(b))
+            })
+            .unwrap_or(at)
+    }
+
     /// After each turn of the loop: settle the space and send what is queued.
     pub(crate) fn after_dispatch(&mut self) {
         self.space.refresh();
