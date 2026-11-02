@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# spin/build-rpms: Dashi's packages from this checkout, with rpmbuild. Run it
+# where they are to be built (the VM: `vm/vm ssh`, then
+# ~/Developer/dashiOS/spin/build-rpms); it needs a clean tree (the packages
+# are built from HEAD), `bun install` done at the root (the shell's runtime
+# packages are copied from node_modules), ../mirin checked out, and the
+# build dependencies the specs name (`dnf builddep spin/rpm/*.spec`).
+#
+#   spin/build-rpms [package...]   default: dashi dashi-comp dashi-greeter dashi-release
+#
+# The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
+set -euo pipefail
+
+repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
+mirin=$(cd -- "$repo/../mirin" && pwd)
+version=0.2.0
+cd "$repo"
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "build-rpms: the tree has uncommitted changes; packages are built from HEAD" >&2
+  exit 1
+fi
+sha=$(git rev-parse --short=7 HEAD)
+snapshot="$version~beta.$(git log -1 --format=%cd --date=format:%Y%m%d).$sha"
+packages=("$@")
+[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release)
+
+top=${RPMBUILD_TOP:-$HOME/rpmbuild}
+mkdir -p "$top"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+
+# The source: HEAD, plus the shell's runtime packages, flattened (node_modules
+# here is Bun's isolated layout of symlinks).
+name=dashi-$snapshot
+git archive --format=tar --prefix="$name/" HEAD | tar -x -C "$stage"
+modules=$stage/$name/vendor/node_modules
+mkdir -p "$modules/@mirinjs" "$modules/@dashi"
+copy_module() { # <installed package dir> <destination>
+  [ -d "$1" ] || { echo "build-rpms: missing $1 (run bun install)" >&2; exit 1; }
+  cp -rL "$1" "$2"
+}
+bun_dir="$repo/node_modules/.bun"
+copy_module "$(ls -d "$bun_dir"/react@*/node_modules/react | head -1)" "$modules/react"
+copy_module "$(ls -d "$bun_dir"/react-reconciler@*/node_modules/react-reconciler | head -1)" "$modules/react-reconciler"
+copy_module "$(ls -d "$bun_dir"/scheduler@*/node_modules/scheduler | head -1)" "$modules/scheduler"
+mkdir -p "$modules/@mirinjs/metal"
+cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
+[ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"
+mkdir -p "$modules/@dashi/ui"
+cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
+git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
+tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
+
+for package in "${packages[@]}"; do
+  spec=$repo/spin/rpm/$package.spec
+  [ -f "$spec" ] || { echo "build-rpms: no spec for $package" >&2; exit 1; }
+  echo "build-rpms: $package $snapshot"
+  rpmbuild -ba "$spec" \
+    --define "_topdir $top" \
+    --define "dashi_snapshot $snapshot" \
+    --define "dashi_source $name" \
+    --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
+done
+echo "build-rpms: done; see $top/RPMS"
