@@ -78,13 +78,14 @@
       <tr><td>Interface font</td><td>Inter (<code>rsms-inter-fonts</code>), with Noto Sans, Noto Sans Mono, and Noto Sans Symbols 2</td></tr>
       <tr><td>Default shell</td><td>zsh, for every new account (<code>dashi-release</code> sets <code>useradd</code>'s default)</td></tr>
       <tr><td>Browser</td><td>Helium (<code>helium-bin</code>), with Dashi's defaults (<code>dashi-helium</code>)</td></tr>
-      <tr><td>Installer</td><td>Anaconda's web UI, opened from the live session's Setup Assistant ("Install Dashi…")</td></tr>
+      <tr><td>Installer</td><td>Anaconda's web UI in Helium, opened from the live session's Setup Assistant ("Install Dashi…"), with Dashi's own Anaconda profile (Fedora's as its base). The installer creates the person's account; the Setup Assistant does the rest at first login.</td></tr>
+      <tr><td>Terminal</td><td>Dashi's own: dashi-term on libghostty-vt (Ghostty's core), drawn by Metal</td></tr>
       <tr><td>Boot splash</td><td>Plymouth theme <code>dashi</code> (two-step), Inter type</td></tr>
       <tr><td>Graphics</td><td>Any GPU with GLES 2 and GBM; a GPU with only a software driver draws with llvmpipe (VMs without 3D, <code>nomodeset</code>). NVIDIA through <code>dashi-nvidia</code> (akmod, RPM Fusion)</td></tr>
     </table>
 
     <h2>Packages</h2>
-    <p>Eleven packages, built from this repository by <code>spin/build-rpms</code> (specs in <code>spin/rpm/</code>). Select one to see what it carries and what it pulls in.</p>
+    <p>Fourteen packages, built from this repository by <code>spin/build-rpms</code> (specs in <code>spin/rpm/</code>). Select one to see what it carries and what it pulls in.</p>
     <div class="legend">
       <span><i style="background:var(--kombu)"></i>Desktop</span>
       <span><i style="background:var(--broth)"></i>System and branding</span>
@@ -155,8 +156,8 @@
     <h2>Versions and releases</h2>
     <ul>
       <li><strong>Release:</strong> Dashi's own number (0.1, 0.2…), shown as <code>VERSION="0.2 beta"</code>. It is independent of Fedora's; <code>VERSION_ID</code> stays Fedora's (44) so Fedora tooling keeps working.</li>
-      <li><strong>Snapshots:</strong> every package built from the tree is <code>0.2.0~beta.YYYYMMDD.SHA</code>, the commit's date and short hash (<code>~</code> sorts before the final 0.2.0). Packages that track Fedora's number (<code>dashi-release</code>, <code>-logos</code>, <code>-kernel</code>, <code>-nvidia</code>) are version 44 with the snapshot as their release.</li>
-      <li><strong>mirin:</strong> <code>mirin-metal-host</code> is <code>0.1.0~beta.YYYYMMDD.SHA</code> of the mirin commit it was built from; <code>/usr/share/dashi/MIRIN_COMMIT</code> records the one the shell was built against.</li>
+      <li><strong>Snapshots:</strong> every package built from the tree is <code>0.2.0~beta.YYYYMMDD.HHMMSS.SHA</code>, the commit's UTC date and time and its short hash, so two builds of a day sort by time (<code>~</code> sorts before the final 0.2.0). Packages that track Fedora's number (<code>dashi-release</code>, <code>-logos</code>, <code>-kernel</code>, <code>-nvidia</code>) are version 44 with the snapshot as their release.</li>
+      <li><strong>mirin:</strong> <code>mirin-metal-host</code> is <code>0.1.0~beta.YYYYMMDD.HHMMSS.SHA</code> of the mirin commit it was built from; <code>/usr/share/dashi/MIRIN_COMMIT</code> records the one the shell was built against.</li>
       <li><strong>Build identity:</strong> <code>DASHI_BUILD</code> in os-release is the snapshot, so a bug report can name the exact tree.</li>
     </ul>
 
@@ -183,7 +184,7 @@
 const PACKAGES = [
   { n: "dashi", layer: "desktop", s: "The desktop: session, shell, and apps",
     carries: "dashi-session, dashi-mcp, the shell and every first-party app (/usr/share/dashi/shell), the vendored runtime packages, the session target, portal and mime config.",
-    needs: ["dashi-comp", "dashi-bun", "mirin-metal-host"], ext: "polkit, xdg-desktop-portal (gtk, wlr), wl-clipboard, Inter and Noto fonts, Adwaita cursors" },
+    needs: ["dashi-comp", "dashi-bun", "mirin-metal-host", "dashi-term"], ext: "polkit, xdg-desktop-portal (gtk, wlr), wl-clipboard, Inter and Noto fonts, Adwaita cursors" },
   { n: "dashi-comp", layer: "desktop", s: "The Wayland compositor (Rust, smithay)",
     carries: "/usr/bin/dashi-comp: DRM/KMS, libinput, Xwayland, rendering, window mechanics, the IPC server.",
     needs: [], ext: "Mesa (DRI, GBM, EGL), xkeyboard-config; recommends Xwayland and GStreamer (video wallpapers)" },
@@ -196,6 +197,15 @@ const PACKAGES = [
   { n: "dashi-bun", layer: "desktop", s: "The Bun runtime the session runs on",
     carries: "/usr/libexec/dashi/bin/bun (Bun 1.4.4, Oven's release build) and its license.",
     needs: [], ext: "none" },
+  { n: "dashi-term", layer: "desktop", s: "The Terminal's engine, on Ghostty's core",
+    carries: "/usr/libexec/dashi/dashi-term: the shell on a PTY and the terminal in libghostty-vt, streaming rows to the Terminal app (packages/shell/apps/terminal).",
+    needs: ["libghostty-vt"], ext: "none beyond libghostty-vt" },
+  { n: "libghostty-vt", layer: "desktop", s: "Ghostty's terminal core as a C library",
+    carries: "libghostty-vt.so from Ghostty 1.4.0 (escape sequences, scrollback, reflow, key encoding, selection); -devel has the headers. Built with Zig 0.17, vendored in the SRPM.",
+    needs: [], ext: "none (libc)" },
+  { n: "dashi-gaming", layer: "image", s: "Steam and the tools around it, offered by setup",
+    carries: "A metapackage: Steam, the 32-bit Mesa and Vulkan stack, steam-devices, gamemode, gamescope, MangoHud, and a sysctl drop-in for what Fedora and the CachyOS kernel don't already set.",
+    needs: [], ext: "RPM Fusion nonfree (steam)" },
   { n: "dashi-release", layer: "system", s: "Release files: Dashi's identity",
     carries: "os-release, system-release, the dashi.repo for COPR, zsh as useradd's default shell, Dashi's zshrc.",
     needs: [], ext: "Provides and replaces fedora-release; requires fedora-repos(44) and zsh" },
