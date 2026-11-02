@@ -14,7 +14,7 @@ import type { ReactNode } from "react";
 import { useColors, useSurface } from "./theme/index.ts";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
-const TOOLBAR_HEIGHT = 44;
+const TOOLBAR_HEIGHT = 38;
 export const SIDEBAR_WIDTH = 200;
 
 export interface TitleBarInset {
@@ -97,7 +97,7 @@ export function AppWindow({ title, subtitle, leading, toolbar, sidebar, sidebarW
             {leading}
             {inset.unified && (
               <View style={{ flexDirection: "column", flexShrink: 1, minWidth: 0, gap: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "bold", color: colors.text }}>
+                <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                   {title}
                 </Text>
                 {subtitle !== undefined && (

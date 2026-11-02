@@ -25,8 +25,8 @@ const LIGHT_REACH: f32 = 8.0;
 const HOVER_SCALE: f32 = 1.18;
 /// A unified window's toolbar strip: the controls are centered in it, and
 /// the app lays its toolbar and sidebar top to it (@dashi/ui's AppWindow
-/// toolbar is 44 px), so the title and the controls share a center line.
-pub(crate) const UNIFIED_HEIGHT: i32 = 44;
+/// toolbar is 38 px), so the title and the controls share a center line.
+pub(crate) const UNIFIED_HEIGHT: i32 = 38;
 /// The window controls and their margins: what a unified window keeps clear.
 pub(crate) const CONTROLS: (i32, i32, i32, i32) = (0, 0, 76, UNIFIED_HEIGHT);
 
@@ -244,11 +244,11 @@ mod tests {
             None,
             "below the bar is the window"
         );
-        assert_eq!(part_at(20.0, 22.0, 600, Decor::Unified), Some(Part::Close));
+        assert_eq!(part_at(20.0, 19.0, 600, Decor::Unified), Some(Part::Close));
         assert_eq!(
             part_at(20.0, 10.0, 600, Decor::Unified),
             None,
-            "lined up with a 44 px toolbar"
+            "lined up with a 38 px toolbar"
         );
         assert_eq!(
             part_at(300.0, 10.0, 600, Decor::Unified),

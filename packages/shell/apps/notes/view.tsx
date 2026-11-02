@@ -178,7 +178,7 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
         testID="move"
         glyph={FOLDER_MOVE}
         disabled={!row}
-        onPress={() => row && setMenu({ x: 330, y: 44, items: moveItems(row.id, row.folder) })}
+        onPress={() => row && setMenu({ x: 330, y: 38, items: moveItems(row.id, row.folder) })}
       />
       <ToolbarButton testID="checklist" glyph={CHECKLIST} disabled={!row} onPress={addChecklistItem} />
       <View style={{ width: 4 }} />
