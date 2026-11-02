@@ -37,6 +37,13 @@ kernel
 kernel-modules
 kernel-modules-extra
 dracut-live
+# What lorax needs to make the ISO bootable (BIOS and UEFI).
+grub2-pc-modules
+grub2-efi-x64
+grub2-efi-x64-cdboot
+shim-x64
+efibootmgr
+syslinux
 glibc-all-langpacks
 livesys-scripts
 anaconda-live

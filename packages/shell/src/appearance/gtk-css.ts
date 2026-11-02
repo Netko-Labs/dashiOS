@@ -186,8 +186,13 @@ export function withoutBlock(existing: string): string {
   return join3(before, after);
 }
 
-/** The text before and after Dashi's block (both trimmed), or all of it as "before" when there is no block. */
-function split(text: string): [string, string] {
+/**
+ * The text before and after Dashi's block (both trimmed), or all of it as
+ * "before" when there is no block. NUL bytes go: a file a crash left
+ * zero-filled is not CSS, and GTK would refuse all of it, Dashi's block too.
+ */
+function split(raw: string): [string, string] {
+  const text = raw.replaceAll("\0", "");
   const start = text.indexOf(BEGIN);
   if (start === -1) return [text.trim(), ""];
   const endAt = text.indexOf(END, start);
