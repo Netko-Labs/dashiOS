@@ -6,10 +6,10 @@
 # Afterwards, set enabled=1 in spin/dashi-release/etc/yum.repos.d/dashi.repo
 # (owner and project must match) so installed systems update through dnf.
 #
-#   spin/copr-publish [owner/project]   default: dashi/dashi
+#   spin/copr-publish [owner/project]   default: pejedev/dashi
 set -euo pipefail
 
-project=${1:-dashi/dashi}
+project=${1:-pejedev/dashi}
 top=${RPMBUILD_TOP:-$HOME/rpmbuild}
 command -v copr-cli >/dev/null || { echo "copr-publish: install copr-cli" >&2; exit 1; }
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/copr" ] || { echo "copr-publish: no COPR token in ~/.config/copr" >&2; exit 1; }
@@ -21,7 +21,7 @@ srpms=("$top"/SRPMS/*.src.rpm)
 # builders need the network. The CachyOS kernel, Helium, and RPM Fusion come
 # from their own repositories.
 if ! copr-cli get "$project" >/dev/null 2>&1; then
-  copr-cli create "${project#*/}" \
+  copr-cli create "$project" \
     --chroot fedora-44-x86_64 \
     --enable-net on \
     --repo 'copr://bieszczaders/kernel-cachyos' \

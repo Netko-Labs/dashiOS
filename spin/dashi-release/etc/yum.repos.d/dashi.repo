@@ -4,13 +4,13 @@
 # COPR"); once the project is up, check that the owner and project name below
 # match it and set enabled=1 here, in dashi-release, so installed systems get
 # Dashi's updates through dnf. Until then Dashi updates only with a new image.
-[copr:copr.fedorainfracloud.org:dashi:dashi]
-name=Copr repo for dashi owned by dashi (placeholder, not published yet)
-baseurl=https://download.copr.fedorainfracloud.org/results/dashi/dashi/fedora-$releasever-$basearch/
+[copr:copr.fedorainfracloud.org:pejedev:dashi]
+name=Copr repo for dashi owned by pejedev (placeholder, not published yet)
+baseurl=https://download.copr.fedorainfracloud.org/results/pejedev/dashi/fedora-$releasever-$basearch/
 type=rpm-md
 skip_if_unavailable=True
 gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/dashi/dashi/pubkey.gpg
+gpgkey=https://download.copr.fedorainfracloud.org/results/pejedev/dashi/pubkey.gpg
 repo_gpgcheck=0
 enabled=0
 enabled_metadata=1
