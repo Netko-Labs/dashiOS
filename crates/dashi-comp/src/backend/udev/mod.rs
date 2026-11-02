@@ -11,6 +11,7 @@ mod edid;
 use std::{collections::HashMap, path::Path, time::Duration};
 
 use serde_json::json;
+use smithay::desktop::utils::OutputPresentationFeedback;
 use smithay::{
     backend::{
         allocator::{
@@ -20,7 +21,7 @@ use smithay::{
             gbm::{GbmAllocator, GbmBufferFlags, GbmDevice},
         },
         drm::{
-            DrmDevice, DrmDeviceFd, DrmEvent, DrmNode, NodeType,
+            DrmDevice, DrmDeviceFd, DrmEvent, DrmEventMetadata, DrmEventTime, DrmNode, NodeType,
             compositor::FrameFlags,
             exporter::gbm::GbmFramebufferExporter,
             output::{DrmOutput, DrmOutputManager, DrmOutputRenderElements},
@@ -45,10 +46,11 @@ use smithay::{
         drm::control::{Device as ControlDevice, ModeTypeFlags, connector, crtc},
         input::Libinput,
         rustix::fs::OFlags,
+        wayland_protocols::wp::presentation_time::server::wp_presentation_feedback,
         wayland_server::backend::GlobalId,
     },
-    utils::DeviceFd,
-    wayland::dmabuf::DmabufFeedbackBuilder,
+    utils::{Clock, DeviceFd, Monotonic},
+    wayland::{dmabuf::DmabufFeedbackBuilder, presentation::Refresh},
 };
 use smithay_drm_extras::drm_scanner::{DrmScanEvent, DrmScanner};
 
@@ -62,14 +64,20 @@ type UdevRenderer<'a> = MultiRenderer<
     GbmGlesBackend<GlesRenderer, DrmDeviceFd>,
     GbmGlesBackend<GlesRenderer, DrmDeviceFd>,
 >;
+/// What a queued frame carries to its vblank: the clients to tell it was shown.
+type FrameData = Option<OutputPresentationFeedback>;
 type OutputManager = DrmOutputManager<
     GbmAllocator<DrmDeviceFd>,
     GbmFramebufferExporter<DrmDeviceFd>,
-    (),
+    FrameData,
     DrmDeviceFd,
 >;
-type Scanout =
-    DrmOutput<GbmAllocator<DrmDeviceFd>, GbmFramebufferExporter<DrmDeviceFd>, (), DrmDeviceFd>;
+type Scanout = DrmOutput<
+    GbmAllocator<DrmDeviceFd>,
+    GbmFramebufferExporter<DrmDeviceFd>,
+    FrameData,
+    DrmDeviceFd,
+>;
 
 /// Formats a screen may scan out, best first (10 bit when the hardware has it).
 const SCANOUT_FORMATS: &[Fourcc] = &[
@@ -448,8 +456,8 @@ fn device_added(
         let (drm, notifier) = DrmDevice::new(fd.clone(), true)?;
         let gbm = GbmDevice::new(fd)?;
 
-        let token = handle.insert_source(notifier, move |event, _, state| match event {
-            DrmEvent::VBlank(crtc) => frame_finished(state, node, crtc),
+        let token = handle.insert_source(notifier, move |event, metadata, state| match event {
+            DrmEvent::VBlank(crtc) => frame_finished(state, node, crtc, metadata.take()),
             DrmEvent::Error(error) => tracing::warn!(?error, "DRM"),
         })?;
 
@@ -774,7 +782,10 @@ fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
             BACKGROUND,
             FrameFlags::DEFAULT,
         ) {
-            Ok(result) if !result.is_empty => match screen.scanout.queue_frame(()) {
+            Ok(result) if !result.is_empty => match screen
+                .scanout
+                .queue_frame(Some(state.after_render(&output, &result.states)))
+            {
                 Ok(()) => {
                     screen.queued = true;
                     true
@@ -802,13 +813,28 @@ fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
     }
 }
 
-/// A vblank: the queued frame is on screen. Draw the next a little before the following one.
-fn frame_finished(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
+/// A vblank: the queued frame is on screen; its clients hear when. Draw the
+/// next a little before the following one.
+fn frame_finished(
+    state: &mut Dashi,
+    node: DrmNode,
+    crtc: crtc::Handle,
+    metadata: Option<DrmEventMetadata>,
+) {
     let output = with_udev(state, |_, data| {
         let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
         screen.queued = false;
-        if let Err(error) = screen.scanout.frame_submitted() {
-            tracing::debug!(?error, "frame submitted");
+        match screen.scanout.frame_submitted() {
+            Ok(Some(Some(mut feedback))) => {
+                let (time, seq) = vblank_time(metadata);
+                let refresh = Refresh::fixed(frame_time(&screen.output));
+                let flags = wp_presentation_feedback::Kind::Vsync
+                    | wp_presentation_feedback::Kind::HwClock
+                    | wp_presentation_feedback::Kind::HwCompletion;
+                feedback.presented::<_, Monotonic>(time, refresh, seq, flags);
+            }
+            Ok(_) => {}
+            Err(error) => tracing::debug!(?error, "frame submitted"),
         }
         Some(screen.output.clone())
     })
@@ -833,6 +859,19 @@ fn schedule(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, after: Duratio
             render_screen(state, node, crtc);
             TimeoutAction::Drop
         });
+}
+
+/// When the vblank was (monotonic) and its sequence; now, if DRM did not say.
+fn vblank_time(metadata: Option<DrmEventMetadata>) -> (Duration, u64) {
+    let now = || Duration::from(Clock::<Monotonic>::new().now());
+    match metadata {
+        Some(DrmEventMetadata {
+            time: DrmEventTime::Monotonic(time),
+            sequence,
+        }) => (time, u64::from(sequence)),
+        Some(DrmEventMetadata { sequence, .. }) => (now(), u64::from(sequence)),
+        None => (now(), 0),
+    }
 }
 
 fn frame_time(output: &Output) -> Duration {

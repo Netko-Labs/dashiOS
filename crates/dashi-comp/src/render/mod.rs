@@ -4,6 +4,7 @@
 pub(crate) mod canvas;
 pub(crate) mod capture;
 pub(crate) mod cursor;
+pub(crate) mod present;
 mod scene;
 pub(crate) mod text;
 pub(crate) mod titlebar;

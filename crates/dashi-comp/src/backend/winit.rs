@@ -2,6 +2,8 @@
 //! Adapted from smithay's smallvil and anvil examples (MIT,
 //! github.com/Smithay/smithay, v0.7.0).
 
+use std::time::Duration;
+
 use smithay::{
     backend::{
         allocator::dmabuf::Dmabuf,
@@ -12,10 +14,11 @@ use smithay::{
     output::{Mode, Output, PhysicalProperties, Subpixel},
     reexports::{
         calloop::LoopHandle,
+        wayland_protocols::wp::presentation_time::server::wp_presentation_feedback,
         winit::{dpi::LogicalSize, window::WindowAttributes},
     },
-    utils::{Rectangle, Transform},
-    wayland::dmabuf::DmabufFeedbackBuilder,
+    utils::{Clock, Monotonic, Rectangle, Transform},
+    wayland::{dmabuf::DmabufFeedbackBuilder, presentation::Refresh},
 };
 
 use super::{BACKGROUND, Backend};
@@ -139,17 +142,29 @@ fn redraw(state: &mut Dashi) {
             let elements = render::output_elements(state, renderer, &output, false);
             data.damage_tracker
                 .render_output(renderer, &mut framebuffer, 0, &elements, BACKGROUND)
-                .map(|_| ())
+                .map(|result| state.after_render(&output, &result.states))
                 .map_err(|error| format!("{error:?}"))
         }
         Err(error) => Err(error.to_string()),
     };
     match rendered {
-        Ok(()) => {
-            if let Err(error) = data.backend.submit(Some(&[Rectangle::from_size(size)])) {
+        Ok(mut feedback) => match data.backend.submit(Some(&[Rectangle::from_size(size)])) {
+            // Nested, there is no vblank to wait for: shown is as good as submitted.
+            Ok(()) => {
+                let refresh = output
+                    .current_mode()
+                    .map(|mode| mode.refresh)
+                    .filter(|mhz| *mhz > 0)
+                    .map(|mhz| Duration::from_secs_f64(1_000.0 / f64::from(mhz)));
+                let refresh = refresh.map_or(Refresh::Unknown, Refresh::fixed);
+                let now = Clock::<Monotonic>::new().now();
+                feedback.presented(now, refresh, 0, wp_presentation_feedback::Kind::empty());
+            }
+            Err(error) => {
+                feedback.discarded();
                 tracing::warn!(%error, "presenting the nested frame");
             }
-        }
+        },
         Err(error) => tracing::warn!(%error, "drawing the nested frame"),
     }
     data.backend.window().request_redraw();

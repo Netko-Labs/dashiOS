@@ -6,7 +6,10 @@
 use std::{ffi::OsString, sync::Arc, time::Instant};
 
 use smithay::{
-    desktop::{PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output},
+    desktop::{
+        PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output,
+        utils::surface_primary_scanout_output,
+    },
     input::{Seat, SeatState, pointer::CursorImageStatus},
     reexports::{
         calloop::{Interest, LoopHandle, LoopSignal, Mode, PostAction, generic::Generic},
@@ -183,6 +186,7 @@ impl Dashi {
         crate::handlers::text::create_globals(&dh, &shell_pid, greeter);
         crate::handlers::security::create_global(&dh);
         crate::handlers::toplevel_meta::create_globals(&dh);
+        crate::render::present::create_global(&dh);
         let xdg_foreign_state = smithay::wayland::xdg_foreign::XdgForeignState::new::<Self>(&dh);
         let xwayland_shell_state =
             smithay::wayland::xwayland_shell::XWaylandShellState::new::<Self>(&dh);
@@ -324,12 +328,13 @@ impl Dashi {
     pub(crate) fn send_frames(&self, output: &smithay::output::Output) {
         self.send_preferred_scales(output);
         let elapsed = self.start_time.elapsed();
-        let throttle = Some(std::time::Duration::ZERO);
+        // Surfaces another screen shows (or none) still hear about once a second.
+        let throttle = Some(std::time::Duration::from_secs(1));
         self.space.elements().for_each(|window| {
-            window.send_frame(output, elapsed, throttle, |_, _| Some(output.clone()));
+            window.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         });
         for layer in layer_map_for_output(output).layers() {
-            layer.send_frame(output, elapsed, throttle, |_, _| Some(output.clone()));
+            layer.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         }
         if let Some(lock) = self.lock_surface_on(output) {
             smithay::desktop::utils::send_frames_surface_tree(
