@@ -15,11 +15,18 @@ import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/store.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
+import { Software } from "../software/manager.ts";
+import { standIn } from "../software/stand-in.ts";
+import { isDevelopmentRun } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
 import { PasswordPrompt } from "../wifi/prompt.tsx";
 import type { WifiStore } from "../wifi/store.ts";
 import type { SetupContext } from "./context.ts";
+import { detectHardware } from "./extras/hardware.ts";
+import { hasHelper, helperRunner, isDryRun } from "./extras/helper.ts";
+import { ExtrasStore } from "./extras/store.ts";
 import { Flow, type Machine, type PageId } from "./flow.ts";
+import { isLiveBoot } from "./live.ts";
 import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./state.ts";
 import { SETUP_WINDOW, SetupWindow } from "./view.tsx";
 
@@ -57,9 +64,9 @@ interface Session {
   stop: () => void;
 }
 
-/** What the machine has, from the Wi-Fi store and the network the menu bar shows. */
-export function machineOf(wifi: Pick<WifiStore, "getSnapshot">, system: Pick<SystemStore, "getSnapshot">): Machine {
-  return { wifi: wifi.getSnapshot().available !== false, wired: system.getSnapshot().network?.kind === "wired" };
+/** What the machine has, from the Wi-Fi store and the network the menu bar shows; `extras`, whether optional software may be offered. */
+export function machineOf(wifi: Pick<WifiStore, "getSnapshot">, system: Pick<SystemStore, "getSnapshot">, extras: boolean): Machine {
+  return { wifi: wifi.getSnapshot().available !== false, wired: system.getSnapshot().network?.kind === "wired", extras };
 }
 
 export function startSetupAssistant(options: SetupOptions): SetupAssistant {
@@ -68,6 +75,18 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
   let session: Session | null = null;
   // The shell going away closes the window too; that is not the person skipping.
   let shuttingDown = false;
+  // The live session installs nothing (it is gone at the next restart), and
+  // without the helper (a checkout run) there is nothing to install with.
+  const env = options.env ?? process.env;
+  // A development run only ever pretends (it must not reach this machine's pkexec).
+  const dryRun = isDryRun(env) || isDevelopmentRun(env);
+  const offersExtras = !isLiveBoot() && hasHelper(dryRun);
+  // One for the assistant's life: an install started here goes on if the window closes, and shows again when it opens.
+  let extras: ExtrasStore | null = null;
+  const extrasStore = (): ExtrasStore => {
+    extras ??= new ExtrasStore({ detect: detectHardware, runHelper: helperRunner(dryRun), software: new Software(standIn() ?? {}) });
+    return extras;
+  };
 
   const close = (): void => {
     const current = session;
@@ -98,8 +117,10 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
       void raise();
       return;
     }
-    const flow = new Flow(machineOf(options.wifi, options.system), page ?? "welcome");
-    const follow = (): void => flow.setMachine(machineOf(options.wifi, options.system));
+    const flow = new Flow(machineOf(options.wifi, options.system, offersExtras), page ?? "welcome");
+    const follow = (): void => flow.setMachine(machineOf(options.wifi, options.system, offersExtras));
+    // Opened again while (or after) it installed: the Installing page is still there to see.
+    if (extrasStore().getSnapshot().run.phase !== "idle") flow.setInstalling(true);
     const stops = [options.wifi.subscribe(follow), options.system.subscribe(follow)];
     // The Wi-Fi page needs to know whether there is a radio before it comes up.
     void options.wifi.refresh();
@@ -123,6 +144,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
       wifi: options.wifi,
       layouts: loadLayouts(),
       flow,
+      extras: extrasStore(),
       askPassword: (network) => passwords.ask(network),
       finish: (how) => {
         outcome = how;

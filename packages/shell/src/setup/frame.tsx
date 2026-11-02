@@ -19,6 +19,10 @@ export interface FrameProps {
   children: ReactNode;
   /** The primary button's label. */
   continueLabel?: string;
+  /** The primary button greyed out (a page waiting on something). */
+  continueDisabled?: boolean;
+  /** No Back button (a page whose work can't be stepped back from). */
+  hideBack?: boolean;
   onContinue: () => void;
   onBack: () => void;
   onSkip: () => void;
@@ -37,7 +41,7 @@ function Dots({ index, count }: { index: number; count: number }) {
   );
 }
 
-export function Frame({ info, view, glyph, tint, children, continueLabel, onContinue, onBack, onSkip, bare }: FrameProps) {
+export function Frame({ info, view, glyph, tint, children, continueLabel, continueDisabled, hideBack, onContinue, onBack, onSkip, bare }: FrameProps) {
   const colors = useColors();
   const surface = useSurface();
   const { controls } = useWindowChrome();
@@ -79,8 +83,8 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, onCont
           <Dots index={view.index} count={view.count} />
         </View>
         <View style={{ width: 210, flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-          {!view.first && <Button testID="setup-back" label="Back" onPress={onBack} />}
-          <Button testID="setup-continue" label={continueLabel ?? "Continue"} primary onPress={onContinue} />
+          {!view.first && !hideBack && <Button testID="setup-back" label="Back" onPress={onBack} />}
+          <Button testID="setup-continue" label={continueLabel ?? "Continue"} primary disabled={continueDisabled === true} onPress={onContinue} />
         </View>
       </View>
     </View>

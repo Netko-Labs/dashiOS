@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- dashi-extras: the Setup Assistant's optional software (codecs, the NVIDIA
+     driver, gaming, Flathub), installed as root through
+     `pkexec /usr/libexec/dashi/dashi-extras <step>...`. Installed by dashi.spec. -->
+<policyconfig>
+  <vendor>Dashi</vendor>
+  <vendor_url>https://github.com/Netko-Labs/dashiOS</vendor_url>
+  <action id="dev.dashi.extras">
+    <description>Install optional software</description>
+    <message>Authentication is required to install media codecs, drivers, and other software.</message>
+    <icon_name>system-software-install</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/dashi/dashi-extras</annotate>
+  </action>
+</policyconfig>

@@ -7,10 +7,21 @@
 
 import { readFileSync } from "node:fs";
 
+/** Whether the kernel command line is the live image's. */
+export const isLiveCmdline = (cmdline: string): boolean => cmdline.split(/\s+/).some((arg) => arg === "rd.live.image" || arg.startsWith("rd.live.image="));
+
 /** The installer's command, when this boot is the live image and it has one. */
 export function liveInstaller(cmdline: string, which: (program: string) => string | null): string | null {
-  const live = cmdline.split(/\s+/).some((arg) => arg === "rd.live.image" || arg.startsWith("rd.live.image="));
-  return live ? which("liveinst") : null;
+  return isLiveCmdline(cmdline) ? which("liveinst") : null;
+}
+
+/** Whether this boot is the live image (nothing installed here survives a restart). */
+export function isLiveBoot(): boolean {
+  try {
+    return isLiveCmdline(readFileSync("/proc/cmdline", "utf8"));
+  } catch {
+    return false;
+  }
 }
 
 /** `liveInstaller` for this machine. */

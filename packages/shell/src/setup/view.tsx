@@ -12,11 +12,15 @@ import { wifiGlyph } from "../glyphs.ts";
 import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../settings-app/glyphs.ts";
 import { useWifi } from "../wifi/store.ts";
 import type { SetupContext } from "./context.ts";
+import { DOWNLOAD, PACKAGE } from "./extras/glyphs.ts";
+import { installingContinueLabel } from "./extras/words.ts";
 import { PAGE_INFO, type PageId } from "./flow.ts";
 import { Frame } from "./frame.tsx";
 import { AgentsPage } from "./pages/agents.tsx";
 import { AppearancePage } from "./pages/appearance.tsx";
 import { DonePage } from "./pages/done.tsx";
+import { ExtrasPage } from "./pages/extras.tsx";
+import { InstallingPage } from "./pages/installing.tsx";
 import { KeyboardPage } from "./pages/keyboard.tsx";
 import { LanguagePage } from "./pages/language.tsx";
 import { TimezonePage } from "./pages/timezone.tsx";
@@ -33,6 +37,8 @@ const GLYPHS: Partial<Record<PageId, { glyph: string; tint: string }>> = {
   timezone: { glyph: CLOCK, tint: "#ff9f0a" },
   appearance: { glyph: CONTRAST, tint: "#5e5ce6" },
   agents: { glyph: SPARKLE, tint: "#6E56CF" },
+  extras: { glyph: PACKAGE, tint: "#ff9f0a" },
+  installing: { glyph: DOWNLOAD, tint: "#0a84ff" },
   done: { glyph: CHECK, tint: "#3E8A72" },
 };
 
@@ -52,6 +58,10 @@ function Page({ id, ctx }: { id: PageId; ctx: SetupContext }) {
       return <AppearancePage ctx={ctx} />;
     case "agents":
       return <AgentsPage />;
+    case "extras":
+      return <ExtrasPage ctx={ctx} />;
+    case "installing":
+      return <InstallingPage ctx={ctx} />;
     case "done":
       return <DonePage ctx={ctx} />;
   }
@@ -60,9 +70,35 @@ function Page({ id, ctx }: { id: PageId; ctx: SetupContext }) {
 export function SetupWindow({ ctx }: { ctx: SetupContext }) {
   const view = useSyncExternalStore(ctx.flow.subscribe, ctx.flow.getSnapshot);
   const wifi = useWifi(ctx.wifi);
+  const extras = useSyncExternalStore(ctx.extras.subscribe, ctx.extras.getSnapshot);
   const style = GLYPHS[view.page];
   const connected = wifi.current !== null;
-  const continueLabel = view.page === "welcome" ? "Get Started" : view.last ? "Done" : view.page === "wifi" && !connected ? "Skip" : "Continue";
+  const installs = ctx.extras.hasWork();
+  const continueLabel =
+    view.page === "welcome"
+      ? "Get Started"
+      : view.last
+        ? "Done"
+        : view.page === "wifi" && !connected
+          ? "Skip"
+          : view.page === "extras" && installs
+            ? "Install"
+            : view.page === "installing"
+              ? installingContinueLabel(extras.run)
+              : "Continue";
+  const onContinue = (): void => {
+    if (view.last) return ctx.finish("finished");
+    if (view.page === "extras") {
+      // Install shows the Installing page and starts; with nothing chosen it is passed by (unless a run is going).
+      if (installs) {
+        ctx.flow.setInstalling(true);
+        void ctx.extras.start();
+      } else if (extras.run.phase === "idle") {
+        ctx.flow.setInstalling(false);
+      }
+    }
+    ctx.flow.next();
+  };
   return (
     <Frame
       info={PAGE_INFO[view.page]}
@@ -70,7 +106,8 @@ export function SetupWindow({ ctx }: { ctx: SetupContext }) {
       bare={view.page === "welcome"}
       {...(style ? { glyph: style.glyph, tint: style.tint } : {})}
       continueLabel={continueLabel}
-      onContinue={() => (view.last ? ctx.finish("finished") : ctx.flow.next())}
+      hideBack={view.page === "installing" && extras.run.phase === "running"}
+      onContinue={onContinue}
       onBack={() => ctx.flow.back()}
       onSkip={() => ctx.finish("skipped")}
     >

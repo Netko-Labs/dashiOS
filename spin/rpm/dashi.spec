@@ -14,8 +14,12 @@ BuildRequires:  systemd-rpm-macros
 Requires:       dashi-comp = %{version}-%{release}
 Requires:       dashi-bun
 Requires:       mirin-metal-host
+# The Terminal's engine (apps/terminal runs it).
+Requires:       dashi-term = %{version}-%{release}
 Requires:       systemd
 Requires:       polkit
+# dashi-extras checks the network with it.
+Requires:       curl
 Requires:       glib2
 Requires:       gsettings-desktop-schemas
 Requires:       wl-clipboard
@@ -54,6 +58,9 @@ rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
 install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
+# The Setup Assistant's optional software, run as root through pkexec.
+install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
+install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 install -Dm0644 session/dashi-session.target %{buildroot}%{_userunitdir}/dashi-session.target
 install -Dm0644 session/dashi.desktop %{buildroot}%{_datadir}/wayland-sessions/dashi.desktop
 install -Dm0644 session/dashi-portals.conf %{buildroot}%{_datadir}/xdg-desktop-portal/dashi-portals.conf
@@ -64,6 +71,9 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
+%dir %{_libexecdir}/dashi
+%{_libexecdir}/dashi/dashi-extras
+%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 %{_userunitdir}/dashi-session.target
 %{_datadir}/wayland-sessions/dashi.desktop
 %{_datadir}/xdg-desktop-portal/dashi-portals.conf

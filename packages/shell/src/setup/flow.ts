@@ -1,10 +1,12 @@
 /**
  * The assistant's pages in order, and where the person is. Pure: which
  * pages come up depends on what the machine has (no Wi-Fi page on a wired
- * computer), and Back and Continue walk only the pages that apply.
+ * computer, no optional software in the live session), and Back and
+ * Continue walk only the pages that apply. The Installing page applies only
+ * once the Extras page started something to install.
  */
 
-export const PAGES = ["welcome", "language", "keyboard", "wifi", "timezone", "appearance", "agents", "done"] as const;
+export const PAGES = ["welcome", "language", "keyboard", "wifi", "timezone", "appearance", "agents", "extras", "installing", "done"] as const;
 export type PageId = (typeof PAGES)[number];
 
 export const isPageId = (value: unknown): value is PageId => PAGES.some((page) => page === value);
@@ -32,6 +34,12 @@ export const PAGE_INFO: Readonly<Record<PageId, PageInfo>> = {
   timezone: { id: "timezone", title: "Time Zone", subtitle: "Pick the city you are in, so your clock reads right." },
   appearance: { id: "appearance", title: "Appearance", subtitle: "Light, dark, or following the time of day, and how round your windows are." },
   agents: { id: "agents", title: "Agents", subtitle: "Dashi lets AI agents help you, and you decide what they may do." },
+  extras: {
+    id: "extras",
+    title: "Extras",
+    subtitle: "Software Fedora can't ship by default. Choose what you want; you can add any of it later from Software.",
+  },
+  installing: { id: "installing", title: "Installing", subtitle: "This can take a few minutes. You can continue while it works." },
   done: { id: "done", title: "You're all set", subtitle: "Enjoy Dashi. System Settings has everything you chose here, and more." },
 };
 
@@ -41,13 +49,20 @@ export interface Machine {
   wifi: boolean;
   /** Whether the computer is already online over a cable. */
   wired: boolean;
+  /** Whether optional software can be offered: an installed system (not the live session) with Dashi's helper. */
+  extras: boolean;
 }
 
-/** Whether a page applies on this machine. */
-const applies = (page: PageId, machine: Machine): boolean => page !== "wifi" || (machine.wifi && !machine.wired);
+/** Whether a page applies on this machine; `installing` is whether the Extras page started a run. */
+const applies = (page: PageId, machine: Machine, installing = false): boolean => {
+  if (page === "wifi") return machine.wifi && !machine.wired;
+  if (page === "extras") return machine.extras;
+  if (page === "installing") return machine.extras && installing;
+  return true;
+};
 
 /** The pages that apply on this machine, in order. */
-export const pagesFor = (machine: Machine): PageId[] => PAGES.filter((page) => applies(page, machine));
+export const pagesFor = (machine: Machine, installing = false): PageId[] => PAGES.filter((page) => applies(page, machine, installing));
 
 export interface FlowView {
   page: PageId;
@@ -62,6 +77,7 @@ export interface FlowView {
 export class Flow {
   private current: PageId;
   private machine: Machine;
+  private installing = false;
   private snapshot: FlowView;
   private readonly listeners = new Set<() => void>();
 
@@ -80,7 +96,7 @@ export class Flow {
 
   private view(): FlowView {
     // A page that stopped applying while it was showing stays until it is left.
-    const pages = PAGES.filter((page) => page === this.current || applies(page, this.machine));
+    const pages = PAGES.filter((page) => page === this.current || applies(page, this.machine, this.installing));
     const index = pages.indexOf(this.current);
     return { page: this.current, index, count: pages.length, first: index === 0, last: index === pages.length - 1 };
   }
@@ -94,14 +110,21 @@ export class Flow {
   }
 
   setMachine(machine: Machine): void {
-    if (machine.wifi === this.machine.wifi && machine.wired === this.machine.wired) return;
+    if (machine.wifi === this.machine.wifi && machine.wired === this.machine.wired && machine.extras === this.machine.extras) return;
     this.machine = machine;
+    this.go(this.current);
+  }
+
+  /** Whether the Installing page is among the pages: on once the Extras page starts a run, off when it installs nothing. */
+  setInstalling(installing: boolean): void {
+    if (installing === this.installing) return;
+    this.installing = installing;
     this.go(this.current);
   }
 
   next(): void {
     const at = PAGES.indexOf(this.current);
-    const page = PAGES.slice(at + 1).find((candidate) => applies(candidate, this.machine));
+    const page = PAGES.slice(at + 1).find((candidate) => applies(candidate, this.machine, this.installing));
     if (page) this.go(page);
   }
 
@@ -109,12 +132,12 @@ export class Flow {
     const at = PAGES.indexOf(this.current);
     const page = PAGES.slice(0, at)
       .reverse()
-      .find((candidate) => applies(candidate, this.machine));
+      .find((candidate) => applies(candidate, this.machine, this.installing));
     if (page) this.go(page);
   }
 
-  /** Jump to a page (an agent's `open_setup_assistant` names one); a page that does not apply on this machine is ignored. */
+  /** Jump to a page (an agent's `open_setup_assistant` names one); a page that does not apply on this machine (or Installing, before a run) is ignored. */
   goto(page: PageId): void {
-    if (applies(page, this.machine)) this.go(page);
+    if (applies(page, this.machine, this.installing)) this.go(page);
   }
 }
