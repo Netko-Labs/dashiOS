@@ -64,8 +64,11 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
 
     // Before the signal source: it blocks SIGTERM/SIGINT on this thread, and a child would inherit that.
     if let Some(command) = &args.command {
-        state.session_client =
-            Some(session::spawn(command, &state.socket_name, state.ipc.path(), &handle)? as i32);
+        let pid = session::spawn(command, &state.socket_name, state.ipc.path(), &handle)? as i32;
+        state.session_client = Some(pid);
+        state
+            .shell_pid
+            .store(pid, std::sync::atomic::Ordering::Relaxed);
     }
     handle.insert_source(
         Signals::new(&[Signal::SIGTERM, Signal::SIGINT])?,

@@ -63,6 +63,9 @@ pub(crate) struct Dashi {
     pub wallpaper: crate::wallpaper::Wallpaper,
     /// The session's client (`-c`): it and the processes under it are the shell.
     pub session_client: Option<i32>,
+    /// The same, for global filters (which see no state).
+    pub shell_pid: Arc<std::sync::atomic::AtomicI32>,
+    pub foreign: crate::protocols::foreign_toplevel::ForeignToplevels,
     pub chrome_style: ChromeStyle,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
@@ -98,6 +101,8 @@ impl Dashi {
         let layer_shell_state = WlrLayerShellState::new::<Self>(&dh);
         let xdg_decoration_state = XdgDecorationState::new::<Self>(&dh);
         dashi_chrome::create_global(&dh);
+        let shell_pid = Arc::new(std::sync::atomic::AtomicI32::new(0));
+        crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let output_manager_state = OutputManagerState::new_with_xdg_output::<Self>(&dh);
         let data_device_state = DataDeviceState::new::<Self>(&dh);
@@ -129,6 +134,8 @@ impl Dashi {
             bars: Default::default(),
             wallpaper: Default::default(),
             session_client: None,
+            shell_pid,
+            foreign: Default::default(),
             chrome_style: ChromeStyle::default(),
             chrome_objects: Vec::new(),
             cursor_status: CursorImageStatus::default_named(),
@@ -168,8 +175,10 @@ impl Dashi {
         let Some(origin) = self.space.output_geometry(output).map(|g| g.loc) else {
             return window();
         };
-        let layers = layer_map_for_output(output);
+        // The layer map's lock is taken for each look and let go before anything
+        // else that takes it (decoration_at does): a second lock would deadlock.
         let in_layer = |layer: Layer| {
+            let layers = layer_map_for_output(output);
             let local = pos - origin.to_f64();
             let surface = layers.layer_under(layer, local)?;
             let at = layers.layer_geometry(surface)?.loc;
@@ -246,6 +255,7 @@ impl Dashi {
     pub(crate) fn after_dispatch(&mut self) {
         self.space.refresh();
         self.popups.cleanup();
+        self.foreign_refresh();
         if let Err(error) = self.display_handle.flush_clients() {
             tracing::warn!(%error, "flushing Wayland clients");
         }
@@ -261,10 +271,14 @@ fn listen(
     let socket = ListeningSocketSource::new_auto()?;
     let name = socket.socket_name().to_os_string();
     handle.insert_source(socket, |stream, _, state| {
-        if let Err(error) = state
-            .display_handle
-            .insert_client(stream, Arc::new(ClientState::default()))
-        {
+        let pid = rustix::net::sockopt::socket_peercred(&stream)
+            .ok()
+            .map(|cred| cred.pid.as_raw_nonzero().get());
+        let data = ClientState {
+            pid,
+            ..ClientState::default()
+        };
+        if let Err(error) = state.display_handle.insert_client(stream, Arc::new(data)) {
             tracing::warn!(%error, "a Wayland client could not connect");
         }
     })?;
@@ -284,6 +298,8 @@ fn listen(
 #[derive(Default)]
 pub(crate) struct ClientState {
     pub compositor_state: CompositorClientState,
+    /// The client's process (SO_PEERCRED), for protocols only the shell may bind.
+    pub pid: Option<i32>,
 }
 
 impl ClientData for ClientState {

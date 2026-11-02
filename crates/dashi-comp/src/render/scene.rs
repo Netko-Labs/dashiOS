@@ -20,6 +20,7 @@ use smithay::{
 
 use super::{DashiElement, titlebar::Decor};
 use crate::state::Dashi;
+use smithay::backend::renderer::element::utils::RescaleRenderElement;
 
 /// What to draw: an area of the space at a scale, with the layers of one
 /// output; for a window capture, that window alone.
@@ -295,15 +296,18 @@ fn overview_window<R>(
     let outer_w = f64::from(geometry.size.w.max(1));
     let s = rect.size.w / outer_w;
     let inner = rect.loc + Point::from((0.0, bar * s));
-    let surface_at = (inner - geometry.loc.to_f64().upscale(s) - origin.to_f64())
+    // Drawn at full size at its small spot, then shrunk about that spot (popups and subsurfaces too).
+    let surface_at = (inner - geometry.loc.to_f64() - origin.to_f64())
         .to_physical(scale)
         .to_i32_round();
-    let small = Scale::from(scale.x * s);
+    let about = (inner - origin.to_f64()).to_physical(scale).to_i32_round();
     elements.extend(
         window
-            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, small, 1.0)
+            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
             .into_iter()
-            .map(DashiElement::Surface),
+            .map(|element| {
+                DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s))
+            }),
     );
     let image = state
         .windows

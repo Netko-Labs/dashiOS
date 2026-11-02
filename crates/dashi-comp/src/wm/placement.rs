@@ -122,6 +122,7 @@ impl Dashi {
         if let Some(entry) = self.windows.get(id) {
             let window = describe(entry, self);
             self.ipc.emit("window-opened", json!({ "window": window }));
+            self.foreign_opened(id);
         }
     }
 

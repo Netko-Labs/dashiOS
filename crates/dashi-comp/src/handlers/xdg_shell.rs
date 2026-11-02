@@ -53,6 +53,7 @@ impl XdgShellHandler for Dashi {
         if was_focused {
             self.focus_topmost();
         }
+        self.foreign_closed(entry.id);
         if entry.announced {
             self.ipc
                 .emit("window-closed", serde_json::json!({ "id": entry.id }));
