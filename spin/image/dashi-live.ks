@@ -68,6 +68,9 @@ dashi-nvidia
 dashi-helium
 dashi-bun
 mirin-metal-host
+# The Terminal: its engine, on Ghostty's terminal core.
+dashi-term
+libghostty-vt
 
 # Dashi's release replaces Fedora's.
 -fedora-release
