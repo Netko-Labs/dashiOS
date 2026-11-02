@@ -32,16 +32,20 @@ it in the VM.
 - [x] C2: wallpapers (pictures, native video, live looks), full screen and
       bars, Spaces, overview, wlr-foreign-toplevel (shell only), idle,
       power, gamma, edges, gestures, outputs-config, drag-to-tile, Dock flights
-- [ ] C3: Xwayland, screencopy with grants, agent seat and `agent-input`,
-      xdg-activation and attention, session lock, xdg-dialog, `--greeter`
+- [x] C3: Xwayland (X11 windows placed by the shell, title bars, focus,
+      move/resize, clipboard and primary selection both ways, restart),
+      screencopy with grants, agent seat and `agent-input`, xdg-activation and
+      attention, session lock, xdg-dialog, `--greeter`, primary selection,
+      ext/wlr-data-control (shell only)
 - [ ] C4: explicit sync, VRR/tearing, direct scanout, fractional scale,
       viewporter, presentation time, cursor-shape, ext-image-copy-capture,
       idle-inhibit, shortcuts-inhibit, text-input/IME, toplevel icons,
-      security-context, primary selection, pointer constraints, gestures
+      security-context, pointer constraints, gestures
 - [ ] Until C1, `vm/dev-session` and `vm/dev-greeter` run on the installed
       0.1.0 dashi-comp; switch them to the checkout's when C1 drives screens
-- [ ] The grabs (from smallvil) still `unwrap()` a window's toplevel; fine
-      for xdg-shell only, revisit with Xwayland (C3)
+- [x] The grabs (from smallvil) no longer `unwrap()` a window's toplevel
+- [ ] Dock icons pressed by QMP clicks in the VM don't launch (0.1.0's
+      compositor too): shell/Metal side, likely the drag guard (`swallows`)
 
 ## 3. Login screen
 
@@ -52,7 +56,7 @@ it in the VM.
 - [ ] One surface per screen (multi-monitor)
 - [ ] Account pictures (AccountsService) instead of initials
 - [ ] Keyboard layout and accessibility on the login screen
-- [ ] `dashi-comp --greeter` (C1)
+- [x] `dashi-comp --greeter` (session/dashi-greeter passes it when supported)
 
 ## 4. Packaging 0.2.0
 

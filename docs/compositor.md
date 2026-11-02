@@ -27,8 +27,15 @@ shell's client:
   xdg-activation, xdg-dialog, dmabuf, gestures, screencopy (`serve`,
   `geometry`, `ipc`: per-client grants), a Dashi chrome protocol
   (`chrome_protocol.rs`).
-- **Xwayland (`xwayland/`):** start, restart, lifecycle, scale, selection,
-  window, resources.
+- **Xwayland (`xwayland/`):** started at login (not in greeter or headless
+  mode) on a display known at once, so the session gets `DISPLAY` from the
+  start; restarted with backoff if it fails, on the same display. dashi-comp
+  is its window manager (smithay's X11Wm): X11 windows join the registry,
+  are placed by the shell (`window-placing` with the spot asked for), get
+  Dashi title bars unless they draw their own, and get the X input focus with
+  the keyboard. Menus and tooltips (override-redirect) go where the app puts
+  them. The clipboard and primary selection cross both ways; an X11 app reads
+  them only while an X11 window has the keyboard.
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and
@@ -81,7 +88,7 @@ Each milestone ends with the shell running on it in the VM.
 - **C2, the desktop (done):** Spaces, overview, `fullscreen` and `bars`, `edges`,
   `gestures`, animations (`animation-target`), `idle`, `power`, `gamma`,
   `outputs-config`, `wallpaper`, `layout` zones, `zoom`.
-- **C3, the rest of 0.1.0:** Xwayland, screencopy with grants and `capture`,
+- **C3, the rest of 0.1.0 (done):** Xwayland, screencopy with grants and `capture`,
   `agent-input` and the agent seat, xdg-activation and attention, dmabuf,
   multi-GPU, lock, xdg-dialog, `person-input`.
 - **C4, better than 0.1.0:** see below.
@@ -113,5 +120,5 @@ Each milestone ends with the shell running on it in the VM.
   Metal: it talks to greetd's IPC (`$GREETD_SOCK`) and draws `@dashi/ui`'s
   `LoginScreen`, the same component as the lock screen. Done; it runs on
   0.1.0's dashi-comp.
-- **dashi-comp in greeter mode** (`dashi-comp --greeter`, C1) will show it with
-  less: no Xwayland, no shell IPC, no screencopy, one surface per screen.
+- **dashi-comp in greeter mode** (`dashi-comp --greeter`) shows it with less:
+  no Xwayland, no wlr-foreign-toplevel, no screencopy, no data-control.

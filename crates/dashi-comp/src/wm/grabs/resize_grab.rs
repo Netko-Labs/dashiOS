@@ -1,4 +1,6 @@
 //! Adapted from smithay's smallvil example (MIT, github.com/Smithay/smithay, v0.7.0).
+//! xdg windows resize through configures and their next commit; X11 windows
+//! take their new geometry at once.
 
 use crate::state::Dashi;
 use smithay::{
@@ -14,7 +16,7 @@ use smithay::{
         wayland_server::protocol::wl_surface::WlSurface,
     },
     utils::{Logical, Point, Rectangle, Size},
-    wayland::{compositor, shell::xdg::SurfaceCachedState},
+    wayland::{compositor, seat::WaylandFocus, shell::xdg::SurfaceCachedState},
 };
 use std::cell::RefCell;
 
@@ -60,12 +62,14 @@ impl ResizeSurfaceGrab {
     ) -> Self {
         let initial_rect = initial_window_rect;
 
-        ResizeSurfaceState::with(window.toplevel().unwrap().wl_surface(), |state| {
-            *state = ResizeSurfaceState::Resizing {
-                edges,
-                initial_rect,
-            };
-        });
+        if let Some(toplevel) = window.toplevel() {
+            ResizeSurfaceState::with(toplevel.wl_surface(), |state| {
+                *state = ResizeSurfaceState::Resizing {
+                    edges,
+                    initial_rect,
+                };
+            });
+        }
 
         Self {
             start_data,
@@ -75,6 +79,43 @@ impl ResizeSurfaceGrab {
             last_window_size: initial_rect.size,
         }
     }
+}
+
+impl ResizeSurfaceGrab {
+    /// An X11 window takes the size now; resizing by the top or left moves it too.
+    fn resize_x11(&self, data: &mut Dashi) {
+        let Some(x11) = self.window.x11_surface() else {
+            return;
+        };
+        let size = self.last_window_size;
+        let mut at = self.initial_rect.loc;
+        if self.edges.intersects(ResizeEdge::LEFT) {
+            at.x += self.initial_rect.size.w - size.w;
+        }
+        if self.edges.intersects(ResizeEdge::TOP) {
+            at.y += self.initial_rect.size.h - size.h;
+        }
+        let _ = x11.configure(Rectangle::new(at, size));
+        data.space.map_element(self.window.clone(), at, false);
+    }
+}
+
+/// The smallest and largest size the client allows (0: no limit).
+fn size_limits(window: &Window) -> (Size<i32, Logical>, Size<i32, Logical>) {
+    if let Some(x11) = window.x11_surface() {
+        return (
+            x11.min_size().unwrap_or_default(),
+            x11.max_size().unwrap_or_default(),
+        );
+    }
+    let Some(surface) = window.wl_surface() else {
+        return Default::default();
+    };
+    compositor::with_states(&surface, |states| {
+        let mut guard = states.cached_state.get::<SurfaceCachedState>();
+        let data = guard.current();
+        (data.min_size, data.max_size)
+    })
 }
 
 impl PointerGrab<Dashi> for ResizeSurfaceGrab {
@@ -109,12 +150,7 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
             new_window_height = (self.initial_rect.size.h as f64 + delta.y) as i32;
         }
 
-        let (min_size, max_size) =
-            compositor::with_states(self.window.toplevel().unwrap().wl_surface(), |states| {
-                let mut guard = states.cached_state.get::<SurfaceCachedState>();
-                let data = guard.current();
-                (data.min_size, data.max_size)
-            });
+        let (min_size, max_size) = size_limits(&self.window);
 
         let min_width = min_size.w.max(1);
         let min_height = min_size.h.max(1);
@@ -135,13 +171,15 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
             new_window_height.max(min_height).min(max_height),
         ));
 
-        let xdg = self.window.toplevel().unwrap();
-        xdg.with_pending_state(|state| {
-            state.states.set(xdg_toplevel::State::Resizing);
-            state.size = Some(self.last_window_size);
-        });
-
-        xdg.send_pending_configure();
+        if let Some(xdg) = self.window.toplevel() {
+            xdg.with_pending_state(|state| {
+                state.states.set(xdg_toplevel::State::Resizing);
+                state.size = Some(self.last_window_size);
+            });
+            xdg.send_pending_configure();
+        } else {
+            self.resize_x11(data);
+        }
     }
 
     fn relative_motion(
@@ -170,7 +208,9 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
             // No more buttons are pressed, release the grab.
             handle.unset_grab(self, data, event.serial, event.time, true);
 
-            let xdg = self.window.toplevel().unwrap();
+            let Some(xdg) = self.window.toplevel() else {
+                return;
+            };
             xdg.with_pending_state(|state| {
                 state.states.unset(xdg_toplevel::State::Resizing);
                 state.size = Some(self.last_window_size);
@@ -307,7 +347,10 @@ impl ResizeSurfaceState {
     {
         compositor::with_states(surface, |states| {
             states.data_map.insert_if_missing(RefCell::<Self>::default);
-            let state = states.data_map.get::<RefCell<Self>>().unwrap();
+            let state = states
+                .data_map
+                .get::<RefCell<Self>>()
+                .expect("inserted just above");
 
             cb(&mut state.borrow_mut())
         })
@@ -337,7 +380,7 @@ impl ResizeSurfaceState {
 pub fn handle_commit(space: &mut Space<Window>, surface: &WlSurface) -> Option<()> {
     let window = space
         .elements()
-        .find(|w| w.toplevel().unwrap().wl_surface() == surface)
+        .find(|w| w.toplevel().is_some_and(|t| t.wl_surface() == surface))
         .cloned()?;
 
     let mut window_loc = space.element_location(&window)?;

@@ -10,7 +10,7 @@ use smithay::{
     output::Output,
     reexports::wayland_protocols::xdg::shell::server::xdg_toplevel,
     reexports::wayland_server::Resource,
-    utils::{Logical, Point, Size},
+    utils::{Logical, Point, Rectangle, Size},
 };
 
 use super::windows::{Shown, WindowId, frame_of};
@@ -56,6 +56,7 @@ impl Dashi {
             }
             configure(&window, Some(screen.size), Some(&output));
             self.space.map_element(window.clone(), screen.loc, true);
+            super::actions::x11_follow(&window, screen.loc);
             self.space.raise_element(&window, true);
         } else {
             let restore = self
@@ -151,6 +152,13 @@ impl Dashi {
 
 /// Tell the client its size and whether it is full screen (on `output`).
 fn configure(window: &Window, size: Option<Size<i32, Logical>>, fullscreen_on: Option<&Output>) {
+    if let Some(x11) = window.x11_surface() {
+        let _ = x11.set_fullscreen(fullscreen_on.is_some());
+        if let Some(size) = size {
+            let _ = x11.configure(Rectangle::new(x11.geometry().loc, size));
+        }
+        return;
+    }
     let Some(toplevel) = window.toplevel() else {
         return;
     };

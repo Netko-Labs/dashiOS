@@ -51,5 +51,10 @@ export LANG=${LANG:-C.UTF-8}
 # The greeter ends this compositor once the session is chosen (exec keeps the pid).
 export DASHI_GREETER_COMPOSITOR=$$
 
+# 0.2.0's compositor has a greeter mode (no Xwayland, no window list or screen
+# copying); 0.1.0's does not take the flag.
+mode=
+"$comp" --help 2>/dev/null | grep -q -- --greeter && mode=--greeter
+
 cd "$greeter"
-exec "$comp" -c "$(quote "$bun") $(quote "$greeter/src/main.tsx")"
+exec "$comp" $mode -c "$(quote "$bun") $(quote "$greeter/src/main.tsx")"

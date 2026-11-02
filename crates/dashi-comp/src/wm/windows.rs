@@ -146,11 +146,8 @@ impl Windows {
         self.entries.iter_mut()
     }
 
-    pub(crate) fn remove_surface(&mut self, surface: &WlSurface) -> Option<Entry> {
-        let at = self
-            .entries
-            .iter()
-            .position(|entry| toplevel_surface(&entry.window).as_ref() == Some(surface))?;
+    pub(crate) fn remove(&mut self, id: WindowId) -> Option<Entry> {
+        let at = self.entries.iter().position(|entry| entry.id == id)?;
         Some(self.entries.remove(at))
     }
 
@@ -165,9 +162,7 @@ impl Windows {
 }
 
 pub(crate) fn toplevel_surface(window: &Window) -> Option<WlSurface> {
-    window
-        .toplevel()
-        .map(|toplevel| toplevel.wl_surface().clone())
+    smithay::wayland::seat::WaylandFocus::wl_surface(window).map(std::borrow::Cow::into_owned)
 }
 
 /// The id of the window whose toplevel is `surface`, if it is one the shell knows.
@@ -181,7 +176,12 @@ pub(crate) fn window_id_for_surface(state: &Dashi, surface: &WlSurface) -> Optio
 
 /// A window's app id and title, as its client last set them.
 pub(crate) fn names(window: &Window) -> (String, String) {
-    toplevel_surface(window)
+    if let Some(x11) = window.x11_surface() {
+        return (x11.class(), x11.title());
+    }
+    window
+        .toplevel()
+        .map(|toplevel| toplevel.wl_surface().clone())
         .map(|surface| {
             with_states(&surface, |states| {
                 states
@@ -220,11 +220,15 @@ pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
 pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
     let surface = toplevel_surface(&entry.window);
     let (app_id, title) = names(&entry.window);
-    let pid = surface
-        .as_ref()
-        .and_then(|surface| state.display_handle.get_client(surface.id()).ok())
-        .and_then(|client| client.get_credentials(&state.display_handle).ok())
-        .map(|credentials| credentials.pid);
+    // Xwayland is one client for every X11 app: an X11 window says its own (_NET_WM_PID).
+    let pid = match entry.window.x11_surface() {
+        Some(x11) => x11.pid().map(|pid| pid as i32),
+        None => surface
+            .as_ref()
+            .and_then(|surface| state.display_handle.get_client(surface.id()).ok())
+            .and_then(|client| client.get_credentials(&state.display_handle).ok())
+            .map(|credentials| credentials.pid),
+    };
     let focused = state
         .seat
         .get_keyboard()
@@ -244,6 +248,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "fullscreen": entry.fullscreen.is_some(),
         "space": entry.space,
         "attention": entry.attention,
+        "x11": entry.window.x11_surface().is_some(),
     })
 }
 

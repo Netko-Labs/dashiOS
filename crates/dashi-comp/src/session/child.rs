@@ -18,17 +18,22 @@ use crate::state::Dashi;
 pub(crate) fn spawn(
     command: &str,
     wayland_display: &OsString,
+    x_display: Option<&str>,
     ipc_socket: &Path,
     handle: &LoopHandle<'static, Dashi>,
 ) -> Result<u32, Box<dyn std::error::Error>> {
-    let mut child = Command::new("/bin/sh")
+    let mut command_line = Command::new("/bin/sh");
+    command_line
         .arg("-c")
         .arg(command)
         .env("WAYLAND_DISPLAY", wayland_display)
         .env("DASHI_COMP_SOCKET", ipc_socket)
         // A client of this compositor, not of whatever it is nested in.
-        .env_remove("DISPLAY")
-        .spawn()?;
+        .env_remove("DISPLAY");
+    if let Some(x_display) = x_display {
+        command_line.env("DISPLAY", x_display);
+    }
+    let mut child = command_line.spawn()?;
     let pid = child.id();
     tracing::info!(pid, command, "session client started");
 

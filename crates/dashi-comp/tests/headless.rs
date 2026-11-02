@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 mod support {
     pub mod client;
 }
-use support::client::Client;
+use support::client::{Client, globals};
 
 struct Compositor {
     child: Child,
@@ -864,4 +864,34 @@ fn an_agent_acts_in_one_window_with_its_own_seat() {
         ipc.request("agent-input", json!({ "release": true }))["result"],
         json!({})
     );
+}
+
+#[test]
+fn a_plain_client_sees_no_privileged_protocols() {
+    for mode in [&[][..], &["--greeter"][..]] {
+        let compositor = Compositor::start(mode);
+        let mut ipc = compositor.connect();
+        let session = ipc.request("session", json!({}))["result"].clone();
+        // Headless and greeter mode never start Xwayland.
+        assert_eq!(session["xwayland"], "off");
+        assert_eq!(session["display"], Value::Null);
+        let display = session["waylandDisplay"].as_str().unwrap().to_owned();
+        let seen = globals(compositor.dir.path(), &display);
+        assert!(
+            seen.iter()
+                .any(|g| g == "zwp_primary_selection_device_manager_v1")
+        );
+        for privileged in [
+            "zwlr_foreign_toplevel_manager_v1",
+            "zwlr_screencopy_manager_v1",
+            "ext_data_control_manager_v1",
+            "zwlr_data_control_manager_v1",
+            "ext_session_lock_manager_v1",
+        ] {
+            assert!(
+                !seen.iter().any(|g| g == privileged),
+                "{privileged} is shown in {mode:?}"
+            );
+        }
+    }
 }

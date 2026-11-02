@@ -105,6 +105,15 @@ pub(crate) struct Dashi {
     pub output_manager_state: OutputManagerState,
     pub seat_state: SeatState<Dashi>,
     pub data_device_state: DataDeviceState,
+    pub primary_selection_state:
+        smithay::wayland::selection::primary_selection::PrimarySelectionState,
+    /// Clipboard access without focus (clipboard history, wl-copy): the shell's processes only.
+    pub data_control: Option<(
+        smithay::wayland::selection::ext_data_control::DataControlState,
+        smithay::wayland::selection::wlr_data_control::DataControlState,
+    )>,
+    pub xwayland_shell_state: smithay::wayland::xwayland_shell::XWaylandShellState,
+    pub xwayland: crate::xwayland::Xwayland,
     pub seat: Seat<Dashi>,
 }
 
@@ -114,6 +123,7 @@ impl Dashi {
         loop_handle: LoopHandle<'static, Dashi>,
         loop_signal: LoopSignal,
         ipc: Ipc,
+        greeter: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let dh = display.handle();
 
@@ -126,15 +136,18 @@ impl Dashi {
         let activation_state =
             smithay::wayland::xdg_activation::XdgActivationState::new::<Self>(&dh);
         let dialog_state = smithay::wayland::shell::xdg::dialog::XdgDialogState::new::<Self>(&dh);
-        crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
         let screencopy_paths = Arc::new(std::sync::Mutex::new(Vec::new()));
-        crate::protocols::screencopy::create_global(
-            &dh,
-            crate::protocols::screencopy::Grants {
-                shell: shell_pid.clone(),
-                paths: screencopy_paths.clone(),
-            },
-        );
+        // The login screen shows no one the window list or the screen.
+        if !greeter {
+            crate::protocols::foreign_toplevel::create_global(&dh, shell_pid.clone());
+            crate::protocols::screencopy::create_global(
+                &dh,
+                crate::protocols::screencopy::Grants {
+                    shell: shell_pid.clone(),
+                    paths: screencopy_paths.clone(),
+                },
+            );
+        }
         let lock_shell = shell_pid.clone();
         let session_lock_state =
             smithay::wayland::session_lock::SessionLockManagerState::new::<Self, _>(
@@ -144,6 +157,25 @@ impl Dashi {
         let shm_state = ShmState::new::<Self>(&dh, vec![]);
         let output_manager_state = OutputManagerState::new_with_xdg_output::<Self>(&dh);
         let data_device_state = DataDeviceState::new::<Self>(&dh);
+        let primary_selection_state =
+            smithay::wayland::selection::primary_selection::PrimarySelectionState::new::<Self>(&dh);
+        let data_control = (!greeter).then(|| {
+            let (ext_shell, wlr_shell) = (shell_pid.clone(), shell_pid.clone());
+            (
+                smithay::wayland::selection::ext_data_control::DataControlState::new::<Self, _>(
+                    &dh,
+                    Some(&primary_selection_state),
+                    move |client| crate::session::trust::is_shell_client(client, &ext_shell),
+                ),
+                smithay::wayland::selection::wlr_data_control::DataControlState::new::<Self, _>(
+                    &dh,
+                    Some(&primary_selection_state),
+                    move |client| crate::session::trust::is_shell_client(client, &wlr_shell),
+                ),
+            )
+        });
+        let xwayland_shell_state =
+            smithay::wayland::xwayland_shell::XWaylandShellState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
         let mut seat: Seat<Self> = seat_state.new_wl_seat(&dh, "seat0");
         // C1 follows keyboards and pointers as they come and go (libinput).
@@ -205,6 +237,10 @@ impl Dashi {
             output_manager_state,
             seat_state,
             data_device_state,
+            primary_selection_state,
+            data_control,
+            xwayland_shell_state,
+            xwayland: Default::default(),
             seat,
         })
     }

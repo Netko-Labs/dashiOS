@@ -179,7 +179,7 @@ impl Dashi {
             .any(|layer| layers.layer_under(layer, at - origin).is_some())
     }
 
-    fn start_move(
+    pub(crate) fn start_move(
         &mut self,
         window: Window,
         pos: Point<f64, Logical>,

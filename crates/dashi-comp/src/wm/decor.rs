@@ -97,10 +97,7 @@ impl Dashi {
                 entry.title_image = None;
                 continue;
             }
-            let surface = entry
-                .window
-                .toplevel()
-                .map(|toplevel| toplevel.wl_surface().clone());
+            let surface = super::toplevel_surface(&entry.window);
             let look = Look {
                 decor: entry.decor,
                 width: entry.window.geometry().size.w,

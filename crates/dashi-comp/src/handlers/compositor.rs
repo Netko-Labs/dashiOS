@@ -29,9 +29,13 @@ impl CompositorHandler for Dashi {
     }
 
     fn client_compositor_state<'a>(&self, client: &'a Client) -> &'a CompositorClientState {
-        match client.get_data::<ClientState>() {
+        if let Some(data) = client.get_data::<ClientState>() {
+            return &data.compositor_state;
+        }
+        match client.get_data::<smithay::xwayland::XWaylandClientData>() {
             Some(data) => &data.compositor_state,
-            // Every client is inserted with ClientState (state.rs).
+            // Every client is inserted with ClientState (state.rs), or by
+            // XWayland::spawn with its own data.
             None => unreachable!("a Wayland client without ClientState"),
         }
     }

@@ -133,7 +133,7 @@ impl Dashi {
 
         if let Some(keys) = params.get("keys") {
             let keys = keys.as_array().ok_or("`keys` must be a list")?;
-            let Some(surface) = window.toplevel().map(|t| t.wl_surface().clone()) else {
+            let Some(surface) = crate::wm::toplevel_surface(&window) else {
                 return Ok(());
             };
             self.agent_keys(&seat, surface, keys)?;

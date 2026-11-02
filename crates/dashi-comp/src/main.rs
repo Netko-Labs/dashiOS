@@ -14,6 +14,7 @@ mod session;
 mod state;
 mod wallpaper;
 mod wm;
+mod xwayland;
 
 use std::path::PathBuf;
 
@@ -51,19 +52,36 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
     let (ipc, listener) = Ipc::bind(&ipc_path()?)?;
     Ipc::listen(listener, &handle)?;
     let display: Display<Dashi> = Display::new()?;
-    let mut state = Dashi::new(display, handle.clone(), event_loop.get_signal(), ipc)?;
+    let mut state = Dashi::new(
+        display,
+        handle.clone(),
+        event_loop.get_signal(),
+        ipc,
+        args.greeter,
+    )?;
 
-    match backend_for(args.backend)? {
+    let backend = backend_for(args.backend)?;
+    match backend {
         BackendChoice::Udev => backend::udev::init(&handle, &mut state)?,
         BackendChoice::Winit => backend::winit::init(&handle, &mut state)?,
         BackendChoice::Headless => backend::headless::init(&handle, &mut state)?,
         BackendChoice::Auto => unreachable!("backend_for resolves Auto"),
     }
     tracing::info!(socket = ?state.socket_name, ipc = %state.ipc.path().display(), "dashi-comp is up");
+    if args.xwayland && !args.greeter && backend != BackendChoice::Headless {
+        state.start_xwayland();
+    }
 
     // Before the signal source: it blocks SIGTERM/SIGINT on this thread, and a child would inherit that.
     if let Some(command) = &args.command {
-        let pid = session::spawn(command, &state.socket_name, state.ipc.path(), &handle)? as i32;
+        let x_display = state.xwayland.display.map(|n| format!(":{n}"));
+        let pid = session::spawn(
+            command,
+            &state.socket_name,
+            x_display.as_deref(),
+            state.ipc.path(),
+            &handle,
+        )? as i32;
         state.session_client = Some(pid);
         state
             .shell_pid

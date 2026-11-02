@@ -96,6 +96,14 @@ attention?: true, x11?: true, fullscreen?: true, space?: int}`; `Frame` is
 - **Done:** every request above, with every event; `wallpaper` also takes
   `{video, mode}`, played by the compositor. Unknown methods are answered
   with an error.
+- **The shell's own Wayland protocols:** wlr-foreign-toplevel, ext- and
+  wlr-data-control (clipboard without focus), ext-session-lock, and
+  `capture` are for the session client and the processes under it only;
+  screencopy also for the executables in `screencopy-clients`. None of them
+  exist in greeter mode.
+- **Xwayland:** `session.display` is set from the start (the X socket listens
+  before the server is ready); `session-changed` follows when it is ready or
+  fails.
 
 ## Events
 

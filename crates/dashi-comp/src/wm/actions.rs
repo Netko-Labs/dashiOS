@@ -52,6 +52,7 @@ impl Dashi {
         let bar = super::windows::bar_of(self, window);
         self.space
             .map_element(window.clone(), (at.x, at.y + bar), activate);
+        x11_follow(window, (at.x, at.y + bar).into());
     }
 
     /// Raise it, give it the keyboard, and bring it back if it was minimized or hidden.
@@ -72,10 +73,30 @@ impl Dashi {
         Ok(())
     }
 
+    /// Window `id` is gone (its client destroyed it, or an X11 window unmapped).
+    pub(crate) fn window_gone(&mut self, id: WindowId) {
+        let Some(entry) = self.windows.remove(id) else {
+            return;
+        };
+        let was_focused = self.is_focused(&entry.window);
+        self.space.unmap_elem(&entry.window);
+        if was_focused {
+            self.focus_topmost();
+        }
+        self.foreign_closed(entry.id);
+        if entry.announced {
+            self.ipc
+                .emit("window-closed", serde_json::json!({ "id": entry.id }));
+        }
+    }
+
     pub(crate) fn close_window(&mut self, id: WindowId) -> Result<(), String> {
         let window = self.window_of(id)?;
         if let Some(toplevel) = window.toplevel() {
             toplevel.send_close();
+        } else if let Some(x11) = window.x11_surface() {
+            x11.close()
+                .map_err(|error| format!("closing an X11 window: {error}"))?;
         }
         Ok(())
     }
@@ -177,6 +198,10 @@ impl Dashi {
                 }
             });
             toplevel.send_pending_configure();
+        } else if let Some(x11) = window.x11_surface() {
+            let size = Size::from((frame.size.w, (frame.size.h - bar).max(1)));
+            let _ = x11.set_maximized(maximized);
+            let _ = x11.configure(Rectangle::new(x11.geometry().loc, size));
         }
         let activate = self.is_focused(window);
         self.map_frame_at(window, frame.loc, activate);
@@ -201,12 +226,25 @@ impl Dashi {
 
     /// Activation changed: tell every client.
     pub(crate) fn configure_all(&self) {
-        self.space
-            .elements()
-            .filter_map(Window::toplevel)
-            .for_each(|toplevel| {
+        for window in self.space.elements() {
+            if let Some(toplevel) = window.toplevel() {
                 toplevel.send_pending_configure();
-            });
+            } else if let Some(x11) = window.x11_surface()
+                && !x11.is_override_redirect()
+            {
+                let _ = x11.set_activated(self.is_focused(window));
+            }
+        }
+    }
+}
+
+/// An X11 window is told where it is on screen (X apps place their menus by it).
+pub(crate) fn x11_follow(window: &Window, at: Point<i32, Logical>) {
+    if let Some(x11) = window.x11_surface()
+        && !x11.is_override_redirect()
+        && x11.geometry().loc != at
+    {
+        let _ = x11.configure(Rectangle::new(at, x11.geometry().size));
     }
 }
 

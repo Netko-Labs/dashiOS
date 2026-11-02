@@ -29,25 +29,46 @@ impl Dashi {
     pub(crate) fn place_when_drawn(&mut self, surface: &WlSurface) {
         let drawn =
             with_renderer_surface_state(surface, |state| state.buffer().is_some()).unwrap_or(false);
-        let listening = self.ipc.has_subscribers();
-        let Some(entry) = self.windows.by_surface_mut(surface) else {
+        let Some(entry) = self.windows.by_surface(surface) else {
             return;
         };
         if entry.placed || entry.placing || !drawn {
             return;
         }
         let id = entry.id;
+        self.start_placing(id);
+    }
+
+    /// Ask the shell where window `id` goes.
+    pub(crate) fn start_placing(&mut self, id: WindowId) {
+        let listening = self.ipc.has_subscribers();
+        let Some(entry) = self.windows.get_mut(id) else {
+            return;
+        };
+        if entry.placed || entry.placing {
+            return;
+        }
         if !listening {
             return self.place_fallback(id);
         }
         entry.placing = true;
         let window = entry.window.clone();
         let (app_id, title) = names(&window);
+        let asked = window
+            .x11_surface()
+            .map(|x11| x11.geometry().loc)
+            .filter(|at| at.x != 0 || at.y != 0);
         let mut size = window.geometry().size;
         size.h += super::windows::bar_of(self, &window);
         self.ipc.emit(
             "window-placing",
-            json!({ "window": { "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h } }),
+            {
+                let mut placing = json!({ "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h });
+                if let Some(at) = asked {
+                    placing["position"] = json!({ "x": at.x, "y": at.y });
+                }
+                json!({ "window": placing })
+            },
         );
         let waited = self.loop_handle.insert_source(
             Timer::from_duration(PLACING_WAIT),
@@ -110,6 +131,10 @@ impl Dashi {
         entry.space = self.spaces.current;
         let window = entry.window.clone();
         self.map_frame_at(&window, at, true);
+        if let Some(x11) = window.x11_surface() {
+            let size = window.geometry().size;
+            let _ = x11.configure(Rectangle::new(at, size));
+        }
         if let (Some(keyboard), Some(surface)) =
             (self.seat.get_keyboard(), toplevel_surface(&window))
         {

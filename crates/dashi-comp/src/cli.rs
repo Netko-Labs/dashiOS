@@ -1,7 +1,7 @@
-//! The command line: `dashi-comp [--backend winit|headless] [-c COMMAND]`.
+//! The command line: `dashi-comp [--backend NAME] [--greeter] [--no-xwayland] [-c COMMAND]`.
 
 pub(crate) const USAGE: &str = "\
-usage: dashi-comp [--backend auto|udev|winit|headless] [-c COMMAND]
+usage: dashi-comp [--backend auto|udev|winit|headless] [--greeter] [--no-xwayland] [-c COMMAND]
 
   -c COMMAND        run COMMAND (a shell command line) as the session's client;
                     the compositor ends when it does
@@ -9,6 +9,9 @@ usage: dashi-comp [--backend auto|udev|winit|headless] [-c COMMAND]
                     winit: in a window of the session this runs in;
                     headless: no screens drawn (tests);
                     auto (default): winit when nested, else udev
+  --greeter         the login screen's compositor: no Xwayland, and no
+                    window list or screen copying for anyone
+  --no-xwayland     no X11 apps (headless never starts Xwayland)
   -h, --help        this
   -V, --version     the version
 ";
@@ -25,6 +28,8 @@ pub(crate) enum BackendChoice {
 pub(crate) struct Args {
     pub command: Option<String>,
     pub backend: BackendChoice,
+    pub greeter: bool,
+    pub xwayland: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -38,11 +43,15 @@ pub(crate) fn parse(mut args: impl Iterator<Item = String>) -> Result<Parsed, St
     let mut parsed = Args {
         command: None,
         backend: BackendChoice::Auto,
+        greeter: false,
+        xwayland: true,
     };
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "-h" | "--help" => return Ok(Parsed::Help),
             "-V" | "--version" => return Ok(Parsed::Version),
+            "--greeter" => parsed.greeter = true,
+            "--no-xwayland" => parsed.xwayland = false,
             "-c" | "--command" => parsed.command = Some(args.next().ok_or("-c needs a command")?),
             "--backend" => {
                 parsed.backend = match args.next().as_deref() {
@@ -74,16 +83,28 @@ mod tests {
             run(&["--backend", "headless", "-c", "'bun' 'session.ts'"]),
             Ok(Parsed::Run(Args {
                 command: Some("'bun' 'session.ts'".into()),
-                backend: BackendChoice::Headless
+                backend: BackendChoice::Headless,
+                greeter: false,
+                xwayland: true,
             }))
         );
         assert_eq!(
             run(&[]),
             Ok(Parsed::Run(Args {
                 command: None,
-                backend: BackendChoice::Auto
+                backend: BackendChoice::Auto,
+                greeter: false,
+                xwayland: true,
             }))
         );
+    }
+
+    #[test]
+    fn greeter_and_xwayland_switches() {
+        let Ok(Parsed::Run(args)) = run(&["--greeter", "--no-xwayland"]) else {
+            panic!("the switches parse");
+        };
+        assert!(args.greeter && !args.xwayland);
     }
 
     #[test]

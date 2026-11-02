@@ -308,8 +308,8 @@ fn session(state: &Dashi) -> Value {
     });
     json!({
         "waylandDisplay": state.socket_name.to_string_lossy(),
-        "display": null,
-        "xwayland": "off",
+        "display": state.xwayland.display.map(|n| format!(":{n}")),
+        "xwayland": state.xwayland.state.name(),
         "pointer": pointer,
         "locked": state.lock.locked,
     })

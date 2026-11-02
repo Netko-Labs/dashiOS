@@ -42,6 +42,7 @@ features = [
     "renderer_gl",
     "renderer_multi",
     "wayland_frontend",
+    "xwayland",
 ]
 
 [dev-dependencies]

@@ -157,3 +157,17 @@ delegate_noop!(State: ignore wl_surface::WlSurface);
 delegate_noop!(State: ignore wl_shm::WlShm);
 delegate_noop!(State: ignore wl_shm_pool::WlShmPool);
 delegate_noop!(State: ignore wl_buffer::WlBuffer);
+
+/// The globals a plain client (not the shell) is shown, by interface name.
+pub fn globals(runtime_dir: &Path, display: &str) -> Vec<String> {
+    let stream = std::os::unix::net::UnixStream::connect(runtime_dir.join(display))
+        .expect("the Wayland socket");
+    let connection = Connection::from_socket(stream).expect("a Wayland connection");
+    let (globals, _queue) = registry_queue_init::<State>(&connection).expect("the registry");
+    globals
+        .contents()
+        .clone_list()
+        .into_iter()
+        .map(|global| global.interface)
+        .collect()
+}

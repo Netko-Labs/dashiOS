@@ -269,6 +269,7 @@ impl Dashi {
         }
         let (window, at) = (entry.window.clone(), entry.away_at);
         if let Some(at) = at {
+            super::actions::x11_follow(&window, at);
             self.space.map_element(window, at, false);
         }
     }

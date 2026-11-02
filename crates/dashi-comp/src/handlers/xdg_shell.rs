@@ -45,18 +45,8 @@ impl XdgShellHandler for Dashi {
     }
 
     fn toplevel_destroyed(&mut self, surface: ToplevelSurface) {
-        let Some(entry) = self.windows.remove_surface(surface.wl_surface()) else {
-            return;
-        };
-        let was_focused = self.is_focused(&entry.window);
-        self.space.unmap_elem(&entry.window);
-        if was_focused {
-            self.focus_topmost();
-        }
-        self.foreign_closed(entry.id);
-        if entry.announced {
-            self.ipc
-                .emit("window-closed", serde_json::json!({ "id": entry.id }));
+        if let Some(entry) = self.windows.by_surface(surface.wl_surface()) {
+            self.window_gone(entry.id);
         }
     }
 
