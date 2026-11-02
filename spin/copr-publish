@@ -14,8 +14,17 @@ top=${RPMBUILD_TOP:-$HOME/rpmbuild}
 command -v copr-cli >/dev/null || { echo "copr-publish: install copr-cli" >&2; exit 1; }
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/copr" ] || { echo "copr-publish: no COPR token in ~/.config/copr" >&2; exit 1; }
 shopt -s nullglob
-srpms=("$top"/SRPMS/*.src.rpm)
-[ ${#srpms[@]} -gt 0 ] || { echo "copr-publish: no source RPMs in $top/SRPMS; run spin/build-rpms all" >&2; exit 1; }
+all=("$top"/SRPMS/*.src.rpm)
+[ ${#all[@]} -gt 0 ] || { echo "copr-publish: no source RPMs in $top/SRPMS; run spin/build-rpms all" >&2; exit 1; }
+# SRPMS keeps every build: only the newest of each package is published.
+srpms=()
+declare -A seen=()
+while IFS= read -r srpm; do
+  name=$(rpm -qp --qf '%{NAME}' "$srpm" 2>/dev/null)
+  [ -n "${seen[$name]:-}" ] && continue
+  seen[$name]=1
+  srpms+=("$srpm")
+done < <(ls -t "${all[@]}")
 
 # Cargo fetches crates while building (dashi-comp, mirin-metal-host): the
 # builders need the network. The CachyOS kernel, Helium, and RPM Fusion come
