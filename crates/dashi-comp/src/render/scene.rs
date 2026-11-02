@@ -364,7 +364,11 @@ fn cursor_elements<R>(
         return;
     }
     let local = at - output_geo.loc.to_f64();
-    match &state.cursor_status {
+    let shown = match state.resize_cursor {
+        Some(icon) => CursorImageStatus::Named(icon),
+        None => state.cursor_status.clone(),
+    };
+    match &shown {
         CursorImageStatus::Hidden => {}
         CursorImageStatus::Surface(surface) => {
             let hotspot = with_states(surface, |states| {

@@ -97,6 +97,8 @@ pub(crate) struct Dashi {
     pub chrome_style: ChromeStyle,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
+    /// Over a window's resize border, or resizing it: that cursor, over the client's.
+    pub resize_cursor: Option<smithay::input::pointer::CursorIcon>,
     /// The last press on a title bar, for double-clicks.
     pub last_bar_press: Option<(u64, std::time::Instant)>,
     pub cursors: Cursors,
@@ -261,6 +263,7 @@ impl Dashi {
             chrome_style: ChromeStyle::default(),
             chrome_objects: Vec::new(),
             cursor_status: CursorImageStatus::default_named(),
+            resize_cursor: None,
             last_bar_press: None,
             cursors: Cursors::default(),
             text: Text::default(),

@@ -6,6 +6,7 @@ mod claims;
 mod constraints;
 mod decorations;
 mod gestures;
+mod resize_edges;
 pub(crate) mod settings;
 
 pub(crate) use claims::Claims;
@@ -75,6 +76,7 @@ impl Dashi {
                 self.watch_edges(to);
                 self.overview_motion(to);
                 self.hover_controls(to);
+                self.hover_resize_edges(to);
             }
             InputEvent::PointerMotionAbsolute { event, .. } => {
                 let Some(output_geo) = self
@@ -110,6 +112,7 @@ impl Dashi {
                 self.watch_edges(pos);
                 self.overview_motion(pos);
                 self.hover_controls(pos);
+                self.hover_resize_edges(pos);
             }
             InputEvent::PointerButton { event, .. } => {
                 let Some(pointer) = self.seat.get_pointer() else {
@@ -134,7 +137,9 @@ impl Dashi {
                 let free = pressed && !pointer.is_grabbed();
                 // A press on a title bar or a traffic light is the compositor's, not a client's.
                 let on_decoration = free && self.decoration_at(at).is_some();
-                if free && !on_decoration {
+                // So is a press on the resize border around a window Dashi frames.
+                let on_border = free && !on_decoration && self.resize_edge_at(at).is_some();
+                if free && !on_decoration && !on_border {
                     self.focus_at(at, serial);
                 }
                 pointer.button(
@@ -149,6 +154,13 @@ impl Dashi {
                 if on_decoration {
                     // After the button is down, so a move grab sees it held.
                     self.press_decoration(at, button, serial);
+                }
+                if on_border {
+                    self.press_resize_edge(at, button, serial);
+                }
+                if !pressed && !pointer.is_grabbed() {
+                    // A resize just ended: the cursor is what the pointer is over again.
+                    self.hover_resize_edges(at);
                 }
                 pointer.frame(self);
             }
