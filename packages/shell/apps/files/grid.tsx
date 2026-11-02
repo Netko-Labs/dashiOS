@@ -4,13 +4,13 @@
  * the number of columns comes from the width the view is laid out at.
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
-import { useColors } from "@dashi/ui";
 import { useFiles, useFilesState } from "./context.ts";
-import { iconFor, previewFor } from "./icons.ts";
 import { middleEllipsis } from "./format.ts";
 import { LINK_BADGE } from "./glyphs.ts";
+import { iconFor, previewFor } from "./icons.ts";
 import type { FileItem } from "./items.ts";
 
 const TILE_WIDTH = 104;

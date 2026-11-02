@@ -6,9 +6,9 @@
  * clipped one, and a press-and-drag on the area (`onPointer`) moves it.
  */
 
+import { darkColors, useColors } from "@dashi/ui";
 import { Image, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { darkColors, useColors } from "@dashi/ui";
 import type { Size } from "./dimensions.ts";
 import { clampPan, type Pan, placement, scaled } from "./zoom.ts";
 

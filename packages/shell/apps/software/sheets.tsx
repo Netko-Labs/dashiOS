@@ -1,8 +1,8 @@
 /** The questions Software asks before it goes ahead, and the one thing it has to tell: a change that failed. */
 
+import { Button, ConfirmSheet, Sheet, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
-import { Button, ConfirmSheet, Sheet, useColors } from "@dashi/ui";
 import { RESTART } from "./glyphs.ts";
 import type { Failure } from "./store.ts";
 

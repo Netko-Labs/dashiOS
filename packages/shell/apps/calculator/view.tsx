@@ -7,9 +7,9 @@
  * bar's Edit menu, with Clear.
  */
 
+import { darkColors, KeySink, type MenuItem, PopupMenu, useColors, useTitleBarInset } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useReducer, useState } from "react";
-import { darkColors, KeySink, type MenuItem, PopupMenu, useColors, useTitleBarInset } from "@dashi/ui";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { type CalcKey, type CalcState, clearLabel, INITIAL, type Operator, press } from "./engine.ts";
 import { copyText, displayFontSize, displayText, parsePasted } from "./format.ts";

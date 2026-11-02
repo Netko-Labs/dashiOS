@@ -10,12 +10,12 @@
  * to confirm: a stray Enter must not pair a device.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { BLUETOOTH } from "../control-center/glyphs.ts";
-import { KeyCatcher } from "../overlay.tsx";
 import { Button, Panel } from "../menus/sheets.tsx";
-import { useColors } from "@dashi/ui";
+import { KeyCatcher } from "../overlay.tsx";
 import type { BluetoothStore } from "./store.ts";
 import { useBluetooth } from "./store.ts";
 import type { PairingRequest } from "./types.ts";

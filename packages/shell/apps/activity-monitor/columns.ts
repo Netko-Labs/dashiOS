@@ -1,6 +1,6 @@
 /** The table's columns on each tab, and the sort each tab opens with. */
 
-import { type Column, type SortState } from "@dashi/ui";
+import type { Column, SortState } from "@dashi/ui";
 import { formatBytes, formatCount, formatCpuTime, formatPercent } from "./format.ts";
 import type { Tab } from "./monitor.ts";
 import type { ProcessRow } from "./sample.ts";

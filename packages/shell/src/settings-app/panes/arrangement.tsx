@@ -5,11 +5,11 @@
  * was dropped. The main display carries a thin bar on top, as the menu bar.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { beginDrag, type Box, type Drag, dropSpot, fitView, moveDrag, type Spot } from "../../display-config/layout.ts";
+import { type Box, beginDrag, type Drag, dropSpot, fitView, moveDrag, type Spot } from "../../display-config/layout.ts";
 import { type Monitor, monitorLabel } from "../../display-config/monitors.ts";
-import { useColors } from "@dashi/ui";
 import { useSurface } from "../ui.tsx";
 
 export const ARRANGEMENT_HEIGHT = 190;

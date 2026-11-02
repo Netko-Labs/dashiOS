@@ -12,17 +12,17 @@ import type { Grants } from "../agents/consent.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
-import type { Arranger } from "./screens.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/store.ts";
+import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { PaneContext } from "./context.ts";
 import { loadLayouts } from "./layouts.ts";
 import { Nav, type PaneId } from "./panes.ts";
+import type { Arranger } from "./screens.ts";
 import { ScreensStore } from "./screens.ts";
 import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
-import { portalChooser } from "../wallpaper/chooser.ts";
 import { SETTINGS_WINDOW, SettingsWindow } from "./view.tsx";
 
 export interface SettingsApp {

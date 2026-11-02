@@ -1,10 +1,10 @@
 /** The month: weeks of day cells, each listing its events as chips, with "N more" when they do not all fit. */
 
+import { useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { weekdayNames } from "../../src/region/week.ts";
-import { useColors, useSurface } from "@dashi/ui";
 import { EventChip, MoreChip } from "./chips.tsx";
 import { type Day, monthOf } from "./dates.ts";
 import { dayNumber, monthDay } from "./format.ts";

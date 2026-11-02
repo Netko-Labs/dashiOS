@@ -105,7 +105,7 @@ function unionArea(rects: readonly Frame[]): number {
       .map((rect): [number, number] => [rect.y, rect.y + rect.height])
       .sort((a, b) => a[0] - b[0]);
     let covered = 0;
-    let end = -Infinity;
+    let end = Number.NEGATIVE_INFINITY;
     for (const [top, bottom] of spans) {
       const from = Math.max(top, end);
       if (bottom > from) covered += bottom - from;

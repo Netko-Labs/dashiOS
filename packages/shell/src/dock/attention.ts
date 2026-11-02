@@ -6,8 +6,8 @@
  * toplevel ids are different spaces; the app id is shared).
  */
 
-import { useSyncExternalStore } from "react";
 import type { Toplevel } from "@mirinjs/metal";
+import { useSyncExternalStore } from "react";
 import type { Compositor, CompositorEvent } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import { appKey } from "./layout.ts";

@@ -8,16 +8,16 @@
  * more before it unpairs.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { CHEVRON_LEFT } from "../control-center/glyphs.ts";
 import { batteryGlyph } from "../glyphs.ts";
 import { Button } from "../menus/sheets.tsx";
-import { useColors } from "@dashi/ui";
 import { Switch } from "../wifi/switch.tsx";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
-import { type Busy, type BluetoothState, type BluetoothStore, useBluetooth } from "./store.ts";
+import { type BluetoothState, type BluetoothStore, type Busy, useBluetooth } from "./store.ts";
 import type { BluetoothDevice } from "./types.ts";
 
 /** The card shows this many pixels of rows, then scrolls. */

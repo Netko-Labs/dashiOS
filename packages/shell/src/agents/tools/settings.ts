@@ -1,9 +1,9 @@
 /** Settings: the switches in Control Center, and Wi-Fi. */
 
-import { DOCK_STYLES, isDockStyle } from "../../dock/settings.ts";
 import { CORNER_NAMES, isCornerName } from "../../corners.ts";
-import { fail, type ToolDef } from "./define.ts";
+import { DOCK_STYLES, isDockStyle } from "../../dock/settings.ts";
 import { isScrollSpeed, SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../../scroll-speed.ts";
+import { fail, type ToolDef } from "./define.ts";
 import { DOCK_SETTINGS, MENU_BAR_SETTINGS, SCROLL_SETTINGS, SETTINGS } from "./types.ts";
 
 const NAMES = [...SETTINGS, ...DOCK_SETTINGS, ...SCROLL_SETTINGS, ...MENU_BAR_SETTINGS];

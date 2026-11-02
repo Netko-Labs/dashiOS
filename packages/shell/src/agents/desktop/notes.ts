@@ -9,8 +9,8 @@
 import { DEFAULT_FOLDER_NAME } from "../../../apps/notes/names.ts";
 import { defaultRoot, NotesStore } from "../../../apps/notes/store.ts";
 import { fold, listOrder, searchNotes, wordCount } from "../../../apps/notes/text.ts";
-import { NotesError, type Note } from "../../../apps/notes/types.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { type Note, NotesError } from "../../../apps/notes/types.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** The longest note text one read returns. */
 export const READ_CHARS = 50_000;

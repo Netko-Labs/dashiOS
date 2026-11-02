@@ -8,9 +8,6 @@
  * same choices as the toolbar's, the tabs, and Quit Process.
  */
 
-import { Text, View } from "@mirinjs/metal";
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { useAppMenus } from "../kit/index.ts";
 import {
   AppWindow,
   Button,
@@ -21,12 +18,15 @@ import {
   SearchField,
   Segmented,
   Sheet,
-  sortRows,
   type SortState,
+  sortRows,
   Table,
   ToolbarButton,
   useColors,
 } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { useAppMenus } from "../kit/index.ts";
 import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
 import { monitorMenus, TABS } from "./menus.ts";
 import type { Monitor, Tab } from "./monitor.ts";

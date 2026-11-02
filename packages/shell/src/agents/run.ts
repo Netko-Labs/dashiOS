@@ -5,13 +5,12 @@
  * sheet is on screen; a launch waits for the app's first new window.
  */
 
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { statSync } from "node:fs";
 import { kindOf } from "../../apps/preview/kinds.ts";
+import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
-import { json, type RunContext, text, type ToolResult, toolError } from "./context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
 import { descendsFrom } from "./peer.ts";
 import { named, noWindow, subject } from "./subject.ts";

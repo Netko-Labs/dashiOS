@@ -4,8 +4,8 @@
  */
 
 import { basename, extname, join } from "node:path";
-import { MAX_VIDEOS, type LiveKeys, type LiveShader, LIVE_SHADERS } from "./choice.ts";
 import { WALLPAPER_DIR } from "../catalog.ts";
+import { LIVE_SHADERS, type LiveKeys, type LiveShader, MAX_VIDEOS } from "./choice.ts";
 
 export interface LiveTile {
   /** Unique across the section: `shader:aurora`, `video:/path`. */

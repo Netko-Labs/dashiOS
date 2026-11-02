@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Grants } from "../agents/consent.ts";
-import { type ScreensState, type ScreensStore } from "./screens.ts";
-import { type SettingsSnapshot, type SettingsStore } from "./store.ts";
+import type { ScreensState, ScreensStore } from "./screens.ts";
+import type { SettingsSnapshot, SettingsStore } from "./store.ts";
 
 export const useSettings = (store: SettingsStore): SettingsSnapshot => useSyncExternalStore(store.subscribe, store.getSnapshot);
 export const useScreens = (store: ScreensStore): ScreensState => useSyncExternalStore(store.subscribe, store.getSnapshot);

@@ -1,7 +1,7 @@
 /** Control Center's switches, the Appearance setting, and the Dock's settings, by the names agents use. */
 
 import type { Flags } from "../../control-center/flags.ts";
-import { json, type RunContext, text, type ToolResult, toolError } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 import type { MenuBarSettingName, ScrollSettingName, SwitchName } from "../tools/types.ts";
 

@@ -1,8 +1,8 @@
+import { Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { SCOPES } from "../../agents/consent.ts";
 import { SPARKLE } from "../../settings-app/glyphs.ts";
 import { Caption, Group } from "../../settings-app/ui.tsx";
-import { Shortcut, useColors } from "@dashi/ui";
 
 /** What each promise is, in the words the consent sheet uses. */
 const PROMISES = [

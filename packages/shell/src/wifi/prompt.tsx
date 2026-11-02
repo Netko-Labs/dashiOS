@@ -3,8 +3,8 @@
  * until it is answered (the same kind of surface as the power sheets).
  */
 
-import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { SHEET_SIZE } from "../menus/sheets.tsx";
+import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { PasswordSheet } from "./password.tsx";
 import type { WifiStore } from "./store.ts";
 import type { WifiNetwork } from "./types.ts";

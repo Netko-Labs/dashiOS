@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { dataDirs } from "../../src/entries.ts";
 import { themeIcon } from "../../src/icon-themes.ts";
 import type { FileItem } from "./items.ts";
-import { categoryOf, iconNames, INODE_DIRECTORY, UNKNOWN_TYPE } from "./mime.ts";
+import { categoryOf, INODE_DIRECTORY, iconNames, UNKNOWN_TYPE } from "./mime.ts";
 import { findThumbnail } from "./thumbs.ts";
 
 const bundled = new URL("./icons/", import.meta.url).pathname;

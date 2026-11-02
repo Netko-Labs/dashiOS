@@ -6,19 +6,19 @@
  * this pane is on screen, reads the loudness, and keeps nothing.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { BLUETOOTH } from "../../control-center/glyphs.ts";
 import { speakerGlyph } from "../../glyphs.ts";
-import { HEADPHONES, DISPLAY } from "../../sound/glyphs.ts";
+import { DISPLAY, HEADPHONES } from "../../sound/glyphs.ts";
 import { type LevelMeter, useLevels } from "../../sound/index.ts";
 import { type SoundStore, useSound } from "../../sound/store.ts";
 import type { Output, OutputKind } from "../../sound/types.ts";
 import type { Volume } from "../../system/volume.ts";
-import { useColors } from "@dashi/ui";
 import { Switch } from "../../wifi/switch.tsx";
-import { useSettings } from "../hooks.ts";
 import { MICROPHONE } from "../glyphs-machine.ts";
+import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Note, Page, Row, Slider } from "../ui.tsx";

@@ -3,9 +3,9 @@
  * it is drawn, and which gap of the sidebar it sits under.
  */
 
+import { INFO } from "@dashi/ui";
 import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
 import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
-import { INFO } from "@dashi/ui";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
 
 export type PaneId =

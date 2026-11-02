@@ -1,11 +1,11 @@
 /** Preview's sheets: file info, the Open With list, and a plain message. */
 
+import { Button, Sheet, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, Sheet, useColors } from "@dashi/ui";
-import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
-import type { Handler } from "./handlers.ts";
 import { DOCUMENT } from "./glyphs.ts";
+import type { Handler } from "./handlers.ts";
+import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
 
 export type InfoRow = readonly [label: string, value: string];
 

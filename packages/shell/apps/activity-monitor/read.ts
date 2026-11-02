@@ -11,6 +11,7 @@ import {
   isKernelThread,
   type MemInfo,
   type NetCounters,
+  type ProcIo,
   parseDiskStats,
   parseIo,
   parseMemInfo,
@@ -20,7 +21,6 @@ import {
   parseStatus,
   parseSystemStat,
   processName,
-  type ProcIo,
   type SystemStat,
 } from "./proc.ts";
 

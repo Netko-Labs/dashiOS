@@ -1,13 +1,13 @@
 /** What a Files window needs from the machine, gathered once so tests can swap each part. */
 
 import { homedir, userInfo } from "node:os";
+import { type Archiver, findArchiver } from "./archive.ts";
 import { type SystemFiles, systemFiles } from "./clipboard.ts";
 import { type Exec, exec } from "./exec.ts";
-import { findArchiver, type Archiver } from "./archive.ts";
 import { type MimeIndex, systemMimeIndex } from "./mime.ts";
-import { cacheHome, trashFilesDir, trashInfoDir, type UserDirName, userDirs } from "./xdg.ts";
 import { readRecents } from "./recent-file.ts";
 import type { TrashPlaces } from "./trashops.ts";
+import { cacheHome, trashFilesDir, trashInfoDir, type UserDirName, userDirs } from "./xdg.ts";
 
 export interface Env {
   home: string;

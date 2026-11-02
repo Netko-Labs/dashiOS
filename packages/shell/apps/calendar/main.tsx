@@ -9,8 +9,8 @@
  */
 
 import { runApp } from "../kit/index.ts";
-import { dayFromArgs, listenForOpen, openInRunning } from "./instance.ts";
 import { portalIcsChooser } from "./import.ts";
+import { dayFromArgs, listenForOpen, openInRunning } from "./instance.ts";
 import { CalendarModel } from "./model.ts";
 import { CalendarStore, defaultRoot } from "./store.ts";
 import { CALENDAR_SIZE, CalendarWindow } from "./view.tsx";

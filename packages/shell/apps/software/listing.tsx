@@ -1,10 +1,10 @@
 /** A category's apps or search results: cards in a grid, a page at a time ("Show More"). */
 
+import { Button, EmptyState, glyphs } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { Answer, CategoryId, Flathub } from "../../src/software/flathub.ts";
 import type { AppSummary, Page } from "../../src/software/flathub-types.ts";
-import { Button, EmptyState, glyphs } from "@dashi/ui";
 import { CardGrid } from "./cards.tsx";
 import { SectionHeader } from "./discover.tsx";
 import { useLoad } from "./hooks.ts";

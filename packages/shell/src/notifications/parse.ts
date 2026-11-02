@@ -4,7 +4,7 @@
  * for the type the spec gives it and ignored if it doesn't match.
  */
 
-import { Variant } from "../dbus/index.ts";
+import type { Variant } from "../dbus/index.ts";
 import { clean, LIMITS, plainBody } from "./text.ts";
 import type { NotificationAction, NotifyInput, Urgency } from "./types.ts";
 

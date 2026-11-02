@@ -12,13 +12,13 @@
  * back does not depend on the connection it arrived on.
  */
 
+import { type BusKind, busAddress, socketPaths } from "./address.ts";
 import { AuthError, ClientAuth } from "./auth.ts";
 import { BUS_NAME, BUS_PATH } from "./bus.ts";
-import { type BusKind, busAddress, socketPaths } from "./address.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
+import { type Chunk, closeFd, connectUnix, POLLERR, POLLHUP, POLLIN, POLLNVAL, pollNow, receiveWithFds, sendWithFds } from "./libc.ts";
 import { MAX_MESSAGE } from "./marshal.ts";
 import { decodeMessage, encodeMessage, Flags, FrameBuffer, type Message, MessageType } from "./message.ts";
-import { type Chunk, closeFd, connectUnix, POLLERR, POLLHUP, POLLIN, POLLNVAL, pollNow, receiveWithFds, sendWithFds } from "./libc.ts";
 import type { CallSpec } from "./types.ts";
 
 const DEFAULT_TIMEOUT_MS = 5000;

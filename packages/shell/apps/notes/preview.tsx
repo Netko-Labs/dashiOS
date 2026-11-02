@@ -1,7 +1,7 @@
 /** A note drawn from its Markdown: headings, quotes, lists, code, and checklists whose boxes can be tapped. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { useColors, useSurface } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { type Block, parseBlocks } from "./checklist.ts";
 import { TICK } from "./glyphs.ts";
 

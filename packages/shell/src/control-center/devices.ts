@@ -10,7 +10,7 @@
 
 import { useSyncExternalStore } from "react";
 import { type Backlight, levelOf, readBacklight, setBrightness } from "../system/brightness.ts";
-import { hasProgram, type Run, run as defaultRun } from "../system/exec.ts";
+import { run as defaultRun, hasProgram, type Run } from "../system/exec.ts";
 import { readVolume, setVolume, type Volume } from "../system/volume.ts";
 import { latestWins } from "./coalesce.ts";
 import { bluetoothRadio, nmcliRadio, type Radio } from "./radios.ts";

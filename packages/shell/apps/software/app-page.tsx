@@ -5,11 +5,11 @@
  * the facts (version, size, license).
  */
 
+import { Button, Group, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { AppDetails } from "../../src/software/flathub-types.ts";
 import { formatBytes } from "../../src/software/text.ts";
-import { Button, Group, useColors } from "@dashi/ui";
 import { useAppState } from "./cards.tsx";
 import { Gallery } from "./gallery.tsx";
 import { useLoad } from "./hooks.ts";

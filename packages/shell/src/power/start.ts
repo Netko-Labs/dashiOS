@@ -17,12 +17,12 @@
 
 import type { Compositor } from "../compositor.ts";
 import type { ConnectOptions } from "../dbus/index.ts";
+import { compositorAbove, isRealSession } from "../menus/session.ts";
 import { type Clock, systemClock } from "./clock.ts";
 import { logindLocks, type TakeLock } from "./inhibit.ts";
 import { LockWatch } from "./lockwatch.ts";
 import { sayOnce } from "./log.ts";
 import { Logind } from "./logind.ts";
-import { compositorAbove, isRealSession } from "../menus/session.ts";
 import { powerOffReason } from "./nested.ts";
 import { POWER_KEY_LOCK, PowerKey } from "./powerkey.ts";
 import { ScreenLock } from "./screenlock.ts";

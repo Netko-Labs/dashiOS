@@ -1,7 +1,7 @@
 /** The sidebar: Favorites, Locations (the computer and its drives, with eject), and the Trash. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { SidebarSection, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
 import { EJECT, sidebarGlyph } from "./glyphs.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";

@@ -4,11 +4,11 @@
  * overlay surface (no keyboard) a little above the bottom edge's center.
  */
 
-import { render, spawnNativeHost, Svg, Text, View } from "@mirinjs/metal";
-import { METAL_HOST } from "../apps.ts";
-import { micGlyph, speakerGlyph, SUN } from "../glyphs.ts";
 import { useColors } from "@dashi/ui";
-import { litSegments, OSD, type OpenOsd, type OsdState, type OsdStore, useOsd } from "./osd-state.ts";
+import { render, Svg, spawnNativeHost, Text, View } from "@mirinjs/metal";
+import { METAL_HOST } from "../apps.ts";
+import { micGlyph, SUN, speakerGlyph } from "../glyphs.ts";
+import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "./osd-state.ts";
 
 const SEGMENT = { width: 8, height: 6, gap: 2 } as const;
 

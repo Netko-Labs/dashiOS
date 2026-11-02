@@ -8,13 +8,13 @@
  * boxes can be tapped. A deleted note is shown read-only, with Restore.
  */
 
+import { Button, EmptyState, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { Button, EmptyState, useColors, useSurface } from "@dashi/ui";
 import { NOTE } from "./glyphs.ts";
+import type { Row } from "./list.ts";
 import type { Draft } from "./model.ts";
 import { Preview } from "./preview.tsx";
-import type { Row } from "./list.ts";
 
 const TITLE_SIZE = 24;
 const BODY_SIZE = 14;

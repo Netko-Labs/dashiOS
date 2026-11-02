@@ -5,10 +5,10 @@
  * on an empty half hour makes an event there; on the strip, an all-day one.
  */
 
+import { useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
-import { useColors } from "@dashi/ui";
 import { inkOn, tint } from "./colors.ts";
 import type { Day } from "./dates.ts";
 import { clock, dayNumber, hourLabel, titleOf, weekdayShort } from "./format.ts";

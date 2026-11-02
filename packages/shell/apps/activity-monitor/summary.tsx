@@ -4,8 +4,8 @@
  * disk and network traffic).
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { useColors, useSurface } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { formatBytes, formatCount, formatPercent, formatRate } from "./format.ts";
 import { niceMax, sparkline, stacked } from "./graph.ts";
 import type { MonitorState, Tab } from "./monitor.ts";

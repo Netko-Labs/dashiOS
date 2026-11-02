@@ -6,15 +6,15 @@
  * while it is open and stops when it closes.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { useDevices } from "../../control-center/index.ts";
 import { failureLine } from "../../bluetooth/failures.ts";
 import { deviceGlyph } from "../../bluetooth/glyphs.ts";
 import { type BluetoothState, useBluetooth } from "../../bluetooth/store.ts";
 import type { BluetoothDevice } from "../../bluetooth/types.ts";
+import { useDevices } from "../../control-center/index.ts";
 import { batteryGlyph } from "../../glyphs.ts";
-import { useColors } from "@dashi/ui";
 import { Switch } from "../../wifi/switch.tsx";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Row } from "../ui.tsx";

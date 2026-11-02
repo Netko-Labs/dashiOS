@@ -5,16 +5,16 @@
  * what the person would have made, and they see it happen.
  */
 
-import type { CornerName } from "../../corners.ts";
+import type { CompositorWindow } from "../../compositor.ts";
 import type { FlagsStore } from "../../control-center/flags.ts";
+import type { CornerName } from "../../corners.ts";
 import type { DisplayManager } from "../../display-config/manager.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/start.tsx";
-import type { NotificationStore } from "../../notifications/store.ts";
-import type { CompositorWindow } from "../../compositor.ts";
 import type { MenuAction, WindowMenu } from "../../menus/model.ts";
-import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
+import type { NotificationStore } from "../../notifications/store.ts";
 import type { RegionDesktop } from "../../region/desktop.ts";
+import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
 import type { PageId } from "../../setup/flow.ts";
 import type { WifiStore } from "../../wifi/store.ts";
 import type { SoftwareBackend } from "./software.ts";

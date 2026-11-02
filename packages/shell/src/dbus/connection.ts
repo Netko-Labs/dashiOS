@@ -11,9 +11,9 @@
  * that must return a descriptor uses `FdConnection` (fds.ts) instead.
  */
 
-import { BUS_NAME, BUS_PATH } from "./bus.ts";
 import { type BusKind, busAddress, socketPaths } from "./address.ts";
 import { AuthError, ClientAuth } from "./auth.ts";
+import { BUS_NAME, BUS_PATH } from "./bus.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
 import { exportedObject, replyMessage } from "./exported.ts";
 import type { InterfaceSpec } from "./introspect.ts";

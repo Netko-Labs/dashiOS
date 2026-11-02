@@ -8,28 +8,28 @@
  * section below the screens.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { FlagsStore } from "../../control-center/flags.ts";
 import {
   commonSizes,
   type Monitor,
+  modeFor,
   monitorLabel,
-  ratesOf,
-  refreshLabel,
   ROTATIONS,
   type Rotation,
+  ratesOf,
+  refreshLabel,
   sizeLabel,
   sizesOf,
-  modeFor,
   VRR_MODES,
   type VrrMode,
 } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
-import type { FlagsStore } from "../../control-center/flags.ts";
-import { useColors } from "@dashi/ui";
-import { useScreens } from "../hooks.ts";
 import { DISPLAY } from "../glyphs.ts";
-import { isCurrentScale, logicalSize, scaleChoices, scaleLabel, type ScreensStore } from "../screens.ts";
+import { useScreens } from "../hooks.ts";
+import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Note, Page, Row } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";

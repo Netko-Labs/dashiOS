@@ -1,7 +1,7 @@
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { TimezonePicker } from "../../region/pickers.tsx";
 import { describeFailure, useRegion } from "../../region/store.ts";
-import { useColors } from "@dashi/ui";
 import type { SetupContext } from "../context.ts";
 
 /** A searchable list of time zone names, starting from the one the system has now; a pick is applied at once. */

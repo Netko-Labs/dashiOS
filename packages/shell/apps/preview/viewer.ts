@@ -13,9 +13,9 @@ import { closeSync, existsSync, linkSync, openSync, readSync, statSync, unlinkSy
 import { basename, dirname, join, resolve } from "node:path";
 import { cacheFile, cacheKey, cacheRoot, ensureCache, partialName, publish, type Stamp } from "./cache.ts";
 import {
-  canSaveCopy,
   CONVERT_MEMORY_MIB,
   CONVERT_TIMEOUT_MS,
+  canSaveCopy,
   convertible,
   copyName,
   MAX_NATIVE_PIXELS,

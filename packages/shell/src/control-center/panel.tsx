@@ -5,16 +5,16 @@
  * not shown.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactElement, type ReactNode, useEffect } from "react";
 import { BluetoothPage } from "../bluetooth/page.tsx";
 import type { BluetoothStore } from "../bluetooth/store.ts";
+import { ETHERNET, SUN, speakerGlyph, wifiGlyph } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { ETHERNET, speakerGlyph, SUN, wifiGlyph } from "../glyphs.ts";
-import { type SystemStore, useSystem } from "../system/store.ts";
-import { useColors } from "@dashi/ui";
 import { SoundPage } from "../sound/page.tsx";
 import type { SoundStore } from "../sound/store.ts";
+import { type SystemStore, useSystem } from "../system/store.ts";
 import { WifiPage } from "../wifi/page.tsx";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";

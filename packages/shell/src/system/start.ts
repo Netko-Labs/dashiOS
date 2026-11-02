@@ -1,9 +1,9 @@
 /** Starts the system services the shell shows: the status store and the hardware keys. */
 
 import { HardwareKeys } from "./keys.ts";
-import { OsdController } from "./osd-state.ts";
-import { openOsdSurface } from "./osd-panel.tsx";
 import type { Network } from "./network.ts";
+import { openOsdSurface } from "./osd-panel.tsx";
+import { OsdController } from "./osd-state.ts";
 import { SystemStore, systemSources } from "./store.ts";
 
 export interface System {

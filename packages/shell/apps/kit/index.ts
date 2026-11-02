@@ -2,5 +2,5 @@
 // Its components are @dashi/ui's.
 export { followDarkMode } from "./appearance.ts";
 export { type Clipboard, systemClipboard } from "./clipboard.ts";
-export { enabledIds, type MenuItemSpec, MenusClient, type MenuSpec, menusClient, useAppMenus } from "./menus.ts";
+export { enabledIds, type MenuItemSpec, type MenuSpec, MenusClient, menusClient, useAppMenus } from "./menus.ts";
 export { type AppOptions, hostBinary, type RunningApp, runApp, type Size } from "./run.tsx";

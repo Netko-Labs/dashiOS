@@ -1,7 +1,7 @@
 /** Preview's toolbar buttons: moving, zooming, turning, and the rest. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { ToolbarButton, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import * as glyphs from "./glyphs.ts";
 
 export interface ToolbarProps {

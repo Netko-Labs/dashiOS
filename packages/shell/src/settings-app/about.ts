@@ -84,7 +84,7 @@ export function lookupPci(pciIds: string, vendor: string, device: string): { ven
   const lineEnd = rest.indexOf("\n");
   const vendorName = rest.slice(vendor.length + 2, lineEnd < 0 ? undefined : lineEnd).trim();
   // The vendor's devices are the tab-indented lines up to the next vendor.
-  const next = rest.slice(lineEnd + 1).search(/^[0-9a-f]{4}  /m);
+  const next = rest.slice(lineEnd + 1).search(/^[0-9a-f]{4} {2}/m);
   const block = lineEnd < 0 ? "" : next < 0 ? rest.slice(lineEnd + 1) : rest.slice(lineEnd + 1, lineEnd + 1 + next);
   const found = new RegExp(`^\\t${device}  (.+)$`, "m").exec(block);
   return vendorName ? { vendor: vendorName, device: found?.[1]?.trim() ?? null } : null;

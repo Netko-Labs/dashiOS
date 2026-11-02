@@ -5,7 +5,7 @@
  * when it reads as one, else typed key by key ("12×3=" works).
  */
 
-import { type KeyInput } from "@dashi/ui";
+import type { KeyInput } from "@dashi/ui";
 import type { CalcKey } from "./engine.ts";
 import { parsePasted } from "./format.ts";
 

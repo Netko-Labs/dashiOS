@@ -7,7 +7,7 @@
  * accepted.
  */
 
-import { usesHour24, clockPrefsFrom } from "../clock.ts";
+import { clockPrefsFrom, usesHour24 } from "../clock.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
 import type { RegionFailure } from "./backend.ts";
 import { isFormatsLocale } from "./locale.ts";

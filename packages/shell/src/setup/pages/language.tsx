@@ -1,8 +1,8 @@
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { LocalePickers } from "../../region/pickers.tsx";
 import { describeFailure, useRegion } from "../../region/store.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
-import { useColors } from "@dashi/ui";
 import type { SetupContext } from "../context.ts";
 
 /** Language (the system's, through localed) and region formats (this person's), applied the moment they are picked. */

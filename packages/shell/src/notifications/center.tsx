@@ -8,16 +8,16 @@
  * "Clear All" a group or everything.
  */
 
-import { Svg, ScrollView, Text, View } from "@mirinjs/metal";
+import { useColors } from "@dashi/ui";
+import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
+import { calendarBridge } from "../calendar/bridge.ts";
 import { useMinuteClock } from "../clock.ts";
 import { MOON } from "../control-center/glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { useColors } from "@dashi/ui";
 import { Card, GroupHeader, hasDefaultAction, TextButton } from "./center-parts.tsx";
-import { calendarBridge } from "../calendar/bridge.ts";
-import { MonthCard } from "./month-card.tsx";
 import { dateHeading, groupByApp } from "./group.ts";
+import { MonthCard } from "./month-card.tsx";
 import { type NotificationStore, useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 

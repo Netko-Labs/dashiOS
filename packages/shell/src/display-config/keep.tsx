@@ -6,11 +6,11 @@
  * agent input never reaches it (agents drive windows, not layer surfaces).
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { Button } from "../consent.tsx";
 import type { OpenOverlay } from "../overlay.tsx";
-import { useColors } from "@dashi/ui";
 import type { AskToKeep, KeepAsk } from "./manager.ts";
 
 export const KEEP_SHEET = { width: 440, height: 190 } as const;

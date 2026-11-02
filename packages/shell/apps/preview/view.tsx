@@ -5,11 +5,11 @@
  * is up, and the keys.
  */
 
+import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chooseFile } from "../../src/portal/file-chooser.ts";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
-import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
 import { Canvas } from "./canvas.tsx";
 import type { Size } from "./dimensions.ts";
 import * as glyphs from "./glyphs.ts";
@@ -17,11 +17,11 @@ import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from ".
 import { factsFor } from "./info.ts";
 import { FORMATS } from "./kinds.ts";
 import { previewMenus } from "./menus.ts";
-import { type InfoRow, imageRows, InfoSheet, infoRows, MessageSheet, OpenWithSheet } from "./sheets.tsx";
+import { type InfoRow, InfoSheet, imageRows, infoRows, MessageSheet, OpenWithSheet } from "./sheets.tsx";
 import { Thumbnails } from "./thumbnails.tsx";
 import { PreviewToolbar } from "./toolbar.tsx";
 import type { Viewer } from "./viewer.ts";
-import { clampPan, FIT, fitScale, type Pan, panAfterZoom, percent, scaleOf, scaled, turned, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
+import { clampPan, FIT, fitScale, type Pan, panAfterZoom, percent, scaled, scaleOf, turned, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
 
 export const PREVIEW_SIZE = { width: 1000, height: 700 } as const;
 const SELF_ID = "dev.dashi.preview.desktop";

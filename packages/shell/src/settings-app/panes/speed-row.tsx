@@ -1,7 +1,7 @@
 /** The speed rows the Trackpad and Mouse panes share: sliders from slow to fast, for tracking and for scrolling. */
 
-import { Text, View } from "@mirinjs/metal";
 import { useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { scrollSpeedAt, scrollSpeedPosition } from "../../scroll-speed.ts";
 import { type Range, SCROLL_POSITION, SPEED } from "../controls.ts";
 import { Row, Slider } from "../ui.tsx";

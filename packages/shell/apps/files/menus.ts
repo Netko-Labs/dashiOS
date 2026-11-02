@@ -1,10 +1,10 @@
 /** The context menus' contents, decided from the selection and where the window is looking. */
 
-import { type MenuItem } from "@dashi/ui";
+import type { MenuItem } from "@dashi/ui";
 import type { WindowActions } from "./context.ts";
 import { formatCount } from "./format.ts";
-import { mayOpen } from "./open.ts";
 import type { FileItem } from "./items.ts";
+import { mayOpen } from "./open.ts";
 import type { Operations } from "./operations.ts";
 import type { FilesStore } from "./store.ts";
 

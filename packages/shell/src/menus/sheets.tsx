@@ -4,11 +4,11 @@
  * a surface with room around it for its shadow.
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { LOGO } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { useColors } from "@dashi/ui";
 import type { PowerKind } from "./model.ts";
 
 /** Panel size, and the margin the shadow needs on each side. */

@@ -4,9 +4,9 @@
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
  */
 
+import { SEARCH, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { SEARCH, useColors } from "@dashi/ui";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";

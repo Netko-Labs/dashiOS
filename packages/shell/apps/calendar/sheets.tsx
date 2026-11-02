@@ -1,8 +1,8 @@
 /** Calendar's smaller sheets: a calendar's name and color, the questions that can't be taken back, and the path of a file to import. */
 
+import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
 import { isColor } from "./ics.ts";
 import { PALETTE } from "./store.ts";
 

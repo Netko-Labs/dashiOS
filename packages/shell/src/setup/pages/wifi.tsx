@@ -1,8 +1,8 @@
+import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { LOCK } from "../../control-center/glyphs.ts";
 import { wifiGlyph } from "../../glyphs.ts";
-import { CHECK, useColors } from "@dashi/ui";
 import { Group, Note } from "../../settings-app/ui.tsx";
 import { chooseNetwork } from "../../wifi/flow.ts";
 import { joinMessage } from "../../wifi/networks.ts";

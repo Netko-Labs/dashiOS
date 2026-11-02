@@ -5,10 +5,10 @@
  * time. "Don't Allow" is the neutral button; the one that goes ahead is red.
  */
 
+import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Confirm } from "./agents/index.ts";
 import { AgentMark, Button } from "./consent.tsx";
-import { Shortcut, useColors } from "@dashi/ui";
 
 export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer: (yes: boolean) => void }) {
   const colors = useColors();

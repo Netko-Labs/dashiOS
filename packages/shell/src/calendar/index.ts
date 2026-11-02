@@ -5,7 +5,7 @@
  * Started once from main.tsx.
  */
 
-import { type Day } from "../../apps/calendar/dates.ts";
+import type { Day } from "../../apps/calendar/dates.ts";
 import { openInRunning, socketPath } from "../../apps/calendar/instance.ts";
 import { defaultRoot } from "../../apps/calendar/store.ts";
 import { type App, launch } from "../apps.ts";

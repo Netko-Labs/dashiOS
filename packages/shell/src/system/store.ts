@@ -6,7 +6,7 @@
 
 import { useSyncExternalStore } from "react";
 import { type Battery, readBattery } from "./battery.ts";
-import { type Run, run as defaultRun } from "./exec.ts";
+import { run as defaultRun, type Run } from "./exec.ts";
 import { type Network, readNetwork } from "./network.ts";
 import { readVolume, type Volume } from "./volume.ts";
 import { watchLines } from "./watch.ts";

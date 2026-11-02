@@ -8,15 +8,16 @@
  * and View.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
+import { AgentPill } from "./consent.tsx";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
 import { MOON } from "./control-center/glyphs.ts";
-import { AgentPill } from "./consent.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
@@ -24,7 +25,6 @@ import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
 import { type SystemStore, useSystem } from "./system/store.ts";
-import { useColors } from "@dashi/ui";
 import { type ToplevelStore, useToplevels } from "./toplevels.ts";
 
 export { formatClock };

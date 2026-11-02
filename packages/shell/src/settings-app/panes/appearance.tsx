@@ -5,9 +5,9 @@
  * file, so a pick shows on the open windows at once).
  */
 
+import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
-import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";

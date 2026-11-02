@@ -6,7 +6,7 @@
  * a repeat rule it cannot show) always stays.
  */
 
-import { addDays, addMinutes, daysBetween, dayPart, isDay, isLocal, type Local, minuteOfDay } from "./dates.ts";
+import { addDays, addMinutes, dayPart, daysBetween, isDay, isLocal, type Local, minuteOfDay } from "./dates.ts";
 import { newUid, stampNow } from "./ics.ts";
 import { type CalEvent, CalendarError, FREQUENCIES, type Repeat } from "./types.ts";
 

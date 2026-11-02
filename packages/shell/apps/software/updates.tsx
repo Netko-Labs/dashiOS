@@ -6,18 +6,18 @@
  * restart.
  */
 
+import { Button, EmptyState, Group, glyphs, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useSyncExternalStore } from "react";
 import type { FlatpakUpdate } from "../../src/software/flatpak-parse.ts";
 import { formatBytes } from "../../src/software/text.ts";
-import { Button, EmptyState, glyphs, Group, useColors } from "@dashi/ui";
 import { ago } from "./format.ts";
 import { UPDATES } from "./glyphs.ts";
+import { useCatalogIcon } from "./hooks.ts";
 import { busyLabel, type Operation } from "./model.ts";
 import { AppIcon, ProgressBar, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 import { Loading } from "./states.tsx";
-import { useCatalogIcon } from "./hooks.ts";
 
 const SHOWN_PACKAGES = 8;
 

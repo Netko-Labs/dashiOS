@@ -1,10 +1,10 @@
 /** The small month in the sidebar: days to jump to, today filled, the days the view shows tinted, a dot under days with events. */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { weekdayNames } from "../../src/region/week.ts";
-import { useColors } from "@dashi/ui";
 import { addDays, addMonths, type Day, firstOfMonth, monthOf, startOfWeek } from "./dates.ts";
 import { monthTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT } from "./glyphs.ts";

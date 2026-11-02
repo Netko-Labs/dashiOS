@@ -10,9 +10,9 @@
  * an ordinary title bar and each page shows its own heading (ui.tsx).
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { useColors } from "@dashi/ui";
 import type { PaneContext } from "./context.ts";
 import { useSettings } from "./hooks.ts";
 import { AboutPane } from "./panes/about.tsx";
@@ -20,9 +20,6 @@ import { AgentsPane } from "./panes/agents.tsx";
 import { AppearancePane } from "./panes/appearance.tsx";
 import { BatteryPane } from "./panes/battery.tsx";
 import { BluetoothPane } from "./panes/bluetooth.tsx";
-import { NetworkPane } from "./panes/network.tsx";
-import { SoundPane } from "./panes/sound.tsx";
-import { UsersPane } from "./panes/users.tsx";
 import { DateTimePane } from "./panes/date-time.tsx";
 import { DesktopDockPane } from "./panes/desktop-dock.tsx";
 import { DisplaysPane } from "./panes/displays.tsx";
@@ -30,8 +27,11 @@ import { KeyboardPane } from "./panes/keyboard.tsx";
 import { LanguageRegionPane } from "./panes/language-region.tsx";
 import { LockScreenPane } from "./panes/lock-screen.tsx";
 import { MousePane } from "./panes/mouse.tsx";
+import { NetworkPane } from "./panes/network.tsx";
 import { NotificationsPane } from "./panes/notifications.tsx";
+import { SoundPane } from "./panes/sound.tsx";
 import { TrackpadPane } from "./panes/trackpad.tsx";
+import { UsersPane } from "./panes/users.tsx";
 import { WallpaperPane } from "./panes/wallpaper.tsx";
 import { type Nav, type PaneId, paneTitle } from "./panes.ts";
 import { Sidebar } from "./sidebar.tsx";

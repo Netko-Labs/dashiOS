@@ -10,8 +10,8 @@
  * Preview's File > Open….
  */
 
-import { isAbsolute } from "node:path";
 import { randomBytes } from "node:crypto";
+import { isAbsolute } from "node:path";
 import { DBusConnection, variant } from "../dbus/index.ts";
 
 const PORTAL = "org.freedesktop.portal.Desktop";

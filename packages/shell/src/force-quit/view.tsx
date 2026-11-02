@@ -5,10 +5,10 @@
  * asks in the same panel. Esc closes (or backs out of the question).
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { KeyCatcher, type NavigationKey } from "../overlay.tsx";
-import { useColors } from "@dashi/ui";
 import type { ForceQuitController, ForceQuitState } from "./controller.ts";
 import { type AppGroup, VISIBLE_ROWS } from "./model.ts";
 

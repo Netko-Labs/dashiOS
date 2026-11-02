@@ -8,10 +8,10 @@
 
 import { spawnDetached } from "../menus/launch.ts";
 import * as cmd from "./flatpak-cmd.ts";
-import { failureMessage, type FlatpakUpdate, type InstalledApp, parseList, parseProgress, parseUpdates } from "./flatpak-parse.ts";
+import { type FlatpakUpdate, failureMessage, type InstalledApp, parseList, parseProgress, parseUpdates } from "./flatpak-parse.ts";
 import { type Installation, isAppId } from "./ids.ts";
 import { parseSystemProgress, parseUpdateList, pkconError, restartCauses, restartNeeded, type SystemUpdate, systemFailure } from "./pkcon.ts";
-import { type RunResult, run as defaultRun, type Runner } from "./run.ts";
+import { run as defaultRun, type Runner, type RunResult } from "./run.ts";
 
 export interface Progress {
   /** 0 to 1, or null while it is not known (shown as busy). */

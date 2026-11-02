@@ -10,9 +10,9 @@
  * a flag, and everything takes a moment.
  */
 
+import type { Radio } from "../control-center/radios.ts";
 import { type Entry, makeEntries } from "./fake-devices.ts";
 import type { ActionResult, AdapterReading, BluetoothBackend, BluetoothReading, PairingHandler, PairResult } from "./types.ts";
-import type { Radio } from "../control-center/radios.ts";
 
 export interface FakeBluetoothOptions {
   /** How long a connect, disconnect, or forget takes. */

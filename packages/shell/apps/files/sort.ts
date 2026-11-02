@@ -1,8 +1,8 @@
 /** Sorting a listing: folders stay on top, whatever the column, as in most file managers. */
 
-import { type Column, sortRows, type SortState } from "@dashi/ui";
-import { type FileItem, kindText } from "./items.ts";
+import { type Column, type SortState, sortRows } from "@dashi/ui";
 import { formatDate, formatSize } from "./format.ts";
+import { type FileItem, kindText } from "./items.ts";
 
 export type FileColumn = Column<FileItem>;
 

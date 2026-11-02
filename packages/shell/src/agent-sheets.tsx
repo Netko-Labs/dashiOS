@@ -8,9 +8,9 @@
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { AgentUi, Answer } from "./agents/index.ts";
+import { DENY, type QueuedSheet, SheetQueue } from "./agents/sheet-queue.ts";
 import { METAL_HOST } from "./apps.ts";
 import { ConfirmSheet } from "./confirm-sheet.tsx";
-import { type QueuedSheet, SheetQueue, DENY } from "./agents/sheet-queue.ts";
 import { CONSENT, ConsentSheet, STOPPED, StoppedNote } from "./consent.tsx";
 
 /** After the last sheet closes, its surface may last a frame; screenshots wait this long. */

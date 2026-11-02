@@ -8,7 +8,7 @@
 import { useSyncExternalStore } from "react";
 import type { LidPolicy, LidSource } from "../power/policy.ts";
 import type { BatteryDetails } from "./battery-details.ts";
-import type { ProfileId, Profiles, ProfileSource } from "./profiles.ts";
+import type { ProfileId, ProfileSource, Profiles } from "./profiles.ts";
 
 export interface EnergySources {
   battery(): Promise<BatteryDetails | null>;

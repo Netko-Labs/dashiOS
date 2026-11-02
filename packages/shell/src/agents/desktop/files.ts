@@ -6,11 +6,11 @@
 
 import { homedir, userInfo } from "node:os";
 import { type AgentPolicy, listFolder as list, openForAgent, planTrash, searchFor, trashForAgent } from "../../../apps/files/agent.ts";
-import { quietContext } from "../../../apps/files/ops.ts";
 import { systemMimeIndex } from "../../../apps/files/mime.ts";
+import { quietContext } from "../../../apps/files/ops.ts";
 import { userDirs } from "../../../apps/files/xdg.ts";
 import { clean } from "../../notifications/text.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 function currentPolicy(): AgentPolicy {
   const home = process.env.HOME || homedir();
@@ -52,8 +52,8 @@ export async function trashFile(call: { path: string }, ctx: RunContext): Promis
     summary: `move “${name}” to the Trash`,
     detail:
       plan.kind === "folder"
-        ? `The folder and everything in it go to the Trash. You can put it back from there.`
-        : `It goes to the Trash. You can put it back from there.`,
+        ? "The folder and everything in it go to the Trash. You can put it back from there."
+        : "It goes to the Trash. You can put it back from there.",
     action: "Move to Trash",
   });
   if (!yes) return toolError("The person did not allow that file to be moved to the Trash. Don't ask again unless they agree.");

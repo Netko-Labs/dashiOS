@@ -12,7 +12,7 @@
  */
 
 import { BUS_PATH } from "../dbus/bus.ts";
-import { BUS_NAME, DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec } from "../dbus/index.ts";
+import { BUS_NAME, type DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec } from "../dbus/index.ts";
 import type { PolkitController } from "./controller.ts";
 import { parseBegin } from "./request.ts";
 import type { Subject } from "./subject.ts";

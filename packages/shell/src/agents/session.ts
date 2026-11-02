@@ -8,13 +8,13 @@
  */
 
 import type { Compositor } from "../compositor.ts";
-import { LineBuffer } from "../lines.ts";
 import type { Tile } from "../layout.ts";
+import { LineBuffer } from "../lines.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";
 import { type ToolResult, toolError } from "./context.ts";
-import type { Desktop } from "./desktop/index.ts";
 import type { Hands } from "./desktop/hands.ts";
+import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";

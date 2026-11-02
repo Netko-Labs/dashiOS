@@ -8,9 +8,9 @@
  */
 
 import type { CompositorWindow } from "../../compositor.ts";
-import { clean } from "../../notifications/text.ts";
 import type { AppGroup } from "../../force-quit/model.ts";
-import { type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { clean } from "../../notifications/text.ts";
+import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 
 type Target = Extract<Call, { name: "force_quit_app" }>["target"];

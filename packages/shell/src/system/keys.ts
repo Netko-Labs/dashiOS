@@ -4,8 +4,8 @@
  * press changes the system through its tool and shows the on-screen display.
  */
 
-import { stepBrightness, levelOf } from "./brightness.ts";
-import { type Run, run as defaultRun } from "./exec.ts";
+import { levelOf, stepBrightness } from "./brightness.ts";
+import { run as defaultRun, type Run } from "./exec.ts";
 import { isMediaKey, pressMedia } from "./media.ts";
 import type { OsdState } from "./osd-state.ts";
 import { SOURCE, stepVolume, toggleMute, type Volume } from "./volume.ts";

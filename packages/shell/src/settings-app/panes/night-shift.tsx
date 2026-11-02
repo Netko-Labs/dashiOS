@@ -5,9 +5,9 @@
  * a schedule the shell flips the switch at its edges.
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
-import { useColors } from "@dashi/ui";
 import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import {
@@ -19,8 +19,8 @@ import {
   FROM_HOURS,
   minutesOf,
   scheduleOf,
-  timeChoices,
   TO_HOURS,
+  timeChoices,
   WARMTH,
 } from "../night.ts";
 import type { SettingsStore } from "../store.ts";

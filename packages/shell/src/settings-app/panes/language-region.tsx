@@ -6,12 +6,12 @@
  * `region`).
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useClockPrefs, useMinuteClock } from "../../clock.ts";
 import { LocalePickers } from "../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../region/store.ts";
 import { firstDayIndex, previewFormats, weekdayNames } from "../../region/week.ts";
-import { useColors } from "@dashi/ui";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row } from "../ui.tsx";

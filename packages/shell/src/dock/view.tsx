@@ -7,13 +7,13 @@
  * it, and dragging it up out of the Dock removes it.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, Image, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import { type App, appFor } from "../apps.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
 import { DOCK, DOCK_HEIGHT } from "../theme.ts";
-import { useColors } from "@dashi/ui";
 import { type ToplevelStore, useToplevels } from "../toplevels.ts";
 import { type AttentionStore, useAttention } from "./attention.ts";
 import type { Autohide } from "./autohide.ts";

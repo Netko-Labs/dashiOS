@@ -1,9 +1,9 @@
 /** An app in a list: its icon, name, a line about it, and the pill; a click opens its page. */
 
+import { useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { AppSummary } from "../../src/software/flathub-types.ts";
-import { useColors, useSurface } from "@dashi/ui";
 import { fitText } from "./format.ts";
 import { appState } from "./model.ts";
 import { ActionPill, AppIcon, useActions, VerifiedBadge } from "./parts.tsx";

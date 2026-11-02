@@ -12,5 +12,5 @@ export {
   type SpacesState,
   spaceLabel,
 } from "./model.ts";
-export { startSpaces, type SpacesRuntime } from "./start.tsx";
-export { SwipeTracker, type SwipeStep } from "./swipe.ts";
+export { type SpacesRuntime, startSpaces } from "./start.tsx";
+export { type SwipeStep, SwipeTracker } from "./swipe.ts";

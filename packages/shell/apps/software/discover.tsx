@@ -1,14 +1,14 @@
 /** Discover: Trending, Popular, and Recently Updated apps from Flathub, a few of each. */
 
+import { useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { Answer, Collection, Flathub } from "../../src/software/flathub.ts";
 import type { Page } from "../../src/software/flathub-types.ts";
-import { useColors } from "@dashi/ui";
 import { CardGrid } from "./cards.tsx";
 import { useLoad } from "./hooks.ts";
-import { Failed, Loading, StaleNote } from "./states.tsx";
 import { useServices } from "./services.ts";
+import { Failed, Loading, StaleNote } from "./states.tsx";
 
 const SECTIONS: ReadonlyArray<{ kind: Collection; title: string; detail: string }> = [
   { kind: "trending", title: "Trending", detail: "What people are installing right now" },

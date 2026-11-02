@@ -7,7 +7,7 @@
  * and System Settings reach the same place.
  */
 
-import { type DockSettings, DOCK_DEFAULTS, sameDock } from "./settings.ts";
+import { DOCK_DEFAULTS, type DockSettings, sameDock } from "./settings.ts";
 
 export class DockPrefs {
   private current: DockSettings = { ...DOCK_DEFAULTS };

@@ -6,7 +6,7 @@
  * nothing to show.
  */
 
-import { type Run } from "../system/exec.ts";
+import type { Run } from "../system/exec.ts";
 import { type EthernetInfo, ethernetOf, isConnectionUuid, parseDevices, parseVpns, type VpnConnection } from "./parse.ts";
 
 export interface NetInfo {

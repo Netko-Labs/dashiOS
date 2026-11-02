@@ -1,10 +1,10 @@
 /** The note list: a column of rows, pinned first, with a date and the first line under each title. */
 
-import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useColors, useSurface } from "@dashi/ui";
+import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { FOLDER, PIN_FILLED } from "./glyphs.ts";
-import { KEEP_DAYS } from "./store.ts";
 import type { Row } from "./list.ts";
+import { KEEP_DAYS } from "./store.ts";
 import { daysLeft, listDate, preview } from "./text.ts";
 
 export const LIST_WIDTH = 276;

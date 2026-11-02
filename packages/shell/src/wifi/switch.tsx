@@ -1,7 +1,7 @@
 /** An on/off switch, macOS style: a pill that takes the accent color when on, with its knob at the end. */
 
-import { View } from "@mirinjs/metal";
 import { useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 
 export function Switch({ on, testID, onChange }: { on: boolean; testID: string; onChange: (on: boolean) => void }) {
   const colors = useColors();

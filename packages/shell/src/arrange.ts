@@ -5,7 +5,7 @@
  * on request (shortcuts, agents), and decides what zoom and full screen do.
  */
 
-import { type Compositor, parseFrame, parsePointer, type Placing } from "./compositor.ts";
+import { type Compositor, type Placing, parseFrame, parsePointer } from "./compositor.ts";
 import { dragZones, fitFrame, type Output, placeNew, type Rect, type Tile, tileFrame, usableFor, zoomFrame } from "./layout.ts";
 
 /** How long the pointer rests in a drag zone before its preview shows. */

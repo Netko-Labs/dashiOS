@@ -1,13 +1,13 @@
 /** Small pieces the pages share: an app's icon, the verified badge, the progress bar, and the Get / Open / Update pill. */
 
+import { darkColors, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import type { Installation } from "../../src/software/ids.ts";
-import { darkColors, useColors } from "@dashi/ui";
-import { type AppState, busyLabel } from "./model.ts";
 import { VERIFIED, VERIFIED_CHECK } from "./glyphs.ts";
 import { useImage } from "./hooks.ts";
+import { type AppState, busyLabel } from "./model.ts";
 
 /** What a click on an app's button does; the window provides it. */
 export interface Actions {

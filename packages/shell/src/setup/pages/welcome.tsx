@@ -1,8 +1,8 @@
+import { useColors } from "@dashi/ui";
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { LOGO } from "../../glyphs.ts";
 import { Button } from "../../settings-app/ui.tsx";
-import { useColors } from "@dashi/ui";
 import { PAGE_INFO } from "../flow.ts";
 import { startInstaller, systemLiveInstaller } from "../live.ts";
 

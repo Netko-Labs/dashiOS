@@ -8,10 +8,10 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import type { FlagsStore } from "../control-center/flags.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
-import { gtkCssPath, syncGtkCss } from "./gtk-css.ts";
-import { DEFAULT_STYLE, type GtkStyle } from "./gtk-colors.ts";
 import { type AppCommand, type AppLook, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
 import type { CornerSource } from "./corner-feed.ts";
+import { DEFAULT_STYLE, type GtkStyle } from "./gtk-colors.ts";
+import { gtkCssPath, syncGtkCss } from "./gtk-css.ts";
 import { detectLook, realProbes } from "./look.ts";
 
 export { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";

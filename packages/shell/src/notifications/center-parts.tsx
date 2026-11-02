@@ -4,9 +4,9 @@
  * beside the clickable part, not on it, so a press can only mean one thing.
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
-import { useColors } from "@dashi/ui";
 import { relativeTime } from "./group.ts";
 import { notificationIcon } from "./icon.ts";
 import { ellipsize } from "./text.ts";

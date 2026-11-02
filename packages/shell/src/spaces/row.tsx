@@ -8,10 +8,10 @@
  * drop uses too, so what is hit is what is drawn.
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { useColors } from "@dashi/ui";
-import { rowLayout, ROW, type SpacesState, spaceLabel } from "./model.ts";
+import { ROW, rowLayout, type SpacesState, spaceLabel } from "./model.ts";
 
 export interface RowProps {
   spaces: { subscribe(listener: () => void): () => void; getSnapshot(): SpacesState };

@@ -6,22 +6,22 @@
  * Enter opens, Backspace goes back, and typing jumps to a name.
  */
 
+import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, Segmented, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
-import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, Segmented, useColors } from "@dashi/ui";
-import { parseUriList, looksLikeUriList } from "./clipboard.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
+import { looksLikeUriList, parseUriList } from "./clipboard.ts";
 import { Files, type WindowActions } from "./context.ts";
 import { Footer } from "./footer.tsx";
-import { Grid } from "./grid.tsx";
-import { ListView } from "./list.tsx";
-import { locationTitle, folderAt } from "./location.ts";
-import { actionMenu, backgroundMenu, itemMenu } from "./menus.ts";
 import { formatCount } from "./format.ts";
+import { Grid } from "./grid.tsx";
 import type { FileItem } from "./items.ts";
-import type { Operations } from "./operations.ts";
+import { ListView } from "./list.tsx";
+import { folderAt, locationTitle } from "./location.ts";
+import { actionMenu, backgroundMenu, itemMenu } from "./menus.ts";
 import type { OpenWithApp } from "./open.ts";
+import type { Operations } from "./operations.ts";
 import { InfoSheet, NameSheet, OpenWithSheet, PathSheet } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { FilesStore } from "./store.ts";

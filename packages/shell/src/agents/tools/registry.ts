@@ -5,14 +5,14 @@
  */
 
 import type { Scope } from "../consent.ts";
-import { type Args, fail, listing, stray, type ToolDef } from "./define.ts";
 import { calendarTools } from "./calendar.ts";
+import { type Args, fail, listing, stray, type ToolDef } from "./define.ts";
 import { fileTools } from "./files.ts";
 import { inputTools } from "./input.ts";
-import { menuTools } from "./menus.ts";
-import { notificationTools } from "./notifications.ts";
 import { machineTools } from "./machine.ts";
+import { menuTools } from "./menus.ts";
 import { noteTools } from "./notes.ts";
+import { notificationTools } from "./notifications.ts";
 import { previewTools } from "./preview.ts";
 import { regionTools } from "./region.ts";
 import { screenTools } from "./screen.ts";

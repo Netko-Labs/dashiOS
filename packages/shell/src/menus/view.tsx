@@ -5,9 +5,9 @@
  * arrow keys highlight a row; a click or Enter chooses it.
  */
 
+import { CHECK, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { CHECK, Shortcut, useColors } from "@dashi/ui";
 import { KeyCatcher } from "../overlay.tsx";
 import { isEnabled, type MenuAction, type MenuEntry, stepHighlight } from "./model.ts";
 

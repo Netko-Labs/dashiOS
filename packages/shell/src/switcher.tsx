@@ -6,10 +6,10 @@
  * the keys (keymap.ts); the compositor reports when ❖ comes up.
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
-import { useColors } from "@dashi/ui";
 
 export interface SwitcherApp {
   appId: string;

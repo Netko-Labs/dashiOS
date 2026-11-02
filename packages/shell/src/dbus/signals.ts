@@ -5,7 +5,7 @@
  * rule, so a handler only sees what it asked for.
  */
 
-import { MessageType, type Message } from "./message.ts";
+import { type Message, MessageType } from "./message.ts";
 
 export interface MatchRule {
   type?: "signal" | "method_call" | "method_return" | "error";

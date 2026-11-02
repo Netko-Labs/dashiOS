@@ -7,16 +7,16 @@
 
 import { compress } from "./archive.ts";
 import { eject, mount } from "./drives.ts";
+import { formatCount } from "./format.ts";
 import type { FileItem } from "./items.ts";
 import { Jobs } from "./jobs.ts";
+import type { Volume } from "./mounts.ts";
+import { appsFor, type OpenWithApp, openWith } from "./open.ts";
 import { copyInto, duplicate, makeFolder, moveInto, OpError, renamePath } from "./ops.ts";
-import { appsFor, openWith, type OpenWithApp } from "./open.ts";
 import { baseName, isInside, parentOf } from "./paths.ts";
 import { measure } from "./size.ts";
 import type { FilesStore } from "./store.ts";
 import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "./trashops.ts";
-import { formatCount } from "./format.ts";
-import type { Volume } from "./mounts.ts";
 
 const quote = (name: string): string => `“${name}”`;
 

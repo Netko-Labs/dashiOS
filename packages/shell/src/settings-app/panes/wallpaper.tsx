@@ -8,9 +8,9 @@
  * the Live section (wallpaper-live.tsx).
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { useColors } from "@dashi/ui";
 import { DEFAULT_WALLPAPER_MODE, selectedRef, type WallpaperMode } from "../../wallpaper/catalog.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { pathFor, photoProblem, type WallpaperTile, wallpaperTiles, withPhoto } from "../../wallpaper/tiles.ts";

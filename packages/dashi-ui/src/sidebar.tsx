@@ -4,8 +4,8 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useColors } from "./theme/index.ts";
 import { Tile } from "./controls.tsx";
+import { useColors } from "./theme/index.ts";
 
 export interface SidebarItemProps {
   label: string;

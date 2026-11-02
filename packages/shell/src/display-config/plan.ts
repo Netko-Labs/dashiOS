@@ -7,7 +7,7 @@
  */
 
 import { choosePrimary } from "../menubars.ts";
-import { identityOf, type Monitor, type Mode, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
+import { identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";
 
 /** What one monitor should be; a field left out is left alone. Names are the compositor's connectors. */

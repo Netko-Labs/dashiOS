@@ -9,11 +9,11 @@
  * microphone's level meter (which would be a way to listen).
  */
 
-import type { PaneServices } from "./services.ts";
-import { describeBattery } from "../system/battery-details.ts";
 import { describeAction } from "../power/policy.ts";
+import { describeBattery } from "../system/battery-details.ts";
 import { isProfileId, PROFILE_LABEL, type ProfileId } from "../system/profiles.ts";
 import type { Volume } from "../system/volume.ts";
+import type { PaneServices } from "./services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "./store.ts";
 
 /** One of several things matching a name: exactly one, none, or too many to choose between. */

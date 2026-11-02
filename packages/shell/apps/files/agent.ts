@@ -13,8 +13,8 @@ import { type Exec, exec } from "./exec.ts";
 import { type FileItem, readFolder } from "./items.ts";
 import { type MimeIndex, mimeOf } from "./mime.ts";
 import { mayOpen, openWithDefault } from "./open.ts";
+import type { OpContext } from "./ops.ts";
 import { baseName, expandHome, isInside, normalizePath, parentOf, tilde } from "./paths.ts";
-import { type OpContext } from "./ops.ts";
 import { searchComputer, searchFolder } from "./search.ts";
 import { protectedReason, trashPaths } from "./trashops.ts";
 

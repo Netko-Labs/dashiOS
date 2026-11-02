@@ -11,8 +11,8 @@
  * and the lock is released whatever happened while locking.
  */
 
-import { sayOnce } from "./log.ts";
 import type { HeldLock } from "./inhibit.ts";
+import { sayOnce } from "./log.ts";
 import type { ScreenLock } from "./screenlock.ts";
 
 export const SLEEP_LOCK = {

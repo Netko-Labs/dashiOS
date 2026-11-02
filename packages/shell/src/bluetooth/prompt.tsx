@@ -5,8 +5,8 @@
  * that may be open closes first: it would only sit in the way.
  */
 
-import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { SHEET_SIZE } from "../menus/sheets.tsx";
+import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { PairingSheet } from "./sheet.tsx";
 import type { BluetoothStore } from "./store.ts";
 

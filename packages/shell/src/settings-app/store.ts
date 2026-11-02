@@ -32,11 +32,11 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { CORNER_NAMES, type CornerName } from "../corners.ts";
+import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
 import { isFormatsLocale } from "../region/locale.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
-import { CORNER_NAMES, type CornerName } from "../corners.ts";
-import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
   FRAME_RATES,

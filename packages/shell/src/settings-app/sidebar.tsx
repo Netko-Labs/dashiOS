@@ -1,8 +1,8 @@
 /** The sidebar: one row per pane, in groups, the chosen one on the accent. */
 
+import { SidebarItem, useColors } from "@dashi/ui";
 import { ScrollView, useWindowChrome, View } from "@mirinjs/metal";
 import { Fragment } from "react";
-import { SidebarItem, useColors } from "@dashi/ui";
 import { type PaneId, paneGroups } from "./panes.ts";
 import { useSurface } from "./ui.tsx";
 

@@ -8,10 +8,10 @@
  * person types elsewhere must not answer it.
  */
 
+import { Shortcut, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { AgentInfo, Allow, Ask } from "./agents/index.ts";
-import { Shortcut, useColors } from "@dashi/ui";
 
 /** The sheet's surface, with room for its shadow and for every scope's row (SCOPES). */
 export const CONSENT = { width: 500, height: 740 } as const;

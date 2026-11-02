@@ -6,8 +6,8 @@
  */
 
 import type { Counters, MemInfo, NetCounters } from "./proc.ts";
-import { readSnapshot, type ReadOptions, type Snapshot } from "./read.ts";
-import { type CpuSplit, cpuSplit, type ProcessRow, processRows, pushHistory, rates, type RowContext } from "./sample.ts";
+import { type ReadOptions, readSnapshot, type Snapshot } from "./read.ts";
+import { type CpuSplit, cpuSplit, type ProcessRow, processRows, pushHistory, type RowContext, rates } from "./sample.ts";
 
 export const INTERVAL_MS = 2000;
 

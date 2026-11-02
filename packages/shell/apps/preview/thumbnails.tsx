@@ -1,7 +1,7 @@
 /** The PDF's page strip: a thumbnail per page, the open page marked, a click goes there. */
 
-import { Image, ScrollView, Text, View } from "@mirinjs/metal";
 import { useColors } from "@dashi/ui";
+import { Image, ScrollView, Text, View } from "@mirinjs/metal";
 import type { PdfState } from "./viewer.ts";
 
 const THUMB_WIDTH = 150;

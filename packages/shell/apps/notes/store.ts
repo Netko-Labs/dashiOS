@@ -8,7 +8,7 @@
  * writes are atomic, and moves never overwrite.
  */
 
-import { existsSync, type Dirent, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, unlinkSync } from "node:fs";
+import { type Dirent, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { isRealDirectory, isRegularFile, MAX_NOTE_BYTES, moveNoClobber, writeAtomic, writeNew } from "./files.ts";

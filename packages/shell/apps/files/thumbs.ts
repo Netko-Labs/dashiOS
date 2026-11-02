@@ -6,7 +6,7 @@
  * edited image never shows its old picture.
  */
 
-import { existsSync, openSync, readSync, closeSync } from "node:fs";
+import { closeSync, existsSync, openSync, readSync } from "node:fs";
 import { join } from "node:path";
 import { fileUri } from "./uri.ts";
 

@@ -37,7 +37,7 @@
 import { accessSync, closeSync, constants, openSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { iconPath, launch as launchApp, type App } from "./apps.ts";
+import { type App, iconPath, launch as launchApp } from "./apps.ts";
 import { desktopFields, parseExec, splitList } from "./entries.ts";
 
 /** The desktop name `OnlyShowIn` and `NotShowIn` are matched against. */

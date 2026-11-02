@@ -1,9 +1,9 @@
 /** About: Dashi and the machine it runs on. */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { LOGO } from "../../glyphs.ts";
-import { useColors } from "@dashi/ui";
 import { formatMemory, formatStorage, versionLine } from "../about.ts";
 import type { PaneContext } from "../context.ts";
 import { Button, Group, Page, Row } from "../ui.tsx";

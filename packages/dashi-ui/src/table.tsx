@@ -7,10 +7,9 @@
 
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { useColors } from "./theme/index.ts";
-import { useSurface } from "./theme/index.ts";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
+import { useColors, useSurface } from "./theme/index.ts";
 
 export interface Column<T> extends SortableColumn<T> {
   title: string;

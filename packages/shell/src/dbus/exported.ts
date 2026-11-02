@@ -1,7 +1,7 @@
 /** The pieces of exporting an object that don't touch the socket. */
 
-import { Flags, type Message, MessageType } from "./message.ts";
 import { PROPERTIES } from "./introspect.ts";
+import { Flags, type Message, MessageType } from "./message.ts";
 import type { ObjectRegistry, Reply } from "./object.ts";
 import type { ExportedObject, SignalSpec } from "./types.ts";
 import { Variant } from "./variant.ts";

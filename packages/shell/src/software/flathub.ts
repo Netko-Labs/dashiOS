@@ -6,10 +6,10 @@
  * with nothing cached does the call fail, as `offline`.
  */
 
-import { JsonCache } from "./cache.ts";
+import type { JsonCache } from "./cache.ts";
 import { type FetchLike, getBytes, NetworkError } from "./fetch.ts";
-import type { AppDetails, Page } from "./flathub-types.ts";
 import { parseCategories, parseDetails, parsePage, parseSizes } from "./flathub-parse.ts";
+import type { AppDetails, Page } from "./flathub-types.ts";
 import { appIdOrNull } from "./ids.ts";
 import { API_HOSTS } from "./parse-values.ts";
 

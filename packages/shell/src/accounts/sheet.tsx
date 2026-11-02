@@ -6,10 +6,10 @@
  * it. What is typed goes to `PasswordChanger` and is forgotten with the sheet.
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Button, Panel } from "../menus/sheets.tsx";
-import { useColors } from "@dashi/ui";
 import type { PasswordChanger, PasswordFailure } from "./types.ts";
 
 const FAILURE: Record<PasswordFailure, string> = {

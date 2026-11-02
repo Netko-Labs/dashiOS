@@ -9,7 +9,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { type Mode, type Rotation, ROTATIONS } from "./monitors.ts";
+import { type Mode, ROTATIONS, type Rotation } from "./monitors.ts";
 
 /** More arrangements than anyone has monitor sets; the oldest are dropped. */
 const MAX_LAYOUTS = 50;

@@ -9,7 +9,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { type AppLook } from "./apps.ts";
+import type { AppLook } from "./apps.ts";
 import { ACCENT, nearestAccent } from "./gtk-colors.ts";
 
 export const ADW_GTK3 = "adw-gtk3";

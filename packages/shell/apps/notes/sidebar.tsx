@@ -1,7 +1,7 @@
 /** The folders column: All Notes, the default folder and the ones you made, Recently Deleted, and New Folder. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { SidebarItem, SidebarSection, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { FOLDER, FOLDER_PLUS, NOTES, TRASH } from "./glyphs.ts";
 import type { Source } from "./list.ts";
 import { DEFAULT_FOLDER_NAME } from "./names.ts";

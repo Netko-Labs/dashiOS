@@ -5,12 +5,12 @@
  * again while the page is open, so a headset plugged in appears on its own.
  */
 
+import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect } from "react";
 import { BLUETOOTH, CHEVRON_LEFT } from "../control-center/glyphs.ts";
 import { Slider } from "../control-center/slider.tsx";
 import { speakerGlyph } from "../glyphs.ts";
-import { CHECK, useColors } from "@dashi/ui";
 import type { Volume } from "../system/volume.ts";
 import { DISPLAY, HEADPHONES } from "./glyphs.ts";
 import { type SoundStore, useSound } from "./store.ts";

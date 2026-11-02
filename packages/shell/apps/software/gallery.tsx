@@ -1,9 +1,9 @@
 /** Screenshots: the first one large, the others as a strip of thumbnails; a click on a thumbnail shows that one large. */
 
+import { useColors, useSurface } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Screenshot } from "../../src/software/flathub-types.ts";
-import { useColors, useSurface } from "@dashi/ui";
 import { useImage } from "./hooks.ts";
 
 const BIG_HEIGHT = 320;

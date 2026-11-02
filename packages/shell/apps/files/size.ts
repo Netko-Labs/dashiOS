@@ -21,7 +21,7 @@ export interface Measure {
 export async function measure(
   path: string,
   signal?: AbortSignal,
-  onProgress?: (so_far: Measure) => void,
+  onProgress?: (soFar: Measure) => void,
   every = 500,
 ): Promise<Measure & { cancelled: boolean }> {
   const total: Measure = { bytes: 0, files: 0, folders: 0, unreadable: 0 };

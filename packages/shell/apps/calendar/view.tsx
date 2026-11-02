@@ -8,26 +8,26 @@
  * menu bar's ❖ shortcuts come through useAppMenus).
  */
 
+import { AppWindow, KeySink, type MenuItem, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
-import { AppWindow, KeySink, type MenuItem, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
-import { MonthView } from "./month-view.tsx";
-import { TimeGrid } from "./time-grid.tsx";
 import type { Day } from "./dates.ts";
 import { blankDraft, type Draft, draftOf, inputOf } from "./draft.ts";
 import { EventSheet } from "./event-sheet.tsx";
 import { viewTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT, PLUS } from "./glyphs.ts";
-import { readIcsFile } from "./import.ts";
 import type { IcsChooser } from "./import.ts";
+import { readIcsFile } from "./import.ts";
 import { type View as ViewName, viewDays, weekDays } from "./layout.ts";
 import { calendarMenus } from "./menus.ts";
 import type { CalendarModel } from "./model.ts";
+import { MonthView } from "./month-view.tsx";
 import { useRegionPrefs } from "./prefs.ts";
 import { CalendarSheet, DeleteCalendarSheet, DeleteEventSheet, ImportPathSheet, type SheetState } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
-import { CalendarError, type Calendar, type Occurrence } from "./types.ts";
+import { TimeGrid } from "./time-grid.tsx";
+import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
 
 export const CALENDAR_SIZE = { width: 1120, height: 740 } as const;
 

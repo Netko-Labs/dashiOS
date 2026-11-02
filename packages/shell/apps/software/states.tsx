@@ -1,7 +1,7 @@
 /** What a page shows while it loads, when it can't (offline, Flathub's trouble), and when it served saved results. */
 
-import { Text, View } from "@mirinjs/metal";
 import { Button, EmptyState, glyphs, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { OFFLINE } from "./glyphs.ts";
 import type { Load } from "./hooks.ts";
 

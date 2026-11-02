@@ -6,8 +6,8 @@
  * make it so the stack (stack.ts) can place them.
  */
 
-import { Image, Text, View } from "@mirinjs/metal";
 import { useColors } from "@dashi/ui";
+import { Image, Text, View } from "@mirinjs/metal";
 import { notificationIcon } from "./icon.ts";
 import { type NotificationStore, useNotifications } from "./store.ts";
 import { ellipsize } from "./text.ts";

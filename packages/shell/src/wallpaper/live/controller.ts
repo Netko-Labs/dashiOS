@@ -17,7 +17,7 @@ import type { Battery } from "../../system/battery.ts";
 import type { WallpaperChoice } from "../catalog.ts";
 import type { WallpaperSync } from "../sync.ts";
 import { type LiveChoice, resolveLive } from "./choice.ts";
-import { type PauseReason, isCovered, parseScreenAreas, pauseReason, type ScreenArea } from "./pause.ts";
+import { isCovered, type PauseReason, parseScreenAreas, pauseReason, type ScreenArea } from "./pause.ts";
 
 export interface LiveHost {
   request: Compositor["request"];

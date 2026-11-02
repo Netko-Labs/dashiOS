@@ -6,10 +6,10 @@
  * so a typo is one fix away.
  */
 
+import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { wifiGlyph } from "../glyphs.ts";
-import { CHECK, useColors } from "@dashi/ui";
 import { Button, Panel } from "../menus/sheets.tsx";
 import { joinMessage, passwordProblem } from "./networks.ts";
 import { useWifi, type WifiStore } from "./store.ts";

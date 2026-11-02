@@ -62,7 +62,7 @@ export async function runSession(specs: readonly ServiceSpec[] = sessionServices
     services.map(async (service) => {
       if ((await service.start()) === "gave-up" && service.spec.essential) {
         code = 1;
-        log(`the ${service.spec.name} cannot be kept running, so the session is over: ` + `press Ctrl+Alt+Backspace to leave it, or Ctrl+Alt+F3 for a console`);
+        log(`the ${service.spec.name} cannot be kept running, so the session is over: ` + "press Ctrl+Alt+Backspace to leave it, or Ctrl+Alt+F3 for a console");
         end(`${service.spec.name} gave up`);
       }
     }),

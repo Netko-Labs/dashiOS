@@ -1,7 +1,7 @@
 /** The toolbar's controls: back and forward before the title; view switch, select-multiple, new folder, the menu, and search after it. */
 
-import { Svg, View } from "@mirinjs/metal";
 import { SearchField, ToolbarButton, useColors, useSurface } from "@dashi/ui";
+import { Svg, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
 import { BACK, CHECKED, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
 

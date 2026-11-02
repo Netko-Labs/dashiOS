@@ -5,7 +5,7 @@
  * and next move. Pure.
  */
 
-import { addDays, addMonths, type Day, daysInMonth, dayPart, firstOfMonth, minuteOfDay, monthOf, startOfWeek, weekday } from "./dates.ts";
+import { addDays, addMonths, type Day, dayPart, daysInMonth, firstOfMonth, minuteOfDay, monthOf, startOfWeek, weekday } from "./dates.ts";
 import type { Occurrence } from "./types.ts";
 
 export const VIEWS = ["day", "week", "month"] as const;

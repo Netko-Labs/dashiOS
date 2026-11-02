@@ -1,10 +1,10 @@
 /** Files' sheets: naming (new folder, rename), Get Info, and Open With. Drawn inside the window by the kit's Sheet. */
 
+import { Button, Group, Sheet, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { Button, Group, Sheet, TextField, useColors } from "@dashi/ui";
 import { formatCount, formatDate, formatSize } from "./format.ts";
-import { loadInfo, type ItemInfo } from "./info.ts";
+import { type ItemInfo, loadInfo } from "./info.ts";
 import type { FileItem } from "./items.ts";
 import type { OpenWithApp } from "./open.ts";
 import { checkName } from "./paths.ts";
@@ -130,7 +130,7 @@ export function InfoSheet({ item, home, onClose }: { item: FileItem; home: strin
       const result = await measure(
         item.path,
         controller.signal,
-        (so_far) => !controller.signal.aborted && setFolder({ bytes: so_far.bytes, files: so_far.files, done: false }),
+        (soFar) => !controller.signal.aborted && setFolder({ bytes: soFar.bytes, files: soFar.files, done: false }),
       );
       if (!controller.signal.aborted) setFolder({ bytes: result.bytes, files: result.files, done: true });
     });

@@ -1,12 +1,12 @@
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useFlags } from "../../control-center/flags.ts";
 import { useClockPrefs, usesHour24 } from "../../clock.ts";
+import { useFlags } from "../../control-center/flags.ts";
 import { useRegion } from "../../region/store.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
 import { describeLayout } from "../../settings-app/layouts.ts";
 import { Group, Row } from "../../settings-app/ui.tsx";
 import { useWifi } from "../../wifi/store.ts";
-import { useColors } from "@dashi/ui";
 import type { SetupContext } from "../context.ts";
 
 function Value({ children, testID }: { children: string; testID: string }) {

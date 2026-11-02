@@ -8,7 +8,7 @@
  * rule as the radios, `control-center/radios.ts`).
  */
 
-import { type Run, run as defaultRun } from "../system/exec.ts";
+import { run as defaultRun, type Run } from "../system/exec.ts";
 import { parseDump, type Side } from "./parse-dump.ts";
 import { parseStatus } from "./parse-status.ts";
 import type { AudioBackend, Output, SoundBackend } from "./types.ts";

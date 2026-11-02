@@ -6,7 +6,7 @@
  * default device, `backend.ts`).
  */
 
-import { type Run, run as defaultRun } from "../system/exec.ts";
+import { run as defaultRun, type Run } from "../system/exec.ts";
 import { readVolume, SINK, SOURCE, type Volume } from "../system/volume.ts";
 import type { Side } from "./parse-dump.ts";
 

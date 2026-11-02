@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { Variant, variant } from "../dbus/index.ts";
+import { type Variant, variant } from "../dbus/index.ts";
 
 /** polkit's `Subject`: a kind and its details, `(sa{sv})`. */
 export type Subject = readonly [kind: string, details: Map<string, Variant>];

@@ -1,7 +1,7 @@
 /** What a tool call comes to once its arguments are checked. */
 
-import type { DockStyle } from "../../dock/settings.ts";
 import type { CornerName } from "../../corners.ts";
+import type { DockStyle } from "../../dock/settings.ts";
 import type { Tile } from "../../layout.ts";
 import type { PageId } from "../../setup/flow.ts";
 import type { ProfileId } from "../../system/profiles.ts";

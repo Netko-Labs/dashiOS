@@ -1,7 +1,7 @@
 /** The strip under the content: running jobs with Cancel, the last message, and the path bar with the status line. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState, useJobs } from "./context.ts";
 import { formatCount, formatSize } from "./format.ts";
 import { CHEVRON, CLOSE } from "./glyphs.ts";

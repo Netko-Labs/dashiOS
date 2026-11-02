@@ -6,8 +6,8 @@
  * too, as on the Mac (settings.json `spaces.switchOnActivate`).
  */
 
-import { Switch } from "../../wifi/switch.tsx";
 import { resolveDock } from "../../dock/settings.ts";
+import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row } from "../ui.tsx";

@@ -1,7 +1,7 @@
 /** Spaces for agents, through the compositor as the shell's own keys go (spaces/). Agents count Spaces from 1. */
 
 import { parseSpaces, spaceLabel } from "../../spaces/model.ts";
-import { json, type RunContext, text, type ToolResult, toolError } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
 
 async function spaces(ctx: RunContext) {

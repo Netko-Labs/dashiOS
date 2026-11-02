@@ -6,7 +6,7 @@
  * radios the Control Center switches get.
  */
 
-import { type Run } from "../system/exec.ts";
+import type { Run } from "../system/exec.ts";
 
 export interface Radio {
   /** Whether it is on; null when it cannot be asked. */

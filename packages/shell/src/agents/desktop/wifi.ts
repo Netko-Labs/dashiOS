@@ -7,7 +7,7 @@
 
 import { joinMessage } from "../../wifi/networks.ts";
 import type { WifiNetwork } from "../../wifi/types.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /**
  * What an agent may join: a network the person joined before, with the

@@ -1,9 +1,9 @@
 /** The screens, through the compositor's `outputs` and `output` (displays.ts has the rules). */
 
-import { type ApplyResult } from "../../display-config/manager.ts";
-import { type Monitor, parseMonitors, refreshLabel, type Rotation } from "../../display-config/monitors.ts";
+import type { ApplyResult } from "../../display-config/manager.ts";
+import { type Monitor, parseMonitors, type Rotation, refreshLabel } from "../../display-config/monitors.ts";
 import { isBuiltIn, leavesRoom, parseScreens, type ScreenInfo, scalesFor } from "../../displays.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 const screens = async (ctx: RunContext): Promise<ScreenInfo[]> => parseScreens(await ctx.compositor.request("outputs"));
 

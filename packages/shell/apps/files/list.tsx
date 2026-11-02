@@ -1,12 +1,12 @@
 /** The list view: the kit's Table with Name, Date Modified, Size, and Kind (Where while searching), sortable. */
 
+import { type Column, Table, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
-import { type Column, Table, useColors } from "@dashi/ui";
 import { useFiles, useFilesState } from "./context.ts";
-import { columnMode, fileColumns } from "./sort.ts";
 import { iconFor } from "./icons.ts";
 import type { FileItem } from "./items.ts";
+import { columnMode, fileColumns } from "./sort.ts";
 
 export function ListView({ items, empty }: { items: readonly FileItem[]; empty: React.ReactNode }) {
   const { store, actions } = useFiles();

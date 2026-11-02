@@ -5,7 +5,7 @@
  * window screenshot.
  */
 
-import { fail, isCallError, type Args, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
+import { type Args, fail, isCallError, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
 import { type Chord, parseKeys } from "./keys.ts";
 import type { Button, CallError, Point } from "./types.ts";
 

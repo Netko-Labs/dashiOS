@@ -5,11 +5,11 @@
  * the apps opened from it last (recents.ts).
  */
 
+import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { calculate, type Entry, search } from "./entries.ts";
 import type { FileHit } from "./file-search.ts";
-import { useColors } from "@dashi/ui";
 
 export const LAUNCHER = { width: 620, height: 440, rowHeight: 44 } as const;
 

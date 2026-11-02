@@ -13,7 +13,7 @@ import { occurrencesIn } from "../../../apps/calendar/recurrence.ts";
 import { readSidecar } from "../../../apps/calendar/sidecar.ts";
 import { CalendarStore, defaultRoot } from "../../../apps/calendar/store.ts";
 import { type Calendar, CalendarError, type Occurrence } from "../../../apps/calendar/types.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** The most of an event's notes one listing returns. */
 export const NOTES_CHARS = 300;

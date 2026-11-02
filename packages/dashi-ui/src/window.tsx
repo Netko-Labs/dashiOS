@@ -11,8 +11,7 @@
 
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { useColors } from "./theme/index.ts";
-import { useSurface } from "./theme/index.ts";
+import { useColors, useSurface } from "./theme/index.ts";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
 const TOOLBAR_HEIGHT = 44;

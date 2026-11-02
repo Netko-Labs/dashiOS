@@ -5,7 +5,7 @@
  */
 
 import { PROFILE_LABEL } from "../../system/profiles.ts";
-import { json, type RunContext, text, type ToolResult, toolError } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 
 export async function getNetwork(ctx: RunContext): Promise<ToolResult> {

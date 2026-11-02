@@ -7,7 +7,7 @@
  */
 
 import { describeFailure } from "../../region/store.ts";
-import { json, type RunContext, text, type ToolResult, toolError } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 
 export function getRegionSettings(ctx: RunContext): ToolResult {

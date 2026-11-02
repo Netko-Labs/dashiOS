@@ -6,7 +6,7 @@
  * days that have events from it.
  */
 
-import { type Day } from "../../apps/calendar/dates.ts";
+import type { Day } from "../../apps/calendar/dates.ts";
 import { busyDays } from "../../apps/calendar/recurrence.ts";
 import { readSidecar } from "../../apps/calendar/sidecar.ts";
 import { CalendarStore } from "../../apps/calendar/store.ts";

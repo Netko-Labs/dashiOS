@@ -1,9 +1,9 @@
 /** The store and operations a Files window's views share. */
 
 import { createContext, useContext, useSyncExternalStore } from "react";
+import type { Job } from "./jobs.ts";
 import type { Operations } from "./operations.ts";
 import type { FilesState, FilesStore } from "./store.ts";
-import type { Job } from "./jobs.ts";
 
 export interface FilesContext {
   store: FilesStore;

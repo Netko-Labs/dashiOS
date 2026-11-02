@@ -1,7 +1,6 @@
 /** Volumes on this machine: read from the kernel and lsblk, mounted and ejected with udisksctl. */
 
-import { readFile } from "node:fs/promises";
-import { statfs } from "node:fs/promises";
+import { readFile, statfs } from "node:fs/promises";
 import { type Exec, exec } from "./exec.ts";
 import { ejectCommands, mountCommand, mountedAt, parseLsblk, parseMountinfo, type Volume, volumesFrom } from "./mounts.ts";
 

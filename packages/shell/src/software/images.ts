@@ -5,7 +5,7 @@
  * only real images, and never more than the cache's limits.
  */
 
-import { ImageCache, LIMITS } from "./cache.ts";
+import { type ImageCache, LIMITS } from "./cache.ts";
 import { type FetchLike, getBytes } from "./fetch.ts";
 import { httpsUrl, MEDIA_HOSTS } from "./parse-values.ts";
 

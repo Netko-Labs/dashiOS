@@ -5,7 +5,7 @@
  * asked to: a listing reads one directory, never recurses.
  */
 
-import { type Dirent, type Stats } from "node:fs";
+import type { Dirent, Stats } from "node:fs";
 import { lstat, readdir, readFile, readlink, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { categoryOf, INODE_DIRECTORY, kindOf, type MimeIndex, mimeOf, UNKNOWN_TYPE } from "./mime.ts";

@@ -8,7 +8,7 @@
 
 import { type Day, dayOf } from "./dates.ts";
 import type { EventInput } from "./event.ts";
-import { type View, viewRange, step } from "./layout.ts";
+import { step, type View, viewRange } from "./layout.ts";
 import { busyDays, occurrencesIn } from "./recurrence.ts";
 import { readSidecar, writeSidecar } from "./sidecar.ts";
 import type { CalendarStore } from "./store.ts";

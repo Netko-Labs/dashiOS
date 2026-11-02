@@ -4,9 +4,9 @@
  * The icon sits inside the fill, as in macOS.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { useColors } from "@dashi/ui";
 import { fillWidth, KNOB, sliderValue } from "./slider-math.ts";
 
 export function Slider({

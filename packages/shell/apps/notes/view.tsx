@@ -6,10 +6,10 @@
  * and down arrows move through the list (Metal reports no Ctrl shortcuts).
  */
 
+import { AppWindow, KeySink, type MenuItem, PopupMenu, SearchField, Segmented, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
-import { AppWindow, KeySink, type MenuItem, PopupMenu, SearchField, Segmented, ToolbarButton, useColors } from "@dashi/ui";
 import { Editor } from "./editor.tsx";
 import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "./glyphs.ts";
 import type { Row } from "./list.ts";

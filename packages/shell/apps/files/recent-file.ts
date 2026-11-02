@@ -2,7 +2,7 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { type RecentFile, parseRecentlyUsed } from "./recent.ts";
+import { parseRecentlyUsed, type RecentFile } from "./recent.ts";
 import { dataHome } from "./xdg.ts";
 
 export async function readRecents(env: Record<string, string | undefined> = process.env): Promise<RecentFile[]> {

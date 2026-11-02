@@ -7,9 +7,9 @@
  * stays with the password on the lock screen; nothing else may open it.
  */
 
+import type { LockWatch } from "./lockwatch.ts";
 import { sayOnce } from "./log.ts";
 import type { Logind } from "./logind.ts";
-import type { LockWatch } from "./lockwatch.ts";
 
 export interface SessionWatchDeps {
   logind: Pick<Logind, "findSession" | "onSessionLock" | "setLockedHint">;

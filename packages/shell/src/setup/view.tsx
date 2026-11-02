@@ -5,15 +5,15 @@
  * undoes anything.
  */
 
+import { CHECK } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 import { CONTRAST } from "../control-center/glyphs.ts";
 import { wifiGlyph } from "../glyphs.ts";
-import { CHECK } from "@dashi/ui";
 import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../settings-app/glyphs.ts";
 import { useWifi } from "../wifi/store.ts";
 import type { SetupContext } from "./context.ts";
+import { PAGE_INFO, type PageId } from "./flow.ts";
 import { Frame } from "./frame.tsx";
-import { type PageId, PAGE_INFO } from "./flow.ts";
 import { AgentsPage } from "./pages/agents.tsx";
 import { AppearancePage } from "./pages/appearance.tsx";
 import { DonePage } from "./pages/done.tsx";

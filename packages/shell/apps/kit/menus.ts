@@ -16,8 +16,8 @@
 
 import { existsSync } from "node:fs";
 import { useEffect, useRef } from "react";
-import { LineBuffer } from "../../src/lines.ts";
 import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/app-menus/protocol.ts";
+import { LineBuffer } from "../../src/lines.ts";
 
 export type { MenuItemSpec, MenuSpec } from "../../src/app-menus/protocol.ts";
 

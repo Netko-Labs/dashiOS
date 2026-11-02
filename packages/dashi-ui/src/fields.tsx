@@ -4,10 +4,9 @@
  */
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { useColors } from "./theme/index.ts";
 import type { Choice } from "./controls.tsx";
-import { useSurface } from "./theme/index.ts";
 import { CLEAR, SEARCH } from "./glyphs.ts";
+import { useColors, useSurface } from "./theme/index.ts";
 
 /** macOS's segmented control: a sunk track, the chosen segment raised on it. */
 export function Segmented<T extends string | number>({

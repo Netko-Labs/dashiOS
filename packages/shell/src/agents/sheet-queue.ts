@@ -6,8 +6,8 @@
  * logic; agent-sheets.tsx supplies the Metal surfaces.
  */
 
-import type { Answer } from "./presence.ts";
 import { ASK_TIMEOUT_MS } from "./confirm.ts";
+import type { Answer } from "./presence.ts";
 
 /** A sheet waiting its turn, or showing. */
 export interface QueuedSheet {

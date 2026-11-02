@@ -16,7 +16,7 @@ import { Software } from "../../software/manager.ts";
 import { cacheRoot } from "../../software/paths.ts";
 import { standIn } from "../../software/stand-in.ts";
 import { formatBytes, tidy } from "../../software/text.ts";
-import { json, type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 
 /** What the tools need of the catalog and the package tools; tests give fakes. */

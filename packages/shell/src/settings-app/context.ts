@@ -1,7 +1,7 @@
 import type { Grants } from "../agents/consent.ts";
-import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import type { RegionStore } from "../region/store.ts";
+import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { AboutInfo } from "./about.ts";
 import type { XkbLayouts } from "./layouts.ts";
 import type { ScreensStore } from "./screens.ts";

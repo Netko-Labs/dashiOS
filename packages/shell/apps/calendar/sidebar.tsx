@@ -1,7 +1,7 @@
 /** The sidebar: the mini month, the calendars with their colors and checkboxes, and New Calendar and Import. */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { SidebarSection, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { CHECK, ELLIPSIS, IMPORT, PLUS } from "./glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
 import type { Calendar } from "./types.ts";

@@ -4,10 +4,10 @@
  * is up now; the agent is asked again the next time it needs something.
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Scope } from "../../agents/consent.ts";
 import { label } from "../../agents/consent.ts";
-import { useColors } from "@dashi/ui";
 import { describeAgentKey } from "../agent-names.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries } from "../hooks.ts";

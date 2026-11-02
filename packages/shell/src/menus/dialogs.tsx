@@ -7,7 +7,7 @@
 import type { ReactElement } from "react";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import type { PowerKind } from "./model.ts";
-import { AboutWindow, type AboutInfo, ConfirmSheet, SHEET_SIZE } from "./sheets.tsx";
+import { type AboutInfo, AboutWindow, ConfirmSheet, SHEET_SIZE } from "./sheets.tsx";
 
 const WIDTH = SHEET_SIZE.width + 2 * SHEET_SIZE.margin;
 

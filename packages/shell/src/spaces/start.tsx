@@ -4,12 +4,12 @@
  * (row.tsx), with what a click, the +, the ×, and a dropped window do.
  */
 
-import type { Compositor } from "../compositor.ts";
 import { parseOutputs } from "../arrange.ts";
-import type { OverviewExtras } from "../overview/index.ts";
+import type { Compositor } from "../compositor.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
+import type { OverviewExtras } from "../overview/index.ts";
 import { SpacesController } from "./controller.ts";
-import { ROW, type Rect, rowFrame, rowLayout, rowTarget } from "./model.ts";
+import { type Rect, ROW, rowFrame, rowLayout, rowTarget } from "./model.ts";
 import { SpacesRow } from "./row.tsx";
 
 export interface SpacesDeps {

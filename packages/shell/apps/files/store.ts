@@ -8,19 +8,18 @@
  */
 
 import { type FSWatcher, statSync, watch } from "node:fs";
-import { type SortState } from "@dashi/ui";
-import type { Env } from "./env.ts";
+import type { SortState } from "@dashi/ui";
 import { loadVolumes, space } from "./drives.ts";
-import { describeError, type FileItem, readFolder } from "./items.ts";
+import type { Env } from "./env.ts";
+import { describeError, type FileItem, itemAt, readFolder } from "./items.ts";
 import { folderAt, type Location, sameLocation } from "./location.ts";
 import type { Volume } from "./mounts.ts";
 import { mayOpen, openWithDefault } from "./open.ts";
 import { expandHome, normalizePath, parentOf, tilde } from "./paths.ts";
-import { parseFileUri } from "./uri.ts";
-import { itemAt } from "./items.ts";
 import { searchComputer, searchFolder } from "./search.ts";
 import { columnMode, DEFAULT_SORT, fileColumns, findByPrefix, sortItems } from "./sort.ts";
 import { listTrash } from "./trashops.ts";
+import { parseFileUri } from "./uri.ts";
 
 export type ViewMode = "icons" | "list";
 export type SearchScope = "folder" | "computer";

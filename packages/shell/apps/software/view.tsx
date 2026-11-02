@@ -7,22 +7,22 @@
  * is changed.
  */
 
+import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { CATEGORIES, type CategoryId } from "../../src/software/flathub.ts";
-import { type InstalledApp } from "../../src/software/flatpak-parse.ts";
-import { type Installation } from "../../src/software/ids.ts";
+import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
+import type { Installation } from "../../src/software/ids.ts";
 import { useAppMenus } from "../kit/index.ts";
-import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
 import { AppPage } from "./app-page.tsx";
 import { Discover } from "./discover.tsx";
+import { BACK, CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "./glyphs.ts";
 import { useAppName } from "./hooks.ts";
-import { CATEGORY_GLYPHS, CATEGORY_TINTS, BACK, DISCOVER, INSTALLED, REFRESH, UPDATES } from "./glyphs.ts";
 import { Installed } from "./installed.tsx";
 import { Listing } from "./listing.tsx";
 import { softwareMenus } from "./menus.ts";
 import { appState } from "./model.ts";
-import { back, canGoBack, goTo, type Nav, type Page, push, search, START } from "./nav.ts";
+import { back, canGoBack, goTo, type Nav, type Page, push, START, search } from "./nav.ts";
 import { type Actions, ActionsContext } from "./parts.tsx";
 import { useServices } from "./services.ts";
 import { type Ask, FailureSheet, Question } from "./sheets.tsx";

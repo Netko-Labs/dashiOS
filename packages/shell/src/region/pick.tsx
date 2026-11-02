@@ -4,9 +4,9 @@
  * list, so a person who has seen one knows the other.
  */
 
+import { SEARCH, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { SEARCH, useColors } from "@dashi/ui";
 import { useSurface } from "../settings-app/ui.tsx";
 
 export function SearchField({

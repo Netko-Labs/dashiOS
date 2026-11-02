@@ -10,7 +10,7 @@
 
 import { type ConnectOptions, DBusConnection, getNameOwner } from "../dbus/index.ts";
 import { unwrap } from "../dbus/properties.ts";
-import { MANAGER, MANAGER_PATH, LOGIND } from "../power/logind.ts";
+import { LOGIND, MANAGER, MANAGER_PATH } from "../power/logind.ts";
 import { powerOffReason } from "../power/nested.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";

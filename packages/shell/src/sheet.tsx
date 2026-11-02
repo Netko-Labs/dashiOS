@@ -6,10 +6,10 @@
  * app column, as the Mac lists a menu's keys; any other app, the standard ones.
  */
 
+import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { PublishedMenus } from "./app-menus/protocol.ts";
 import { KeyCatcher } from "./overlay.tsx";
-import { Shortcut, useColors } from "@dashi/ui";
 
 /** The card's size; its height fits the longest column (MAX_ROWS rows). The surface adds a margin for the corners and shadow. */
 export const SHEET = { width: 720, height: 380 } as const;

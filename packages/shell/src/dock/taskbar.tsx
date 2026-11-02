@@ -10,14 +10,14 @@
  * the clock and the status icons, so the bar's right side is empty.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, Image, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { appFor, type App } from "../apps.ts";
+import { type App, appFor } from "../apps.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
 import { TASKBAR } from "../theme.ts";
-import { useColors } from "@dashi/ui";
-import { useToplevels, type ToplevelStore } from "../toplevels.ts";
+import { type ToplevelStore, useToplevels } from "../toplevels.ts";
 import { type AttentionStore, useAttention } from "./attention.ts";
 import type { Autohide } from "./autohide.ts";
 import { type DockController, useStarting } from "./controller.ts";
@@ -28,8 +28,8 @@ import { type PinStore, usePins } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, type PressSetup, usePress } from "./press.ts";
 import { Painted, Slide, useSlide } from "./slide.tsx";
-import type { TileStore } from "./tiles.ts";
 import { type TaskbarButton, taskbarButtons, taskbarCenters } from "./taskbar-model.ts";
+import type { TileStore } from "./tiles.ts";
 
 /** The distance a drag must cover to pass a neighbor when the buttons have not been measured. */
 const UNMEASURED_SLOT = 100;

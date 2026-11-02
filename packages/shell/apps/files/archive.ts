@@ -6,12 +6,12 @@
  * runs in the items' folder, so the archive holds relative paths only.
  */
 
-import { exec, type Exec } from "./exec.ts";
-import { Cancelled, type OpContext, OpError } from "./ops.ts";
-import { baseName, checkName, parentOf, splitName, uniqueName } from "./paths.ts";
 import { existsSync } from "node:fs";
 import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { type Exec, exec } from "./exec.ts";
+import { Cancelled, type OpContext, OpError } from "./ops.ts";
+import { baseName, checkName, parentOf, splitName, uniqueName } from "./paths.ts";
 
 export interface Archiver {
   tool: "zip" | "bsdtar";

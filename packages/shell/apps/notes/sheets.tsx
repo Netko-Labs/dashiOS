@@ -1,8 +1,8 @@
 /** Notes' sheets: a name for a folder, and the questions that can't be taken back. */
 
+import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
 
 export type SheetState =
   | { kind: "new-folder" }

@@ -7,9 +7,9 @@
  * palette, so Dark Mode repaints Settings too.
  */
 
+import { useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { useColors } from "@dashi/ui";
 import { fractionAt, fractionOf, type Range, valueAt } from "./controls.ts";
 
 export { Button, Caption, type Choice, Choices, Group, Note, Row, type Surface, Tile, useSurface } from "@dashi/ui";

@@ -10,8 +10,8 @@
  * a dimmed desktop. The hardware keys do not: volume is not a window action.
  */
 
-import type { Compositor, CompositorEvent } from "../compositor.ts";
 import { parseOutputs } from "../arrange.ts";
+import type { Compositor, CompositorEvent } from "../compositor.ts";
 import { HARDWARE_BINDINGS } from "../system/keys.ts";
 import { planOverview } from "./plan.ts";
 

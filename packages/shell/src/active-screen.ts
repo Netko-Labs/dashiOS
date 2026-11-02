@@ -9,7 +9,7 @@
  * `outputs` (displays.ts), in the same space.
  */
 
-import { type Compositor, type Frame, parsePointer, type Point } from "./compositor.ts";
+import { type Compositor, type Frame, type Point, parsePointer } from "./compositor.ts";
 import { parseScreens } from "./displays.ts";
 
 /** A screen's name and where it sits, in the space the pointer is reported in. */

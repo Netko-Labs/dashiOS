@@ -5,7 +5,7 @@
  * graphs draw. Pure: the looks come in, rows and numbers go out.
  */
 
-import type { CpuTimes, Counters, NetCounters } from "./proc.ts";
+import type { Counters, CpuTimes, NetCounters } from "./proc.ts";
 import type { ProcessSample, Snapshot } from "./read.ts";
 
 export interface ProcessRow {

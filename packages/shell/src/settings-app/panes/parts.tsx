@@ -4,9 +4,9 @@
  * compact button, a pressable list row, and a round icon.
  */
 
+import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { CHECK, useColors } from "@dashi/ui";
 
 /** A value at the end of a row, muted and right-aligned (several lines stack). */
 export function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {

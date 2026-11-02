@@ -1,8 +1,8 @@
 /** Date, time, and region for agents, and the Setup Assistant. All under the "settings" permission. */
 
-import { PAGES } from "../../setup/flow.ts";
-import { isTimezoneName } from "../../region/timezones.ts";
 import { isFormatsLocale } from "../../region/locale.ts";
+import { isTimezoneName } from "../../region/timezones.ts";
+import { PAGES } from "../../setup/flow.ts";
 import { fail, type ToolDef } from "./define.ts";
 
 export const regionTools: readonly ToolDef[] = [

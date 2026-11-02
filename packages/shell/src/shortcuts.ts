@@ -10,8 +10,8 @@ import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
 import { TILES, type Tile } from "./layout.ts";
 import { takeScreenshot } from "./screenshots.ts";
-import type { HardwareKeys } from "./system/keys.ts";
 import type { SwitcherController } from "./switcher.tsx";
+import type { HardwareKeys } from "./system/keys.ts";
 
 export interface ShellActions {
   toggleLauncher(): void;

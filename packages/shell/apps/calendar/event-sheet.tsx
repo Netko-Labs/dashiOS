@@ -5,11 +5,11 @@
  * start takes the end along, as the Mac's does.
  */
 
+import { Button, Choices, Sheet, TextField, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { Button, Choices, Sheet, TextField, useColors, useSurface } from "@dashi/ui";
-import { Switch } from "../../src/wifi/switch.tsx";
 import type { ClockPrefs } from "../../src/clock.ts";
+import { Switch } from "../../src/wifi/switch.tsx";
 import { addDays, type Day } from "./dates.ts";
 import { type Draft, type EndsChoice, moveStart, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
 import { ALL_DAY_ALERTS, alertLabel, clock, TIMED_ALERTS, weekdayShort } from "./format.ts";

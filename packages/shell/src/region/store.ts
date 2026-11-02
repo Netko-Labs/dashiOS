@@ -9,7 +9,7 @@
 
 import { useSyncExternalStore } from "react";
 import { type RegionBackend, RegionError, type RegionFailure } from "./backend.ts";
-import { isLocaleName, languageOf, type LocaleEntry, localeEntries, withLanguage } from "./locale.ts";
+import { isLocaleName, type LocaleEntry, languageOf, localeEntries, withLanguage } from "./locale.ts";
 import { buildZones, isTimezoneName, readZoneTables, type Zone, type ZoneTables } from "./timezones.ts";
 
 export type RegionWrite = "timezone" | "ntp" | "language";

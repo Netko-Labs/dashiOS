@@ -5,14 +5,14 @@
  * shell sends it to the compositor, which draws or plays it (wallpaper/live/).
  */
 
-import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { statSync } from "node:fs";
-import { useState } from "react";
 import { useColors } from "@dashi/ui";
-import { Switch } from "../../wifi/switch.tsx";
+import { Image, Text, TextInput, View } from "@mirinjs/metal";
+import { useState } from "react";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { FRAME_RATES, isVideoPath } from "../../wallpaper/live/choice.ts";
 import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../wallpaper/live/tiles.ts";
+import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Row, useSurface } from "../ui.tsx";

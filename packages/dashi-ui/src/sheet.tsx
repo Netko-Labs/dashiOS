@@ -8,13 +8,11 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { CHECK } from "./glyphs.ts";
-import { Shortcut } from "./shortcut.tsx";
-import { useColors } from "./theme/index.ts";
 import { Button } from "./controls.tsx";
-import { useSurface } from "./theme/index.ts";
-import { WARNING } from "./glyphs.ts";
+import { CHECK, WARNING } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
+import { Shortcut } from "./shortcut.tsx";
+import { useColors, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
 export interface SheetProps {

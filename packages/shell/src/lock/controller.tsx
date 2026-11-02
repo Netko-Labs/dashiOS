@@ -9,9 +9,9 @@
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost } from "@mirinjs/metal";
 import { METAL_HOST } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
+import { runPower } from "../menus/session.ts";
 import { Attempts, type Verdict } from "./attempts.ts";
 import { checkPassword, displayName, lockedUser } from "./auth.ts";
-import { runPower } from "../menus/session.ts";
 import { LockScreen } from "./screen.tsx";
 
 /** A lock screen that died comes back after this. */

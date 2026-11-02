@@ -7,7 +7,7 @@
 
 import { SETUP_APP_ID } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor.ts";
-import { type RunContext, text, toolError, type ToolResult } from "../context.ts";
+import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
 import { keySteps } from "../tools/index.ts";

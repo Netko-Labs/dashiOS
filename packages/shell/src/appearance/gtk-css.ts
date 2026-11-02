@@ -18,9 +18,9 @@
  * replaced, not joined by a second one.
  */
 
-import { existsSync, readFileSync, realpathSync, renameSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_STYLE, gtk3Colors, gtk4Colors, type GtkStyle } from "./gtk-colors.ts";
+import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "./gtk-colors.ts";
 
 export const BEGIN = "/* >>> dashi window buttons (managed by Dashi; edit outside this block) */";
 export const END = "/* <<< dashi window buttons */";

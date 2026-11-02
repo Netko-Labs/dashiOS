@@ -1,10 +1,10 @@
 /** Installed: every Flatpak app on the machine, the person's own and the system's, with Open, Update, and Remove. */
 
+import { Button, EmptyState, Group, glyphs, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useMemo, useSyncExternalStore } from "react";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import { formatBytes } from "../../src/software/text.ts";
-import { Button, EmptyState, glyphs, Group, useColors } from "@dashi/ui";
 import { localIcon } from "./format.ts";
 import { INSTALLED } from "./glyphs.ts";
 import { useCatalogIcon } from "./hooks.ts";

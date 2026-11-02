@@ -1,8 +1,8 @@
 /** An event as a line in a month cell or the all-day strip: a solid bar for all-day events, a dot and the time for the rest. */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { ClockPrefs } from "../../src/clock.ts";
-import { useColors } from "@dashi/ui";
 import { inkOn, tint } from "./colors.ts";
 import { dayPart } from "./dates.ts";
 import { clockShort, titleOf } from "./format.ts";

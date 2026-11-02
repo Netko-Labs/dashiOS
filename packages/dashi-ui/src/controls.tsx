@@ -9,8 +9,7 @@
 import { Svg, Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
 import { Shortcut } from "./shortcut.tsx";
-import { useColors } from "./theme/index.ts";
-import { useSurface } from "./theme/index.ts";
+import { useColors, useSurface } from "./theme/index.ts";
 
 /** A heading over a group, or a sentence under it; `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {

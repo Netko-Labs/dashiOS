@@ -17,10 +17,10 @@
  * Nothing here knows Metal; start.tsx hands in the surfaces.
  */
 
-import { AUTOHIDE, type Autohide } from "./autohide.ts";
-import type { DockPrefs } from "./prefs.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
+import { AUTOHIDE, type Autohide } from "./autohide.ts";
 import type { EdgeClaim } from "./edges.ts";
+import type { DockPrefs } from "./prefs.ts";
 import type { DockSettings, DockStyle } from "./settings.ts";
 import type { Slide } from "./slide.tsx";
 import type { DockSurface } from "./surface.ts";

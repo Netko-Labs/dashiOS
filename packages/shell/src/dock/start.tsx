@@ -9,22 +9,22 @@
 import { type NativeHostOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { type App, METAL_HOST } from "../apps.ts";
+import type { Compositor } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";
-import type { Compositor } from "../compositor.ts";
 import { Autohide } from "./autohide.ts";
 import type { DockController } from "./controller.ts";
 import { compositorEdges } from "./edges.ts";
 import type { PinStore } from "./pins.ts";
-import { DockPresenter, specOf } from "./presenter.ts";
 import type { DockPrefs } from "./prefs.ts";
+import { DockPresenter, specOf } from "./presenter.ts";
 import { Slide } from "./slide.tsx";
-import type { TileStore } from "./tiles.ts";
-import { DockSurface, type DockHandle } from "./surface.ts";
+import { type DockHandle, DockSurface } from "./surface.ts";
 import { Taskbar } from "./taskbar.tsx";
+import type { TileStore } from "./tiles.ts";
 import { Dock } from "./view.tsx";
 
 export interface StartDockOptions {

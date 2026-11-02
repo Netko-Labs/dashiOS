@@ -3,9 +3,9 @@
  * for as long as the compositor reports a capture (screen-capture.ts).
  */
 
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
-import { useColors } from "@dashi/ui";
 
 export function CapturePill({ store }: { store: ScreenCaptureStore }) {
   const colors = useColors();

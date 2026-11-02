@@ -15,8 +15,8 @@
  * there; both are written so a version that reads only one still follows).
  */
 
-import { CORNER_RADIUS, DEFAULT_CORNERS } from "../corners.ts";
 import { lightColors } from "@dashi/ui";
+import { CORNER_RADIUS, DEFAULT_CORNERS } from "../corners.ts";
 
 /** What the block depends on: Dark Mode and the Appearance setting's window corners. */
 export interface GtkStyle {

@@ -7,22 +7,22 @@
  * memory (system/stand-in.ts), as Wi-Fi and Bluetooth do.
  */
 
-import { type AccountsSetup, AccountStore, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
+import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { DeviceStore } from "../control-center/devices.ts";
-import { logindLid, fakeLid } from "../power/policy.ts";
+import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
-import { fakeMeter, inputsOf, LevelsStore, type LevelMeter, pipewireMeter, shadowLevels, SoundStore, wpctlLevels } from "../sound/index.ts";
+import { fakeLid, logindLid } from "../power/policy.ts";
+import { fakeMeter, inputsOf, type LevelMeter, LevelsStore, pipewireMeter, SoundStore, shadowLevels, wpctlLevels } from "../sound/index.ts";
 import type { AudioBackend } from "../sound/types.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { EnergyStore } from "../system/energy.ts";
 import { run } from "../system/exec.ts";
 import { powerprofilesctl, shadowProfiles } from "../system/profiles.ts";
-import type { SystemStore } from "../system/store.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
+import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";
-import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 
 /** The stores Control Center runs, which the panes share (menus/start.tsx hands them over). */
 export interface SharedStores {
