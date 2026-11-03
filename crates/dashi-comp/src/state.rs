@@ -97,6 +97,13 @@ pub(crate) struct Dashi {
     pub chrome_style: ChromeStyle,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
+    /// The icon a client gave the drag it started (wl_data_device.start_drag),
+    /// drawn under the pointer until the drop, and how far it sits from the
+    /// pointer (the surface's attach offsets, summed).
+    pub dnd_icon: Option<(
+        WlSurface,
+        smithay::utils::Point<i32, smithay::utils::Logical>,
+    )>,
     /// Over a window's resize border, or resizing it: that cursor, over the client's.
     pub resize_cursor: Option<smithay::input::pointer::CursorIcon>,
     /// The last press on a title bar, for double-clicks.
@@ -266,6 +273,7 @@ impl Dashi {
             chrome_objects: Vec::new(),
             layer_regions: Default::default(),
             cursor_status: CursorImageStatus::default_named(),
+            dnd_icon: None,
             resize_cursor: None,
             last_bar_press: None,
             cursors: Cursors::default(),

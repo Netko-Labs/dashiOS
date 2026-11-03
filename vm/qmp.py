@@ -5,6 +5,7 @@
     qmp.py SOCKET type TEXT             type TEXT on the VM's keyboard
     qmp.py SOCKET key COMBO...          press combos: ctrl-alt-t, ret, meta_l
     qmp.py SOCKET click X Y W H         click at (X, Y) on a W×H screen (a screenshot's size)
+    qmp.py SOCKET drag X Y X2 Y2 W H    press at (X, Y), move to (X2, Y2) in steps, release there
     qmp.py SOCKET powerdown             ask the guest to shut down (ACPI)
 """
 
@@ -81,6 +82,27 @@ def main() -> None:
         for down in (True, False):
             qmp.call("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": "left"}}])
             time.sleep(0.05)
+    elif command == "drag" and len(args) == 6:
+        x, y, x2, y2, width, height = (float(a) for a in args)
+
+        def move(px: float, py: float) -> None:
+            qmp.call(
+                "input-send-event",
+                events=[
+                    {"type": "abs", "data": {"axis": "x", "value": int(px / width * 32767)}},
+                    {"type": "abs", "data": {"axis": "y", "value": int(py / height * 32767)}},
+                ],
+            )
+            time.sleep(0.03)
+
+        move(x, y)
+        qmp.call("input-send-event", events=[{"type": "btn", "data": {"down": True, "button": "left"}}])
+        time.sleep(0.15)
+        steps = 24
+        for step in range(1, steps + 1):
+            move(x + (x2 - x) * step / steps, y + (y2 - y) * step / steps)
+        time.sleep(0.4)
+        qmp.call("input-send-event", events=[{"type": "btn", "data": {"down": False, "button": "left"}}])
     elif command == "powerdown" and not args:
         qmp.call("system_powerdown")
     else:

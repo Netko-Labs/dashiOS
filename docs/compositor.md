@@ -69,7 +69,8 @@ crates/dashi-comp/src/
     headless.rs     no screens: IPC and protocol tests
   handlers/         one module per Wayland protocol (or family): compositor,
                     xdg_shell, layer_shell, seat (clipboard, primary selection,
-                    data-control), surface (viewporter, fractional scale, ...),
+                    data-control, drag and drop: the drag icon rides under
+                    the pointer), surface (viewporter, fractional scale, ...),
                     pointer (constraints, relative, gestures, cursor-shape),
                     inhibit, text (text-input, input-method, virtual keyboard),
                     security (security-context), sync (explicit and implicit),

@@ -408,6 +408,24 @@ fn cursor_elements<R>(
             }
         }
     }
+    // A drag's icon, under the pointer (the client placed it with its attach offsets).
+    if let Some((icon, offset)) = &state.dnd_icon
+        && smithay::reexports::wayland_server::Resource::is_alive(icon)
+    {
+        let origin = (local + offset.to_f64()).to_physical(scale).to_i32_round();
+        elements.extend(
+            render_elements_from_surface_tree::<_, WaylandSurfaceRenderElement<R>>(
+                renderer,
+                icon,
+                origin,
+                scale,
+                1.0,
+                Kind::Unspecified,
+            )
+            .into_iter()
+            .map(DashiElement::Surface),
+        );
+    }
 }
 
 /// A window drawn small where the overview puts it (`rect`: its outer frame there).

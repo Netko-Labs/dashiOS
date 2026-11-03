@@ -150,7 +150,20 @@ impl DataDeviceHandler for Dashi {
     }
 }
 
-impl ClientDndGrabHandler for Dashi {}
+impl ClientDndGrabHandler for Dashi {
+    fn started(
+        &mut self,
+        _source: Option<smithay::reexports::wayland_server::protocol::wl_data_source::WlDataSource>,
+        icon: Option<WlSurface>,
+        _seat: Seat<Self>,
+    ) {
+        self.dnd_icon = icon.map(|surface| (surface, (0, 0).into()));
+    }
+
+    fn dropped(&mut self, _target: Option<WlSurface>, _validated: bool, _seat: Seat<Self>) {
+        self.dnd_icon = None;
+    }
+}
 impl ServerDndGrabHandler for Dashi {}
 
 delegate_data_device!(Dashi);
