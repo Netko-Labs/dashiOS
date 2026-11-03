@@ -15,17 +15,23 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       and `Xcursor.size` through xrdb (xwayland-scale.ts; dashi requires
       xrdb). Checked in the VM at 1.5: X11 Helium the same size, sharp; clicks
       and tooltips land right. Steam itself not tried in the VM
-- [ ] A setting for X11 apps that ignore `Xft.dpi` (they draw small now):
-      Displays, "X11 apps: sharp / stretched"
+- [x] A setting for X11 apps that ignore `Xft.dpi`: Displays → Older apps
+      (X11), Sharp or Stretched (`appearance.x11Apps`). Stretched puts
+      Xwayland back at 1 and X11 apps at 96 dpi. Checked in the VM: the X
+      screen 1920×1200 ↔ 1280×800, xrdb, zenity on X11 the right size
 - [x] Maximize did nothing after a minimize and restore: a parked window
       stayed "activated" and came back with no configure, so Chromium and
       Electron still thought they were minimized and ignored clicks. Parking
       deactivates; showing sends a configure. Checked in the VM (Helium on
       Wayland: minimize, Dock, maximize; X11: wmctrl toggle/add/remove,
       xdotool minimize). Steam itself not tried in the VM
-- [ ] X11 `_NET_ACTIVE_WINDOW` (an app asking to be shown, e.g. Steam
-      opened again) doesn't restore a minimized X11 window: smithay has no
-      handler for it
+- [x] X11 `_NET_ACTIVE_WINDOW` (an app asking to be shown, e.g. Steam
+      opened again) didn't restore a minimized X11 window: smithay ignores
+      it, so a second X connection listens (xwayland/activate.rs). Minimized
+      or hidden comes back; a pager's request or one while X11 has the
+      keyboard focuses; others want attention. Checked in the VM, all three
+- [ ] X11 GTK dialogs show black outside their round corners (zenity on X11
+      in the VM): likely no `_NET_WM_CM_S0` owner, so GTK picks no alpha
 - [x] ❖C/❖V ignored in Electron, Chromium, GTK, and X11 apps: smithay sends
       a key before its modifiers, so a replayed Ctrl+C arrived as "c"; replays
       press real modifier keys first (keys/replay.rs). Checked in the VM:
@@ -35,8 +41,11 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       @dashi/ui so both use it). It can't read the person's chosen scale
       (their home), so a laptop set to 1.75 logs in at 2. Checked in the VM:
       the greeter set 1920×1200 to 1.5 on its own
-- [ ] The pointer looks small on a scaled screen (24 px at 1.5): check the
-      compositor's cursor size against the scale
+- [x] The pointer looked small: it was the standard 24 points (36 px at
+      1.5), GNOME's size. Settings → Appearance → Pointer size (24, 32, 40,
+      48; `appearance.pointerSize`) goes to the compositor (IPC
+      `cursor-size`, resampled to the exact size at any scale), GTK
+      (gsettings `cursor-size`), and X11 (`Xcursor.size`). Checked in the VM
 - [x] `space-remove` was unknown to dashi-comp (the shell asked for it 17
       times on the installed system): added (wm/space_list.rs). Checked in the
       VM over IPC: removing the shown Space, the first, and refusing the last

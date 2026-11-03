@@ -35,6 +35,7 @@ import { basename, dirname, join } from "node:path";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
+import { isPointerSize } from "../pointer.ts";
 import { isFormatsLocale } from "../region/locale.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
@@ -48,6 +49,7 @@ import {
   WALLPAPER_KINDS,
   type WallpaperKind,
 } from "../wallpaper/live/choice.ts";
+import { X11_SCALINGS, type X11Scaling } from "../xwayland-scale.ts";
 
 export interface TouchpadSettings {
   tap?: boolean;
@@ -95,6 +97,10 @@ export interface AppearanceSettings {
   reduceMotion?: boolean;
   /** Dark Mode follows the time of day: dark in the evening and night (appearance/auto.ts). */
   auto?: boolean;
+  /** The pointer's size in points (pointer.ts); 24 when not set. */
+  pointerSize?: number;
+  /** How X11 apps meet a scaled screen (xwayland-scale.ts); sharp when not set. */
+  x11Apps?: X11Scaling;
 }
 
 /** `appearance.wallpaper`: what the desktop shows behind everything, and the photos the person added. */
@@ -226,7 +232,10 @@ const SECTIONS = {
   },
   idle: { path: ["idle"], fields: { blankAfterSeconds: numberIn(0, MAX_BLANK_AFTER), sleepAfterSeconds: numberIn(0, MAX_BLANK_AFTER) } },
   menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
-  appearance: { path: ["appearance"], fields: { cornerRadius: oneOf(...CORNER_NAMES), reduceMotion: isBoolean, auto: isBoolean } },
+  appearance: {
+    path: ["appearance"],
+    fields: { cornerRadius: oneOf(...CORNER_NAMES), reduceMotion: isBoolean, auto: isBoolean, pointerSize: isPointerSize, x11Apps: oneOf(...X11_SCALINGS) },
+  },
   wallpaper: {
     path: ["appearance", "wallpaper"],
     fields: {

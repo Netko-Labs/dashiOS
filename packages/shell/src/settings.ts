@@ -18,6 +18,7 @@
  *                   "repeatRate": 30, "repeatDelay": 250 },
  *     "idle": { "blankAfterSeconds": 300 },
  *     "appearance": { "cornerRadius": "medium", "reduceMotion": false,
+ *                     "pointerSize": 24, "x11Apps": "sharp",
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
  *     "spaces": { "count": 3, "switchOnActivate": true }
@@ -36,7 +37,9 @@
  * Space switches there (true) or brings the window here (spaces/).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
  * round every window is (corners.ts). `reduceMotion` turns the compositor's
- * window animations off. `wallpaper.path` is a bundled wallpaper's id or an
+ * window animations off. `pointerSize` is 24 (the default), 32, 40, or 48
+ * points (pointer.ts); `x11Apps` is "sharp" (the default) or "stretched",
+ * how X11 apps meet a scaled screen (xwayland-scale.ts). `wallpaper.path` is a bundled wallpaper's id or an
  * absolute path to a PNG or JPEG (none is the built-in gradient);
  * `wallpaper.mode` is "fill" (the default), "fit", or "center"
  * (wallpaper/catalog.ts). `wallpaper.kind` ("picture", "shader", or "video")
@@ -55,9 +58,11 @@ import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
+import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
 import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
 import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
+import { DEFAULT_X11_SCALING, X11_SCALINGS, type X11Scaling } from "./xwayland-scale.ts";
 
 export interface TouchpadSettings {
   tap?: boolean;
@@ -90,7 +95,7 @@ export interface Settings {
   idle: { blankAfterSeconds: number; sleepAfterSeconds: number };
   /** The status area (settings-app/store.ts `MenuBarSettings`); every key has a value. */
   menuBar: { batteryPercent: boolean; sound: boolean };
-  appearance: { cornerRadius: CornerName; reduceMotion: boolean; wallpaper: WallpaperChoice };
+  appearance: { cornerRadius: CornerName; reduceMotion: boolean; pointerSize: number; x11Apps: X11Scaling; wallpaper: WallpaperChoice };
   /** The Dock (dock/settings.ts); every key has a value. */
   dock: DockSettings;
   /** Spaces (spaces/): no count leaves them as they are. */
@@ -113,7 +118,13 @@ export function defaults(): Settings {
     keyboard: {},
     idle: { blankAfterSeconds: DEFAULT_BLANK_AFTER, sleepAfterSeconds: 0 },
     menuBar: { batteryPercent: false, sound: true },
-    appearance: { cornerRadius: DEFAULT_CORNERS, reduceMotion: false, wallpaper: { mode: DEFAULT_WALLPAPER_MODE } },
+    appearance: {
+      cornerRadius: DEFAULT_CORNERS,
+      reduceMotion: false,
+      pointerSize: DEFAULT_POINTER_SIZE,
+      x11Apps: DEFAULT_X11_SCALING,
+      wallpaper: { mode: DEFAULT_WALLPAPER_MODE },
+    },
     dock: { ...DOCK_DEFAULTS },
     spaces: { switchOnActivate: true },
   };
@@ -265,9 +276,18 @@ export function parseSettings(value: unknown): Loaded {
   });
   const spaces = new Section("spaces", value.spaces, problems).only(["count", "switchOnActivate"]);
   settings.spaces = defined({ count: spaces.number("count", 1, 16, true), switchOnActivate: spaces.boolean("switchOnActivate") ?? true });
-  const appearance = new Section("appearance", value.appearance, problems).only(["cornerRadius", "reduceMotion", "auto", "wallpaper"]);
+  const appearance = new Section("appearance", value.appearance, problems).only([
+    "cornerRadius",
+    "reduceMotion",
+    "pointerSize",
+    "x11Apps",
+    "auto",
+    "wallpaper",
+  ]);
   settings.appearance.cornerRadius = appearance.choice("cornerRadius", CORNER_NAMES) ?? DEFAULT_CORNERS;
   settings.appearance.reduceMotion = appearance.boolean("reduceMotion") ?? false;
+  settings.appearance.pointerSize = appearance.numberChoice("pointerSize", POINTER_SIZES) ?? DEFAULT_POINTER_SIZE;
+  settings.appearance.x11Apps = appearance.choice("x11Apps", X11_SCALINGS) ?? DEFAULT_X11_SCALING;
   const wallpaper = new Section("appearance.wallpaper", appearance.get("wallpaper"), problems).only([
     "path",
     "mode",

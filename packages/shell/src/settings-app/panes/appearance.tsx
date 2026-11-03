@@ -2,13 +2,15 @@
  * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from, the same
  * switch as Control Center's Dark Mode tile, the accent color, and how round
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
- * file, so a pick shows on the open windows at once).
+ * file, so a pick shows on the open windows at once), and the pointer's size
+ * (`appearance.pointerSize`, pointer.ts).
  */
 
 import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
+import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
@@ -16,6 +18,8 @@ import { Caption, Choices, Group, Page, Row, useSurface } from "../ui.tsx";
 
 const CORNER_LABELS: Record<CornerName, string> = { none: "None", small: "Small", medium: "Medium", large: "Large" };
 const CORNER_OPTIONS = CORNER_NAMES.map((value) => ({ value, label: CORNER_LABELS[value] }));
+const POINTER_LABELS: Record<(typeof POINTER_SIZES)[number], string> = { 24: "Standard", 32: "Large", 40: "Larger", 48: "Largest" };
+const POINTER_OPTIONS = POINTER_SIZES.map((value) => ({ value: value as number, label: POINTER_LABELS[value] }));
 
 /** A miniature desktop: a menu bar, a window with two lines of text. */
 function MiniDesktop({ palette }: { palette: Palette }) {
@@ -133,6 +137,14 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         </Row>
         <Row stack label="Window corners" detail="How round windows are, app content included.">
           <CornerChoices settings={settings} />
+        </Row>
+        <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
+          <Choices
+            testID="appearance-pointer-size"
+            value={appearance.pointerSize ?? DEFAULT_POINTER_SIZE}
+            options={POINTER_OPTIONS}
+            onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
+          />
         </Row>
         <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
           <Switch

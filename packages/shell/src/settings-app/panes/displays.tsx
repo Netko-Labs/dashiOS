@@ -27,11 +27,12 @@ import {
   type VrrMode,
 } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
+import { DEFAULT_X11_SCALING, type X11Scaling } from "../../xwayland-scale.ts";
 import { DISPLAY } from "../glyphs.ts";
-import { useScreens } from "../hooks.ts";
+import { useScreens, useSettings } from "../hooks.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Note, Page, Row } from "../ui.tsx";
+import { Button, Caption, type Choice, Choices, Group, Note, Page, Row } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
 
@@ -161,6 +162,34 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
   );
 }
 
+const X11_OPTIONS: ReadonlyArray<Choice<X11Scaling>> = [
+  { value: "sharp", label: "Sharp" },
+  { value: "stretched", label: "Stretched" },
+];
+
+/** How X11 apps meet a scaled screen (settings.json `appearance.x11Apps`, xwayland-scale.ts). */
+function X11AppsSection({ settings }: { settings: SettingsStore }) {
+  const { appearance } = useSettings(settings).data;
+  return (
+    <>
+      <Group>
+        <Row stack label="Older apps (X11)">
+          <Choices
+            testID="displays-x11-apps"
+            value={appearance.x11Apps ?? DEFAULT_X11_SCALING}
+            options={X11_OPTIONS}
+            onChange={(x11Apps) => settings.patch("appearance", { x11Apps })}
+          />
+        </Row>
+      </Group>
+      <Caption>
+        Sharp draws X11 apps such as Steam at the screen's full detail; an app that can't size itself comes out small. Stretched keeps every X11 app the right
+        size, a little soft. Apps opened after the change follow it.
+      </Caption>
+    </>
+  );
+}
+
 export function DisplaysPane({ screens, settings, flags }: { screens: ScreensStore; settings: SettingsStore; flags: FlagsStore }) {
   const colors = useColors();
   const state = useScreens(screens);
@@ -198,6 +227,7 @@ export function DisplaysPane({ screens, settings, flags }: { screens: ScreensSto
         Windows move with the screen when its scale changes. The choice is kept for the next login. A new resolution or rotation goes back by itself unless you
         keep it.
       </Caption>
+      <X11AppsSection settings={settings} />
       <NightShiftSection settings={settings} flags={flags} />
     </Page>
   );

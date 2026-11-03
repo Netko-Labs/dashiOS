@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { CompositorEvent } from "../src/compositor.ts";
-import { outputScales, startXwaylandScaling, xResources, xwaylandScale } from "../src/xwayland-scale.ts";
+import { outputScales, startXwaylandScaling, type XwaylandChoice, xResources, xwaylandScale } from "../src/xwayland-scale.ts";
 
 test("Xwayland takes the largest screen scale, never below 1", () => {
   expect(xwaylandScale([1, 1.75])).toBe(1.75);
@@ -13,6 +13,7 @@ test("Xwayland takes the largest screen scale, never below 1", () => {
 test("X resources say the dpi and cursor size for the scale", () => {
   expect(xResources(1.75)).toBe("Xft.dpi:\t168\nXcursor.size:\t42\n");
   expect(xResources(1)).toBe("Xft.dpi:\t96\nXcursor.size:\t24\n");
+  expect(xResources(1.5, 32)).toBe("Xft.dpi:\t144\nXcursor.size:\t48\n");
 });
 
 test("the scale goes to the compositor, and the resources once Xwayland is ready, again when it restarts", async () => {
@@ -32,12 +33,14 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
     },
   };
   const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
-  startXwaylandScaling({
+  const choice: XwaylandChoice = { scaling: "sharp", pointerSize: 24 };
+  const scaling = startXwaylandScaling({
     compositor: compositor as never,
     mergeResources: async (display, resources) => {
       merged.push(`${display} ${resources}`);
       return true;
     },
+    choice: () => choice,
   });
   await settle();
   expect(requests).toContainEqual(["xwayland-scale", { scale: 1.5 }]);
@@ -54,4 +57,16 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
   events.send?.({ event: "session-changed" });
   await settle();
   expect(merged).toHaveLength(2);
+  // A bigger pointer: the same scale, a new cursor size.
+  choice.pointerSize = 32;
+  scaling.refresh();
+  await settle();
+  expect(merged.at(-1)).toBe(":0 Xft.dpi:\t144\nXcursor.size:\t48\n");
+  // Stretched: Xwayland back at 1, X11 apps told 96 dpi.
+  choice.scaling = "stretched";
+  scaling.refresh();
+  await settle();
+  expect(requests.at(-1)).toEqual(["xwayland-scale", { scale: 1 }]);
+  expect(merged.at(-1)).toBe(":0 Xft.dpi:\t96\nXcursor.size:\t32\n");
+  scaling.stop();
 });

@@ -233,6 +233,14 @@ pub(crate) fn handle(
             done(outputs::set_scale(state, &name, number(params, "scale")?))
         }
         "xwayland-scale" => done(state.set_xwayland_scale(number(params, "scale")?)),
+        "cursor-size" => {
+            let size = number(params, "size")?;
+            if !(16.0..=128.0).contains(&size) || size.fract() != 0.0 {
+                return Err("cursor-size: `size` must be a whole number from 16 to 128".into());
+            }
+            state.cursors.set_size(size as u32);
+            Ok(json!({}))
+        }
         method => Err(format!("unknown method: {method}")),
     }
 }

@@ -1,6 +1,11 @@
 //! The pointer's image: the client's own surface when it sets one, else a
-//! named icon from the xcursor theme (`XCURSOR_THEME`, `XCURSOR_SIZE`), else a
-//! plain arrow drawn here. Loading follows smithay's anvil example (MIT).
+//! named icon from the xcursor theme (`XCURSOR_THEME`), else a plain arrow
+//! drawn here. Its size is logical pixels: `XCURSOR_SIZE` at start, then the
+//! shell's (IPC `cursor-size`, Settings → Appearance → Pointer size). A theme
+//! has a few sizes (Adwaita: 24, 30, 36, 48, 72, 96); the nearest one at least
+//! as big as the screen needs is resampled to exactly that, so the pointer is
+//! the same size on every screen and at every scale. Loading follows
+//! smithay's anvil example (MIT).
 
 use std::collections::HashMap;
 
@@ -56,30 +61,95 @@ impl Cursors {
         image
     }
 
+    /// The pointer's size, in logical pixels; forgets the images of the old one.
+    pub(crate) fn set_size(&mut self, size: u32) {
+        if self.size != size {
+            self.size = size;
+            self.cache.clear();
+        }
+    }
+
     fn load(&self, name: &str, scale: i32) -> Option<CursorImage> {
         let path = self.theme.load_icon(name)?;
         let data = std::fs::read(path).ok()?;
         let images = parse_xcursor(&data)?;
-        let want = self.size as i32 * scale;
+        let scale = scale.max(1);
+        let want = self.size * scale as u32;
+        // The smallest image at least as big as wanted (shrinking stays
+        // sharp), else the biggest there is. The first frame of an animation.
         let image = images
             .iter()
-            .min_by_key(|image| (image.size as i32 - want).abs())?;
-        // xcursor images are in nominal pixels: shown at `scale`, as a buffer of that scale.
-        let buffer_scale = (image.size as i32 / self.size as i32).max(1);
+            .filter(|image| image.size >= want)
+            .min_by_key(|image| image.size)
+            .or_else(|| images.iter().max_by_key(|image| image.size))?;
+        let ratio = want as f32 / image.size.max(1) as f32;
+        let (width, height) = (
+            ((image.width as f32 * ratio).round() as u32).max(1),
+            ((image.height as f32 * ratio).round() as u32).max(1),
+        );
+        let pixels = if (width, height) == (image.width, image.height) {
+            image.pixels_rgba.clone()
+        } else {
+            resample(
+                &image.pixels_rgba,
+                (image.width, image.height),
+                (width, height),
+            )
+        };
         let buffer = MemoryRenderBuffer::from_slice(
-            &image.pixels_rgba,
+            &pixels,
             Fourcc::Abgr8888,
-            (image.width as i32, image.height as i32),
-            buffer_scale,
+            (width as i32, height as i32),
+            scale,
             Transform::Normal,
             None,
         );
         let hotspot = Point::from((
-            image.xhot as i32 / buffer_scale,
-            image.yhot as i32 / buffer_scale,
+            (image.xhot as f32 * ratio / scale as f32).round() as i32,
+            (image.yhot as f32 * ratio / scale as f32).round() as i32,
         ));
         Some(CursorImage { buffer, hotspot })
     }
+}
+
+/// Resize premultiplied RGBA pixels from `from` to `to`: each new pixel is the
+/// area-weighted mean of the old ones it covers (a box filter, which keeps a
+/// shrunk arrow's edges smooth; growing blends at most two pixels a side).
+fn resample(pixels: &[u8], from: (u32, u32), to: (u32, u32)) -> Vec<u8> {
+    let (sw, sh) = from;
+    let (dw, dh) = to;
+    let fx = sw as f32 / dw as f32;
+    let fy = sh as f32 / dh as f32;
+    let mut out = vec![0u8; (dw * dh * 4) as usize];
+    for dy in 0..dh {
+        let (y0, y1) = (dy as f32 * fy, (dy + 1) as f32 * fy);
+        for dx in 0..dw {
+            let (x0, x1) = (dx as f32 * fx, (dx + 1) as f32 * fx);
+            let mut sum = [0f32; 4];
+            let mut area = 0f32;
+            for sy in (y0.floor() as u32)..(y1.ceil() as u32).min(sh) {
+                let wy = y1.min(sy as f32 + 1.0) - y0.max(sy as f32);
+                for sx in (x0.floor() as u32)..(x1.ceil() as u32).min(sw) {
+                    let weight = wy * (x1.min(sx as f32 + 1.0) - x0.max(sx as f32));
+                    if weight <= 0.0 {
+                        continue;
+                    }
+                    let at = ((sy * sw + sx) * 4) as usize;
+                    for (channel, total) in sum.iter_mut().enumerate() {
+                        *total +=
+                            f32::from(pixels.get(at + channel).copied().unwrap_or(0)) * weight;
+                    }
+                    area += weight;
+                }
+            }
+            let at = ((dy * dw + dx) * 4) as usize;
+            for (channel, total) in sum.iter().enumerate() {
+                out[at + channel] =
+                    (total / area.max(f32::EPSILON)).round().clamp(0.0, 255.0) as u8;
+            }
+        }
+    }
+    out
 }
 
 /// A plain arrow, for systems without a cursor theme.
@@ -178,4 +248,26 @@ pub(crate) fn agent_pointer(
         Transform::Normal,
         None,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resample;
+
+    #[test]
+    fn resampling_averages_what_each_pixel_covers() {
+        // Two by two to one: the mean of the four.
+        let pixels = [
+            0, 0, 0, 0, 255, 255, 255, 255, //
+            255, 255, 255, 255, 0, 0, 0, 0,
+        ];
+        assert_eq!(resample(&pixels, (2, 2), (1, 1)), vec![128, 128, 128, 128]);
+        // 48 to 36 (a 24 px pointer at 1.5 from Adwaita's 48): opaque stays opaque.
+        let opaque = vec![255u8; 48 * 48 * 4];
+        let shrunk = resample(&opaque, (48, 48), (36, 36));
+        assert_eq!(shrunk.len(), 36 * 36 * 4);
+        assert!(shrunk.iter().all(|&value| value == 255));
+        // Growing keeps the size asked for.
+        assert_eq!(resample(&opaque[..4], (1, 1), (3, 2)).len(), 3 * 2 * 4);
+    }
 }

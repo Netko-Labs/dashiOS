@@ -68,6 +68,7 @@ import { startNotifications } from "./notifications/index.ts";
 import { openOverlay } from "./overlay.tsx";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { OverviewController } from "./overview/index.ts";
+import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
 import { startPolkit } from "./polkit/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
@@ -99,7 +100,7 @@ import type { WallpaperChoice } from "./wallpaper/catalog.ts";
 import { LiveWallpaperController } from "./wallpaper/live/controller.ts";
 import { reportWallpaper, WallpaperSync } from "./wallpaper/sync.ts";
 import { chooseWifi, WifiStore } from "./wifi/index.ts";
-import { startXwaylandScaling } from "./xwayland-scale.ts";
+import { DEFAULT_X11_SCALING, startXwaylandScaling, type XwaylandChoice, type XwaylandScaling } from "./xwayland-scale.ts";
 
 // One failing feature (a scan, a D-Bus call, a timer) must not take the menu
 // bar and the Dock down with it: Bun exits on anything unhandled, so log it
@@ -212,9 +213,22 @@ let liveWallpaper: LiveWallpaperController | null = null;
 let wallpaperChoice: WallpaperChoice | null = null;
 /** Settings → Appearance → Reduce Motion, for what the shell itself animates (the Dock's entrance). */
 let reduceMotion = false;
+// What other apps read about Dark Mode, the font, and the pointer (appearance/, pointer.ts).
+const appearanceDeps = sessionDeps();
+// The pointer's size: the compositor's, GTK's, and X11's (pointer.ts).
+const pointer = compositor ? new PointerSync({ compositor, gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run }) : null;
+// What X11 apps hear (xwayland-scale.ts): the settings say it, X11 scaling below follows.
+let xwaylandChoice: XwaylandChoice = { scaling: DEFAULT_X11_SCALING, pointerSize: DEFAULT_POINTER_SIZE };
+let xwaylandScaling: XwaylandScaling | null = null;
 const stopSettings = compositor
   ? startSettings(compositor, (settings) => {
       reduceMotion = settings.appearance.reduceMotion;
+      void pointer?.apply(settings.appearance.pointerSize);
+      const choice = { scaling: settings.appearance.x11Apps, pointerSize: settings.appearance.pointerSize };
+      if (choice.scaling !== xwaylandChoice.scaling || choice.pointerSize !== xwaylandChoice.pointerSize) {
+        xwaylandChoice = choice;
+        xwaylandScaling?.refresh();
+      }
       void idle?.blankAfter(settings.idle.blankAfterSeconds);
       void idle?.sleepAfter(settings.idle.sleepAfterSeconds);
       chromeStyle?.setCorners(settings.appearance.cornerRadius);
@@ -327,7 +341,7 @@ const stopFollowingFlags = flags.subscribe(followFlags);
 // Night Shift warms the screens when its switch is on (night-shift.ts).
 const stopNightShift = compositor ? startNightShift(compositor, flags) : () => {};
 // Dark Mode repaints the shell by itself (theme.ts); apps are told here (appearance/).
-const stopAppearance = startAppearance(flags, { ...sessionDeps(), corners: gtkCorners });
+const stopAppearance = startAppearance(flags, { ...appearanceDeps, corners: gtkCorners });
 // The compositor's title bars follow Dark Mode too (IPC `chrome`).
 const tellChrome = () => chromeStyle?.setDark(flags.getSnapshot().dark);
 tellChrome();
@@ -583,7 +597,8 @@ const stopFollowingScreens = compositor
     })
   : () => {};
 // X11 apps drawn at the screens' scale, not stretched (xwayland-scale.ts).
-const stopXwaylandScaling = compositor ? startXwaylandScaling({ compositor }) : () => {};
+xwaylandScaling = compositor ? startXwaylandScaling({ compositor, choice: () => xwaylandChoice }) : null;
+const stopXwaylandScaling = () => xwaylandScaling?.stop();
 
 type OverlayKind = "launcher" | "sheet" | "switcher";
 const overlays = new OverlaySlots<OverlayKind>();
