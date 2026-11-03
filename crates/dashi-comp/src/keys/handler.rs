@@ -43,10 +43,8 @@ struct SuperPress {
 
 enum Taken {
     Swallowed,
-    Translated {
-        target: Keycode,
-        restore: ModifiersState,
-    },
+    /// Replayed as another chord, held until this key is released (replay.rs).
+    Translated(super::replay::Held),
 }
 
 /// What a key is, read from xkb as it is pressed.
@@ -74,10 +72,7 @@ impl Dashi {
             match self.keys.taken.remove(&keycode) {
                 None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
                 Some(Taken::Swallowed) => {}
-                Some(Taken::Translated { target, restore }) => {
-                    keyboard.set_modifier_state(restore);
-                    keyboard.input_forward(self, target, KeyState::Released, serial, time, true);
-                }
+                Some(Taken::Translated(held)) => self.replay_release(held, time),
             }
             return;
         }
@@ -142,12 +137,11 @@ impl Dashi {
             }
             Some(Action::Send(chord)) => match self.resolve(&chord, keycode, info.mods.shift) {
                 Some((target, target_mods)) => {
-                    let restore = keyboard.modifier_state();
-                    keyboard.set_modifier_state(target_mods);
-                    keyboard.input_forward(self, target, KeyState::Pressed, serial, time, true);
-                    self.keys
-                        .taken
-                        .insert(keycode, Taken::Translated { target, restore });
+                    let taken = match self.replay_press(target, target_mods, time) {
+                        Some(held) => Taken::Translated(held),
+                        None => Taken::Swallowed,
+                    };
+                    self.keys.taken.insert(keycode, taken);
                 }
                 None => {
                     self.keys.taken.insert(keycode, Taken::Swallowed);
@@ -171,9 +165,6 @@ impl Dashi {
         keep_shift: bool,
         time: u32,
     ) -> bool {
-        let Some(keyboard) = self.seat.get_keyboard() else {
-            return false;
-        };
         let pressed = pressed.unwrap_or(Keycode::new(0));
         let Some((target, mods)) = self.resolve(chord, pressed, keep_shift) else {
             return false;
@@ -181,25 +172,10 @@ impl Dashi {
         if target.raw() == 0 {
             return false;
         }
-        let restore = keyboard.modifier_state();
-        keyboard.set_modifier_state(mods);
-        keyboard.input_forward(
-            self,
-            target,
-            KeyState::Pressed,
-            SERIAL_COUNTER.next_serial(),
-            time,
-            true,
-        );
-        keyboard.set_modifier_state(restore);
-        keyboard.input_forward(
-            self,
-            target,
-            KeyState::Released,
-            SERIAL_COUNTER.next_serial(),
-            time,
-            true,
-        );
+        let Some(held) = self.replay_press(target, mods, time) else {
+            return false;
+        };
+        self.replay_release(held, time);
         true
     }
 

@@ -14,9 +14,10 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       `xwayland-scale` (smithay client scale) done; shell side to do: send the
       screens' scale, `Xft.dpi` and `Xcursor.size` through xrdb
 - [ ] Steam's maximize button does nothing: reproduce in the VM
-- [ ] ❖C/❖V ignored in Electron, Chromium, GTK, and X11 apps: reproduce in
-      the VM (suspect: a focus the compositor can't name falls to `app-chord`,
-      which drops the chord when the window is null)
+- [x] ❖C/❖V ignored in Electron, Chromium, GTK, and X11 apps: smithay sends
+      a key before its modifiers, so a replayed Ctrl+C arrived as "c"; replays
+      press real modifier keys first (keys/replay.rs). Checked in the VM:
+      Helium, GTK on Wayland, GTK on X11
 - [ ] The login screen comes up at scale 1 on a HiDPI panel: the greeter
       should pick the screen's scale as the shell does (`initialScale`)
 - [ ] `space-remove` is unknown to dashi-comp (the shell asks for it)

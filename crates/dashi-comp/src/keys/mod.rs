@@ -3,6 +3,7 @@
 mod handler;
 mod keymap;
 mod layout;
+mod replay;
 
 pub(crate) use handler::Keys;
 pub(crate) use keymap::{Chord, Keymap};
