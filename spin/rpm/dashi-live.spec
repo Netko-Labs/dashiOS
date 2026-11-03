@@ -49,9 +49,6 @@ cd spin/dashi-live
 install -Dm0644 etc/anaconda/conf.d/90-dashi.conf %{buildroot}%{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 install -Dm0755 usr/libexec/dashi/installer-browser %{buildroot}%{_libexecdir}/dashi/installer-browser
 install -Dm0755 usr/libexec/dashi/finish-install %{buildroot}%{_libexecdir}/dashi/finish-install
-%{_libexecdir}/dashi/dashi-install
-%{_libexecdir}/dashi/dashi-installer
-%{_datadir}/polkit-1/actions/dev.dashi.install.policy
 install -Dm0755 usr/libexec/dashi/dashi-install %{buildroot}%{_libexecdir}/dashi/dashi-install
 install -Dm0755 usr/libexec/dashi/dashi-installer %{buildroot}%{_libexecdir}/dashi/dashi-installer
 install -Dm0644 usr/share/polkit-1/actions/dev.dashi.install.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.install.policy
