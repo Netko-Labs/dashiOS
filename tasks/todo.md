@@ -40,9 +40,17 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [x] `space-remove` was unknown to dashi-comp (the shell asked for it 17
       times on the installed system): added (wm/space_list.rs). Checked in the
       VM over IPC: removing the shown Space, the first, and refusing the last
-- [ ] Apps are slow to open the first time after login: measure
-- [ ] First boot after install waits ~30 s on akmods building nvidia-kmod
-      (once per new kernel): consider building it in the image
+- [x] Apps slow to open: on the NVIDIA + AMD laptop, listing GPUs woke the
+      sleeping NVIDIA card first: Vulkan 3.5–7.4 s, EGL (Chromium, Electron)
+      2.9 s, against 0.01 s with only the AMD GPU in view. Apps the shell
+      starts now see only the screens' GPU (VK_LOADER_DRIVERS_SELECT, Mesa's
+      EGL); `PrefersNonDefaultGPU` apps (Steam) get NVIDIA's offload instead
+      (gpu-env.ts). Dashi's own apps already limit themselves (mirin gpu.rs).
+      Measured with the variables on the host; the VM has one GPU. Programs
+      started from Terminal are left alone (prime-run must still work)
+- [ ] The NVIDIA card ran on nouveau this boot: akmods built nvidia-kmod 30 s
+      after nouveau took the card. Build the kmod in the image (or at install)
+      so the first boot already has it
 
 # Dashi 0.2.0
 

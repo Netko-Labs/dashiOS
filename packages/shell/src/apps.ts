@@ -8,6 +8,8 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
 import { firstPartyApps } from "./first-party.ts";
+import { chooseGpu, readCards } from "./gpu.ts";
+import { type GpuEnvs, gpuEnvFor, gpuEnvs } from "./gpu-env.ts";
 
 export interface App {
   /** The app id its windows report (xdg-toplevel app_id). */
@@ -20,6 +22,8 @@ export interface App {
   env?: Readonly<Record<string, string>>;
   /** Working directory; Bun apps read their tsconfig and bunfig from it. */
   cwd?: string;
+  /** Its desktop entry asks for the discrete GPU (`PrefersNonDefaultGPU`; gpu-env.ts). */
+  gpu?: "discrete";
 }
 
 const icons = new URL("../icons/", import.meta.url).pathname;
@@ -241,6 +245,19 @@ export function canLaunch(app: App): boolean {
  * crashed shell (and reaps the shell's process group) apps keep running.
  * A shell app opens in the shell itself.
  */
+let gpuEnvsHere: GpuEnvs | null = null;
+
+/** This machine's GPU environments for apps (gpu-env.ts), read on the first launch. */
+function machineGpuEnvs(): GpuEnvs {
+  if (!gpuEnvsHere) {
+    const cards = readCards();
+    // The GPU dashi-session gave the compositor, else the one it would choose.
+    const display = cards.find((card) => card.devnode === process.env.DASHI_DRM_DEVICE) ?? chooseGpu(cards)?.card ?? null;
+    gpuEnvsHere = gpuEnvs(display, cards);
+  }
+  return gpuEnvsHere;
+}
+
 export function launch(app: App): number | null {
   const open = app.exec ? undefined : shellOpeners.get(app.id);
   if (open) {
@@ -251,7 +268,7 @@ export function launch(app: App): number | null {
   if (!app.exec) return null;
   try {
     const child = Bun.spawn([...app.exec], {
-      env: { ...process.env, ...app.env },
+      env: { ...process.env, ...gpuEnvFor(app, machineGpuEnvs(), process.env), ...app.env },
       // Apps start at home, like a fresh terminal, not where the shell runs.
       cwd: app.cwd ?? homedir(),
       stdin: "ignore",

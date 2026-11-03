@@ -82,6 +82,8 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
     ...(yes("NoDisplay") ? { hidden: true as const } : {}),
+    // The freedesktop key, and KDE's older one (Steam sets both).
+    ...(yes("PrefersNonDefaultGPU") || yes("X-KDE-RunOnDiscreteGpu") ? { gpu: "discrete" as const } : {}),
     keywords: [...splitList(fields.get("Keywords")), ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : [])].map((word) =>
       word.toLowerCase(),
     ),
