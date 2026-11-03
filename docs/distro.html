@@ -78,7 +78,7 @@
       <tr><td>Interface font</td><td>Inter (<code>rsms-inter-fonts</code>), with Noto Sans, Noto Sans Mono, and Noto Sans Symbols 2</td></tr>
       <tr><td>Default shell</td><td>zsh, for every new account (<code>dashi-release</code> sets <code>useradd</code>'s default)</td></tr>
       <tr><td>Browser</td><td>Helium (<code>helium-bin</code>), with Dashi's defaults (<code>dashi-helium</code>)</td></tr>
-      <tr><td>Installer</td><td>Anaconda's web UI in Helium, opened from the live session's Setup Assistant ("Install Dashi…"), with Dashi's own Anaconda profile (Fedora's as its base). The installer creates the person's account; the Setup Assistant does the rest at first login.</td></tr>
+      <tr><td>Installer</td><td>Dashi's own, a Metal app (<code>dev.dashi.installer</code>, the shell's <code>apps/installer</code>) opened from the live session's Setup Assistant or "Install Dashi": a disk, the account, NVIDIA's driver as a choice (on when the machine has an NVIDIA GPU), then <code>dashi-install</code> as root erases the disk, lays it out as Fedora does (EFI, <code>/boot</code>, Btrfs <code>root</code> and <code>home</code>), copies the live system, installs shim and GRUB, and runs <code>finish-install</code>. UEFI only; one whole disk. Anaconda stays on the image, unoffered. The Setup Assistant does the rest at first login.</td></tr>
       <tr><td>Terminal</td><td>Dashi's own: dashi-term on libghostty-vt (Ghostty's core), drawn by Metal</td></tr>
       <tr><td>Boot splash</td><td>Plymouth theme <code>dashi</code> (two-step), Inter type</td></tr>
       <tr><td>Graphics</td><td>Any GPU with GLES 2 and GBM; a GPU with only a software driver draws with llvmpipe (VMs without 3D, <code>nomodeset</code>). NVIDIA through <code>dashi-nvidia</code> (akmod, RPM Fusion), built at install on a machine with an NVIDIA GPU (removed on one without), so the first boot runs on it</td></tr>
@@ -222,9 +222,9 @@ const PACKAGES = [
   { n: "dashi-helium", layer: "image", s: "Helium's defaults on Dashi",
     carries: "Helium's policies: its GTK title bar and the one-row layout, matching Dashi's windows.",
     needs: [], ext: "helium-bin (COPR imput/helium)" },
-  { n: "dashi-live", layer: "image", s: "The live image's session and installer entry",
-    carries: "livesys-dashi: autologin into Dashi (greetd's initial session), the Install Dashi… entry, the installer's browser.",
-    needs: ["dashi", "dashi-greeter"], ext: "anaconda-live, livesys-scripts, helium-bin" },
+  { n: "dashi-live", layer: "image", s: "The live image's session and Dashi's installer",
+    carries: "livesys-dashi: autologin into Dashi (greetd's initial session), the Install Dashi entry; dashi-install (the installer's root half, polkit dev.dashi.install), dashi-installer, finish-install.",
+    needs: ["dashi", "dashi-greeter", "dashi-kernel"], ext: "livesys-scripts, btrfs-progs, dosfstools, efibootmgr, shim-x64, grub2-efi-x64; anaconda-live, helium-bin (Anaconda, kept)" },
 ];
 
 const map = document.getElementById("pkg-map");
@@ -269,7 +269,7 @@ const BOOT = {
     ["greetd → autologin", "greetd's first session logs liveuser into Dashi with no greeter; later sessions get the login screen."],
     ["dashi-session", "As installed: the GPU (or software rendering in a VM without 3D), the compositor, the shell."],
     ["Setup Assistant", "Opens with \"Install Dashi…\": You are trying Dashi from a USB drive. Install it to keep it."],
-    ["Install", "Anaconda's web UI in Helium copies the live system to disk; the installed system boots what the image showed."],
+    ["Install", "Dashi's Installer erases one disk and copies the live system to it (dashi-install, as root); the installed system boots what the image showed, with NVIDIA's driver built if chosen and CachyOS's kernel alone where it boots."],
   ],
 };
 

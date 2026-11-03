@@ -15,8 +15,15 @@ Requires:       anaconda-live
 Requires:       rsync
 Requires:       livesys-scripts
 Requires:       helium-bin
-# finish-install.
+# finish-install, and dashi-install's tools.
 Requires:       dashi-kernel
+Requires:       btrfs-progs
+Requires:       dosfstools
+Requires:       e2fsprogs
+Requires:       efibootmgr
+Requires:       grub2-efi-x64
+Requires:       shim-x64
+Requires:       polkit
 Requires:       diffutils
 Requires:       util-linux
 
@@ -24,7 +31,9 @@ Requires:       util-linux
 What Dashi's live ISO adds at boot (livesys-scripts runs livesys-dashi only
 on a live boot): autologin into Dashi (greetd's initial session), a polkit
 rule so the installer opens without a password, and "Install Dashi" in the
-launcher. Anaconda's web UI opens in Helium (installer-browser), and once it
+launcher, which opens Dashi's Installer (dashi-installer, the shell's
+apps/installer; dashi-install does the work as root). Anaconda stays on the
+image: its web UI opens in Helium (installer-browser), and once it
 has installed the system, finish-install builds NVIDIA's driver for a
 machine with an NVIDIA GPU (removes it otherwise) and leaves CachyOS's
 kernel the only one where it boots. Installed systems keep the files, which
@@ -40,6 +49,12 @@ cd spin/dashi-live
 install -Dm0644 etc/anaconda/conf.d/90-dashi.conf %{buildroot}%{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 install -Dm0755 usr/libexec/dashi/installer-browser %{buildroot}%{_libexecdir}/dashi/installer-browser
 install -Dm0755 usr/libexec/dashi/finish-install %{buildroot}%{_libexecdir}/dashi/finish-install
+%{_libexecdir}/dashi/dashi-install
+%{_libexecdir}/dashi/dashi-installer
+%{_datadir}/polkit-1/actions/dev.dashi.install.policy
+install -Dm0755 usr/libexec/dashi/dashi-install %{buildroot}%{_libexecdir}/dashi/dashi-install
+install -Dm0755 usr/libexec/dashi/dashi-installer %{buildroot}%{_libexecdir}/dashi/dashi-installer
+install -Dm0644 usr/share/polkit-1/actions/dev.dashi.install.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.install.policy
 install -Dm0644 usr/share/dashi/finish-install.ks %{buildroot}%{_datadir}/dashi/finish-install.ks
 install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libexecdir}/livesys/sessions.d/livesys-dashi
 
@@ -48,6 +63,9 @@ install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libe
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/installer-browser
 %{_libexecdir}/dashi/finish-install
+%{_libexecdir}/dashi/dashi-install
+%{_libexecdir}/dashi/dashi-installer
+%{_datadir}/polkit-1/actions/dev.dashi.install.policy
 %dir %{_datadir}/dashi
 %{_datadir}/dashi/finish-install.ks
 %{_libexecdir}/livesys/sessions.d/livesys-dashi

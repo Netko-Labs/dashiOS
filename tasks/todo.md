@@ -77,6 +77,21 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       in the VM from Mission Control's ×
 - [x] Agents saw T3 Code's window as `app: null`: list_windows named windows
       without hidden (NoDisplay) entries; it uses them now
+- [x] Dashi's own installer, on Metal (`apps/installer`, dev.dashi.installer):
+      Welcome, disk, account, options (NVIDIA's driver: on when the machine
+      has an NVIDIA GPU), a last look, progress, Restart. Its root half is
+      dashi-live's `dashi-install` (pkexec, polkit dev.dashi.install; the live
+      user needs no password): GPT with EFI 600 MiB, /boot ext4 2 GiB, Btrfs
+      root and home (zstd); the live root copied with its labels (the ESP
+      without: FAT); fstab, machine-id, hostname, account; kernel-install per
+      kernel, shim and GRUB with a stub on the ESP, efibootmgr; finish-install;
+      setfiles. Checked in the VM: a real install of the dev VM's system onto
+      a second disk (vm/vm's DASHI_VM_EXTRA_DISK), which booted on fresh
+      firmware (shim's fallback) to CachyOS's kernel with the account,
+      Enforcing and no denials; the app walked through as a practice run
+- [ ] The installer from the live ISO itself (the next image), on real
+      hardware with NVIDIA; then drop Anaconda from the image
+- [ ] Installer: install next to another system, disk encryption, BIOS
 - [ ] Verify finish-install through a real Anaconda install of the 0.3.0 ISO
       (the live system boots Fedora's kernel: protect_running_kernel is off).
       The first 0.3.0 ISO's install showed Anaconda's post-scripts/ never ran:

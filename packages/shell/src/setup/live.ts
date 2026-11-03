@@ -1,18 +1,22 @@
 /**
  * The live ISO (spin/): booted from the USB stick, the Setup Assistant's
- * first page offers "Install Dashi", which runs Fedora's live installer
- * (`liveinst`, Anaconda). An installed system boots without `rd.live.image`,
- * so the button is not there.
+ * first page offers "Install Dashi", which opens Dashi's Installer
+ * (dashi-live's dashi-installer; Fedora's `liveinst` where it is missing).
+ * An installed system boots without `rd.live.image`, so the button is not there.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 /** Whether the kernel command line is the live image's. */
 export const isLiveCmdline = (cmdline: string): boolean => cmdline.split(/\s+/).some((arg) => arg === "rd.live.image" || arg.startsWith("rd.live.image="));
 
-/** The installer's command, when this boot is the live image and it has one. */
-export function liveInstaller(cmdline: string, which: (program: string) => string | null): string | null {
-  return isLiveCmdline(cmdline) ? which("liveinst") : null;
+/** Dashi's Installer, as dashi-live installs it. */
+export const DASHI_INSTALLER = "/usr/libexec/dashi/dashi-installer";
+
+/** The installer's command, when this boot is the live image and it has one: Dashi's, else Anaconda's. */
+export function liveInstaller(cmdline: string, which: (program: string) => string | null, exists: (path: string) => boolean = existsSync): string | null {
+  if (!isLiveCmdline(cmdline)) return null;
+  return exists(DASHI_INSTALLER) ? DASHI_INSTALLER : which("liveinst");
 }
 
 /** Whether this boot is the live image (nothing installed here survives a restart). */
