@@ -1,6 +1,9 @@
 # Dashi (dashi-live): finish the installed system once Anaconda has copied the
-# live image onto it, configured it, and installed the boot loader. Anaconda
-# reads every *ks here and runs these after its own steps (post-scripts).
+# live image onto it, configured it, and installed the boot loader. The live
+# session adds this to Anaconda's interactive-defaults.ks (livesys-dashi),
+# the kickstart a live install reads: its %post runs after Anaconda's own
+# steps. (Anaconda's post-scripts/ directory reaches only its main process,
+# not the module that runs scripts, so a %post there never runs.)
 # NVIDIA's driver is built when the machine has an NVIDIA GPU (removed when
 # it hasn't), and CachyOS's kernel becomes the only one where it boots
 # (/usr/libexec/dashi/finish-install). A failure leaves the system as it

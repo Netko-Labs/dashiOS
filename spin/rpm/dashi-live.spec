@@ -40,7 +40,7 @@ cd spin/dashi-live
 install -Dm0644 etc/anaconda/conf.d/90-dashi.conf %{buildroot}%{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 install -Dm0755 usr/libexec/dashi/installer-browser %{buildroot}%{_libexecdir}/dashi/installer-browser
 install -Dm0755 usr/libexec/dashi/finish-install %{buildroot}%{_libexecdir}/dashi/finish-install
-install -Dm0644 usr/share/anaconda/post-scripts/90-dashi.ks %{buildroot}%{_datadir}/anaconda/post-scripts/90-dashi.ks
+install -Dm0644 usr/share/dashi/finish-install.ks %{buildroot}%{_datadir}/dashi/finish-install.ks
 install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %files
@@ -48,7 +48,8 @@ install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libe
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/installer-browser
 %{_libexecdir}/dashi/finish-install
-%{_datadir}/anaconda/post-scripts/90-dashi.ks
+%dir %{_datadir}/dashi
+%{_datadir}/dashi/finish-install.ks
 %{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %changelog

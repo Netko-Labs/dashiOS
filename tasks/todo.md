@@ -60,7 +60,8 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [x] The NVIDIA card ran on nouveau at first boot: the image has the akmod
       but no built module, and akmods built it 30 s into the boot, after
       nouveau took the card. Anaconda now runs finish-install
-      (post-scripts/90-dashi.ks): builds the driver at install on a machine
+      (finish-install.ks, added to interactive-defaults.ks at live boot: a
+      %post in post-scripts/ never runs on a live install): builds the driver at install on a machine
       with an NVIDIA GPU, removes it on one without. Verified in the VM, both ways
 - [x] CachyOS's kernel the only one after install where it boots (x86-64-v3,
       Secure Boot off; `default-kernel --check`): finish-install removes
@@ -77,7 +78,9 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [x] Agents saw T3 Code's window as `app: null`: list_windows named windows
       without hidden (NoDisplay) entries; it uses them now
 - [ ] Verify finish-install through a real Anaconda install of the 0.3.0 ISO
-      (the live system boots Fedora's kernel: protect_running_kernel is off)
+      (the live system boots Fedora's kernel: protect_running_kernel is off).
+      The first 0.3.0 ISO's install showed Anaconda's post-scripts/ never ran:
+      moved to interactive-defaults.ks
 - [ ] Dashi's own installer in place of Anaconda's web UI, with "Install
       NVIDIA's driver" as a checkbox (on when the machine has an NVIDIA GPU);
       it ends with the same finish-install

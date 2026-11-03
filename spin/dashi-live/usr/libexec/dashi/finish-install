@@ -5,7 +5,8 @@
 #   finish-install --root DIR [--nvidia auto|yes|no] [--kernel auto|cachyos|both]
 #       On the live system, with the installed system mounted at DIR: decide
 #       what this machine needs (auto), then finish DIR, chrooted. Anaconda
-#       runs it so (post-scripts/90-dashi.ks).
+#       runs it so (finish-install.ks, which livesys-dashi adds to the
+#       kickstart a live install reads).
 #   finish-install --nvidia yes|no --kernel cachyos|both
 #       As root inside the installed system: do it.
 #

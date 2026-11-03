@@ -49,6 +49,14 @@ Categories=System;
 Keywords=install;installer;anaconda;disk;
 DESKTOP_EOF
 
+# Once the installer has copied the system, finish it (dashi-live's
+# finish-install: NVIDIA's driver, CachyOS's kernel). A live install reads
+# interactive-defaults.ks as its kickstart, so the %post goes there.
+defaults=/usr/share/anaconda/interactive-defaults.ks
+if [ -f "$defaults" ] && ! grep -q 'finish-install' "$defaults"; then
+  cat /usr/share/dashi/finish-install.ks >> "$defaults"
+fi
+
 # Turn off PackageKit-command-not-found while running live, as Fedora does.
 if [ -f /etc/PackageKit/CommandNotFound.conf ]; then
   sed -i -e 's/^SoftwareSourceSearch=true/SoftwareSourceSearch=false/' /etc/PackageKit/CommandNotFound.conf
