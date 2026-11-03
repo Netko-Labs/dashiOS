@@ -114,6 +114,14 @@ impl Dashi {
             entry.shown = shown;
         }
         self.space.unmap_elem(&window);
+        // Off screen, it is not the active window; telling it now means its
+        // return is a change the client hears (configure_all only walks the
+        // windows on screen). An app that minimized itself (Chromium,
+        // Electron) ignores clicks until a configure says it is back.
+        window.set_activated(false);
+        if let Some(toplevel) = window.toplevel() {
+            toplevel.send_pending_configure();
+        }
         // X11 apps read it back (_NET_WM_STATE_HIDDEN) and can stop drawing.
         if shown == Shown::Minimized
             && let Some(x11) = window.x11_surface()
@@ -154,6 +162,10 @@ impl Dashi {
             return;
         }
         self.map_frame_at(&window, at, true);
+        // Back: a configure even if nothing else changed, so the client knows.
+        if let Some(toplevel) = window.toplevel() {
+            toplevel.send_configure();
+        }
         if let Some(frame) = frame_of(self, &window) {
             self.fly(id, frame, false);
         }

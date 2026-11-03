@@ -13,7 +13,15 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [ ] Steam and other X11 apps blurry at fractional scale: compositor
       `xwayland-scale` (smithay client scale) done; shell side to do: send the
       screens' scale, `Xft.dpi` and `Xcursor.size` through xrdb
-- [ ] Steam's maximize button does nothing: reproduce in the VM
+- [x] Maximize did nothing after a minimize and restore: a parked window
+      stayed "activated" and came back with no configure, so Chromium and
+      Electron still thought they were minimized and ignored clicks. Parking
+      deactivates; showing sends a configure. Checked in the VM (Helium on
+      Wayland: minimize, Dock, maximize; X11: wmctrl toggle/add/remove,
+      xdotool minimize). Steam itself not tried in the VM
+- [ ] X11 `_NET_ACTIVE_WINDOW` (an app asking to be shown, e.g. Steam
+      opened again) doesn't restore a minimized X11 window: smithay has no
+      handler for it
 - [x] ❖C/❖V ignored in Electron, Chromium, GTK, and X11 apps: smithay sends
       a key before its modifiers, so a replayed Ctrl+C arrived as "c"; replays
       press real modifier keys first (keys/replay.rs). Checked in the VM:
