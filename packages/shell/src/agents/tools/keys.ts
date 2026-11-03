@@ -135,7 +135,7 @@ function parseChord(text: string): Chord | string {
   }
   const key = keyName(rest);
   if (key === null)
-    return `\`${rest}\` in ${text} is not a key I know: a letter, digit, punctuation mark, arrow (←↑↓→), or a name like Return, Tab, Escape, F5.`;
+    return `\`${rest}\` in ${text} is not a key I know: a letter, digit, unshifted punctuation (, . / ; ' [ ] - =), arrow (←↑↓→), or a name like Return, Tab, Escape, F5. Type symbols such as * or + with type_text.`;
   return { mods, key };
 }
 

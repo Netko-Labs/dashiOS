@@ -75,6 +75,12 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [x] Deleting a Desktop did nothing on 0.2.0: its dashi-comp had no
       `space-remove` (dashi.log: 20 "unknown method"). 0.3.0 has it; checked
       in the VM from Mission Control's ×
+- [x] Agent control end to end in the VM (dashi-mcp, consent sheet per
+      scope): list_windows, list_apps, type_text (Calculator 12+30= → 42),
+      a window screenshot, click with the agent's pointer, focus_window.
+      press_keys takes unshifted punctuation only; its error says so now
+- [x] Clicks beside a revealed Dock reached the window under it, and its
+      icons still work (VM, autohide on, a window to the bottom edge)
 - [x] Agents saw T3 Code's window as `app: null`: list_windows named windows
       without hidden (NoDisplay) entries; it uses them now
 - [x] Dashi's own installer, on Metal (`apps/installer`, dev.dashi.installer):
