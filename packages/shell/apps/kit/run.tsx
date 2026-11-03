@@ -85,6 +85,14 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     process.exit(0);
   };
   host.onClose(finish);
+  // Told to stop (kill, logout): the window goes with the process. The Metal
+  // host is a process of its own and would otherwise stay on screen.
+  for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
+    process.on(signal, () => {
+      host.close();
+      finish();
+    });
+  }
   return {
     host,
     root,
