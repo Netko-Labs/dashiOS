@@ -2,7 +2,9 @@
  * Screen brightness: read from /sys/class/backlight, changed with
  * `brightnessctl` (which falls back to logind when the file is not
  * writable). Without a backlight (a desktop monitor) or without the tool,
- * the keys do nothing. Steps are 1/16, like the Mac's.
+ * the keys do nothing. Steps are 1/16, like the Mac's. The lowest is 0,
+ * which on most laptop panels turns the backlight off, as the Mac's does:
+ * Brightness Up (or the slider) brings it back.
  */
 
 import { readdir } from "node:fs/promises";
@@ -81,8 +83,7 @@ export function levelOf(light: Backlight): number {
 /**
  * The raw value one step from `light`, on the grid of 1/16ths. A value near
  * a step (hardware rounds) counts as on it; one between steps moves to the
- * next step in that direction. Never 0: on many panels that switches the
- * screen off, and the keys must not.
+ * next step in that direction. The last step down is 0, the backlight off.
  */
 export function steppedValue(light: Backlight, direction: "up" | "down"): number {
   const position = levelOf(light) * LEVELS;
@@ -90,7 +91,7 @@ export function steppedValue(light: Backlight, direction: "up" | "down"): number
   const delta = direction === "up" ? 1 : -1;
   const onStep = Math.abs(position - nearest) < 0.2;
   const next = onStep ? nearest + delta : direction === "up" ? Math.ceil(position) : Math.floor(position);
-  return Math.max(1, Math.round((light.max * Math.min(Math.max(next, 0), LEVELS)) / LEVELS));
+  return Math.round((light.max * Math.min(Math.max(next, 0), LEVELS)) / LEVELS);
 }
 
 /** Brighter or dimmer by a step; null if there is no backlight or no brightnessctl. */
@@ -110,9 +111,9 @@ export async function stepBrightness(
   return readBacklight(options.root);
 }
 
-/** The raw value for a 0..1 level. Never 0, for the reason `steppedValue` gives. */
+/** The raw value for a 0..1 level; 0 turns the backlight off. */
 export function rawFor(light: Backlight, level: number): number {
-  return Math.max(1, Math.round(light.max * Math.min(Math.max(level, 0), 1)));
+  return Math.round(light.max * Math.min(Math.max(level, 0), 1));
 }
 
 /** Sets the brightness to `level` (0..1), as Control Center's slider does; false if it could not. */
