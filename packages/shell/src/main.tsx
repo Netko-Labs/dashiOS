@@ -272,7 +272,7 @@ const stopGestures =
     : () => {};
 
 // Battery, network, and volume for the menu bar; the volume and brightness keys.
-const system = startSystem(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {});
+const system = startSystem({ compositor, ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}) });
 if (compositor && wallpaper) {
   const controller = new LiveWallpaperController({
     compositor,
@@ -469,6 +469,7 @@ const menus = startMenus({
   compositor,
   arranger,
   system: system.store,
+  brightnessChanged: system.brightnessChanged,
   notifications: notifications.store,
   wifi,
   wifiStore,

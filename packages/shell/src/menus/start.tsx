@@ -46,6 +46,8 @@ export interface MenusOptions {
   compositor: Compositor | null;
   arranger: Arranger | null;
   system: SystemStore;
+  /** Control Center's slider set the brightness to `level` (0..1): at 0 the built-in screen goes off. */
+  brightnessChanged?: (level: number) => void;
   /** What the notification center lists; it also hears when the center opens (banners go away then). */
   notifications: NotificationStore;
   /** What Wi-Fi is wired to: NetworkManager, or the stand-in of a development run. */
@@ -126,6 +128,7 @@ export function startMenus(options: MenusOptions): Menus {
   });
   const devices = new DeviceStore({
     volumeChanged: (volume) => options.system.publish("volume", volume),
+    ...(options.brightnessChanged ? { brightnessChanged: options.brightnessChanged } : {}),
     wifiRadio: radios.wifi,
     bluetoothRadio: radios.bluetooth,
     // The Bluetooth radio asks BlueZ itself (and falls back to bluetoothctl, which may be missing).

@@ -101,7 +101,11 @@ pub(crate) fn handle(
                 .get("on")
                 .and_then(Value::as_bool)
                 .ok_or("`on` must be true or false")?;
-            backend::udev::power(state, on, flag(params, "reset"));
+            let only = match params.get("output") {
+                None | Some(Value::Null) => None,
+                Some(_) => Some(text(params, "output")?),
+            };
+            backend::udev::power(state, on, flag(params, "reset"), only)?;
             Ok(json!({}))
         }
         "gamma" => {

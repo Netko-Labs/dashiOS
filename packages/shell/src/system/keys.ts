@@ -32,6 +32,8 @@ export interface HardwareDeps {
   volumeChanged?: (volume: Volume) => void;
   /** Where the backlights are, and whether brightnessctl exists (tests). */
   brightness?: { root?: string; hasBrightnessctl?: boolean };
+  /** The brightness level (0..1) after a key changed it: at 0 the built-in screen goes off (screen-dark.ts). */
+  brightnessChanged?: (level: number) => void;
   hasPlayerctl?: boolean;
 }
 
@@ -78,7 +80,9 @@ export class HardwareKeys {
       case "brightness-up":
       case "brightness-down": {
         const light = await stepBrightness(run, name === "brightness-up" ? "up" : "down", this.deps.brightness);
-        if (light) this.deps.osd.show({ kind: "brightness", level: levelOf(light) });
+        if (!light) return;
+        this.deps.brightnessChanged?.(levelOf(light));
+        this.deps.osd.show({ kind: "brightness", level: levelOf(light) });
         return;
       }
     }

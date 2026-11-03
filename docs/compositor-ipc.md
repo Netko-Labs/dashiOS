@@ -64,7 +64,7 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | `cursor-size` | `{size}`, a whole number of points from 16 to 128 | `{}`; the pointer dashi-comp draws (named shapes, its own arrows), that size on every screen at every scale; starts at `XCURSOR_SIZE` or 24. The shell sends Settings → Appearance → Pointer size |
 | `input-region` | `{namespace, rects}`: a shell layer namespace (`dashi.*`) and up to 32 `{x, y, width, height}` in surface coordinates, or `rects: null` for the whole surface | `{}`; that namespace's layer surfaces take the pointer only inside the rects (their popups anywhere); elsewhere it reaches what is under them. The Dock sends its panel, so clicks beside it reach the windows |
 | `outputs-config` | a full arrangement; *see* `toWire` in `src/display-config/plan.ts`; an entry may set `vrr: "off"\|"on"\|"fullscreen"` (only while a window is full screen there) | `{}`; the shell reverts on its own timer if not kept |
-| `power` | `{on: bool, reset?: bool}` | `{}`; screens on/off (DPMS) |
+| `power` | `{on: bool, reset?: bool, output?: name}` | `{}`; screens on/off (DPMS). With `output`, just that screen, held so: lighting every screen (waking from idle) and Displays leave a held-dark screen dark until `{on: true, output}`; an unknown name is an error. The shell holds the built-in screen dark at brightness 0 (`src/system/screen-dark.ts`) |
 | `gamma` | the Night Shift tint; *see* `tintFor` in `src/night-shift.ts` | `{}` |
 | `wallpaper` | a `WallpaperRequest` (*see* `src/wallpaper/catalog.ts`; `{video, mode}` plays a video, looped and muted) or `{paused: bool}` | `{}`, or an error if the file is refused; `wallpaper` event when loaded |
 

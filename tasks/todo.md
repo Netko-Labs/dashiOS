@@ -72,6 +72,11 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       the screen; Metal can't set an input region): the shell sends the
       panel's bounds (IPC `input-region`) and dashi-comp lets the rest
       through, title bars and click-to-focus included
+- [x] Brightness 0 left the Zephyrus G14's OLED faintly lit (amdgpu's
+      backlight 0 is the panel's minimum, not off): at 0 the shell holds the
+      built-in screen (eDP/LVDS/DSI) dark (IPC `power {on, output}`), and the
+      first rise lights it; waking from idle leaves it dark. dashi-comp's
+      hold checked in the VM; the shell's side by test/screen-dark.test.ts
 - [x] Deleting a Desktop did nothing on 0.2.0: its dashi-comp had no
       `space-remove` (dashi.log: 20 "unknown method"). 0.3.0 has it; checked
       in the VM from Mission Control's ×

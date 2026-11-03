@@ -143,6 +143,10 @@ struct Screen {
     scheduled: bool,
     /// The screen is lit (`power`, and on in Displays).
     powered: bool,
+    /// Held dark by `power {on: false, output}` (brightness at 0 on a panel
+    /// whose backlight never goes out, such as an OLED): lighting every
+    /// screen (waking from idle) and Displays leave it dark.
+    held: bool,
     /// The connector's modes, to switch to one (Displays).
     modes: Vec<smithay::reexports::drm::control::Mode>,
     /// Whether it can change its refresh rate as frames come (vrr.rs).
@@ -240,9 +244,9 @@ impl UdevData {
         let Some(screen) = self.screen_of(output) else {
             return;
         };
-        screen.powered = enabled;
+        screen.powered = enabled && !screen.held;
         screen.queued = false;
-        if !enabled
+        if !screen.powered
             && let Err(error) = screen
                 .scanout
                 .with_compositor(|compositor| compositor.clear())
@@ -251,9 +255,18 @@ impl UdevData {
         }
     }
 
-    /// `power`: screens dark or lit. Lighting them draws them again.
-    pub(crate) fn set_power(&mut self, on: bool, reset: bool) -> Vec<(DrmNode, crtc::Handle)> {
+    /// `power`: screens dark or lit. Lighting them draws them again. With
+    /// `only`, just the screen of that name, which stays as it is left: a
+    /// held-dark screen stays dark when the rest are lit. None by that name
+    /// is an error.
+    pub(crate) fn set_power(
+        &mut self,
+        on: bool,
+        reset: bool,
+        only: Option<&str>,
+    ) -> Result<Vec<(DrmNode, crtc::Handle)>, String> {
         let mut lit = Vec::new();
+        let mut found = false;
         for (node, device) in &mut self.devices {
             if on
                 && reset
@@ -262,6 +275,15 @@ impl UdevData {
                 tracing::warn!(%error, "resetting a GPU's state");
             }
             for (crtc, screen) in &mut device.screens {
+                if let Some(name) = only {
+                    if screen.output.name() != name {
+                        continue;
+                    }
+                    found = true;
+                    screen.held = !on;
+                } else if on && screen.held {
+                    continue;
+                }
                 if on {
                     screen.powered = true;
                     screen.queued = false;
@@ -277,10 +299,15 @@ impl UdevData {
                 }
             }
         }
+        if let Some(name) = only
+            && !found
+        {
+            return Err(format!("no screen named {name}"));
+        }
         if on && let Some(tint) = self.gamma {
             self.set_gamma(Some(tint));
         }
-        lit
+        Ok(lit)
     }
 
     pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
@@ -290,14 +317,21 @@ impl UdevData {
     }
 }
 
-/// `power {on, reset?}`: the screens dark, or lit and drawn again.
-pub(crate) fn power(state: &mut Dashi, on: bool, reset: bool) {
-    let lit = with_udev(state, |_, data| data.set_power(on, reset)).unwrap_or_default();
+/// `power {on, reset?, output?}`: the screens (or that one) dark, or lit and drawn again.
+pub(crate) fn power(
+    state: &mut Dashi,
+    on: bool,
+    reset: bool,
+    only: Option<&str>,
+) -> Result<(), String> {
+    let lit =
+        with_udev(state, |_, data| data.set_power(on, reset, only)).unwrap_or(Ok(Vec::new()))?;
     for (node, crtc) in lit {
         state
             .loop_handle
             .insert_idle(move |state| render_screen(state, node, crtc));
     }
+    Ok(())
 }
 
 /// With the backend taken out of the state for the call (device callbacks need both).

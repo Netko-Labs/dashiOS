@@ -131,6 +131,7 @@ fn connector_connected(
                 queued: false,
                 scheduled: false,
                 powered: true,
+                held: false,
                 modes: connector.modes().to_vec(),
                 vrr,
                 feedback,
