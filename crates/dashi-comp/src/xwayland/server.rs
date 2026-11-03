@@ -55,6 +55,7 @@ impl Dashi {
                                 state.xwayland.display = Some(display_number);
                                 state.xwayland.state = XState::Ready;
                                 state.xwayland.restarts = 0;
+                                state.listen_x11_activation(display_number);
                                 tracing::info!(display = display_number, "Xwayland is ready");
                             }
                             Err(error) => {

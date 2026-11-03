@@ -5,7 +5,10 @@
 //! and share the clipboard and primary selection with Wayland apps. Menus and
 //! tooltips (override-redirect windows) go where the app puts them. Its scale
 //! (`scale.rs`) is the shell's: above 1, X11 apps draw at the screen's pixels.
+//! An app asking for its window back (`_NET_ACTIVE_WINDOW`) is heard on a
+//! connection of dashi-comp's own (`activate.rs`).
 
+mod activate;
 mod focus;
 mod scale;
 mod server;

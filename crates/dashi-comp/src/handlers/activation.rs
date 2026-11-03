@@ -64,6 +64,14 @@ impl XdgActivationHandler for Dashi {
             }
             return;
         }
+        self.want_attention(id);
+    }
+}
+
+impl Dashi {
+    /// A window asked for the keyboard and didn't get it: it wants attention
+    /// until it gets the keyboard (the shell hears `window-attention`).
+    pub(crate) fn want_attention(&mut self, id: crate::wm::WindowId) {
         if let Some(entry) = self.windows.get_mut(id)
             && !entry.attention
         {

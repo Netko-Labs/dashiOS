@@ -411,6 +411,7 @@ dependencies = [
  "wayland-protocols",
  "wayland-scanner",
  "wayland-server",
+ "x11rb",
  "xcursor",
 ]
 

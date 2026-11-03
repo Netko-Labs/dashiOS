@@ -35,7 +35,10 @@ shell's client:
   Dashi title bars unless they draw their own, and get the X input focus with
   the keyboard. Menus and tooltips (override-redirect) go where the app puts
   them. The clipboard and primary selection cross both ways; an X11 app reads
-  them only while an X11 window has the keyboard.
+  them only while an X11 window has the keyboard. `_NET_ACTIVE_WINDOW`, which
+  X11Wm ignores, is heard on a second X connection (`xwayland/activate.rs`):
+  a minimized or hidden window comes back, as does one a pager asks for or
+  any while an X11 app has the keyboard; others want attention.
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and
