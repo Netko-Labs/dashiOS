@@ -119,8 +119,9 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
     icon: "files",
     dir: "files",
     keywords: ["file manager", "finder", "folders", "explorer", "trash", "documents", "downloads", "drives", "nautilus"],
-    // It opens folders: a folder on its command line, as `gio open` passes it. Not yet the default handler (defaultHandler): Nautilus keeps that.
+    // It opens folders: a folder on its command line, as `gio open` passes it. The default for them, in place of Nautilus.
     mimeTypes: ["inode/directory"],
+    defaultHandler: true,
     categories: ["Utility", "FileManager"],
   },
   {

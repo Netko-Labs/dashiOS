@@ -58,9 +58,7 @@ const PINNED: readonly PinnedSpec[] = [
     name: "Files",
     icon: "files",
     choices: [
-      { id: "org.gnome.Nautilus", exec: ["nautilus"] },
-      { id: "org.kde.dolphin", exec: ["dolphin"] },
-      // Dashi's own Files (apps/files) is the pin where neither is installed. A GNOME or KDE file manager stays first until Files has drag and drop and Ctrl shortcuts (README, "Files").
+      // Dashi's own Files (apps/files) is the file manager: it replaces Nautilus.
       { id: "dev.dashi.files", exec: [process.execPath, `${shellRoot}apps/files/main.tsx`], cwd: shellRoot },
     ],
   },

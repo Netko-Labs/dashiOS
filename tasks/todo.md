@@ -127,9 +127,15 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [ ] See the drag icon in the VM (its screenshot can't run mid-drag), and a
       drop into another app (Helium's upload, the Terminal)
 - [ ] X11 apps: drags to and from them (smithay's X11Wm doesn't bridge XDND)
-- [ ] org.freedesktop.FileManager1 (ShowItems, ShowFolders), the "Show in
-      folder" of browsers and Electron apps; Files the default for
-      inode/directory (first-party.ts `defaultHandler`)
+- [x] org.freedesktop.FileManager1 from the shell (file-manager.ts): "Show
+      in folder" opens Files on each folder with the items selected, Get
+      Info for ShowItemProperties (Files `--info`); Files is the default for
+      inode/directory and the Dock's Files pin. Checked in the VM with gdbus
+- [x] Thumbnails made, not only read (thumbnailer.ts): the system's
+      .thumbnailer programs (glycin, GStreamer, libgsf) in bubblewrap, into
+      the freedesktop cache with URI and MTime. dashi requires gvfs and
+      bubblewrap and recommends the thumbnailers and gvfs-fuse/-mtp/-smb,
+      which Nautilus pulled in. Checked in the VM (a 4 MB PNG)
 - [ ] Then remove Nautilus from the host (the image has none)
 
 # Dashi 0.2.0

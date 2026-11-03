@@ -10,6 +10,7 @@ import { dataDirs } from "../../src/entries.ts";
 import { themeIcon } from "../../src/icon-themes.ts";
 import type { FileItem } from "./items.ts";
 import { categoryOf, INODE_DIRECTORY, iconNames, UNKNOWN_TYPE } from "./mime.ts";
+import { type ThumbnailMaker, thumbnailMaker } from "./thumbnailer.ts";
 import { findThumbnail } from "./thumbs.ts";
 
 const bundled = new URL("./icons/", import.meta.url).pathname;
@@ -42,10 +43,21 @@ export const folderIcon = (): string => typeIcon(INODE_DIRECTORY);
 const DRAWABLE = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 const ORIGINAL_LIMIT = 1_500_000;
 
-/** A picture of the file itself: a cached thumbnail, or a small original. Null for anything else. */
+/** The thumbnail maker for `cacheDir` (thumbnailer.ts), on the system's thumbnailers. */
+export const thumbnails = (cacheDir: string): ThumbnailMaker => thumbnailMaker(cacheDir, dataDirs);
+
+/**
+ * A picture of the file itself: a cached thumbnail, or a small original.
+ * Null for anything else; then, when a thumbnailer can make one, it is asked
+ * to (the maker's listeners hear when it lands).
+ */
 export function previewFor(item: FileItem, pixels: number, cacheDir: string): string | null {
-  if (item.kind !== "file" || !DRAWABLE.has(item.mime)) return null;
-  return findThumbnail(item.path, item.mtime, pixels, cacheDir) ?? (item.size <= ORIGINAL_LIMIT ? item.path : null);
+  if (item.kind !== "file") return null;
+  const cached = findThumbnail(item.path, item.mtime, pixels, cacheDir);
+  if (cached) return cached;
+  if (DRAWABLE.has(item.mime) && item.size <= ORIGINAL_LIMIT) return item.path;
+  thumbnails(cacheDir).request({ path: item.path, mime: item.mime, mtimeMs: item.mtime });
+  return null;
 }
 
 export function iconFor(item: Pick<FileItem, "kind" | "mime" | "broken">): string {

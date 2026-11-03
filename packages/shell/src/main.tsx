@@ -21,7 +21,7 @@ import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { appletsSocketPath, serveApplets } from "./applets/index.ts";
-import { appFor, displayName, iconPath, launch, METAL_HOST, resolvePinned } from "./apps.ts";
+import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
@@ -49,6 +49,7 @@ import {
 } from "./dock/index.ts";
 import { type Entry, fileIcon, launchEntry, loadEntries } from "./entries.ts";
 import { ExtrasStore } from "./extras/index.ts";
+import { serveFileManager } from "./file-manager.ts";
 import { iconNamesFor, searchFiles } from "./file-search.ts";
 import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
@@ -327,6 +328,16 @@ const agentUi = createAgentUi();
 // Notifications: org.freedesktop.Notifications on the session bus, with banners
 // at the top right. If the bus is missing or the name is taken, it logs and
 // the shell goes on without.
+// "Show in folder" from browsers and other apps (org.freedesktop.FileManager1): Dashi's Files answers.
+const fileManager = serveFileManager((args, startup) => {
+  const files = ownApp("dev.dashi.files");
+  if (!files?.exec) return;
+  launch({
+    ...files,
+    exec: [...files.exec, ...args],
+    ...(startup !== "" ? { env: { ...files.env, XDG_ACTIVATION_TOKEN: startup, DESKTOP_STARTUP_ID: startup } } : {}),
+  });
+});
 const notifications = startNotifications(undefined, { screen: () => (compositor ? activeScreen(compositor) : Promise.resolve(undefined)) });
 // Low-battery warnings go through that store (system/battery-alerts.ts).
 const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
@@ -837,6 +848,7 @@ const quit = () => {
     ["appearance", stopAppearance],
     ["chrome", stopChrome],
     ["notifications", () => notifications.close()],
+    ["file manager", () => void fileManager.then((service) => service?.close())],
     ["menus", () => menus.close()],
     ["app menus", () => appMenus.close()],
     ["applets", stopApplets],

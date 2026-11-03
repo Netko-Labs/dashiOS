@@ -39,6 +39,17 @@ Requires:       gstreamer1-plugins-base
 Recommends:     gstreamer1-plugins-good
 Recommends:     gstreamer1-plugin-libav
 Recommends:     dashi-greeter = %{version}-%{release}
+# Files, Dashi's file manager (it replaces Nautilus, which brought these):
+# GVfs for the Trash across disks, phones, cameras, and network shares;
+# bubblewrap to sandbox the thumbnailers, which make pictures of pictures,
+# videos, and songs.
+Requires:       gvfs
+Requires:       bubblewrap
+Recommends:     gvfs-fuse
+Recommends:     gvfs-mtp
+Recommends:     gvfs-smb
+Recommends:     glycin-thumbnailer
+Recommends:     gst-thumbnailers
 
 %description
 Dashi is a desktop on Fedora. The compositor (dashi-comp) puts pixels on the

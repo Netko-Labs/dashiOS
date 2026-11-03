@@ -9,7 +9,7 @@
 
 import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
 import { looksLikeUriList, parseUriList } from "./clipboard.ts";
@@ -90,7 +90,7 @@ function Content({ onBackgroundMenu, children }: { onBackgroundMenu: (point: { x
   );
 }
 
-export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations }) {
+export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Operations; info?: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -148,6 +148,14 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
   useAppMenus(menuSpecs(state, store, ops), (id) => chooseMenu(id, store, ops, actions));
 
   const items = store.visible();
+  // `--info` (the file manager service's ShowItemProperties): Get Info for that item once the folder is listed.
+  const infoShown = useRef(info === undefined);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: waits for the listing; the sheet opens once
+  useEffect(() => {
+    if (infoShown.current || state.loading || info === undefined) return;
+    infoShown.current = true;
+    actions.info(info);
+  }, [state.loading, state.items]);
   const deps = { store, ops, actions };
   const menuItems = (kind: MenuState["kind"]): MenuItem[] =>
     kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps);
