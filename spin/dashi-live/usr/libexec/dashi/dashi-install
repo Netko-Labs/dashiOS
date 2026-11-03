@@ -191,9 +191,9 @@ copy_tree() {
   # 24: files vanished while copying, which a running system does.
   ((status[0] == 0 || status[0] == 24)) || fail "copying $from failed (rsync exit ${status[0]})"
 }
-readonly FULL=(-aAXHx --exclude=/boot/efi/*)
+readonly FULL=(-aAXHx --exclude=/boot/efi)
 copy_tree "$source" "$TARGET" 0 0.9 "${FULL[@]}"
-if mountpoint -q "$source/boot"; then copy_tree "$source/boot" "$TARGET/boot" 0.9 0.05 -aAXHx --exclude=/efi/*; fi
+if mountpoint -q "$source/boot"; then copy_tree "$source/boot" "$TARGET/boot" 0.9 0.05 -aAXHx --exclude=/efi; fi
 copy_tree "$source/boot/efi" "$TARGET/boot/efi" 0.95 0.05 -rltDx --modify-window=1
 emit_progress 1
 
