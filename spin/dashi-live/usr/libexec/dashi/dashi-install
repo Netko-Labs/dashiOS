@@ -20,7 +20,7 @@
 #
 #   {"event":"step","step":S}                       S: check partition copy configure account bootloader finish
 #   {"event":"progress","step":S,"fraction":F}      F in [0, 1], while copying
-#   {"event":"failed","step":S,"message":M}
+#   {"event":"failed","step":S,"message":M}        (the tools' output: /var/log/dashi-install.log)
 #   {"event":"finished","ok":BOOL}                  always last
 #
 # Exit status: 0 installed, 1 failed, 2 a usage error. --dry-run checks the
@@ -96,6 +96,12 @@ fi
 
 [[ $EUID -eq 0 ]] || { echo "dashi-install: run as root" >&2; exit 2; }
 IFS= read -r password || password=
+
+# Everything the tools say goes to a log as well as stderr (the app's), and
+# into the installed system at the end: a failure can be read afterwards.
+readonly LOG=/var/log/dashi-install.log
+: > "$LOG"
+exec 2> >(tee -a "$LOG" >&2)
 [[ -n $password ]] || { echo "dashi-install: no password on stdin" >&2; exit 2; }
 
 # Undo mounts however this ends.
@@ -174,7 +180,7 @@ copy_tree() {
   local from=$1 to=$2 start=$3 span=$4
   shift 4
   rsync "$@" --numeric-ids --no-inc-recursive --info=progress2 \
-    --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/var/cache/dnf/* --exclude=/var/log/journal/* \
+    --exclude=/lost+found --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/var/cache/dnf/* --exclude=/var/log/journal/* \
     "$from/" "$to/" \
     | tr '\r' '\n' | awk -v start="$start" -v span="$span" '
         match($0, / ([0-9]+)% /, m) {
@@ -265,6 +271,8 @@ emit_step finish
 # every file labeled for SELinux.
 run /usr/libexec/dashi/finish-install --root "$TARGET" --nvidia "$nvidia" --kernel "$kernel"
 in_target setfiles -F -e /proc -e /sys -e /dev -e /run /etc/selinux/targeted/contexts/files/file_contexts /
+mkdir -p "$TARGET/var/log/dashi"
+cp "$LOG" "$TARGET/var/log/dashi/install.log" 2>/dev/null || true
 cleanup
 trap - EXIT
 finished true

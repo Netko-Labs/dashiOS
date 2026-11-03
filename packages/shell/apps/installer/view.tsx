@@ -375,6 +375,7 @@ export function InstallerWindow({ restart }: { restart: () => void }) {
           <View testID="installer-failure" style={{ flexShrink: 0 }}>
             <Text style={{ fontSize: 12, color: colors.critical }}>{progress.failed?.message ?? "The install stopped."}</Text>
           </View>
+          {!dryRun && <Caption>What the installer's tools said is in /var/log/dashi-install.log.</Caption>}
         </Frame>
       );
   }
