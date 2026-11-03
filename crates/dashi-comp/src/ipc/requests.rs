@@ -146,6 +146,13 @@ pub(crate) fn handle(
             state.configure_spaces(count, follow)
         }
         "space-add" => state.add_space(),
+        "space-remove" => {
+            let space = params
+                .get("space")
+                .and_then(Value::as_u64)
+                .ok_or("`space` must be a Space's index")? as usize;
+            state.remove_space(space)
+        }
         "space-switch" => {
             let space = params
                 .get("space")

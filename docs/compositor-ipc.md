@@ -86,6 +86,7 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | --- | --- | --- |
 | `spaces` | `{}` | *see* `parseSpaces`, `src/agents/desktop/spaces.ts` |
 | `space-add` | `{}` | the new Space; *see* `src/spaces/controller.ts` |
+| `space-remove` | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
 | `space-switch` | `{space, progress?}` | `{}`; `progress` follows a swipe |
 | `space-move` | `{window, space}` | `{}` |
 | `overview` | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}` |

@@ -96,18 +96,6 @@ impl Dashi {
         Ok(self.spaces.answer())
     }
 
-    /// `space-add`: a new Space at the end.
-    pub(crate) fn add_space(&mut self) -> Result<Value, String> {
-        if self.spaces.count >= MAX_SPACES {
-            return Err(format!("there are already {MAX_SPACES} Spaces"));
-        }
-        self.spaces.count += 1;
-        self.emit_space(self.spaces.current);
-        let mut answer = self.spaces.answer();
-        answer["space"] = json!(self.spaces.count - 1);
-        Ok(answer)
-    }
-
     /// `space-switch {space, progress?}`: hold part of the way (a swipe), or go there.
     pub(crate) fn switch_space(
         &mut self,
@@ -274,7 +262,7 @@ impl Dashi {
         }
     }
 
-    fn emit_space(&mut self, previous: usize) {
+    pub(super) fn emit_space(&mut self, previous: usize) {
         let event = json!({ "current": self.spaces.current, "previous": previous, "count": self.spaces.count });
         self.ipc.emit("space", event);
     }

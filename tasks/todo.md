@@ -37,7 +37,9 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       the greeter set 1920×1200 to 1.5 on its own
 - [ ] The pointer looks small on a scaled screen (24 px at 1.5): check the
       compositor's cursor size against the scale
-- [ ] `space-remove` is unknown to dashi-comp (the shell asks for it)
+- [x] `space-remove` was unknown to dashi-comp (the shell asked for it 17
+      times on the installed system): added (wm/space_list.rs). Checked in the
+      VM over IPC: removing the shown Space, the first, and refusing the last
 - [ ] Apps are slow to open the first time after login: measure
 - [ ] First boot after install waits ~30 s on akmods building nvidia-kmod
       (once per new kernel): consider building it in the image

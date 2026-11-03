@@ -9,6 +9,7 @@ mod overview;
 mod zones;
 pub(crate) use motion::Motion;
 pub(crate) use zones::Zones;
+mod space_list;
 mod spaces;
 pub(crate) use decor::ChromeStyle;
 pub(crate) use fullscreen::Bars;
