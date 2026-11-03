@@ -99,6 +99,7 @@ import type { WallpaperChoice } from "./wallpaper/catalog.ts";
 import { LiveWallpaperController } from "./wallpaper/live/controller.ts";
 import { reportWallpaper, WallpaperSync } from "./wallpaper/sync.ts";
 import { chooseWifi, WifiStore } from "./wifi/index.ts";
+import { startXwaylandScaling } from "./xwayland-scale.ts";
 
 // One failing feature (a scan, a D-Bus call, a timer) must not take the menu
 // bar and the Dock down with it: Bun exits on anything unhandled, so log it
@@ -581,6 +582,8 @@ const stopFollowingScreens = compositor
       if (event.event === "outputs-changed") void screenNames().then((names) => names && followScreens(names));
     })
   : () => {};
+// X11 apps drawn at the screens' scale, not stretched (xwayland-scale.ts).
+const stopXwaylandScaling = compositor ? startXwaylandScaling({ compositor }) : () => {};
 
 type OverlayKind = "launcher" | "sheet" | "switcher";
 const overlays = new OverlaySlots<OverlayKind>();
@@ -830,6 +833,7 @@ const quit = () => {
     ["settings services", () => paneServices?.close()],
     ["overlays", () => overlays.closeAll()],
     ["screens", stopFollowingScreens],
+    ["xwayland-scale", stopXwaylandScaling],
     [
       "display arrangement",
       () => {

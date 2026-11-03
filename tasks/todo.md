@@ -10,9 +10,13 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       were ignored; they park the window like the yellow light
 - [x] ❖Tab showed the generic icon for T3 Code: the switcher read entries
       without the hidden (NoDisplay) ones; it uses the Dock's catalog now
-- [ ] Steam and other X11 apps blurry at fractional scale: compositor
-      `xwayland-scale` (smithay client scale) done; shell side to do: send the
-      screens' scale, `Xft.dpi` and `Xcursor.size` through xrdb
+- [x] Steam and other X11 apps blurry at fractional scale: Xwayland draws at
+      the largest screen scale (`xwayland-scale`), and X11 apps hear `Xft.dpi`
+      and `Xcursor.size` through xrdb (xwayland-scale.ts; dashi requires
+      xrdb). Checked in the VM at 1.5: X11 Helium the same size, sharp; clicks
+      and tooltips land right. Steam itself not tried in the VM
+- [ ] A setting for X11 apps that ignore `Xft.dpi` (they draw small now):
+      Displays, "X11 apps: sharp / stretched"
 - [x] Maximize did nothing after a minimize and restore: a parked window
       stayed "activated" and came back with no configure, so Chromium and
       Electron still thought they were minimized and ignored clicks. Parking

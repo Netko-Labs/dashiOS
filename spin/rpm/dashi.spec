@@ -33,6 +33,8 @@ Requires:       google-noto-sans-mono-fonts
 Requires:       google-noto-sans-symbols-2-fonts
 # X11 apps (dashi-comp starts Xwayland) and video wallpapers (GStreamer).
 Requires:       xorg-x11-server-Xwayland
+# X11 apps' dpi and cursor size (X resources), set when Xwayland draws at the screens' scale.
+Requires:       xrdb
 Requires:       gstreamer1-plugins-base
 Recommends:     gstreamer1-plugins-good
 Recommends:     gstreamer1-plugin-libav
