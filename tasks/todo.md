@@ -67,6 +67,15 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       Fedora's and remakes the rescue entry. dashi-kernel no longer requires
       kernel-core, dashi-nvidia wants Fedora's headers only beside Fedora's
       kernel. Verified in the VM (boots, rescue is CachyOS's)
+- [x] The Dock took clicks across the whole bottom strip (its surface spans
+      the screen; Metal can't set an input region): the shell sends the
+      panel's bounds (IPC `input-region`) and dashi-comp lets the rest
+      through, title bars and click-to-focus included
+- [x] Deleting a Desktop did nothing on 0.2.0: its dashi-comp had no
+      `space-remove` (dashi.log: 20 "unknown method"). 0.3.0 has it; checked
+      in the VM from Mission Control's ×
+- [x] Agents saw T3 Code's window as `app: null`: list_windows named windows
+      without hidden (NoDisplay) entries; it uses them now
 - [ ] Verify finish-install through a real Anaconda install of the 0.3.0 ISO
       (the live system boots Fedora's kernel: protect_running_kernel is off)
 - [ ] Dashi's own installer in place of Anaconda's web UI, with "Install

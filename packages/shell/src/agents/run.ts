@@ -44,7 +44,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
   switch (call.name) {
     case "list_windows": {
       ctx.status("Looking at your windows");
-      const entries = loadEntries();
+      // Hidden entries too: they only name windows (T3 Code's window answers to a NoDisplay one).
+      const entries = loadEntries({ withHidden: true });
       return json({ windows: (await compositor.windows()).map((window) => describe(window, entries)) });
     }
     case "list_apps": {
