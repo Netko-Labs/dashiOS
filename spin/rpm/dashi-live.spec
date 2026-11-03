@@ -15,13 +15,20 @@ Requires:       anaconda-live
 Requires:       rsync
 Requires:       livesys-scripts
 Requires:       helium-bin
+# finish-install.
+Requires:       dashi-kernel
+Requires:       diffutils
+Requires:       util-linux
 
 %description
 What Dashi's live ISO adds at boot (livesys-scripts runs livesys-dashi only
 on a live boot): autologin into Dashi (greetd's initial session), a polkit
 rule so the installer opens without a password, and "Install Dashi" in the
-launcher. Anaconda's web UI opens in Helium (installer-browser). Installed
-systems keep the files, which do nothing there.
+launcher. Anaconda's web UI opens in Helium (installer-browser), and once it
+has installed the system, finish-install builds NVIDIA's driver for a
+machine with an NVIDIA GPU (removes it otherwise) and leaves CachyOS's
+kernel the only one where it boots. Installed systems keep the files, which
+do nothing there.
 
 %prep
 %autosetup -n %{dashi_source}
@@ -32,12 +39,18 @@ systems keep the files, which do nothing there.
 cd spin/dashi-live
 install -Dm0644 etc/anaconda/conf.d/90-dashi.conf %{buildroot}%{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 install -Dm0755 usr/libexec/dashi/installer-browser %{buildroot}%{_libexecdir}/dashi/installer-browser
+%{_libexecdir}/dashi/finish-install
+%{_datadir}/anaconda/post-scripts/90-dashi.ks
+install -Dm0755 usr/libexec/dashi/finish-install %{buildroot}%{_libexecdir}/dashi/finish-install
+install -Dm0644 usr/share/anaconda/post-scripts/90-dashi.ks %{buildroot}%{_datadir}/anaconda/post-scripts/90-dashi.ks
 install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %files
 %config(noreplace) %{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/installer-browser
+%{_libexecdir}/dashi/finish-install
+%{_datadir}/anaconda/post-scripts/90-dashi.ks
 %{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %changelog

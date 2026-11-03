@@ -10,7 +10,6 @@ BuildArch:      noarch
 BuildRequires:  systemd-rpm-macros
 
 Requires:       kernel-cachyos
-Requires:       kernel-core
 Requires:       grubby
 Requires:       coreutils
 Requires:       findutils

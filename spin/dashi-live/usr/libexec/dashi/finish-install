@@ -1,0 +1,154 @@
+#!/usr/bin/bash
+# /usr/libexec/dashi/finish-install: what Dashi's installer does to the
+# installed system once the live image is copied onto it (dashi-live).
+#
+#   finish-install --root DIR [--nvidia auto|yes|no] [--kernel auto|cachyos|both]
+#       On the live system, with the installed system mounted at DIR: decide
+#       what this machine needs (auto), then finish DIR, chrooted. Anaconda
+#       runs it so (post-scripts/90-dashi.ks).
+#   finish-install --nvidia yes|no --kernel cachyos|both
+#       As root inside the installed system: do it.
+#
+# NVIDIA's driver (--nvidia; auto: yes when this machine has an NVIDIA GPU).
+# yes: built now for every kernel, so the first boot starts on it. The live
+# image carries RPM Fusion's akmod but no built module (building it needs
+# the machine's kernels), and left to itself akmods builds it during the
+# first boot, about 30 s in, after nouveau has taken the card for that boot.
+# Later kernels get theirs when they are installed (akmods' kernel-install
+# plugin). no: the driver and its packages are removed.
+#
+# The kernel (--kernel; auto: cachyos where CachyOS's kernel boots, as
+# default-kernel --check decides: an x86-64-v3 CPU and Secure Boot off).
+# cachyos: Fedora's kernel, its modules and its headers are removed, and the
+# rescue entry (dracut's copy of a kernel) is made again from CachyOS's.
+# both: Fedora's stays beside it and default-kernel picks.
+set -euo pipefail
+
+say() { echo "finish-install: $*"; }
+
+root=
+nvidia=auto
+kernel=auto
+while (($#)); do
+  case $1 in
+    --root) root=${2:?--root needs a directory}; shift 2 ;;
+    --nvidia) nvidia=${2:-}; shift 2 ;;
+    --kernel) kernel=${2:-}; shift 2 ;;
+    *) echo "finish-install: unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+case $nvidia in auto | yes | no) ;; *) echo "finish-install: --nvidia auto, yes, or no" >&2; exit 2 ;; esac
+case $kernel in auto | cachyos | both) ;; *) echo "finish-install: --kernel auto, cachyos, or both" >&2; exit 2 ;; esac
+[[ $EUID -eq 0 ]] || { echo "finish-install: run as root" >&2; exit 1; }
+
+# Whether this machine has an NVIDIA GPU (a display controller from vendor 0x10de).
+has_nvidia() {
+  local device
+  for device in /sys/bus/pci/devices/*; do
+    [[ $(cat "$device/vendor" 2>/dev/null) == 0x10de ]] || continue
+    [[ $(cat "$device/class" 2>/dev/null) == 0x03* ]] && return 0
+  done
+  return 1
+}
+
+# The installed packages whose names match the extended regex $1.
+installed() { rpm -qa --qf '%{NAME}\n' | grep -xE "$1" | sort -u || true; }
+
+# Remove packages offline (no repositories), with what only they needed. The
+# kernel being removed may be the one the live system runs (the chroot sees
+# its uname), which dnf otherwise refuses to remove.
+remove() {
+  (($#)) || return 0
+  say "removing $*"
+  dnf -y -q --disablerepo='*' --setopt=protect_running_kernel=False remove "$@"
+}
+
+# On the live system: decide, then run inside the installed system.
+if [[ -n $root ]]; then
+  [[ -x $root/usr/libexec/dashi/finish-install ]] || { echo "finish-install: $root is not a Dashi system" >&2; exit 1; }
+  if [[ $nvidia == auto ]]; then
+    if has_nvidia; then nvidia=yes; else nvidia=no; fi
+  fi
+  if [[ $kernel == auto ]]; then
+    if [[ $(/usr/libexec/dashi/default-kernel --check) == cachyos ]]; then kernel=cachyos; else kernel=both; fi
+  fi
+  say "NVIDIA's driver: $nvidia; kernels: $kernel"
+  # The installer usually has these mounted for its own chroot; mount what it hasn't.
+  mounted=()
+  cleanup() {
+    local i
+    for ((i = ${#mounted[@]} - 1; i >= 0; i--)); do umount -l "${mounted[i]}" || true; done
+  }
+  trap cleanup EXIT
+  for spec in proc:proc sysfs:sys devtmpfs:dev; do
+    target=$root/${spec#*:}
+    if ! mountpoint -q "$target"; then
+      mount -t "${spec%%:*}" "${spec%%:*}" "$target"
+      mounted+=("$target")
+    fi
+  done
+  if [[ -d /sys/firmware/efi/efivars && -d $root/sys/firmware/efi/efivars ]] && ! mountpoint -q "$root/sys/firmware/efi/efivars"; then
+    mount -t efivarfs efivarfs "$root/sys/firmware/efi/efivars" && mounted+=("$root/sys/firmware/efi/efivars")
+  fi
+  chroot "$root" /usr/libexec/dashi/finish-install --nvidia "$nvidia" --kernel "$kernel"
+  exit
+fi
+
+[[ $nvidia != auto && $kernel != auto ]] || { echo "finish-install: inside the installed system, say --nvidia yes|no and --kernel cachyos|both" >&2; exit 2; }
+
+# The kernels, newest last, from their modules directories.
+kernels() { find /lib/modules -mindepth 2 -maxdepth 2 -name vmlinuz -printf '%h\n' | sed 's|.*/||' | sort -V; }
+
+# 1. The kernel first: no driver gets built for a kernel about to go.
+if [[ $kernel == cachyos ]]; then
+  if ! kernels | grep -q 'cachyos[0-9]'; then
+    say "no CachyOS kernel is installed: keeping Fedora's"
+  else
+    mapfile -t fedora < <(installed 'kernel(-core|-modules|-modules-core|-modules-extra|-devel|-devel-matched|-uki-virt)?')
+    remove "${fedora[@]}"
+  fi
+fi
+
+# 2. NVIDIA's driver.
+if [[ $nvidia == no ]]; then
+  mapfile -t driver < <(installed 'dashi-nvidia|akmod-nvidia|kmod-nvidia(-.*)?|xorg-x11-drv-nvidia(-.*)?|nvidia-settings|nvidia-modprobe|nvidia-persistenced')
+  remove "${driver[@]}"
+elif ! rpm -q --quiet akmod-nvidia; then
+  say "NVIDIA's driver isn't on this system; nothing to build"
+else
+  while IFS= read -r version; do
+    if compgen -G "/lib/modules/$version/extra/nvidia/nvidia.ko*" > /dev/null; then
+      say "NVIDIA's driver is already built for $version"
+      continue
+    fi
+    if [[ ! -e /lib/modules/$version/build ]]; then
+      say "no headers for $version: akmods builds NVIDIA's driver at its first boot"
+      continue
+    fi
+    say "building NVIDIA's driver for $version"
+    akmods --force --kernels "$version" || true
+    compgen -G "/lib/modules/$version/extra/nvidia/nvidia.ko*" > /dev/null \
+      || say "NVIDIA's driver didn't build for $version (/var/cache/akmods/nvidia); akmods tries again at boot"
+  done < <(kernels)
+fi
+
+# 3. The rescue entry: a copy of the kernel it was made from, which may be gone.
+machine_id=$(cat /etc/machine-id 2>/dev/null || true)
+rescue=/boot/vmlinuz-0-rescue-$machine_id
+if [[ -n $machine_id && -f $rescue ]]; then
+  current=
+  while IFS= read -r version; do
+    if cmp -s "$rescue" "/lib/modules/$version/vmlinuz"; then current=$version; fi
+  done < <(kernels)
+  newest=$(kernels | tail -n 1)
+  if [[ -z $current && -n $newest ]]; then
+    say "making the rescue entry again from $newest"
+    rm -f -- "$rescue" "/boot/initramfs-0-rescue-$machine_id.img" "/boot/loader/entries/$machine_id-0-rescue.conf"
+    /usr/lib/kernel/install.d/51-dracut-rescue.install add "$newest" "/boot/$machine_id/$newest" "/lib/modules/$newest/vmlinuz" \
+      || say "couldn't make the rescue entry"
+  fi
+fi
+
+# 4. The boot loader's default.
+/usr/libexec/dashi/default-kernel || true
+say "done"

@@ -12,7 +12,7 @@ Requires:       rpmfusion-nonfree-release
 Requires:       akmod-nvidia
 Requires:       xorg-x11-drv-nvidia
 Requires:       xorg-x11-drv-nvidia-power
-Requires:       kernel-devel-matched
+Requires:       (kernel-devel-matched if kernel-core)
 Requires:       (kernel-cachyos-devel-matched if kernel-cachyos-core)
 
 %description
