@@ -46,6 +46,7 @@ export function Dock({
   autohide = null,
   slide = null,
   tiles = null,
+  onPanel,
 }: {
   /** The apps the menu bar names windows by (the Dock's first-run defaults). */
   apps: readonly App[];
@@ -66,6 +67,8 @@ export function Dock({
   slide?: Slide | null;
   /** Told where each app's icon is, for the minimize animation (animation-targets.ts). */
   tiles?: Pick<TileStore, "set"> | null;
+  /** Told where the panel is on the surface: only there does the Dock take clicks (start.tsx). */
+  onPanel?: (bounds: Bounds) => void;
 }) {
   const colors = useColors();
   const windows = useToplevels(toplevels);
@@ -128,6 +131,7 @@ export function Dock({
       <View
         testID="dock-panel"
         onContextMenu={(event) => openOptions(event.x)}
+        onLayout={onPanel}
         // Past the Dock's edge Metal reports nothing more, not even the release.
         style={{
           opacity: panelOpacity(slid),

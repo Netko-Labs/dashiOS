@@ -6,7 +6,7 @@
  * the list outlives a hidden Dock.
  */
 
-import { type NativeHostOptions, render, spawnNativeHost } from "@mirinjs/metal";
+import { type Bounds, type NativeHostOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { type App, METAL_HOST } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
@@ -52,6 +52,9 @@ export interface DockRuntime {
   close(): void;
 }
 
+/** The Dock's layer-shell namespace, which `input-region` names it by. */
+const DOCK_NAMESPACE = "dashi.dock";
+
 type Layer = Exclude<NonNullable<NativeHostOptions["surface"]>, { role: "lock" }>;
 
 /** The layer surface of a Dock view: the floating Dock or the full-width bar, with or without a zone for windows to stop at. */
@@ -68,7 +71,7 @@ export function viewSurface(variant: string, output: string | undefined): { heig
       // Windows stop above the Dock; a hidden-until-needed one lies over them.
       exclusiveZone: exclusive ? height + margin : 0,
       margin: { bottom: margin },
-      namespace: "dashi.dock",
+      namespace: DOCK_NAMESPACE,
       ...(output === undefined ? {} : { output }),
     },
   };
@@ -78,6 +81,20 @@ export function startDock(options: StartDockOptions): DockRuntime {
   const { prefs, toplevels } = options;
   const autohide = new Autohide();
   const slide = new Slide(0, () => options.reduceMotion?.() ?? false);
+
+  // The Dock's surface spans the screen's width with the panel in its middle:
+  // the compositor lets clicks beside the panel through to the windows there
+  // (IPC `input-region`). Sent when it changes; null is the whole surface.
+  let region = "";
+  const clickable = (rects: readonly Bounds[] | null) => {
+    const wire = rects?.map(({ x, y, width, height }) => ({ x, y, width, height })) ?? null;
+    const key = JSON.stringify(wire);
+    if (key === region) return;
+    region = key;
+    options.compositor
+      ?.request("input-region", { namespace: DOCK_NAMESPACE, rects: wire })
+      .catch((error) => console.error("dashi-shell: the Dock takes clicks across the screen:", error instanceof Error ? error.message : error));
+  };
 
   /** Opens `element` on a new host; `onClosed` runs once, however it ended. */
   const open = (hostOptions: NativeHostOptions, element: ReactElement, onClosed: () => void): DockHandle => {
@@ -118,7 +135,14 @@ export function startDock(options: StartDockOptions): DockRuntime {
         tiles: options.tiles ?? null,
         ...(output === undefined ? {} : { output }),
       };
-      const element = specOf(variant).style === "taskbar" ? <Taskbar {...shared} autohide={autohide} /> : <Dock {...shared} autohide={autohide} />;
+      const taskbar = specOf(variant).style === "taskbar";
+      // The taskbar takes clicks across the screen; the Dock only on its panel.
+      if (taskbar) clickable(null);
+      const element = taskbar ? (
+        <Taskbar {...shared} autohide={autohide} />
+      ) : (
+        <Dock {...shared} autohide={autohide} onPanel={(bounds) => clickable([bounds])} />
+      );
       return open({ title: "Dock", width: 1, height, surface }, element, onClosed);
     },
     onLost: options.onLost,

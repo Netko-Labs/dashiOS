@@ -102,6 +102,8 @@ pub(crate) struct Dashi {
     /// The last press on a title bar, for double-clicks.
     pub last_bar_press: Option<(u64, std::time::Instant)>,
     pub cursors: Cursors,
+    /// Where the shell's layer surfaces take the pointer (IPC `input-region`).
+    pub layer_regions: crate::handlers::layer_regions::LayerRegions,
     pub text: Text,
     #[expect(dead_code, reason = "kept alive: it owns the xdg-decoration global")]
     pub xdg_decoration_state: XdgDecorationState,
@@ -262,6 +264,7 @@ impl Dashi {
             foreign: Default::default(),
             chrome_style: ChromeStyle::default(),
             chrome_objects: Vec::new(),
+            layer_regions: Default::default(),
             cursor_status: CursorImageStatus::default_named(),
             resize_cursor: None,
             last_bar_press: None,
@@ -322,14 +325,16 @@ impl Dashi {
         };
         // The layer map's lock is taken for each look and let go before anything
         // else that takes it (decoration_at does): a second lock would deadlock.
+        // A surface the shell limited (IPC `input-region`) lets the pointer
+        // through outside its rects, to whatever is under it (layer_regions.rs).
         let in_layer = |layer: Layer| {
             let layers = layer_map_for_output(output);
             let local = pos - origin.to_f64();
-            let surface = layers.layer_under(layer, local)?;
-            let at = layers.layer_geometry(surface)?.loc;
-            surface
-                .surface_under(local - at.to_f64(), WindowSurfaceType::ALL)
-                .map(|(surface, loc)| (surface, (loc + at + origin).to_f64()))
+            layers
+                .layers_on(layer)
+                .rev()
+                .find_map(|surface| self.layer_hit(&layers, surface, local))
+                .map(|(surface, at)| (surface, at + origin.to_f64()))
         };
         let top_shown = self.shows_top_layers(output);
         if let Some(top) =

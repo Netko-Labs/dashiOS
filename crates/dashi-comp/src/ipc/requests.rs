@@ -233,6 +233,7 @@ pub(crate) fn handle(
             done(outputs::set_scale(state, &name, number(params, "scale")?))
         }
         "xwayland-scale" => done(state.set_xwayland_scale(number(params, "scale")?)),
+        "input-region" => done(state.set_layer_region(params)),
         "cursor-size" => {
             let size = number(params, "size")?;
             if !(16.0..=128.0).contains(&size) || size.fract() != 0.0 {

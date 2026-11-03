@@ -47,7 +47,7 @@ impl Dashi {
             let layers = layer_map_for_output(output);
             if [Layer::Overlay, Layer::Top]
                 .into_iter()
-                .any(|layer| layers.layer_under(layer, pos - origin).is_some())
+                .any(|layer| self.layer_at(&layers, layer, pos - origin).is_some())
             {
                 return None;
             }
@@ -151,7 +151,7 @@ impl Dashi {
                 let layers = layer_map_for_output(&output);
                 [Layer::Overlay, Layer::Top]
                     .into_iter()
-                    .find_map(|layer| layers.layer_under(layer, at - origin).cloned())
+                    .find_map(|layer| self.layer_at(&layers, layer, at - origin))
             });
         if let Some(layer) = top_layer {
             if layer.can_receive_keyboard_focus() {
@@ -190,7 +190,7 @@ impl Dashi {
         [Layer::Overlay, Layer::Top]
             .into_iter()
             .filter(|layer| top || *layer == Layer::Overlay)
-            .any(|layer| layers.layer_under(layer, at - origin).is_some())
+            .any(|layer| self.layer_at(&layers, layer, at - origin).is_some())
     }
 
     pub(crate) fn start_move(
