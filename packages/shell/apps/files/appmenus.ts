@@ -59,6 +59,8 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations)
         { id: "paste", shortcut: "❖V", label: "Paste", enabled: writable },
         SEPARATOR,
         { id: "select-all", shortcut: "❖A", label: "Select All", enabled: true },
+        SEPARATOR,
+        { id: "find", shortcut: "❖F", label: "Find" },
       ],
     },
     {
@@ -144,6 +146,8 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
       return store.go({ kind: "trash" });
     case "go-folder":
       return actions.goToFolder();
+    case "find":
+      return actions.find();
     default:
       break;
   }

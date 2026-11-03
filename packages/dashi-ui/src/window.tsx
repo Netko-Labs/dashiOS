@@ -41,6 +41,8 @@ export interface AppWindowProps {
   leading?: ReactNode;
   /** The toolbar's controls, at its end. */
   toolbar?: ReactNode;
+  /** In place of the title, filling the toolbar between `leading` and `toolbar` (Files' omnibox). `title` stays the window's name. */
+  center?: ReactNode;
   /** The sidebar's rows (`SidebarSection`s and `SidebarItem`s). */
   sidebar?: ReactNode;
   sidebarWidth?: number;
@@ -51,7 +53,7 @@ export interface AppWindowProps {
   children: ReactNode;
 }
 
-export function AppWindow({ title, subtitle, leading, toolbar, sidebar, sidebarWidth = SIDEBAR_WIDTH, footer, overlay, children }: AppWindowProps) {
+export function AppWindow({ title, subtitle, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, footer, overlay, children }: AppWindowProps) {
   const colors = useColors();
   const surface = useSurface();
   const inset = useTitleBarInset();
@@ -95,7 +97,8 @@ export function AppWindow({ title, subtitle, leading, toolbar, sidebar, sidebarW
             }}
           >
             {leading}
-            {inset.unified && (
+            {center}
+            {center === undefined && inset.unified && (
               <View style={{ flexDirection: "column", flexShrink: 1, minWidth: 0, gap: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                   {title}
@@ -107,7 +110,7 @@ export function AppWindow({ title, subtitle, leading, toolbar, sidebar, sidebarW
                 )}
               </View>
             )}
-            <View style={{ flex: 1 }} />
+            {center === undefined && <View style={{ flex: 1 }} />}
             {toolbar}
           </View>
         )}

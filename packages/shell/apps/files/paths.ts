@@ -91,7 +91,7 @@ export interface Crumb {
 }
 
 /**
- * The path bar's segments: from the home folder when `path` is inside it
+ * The omnibox's crumbs: from the home folder when `path` is inside it
  * (the first crumb is the home folder, named "Home"), else from the root.
  */
 export function crumbs(path: string, home: string): Crumb[] {

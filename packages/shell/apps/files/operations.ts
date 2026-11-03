@@ -6,6 +6,7 @@
  */
 
 import { compress } from "./archive.ts";
+import { type DropKeys, dropChoice } from "./drag.ts";
 import { eject, mount } from "./drives.ts";
 import { formatCount } from "./format.ts";
 import type { FileItem } from "./items.ts";
@@ -148,7 +149,25 @@ export class Operations {
   // --- Trash -------------------------------------------------------------------------
 
   async trash(items: readonly FileItem[] = this.store.selectedItems()): Promise<void> {
-    const paths = this.paths(items);
+    await this.trashFiles(this.paths(items));
+  }
+
+  /**
+   * Files dropped on the folder `dest` (drag.ts says move or copy), or on
+   * the Trash. Dropped on the folder they're in, without a key, nothing.
+   */
+  async drop(paths: readonly string[], dest: string | "trash", keys: DropKeys): Promise<void> {
+    if (dest === "trash") {
+      const outside = paths.filter((path) => !isInside(this.store.env.trash.files, path));
+      if (outside.length > 0) await this.trashFiles(outside);
+      return;
+    }
+    const choice = dropChoice(paths, dest, keys);
+    if (choice) await this.transfer(choice.paths, dest, choice.mode);
+  }
+
+  private async trashFiles(paths: readonly string[]): Promise<void> {
+    if (paths.length === 0) return;
     const { home, dirs } = this.store.env;
     for (const path of paths) {
       const reason = protectedReason(

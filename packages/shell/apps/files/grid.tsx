@@ -8,6 +8,8 @@ import { useColors } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { useFiles, useFilesState } from "./context.ts";
+import { dragPaths } from "./drag.ts";
+import { useDropTarget } from "./drop.ts";
 import { middleEllipsis } from "./format.ts";
 import { LINK_BADGE } from "./glyphs.ts";
 import { iconFor, previewFor } from "./icons.ts";
@@ -19,13 +21,29 @@ const TILE_HEIGHT = 98;
 const TALL_TILE_HEIGHT = 114;
 const PICTURE = 56;
 
-function Tile({ item, selected, dimmed, height }: { item: FileItem; selected: boolean; dimmed: boolean; height: number }) {
+function Tile({
+  item,
+  selected,
+  dimmed,
+  height,
+  selection,
+}: {
+  item: FileItem;
+  selected: boolean;
+  dimmed: boolean;
+  height: number;
+  selection: readonly string[];
+}) {
   const colors = useColors();
   const { store, actions } = useFiles();
   const picture = useMemo(() => previewFor(item, 128, store.env.cache), [item, store.env.cache]);
+  const drop = useDropTarget(item.kind === "folder" ? item.path : null);
+  const lit = selected || drop.over;
   return (
     <View
       testID={`item:${item.path}`}
+      dragFiles={{ paths: dragPaths(item.path, selection), icon: picture ?? iconFor(item) }}
+      {...drop.props}
       onPress={() => {
         store.click(item);
         actions.refocus();
@@ -43,8 +61,8 @@ function Tile({ item, selected, dimmed, height }: { item: FileItem; selected: bo
         gap: 4,
         borderRadius: 8,
         opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1,
-        backgroundColor: selected ? `${colors.selection}33` : "#00000000",
-        hoverBackgroundColor: selected ? `${colors.selection}33` : `${colors.button}`,
+        backgroundColor: lit ? `${colors.selection}33` : "#00000000",
+        hoverBackgroundColor: lit ? `${colors.selection}33` : `${colors.button}`,
       }}
     >
       <View style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center" }}>
@@ -124,7 +142,7 @@ export function Grid({ items, onColumns, empty }: { items: readonly FileItem[]; 
           {rows.map((row) => (
             <View key={row[0]?.path} style={{ flexDirection: "row", flexShrink: 0, height, gap: 0 }}>
               {row.map((item) => (
-                <Tile key={item.path} item={item} selected={chosen.has(item.path)} dimmed={cut.has(item.path)} height={height} />
+                <Tile key={item.path} item={item} selected={chosen.has(item.path)} dimmed={cut.has(item.path)} height={height} selection={state.selection} />
               ))}
             </View>
           ))}

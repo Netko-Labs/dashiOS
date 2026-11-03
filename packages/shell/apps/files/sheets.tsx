@@ -61,40 +61,6 @@ export function NameSheet({
   );
 }
 
-/** Go to Folder: a path (or `~/…`, or a file:// URI) to type; an error shows under the field. */
-export function PathSheet({ onSubmit, onCancel }: { onSubmit: (text: string) => Promise<string | null>; onCancel: () => void }) {
-  const colors = useColors();
-  const [text, setText] = useState("");
-  const [problem, setProblem] = useState<string | null>(null);
-  const submit = async (value: string): Promise<void> => setProblem(await onSubmit(value));
-  return (
-    <Sheet testID="path-sheet" width={420} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Go to Folder</Text>
-      <TextField
-        testID="path-field"
-        value={text}
-        placeholder="~/Documents or /usr/share"
-        autoFocus
-        onChangeText={(next) => {
-          setText(next);
-          setProblem(null);
-        }}
-        onSubmit={(value) => void submit(value)}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-      />
-      {problem !== null && (
-        <View testID="path-problem">
-          <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
-        </View>
-      )}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="path-sheet:cancel" onPress={onCancel} />
-        <Button label="Go" testID="path-sheet:ok" primary onPress={() => void submit(text)} />
-      </View>
-    </Sheet>
-  );
-}
-
 /** "4.2 MB (4,201,337 bytes)": the rounded size and the exact one. */
 const exactSize = (bytes: number): string => (bytes >= 1000 ? `${formatSize(bytes)} (${bytes.toLocaleString("en-US")} bytes)` : formatSize(bytes));
 

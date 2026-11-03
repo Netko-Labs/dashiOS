@@ -1,6 +1,6 @@
-/** The toolbar's controls: back and forward before the title; view switch, select-multiple, new folder, the menu, and search after it. */
+/** The toolbar's controls: back and forward before the omnibox; view switch, select-multiple, new folder, and the menu after it. */
 
-import { SearchField, ToolbarButton, useColors, useSurface } from "@dashi/ui";
+import { ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
 import { BACK, CHECKED, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
@@ -85,20 +85,6 @@ export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onM
       >
         <Svg markup={MORE} size={16} color={colors.textMuted} />
       </View>
-      <SearchField
-        testID="search"
-        value={state.query}
-        onChangeText={(text) => store.setQuery(text)}
-        width={180}
-        placeholder="Search"
-        onKeyPress={(key) => {
-          if (key === "ArrowDown") {
-            store.move(1);
-            actions.refocus();
-          } else if (key === "Escape") actions.refocus();
-        }}
-        onSubmit={() => actions.refocus()}
-      />
     </>
   );
 }

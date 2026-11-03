@@ -68,7 +68,7 @@ export function isCurrent(place: Place, location: Location): boolean {
   return sameLocation(place.location, location);
 }
 
-/** The path bar's segments for a location. */
+/** The omnibox's crumbs for a location. */
 export function pathSegments(location: Location, home: string, trashFiles?: string): Array<{ name: string; location: Location }> {
   if (location.kind === "recents") return [{ name: "Recents", location }];
   if (location.kind === "trash") return [{ name: "Trash", location }];

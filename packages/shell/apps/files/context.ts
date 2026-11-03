@@ -17,7 +17,10 @@ export interface WindowActions {
   info(path: string): void;
   openWith(path: string): void;
   newFolder(): void;
+  /** The omnibox, editing the current folder's path. */
   goToFolder(): void;
+  /** The omnibox, empty, for a search. */
+  find(): void;
   confirmEmptyTrash(): void;
   confirmDelete(paths: readonly string[]): void;
   menu(point: { x: number; y: number }, kind: "item" | "background"): void;

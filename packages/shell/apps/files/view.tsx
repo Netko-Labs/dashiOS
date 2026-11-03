@@ -1,18 +1,20 @@
 /**
  * Files' window: the sidebar, a toolbar with back and forward and the view
- * switch, the listing in icons or a table, and the footer with the path bar.
+ * switch around the omnibox (the path and search, omnibox.tsx), the listing
+ * in icons or a table, and a footer only while a job runs or a notice stands.
  * Sheets and menus are drawn inside it (Metal has no child windows). The
  * keyboard comes through the kit's KeySink: arrows move the selection,
  * Enter opens, Backspace goes back, and typing jumps to a name.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, Segmented, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
 import { looksLikeUriList, parseUriList } from "./clipboard.ts";
-import { Files, type WindowActions } from "./context.ts";
+import { Files, useFilesState, type WindowActions } from "./context.ts";
+import { useDropTarget } from "./drop.ts";
 import { Footer } from "./footer.tsx";
 import { formatCount } from "./format.ts";
 import { Grid } from "./grid.tsx";
@@ -20,9 +22,10 @@ import type { FileItem } from "./items.ts";
 import { ListView } from "./list.tsx";
 import { folderAt, locationTitle } from "./location.ts";
 import { actionMenu, backgroundMenu, itemMenu } from "./menus.ts";
+import { editText, Omnibox, SuggestionList, type Suggestions } from "./omnibox.tsx";
 import type { OpenWithApp } from "./open.ts";
 import type { Operations } from "./operations.ts";
-import { InfoSheet, NameSheet, OpenWithSheet, PathSheet } from "./sheets.tsx";
+import { InfoSheet, NameSheet, OpenWithSheet } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { FilesStore } from "./store.ts";
 import { Controls, Leading } from "./toolbar.tsx";
@@ -34,7 +37,6 @@ type Sheet =
   | { kind: "rename"; item: FileItem }
   | { kind: "info"; item: FileItem }
   | { kind: "open-with"; item: FileItem; apps: OpenWithApp[] | null }
-  | { kind: "go" }
   | { kind: "empty-trash" }
   | { kind: "delete"; items: FileItem[] };
 
@@ -71,36 +73,19 @@ function Empty({ store }: { store: FilesStore }) {
   );
 }
 
-function SearchBar({ store }: { store: FilesStore }) {
+/** The listing's area: a right-click there is the folder's menu, and files dropped there go into the folder shown (not into Recents or search results). */
+function Content({ onBackgroundMenu, children }: { onBackgroundMenu: (point: { x: number; y: number }) => void; children: React.ReactNode }) {
   const colors = useColors();
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  if (state.query === "") return null;
+  const state = useFilesState();
+  const drop = useDropTarget(state.location.kind === "folder" && state.found === null ? state.location.path : null);
   return (
     <View
-      testID="searchbar"
-      style={{
-        height: 34,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 10,
-        paddingHorizontal: 14,
-        borderBottomWidth: 1,
-        borderColor: colors.separator,
-      }}
+      testID="content"
+      {...drop.props}
+      style={{ flex: 1, minHeight: 0, ...(drop.over ? { borderWidth: 2, borderColor: colors.selection, borderRadius: 4 } : {}) }}
+      onContextMenu={onBackgroundMenu}
     >
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>Search:</Text>
-      <Segmented
-        testID="scope"
-        options={[
-          { value: "folder", label: state.location.kind === "folder" ? `“${locationTitle(state.location, store.env.home)}”` : "This List" },
-          { value: "computer", label: "This Computer" },
-        ]}
-        value={state.scope}
-        onChange={(scope) => store.setScope(scope)}
-      />
-      {state.searching && <Text style={{ fontSize: 11, color: colors.textMuted }}>Searching…</Text>}
-      {state.truncated && <Text style={{ fontSize: 11, color: colors.textMuted }}>Showing the first results. Narrow the search.</Text>}
+      {children}
     </View>
   );
 }
@@ -113,6 +98,9 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
   // A right-click reaches the item under the pointer and then the empty space around it: the item's menu stands.
   const itemMenuAt = useRef(0);
   const [columns, setColumns] = useState(1);
+  // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
+  const [editing, setEditing] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [frame, setFrame] = useState<{ width: number; height: number }>({ width: FILES_SIZE.width, height: FILES_SIZE.height });
 
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
@@ -141,7 +129,8 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
         void ops.appsFor(item).then((apps) => setSheet((now) => (now?.kind === "open-with" && now.item.path === item.path ? { ...now, apps } : now)));
       },
       newFolder: () => setSheet({ kind: "new-folder" }),
-      goToFolder: () => setSheet({ kind: "go" }),
+      goToFolder: () => setEditing(editText(store.getSnapshot().location, store.env.home)),
+      find: () => setEditing(store.getSnapshot().query),
       confirmEmptyTrash: () => setSheet({ kind: "empty-trash" }),
       confirmDelete: (paths) => setSheet({ kind: "delete", items: paths.flatMap((path) => find(path) ?? []) }),
       menu: (point, kind) => {
@@ -218,18 +207,6 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
         />
       );
     }
-    if (sheet?.kind === "go") {
-      return (
-        <PathSheet
-          onCancel={close}
-          onSubmit={async (text) => {
-            const problem = store.goToPath(text);
-            if (problem === null) close();
-            return problem;
-          }}
-        />
-      );
-    }
     if (sheet?.kind === "info") return <InfoSheet item={sheet.item} home={store.env.home} onClose={close} />;
     if (sheet?.kind === "open-with")
       return (
@@ -282,11 +259,10 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
       const y = Math.max(8, Math.min(menu.y, frame.height - entries.length * 24 - 16));
       return <PopupMenu testID="menu" x={x} y={y} items={entries} onClose={close} />;
     }
+    if (suggestions) return <SuggestionList suggestions={suggestions} home={store.env.home} />;
     return undefined;
   })();
 
-  const total = items.length;
-  const subtitle = state.found !== null ? `${formatCount(total)} found` : formatCount(total);
   const title = state.found !== null ? "Search Results" : locationTitle(state.location, store.env.home);
   const empty = <Empty store={store} />;
 
@@ -295,26 +271,33 @@ export function FilesWindow({ store, ops }: { store: FilesStore; ops: Operations
       <View style={{ flex: 1 }} onLayout={(bounds) => setFrame({ width: bounds.width, height: bounds.height })}>
         <AppWindow
           title={title}
-          subtitle={subtitle}
           leading={<Leading />}
+          center={
+            <Omnibox
+              editing={editing}
+              onEdit={setEditing}
+              onDone={() => {
+                setEditing(null);
+                refocus();
+              }}
+              onSuggest={setSuggestions}
+            />
+          }
           toolbar={<Controls onNewFolder={() => setSheet({ kind: "new-folder" })} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
           sidebar={<Sidebar />}
           footer={<Footer />}
           overlay={overlay}
         >
-          {!sheet && !menu && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}
-          <SearchBar store={store} />
-          <View
-            testID="content"
-            style={{ flex: 1, minHeight: 0 }}
-            onContextMenu={(point) => {
+          {!sheet && !menu && editing === null && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}
+          <Content
+            onBackgroundMenu={(point) => {
               if (Date.now() - itemMenuAt.current < 150) return;
               store.select([]);
               setMenu({ ...point, kind: "background" });
             }}
           >
             {state.view === "icons" ? <Grid items={items} onColumns={setColumns} empty={empty} /> : <ListView items={items} empty={empty} />}
-          </View>
+          </Content>
         </AppWindow>
       </View>
     </Files.Provider>

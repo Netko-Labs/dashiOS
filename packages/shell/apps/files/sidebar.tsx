@@ -3,6 +3,7 @@
 import { SidebarSection, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
+import { useDropTarget } from "./drop.ts";
 import { EJECT, sidebarGlyph } from "./glyphs.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
 import type { Volume } from "./mounts.ts";
@@ -15,6 +16,7 @@ function Row({
   current,
   onPress,
   action,
+  dropInto = null,
 }: {
   id: string;
   name: string;
@@ -22,13 +24,17 @@ function Row({
   current: boolean;
   onPress: () => void;
   action?: { glyph: string; id: string; onPress: () => void };
+  /** The folder files dropped on the row go into, or the Trash. */
+  dropInto?: string | "trash" | null;
 }) {
   const colors = useColors();
+  const drop = useDropTarget(dropInto);
   const ink = current ? "#ffffff" : colors.text;
   return (
     <View
       testID={`place:${id}`}
       onPress={onPress}
+      {...drop.props}
       style={{
         height: 30,
         flexShrink: 0,
@@ -40,6 +46,7 @@ function Row({
         borderRadius: 7,
         backgroundColor: current ? colors.selection : "#00000000",
         hoverBackgroundColor: current ? colors.selection : colors.button,
+        ...(drop.over ? { borderWidth: 2, borderColor: colors.selection } : {}),
       }}
     >
       <Svg markup={sidebarGlyph(glyph)} size={16} color={current ? "#ffffff" : colors.selection} />
@@ -92,6 +99,7 @@ export function Sidebar() {
             glyph={place.glyph}
             current={sameLocation(place.location, location)}
             onPress={() => go(place.location)}
+            dropInto={place.location.kind === "folder" ? place.location.path : null}
           />
         ))}
       </SidebarSection>
@@ -104,6 +112,7 @@ export function Sidebar() {
             glyph={volumeGlyph(volume)}
             current={inVolume(volume)}
             onPress={() => (volume.mountPoint ? go(folderAt(volume.mountPoint)) : void ops.mountVolume(volume))}
+            dropInto={volume.mountPoint}
             {...(volume.ejectable ? { action: { glyph: EJECT, id: "eject", onPress: () => void ops.ejectVolume(volume) } } : {})}
           />
         ))}
@@ -113,6 +122,7 @@ export function Sidebar() {
           glyph="trash"
           current={location.kind === "trash" || (location.kind === "folder" && isInside(store.env.trash.files, location.path))}
           onPress={() => go({ kind: "trash" })}
+          dropInto="trash"
         />
       </SidebarSection>
     </>

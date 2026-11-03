@@ -111,6 +111,27 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       NVIDIA's driver" as a checkbox (on when the machine has an NVIDIA GPU);
       it ends with the same finish-install
 
+### Files replaces Nautilus
+
+- [x] Drag and drop: items drag out (the selection when the pressed item is
+      in it) to folders, sidebar places, the omnibox's crumbs, the Trash, and
+      other apps' windows; drops from anywhere move on one disk and copy
+      across disks (⌥/Ctrl copies, ⇧ moves) (drag.ts, drop.ts). mirin's
+      `dragFiles`/`onDrop` (74aeade); dashi-comp draws the drag icon.
+      Checked in the VM: a tile onto a folder, onto sidebar places
+- [x] One omnibox in place of the title, its "N items" line, the search
+      field, the search row, and the footer's path bar: crumbs and the
+      status line at rest; a path (`/`, `~`) goes, with folder completion;
+      anything else searches, scope on a chip (omnibox.tsx). The footer
+      shows only jobs and notices. Checked in the VM
+- [ ] See the drag icon in the VM (its screenshot can't run mid-drag), and a
+      drop into another app (Helium's upload, the Terminal)
+- [ ] X11 apps: drags to and from them (smithay's X11Wm doesn't bridge XDND)
+- [ ] org.freedesktop.FileManager1 (ShowItems, ShowFolders), the "Show in
+      folder" of browsers and Electron apps; Files the default for
+      inode/directory (first-party.ts `defaultHandler`)
+- [ ] Then remove Nautilus from the host (the image has none)
+
 # Dashi 0.2.0
 
 ## 1. Monorepo and docs (`feat/monorepo`)

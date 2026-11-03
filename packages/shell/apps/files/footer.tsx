@@ -1,12 +1,11 @@
-/** The strip under the content: running jobs with Cancel, the last message, and the path bar with the status line. */
+/** The strip under the content, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState, useJobs } from "./context.ts";
 import { formatCount, formatSize } from "./format.ts";
-import { CHEVRON, CLOSE } from "./glyphs.ts";
+import { CLOSE } from "./glyphs.ts";
 import type { Job } from "./jobs.ts";
-import { pathSegments } from "./location.ts";
 
 function JobRow({ job }: { job: Job }) {
   const colors = useColors();
@@ -70,46 +69,16 @@ export function statusLine(total: number, selected: readonly { size: number; kin
 
 export function Footer() {
   const colors = useColors();
-  const { store } = useFiles();
   const state = useFilesState();
   const jobs = useJobs().filter((job) => job.state === "running");
-  const visible = store.visible();
-  const chosen = new Set(state.selection);
-  const picked = visible.filter((item) => chosen.has(item.path));
-  const segments = pathSegments(state.location, store.env.home, store.env.trash.files);
-  const search = state.found !== null;
+  // Vertical space is the listing's: the strip is there only while it has something to say.
+  if (jobs.length === 0 && !state.notice) return null;
   return (
     <View testID="footer" style={{ flexShrink: 0, flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator }}>
       {jobs.map((job) => (
         <JobRow key={job.id} job={job} />
       ))}
       <NoticeRow />
-      <View style={{ height: 28, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12 }}>
-        <View testID="pathbar" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 2, overflow: "hidden" }}>
-          {segments.map((segment, index) => (
-            <View
-              key={`${index}:${segment.name}`}
-              style={{ flexDirection: "row", alignItems: "center", gap: 2, flexShrink: index === segments.length - 1 ? 1 : 0 }}
-            >
-              {index > 0 && <Svg markup={CHEVRON} size={10} color={colors.textDisabled} />}
-              <View
-                testID={`path:${index}`}
-                onPress={() => store.go(segment.location)}
-                style={{ paddingHorizontal: 4, height: 20, justifyContent: "center", borderRadius: 4, hoverBackgroundColor: colors.button }}
-              >
-                <Text numberOfLines={1} style={{ fontSize: 11, color: index === segments.length - 1 ? colors.text : colors.textMuted }}>
-                  {segment.name}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-        <View testID="status" style={{ flexShrink: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-            {statusLine(visible.length, picked, search ? null : (state.free?.free ?? null))}
-          </Text>
-        </View>
-      </View>
     </View>
   );
 }

@@ -4,12 +4,13 @@ import { type Column, Table, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { useFiles, useFilesState } from "./context.ts";
+import { dragPaths } from "./drag.ts";
 import { iconFor } from "./icons.ts";
 import type { FileItem } from "./items.ts";
 import { columnMode, fileColumns } from "./sort.ts";
 
 export function ListView({ items, empty }: { items: readonly FileItem[]; empty: React.ReactNode }) {
-  const { store, actions } = useFiles();
+  const { store, actions, ops } = useFiles();
   const state = useFilesState();
   const colors = useColors();
   const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
@@ -69,6 +70,16 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
       sort={store.effectiveSort()}
       onSort={(next) => store.setSort(next)}
       muted={(item) => item.hidden}
+      dragFiles={(item) => ({ paths: dragPaths(item.path, state.selection), icon: iconFor(item) })}
+      onDropRow={(item) =>
+        item.kind === "folder"
+          ? (event) => {
+              if (event.phase !== "drop") return;
+              void ops.drop(event.paths, item.path, event);
+              actions.refocus();
+            }
+          : null
+      }
       empty={empty}
       rowHeight={26}
     />
