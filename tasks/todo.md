@@ -48,9 +48,21 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       (gpu-env.ts). Dashi's own apps already limit themselves (mirin gpu.rs).
       Measured with the variables on the host; the VM has one GPU. Programs
       started from Terminal are left alone (prime-run must still work)
-- [ ] The NVIDIA card ran on nouveau this boot: akmods built nvidia-kmod 30 s
-      after nouveau took the card. Build the kmod in the image (or at install)
-      so the first boot already has it
+- [x] The NVIDIA card ran on nouveau at first boot: the image has the akmod
+      but no built module, and akmods built it 30 s into the boot, after
+      nouveau took the card. Anaconda now runs finish-install
+      (post-scripts/90-dashi.ks): builds the driver at install on a machine
+      with an NVIDIA GPU, removes it on one without. Verified in the VM, both ways
+- [x] CachyOS's kernel the only one after install where it boots (x86-64-v3,
+      Secure Boot off; `default-kernel --check`): finish-install removes
+      Fedora's and remakes the rescue entry. dashi-kernel no longer requires
+      kernel-core, dashi-nvidia wants Fedora's headers only beside Fedora's
+      kernel. Verified in the VM (boots, rescue is CachyOS's)
+- [ ] Verify finish-install through a real Anaconda install of the 0.3.0 ISO
+      (the live system boots Fedora's kernel: protect_running_kernel is off)
+- [ ] Dashi's own installer in place of Anaconda's web UI, with "Install
+      NVIDIA's driver" as a checkbox (on when the machine has an NVIDIA GPU);
+      it ends with the same finish-install
 
 # Dashi 0.2.0
 

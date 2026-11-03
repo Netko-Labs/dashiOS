@@ -70,7 +70,7 @@
       <tr><td>Current release</td><td>0.2 beta <span class="pill wip">in progress</span></td></tr>
       <tr><td>Base</td><td>Fedora Linux 44 (<code>VERSION_ID=44</code>, <code>PLATFORM_ID=platform:f44</code>); support ends with Fedora 44, 2027-05-19</td></tr>
       <tr><td>Architecture</td><td>x86_64 (Bun ships for aarch64 too; no aarch64 image yet)</td></tr>
-      <tr><td>Kernel</td><td>CachyOS's kernel (<code>kernel-cachyos</code>), made the default by <code>dashi-kernel</code>; Fedora's kernel stays installed as a fallback</td></tr>
+      <tr><td>Kernel</td><td>CachyOS's kernel (<code>kernel-cachyos</code>), made the default by <code>dashi-kernel</code>. The installer leaves it the only kernel where it boots (an x86-64-v3 CPU, Secure Boot off); elsewhere Fedora's stays beside it as the default</td></tr>
       <tr><td>Display server</td><td>Wayland only: <code>dashi-comp</code> (smithay), with Xwayland for X11 apps</td></tr>
       <tr><td>Login</td><td>greetd with Dashi's own greeter (<code>dashi-greeter</code>)</td></tr>
       <tr><td>Session runtime</td><td>Bun 1.4.4 at <code>/usr/libexec/dashi/bin/bun</code> (<code>dashi-bun</code>); no Node</td></tr>
@@ -81,7 +81,7 @@
       <tr><td>Installer</td><td>Anaconda's web UI in Helium, opened from the live session's Setup Assistant ("Install Dashi…"), with Dashi's own Anaconda profile (Fedora's as its base). The installer creates the person's account; the Setup Assistant does the rest at first login.</td></tr>
       <tr><td>Terminal</td><td>Dashi's own: dashi-term on libghostty-vt (Ghostty's core), drawn by Metal</td></tr>
       <tr><td>Boot splash</td><td>Plymouth theme <code>dashi</code> (two-step), Inter type</td></tr>
-      <tr><td>Graphics</td><td>Any GPU with GLES 2 and GBM; a GPU with only a software driver draws with llvmpipe (VMs without 3D, <code>nomodeset</code>). NVIDIA through <code>dashi-nvidia</code> (akmod, RPM Fusion)</td></tr>
+      <tr><td>Graphics</td><td>Any GPU with GLES 2 and GBM; a GPU with only a software driver draws with llvmpipe (VMs without 3D, <code>nomodeset</code>). NVIDIA through <code>dashi-nvidia</code> (akmod, RPM Fusion), built at install on a machine with an NVIDIA GPU (removed on one without), so the first boot runs on it</td></tr>
     </table>
 
     <h2>Packages</h2>
@@ -215,7 +215,7 @@ const PACKAGES = [
     needs: [], ext: "generic-logos, plymouth two-step and spinner" },
   { n: "dashi-kernel", layer: "system", s: "CachyOS's kernel, made the default",
     carries: "dashi-default-kernel: a service that keeps the CachyOS kernel first in GRUB on installed systems.",
-    needs: [], ext: "kernel-cachyos (COPR), kernel-core as a fallback, grubby" },
+    needs: [], ext: "kernel-cachyos (COPR), grubby; kernel-core only where CachyOS's can't boot" },
   { n: "dashi-nvidia", layer: "image", s: "NVIDIA's driver, built for every kernel",
     carries: "A metapackage: the akmod and the kernel headers for each installed kernel, CachyOS's included.",
     needs: ["dashi-kernel"], ext: "RPM Fusion nonfree: akmod-nvidia, xorg-x11-drv-nvidia(-power)" },
@@ -253,7 +253,7 @@ map.addEventListener("click", (e) => {
 
 const BOOT = {
   installed: [
-    ["Firmware → GRUB", "BIOS or UEFI (shim for Secure Boot) loads GRUB. dashi-default-kernel has made CachyOS's kernel the default entry; Fedora's kernel stays as a fallback."],
+    ["Firmware → GRUB", "BIOS or UEFI (shim for Secure Boot) loads GRUB. CachyOS's kernel is the default entry (dashi-default-kernel), and the only one where it boots; Fedora's stays as the default elsewhere."],
     ["Kernel + initramfs", "The kernel brings up the GPU's DRM driver; Plymouth shows the 'dashi' splash, the animated bowl."],
     ["systemd → graphical.target", "Services start; greetd is wanted by graphical.target."],
     ["greetd → dashi-greeter", "greetd runs the greeter as the greetd user: dashi-comp --greeter and the login screen (packages/greeter). The form is on the main screen, backdrops on the others."],
