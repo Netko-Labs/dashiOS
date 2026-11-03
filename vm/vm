@@ -27,7 +27,8 @@
 # Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
 # DASHI_VM_RES (1920x1080), DASHI_VM_HEADS (1; 2 for a second screen), DASHI_VM_SSH (2222),
 # DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi),
-# DASHI_VM_PASSWORD (for sudo in the guest; checkout-session).
+# DASHI_VM_PASSWORD (for sudo in the guest; checkout-session), DASHI_VM_EXTRA_DISK
+# (a qcow2 image `desktop` attaches as a second disk, for the installer: vm/images/install-test.qcow2).
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
@@ -110,7 +111,12 @@ case $cmd in
   desktop)
     [ -f "$disk" ] || die "no VM disk yet; run vm/vm install first"
     start_virtiofsd
-    qemu -drive file="$disk",if=virtio,format=qcow2 \
+    extra=()
+    if [ -n "${DASHI_VM_EXTRA_DISK:-}" ]; then
+      [ -f "$DASHI_VM_EXTRA_DISK" ] || qemu-img create -q -f qcow2 "$DASHI_VM_EXTRA_DISK" 40G
+      extra=(-drive file="$DASHI_VM_EXTRA_DISK",if=virtio,format=qcow2)
+    fi
+    qemu -drive file="$disk",if=virtio,format=qcow2 "${extra[@]}" \
       -chardev socket,id=fs0,path="$fs_sock" \
       -device vhost-user-fs-pci,chardev=fs0,tag=developer
     ;;
