@@ -30,8 +30,13 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       a key before its modifiers, so a replayed Ctrl+C arrived as "c"; replays
       press real modifier keys first (keys/replay.rs). Checked in the VM:
       Helium, GTK on Wayland, GTK on X11
-- [ ] The login screen comes up at scale 1 on a HiDPI panel: the greeter
-      should pick the screen's scale as the shell does (`initialScale`)
+- [x] The login screen came up at scale 1 on a HiDPI panel: the greeter
+      gives each screen its density scale (`defaultScale`, moved to
+      @dashi/ui so both use it). It can't read the person's chosen scale
+      (their home), so a laptop set to 1.75 logs in at 2. Checked in the VM:
+      the greeter set 1920×1200 to 1.5 on its own
+- [ ] The pointer looks small on a scaled screen (24 px at 1.5): check the
+      compositor's cursor size against the scale
 - [ ] `space-remove` is unknown to dashi-comp (the shell asks for it)
 - [ ] Apps are slow to open the first time after login: measure
 - [ ] First boot after install waits ~30 s on akmods building nvidia-kmod

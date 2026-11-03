@@ -6,6 +6,7 @@ export { CHECK, CHEVRON_DOWN, CHEVRON_UP, CLEAR, INFO, LOCK, RESTART, SEARCH, SH
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
+export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { ConfirmSheet, type ConfirmSheetProps, EmptyState, type MenuItem, PopupMenu, Sheet, type SheetProps } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { SidebarItem, type SidebarItemProps } from "./sidebar.tsx";

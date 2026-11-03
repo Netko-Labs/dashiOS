@@ -18,7 +18,7 @@ test("X resources say the dpi and cursor size for the scale", () => {
 test("the scale goes to the compositor, and the resources once Xwayland is ready, again when it restarts", async () => {
   const requests: [string, unknown][] = [];
   const merged: string[] = [];
-  let listener: ((event: CompositorEvent) => void) | null = null;
+  const events: { send?: (event: CompositorEvent) => void } = {};
   let xwayland: "starting" | "ready" = "starting";
   const compositor = {
     request: async (method: string, params?: unknown) => {
@@ -27,7 +27,7 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
     },
     session: async () => ({ waylandDisplay: "wayland-1", display: ":0", xwayland, pointer: null }),
     on: (handler: (event: CompositorEvent) => void) => {
-      listener = handler;
+      events.send = handler;
       return () => {};
     },
   };
@@ -43,15 +43,15 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
   expect(requests).toContainEqual(["xwayland-scale", { scale: 1.5 }]);
   expect(merged).toEqual([]);
   xwayland = "ready";
-  listener?.({ event: "session-changed" });
+  events.send?.({ event: "session-changed" });
   await settle();
   expect(merged).toEqual([":0 Xft.dpi:\t144\nXcursor.size:\t36\n"]);
   // Same screens: nothing new to tell X11 apps.
-  listener?.({ event: "outputs-changed" });
+  events.send?.({ event: "outputs-changed" });
   await settle();
   expect(merged).toHaveLength(1);
   // Xwayland restarted: its resources are gone, so they go again.
-  listener?.({ event: "session-changed" });
+  events.send?.({ event: "session-changed" });
   await settle();
   expect(merged).toHaveLength(2);
 });
