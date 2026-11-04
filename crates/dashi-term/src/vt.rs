@@ -75,6 +75,8 @@ pub(crate) struct Vt {
     pub(crate) anchor: Option<ffi::GhosttyGridRef>,
     /// Wheel lines not yet scrolled (touchpads give fractions).
     scroll_rest: f64,
+    /// The cursor as last sent: a move alone dirties no row, but needs a frame.
+    pub(crate) sent_cursor: Option<crate::protocol::Cursor>,
 }
 
 fn ok(result: ffi::GhosttyResult, what: &str) -> Result<(), String> {
@@ -102,6 +104,7 @@ impl Vt {
             hooks,
             anchor: None,
             scroll_rest: 0.0,
+            sent_cursor: None,
         };
         // SAFETY: each constructor writes a fresh handle into a field we own; Drop frees them.
         unsafe {

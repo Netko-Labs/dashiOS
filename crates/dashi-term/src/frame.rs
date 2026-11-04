@@ -35,17 +35,33 @@ impl Vt {
                 ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_DIRTY,
                 (&mut dirty as *mut i32).cast(),
             );
-            if dirty == ffi::GhosttyRenderStateDirty_GHOSTTY_RENDER_STATE_DIRTY_FALSE && !force {
+            let get =
+                |data, out: *mut c_void| ffi::ghostty_render_state_get(self.render, data, out);
+            let mut raw_cursor = sized!(ffi::GhosttyRenderStateCursor);
+            get(
+                ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_CURSOR,
+                (&mut raw_cursor as *mut ffi::GhosttyRenderStateCursor).cast(),
+            );
+            let cursor = Cursor {
+                x: raw_cursor.viewport_x,
+                y: raw_cursor.viewport_y,
+                visible: raw_cursor.visible && raw_cursor.viewport_has_value,
+                style: cursor_style(raw_cursor.visual_style),
+            };
+            // A cursor that only moved (← in a shell's line editor) dirties no
+            // row, yet the app must draw it where it went.
+            let clean = dirty == ffi::GhosttyRenderStateDirty_GHOSTTY_RENDER_STATE_DIRTY_FALSE;
+            if clean && !force && self.sent_cursor.as_ref() == Some(&cursor) {
                 return None;
             }
+            self.sent_cursor = Some(cursor.clone());
             let full =
                 force || dirty == ffi::GhosttyRenderStateDirty_GHOSTTY_RENDER_STATE_DIRTY_FULL;
             let mut frame = Frame {
                 full,
+                cursor,
                 ..Frame::default()
             };
-            let get =
-                |data, out: *mut c_void| ffi::ghostty_render_state_get(self.render, data, out);
             get(
                 ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_COLS,
                 (&mut frame.cols as *mut u16).cast(),
@@ -61,17 +77,6 @@ impl Vt {
             );
             frame.fg = rgb(colors.foreground);
             frame.bg = rgb(colors.background);
-            let mut cursor = sized!(ffi::GhosttyRenderStateCursor);
-            get(
-                ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_CURSOR,
-                (&mut cursor as *mut ffi::GhosttyRenderStateCursor).cast(),
-            );
-            frame.cursor = Cursor {
-                x: cursor.viewport_x,
-                y: cursor.viewport_y,
-                visible: cursor.visible && cursor.viewport_has_value,
-                style: cursor_style(cursor.visual_style),
-            };
             let mut bar = ffi::GhosttyTerminalScrollbar {
                 total: 0,
                 offset: 0,

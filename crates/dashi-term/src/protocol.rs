@@ -97,7 +97,7 @@ pub(crate) struct Frame {
     pub scroll: [u64; 3],
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Clone, PartialEq)]
 pub(crate) struct Cursor {
     pub x: u16,
     pub y: u16,
