@@ -4,8 +4,14 @@
 //! may see the global. While copies keep coming the shell hears
 //! `screen-capture {active: true}` (so it can show it), and `false` once they
 //! stop.
+//!
+//! `copy_with_damage` is what recorders and screen sharing loop on: those
+//! copies are paced to the screen's refresh (at most `MAX_FPS`), so a
+//! recorder gets a steady stream instead of copies as fast as the GPU
+//! renders them; each reports the whole frame as damaged.
 
 use std::{
+    collections::HashMap,
     path::PathBuf,
     sync::{Arc, Mutex, atomic::AtomicI32},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -22,7 +28,7 @@ use smithay::{
         },
         wayland_server::{
             Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, Resource,
-            protocol::wl_shm,
+            protocol::{wl_buffer::WlBuffer, wl_shm},
         },
     },
     utils::{Logical, Rectangle},
@@ -32,6 +38,8 @@ use crate::{backend, render::View, session::trust, state::Dashi};
 
 /// A capture stops counting as active after this long without a copy.
 const QUIET: Duration = Duration::from_secs(2);
+/// The fastest a looping capture (`copy_with_damage`) is served, whatever the refresh.
+const MAX_FPS: u64 = 60;
 
 /// Who may copy the screen: the shell, and these executables.
 #[derive(Clone)]
@@ -40,6 +48,7 @@ pub(crate) struct Grants {
     pub paths: Arc<Mutex<Vec<PathBuf>>>,
 }
 
+#[derive(Clone)]
 pub(crate) struct FrameData {
     output: Output,
     region: Rectangle<i32, Logical>,
@@ -50,6 +59,36 @@ pub(crate) struct FrameData {
 pub(crate) struct Activity {
     last_copy: Option<Instant>,
     watching: bool,
+    /// When each screen's next paced copy is due, by output name.
+    next_paced: HashMap<String, Instant>,
+}
+
+impl Activity {
+    /// How long a looping copy of `output` waits for its turn: one refresh
+    /// (or `MAX_FPS`) after the one before.
+    fn pace(&mut self, output: &Output, now: Instant) -> Duration {
+        let millihertz = output.current_mode().map_or(60_000, |mode| mode.refresh);
+        let due = self.next_paced.get(&output.name()).copied();
+        let (wait, next) = paced(due, now, frame_interval(millihertz));
+        self.next_paced.insert(output.name(), next);
+        wait
+    }
+}
+
+/// One frame at `millihertz` (60 Hz when unknown), never shorter than one at `MAX_FPS`.
+fn frame_interval(millihertz: i32) -> Duration {
+    let millihertz = u64::try_from(millihertz)
+        .ok()
+        .filter(|mhz| *mhz > 0)
+        .unwrap_or(60_000);
+    Duration::from_micros(1_000_000_000 / millihertz)
+        .max(Duration::from_micros(1_000_000 / MAX_FPS))
+}
+
+/// The wait before a copy whose turn was `due`, and when the one after is due.
+fn paced(due: Option<Instant>, now: Instant, interval: Duration) -> (Duration, Instant) {
+    let at = due.filter(|due| *due > now).unwrap_or(now);
+    (at - now, at + interval)
 }
 
 pub(crate) fn create_global(dh: &DisplayHandle, grants: Grants) {
@@ -177,43 +216,77 @@ impl Dispatch<ZwlrScreencopyFrameV1, Option<FrameData>> for Dashi {
         _dh: &DisplayHandle,
         _data_init: &mut DataInit<'_, Self>,
     ) {
-        let buffer = match request {
-            frame_v1::Request::Copy { buffer } | frame_v1::Request::CopyWithDamage { buffer } => {
-                buffer
-            }
+        let (buffer, looping) = match request {
+            frame_v1::Request::Copy { buffer } => (buffer, false),
+            frame_v1::Request::CopyWithDamage { buffer } => (buffer, true),
             _ => return,
         };
         let Some(data) = data else {
             return frame.failed();
         };
-        let view = View {
-            area: data.region,
-            scale: data.output.current_scale().fractional_scale().into(),
-            output: &data.output,
-            cursor: data.cursor,
-            only: None,
-        };
-        let picture = match backend::capture(state, &view) {
-            Ok(picture) => picture,
-            Err(error) => {
-                tracing::debug!(%error, "a screencopy frame");
-                return frame.failed();
+        if looping {
+            let wait = state.capture_activity.pace(&data.output, Instant::now());
+            if !wait.is_zero() {
+                let (frame, data) = (frame.clone(), data.clone());
+                let _ = state.loop_handle.insert_source(
+                    Timer::from_duration(wait),
+                    move |_, _, state| {
+                        if frame.is_alive() && buffer.is_alive() {
+                            serve(state, &frame, &buffer, &data, true);
+                        }
+                        TimeoutAction::Drop
+                    },
+                );
+                return;
             }
-        };
-        if !crate::render::capture::copy_to_shm(&picture, &buffer) {
+        }
+        serve(state, frame, &buffer, data, looping);
+    }
+}
+
+/// Copy the frame's area into `buffer` and say it is ready.
+fn serve(
+    state: &mut Dashi,
+    frame: &ZwlrScreencopyFrameV1,
+    buffer: &WlBuffer,
+    data: &FrameData,
+    whole_damage: bool,
+) {
+    let view = View {
+        area: data.region,
+        scale: data.output.current_scale().fractional_scale().into(),
+        output: &data.output,
+        cursor: data.cursor,
+        only: None,
+    };
+    let picture = match backend::capture(state, &view) {
+        Ok(picture) => picture,
+        Err(error) => {
+            tracing::debug!(%error, "a screencopy frame");
             return frame.failed();
         }
-        frame.flags(frame_v1::Flags::empty());
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        frame.ready(
-            (now.as_secs() >> 32) as u32,
-            now.as_secs() as u32,
-            now.subsec_nanos(),
-        );
-        state.note_capture();
+    };
+    if !crate::render::capture::copy_to_shm(&picture, buffer) {
+        return frame.failed();
     }
+    frame.flags(frame_v1::Flags::empty());
+    if whole_damage && frame.version() >= 2 {
+        frame.damage(
+            0,
+            0,
+            picture.width.max(0) as u32,
+            picture.height.max(0) as u32,
+        );
+    }
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default();
+    frame.ready(
+        (now.as_secs() >> 32) as u32,
+        now.as_secs() as u32,
+        now.subsec_nanos(),
+    );
+    state.note_capture();
 }
 
 impl Dashi {
@@ -239,5 +312,33 @@ impl Dashi {
                 state.ipc.emit("screen-capture", json!({ "active": false }));
                 TimeoutAction::Drop
             });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn looping_copies_wait_one_frame_each() {
+        let now = Instant::now();
+        let frame = frame_interval(60_000);
+        let (wait, next) = paced(None, now, frame);
+        assert!(wait.is_zero());
+        let (wait, next) = paced(Some(next), now, frame);
+        assert_eq!(wait, frame);
+        // Late copies don't build up a backlog.
+        let later = next + Duration::from_secs(1);
+        assert!(paced(Some(next), later, frame).0.is_zero());
+    }
+
+    #[test]
+    fn fast_screens_are_capped() {
+        assert_eq!(
+            frame_interval(144_000),
+            Duration::from_micros(1_000_000 / MAX_FPS)
+        );
+        assert_eq!(frame_interval(30_000), Duration::from_micros(33_333));
+        assert_eq!(frame_interval(0), frame_interval(60_000));
     }
 }

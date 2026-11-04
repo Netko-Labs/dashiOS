@@ -156,7 +156,7 @@ export function parseKeys(text: string): Chord[] | string {
 export type KeyStep = { name: string; state?: "down" | "up" };
 
 /** The key events for `chords`: modifiers down, the key, modifiers up, each chord in turn. */
-export function keySteps(chords: readonly Chord[]): KeyStep[] {
+export function keySteps(chords: ReadonlyArray<{ mods: readonly Modifier[]; key: string }>): KeyStep[] {
   return chords.flatMap(({ mods, key }) => [
     ...mods.map((mod): KeyStep => ({ name: MODIFIER_KEYS[mod], state: "down" })),
     { name: key },

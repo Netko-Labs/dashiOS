@@ -118,6 +118,7 @@
       "!**/node_modules",
       "!**/.git",
       "!**/.mirin",
+      "!.claude/worktrees",
       "!**/target",
       "!**/vendor",
       "!**/vendor/cef",

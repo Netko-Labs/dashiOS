@@ -74,20 +74,31 @@ export function useScreenCapture(store: ScreenCaptureStore): boolean {
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
 }
 
-/** Give the compositor the list and follow its events into `store`; returns a stop function. */
+export interface ScreenCapture {
+  /**
+   * Let the program at `path` capture too, until the returned function is
+   * called: the shell's own recorder (recorder/) runs wf-recorder this way,
+   * so it is allowed only while Dashi records.
+   */
+  allow(path: string): () => void;
+  stop(): void;
+}
+
+/** Give the compositor the list and follow its events into `store`. */
 export function startScreenCapture(
   compositor: Pick<Compositor, "request" | "on">,
   store: ScreenCaptureStore,
   options: { clients?: () => string[] } = {},
-): () => void {
+): ScreenCapture {
   const clients = options.clients ?? readCaptureClients;
+  const extra = new Map<string, number>();
   const stop = compositor.on((event) => {
     if (event.event === "screen-capture") store.set(event.active);
   });
+  const send = (): Promise<unknown> => compositor.request("screencopy-clients", { paths: [...new Set([...clients(), ...extra.keys()])].slice(0, MAX_CLIENTS) });
   // A shell that restarts mid-share would otherwise show nothing until the next change:
   // the answer says `active`.
-  compositor
-    .request("screencopy-clients", { paths: clients() })
+  send()
     .then((answer) => {
       const active = typeof answer === "object" && answer !== null ? (answer as Record<string, unknown>).active : undefined;
       if (typeof active === "boolean") store.set(active);
@@ -96,5 +107,20 @@ export function startScreenCapture(
       // An older compositor has no screen sharing; there is nothing to indicate either.
       console.log(`dashi-shell: the compositor won't take a screen sharing list: ${error instanceof Error ? error.message : String(error)}`);
     });
-  return stop;
+  return {
+    allow(path) {
+      extra.set(path, (extra.get(path) ?? 0) + 1);
+      void send().catch(() => {});
+      let allowed = true;
+      return () => {
+        if (!allowed) return;
+        allowed = false;
+        const count = (extra.get(path) ?? 1) - 1;
+        if (count > 0) extra.set(path, count);
+        else extra.delete(path);
+        void send().catch(() => {});
+      };
+    },
+    stop,
+  };
 }

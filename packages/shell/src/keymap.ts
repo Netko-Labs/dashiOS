@@ -118,9 +118,11 @@ export const KEYMAP: Keymap = {
     { when: "super+comma", bind: "settings" },
     { when: "super+w", app: "metal", bind: "close-window" },
     // ⇧❖3 captures the screen; ⇧❖4 an area dragged out, or with Space the
-    // focused window (screenshots.ts, screenshot-area.tsx).
+    // focused window (screenshots.ts, screenshot-area.tsx); ⇧❖5 opens the
+    // toolbar that also records the screen, or stops a recording (recorder/).
     { when: "super+shift+3", bind: "screenshot-screen" },
     { when: "super+shift+4", bind: "screenshot-area" },
+    { when: "super+shift+5", bind: "capture-toolbar" },
 
     // In terminals ❖ and ⌥ move and delete in readline's keys, as Terminal
     // and iTerm do on the Mac: zsh, bash, fish, and most prompts know them,

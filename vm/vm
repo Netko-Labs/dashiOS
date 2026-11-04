@@ -7,6 +7,10 @@
 #   vm/vm desktop         boot the installed VM
 #   vm/vm live [ISO]      boot the image alone, nothing kept
 #   vm/vm ssh [ARGS...]   ssh into the running VM (localhost:$DASHI_VM_SSH)
+#   vm/vm mcp             Dashi's MCP server in the VM's session, on stdio (the
+#                         agent integration, over ssh): `claude mcp add dashi-vm
+#                         -- vm/vm mcp`, or vm/agent from a shell
+#   vm/vm ipc METHOD [JSON] one request to the VM's compositor (docs/compositor-ipc.md)
 #   vm/vm screenshot [PNG] save what the VM's screen shows (vm/images/screen.png)
 #   vm/vm type TEXT       type on the VM's keyboard; vm/vm key ctrl-alt-t ret
 #   vm/vm stop            ask the guest to shut down
@@ -131,9 +135,21 @@ case $cmd in
       -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$images/known_hosts" \
       "${DASHI_VM_USER:-dashi}"@localhost "$@"
     ;;
+  mcp)
+    # The checkout's bridge when the VM runs the checkout's session, else the installed one.
+    exec "$0" ssh -T -o BatchMode=yes \
+      'if [ -x /mnt/developer/dashiOS/session/dashi-mcp ]; then exec /mnt/developer/dashiOS/session/dashi-mcp; else exec dashi-mcp; fi'
+    ;;
+  ipc)
+    [ $# -ge 1 ] || die "usage: vm/vm ipc METHOD [JSON]"
+    exec "$0" ssh -T -o BatchMode=yes python3 - "$(printf '%q' "$1")" "$(printf '%q' "${2:-{\}}")" < "$here/guest-ipc.py"
+    ;;
   screenshot)
     out=$(readlink -f -- "${1:-$images/screen.png}")
     if python3 "$here/qmp.py" "$qmp_sock" screenshot "$out" 2>/dev/null; then echo "$out"; exit 0; fi
+    # Dashi's agent integration: the compositor's capture, which works mid-drag
+    # and with menus open (once "See the screen" is allowed in the VM).
+    if "$here/agent" screenshot "$out" >/dev/null 2>&1; then echo "$out"; exit 0; fi
     # Venus scanouts are GPU memory QEMU cannot read, and the compositor
     # captures only for the shell: press the shell's ⇧❖3 and copy its newest
     # screenshot out (needs a running Dashi session in the VM).

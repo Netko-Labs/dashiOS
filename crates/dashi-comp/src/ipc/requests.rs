@@ -305,11 +305,13 @@ fn capture(
         )
     };
     let scale = output.current_scale().fractional_scale();
+    // The pointer (and what it drags) only when asked, and never in a window's picture.
+    let cursor = only.is_none() && params.get("cursor").and_then(Value::as_bool) == Some(true);
     let view = render::View {
         area,
         scale: scale.into(),
         output: &output,
-        cursor: false,
+        cursor,
         only,
     };
     let picture = backend::capture(state, &view)?;

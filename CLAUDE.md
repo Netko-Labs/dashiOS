@@ -84,8 +84,19 @@ the same change.
 - VM checkout runs (`DASHI_VM_PASSWORD` for the guest's sudo): `vm/vm checkout-greeter on`
   (greetd with this checkout's login screen; pick "Dashi (checkout)" there for this
   checkout's session), `vm/vm checkout-session on` (SDDM autologin into it instead).
+- Drive the VM through Dashi's own agent integration (dogfood it): `vm/agent`
+  speaks MCP to the VM session's `dashi-mcp` over ssh (`vm/vm mcp`), the server
+  any agent uses: `vm/agent screenshot [PNG]`, `vm/agent call TOOL JSON`
+  (`launch_app`, `click`, `type_text`, `press_keys`, `record_screen`, …),
+  `vm/agent batch -` for several calls. `.mcp.json` offers the same server to
+  Claude Code as `dashi-vm`. The first call of each kind asks for consent on the
+  VM's screen; allow it there once ("Always Allow"). `vm/vm ipc METHOD JSON` sends one
+  compositor request (setting the VM's mode, say).
+- Start the VM as its own user unit, so it outlives the shell that started it:
+  `systemd-run --user --unit=dashi-vm --collect vm/vm desktop`.
 - VM screenshots: QEMU reads the screen with `DASHI_VM_GPU=none`; with the default
-  Venus GPU, `vm/vm screenshot` needs a running session (it presses the shell's ⇧❖3).
+  Venus GPU, `vm/vm screenshot` uses `vm/agent` (works mid-drag), else presses the
+  shell's ⇧❖3 (needs a running session).
 
 ## Verification
 

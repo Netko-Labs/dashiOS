@@ -43,6 +43,7 @@ export type Call =
   | { name: "list_windows" }
   | { name: "list_apps" }
   | { name: "screenshot"; window: number | null; rect?: Rect }
+  | { name: "record_screen"; seconds: number; display: string | null; rect?: Rect; frames: number }
   | { name: "launch_app"; app: string }
   | { name: "open_in_preview"; path: string }
   | { name: "focus_window" | "minimize_window" | "close_window"; window: number }

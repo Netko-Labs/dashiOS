@@ -12,6 +12,7 @@ import type { CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
+import { recordScreen } from "./desktop/record.ts";
 import { descendsFrom } from "./peer.ts";
 import { named, noWindow, subject } from "./subject.ts";
 import type { Call, Rect } from "./tools/index.ts";
@@ -57,6 +58,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
     }
     case "screenshot":
       return screenshot(call.window, call.rect, ctx);
+    case "record_screen":
+      return recordScreen(call, ctx);
     case "launch_app":
       return launchApp(call.app, ctx);
     case "open_in_preview":

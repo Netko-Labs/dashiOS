@@ -73,6 +73,7 @@ import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
 import { startPolkit } from "./polkit/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
+import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
 import { chooseRegion, startRegion } from "./region/index.ts";
 import { ScreenCaptureStore, startScreenCapture } from "./screen-capture.ts";
@@ -309,7 +310,7 @@ if (idle) idle.onSleep = () => void power.suspend();
 // Screen sharing: the compositor serves the portal's captures only to the
 // programs on our list, and tells us while one is running (screen-capture.ts).
 const screenCapture = new ScreenCaptureStore();
-const stopScreenCapture = compositor ? startScreenCapture(compositor, screenCapture) : () => {};
+const capture = compositor ? startScreenCapture(compositor, screenCapture) : null;
 
 // Privileged actions apps ask for (pkexec, mounting a disk, software installs)
 // need a password sheet: polkit's authentication agent (polkit/). It stays off
@@ -339,6 +340,25 @@ const fileManager = serveFileManager((args, startup) => {
   });
 });
 const notifications = startNotifications(undefined, { screen: () => (compositor ? activeScreen(compositor) : Promise.resolve(undefined)) });
+
+// The screen recorder and ⇧❖5's toolbar (recorder/).
+const screenOf = async (window: number | null) => {
+  if (!compositor) return { origin: { x: 0, y: 0 } };
+  const [answer, windows] = await Promise.all([compositor.request("outputs"), compositor.windows().catch(() => [])]);
+  const near = windows.find((each) => each.id === window)?.frame ?? null;
+  return chooseCaptureScreen(answer, { near, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
+};
+const captureTools = compositor
+  ? startCapture({
+      compositor,
+      open: openOverlay,
+      allow: (path) => capture?.allow(path) ?? (() => {}),
+      notifications: notifications.store,
+      screen: screenOf,
+      captureArea: (window) => selectArea(window),
+    })
+  : null;
+
 // Low-battery warnings go through that store (system/battery-alerts.ts).
 const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
 // Calendar's alerts fire from here, window open or not; the notification center's month marks the days with
@@ -407,6 +427,9 @@ const agents = compositor
         setup: { open: (page) => setupAssistant?.open(page) },
         // Late-bound like the Setup Assistant: the menu bar's menus, apps' own included.
         menus: { of: (window) => menus.menusOf(window), run: (action, appName) => menus.run(action, appName) },
+        // Late-bound too: ❖ chords an agent presses in Dashi's apps choose their menu items, as the person's do.
+        appShortcut: (window, shortcut) => appShortcut(window, shortcut),
+        ...(captureTools ? { recorder: captureTools.recorder } : {}),
       },
     })
   : null;
@@ -585,6 +608,7 @@ const menuBars = new MenuBars({
         toplevels={toplevels}
         agents={agentStore}
         capture={screenCapture}
+        {...(captureTools ? { recorder: captureTools.recorder } : {})}
         system={system.store}
         menus={menus.controller}
         appMenus={appMenus.store}
@@ -720,16 +744,32 @@ function showSwitcher(state: SwitcherState): void {
   );
 }
 
+/** Choose the item of `window`'s app menus that shows `shortcut`, for the person's ❖ chords and an agent's. */
+async function appShortcut(window: number, shortcut: string): Promise<boolean> {
+  const pid = (await compositor?.windows())?.find((each) => each.id === window)?.pid ?? null;
+  return appMenus.store.shortcut(appMenus.ownersOf(pid), shortcut);
+}
+
 // Shortcuts (keymap.ts) and ❖ taps and holds, as the compositor reports them.
 // ⇧❖4's selection overlay, made on first use.
 let captureArea: AreaCapture | undefined;
 let focusedAtCapture: number | null = null;
+/** ⇧❖4, and Capture Area in ⇧❖5's toolbar: drag out an area of the screen holding `window`. */
+function selectArea(window: number | null): void {
+  if (!compositor) return;
+  focusedAtCapture = window;
+  captureArea ??= areaCapture({
+    open: openOverlay,
+    // The focused window's screen, else the primary: named for the surface, and its corner for the area.
+    screen: () => screenOf(focusedAtCapture),
+    captureArea: (rect) => takeScreenshot(compositor, { rect }),
+    captureWindow: async () => (focusedAtCapture === null ? undefined : takeScreenshot(compositor, { window: focusedAtCapture })),
+  });
+  captureArea();
+}
 const stopShortcuts = compositor
   ? startShortcuts(compositor, {
-      appShortcut: async (window, shortcut) => {
-        const pid = (await compositor.windows()).find((each) => each.id === window)?.pid ?? null;
-        return appMenus.store.shortcut(appMenus.ownersOf(pid), shortcut);
-      },
+      appShortcut,
       toggleLauncher: () => (overlays.has("launcher") ? closeOverlay("launcher") : openLauncher()),
       showSheet: () => {
         if (!overlays.has("sheet")) openSheet();
@@ -746,21 +786,8 @@ const stopShortcuts = compositor
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),
       powerKey: () => power.powerKey(),
-      screenshotArea: (window) => {
-        focusedAtCapture = window;
-        captureArea ??= areaCapture({
-          open: openOverlay,
-          // The focused window's screen, else the primary: named for the surface, and its corner for the area.
-          screen: async () => {
-            const [answer, windows] = await Promise.all([compositor.request("outputs"), compositor.windows().catch(() => [])]);
-            const focused = windows.find((window) => window.id === focusedAtCapture)?.frame ?? null;
-            return chooseCaptureScreen(answer, { near: focused, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
-          },
-          captureArea: (rect) => takeScreenshot(compositor, { rect }),
-          captureWindow: async () => (focusedAtCapture === null ? undefined : takeScreenshot(compositor, { window: focusedAtCapture })),
-        });
-        captureArea();
-      },
+      screenshotArea: selectArea,
+      captureToolbar: (window) => captureTools?.toolbar(window),
     })
   : () => {};
 
@@ -790,6 +817,7 @@ const stopClosingOnLock = compositor
       menus.dismissAll();
       overlays.closeAll();
       captureArea?.close();
+      captureTools?.close();
     })
   : () => {};
 
@@ -842,7 +870,8 @@ const quit = () => {
     ["agent sheets", () => agentUi.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
-    ["screen sharing", stopScreenCapture],
+    ["screen recording", () => captureTools?.close()],
+    ["screen sharing", () => capture?.stop()],
     ["battery alerts", stopBatteryAlerts],
     ["calendar", () => calendar.close()],
     ["appearance", stopAppearance],

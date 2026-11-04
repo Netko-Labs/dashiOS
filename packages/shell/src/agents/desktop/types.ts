@@ -13,6 +13,7 @@ import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/start.tsx";
 import type { MenuAction, WindowMenu } from "../../menus/model.ts";
 import type { NotificationStore } from "../../notifications/store.ts";
+import type { ScreenRecorder } from "../../recorder/recorder.ts";
 import type { RegionDesktop } from "../../region/desktop.ts";
 import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
 import type { PageId } from "../../setup/flow.ts";
@@ -50,6 +51,10 @@ export interface Desktop {
   software?: SoftwareBackend;
   /** Show the lock screen. */
   lock(): void;
+  /** The shell's screen recorder, for record_screen (recorder/). Absent without a compositor. */
+  recorder?: ScreenRecorder;
+  /** Choose the item of `window`'s app menus that shows `shortcut` ("⇧❖N"); false when none does (app-menus/). */
+  appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** The menu bar's menus for a window (its app's own included), and choosing a row. Absent where there is no menu bar. */
   menus?: {
     of(window: CompositorWindow): Promise<WindowMenu[]>;

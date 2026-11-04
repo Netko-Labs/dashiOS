@@ -5,8 +5,10 @@
  * as far as the agent may know it (a title needs "see").
  */
 
+import { chordText } from "../../app-menus/shortcut.ts";
 import { SETUP_APP_ID } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor.ts";
+import { type KeyChord, resolveChord } from "../../keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
@@ -33,6 +35,16 @@ function content(window: CompositorWindow): { width: number; height: number } | 
 }
 
 const isResult = (value: object): value is ToolResult => "content" in value;
+
+/** The keymap's binding that hands ❖ chords to a Dashi app's menus (keymap.ts). */
+const APP_CHORD = "app-chord";
+
+const shortcutOf = (chord: KeyChord): string =>
+  chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
+  [...chord.mods, chord.key].join("+");
+
+/** ❖ played as the app's own Ctrl, Shift kept. */
+const asCtrl = (chord: KeyChord): KeyChord => ({ mods: ["ctrl", ...chord.mods.filter((mod) => mod === "shift")], key: chord.key });
 
 /** Every point must land inside the window's content. */
 function inside(window: CompositorWindow, size: { width: number; height: number }, points: ReadonlyArray<{ x: number; y: number }>): ToolResult | null {
@@ -96,10 +108,23 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         await send({ keys: [{ text: call.text }] });
         // Never what was typed: only how much.
         return text(`Typed ${[...call.text].length} characters into w${window.id}.`);
-      case "press_keys":
+      case "press_keys": {
+        // The person's keys pass the keymap in the compositor; an agent's are
+        // resolved here, so ⌥← and ❖S mean the same for both (keymap-match.ts).
+        const plan = call.chords.map((chord) => ({ chord, resolved: resolveChord(chord, window.appId) }));
+        const kept = plan.find(({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD));
+        if (kept)
+          return toolError(
+            `${shortcutOf(kept.chord)} is the desktop's own shortcut, not the window's; use the window tools (focus_window, close_window, …) instead.`,
+          );
         say(`Pressing keys in ${where}`);
-        await send({ keys: keySteps(call.chords) });
+        for (const { chord, resolved } of plan) {
+          if (resolved.kind === "keys") await send({ keys: keySteps(resolved.chords) });
+          // A ❖ chord in one of Dashi's apps: its menu item with that shortcut, else the app's Ctrl chord (shortcuts.ts).
+          else if (!(await ctx.desktop.appShortcut?.(window.id, shortcutOf(chord)))) await send({ keys: keySteps([asCtrl(chord)]) });
+        }
         return text(`Pressed ${call.keys} in w${window.id}.`);
+      }
     }
   } catch (error) {
     if (error instanceof PersonBusy) return describePerson(error);

@@ -76,7 +76,8 @@ crates/dashi-comp/src/
                     security (security-context), sync (explicit and implicit),
                     toplevel_meta (icons, bell), activation (+ dialog, foreign)
   protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
-                    toplevel, wlr-screencopy, ext-image-copy-capture
+                    toplevel, wlr-screencopy (copy_with_damage paced to the
+                    refresh, at most 60 fps), ext-image-copy-capture
                     (image_capture.rs), ext-foreign-toplevel-list
   render/           scene, title bars, cursor, capture, presentation (present.rs),
                     rounded corners (rounded.rs)

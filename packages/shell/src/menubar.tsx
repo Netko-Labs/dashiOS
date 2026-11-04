@@ -25,6 +25,8 @@ import { ExtraItems } from "./extras/view.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { batteryEntries, extraEntries } from "./menus/status-menu.ts";
+import { RecordingButton } from "./recorder/indicator.tsx";
+import type { ScreenRecorder } from "./recorder/recorder.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
@@ -118,6 +120,7 @@ export function MenuBar({
   toplevels,
   agents,
   capture,
+  recorder,
   system,
   menus,
   appMenus,
@@ -132,6 +135,8 @@ export function MenuBar({
   toplevels: ToplevelStore;
   agents: AgentStore;
   capture: ScreenCaptureStore;
+  /** The screen recorder, for its stop button (recorder/). */
+  recorder?: ScreenRecorder;
   system: SystemStore;
   menus: MenuController;
   /** The menus apps published; the focused app's replace File, Edit, and View. */
@@ -219,7 +224,8 @@ export function MenuBar({
         {titles.map(({ id, title }) => menu(id, <Text style={label}>{title}</Text>))}
       </View>
       <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16, flexShrink: 1, minWidth: 0 }}>
-        <CapturePill store={capture} />
+        {recorder ? <RecordingButton recorder={recorder} /> : null}
+        <CapturePill store={capture} {...(recorder ? { recorder } : {})} />
         {connected.map((agent) => (
           <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
         ))}

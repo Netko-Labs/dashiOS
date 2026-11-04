@@ -58,6 +58,7 @@ greetd
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
+| shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
 
 ## Installed Layout

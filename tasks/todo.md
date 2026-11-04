@@ -124,8 +124,9 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       status line at rest; a path (`/`, `~`) goes, with folder completion;
       anything else searches, scope on a chip (omnibox.tsx). The footer
       shows only jobs and notices. Checked in the VM
-- [ ] See the drag icon in the VM (its screenshot can't run mid-drag), and a
-      drop into another app (Helium's upload, the Terminal)
+- [x] See the drag icon in the VM: a `record_screen` video of a drag in
+      Files shows the file's icon riding under the pointer
+- [ ] A drop into another app (Helium's upload, the Terminal)
 - [ ] X11 apps: drags to and from them (smithay's X11Wm doesn't bridge XDND)
 - [x] org.freedesktop.FileManager1 from the shell (file-manager.ts): "Show
       in folder" opens Files on each folder with the items selected, Get
@@ -275,3 +276,24 @@ it in the VM.
       Switch) to `@mirinjs/metal-ui`, styled with Dashi's theme
 - [ ] Theme tokens: Dashi's palettes as a metal-ui theme, so metal-ui
       components and `@dashi/ui` paint from the same colors
+
+### Screen recording and dogfooding the agent integration
+
+- [x] ⇧❖5: the screenshot and recording toolbar, one row (recorder/toolbar.tsx):
+      screen, window, area; record the screen or an area, with the microphone;
+      the menu bar's stop button with the time (recorder/indicator.tsx); a
+      notice when saved (Videos/Screen Recordings), click to open
+- [x] wf-recorder (H.264 MP4, VP9 WebM fallback), allowed screencopy only
+      while Dashi records; dashi-comp paces copy_with_damage to the refresh
+- [x] Agents: `record_screen` (a video, and stills with the pointer through it)
+- [x] Agents' ⌥/❖ chords pass the keymap as the person's do (keymap-match.ts):
+      ⌥← in a terminal is Esc b, ❖S in Dashi's apps picks the menu item, the
+      desktop's own shortcuts (❖Q, ❖Tab) are refused
+- [x] The VM driven through Dashi's MCP server: `vm/agent`, `vm/vm mcp`, `.mcp.json`
+- [ ] Recording cost: dmabuf screencopy (no CPU readback) and VAAPI encoding;
+      the debug compositor uses a whole core at 60 copies a second
+- [ ] The consent sheet doesn't fit small screens (640×480: its buttons are
+      off screen) and Return doesn't answer it
+- [ ] The menu bar's agent pill wraps "Waiting for you" onto two lines
+- [ ] After a shell restart in the VM, new Metal windows sometimes don't draw
+      (black, or stale until a real key press); a reboot fixes it

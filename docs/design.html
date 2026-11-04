@@ -558,7 +558,7 @@ const KEY = {
 const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓]|[^❖⌃⌥⇧←→↑↓]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
 const SHORTCUTS = [
   ["❖Space", "Launcher"], ["❖Tab, ⇧❖Tab", "Switch apps"], ["❖`", "Next window of the app"], ["❖Q", "Quit the app"], ["❖W", "Close the window (Dashi's apps)"],
-  ["❖M", "Minimize"], ["❖H", "Hide the app"], ["❖,", "System Settings"], ["⇧❖3", "Screenshot of the screen"], ["⇧❖4", "Screenshot of an area (Space: a window)"],
+  ["❖M", "Minimize"], ["❖H", "Hide the app"], ["❖,", "System Settings"], ["⇧❖3", "Screenshot of the screen"], ["⇧❖4", "Screenshot of an area (Space: a window)"], ["⇧❖5", "Screenshot and recording toolbar (again: stop recording)"],
   ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Space"], ["⌃❖←, ⌃❖→", "Tile left and right"], ["⌃❖↑", "Fill the screen"], ["⌃❖↓", "Restore"],
   ["⌃❖F", "Full screen"], ["⌃❖Q", "Lock the screen"], ["⌥❖Esc", "Force Quit"], ["⌥❖D", "Dock autohide on or off"],
 ];

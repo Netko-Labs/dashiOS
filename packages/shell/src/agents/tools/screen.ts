@@ -67,6 +67,48 @@ export const screenTools: readonly ToolDef[] = [
     },
   },
   {
+    name: "record_screen",
+    title: "Record the screen",
+    description:
+      "Record a video of a whole screen (`name`, else the main display) or of an area (`rect`, screen points) for `seconds`, saved to the person's Videos/Screen Recordings folder. " +
+      "Use it to see what happens over time, such as an animation or a drag, which a screenshot can't catch: do the other calls while it records (it returns when the time is up). " +
+      "Returns the video's path and `frames` stills taken evenly through the recording. The menu bar shows the recording's stop button, and the person may stop it early.",
+    scope: "screen",
+    readOnly: false,
+    destructive: false,
+    properties: {
+      seconds: { type: "integer", minimum: 1, maximum: 60, description: "How long to record, 1 to 60 seconds. Default 5." },
+      name: displayProp,
+      rect: {
+        type: "object",
+        description: "An area of the screen in points: x and y of its top left corner, and its width and height.",
+        properties: {
+          x: { type: "integer" },
+          y: { type: "integer" },
+          width: { type: "integer", minimum: 1 },
+          height: { type: "integer", minimum: 1 },
+        },
+        required: ["x", "y", "width", "height"],
+        additionalProperties: false,
+      },
+      frames: { type: "integer", minimum: 0, maximum: 8, description: "Stills to return, 0 to 8. Default 3." },
+    },
+    parse: (args) => {
+      const seconds = args.seconds === undefined ? 5 : whole(args.seconds, 1, 60);
+      if (seconds === null) return fail("`seconds` must be a whole number from 1 to 60.");
+      const frames = args.frames === undefined ? 3 : whole(args.frames, 0, 8);
+      if (frames === null) return fail("`frames` must be a whole number from 0 to 8.");
+      if (args.name !== undefined && args.rect !== undefined) return fail("Give `name` or `rect`, not both.");
+      if (args.rect !== undefined) {
+        const rect = parseRect(args.rect);
+        return isCallError(rect) ? rect : { name: "record_screen", seconds, display: null, rect, frames };
+      }
+      if (args.name === undefined) return { name: "record_screen", seconds, display: null, frames };
+      const display = displayArg(args);
+      return typeof display === "string" ? { name: "record_screen", seconds, display, frames } : display;
+    },
+  },
+  {
     name: "list_displays",
     title: "List screens",
     description:
