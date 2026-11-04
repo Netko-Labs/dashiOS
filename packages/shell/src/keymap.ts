@@ -50,6 +50,7 @@ export const TERMINALS = [
   "com.mitchellh.ghostty",
   "org.wezfurlong.wezterm",
   "xterm",
+  "dev.dashi.terminal",
 ];
 
 export const KEYMAP: Keymap = {
@@ -120,6 +121,16 @@ export const KEYMAP: Keymap = {
     // focused window (screenshots.ts, screenshot-area.tsx).
     { when: "super+shift+3", bind: "screenshot-screen" },
     { when: "super+shift+4", bind: "screenshot-area" },
+
+    // In terminals ❖ and ⌥ move and delete in readline's keys, as Terminal
+    // and iTerm do on the Mac: zsh, bash, fish, and most prompts know them,
+    // where Home, End, and Ctrl+arrows are often left unbound.
+    { when: "super+Left", app: "terminal", send: "ctrl+a" },
+    { when: "super+Right", app: "terminal", send: "ctrl+e" },
+    { when: "alt+Left", app: "terminal", send: "alt+b" },
+    { when: "alt+Right", app: "terminal", send: "alt+f" },
+    { when: "alt+BackSpace", app: "terminal", send: "ctrl+w" },
+    { when: "alt+Delete", app: "terminal", send: "alt+d" },
 
     // Moving in text, Mac style; ⇧ with them selects.
     { when: "super+Left", send: "Home" },

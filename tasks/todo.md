@@ -136,7 +136,8 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
       the freedesktop cache with URI and MTime. dashi requires gvfs and
       bubblewrap and recommends the thumbnailers and gvfs-fuse/-mtp/-smb,
       which Nautilus pulled in. Checked in the VM (a 4 MB PNG)
-- [ ] Then remove Nautilus from the host (the image has none)
+- [x] Then remove Nautilus from the host (the image has none): removed with
+      nautilus-extensions; gvfs and the thumbnailers kept (`dnf mark user`)
 
 # Dashi 0.2.0
 
@@ -262,6 +263,7 @@ it in the VM.
 - [ ] Extras: tooltips (Metal has none), nested submenus, middle click (SecondaryActivate),
       XEmbed tray icons, Bluetooth device batteries in the battery menu, reordering/hiding extras
 - [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)
+- [x] Terminal: ⌥/❖ arrows and ⌥⌫ in readline's keys (keymap.ts), as on the Mac
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences
 - [ ] A Dashi-native installer front end over Anaconda
