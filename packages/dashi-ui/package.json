@@ -1,0 +1,22 @@
+{
+  "name": "@dashi/ui",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Dashi's own Metal components: what @mirinjs/metal-ui (shadcn) does not cover, painted with Dashi's palettes.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}

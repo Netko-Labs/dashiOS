@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = ["crates/dashi-comp"]
+# dashi-term links libghostty-vt and is built on its own (its spec, its Cargo.lock).
+exclude = ["crates/dashi-term"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/Netko-Labs/dashiOS"
+
+[profile.release]
+debug = "line-tables-only"

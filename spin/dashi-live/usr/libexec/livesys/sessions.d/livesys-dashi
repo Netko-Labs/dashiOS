@@ -5,41 +5,58 @@
 # session gets these; the installed system is the image as built, with a
 # login screen.
 
-# SDDM logs liveuser into Dashi.
-mkdir -p /etc/sddm.conf.d
-cat > /etc/sddm.conf.d/zz-livesys-dashi.conf << SDDM_EOF
-[Autologin]
-User=liveuser
-Session=dashi.desktop
-SDDM_EOF
+# greetd logs liveuser into Dashi once (initial_session); after a logout the
+# login screen (dashi-greeter) shows.
+mkdir -p /etc/greetd
+cat > /etc/greetd/config.toml << GREETD_EOF
+[terminal]
+vt = 1
+
+[initial_session]
+command = "/usr/bin/dashi-session"
+user = "liveuser"
+
+[default_session]
+command = "/usr/bin/dashi-greeter"
+user = "greetd"
+GREETD_EOF
 
 # The installer starts without a password prompt (liveuser has none), as on
-# Fedora's GNOME live image.
+# Fedora's GNOME live image: Dashi's (dev.dashi.install) and Anaconda's.
 cat > /usr/share/polkit-1/rules.d/20-livesys-dashi.rules << POLKIT_EOF
 polkit.addRule(function(action, subject) {
     if (!subject.local)
         return undefined;
     if (subject.user !== 'liveuser')
         return undefined;
-    if (action.id.indexOf('org.fedoraproject.pkexec.liveinst') !== 0)
-        return undefined;
-    return 'yes';
+    if (action.id === 'dev.dashi.install' || action.id.indexOf('org.fedoraproject.pkexec.liveinst') === 0)
+        return 'yes';
+    return undefined;
 });
 POLKIT_EOF
 
-# "Install Dashi" in the launcher (and the Setup Assistant's first page, which
-# looks for liveinst on a live boot).
-cat > /usr/share/applications/dashi-install.desktop << DESKTOP_EOF
+# "Install Dashi" in the launcher (and the Setup Assistant's first page):
+# Dashi's own Installer. Named for the app id its window reports, so the Dock
+# and the menu bar name it. Anaconda (liveinst) stays on the image, unoffered.
+cat > /usr/share/applications/dev.dashi.installer.desktop << DESKTOP_EOF
 [Desktop Entry]
 Type=Application
 Name=Install Dashi
 GenericName=Installer
 Comment=Install Dashi on this computer
-Exec=liveinst
-Icon=org.fedoraproject.AnacondaInstaller
+Exec=/usr/libexec/dashi/dashi-installer
+Icon=system-software-install
 Categories=System;
-Keywords=install;installer;anaconda;disk;
+Keywords=install;installer;disk;
 DESKTOP_EOF
+
+# Once the installer has copied the system, finish it (dashi-live's
+# finish-install: NVIDIA's driver, CachyOS's kernel). A live install reads
+# interactive-defaults.ks as its kickstart, so the %post goes there.
+defaults=/usr/share/anaconda/interactive-defaults.ks
+if [ -f "$defaults" ] && ! grep -q 'finish-install' "$defaults"; then
+  cat /usr/share/dashi/finish-install.ks >> "$defaults"
+fi
 
 # Turn off PackageKit-command-not-found while running live, as Fedora does.
 if [ -f /etc/PackageKit/CommandNotFound.conf ]; then

@@ -1,0 +1,61 @@
+#!/usr/bin/sh
+# dashi-greeter: Dashi's login screen, the command greetd runs as its greeter
+# (/etc/greetd/config.toml, [default_session]). dashi-comp shows it, with the
+# greeter (packages/greeter) as its only client; once someone is in, the
+# greeter ends the compositor and greetd starts their session.
+#
+# Paths come from where this script lives: an install prefix
+# (<prefix>/bin/dashi-greeter, <prefix>/share/dashi/greeter) or a checkout
+# (<repo>/session/dashi-greeter, <repo>/packages/greeter, <repo>/target/*/dashi-comp).
+# DASHI_COMP, DASHI_METAL_HOST, and DASHI_BUN override them.
+set -eu
+
+self=$(readlink -f -- "$0")
+base=$(dirname -- "$(dirname -- "$self")")
+die() { echo "dashi-greeter: $*" >&2; exit 1; }
+# dashi-comp -c takes one command line; POSIX sh has no printf %q.
+quote() { printf "'%s'" "$(printf %s "$1" | sed "s/'/'\\\\''/g")"; }
+
+if [ -f "$base/share/dashi/greeter/src/main.tsx" ]; then
+  greeter=$base/share/dashi/greeter
+  comp=${DASHI_COMP:-$base/bin/dashi-comp}
+  export DASHI_METAL_HOST=${DASHI_METAL_HOST:-$base/libexec/dashi/mirin-metal-host}
+  bun=${DASHI_BUN:-$base/libexec/dashi/bin/bun}
+elif [ -f "$base/packages/greeter/src/main.tsx" ]; then
+  greeter=$base/packages/greeter
+  comp=${DASHI_COMP:-}
+  if [ -z "$comp" ]; then
+    # Whichever build is newer: a stale release build must not hide a fresh debug one.
+    for profile in debug release; do
+      candidate=$base/target/$profile/dashi-comp
+      if [ -x "$candidate" ] && { [ -z "$comp" ] || [ "$candidate" -nt "$comp" ]; }; then comp=$candidate; fi
+    done
+  fi
+  comp=${comp:-/usr/bin/dashi-comp}
+  bun=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+  [ -x "$bun" ] || bun=$(command -v bun || true)
+else
+  die "can't find the greeter next to $self"
+fi
+[ -x "$comp" ] || die "no dashi-comp at $comp"
+[ -x "${bun:-}" ] || die "bun not found; set DASHI_BUN"
+
+# Everything said goes to a log in the greeter's runtime folder.
+log=${XDG_RUNTIME_DIR:-/tmp}/dashi-greeter.log
+[ -f "$log" ] && mv -f "$log" "$log.old"
+exec >>"$log" 2>&1
+
+export XDG_SESSION_TYPE=wayland
+export XDG_CURRENT_DESKTOP=Dashi
+export LANG=${LANG:-C.UTF-8}
+# The greeter ends this compositor once the session is chosen (exec keeps the pid).
+export DASHI_GREETER_COMPOSITOR=$$
+
+# 0.2.0's compositor has a greeter mode (no Xwayland, no window list or screen
+# copying); 0.1.0's does not take the flag, and starts on any argument, so its
+# usage text is looked for in the binary rather than asked for.
+mode=
+grep -aqF -- "--greeter         the login screen" "$comp" && mode=--greeter
+
+cd "$greeter"
+exec "$comp" $mode -c "$(quote "$bun") $(quote "$greeter/src/main.tsx")"

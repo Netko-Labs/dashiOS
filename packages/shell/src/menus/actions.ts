@@ -1,0 +1,169 @@
+/**
+ * What choosing a menu row does. The compositor's window actions go over
+ * IPC, layout through the Arranger, and everything else (the lock screen,
+ * sheets, power) is handed in, so this file holds only the policy: which
+ * windows "Hide Others" hides, what "Quit" closes, and so on.
+ *
+ * Rows that stand for a keystroke in the app (Undo, Paste) type its chord
+ * into the window (keystrokes.ts) once the menu is gone and the window has
+ * the keyboard back.
+ */
+
+import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Tile } from "../layout.ts";
+import { sameApp } from "../shortcuts.ts";
+import { type EditCommand, editChord } from "./keystrokes.ts";
+import type { MenuAction, PowerKind } from "./model.ts";
+
+/** What the actions reach beyond the compositor. */
+export interface ActionDeps {
+  /** Null without dashi-comp: window rows do nothing. */
+  compositor: Pick<Compositor, "request" | "windows"> | null;
+  arranger: {
+    tile(window: number, tile: Tile): Promise<void>;
+    zoom(window: number): Promise<void>;
+    toggleFullscreen?(window: number): Promise<void>;
+  } | null;
+  /** Waits before typing into the window, so the menu's surface has let go of the keyboard; tests pass none. */
+  settle?(): Promise<void>;
+  lock(): void;
+  /** Starts the app again; false when it cannot be. */
+  launchApp(appId: string): boolean;
+  showAbout(about: AboutTarget): void;
+  /** Asks first; the answer runs the power action (session.ts). */
+  confirmPower(what: PowerKind): void;
+  suspend(): void;
+  openHelp(): void;
+  showShortcuts(): void;
+  /** Opens Force Quit Applications (force-quit/). */
+  openForceQuit(): void;
+  /** Opens System Settings (settings-app/); a run without it does nothing. */
+  openSettings?(): void;
+  /** Tells an app its own row was chosen (app-menus/); a run without it does nothing. */
+  selectAppItem?(pid: number, id: string): void;
+}
+
+export type AboutTarget = { kind: "dashi" } | { kind: "app"; appId: string; name: string; pid: number | null };
+
+/** One window of each app among `windows`, in their order. */
+export function onePerApp(windows: readonly CompositorWindow[]): CompositorWindow[] {
+  const picked: CompositorWindow[] = [];
+  for (const window of windows) {
+    if (!picked.some((each) => sameApp(each, window))) picked.push(window);
+  }
+  return picked;
+}
+
+export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promise<void> {
+  const { compositor } = deps;
+  const request = async (method: string, window: number) => {
+    await compositor?.request(method, { window });
+  };
+  switch (action.kind) {
+    case "about-dashi":
+      return deps.showAbout({ kind: "dashi" });
+    case "about-app":
+      return deps.showAbout({ kind: "app", appId: action.appId, name: action.name, pid: action.pid });
+    case "sleep":
+      return deps.suspend();
+    case "power":
+      return deps.confirmPower(action.what);
+    case "lock":
+      return deps.lock();
+    case "force-quit":
+      return deps.openForceQuit();
+    case "settings":
+      return deps.openSettings?.();
+    case "help":
+      return deps.openHelp();
+    case "shortcuts":
+      return deps.showShortcuts();
+    case "app-item":
+      return deps.selectAppItem?.(action.pid, action.id);
+    case "new-window":
+      deps.launchApp(action.appId);
+      return;
+    case "hide-app":
+      return request("hide", action.window);
+    case "close-window":
+      return request("close", action.window);
+    case "minimize":
+      return request("minimize", action.window);
+    case "focus":
+      return request("focus", action.window);
+    case "zoom":
+      await deps.arranger?.zoom(action.window);
+      return;
+    case "tile":
+      await deps.arranger?.tile(action.window, action.tile);
+      return;
+    case "fullscreen":
+      await deps.arranger?.toggleFullscreen?.(action.window);
+      return;
+    case "edit":
+      return typeEdit(deps, action.window, action.command);
+    case "quit-app":
+      return forEachWindowOfApp(compositor, action.window, (window) => request("close", window.id));
+    case "hide-others":
+      return hideOthers(compositor, action.window);
+    case "show-all":
+      return showAll(compositor, action.window);
+    case "bring-to-front":
+      return bringToFront(compositor, action.window);
+  }
+}
+
+/** How long the menu's surface is given to let go of the keyboard (it closes just before the action runs). */
+export const SETTLE_MS = 60;
+
+/** Gives the window the keyboard back, then types the chord an Edit row stands for. */
+async function typeEdit(deps: ActionDeps, window: number, command: EditCommand): Promise<void> {
+  const { compositor } = deps;
+  if (!compositor) return;
+  const target = (await compositor.windows()).find((candidate) => candidate.id === window);
+  if (!target || target.state !== "normal") return;
+  await compositor.request("focus", { window });
+  await (deps.settle ?? (() => Bun.sleep(SETTLE_MS)))();
+  await compositor.request("send-keys", { window, chord: editChord(command, target.appId) });
+}
+
+async function forEachWindowOfApp(compositor: ActionDeps["compositor"], window: number, each: (window: CompositorWindow) => Promise<void>): Promise<void> {
+  if (!compositor) return;
+  const windows = await compositor.windows();
+  const focused = windows.find((candidate) => candidate.id === window);
+  if (!focused) return;
+  for (const sibling of windows.filter((candidate) => sameApp(candidate, focused))) await each(sibling);
+}
+
+/** Hides every other app that is on screen; the app of `window` stays and keeps the focus. */
+async function hideOthers(compositor: ActionDeps["compositor"], window: number): Promise<void> {
+  if (!compositor) return;
+  const windows = await compositor.windows();
+  const keep = windows.find((candidate) => candidate.id === window);
+  if (!keep) return;
+  const others = onePerApp(windows.filter((candidate) => candidate.state === "normal" && !sameApp(candidate, keep)));
+  for (const other of others) await compositor.request("hide", { window: other.id });
+  await compositor.request("focus", { window });
+}
+
+/** Unhides every hidden app (focusing one of its windows does), then gives the focus back. */
+async function showAll(compositor: ActionDeps["compositor"], window: number | null): Promise<void> {
+  if (!compositor) return;
+  const windows = await compositor.windows();
+  for (const hidden of onePerApp(windows.filter((candidate) => candidate.state === "hidden"))) {
+    await compositor.request("focus", { window: hidden.id });
+  }
+  if (window !== null && windows.some((candidate) => candidate.id === window)) await compositor.request("focus", { window });
+}
+
+/** Raises the app's windows that are on screen (back to front) and ends on `window`. */
+async function bringToFront(compositor: ActionDeps["compositor"], window: number): Promise<void> {
+  if (!compositor) return;
+  const windows = await compositor.windows();
+  const focused = windows.find((candidate) => candidate.id === window);
+  if (!focused) return;
+  // `windows` is front to back; raising from the back keeps their order.
+  const mine = windows.filter((candidate) => candidate.state === "normal" && sameApp(candidate, focused)).reverse();
+  for (const each of mine) if (each.id !== window) await compositor.request("focus", { window: each.id });
+  await compositor.request("focus", { window });
+}

@@ -3,23 +3,25 @@
 # Dashi wants on this machine (dashi-kernel).
 #
 #   default-kernel [--except <version>] [--dry-run]
+#   default-kernel --check    print which kernel this machine should boot
+#                             (cachyos or fedora), whichever are installed
 #
-# Dashi ships two kernels: CachyOS's (kernel-cachyos, from CachyOS's COPR:
+# Dashi's image carries two kernels: CachyOS's (kernel-cachyos, from CachyOS's COPR:
 # BORE scheduler, 1000 Hz, NTSync, sched-ext; the one for games) and
 # Fedora's (kernel-core, signed for Secure Boot, built for every x86-64 CPU).
 # The CachyOS build needs an x86-64-v3 CPU (Haswell, Excavator, or newer) and
 # is not signed with a key shim trusts, so it is the default only where it
 # boots: a v3 CPU, and Secure Boot off (or shim's validation turned off with
-# `mokutil --disable-validation`). Elsewhere Fedora's kernel stays the
-# default. Both stay in the boot menu either way.
+# `mokutil --disable-validation`). Where it boots, the installer leaves it
+# the only kernel (dashi-live's finish-install, which asks --check);
+# elsewhere Fedora's kernel stays beside it as the default.
 #
 # /etc/dashi/kernel.conf can say otherwise: DEFAULT_KERNEL=auto (the rule
 # above), cachyos, fedora, or keep (leave the default to the person and
 # `grubby --set-default`).
 #
-# Run at every boot (dashi-default-kernel.service: the installer leaves the
-# oldest kernel as the default, and Anaconda has no hook after it that runs
-# on a live install), and by kernel-install after every kernel is added or
+# Run at every boot (dashi-default-kernel.service: a system installed before
+# 0.3.0 was left with the oldest kernel as the default), and by kernel-install after every kernel is added or
 # removed (99-dashi-default-kernel.install), so a Fedora kernel update does
 # not take the default away from CachyOS's.
 set -euo pipefail
@@ -27,15 +29,17 @@ set -euo pipefail
 conf=/etc/dashi/kernel.conf
 except=
 dry_run=0
+check=0
 while (($#)); do
   case $1 in
     --except) except=${2:-}; shift 2 ;;
     --dry-run) dry_run=1; shift ;;
+    --check) check=1; shift ;;
     *) echo "default-kernel: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-say() { echo "default-kernel: $*"; }
+say() { if ((check)); then echo "default-kernel: $*" >&2; else echo "default-kernel: $*"; fi; }
 
 choice=auto
 if [[ -r $conf ]]; then
@@ -46,7 +50,8 @@ if [[ -r $conf ]]; then
     *) say "ignoring DEFAULT_KERNEL=$value in $conf (auto, cachyos, fedora, or keep)" ;;
   esac
 fi
-[[ $choice != keep ]] || exit 0
+[[ $choice != keep ]] || ((check)) || exit 0
+[[ $choice != keep ]] || choice=auto
 
 # Whether this CPU runs x86-64-v3 code; the dynamic loader knows.
 has_v3() {
@@ -92,6 +97,11 @@ elif [[ $choice == auto ]]; then
   else
     want=cachyos
   fi
+fi
+
+if ((check)); then
+  echo "$want"
+  exit 0
 fi
 
 if [[ $want == cachyos && ${#cachyos[@]} -eq 0 ]]; then

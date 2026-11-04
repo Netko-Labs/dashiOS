@@ -1,0 +1,23 @@
+#!/usr/bin/sh
+# vm/dev-session: in the VM, the Dashi session from the shared checkout
+# (/home/dashi/Developer/dashiOS), on the checkout's dashi-comp (see below)
+# and on the checkout's Metal host once it is built
+# (../mirin/crates/mirin-metal/target/release/mirin-metal-host). `vm/vm checkout-session on` makes SDDM log in to it.
+set -eu
+repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
+# The checkout's dashi-comp (cargo build), else the installed one. DASHI_COMP picks another.
+if [ -z "${DASHI_COMP:-}" ]; then
+  DASHI_COMP=/usr/bin/dashi-comp
+  # Whichever build is newer: a stale release build must not hide a fresh debug one.
+  for build in "$repo/target/debug/dashi-comp" "$repo/target/release/dashi-comp"; do
+    if [ -x "$build" ] && { [ "$DASHI_COMP" = /usr/bin/dashi-comp ] || [ "$build" -nt "$DASHI_COMP" ]; }; then
+      DASHI_COMP=$build
+    fi
+  done
+fi
+export DASHI_COMP
+if [ -z "${DASHI_METAL_HOST:-}" ] && [ ! -x "$repo/../mirin/crates/mirin-metal/target/release/mirin-metal-host" ]; then
+  export DASHI_METAL_HOST=/usr/libexec/dashi/mirin-metal-host
+fi
+export DASHI_BUN=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+exec "$repo/session/dashi-session" "$@"

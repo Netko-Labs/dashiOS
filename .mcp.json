@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dashi-vm": {
+      "command": "vm/vm",
+      "args": ["mcp"]
+    }
+  }
+}

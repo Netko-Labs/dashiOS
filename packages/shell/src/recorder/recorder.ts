@@ -1,0 +1,156 @@
+/**
+ * The screen recorder: one recording at a time, made by wf-recorder
+ * (command.ts) and followed here for the menu bar's stop button
+ * (indicator.tsx) and the ⇧❖5 toolbar (toolbar.tsx). wf-recorder may copy
+ * the screen only while it records: `allow` adds it to the compositor's
+ * screencopy list for that long. Stopping sends SIGINT, which makes
+ * wf-recorder finish the file.
+ */
+
+import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { useSyncExternalStore } from "react";
+import { CODECS, type RecordTarget, recorderArgs, recordingDirectory, recordingName, WF_RECORDER } from "./command.ts";
+
+export type RecorderState =
+  | { kind: "idle" }
+  | { kind: "starting" }
+  | { kind: "recording"; since: number; file: string; target: RecordTarget }
+  | { kind: "saving"; file: string };
+
+/** A running wf-recorder, as far as the recorder needs it. */
+export interface RecorderProcess {
+  exited: Promise<number>;
+  kill(signal: "SIGINT" | "SIGKILL"): void;
+}
+
+export interface RecorderDeps {
+  /** Let `path` use screencopy until the returned function runs (screen-capture.ts). */
+  allow(path: string): () => void;
+  spawn?(argv: string[]): RecorderProcess;
+  exists?(path: string): boolean;
+  directory?(): string;
+  now?(): number;
+  /** A recording was saved. */
+  saved?(file: string): void;
+  /** A recording could not start or ended on its own. */
+  failed?(message: string): void;
+}
+
+/** A recorder still running after this long has started; one that exits sooner failed to (a codec it lacks, no screen). */
+export const STARTUP_MS = 700;
+/** The compositor calls a capture over 2 s after its last frame; the recorder's stays its own that long. */
+const CAPTURE_TAIL_MS = 3000;
+/** How long wf-recorder gets to finish the file after SIGINT. */
+const FINISH_MS = 10_000;
+
+const sleep = (ms: number) => new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), ms));
+
+function spawnRecorder(argv: string[]): RecorderProcess {
+  const child = Bun.spawn(argv, { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+  return { exited: child.exited, kill: (signal) => child.kill(signal) };
+}
+
+export class ScreenRecorder {
+  private state: RecorderState = { kind: "idle" };
+  private readonly listeners = new Set<() => void>();
+  private process: RecorderProcess | null = null;
+  private revoke: (() => void) | null = null;
+  private stopping = false;
+  private endedAt = Number.NEGATIVE_INFINITY;
+
+  constructor(private readonly deps: RecorderDeps) {}
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  getSnapshot = (): RecorderState => this.state;
+
+  private set(state: RecorderState): void {
+    this.state = state;
+    for (const listener of this.listeners) listener();
+  }
+
+  /** Whether a screen capture going on now is the recorder's: it records, or stopped a moment ago. */
+  ownsCapture(now: number = Date.now()): boolean {
+    return this.state.kind !== "idle" || now - this.endedAt < CAPTURE_TAIL_MS;
+  }
+
+  /** Whether wf-recorder is installed. */
+  available(): boolean {
+    return (this.deps.exists ?? existsSync)(WF_RECORDER);
+  }
+
+  /** Start recording `target`; resolves with the file it is writing, rejects with why it couldn't. */
+  async start(target: RecordTarget, options: { microphone?: boolean } = {}): Promise<string> {
+    if (this.state.kind !== "idle") throw new Error("A recording is already running.");
+    if (!this.available()) throw new Error("Screen recording needs wf-recorder (dnf install wf-recorder).");
+    this.set({ kind: "starting" });
+    const directory = (this.deps.directory ?? recordingDirectory)();
+    mkdirSync(directory, { recursive: true });
+    const exists = this.deps.exists ?? existsSync;
+    this.revoke = this.deps.allow(WF_RECORDER);
+    // The list reaches the compositor before wf-recorder binds the global.
+    await sleep(50);
+    for (const codec of CODECS) {
+      const file = join(
+        directory,
+        recordingName(new Date((this.deps.now ?? Date.now)()), codec.extension, (name) => exists(join(directory, name))),
+      );
+      const process = (this.deps.spawn ?? spawnRecorder)([WF_RECORDER, ...recorderArgs({ target, file, codec, microphone: options.microphone ?? false })]);
+      const early = await Promise.race([process.exited, sleep(STARTUP_MS)]);
+      if (early !== "timeout") {
+        rmSync(file, { force: true });
+        continue;
+      }
+      this.process = process;
+      this.set({ kind: "recording", since: (this.deps.now ?? Date.now)(), file, target });
+      void process.exited.then(() => this.ended(file));
+      return file;
+    }
+    this.release();
+    this.set({ kind: "idle" });
+    throw new Error("The screen recorder could not start: no video encoder worked, or the screen could not be captured.");
+  }
+
+  /** Stop and save; resolves with the file, or null when nothing was recording. */
+  async stop(): Promise<string | null> {
+    if (this.state.kind !== "recording" || !this.process) return null;
+    const { file } = this.state;
+    const process = this.process;
+    this.stopping = true;
+    this.set({ kind: "saving", file });
+    process.kill("SIGINT");
+    if ((await Promise.race([process.exited, sleep(FINISH_MS)])) === "timeout") process.kill("SIGKILL");
+    await process.exited;
+    return file;
+  }
+
+  /** wf-recorder exited: asked to (stop), or on its own (the screen went away, the disk filled). */
+  private ended(file: string): void {
+    const asked = this.stopping;
+    this.stopping = false;
+    this.process = null;
+    this.release();
+    this.endedAt = (this.deps.now ?? Date.now)();
+    this.set({ kind: "idle" });
+    if (!asked) this.deps.failed?.("The screen recording stopped on its own.");
+    if ((this.deps.exists ?? existsSync)(file)) this.deps.saved?.(file);
+  }
+
+  private release(): void {
+    this.revoke?.();
+    this.revoke = null;
+  }
+
+  /** Stop at shell exit, keeping what was recorded. */
+  close(): void {
+    void this.stop();
+  }
+}
+
+export function useRecorder(recorder: ScreenRecorder): RecorderState {
+  return useSyncExternalStore(recorder.subscribe, recorder.getSnapshot);
+}

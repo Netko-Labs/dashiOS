@@ -1,0 +1,17 @@
+#!/usr/bin/sh
+# vm/dev-greeter: in the VM, the checkout's login screen (session/dashi-greeter),
+# as greetd runs it (`vm/vm checkout-greeter on`), on the checkout's dashi-comp
+# (cargo build) in greeter mode, else the installed one. DASHI_COMP picks another.
+set -eu
+repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
+if [ -z "${DASHI_COMP:-}" ]; then
+  DASHI_COMP=/usr/bin/dashi-comp
+  # Whichever build is newer: a stale release build must not hide a fresh debug one.
+  for build in "$repo/target/debug/dashi-comp" "$repo/target/release/dashi-comp"; do
+    if [ -x "$build" ] && { [ "$DASHI_COMP" = /usr/bin/dashi-comp ] || [ "$build" -nt "$DASHI_COMP" ]; }; then
+      DASHI_COMP=$build
+    fi
+  done
+fi
+export DASHI_COMP
+exec "$repo/session/dashi-greeter" "$@"

@@ -1,11 +1,11 @@
 NAME="Dashi"
-VERSION="0.1 beta"
+VERSION="0.3 beta"
 ID=dashi
 ID_LIKE=fedora
 VERSION_ID=44
 VERSION_CODENAME=""
 PLATFORM_ID="platform:f44"
-PRETTY_NAME="Dashi 0.1 beta"
+PRETTY_NAME="Dashi 0.3 beta"
 ANSI_COLOR="0;38;2;95;174;149"
 LOGO=dashi-logo-icon
 CPE_NAME="cpe:/o:dashi:dashi:44"
@@ -14,5 +14,5 @@ DEFAULT_HOSTNAME="dashi"
 HOME_URL="https://dashi.invalid/"
 SUPPORT_END=2027-05-19
 # Dashi's own keys (os-release allows vendor-prefixed fields): its build and what it is built on.
-DASHI_BUILD="0.1.0~beta.20261101.8ca85a9"
+DASHI_BUILD="@DASHI_BUILD@"
 DASHI_BASED_ON="Fedora Linux 44"

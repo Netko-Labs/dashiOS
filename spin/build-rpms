@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# spin/build-rpms: Dashi's packages from this checkout, with rpmbuild. Run it
+# on any Fedora 44 machine set up for it (the laptop is; the VM works too,
+# slower): it needs a clean tree (the packages are built from HEAD),
+# `bun install` done at the root (the shell's runtime packages are copied
+# from node_modules), ../mirin checked out, and the build dependencies the
+# specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
+# COPR enabled for libghostty-vt-devel 1.4).
+#
+#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
+#   all: every spec in spin/rpm (mirin-metal-host from ../mirin's HEAD; dashi-bun
+#   downloads Bun's release, with spectool)
+#
+# The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
+set -euo pipefail
+
+repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
+mirin=$(cd -- "$repo/../mirin" && pwd)
+version=0.3.0
+cd "$repo"
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "build-rpms: the tree has uncommitted changes; packages are built from HEAD" >&2
+  exit 1
+fi
+sha=$(git rev-parse --short=7 HEAD)
+# The commit's UTC date and time, then its hash: two builds of one day sort by
+# time (a hash alone sorted them at random), and a numeric time sorts above
+# the hashes the older DATE.SHA snapshots had there.
+stamp() { TZ=UTC git -C "$1" log -1 --format=%cd --date=format-local:%Y%m%d.%H%M%S; }
+snapshot="$version~beta.$(stamp "$repo").$sha"
+packages=("$@")
+[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release dashi-live)
+if [ "${packages[0]}" = all ]; then
+  packages=()
+  for spec in "$repo"/spin/rpm/*.spec; do packages+=("$(basename "$spec" .spec)"); done
+fi
+
+top=${RPMBUILD_TOP:-$HOME/rpmbuild}
+mkdir -p "$top"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+
+# The source: HEAD, plus the shell's runtime packages, flattened (node_modules
+# here is Bun's isolated layout of symlinks).
+name=dashi-$snapshot
+git archive --format=tar --prefix="$name/" HEAD | tar -x -C "$stage"
+modules=$stage/$name/vendor/node_modules
+mkdir -p "$modules/@mirinjs" "$modules/@dashi"
+copy_module() { # <installed package dir> <destination>
+  [ -d "$1" ] || { echo "build-rpms: missing $1 (run bun install)" >&2; exit 1; }
+  cp -rL "$1" "$2"
+}
+bun_dir="$repo/node_modules/.bun"
+copy_module "$(ls -d "$bun_dir"/react@*/node_modules/react | head -1)" "$modules/react"
+copy_module "$(ls -d "$bun_dir"/react-reconciler@*/node_modules/react-reconciler | head -1)" "$modules/react-reconciler"
+copy_module "$(ls -d "$bun_dir"/scheduler@*/node_modules/scheduler | head -1)" "$modules/scheduler"
+mkdir -p "$modules/@mirinjs/metal"
+cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
+[ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"
+mkdir -p "$modules/@dashi/ui"
+cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
+git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
+tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
+
+# mirin's source, for mirin-metal-host: its HEAD, as Dashi's tree pins it by commit.
+mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
+mirin_snapshot="0.1.0~beta.$(stamp "$mirin").$mirin_sha"
+mirin_name=mirin-$mirin_snapshot
+if [[ " ${packages[*]} " == *" mirin-metal-host "* ]]; then
+  git -C "$mirin" archive --format=tar.gz --prefix="$mirin_name/" -o "$top/SOURCES/$mirin_name.tar.gz" HEAD
+fi
+
+for package in "${packages[@]}"; do
+  spec=$repo/spin/rpm/$package.spec
+  [ -f "$spec" ] || { echo "build-rpms: no spec for $package" >&2; exit 1; }
+  echo "build-rpms: $package $snapshot"
+  # Sources at URLs (dashi-bun's release) are fetched first.
+  if grep -q '^Source[0-9]*:[[:space:]]*https://' "$spec"; then
+    spectool -g -C "$top/SOURCES" "$spec"
+  fi
+  # The snapshot and source names go into the spec itself, so the SRPM
+  # rebuilds anywhere (COPR) without these --defines.
+  staged=$top/SPECS/$package.spec
+  mkdir -p "$top/SPECS"
+  {
+    echo "%global dashi_snapshot $snapshot"
+    echo "%global dashi_source $name"
+    echo "%global mirin_snapshot $mirin_snapshot"
+    echo "%global mirin_source $mirin_name"
+    cat "$spec"
+  } > "$staged"
+  rpmbuild -ba "$staged" \
+    --define "_topdir $top" \
+    --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
+done
+# No file may belong to two of Dashi's packages (the newest build of each):
+# dnf refuses such a pair, and the image build would fail far later.
+newest=$(ls -t "$top"/RPMS/*/*.rpm | grep -v -- '-debug' | while read -r rpm; do
+  printf '%s %s\n' "$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)" "$rpm"
+done | awk '!seen[$1]++ {print $2}')
+clashes=$(for rpm in $newest; do
+  name=$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)
+  rpm -qp --qf '[%{FILEMODES:perms} %{FILENAMES}\n]' "$rpm" 2>/dev/null | awk -v n="$name" '$1 !~ /^d/ {print $2, n}'
+done | sort | awk '{ if ($1 == last) print $1": "owner" and "$2; last = $1; owner = $2 }' | grep -v '/usr/lib/.build-id/' || true)
+if [ -n "$clashes" ]; then
+  echo "build-rpms: files in two packages:" >&2
+  echo "$clashes" >&2
+  exit 1
+fi
+echo "build-rpms: done; see $top/RPMS"

@@ -1,0 +1,27 @@
+#!/usr/bin/sh
+# vm/nested-session: in the VM's running session, the checkout's whole session
+# (its dashi-comp and shell) in a window. It gets runtime and state folders of
+# its own, so its sockets and log do not touch the session it runs in; the
+# outer compositor is reached by absolute path, the user's D-Bus as usual.
+#
+#   vm/vm ssh vm/nested-session     (from the host; or run it in the VM)
+#
+# DASHI_COMP picks the compositor (default: the checkout's newest build).
+set -eu
+repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
+outer=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+display=${WAYLAND_DISPLAY:-wayland-1}
+case $display in /*) ;; *) display=$outer/$display ;; esac
+[ -S "$display" ] || { echo "nested-session: no compositor to nest in at $display" >&2; exit 1; }
+
+dir=$outer/dashi-nested
+mkdir -p "$dir" && chmod 700 "$dir"
+newest=$(ls -t "$repo"/target/*/dashi-comp 2>/dev/null | head -1)
+export DASHI_COMP=${DASHI_COMP:-$newest}
+[ -x "$DASHI_COMP" ] || { echo "nested-session: no dashi-comp build (cargo build -p dashi-comp)" >&2; exit 1; }
+export DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$outer/bus}
+export XDG_RUNTIME_DIR=$dir XDG_STATE_HOME=$dir/state WAYLAND_DISPLAY=$display
+export DASHI_METAL_HOST=${DASHI_METAL_HOST:-/usr/libexec/dashi/mirin-metal-host}
+export DASHI_BUN=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+unset DISPLAY DASHI_COMP_SOCKET
+exec "$repo/session/dashi-session" "$@"

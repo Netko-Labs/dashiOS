@@ -1,0 +1,11 @@
+#!/usr/bin/sh
+# dashi-installer: start Dashi's Installer (dev.dashi.installer), the Metal app
+# in the shell's apps/installer, on Dashi's own Bun and Metal host. "Install
+# Dashi" on the live image runs it (livesys-dashi); the app runs dashi-install
+# as root through pkexec. Installed by dashi-live.
+set -eu
+shell=${DASHI_SHELL_DIR:-/usr/share/dashi/shell}
+bun=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+host=${DASHI_METAL_HOST:-/usr/libexec/dashi/mirin-metal-host}
+[ -x "$bun" ] || bun=$(command -v bun)
+exec "$bun" "$shell/apps/installer/main.tsx" "$host"

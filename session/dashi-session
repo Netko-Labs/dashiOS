@@ -12,7 +12,7 @@
 # Paths come from where this script lives: an install prefix
 # (<prefix>/bin/dashi-session, <prefix>/share/dashi/shell,
 # <prefix>/libexec/dashi/mirin-metal-host) or a checkout
-# (<repo>/session/dashi-session, <repo>/shell, <repo>/comp/target/*/dashi-comp).
+# (<repo>/session/dashi-session, <repo>/packages/shell, <repo>/target/*/dashi-comp).
 # DASHI_COMP, DASHI_SHELL_DIR, DASHI_METAL_HOST, and DASHI_BUN override them.
 set -eu
 
@@ -37,14 +37,14 @@ if [ -f "$base/share/dashi/shell/src/session.ts" ]; then
   shell_dir=${DASHI_SHELL_DIR:-$base/share/dashi/shell}
   comp=${DASHI_COMP:-$base/bin/dashi-comp}
   host=${DASHI_METAL_HOST:-$base/libexec/dashi/mirin-metal-host}
-elif [ -f "$base/shell/src/session.ts" ]; then
+elif [ -f "$base/packages/shell/src/session.ts" ]; then
   layout=checkout
-  shell_dir=${DASHI_SHELL_DIR:-$base/shell}
+  shell_dir=${DASHI_SHELL_DIR:-$base/packages/shell}
   comp=${DASHI_COMP:-}
   if [ -z "$comp" ]; then
     # Whichever build is newer: a stale release build must not hide a fresh debug one.
     for profile in debug release; do
-      candidate=$base/comp/target/$profile/dashi-comp
+      candidate=$base/target/$profile/dashi-comp
       if [ -x "$candidate" ] && { [ -z "$comp" ] || [ "$candidate" -nt "$comp" ]; }; then comp=$candidate; fi
     done
   fi
@@ -53,7 +53,7 @@ elif [ -f "$base/shell/src/session.ts" ]; then
 else
   die "can't find the shell next to $self"
 fi
-[ -x "${comp:-}" ] || die "no dashi-comp to run (looked for ${comp:-a build in $base/comp/target}); build it or set DASHI_COMP"
+[ -x "${comp:-}" ] || die "no dashi-comp to run (looked for ${comp:-a build in $base/target}); build it or set DASHI_COMP"
 [ -f "$shell_dir/src/session.ts" ] || die "no shell at $shell_dir"
 
 # Bun is not packaged by Fedora. Installed from Dashi's packages, the session

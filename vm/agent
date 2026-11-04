@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""vm/agent: drive the VM's Dashi through its own agent integration.
+
+Speaks MCP to the Dashi session in the VM (`vm/vm mcp`: dashi-mcp over ssh),
+the same server any agent uses, so developing Dashi in the VM dogfoods it.
+The first call of each kind puts up Dashi's consent sheet in the VM; allow it
+there once ("Always Allow") and later calls go straight through.
+
+    vm/agent tools                    the tools, one line each
+    vm/agent call TOOL [JSON]         call one; text printed, images saved
+    vm/agent screenshot [PNG] [JSON]  the screen (or JSON's window / rect)
+    vm/agent windows                  list_windows, shortly
+    vm/agent batch FILE|-             several calls in one session: one
+                                      `TOOL JSON` per line (# comments)
+
+Images go to PNG (screenshot) or vm/images/agent-N.png, one path per line.
+Env: DASHI_AGENT_CMD overrides the server command (default: vm/vm mcp), so
+`DASHI_AGENT_CMD=dashi-mcp vm/agent ...` drives this machine's own session.
+"""
+
+import base64
+import json
+import os
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+IMAGES = HERE / "images"
+CLIENT = {"name": "dashi-vm-agent", "title": "vm/agent (Dashi development)", "version": "0.1.0"}
+TIMEOUT_S = 120
+
+
+class Session:
+    def __init__(self) -> None:
+        command = os.environ.get("DASHI_AGENT_CMD")
+        argv = shlex.split(command) if command else [str(HERE / "vm"), "mcp"]
+        self.proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
+        self.next_id = 0
+        self.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": CLIENT})
+        self.notify("notifications/initialized")
+
+    def notify(self, method: str) -> None:
+        self.send({"jsonrpc": "2.0", "method": method})
+
+    def send(self, message: dict) -> None:
+        assert self.proc.stdin is not None
+        self.proc.stdin.write(json.dumps(message) + "\n")
+        self.proc.stdin.flush()
+
+    def request(self, method: str, params: dict) -> dict:
+        self.next_id += 1
+        wanted = self.next_id
+        self.send({"jsonrpc": "2.0", "id": wanted, "method": method, "params": params})
+        assert self.proc.stdout is not None
+        for line in self.proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            message = json.loads(line)
+            if message.get("id") != wanted:
+                continue
+            if "error" in message:
+                raise SystemExit(f"vm/agent: {method}: {message['error'].get('message', message['error'])}")
+            return message["result"]
+        raise SystemExit("vm/agent: the server hung up (is the VM's Dashi session running? vm/vm ssh works?)")
+
+    def close(self) -> None:
+        if self.proc.stdin:
+            self.proc.stdin.close()
+        try:
+            self.proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+
+
+def free_image_path() -> Path:
+    IMAGES.mkdir(exist_ok=True)
+    n = 1
+    while (IMAGES / f"agent-{n}.png").exists():
+        n += 1
+    return IMAGES / f"agent-{n}.png"
+
+
+def show(result: dict, image_out: Path | None = None) -> bool:
+    """Print a tool result's text, save its images; False when it was an error."""
+    for item in result.get("content", []):
+        if item.get("type") == "text":
+            print(item["text"])
+        elif item.get("type") == "image":
+            path = image_out or free_image_path()
+            image_out = None
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(base64.b64decode(item["data"]))
+            print(path)
+    return not result.get("isError", False)
+
+
+def call(session: Session, tool: str, arguments: dict, image_out: Path | None = None) -> bool:
+    return show(session.request("tools/call", {"name": tool, "arguments": arguments}), image_out)
+
+
+def parse_json(text: str | None) -> dict:
+    if not text:
+        return {}
+    value = json.loads(text)
+    if not isinstance(value, dict):
+        raise SystemExit("vm/agent: arguments must be a JSON object")
+    return value
+
+
+def main(argv: list[str]) -> int:
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print(__doc__.strip())
+        return 0
+    command, rest = argv[0], argv[1:]
+    session = Session()
+    try:
+        if command == "tools":
+            for tool in session.request("tools/list", {})["tools"]:
+                print(f"{tool['name']:28} {tool.get('description', '').splitlines()[0][:110]}")
+            return 0
+        if command == "call" and rest:
+            return 0 if call(session, rest[0], parse_json(rest[1] if len(rest) > 1 else None)) else 1
+        if command == "screenshot":
+            out = Path(rest[0]).resolve() if rest and not rest[0].startswith("{") else None
+            arguments = parse_json(next((a for a in rest if a.startswith("{")), None))
+            return 0 if call(session, "screenshot", arguments, out or IMAGES / "screen.png") else 1
+        if command == "windows":
+            return 0 if call(session, "list_windows", {}) else 1
+        if command == "batch" and rest:
+            text = sys.stdin.read() if rest[0] == "-" else Path(rest[0]).read_text()
+            ok = True
+            for line in text.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                tool, _, arguments = line.partition(" ")
+                print(f"> {tool}", file=sys.stderr)
+                ok = call(session, tool, parse_json(arguments.strip() or None)) and ok
+            return 0 if ok else 1
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    finally:
+        session.close()
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

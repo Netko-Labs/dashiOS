@@ -1,0 +1,278 @@
+#!/usr/bin/bash
+# dashi-install: Dashi's installer, the part that runs as root (dashi-live).
+# The Installer app (packages/shell/apps/installer) runs it through pkexec
+# (polkit action dev.dashi.install; on the live image the live user may
+# without a password) and shows its progress.
+#
+#   dashi-install [--dry-run] --disk DEV --user NAME [--full-name TEXT]
+#                 [--hostname NAME] [--nvidia yes|no] [--kernel auto|cachyos|both]
+#                 [--source DIR]
+#
+# The account's password is the first line on stdin, never an argument.
+# The whole of DEV is erased: GPT, an EFI system partition (600 MiB), /boot
+# (ext4, 2 GiB), and the rest Btrfs with subvolumes root and home (zstd), as
+# Fedora lays a disk out. The system is the live image's root as built
+# (/run/rootfsbase; --source names another, for testing on an installed
+# system), copied file for file with its SELinux labels. UEFI only.
+#
+# It speaks one JSON object per line on stdout, nothing else (the tools'
+# own output goes to stderr):
+#
+#   {"event":"step","step":S}                       S: check partition copy configure account bootloader finish
+#   {"event":"progress","step":S,"fraction":F}      F in [0, 1], while copying
+#   {"event":"failed","step":S,"message":M}        (the tools' output: /var/log/dashi-install.log)
+#   {"event":"finished","ok":BOOL}                  always last
+#
+# Exit status: 0 installed, 1 failed, 2 a usage error. --dry-run checks the
+# arguments, prints the same events slowly, and touches nothing
+# (DASHI_INSTALL_DELAY seconds between them, DASHI_INSTALL_FAIL=step fails one).
+set -uo pipefail
+export LC_ALL=C.UTF-8 LANG=C.UTF-8
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+readonly TARGET=/run/dashi-install/target
+readonly MIN_BYTES=$((20 * 1024 * 1024 * 1024))
+
+dry_run=0 disk= user= full_name= hostname=dashi nvidia=no kernel=auto source=
+usage() {
+  echo "usage: dashi-install [--dry-run] --disk DEV --user NAME [--full-name TEXT] [--hostname NAME] [--nvidia yes|no] [--kernel auto|cachyos|both] [--source DIR]" >&2
+  exit 2
+}
+while (($#)); do
+  case $1 in
+    --dry-run) dry_run=1; shift ;;
+    --disk) disk=${2:-}; shift 2 ;;
+    --user) user=${2:-}; shift 2 ;;
+    --full-name) full_name=${2:-}; shift 2 ;;
+    --hostname) hostname=${2:-}; shift 2 ;;
+    --nvidia) nvidia=${2:-}; shift 2 ;;
+    --kernel) kernel=${2:-}; shift 2 ;;
+    --source) source=${2:-}; shift 2 ;;
+    *) usage ;;
+  esac
+done
+[[ $disk == /dev/* && -n $user ]] || usage
+[[ $user =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || { echo "dashi-install: the user name must be lowercase letters, digits, - or _" >&2; exit 2; }
+[[ $hostname =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,62}$ ]] || { echo "dashi-install: a host name is letters, digits, and -" >&2; exit 2; }
+[[ $full_name != *[:$'\n']* ]] || { echo "dashi-install: the full name can't have : or a line break" >&2; exit 2; }
+case $nvidia in yes | no) ;; *) usage ;; esac
+case $kernel in auto | cachyos | both) ;; *) usage ;; esac
+
+# --- events -----------------------------------------------------------------
+
+json() {
+  local s=$1
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  s=$(printf '%s' "$s" | tr '\n\t' '  ' | tr -d '\000-\037')
+  printf '"%s"' "$s"
+}
+step=check
+emit_step() { step=$1; printf '{"event":"step","step":"%s"}\n' "$1"; }
+emit_progress() { printf '{"event":"progress","step":"%s","fraction":%s}\n' "$step" "$1"; }
+finished() {
+  printf '{"event":"finished","ok":%s}\n' "$1"
+  [[ $1 == true ]] && exit 0 || exit 1
+}
+fail() {
+  printf '{"event":"failed","step":"%s","message":%s}\n' "$step" "$(json "$1")"
+  echo "dashi-install: $step: $1" >&2
+  finished false
+}
+
+STEPS=(check partition copy configure account bootloader finish)
+if ((dry_run)); then
+  delay=${DASHI_INSTALL_DELAY:-0.4}
+  for s in "${STEPS[@]}"; do
+    emit_step "$s"
+    [[ ${DASHI_INSTALL_FAIL:-} == "$s" ]] && fail "a dry run failing at $s"
+    if [[ $s == copy ]]; then
+      for f in 0.1 0.25 0.4 0.55 0.7 0.85 1; do sleep "$delay"; emit_progress "$f"; done
+    fi
+    sleep "$delay"
+  done
+  finished true
+fi
+
+[[ $EUID -eq 0 ]] || { echo "dashi-install: run as root" >&2; exit 2; }
+IFS= read -r password || password=
+
+# Everything the tools say goes to a log as well as stderr (the app's), and
+# into the installed system at the end: a failure can be read afterwards.
+readonly LOG=/var/log/dashi-install.log
+: > "$LOG"
+exec 2> >(tee -a "$LOG" >&2)
+[[ -n $password ]] || { echo "dashi-install: no password on stdin" >&2; exit 2; }
+
+# Undo mounts however this ends.
+cleanup() {
+  if mountpoint -q "$TARGET"; then
+    sync
+    umount -R "$TARGET" 2>/dev/null || umount -R -l "$TARGET" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+
+# A command whose failure ends the install, its output on stderr.
+run() { "$@" >&2 || fail "$1 failed (exit $?)"; }
+# The same, in the installed system.
+in_target() { chroot "$TARGET" "$@" >&2 || fail "$1 failed in the installed system (exit $?)"; }
+
+# --- check ------------------------------------------------------------------
+
+emit_step check
+[[ -d /sys/firmware/efi ]] || fail "this computer started without UEFI; Dashi's installer needs UEFI"
+[[ -b $disk ]] || fail "$disk is not a disk"
+[[ $(lsblk -dno TYPE "$disk") == disk ]] || fail "$disk is not a whole disk"
+size=$(lsblk -bdno SIZE "$disk")
+((size >= MIN_BYTES)) || fail "$disk is too small: Dashi needs 20 GB"
+if [[ -z $source ]]; then
+  source=/run/rootfsbase
+  [[ -d $source/usr ]] || fail "no live system to copy (/run/rootfsbase); start from the Dashi USB drive"
+fi
+[[ -x $source/usr/libexec/dashi/finish-install ]] || fail "$source is not a Dashi system"
+# Never the disk the running system or the live medium is on.
+for mount in / /run/initramfs/live "$source"; do
+  dev=$(findmnt -nvo SOURCE "$mount" 2>/dev/null | head -1) || continue
+  [[ -b $dev ]] || continue
+  parent=$(lsblk -nso NAME,TYPE "$dev" 2>/dev/null | awk '$2 == "disk" { print "/dev/" $1 }' | tail -1)
+  [[ $parent != "$(readlink -f "$disk")" ]] || fail "$disk holds the running system"
+done
+lsblk -nro MOUNTPOINTS "$disk" | grep -q . && fail "$disk has something mounted; eject it first"
+
+# --- partition --------------------------------------------------------------
+
+emit_step partition
+run wipefs -a -f "$disk"
+sfdisk --wipe always --wipe-partitions always -q "$disk" >&2 << 'LAYOUT' || fail "sfdisk could not partition $disk"
+label: gpt
+size=600MiB, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="EFI System Partition"
+size=2GiB, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="boot"
+type=4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709, name="dashi"
+LAYOUT
+udevadm settle
+mapfile -t parts < <(lsblk -nrpo NAME,TYPE "$disk" | awk '$2 == "part" { print $1 }')
+((${#parts[@]} == 3)) || fail "$disk did not come back with three partitions"
+esp=${parts[0]} boot=${parts[1]} root=${parts[2]}
+run mkfs.vfat -F 32 -n EFI "$esp"
+run mkfs.ext4 -q -F -L boot "$boot"
+run mkfs.btrfs -q -f -L dashi "$root"
+mkdir -p "$TARGET"
+run mount "$root" "$TARGET"
+run btrfs subvolume create "$TARGET/root"
+run btrfs subvolume create "$TARGET/home"
+run umount "$TARGET"
+readonly OPTS=compress=zstd:1
+run mount -o "subvol=root,$OPTS" "$root" "$TARGET"
+mkdir -p "$TARGET/boot" "$TARGET/home"
+run mount "$boot" "$TARGET/boot"
+mkdir -p "$TARGET/boot/efi"
+run mount -o umask=0077,shortname=winnt "$esp" "$TARGET/boot/efi"
+run mount -o "subvol=home,$OPTS" "$root" "$TARGET/home"
+
+# --- copy -------------------------------------------------------------------
+
+emit_step copy
+# The live root is one file system; an installed one (--source /) has /boot
+# mounted apart, and /home, /proc, and the like are left out (-x). The ESP is
+# FAT: no owners, modes, or SELinux labels, so it is copied on its own.
+copy_tree() {
+  local from=$1 to=$2 start=$3 span=$4
+  shift 4
+  rsync "$@" --numeric-ids --no-inc-recursive --info=progress2 \
+    --exclude=/lost+found --exclude=/tmp/* --exclude=/var/tmp/* --exclude=/var/cache/dnf/* --exclude=/var/log/journal/* \
+    "$from/" "$to/" \
+    | tr '\r' '\n' | awk -v start="$start" -v span="$span" '
+        match($0, / ([0-9]+)% /, m) {
+          f = start + span * m[1] / 100
+          if (f - last >= 0.01) { printf "{\"event\":\"progress\",\"step\":\"copy\",\"fraction\":%.3f}\n", f; fflush(); last = f }
+        }'
+  local status=("${PIPESTATUS[@]}")
+  # 24: files vanished while copying, which a running system does.
+  ((status[0] == 0 || status[0] == 24)) || fail "copying $from failed (rsync exit ${status[0]})"
+}
+readonly FULL=(-aAXHx --exclude=/boot/efi)
+copy_tree "$source" "$TARGET" 0 0.9 "${FULL[@]}"
+if mountpoint -q "$source/boot"; then copy_tree "$source/boot" "$TARGET/boot" 0.9 0.05 -aAXHx --exclude=/efi; fi
+copy_tree "$source/boot/efi" "$TARGET/boot/efi" 0.95 0.05 -rltDx --modify-window=1
+emit_progress 1
+
+# --- configure --------------------------------------------------------------
+
+emit_step configure
+uuid() { blkid -s UUID -o value "$1"; }
+root_uuid=$(uuid "$root") boot_uuid=$(uuid "$boot") esp_uuid=$(uuid "$esp")
+cat > "$TARGET/etc/fstab" << FSTAB
+# Written by Dashi's installer.
+UUID=$root_uuid  /          btrfs  subvol=root,$OPTS  0 0
+UUID=$boot_uuid  /boot      ext4   defaults  1 2
+UUID=$esp_uuid   /boot/efi  vfat   umask=0077,shortname=winnt  0 2
+UUID=$root_uuid  /home      btrfs  subvol=home,$OPTS  0 0
+FSTAB
+for fs in proc sys dev run; do
+  mkdir -p "$TARGET/$fs"
+  run mount --rbind "/$fs" "$TARGET/$fs"
+  mount --make-rslave "$TARGET/$fs"
+done
+# A new machine: its own id (the boot entries are named by it), its name.
+rm -f "$TARGET/etc/machine-id"
+in_target systemd-machine-id-setup
+echo "$hostname" > "$TARGET/etc/hostname"
+# The live session's language, keyboard, and time zone, where it has them.
+for file in /etc/locale.conf /etc/vconsole.conf /etc/X11/xorg.conf.d/00-keyboard.conf; do
+  [[ -f $file ]] && install -Dm0644 "$file" "$TARGET$file"
+done
+[[ -L /etc/localtime ]] && ln -sfn "$(readlink /etc/localtime)" "$TARGET/etc/localtime"
+# What the kernel starts with: kernel-install writes it into each boot entry.
+echo "root=UUID=$root_uuid ro rootflags=subvol=root rhgb quiet" > "$TARGET/etc/kernel/cmdline"
+
+# --- account ----------------------------------------------------------------
+
+emit_step account
+in_target useradd -m -G wheel -c "$full_name" "$user"
+printf '%s:%s\n' "$user" "$password" | chroot "$TARGET" chpasswd >&2 || fail "the password could not be set"
+unset password
+in_target passwd -l root
+
+# --- bootloader -------------------------------------------------------------
+
+emit_step bootloader
+# The image's own boot entries and initramfs images were made for it; each
+# kernel gets its entry again, for this machine (dracut, host-only).
+rm -f "$TARGET"/boot/loader/entries/*.conf "$TARGET"/boot/initramfs-*.img "$TARGET"/boot/*-rescue-*
+while IFS= read -r version; do
+  in_target kernel-install add "$version" "/lib/modules/$version/vmlinuz"
+done < <(find "$TARGET/lib/modules" -mindepth 2 -maxdepth 2 -name vmlinuz -printf '%h\n' | sed 's|.*/||' | sort -V)
+# shim and GRUB are on the ESP from the copy (shim-x64, grub2-efi-x64);
+# GRUB there reads its real configuration from /boot.
+efi_dir=$TARGET/boot/efi/EFI/fedora
+[[ -f $efi_dir/shimx64.efi ]] || fail "shim is missing from the system (shim-x64)"
+cat > "$efi_dir/grub.cfg" << GRUBCFG
+search --no-floppy --fs-uuid --set=dev $boot_uuid
+set prefix=(\$dev)/grub2
+export \$prefix
+configfile \$prefix/grub.cfg
+GRUBCFG
+in_target grub2-mkconfig -o /boot/grub2/grub.cfg
+[[ -f $TARGET/boot/grub2/grubenv ]] || in_target grub2-editenv /boot/grub2/grubenv create
+# The firmware's boot menu: an earlier Dashi's entries whose partition is
+# gone (this disk was it) go, then this one, first.
+disk_name=$(readlink -f "$disk")
+part_number=$(cat "/sys/class/block/$(basename "$esp")/partition")
+while read -r number partuuid; do
+  [[ -e /dev/disk/by-partuuid/$partuuid ]] || efibootmgr -q -b "$number" -B >&2 || true
+done < <(efibootmgr -v | sed -nE 's/^Boot([0-9A-Fa-f]{4})\*? Dashi[[:space:]]+HD\([0-9]+,GPT,([0-9a-fA-F-]+),.*/\1 \2/p')
+run efibootmgr -q -c -d "$disk_name" -p "$part_number" -L Dashi -l '\EFI\fedora\shimx64.efi'
+
+# --- finish -----------------------------------------------------------------
+
+emit_step finish
+# NVIDIA's driver and CachyOS's kernel (dashi-live's finish-install), then
+# every file labeled for SELinux.
+run /usr/libexec/dashi/finish-install --root "$TARGET" --nvidia "$nvidia" --kernel "$kernel"
+in_target setfiles -F -e /proc -e /sys -e /dev -e /run /etc/selinux/targeted/contexts/files/file_contexts /
+mkdir -p "$TARGET/var/log/dashi"
+cp "$LOG" "$TARGET/var/log/dashi/install.log" 2>/dev/null || true
+cleanup
+trap - EXIT
+finished true

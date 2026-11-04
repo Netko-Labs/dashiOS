@@ -1,0 +1,55 @@
+[package]
+name = "dashi-comp"
+version = "0.2.0"
+description = "Dashi's Wayland compositor"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+bitflags = "2"
+calloop = { version = "0.14", features = ["signals"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+cosmic-text = "0.14"
+gstreamer = "0.25"
+gstreamer-app = "0.25"
+gstreamer-video = "0.25"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+png = "0.17"
+libc = "0.2"
+rustix = { version = "1", features = ["net", "process"] }
+smithay-drm-extras = { version = "0.1", default-features = false }
+wayland-backend = "0.3"
+wayland-protocols = { version = "0.32", features = ["server", "staging"] }
+wayland-scanner = "0.31"
+wayland-server = "0.31"
+xcursor = "0.3"
+# A second X connection, for what smithay's X11Wm ignores (_NET_ACTIVE_WINDOW); smithay's own version.
+x11rb = { version = "0.13", default-features = false }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dependencies.smithay]
+version = "0.7.0"
+default-features = false
+features = [
+    "backend_drm",
+    "backend_egl",
+    "backend_gbm",
+    "backend_libinput",
+    "backend_session_libseat",
+    "backend_udev",
+    "backend_winit",
+    "desktop",
+    "renderer_gl",
+    "renderer_multi",
+    "wayland_frontend",
+    "xwayland",
+]
+
+[dev-dependencies]
+png = "0.17"
+tempfile = "3"
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "server"] }

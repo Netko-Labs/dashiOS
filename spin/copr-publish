@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# spin/copr-publish: Dashi's packages to its COPR, from the source RPMs
+# spin/build-rpms made (~/rpmbuild/SRPMS). Publishing is the owner's: it needs
+# copr-cli and their API token in ~/.config/copr
+# (https://copr.fedorainfracloud.org/api/). The first run creates the project.
+# Afterwards, set enabled=1 in spin/dashi-release/etc/yum.repos.d/dashi.repo
+# (owner and project must match) so installed systems update through dnf.
+#
+#   spin/copr-publish [owner/project]   default: pejedev/dashi
+set -euo pipefail
+
+project=${1:-pejedev/dashi}
+top=${RPMBUILD_TOP:-$HOME/rpmbuild}
+command -v copr-cli >/dev/null || { echo "copr-publish: install copr-cli" >&2; exit 1; }
+[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/copr" ] || { echo "copr-publish: no COPR token in ~/.config/copr" >&2; exit 1; }
+shopt -s nullglob
+all=("$top"/SRPMS/*.src.rpm)
+[ ${#all[@]} -gt 0 ] || { echo "copr-publish: no source RPMs in $top/SRPMS; run spin/build-rpms all" >&2; exit 1; }
+# SRPMS keeps every build: only the newest of each package is published.
+srpms=()
+declare -A seen=()
+while IFS= read -r srpm; do
+  name=$(rpm -qp --qf '%{NAME}' "$srpm" 2>/dev/null)
+  [ -n "${seen[$name]:-}" ] && continue
+  seen[$name]=1
+  srpms+=("$srpm")
+done < <(ls -t "${all[@]}")
+
+# Cargo fetches crates while building (dashi-comp, mirin-metal-host): the
+# builders need the network. The CachyOS kernel, Helium, and RPM Fusion come
+# from their own repositories. COPR takes every repository as a baseurl (a
+# mirrorlist URL fails), and the settings are applied on every run so a
+# project made by an older copy of this script is corrected.
+rpmfusion=https://download1.rpmfusion.org
+settings=(
+  --enable-net on
+  --repo 'copr://bieszczaders/kernel-cachyos'
+  --repo 'copr://imput/helium'
+  --repo "$rpmfusion/free/fedora/releases/\$releasever/Everything/\$basearch/os/"
+  --repo "$rpmfusion/free/fedora/updates/\$releasever/\$basearch/"
+  --repo "$rpmfusion/nonfree/fedora/releases/\$releasever/Everything/\$basearch/os/"
+  --repo "$rpmfusion/nonfree/fedora/updates/\$releasever/\$basearch/"
+  --description "Dashi, a desktop on Fedora: the compositor, the shell, the login screen."
+)
+if copr-cli get "$project" >/dev/null 2>&1; then
+  copr-cli modify "$project" "${settings[@]}"
+else
+  copr-cli create "$project" --chroot fedora-44-x86_64 "${settings[@]}"
+fi
+for srpm in "${srpms[@]}"; do
+  echo "copr-publish: $(basename "$srpm")"
+  copr-cli build --nowait "$project" "$srpm"
+done
+echo "copr-publish: submitted; watch https://copr.fedorainfracloud.org/coprs/$project/builds/"

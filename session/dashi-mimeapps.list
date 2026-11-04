@@ -10,3 +10,4 @@ image/bmp=dev.dashi.preview.desktop;
 image/svg+xml=dev.dashi.preview.desktop;
 image/tiff=dev.dashi.preview.desktop;
 application/pdf=dev.dashi.preview.desktop;
+inode/directory=dev.dashi.files.desktop;

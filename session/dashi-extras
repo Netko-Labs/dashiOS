@@ -1,0 +1,284 @@
+#!/usr/bin/bash
+# dashi-extras: the optional software the Setup Assistant offers, installed as
+# root. The shell runs it through pkexec (polkit action dev.dashi.extras,
+# session/dev.dashi.extras.policy); installed at /usr/libexec/dashi/dashi-extras.
+#
+#   dashi-extras [--dry-run] <step>...     steps: codecs nvidia gaming flathub
+#
+# It speaks one JSON object per line on stdout, and nothing else goes there
+# (dnf's and flatpak's own output goes to stderr):
+#
+#   {"event":"start","step":S}
+#   {"event":"progress","step":S,"message":M[,"fraction":F]}   F in [0, 1]
+#   {"event":"done","step":S[,"message":M]}
+#   {"event":"failed","step":S,"reason":"offline"|"package"|"other","message":M}
+#   {"event":"finished","ok":BOOL}                              always last
+#
+# Steps run in the order given; one failing does not stop the others. Exit
+# status: 0 when every step succeeded, 1 when any failed, 2 on a usage error.
+# Without a network every step fails as "offline". --dry-run prints the same
+# events and changes nothing; only then are these honored (tests and the UI):
+#   DASHI_EXTRAS_NETWORK=online|offline   skip the reachability check
+#   DASHI_EXTRAS_NVIDIA=1|0               pretend there is (not) an NVIDIA GPU
+#   DASHI_EXTRAS_FAIL=step[,step]         those steps fail as "package"
+#   DASHI_EXTRAS_DELAY=seconds            pause between events
+set -uo pipefail
+export LC_ALL=C.UTF-8 LANG=C.UTF-8
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+readonly STEPS=(codecs nvidia gaming flathub)
+readonly FLATHUB_URL=https://dl.flathub.org/repo/flathub.flatpakrepo
+readonly REACHABLE=(https://mirrors.fedoraproject.org/ https://mirrors.rpmfusion.org/)
+
+dry_run=0
+steps=()
+
+usage() {
+  echo "usage: dashi-extras [--dry-run] <step>...   (steps: ${STEPS[*]})" >&2
+  exit 2
+}
+
+is_step() {
+  local known
+  for known in "${STEPS[@]}"; do [ "$known" = "$1" ] && return 0; done
+  return 1
+}
+
+for arg in "$@"; do
+  case $arg in
+    --dry-run) dry_run=1 ;;
+    -h | --help) usage ;;
+    -*) echo "dashi-extras: unknown option $arg" >&2; usage ;;
+    *)
+      is_step "$arg" || { echo "dashi-extras: unknown step $arg" >&2; usage; }
+      # A step named twice runs once.
+      [[ " ${steps[*]} " == *" $arg "* ]] || steps+=("$arg")
+      ;;
+  esac
+done
+[ ${#steps[@]} -gt 0 ] || usage
+
+# ---- output -----------------------------------------------------------------
+
+# A JSON string's contents: backslashes, quotes, and control characters escaped.
+json_text() {
+  local s
+  s=$(printf '%s' "$1" | tr -d '\000-\010\013\014\016-\037\177')
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  s=${s//$'\t'/\\t}
+  s=${s//$'\r'/}
+  s=${s//$'\n'/\\n}
+  printf '%s' "$s"
+}
+
+pause() {
+  if [ "$dry_run" = 1 ] && [[ ${DASHI_EXTRAS_DELAY:-} =~ ^[0-9]+(\.[0-9]+)?$ ]]; then sleep "$DASHI_EXTRAS_DELAY"; fi
+}
+
+emit_start() { printf '{"event":"start","step":"%s"}\n' "$1"; pause; }
+# emit_progress <step> <message> [fraction]
+emit_progress() {
+  if [ $# -ge 3 ]; then
+    printf '{"event":"progress","step":"%s","message":"%s","fraction":%s}\n' "$1" "$(json_text "$2")" "$3"
+  else
+    printf '{"event":"progress","step":"%s","message":"%s"}\n' "$1" "$(json_text "$2")"
+  fi
+  pause
+}
+emit_done() {
+  if [ -n "${2:-}" ]; then
+    printf '{"event":"done","step":"%s","message":"%s"}\n' "$1" "$(json_text "$2")"
+  else
+    printf '{"event":"done","step":"%s"}\n' "$1"
+  fi
+  pause
+}
+emit_failed() { printf '{"event":"failed","step":"%s","reason":"%s","message":"%s"}\n' "$1" "$2" "$(json_text "$3")"; pause; }
+
+# ---- the system -------------------------------------------------------------
+
+online() {
+  if [ "$dry_run" = 1 ]; then
+    case ${DASHI_EXTRAS_NETWORK:-} in
+      online) return 0 ;;
+      offline) return 1 ;;
+    esac
+  fi
+  local url
+  # Any HTTP answer will do: it only has to be reachable.
+  for url in "${REACHABLE[@]}"; do
+    curl --silent --head --max-time 6 --output /dev/null "$url" && return 0
+  done
+  return 1
+}
+
+has_nvidia() {
+  if [ "$dry_run" = 1 ]; then
+    case ${DASHI_EXTRAS_NVIDIA:-} in
+      1) return 0 ;;
+      0) return 1 ;;
+    esac
+  fi
+  local device vendor class
+  for device in /sys/bus/pci/devices/*; do
+    [ -r "$device/vendor" ] && [ -r "$device/class" ] || continue
+    read -r vendor < "$device/vendor" || continue
+    read -r class < "$device/class" || continue
+    # NVIDIA's vendor id, on a display controller (PCI class 0x03xxxx).
+    [ "$vendor" = 0x10de ] && [[ $class == 0x03* ]] && return 0
+  done
+  return 1
+}
+
+installed() { rpm -q --quiet "$@" 2> /dev/null; }
+
+# Why the last command failed, in a line: its last error, else its last line.
+fail_reason=""
+last_error() {
+  local line
+  line=$(grep -E -i '^(error|problem|failed|cannot|curl error)' "$1" | tail -n 1)
+  [ -n "$line" ] || line=$(grep -v '^[[:space:]]*$' "$1" | tail -n 1)
+  printf '%s' "${line:0:300}"
+}
+
+# run <command>...: runs it (not in a dry run) with its output on stderr;
+# on failure, fail_reason says why.
+run() {
+  if [ "$dry_run" = 1 ]; then
+    echo "dashi-extras (dry run): $*" >&2
+    return 0
+  fi
+  local log status
+  log=$(mktemp)
+  "$@" < /dev/null 2>&1 | tee "$log" >&2
+  status=${PIPESTATUS[0]}
+  [ "$status" = 0 ] || fail_reason=$(last_error "$log")
+  rm -f "$log"
+  return "$status"
+}
+
+dnf_() { run dnf -y "$@"; }
+
+# ---- steps ------------------------------------------------------------------
+# Each returns 0, or 1 having set fail_reason; failure_kind says which reason.
+
+# RPM Fusion free and nonfree: the release packages (from RPM Fusion's own
+# mirror when they are not installed yet), and their repositories enabled.
+rpmfusion() { # <step> <fraction>
+  local fedora urls=()
+  emit_progress "$1" "Enabling RPM Fusion" "$2"
+  fedora=$(rpm -E %fedora)
+  installed rpmfusion-free-release || urls+=("https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$fedora.noarch.rpm")
+  installed rpmfusion-nonfree-release || urls+=("https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$fedora.noarch.rpm")
+  if [ ${#urls[@]} -gt 0 ]; then dnf_ install "${urls[@]}" || return 1; fi
+  # In case someone turned them off; config-manager is a dnf5 plugin, so a missing one is no failure.
+  run dnf config-manager setopt rpmfusion-free.enabled=1 rpmfusion-free-updates.enabled=1 \
+    rpmfusion-nonfree.enabled=1 rpmfusion-nonfree-updates.enabled=1 || true
+}
+
+step_codecs() {
+  rpmfusion codecs 0.05 || return 1
+  emit_progress codecs "Replacing FFmpeg with the full build" 0.2
+  if installed ffmpeg-free; then
+    dnf_ swap ffmpeg-free ffmpeg --allowerasing || return 1
+  elif ! installed ffmpeg; then
+    dnf_ install --allowerasing ffmpeg || return 1
+  fi
+  # Fedora 44's Mesa carries VA-API in mesa-dri-drivers; the freeworld build
+  # (H.264, H.265) installs beside it in dri-freeworld, so it is added, not
+  # swapped. Mesa no longer builds VDPAU drivers, so there is none to swap.
+  emit_progress codecs "Adding hardware video decoding" 0.45
+  dnf_ install mesa-va-drivers-freeworld || return 1
+  emit_progress codecs "Installing GStreamer plugins" 0.6
+  dnf_ install gstreamer1-plugins-bad-freeworld gstreamer1-plugins-ugly gstreamer1-plugin-libav || return 1
+  emit_progress codecs "Installing OpenH264" 0.85
+  run dnf config-manager setopt fedora-cisco-openh264.enabled=1 || true
+  dnf_ install --enablerepo=fedora-cisco-openh264 openh264 gstreamer1-plugin-openh264 mozilla-openh264 || return 1
+}
+
+step_nvidia() {
+  if ! has_nvidia; then
+    done_message="There is no NVIDIA graphics card in this computer."
+    return 0
+  fi
+  if installed dashi-nvidia; then
+    done_message="The NVIDIA driver is already installed."
+    return 0
+  fi
+  rpmfusion nvidia 0.1 || return 1
+  emit_progress nvidia "Installing the NVIDIA driver" 0.3
+  dnf_ install dashi-nvidia || return 1
+  done_message="The driver finishes building in the background. Restart when it is done to use it."
+}
+
+step_gaming() {
+  if installed dashi-gaming; then
+    done_message="Steam and the gaming tools are already installed."
+    return 0
+  fi
+  rpmfusion gaming 0.05 || return 1
+  emit_progress gaming "Installing Steam and the gaming tools" 0.2
+  dnf_ install dashi-gaming || return 1
+}
+
+step_flathub() {
+  if ! command -v flatpak > /dev/null; then
+    fail_reason="Flatpak is not installed."
+    return 1
+  fi
+  emit_progress flathub "Adding Flathub" 0.3
+  run flatpak remote-add --if-not-exists --system flathub "$FLATHUB_URL" || return 1
+  # A Flathub remote that was already there may be filtered or off (Fedora's is).
+  run flatpak remote-modify --system --enable --no-filter flathub || return 1
+}
+
+# ---- run --------------------------------------------------------------------
+
+ok=1
+finish() {
+  printf '{"event":"finished","ok":%s}\n' "$([ "$ok" = 1 ] && echo true || echo false)"
+  [ "$ok" = 1 ] && exit 0 || exit 1
+}
+
+if [ "$dry_run" = 0 ] && [ "$(id -u)" != 0 ]; then
+  ok=0
+  for step in "${steps[@]}"; do
+    emit_start "$step"
+    emit_failed "$step" other "dashi-extras has to run as root, through pkexec."
+  done
+  finish
+fi
+
+network=1
+online || network=0
+
+failing=",${DASHI_EXTRAS_FAIL:-},"
+for step in "${steps[@]}"; do
+  emit_start "$step"
+  if [ "$network" = 0 ]; then
+    ok=0
+    emit_failed "$step" offline "This computer is not connected to the internet."
+    continue
+  fi
+  fail_reason=""
+  done_message=""
+  if [ "$dry_run" = 1 ] && [[ $failing == *",$step,"* ]]; then
+    fail_reason="A package could not be installed (a dry run's pretend failure)."
+    false
+  else
+    "step_$step"
+  fi
+  if [ $? = 0 ]; then
+    emit_done "$step" "$done_message"
+  else
+    ok=0
+    # Lost the network on the way: say so, rather than blame a package.
+    if online; then
+      emit_failed "$step" package "${fail_reason:-It did not finish.}"
+    else
+      emit_failed "$step" offline "The connection to the internet was lost."
+    fi
+  fi
+done
+finish
