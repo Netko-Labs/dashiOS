@@ -140,6 +140,25 @@ Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
 - [x] Then remove Nautilus from the host (the image has none): removed with
       nautilus-extensions; gvfs and the thumbnailers kept (`dnf mark user`)
 
+### dashi-dialog replaces Zenity
+
+- [x] `dashi-dialog` (apps/dialog, session/dashi-dialog): Zenity's command
+      line, stdin, stdout, and exit status (0, 1, 5 timeout, 255) for the
+      messages (`--info`, `--warning`, `--error`, `--question` with labels,
+      `--extra-button`, `--switch`, `--default-cancel`, `--timeout`),
+      `--progress` (stdin's numbers, `#` text, `pulsate:`, `--auto-close`,
+      `--auto-kill`), `--entry`, `--password`, `--list` (checklist,
+      radiolist, `--print-column`, `--separator`), `--text-info`, `--scale`,
+      and `--calendar`. Markup is taken out, not drawn (Metal has one style
+      per text). Tests: test/dialog-*.test.ts
+- [ ] Check each dialog in the VM: the size it opens at, the keys (Enter,
+      Esc, arrows), the progress bar from a pipe, Dark Mode
+- [ ] `--file-selection` (the portal's FileChooser), `--notification`
+      (org.freedesktop.Notifications), `--forms`, `--color-selection`: they
+      exit 255 for now
+- [ ] A package that provides `/usr/bin/zenity` pointing at it (provides and
+      obsoletes zenity), once Steam's scripts are checked against it
+
 # Dashi 0.2.0
 
 ## 1. Monorepo and docs (`feat/monorepo`)

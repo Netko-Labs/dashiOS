@@ -44,6 +44,14 @@ greetd
 - **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
   screen consents before an agent sees or does anything.
+- **dashi-dialog** (`session/dashi-dialog`, `apps/dialog`) shows a dialog for
+  a shell script, on Zenity's command line, stdin, stdout, and exit status
+  (0 OK, 1 Cancel or closed, 5 timed out, 255 an error), so it can stand in
+  for `zenity` (Steam's scripts call it). It is an app on the kit
+  (`dev.dashi.dialog`), one process per dialog, not in the launcher. It draws
+  the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
+  `--text-info`, `--scale`, and `--calendar`; `--file-selection`, `--forms`,
+  `--color-selection`, and `--notification` exit 255 for now.
 
 ## Channels
 
@@ -65,7 +73,7 @@ greetd
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-greeter` | `session/` |
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |

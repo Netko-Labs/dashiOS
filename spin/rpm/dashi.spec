@@ -73,6 +73,8 @@ rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
 install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
+# Dialogs for shell scripts, on Zenity's command line (apps/dialog).
+install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
 # The Setup Assistant's optional software, run as root through pkexec.
 install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
 install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
@@ -86,6 +88,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
+%{_bindir}/dashi-dialog
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
 %{_datadir}/polkit-1/actions/dev.dashi.extras.policy
