@@ -342,7 +342,9 @@ fn cursor_elements<R>(
             state.agent_cursor = Some((label, s, image));
         }
         if let Some((_, _, image)) = &state.agent_cursor {
-            let origin = (at - output_geo.loc.to_f64()).to_physical(scale);
+            let tip = super::cursor::AGENT_TIP;
+            let origin =
+                (at - output_geo.loc.to_f64() - Point::from((tip, tip))).to_physical(scale);
             if let Ok(element) = MemoryRenderBufferRenderElement::from_buffer(
                 renderer,
                 origin,
@@ -361,6 +363,16 @@ fn cursor_elements<R>(
     };
     let at = pointer.current_location();
     if !output_geo.to_f64().contains(at) {
+        return;
+    }
+    // An agent acting on the person's seat moves its pointer too: one pointer
+    // is drawn there, the agent's, not the app's cursor stacked on it.
+    let agent_there = state
+        .agent
+        .pointer
+        .as_ref()
+        .is_some_and(|(agent, _)| (agent.x - at.x).abs() < 1.0 && (agent.y - at.y).abs() < 1.0);
+    if agent_there {
         return;
     }
     let local = at - output_geo.loc.to_f64();

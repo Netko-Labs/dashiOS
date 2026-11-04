@@ -13,6 +13,22 @@ pub(crate) struct Text {
 }
 
 impl Text {
+    /// How wide one line of `text` sets at `size`, in the canvas's pixels.
+    pub(crate) fn width(&mut self, text: &str, size: f32) -> f32 {
+        let fonts = self.fonts.get_or_insert_with(FontSystem::new);
+        let mut buffer = Buffer::new(fonts, Metrics::new(size, size * 1.25));
+        buffer.set_size(fonts, None, None);
+        let attrs = Attrs::new()
+            .family(Family::SansSerif)
+            .weight(Weight::SEMIBOLD);
+        buffer.set_text(fonts, text, &attrs, Shaping::Advanced);
+        buffer.shape_until_scroll(fonts, false);
+        buffer
+            .layout_runs()
+            .map(|run| run.line_w)
+            .fold(0.0, f32::max)
+    }
+
     /// Draw one line of `text` centered between `left` and `right` (canvas
     /// pixels), shortened with an ellipsis when it does not fit.
     pub(crate) fn draw_centered(
