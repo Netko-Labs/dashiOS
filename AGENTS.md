@@ -78,6 +78,9 @@ the same change.
 - Rust: `cargo build --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`,
   `cargo fmt --all --check`, `cargo test --workspace`
 - Metal host (in mirin): `cd ../mirin/crates/mirin-metal && cargo build --release --bin mirin-metal-host`
+- Packages: `spin/build-rpms [package...|all]` on the laptop (set up with
+  `sudo dnf builddep spin/rpm/*.spec`; no VM needed), from a clean HEAD; RPMs in
+  `~/rpmbuild/RPMS`. Publish: `spin/copr-publish` (the pejedev/dashi COPR).
 - VM: `vm/vm desktop` (boot), `vm/vm ssh` (shell in, user `dashi`), `vm/vm screenshot`,
   `vm/vm stop`; `vm/vm install` and `vm/vm live` boot an image. The VM sees
   `~/Developer` at `/home/dashi/Developer`.

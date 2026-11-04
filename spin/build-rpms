@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # spin/build-rpms: Dashi's packages from this checkout, with rpmbuild. Run it
-# where they are to be built (the VM: `vm/vm ssh`, then
-# ~/Developer/dashiOS/spin/build-rpms); it needs a clean tree (the packages
-# are built from HEAD), `bun install` done at the root (the shell's runtime
-# packages are copied from node_modules), ../mirin checked out, and the
-# build dependencies the specs name (`dnf builddep spin/rpm/*.spec`).
+# on any Fedora 44 machine set up for it (the laptop is; the VM works too,
+# slower): it needs a clean tree (the packages are built from HEAD),
+# `bun install` done at the root (the shell's runtime packages are copied
+# from node_modules), ../mirin checked out, and the build dependencies the
+# specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
+# COPR enabled for libghostty-vt-devel 1.4).
 #
 #   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
 #   all: every spec in spin/rpm (mirin-metal-host from ../mirin's HEAD; dashi-bun
