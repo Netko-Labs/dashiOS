@@ -43,6 +43,8 @@ export interface TableProps<T, K extends string | number> {
   dragFiles?: (row: T) => DragFiles | undefined;
   /** Files dropped on a row: its handler, or null for a row that takes none. A row lights up while files are over it. */
   onDropRow?: (row: T) => ((event: DropInfo) => void) | null;
+  /** The header of column titles; on by default (a list of choices may go without it). */
+  header?: boolean;
 }
 
 const PAD = 10;
@@ -73,36 +75,39 @@ export function Table<T, K extends string | number>({
   empty,
   dragFiles,
   onDropRow,
+  header = true,
 }: TableProps<T, K>) {
   const colors = useColors();
   const surface = useSurface();
   const [dropOver, setDropOver] = useState<K | null>(null);
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", minHeight: 0, backgroundColor: surface.card }}>
-      <View style={{ height: 26, flexShrink: 0, flexDirection: "row", paddingHorizontal: PAD / 2, borderBottomWidth: 1, borderColor: colors.separator }}>
-        {columns.map((column, index) => {
-          const sorted = sort?.key === column.key;
-          return (
-            <View
-              key={column.key}
-              testID={`${testID}:sort:${column.key}`}
-              onPress={() => onSort(nextSort(sort, column))}
-              style={{
-                ...cellBox(column.width, column.align),
-                gap: 3,
-                borderLeftWidth: index > 0 ? 1 : 0,
-                borderColor: colors.separator,
-                hoverBackgroundColor: colors.button,
-              }}
-            >
-              <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>
-                {column.title}
-              </Text>
-              {sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />}
-            </View>
-          );
-        })}
-      </View>
+      {header && (
+        <View style={{ height: 26, flexShrink: 0, flexDirection: "row", paddingHorizontal: PAD / 2, borderBottomWidth: 1, borderColor: colors.separator }}>
+          {columns.map((column, index) => {
+            const sorted = sort?.key === column.key;
+            return (
+              <View
+                key={column.key}
+                testID={`${testID}:sort:${column.key}`}
+                onPress={() => onSort(nextSort(sort, column))}
+                style={{
+                  ...cellBox(column.width, column.align),
+                  gap: 3,
+                  borderLeftWidth: index > 0 ? 1 : 0,
+                  borderColor: colors.separator,
+                  hoverBackgroundColor: colors.button,
+                }}
+              >
+                <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>
+                  {column.title}
+                </Text>
+                {sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />}
+              </View>
+            );
+          })}
+        </View>
+      )}
       {rows.length === 0 && empty !== undefined ? (
         <View style={{ flex: 1 }}>{empty}</View>
       ) : (

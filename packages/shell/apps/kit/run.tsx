@@ -3,7 +3,8 @@
  * [host]`), one Metal host per window. `runApp` finds the host the way the
  * shell does, opens the window with the app's id (the Dock and the menu bar
  * name and draw it from that id, src/first-party.ts), follows Dark Mode, and
- * exits the process when the window goes.
+ * exits the process when the window goes: with `closeCode` when the person
+ * closes it, with the code given to `quit` when the app does.
  */
 
 import { existsSync } from "node:fs";
@@ -34,13 +35,15 @@ export interface AppOptions {
   titleBar?: TitleBarStyle;
   /** The Metal host, for an app whose command line is not only a host path (Preview takes files). */
   host?: string;
+  /** The exit status when the window is closed or the process is told to stop; 0 by default (a dialog's close is a Cancel, 1). */
+  closeCode?: number;
 }
 
 export interface RunningApp {
   host: NativeHostTransport;
   root: NativeRoot;
-  /** Closes the window; the process exits. */
-  quit(): void;
+  /** Closes the window; the process exits, with `code` (0 by default). */
+  quit(code?: number): void;
 }
 
 /**
@@ -76,29 +79,30 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   const root = render(element, host);
   const stopControl = serveControl(host, root);
   let open = true;
-  const finish = (): void => {
+  const closeCode = options.closeCode ?? 0;
+  const finish = (code: number): void => {
     if (!open) return;
     open = false;
     root.unmount();
     stopFollowing();
     stopControl();
-    process.exit(0);
+    process.exit(code);
   };
-  host.onClose(finish);
+  host.onClose(() => finish(closeCode));
   // Told to stop (kill, logout): the window goes with the process. The Metal
   // host is a process of its own and would otherwise stay on screen.
   for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
     process.on(signal, () => {
       host.close();
-      finish();
+      finish(closeCode);
     });
   }
   return {
     host,
     root,
-    quit() {
+    quit(code = 0) {
       host.close();
-      finish();
+      finish(code);
     },
   };
 }
