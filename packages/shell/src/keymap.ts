@@ -159,3 +159,23 @@ export const KEYMAP: Keymap = {
     { when: "alt+Delete", send: "ctrl+Delete" },
   ],
 };
+
+/**
+ * Keys bound only while the app switcher is open (switcher/), ahead of every
+ * other rule: ↓ and ` into the chosen app's windows, ↑ back, ← → along the
+ * row, ⌫ and the letters, digits, and Space for typing to find (Q, H, M, and
+ * W act while nothing is typed). Tab, ⇧Tab, and Esc are the rules above.
+ */
+export const SWITCHER_RULES: Rule[] = [
+  { when: "super+Down", bind: "switcher-down" },
+  { when: "super+grave|asciitilde", bind: "switcher-down" },
+  { when: "super+Up", bind: "switcher-up" },
+  { when: "super+Left", bind: "switcher-left" },
+  { when: "super+Right", bind: "switcher-right" },
+  { when: "super+BackSpace", bind: "switcher-erase" },
+  { when: "super+letter", bind: "switcher-key" },
+  { when: "super+0|1|2|3|4|5|6|7|8|9|space", bind: "switcher-key" },
+];
+
+/** The keymap while a switcher session is open: its keys first. */
+export const withSwitcher = (keymap: Keymap): Keymap => ({ ...keymap, rules: [...SWITCHER_RULES, ...keymap.rules] });

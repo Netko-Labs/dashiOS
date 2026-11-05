@@ -22,12 +22,12 @@ import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { appletsSocketPath, serveApplets } from "./applets/index.ts";
 import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
-import { Arranger } from "./arrange.ts";
+import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
-import { Compositor, type CompositorWindow } from "./compositor.ts";
+import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
 import { DEFAULT_CORNERS } from "./corners.ts";
@@ -56,7 +56,7 @@ import { startForceQuit } from "./force-quit/index.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
 import { IdlePolicy } from "./idle.ts";
-import { KEYMAP } from "./keymap.ts";
+import { KEYMAP, withSwitcher } from "./keymap.ts";
 import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
 import type { Tile } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
@@ -90,7 +90,7 @@ import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { runClosers } from "./shutdown.ts";
 import { startSpaces } from "./spaces/index.ts";
-import { type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore, switcherSize } from "./switcher.tsx";
+import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { run } from "./system/exec.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
@@ -738,18 +738,60 @@ function identifier(): (app: SwitcherApp) => { name: string; icon: string } {
   };
 }
 
+/** Where the switcher's surface is on screen (global logical), once it is open: its window pictures go from there. */
+let switcherOrigin: Promise<{ x: number; y: number } | null> = Promise.resolve(null);
+
 function showSwitcher(state: SwitcherState): void {
   switcher.set(state);
   if (overlays.has("switcher")) return;
-  const { width, height } = switcherSize(state.apps.length);
-  void overlays.showOn("switcher", whereIsPerson, (onClosed, output) =>
-    openOverlay(
+  const { width, height } = state.size;
+  void overlays.showOn("switcher", whereIsPerson, (onClosed, output) => {
+    // Layer-shell centers it in what the menu bar and the Dock leave free (switcher/layout.ts).
+    switcherOrigin = (compositor?.request("outputs") ?? Promise.resolve(null))
+      .then((answer) => {
+        const outputs = parseOutputs(answer);
+        const screen = outputs.find((each) => each.name === output) ?? outputs[0];
+        return screen ? centeredOn(screen.usable, state.size) : null;
+      })
+      .catch(() => null);
+    return openOverlay(
       { title: "Switcher", width, height, surface: { layer: "overlay", namespace: "dashi.switcher", ...onScreen(output) } },
-      <SwitcherPanel store={switcher} identify={identifier()} />,
+      <SwitcherPanel
+        store={switcher}
+        identify={identifier()}
+        onPoint={(app, window) => switcherController?.point(app, window)}
+        onPick={(app, window) => switcherController?.pick(app, window)}
+      />,
       onClosed,
-    ),
-  );
+    );
+  });
 }
+
+/** The chosen app's windows as live pictures in the switcher (`window-thumbnails`); none clears them. */
+function switcherPictures(rects: ReadonlyArray<{ window: number; rect: Frame }>): void {
+  if (!compositor) return;
+  void switcherOrigin
+    .then((origin) => {
+      const placed = origin ? rects.map(({ window, rect }) => ({ window, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height })) : [];
+      return compositor.request("window-thumbnails", { rects: placed });
+    })
+    .catch((error) => console.error("dashi-shell: the switcher's pictures:", error));
+}
+
+/** The switcher session's own keys come and go with it (keymap.ts `withSwitcher`). */
+const switcherKeys = {
+  begin: () => void compositor?.request("keymap", withSwitcher(KEYMAP)).catch((error) => console.error("dashi-shell: the switcher's keys:", error)),
+  end: () => void compositor?.request("keymap", KEYMAP).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+};
+
+const switcherController = compositor
+  ? new SwitcherController(
+      compositor,
+      { show: showSwitcher, hide: () => closeOverlay("switcher"), pictures: switcherPictures },
+      (group) => identifier()({ appId: group.appId, title: group.title, count: group.windows.length, away: false }).name,
+      switcherKeys,
+    )
+  : null;
 
 /** Choose the item of `window`'s app menus that shows `shortcut`, for the person's ❖ chords and an agent's. */
 async function appShortcut(window: number, shortcut: string): Promise<boolean> {
@@ -787,7 +829,7 @@ const stopShortcuts = compositor
       toggleAutohide: () => dockPrefs.toggleAutohide(),
       overview: { toggle: () => overview?.toggle() },
       ...(spaces ? { spaces: spaces.controller } : {}),
-      switcher: new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
+      switcher: switcherController ?? new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
       tile,
       fullscreen: (window) => arranger?.toggleFullscreen(window) ?? Promise.resolve(),
       hardware: system.hardware,
