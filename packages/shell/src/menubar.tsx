@@ -252,7 +252,7 @@ export function MenuBar({
           <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
         ))}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
-          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y)} />
+          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y, output)} />
           <View
             testID="status-area"
             style={{

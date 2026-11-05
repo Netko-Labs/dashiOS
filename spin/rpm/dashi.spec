@@ -50,6 +50,8 @@ Recommends:     dashi-greeter = %{version}-%{release}
 # videos, and songs.
 Requires:       gvfs
 Requires:       bubblewrap
+# Applets from the Applet Store run in bubblewrap too; their D-Bus permissions go through the proxy (docs/applets.md).
+Requires:       xdg-dbus-proxy
 # The screen recorder (⇧❖5, src/recorder/): wf-recorder over dashi-comp's screencopy.
 Requires:       wf-recorder
 Recommends:     gvfs-fuse
@@ -80,6 +82,8 @@ install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
 # Agents in a sandbox that can use secrets through Dashi but never read them.
 install -Dm0755 session/dashi-agent %{buildroot}%{_bindir}/dashi-agent
+# The applet SDK's CLI (@dashi/applet, in node_modules): new, dev, pack, publish.
+install -Dm0755 session/dashi-applet %{buildroot}%{_bindir}/dashi-applet
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
 # The screen-share picker, xdg-desktop-portal-wlr's chooser in a Dashi session (src/share-picker/).
@@ -104,6 +108,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
 %{_bindir}/dashi-agent
+%{_bindir}/dashi-applet
 %{_bindir}/dashi-dialog
 %{_bindir}/dashi-share-picker
 %dir %{_sysconfdir}/xdg/xdg-desktop-portal-wlr

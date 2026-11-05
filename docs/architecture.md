@@ -22,6 +22,13 @@ greetd
 systemd --user (D-Bus activated)
 └─ dashi-portal (apps/portal)       Bun: xdg-desktop-portal's backend for Dashi
    └─ mirin-metal-host ×N           one per open dialog, from a warm host
+
+systemd --user
+└─ dashi-applet-<id>.service        one per installed applet, started by the shell's launcher
+   └─ bin/dashi-applet-run.ts       Bun: the applet's D-Bus proxy, then its sandbox
+      ├─ xdg-dbus-proxy             only the bus names and calls its permissions allow
+      └─ bwrap → the applet         Bun on its main.js, sandboxed (docs/applets.md)
+         └─ mirin-metal-host        its popover (layer-shell, granted while open) or window
 ```
 
 - **The greeter** (`packages/greeter`, `session/dashi-greeter`) is Dashi's
@@ -44,6 +51,11 @@ systemd --user (D-Bus activated)
   each surface drawn by its own Metal host.
 - **Apps** (`apps/*`) are separate Bun processes on the app kit (`apps/kit`),
   each with a Metal window, a control socket, and menus served to the shell.
+- **Applets** (`docs/applets.md`) installed from the Applet Store run each in
+  bubblewrap with only what their manifest asks for, as systemd user units
+  outside the shell's processes, so nothing the compositor trusts the shell
+  with reaches them; the shell's launcher (`src/applets/launcher.ts`) starts
+  and stops them, and listens on a socket of their own.
 - **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
   screen consents before an agent sees or does anything.
@@ -145,7 +157,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | shell/apps ↔ Metal host | mirin's element-tree protocol over the host's pipes | `../mirin/docs/metal.md` |
 | Metal host ↔ dashi-comp | Wayland (xdg-shell for windows, layer-shell for shell surfaces) | |
 | app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/app-menus/protocol.ts` |
-| applet ↔ shell, menu bar extras | `$XDG_RUNTIME_DIR/dashi-applets.sock`, newline JSON | `docs/applets.md` |
+| applet ↔ shell, menu bar extras | `$XDG_RUNTIME_DIR/dashi-applets.sock` (an installed applet: `dashi-applets/<id>/applets.sock`), newline JSON | `docs/applets.md` |
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |

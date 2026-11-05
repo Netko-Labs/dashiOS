@@ -65,6 +65,8 @@ pub(crate) struct Dashi {
         i32,
         smithay::backend::renderer::element::memory::MemoryRenderBuffer,
     )>,
+    /// Applets' processes and their layer-shell grants (`applet-clients`).
+    pub applet_clients: crate::session::applets::AppletClients,
     /// Executables the shell lets copy the screen (`screencopy-clients`).
     pub screencopy_paths: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>>,
     pub capture_activity: crate::protocols::screencopy::Activity,
@@ -261,6 +263,7 @@ impl Dashi {
             keys: Keys::default(),
             agent: crate::session::agent::Agent::new(agent_seat),
             agent_cursor: None,
+            applet_clients: Default::default(),
             screencopy_paths,
             capture_activity: Default::default(),
             capture_masks: Default::default(),

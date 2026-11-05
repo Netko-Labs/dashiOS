@@ -239,6 +239,7 @@ pub(crate) fn handle(
             }
             Ok(json!({}))
         }
+        "applet-clients" => applet_clients(state, connection, params),
         "layout" => done(state.set_zones(params)),
         "keyboard" => done(state.set_keyboard(params)),
         "input" => done(state.set_input(params)),
@@ -310,6 +311,19 @@ fn shell_only(state: &Dashi, connection: ConnectionId, method: &str) -> Result<(
     } else {
         Err(format!("{method} is only for the shell"))
     }
+}
+
+/// `applet-clients {applets: [{pid, layerShell}]}`: only the shell may.
+fn applet_clients(
+    state: &mut Dashi,
+    connection: ConnectionId,
+    params: &Map<String, Value>,
+) -> Result<Value, String> {
+    shell_only(state, connection, "applet-clients")?;
+    let list = session::applets::AppletClients::parse(params)?;
+    state.applet_clients.set(list);
+    state.close_ungranted_layers();
+    Ok(json!({}))
 }
 
 /// `capture {path, window?, rect?, cursor?, mask?}`: only the shell may.

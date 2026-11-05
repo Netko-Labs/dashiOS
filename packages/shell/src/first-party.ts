@@ -114,6 +114,14 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
     keywords: ["app store", "store", "apps", "install", "uninstall", "updates", "update", "flatpak", "flathub", "packages", "download"],
   },
   {
+    id: "dev.dashi.applet-store",
+    name: "Applet Store",
+    icon: "applet-store",
+    dir: "applet-store",
+    keywords: ["applets", "applet", "menu bar", "extensions", "widgets", "add-ons", "plugins", "asus", "store"],
+    categories: ["System", "PackageManager"],
+  },
+  {
     id: "dev.dashi.files",
     name: "Files",
     icon: "files",
