@@ -35,9 +35,10 @@ that creeps into Rust is a bug to move.
   Both sides change in the same commit as this doc.
 - `docs/conventions.md`: this rulebook.
 - `RECOVERY.md`: what was recovered from 0.1.0 and what was lost.
-- `docs/*.html` (start at `docs/index.html`): the distro spec, brand
-  guidelines, the mascot, and design guidelines. Plain HTML, CSS, and
-  JavaScript in `docs/assets/`, no build step and nothing fetched. Values on
+- `docs/*.html` (start at `docs/index.html`): the distro spec and the design
+  guidelines (`docs/design.html`: brand, voice, the mascot, and the rules
+  apps follow). Plain HTML, CSS, and JavaScript in `docs/assets/`, no build
+  step and nothing fetched. Values on
   them come from the code and name their source; a change to a color, a
   measure, a motion, or the brand updates them in the same commit.
 - Code is allowed to move, but source-of-truth docs move with the behavior in

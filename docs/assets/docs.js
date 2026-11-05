@@ -6,11 +6,10 @@
 const PAGES = [
   ["index.html", "Overview"],
   ["distro.html", "Distro"],
-  ["brand.html", "Brand"],
-  ["mascot.html", "Kombu"],
   ["design.html", "Design"],
   ["0.4.0.html", "0.4.0"],
   ["plan.html", "Plan"],
+  ["proposals.html", "Proposals"],
 ];
 
 /** The mark: the bowl and its three wisps of steam (packages/shell/icons/setup.svg). */
@@ -26,7 +25,7 @@ function dashiMark({ tile = true, ink = "#f4f4f6" } = {}) {
  * from, with the logo's wisp of steam above it. One flat shape in the accent,
  * two dot eyes and a mouth; one body, six faces.
  */
-// biome-ignore lint/correctness/noUnusedVariables: a global the pages' inline scripts use (mascot.html).
+// biome-ignore lint/correctness/noUnusedVariables: a global the pages' inline scripts use (design.html).
 const EXPRESSIONS = ["happy", "wink", "thinking", "surprised", "sleepy", "cheer"];
 
 function kombuSprite(expression = "happy", { dark = false } = {}) {

@@ -6,6 +6,12 @@ The plan is `docs/plan.html` (built from the recommended options in
 seen working in the VM, and an item without one hasn't run in a session yet.
 Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 
+## Proposals waiting for picks (`docs/proposals.html`)
+- [ ] Window management: the green control fills (⌥ = full screen), one Fill, ⌃❖ arrows = four halves with chained quarters, ⌃❖↩ / C / R, and the seven tiling bugs found
+- [ ] Depth between windows: shadow + hairline by default, accent ring as an Appearance option
+- [ ] The roast of every app (`docs/roast/`): themes, per-app fixes, three waves
+- [x] The design guidelines are one page, `docs/design.html` (brand and Kombu folded in; numbered rules, tagged where the code doesn't follow them yet)
+
 ## Packages
 - [x] `spin/build-rpms` builds dashi, dashi-comp, dashi-hardware, dashi-secretd, dashi-greeter, dashi-release, dashi-term, dashi-graphics at 0.4.0~beta; a set is in ~/Developer/dashi-0.4.0-rpms (not published to COPR)
 - [x] VM: they install over 0.3 and upgrade over an earlier 0.4.0 snapshot; tuned-ppd, the vault's socket, the portal and the bridge come up

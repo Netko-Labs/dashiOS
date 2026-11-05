@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proposals · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    /* Option cards, as in 0.4.0.html. */
+    .props { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0 8px; }
+    .prop { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+    .prop.pick { border-color: var(--kombu); box-shadow: 0 0 0 1.5px var(--kombu), var(--shadow-sm); }
+    .prop .mk { height: 200px; position: relative; overflow: hidden; background: var(--wall); color: #1d1d1f; font-size: 11px; line-height: 1.3; }
+    .prop .mk.plain { background: var(--wash); color: var(--ink); }
+    .prop .cap { padding: 13px 16px 15px; flex: 1; }
+    .prop .cap h4 { margin: 0 0 4px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+    .prop .cap h4 .k { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); font-size: 12px; flex: none; }
+    .prop.pick .cap h4::after { content: "Recommended"; margin-left: auto; font-size: 11px; font-weight: 600; color: #fff; background: var(--kombu); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+    .prop.today .cap h4::after { content: "Today"; margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink-muted); background: var(--wash); border: 1px solid var(--line); padding: 0 8px; border-radius: 99px; }
+    .prop .cap p { margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+    .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 9px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+    .pc li { margin: 0; color: var(--ink-muted); padding-left: 14px; position: relative; }
+    .pc li::before { position: absolute; left: 0; font-weight: 700; }
+    .pc .y::before { content: "+"; color: var(--kombu); }
+    .pc .n::before { content: "–"; color: var(--ume); }
+    .verdict { border-left: 3px solid var(--kombu); padding: 4px 0 4px 16px; margin: 18px 0 8px; }
+    .verdict b { color: var(--accent); }
+    .spec { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 20px; margin: 14px 0; font-size: 14px; }
+    .spec h5 { font-size: 12px; color: var(--ink-muted); margin: 12px 0 2px; font-weight: 600; }
+    .spec ul { margin: 4px 0 10px; }
+    .bugs { display: grid; gap: 10px; margin: 14px 0; }
+    .bug { background: var(--bg-raised); border: 1px solid var(--line); border-left: 3px solid var(--ume); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+    .bug b { display: block; margin-bottom: 2px; }
+    .bug small { color: var(--ink-muted); }
+    .sz { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; background: var(--wash); border: 1px solid var(--line); color: var(--ink-muted); white-space: nowrap; }
+    .where { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; white-space: nowrap; }
+    .where.mirin { background: #6e56cf1f; color: var(--shiso); }
+    .where.ui { background: var(--accent-wash); color: var(--accent); }
+    .where.app { background: #e5b13f26; color: #8a6510; }
+    .where.comp { background: #d0596f1f; color: var(--ume); }
+    :root[data-theme="dark"] .where.app { color: var(--broth); }
+    .roast { margin: 6px 0 10px; padding: 10px 14px; border-radius: 10px; background: var(--wash); font-style: italic; color: var(--ink); font-size: 14.5px; }
+    .app-card { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 18px 10px; margin: 12px 0 18px; }
+    .app-card h3 { margin-top: 14px; }
+    .app-card ol { margin: 6px 0 8px; padding-left: 20px; font-size: 14px; }
+    .app-card .big { font-size: 14px; margin: 6px 0; }
+    .app-card .big b { color: var(--accent); }
+    .app-card .src { font-size: 12.5px; color: var(--ink-muted); margin: 4px 0 6px; }
+    .wave { border-left: 3px solid var(--line-strong); padding: 2px 0 2px 16px; margin: 14px 0; }
+    .wave.w1 { border-color: var(--kombu); } .wave.w2 { border-color: var(--shiso); } .wave.w3 { border-color: var(--broth); }
+    .wave h3 { margin: 4px 0; }
+    .picks { counter-reset: q; list-style: none; padding: 0; display: grid; gap: 8px; }
+    .picks li { counter-increment: q; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px 9px 46px; position: relative; font-size: 14px; }
+    .picks li::before { content: counter(q); position: absolute; left: 12px; top: 9px; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); font-weight: 700; font-size: 12px; }
+    table.keys td:first-child { white-space: nowrap; font-weight: 600; }
+    table.keys td.chg { color: var(--accent); font-weight: 600; }
+
+    /* The mockup kit: a wallpaper, a menu bar, the Dock, windows with Dashi's controls. */
+    :root { --wall: radial-gradient(90% 80% at 85% 100%, #e88a55aa 0%, transparent 60%), linear-gradient(135deg, #191433 0%, #3b2a7a 50%, #8a4fb8 100%); }
+    .mb { position: absolute; top: 0; left: 0; right: 0; height: 14px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #f5f5f7c7; border-bottom: 1px solid #0000002b; font-size: 8.5px; z-index: 3; }
+    .mb b { font-weight: 700; }
+    .dock { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; padding: 3px 4px; border-radius: 9px; background: #f5f5f799; border: 1px solid #ffffff73; z-index: 3; }
+    .dock i { width: 14px; height: 14px; border-radius: 4px; background: linear-gradient(#5fae95, #2f6f5a); display: block; }
+    .dock i:nth-child(2) { background: linear-gradient(#f0c35e, #c8901c); } .dock i:nth-child(3) { background: linear-gradient(#e88a9a, #b04a5e); } .dock i:nth-child(4) { background: linear-gradient(#8b76e8, #4b3aa8); }
+    .w { position: absolute; background: #fff; border-radius: 6px; overflow: hidden; color: #1d1d1f; }
+    .w::before { content: ""; display: block; height: 11px; background: #f2f1ee; border-bottom: 1px solid #0000001a; }
+    .w.d { background: #1e1e20; color: #f5f5f7; } .w.d::before { background: #2a2a2c; border-color: #ffffff14; }
+    .w .x { position: absolute; top: 3.5px; left: 5px; display: flex; gap: 3px; align-items: center; }
+    .w .x i { display: block; width: 4.5px; height: 4.5px; border-radius: 50%; background: #d0596f; }
+    .w .x i + i { width: 5.5px; height: 2px; border-radius: 1px; background: #e5b13f; }
+    .w .x i + i + i { width: 4.5px; height: 4.5px; border-radius: 1.3px; background: #4a9a7e; }
+    .w .ln { margin: 5px 7px 0; height: 3px; border-radius: 2px; background: #1d1d1f1a; }
+    .w.d .ln { background: #ffffff1f; }
+    .w .ln.s { width: 55%; }
+    .note { position: absolute; font-size: 9.5px; color: #fff; background: #0000008c; padding: 2px 7px; border-radius: 99px; z-index: 8; white-space: nowrap; }
+    .ptr { position: absolute; width: 12px; height: 16px; z-index: 9; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Cpath d='M1 1l0 12.5 3.2-3 2.3 5 2-1-2.3-4.8 4.3-.2z' fill='%23111' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") no-repeat; }
+    .ghost { position: absolute; border-radius: 6px; background: #ffffff33; border: 1.5px solid #ffffffcc; z-index: 2; }
+    .kbd { display: inline-block; font: 600 9.5px var(--font); padding: 1px 5px; border-radius: 4px; background: #ffffffd9; color: #1d1d1f; border: 1px solid #0000002b; }
+    /* The green control's menu. */
+    .gm { position: absolute; z-index: 6; background: #f6f6f8f5; border: 1px solid #0000002b; border-radius: 9px; box-shadow: 0 14px 28px -8px #0006; padding: 6px; width: 132px; font-size: 9.5px; color: #1d1d1f; }
+    .gm .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
+    .gm .grid span { height: 18px; border-radius: 3px; border: 1px solid #1d1d1f33; position: relative; overflow: hidden; background: #fff; }
+    .gm .grid span::after { content: ""; position: absolute; background: #4a9a7e; border-radius: 1px; }
+    .gm .grid .l::after { left: 1px; top: 1px; bottom: 1px; width: calc(50% - 1.5px); }
+    .gm .grid .r::after { right: 1px; top: 1px; bottom: 1px; width: calc(50% - 1.5px); }
+    .gm .grid .t::after { left: 1px; right: 1px; top: 1px; height: calc(50% - 1.5px); }
+    .gm .grid .b::after { left: 1px; right: 1px; bottom: 1px; height: calc(50% - 1.5px); }
+    .gm .grid .tl::after { left: 1px; top: 1px; width: calc(50% - 1.5px); height: calc(50% - 1.5px); }
+    .gm .grid .tr::after { right: 1px; top: 1px; width: calc(50% - 1.5px); height: calc(50% - 1.5px); }
+    .gm .grid .bl::after { left: 1px; bottom: 1px; width: calc(50% - 1.5px); height: calc(50% - 1.5px); }
+    .gm .grid .br::after { right: 1px; bottom: 1px; width: calc(50% - 1.5px); height: calc(50% - 1.5px); }
+    .gm .row { padding: 3px 5px; border-radius: 4px; display: flex; justify-content: space-between; }
+    .gm .row.sel { background: var(--kombu); color: #fff; }
+    .gm .row small { opacity: .6; }
+    .gm hr { border: 0; border-top: 1px solid #0000001f; margin: 3px 4px; }
+    /* A keyboard-chord diagram. */
+    .chords { position: absolute; inset: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; align-content: center; }
+    .chords .c { background: #ffffffe6; border-radius: 7px; padding: 5px 6px; font-size: 9.5px; color: #1d1d1f; text-align: center; }
+    .chords .c b { display: block; font-size: 10.5px; margin-bottom: 3px; }
+    .chords .scr { height: 26px; border-radius: 3px; border: 1px solid #1d1d1f33; position: relative; margin: 0 auto 3px; width: 44px; background: #f2f1ee; }
+    .chords .scr i { position: absolute; background: #4a9a7e; border-radius: 2px; }
+    /* Depth mockups: each card is split, light on the left, dark on the right. */
+    .dm { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+    .dm > div { position: relative; overflow: hidden; background: var(--wall); }
+    .dm > div + div { border-left: 1px solid #ffffff40; }
+    .dm .w { width: 62%; height: 58%; border-radius: 7px; }
+    .dm .w.back { left: 9%; top: 12%; }
+    .dm .w.front { left: 27%; top: 34%; }
+    .dm .tag { position: absolute; bottom: 5px; right: 6px; font-size: 9px; color: #fff; opacity: .8; }
+    .dm .w .bodyfill { position: absolute; inset: 11px 0 0; background: inherit; }
+    .d-none .w { box-shadow: none; }
+    .d-shadow .w.back { box-shadow: 0 6px 14px -5px #00000059; }
+    .d-shadow .w.front { box-shadow: 0 16px 30px -8px #0000008c, 0 2px 6px #00000033; }
+    .d-shadow .dk .w.front { box-shadow: 0 16px 30px -8px #000000c0, 0 2px 6px #00000066; }
+    .d-edge .w { box-shadow: inset 0 0 0 1px #0000002e; }
+    .d-edge .dk .w { box-shadow: inset 0 0 0 1px #ffffff24; }
+    .d-ring .w.front { box-shadow: 0 0 0 1.5px #4a9a7e; }
+    .d-ring .dk .w.front { box-shadow: 0 0 0 1.5px #5fae95; }
+    .d-dim .w.back { filter: brightness(.8) saturate(.7); }
+    .d-dim .dk .w.back { filter: brightness(.65); }
+    .d-ab .w.back { box-shadow: inset 0 0 0 1px #0000002e, 0 6px 14px -5px #00000059; }
+    .d-ab .w.front { box-shadow: inset 0 0 0 1px #0000002e, 0 16px 30px -8px #0000008c, 0 2px 6px #00000033; }
+    .d-ab .dk .w.back { box-shadow: inset 0 0 0 1px #ffffff24, 0 6px 14px -5px #00000080; }
+    .d-ab .dk .w.front { box-shadow: inset 0 0 0 1px #ffffff24, 0 16px 30px -8px #000000c0, 0 2px 6px #00000066; }
+    .d-abc .w.back { box-shadow: inset 0 0 0 1px #0000002e, 0 6px 14px -5px #00000059; }
+    .d-abc .w.front { box-shadow: 0 0 0 1.5px #4a9a7e, 0 16px 30px -8px #0000008c, 0 2px 6px #00000033; }
+    .d-abc .dk .w.back { box-shadow: inset 0 0 0 1px #ffffff24, 0 6px 14px -5px #00000080; }
+    .d-abc .dk .w.front { box-shadow: 0 0 0 1.5px #5fae95, 0 16px 30px -8px #000000c0, 0 2px 6px #00000066; }
+    @media (max-width: 760px) { .props { grid-template-columns: 1fr; } .pc { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Proposals · open</div>
+    <h1>Windows, and a roast</h1>
+    <p class="lede">Two things. First, the window fixes asked for on 2026-11-05: the green control fills the screen instead of going full screen, tiling gets top and bottom halves and a shortcut map that holds together, and windows get depth so one can be told from the next. Second, every Dashi app was roasted by its own reviewer this morning, and what they found is gathered here into themes, per-app fixes and an order of work.</p>
+
+    <div class="callout open"><div>◆</div><p>Nothing here is <span class="pill done">picked</span> yet. Cards outlined in green are the recommendation; "Today" marks what Dashi does now. Bugs cite <code>path:line</code> from <code>release/0.4.0</code> at <code>74d917d</code>; two were confirmed in the VM. The roast's full reports are in <a href="roast/files.md"><code>docs/roast/</code></a>. Picks to make are at <a href="#what-i-need-from-you">the end</a>.</p></div>
+
+    <h2>What's here</h2>
+    <table>
+      <tr><th>Topic</th><th>In short</th><th></th></tr>
+      <tr><td><a href="#found-in-the-tiling-code">Found in the tiling code</a></td><td>Seven bugs and gaps in today's zoom, fill, restore and tiling paths.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#the-green-control">The green control</a></td><td>A click fills the screen; ⌥ goes full screen; a press-and-hold menu tiles.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#tiling-shortcuts">Tiling shortcuts</a></td><td>Halves on all four arrows, quarters by chaining, Fill, Center, Back.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#drag-to-tile">Drag to tile</a></td><td>Whether dragging gets top and bottom halves too.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#the-roast">The roast</a></td><td>13 reports: what hits every app, then each app's top fixes and big idea.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#order-of-work">Order of work</a></td><td>Three waves: embarrassment first, then platform pieces, then the big ideas.</td><td><span class="pill wip">open</span></td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Found in the tiling code</h2>
+    <p>How it works today: the shell's <code>Arranger</code> (<code>packages/shell/src/arrange.ts</code>) asks the compositor to <code>frame</code> a window with <code>remember: true</code>; the compositor keeps the frame it had as <code>restore</code> and gives it back on <code>restore</code> (<code>crates/dashi-comp/src/wm/actions.rs:187-219</code>). Tiles are <code>left</code>, <code>right</code>, four quarters, <code>fill</code> and <code>restore</code> (<code>layout.ts:32</code>); there is no top or bottom half. The green control asks for full screen and, with ⌥, zoom; a double-click on the title bar zooms (<code>input/decorations.rs:96-117</code>).</p>
+    <div class="bugs">
+      <div class="bug"><b>1 · Zoom on a tiled window shrinks it back instead of filling.</b>The compositor reports <code>zoomed</code> whenever it remembers a frame (<code>wm/windows.rs:283</code>), and a tile remembers one; <code>Arranger.zoom</code> restores any window that says zoomed (<code>arrange.ts:143</code>). So ⌥-green, double-click and Window › Zoom on a left-tiled window put it back to its old size. <small>Confirmed in the VM: Files tiled left reports <code>zoomed: true</code>.</small></div>
+      <div class="bug"><b>2 · Moving or resizing a tiled window keeps a stale "back" frame.</b>Only a drop in a drag zone touches <code>restore</code> (<code>wm/zones.rs:107-117</code>); the person's own move and resize (<code>wm/grabs/move_grab.rs</code>, <code>resize_grab.rs</code>) never clear it. A window dragged out of a tile keeps the tile's size, still says zoomed, and Restore (⌃❖↓) later jumps it to a frame from before the tile.</div>
+      <div class="bug"><b>3 · Two different Fills.</b>Tile <code>fill</code> (⌃❖↑, the menu-bar drag zone, Window › Fill) is the usable area less 6 px gaps and doesn't tell the app (<code>layout.ts:65-66</code>, <code>arrange.ts:135</code>); Zoom is the whole usable area and sets xdg <code>Maximized</code> (<code>layout.ts:70-71</code>, <code>arrange.ts:145</code>). The Window menu lists both, "Zoom" and "Fill", side by side (<code>menus/model.ts:206-209</code>). Apps that draw their own frame keep their rounded corners and resize borders after Fill because nobody told them. <small>Confirmed in the VM: Fill gives x 6, width 1634 on a 1646-point screen.</small></div>
+      <div class="bug"><b>4 · The green control's meaning is decided in Rust.</b>A plain press emits <code>fullscreen on</code> and ⌥ emits <code>zoom</code> (<code>input/decorations.rs:96-104</code>). Which action a control means is policy, and the file's own header says the shell decides (lines 2-4). It should report the press and its modifiers and let <code>arrange.ts</code> choose.</div>
+      <div class="bug"><b>5 · Restore with nothing to restore does nothing, silently.</b><code>restore_window</code> is a no-op without a remembered frame (<code>wm/actions.rs:208-219</code>), and Window › Restore is enabled for every window (<code>menus/model.ts:174-179</code>). It should be disabled unless the window is arranged.</div>
+      <div class="bug"><b>6 · Pressing a tile again does nothing; there's no way to another screen.</b>A second ⌃❖← recomputes the same frame on the window's own screen (<code>arrange.ts:129-136</code>). With two screens, the keyboard can't move a window to the other one.</div>
+      <div class="bug"><b>7 · ⌃❖↑ and ⌃❖↓ are spent on Fill and Restore.</b>That is why top and bottom halves have no keys (<code>keymap.ts:91-94</code>). The arrows read as directions everywhere else in the map, so ↑ meaning "everything" and ↓ meaning "undo" is the odd one out.</div>
+    </div>
+    <p>Not bugs, but worth keeping in mind: the agent tool <code>tile_window</code> takes its choices from <code>TILES</code> (<code>agents/tools/windows.ts:97</code>), so new tiles reach agents for free; and its description promises "zoomed (tiled or filling the screen)", which changes meaning once bug 1 is fixed.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The green control</h2>
+    <p>Today a click on the green square goes full screen: the menu bar and Dock leave, and getting back needs the pointer at the top edge or ⌃❖F. That is the Mac's default. Most of the time the person wanted a big window, not a different mode.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span>File</span><span>Edit</span><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="w" style="left:0;top:15px;right:0;bottom:28px;border-radius:0"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div>
+          <div class="dock"><i></i><i></i><i></i><i></i></div>
+          <span class="note" style="left:50%;top:46%;transform:translateX(-50%)">Click: Fill · again: back</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Click fills the screen</h4><p>The window takes everything between the menu bar and the Dock, as maximize does elsewhere. A second click gives it its own size back. ⌥-click goes full screen.</p>
+          <ul class="pc"><li class="y">What people expect from "the big button"</li><li class="y">Menu bar and Dock stay</li><li class="n">Full screen is one modifier away</li><li class="n">Differs from the Mac's default</li></ul></div>
+      </div>
+      <div class="prop today">
+        <div class="mk">
+          <div class="w" style="inset:0;border-radius:0"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div>
+          <span class="note" style="left:50%;top:46%;transform:translateX(-50%)">Click: Full Screen</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Click goes full screen</h4><p>The window covers the whole screen; the menu bar comes back only at the top edge. ⌥-click zooms.</p>
+          <ul class="pc"><li class="y">As the Mac does</li><li class="y">Best for video and focus</li><li class="n">The mode people trip into</li><li class="n">Dock and clock gone</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span>File</span><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="w" style="left:30px;top:34px;width:190px;height:120px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div>
+          <div class="gm" style="left:44px;top:50px"><div class="grid"><span class="l"></span><span class="r"></span><span class="t"></span><span class="b"></span><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="row sel">Fill</div><div class="row">Full Screen</div></div>
+          <div class="ptr" style="left:46px;top:40px"></div>
+          <span class="note" style="right:10px;bottom:10px">Shows after a 0.5 s hover</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Hover shows tiles</h4><p>Resting on the green control opens a small menu of halves, quarters, Fill and Full Screen, as Windows does on its maximize button.</p>
+          <ul class="pc"><li class="y">Every layout one click away</li><li class="y">Teaches the tiles</li><li class="n">Pops up on passing hovers</li><li class="n">Covers the title bar</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span>File</span><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="w" style="left:30px;top:34px;width:190px;height:120px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div>
+          <div class="gm" style="left:44px;top:50px"><div class="grid"><span class="l"></span><span class="r"></span><span class="t"></span><span class="b"></span><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="row sel">Fill <small>⌃❖↩</small></div><div class="row">Center <small>⌃❖C</small></div><hr><div class="row">Full Screen <small>⌃❖F</small></div><div class="row">Move to Built-in Display</div></div>
+          <div class="ptr" style="left:46px;top:40px"></div>
+          <span class="note" style="right:10px;bottom:10px">Press and hold, or right-click</span>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Press and hold for the menu</h4><p>Holding the green control (or right-clicking it) opens the same menu; a plain click still fills. The menu shows each choice's shortcut, so it teaches the keys too.</p>
+          <ul class="pc"><li class="y">Never in the way</li><li class="y">One place for every layout</li><li class="n">Hidden until found</li><li class="n">A new popup to build</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Calculator</b><span>Edit</span><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="w" style="left:80px;top:36px;width:90px;height:140px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div>
+          <div class="ghost" style="left:60px;top:28px;width:130px;height:156px"></div>
+          <span class="note" style="right:10px;bottom:10px">Grows to what the app needs</span>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Click fits the content</h4><p>The classic Mac zoom: the window grows to the size its content wants (the app says), up to the usable area.</p>
+          <ul class="pc"><li class="y">Right for Calculator, dialogs</li><li class="y">No wasted space</li><li class="n">Needs every app to say its size</li><li class="n">Unpredictable for most apps</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="chords" style="grid-template-columns:1fr">
+            <div class="c" style="text-align:left;font-size:10.5px"><b>Desktop &amp; Dock</b>Clicking the green button: <span class="kbd">Fills the screen</span> <span class="kbd" style="opacity:.55">Enters full screen</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>A setting decides</h4><p>Desktop &amp; Dock gets a row choosing what a click does, defaulting to Fill.</p>
+          <ul class="pc"><li class="y">Both camps served</li><li class="y">Cheap</li><li class="n">A setting for something that should just be right</li><li class="n">Two behaviours to support</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, with D as the follow-up.</b> A click fills, a second click goes back, ⌥-click is Full Screen, and a double-click on the title bar does what the click does. The press-and-hold menu comes after the keys exist, so it can show them. Not C: a menu that opens on passing hovers fights the title bar people drag. Not F: if A is right, a setting only hides that it is.</p>
+    <div class="spec">
+      <h5>One Fill</h5>
+      <ul>
+        <li><b>Fill</b> replaces both Zoom and tile <code>fill</code>: the whole usable area with no gap, and the app is told it is maximized (fixes bug 3). The Window menu says "Fill" once; "Zoom" goes.</li>
+        <li><b>The shell remembers what it did.</b> <code>Arranger</code> keeps each window's arrangement (<code>fill</code>, a tile, or none) and reports it to the menus and the agent tool; the compositor's <code>zoomed</code> flag stops standing in for it (fixes bug 1).</li>
+        <li><b>Dragging a filled or tiled window</b> gives it its own size back under the pointer, as on every other desktop, and forgets the arrangement; a person's resize forgets it too (fixes bug 2). The compositor reports the grab's start; the shell decides.</li>
+        <li><b>The compositor reports the press</b>: <code>window-control {window, control: "zoom", alt, hold}</code>, and the shell picks Fill, Full Screen or the menu (fixes bug 4). <code>docs/compositor-ipc.md</code> changes in the same commit.</li>
+        <li><b>Back</b> (Window › Back to Previous Size) is disabled when there is nothing to go back to (fixes bug 5).</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Tiling shortcuts</h2>
+    <p>The ⌃❖ arrows already arrange windows; ⌃ alone moves between Desktops, and ❖ alone moves the caret (❖← is the start of the line in every text field, and in Terminal it sends ⌃A). So arrangement stays on ⌃❖. The question is what each key means.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk plain">
+          <div class="chords">
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;bottom:1px;width:20px"></i></div><b>⌃❖←</b>Left half</div>
+            <div class="c"><div class="scr"><i style="left:1px;right:1px;top:1px;height:11px"></i></div><b>⌃❖↑</b>Top half</div>
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;width:20px;height:11px"></i></div><b>← then ↑</b>Top left</div>
+            <div class="c"><div class="scr"><i style="inset:1px"></i></div><b>⌃❖↩</b>Fill</div>
+            <div class="c"><div class="scr"><i style="left:12px;top:6px;width:20px;height:13px"></i></div><b>⌃❖C</b>Center</div>
+            <div class="c"><div class="scr"><i style="left:6px;top:4px;width:26px;height:16px;opacity:.5"></i></div><b>⌃❖R</b>Back</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Four halves, chained quarters</h4><p>Each arrow is the half on that side. From a half, the arrow at right angles makes the quarter; the opposite arrow gives the window its own size back; the same arrow again sends it to that side's next screen.</p>
+          <ul class="pc"><li class="y">Arrows mean directions, always</li><li class="y">Eight layouts from four keys</li><li class="n">↑ no longer fills</li><li class="n">Quarters take two presses</li></ul></div>
+      </div>
+      <div class="prop today">
+        <div class="mk plain">
+          <div class="chords">
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;bottom:1px;width:20px"></i></div><b>⌃❖←</b>Left half</div>
+            <div class="c"><div class="scr"><i style="right:1px;top:1px;bottom:1px;width:20px"></i></div><b>⌃❖→</b>Right half</div>
+            <div class="c"><div class="scr"><i style="inset:3px"></i></div><b>⌃❖↑</b>Fill (gaps)</div>
+            <div class="c"><div class="scr"><i style="left:6px;top:4px;width:26px;height:16px;opacity:.5"></i></div><b>⌃❖↓</b>Restore</div>
+            <div class="c" style="opacity:.5"><div class="scr"></div><b>—</b>No top, bottom, quarters</div>
+            <div class="c"><div class="scr"><i style="inset:0"></i></div><b>⌃❖F</b>Full Screen</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Keep today's map</h4><p>Left and right halves, ↑ to fill, ↓ to restore. Quarters only by dragging to a corner.</p>
+          <ul class="pc"><li class="y">Nothing to relearn</li><li class="y">Shipped</li><li class="n">No top or bottom halves</li><li class="n">↑ and ↓ break the direction rule</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="chords">
+            <div class="c"><b>⌃❖7</b>Top left</div><div class="c"><b>⌃❖8</b>Top half</div><div class="c"><b>⌃❖9</b>Top right</div>
+            <div class="c"><b>⌃❖4</b>Left half</div><div class="c"><b>⌃❖5</b>Fill</div><div class="c"><b>⌃❖6</b>Right half</div>
+            <div class="c"><b>⌃❖1</b>Bottom left</div><div class="c"><b>⌃❖2</b>Bottom half</div><div class="c"><b>⌃❖3</b>Bottom right</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A grid on the number keys</h4><p>The nine digits as a map of the screen, laid out like a numeric keypad.</p>
+          <ul class="pc"><li class="y">Every layout in one press</li><li class="y">Easy to explain</li><li class="n">Laptops have no keypad; the top row isn't a grid</li><li class="n">Next to ⌃1…⌃9 (Desktops)</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="chords">
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;bottom:1px;width:20px"></i></div><b>⌃❖←</b>½</div>
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;bottom:1px;width:28px"></i></div><b>again</b>⅔</div>
+            <div class="c"><div class="scr"><i style="left:1px;top:1px;bottom:1px;width:13px"></i></div><b>again</b>⅓</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Repeat cycles the width</h4><p>Pressing the same arrow again steps the half to two thirds, then one third, as window-manager add-ons do.</p>
+          <ul class="pc"><li class="y">Thirds without new keys</li><li class="y">Good on wide screens</li><li class="n">Repeat can't also mean "next screen"</li><li class="n">Hard to predict</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="chords" style="grid-template-columns:1fr 1fr">
+            <div class="c"><b>❖←</b>Left half</div><div class="c"><b>❖↑</b>Fill</div>
+            <div class="c" style="opacity:.55"><b>❖← in a text field</b>was: start of line</div><div class="c" style="opacity:.55"><b>❖← in Terminal</b>was: ⌃A</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>❖ and the arrows alone</h4><p>Windows' layout: the logo key and an arrow tile the window.</p>
+          <ul class="pc"><li class="y">Familiar from Windows</li><li class="y">One modifier</li><li class="n">Breaks ❖← and ❖→ in every text field</li><li class="n">Breaks Terminal's line keys</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="chords">
+            <div class="c"><div class="scr"><i style="left:1px;right:1px;top:1px;height:11px"></i></div><b>⇧⌃❖↑</b>Top half</div>
+            <div class="c"><div class="scr"><i style="left:1px;right:1px;bottom:1px;height:11px"></i></div><b>⇧⌃❖↓</b>Bottom half</div>
+            <div class="c"><div class="scr"><i style="inset:3px"></i></div><b>⌃❖↑</b>Fill, as now</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Add ⇧ for top and bottom</h4><p>Keep today's keys and put the new halves on ⇧.</p>
+          <ul class="pc"><li class="y">Smallest change</li><li class="y">Nothing moves</li><li class="n">Three modifiers for a half</li><li class="n">Keeps the mixed meanings of ↑ and ↓</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A.</b> Arrows are directions, Return fills, C centers, R goes back, F stays Full Screen as on the Mac (⌃⌘F). The same arrow again moves the window to the next screen on that side, which also fixes bug 6. Thirds (D) can come later as a Desktop &amp; Dock option if anyone asks.</p>
+    <table class="keys">
+      <tr><th>Chord</th><th>Does</th><th>Today</th><th>Checked against</th></tr>
+      <tr><td>⌃❖←, ⌃❖→</td><td>Left, right half. From top or bottom half: that quarter. From the opposite half: back to own size. Again: the next screen that way, same half.</td><td>Left, right half</td><td>⌃← ⌃→ are Desktops (<code>keymap.ts:86-87</code>); rules match ⌃, ⌥ and ❖ exactly (<code>keymap-match.ts:31-47</code>), so no clash.</td></tr>
+      <tr><td class="chg">⌃❖↑, ⌃❖↓</td><td>Top, bottom half; quarters and back as above.</td><td>Fill, Restore</td><td>⌃↑ is Overview (<code>keymap.ts:83</code>); no clash.</td></tr>
+      <tr><td class="chg">⌃❖↩</td><td>Fill (the same as the green control).</td><td>—</td><td>Free. Must sit above the <code>super+ctrl+*</code> swallow (<code>keymap.ts:104</code>), as every new ⌃❖ rule must.</td></tr>
+      <tr><td class="chg">⌃❖C</td><td>Center, at its own size.</td><td>—</td><td>Free; ❖C (Copy) has no ⌃.</td></tr>
+      <tr><td class="chg">⌃❖R</td><td>Back to Previous Size.</td><td>—</td><td>Free.</td></tr>
+      <tr><td>⌃❖F</td><td>Full Screen, unchanged.</td><td>Full Screen</td><td>As on the Mac.</td></tr>
+      <tr><td>⌃❖Q, ⌃❖Space, ⌃❖Esc</td><td>Unchanged: lock, emoji (reserved), stop agents.</td><td></td><td><code>keymap.ts:19,98,104</code>.</td></tr>
+    </table>
+    <p>Shift isn't matched unless a rule names it (<code>keymap-match.ts:26-27,47</code>), so ⇧⌃❖← also tiles today; that stays harmless. The Window menu grows to Fill, Center, a Move &amp; Resize submenu (Left, Right, Top, Bottom, four quarters) and Back to Previous Size, each showing its chord; Agents get the new tiles through <code>TILES</code>.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Drag to tile</h2>
+    <p>Dragging a window against a side tiles it to that half, against a side's ends to a quarter, and against the menu bar to Fill (<code>layout.ts:75-99</code>). Holding against the left or right edge for 400 ms carries the window to the next Desktop (<code>edge-hold</code>, <code>docs/compositor-ipc.md</code>). The bottom edge belongs to the Dock.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="ghost" style="left:4px;top:18px;right:4px;bottom:28px"></div>
+          <div class="w" style="left:90px;top:16px;width:120px;height:80px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div></div>
+          <div class="ptr" style="left:140px;top:12px"></div>
+          <div class="dock"><i></i><i></i><i></i><i></i></div>
+          <span class="note" style="left:10px;bottom:30px">Menu bar: Fill · sides: halves · ends: quarters</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Keep the zones as they are</h4><p>Top and bottom halves come from the keys and the green control's menu, not from dragging.</p>
+          <ul class="pc"><li class="y">Learned, and matches the green control</li><li class="y">No clash with the Dock or edge-hold</li><li class="n">Top and bottom halves not draggable</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="ghost" style="left:4px;top:18px;right:4px;height:72px"></div>
+          <div class="w" style="left:90px;top:16px;width:120px;height:80px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div></div>
+          <div class="ptr" style="left:140px;top:12px"></div>
+          <span class="note" style="left:10px;bottom:10px">Rest: top half · keep resting: Fill</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Top edge in two steps</h4><p>Resting at the menu bar shows the top half; resting on shows Fill.</p>
+          <ul class="pc"><li class="y">Top half by drag</li><li class="n">Fill gets slower to reach</li><li class="n">A preview that changes under you</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="gm" style="left:50%;transform:translateX(-50%);top:17px;width:150px"><div class="grid"><span class="l"></span><span class="r"></span><span class="t"></span><span class="b"></span><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></div><div class="row sel" style="justify-content:center">Fill</div></div>
+          <div class="w" style="left:110px;top:95px;width:110px;height:70px"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div></div>
+          <div class="ptr" style="left:150px;top:42px"></div>
+          <span class="note" style="left:10px;bottom:10px">Drag to the top middle: drop on a layout</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A layout strip at the top</h4><p>A dragged window near the top middle drops down the green control's menu; letting go over a layout tiles there.</p>
+          <ul class="pc"><li class="y">Every layout by drag</li><li class="y">Reuses the green menu</li><li class="n">Another target near the menu bar</li><li class="n">Waits for the menu (green D)</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span style="margin-left:auto">Thu 11:40</span></div>
+          <div class="ghost" style="left:4px;bottom:4px;right:4px;height:80px"></div>
+          <div class="dock"><i></i><i></i><i></i><i></i></div>
+          <span class="note" style="left:10px;top:24px">Bottom edge: bottom half</span>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Bottom edge for the bottom half</h4><p>Resting against the bottom edge previews the bottom half.</p>
+          <ul class="pc"><li class="y">Symmetric with the top</li><li class="n">The Dock lives there (autohide reveal, drops on tiles)</li><li class="n">Misfires while aiming at the Dock</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A now, C once the green control's menu exists.</b> The zones already match the recommended green control (the menu bar is Fill). Top and bottom halves are one chord away, and C gives them a drag target later without taking the bottom edge from the Dock (not D) or slowing Fill (not B).</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Depth between windows</h2>
+    <p>Windows cast no shadow today (<a href="design.html">the design guidelines</a> say so), so two light windows that overlap read as one sheet of paper, and in dark mode a window melts into the one behind it. The compositor already draws each window's rounded corners with a shader (<code>crates/dashi-comp/src/render/rounded.rs</code>). Each card shows light on the left and dark on the right; the front window has the keyboard.</p>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk"><div class="dm d-none"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">·</span>Nothing</h4><p>Where the windows overlap, only the title bar's edge says which is in front.</p></div>
+      </div>
+      <div class="prop">
+        <div class="mk"><div class="dm d-shadow"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">A</span>A soft shadow</h4><p>Every window casts one; the focused window's is deeper, so the stack reads at a glance.</p>
+          <ul class="pc"><li class="y">Reads as depth, not decoration</li><li class="y">Says which window is active</li><li class="n">Weak in dark mode on its own</li><li class="n">A shader and damage to get right</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk"><div class="dm d-edge"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">B</span>A hairline edge</h4><p>A 1 px line just inside the frame: ink at 18% in light, white at 14% in dark, as the menu bar's edge already is.</p>
+          <ul class="pc"><li class="y">Crisp at any scale</li><li class="y">Strong in dark mode</li><li class="n">Flat: no front and back</li><li class="n">Busy where tiles meet</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk"><div class="dm d-ring"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">C</span>An accent ring on the active window</h4><p>A 1.5 px kombu line around the window with the keyboard, in the accent color.</p>
+          <ul class="pc"><li class="y">Unmissable focus</li><li class="y">Great with tiles and two screens</li><li class="n">Kombu means "selected" everywhere else</li><li class="n">Loud all day</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk"><div class="dm d-dim"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">D</span>Dim the windows behind</h4><p>Windows without the keyboard are darkened a little.</p>
+          <ul class="pc"><li class="y">Strong focus</li><li class="n">The window you are reading from goes gray</li><li class="n">Wrong colors in the window behind</li><li class="n">Fights side-by-side tiles</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk"><div class="dm d-ab"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">A+B</span>Shadow and hairline, by default</h4><p>The shadow gives front and back; the hairline keeps edges sharp in dark mode and where shadows are faint.</p>
+          <ul class="pc"><li class="y">Works in both modes</li><li class="y">Calm: no new color</li><li class="n">Two things to tune</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk"><div class="dm d-abc"><div><div class="w back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Light</span></div><div class="dk"><div class="w d back"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div></div><div class="w d front"><div class="x"><i></i><i></i><i></i></div><div class="ln"></div><div class="ln s"></div><div class="ln"></div></div><span class="tag">Dark</span></div></div></div>
+        <div class="cap"><h4><span class="k">+C</span>…and the ring as an option</h4><p>Appearance › "Highlight the active window" adds the accent ring on top of A+B; Increase Contrast turns it on too.</p>
+          <ul class="pc"><li class="y">For tilers and two-screen setups</li><li class="y">Off by default, so kombu keeps its job</li><li class="n">One more setting</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A + B by default; C as an Appearance option, off by default; no D.</b> Depth should come from light, not color: kombu means "yours, selected" everywhere else, so a kombu ring all day would spend that meaning (the roast found kombu already overused, <a href="#across-every-app">below</a>). Those who tile or use two screens can turn the ring on.</p>
+    <div class="spec">
+      <h5>How the compositor draws it</h5>
+      <ul>
+        <li><b>The shell sends the look, the compositor draws it.</b> A new <code>decor</code> request carries <code>shadow {focused, other}</code> (offset, blur, alpha), <code>edge {light, dark}</code> and <code>ring {on, color, width}</code>; values live in <code>@dashi/ui</code>'s tokens and in <code>design.html</code>. Starting values: focused <code>0 18 40 −8</code> at 38% plus <code>0 2 6</code> at 16%; others <code>0 8 20 −6</code> at 22%; dark mode raises alphas by about half.</li>
+        <li><b>The shadow is one quad per window</b> behind its surface, drawn with a closed-form blurred rounded-rectangle shader next to <code>rounded.rs</code>, so there is no blur pass or offscreen buffer. The hairline is a parameter of the existing corner shader. The ring is drawn outside the frame.</li>
+        <li><b>Focus changes cross-fade</b> the two shadow strengths over 150 ms (ease-out cubic, as every compositor motion); Reduce Motion makes it instant.</li>
+      </ul>
+      <h5>Edge cases</h5>
+      <ul>
+        <li><b>Full screen:</b> no shadow, edge or ring; direct scanout keeps working.</li>
+        <li><b>Fill:</b> the edge and ring stay, the shadow goes (it would only fall on the menu bar and Dock).</li>
+        <li><b>Tiles 6 px apart:</b> shadows are clipped to the window's own screen and, for tiled windows, drawn short (offset 0, blur 8) so they shade the gap, not the neighbor.</li>
+        <li><b>Apps that draw their own frame</b> (Xwayland, client-side decorations): the shadow follows the window's geometry, not its buffer; a client whose buffer is bigger than its geometry already draws a shadow, and gets none from Dashi.</li>
+        <li><b>Sheets and popups:</b> sheets get the <code>xl</code> shadow from the same shader (they have none today, a known 0.4.0 issue); app menus (xdg popups) get the menu shadow; the menu bar, Dock and other layer surfaces get none.</li>
+        <li><b>Overview and the switcher:</b> thumbnails get a scaled shadow so they lift off the wallpaper; the hover highlight stays Overview's own.</li>
+        <li><b>Screenshots:</b> ⇧❖4 then Space captures the window without its shadow; agents' captures are unchanged.</li>
+        <li><b>Damage:</b> the shadow's rectangle joins the window's damage when it moves, resizes or changes focus (two windows per focus change); nothing else redraws. Check frame time in the VM with ten overlapping windows before shipping.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The roast</h2>
+    <p>On 2026-11-05 every first-party app was screenshotted in the VM (light mode, 1646 × 937) and handed, with its code, to its own reviewer, whose only job was to roast it and turn the roast into fixes. Thirteen reports came back, each with a findings table (P0 broken to P3 polish), improvements with sizes, one big idea, and notes for the design system. They are in <code>docs/roast/</code>. Every claim in them cites code or a screenshot. What follows is the merge.</p>
+    <p>Where the work lands: <span class="where mirin">mirin</span> Metal itself, <span class="where ui">@dashi/ui</span> or the app kit, <span class="where comp">compositor</span>, or <span class="where app">app</span> code alone.</p>
+
+    <h3>Across every app</h3>
+    <table>
+      <tr><th>Theme</th><th>Where it hit</th><th>Recommendation</th><th></th></tr>
+      <tr><td><b>Two chrome rows</b></td><td><code>AppWindow</code>'s <code>subtitle</code> stacks a second line under the title in Activity Monitor, Editor, Notes, Software, Applet Store and Preview; Notes and Calendar add a permanent footer; Terminal adds a tab bar.</td><td>Remove <code>subtitle</code> and <code>footer</code> from <code>AppWindow</code>; counts go to sidebar badges, scopes to the sidebar, and Terminal's tabs into the title bar. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>The keyboard stops at Up and Down</b></td><td><code>KeySink</code>, a hidden 1×1 text field, reports text, Enter, Esc, Up and Down only (<code>dashi-ui/src/key-sink.tsx:41</code>). Files can't move left in a grid, dialogs can't Tab, no button takes focus. Metal has had <code>onKeyDown</code> with modifiers all along, and Terminal uses it.</td><td>Rebuild <code>KeySink</code> on <code>onKeyDown</code>, then a focus model: Tab order, arrows inside groups, Space and Enter to press, a 2 px kombu ring after keyboard use. Fix the stale comments that say the events don't exist. <span class="sz">M → L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Text you can't click into</b></td><td>Editor (P0: no click-to-place caret, no selection, "Copy All"), Notes (P0: arrow keys only), every form field.</td><td>Caret placement, drag and ⇧ selection, Cut and Copy in Metal's <code>TextInput</code>, then a real document view for Editor and Notes. <span class="sz">L</span></td><td><span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>No Undo</b></td><td>Files (no undo for any write), Notes (no Edit menu), Editor's Revert, Calendar edits, Settings deletions.</td><td>Move Editor's <code>history.ts</code> into the kit as a shared undo stack; Files records every write in it. <span class="sz">M</span></td><td><span class="where ui">kit</span></td></tr>
+      <tr><td><b>Irreversible in one click</b></td><td>Deleting a saved password or card (<code>panes/passwords.tsx:120</code>), Editor's Revert, ❖W ending an <code>ssh</code> tab, Enter granting the camera in an Access sheet, Files' silent "name 2" instead of asking.</td><td>One <code>ConfirmSheet</code> / confirm button in <code>@dashi/ui</code>; Enter presses the safe answer for grants, deletions and replacements; destructive buttons are ume. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Contrast below AA</b></td><td>Muted text 4.2–4.35:1, white on kombu 4.13:1, the secondary button 1.14:1 against the window, Terminal's prompt 1.7:1.</td><td>A darker accent fill for white text, muted ink at about 65%, 3:1 edges on buttons, fields and off switches; a Dashi terminal palette. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Colors doing the wrong jobs</b></td><td>Shiso (agents only) tints Software's and the Applet Store's tiles and Appearance's icon; kombu tints every sidebar glyph and file icon; three reds and no broth or moss tokens, so warnings come out gray.</td><td>Tokens per job: kombu selected, ume destroy, broth warning, moss success, shiso agents; icons ink or muted. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Copied from the Mac</b></td><td>Calculator ("round as on the Mac since Sequoia"), Calendar ("the Mac's calendar colors"), Settings' sidebar (Apple's system hexes), Activity Monitor ("as on the Mac"), Desktop &amp; Dock's sentences word for word.</td><td>Palettes from the ingredients, the copy rewritten in Dashi's voice, and a lint for Apple product names in UI strings. <span class="sz">S–M</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Controls rolled by hand</b></td><td>About 20 copies: Switch lives in the Wi-Fi folder, three checkboxes, three month grids, two sliders, two search fields, no select, no progress bar, no tooltips.</td><td>Add Switch, Slider, Checkbox, PopUpButton, Stepper, ProgressBar, Tabs, Tooltip, MonthGrid, an Open With sheet and one alert frame; delete the copies. <span class="sz">L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>The gallery shows the wrong library</b></td><td>Components, pinned second in the Dock, is mirin's metal-ui browser (no Dashi app imports metal-ui) and opens dark on a light desktop.</td><td>Make it the <code>@dashi/ui</code> gallery, every state in both modes side by side, and unpin it from the default Dock. <span class="sz">M</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Pointer features left on the table</b></td><td>Calendar has no drag at all, Preview accepts no drop and doesn't scroll PDFs, Files has no rubber band or ⇧-click; Metal has <code>onPointer</code>, <code>onDrop</code> and <code>onWheel</code>. Only modifiers on <code>onPress</code> are missing.</td><td>Use what exists in the apps; add modifiers to <code>onPress</code> in mirin. <span class="sz">S–L</span></td><td><span class="where app">apps</span> <span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>Five ways to pick a file</b></td><td>The portal chooser has no way up a folder and accepts on a slow second click; <code>dashi-dialog --file-selection</code> exits 255; Editor asks for a typed path; Calendar falls back to one.</td><td>One file browser: Files' core as a component, embedded by the portal, <code>dashi-dialog</code> and Dashi's own apps. <span class="sz">L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>A store that can't open</b></td><td>The Applet Store's catalog key is <code>null</code> (<code>src/applet-store/keys.ts:9</code>), so everyone gets "isn't set up yet" and a Try Again that can't work.</td><td>Hide Discover until the key exists, or generate the key; then fold applets into Software as a section. <span class="sz">S, then M</span></td><td><span class="where app">app</span></td></tr>
+      <tr><td><b>Consent you can't see or undo</b></td><td>Flatpaks install with no word about what they reach; applets can't be turned off; Agents can only revoke everything; the Access dialog points at a "Settings › Privacy" that doesn't exist.</td><td>One plain-language permission line set for Flatpaks, applets and agents, and a Privacy &amp; Security pane to review and revoke. <span class="sz">M</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Work on the UI thread</b></td><td>Activity Monitor reads <code>/proc</code> synchronously every 2 s and is the second-busiest process on an idle VM; Files runs <code>lsblk</code> every 4 s per window; Terminal's <code>memo</code> never holds; dashi-dialog's progress re-renders 25 times a second.</td><td>Workers for sampling, pause when hidden (the kit needs a visibility signal), memoize properly. <span class="sz">S–M</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Not accessible</b></td><td>No accessibility tree anywhere in the stack; glyph-only buttons have no names.</td><td>AccessKit to AT-SPI in mirin Metal; <code>label</code> required on glyph-only controls now, so the names exist before the tree does. <span class="sz">L</span></td><td><span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>Locale ignored</b></td><td>Calculator types <code>1,000</code> as 1.000; dashi-dialog's calendar starts on Sunday in English; dates in the chooser skip Region settings.</td><td>One Region helper for numbers, weeks and dates in every process. <span class="sz">S–M</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Errors that read like a spec file</b></td><td>"PDF files need poppler-utils (pdftoppm and pdfinfo)", "Is wl-clipboard installed?"</td><td>Make them package dependencies, and say what happened in people's words. <span class="sz">S</span></td><td><span class="where app">apps</span></td></tr>
+    </table>
+
+    <h3>App by app</h3>
+
+    <div class="app-card">
+      <h3>Files</h3>
+      <p class="roast">"Files never overwrites anything, and it never asks either. Drag in a newer report.txt and you get report 2.txt, then report 3.txt, until you're sure you're losing your mind."</p>
+      <ol>
+        <li>Move the keyboard to <code>onKeyDown</code>: arrows in two dimensions, ⇧-arrows, Space to peek, ❖⌫ to trash, F2 to rename. <span class="sz">M</span></li>
+        <li>Real selection: ⇧-click, ❖-click, a rubber band; retire the Select toggle that silently stops double-click from opening. <span class="sz">M</span></li>
+        <li>Undo for every write, and a Replace / Keep Both / Skip sheet instead of silent "name 2". <span class="sz">M + M</span></li>
+        <li>One icon family typed by content, not only by name (logs show a blank square today). <span class="sz">S</span></li>
+        <li>Search that doesn't turn into a path field when clicked; New Folder that picks a free name (<code>freeName()</code> exists and is never called). <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> one file browser, used everywhere; the portal's Open and Save become Files in a sheet.</p>
+      <p class="src">Report: <a href="roast/files.md">roast/files.md</a> · 20 findings, seven P1.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>System Settings and Setup Assistant</h3>
+      <p class="roast">"Forgetting a Wi-Fi network asks first. Deleting a saved password doesn't: it takes one click on a bright red button."</p>
+      <ol>
+        <li>One confirm pattern for everything irreversible (passwords, cards, Forget, Skip Setup), and errors that show instead of vanishing. <span class="sz">S</span></li>
+        <li>Search in the existing header strip, backed by a registry of every row; no new bar. <span class="sz">M</span></li>
+        <li>Regroup the sidebar and drop Apple's hexes: neutral tiles, shiso for Agents only. <span class="sz">S</span></li>
+        <li>Appearance: one Dark Mode control (the previews), not two that disagree. <span class="sz">S</span></li>
+        <li>Agents as a consent dashboard: each scope its own switch, ordered by risk, with Undo after Revoke. <span class="sz">M</span></li>
+      </ol>
+      <p>Setup Assistant: the Wi-Fi page shows both "Skip Setup" and "Skip"; Skip Setup ends setup with no confirmation; closing the window counts as skipping after 2 s.</p>
+      <p class="big"><b>Big idea:</b> every setting an addressable entry, driving search, deep links, the launcher and agent tools, with a "Recently changed" list that names who changed what, agents in shiso, each with Undo.</p>
+      <p class="src">Report: <a href="roast/settings.md">roast/settings.md</a> · 20 findings, one P0.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>Terminal</h3>
+      <p class="roast">"The first thing you see is a prompt you can't read: the ~ is about #C1C880 on pure white, around 1.7:1. The welcome message is 'get closer to the screen'."</p>
+      <ol>
+        <li>A Dashi terminal palette (16 ANSI colors, light and dark) passed to the engine. <span class="sz">M</span></li>
+        <li>A cheap render path: memoize <code>look</code> (<code>view.tsx:87</code>) so unchanged rows stop redrawing up to 125 times a second. <span class="sz">S</span></li>
+        <li>Draw on a fixed cell grid so the cursor stops drifting after emoji and CJK. <span class="sz">M</span></li>
+        <li>Ask before closing a tab with a running process; fix ⇧❖W, which closes only a tab (<code>keymap.ts:119</code>). <span class="sz">S</span></li>
+        <li>Tabs in the title bar, not a second 28 px bar. <span class="sz">M</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> shell integration on by default: tabs named by folder, new tabs where you are, ❖↑ and ❖↓ between prompts, failed commands marked in ume.</p>
+      <p class="src">Report: <a href="roast/terminal.md">roast/terminal.md</a></p>
+    </div>
+
+    <div class="app-card">
+      <h3>Text Editor</h3>
+      <p class="roast">"It's a text editor where you can't click in the text or select a word. The Edit menu offers 'Copy All', which is what you ship when Copy didn't make it."</p>
+      <ol>
+        <li>A real document view in mirin: caret, selection, Cut and Copy, find highlights, a gutter. <span class="sz">L</span> <span class="where mirin">mirin</span></li>
+        <li>Stop remounting the input on ❖S, sheets and Esc, so the caret stays put (<code>text-area.tsx:101</code>). <span class="sz">S</span></li>
+        <li>One close path that never loses work: ❖W asks like File › Close; recovery written continuously, not only at exit. <span class="sz">M</span></li>
+        <li>The document's name as the window title, on one line (every window is "Text Editor" today). <span class="sz">S</span></li>
+        <li>Revert asks first, or is undoable. <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> a document surface with continuous versioned autosave: "you never lose a word, and you never get asked."</p>
+      <p class="src">Report: <a href="roast/editor.md">roast/editor.md</a> · one P0.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>Notes</h3>
+      <p class="roast">"The note count appears three times on one empty screen: the sidebar badge, the toolbar subtitle, and the footer. The window spends two bars on a number that is already in a badge."</p>
+      <ol>
+        <li>Drop the subtitle and the footer. <span class="sz">S</span></li>
+        <li>An Edit menu with Undo and Redo, on the kit's shared history. <span class="sz">M</span></li>
+        <li>Save a conflict copy instead of silently overwriting a sync tool's change. <span class="sz">M</span></li>
+        <li>Inline Markdown in Preview, Format items with ❖B, ❖I and ⇧❖L. <span class="sz">M</span></li>
+        <li>Click-to-place caret and selection, from the same mirin work as Editor. <span class="sz">L</span> <span class="where mirin">mirin</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> one live page that formats Markdown as you type, checkboxes tickable in place, the file still plain Markdown.</p>
+      <p class="src">Report: <a href="roast/notes.md">roast/notes.md</a> · one P0.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>Calendar</h3>
+      <p class="roast">"Click Thursday's weekly standup and the sheet opens on the day the series started. Change the time and you've moved every standup ever."</p>
+      <ol>
+        <li>Drag to create, move and resize events (<code>onPointer</code> exists). <span class="sz">L</span></li>
+        <li>Open the occurrence that was clicked; ask "This event / This and following / All events". <span class="sz">M</span></li>
+        <li>Keep time zones; show moved instances from Google and Outlook imports. <span class="sz">L</span></li>
+        <li>New events only go to visible calendars, so they can't vanish into a hidden one. <span class="sz">S</span></li>
+        <li>A palette from Dashi's ingredients, not the Mac's calendar colors. <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> the grid is the editor: drag across hours, type the title in place, Enter; a small popover for details.</p>
+      <p class="src">Report: <a href="roast/calendar.md">roast/calendar.md</a></p>
+    </div>
+
+    <div class="app-card">
+      <h3>Preview</h3>
+      <p class="roast">"To 'read' a PDF you get one page at a time, fitted whole, as a PNG. No wheel, no scroll, no fit-width, no selecting text, no search. It's a fax machine with a sidebar."</p>
+      <ol>
+        <li>PDFs as a scrolling document: wheel, pinch, fit-width, pages rendered near the screen. <span class="sz">L</span></li>
+        <li>The title on one line. <span class="sz">S</span></li>
+        <li>An empty state that works: accept drops, Open… as the primary button, recent files, no dead controls. <span class="sz">S–M</span></li>
+        <li>Show progress, and make rotation stick (lossless for JPEG). <span class="sz">M</span></li>
+        <li>Copy, Export and Print. <span class="sz">M</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> every file a strip of pages on one scrolling surface; edits a non-destructive layer remembered while you browse.</p>
+      <p class="src">Report: <a href="roast/preview.md">roast/preview.md</a> · one P0.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>Calculator</h3>
+      <p class="roast">"The comment at the top says it out loud: 'round as on the Mac since Sequoia'. The screenshot is exactly that calculator with its orange swapped for kombu."</p>
+      <ol>
+        <li>Separators and the decimal key from the locale: <code>1,000</code> becomes 1.000 today. <span class="sz">M</span></li>
+        <li>One paste behaviour: ⌃V types the clipboard key by key, so a <code>c</code> in it clears the display. <span class="sz">S</span></li>
+        <li>Display spacing: the 0 sits 6 px above the keys under 38 px of nothing. <span class="sz">S</span></li>
+        <li>A window size that behaves: fixed, or a keypad that scales (today Fill floats it in a gray field). <span class="sz">M</span></li>
+        <li>History as a tape in the empty band. <span class="sz">L</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> an editable expression line with a live result and a remembered tape; it leaves the Mac's calculator behind without adding chrome.</p>
+      <p class="src">Report: <a href="roast/calculator.md">roast/calculator.md</a></p>
+    </div>
+
+    <div class="app-card">
+      <h3>Activity Monitor</h3>
+      <p class="roast">"On an idle VM, Activity Monitor is the second-busiest thing on the machine. It doesn't so much observe the system as join it."</p>
+      <ol>
+        <li>Rows by app, with icon and name, helpers folded in (two rows say <code>mirin-metal-host</code> and one says <code>bun</code> today). <span class="sz">M</span></li>
+        <li>An Energy tab; the battery menu sends people here for one and there isn't one. <span class="sz">M</span></li>
+        <li>Sampling off the UI thread, paused when hidden. <span class="sz">M</span></li>
+        <li>Numbers that are right: memory, disk as rates, smoothed CPU. <span class="sz">S–M</span></li>
+        <li>One toolbar row and a labelled "Quit…" button. <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> answer "what is slowing, heating or draining my computer, and can I stop it?", sharing one model of an app's cost with the battery menu and Force Quit.</p>
+      <p class="src">Report: <a href="roast/activity-monitor.md">roast/activity-monitor.md</a></p>
+    </div>
+
+    <div class="app-card">
+      <h3>Software</h3>
+      <p class="roast">"A 40 KB menu-bar applet that wants to read the battery gets a full consent sheet. A Flatpak that can read your whole home folder and use the camera gets a grey 'Get' pill and nothing else."</p>
+      <ol>
+        <li>A permissions block on the app page in plain words; a sheet before installing apps that ask for broad access. <span class="sz">M</span></li>
+        <li>A daily background update check that posts one quiet notification (43 updates were waiting in the VM). <span class="sz">M</span></li>
+        <li>Dashi's recommended list from the local copy, right away and offline, with Dashi's own summaries. <span class="sz">S</span></li>
+        <li>The page name in the single toolbar line. <span class="sz">S</span></li>
+        <li>A busy pill with cancel, and one place that shows the queue. <span class="sz">M</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> the app page as a trust card: who made it, what it can reach, what changed, how many use it.</p>
+      <p class="src">Report: <a href="roast/software.md">roast/software.md</a></p>
+    </div>
+
+    <div class="app-card">
+      <h3>Applet Store</h3>
+      <p class="roast">"It isn't a store yet, it's a sign saying a store is coming: a shop with every aisle labelled and no shelves."</p>
+      <ol>
+        <li>Don't ship a dead store: open on Installed while there is no catalog key, with one quiet line. <span class="sz">S</span></li>
+        <li>The consent sheet on <code>@dashi/ui</code>'s <code>Sheet</code>, with the applet's real icon and only the new permissions on update. <span class="sz">M</span></li>
+        <li>Manage an installed applet: on/off, each permission, Remove with or without its data. <span class="sz">M</span></li>
+        <li>Menus like Software's, so it has shortcuts at all. <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> make applets a section of Software: one Updates page, one Installed page, one trust language.</p>
+      <p class="src">Report: <a href="roast/applet-store.md">roast/applet-store.md</a> · its first finding is that it can never load its catalog.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>@dashi/ui and Components</h3>
+      <p class="roast">"Count the copies: three checkboxes, three month grids, three 'Open With' lists, two search fields, two sliders, and four sidebar-row heights. In practice the design system is a list of suggestions."</p>
+      <ol>
+        <li>Components becomes the <code>@dashi/ui</code> gallery, every state, both modes. <span class="sz">M</span></li>
+        <li>Real keyboard and focus in the library. <span class="sz">L</span></li>
+        <li>Fill the control gaps, then delete the copies. <span class="sz">L</span></li>
+        <li>Palette in line with the brand and AA. <span class="sz">S</span></li>
+        <li>No <code>subtitle</code> in <code>AppWindow</code>. <span class="sz">S</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> the gallery as a live spec: tokens generate <code>design.html</code>'s values, the VM screenshots every exhibit in CI, and a control must be in the gallery before an app may use it.</p>
+      <p class="src">Report: <a href="roast/dashi-ui.md">roast/dashi-ui.md</a> · its 17 proposed rules feed the consolidated design guidelines.</p>
+    </div>
+
+    <div class="app-card">
+      <h3>Portal dialogs and dashi-dialog</h3>
+      <p class="roast">"The file chooser lets you walk into a folder but never back out, like a hotel whose only fire exit is in the lobby."</p>
+      <ol>
+        <li>Real navigation in the chooser: a folder pop-up, Back and Up, a go-to field. <span class="sz">M</span></li>
+        <li>A real double-click; a single click only selects. <span class="sz">S</span></li>
+        <li>A print sheet that works from the keyboard, with a Copies stepper that lets you clear the field. <span class="sz">M</span></li>
+        <li>Access decisions you can review and revoke, and that Enter can't grant by accident. <span class="sz">M</span></li>
+        <li><code>dashi-dialog --file-selection</code> through the same chooser. <span class="sz">M</span></li>
+      </ol>
+      <p class="big"><b>Big idea:</b> one chooser everywhere, Files in a sheet, used by Dashi's own apps first.</p>
+      <p class="src">Report: <a href="roast/portal-dialogs.md">roast/portal-dialogs.md</a> · one P0.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Order of work</h2>
+    <div class="wave w1">
+      <h3>Wave 1: remove the embarrassment</h3>
+      <p>Small, mostly app and token changes; each is a day or less, and together they change the first impression.</p>
+      <ul>
+        <li>The window fixes on this page: Fill on the green control, the new chords, bugs 1–7. <span class="where app">shell</span> <span class="where comp">compositor</span></li>
+        <li><code>AppWindow</code> without <code>subtitle</code> and <code>footer</code>; contrast and job tokens (ume, broth, moss; darker accent fill). <span class="where ui">@dashi/ui</span></li>
+        <li>Confirm before deleting passwords and cards, Revert, closing a running tab; Enter never grants. <span class="where ui">@dashi/ui</span></li>
+        <li>Applet Store opens on Installed without a key; Components unpinned from the default Dock.</li>
+        <li>Terminal palette, <code>memo</code> fix, ⇧❖W; Editor caret jump, ❖W asks, window titles.</li>
+        <li>Calculator locale, paste and spacing; Activity Monitor numbers, one row, sampling in a worker.</li>
+        <li>Settings' two Dark Mode controls, the sidebar colors; Calendar's hidden-calendar trap and palette.</li>
+        <li>Portal chooser Back and Up, real double-click, the Copies field; Software's local recommended list; Preview's empty state; Notes' conflict copy.</li>
+      </ul>
+    </div>
+    <div class="wave w2">
+      <h3>Wave 2: the platform pieces</h3>
+      <p>Each unlocks several apps at once. Most of these are in mirin or <code>@dashi/ui</code>, not in an app.</p>
+      <ul>
+        <li><span class="where mirin">mirin</span> <code>TextInput</code> caret placement and selection, then a document view; modifiers on <code>onPress</code>; tooltips; later the accessibility tree.</li>
+        <li><span class="where ui">@dashi/ui</span> <code>KeySink</code> on <code>onKeyDown</code> and a focus model; the missing controls; PopupMenu with separators, keys and clamping; one alert frame; a token lint.</li>
+        <li><span class="where ui">kit</span> a shared undo stack; a window-visibility signal; Components as the gallery.</li>
+        <li><span class="where comp">compositor</span> shadows, the hairline and the optional ring; sheets' shadow.</li>
+        <li><span class="where app">Settings</span> the settings registry behind search; one permission language and a Privacy &amp; Security pane.</li>
+      </ul>
+    </div>
+    <div class="wave w3">
+      <h3>Wave 3: the big ideas</h3>
+      <ul>
+        <li>One file browser everywhere (Files, the portal, <code>dashi-dialog</code>, Dashi's apps).</li>
+        <li>Settings as addressable entries, with "Recently changed" and Undo, agents included.</li>
+        <li>Software as the trust card, with applets folded in.</li>
+        <li>Activity Monitor app-first, sharing one cost model with the battery menu and Force Quit.</li>
+        <li>Calendar's grid as the editor; Notes as one live page; Editor's document surface with autosave.</li>
+        <li>Terminal with shell integration; Preview's strip of pages; Calculator's expression line.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>What I need from you</h2>
+    <ol class="picks">
+      <li><b>The green control:</b> A (click fills, ⌥-click full screen) with D (press-and-hold menu) later, as recommended, or something else?</li>
+      <li><b>Fill's edges:</b> Fill without gaps and maximized (recommended), or the 6 px gap that tiles keep?</li>
+      <li><b>The chords:</b> map A (four halves, chained quarters, ⌃❖↩ Fill, ⌃❖C Center, ⌃❖R Back)? And should pressing the same arrow again go to the next screen (recommended) or cycle thirds?</li>
+      <li><b>Drag zones:</b> keep them (recommended), and add the top layout strip after the green menu?</li>
+      <li><b>Depth:</b> shadow and hairline by default, the accent ring as an option (recommended), or the ring on for everyone?</li>
+      <li><b>The Applet Store:</b> fold it into Software? And generate Dashi's catalog signing key now (it is held offline by the maintainers), or hide the catalog until then?</li>
+      <li><b>When:</b> Wave 1 in 0.4.0 before it ships, or as 0.4.1? The window fixes alone could go either way.</li>
+      <li><b>Mac-derived looks:</b> rework Calculator, Calendar's palette and Settings' sidebar away from the Mac now (Wave 1), or with their big ideas (Wave 3)?</li>
+    </ol>
+  </main>
+</div>
+</body>
+</html>

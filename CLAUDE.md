@@ -39,9 +39,10 @@ the same change.
   rules.
 - `RECOVERY.md` - what was recovered from 0.1.0 and what was lost.
 - `docs/*.html` - the illustrated guides (open `docs/index.html`): the distro
-  spec, brand guidelines, the mascot, and design guidelines (tokens, type,
-  spacing, chrome, motion, icons). A change to a color, a measure, or a
-  motion updates them in the same commit.
+  spec and the design guidelines (`docs/design.html`: the brand, voice, the
+  mascot, tokens, type, spacing, chrome, window management, motion, icons,
+  components, and the numbered rules apps follow). A change to a color, a
+  measure, or a motion updates them in the same commit.
 - `tasks/todo.md` - the current plan and its checkpoints.
 
 The shared code-style and structure rules live in:
