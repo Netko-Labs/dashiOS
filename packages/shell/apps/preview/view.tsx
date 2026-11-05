@@ -5,7 +5,7 @@
  * is up, and the keys.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, Notice, PopupMenu, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chooseFile } from "../../src/portal/file-chooser.ts";
@@ -47,6 +47,7 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   const [sheet, setSheet] = useState<SheetState>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [thumbnails, setThumbnails] = useState(true);
+  const [dismissedNote, setDismissedNote] = useState<string | null>(null);
 
   const { picture, pdf } = snap;
   const isPdf = snap.kind === "pdf";
@@ -204,7 +205,8 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     { label: "Move to Trash…", onPress: () => setSheet({ kind: "trash" }), disabled: !snap.path },
   ];
 
-  const subtitle = useMemo(() => {
+  // The picture's size and place in its folder: a quiet line in the toolbar row, not a second line under the title.
+  const detail = useMemo(() => {
     if (!snap.path) return undefined;
     if (pdf) return `${pdf.pages} ${pdf.pages === 1 ? "page" : "pages"}${pdf.title ? ` · ${pdf.title}` : ""}`;
     const parts: string[] = [];
@@ -294,20 +296,27 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     />
   );
 
-  const footer = snap.note ? (
-    <View testID="note" style={{ paddingHorizontal: 14, paddingVertical: 6, borderTopWidth: 1, borderColor: colors.separator }}>
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{snap.note}</Text>
-    </View>
-  ) : undefined;
+  // A note about how the picture is shown floats over it until dismissed, instead of a bar under it.
+  const notice = snap.note && snap.note !== dismissedNote ? <Notice testID="note" text={snap.note} onDismiss={() => setDismissedNote(snap.note)} /> : undefined;
 
   return (
     <AppWindow
       title={snap.name || "Preview"}
-      {...(subtitle !== undefined ? { subtitle } : {})}
-      toolbar={toolbar}
+      toolbar={
+        <>
+          {detail !== undefined && (
+            <View style={{ flexShrink: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+                {detail}
+              </Text>
+            </View>
+          )}
+          {toolbar}
+        </>
+      }
       sidebar={pdf && thumbnails ? <Thumbnails pdf={pdf} pageSize={viewer.firstPageSize} onPage={(page) => void viewer.goToPage(page)} /> : undefined}
       sidebarWidth={190}
-      footer={footer}
+      notice={notice}
       overlay={overlay}
     >
       {sheet === null && menu === null && <KeySink testID="keys" onKey={onKey} />}

@@ -1,15 +1,14 @@
 /**
  * Things that come over a window's content: a sheet (a card hung from the
- * top of the window that holds the window until it is answered, as on the
- * Mac), the confirm sheet built on it, a popup menu, and an empty state.
+ * top of the window that holds the window until it is answered; the confirm
+ * sheet in confirm.tsx is built on it), a popup menu, and an empty state.
  * Metal has no child windows, so all of them are drawn inside the window,
  * over everything (pass them as `AppWindow`'s `overlay`).
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { Button } from "./controls.tsx";
-import { CHECK, WARNING } from "./glyphs.ts";
+import { CHECK } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
@@ -63,51 +62,6 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
         {children}
       </View>
     </View>
-  );
-}
-
-export interface ConfirmSheetProps {
-  title: string;
-  message: string;
-  /** The button that goes ahead ("Quit", "Force Quit"). */
-  confirmLabel: string;
-  /** It can't be taken back: the button is red. */
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  testID?: string;
-  /** A glyph beside the title; a warning sign by default. */
-  glyph?: string;
-}
-
-/** A question with Cancel and one button that goes ahead (Enter); Esc cancels. */
-export function ConfirmSheet({ title, message, confirmLabel, danger, onConfirm, onCancel, testID = "confirm", glyph = WARNING }: ConfirmSheetProps) {
-  const colors = useColors();
-  return (
-    <Sheet testID={testID} onCancel={onCancel} onConfirm={onConfirm}>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: danger ? `${colors.critical}24` : colors.button,
-          }}
-        >
-          <Svg markup={glyph} size={22} color={danger ? colors.critical : colors.textMuted} />
-        </View>
-        <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>
-        </View>
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
-        <Button label="Cancel" testID={`${testID}:cancel`} onPress={onCancel} />
-        <Button label={confirmLabel} testID={`${testID}:ok`} onPress={onConfirm} primary={!danger} danger={danger} />
-      </View>
-    </Sheet>
   );
 }
 

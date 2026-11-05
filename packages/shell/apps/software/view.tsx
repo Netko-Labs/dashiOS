@@ -31,23 +31,6 @@ export const SOFTWARE_SIZE = { width: 1020, height: 700 } as const;
 
 const SEARCH_DELAY_MS = 300;
 
-function pageLabel(page: Page): string {
-  switch (page.kind) {
-    case "discover":
-      return "Discover";
-    case "installed":
-      return "Installed";
-    case "updates":
-      return "Updates";
-    case "category":
-      return CATEGORIES.find((category) => category.id === page.id)?.label ?? "Category";
-    case "search":
-      return `Results for “${page.query}”`;
-    case "app":
-      return "";
-  }
-}
-
 const inSidebar = (nav: Nav, page: Page): boolean =>
   nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
 
@@ -222,7 +205,7 @@ export function SoftwareWindow() {
 
   return (
     <ActionsContext.Provider value={actions}>
-      <AppWindow title="Software" subtitle={pageLabel(nav.page) || undefined} sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
+      <AppWindow title="Software" sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
         <PageView nav={nav} query={query} onRestart={() => setAsk({ kind: "restart" })} onUpdateSystem={askSystem} />
       </AppWindow>
     </ActionsContext.Provider>

@@ -1,6 +1,6 @@
-/** The strip under the content, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
+/** The notice over the content's foot, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
-import { useColors } from "@dashi/ui";
+import { Notice, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState, useJobs } from "./context.ts";
 import { formatCount, formatSize } from "./format.ts";
@@ -36,27 +36,6 @@ function JobRow({ job }: { job: Job }) {
   );
 }
 
-function NoticeRow() {
-  const colors = useColors();
-  const { store } = useFiles();
-  const { notice } = useFilesState();
-  if (!notice) return null;
-  return (
-    <View testID="notice" style={{ minHeight: 28, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 4 }}>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 12, color: notice.error ? colors.critical : colors.textMuted }}>{notice.text}</Text>
-      </View>
-      <View
-        testID="notice:close"
-        onPress={() => store.dismissNotice()}
-        style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-      >
-        <Svg markup={CLOSE} size={11} color={colors.textMuted} />
-      </View>
-    </View>
-  );
-}
-
 /** "12 items, 41.3 GB available", or "3 of 12 selected, 4.2 MB". */
 export function statusLine(total: number, selected: readonly { size: number; kind: string }[], free: number | null): string {
   if (selected.length > 0) {
@@ -68,17 +47,17 @@ export function statusLine(total: number, selected: readonly { size: number; kin
 }
 
 export function Footer() {
-  const colors = useColors();
+  const { store } = useFiles();
   const state = useFilesState();
   const jobs = useJobs().filter((job) => job.state === "running");
-  // Vertical space is the listing's: the strip is there only while it has something to say.
+  // It floats over the listing (AppWindow's notice) only while it has something to say; it is never a bar.
   if (jobs.length === 0 && !state.notice) return null;
+  const notice = state.notice;
   return (
-    <View testID="footer" style={{ flexShrink: 0, flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator }}>
+    <Notice testID="footer" text={notice?.text} tone={notice?.error ? "error" : "info"} onDismiss={notice ? () => store.dismissNotice() : undefined}>
       {jobs.map((job) => (
         <JobRow key={job.id} job={job} />
       ))}
-      <NoticeRow />
-    </View>
+    </Notice>
   );
 }
