@@ -11,6 +11,7 @@ import { type ReactElement, type ReactNode, useEffect } from "react";
 import { BluetoothPage } from "../bluetooth/page.tsx";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import { ETHERNET, SUN, speakerGlyph, wifiGlyph } from "../glyphs.ts";
+import type { Laptop } from "../laptop/start.ts";
 import { KeyCatcher } from "../overlay.tsx";
 import { SoundPage } from "../sound/page.tsx";
 import type { SoundStore } from "../sound/store.ts";
@@ -21,6 +22,8 @@ import type { WifiNetwork } from "../wifi/types.ts";
 import { type DeviceStore, useDevices } from "./devices.ts";
 import { type FlagsStore, useFlags } from "./flags.ts";
 import { BLUETOOTH, CHEVRON_RIGHT, CONTRAST, LOCK, MOON, SUNSET } from "./glyphs.ts";
+import { LaptopPageView } from "./laptop-pages.tsx";
+import { type LaptopPage, LaptopRow } from "./laptop-row.tsx";
 import { Slider } from "./slider.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: 340, padding: 12, gap: 8 } as const;
@@ -30,7 +33,7 @@ const INNER = CONTROL_CENTER_PANEL.width - 2 * CONTROL_CENTER_PANEL.padding;
 const SLIDER = INNER - 20;
 
 /** What the panel shows: the tiles and sliders, or a tile's own page. */
-export type ControlPage = "main" | "wifi" | "sound" | "bluetooth";
+export type ControlPage = "main" | "wifi" | "sound" | "bluetooth" | LaptopPage;
 
 export interface ControlCenterProps {
   flags: FlagsStore;
@@ -39,6 +42,8 @@ export interface ControlCenterProps {
   wifi: WifiStore;
   sound: SoundStore;
   bluetooth: BluetoothStore;
+  /** The laptop row (laptop-row.tsx); shown only on laptops. */
+  laptop?: Laptop;
   page: ControlPage;
   onPage: (page: ControlPage) => void;
   /** A network was picked on the Wi-Fi page. */
@@ -165,6 +170,7 @@ export function ControlCenterPanel({
   wifi,
   sound,
   bluetooth: bluetoothStore,
+  laptop,
   page,
   onPage,
   onJoin,
@@ -243,6 +249,10 @@ export function ControlCenterPanel({
           <SoundPage sound={sound} volume={volume} onVolume={(level) => devices.setVolumeLevel(level)} sliderWidth={SLIDER} onBack={() => onPage("main")} />
         ) : page === "bluetooth" ? (
           <BluetoothPage bluetooth={bluetoothStore} radio={bluetooth} onRadio={(on) => void devices.setBluetooth(on)} onBack={() => onPage("main")} />
+        ) : page !== "main" ? (
+          laptop ? (
+            <LaptopPageView page={page} laptop={laptop} onBack={() => onPage("main")} onRestart={() => laptop.run({ kind: "restart" })} />
+          ) : null
         ) : (
           <>
             {pairs(tiles).map((row, index) => (
@@ -251,6 +261,7 @@ export function ControlCenterPanel({
                 {row}
               </View>
             ))}
+            {laptop && <LaptopRow laptop={laptop} gap={CONTROL_CENTER_PANEL.gap} onPage={onPage} />}
             {brightness !== null && (
               <Card title="Display">
                 <Slider testID="cc-brightness" width={SLIDER} value={brightness} glyph={SUN} onChange={(value) => devices.setBrightnessLevel(value)} />

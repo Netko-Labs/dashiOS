@@ -39,8 +39,15 @@ export interface HardwareDeps {
 
 export class HardwareKeys {
   private queue: Promise<unknown> = Promise.resolve();
+  /** The laptop's own keys (laptop/hotkeys.ts), handed in once the machine is known. */
+  private machineKeys: ((name: string) => Promise<boolean>) | null = null;
 
   constructor(private readonly deps: HardwareDeps) {}
+
+  /** Runs this machine's own keys (Fn F5, Fn F4, the ROG key) before the generic ones. */
+  setMachineKeys(run: ((name: string) => Promise<boolean>) | null): void {
+    this.machineKeys = run;
+  }
 
   /**
    * Runs the binding if it is a hardware key (false if it is not). Presses
@@ -48,7 +55,7 @@ export class HardwareKeys {
    * writes.
    */
   run(name: string): Promise<boolean> {
-    if (!HARDWARE_BINDINGS.includes(name)) return Promise.resolve(false);
+    if (!HARDWARE_BINDINGS.includes(name)) return this.machineKeys?.(name) ?? Promise.resolve(false);
     const result = this.queue.then(() => this.perform(name));
     this.queue = result.catch(() => {});
     return result.then(() => true);

@@ -55,8 +55,10 @@ import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
+import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { KEYMAP } from "./keymap.ts";
+import { startLaptop } from "./laptop/start.ts";
 import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
 import type { Tile } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
@@ -72,6 +74,7 @@ import { OverviewController } from "./overview/index.ts";
 import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
 import { startPolkit } from "./polkit/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
+import { powerOffReason } from "./power/nested.ts";
 import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
 import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
@@ -88,7 +91,7 @@ import { createPaneServices, type PaneServices } from "./settings-app/services.t
 import { startSetupAssistant } from "./setup/start.tsx";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
-import { runClosers } from "./shutdown.ts";
+import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { startSpaces } from "./spaces/index.ts";
 import { type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore, switcherSize } from "./switcher.tsx";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
@@ -385,7 +388,7 @@ const forceQuit = startForceQuit(compositor);
 // agent first needs them, from the stores the menus run (menus/start.tsx).
 let paneServices: PaneServices | undefined;
 function paneServicesOf(): PaneServices {
-  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor }));
+  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop }));
 }
 
 // Agents reach the same stores and controllers the menus use (agents/desktop/).
@@ -495,6 +498,22 @@ const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: instal
 const stopApplets = serveApplets({ path: appletsSocketPath(), extras });
 const tray = mayServeTray(process.env) ? startTray(extras) : Promise.resolve(null);
 
+// The graphics card falling off the bus is said once, and apps stop being offloaded to it (graphics/).
+const lostCard = startLostCardWatch({ notifications: notifications.store, restart: () => menus.confirmPower("restart") });
+// The laptop: power modes in sync with the firmware, battery health, its keys, saved tuning, the graphics card (laptop/).
+const laptop = startLaptop({
+  compositor,
+  settings: settingsStore,
+  system,
+  notifications: notifications.store,
+  developmentRun,
+  realSession: powerOffReason() === null,
+  lostCard,
+  nameOf: (window) => appFor(apps, window, installedApp).name,
+  openSettings: (pane) => settingsApp.open(pane),
+  confirmRestart: () => menus.confirmPower("restart"),
+});
+
 // The menu bar's menus and Control Center (menus/, control-center/).
 const menus = startMenus({
   appMenus: appMenus.store,
@@ -519,13 +538,40 @@ const menus = startMenus({
       ? bottomInset({ ...dockPrefs.snapshot, autohide: dockPrefs.snapshot.autohide && compositor !== null })
       : 0,
   runDock: (action) => dock.run(action).catch((error) => console.error(`dashi-shell: Dock “${action.kind}” failed:`, error)),
-  runStatus: (action) => (action.kind === "extra" ? extras.choose(action.key, action.id) : settingsApp.open("battery")),
+  runStatus: (action) =>
+    action.kind === "extra" ? extras.choose(action.key, action.id) : action.kind === "laptop" ? laptop.run(action.action) : settingsApp.open("battery"),
+  laptop,
   statusClosed: (key) => extras.menuClosed(key),
   showShortcuts: (appName) => {
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
 });
 
+// Restart and Shut Down give the apps 10 s, then go regardless of what is stuck (shutdown.ts).
+configureMachineEnd({
+  processes: async () => {
+    const windows = compositor ? await compositor.windows() : [];
+    const byPid = new Map(
+      windows.flatMap((window) => (window.pid === null || window.pid === process.pid ? [] : [[window.pid, appFor(apps, window, installedApp).name] as const])),
+    );
+    return [...byPid].map(([pid, name]) => ({ pid, name }));
+  },
+  waiting: (names, seconds, what) =>
+    notifications.store.notify({
+      appName: "Dashi",
+      appIcon: "",
+      summary: what === "restart" ? "Restarting" : "Shutting Down",
+      body: `${names.join(", ")} ${names.length === 1 ? "isn’t" : "aren’t"} closing. Dashi will ${what === "restart" ? "restart" : "shut down"} without ${names.length === 1 ? "it" : "them"} in ${seconds} s.`,
+      actions: [],
+      urgency: "critical",
+      expireTimeout: 0,
+      imagePath: "",
+      desktopEntry: "",
+      category: "system",
+      transient: true,
+      resident: false,
+    }),
+});
 // A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar.
 const stopHoldingBars = menus.controller.subscribe(() => {
   const open = menus.controller.getSnapshot().popover !== null;
@@ -614,6 +660,7 @@ const menuBars = new MenuBars({
         appMenus={appMenus.store}
         extras={extras}
         batteryMonitor={batteryMonitor}
+        laptop={laptop}
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
         onStopAgent={(id) => agents?.stop(id)}
@@ -882,6 +929,8 @@ const quit = () => {
     ["app menus", () => appMenus.close()],
     ["applets", stopApplets],
     ["battery monitor", () => batteryMonitor.stop()],
+    ["lost card watch", () => lostCard.close()],
+    ["laptop", () => laptop.close()],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],

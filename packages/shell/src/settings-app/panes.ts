@@ -5,6 +5,7 @@
 
 import { INFO } from "@dashi/ui";
 import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
+import { graphicsGlyph } from "../laptop/glyphs.ts";
 import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
 
@@ -26,6 +27,7 @@ export type PaneId =
   | "bluetooth"
   | "sound"
   | "battery"
+  | "graphics"
   | "users";
 
 export interface PaneInfo {
@@ -36,6 +38,8 @@ export interface PaneInfo {
   tint: string;
   /** Rows of one group sit together; a gap separates groups. */
   group: number;
+  /** Listed only when the machine has it (the sidebar is told which: view.tsx). */
+  optional?: true;
 }
 
 export const PANES: readonly PaneInfo[] = [
@@ -47,6 +51,7 @@ export const PANES: readonly PaneInfo[] = [
   { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, tint: "#0a84ff", group: 10 },
   { id: "sound", title: "Sound", glyph: SPEAKER, tint: "#ff375f", group: 10 },
   { id: "battery", title: "Battery & Power", glyph: BATTERY, tint: "#30d158", group: 10 },
+  { id: "graphics", title: "Graphics", glyph: graphicsGlyph(), tint: "#5856d6", group: 10, optional: true },
   { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, tint: "#8e8e93", group: 1 },
   { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, tint: "#8e8e93", group: 1 },
   { id: "mouse", title: "Mouse", glyph: MOUSE, tint: "#8e8e93", group: 1 },

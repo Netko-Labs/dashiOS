@@ -13,6 +13,8 @@ export interface System {
   store: SystemStore;
   /** For the keymap's hardware key bindings. */
   hardware: HardwareKeys;
+  /** The on-screen display, for keys handled elsewhere (the laptop's, laptop/). */
+  osd: OsdController;
   /** Brightness changed to `level` (0..1) elsewhere (Control Center): at 0 the built-in screen goes off. */
   brightnessChanged(level: number): void;
   close(): void;
@@ -42,6 +44,7 @@ export function startSystem(options: SystemOptions = {}): System {
   return {
     store,
     hardware,
+    osd,
     brightnessChanged,
     close() {
       stopCharger();

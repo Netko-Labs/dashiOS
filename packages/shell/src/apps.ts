@@ -9,7 +9,7 @@ import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
 import { firstPartyApps } from "./first-party.ts";
 import { chooseGpu, readCards } from "./gpu.ts";
-import { type GpuEnvs, gpuEnvFor, gpuEnvs } from "./gpu-env.ts";
+import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
 
 export interface App {
   /** The app id its windows report (xdg-toplevel app_id). */
@@ -266,7 +266,7 @@ export function launch(app: App): number | null {
   if (!app.exec) return null;
   try {
     const child = Bun.spawn([...app.exec], {
-      env: { ...process.env, ...gpuEnvFor(app, machineGpuEnvs(), process.env), ...app.env },
+      env: { ...process.env, ...launchEnvFor(app, machineGpuEnvs(), process.env), ...app.env },
       // Apps start at home, like a fresh terminal, not where the shell runs.
       cwd: app.cwd ?? homedir(),
       stdin: "ignore",

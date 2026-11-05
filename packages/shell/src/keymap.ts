@@ -159,3 +159,13 @@ export const KEYMAP: Keymap = {
     { when: "alt+Delete", send: "ctrl+Delete" },
   ],
 };
+
+/**
+ * `keymap` with this machine's own rules first: the laptop's keys (Fn F5,
+ * Fn F4, the ROG key; laptop/hotkeys.ts), whose keysyms come from the model
+ * database. They carry no modifiers, so going first only matters for a key
+ * the list above also names, and then the machine's meaning wins.
+ */
+export function withRules(keymap: Keymap, rules: readonly Rule[]): Keymap {
+  return rules.length === 0 ? keymap : { ...keymap, rules: [...rules, ...keymap.rules] };
+}

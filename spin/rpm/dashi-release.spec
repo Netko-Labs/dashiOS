@@ -100,6 +100,8 @@ fi
 %{_prefix}/lib/rpm/macros.d/macros.dist
 %{_prefix}/lib/systemd/system-preset/*.preset
 %{_prefix}/lib/systemd/user-preset/*.preset
+%{_prefix}/lib/systemd/user.conf.d/50-dashi-stop.conf
+%{_prefix}/lib/systemd/system/user@.service.d/50-dashi-stop.conf
 %{_datadir}/dnf5/libdnf.conf.d/20-fedora-defaults.conf
 %{_sysconfdir}/os-release
 %{_sysconfdir}/dashi-release

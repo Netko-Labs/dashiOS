@@ -23,6 +23,7 @@ import { BluetoothPane } from "./panes/bluetooth.tsx";
 import { DateTimePane } from "./panes/date-time.tsx";
 import { DesktopDockPane } from "./panes/desktop-dock.tsx";
 import { DisplaysPane } from "./panes/displays.tsx";
+import { GraphicsPane } from "./panes/graphics.tsx";
 import { KeyboardPane } from "./panes/keyboard.tsx";
 import { LanguageRegionPane } from "./panes/language-region.tsx";
 import { LockScreenPane } from "./panes/lock-screen.tsx";
@@ -47,11 +48,11 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
-      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} flags={ctx.flags} />;
+      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} flags={ctx.flags} laptop={ctx.services.laptop} />;
     case "desktop-dock":
       return <DesktopDockPane settings={ctx.settings} />;
     case "keyboard":
-      return <KeyboardPane settings={ctx.settings} layouts={ctx.layouts} />;
+      return <KeyboardPane settings={ctx.settings} layouts={ctx.layouts} laptop={ctx.services.laptop} />;
     case "trackpad":
       return <TrackpadPane settings={ctx.settings} />;
     case "mouse":
@@ -76,6 +77,8 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       return <SoundPane services={ctx.services} settings={ctx.settings} />;
     case "battery":
       return <BatteryPane services={ctx.services} settings={ctx.settings} />;
+    case "graphics":
+      return <GraphicsPane laptop={ctx.services.laptop} />;
     case "users":
       return <UsersPane services={ctx.services} chooser={ctx.chooser} />;
   }
@@ -93,15 +96,28 @@ function Toolbar({ title, height }: { title: string; height: number }) {
   );
 }
 
+const NO_GRAPHICS = { subscribe: () => () => {}, getSnapshot: () => false };
+
+/** The panes listed only when the machine has them: Graphics with a graphics card. */
+function useOptionalPanes(ctx: PaneContext): ReadonlySet<PaneId> {
+  const graphics = ctx.services.laptop?.graphics;
+  const source = graphics ? { subscribe: graphics.subscribe, getSnapshot: () => graphics.getSnapshot().hasCard } : NO_GRAPHICS;
+  const hasCard = useSyncExternalStore(source.subscribe, source.getSnapshot);
+  return hasCard ? GRAPHICS_PANES : NONE;
+}
+const GRAPHICS_PANES: ReadonlySet<PaneId> = new Set(["graphics"]);
+const NONE: ReadonlySet<PaneId> = new Set();
+
 export function SettingsWindow({ ctx, nav }: { ctx: PaneContext; nav: Nav }) {
   const colors = useColors();
   const surface = useSurface();
   const current = useSyncExternalStore(nav.subscribe, nav.getSnapshot);
   const { error } = useSettings(ctx.settings);
   const { controls } = useWindowChrome();
+  const shown = useOptionalPanes(ctx);
   return (
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
-      <Sidebar current={current} onSelect={(pane) => nav.select(pane)} />
+      <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
       <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
         {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
         {/* A pane's state is its own: switching panes starts the next one fresh. */}
