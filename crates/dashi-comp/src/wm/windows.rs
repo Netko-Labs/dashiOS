@@ -64,6 +64,10 @@ pub(crate) struct Entry {
     pub space: usize,
     /// Where it was while its Space is not shown.
     pub away_at: Option<Point<i32, Logical>>,
+    /// Its place in its Space's stack while that Space is not shown (higher
+    /// is nearer the front): stamped as it leaves the screen, so the Space
+    /// comes back, slides in, and is pictured in the order it had.
+    pub away_rank: u64,
     /// It asked for focus and was refused; cleared when it gets the keyboard.
     pub attention: bool,
     /// The title bar control under the pointer, if any (the controls light up).
@@ -87,6 +91,8 @@ pub(crate) struct Windows {
     next_id: WindowId,
     /// The last `used` stamp given.
     used: u64,
+    /// The last `away_rank` given.
+    ranked: u64,
 }
 
 impl Default for Windows {
@@ -95,6 +101,7 @@ impl Default for Windows {
             entries: Vec::new(),
             next_id: 1,
             used: 0,
+            ranked: 0,
         }
     }
 }
@@ -119,6 +126,7 @@ impl Windows {
             fullscreen: None,
             space: 0,
             away_at: None,
+            away_rank: 0,
             attention: false,
             icon: Default::default(),
             hover: None,
@@ -137,6 +145,26 @@ impl Windows {
         if let Some(entry) = self.by_surface_mut(surface) {
             entry.used = stamp;
         }
+    }
+
+    /// Window `id` waits in front of the others on its Space (it left the screen last, or was put there).
+    pub(crate) fn rank_front(&mut self, id: WindowId) {
+        self.ranked += 1;
+        let rank = self.ranked;
+        if let Some(entry) = self.get_mut(id) {
+            entry.away_rank = rank;
+        }
+    }
+
+    /// The windows waiting on Space `space` that show (not minimized or hidden), back to front.
+    pub(crate) fn waiting_on(&self, space: usize) -> Vec<&Entry> {
+        let mut waiting: Vec<&Entry> = self
+            .entries
+            .iter()
+            .filter(|entry| entry.space == space && entry.shown == Shown::Normal)
+            .collect();
+        waiting.sort_by_key(|entry| entry.away_rank);
+        waiting
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = WindowId> + use<> {

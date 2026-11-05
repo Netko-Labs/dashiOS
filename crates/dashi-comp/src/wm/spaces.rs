@@ -179,12 +179,24 @@ impl Dashi {
             return;
         }
         self.carry_held(target);
-        let ids: Vec<WindowId> = self.windows.ids().collect();
-        for id in &ids {
+        // Off the screen back to front, so each waits with its place in the stack.
+        let leaving: Vec<WindowId> = self
+            .space
+            .elements()
+            .filter_map(|window| self.windows.by_window(window).map(|entry| entry.id))
+            .collect();
+        for id in &leaving {
             self.space_unmap(*id);
         }
         self.spaces.current = target;
-        for id in &ids {
+        // Back on it back to front, each mapped over the ones before.
+        let arriving: Vec<WindowId> = self
+            .windows
+            .waiting_on(target)
+            .iter()
+            .map(|entry| entry.id)
+            .collect();
+        for id in &arriving {
             self.space_map(*id);
         }
         // A window carried across stays in front, with the keyboard; the
@@ -216,6 +228,8 @@ impl Dashi {
         if let Some(entry) = self.windows.get_mut(id) {
             entry.space = space;
         }
+        // Put on a Space, it is in front there.
+        self.windows.rank_front(id);
         self.space_map(id);
         if was_focused && space != self.spaces.current {
             self.focus_topmost();
@@ -271,6 +285,7 @@ impl Dashi {
         if let Some(entry) = self.windows.get_mut(id) {
             entry.away_at = at;
         }
+        self.windows.rank_front(id);
         self.space.unmap_elem(&window);
     }
 

@@ -177,11 +177,12 @@ impl Dashi {
             let _ = x11.set_suspended(false);
         }
         if space != self.spaces.current {
-            // Back, but on a Space that is not shown: it waits there.
+            // Back, but on a Space that is not shown: it waits there, in front.
             let bar = super::windows::bar_of(self, &window);
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
+            self.windows.rank_front(id);
             return;
         }
         self.map_frame_at(&window, at, true);

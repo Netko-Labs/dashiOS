@@ -20,7 +20,6 @@ use super::{Thumb, fit, on_preview};
 use crate::{
     render::{DashiElement, GlesAccess},
     state::Dashi,
-    wm::Shown,
 };
 
 /// Window pictures are numbered after the Desktop pictures, which are never this many.
@@ -147,11 +146,12 @@ fn space_windows(state: &Dashi, space: usize) -> Vec<(Window, Rectangle<i32, Log
             .filter_map(|window| Some((window.clone(), state.space.element_geometry(window)?)))
             .collect();
     }
-    // Off screen they wait in the registry's order, the last on top when they come back.
+    // Off screen they wait in the order they had (wm/windows.rs `away_rank`).
     let mut waiting: Vec<_> = state
         .windows
-        .entries()
-        .filter(|e| e.space == space && e.shown == Shown::Normal && e.placed)
+        .waiting_on(space)
+        .into_iter()
+        .filter(|e| e.placed)
         .filter_map(|e| {
             let at = e.away_at?;
             Some((

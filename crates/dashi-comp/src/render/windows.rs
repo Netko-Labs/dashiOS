@@ -285,7 +285,7 @@ impl Rounding {
     }
 }
 
-/// The rounding for a window Dashi frames (none for others, or with square corners chosen);
+/// The rounding for a window Dashi frames (none for others, full screen, or with square corners chosen);
 /// `pixels`: physical pixels per logical one where it is drawn (its scale, times how small).
 fn rounding<R>(
     state: &Dashi,
@@ -297,9 +297,10 @@ fn rounding<R>(
 where
     R: Renderer + GlesAccess,
 {
-    let decor = state.windows.by_window(window)?.decor;
-    let framed = matches!(decor, Decor::Standard | Decor::Unified);
-    if !framed || state.chrome_style.radius <= 0 {
+    let entry = state.windows.by_window(window)?;
+    let framed = matches!(entry.decor, Decor::Standard | Decor::Unified);
+    // Full screen, it is square to the screen's edges.
+    if !framed || entry.fullscreen.is_some() || state.chrome_style.radius <= 0 {
         return None;
     }
     let program = super::rounded::program(renderer.gles())?;

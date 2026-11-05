@@ -153,6 +153,8 @@ impl Dashi {
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
+            // New, so in front there.
+            self.windows.rank_front(id);
         }
         if let Some(x11) = window.x11_surface() {
             let size = window.geometry().size;

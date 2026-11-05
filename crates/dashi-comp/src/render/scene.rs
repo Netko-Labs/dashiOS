@@ -239,8 +239,8 @@ where
     {
         let arriving: Vec<_> = state
             .windows
-            .entries()
-            .filter(|e| e.space == slide.to && e.shown == crate::wm::Shown::Normal)
+            .waiting_on(slide.to)
+            .into_iter()
             .filter_map(|e| e.away_at.map(|at| (e.window.clone(), at)))
             .collect();
         for (window, at) in arriving.into_iter().rev() {

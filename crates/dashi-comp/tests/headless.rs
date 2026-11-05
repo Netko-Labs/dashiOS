@@ -981,6 +981,44 @@ fn a_held_window_goes_along_when_the_space_changes() {
 }
 
 #[test]
+fn a_desktop_comes_back_in_the_order_its_windows_had() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    ipc.request("subscribe", json!({}));
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // Two windows, one over the other; the older one is brought to the front.
+    let mut older = Client::open(compositor.dir.path(), &display, "dev.dashi.older", "Older");
+    let first = wait_event(&mut ipc, &mut older, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": first, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut older, "window-opened");
+    let mut newer = Client::open(compositor.dir.path(), &display, "dev.dashi.newer", "Newer");
+    let second = wait_event(&mut ipc, &mut newer, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": second, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut newer, "window-opened");
+    ipc.request("focus", json!({ "window": first }));
+    assert_eq!(window_named(&mut ipc, first)["focused"], true);
+
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut older, "space");
+    ipc.request("space-switch", json!({ "space": 1 }));
+    wait_event(&mut ipc, &mut older, "space");
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut older, "space");
+
+    // Back as it was: the older window still in front, with the keyboard.
+    assert_eq!(window_named(&mut ipc, first)["focused"], true);
+    assert_eq!(window_named(&mut ipc, second)["focused"], false);
+}
+
+#[test]
 fn a_window_held_against_an_edge_is_told_after_a_while() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
