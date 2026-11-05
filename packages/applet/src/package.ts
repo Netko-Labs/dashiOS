@@ -48,7 +48,15 @@ export async function pack(dir: string): Promise<Packed> {
   const manifestText = readFileSync(manifestPath, "utf8");
   const manifest = readManifest(manifestText);
   if ("error" in manifest) throw new Error(`applet.json: ${manifest.error}`);
-  const built = await Bun.build({ entrypoints: [join(dir, manifest.entry)], target: "bun", format: "esm", minify: false, sourcemap: "none" });
+  // React and friends in their production builds, whatever the shell running pack has set.
+  const built = await Bun.build({
+    entrypoints: [join(dir, manifest.entry)],
+    target: "bun",
+    format: "esm",
+    minify: false,
+    sourcemap: "none",
+    define: { "process.env.NODE_ENV": JSON.stringify("production") },
+  });
   if (!built.success) throw new Error(`the build failed:\n${built.logs.map((log) => String(log)).join("\n")}`);
   const output = built.outputs.find((each) => each.kind === "entry-point");
   if (!output) throw new Error("the build made no entry point");

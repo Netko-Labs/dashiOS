@@ -114,6 +114,9 @@ test("hardware: the system bus through the proxy, dashi-hardware's methods for t
   expect([...sensors, ...power, ...fans, ...tuning].some((rule) => rule.startsWith(`--talk=${HARDWARE_BUS_NAME}`))).toBe(false);
   const { bwrap } = sandboxPlan(manifest(["hardware.power"]), PATHS);
   expect(binds(bwrap, "--ro-bind")).toContainEqual(["/run/user/1000/dashi-applets/proxy/dev.example.weather.system", INSIDE.systemBus]);
+  // The sensors, read-only, with any hardware scope; not without one.
+  expect(binds(bwrap, "--ro-bind-try")).toContainEqual(["/sys/class/hwmon", "/sys/class/hwmon"]);
+  expect(binds(sandboxPlan(manifest([]), PATHS).bwrap, "--ro-bind-try")).not.toContainEqual(["/sys/class/hwmon", "/sys/class/hwmon"]);
   expect(envOf(bwrap).get("DBUS_SYSTEM_BUS_ADDRESS")).toBe(`unix:path=${INSIDE.systemBus}`);
 });
 

@@ -155,6 +155,8 @@ export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPla
   args.push("--proc", "/proc", "--dev", "/dev", "--dev-bind-try", "/dev/dri", "/dev/dri");
   // The GPU's driver finds its device here; read-only, and nothing is written through it.
   args.push("--ro-bind-try", "/sys/dev/char", "/sys/dev/char", "--ro-bind-try", "/sys/devices", "/sys/devices");
+  // Any hardware scope reads the sensors (temperatures, fans, the battery's draw), read-only; changes go through dashi-hardware.
+  if (has("hardware")) for (const path of ["/sys/class/hwmon", "/sys/class/power_supply"]) args.push("--ro-bind-try", path, path);
   args.push("--tmpfs", "/tmp", "--perms", "0700", "--dir", runtime);
   args.push("--ro-bind", `${runtime}/${paths.wayland}`, `${runtime}/${paths.wayland}`);
   args.push("--ro-bind", paths.socketDir, INSIDE.socketDir);

@@ -201,6 +201,8 @@ permissions need one, then bubblewrap with the arguments
   Wayland socket, its own applets socket (`/run/applet/socket/applets.sock`,
   `DASHI_APPLETS_SOCKET`), Bun and the Metal host read-only, the shell's Dark
   Mode file read-only;
+- with any `hardware.*` permission, `/sys/class/hwmon` and
+  `/sys/class/power_supply` read-only (the sensors);
 - the proxy's sockets and the folders, as its permissions say; nothing else.
 
 The launcher watches the folder: what the store installs, updates, disables,
