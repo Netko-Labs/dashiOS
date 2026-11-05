@@ -1060,6 +1060,15 @@ const actions = startActions({
   confirmPerson: (question) => agentUi.confirmPerson(question),
   entries: () => catalog,
   launch: launchEntry,
+  // A key or link that opens an app brings its window forward when it has one, as the Dock does.
+  activate: async (entry) => {
+    const windows = (await compositor?.windows().catch(() => [])) ?? [];
+    const own = windows.filter((window) => installedApp(window.appId)?.id === entry.id);
+    const target = own.find((window) => window.focused) ?? own.find((window) => window.state === "normal") ?? own[0];
+    if (!target || !compositor) return false;
+    await compositor.request("focus", { window: target.id });
+    return true;
+  },
   appMenus: appMenus.store,
   appName: (window) => nameApp?.(window) ?? window.appId,
   arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,

@@ -17,6 +17,12 @@ export interface AppDeps {
   launch(entry: Entry): number | null;
   /** An icon name as a file (entries.ts `resolveIcon`), for a Desktop Action's own icon. */
   icon?(name: string): string;
+  /**
+   * Bring the app's window forward when it has one, as a click on its Dock
+   * icon does; whether it did. Opening an app (a key, a link) starts it only
+   * when it isn't running.
+   */
+  activate?(entry: Entry): Promise<boolean>;
 }
 
 /** Desktop Action names, by language, as words: `Name[de]=Neues Fenster` finds it in German. */
@@ -31,7 +37,7 @@ function started(entry: Entry, deps: Pick<AppDeps, "launch">, what: string) {
 }
 
 /** The actions for one app: opening it, then its own actions. */
-export function appActions(entry: Entry, deps: Pick<AppDeps, "launch" | "icon">): ActionDef[] {
+export function appActions(entry: Entry, deps: Pick<AppDeps, "launch" | "icon" | "activate">): ActionDef[] {
   if (entry.hidden || !isSegment(entry.id)) return [];
   const base = {
     description: "",
@@ -49,7 +55,11 @@ export function appActions(entry: Entry, deps: Pick<AppDeps, "launch" | "icon">)
     keywords: { en: entry.keywords },
     kind: "open",
     icon: entry.icon,
-    check: () => started(entry, deps, entry.name),
+    check: () =>
+      ready(async () => {
+        if (await deps.activate?.(entry).catch(() => false)) return ok(`${entry.name} is in front.`);
+        return deps.launch(entry) === null ? failed(`${entry.name} could not start.`) : ok(`${entry.name} is opening.`);
+      }),
   };
   const own = (entry.actions ?? []).map(
     (action): ActionDef => ({

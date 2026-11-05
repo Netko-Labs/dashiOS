@@ -43,6 +43,8 @@ export interface ActionsOptions {
   /** The installed apps (the shell's catalog). */
   entries(): readonly Entry[];
   launch(entry: Entry): number | null;
+  /** Bring a running app's window forward (sources/apps.ts); whether it did. */
+  activate?(entry: Entry): Promise<boolean>;
   appMenus: Pick<AppMenuStore, "published" | "onPublished" | "select">;
   /** What the menu bar calls a window's app. */
   appName(window: CompositorWindow): string;
@@ -109,7 +111,7 @@ export function startActions(options: ActionsOptions): Actions {
       }),
     ),
   );
-  const apps = new AppSource({ entries: options.entries, launch: options.launch });
+  const apps = new AppSource({ entries: options.entries, launch: options.launch, ...(options.activate ? { activate: options.activate } : {}) });
   registry.add(apps);
   const arrange = options.arrange;
   const windowSource = new WindowSource({

@@ -97,6 +97,21 @@ describe("Desktop Actions", () => {
     expect(appActions({ ...entry, hidden: true }, { launch: () => 1 })).toEqual([]);
     expect(appActions({ ...entry, id: "dev.dashi.settings/appearance" }, { launch: () => 1 })).toEqual([]);
   });
+
+  test("opening a running app brings its window forward instead of starting another (a key or link, the VM run)", async () => {
+    const entry: Entry = { id: "dev.dashi.notes", name: "Notes", icon: "", keywords: [] };
+    let launches = 0;
+    let running = true;
+    const [open] = appActions(entry, {
+      launch: () => ++launches,
+      activate: async () => running,
+    });
+    expect(await run(open)).toEqual({ ok: true, text: "Notes is in front." });
+    expect(launches).toBe(0);
+    running = false;
+    expect(await run(open)).toEqual({ ok: true, text: "Notes is opening." });
+    expect(launches).toBe(1);
+  });
 });
 
 describe("windows", () => {
