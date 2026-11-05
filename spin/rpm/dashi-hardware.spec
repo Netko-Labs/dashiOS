@@ -60,20 +60,42 @@ done
 for profile in dashi-powersave dashi-balanced dashi-performance; do
   install -Dm0644 spin/dashi-hardware/usr/lib/tuned/$profile/tuned.conf %{buildroot}%{_prefix}/lib/tuned/$profile/tuned.conf
 done
-install -Dm0644 spin/dashi-hardware/etc/tuned/ppd.conf %{buildroot}%{_sysconfdir}/tuned/ppd.conf
+# tuned-ppd owns /etc/tuned/ppd.conf, so Dashi's mapping is shipped beside it
+# and put in place by the scriptlets below (the stock file kept as .dashi-orig).
+install -Dm0644 spin/dashi-hardware/etc/tuned/ppd.conf %{buildroot}%{_datadir}/dashi/tuned/ppd.conf
 
 install -d %{buildroot}%{_presetdir}
 echo "enable dashi-hardware-boot.service" > %{buildroot}%{_presetdir}/80-dashi-hardware.preset
 echo "enable dashi-hardware-clean.service" >> %{buildroot}%{_presetdir}/80-dashi-hardware.preset
 
+# Put Dashi's tuned-ppd mapping in place, once: the stock file is kept beside
+# it (as ppd.conf.dashi-orig, restored on removal). %%triggerin covers
+# tuned-ppd arriving after this package in the same transaction.
+%define dashi_ppd_apply \
+conf=%{_sysconfdir}/tuned/ppd.conf \
+if [ -f "$conf" ] && ! grep -q dashi-balanced "$conf"; then \
+  cp -a "$conf" "$conf.dashi-orig" \
+  cp %{_datadir}/dashi/tuned/ppd.conf "$conf" \
+  systemctl try-restart tuned-ppd.service >/dev/null 2>&1 || : \
+fi
+
 %post
 %systemd_post dashi-hardware-boot.service dashi-hardware-clean.service
+%{dashi_ppd_apply}
+
+%triggerin -- tuned-ppd
+%{dashi_ppd_apply}
 
 %preun
 %systemd_preun dashi-hardware-boot.service dashi-hardware-clean.service
 
 %postun
 %systemd_postun dashi-hardware-boot.service dashi-hardware-clean.service
+# Removed: tuned-ppd's own mapping comes back.
+if [ $1 -eq 0 ] && [ -f %{_sysconfdir}/tuned/ppd.conf.dashi-orig ]; then
+  mv -f %{_sysconfdir}/tuned/ppd.conf.dashi-orig %{_sysconfdir}/tuned/ppd.conf
+  systemctl try-restart tuned-ppd.service >/dev/null 2>&1 || :
+fi
 
 %files
 %{_libexecdir}/dashi/dashi-hardware
@@ -91,7 +113,8 @@ echo "enable dashi-hardware-clean.service" >> %{buildroot}%{_presetdir}/80-dashi
 %{_prefix}/lib/tuned/dashi-powersave/tuned.conf
 %{_prefix}/lib/tuned/dashi-balanced/tuned.conf
 %{_prefix}/lib/tuned/dashi-performance/tuned.conf
-%config(noreplace) %{_sysconfdir}/tuned/ppd.conf
+%dir %{_datadir}/dashi/tuned
+%{_datadir}/dashi/tuned/ppd.conf
 %{_presetdir}/80-dashi-hardware.preset
 
 %changelog
