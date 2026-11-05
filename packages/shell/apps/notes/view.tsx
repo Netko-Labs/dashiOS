@@ -1,7 +1,7 @@
 /**
  * Notes' window: folders on the left (with their counts), the list of notes,
  * the note itself (its date and word count above it), and a toolbar with the
- * actions; an error floats as a notice. The keyboard is
+ * actions; an error or a conflict copy floats as a notice. The keyboard is
  * the open field's while one is focused; otherwise it is the kit's KeySink:
  * N new note, Backspace delete, P pin, E or Enter edit, / search, and the up
  * and down arrows move through the list (Metal reports no Ctrl shortcuts).
@@ -217,13 +217,19 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
   ) : undefined;
 
-  // One chrome row: the counts are the sidebar's badges, the words follow the note's date, and an error floats as a notice.
+  // One chrome row: the counts are the sidebar's badges, the words follow the note's date, and an error or a conflict copy floats as a notice.
   return (
     <AppWindow
       title={title}
       toolbar={toolbar}
       overlay={overlay}
-      notice={state.error ? <Notice testID="error" tone="error" text={state.error} /> : undefined}
+      notice={
+        state.error ? (
+          <Notice testID="error" tone="error" text={state.error} />
+        ) : state.notice ? (
+          <Notice testID="conflict" text={state.notice} onDismiss={() => model.dismissNotice()} />
+        ) : undefined
+      }
       sidebar={
         <Sidebar
           folders={state.folders}

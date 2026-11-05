@@ -1,7 +1,8 @@
 /**
- * The strip under the table, as on the Mac: figures for the open tab on
- * either side of a graph of the last two minutes (CPU load, memory in use,
- * disk and network traffic).
+ * The strip under the table: figures for the open tab on either side of a
+ * graph of the last two minutes (CPU load, memory in use, disk and network
+ * traffic). Processes and threads are counted as the View menu shows them:
+ * kernel threads only when they are shown.
  */
 
 import { useColors, useSurface } from "@dashi/ui";
@@ -13,7 +14,7 @@ import type { MonitorState, Tab } from "./monitor.ts";
 export const SUMMARY_HEIGHT = 132;
 const GRAPH = { width: 260, height: 78 } as const;
 
-/** Two colors for two series: the accent, and a blue (red for the CPU's system share, as on the Mac). */
+/** Two colors for two series: the accent, and a blue (red for the CPU's system share). */
 const BLUE = "#3b82c4";
 
 interface Figure {
@@ -79,7 +80,7 @@ function Graph({ title, series, max }: { title: string; series: readonly Series[
   );
 }
 
-export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorState; processes: number }) {
+export function Summary({ tab, state, totals }: { tab: Tab; state: MonitorState; totals: { processes: number; threads: number } }) {
   const colors = useColors();
   const surface = useSurface();
   const accent = colors.selection;
@@ -94,8 +95,8 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
         { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
       ];
       right = [
-        { label: "Threads", value: formatCount(state.threads) },
-        { label: "Processes", value: formatCount(processes) },
+        { label: "Threads", value: formatCount(totals.threads) },
+        { label: "Processes", value: formatCount(totals.processes) },
         { label: "CPUs", value: formatCount(state.cpus) },
       ];
       graph = {

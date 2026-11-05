@@ -1,11 +1,14 @@
 /**
- * Activity Monitor's window: the toolbar (stop, the view menu, the CPU /
+ * Activity Monitor's window: the toolbar (Quit…, the view menu, the CPU /
  * Memory / Disk / Network tabs, search), the process table, and the summary
  * strip for the open tab. The user's own processes can be quit (SIGTERM) or
  * force quit (SIGKILL) after a sheet asks; everyone else's are shown dimmed
  * and read-only. The search field holds the keyboard: typing filters, the
- * arrows move the selection, Esc clears. The menu bar's View menu has the
- * same choices as the toolbar's, the tabs, and Quit Process.
+ * arrows move the selection, Return selects (the first match when the
+ * selection is filtered away), Esc clears. Nothing typed in the search field
+ * quits anything, and the quit sheet has no Return default: a quit is always
+ * a click (or ❖K) and then a click. The menu bar's View menu has the same
+ * choices as the toolbar's, the tabs, and Quit Process….
  */
 
 import {
@@ -25,13 +28,13 @@ import {
   useColors,
 } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
 import { monitorMenus, TABS } from "./menus.ts";
 import type { Monitor, Tab } from "./monitor.ts";
 import { type QuitSignal, quitRefusal } from "./policy.ts";
-import { filterRows, type ProcessRow } from "./sample.ts";
+import { filterRows, type ProcessRow, scopeTotals, submitSelection } from "./sample.ts";
 import { Summary } from "./summary.tsx";
 
 export const MONITOR_SIZE = { width: 940, height: 640 } as const;
@@ -48,7 +51,8 @@ type SheetState = { kind: "quit"; row: ProcessRow } | { kind: "refused"; row: Pr
 function QuitSheet({ row, onAnswer }: { row: ProcessRow; onAnswer: (signal: QuitSignal | null) => void }) {
   const colors = useColors();
   return (
-    <Sheet testID="quit-sheet" width={420} onCancel={() => onAnswer(null)} onConfirm={() => onAnswer("SIGTERM")}>
+    // Esc cancels; Return does nothing here, so a Return meant for something else can't end a process.
+    <Sheet testID="quit-sheet" width={420} onCancel={() => onAnswer(null)}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Are you sure you want to quit “${row.name}”?`}</Text>
       <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>
         {`Quit asks it to close (SIGTERM to process ${row.pid}). Force Quit ends it at once (SIGKILL), and anything it has not saved is lost.`}
@@ -92,6 +96,9 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
   const sort = sorts[tab];
   const shown = useMemo(() => sortRows(filterRows(state.rows, query, scope), columns, sort), [state.rows, query, scope, columns, sort]);
   const selectedRow = shown.find((row) => row.pid === selected) ?? null;
+  const totals = useMemo(() => scopeTotals(state.rows, scope), [state.rows, scope]);
+  // Kernel threads are read only while they are shown.
+  useEffect(() => monitor.setKernel(scope.kernel), [monitor, scope.kernel]);
 
   const chooseTab = (next: Tab): void => {
     setTab(next);
@@ -116,12 +123,12 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
       return;
     }
     closeSheet();
-    setTimeout(() => monitor.refresh(), 300);
+    setTimeout(() => void monitor.refresh(), 300);
   };
 
   const scopeLabel = scope.mine ? "My Processes" : "All Processes";
 
-  // The menu bar's menus (src/app-menus/), as on a Mac.
+  // The menu bar's menus (src/app-menus/).
   const { menus, run } = monitorMenus({
     tab,
     scope,
@@ -138,7 +145,7 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
   useAppMenus(menus, run);
   const toolbar = (
     <>
-      <ToolbarButton glyph={glyphs.STOP} testID="stop" disabled={!selectedRow} onPress={stop} />
+      <ToolbarButton glyph={glyphs.STOP} label="Quit…" testID="stop" disabled={!selectedRow} onPress={stop} />
       <View
         testID="view-menu"
         onPress={(event) => setViewMenu({ x: Math.max((event.bounds?.x ?? 0) - 40, 8), y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
@@ -168,7 +175,14 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
             );
           }
         }}
-        onSubmit={() => stop()}
+        onSubmit={() =>
+          setSelected(
+            submitSelection(
+              shown.map((row) => row.pid),
+              selectedRow?.pid ?? null,
+            ),
+          )
+        }
       />
     </>
   );
@@ -216,7 +230,7 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
           )
         }
       />
-      <Summary tab={tab} state={state} processes={state.rows.filter((row) => !row.kernel).length} />
+      <Summary tab={tab} state={state} totals={totals} />
     </AppWindow>
   );
 }
