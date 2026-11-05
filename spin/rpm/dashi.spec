@@ -12,6 +12,8 @@ BuildArch:      noarch
 BuildRequires:  systemd-rpm-macros
 
 Requires:       dashi-comp = %{version}-%{release}
+# The vault apps and agents use (the Secret Service; sign-in for agents).
+Requires:       dashi-secretd = %{version}-%{release}
 Requires:       dashi-bun
 Requires:       mirin-metal-host
 # The Terminal's engine (apps/terminal runs it).
@@ -73,6 +75,8 @@ rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
 install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
+# Agents in a sandbox that can use secrets through Dashi but never read them.
+install -Dm0755 session/dashi-agent %{buildroot}%{_bindir}/dashi-agent
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
 # The Setup Assistant's optional software, run as root through pkexec.
@@ -88,6 +92,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
+%{_bindir}/dashi-agent
 %{_bindir}/dashi-dialog
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
