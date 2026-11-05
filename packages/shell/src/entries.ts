@@ -7,7 +7,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { type App, displayName, iconPath, launch, resolvePinned, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
+import { type App, displayName, iconPath, type LaunchWatch, launch, resolvePinned, SETTINGS_APP_ID, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
 
@@ -16,6 +16,16 @@ export { calculate } from "./launcher-math.ts";
 export interface Entry extends App {
   /** Other words people search for ("browser" for Firefox). */
   keywords: string[];
+  /** Whole queries that mean this entry above anything named so ("settings" is System Settings). */
+  intents?: string[];
+  /** Words it answers to only when nothing else matches ("settings" for a Settings pane). */
+  fallbackKeywords?: string[];
+  /** Found by its name, but below every other match unless the query is its name or one of its keywords (Setup Assistant). */
+  demoted?: true;
+  /** A one-color SVG drawn on a neutral tile instead of `icon` (a Settings pane's glyph). */
+  glyph?: string;
+  /** A few muted words after the name, on the same line ("Web Browser", "Dark Mode, accent, corners"). */
+  detail?: string;
   /** The app id its windows use when it differs from the desktop id. */
   wmClass?: string;
   /** One of the shell's own apps (System Settings): it wins ties in search over an installed app of the same words. */
@@ -75,6 +85,8 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   if (splitList(fields.get("NotShowIn")).includes("Dashi")) return null;
   const argv = parseExec(exec);
   if (!argv.length) return null;
+  // What kind of app it is ("Web Browser"), after its name on the launcher's row; not when it only repeats the name.
+  const generic = fields.get("GenericName");
   return {
     id,
     name,
@@ -84,9 +96,8 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     ...(yes("NoDisplay") ? { hidden: true as const } : {}),
     // The freedesktop key, and KDE's older one (Steam sets both).
     ...(yes("PrefersNonDefaultGPU") || yes("X-KDE-RunOnDiscreteGpu") ? { gpu: "discrete" as const } : {}),
-    keywords: [...splitList(fields.get("Keywords")), ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : [])].map((word) =>
-      word.toLowerCase(),
-    ),
+    ...(generic && generic.toLowerCase() !== name.toLowerCase() ? { detail: generic } : {}),
+    keywords: [...splitList(fields.get("Keywords")), ...(generic ? [generic] : [])].map((word) => word.toLowerCase()),
   };
 }
 
@@ -156,13 +167,40 @@ export function resolveIcon(name: string, roots = iconRoots()): string {
   return themeIcon(name, roots) ?? iconPath("generic");
 }
 
+/**
+ * Icons found so far, by name: an app's icon is looked for on disk once, not
+ * at every load of the index. A name that found nothing is looked for again
+ * next time (its app may be installing its icon right now).
+ */
+const appIcons = new Map<string, string>();
+
+/** `resolveIcon`, remembered (`appIcons`). */
+export function cachedIcon(name: string, roots: string[] = iconRoots(), resolve: (name: string, roots: string[]) => string = resolveIcon): string {
+  const known = appIcons.get(name);
+  if (known !== undefined) return known;
+  const path = resolve(name, roots);
+  if (path !== iconPath("generic")) appIcons.set(name, path);
+  return path;
+}
+
+/** File icons by the names asked for: a launcher keystroke never probes the theme twice for one kind of file. */
+const fileIcons = new Map<string, string>();
+
 /** The first of `names` the icon theme draws as a file or folder (`mimetypes`, `places`), else the generic icon. */
 export function fileIcon(names: readonly string[], roots = iconRoots()): string {
+  const key = names.join("\n");
+  const known = fileIcons.get(key);
+  if (known !== undefined) return known;
+  let path = iconPath("generic");
   for (const name of names) {
-    const path = themeIcon(name, roots, ["mimetypes", "places"]);
-    if (path) return path;
+    const themed = themeIcon(name, roots, ["mimetypes", "places"]);
+    if (themed) {
+      path = themed;
+      break;
+    }
   }
-  return iconPath("generic");
+  fileIcons.set(key, path);
+  return path;
 }
 
 /** XDG data directories, user first. An empty variable counts as unset (the specification says so). */
@@ -182,11 +220,20 @@ export function pinnedKeywords(app: Pick<App, "id" | "exec">): string[] {
   return [...new Set([app.id, command].filter((word): word is string => Boolean(word)).map((word) => word.toLowerCase()))];
 }
 
-/** What else the shell's own apps are found by ("preferences" finds System Settings). */
-const SHELL_KEYWORDS = ["settings", "preferences", "system", "options", "configuration"];
-/** And what only one of them answers to ("welcome" finds the Setup Assistant). */
-const OWN_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  [SETUP_APP_ID]: ["setup", "assistant", "welcome", "first run", "language", "region", "time zone"],
+/**
+ * How the shell's own apps are found. System Settings answers to the words
+ * people use for settings, and "settings", "preferences" and "control panel"
+ * mean it above anything else named so. The Setup Assistant, run once in a
+ * lifetime, answers to "setup", "welcome" and "first run" only, and sits
+ * below every other match of its name ("set" is System Settings).
+ */
+const SHELL_APP_WORDS: Readonly<Record<string, Pick<Entry, "keywords" | "intents" | "demoted" | "detail">>> = {
+  [SETTINGS_APP_ID]: {
+    keywords: ["settings", "preferences", "control panel", "system", "options", "configuration"],
+    intents: ["settings", "preferences", "control panel"],
+    detail: "all your settings",
+  },
+  [SETUP_APP_ID]: { keywords: ["setup", "welcome", "first run"], demoted: true, detail: "run first-time setup again" },
 };
 
 /** Every launchable app: Dashi's pinned apps first, then the shell's own and the first-party ones, then the installed ones. */
@@ -206,15 +253,30 @@ export function withDistinctNames(entries: Entry[]): Entry[] {
   });
 }
 
+/** What opens in the shell itself: its own apps (System Settings), then what they registered (Settings panes). */
+export function shellEntries(): Entry[] {
+  // The shell's own apps answer to the words people look for them by.
+  const own = shellApps().map((app): Entry => {
+    const words = SHELL_APP_WORDS[app.id];
+    return { ...app, ...words, shell: true, keywords: [...(words?.keywords ?? []), ...pinnedKeywords(app)] };
+  });
+  // Settings panes ("display" finds Displays).
+  const registered = shellEntryList().map(
+    ({ fallbackKeywords, ...entry }): Entry => ({
+      ...entry,
+      shell: true,
+      ...(fallbackKeywords ? { fallbackKeywords: [...fallbackKeywords] } : {}),
+    }),
+  );
+  return [...own, ...registered];
+}
+
 /** The installed apps; `withHidden` adds the `NoDisplay` ones, which only name windows (app-catalog.ts), never a list. */
 export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
   // A pinned app stands in for its desktop entry (the pinned Terminal is
   // foot.desktop), so it answers to that entry's id and command too.
   const entries: Entry[] = resolvePinned().map((app) => ({ ...app, keywords: pinnedKeywords(app) }));
-  // The shell's own apps (System Settings) answer to the words people look for them by.
-  for (const app of shellApps()) entries.push({ ...app, shell: true, keywords: [...SHELL_KEYWORDS, ...(OWN_KEYWORDS[app.id] ?? []), ...pinnedKeywords(app)] });
-  // What else opens in the shell: Settings panes ("display" finds Displays).
-  for (const entry of shellEntryList()) entries.push({ ...entry, shell: true });
+  entries.push(...shellEntries());
   // Dashi's own apps that run as their own process (first-party.ts); found by their words, not by "bun".
   for (const app of firstPartyApps()) if (!entries.some((entry) => entry.id === app.id)) entries.push({ ...app, keywords: firstPartyKeywords(app.id) });
   const seen = new Set(entries.map((entry) => entry.id));
@@ -240,38 +302,58 @@ export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
       const parsed = parseDesktopEntry(id, text);
       if (!parsed || (parsed.hidden && !options.withHidden)) continue;
       const { iconName, ...entry } = parsed;
-      entries.push({ ...entry, icon: resolveIcon(iconName, roots) });
+      entries.push({ ...entry, icon: cachedIcon(iconName, roots) });
     }
   }
   return withDistinctNames(entries);
 }
 
+/** A query this short never matches inside a word: "ter" is Terminal, not Battery. */
+export const MIN_INSIDE_WORD = 4;
+/** Where a demoted entry's tiers start: below every tier of the others. */
+const DEMOTED = 10;
+
+/** The tier of a match on part of the name or a keyword, or null for none. */
+function partialTier(name: string, keywords: readonly string[], q: string): number | null {
+  if (name.startsWith(q)) return 3;
+  if (name.split(/[\s\-_.]+/).some((word) => word.startsWith(q))) return 4;
+  if (q.length >= MIN_INSIDE_WORD && name.includes(q)) return 5;
+  if (keywords.some((word) => word.startsWith(q))) return 6;
+  return null;
+}
+
 /**
- * Entries matching `query`: the exact name, then an exact keyword (an app
- * called Terminal before the ones whose generic name is "Terminal"), then
- * name prefix, word start, anywhere, then keyword prefix.
+ * Entries matching `query`: an intent ("settings" is System Settings), the
+ * exact name, then an exact keyword (an app called Terminal before the ones
+ * whose generic name is "Terminal"), then name prefix, word start, inside a
+ * word (from `MIN_INSIDE_WORD` letters), then keyword prefix. A demoted
+ * entry's prefix and word matches come after everyone else's; fallback
+ * keywords count only when nothing else matched.
  */
 export function search(entries: readonly Entry[], query: string, limit = 7): Entry[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const score = (entry: Entry): number => {
+  const score = (entry: Entry): number | null => {
     const name = entry.name.toLowerCase();
-    if (name === q) return 0;
-    if (entry.keywords.includes(q)) return 1;
-    if (name.startsWith(q)) return 2;
-    if (name.split(/[\s\-_.]+/).some((word) => word.startsWith(q))) return 3;
-    if (name.includes(q)) return 4;
-    if (entry.keywords.some((word) => word.startsWith(q))) return 5;
-    return -1;
+    if (entry.intents?.includes(q)) return 0;
+    if (name === q) return 1;
+    if (entry.keywords.includes(q)) return 2;
+    const tier = partialTier(name, entry.keywords, q);
+    return tier !== null && entry.demoted ? tier + DEMOTED : tier;
   };
-  return entries
-    .map((entry) => ({ entry, score: score(entry) }))
-    .filter(({ score }) => score >= 0)
-    .sort((a, b) => a.score - b.score || Number(b.entry.shell === true) - Number(a.entry.shell === true) || a.entry.name.localeCompare(b.entry.name))
-    .slice(0, limit)
-    .map(({ entry }) => entry);
+  const fallback = (entry: Entry): number | null => (entry.fallbackKeywords?.some((word) => word.startsWith(q)) ? 0 : null);
+  const rank = (by: (entry: Entry) => number | null) =>
+    entries
+      .flatMap((entry) => {
+        const score = by(entry);
+        return score === null ? [] : [{ entry, score }];
+      })
+      .sort((a, b) => a.score - b.score || Number(b.entry.shell === true) - Number(a.entry.shell === true) || a.entry.name.localeCompare(b.entry.name));
+  const ranked = rank(score);
+  return (ranked.length > 0 ? ranked : rank(fallback)).slice(0, limit).map(({ entry }) => entry);
 }
 
-export function launchEntry(entry: Entry): number | null {
-  return launch({ ...entry, cwd: entry.cwd ?? homedir() });
+/** Start `entry`; `watch` hears whether it quit as it started (apps.ts). */
+export function launchEntry(entry: Entry, watch?: LaunchWatch): number | null {
+  return launch({ ...entry, cwd: entry.cwd ?? homedir() }, watch);
 }
