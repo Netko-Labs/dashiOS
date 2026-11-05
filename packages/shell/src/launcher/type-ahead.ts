@@ -65,19 +65,28 @@ export const isEdit = (typed: Typed): boolean => typed.kind === "text" || typed.
 
 /**
  * The keys between a tap and the launcher being up. `begin` at the tap,
- * `push` each one that comes, `ready` once the field has the keyboard (the
+ * `push` each one that comes, `ready` once the field can take them (the
  * launcher hears the waiting ones, in order, and any late ones after them),
  * `end` when it closes (anything still waiting goes with it).
+ *
+ * The keyboard goes to the field only once it is `settled`: up, nothing
+ * waiting, and the launcher has played in all it was given (`drained`). A
+ * key typed while the field is still taking the typed-ahead text would
+ * reach it before that text and be lost or put out of order.
  */
 export class TypeAhead {
   private state: "closed" | "waiting" | "up" = "closed";
   private waiting: Typed[] = [];
   private listener: ((keys: readonly Typed[]) => void) | null = null;
+  /** Keys given to the launcher that it hasn't played in yet. */
+  private pending = false;
+  private settledListener: (() => void) | null = null;
 
   /** The launcher is opening: keys from now on are kept for it. */
   begin(): void {
     this.state = "waiting";
     this.waiting = [];
+    this.pending = false;
   }
 
   /** A key typed ahead; false when the launcher isn't opening or open (it is dropped). */
@@ -88,20 +97,42 @@ export class TypeAhead {
     return true;
   }
 
-  /** The launcher's field has the keyboard: what waited goes to it. */
+  /** The launcher is up: what waited goes to it. */
   ready(): void {
     if (this.state !== "waiting") return;
     this.state = "up";
     this.deliver();
+    this.check();
   }
 
   isWaiting(): boolean {
     return this.state === "waiting";
   }
 
+  /** Up, nothing waiting, and all it was given played in: the field may take the keyboard. */
+  isSettled(): boolean {
+    return this.state === "up" && this.waiting.length === 0 && !this.pending;
+  }
+
+  /** The launcher played in every key it was given (use-type-ahead.ts). */
+  drained(): void {
+    this.pending = false;
+    this.check();
+  }
+
+  /** Hear each time it becomes settled (one listener: the shell's hand-off). */
+  onSettled(listener: (() => void) | null): void {
+    this.settledListener = listener;
+  }
+
   end(): void {
     this.state = "closed";
     this.waiting = [];
+    this.pending = false;
+  }
+
+  private check(): void {
+    if (this.isSettled()) this.settledListener?.();
   }
 
   /** The launcher listens (one at a time); keys already up for it come at once. */
@@ -115,6 +146,7 @@ export class TypeAhead {
 
   private deliver(): void {
     if (!this.listener || this.waiting.length === 0) return;
+    this.pending = true;
     this.listener(this.waiting.splice(0));
   }
 }

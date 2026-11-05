@@ -836,6 +836,9 @@ const launchFailures = new LaunchFailures(notifications.store);
  * tap, and `typing` says so for an open without one (Search…); `begin` hands the keys to the field
  * once its surface has drawn.
  */
+/** Whether the open launcher's field has the keyboard yet (it waits for what was typed ahead). */
+let handedOff = false;
+let handoff: ReturnType<typeof setTimeout> | null = null;
 const launcherKeymap = {
   typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () =>
@@ -844,8 +847,10 @@ const launcherKeymap = {
       .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
+/** The open launcher's keys again (a key set, recording a shortcut): the field's, or still typing ahead. */
+const launcherKeysAgain = () => (handedOff ? launcherKeymap.begin() : launcherKeymap.typing());
 launcherKeys.onRecording = () => {
-  if (overlays.has("launcher")) launcherKeymap.begin();
+  if (overlays.has("launcher")) launcherKeysAgain();
 };
 // The person's aliases and keys (settings.json `launcher`; launcher/person-keys.ts): a key they set
 // reaches the compositor at once, and an edit of the file by hand too.
@@ -857,7 +862,7 @@ const followPersonKeys = () => {
   if (text === personKeys) return;
   personKeys = text;
   setPersonRules(rules);
-  if (overlays.has("launcher")) launcherKeymap.begin();
+  if (overlays.has("launcher")) launcherKeysAgain();
   else if (!overlays.has("switcher"))
     void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 };
@@ -871,10 +876,23 @@ let launcherHost: LauncherHost | null = null;
 const typeAhead = new TypeAhead();
 /** Longer than this without word that the launcher drew, its field is given the keys anyway. */
 const TYPE_AHEAD_LIMIT_MS = 3000;
-/** The launcher's surface has drawn: its field takes the keys from here, after the ones typed ahead. */
+/** How long the typed-ahead keys must be quiet and played in before the field takes the keyboard. */
+const HANDOFF_MS = 60;
+// The field takes the keyboard once what was typed ahead is in it, and no key came for a moment:
+// a key typed while it was still playing them in would reach it first (launcher/type-ahead.ts).
+typeAhead.onSettled(() => {
+  if (handedOff) return;
+  if (handoff) clearTimeout(handoff);
+  handoff = setTimeout(() => {
+    handoff = null;
+    if (handedOff || !typeAhead.isSettled()) return;
+    handedOff = true;
+    launcherKeymap.begin();
+  }, HANDOFF_MS);
+});
+/** The launcher's surface has drawn: what was typed ahead goes to it, and the keyboard follows once it is in. */
 function launcherReady(): void {
   if (!typeAhead.isWaiting()) return;
-  launcherKeymap.begin();
   typeAhead.ready();
 }
 /** The open launcher's bindings: a key typed ahead (`launcher-type`), or one of its keys (launcher/keys.ts). */
@@ -942,6 +960,7 @@ function openLauncher(presented: Presented | null = null): void {
   markOpen();
   // Keys typed from the tap on wait for the field (launcher/type-ahead.ts).
   typeAhead.begin();
+  handedOff = false;
   launcherKeymap.typing();
   const limit = setTimeout(launcherReady, TYPE_AHEAD_LIMIT_MS);
   const close = () => closeOverlay("launcher");
@@ -950,6 +969,8 @@ function openLauncher(presented: Presented | null = null): void {
   let opened = false;
   const finished = () => {
     clearTimeout(limit);
+    if (handoff) clearTimeout(handoff);
+    handoff = null;
     typeAhead.end();
     launcherKeymap.end();
   };

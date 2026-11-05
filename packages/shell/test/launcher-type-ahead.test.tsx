@@ -44,6 +44,41 @@ describe("typing ahead: the keys", () => {
 });
 
 describe("typing ahead: the buffer", () => {
+  test("the field takes the keyboard only once what was given is played in, and again after a late key", () => {
+    const ahead = new TypeAhead();
+    let settled = 0;
+    ahead.onSettled(() => settled++);
+    ahead.subscribe(() => {});
+    ahead.begin();
+    ahead.push(text("l"));
+    ahead.push(text("o"));
+    expect(ahead.isSettled()).toBe(false);
+    ahead.ready();
+    // Given, not yet played in: a key now would reach the field before them.
+    expect(ahead.isSettled()).toBe(false);
+    expect(settled).toBe(0);
+    ahead.drained();
+    expect(ahead.isSettled()).toBe(true);
+    expect(settled).toBe(1);
+    // A key on its way still comes through here; the field waits for it too.
+    ahead.push(text("c"));
+    expect(ahead.isSettled()).toBe(false);
+    ahead.drained();
+    expect(settled).toBe(2);
+    ahead.end();
+    expect(ahead.isSettled()).toBe(false);
+  });
+
+  test("nothing typed ahead: settled as soon as it is up", () => {
+    const ahead = new TypeAhead();
+    let settled = 0;
+    ahead.onSettled(() => settled++);
+    ahead.begin();
+    ahead.ready();
+    expect(ahead.isSettled()).toBe(true);
+    expect(settled).toBe(1);
+  });
+
   test("keys wait until the launcher is up, then go to it in order; later ones follow", () => {
     const ahead = new TypeAhead();
     const heard: Typed[][] = [];
@@ -151,6 +186,25 @@ describe("typing ahead: the launcher plays the keys in", () => {
     };
     return { opened, closed, field };
   }
+
+  test("once it has played the keys in, the launcher says so: the field may take the keyboard", async () => {
+    const ahead = new TypeAhead();
+    ahead.begin();
+    for (const each of [text("l"), text("o"), text("c")]) ahead.push(each);
+    const launcher = mount(ahead);
+    await settle();
+    ahead.ready();
+    expect(ahead.isSettled()).toBe(false);
+    await settle(50);
+    expect(launcher.field()).toBe("loc");
+    expect(ahead.isSettled()).toBe(true);
+    // One more on its way: played in after the others, and settled again.
+    ahead.push(text("k"));
+    expect(ahead.isSettled()).toBe(false);
+    await settle(50);
+    expect(launcher.field()).toBe("lock");
+    expect(ahead.isSettled()).toBe(true);
+  });
 
   test("“ter” and Return typed before the field was ready open Terminal", async () => {
     const ahead = new TypeAhead();

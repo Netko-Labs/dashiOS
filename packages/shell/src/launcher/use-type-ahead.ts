@@ -10,6 +10,8 @@ import { isEdit, type Typed, type TypedKey } from "./type-ahead.ts";
 
 export interface TypeAheadSource {
   subscribe(listener: (keys: readonly Typed[]) => void): () => void;
+  /** Every key given has been played in and committed. */
+  drained?(): void;
 }
 
 export interface TypeAheadHandlers {
@@ -38,7 +40,8 @@ export function useTypeAhead(source: TypeAheadSource | undefined, handlers: Type
   // biome-ignore lint/correctness/useExhaustiveDependencies: each step runs after the commit the one before it caused
   useEffect(() => {
     const [next] = queue.current;
-    if (!next) return;
+    // Empty after a commit: what was given is in the field.
+    if (!next) return source?.drained?.();
     if (isEdit(next)) {
       const count = queue.current.findIndex((typed) => !isEdit(typed));
       latest.current.edit(queue.current.splice(0, count < 0 ? queue.current.length : count));
