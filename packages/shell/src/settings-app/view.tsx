@@ -37,6 +37,7 @@ import { UsersPane } from "./panes/users.tsx";
 import { WallpaperPane } from "./panes/wallpaper.tsx";
 import { type Nav, type PaneId, paneTitle } from "./panes.ts";
 import { Sidebar } from "./sidebar.tsx";
+import { SpotContext, type SpotHost } from "./spot.tsx";
 import { useSurface } from "./ui.tsx";
 
 /** The window's size (the Mac's System Settings opens about this big). */
@@ -111,7 +112,7 @@ function useOptionalPanes(ctx: PaneContext): ReadonlySet<PaneId> {
 const GRAPHICS_PANES: ReadonlySet<PaneId> = new Set(["graphics"]);
 const NONE: ReadonlySet<PaneId> = new Set();
 
-export function SettingsWindow({ ctx, nav }: { ctx: PaneContext; nav: Nav }) {
+export function SettingsWindow({ ctx, nav, spots }: { ctx: PaneContext; nav: Nav; spots?: SpotHost }) {
   const colors = useColors();
   const surface = useSurface();
   const current = useSyncExternalStore(nav.subscribe, nav.getSnapshot);
@@ -119,20 +120,22 @@ export function SettingsWindow({ ctx, nav }: { ctx: PaneContext; nav: Nav }) {
   const { controls } = useWindowChrome();
   const shown = useOptionalPanes(ctx);
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
-      <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
-      <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-        {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
-        {/* A pane's state is its own: switching panes starts the next one fresh. */}
-        <Pane key={current} id={current} ctx={ctx} />
-        {error !== null && (
-          <View testID="settings-error" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
-            <Text numberOfLines={1} style={{ fontSize: 11, color: colors.critical }}>
-              {`Could not save settings: ${error}`}
-            </Text>
-          </View>
-        )}
+    <SpotContext.Provider value={spots ?? null}>
+      <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
+        <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
+        <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+          {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
+          {/* A pane's state is its own: switching panes starts the next one fresh. */}
+          <Pane key={current} id={current} ctx={ctx} />
+          {error !== null && (
+            <View testID="settings-error" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
+              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.critical }}>
+                {`Could not save settings: ${error}`}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
+    </SpotContext.Provider>
   );
 }

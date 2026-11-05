@@ -9,7 +9,9 @@
  * Super, Ctrl, and Alt must match exactly; Shift only when named. The first
  * matching rule wins, and its action is one of:
  *
- *   bind     the key is the shell's: shortcuts.ts runs the named action
+ *   bind     the key is the shell's: shortcuts.ts runs the named action; a
+ *            `dashi://` address is any action of the registry (actions/,
+ *            docs/actions.md), run for the person on the focused window
  *   send     the app gets this chord instead, held like the key; Shift held
  *            with it passes through ("key" means the pressed key)
  *   tap      these chords, pressed and released at once
@@ -92,16 +94,17 @@ export const KEYMAP: Keymap = {
     // ⌃❖ arrows arrange the focused window: the half on that side, then a
     // quarter, its own size, or the next screen (tiling.ts). ⌃❖↩ fills,
     // ⌃❖C centers, ⌃❖R gives back its own size (arrange.ts). Like every
-    // ⌃❖ rule, above the reserved super+ctrl+* below.
-    { when: "super+ctrl+Left", bind: "tile-left" },
-    { when: "super+ctrl+Right", bind: "tile-right" },
-    { when: "super+ctrl+Up", bind: "tile-up" },
-    { when: "super+ctrl+Down", bind: "tile-down" },
-    { when: "super+ctrl+Return|KP_Enter", bind: "tile-fill" },
-    { when: "super+ctrl+c", bind: "tile-center" },
-    { when: "super+ctrl+r", bind: "tile-restore" },
+    // ⌃❖ rule, above the reserved super+ctrl+* below. They bind the
+    // registry's addresses (actions/sources/windows.ts).
+    { when: "super+ctrl+Left", bind: "dashi://window/arrange/left" },
+    { when: "super+ctrl+Right", bind: "dashi://window/arrange/right" },
+    { when: "super+ctrl+Up", bind: "dashi://window/arrange/up" },
+    { when: "super+ctrl+Down", bind: "dashi://window/arrange/down" },
+    { when: "super+ctrl+Return|KP_Enter", bind: "dashi://window/arrange/fill" },
+    { when: "super+ctrl+c", bind: "dashi://window/arrange/center" },
+    { when: "super+ctrl+r", bind: "dashi://window/arrange/restore" },
     // ⌃❖F: full screen (arrange.ts), for any window, as on the Mac.
-    { when: "super+ctrl+f", bind: "fullscreen" },
+    { when: "super+ctrl+f", bind: "dashi://window/full-screen" },
     // ⌃❖Q: lock the screen, as on the Mac.
     { when: "super+ctrl+q", bind: "lock-screen" },
     // ⌥❖Esc: Force Quit Applications (force-quit/). Before the reserved ⌥❖ rule below.

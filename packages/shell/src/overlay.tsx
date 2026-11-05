@@ -22,6 +22,8 @@ export interface OverlayHandle {
    * that must not see the surface, such as a screenshot.
    */
   exited?: Promise<void>;
+  /** Scroll the scroll view with this testID by `dy` points (down is positive), as a wheel would (settings-app/spot.tsx). */
+  scroll?(testID: string, dy: number): void;
 }
 
 /**
@@ -58,6 +60,10 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
       if (!open) return;
       finish();
       host.close();
+    },
+    scroll(testID, dy) {
+      const id = open ? root.nodeId(testID) : undefined;
+      if (id !== undefined) host.simulate({ kind: "scroll", id, dy });
     },
   };
 };

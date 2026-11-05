@@ -4,56 +4,44 @@
  * Pure: the panel (launcher.tsx) draws it, and the tests read it.
  *
  * The rules that keep the list honest:
- * - The instant rows (the answer, apps, Settings panes) come first and are
- *   laid out from the query alone, so nothing a slow source brings can move
- *   them. Files go below, under their own head, in slots held for them
- *   while their answer is on its way.
- * - Heads show once two kinds of instant rows do: Top hit, Apps, Settings.
+ * - The instant rows (the answer, then what the ranking found among apps,
+ *   windows, settings, commands and menus) come first and are laid out from
+ *   the query alone, so nothing a slow source brings can move them. Files go
+ *   below, under their own head, in slots held for them while their answer
+ *   is on its way.
+ * - Heads show once two kinds of instant rows do: Top hit, then Windows,
+ *   Apps, Settings, Commands, Menus.
+ * - An alias the person gave is matched first, before the ranking.
+ * - A typo is never a result: it is "Did you mean …?" when nothing else matched.
  * - Nothing found is a way forward, never an empty panel.
  */
 
 import { INFO } from "@dashi/ui";
-import { SETTINGS_APP_ID } from "../apps.ts";
-import { calculate, type Entry, search } from "../entries.ts";
-import { type FileHit, MIN_QUERY } from "../file-search.ts";
+import { iconPath } from "../apps.ts";
+import { calculate, type Entry } from "../entries.ts";
+import { MIN_QUERY } from "../file-search.ts";
 import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
-import { didYouMean } from "./suggest.ts";
+import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsOf } from "./items.ts";
+import { fold } from "./ranking/fold.ts";
+import type { RankSignals } from "./ranking/item.ts";
+import { type RankIndex, type RankResult, rank } from "./ranking/rank.ts";
+import { actionRow, entryRow, type FileRow, fileNameMatches, fileRow, type Row, type RowGroup, shownName, windowRow } from "./row-model.ts";
+
+export {
+  entryRow,
+  type FileRow,
+  fileNameMatches,
+  fileRow,
+  type Row,
+  type RowAction,
+  type RowControl,
+  type RowGroup,
+  type RowIcon,
+  shortFolder,
+} from "./row-model.ts";
 
 /** A 2 × 2 grid (All apps), drawn in ink like the panes' glyphs. */
 const GRID = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="2" y="9" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="9" width="5" height="5" rx="1.2" fill="#000"/></svg>`;
-
-/** A file row: its hit and the icon resolved for it. */
-export interface FileRow extends FileHit {
-  icon: string;
-}
-
-/** An image file, or a one-color glyph drawn on a neutral tile. */
-export type RowIcon = { image: string } | { glyph: string };
-
-export type RowAction =
-  | { kind: "open"; entry: Entry }
-  | { kind: "open-file"; file: FileRow }
-  | { kind: "copy"; text: string }
-  /** Put these words in the field (the examples of the empty launcher). */
-  | { kind: "type"; query: string }
-  | { kind: "search-files"; query: string }
-  | { kind: "find-software"; query: string }
-  | { kind: "all-apps" };
-
-export interface Row {
-  id: string;
-  title: string;
-  /** A few muted words after the title, on the same line. */
-  detail?: string;
-  /** What it is, right-aligned and muted ("App", "Settings"); empty for nothing. */
-  kind: string;
-  icon: RowIcon;
-  action: RowAction;
-  /** The title in SemiBold (the answer). */
-  strong?: true;
-  /** A → at the right end: Enter goes somewhere in the launcher (All apps). */
-  more?: true;
-}
 
 export interface Section {
   id: string;
@@ -95,7 +83,8 @@ export function filesStateFor(state: {
   if (!state.offered || query.length < MIN_QUERY || answerFor(query) !== null) return { kind: "none" };
   if (state.off) return { kind: "off" };
   if (state.answer?.query !== query) return { kind: "waiting", reserved: Math.min(state.lastCount, FILE_ROWS) };
-  return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files };
+  // Only names that answer the words as a name would (row-model.ts `fileNameMatches`): LocalSearch matches inside words.
+  return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files.filter((file) => fileNameMatches(file.name, query)) };
 }
 
 export interface ListInput {
@@ -103,14 +92,22 @@ export interface ListInput {
   entries: readonly Entry[];
   recent: readonly Entry[];
   files: FilesState;
+  /** What the ranking searches (items.ts `launcherIndex`); the entries alone when left out. */
+  index?: RankIndex<LauncherItem>;
+  /** The ranking's history: picks for this query and frecency (ranking/store.ts). */
+  signals?: RankSignals;
+  /** The open windows, most recent app first: an app with windows switches to its last one. */
+  windows?: readonly LauncherWindow[];
+  /** The person's aliases: folded alias → address (settings.json `launcher.aliases`). */
+  aliases?: ReadonlyMap<string, string>;
   /** All apps, A to Z, in place of what the empty field offers. */
   allApps?: boolean;
   /** What became of copying the answer to this query. */
   copied?: { query: string; ok: boolean } | null;
   /** An app that could not be started just now. */
   failed?: Entry | null;
-  /** Icons for the rows that aren't an app's: the calculator's, Files', Software's. */
-  icons: { calculator: string; files: string; software: string };
+  /** Icons for the rows that aren't an app's: the calculator's, Files', Software's, and Dashi's own commands'. */
+  icons: { calculator: string; files: string; software: string; command?: string };
   /** The Region, the clock and the zone answers are worked out in (answers/). */
   answers?: AnswerContext;
 }
@@ -122,34 +119,7 @@ export const FILE_ROWS = 3;
 const FILES_ID = "dev.dashi.files";
 const SOFTWARE_ID = "dev.dashi.software";
 
-/** A Settings pane's entry id, `dev.dashi.settings/<pane>`. */
-export const isPane = (entry: Pick<Entry, "id">): boolean => entry.id.startsWith(`${SETTINGS_APP_ID}/`);
-
-const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");
-const iconOf = (entry: Entry): RowIcon => (entry.glyph ? { glyph: entry.glyph } : { image: entry.icon });
-
-export function entryRow(entry: Entry, prefix = "entry"): Row {
-  return {
-    id: `${prefix}:${entry.id}`,
-    title: entry.name,
-    ...(entry.detail ? { detail: entry.detail } : {}),
-    kind: kindOf(entry),
-    icon: iconOf(entry),
-    action: { kind: "open", entry },
-  };
-}
-
-export function fileRow(file: FileRow): Row {
-  const folder = file.mime === "inode/directory";
-  return {
-    id: `file:${file.url}`,
-    title: file.name,
-    detail: file.folder,
-    kind: folder ? "Folder" : "File",
-    icon: { image: file.icon },
-    action: { kind: "open-file", file },
-  };
-}
+export { isPane } from "./items.ts";
 
 /** The answer's row (a sum, a unit, money, a time): the answer in SemiBold, what it answers after it, Enter copies. */
 export function answerRow(query: string, answer: Answer, icons: ListInput["icons"], copied?: ListInput["copied"]): Row {
@@ -162,12 +132,13 @@ export function answerRow(query: string, answer: Answer, icons: ListInput["icons
     icon: { image: icons.calculator },
     action: { kind: "copy", text: answer.copy },
     strong: true,
+    group: "answer",
   };
 }
 
-/** Apps the field can list A to Z (not panes, not hidden entries). */
+/** Apps the field can list A to Z (not panes, not hidden entries), by the name the person reads. */
 export function allApps(entries: readonly Entry[]): Entry[] {
-  return entries.filter((entry) => !entry.hidden && !isPane(entry)).sort((a, b) => a.name.localeCompare(b.name));
+  return entries.filter((entry) => !entry.hidden && !isPane(entry)).sort((a, b) => shownName(a).localeCompare(shownName(b)));
 }
 
 const allAppsRow: Row = { id: "all-apps", title: "All apps", detail: "A to Z", kind: "", icon: { glyph: GRID }, action: { kind: "all-apps" }, more: true };
@@ -180,29 +151,77 @@ const EXAMPLES: ReadonlyArray<{ query: string; title: string; detail: string; ki
   { query: "dark mode", title: "Dark Mode", detail: "Appearance", kind: "Settings" },
 ];
 
-function examples(entries: readonly Entry[], icons: ListInput["icons"]): Row[] {
+const indexOf = (input: ListInput): RankIndex<LauncherItem> => input.index ?? launcherIndex({ entries: input.entries });
+
+function examples(input: ListInput): Row[] {
+  const index = indexOf(input);
   return EXAMPLES.flatMap((example): Row[] => {
-    const match = search(entries, example.query, 1)[0];
+    // Shown only when it lands where it says: "wi-fi" on the Wi-Fi switch, not on the Network pane (no Wi-Fi here).
     const sum = calculate(example.query);
-    if (!match && sum === null) return [];
-    const icon = match ? iconOf(match) : { image: icons.calculator };
+    const match = sum === null ? rank(index, example.query, { limit: 1 })[0]?.item : undefined;
+    const row = match ? rowFor(match, input) : null;
+    if (sum === null && (!row || fold(row.title) !== fold(example.title))) return [];
+    const icon = row ? row.icon : { image: input.icons.calculator };
     return [
       { id: `try:${example.query}`, title: example.title, detail: example.detail, kind: example.kind, icon, action: { kind: "type", query: example.query } },
     ];
   });
 }
 
-/** The instant rows, grouped: one untitled run for one kind, else Top hit, then Apps, then Settings. */
+/** The row for a ranked item, its alias as a badge. */
+export function rowFor(item: LauncherItem, input: Pick<ListInput, "entries" | "windows" | "aliases" | "icons">, prefix = "entry"): Row {
+  const row = item.entry
+    ? entryRow(item.entry, prefix, windowsOf(input.windows ?? [], item.entry.id))
+    : item.window
+      ? windowRow(item.window)
+      : actionRow(item, {
+          app: (id) => input.entries.find((entry) => entry.id === id || entry.wmClass === id)?.icon,
+          dashi: input.icons.command ?? iconPath("generic"),
+        });
+  const alias = item.address ? aliasOf(input.aliases, item.address) : undefined;
+  return { ...row, item, ...(prefix !== "entry" && !item.entry ? { id: `${prefix}:${item.id}` } : {}), ...(alias ? { badge: alias } : {}) };
+}
+
+/** The alias the person gave `address`, if any. */
+function aliasOf(aliases: ReadonlyMap<string, string> | undefined, address: string): string | undefined {
+  if (!aliases) return undefined;
+  for (const [alias, target] of aliases) if (target === address) return alias;
+  return undefined;
+}
+
+const TYPOS = new Set(["typo", "keywordTypo"]);
+
+/** What the query finds, best first: an alias first, then the ranking's matches; typos only as a suggestion. */
+export function found(input: ListInput, limit: number): { items: LauncherItem[]; suggestion: LauncherItem | null } {
+  const query = input.query.trim();
+  const index = indexOf(input);
+  const results: RankResult<LauncherItem>[] = rank(index, query, { limit: limit * 2, ...(input.signals ? { signals: input.signals } : {}) });
+  const strong = results.filter((result) => !TYPOS.has(result.match)).map((result) => result.item);
+  const target = input.aliases?.get(fold(query));
+  const aliased = target ? index.prepared.find((each) => each.item.address === target)?.item : undefined;
+  const items = aliased ? [aliased, ...strong.filter((item) => item !== aliased)] : strong;
+  const suggestion = items.length === 0 ? (results.find((result) => TYPOS.has(result.match))?.item ?? null) : null;
+  return { items: items.slice(0, limit), suggestion };
+}
+
+/** The sections' heads and order once two kinds show. */
+const GROUPS: ReadonlyArray<[RowGroup, string]> = [
+  ["window", "Windows"],
+  ["app", "Apps"],
+  ["settings", "Settings"],
+  ["command", "Commands"],
+  ["menu", "Menus"],
+];
+
+/** The instant rows, grouped: one untitled run for one kind, else Top hit, then each kind under its head. */
 function grouped(rows: Row[]): Section[] {
-  if (new Set(rows.map((row) => row.kind)).size < 2) return rows.length > 0 ? [{ id: "results", rows }] : [];
+  if (new Set(rows.map((row) => row.group ?? "other")).size < 2) return rows.length > 0 ? [{ id: "results", rows }] : [];
   const [top, ...rest] = rows as [Row, ...Row[]];
   const sections: Section[] = [{ id: "top", title: "Top hit", rows: [top] }];
-  for (const [kind, title] of [
-    ["App", "Apps"],
-    ["Settings", "Settings"],
-  ] as const) {
-    const ofKind = rest.filter((row) => row.kind === kind);
-    if (ofKind.length > 0) sections.push({ id: kind, title, rows: ofKind });
+  for (const [group, title] of GROUPS) {
+    const ofKind = rest.filter((row) => row.group === group);
+    // The ids stay what wave 1 named them ("App", "Settings").
+    if (ofKind.length > 0) sections.push({ id: group === "app" ? "App" : group === "settings" ? "Settings" : group, title, rows: ofKind });
   }
   return sections;
 }
@@ -234,13 +253,13 @@ function filesSection(state: FilesState, query: string): Section | null {
 }
 
 /** Nothing matched: say so, and offer what can still be done with the words. */
-function nothingFound(input: ListInput, query: string): Section {
+function nothingFound(input: ListInput, query: string, suggestion: LauncherItem | null): Section {
   const byId = (id: string) => input.entries.find((entry) => entry.id === id);
-  const suggestion = didYouMean(input.entries, query);
   const files = byId(FILES_ID);
   const software = byId(SOFTWARE_ID);
+  const suggested = suggestion ? rowFor(suggestion, input, "suggest") : null;
   const rows: Row[] = [
-    ...(suggestion ? [{ ...entryRow(suggestion, "suggest"), title: `Did you mean ${suggestion.name}?` }] : []),
+    ...(suggested ? [{ ...suggested, title: `Did you mean ${suggested.title}?` }] : []),
     ...(files
       ? [
           {
@@ -271,23 +290,23 @@ function nothingFound(input: ListInput, query: string): Section {
 export function buildSections(input: ListInput): Section[] {
   const query = input.query.trim();
   const failed: Section[] = input.failed
-    ? [{ id: "failed", rows: [{ ...entryRow(input.failed, "failed"), title: `Couldn't open ${input.failed.name}`, detail: "try again", kind: "" }] }]
+    ? [{ id: "failed", rows: [{ ...entryRow(input.failed, "failed"), title: `Couldn't open ${shownName(input.failed)}`, detail: "try again", kind: "" }] }]
     : [];
   if (!query) {
     if (input.allApps) return [...failed, { id: "all", title: "All apps", rows: allApps(input.entries).map((entry) => entryRow(entry)) }];
     if (input.recent.length > 0)
       return [...failed, { id: "recent", title: "Recent", rows: [...input.recent.map((entry) => entryRow(entry, "recent")), allAppsRow] }];
-    return [...failed, { id: "try", title: "Try", aside: "Searches this computer only", rows: [...examples(input.entries, input.icons), allAppsRow] }];
+    return [...failed, { id: "try", title: "Try", aside: "Searches this computer only", rows: [...examples(input), allAppsRow] }];
   }
   const answer = answerFor(query, input.answers);
-  const found = search(input.entries, query, answer === null ? LOCAL_ROWS : LOCAL_ROWS - 1).map((entry) => entryRow(entry));
-  const instant = [...(answer === null ? [] : [answerRow(query, answer, input.icons, input.copied)]), ...found];
+  const { items, suggestion } = found(input, answer === null ? LOCAL_ROWS : LOCAL_ROWS - 1);
+  const instant = [...(answer === null ? [] : [answerRow(query, answer, input.icons, input.copied)]), ...items.map((item) => rowFor(item, input))];
   const files = filesSection(input.files, query);
   if (instant.length > 0) return [...failed, ...grouped(instant), ...(files ? [files] : [])];
   // Nothing instant: wait for the files before saying nothing is there (their slots, if any, are held).
   if (input.files.kind === "waiting") return [...failed, ...(files ? [files] : [])];
   if (files && input.files.kind === "found") return [...failed, files];
-  return [...failed, nothingFound(input, query)];
+  return [...failed, nothingFound(input, query, suggestion)];
 }
 
 /** The rows that can be selected, in order. */

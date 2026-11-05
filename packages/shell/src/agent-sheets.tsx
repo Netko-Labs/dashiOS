@@ -7,6 +7,7 @@
 
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
+import { PersonConfirmSheet, type PersonQuestion } from "./actions/confirm-sheet.tsx";
 import type { AgentUi, Answer } from "./agents/index.ts";
 import { SHEET_LAYERS } from "./agents/mask.ts";
 import { personAnswered } from "./agents/person.ts";
@@ -48,7 +49,15 @@ export interface AgentUiOptions {
   request(method: string, params: Record<string, unknown>): Promise<unknown>;
 }
 
-export function createAgentUi(options: AgentUiOptions): AgentUi & { close(): void } {
+/** The sheet queue's id for the person's own questions (agents' connections count from 1). */
+export const PERSON_SHEETS = 0;
+
+/** What else the queue shows: the person's own questions (actions/run.ts), answered by their press only. */
+export interface PersonSheets {
+  confirmPerson(question: PersonQuestion, signal?: AbortSignal): Promise<boolean>;
+}
+
+export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets & { close(): void } {
   let note: (Overlay & { timer: ReturnType<typeof setTimeout> }) | null = null;
   let clearWaiters: Array<() => void> = [];
   /** "Your turn" banners, one per agent: Done (true) or taken down (false). */
@@ -120,6 +129,18 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & { close(): voi
           {
             agent: confirm.agent,
             view: (answer) => <ConfirmSheet confirm={confirm} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />,
+            resolve: (answer) => resolve(answer.allow !== "deny"),
+          },
+          signal,
+        ),
+      );
+    },
+    confirmPerson(question, signal) {
+      return new Promise((resolve) =>
+        queue(
+          {
+            agent: PERSON_SHEETS,
+            view: (answer) => <PersonConfirmSheet question={question} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />,
             resolve: (answer) => resolve(answer.allow !== "deny"),
           },
           signal,

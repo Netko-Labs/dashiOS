@@ -1,8 +1,10 @@
 /**
- * How a tool is written down: its listing for `tools/list`, the scope it
+ * How a tool is written down: its arguments for `tools/list`, the scope it
  * needs, and the function that checks its arguments into a `Call`. The
- * listing and the check live side by side, so a tool can't take an argument
- * the check forgets (the check is only given names the listing declares).
+ * schema and the check live side by side, so a tool can't take an argument
+ * the check forgets (the check is only given names the schema declares).
+ * Each tool becomes an action (actions/tools.ts), and `tools/list` is
+ * written from the actions (`mcpListing`).
  *
  * Every tool states `readOnlyHint` and `destructiveHint`: MCP treats a tool
  * that says neither as destructive.
@@ -30,23 +32,6 @@ export interface ToolDef {
   parse(args: Args): Call | CallError;
 }
 
-/** `tools/list` for one tool. */
-export function listing(def: ToolDef) {
-  return {
-    name: def.name,
-    title: def.title,
-    description: def.description,
-    inputSchema: { type: "object", properties: def.properties, required: [...(def.required ?? [])], additionalProperties: false },
-    annotations: {
-      title: def.title,
-      readOnlyHint: def.readOnly,
-      destructiveHint: def.destructive,
-      idempotentHint: def.idempotent ?? def.readOnly,
-      openWorldHint: false,
-    },
-  };
-}
-
 export const fail = (message: string): CallError => ({ arguments: message });
 
 export function isCallError(value: object): value is CallError {
@@ -55,6 +40,22 @@ export function isCallError(value: object): value is CallError {
 
 /** The first of `args`' names that `allowed` doesn't list. */
 export const stray = (args: Args, allowed: Record<string, unknown>): string | undefined => Object.keys(args).find((key) => !(key in allowed));
+
+/**
+ * A tool's `arguments` (anything an agent, a person, or a link sent) checked
+ * into its `Call`: an object, only names the tool declares, then its own
+ * `parse`. The agents' `tools/call` and a person's command go through this one.
+ */
+export function checkToolArgs(tool: ToolDef, given: unknown): Call | CallError {
+  if (given !== undefined && given !== null && (typeof given !== "object" || Array.isArray(given))) return fail("`arguments` must be an object.");
+  const args = (given ?? {}) as Args;
+  const extra = stray(args, tool.properties);
+  if (extra !== undefined) {
+    const takes = Object.keys(tool.properties);
+    return fail(`\`${extra}\` is not an argument of ${tool.name}; ${takes.length > 0 ? `it takes ${takes.join(", ")}` : "it takes none"}.`);
+  }
+  return tool.parse(args);
+}
 
 /** `value` if it is a whole number from `min` to `max`. */
 export function whole(value: unknown, min: number, max: number): number | null {

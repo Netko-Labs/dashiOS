@@ -23,12 +23,17 @@ import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
 import { ScreensStore } from "./screens.ts";
 import type { PaneServices } from "./services.ts";
+import { RowFocus, type SpotHost } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
 import { SETTINGS_WINDOW, SettingsWindow } from "./view.tsx";
 
 export interface SettingsApp {
-  /** Opens the window, or brings it forward when it is open; `pane` also switches to that pane. */
-  open(pane?: PaneId): void;
+  /**
+   * Opens the window, or brings it forward when it is open; `pane` also
+   * switches to that pane, and `row` scrolls to that row and lights it up
+   * (a `dashi://settings/<pane>/<row>` address: spot.tsx).
+   */
+  open(pane?: PaneId, row?: string): void;
   close(): void;
 }
 
@@ -62,7 +67,10 @@ export const SETTINGS_TITLE = "System Settings";
 export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
   const { compositor } = options;
   const nav = new Nav();
+  const focus = new RowFocus();
   let session: Session | null = null;
+  // The page scrolls to a row through the window's host (spot.tsx).
+  const spots: SpotHost = { focus, scroll: (testID, dy) => session?.surface?.scroll?.(testID, dy) };
 
   const close = (): void => {
     const current = session;
@@ -82,8 +90,9 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     }
   };
 
-  const open = (pane?: PaneId): void => {
+  const open = (pane?: PaneId, row?: string): void => {
     if (pane) nav.select(pane);
+    if (pane && row) focus.request(pane, row);
     if (session) {
       void raise();
       return;
@@ -118,7 +127,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     // unified title bar, see view.tsx) where the compositor can draw them so, else in a title bar.
     current.surface = openOverlay(
       { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, width: SETTINGS_WINDOW.width, height: SETTINGS_WINDOW.height, titleBar: "unified" },
-      <SettingsWindow ctx={ctx} nav={nav} />,
+      <SettingsWindow ctx={ctx} nav={nav} spots={spots} />,
       () => {
         // The window went (its close button, or its host died): forget the session.
         if (session === current) session = null;

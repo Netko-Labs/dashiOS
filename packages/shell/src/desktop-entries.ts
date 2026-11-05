@@ -145,15 +145,25 @@ function writeAtomic(path: string, text: string): void {
  * text changed), skip a name a person's own file holds, and remove the
  * `dev.dashi.*.desktop` files with the marker whose app is not in `specs`.
  */
-export function syncDesktopEntries(specs: readonly FirstPartySpec[], dir: string, context: EntryContext): SyncResult {
+export function syncDesktopEntries(
+  specs: readonly FirstPartySpec[],
+  dir: string,
+  context: EntryContext,
+  /** Entries that are not apps' (the dashi:// handler, actions/entry.ts): `dev.dashi.*` files kept in line the same way. */
+  extra: readonly { file: string; text: string }[] = [],
+): SyncResult {
   const result: SyncResult = { written: [], removed: [], skipped: [] };
   mkdirSync(dir, { recursive: true });
   const wanted = new Set<string>();
-  for (const spec of specs) {
-    if (!spec.id.startsWith(ID_PREFIX) || !/^[A-Za-z0-9._-]+$/.test(spec.id)) continue;
-    const text = desktopEntryText(spec, context);
-    if (text === null) continue;
-    const file = entryFile(spec.id);
+  const entries = [
+    ...specs.flatMap((spec) => {
+      if (!spec.id.startsWith(ID_PREFIX) || !/^[A-Za-z0-9._-]+$/.test(spec.id)) return [];
+      const text = desktopEntryText(spec, context);
+      return text === null ? [] : [{ file: entryFile(spec.id), text }];
+    }),
+    ...extra.filter(({ file }) => file.startsWith(ID_PREFIX) && /^[A-Za-z0-9._-]+\.desktop$/.test(file)),
+  ];
+  for (const { file, text } of entries) {
     wanted.add(file);
     const path = join(dir, file);
     const existing = readRegular(path);
@@ -218,11 +228,11 @@ export function shouldWriteEntries(env: Record<string, string | undefined>, deve
 export async function installDesktopEntries(
   specs: readonly FirstPartySpec[],
   context: EntryContext,
-  options: { dir?: string; refresh?: (dir: string) => Promise<void> } = {},
+  options: { dir?: string; refresh?: (dir: string) => Promise<void>; extra?: readonly { file: string; text: string }[] } = {},
 ): Promise<SyncResult | null> {
   const dir = options.dir ?? applicationsDir();
   try {
-    const result = syncDesktopEntries(specs, dir, context);
+    const result = syncDesktopEntries(specs, dir, context, options.extra);
     if (result.written.length + result.removed.length > 0) await (options.refresh ?? refreshCache)(dir);
     return result;
   } catch (error) {

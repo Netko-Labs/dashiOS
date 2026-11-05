@@ -10,6 +10,7 @@ export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { ConfirmSheet, type ConfirmSheetProps, EmptyState, type MenuItem, PopupMenu, Sheet, type SheetProps } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
+export { Switch, type SwitchProps } from "./switch.tsx";
 export { type Column, Table, type TableProps } from "./table.tsx";
 export { moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
 export {
