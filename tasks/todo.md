@@ -383,6 +383,11 @@ it in the VM.
       XEmbed tray icons, Bluetooth device batteries in the battery menu, reordering/hiding extras
 - [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)
 - [x] Terminal: ⌥/❖ arrows and ⌥⌫ in readline's keys (keymap.ts), as on the Mac
+- [x] Terminal: Dashi's 16-color palette, light and dark, AA on the ground (apps/terminal/palette.ts),
+      programs' own colors honored; ⇧❖W closes the window; closing a busy tab or window asks
+- [ ] Terminal and Text Editor: the close control and ❖Q ask too (needs the mirin item above)
+- [x] Text Editor: ❖W asks like File › Close, unsaved text kept as it is typed, a window title
+      per document, Revert asks (and is one Undo step), the caret stays put on ❖S and after sheets
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences
 - [ ] A Dashi-native installer front end over Anaconda

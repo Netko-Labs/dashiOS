@@ -70,13 +70,7 @@ impl Vt {
                 ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_ROWS,
                 (&mut frame.rows as *mut u16).cast(),
             );
-            let mut colors = sized!(ffi::GhosttyRenderStateColors);
-            get(
-                ffi::GhosttyRenderStateData_GHOSTTY_RENDER_STATE_DATA_COLORS,
-                (&mut colors as *mut ffi::GhosttyRenderStateColors).cast(),
-            );
-            frame.fg = rgb(colors.foreground);
-            frame.bg = rgb(colors.background);
+            (frame.fg, frame.bg) = self.colors();
             let mut bar = ffi::GhosttyTerminalScrollbar {
                 total: 0,
                 offset: 0,
