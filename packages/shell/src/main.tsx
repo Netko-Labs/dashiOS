@@ -814,7 +814,12 @@ const launcherKeymap = {
 
 /** Start `entry` from the launcher; false when it could not be started at all. One that quits at once is a notification. */
 function launchFromLauncher(entry: Entry): boolean {
-  const pid = launchEntry(entry, { failed: () => launchFailures.quit(entry.name, () => launchFromLauncher(entry)) });
+  const pid = launchEntry(entry, {
+    failed: () => {
+      launcherRecents.forget(entry.id);
+      launchFailures.quit(entry.name, () => launchFromLauncher(entry));
+    },
+  });
   if (pid === null) return false;
   launcherRecents.remember(entry.id);
   return true;
