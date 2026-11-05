@@ -7,7 +7,7 @@
  * is changed.
  */
 
-import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
+import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton } from "@dashi/ui";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { CATEGORIES, type CategoryId } from "../../src/software/flathub.ts";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
@@ -174,7 +174,7 @@ export function SoftwareWindow() {
             key={category.id}
             testID={`nav:category:${category.id}`}
             label={category.label}
-            tile={{ glyph: CATEGORY_GLYPHS[category.id] ?? DISCOVER, tint: CATEGORY_TINTS[category.id] ?? "#7a7a82" }}
+            tile={{ glyph: CATEGORY_GLYPHS[category.id] ?? DISCOVER, tint: CATEGORY_TINTS[category.id] ?? TINTS.goma }}
             selected={inSidebar(nav, { kind: "category", id: category.id })}
             onPress={() => go({ kind: "category", id: category.id })}
           />

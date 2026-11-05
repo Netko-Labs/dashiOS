@@ -46,6 +46,15 @@ export class AppletStore {
 
   getSnapshot = (): StoreState => this.state;
 
+  /**
+   * Whether the catalog can be shown at all: false while this build has no
+   * key for it (src/applet-store/keys.ts). The window then offers only
+   * Installed, since asking again can't help.
+   */
+  get catalogReady(): boolean {
+    return this.catalog.hasKey;
+  }
+
   private set(change: Partial<StoreState>): void {
     this.state = { ...this.state, ...change };
     for (const listener of this.listeners) listener();

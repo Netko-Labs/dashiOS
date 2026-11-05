@@ -5,7 +5,7 @@
  */
 
 import type { IndexApplet, InstalledApplet } from "@dashi/applet";
-import { Group, useColors } from "@dashi/ui";
+import { Group, tintFor, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext, useSyncExternalStore } from "react";
 import type { AppletStatus } from "../../src/applet-store/installer.ts";
@@ -31,10 +31,6 @@ export function useStoreState() {
   const { store } = useServices();
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
 }
-
-const TINTS = ["#5b6ad0", "#3b8fd0", "#2f9d8f", "#4f8f4f", "#c7892b", "#d97a2c", "#d0527f", "#6E56CF"];
-
-const tintFor = (name: string): string => TINTS[[...name].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) % 9973, 0) % TINTS.length] ?? "#7a7a82";
 
 /** The applet's icon from the catalog; its first letter on a tile until it is here. */
 export function AppletIcon({ url, name, size }: { url?: string | undefined; name: string; size: number }) {

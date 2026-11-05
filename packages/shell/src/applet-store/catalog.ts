@@ -63,6 +63,11 @@ export interface Loaded {
 export class Catalog {
   constructor(private readonly options: CatalogOptions) {}
 
+  /** Whether there is a key to check the index with: without one nothing from the catalog can be shown. */
+  get hasKey(): boolean {
+    return this.options.key !== null && this.options.key.trim() !== "";
+  }
+
   private cached(): CatalogIndex | null {
     const { key, cacheDir } = this.options;
     const json = join(cacheDir, "index.json");

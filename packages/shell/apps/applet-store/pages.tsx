@@ -32,7 +32,7 @@ function Problem() {
       glyph={problem.kind === "offline" ? OFFLINE : glyphs.WARNING}
       title={title}
       message={message}
-      action={<Button label="Try Again" testID="retry" onPress={() => void store.refresh()} />}
+      {...(problem.kind === "no-key" ? {} : { action: <Button label="Try Again" testID="retry" onPress={() => void store.refresh()} /> })}
     />
   );
 }
@@ -78,8 +78,15 @@ export function ListPage({ page }: { page: Extract<Page, { kind: "all" | "catego
   );
 }
 
-/** Installed: what is on this machine, from the catalog or by hand, with Remove; a pulled one says why. */
-export function InstalledPage({ query }: { query: string }) {
+/** The quiet line Installed shows while this build has no key for the catalog. */
+export const NO_CATALOG = "The applet catalog isn't available yet. Applets you add by hand work today, and show up here.";
+
+/**
+ * Installed: what is on this machine, from the catalog or by hand, with
+ * Remove; a pulled one says why. Without a catalog (`catalogReady` false) it
+ * is the whole window, with one quiet line saying the catalog isn't here yet.
+ */
+export function InstalledPage({ query, catalogReady = true }: { query: string; catalogReady?: boolean }) {
   const colors = useColors();
   const actions = useActions();
   const state = useStoreState();
@@ -91,13 +98,16 @@ export function InstalledPage({ query }: { query: string }) {
       <EmptyState
         testID="installed-empty"
         glyph={INSTALLED}
-        title={query.trim() ? "No Results" : "No applets yet"}
-        message={query.trim() ? `None of your applets match “${query.trim()}”.` : "Applets you get show up here, and in the menu bar."}
+        title={query.trim() ? "No results" : "No applets yet"}
+        message={
+          query.trim() ? `None of your applets match “${query.trim()}”.` : catalogReady ? "Applets you get show up here, and in the menu bar." : NO_CATALOG
+        }
       />
     );
   }
   return (
     <ScrollView testID="installed" style={{ flex: 1, flexDirection: "column", gap: 12, padding: 22 }}>
+      {!catalogReady && <Note testID="no-catalog" text={NO_CATALOG} />}
       {state.justPulled.length > 0 && (
         <Note testID="just-pulled" text="An applet was pulled from the catalog and is turned off. Its page offers a good version." />
       )}
