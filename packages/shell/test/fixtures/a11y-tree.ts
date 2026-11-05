@@ -8,6 +8,8 @@ export interface Spec {
   rect?: Rect;
   url?: string;
   children?: Spec[];
+  /** Its first GetExtents answers nothing, as Firefox's does. */
+  late?: boolean;
 }
 
 /** GetState's two words with these bits set. */
@@ -18,11 +20,16 @@ export function bits(states: readonly number[]): number[] {
 }
 
 export function tree(spec: Spec): A11yNode {
+  let asked = false;
   return {
     role: async () => spec.role,
     states: async () => bits(spec.states ?? []),
     children: async () => (spec.children ?? []).map(tree),
-    extents: async () => spec.rect ?? null,
+    extents: async () => {
+      const early = spec.late && !asked;
+      asked = true;
+      return early ? null : (spec.rect ?? null);
+    },
     url: async () => spec.url ?? null,
   };
 }

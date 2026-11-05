@@ -46,6 +46,22 @@ async function find(node: A11yNode, depth = 0, budget = { nodes: 30_000 }): Prom
 for (const { pid, app } of await atspi.apps()) {
   if (wanted === 0) console.log(`app pid ${pid}`);
   if (wanted !== null && pid !== wanted) continue;
+  if (process.argv.includes("--mask") && pid !== null) {
+    // What the agents' mask sees, timed (src/agents/mask.ts): wake, then a bounded walk every 100 ms for 4 s.
+    const start = Date.now();
+    const woke = await atspi.wake(pid);
+    console.log(`woke ${woke} in ${Date.now() - start} ms`);
+    if (process.argv.includes("--find")) await find(app);
+    let last = "";
+    for (let round = 0; round < 40; round++) {
+      const walked = Date.now();
+      const { rects, complete } = await passwordFields(app, limits(500));
+      const now = `complete ${complete}, ${rects.length} password fields`;
+      if (now !== last) console.log(`at ${walked - start} ms (walk ${Date.now() - walked} ms): ${now}`);
+      last = now;
+      await Bun.sleep(100);
+    }
+  }
   if (process.argv.includes("--wake") && pid !== null && (await atspi.wake(pid))) {
     console.log(`woke ${pid}`);
     await Bun.sleep(2000);

@@ -58,8 +58,18 @@ export async function fieldAt(node: A11yNode): Promise<Focused | null> {
 
 /** A node's extents, with its page's (the outermost web document around it) to place it by. */
 async function placed(node: A11yNode, page: A11yNode | null): Promise<Placed> {
-  const [rect, pageRect] = await Promise.all([node.extents().catch(() => null), page ? page.extents().catch(() => null) : null]);
+  const [rect, pageRect] = await Promise.all([extentsOf(node), page ? extentsOf(page) : null]);
   return { rect, page: pageRect };
+}
+
+/** Firefox answers a node's first GetExtents with nothing and the next with its place (measured in the VM). */
+export const EXTENTS_RETRY_MS = 100;
+
+async function extentsOf(node: A11yNode): Promise<Rect | null> {
+  const first = await node.extents().catch(() => null);
+  if (first) return first;
+  await Bun.sleep(EXTENTS_RETRY_MS);
+  return node.extents().catch(() => null);
 }
 
 /** Where something is, as the app says, and where its page is in the same units (null outside a web page). */

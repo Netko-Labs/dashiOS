@@ -54,6 +54,31 @@ describe("the accessibility walk", () => {
     expect(toWindow(field, null, { width: 596, height: 436 })).toEqual(field);
   });
 
+  test("a field and its page that Firefox places only when asked twice are placed", async () => {
+    const field = { x: 418, y: 310, width: 436, height: 35 };
+    const page = { x: 26, y: 96, width: 1204, height: 614 };
+    const firefox = tree({
+      role: ROLE.APPLICATION,
+      children: [
+        {
+          role: ROLE.FRAME,
+          states: [STATE.SHOWING],
+          children: [
+            {
+              role: ROLE.DOCUMENT_WEB,
+              states: [STATE.SHOWING],
+              url: "http://signin.localhost:8443/",
+              rect: page,
+              late: true,
+              children: [{ role: ROLE.PASSWORD_TEXT, states: [STATE.SHOWING], rect: field, late: true }],
+            },
+          ],
+        },
+      ],
+    });
+    expect((await passwordFields(firefox)).rects).toEqual([{ rect: field, page }]);
+  });
+
   test("a walk gives up at its limits instead of holding a picture", async () => {
     const wide = tree({ role: ROLE.APPLICATION, children: Array.from({ length: 50 }, () => ({ role: ROLE.FRAME, states: [STATE.SHOWING] })) });
     const { complete } = await passwordFields(wide, { nodes: 10, deadline: Date.now() + 1000 });

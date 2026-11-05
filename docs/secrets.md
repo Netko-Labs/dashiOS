@@ -174,7 +174,8 @@ before it looks, the shell wakes each app once (`Atspi.wake` in
 `src/agents/atspi/client.ts`): it asks the app and its windows, then its
 web documents, for their attributes, which turns on Chromium's web tree
 (`--force-renderer-accessibility` isn't needed); `org.a11y.Status.IsEnabled`
-alone gives only the frame. Firefox and GTK apps answer at once. Chromium
+alone gives only the frame. Firefox publishes its tree at once, but answers
+a node's first `GetExtents` with nothing, so that is asked twice. Chromium
 also reports AT-SPI's window coordinates in device pixels from an origin of
 its own, so a web field is placed by its page (the outermost web document):
 the page fills the window's content below the toolbar with equal borders at
