@@ -40,16 +40,16 @@ function CalendarRow({
 }) {
   const colors = useColors();
   return (
+    // The check, the name and the menu are side by side, not nested: Metal gives a press to every
+    // view under it, and a check inside the row would hide the calendar and pick (show) it again.
     <View
       testID={`calendar-row:${calendar.id}`}
-      onPress={onChoose}
       onContextMenu={(event) => onMenu(event.x, event.y)}
       style={{
         height: 28,
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
         paddingHorizontal: 8,
         borderRadius: 7,
         backgroundColor: chosen ? colors.button : "#00000000",
@@ -76,7 +76,7 @@ function CalendarRow({
           {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
         </View>
       </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
+      <View testID={`calendar-name:${calendar.id}`} onPress={onChoose} style={{ flex: 1, minWidth: 0, height: 28, justifyContent: "center", paddingLeft: 8 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, color: visible ? colors.text : colors.textMuted }}>
           {calendar.name}
         </Text>
