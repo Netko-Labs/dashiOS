@@ -82,9 +82,12 @@ export function actionKind(action: ActionDef): RankKind | null {
     case "dashi":
       return "command";
     // An agent tool that needs an argument waits for a link to fill it in (the presenter): no row of its own.
-    // One that only reads (list_windows, get_settings) answers a model, not a person: no row either.
+    // One that only reads (list_windows, get_settings) answers a model, not a person: no row either;
+    // nor one that takes arguments at all (set_volume's level), which a row can't give it.
     case "tools":
-      return action.who === "both" && !action.readOnly && (action.required ?? []).length === 0 ? "command" : null;
+      return action.who === "both" && !action.readOnly && (action.required ?? []).length === 0 && Object.keys(action.properties ?? {}).length === 0
+        ? "command"
+        : null;
     default:
       return "command";
   }

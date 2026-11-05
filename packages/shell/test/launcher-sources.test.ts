@@ -95,6 +95,7 @@ describe("what the launcher lists", () => {
 
   test("agent tools: no row for one that only reads, one row with Dashi's command of the same name, no model-facing detail", () => {
     expect(actionKind(action("dashi://tool/list-windows", { source: "tools", who: "both", readOnly: true }))).toBeNull();
+    expect(actionKind(action("dashi://tool/set-volume", { source: "tools", who: "both", properties: { level: { type: "number" } } }))).toBeNull();
     const items = launcherItems({
       entries: [],
       actions: [
