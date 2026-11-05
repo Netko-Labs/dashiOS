@@ -21,6 +21,7 @@ import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
 import type { AgentInfo, AgentUi, Who } from "./presence.ts";
 import { runCall } from "./run.ts";
+import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall, scopeOf } from "./tools/index.ts";
 
 /** How long a finished action stays in the menu bar before "Idle". */
@@ -42,6 +43,8 @@ export interface SessionContext {
   /** The menu bar's list changed. */
   publish(): void;
   tile(window: number, tile: Tile): Promise<void>;
+  /** Login sources, the accessibility bus, and the windows handed to the person. */
+  secrets: SecretsShared;
 }
 
 /** What a Bun socket offers the session. */
@@ -67,6 +70,7 @@ export class Session {
   private readonly lines = new LineBuffer();
   private outbox: Uint8Array[] = [];
   private closed = false;
+  private readonly secrets: SessionSecrets;
 
   constructor(
     readonly id: number,
@@ -74,8 +78,11 @@ export class Session {
     private readonly connection: Connection,
     private readonly ctx: SessionContext,
     private readonly onGone: (session: Session) => void,
+    /** In Dashi's agent sandbox, or on another machine (sandbox.ts): only then may it sign in. */
+    confined = false,
   ) {
     this.granted = peer.remote ? new Set() : ctx.grants.get(peer.key);
+    this.secrets = new SessionSecrets(ctx.secrets, ctx.ui, confined);
   }
 
   info(): AgentInfo {
@@ -247,18 +254,22 @@ export class Session {
   private async run(id: mcp.Id, call: Call): Promise<void> {
     let result: ToolResult;
     try {
-      result = await runCall(call, {
-        compositor: this.ctx.compositor,
-        ui: this.ctx.ui,
-        desktop: this.ctx.desktop,
-        hands: this.ctx.hands,
-        mask: this.ctx.mask,
-        agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
-        status: (text) => this.setStatus(text),
-        tile: this.ctx.tile,
-        mayName: () => this.granted.has("see"),
-        confirm: (question) => this.confirm(question),
-      });
+      // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
+      result = await this.secrets.around(call, () =>
+        runCall(call, {
+          compositor: this.ctx.compositor,
+          ui: this.ctx.ui,
+          desktop: this.ctx.desktop,
+          hands: this.ctx.hands,
+          mask: this.ctx.mask,
+          secrets: this.secrets.run(this.id, () => this.who),
+          agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
+          status: (text) => this.setStatus(text),
+          tile: this.ctx.tile,
+          mayName: () => this.granted.has("see"),
+          confirm: (question) => this.confirm(question),
+        }),
+      );
     } catch (error) {
       result = toolError(`${call.name} failed: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -318,7 +329,8 @@ export class Session {
     if (this.closed) return;
     this.closed = true;
     this.log(null, why);
-    if (this.asking || this.confirming > 0) this.ctx.ui.dismiss(this.id);
+    // Its sheets, and a "Your turn" it left up, come down.
+    this.ctx.ui.dismiss(this.id);
     this.connection.terminate();
     this.onGone(this);
   }

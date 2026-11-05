@@ -14,6 +14,7 @@ import { createAgentUi } from "./agent-sheets.tsx";
 import { Grants } from "./agents/consent.ts";
 import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
+import { startPasswords } from "./agents/secrets/passwords.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
 import { AutoAppearance } from "./appearance/auto.ts";
@@ -324,6 +325,8 @@ const polkit = startPolkit({
 
 // Agents (MCP) run here too; they start below, once what they reach exists.
 const agentStore = new AgentStore();
+// Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
+const passwords = startPasswords();
 // A sheet's yes counts only if the person pressed it (agents/person.ts).
 const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
 
@@ -394,6 +397,7 @@ const agents = compositor
   ? startAgents({
       compositor,
       ui: agentUi,
+      sources: passwords.sources,
       store: agentStore,
       tile,
       desktop: {
@@ -442,6 +446,7 @@ const settingsApp = startSettingsApp({
   displays,
   settings: settingsStore,
   region: region.store,
+  passwords,
   openSetup: () => setupAssistant?.open(),
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.

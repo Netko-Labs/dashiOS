@@ -32,6 +32,12 @@ export const SCOPES = [
   { id: "calendar", label: "Read your calendar", detail: "List your calendars and the events in them: their titles, times, places, and notes" },
   { id: "calendar_write", label: "Add to your calendar", detail: "Add events to your calendar (it can't change or delete the ones there)" },
   {
+    id: "signin",
+    label: "Sign in for you",
+    detail:
+      "See which sites you have logins for and their account names, and ask you to let Dashi sign it in or enter a one-time code. Each login is asked about on screen; Dashi types the password or code, and the agent never sees it",
+  },
+  {
     id: "settings",
     label: "Change settings",
     detail:

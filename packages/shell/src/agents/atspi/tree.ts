@@ -27,6 +27,32 @@ export interface A11yNode {
   extents(): Promise<Rect | null>;
   /** A web document's address (Document's DocURL), else null. */
   url(): Promise<string | null>;
+  /** Its parent, when the tree can be walked up (the focus is found by events, then its documents by its ancestors). */
+  parent?(): Promise<A11yNode | null>;
+}
+
+/** How far up a field's documents are looked for. */
+const MAX_DEPTH = 256;
+
+/** The focused field from its node (found by a focus event): what it is, and the documents around it. */
+export async function fieldAt(node: A11yNode): Promise<Focused | null> {
+  const [role, states] = await Promise.all([node.role(), node.states()]);
+  if (!hasState(states, STATE.FOCUSED)) return null;
+  const documents: string[] = [];
+  let current: A11yNode | null = node;
+  for (let depth = 0; current?.parent && depth < MAX_DEPTH; depth++) {
+    current = await current.parent().catch(() => null);
+    if (!current) break;
+    const up = await current.role().catch(() => -1);
+    if (up === ROLE.DOCUMENT_WEB) documents.push((await current.url().catch(() => null)) ?? "");
+    if (up === ROLE.APPLICATION) break;
+  }
+  return { kind: kindOf(role, states), rect: await node.extents().catch(() => null), documents };
+}
+
+function kindOf(role: number, states: readonly number[]): Focused["kind"] {
+  if (role === ROLE.PASSWORD_TEXT) return "password";
+  return hasState(states, STATE.EDITABLE) && (role === ROLE.ENTRY || role === ROLE.TEXT) ? "text" : "other";
 }
 
 export function hasState(states: readonly number[], state: number): boolean {
@@ -112,7 +138,5 @@ export async function focusedField(root: A11yNode, limit: Limits = limits()): Pr
   });
   const found = hit as Visit | null;
   if (!found) return null;
-  const editable = hasState(found.states, STATE.EDITABLE);
-  const kind = found.role === ROLE.PASSWORD_TEXT ? "password" : editable && (found.role === ROLE.ENTRY || found.role === ROLE.TEXT) ? "text" : "other";
-  return { kind, rect: await found.node.extents().catch(() => null), documents: found.documents };
+  return { kind: kindOf(found.role, found.states), rect: await found.node.extents().catch(() => null), documents: found.documents };
 }

@@ -182,6 +182,68 @@ consent sheet's yes counts only if the person pressed on the sheet within the
 last 2 seconds and no agent pressed there since (`src/agents/person.ts`); a
 no always counts. Anything else (an older compositor, an error) is a no.
 
+## Signing in, codes, "Your turn"
+
+Agent tools (`src/agents/tools/secrets.ts`), carried out by
+`src/agents/desktop/secrets.ts` and the broker (`src/agents/secrets/broker.ts`):
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_logins {site?}` | Sign in for you | Each saved login's site, account, source, whether it has a code, and whether agents may ask (`ask`/`never`). Never a secret |
+| `sign_in {window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
+| `fill_code {window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
+| `hand_over {window, reason}` | Manage windows and apps | "Your turn: <reason>", Done; the agent waits, the window is blank in its pictures |
+
+"Sign in for you" is a scope like the others, but every login is asked about
+again on its own sheet ("Claude wants to sign in to github.com as alexk":
+Deny, Allow for This Task, Allow Once). "Allow for This Task" lasts while the
+agent stays connected; "Allow Once" covers that sign-in and, for two
+minutes, its one-time code. A login marked Never is refused, by the broker
+and by dashi-secretd itself (`forAgent`).
+
+Before the sheet and again just before typing, the broker checks the field
+(`src/agents/secrets/field-check.ts`):
+
+- AT-SPI says the focused field is a password field (`PASSWORD_TEXT`; for a
+  code, an editable text or password field). The focus comes from AT-SPI
+  focus events (`object:state-changed:focused`), else a bounded search;
+- every web document around the field, frames included, is on the login's
+  site (the same host or one under it), over https (http only on
+  `*.localhost`), by the documents' `DocURL`;
+- the browser wasn't started with remote debugging (CDP, Marionette).
+
+The secret is fetched only then, typed through the agent's hands (one
+`agent-input` request), and dropped; a sign-in runs alone, so the agent's own
+input can't move the focus meanwhile. Results say what was typed for whom,
+never what. Agents outside the sandbox (`dashi-agent`) are refused, and told
+how to get in.
+
+"Your turn" (`hand_over`): a banner at the top ("Your turn: sign in to the
+bank", Done; one overlay, no bar), the window comes forward, the agent's
+other calls wait, and the window is blank in its pictures until the person
+presses Done (their own press, as for sheets).
+
+## Sources
+
+Dashi's vault and 1Password, each turned on in Settings › Passwords
+(`$XDG_CONFIG_HOME/dashi/passwords.json`: `sources`, `saveTo`; read-only in the
+sandbox). The broker asks each enabled one for logins matching the site
+(`src/agents/secrets/sources.ts`); a source that fails is left out and named.
+Dashi's vault always holds the Secret Service's items (apps' secrets).
+
+Settings › Passwords also lists the vault's logins (site, account, Ask or
+Never for agents, Delete) and adds new ones (site, account, password,
+two-factor setup key). Agents' pictures blank Settings while it shows.
+
+## The test site
+
+`packages/shell/test/fixtures/sign-in-site/server.ts` (a small Bun server):
+a login (`alexk`, a password of the fixture's), a TOTP code, passkeys, and a
+fake checkout that takes Stripe's test card number only. Never a real
+account or card. `bun packages/shell/test/fixtures/sign-in-site/server.ts`
+serves it on `http://signin.localhost:8443/` and prints the two-factor
+setup key.
+
 ## What this can't fix
 
 - Once signed in, the agent acts as the person on that site until the

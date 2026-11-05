@@ -44,6 +44,28 @@ export function inAgentScope(cgroupFile: string): boolean {
   return parts.some((part) => part.startsWith("dashi-agent-"));
 }
 
+/**
+ * Whether an SSH connection (`SSH_CONNECTION`: client address, port, server
+ * address, port) comes from another machine. From this one (loopback, or its
+ * own address) an agent could reach Dashi over SSH to look remote.
+ */
+export function fromAnotherMachine(sshConnection: string | null): boolean {
+  const [client, , server] = (sshConnection ?? "").trim().split(/\s+/);
+  if (!client || !server) return false;
+  const loopback = client === "::1" || client.startsWith("127.") || client === "::ffff:127.0.0.1";
+  return !loopback && client !== server;
+}
+
+/** Whether the agent behind `pid` (the process on the MCP socket) can't read secrets any other way. */
+export function isConfined(read: (path: string) => string | null, pid: number, remote: boolean): boolean {
+  if (remote) {
+    const environ = read(`/proc/${pid}/environ`) ?? "";
+    const ssh = environ.split("\0").find((entry) => entry.startsWith("SSH_CONNECTION="));
+    return fromAnotherMachine(ssh?.slice("SSH_CONNECTION=".length) ?? null);
+  }
+  return inAgentScope(read(`/proc/${pid}/cgroup`) ?? "");
+}
+
 /** Directories hidden from agents (tmpfs over them). */
 function hidden(env: SandboxEnv): string[] {
   return ["/run/dashi-secretd", join(env.config, "op"), join(env.home, ".op"), join(env.home, ".1password"), join(env.config, "1Password")];

@@ -62,6 +62,13 @@ class Node implements A11yNode {
     return rectOf(await this.call("org.a11y.atspi.Component", "GetExtents", "u", [WINDOW_COORDS]));
   }
 
+  async parent(): Promise<A11yNode | null> {
+    const value = unwrap(await this.call(PROPERTIES, "Get", "ss", [ACCESSIBLE, "Parent"]));
+    if (!Array.isArray(value)) return null;
+    const [name, path] = value as unknown[];
+    return typeof name === "string" && typeof path === "string" && path !== "/org/a11y/atspi/null" ? new Node(this.bus, name, path) : null;
+  }
+
   async url(): Promise<string | null> {
     for (const name of ["DocURL", "URI"]) {
       const value = await this.call("org.a11y.atspi.Document", "GetAttributeValue", "s", [name]).catch(() => null);
@@ -73,8 +80,38 @@ class Node implements A11yNode {
 
 export class Atspi {
   private readonly pids = new Map<string, number | null>();
+  /** What last took the focus in each app (by its bus name), from focus events. */
+  private readonly focus = new Map<string, string>();
 
   private constructor(private readonly bus: DBusConnection) {}
+
+  /** Follow focus events: apps send them once someone has registered for them. */
+  private async watchFocus(): Promise<void> {
+    const registry = {
+      destination: "org.a11y.atspi.Registry",
+      path: "/org/a11y/atspi/registry",
+      interface: "org.a11y.atspi.Registry",
+      member: "RegisterEvent",
+    };
+    const event = "object:state-changed:focused";
+    // Newer at-spi2 takes the properties to send along and an app; older, the event alone.
+    await this.bus
+      .call({ ...registry, signature: "sass", body: [event, [], ""] }, 1000)
+      .catch(() => this.bus.call({ ...registry, signature: "s", body: [event] }, 1000).catch(() => {}));
+    await this.bus.subscribe({ type: "signal", interface: "org.a11y.atspi.Event.Object", member: "StateChanged" }, (message) => {
+      const [detail, gained] = message.body;
+      if (detail !== "focused" || gained !== 1 || typeof message.sender !== "string" || typeof message.path !== "string") return;
+      this.focus.set(message.sender, message.path);
+    });
+  }
+
+  /** The node that last took the focus in the app that runs as `pid`, if one did. */
+  async focusedIn(pid: number): Promise<A11yNode | null> {
+    for (const [name, path] of this.focus) {
+      if ((await this.pidOf(name)) === pid) return new Node(this.bus, name, path);
+    }
+    return null;
+  }
 
   /** Turn accessibility on and join its bus; null where there is none. */
   static async connect(): Promise<Atspi | null> {
@@ -87,7 +124,9 @@ export class Atspi {
         .catch(() => {});
       const [address] = await session.call({ ...target, interface: "org.a11y.Bus", member: "GetAddress" }, 1000);
       if (typeof address !== "string") return null;
-      return new Atspi(await DBusConnection.connect({ address, timeoutMs: 2000 }));
+      const atspi = new Atspi(await DBusConnection.connect({ address, timeoutMs: 2000 }));
+      await atspi.watchFocus().catch(() => {});
+      return atspi;
     } catch {
       return null;
     } finally {
