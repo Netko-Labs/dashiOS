@@ -58,7 +58,7 @@ done
 # tuned profiles (thin: Dashi's recipe owns EPP, the profile, boost and the
 # power limits) and tuned-ppd's mapping to them.
 for profile in dashi-powersave dashi-balanced dashi-performance; do
-  install -Dm0644 spin/dashi-hardware/usr/lib/tuned/$profile/tuned.conf %{buildroot}%{_prefix}/lib/tuned/$profile/tuned.conf
+  install -Dm0644 spin/dashi-hardware/usr/lib/tuned/profiles/$profile/tuned.conf %{buildroot}%{_prefix}/lib/tuned/profiles/$profile/tuned.conf
 done
 # tuned-ppd owns /etc/tuned/ppd.conf, so Dashi's mapping is shipped beside it
 # and put in place by the scriptlets below (the stock file kept as .dashi-orig).
@@ -107,12 +107,12 @@ fi
 %{_unitdir}/dashi-hardware.service
 %{_unitdir}/dashi-hardware-boot.service
 %{_unitdir}/dashi-hardware-clean.service
-%dir %{_prefix}/lib/tuned/dashi-powersave
-%dir %{_prefix}/lib/tuned/dashi-balanced
-%dir %{_prefix}/lib/tuned/dashi-performance
-%{_prefix}/lib/tuned/dashi-powersave/tuned.conf
-%{_prefix}/lib/tuned/dashi-balanced/tuned.conf
-%{_prefix}/lib/tuned/dashi-performance/tuned.conf
+%dir %{_prefix}/lib/tuned/profiles/dashi-powersave
+%dir %{_prefix}/lib/tuned/profiles/dashi-balanced
+%dir %{_prefix}/lib/tuned/profiles/dashi-performance
+%{_prefix}/lib/tuned/profiles/dashi-powersave/tuned.conf
+%{_prefix}/lib/tuned/profiles/dashi-balanced/tuned.conf
+%{_prefix}/lib/tuned/profiles/dashi-performance/tuned.conf
 %dir %{_datadir}/dashi/tuned
 %{_datadir}/dashi/tuned/ppd.conf
 %{_presetdir}/80-dashi-hardware.preset
