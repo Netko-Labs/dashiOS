@@ -4,7 +4,7 @@ import { Switch } from "../../wifi/switch.tsx";
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";
 
 export function MousePane({ settings }: { settings: SettingsStore }) {
@@ -16,7 +16,9 @@ export function MousePane({ settings }: { settings: SettingsStore }) {
           <Switch testID="mouse-natural" on={mouse.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("mouse", { naturalScroll })} />
         </Row>
         <SpeedRow testID="mouse-speed" value={mouse.accelSpeed ?? DEFAULTS.accelSpeed} onCommit={(accelSpeed) => settings.patch("mouse", { accelSpeed })} />
-        <ScrollSpeedRow testID="mouse-scroll-speed" value={mouse.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("mouse", { scrollSpeed })} />
+        <Spot pane="mouse" row="scrolling-speed">
+          <ScrollSpeedRow testID="mouse-scroll-speed" value={mouse.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("mouse", { scrollSpeed })} />
+        </Spot>
         <Row stack label="Acceleration" detail="Adaptive speeds up the pointer when the mouse moves fast; flat keeps it steady.">
           <Choices
             testID="mouse-profile"

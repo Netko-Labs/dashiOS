@@ -9,7 +9,7 @@ import { Switch } from "../../wifi/switch.tsx";
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";
 
 export function TrackpadPane({ settings }: { settings: SettingsStore }) {
@@ -35,7 +35,9 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
           value={touchpad.accelSpeed ?? DEFAULTS.accelSpeed}
           onCommit={(accelSpeed) => settings.patch("touchpad", { accelSpeed })}
         />
-        <ScrollSpeedRow testID="trackpad-scroll-speed" value={touchpad.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("touchpad", { scrollSpeed })} />
+        <Spot pane="trackpad" row="scrolling-speed">
+          <ScrollSpeedRow testID="trackpad-scroll-speed" value={touchpad.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("touchpad", { scrollSpeed })} />
+        </Spot>
         <Row stack label="Click" detail="How the pad tells a left click from a right click.">
           <Choices
             testID="trackpad-click"

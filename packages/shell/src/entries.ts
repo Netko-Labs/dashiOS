@@ -7,6 +7,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { type DesktopAction, desktopActions } from "./actions/desktop-actions.ts";
 import { type App, displayName, iconPath, launch, resolvePinned, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
@@ -27,6 +28,8 @@ export interface Entry extends App {
    * `t3code-nightly`), as GNOME and KDE allow.
    */
   hidden?: true;
+  /** Its `[Desktop Action]` groups ("New Private Window"): commands of the app in the action registry (actions/). */
+  actions?: DesktopAction[];
 }
 
 /**
@@ -75,6 +78,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   if (splitList(fields.get("NotShowIn")).includes("Dashi")) return null;
   const argv = parseExec(exec);
   if (!argv.length) return null;
+  const actions = desktopActions(text, parseExec);
   return {
     id,
     name,
@@ -82,6 +86,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
     ...(yes("NoDisplay") ? { hidden: true as const } : {}),
+    ...(actions.length > 0 ? { actions } : {}),
     // The freedesktop key, and KDE's older one (Steam sets both).
     ...(yes("PrefersNonDefaultGPU") || yes("X-KDE-RunOnDiscreteGpu") ? { gpu: "discrete" as const } : {}),
     keywords: [...splitList(fields.get("Keywords")), ...(fields.get("GenericName") ? [fields.get("GenericName") as string] : [])].map((word) =>

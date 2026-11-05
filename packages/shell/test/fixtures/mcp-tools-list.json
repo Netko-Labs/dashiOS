@@ -49,9 +49,7 @@
             "description": "An app id like \"org.gnome.TextEditor\", or a name like \"Text Editor\"."
           }
         },
-        "required": [
-          "app"
-        ],
+        "required": ["app"],
         "additionalProperties": false
       },
       "annotations": {
@@ -74,9 +72,7 @@
             "description": "A window id from list_windows, like \"w3\"."
           }
         },
-        "required": [
-          "window"
-        ],
+        "required": ["window"],
         "additionalProperties": false
       },
       "annotations": {
@@ -99,9 +95,7 @@
             "description": "A window id from list_windows, like \"w3\"."
           }
         },
-        "required": [
-          "window"
-        ],
+        "required": ["window"],
         "additionalProperties": false
       },
       "annotations": {
@@ -124,9 +118,7 @@
             "description": "A window id from list_windows, like \"w3\"."
           }
         },
-        "required": [
-          "window"
-        ],
+        "required": ["window"],
         "additionalProperties": false
       },
       "annotations": {
@@ -150,25 +142,10 @@
           },
           "tile": {
             "type": "string",
-            "enum": [
-              "left",
-              "right",
-              "top",
-              "bottom",
-              "top-left",
-              "top-right",
-              "bottom-left",
-              "bottom-right",
-              "fill",
-              "center",
-              "restore"
-            ]
+            "enum": ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right", "fill", "center", "restore"]
           }
         },
-        "required": [
-          "window",
-          "tile"
-        ],
+        "required": ["window", "tile"],
         "additionalProperties": false
       },
       "annotations": {
@@ -257,9 +234,7 @@
             "description": "A Space's number from list_spaces: 1 is Desktop 1."
           }
         },
-        "required": [
-          "space"
-        ],
+        "required": ["space"],
         "additionalProperties": false
       },
       "annotations": {
@@ -288,10 +263,7 @@
             "description": "A Space's number from list_spaces: 1 is Desktop 1."
           }
         },
-        "required": [
-          "window",
-          "space"
-        ],
+        "required": ["window", "space"],
         "additionalProperties": false
       },
       "annotations": {
@@ -323,11 +295,7 @@
           },
           "button": {
             "type": "string",
-            "enum": [
-              "left",
-              "right",
-              "middle"
-            ]
+            "enum": ["left", "right", "middle"]
           },
           "count": {
             "type": "integer",
@@ -335,11 +303,7 @@
             "maximum": 3
           }
         },
-        "required": [
-          "window",
-          "x",
-          "y"
-        ],
+        "required": ["window", "x", "y"],
         "additionalProperties": false
       },
       "annotations": {
@@ -378,11 +342,7 @@
             "description": "Vertical pixels; positive scrolls down."
           }
         },
-        "required": [
-          "window",
-          "x",
-          "y"
-        ],
+        "required": ["window", "x", "y"],
         "additionalProperties": false
       },
       "annotations": {
@@ -417,10 +377,7 @@
                 "description": "Pixels from the top of the window's content."
               }
             },
-            "required": [
-              "x",
-              "y"
-            ],
+            "required": ["x", "y"],
             "additionalProperties": false
           },
           "to": {
@@ -436,18 +393,11 @@
                 "description": "Pixels from the top of the window's content."
               }
             },
-            "required": [
-              "x",
-              "y"
-            ],
+            "required": ["x", "y"],
             "additionalProperties": false
           }
         },
-        "required": [
-          "window",
-          "from",
-          "to"
-        ],
+        "required": ["window", "from", "to"],
         "additionalProperties": false
       },
       "annotations": {
@@ -475,10 +425,7 @@
             "maxLength": 4096
           }
         },
-        "required": [
-          "window",
-          "text"
-        ],
+        "required": ["window", "text"],
         "additionalProperties": false
       },
       "annotations": {
@@ -505,10 +452,7 @@
             "description": "Chords like \"❖S\" or \"⌥← ⌥←\"."
           }
         },
-        "required": [
-          "window",
-          "keys"
-        ],
+        "required": ["window", "keys"],
         "additionalProperties": false
       },
       "annotations": {
@@ -562,11 +506,7 @@
             "description": "An item label from list_menus, like \"New Window\"."
           }
         },
-        "required": [
-          "window",
-          "menu",
-          "item"
-        ],
+        "required": ["window", "menu", "item"],
         "additionalProperties": false
       },
       "annotations": {
@@ -607,12 +547,7 @@
                 "minimum": 1
               }
             },
-            "required": [
-              "x",
-              "y",
-              "width",
-              "height"
-            ],
+            "required": ["x", "y", "width", "height"],
             "additionalProperties": false
           }
         },
@@ -663,12 +598,7 @@
                 "minimum": 1
               }
             },
-            "required": [
-              "x",
-              "y",
-              "width",
-              "height"
-            ],
+            "required": ["x", "y", "width", "height"],
             "additionalProperties": false
           },
           "frames": {
@@ -720,21 +650,10 @@
           },
           "scale": {
             "type": "number",
-            "enum": [
-              1,
-              1.25,
-              1.5,
-              1.75,
-              2,
-              2.5,
-              3
-            ]
+            "enum": [1, 1.25, 1.5, 1.75, 2, 2.5, 3]
           }
         },
-        "required": [
-          "name",
-          "scale"
-        ],
+        "required": ["name", "scale"],
         "additionalProperties": false
       },
       "annotations": {
@@ -772,11 +691,7 @@
             "description": "Refresh rate in hertz, such as 59.94 or 120. Optional."
           }
         },
-        "required": [
-          "name",
-          "width",
-          "height"
-        ],
+        "required": ["name", "width", "height"],
         "additionalProperties": false
       },
       "annotations": {
@@ -800,18 +715,10 @@
           },
           "rotation": {
             "type": "integer",
-            "enum": [
-              0,
-              90,
-              180,
-              270
-            ]
+            "enum": [0, 90, 180, 270]
           }
         },
-        "required": [
-          "name",
-          "rotation"
-        ],
+        "required": ["name", "rotation"],
         "additionalProperties": false
       },
       "annotations": {
@@ -834,9 +741,7 @@
             "description": "A screen name from list_displays, like \"eDP-1\"."
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "additionalProperties": false
       },
       "annotations": {
@@ -865,11 +770,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "name",
-          "x",
-          "y"
-        ],
+        "required": ["name", "x", "y"],
         "additionalProperties": false
       },
       "annotations": {
@@ -918,9 +819,7 @@
             "description": "A notification id from list_notifications."
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "additionalProperties": false
       },
       "annotations": {
@@ -996,14 +895,7 @@
               },
               {
                 "type": "string",
-                "enum": [
-                  "none",
-                  "small",
-                  "medium",
-                  "large",
-                  "dock",
-                  "taskbar"
-                ]
+                "enum": ["none", "small", "medium", "large", "dock", "taskbar"]
               },
               {
                 "type": "number",
@@ -1014,10 +906,7 @@
             "description": "true for on, false for off; for window_corners one of: none, small, medium, large; for dock_style one of: dock, taskbar; for the scroll speeds a number from 0.25 to 4."
           }
         },
-        "required": [
-          "name",
-          "value"
-        ],
+        "required": ["name", "value"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1058,9 +947,7 @@
             "description": "A network name from list_wifi_networks."
           }
         },
-        "required": [
-          "ssid"
-        ],
+        "required": ["ssid"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1101,9 +988,7 @@
             "description": "An IANA time zone name, like America/New_York."
           }
         },
-        "required": [
-          "time_zone"
-        ],
+        "required": ["time_zone"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1126,9 +1011,7 @@
             "description": "true for 24-hour time, false for 12-hour."
           }
         },
-        "required": [
-          "value"
-        ],
+        "required": ["value"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1147,16 +1030,11 @@
         "type": "object",
         "properties": {
           "locale": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "A locale name like fr_CA.UTF-8, or null to follow the language."
           }
         },
-        "required": [
-          "locale"
-        ],
+        "required": ["locale"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1176,18 +1054,7 @@
         "properties": {
           "page": {
             "type": "string",
-            "enum": [
-              "welcome",
-              "language",
-              "keyboard",
-              "wifi",
-              "timezone",
-              "appearance",
-              "agents",
-              "extras",
-              "installing",
-              "done"
-            ],
+            "enum": ["welcome", "language", "keyboard", "wifi", "timezone", "appearance", "agents", "extras", "installing", "done"],
             "description": "The page to start on; the welcome page by default."
           }
         },
@@ -1254,10 +1121,7 @@
             "description": "true to connect, false to disconnect."
           }
         },
-        "required": [
-          "device",
-          "connected"
-        ],
+        "required": ["device", "connected"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1298,9 +1162,7 @@
             "description": "An output name from get_sound."
           }
         },
-        "required": [
-          "device"
-        ],
+        "required": ["device"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1320,10 +1182,7 @@
         "properties": {
           "target": {
             "type": "string",
-            "enum": [
-              "output",
-              "input"
-            ],
+            "enum": ["output", "input"],
             "description": "Which device: the speakers (output) or the microphone (input). Default output."
           },
           "level": {
@@ -1375,17 +1234,11 @@
         "properties": {
           "profile": {
             "type": "string",
-            "enum": [
-              "power-saver",
-              "balanced",
-              "performance"
-            ],
+            "enum": ["power-saver", "balanced", "performance"],
             "description": "power-saver, balanced, or performance."
           }
         },
-        "required": [
-          "profile"
-        ],
+        "required": ["profile"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1462,9 +1315,7 @@
             "description": "How many to return, default 50."
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1487,9 +1338,7 @@
             "description": "A note id from list_notes or search_notes, like \"Groceries.md\" or \"Work/Plan.md\"."
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1522,9 +1371,7 @@
             "description": "A folder's name; the notes that are in no folder are in the folder called Notes."
           }
         },
-        "required": [
-          "title"
-        ],
+        "required": ["title"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1552,10 +1399,7 @@
             "description": "What to add, as Markdown; a checklist item is \"- [ ] milk\"."
           }
         },
-        "required": [
-          "id",
-          "text"
-        ],
+        "required": ["id", "text"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1610,9 +1454,7 @@
             "description": "How many to return, default 100."
           }
         },
-        "required": [
-          "from"
-        ],
+        "required": ["from"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1657,12 +1499,7 @@
           },
           "repeat": {
             "type": "string",
-            "enum": [
-              "daily",
-              "weekly",
-              "monthly",
-              "yearly"
-            ],
+            "enum": ["daily", "weekly", "monthly", "yearly"],
             "description": "Repeats daily, weekly, monthly, or yearly; once by default."
           },
           "repeat_every": {
@@ -1688,10 +1525,7 @@
             "description": "Notify this many minutes before it starts; 0 at the start. None by default. For an all-day event it counts from midnight."
           }
         },
-        "required": [
-          "title",
-          "start"
-        ],
+        "required": ["title", "start"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1714,9 +1548,7 @@
             "description": "An absolute path, like /home/me/Pictures/photo.jpg."
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1745,9 +1577,7 @@
             "description": "How many results (default 10)."
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1770,9 +1600,7 @@
             "description": "A Flatpak application id from search_software, like \"org.gnome.Calculator\"."
           }
         },
-        "required": [
-          "app"
-        ],
+        "required": ["app"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1831,9 +1659,7 @@
             "description": "A Flatpak application id from search_software, like \"org.gnome.Calculator\"."
           }
         },
-        "required": [
-          "app"
-        ],
+        "required": ["app"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1856,9 +1682,7 @@
             "description": "\"apps\", \"system\", or an application id."
           }
         },
-        "required": [
-          "target"
-        ],
+        "required": ["target"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1892,9 +1716,7 @@
             "description": "How many to return, default 200."
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1929,9 +1751,7 @@
             "description": "How many to return, default 200."
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1955,9 +1775,7 @@
             "description": "An absolute path (or one starting with ~/), like /home/me/Documents."
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1981,9 +1799,7 @@
             "description": "An absolute path (or one starting with ~/), like /home/me/Documents."
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "additionalProperties": false
       },
       "annotations": {
@@ -2041,10 +1857,7 @@
             "description": "Press Return after typing (default false)."
           }
         },
-        "required": [
-          "window",
-          "site"
-        ],
+        "required": ["window", "site"],
         "additionalProperties": false
       },
       "annotations": {
@@ -2079,10 +1892,7 @@
             "description": "Press Return after typing (default false)."
           }
         },
-        "required": [
-          "window",
-          "site"
-        ],
+        "required": ["window", "site"],
         "additionalProperties": false
       },
       "annotations": {
@@ -2117,11 +1927,7 @@
             "description": "Which card, by its last four digits or its name in Settings (default: a single-use card)."
           }
         },
-        "required": [
-          "window",
-          "site",
-          "amount"
-        ],
+        "required": ["window", "site", "amount"],
         "additionalProperties": false
       },
       "annotations": {
@@ -2148,10 +1954,7 @@
             "description": "What the person should do, like \"Sign in to your bank\"."
           }
         },
-        "required": [
-          "window",
-          "reason"
-        ],
+        "required": ["window", "reason"],
         "additionalProperties": false
       },
       "annotations": {

@@ -17,7 +17,7 @@ describe("tools/list from the registry", () => {
   });
 
   test("lists every tool, once, in the same order, under the same name", () => {
-    expect(catalog().map((tool) => tool.name)).toEqual(fixture.tools.map((tool) => tool.name));
+    expect(catalog().map((tool): string => tool.name)).toEqual(fixture.tools.map((tool) => tool.name));
     expect(new Set(catalog().map((tool) => tool.name)).size).toBe(TOOLS.length);
   });
 

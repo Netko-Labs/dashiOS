@@ -28,6 +28,8 @@ export class AppMenuStore {
   private held = false;
   private active: PublishedMenus | null = null;
   private readonly listeners = new Set<() => void>();
+  /** Told of every publish and withdrawal, whoever is focused (the action registry's menus: actions/sources/menus.ts). */
+  private readonly publishedListeners = new Set<() => void>();
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -42,6 +44,7 @@ export class AppMenuStore {
     if (menus.length === 0) this.byPid.delete(owner.pid);
     else this.byPid.set(owner.pid, { owner, published: { pid: owner.pid, menus } });
     this.update();
+    for (const listener of this.publishedListeners) listener();
   }
 
   /** `owner`'s connection closed: its menus go, unless a newer connection of that process holds them. */
@@ -49,6 +52,18 @@ export class AppMenuStore {
     if (this.byPid.get(owner.pid)?.owner !== owner) return;
     this.byPid.delete(owner.pid);
     this.update();
+    for (const listener of this.publishedListeners) listener();
+  }
+
+  /** Every process's menus, focused or not. */
+  published(): PublishedMenus[] {
+    return [...this.byPid.values()].map(({ published }) => published);
+  }
+
+  /** Hear every publish and withdrawal; returns what stops listening. */
+  onPublished(listener: () => void): () => void {
+    this.publishedListeners.add(listener);
+    return () => this.publishedListeners.delete(listener);
   }
 
   /** The focused window's process and its parent (empty: nothing focused). Ignored while held. */
