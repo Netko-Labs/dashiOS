@@ -21,11 +21,12 @@ import {
   withKey,
 } from "../src/launcher/person-keys.ts";
 import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
+import { rank } from "../src/launcher/ranking/index.ts";
 import { actionRow } from "../src/launcher/row-model.ts";
 import { buildSections, fileNameMatches, type ListInput, selectable, shortFolder } from "../src/launcher/rows.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
 import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
-import { launcherWindows } from "../src/launcher/world.ts";
+import { desktopWord, launcherWindows } from "../src/launcher/world.ts";
 import type { LauncherSettings } from "../src/settings-app/store.ts";
 
 const app = (name: string, extra: Partial<Entry> = {}): Entry => ({ id: `app.${name.toLowerCase()}`, name, icon: `/${name}.svg`, keywords: [], ...extra });
@@ -388,5 +389,41 @@ describe("the radios", () => {
     expect(changed).toBe(1);
     expect(source.actions()).toHaveLength(2);
     source.close();
+  });
+});
+
+describe("menu rows answer to their own words", () => {
+  const sortByDate = action("dashi://app/notes/menu/sort-date", {
+    source: "menus",
+    title: "Notes › View › Sort by Date",
+    keywords: { en: ["sort by date", "view", "notes"] },
+  });
+  const newNote = action("dashi://app/notes/menu/new", { source: "menus", title: "Notes › File › New Note", keywords: { en: ["new note", "file", "notes"] } });
+  const index = launcherIndex({ entries: [app("Notes", { id: "dev.dashi.notes" })], actions: [sortByDate, newNote] });
+  const found = (query: string) => rank(index, query).map((result) => result.item.id);
+
+  test("the app's name or the menu's alone finds no menu row", () => {
+    expect(found("no")).not.toContain(sortByDate.address);
+    expect(found("notes")).not.toContain(sortByDate.address);
+    expect(found("view")).not.toContain(sortByDate.address);
+  });
+
+  test("the item's words find it, and the app or the menu narrows them", () => {
+    expect(found("sort")).toContain(sortByDate.address);
+    expect(found("notes sort")).toContain(sortByDate.address);
+    expect(found("view sort")).toContain(sortByDate.address);
+    expect(found("new note")[0]).toBe(newNote.address);
+    expect(found("notes new")).toContain(newNote.address);
+    expect(found("notes new")).not.toContain(sortByDate.address);
+  });
+});
+
+describe("a window row's Desktop", () => {
+  test("its name, unless the name only repeats the app: then its place", () => {
+    expect(desktopWord("Work", "Terminal", 1)).toBe("Work");
+    expect(desktopWord("Terminal", "Terminal", 1)).toBe("Desktop 2");
+    expect(desktopWord(" terminal ", "Terminal", 2)).toBe("Desktop 3");
+    expect(desktopWord("Terminal, Files", "Terminal", 1)).toBe("Terminal, Files");
+    expect(desktopWord(undefined, "Terminal", 0)).toBe("Desktop 1");
   });
 });

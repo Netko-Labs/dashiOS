@@ -55,8 +55,8 @@ function RightEnd({ row, digit, quiet }: { row: Row; digit: number | undefined; 
 
 export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit }: ResultRowProps) {
   const colors = useColors();
-  // On the wash every word is ink: muted ink there would fall under 4.5:1.
-  const ink = selected ? colors.onSelection : row.danger ? colors.critical : colors.text;
+  // On the wash every word is ink: muted ink there would fall under 4.5:1. A destructive row stays red, selected or not.
+  const ink = row.danger ? colors.criticalInk : selected ? colors.onSelection : colors.text;
   const quiet = selected ? colors.onSelection : colors.textMuted;
   return (
     <View

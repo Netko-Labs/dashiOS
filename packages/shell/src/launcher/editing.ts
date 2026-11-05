@@ -46,7 +46,7 @@ export function shortcutRows(when: string | null, title: string, found: Collisio
       {
         id: "shortcut:hint",
         title: `Press the keys for ${title}`,
-        detail: "Super and a key, with Ctrl, Alt or Shift if you like",
+        detail: "❖ and a key, with ⌃, ⌥ or ⇧ if you like",
         kind: "",
         icon: none,
         action: nothing,

@@ -44,6 +44,13 @@ describe.each(Object.entries(MODES))("the launcher's selection in %s mode", (_mo
     expect(contrast(over(colors.onSelection, ground), ground)).toBeGreaterThanOrEqual(4.5);
   });
 
+  test.each(Object.entries(WALLPAPERS))("a destructive row's red reads at 4.5:1 or more, selected or not, over a %s wallpaper", (_wall, wallpaper) => {
+    const glass = over(colors.launcher, wallpaper);
+    const washed = over(colors.selectionWash, glass);
+    expect(contrast(over(colors.criticalInk, glass), glass)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(over(colors.criticalInk, washed), washed)).toBeGreaterThanOrEqual(4.5);
+  });
+
   test.each(Object.entries(WALLPAPERS))("the 3 px kombu bar stands out at 3:1 or more over a %s wallpaper", (_wall, wallpaper) => {
     const glass = over(colors.launcher, wallpaper);
     expect(contrast(over(colors.selection, glass), glass)).toBeGreaterThanOrEqual(3);

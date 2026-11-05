@@ -41,6 +41,8 @@ export interface Palette {
   checkbox: string;
   /** Urgent things: the mark on a critical notification. */
   critical: string;
+  /** Words that destroy (Quit, Move to Trash): red that reads at 4.5:1 on the glass and on `selectionWash`. */
+  criticalInk: string;
   /** Tiles and cards on Control Center's panel. */
   tile: string;
   /** A card under the pointer. */
@@ -79,6 +81,7 @@ export const lightColors: Palette = {
   button: "#1d1d1f12",
   checkbox: "#1d1d1f66",
   critical: "#d4483b",
+  criticalInk: "#9c3027",
   tile: "#ffffffb8",
   tileHover: "#ffffffe6",
   track: "#1d1d1f1f",
@@ -116,6 +119,7 @@ export const darkColors: Palette = {
   button: "#ffffff1f",
   checkbox: "#f5f5f766",
   critical: "#ff5a4f",
+  criticalInk: "#ff8a80",
   tile: "#ffffff17",
   tileHover: "#ffffff29",
   track: "#ffffff2e",
