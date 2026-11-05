@@ -188,8 +188,18 @@ export function shellApps(): App[] {
   return SHELL_APPS.filter((app) => shellOpeners.has(app.id)).map((app) => ({ ...app }));
 }
 
-/** "org.kde.konsole" → "Konsole"; falls back to the window title. */
+/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/connection.ts). */
+const appletNames = new Map<string, string>();
+
+/** An applet said who it is: its windows are called by its manifest's name. */
+export function nameApplet(id: string, name: string): void {
+  if (name.trim() !== "") appletNames.set(id, name.trim());
+}
+
+/** "org.kde.konsole" → "Konsole" (an applet by its own name); falls back to the window title. */
 export function displayName(appId: string, title: string): string {
+  const applet = appletNames.get(appId);
+  if (applet) return applet;
   const last = appId.split(".").filter(Boolean).at(-1);
   if (!last) return title || "Untitled";
   return last.charAt(0).toUpperCase() + last.slice(1);

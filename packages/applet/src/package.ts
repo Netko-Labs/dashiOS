@@ -14,6 +14,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { isInsidePath, type Manifest, readManifest } from "./manifest.ts";
+import { singletons } from "./singletons.ts";
 import { readTar, writeTar } from "./tar.ts";
 
 export const PACKAGE_EXTENSION = ".dashi-applet";
@@ -56,6 +57,7 @@ export async function pack(dir: string): Promise<Packed> {
     minify: false,
     sourcemap: "none",
     define: { "process.env.NODE_ENV": JSON.stringify("production") },
+    plugins: [singletons(dir)],
   });
   if (!built.success) throw new Error(`the build failed:\n${built.logs.map((log) => String(log)).join("\n")}`);
   const output = built.outputs.find((each) => each.kind === "entry-point");

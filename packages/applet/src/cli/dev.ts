@@ -12,6 +12,7 @@ import { join, relative } from "node:path";
 import { LOG_MARK } from "../define.ts";
 import { readManifest } from "../manifest.ts";
 import { appletsSocketPath } from "../protocol.ts";
+import { dedupeInstalled } from "../singletons.ts";
 import { MessageLog } from "./log.ts";
 import { sdkPaths } from "./templates.ts";
 
@@ -81,6 +82,8 @@ export async function dev(dir: string, args: readonly string[]): Promise<number>
   const socket = appletsSocketPath();
   if (!socket || !existsSync(socket)) console.error("  ! no Dashi session here (no dashi-applets.sock); waiting for one, or use --vm");
   console.log(`  ${manifest.name} ${manifest.version} · watching src/ · reload on save`);
+  // One React and one @mirinjs/metal, or @dashi/ui's components miss the window's context (singletons.ts).
+  for (const gone of dedupeInstalled(dir)) console.log(`  · one copy: ${gone} (the applet's own)`);
   const log = new MessageLog();
   let child: ReturnType<typeof Bun.spawn> | null = null;
   const start = (): void => {

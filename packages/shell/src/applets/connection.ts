@@ -11,6 +11,7 @@
  */
 
 import { type Manifest, permissionName } from "@dashi/applet";
+import { nameApplet } from "../apps.ts";
 import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../extras/index.ts";
 import { LineBuffer } from "../lines.ts";
 import type { AppletGrants } from "./grants.ts";
@@ -237,6 +238,7 @@ export class AppletConnection implements ExtraActions {
       return this.end();
     }
     this.manifest = manifest;
+    nameApplet(manifest.id, manifest.name);
     this.version = PROTOCOL;
     // A sandboxed applet is never a developer's.
     this.dev = dev && !installed;
