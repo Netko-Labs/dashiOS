@@ -263,6 +263,7 @@ pub(crate) fn handle(
         "keyboard" => done(state.set_keyboard(params)),
         "input" => done(state.set_input(params)),
         "animation-target" => done(state.set_animation_targets(params)),
+        "layer-motion" => done(state.layer_motion.set(params)),
         "outputs-config" => done(state.configure_outputs(params)),
         "output" => {
             let name = text(params, "name")?.to_owned();

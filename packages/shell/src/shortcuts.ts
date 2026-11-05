@@ -47,8 +47,11 @@ export interface ShellActions {
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
-  /** The open launcher's keys: ⌃N ⌃P, Page Up and Down, Home and End (launcher/keys.ts); says whether it was one. */
-  launcher?: { binding(name: string): boolean };
+  /**
+   * The open launcher's keys: ⌃N ⌃P, Page Up and Down, Home and End, and what is typed before
+   * its field has the keyboard (launcher/keys.ts, launcher/type-ahead.ts); says whether it was one.
+   */
+  launcher?: { binding(name: string, typed?: { key: string; text?: string }): boolean };
 }
 
 /** The compositor client's requests the actions use. */
@@ -209,6 +212,9 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
           break;
       }
     } else if (event.event === "binding") {
+      // The launcher's keys are taken here, in the order they came: typing must not be reordered.
+      const typed = { key: event.chord?.key ?? "", ...(event.text === undefined ? {} : { text: event.text }) };
+      if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, typed)) return;
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));
     }
   });

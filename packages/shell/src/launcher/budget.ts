@@ -14,6 +14,10 @@
  */
 
 export const BUDGET = {
+  /** ❖ tapped → the first frame, with the field ready. */
+  openMs: 50,
+  /** A keystroke → its rows drawn: one frame. */
+  keystrokeMs: 16,
   /** Every in-memory source together, per keystroke. */
   instantMs: 2,
   /** Files, then their answer goes into the slots held for it. */

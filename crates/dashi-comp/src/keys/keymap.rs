@@ -4,6 +4,11 @@
 //! keysym name ("q", "Left", "Tab|ISO_Left_Tab"), `letter` (a–z), or `*`.
 //! Super, Ctrl, and Alt must match exactly; Shift only when named. The first
 //! matching rule wins; its action is `bind`, `send`, `tap`, or `swallow`.
+//!
+//! `afterTap` is a second list of rules the compositor switches to by itself
+//! the moment ❖ is tapped, until the shell's next keymap: the shell's launcher
+//! takes the keys typed after the tap from that instant, not from whenever the
+//! shell hears of it. Which rules, and whether there are any, is the shell's.
 
 use std::collections::HashMap;
 
@@ -110,6 +115,8 @@ pub(crate) struct Keymap {
     pub tap_ms: u64,
     pub hold_ms: u64,
     rules: Vec<Rule>,
+    /// The rules for after the next ❖ tap (`afterTap`), once.
+    after_tap: Option<Vec<Rule>>,
 }
 
 impl Default for Keymap {
@@ -120,6 +127,7 @@ impl Default for Keymap {
             tap_ms: 350,
             hold_ms: 800,
             rules: Vec::new(),
+            after_tap: None,
         }
     }
 }
@@ -153,22 +161,46 @@ impl Keymap {
                 .filter(|ms| *ms <= 10_000)
                 .ok_or_else(|| format!("{key} must be milliseconds")),
         };
-        let rules = params
-            .get("rules")
-            .and_then(Value::as_array)
-            .ok_or("rules must be a list")?
-            .iter()
-            .enumerate()
-            .map(|(index, rule)| {
-                parse_rule(rule, &apps).map_err(|error| format!("rule {index}: {error}"))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+        // `name` for the list, `each` for a rule in it ("rules", "rule 3: …").
+        let list = |name: &str, each: &str, rules: &Value| {
+            rules
+                .as_array()
+                .ok_or_else(|| format!("{name} must be a list"))?
+                .iter()
+                .enumerate()
+                .map(|(index, rule)| {
+                    parse_rule(rule, &apps).map_err(|error| format!("{each} {index}: {error}"))
+                })
+                .collect::<Result<Vec<_>, _>>()
+        };
+        let rules = list(
+            "rules",
+            "rule",
+            params.get("rules").ok_or("rules must be a list")?,
+        )?;
+        let after_tap = params
+            .get("afterTap")
+            .map(|rules| list("afterTap", "afterTap", rules))
+            .transpose()?;
         Ok(Self {
             apps,
             tap_ms: millis("tapMs", 350)?,
             hold_ms: millis("holdMs", 800)?,
             rules,
+            after_tap,
         })
+    }
+
+    /// ❖ was tapped: the `afterTap` rules, if the keymap has them, are the rules from now
+    /// on (once; the shell's next keymap replaces them). Whether it switched.
+    pub(crate) fn arm_after_tap(&mut self) -> bool {
+        match self.after_tap.take() {
+            Some(rules) => {
+                self.rules = rules;
+                true
+            }
+            None => false,
+        }
     }
 
     /// The first rule that matches, if any.
@@ -451,5 +483,71 @@ mod tests {
         assert!(bad(json!([{ "when": "meta+q", "bind": "x" }])).contains("meta"));
         assert!(bad(json!([{ "when": "q", "app": "nope", "bind": "x" }])).contains("class"));
         assert!(Keymap::parse(json!({}).as_object().unwrap()).is_err());
+        let after = Keymap::parse(
+            json!({ "rules": [], "afterTap": [{ "when": "q" }] })
+                .as_object()
+                .unwrap(),
+        )
+        .unwrap_err();
+        assert!(after.starts_with("afterTap 0:"), "{after}");
+        assert!(
+            Keymap::parse(json!({ "rules": [], "afterTap": {} }).as_object().unwrap()).is_err()
+        );
+    }
+
+    #[test]
+    fn after_a_tap_the_after_tap_rules_hold_until_the_next_keymap() {
+        let mut map = Keymap::parse(
+            json!({
+                "rules": [{ "when": "XF86AudioMute", "bind": "volume-mute" }],
+                "afterTap": [
+                    { "when": "XF86AudioMute", "bind": "volume-mute" },
+                    { "when": "*", "bind": "launcher-type" }
+                ]
+            })
+            .as_object()
+            .unwrap(),
+        )
+        .unwrap();
+        let plain = Mods::default();
+        assert_eq!(action(&map, &["a"], plain, "firefox"), None);
+        assert!(map.arm_after_tap());
+        assert_eq!(
+            action(&map, &["a"], plain, "firefox"),
+            Some(Action::Bind("launcher-type".into()))
+        );
+        // Shift isn't named, so a capital is typed too; a chord with Ctrl is not.
+        assert_eq!(
+            action(
+                &map,
+                &["a", "A"],
+                Mods {
+                    shift: true,
+                    ..plain
+                },
+                "firefox"
+            ),
+            Some(Action::Bind("launcher-type".into()))
+        );
+        assert_eq!(
+            action(
+                &map,
+                &["c"],
+                Mods {
+                    ctrl: true,
+                    ..plain
+                },
+                "firefox"
+            ),
+            None
+        );
+        assert_eq!(
+            action(&map, &["XF86AudioMute"], plain, "firefox"),
+            Some(Action::Bind("volume-mute".into()))
+        );
+        // Once: a second tap keeps what the first switched to.
+        assert!(!map.arm_after_tap());
+        let mut none = Keymap::parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
+        assert!(!none.arm_after_tap());
     }
 }

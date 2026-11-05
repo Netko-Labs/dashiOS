@@ -17,7 +17,7 @@ import type { LostCardStart } from "../graphics/lost-start.ts";
 import { listNames } from "../graphics/policy.ts";
 import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
 import { detectLaptop } from "../hardware/laptop.ts";
-import { currentKeymap, setMachineRules } from "../keymap-state.ts";
+import { idleKeymap, setMachineRules } from "../keymap-state.ts";
 import { parseStat } from "../menus/session.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import { Logind } from "../power/logind.ts";
@@ -182,7 +182,7 @@ export function startLaptop(options: LaptopOptions): Laptop {
     const light = keyboardLight(store.getSnapshot());
     const rules = laptopKeyRules(machine?.hotkeys ?? {}, light !== null);
     setMachineRules(rules);
-    if (compositor && rules.length > 0) compositor.request("keymap", currentKeymap()).catch(() => {});
+    if (compositor && rules.length > 0) compositor.request("keymap", idleKeymap()).catch(() => {});
     void charge.check();
   };
   const stopChanged = hardware.onChanged((knob, value) => {

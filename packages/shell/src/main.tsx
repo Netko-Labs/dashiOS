@@ -64,12 +64,16 @@ import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { withSwitcher } from "./keymap.ts";
-import { currentKeymap } from "./keymap-state.ts";
+import { currentKeymap, idleKeymap } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
 import { AppIndex } from "./launcher/app-index.ts";
+import { BUDGET } from "./launcher/budget.ts";
 import { LaunchFailures } from "./launcher/failures.ts";
 import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
+import { LAUNCHER_MOTION, ResidentHost } from "./launcher/resident.tsx";
 import { FILE_ROWS } from "./launcher/rows.ts";
+import { logTiming, markOpen, sinceOpen } from "./launcher/timing.ts";
+import { TYPE_BINDING, TypeAhead, typedFrom, withTyping } from "./launcher/type-ahead.ts";
 import { LAUNCHER, Launcher, type LauncherFiles } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
 import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "./local-search.ts";
@@ -80,7 +84,7 @@ import { startMenus } from "./menus/index.ts";
 import { runPower } from "./menus/session.ts";
 import { startNightShift } from "./night-shift.ts";
 import { startNotifications } from "./notifications/index.ts";
-import { openOverlay } from "./overlay.tsx";
+import { type OpenOverlay, openOverlay } from "./overlay.tsx";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { OverviewController } from "./overview/index.ts";
 import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
@@ -144,7 +148,12 @@ compositor?.onClosed(() => {
   console.error("dashi-shell: dashi-comp went away; the shell ends with it");
   process.exit(1);
 });
-compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+// Idle, the keymap also says what keys do from a ❖ tap on: they type into the launcher (launcher/type-ahead.ts).
+compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+// The launcher fades in from a little smaller (launcher/resident.tsx); with Reduce Motion the compositor skips it.
+compositor
+  ?.request("layer-motion", { namespace: LAUNCHER_MOTION.namespace, ms: LAUNCHER_MOTION.openMs, scale: LAUNCHER_MOTION.fromScale })
+  .catch((error) => console.error("dashi-shell: dashi-comp refused the launcher's motion:", error));
 
 // A menu bar goes on every screen, the Dock on the primary one (menubars.ts).
 // The screens, or null when the compositor could not say (nothing should be torn down on a failed question).
@@ -808,11 +817,37 @@ const launcherKeys = new LauncherKeys();
 // Copying an answer: wl-copy, a child of the shell, so the compositor serves it data-control.
 const launcherClipboard = systemClipboard();
 const launchFailures = new LaunchFailures(notifications.store);
-/** The launcher's own keys come and go with it (launcher/keys.ts), as the switcher's do. */
+/**
+ * The launcher's own keys come and go with it (launcher/keys.ts), as the switcher's do. From the
+ * tap until its field has the keyboard every plain key is typed ahead (launcher/type-ahead.ts):
+ * the compositor switches to those rules itself at the tap, and `typing` says so for an open
+ * without one (Search…); `begin` hands the keys to the field once its surface has drawn.
+ */
 const launcherKeymap = {
+  typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () => void compositor?.request("keymap", withLauncher(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
-  end: () => void compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+  end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
+const typeAhead = new TypeAhead();
+/** Longer than this without word that the launcher drew, its field is given the keys anyway. */
+const TYPE_AHEAD_LIMIT_MS = 3000;
+/** The launcher's surface has drawn: its field takes the keys from here, after the ones typed ahead. */
+function launcherReady(): void {
+  if (!typeAhead.isWaiting()) return;
+  launcherKeymap.begin();
+  typeAhead.ready();
+}
+/** The open launcher's bindings: a key typed ahead (`launcher-type`), or one of its keys (launcher/keys.ts). */
+function launcherBinding(name: string, typed?: { key: string; text?: string }): boolean {
+  if (name !== TYPE_BINDING) return launcherKeys.binding(name);
+  typeIntoLauncher(typed);
+  return true;
+}
+/** A key typed ahead, from the compositor's `launcher-type` binding. */
+function typeIntoLauncher(typed: { key: string; text?: string } | undefined): void {
+  const key = typed ? typedFrom(typed) : null;
+  if (key) typeAhead.push(key);
+}
 
 /** Start `entry` from the launcher; false when it could not be started at all. One that quits at once is a notification. */
 function launchFromLauncher(entry: Entry): boolean {
@@ -828,18 +863,54 @@ function openWith(appId: string, env: Record<string, string>): boolean {
   return entry ? launchEntry({ ...entry, env: { ...entry.env, ...env } }) !== null : false;
 }
 
+// The launcher's own host, kept for the session and shown and hidden (launcher/resident.tsx); with a
+// host binary that can't, it opens on the warm host as other overlays do.
+const residentLauncher = new ResidentHost(METAL_HOST, {
+  onFrame: (ms) => {
+    logTiming("open → first frame", sinceOpen() ?? ms, BUDGET.openMs, "resident host");
+    launcherReady();
+  },
+});
+/** The list's height follows its rows on Dashi's curve (120 ms), on a host that can and without Reduce Motion. */
+const launcherHeightMs = (): number | undefined => (residentLauncher.isReady() && !reduceMotion ? LAUNCHER_MOTION.heightMs : undefined);
+const openLauncherSurface: OpenOverlay = (options, element, onClosed) => {
+  const resident = residentLauncher.open(options, element, onClosed);
+  if (resident) return resident;
+  const opened = sinceOpen();
+  if (opened !== null) logTiming("open → surface asked", opened, BUDGET.openMs, "no resident host: first frame not reported");
+  // An older host reports no first frame: its answer to a layout question says it is up.
+  return openOverlay(options, element, onClosed, (host) => {
+    host.onEvent((event) => {
+      const kind: string = event.type;
+      if (kind === "layout" || kind === "frame") launcherReady();
+    });
+    host.simulate({ kind: "layout" });
+  });
+};
+
 /** The launcher, unless it is up already (Search… in the Dashi menu, Try it in the Setup Assistant). */
 function showLauncher(): void {
   if (!overlays.has("launcher")) openLauncher();
 }
 
 function openLauncher(): void {
+  markOpen();
+  // Keys typed from the tap on wait for the field (launcher/type-ahead.ts).
+  typeAhead.begin();
+  launcherKeymap.typing();
+  const limit = setTimeout(launcherReady, TYPE_AHEAD_LIMIT_MS);
   const close = () => closeOverlay("launcher");
   const entries = appIndex.entries();
-  void overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
+  let opened = false;
+  const finished = () => {
+    clearTimeout(limit);
+    typeAhead.end();
+    launcherKeymap.end();
+  };
+  const showing = overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
+    opened = true;
     // Its keys come with the surface and go with it, however it closes.
-    launcherKeymap.begin();
-    return openOverlay(
+    return openLauncherSurface(
       {
         title: "Launcher",
         width: LAUNCHER.width,
@@ -874,13 +945,19 @@ function openLauncher(): void {
         }}
         copy={(text) => launcherClipboard.writeText(text)}
         keys={launcherKeys}
+        typeAhead={typeAhead}
+        {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
         onClose={close}
       />,
       () => {
-        launcherKeymap.end();
+        finished();
         onClosed();
       },
     );
+  });
+  // Closed before it had a screen (a second tap): its keys go back as they were.
+  void showing.then(() => {
+    if (!opened) finished();
   });
 }
 
@@ -969,7 +1046,7 @@ function switcherPictures(rects: ReadonlyArray<{ window: number; rect: Frame }>)
 /** The switcher session's own keys come and go with it (keymap.ts `withSwitcher`). */
 const switcherKeys = {
   begin: () => void compositor?.request("keymap", withSwitcher(currentKeymap())).catch((error) => console.error("dashi-shell: the switcher's keys:", error)),
-  end: () => void compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+  end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
 
 const switcherController = compositor
@@ -1026,7 +1103,7 @@ const stopShortcuts = compositor
       powerKey: () => power.powerKey(),
       screenshotArea: selectArea,
       captureToolbar: (window) => captureTools?.toolbar(window),
-      launcher: launcherKeys,
+      launcher: { binding: launcherBinding },
     })
   : () => {};
 

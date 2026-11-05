@@ -6,7 +6,10 @@
 //! waits on Bun: a `bind` goes to the shell as a `binding` event, a `send` is
 //! replayed to the focused client as another chord while the key is held, a
 //! `tap` replays chords at once, a `swallow` is dropped. Keys no rule matches
-//! go to the client as they are.
+//! go to the client as they are. A `binding` carries the key's text as
+//! typed, when it has one, so the shell can take typing too (the launcher's
+//! keys between a ❖ tap and its field taking the keyboard), and a tap switches
+//! to the keymap's `afterTap` rules at once, before the shell has heard of it.
 
 use std::{collections::HashMap, time::Instant};
 
@@ -51,6 +54,8 @@ enum Taken {
 struct KeyInfo {
     /// Unshifted keysym names first, then the keysym as typed.
     names: Vec<String>,
+    /// What the key types with these modifiers ("a", "A", "é"), if it types anything.
+    text: Option<String>,
     mods: ModifiersState,
     is_modifier: bool,
     function_key: Option<u32>,
@@ -134,10 +139,11 @@ impl Dashi {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
                 let window = self.focused_window_id();
                 let key = info.names.first().cloned().unwrap_or_default();
-                self.ipc.emit(
-                    "binding",
-                    json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt }),
-                );
+                let mut event = json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt });
+                if let Some(text) = &info.text {
+                    event["text"] = json!(text);
+                }
+                self.ipc.emit("binding", event);
             }
             Some(Action::Send(chord)) => match self.resolve(&chord, keycode, info.mods.shift) {
                 Some((target, target_mods)) => {
@@ -276,6 +282,8 @@ impl Dashi {
                 let tapped = !press.chorded
                     && press.since.elapsed().as_millis() < u128::from(self.keys.keymap.tap_ms);
                 if tapped {
+                    // The shell's rules for after a tap hold from now, not from when it hears of the tap.
+                    self.keys.keymap.arm_after_tap();
                     self.ipc.emit("super", json!({ "phase": "tap" }));
                 }
                 self.ipc.emit("super", json!({ "phase": "up" }));
@@ -339,6 +347,7 @@ fn key_info(mods: &ModifiersState, handle: &KeysymHandle<'_>) -> KeyInfo {
         });
     KeyInfo {
         names,
+        text: typed_text(typed),
         mods: *mods,
         is_modifier,
         function_key,
@@ -365,4 +374,41 @@ fn keycode_for(keymap: &xkb::Keymap, state: &xkb::State, name: &str) -> Option<(
             })
             .map(|level| (code, level == 1))
     })
+}
+
+/// The text a keysym types: a printable character, never a control one (Return, Tab, Esc).
+fn typed_text(sym: xkb::Keysym) -> Option<String> {
+    sym.key_char()
+        .filter(|char| !char.is_control())
+        .map(String::from)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::typed_text;
+    use smithay::input::keyboard::{keysyms, xkb::Keysym};
+
+    #[test]
+    fn keys_type_their_characters_and_nothing_for_control_keys() {
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_a)).as_deref(),
+            Some("a")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_A)).as_deref(),
+            Some("A")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_eacute)).as_deref(),
+            Some("é")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_space)).as_deref(),
+            Some(" ")
+        );
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Return)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_BackSpace)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Escape)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Left)), None);
+    }
 }

@@ -89,6 +89,8 @@ impl WlrLayerShellHandler for Dashi {
             surface.send_close();
             return;
         };
+        self.layer_motion
+            .made(surface.wl_surface().id(), &namespace);
         let mut map = layer_map_for_output(&output);
         if let Err(error) = map.map_layer(&LayerSurface::new(surface, namespace)) {
             tracing::warn!(?error, "a layer surface could not be mapped");
@@ -96,6 +98,7 @@ impl WlrLayerShellHandler for Dashi {
     }
 
     fn layer_destroyed(&mut self, surface: WlrLayerSurface) {
+        self.layer_motion.gone(&surface.wl_surface().id());
         let mut had_focus = false;
         let outputs: Vec<Output> = self.space.outputs().cloned().collect();
         for output in &outputs {

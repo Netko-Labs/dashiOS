@@ -35,6 +35,8 @@ export type Keymap = {
   tapMs: number;
   holdMs: number;
   rules: Rule[];
+  /** The rules the compositor switches to by itself the moment ❖ is tapped, until the next keymap (launcher/type-ahead.ts). */
+  afterTap?: Rule[];
 };
 
 /** Terminals keep plain Ctrl chords for the program inside (Ctrl+C interrupts). */

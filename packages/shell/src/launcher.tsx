@@ -23,6 +23,8 @@ import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, filesStateFor, placeholderFor, type Row, selectable } from "./launcher/rows.ts";
 import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
 import { logTiming, timingNow } from "./launcher/timing.ts";
+import { applyEdits } from "./launcher/type-ahead.ts";
+import { type TypeAheadSource, useTypeAhead } from "./launcher/use-type-ahead.ts";
 
 export type { FileRow } from "./launcher/rows.ts";
 
@@ -64,20 +66,38 @@ export interface LauncherProps {
   /** Put the answer on the clipboard; whether it worked. */
   copy?: (text: string) => Promise<boolean>;
   keys?: LauncherKeySource;
+  /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
+  typeAhead?: TypeAheadSource;
+  /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
+  heightTransitionMs?: number;
   onClose: () => void;
 }
 
 const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software") };
 
-export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSearchFiles, onFindSoftware, copy, keys, onClose }: LauncherProps) {
+export function Launcher({
+  entries,
+  recent = [],
+  onOpen,
+  files,
+  onOpenFile,
+  onSearchFiles,
+  onFindSoftware,
+  copy,
+  keys,
+  typeAhead,
+  heightTransitionMs,
+  onClose,
+}: LauncherProps) {
   const colors = useColors();
   const [query, setQuery] = useState("");
   const [held, setHeld] = useState<string | null>(null);
   const [allApps, setAllApps] = useState(false);
   const [found, setFound] = useState<{ query: string; files: FileRow[] | null } | null>(null);
   const [filesOff, setFilesOff] = useState(() => files !== undefined && !files.isAvailable());
-  // How many file rows the last answer had: that many slots are held while the next one comes.
-  const [lastFileCount, setLastFileCount] = useState(0);
+  // How many file rows the last answer had: that many slots are held while the next one comes
+  // (all of them before the first answer, so the panel never grows when files arrive).
+  const [lastFileCount, setLastFileCount] = useState(FILE_ROWS);
   const [copied, setCopied] = useState<{ query: string; ok: boolean } | null>(null);
   const [failed, setFailed] = useState<Entry | null>(null);
   const offset = useRef(0);
@@ -117,7 +137,7 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs once each typed query is committed, which is the moment it times
   useEffect(() => {
     if (typedAt.current === null) return;
-    logTiming("keystroke → rows sent", performance.now() - typedAt.current, 16);
+    logTiming("keystroke → rows sent", performance.now() - typedAt.current, BUDGET.keystrokeMs);
     typedAt.current = null;
   }, [query]);
   const rows = selectable(sections);
@@ -168,6 +188,24 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
     }
   };
 
+  const onKey = (key: "Escape" | "ArrowUp" | "ArrowDown") => {
+    if (key === "ArrowDown") return move("down");
+    if (key === "ArrowUp") return move("up");
+    // Esc steps out: All apps, then the typed words, then the launcher.
+    if (allApps && !query) return setAllApps(false);
+    if (query) return restart("");
+    onClose();
+  };
+
+  // What was typed before the field had the keyboard, in order (launcher/type-ahead.ts).
+  useTypeAhead(typeAhead, {
+    edit: (edits) => restart(applyEdits(query, edits)),
+    key: (key) => {
+      if (key === "Return") return act(rows.find((row) => row.id === selected));
+      onKey(key === "Up" ? "ArrowUp" : key === "Down" ? "ArrowDown" : "Escape");
+    },
+  });
+
   const drawn = (section: (typeof sections)[number]): Row[] => {
     if (section.id !== "all") return section.rows;
     const index = Math.max(
@@ -181,7 +219,16 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
   let list: ReactNode = null;
   if (sections.length > 0) {
     list = (
-      <View testID="launcher:list" style={{ flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator, padding: LAUNCHER.padding }}>
+      <View
+        testID="launcher:list"
+        style={{
+          flexDirection: "column",
+          borderTopWidth: 1,
+          borderColor: colors.separator,
+          padding: LAUNCHER.padding,
+          ...(heightTransitionMs ? { heightTransitionMs } : {}),
+        }}
+      >
         {sections.map((section) => (
           <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
             {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
@@ -221,14 +268,7 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
               autoFocus
               onChangeText={restart}
               onSubmitEditing={() => act(rows.find((row) => row.id === selected))}
-              onKeyPress={(key) => {
-                if (key === "ArrowDown") return move("down");
-                if (key === "ArrowUp") return move("up");
-                // Esc steps out: All apps, then the typed words, then the launcher.
-                if (allApps && !query) return setAllApps(false);
-                if (query) return restart("");
-                onClose();
-              }}
+              onKeyPress={onKey}
               // Empty, the field is only as wide as its caret, and the placeholder is drawn after it:
               // Metal hides a focused field's own placeholder, and this one is always focused.
               style={{ ...(query ? { flex: 1 } : { width: 8 }), fontSize: LAUNCHER.fieldText, color: colors.text }}

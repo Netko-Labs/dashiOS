@@ -293,3 +293,16 @@ test("the empty launcher teaches: examples that work here, then All apps, A to Z
   await launcher.key("Escape");
   expect(launcher.has("launcher:section:try")).toBe(true);
 });
+
+test("the first file answer of an open finds its slots held: the panel doesn't grow when files arrive", async () => {
+  const files = deferredFiles();
+  const launcher = await mount({ entries: TEAS, files });
+  await launcher.type("tea");
+  // Before any answer, the files' head and their slots are already there.
+  expect(launcher.has("launcher:section:files")).toBe(true);
+  expect(launcher.rows().ids.some((id) => id.startsWith("file:"))).toBe(false);
+  await settle(FILE_DELAY_MS + 20);
+  files.answer([file("tea-notes.md"), file("teapot.txt"), file("tea.csv")]);
+  await settle();
+  expect(launcher.rows().ids.filter((id) => id.startsWith("file:"))).toHaveLength(3);
+});

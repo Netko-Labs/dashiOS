@@ -28,3 +28,18 @@ export function timingLine(moment: string, ms: number, budgetMs: number, note?: 
 
 /** The clock timing reads, or null when timing is off (so nothing is measured). */
 export const timingNow = (): number | null => (ON ? performance.now() : null);
+
+let asked: number | null = null;
+
+/** The launcher was asked to open (a ❖ tap, Search…): "open → first frame" counts from here. */
+export function markOpen(): void {
+  asked = timingNow();
+}
+
+/** Ms since the open was asked, once; null when timing is off or it was read already. */
+export function sinceOpen(): number | null {
+  if (asked === null) return null;
+  const ms = performance.now() - asked;
+  asked = null;
+  return ms;
+}
