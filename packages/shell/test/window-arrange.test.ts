@@ -99,9 +99,14 @@ describe("the ⌃❖ arrows", () => {
   });
 });
 
-/** A compositor holding `windows`, carrying out `frame` and `fullscreen`, and keeping what it was asked. */
+/**
+ * A compositor holding `windows`, carrying out `frame` and `fullscreen`, and
+ * keeping what it was asked. As dashi-comp does, full screen says
+ * `outputs-changed` while it is asked; leaving, the app still draws at the
+ * screen's size for a while (where its old frame was).
+ */
 function fake(
-  windows: CompositorWindow[],
+  windows: Array<CompositorWindow & { away?: Rect | null }>,
   outputs: Array<{ name: string; frame: Rect; usable: Rect }> = [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }],
 ) {
   const requests: Array<[string, Record<string, unknown>]> = [];
@@ -118,10 +123,16 @@ function fake(
       if (method === "outputs") return { outputs: outputs.map((output) => ({ ...output, scale: 1 })) };
       const window = windows.find((candidate) => candidate.id === params.window);
       if (window && method === "frame") window.frame = { x: Number(params.x), y: Number(params.y), width: Number(params.width), height: Number(params.height) };
-      if (window && method === "fullscreen") window.fullscreen = params.on === true;
+      if (window && method === "fullscreen") {
+        const on = params.on === true;
+        if (on) window.away = window.frame;
+        window.fullscreen = on;
+        window.frame = on ? { ...SCREEN } : { x: window.away?.x ?? 0, y: window.away?.y ?? 0, width: SCREEN.width, height: SCREEN.height };
+        listener?.({ event: "outputs-changed" });
+      }
       return {};
     },
-    windows: async () => windows.map((window) => ({ ...window })),
+    windows: async () => windows.map(({ away: _, ...window }) => ({ ...window })),
   } as unknown as Compositor;
   const frames = () => requests.filter(([method]) => method === "frame" || method === "fullscreen");
   const emit = async (event: CompositorEvent) => {
@@ -177,7 +188,10 @@ describe("the square and Fill", () => {
     expect(frames()).toEqual([["fullscreen", { window: 7, on: true }]]);
     expect(window.fullscreen).toBe(true);
     await arranger.control(7, false);
-    expect(frames().at(-1)).toEqual(["fullscreen", { window: 7, on: false }]);
+    expect(frames().slice(1)).toEqual([
+      ["fullscreen", { window: 7, on: false }],
+      ["frame", { window: 7, ...OWN }],
+    ]);
   });
 
   test("the title bar's double-click does what the square does", async () => {
@@ -326,5 +340,74 @@ describe("the events", () => {
     expect(parseEvent({ event: "window-drop", window: 3, zone: -1, frame: { x: 1, y: 2, width: 3, height: 4 } })).toBeNull();
     expect(parseEvent({ event: "zoom", window: 3, on: false })).toEqual({ event: "zoom", window: 3, on: false });
     expect(parseEvent({ event: "zoom", window: 3 })).toEqual({ event: "zoom", window: 3 });
+  });
+});
+
+describe("full screen and back", () => {
+  const settle = () => new Promise((done) => setTimeout(done, 20));
+
+  test("leaving gives back the frame from before, and the screens unchanged fit nothing", async () => {
+    const { arranger, frames, window } = await started();
+    await arranger.control(7, true);
+    await arranger.toggleFullscreen(7);
+    await settle();
+    expect(frames()).toEqual([
+      ["fullscreen", { window: 7, on: true }],
+      ["fullscreen", { window: 7, on: false }],
+      ["frame", { window: 7, ...OWN }],
+    ]);
+    expect(window.frame).toEqual(OWN);
+    expect(arranger.arrangement(7)).toBeNull();
+    // Its own frame is still its own: Fill, then back, is the frame from before.
+    await arranger.arrange(7, "fill");
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("a tiled or filled window comes back tiled or filled", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrow(7, "left");
+    await arranger.toggleFullscreen(7);
+    await arranger.toggleFullscreen(7);
+    await settle();
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("left", USABLE) }]);
+    expect(arranger.arrangement(7)).toBe("left");
+    await arranger.arrange(7, "fill");
+    await arranger.toggleFullscreen(7);
+    await arranger.toggleFullscreen(7);
+    await settle();
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...USABLE, maximized: true }]);
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("Fill, Center, then full screen twice: centered again, not maximized", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrange(7, "fill");
+    await arranger.arrange(7, "center");
+    await arranger.toggleFullscreen(7);
+    await arranger.toggleFullscreen(7);
+    await settle();
+    const centered = rect(423, 147, 800, 600);
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...centered }]);
+    // Only Fill tells the app it is maximized: Center and Back do not.
+    expect(frames().filter(([, params]) => params.maximized === true)).toHaveLength(1);
+  });
+
+  test("when the screens do change just after, the frame given back is what is fitted, not the full-screen size", async () => {
+    const outputs = [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }];
+    const window = files();
+    const world = fake([window], outputs);
+    const arranger = new Arranger(world.compositor);
+    await arranger.start();
+    await arranger.toggleFullscreen(7);
+    await arranger.toggleFullscreen(7);
+    await settle();
+    world.requests.length = 0;
+    // The Dock comes back meanwhile, and the app has not yet taken its frame back: it reports the screen's size.
+    window.frame = { x: OWN.x, y: OWN.y, width: SCREEN.width, height: SCREEN.height };
+    outputs[0] = { ...outputs[0], usable: rect(0, 28, 1646, 800) } as (typeof outputs)[number];
+    await world.emit({ event: "outputs-changed" });
+    expect(world.frames()).toEqual([["frame", { window: 7, ...OWN }]]);
   });
 });

@@ -6,7 +6,9 @@
  * Window menu, agents, and full screen do. It remembers how each window is
  * arranged (a tile or Fill) and the frame it had before: what Back to
  * Previous Size gives back. A drag or a resize by the person ends the
- * arrangement: the compositor reports the grab, the shell decides.
+ * arrangement: the compositor reports the grab, the shell decides. Full
+ * screen is on top of all that: leaving it gives back the frame from before
+ * (its tile, if it was tiled or filled).
  */
 
 import { type Compositor, type CompositorEvent, type Placing, parseFrame, parsePointer } from "./compositor.ts";
@@ -53,6 +55,27 @@ type EventOf<Name extends CompositorEvent["event"]> = Extract<CompositorEvent, {
 
 const sameRect = (a: Rect, b: Rect): boolean => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 
+/** Whether two lists of screens have the same names, frames, usable areas, and scales. */
+const sameOutputs = (a: readonly Output[], b: readonly Output[]): boolean =>
+  a.length === b.length &&
+  a.every((output, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      output.name === other.name &&
+      output.scale === other.scale &&
+      sameRect(output.frame, other.frame) &&
+      sameRect(output.usable, other.usable)
+    );
+  });
+
+/**
+ * How long after leaving full screen a window's reported size is not to be
+ * believed: the app still draws at the screen's size until it takes the
+ * frame it was given back.
+ */
+const SETTLE_MS = 1000;
+
 /** The frame request for `tile`: Fill also tells the app it is maximized. */
 const tileRequest = (window: number, tile: Tile, frame: Rect) => ({ window, ...frame, ...(tile === "fill" ? { maximized: true } : {}) });
 
@@ -62,6 +85,10 @@ export class Arranger {
   private readonly arranged = new Map<number, Arranged>();
   /** Where each dragged window was as its drag began: its own frame, if the drag ends in a tile. */
   private readonly dragFrom = new Map<number, Rect>();
+  /** The frame each full-screen window had before: given back when it leaves. */
+  private readonly beforeFullscreen = new Map<number, Rect>();
+  /** Windows that just left full screen: the frame they were given back, and until when the app may still be drawing at full size. */
+  private readonly settling = new Map<number, { frame: Rect; until: number }>();
   /** The drag-to-tile zones last sent, in order: which tile each is, on which screen. */
   private zones: Array<{ tile: Tile; frame: Rect; usable: Rect }> = [];
   /** The first refresh; placing and arranging wait for it, since they need the screens. */
@@ -87,7 +114,7 @@ export class Arranger {
       else if (event.event === "fullscreen") run(this.fullscreen(event.window, event.on));
       else if (event.event === "window-grab") run(this.grabbed(event));
       else if (event.event === "window-drop") run(this.dropped(event));
-      else if (event.event === "window-closed") this.forget(event.id);
+      else if (event.event === "window-closed") this.closed(event.id);
     });
     this.ready = this.refresh();
     try {
@@ -121,14 +148,19 @@ export class Arranger {
   }
 
   private async refresh(): Promise<void> {
+    const before = this.outputs;
     this.outputs = parseOutputs(await this.compositor.request("outputs"));
+    // `outputs-changed` also comes when a window enters or leaves full screen;
+    // with the screens as they were, nothing needs fitting (and a window just
+    // out of full screen still reports its full-screen size).
+    const changed = !sameOutputs(before, this.outputs);
     const zones = this.outputs.flatMap((output) => dragZones(output).map((zone) => ({ ...zone, usable: output.usable })));
     this.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
     // Drag-to-tile is the compositor's to offer; without it, windows still fit their screens.
     await this.compositor
       .request("layout", { zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
       .catch((error) => console.error("dashi-shell: drag-to-tile is off:", error instanceof Error ? error.message : error));
-    await this.fitWindows();
+    if (changed) await this.fitWindows();
   }
 
   /**
@@ -140,10 +172,13 @@ export class Arranger {
     for (const window of await this.compositor.windows()) {
       // A full-screen window fills its screen, whatever the bars leave free.
       if (window.state !== "normal" || !window.frame || window.fullscreen) continue;
-      const usable = usableFor(window.frame, this.outputs);
+      // Just out of full screen, the app may still be at the screen's size: fit the frame it was given.
+      const settling = this.settling.get(window.id);
+      const frame = settling && settling.until > Date.now() ? settling.frame : window.frame;
+      const usable = usableFor(frame, this.outputs);
       if (!usable) continue;
       const tile = this.arranged.get(window.id)?.tile;
-      const fitted = tile ? tileFrame(tile, usable) : fitFrame(window.frame, usable);
+      const fitted = tile ? tileFrame(tile, usable) : fitFrame(frame, usable);
       if (sameRect(fitted, window.frame)) continue;
       await this.compositor.request("frame", tile ? tileRequest(window.id, tile, fitted) : { window: window.id, ...fitted });
     }
@@ -226,6 +261,12 @@ export class Arranger {
     this.dragFrom.delete(id);
   }
 
+  private closed(id: number): void {
+    this.forget(id);
+    this.beforeFullscreen.delete(id);
+    this.settling.delete(id);
+  }
+
   /**
    * The square, or a double-click on the title bar: Fill, or its own frame
    * back when it is filled or tiled; with ⌥, full screen. On a full-screen
@@ -282,15 +323,30 @@ export class Arranger {
   /**
    * Full screen: the window covers its whole screen, over the menu bar and
    * Dock, and leaving gives the frame back (⌥ and the square, ⌃❖F, the View
-   * menu, an app's own F11 or video button). A tiled or filled window stays
-   * so underneath. The compositor picks the screen the window is mostly on.
+   * menu, an app's own F11 or video button). Leaving gives back the frame it
+   * had before, or its tile on that screen if it was tiled or filled. The
+   * compositor picks the screen the window is mostly on.
    */
   async fullscreen(id: number, on: boolean): Promise<void> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
     if (!window || window.state !== "normal" || (window.fullscreen ?? false) === on) return;
+    if (on && window.frame) this.beforeFullscreen.set(id, window.frame);
     await this.compositor.request("fullscreen", { window: id, on });
+    if (!on) await this.leftFullscreen(id);
     this.afterFullscreen?.();
+  }
+
+  /** Out of full screen: the frame from before, or its tile there; nothing known (the shell restarted meanwhile), the compositor's own. */
+  private async leftFullscreen(id: number): Promise<void> {
+    const before = this.beforeFullscreen.get(id);
+    this.beforeFullscreen.delete(id);
+    if (!before) return;
+    const tile = this.arranged.get(id)?.tile;
+    const usable = usableFor(before, this.outputs);
+    const frame = tile && usable ? tileFrame(tile, usable) : before;
+    this.settling.set(id, { frame, until: Date.now() + SETTLE_MS });
+    await this.compositor.request("frame", tile ? tileRequest(id, tile, frame) : { window: id, ...frame });
   }
 
   /** Enter full screen, or leave it (⌃❖F, the View menu). */
