@@ -6,6 +6,7 @@
  */
 
 import type { ExtraMenuRow } from "../extras/index.ts";
+import type { LaptopAction } from "../laptop/menu.ts";
 import { type Battery, formatMinutes } from "../system/battery.ts";
 import type { MenuEntry } from "./model.ts";
 
@@ -14,7 +15,9 @@ export type StatusMenuAction =
   | { kind: "extra"; key: string; id: string }
   | { kind: "battery-settings" }
   /** An app using significant energy was chosen: Activity Monitor shows what it is doing. */
-  | { kind: "activity-monitor" };
+  | { kind: "activity-monitor" }
+  /** A laptop row: the power mode, the charge, the graphics card's holders (laptop/menu.ts). */
+  | { kind: "laptop"; action: LaptopAction };
 
 /** What the battery's menu shows beyond the battery: the battery monitor's draw and heavy apps (battery/). */
 export interface BatteryUse {
@@ -54,9 +57,14 @@ export function batteryStatus(battery: Battery): string {
 /**
  * The battery's menu, as a Mac's: the charge, the power source, the time,
  * the draw, the apps using significant energy (each opens Activity
- * Monitor), then Settings.
+ * Monitor), other modules' sections (the laptop's: laptop/menu.ts; each
+ * starts with its own separator), then Settings.
  */
-export function batteryEntries(battery: Battery, use: BatteryUse = { watts: null, apps: [] }): MenuEntry<StatusMenuAction>[] {
+export function batteryEntries(
+  battery: Battery,
+  use: BatteryUse = { watts: null, apps: [] },
+  sections: readonly MenuEntry<StatusMenuAction>[] = [],
+): MenuEntry<StatusMenuAction>[] {
   const info = (label: string): MenuEntry<StatusMenuAction> => ({ kind: "item", label, action: null });
   const draw =
     use.watts === null || battery.state === "full" || battery.state === "plugged"
@@ -76,6 +84,7 @@ export function batteryEntries(battery: Battery, use: BatteryUse = { watts: null
     info(batteryStatus(battery)),
     ...draw,
     ...apps,
+    ...sections,
     { kind: "separator" },
     { kind: "item", label: "Battery Settings…", action: { kind: "battery-settings" } },
   ];

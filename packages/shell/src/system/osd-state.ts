@@ -11,7 +11,11 @@ export type OsdState =
   | { kind: "brightness"; level: number }
   | { kind: "mic"; muted: boolean }
   /** A charger was plugged in: charging (`true`) or holding its charge (`"plugged"`). */
-  | { kind: "power"; percent: number; charge: true | "plugged" };
+  | { kind: "power"; percent: number; charge: true | "plugged" }
+  /** The laptop's mode key (Fn F5) or the firmware changed the power mode (laptop/). */
+  | { kind: "mode"; mode: "low-power" | "balanced" | "performance"; label: string }
+  /** The keyboard light's key: its level of `max`. */
+  | { kind: "keyboard-light"; level: number; max: number };
 
 /** The HUD's measures, in px. */
 export const OSD = {
@@ -38,6 +42,9 @@ export function litSegments(state: OsdState): number {
       return state.muted ? 0 : filledSegments(state.level);
     case "brightness":
       return filledSegments(state.level);
+    case "keyboard-light":
+      return state.max > 0 ? filledSegments(state.level / state.max) : 0;
+    case "mode":
     case "mic":
     case "power":
       return 0;

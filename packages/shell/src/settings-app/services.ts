@@ -11,6 +11,7 @@ import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt 
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { DeviceStore } from "../control-center/devices.ts";
+import type { Laptop } from "../laptop/start.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { fakeLid, logindLid } from "../power/policy.ts";
@@ -46,6 +47,8 @@ export interface PaneServices extends SharedStores {
   energy: EnergyStore;
   /** The battery's history, draw, energy users, and insights (battery/); null without one. */
   battery: BatteryMonitor | null;
+  /** The power modes, the charge limit, the keyboard light, the graphics card (laptop/); null in tests. */
+  laptop: Laptop | null;
   account: AccountStore;
   /** Opens the password sheet; `needsCurrent` asks for the current password first. */
   changePassword(needsCurrent: boolean): void;
@@ -61,6 +64,8 @@ export interface ServicesOptions {
   accounts?: AccountsSetup;
   /** The shell's battery monitor. */
   battery?: BatteryMonitor | null;
+  /** The shell's laptop (laptop/start.ts). */
+  laptop?: Laptop | null;
 }
 
 export function createPaneServices(options: ServicesOptions): PaneServices {
@@ -77,6 +82,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
   return {
     ...shared,
     battery: options.battery ?? null,
+    laptop: options.laptop ?? null,
     netinfo: new NetInfoStore(fake ? fakeNetInfo() : nmcliNetInfo(run)),
     inputs: new SoundStore(inputsOf(shared.audio)),
     levels: new LevelsStore(fake ? shadowLevels(real) : real, (volume) => system.publish("volume", volume)),

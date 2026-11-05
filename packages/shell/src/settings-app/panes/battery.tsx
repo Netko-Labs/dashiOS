@@ -1,8 +1,9 @@
 /**
  * Battery & Power: the battery (level, state, health, cycles), whether the
  * menu bar shows its percentage, its usage (the draw, the last day's charts,
- * insights, the apps using energy: battery-usage.tsx), the power mode (Low Power, Balanced, High
- * Performance, through power-profiles-daemon), when the display turns off and
+ * insights, the apps using energy: battery-usage.tsx), the power mode (Automatic, Low Power,
+ * Balanced, High Performance: power/modes/, with battery health and the processor on a laptop:
+ * battery-laptop.tsx), when the display turns off and
  * the computer sleeps, and what the lid and power button do. Parts that do not
  * apply are left out: a desktop has no battery, and a machine without the
  * daemon has no power modes. The lid is logind's configuration
@@ -23,6 +24,7 @@ import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { BatteryHealthGroup, PowerModeGroup, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
 import { Failure, Value } from "./parts.tsx";
 
@@ -81,7 +83,14 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
         </Group>
       )}
       {battery && services.battery && <BatteryUsage monitor={services.battery} />}
-      {profiles && (
+      {services.laptop && (
+        <>
+          <PowerModeGroup laptop={services.laptop} />
+          <BatteryHealthGroup laptop={services.laptop} settings={settings} />
+          <ProcessorGroup laptop={services.laptop} settings={settings} />
+        </>
+      )}
+      {!services.laptop && profiles && (
         <>
           <Group testID="power-mode">
             <Row stack label="Power Mode" detail={MODE_DETAIL[profiles.active]}>

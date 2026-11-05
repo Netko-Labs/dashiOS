@@ -68,6 +68,8 @@ greetd
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
+| shell ↔ laptop hardware | D-Bus system bus, one kept connection (`src/system/system-bus.ts`): tuned-ppd's power-profiles API, `dev.dashi.Hardware1` (dashi-hardware), cardwire (`org.opengamingcollective.cardwire`, packaged as dashi-graphics). The shell decides the mode and the graphics policy; they write | `docs/hardware.md`, `src/laptop/`, `src/power/modes/`, `src/graphics/` |
+| kernel log → shell | `journalctl -k -b 0 -f -o json`, followed for a graphics card falling off the bus (Xid 79, pciehp Link Down on its port) | `src/graphics/lost-card.ts` |
 
 ## Installed Layout
 

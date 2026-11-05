@@ -16,6 +16,7 @@ import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { controlFlags, DeviceStore, radiosFor } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
+import type { Laptop } from "../laptop/start.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { SharedStores } from "../settings-app/services.ts";
@@ -75,6 +76,8 @@ export interface MenusOptions {
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
   appMenus?: AppMenuStore;
+  /** The laptop's stores, for Control Center's laptop row (laptop/). */
+  laptop?: Laptop;
 }
 
 export interface Menus {
@@ -172,6 +175,7 @@ export function startMenus(options: MenusOptions): Menus {
             wifi,
             sound,
             bluetooth,
+            ...(options.laptop ? { laptop: options.laptop } : {}),
             onJoin: (network) =>
               void chooseNetwork(wifi, network, (secured) => {
                 // The sheet takes the keyboard; the popover would only sit in its way.

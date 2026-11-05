@@ -3,12 +3,12 @@
 import { SidebarItem, useColors } from "@dashi/ui";
 import { ScrollView, useWindowChrome, View } from "@mirinjs/metal";
 import { Fragment } from "react";
-import { type PaneId, paneGroups } from "./panes.ts";
+import { PANES, type PaneId, paneGroups } from "./panes.ts";
 import { useSurface } from "./ui.tsx";
 
 export const SIDEBAR_WIDTH = 200;
 
-export function Sidebar({ current, onSelect }: { current: PaneId; onSelect: (pane: PaneId) => void }) {
+export function Sidebar({ current, onSelect, shown }: { current: PaneId; onSelect: (pane: PaneId) => void; shown?: ReadonlySet<PaneId> }) {
   const colors = useColors();
   const surface = useSurface();
   // The unified title bar: the sidebar runs to the top of the window, and the compositor's window controls sit over
@@ -30,7 +30,7 @@ export function Sidebar({ current, onSelect }: { current: PaneId; onSelect: (pan
       {controls && <View testID="settings-sidebar-top" dragRegion style={{ height: strip, flexShrink: 0 }} />}
       {/* The panes fit the window at its default size, so a pane opened from outside (an agent, a deep link) is in view; a smaller window scrolls the list. */}
       <ScrollView testID="settings-sidebar-list" style={{ flex: 1, flexDirection: "column", gap: 10, padding: 10, paddingTop: controls ? 2 : 14 }}>
-        {paneGroups().map((group, index) => (
+        {paneGroups(PANES.filter((pane) => !pane.optional || shown?.has(pane.id))).map((group, index) => (
           <Fragment key={index}>
             <View style={{ flexDirection: "column", gap: 1 }}>
               {group.map((pane) => (

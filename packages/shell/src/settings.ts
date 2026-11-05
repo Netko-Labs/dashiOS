@@ -49,6 +49,9 @@
  * `clock` (`hour24`, `showDate`) and `region` (`formats`, `firstWeekday`) are the person's
  * date and time habits (clock.ts, region/); the shell reads them through
  * settings-app/store.ts, which holds their keys.
+ * `power` (`mode` "automatic" or a mode, `chargeLimit`, `fullChargeOnce`, `fullBy`,
+ * `fullByDays`, `boost`, `epp`, `batteryMaxKhz`) and `graphics.mode` are the
+ * laptop's (power/modes/settings.ts), read through settings-app/store.ts.
  * Keys left out keep the compositor's own (DASHI_XKB_LAYOUT and the like),
  * except a missing touchpad or mouse setting, which is the device's default.
  */

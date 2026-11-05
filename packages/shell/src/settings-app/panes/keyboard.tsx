@@ -7,11 +7,13 @@
 import { SEARCH, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import type { Laptop } from "../../laptop/start.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
+import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
 
@@ -122,7 +124,7 @@ function RangeLabels({ low, high }: { low: string; high: string }) {
   );
 }
 
-export function KeyboardPane({ settings, layouts }: { settings: SettingsStore; layouts: XkbLayouts }) {
+export function KeyboardPane({ settings, layouts, laptop }: { settings: SettingsStore; layouts: XkbLayouts; laptop?: Laptop | null }) {
   const { keyboard } = useSettings(settings).data;
   const rate = keyboard.repeatRate ?? DEFAULTS.repeatRate;
   const delay = keyboard.repeatDelay ?? DEFAULTS.repeatDelay;
@@ -150,6 +152,7 @@ export function KeyboardPane({ settings, layouts }: { settings: SettingsStore; l
         )}
       </Group>
       <Caption>A new layout applies in a moment, to every app.</Caption>
+      <KeyboardLightSection laptop={laptop ?? null} />
     </Page>
   );
 }

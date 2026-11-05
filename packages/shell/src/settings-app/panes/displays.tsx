@@ -27,6 +27,7 @@ import {
   type VrrMode,
 } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
+import type { Laptop } from "../../laptop/start.ts";
 import { DEFAULT_X11_SCALING, type X11Scaling } from "../../xwayland-scale.ts";
 import { DISPLAY } from "../glyphs.ts";
 import { useScreens, useSettings } from "../hooks.ts";
@@ -34,6 +35,7 @@ import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabe
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, type Choice, Choices, Group, Note, Page, Row } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";
+import { PanelOverdriveSection } from "./laptop-parts.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
 
 const ROTATION_LABELS: Record<Rotation, string> = { 0: "Standard", 90: "90°", 180: "180°", 270: "270°" };
@@ -190,7 +192,17 @@ function X11AppsSection({ settings }: { settings: SettingsStore }) {
   );
 }
 
-export function DisplaysPane({ screens, settings, flags }: { screens: ScreensStore; settings: SettingsStore; flags: FlagsStore }) {
+export function DisplaysPane({
+  screens,
+  settings,
+  flags,
+  laptop,
+}: {
+  screens: ScreensStore;
+  settings: SettingsStore;
+  flags: FlagsStore;
+  laptop?: Laptop | null;
+}) {
   const colors = useColors();
   const state = useScreens(screens);
   const on = state.monitors.filter((monitor) => monitor.enabled);
@@ -227,6 +239,7 @@ export function DisplaysPane({ screens, settings, flags }: { screens: ScreensSto
         Windows move with the screen when its scale changes. The choice is kept for the next login. A new resolution or rotation goes back by itself unless you
         keep it.
       </Caption>
+      <PanelOverdriveSection laptop={laptop ?? null} />
       <X11AppsSection settings={settings} />
       <NightShiftSection settings={settings} flags={flags} />
     </Page>
