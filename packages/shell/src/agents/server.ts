@@ -76,7 +76,21 @@ export function startAgents({ compositor, ui, store, tile, desktop, sources = ()
     windows: () => compositor.windows(),
     atspi: joinAtspi,
     handedOver: () => [...secrets.handedOver],
-    filled: () => [...secrets.filled].flatMap(([window, fields]) => fields.filter((f) => f.until > Date.now()).map(({ rect }) => ({ window, rect }))),
+    filled: () =>
+      [...secrets.filled].flatMap(([window, fields]) =>
+        fields
+          .filter((f) => f.until > Date.now())
+          .map((field) => ({
+            window,
+            rect: field.rect,
+            again: field.again,
+            forget: () =>
+              secrets.filled.set(
+                window,
+                (secrets.filled.get(window) ?? []).filter((f) => f !== field),
+              ),
+          })),
+      ),
     isVault: isVaultWindow,
   });
   const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, secrets };

@@ -3,7 +3,7 @@
 import type { Compositor } from "../compositor.ts";
 import type { Tile } from "../layout.ts";
 import type { Atspi } from "./atspi/client.ts";
-import type { Rect } from "./atspi/tree.ts";
+import type { Placed, Rect } from "./atspi/tree.ts";
 import type { Question } from "./confirm.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/types.ts";
@@ -26,7 +26,7 @@ export interface SecretsRun {
   /** Ask the person which login, on the sheet. */
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** A field Dashi typed a secret into (a code, a card): agents' pictures blank it for a while. */
-  filled(window: number, rect: Rect | null): void;
+  filled(window: number, rect: Rect | null, again?: Placed["again"]): void;
   /** Dashi's vault, for cards and payments. */
   vault: Pick<Vault, "cards" | "pay">;
   /** Run `work` with this agent's other calls held (Dashi checking a field and typing into it). */

@@ -6,7 +6,7 @@
  * person presses Done, and blanks that window in agents' pictures meanwhile.
  */
 
-import type { Rect } from "../atspi/tree.ts";
+import type { Placed, Rect } from "../atspi/tree.ts";
 import type { SecretsRun } from "../context.ts";
 import type { AgentUi, Who } from "../presence.ts";
 import type { Call } from "../tools/index.ts";
@@ -17,13 +17,20 @@ export interface SecretsShared {
   sources: SecretsRun["sources"];
   atspi: SecretsRun["atspi"];
   /** Fields Dashi typed secrets into, by window, until when (the mask blanks them). */
-  filled: Map<number, Array<{ rect: Rect; until: number }>>;
+  filled: Map<number, FilledField[]>;
   vault: SecretsRun["vault"];
   /** Windows handed to the person now (the mask blanks them). */
   handedOver: Set<number>;
 }
 
-/** How long a field Dashi filled stays blank in agents' pictures. */
+/** A field Dashi typed a secret into, in its window's content coordinates when typed, and how to find it again. */
+export interface FilledField {
+  rect: Rect;
+  until: number;
+  again?: Placed["again"];
+}
+
+/** How long a field Dashi filled stays blank in agents' pictures, at most (less once its page is gone). */
 export const FILLED_MS = 10 * 60_000;
 
 export class SessionSecrets {
@@ -72,11 +79,11 @@ export class SessionSecrets {
       atspi: this.shared.atspi,
       vault: this.shared.vault,
       exclusive: (work) => this.exclusive(work),
-      filled: (window, rect) => {
+      filled: (window, rect, again) => {
         if (!rect) return;
         const now = Date.now();
         const kept = (this.shared.filled.get(window) ?? []).filter((f) => f.until > now);
-        this.shared.filled.set(window, [...kept, { rect, until: now + FILLED_MS }].slice(-16));
+        this.shared.filled.set(window, [...kept, { rect, until: now + FILLED_MS, again }].slice(-16));
       },
       ask: (summary, logins) => this.ui.signIn({ agent, who: who(), summary, logins }, signal),
       handOver: async (window, reason) => {

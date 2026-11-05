@@ -15,7 +15,7 @@
 
 import type { CompositorWindow } from "../compositor.ts";
 import type { Atspi } from "./atspi/client.ts";
-import { limits, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
+import { limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
 
 /** The name agents' captures use. */
 export const AGENT_MASK = "agent";
@@ -27,6 +27,18 @@ export const FIELD_PAD = 8;
 const LOOK_MS = 500;
 /** A browser woken for its first picture (Atspi.wake) publishes its page within this. */
 const WOKEN_MS = 1200;
+/** Finding a filled field again: past this, it is blanked where it was. */
+const AGAIN_MS = 300;
+
+/** A field Dashi typed a secret into, where it was, and how to find it now (AT-SPI). */
+export interface FilledField {
+  window: number;
+  /** In its window's content coordinates, when it was typed into. */
+  rect: Rect;
+  again?: Placed["again"];
+  /** Its page is gone: it needn't be blanked any more. */
+  forget?(): void;
+}
 
 export interface MaskInputs {
   /** Fields Dashi typed a secret into (a code, a card), in their window's content coordinates. */
@@ -65,7 +77,7 @@ export interface MaskDeps {
   atspi(): Promise<(Pick<Atspi, "appFor"> & Partial<Pick<Atspi, "wake">>) | null>;
   handedOver(): readonly number[];
   /** Fields Dashi typed a secret into, still blanked. */
-  filled?(): ReadonlyArray<{ window: number; rect: Rect }>;
+  filled?(): readonly FilledField[];
   /** Whether a window is one of the vault's (Settings showing Passwords). */
   isVault(window: CompositorWindow): boolean;
 }
@@ -88,10 +100,35 @@ export class AgentMask {
       handedOver: this.deps.handedOver(),
       vault: windows.filter((w) => this.deps.isVault(w)).map((w) => w.id),
       fields,
-      filled: this.deps.filled?.() ?? [],
+      filled: await this.filledFields(windows),
       pids: this.recorders,
     });
     await this.deps.request("capture-mask", request);
+  }
+
+  /**
+   * Where the fields Dashi filled are now: they follow the page as it
+   * scrolls, are left out while hidden (another tab), and are forgotten once
+   * their page is gone. A field that can't be found in time is blanked where it was.
+   */
+  private async filledFields(windows: readonly CompositorWindow[]): Promise<Array<{ window: number; rect: Rect }>> {
+    const found = await Promise.all(
+      (this.deps.filled?.() ?? []).map(async (field) => {
+        const window = windows.find((w) => w.id === field.window);
+        if (!field.again || !window?.frame) return [field];
+        const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), AGAIN_MS));
+        const now = await Promise.race([field.again().catch(() => null), timeout]);
+        if (now === "gone") {
+          field.forget?.();
+          return [];
+        }
+        if (now === "hidden") return [];
+        if (!now?.rect) return [field];
+        const content = { width: window.frame.width, height: window.frame.height - window.titleBar };
+        return [{ window: field.window, rect: toWindow(now.rect, now.page, content) }];
+      }),
+    );
+    return found.flat().map(({ window, rect }) => ({ window, rect }));
   }
 
   private async passwordFields(windows: readonly CompositorWindow[]): Promise<Array<{ window: number; rect: Rect }>> {

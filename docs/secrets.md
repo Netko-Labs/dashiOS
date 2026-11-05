@@ -163,6 +163,10 @@ every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
 - windows handed to the person ("Your turn") until they press Done;
 - every password field that is showing (AT-SPI, role `PASSWORD_TEXT`, state
   `SHOWING`), 8 points larger all round, in each window of the app that has it.
+- every field Dashi typed a code or a card into, for ten minutes at most:
+  found again through AT-SPI before each picture, so the blank follows it
+  as the page scrolls, leaves while it is hidden (another tab), and goes
+  with its page; a field not found within 300 ms is blanked where it was.
 
 A sheet waiting for the person doesn't hold the agent's pictures: it is
 blanked in them like the rest, so a screenshot taken meanwhile returns at

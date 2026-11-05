@@ -84,7 +84,7 @@ function brokerFor(window: CompositorWindow, ctx: RunContext): BrokerContext {
     type: (payload) => ctx.hands.send(window, payload, ctx.agent, ctx.status),
     ask: (summary, logins) => ctx.secrets.ask(summary, logins),
     approvals: ctx.secrets.approvals,
-    filled: (field) => ctx.secrets.filled(window.id, placeIn(window, field)),
+    filled: (field) => ctx.secrets.filled(window.id, placeIn(window, field), field.again),
     cancelled: () => ctx.signal.aborted,
     exclusive: (work) => ctx.secrets.exclusive(work),
     status: ctx.status,
@@ -124,7 +124,7 @@ export async function payCall(call: Extract<Call, { name: "pay" }>, ctx: RunCont
     ...broker,
     cards: () => ctx.secrets.vault.cards(),
     pay: (merchant: string, cents: number, card: number) => ctx.secrets.vault.pay(merchant, cents, card),
-    filled: (field: Placed) => ctx.secrets.filled(window.id, placeIn(window, field)),
+    filled: (field: Placed) => ctx.secrets.filled(window.id, placeIn(window, field), field.again),
   };
   return payWith(pay, call.site, call.cents, call.card);
 }

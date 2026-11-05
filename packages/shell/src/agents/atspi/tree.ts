@@ -9,7 +9,7 @@
 /** AT-SPI roles (AtspiRole) the walk cares about. */
 export const ROLE = { FRAME: 23, PASSWORD_TEXT: 40, TEXT: 61, APPLICATION: 75, ENTRY: 79, DOCUMENT_WEB: 95 } as const;
 /** AT-SPI states (AtspiStateType), as bit numbers in GetState's two words. */
-export const STATE = { EDITABLE: 7, FOCUSED: 12, SHOWING: 25 } as const;
+export const STATE = { DEFUNCT: 6, EDITABLE: 7, FOCUSED: 12, SHOWING: 25 } as const;
 
 export interface Rect {
   x: number;
@@ -53,7 +53,7 @@ export async function fieldAt(node: A11yNode): Promise<Focused | null> {
     }
     if (up === ROLE.APPLICATION) break;
   }
-  return { kind: kindOf(role, states), ...(await placed(node, page)), documents };
+  return { kind: kindOf(role, states), ...(await placed(node, page)), documents, again: () => placeAgain(node, page) };
 }
 
 /** A node's extents, with its page's (the outermost web document around it) to place it by. */
@@ -76,6 +76,21 @@ async function extentsOf(node: A11yNode): Promise<Rect | null> {
 export interface Placed {
   rect: Rect | null;
   page: Rect | null;
+  /** Where it is now: gone once its page has (the app forgot the node), hidden while it isn't showing. */
+  again?(): Promise<Placed | "gone" | "hidden">;
+}
+
+/** A node placed again, for a field that must stay blank where it moves (scrolling) and no longer once its page is gone. */
+export async function placeAgain(node: A11yNode, page: A11yNode | null): Promise<Placed | "gone" | "hidden"> {
+  let states: readonly number[];
+  try {
+    states = await node.states();
+  } catch {
+    return "gone";
+  }
+  if (hasState(states, STATE.DEFUNCT)) return "gone";
+  if (!hasState(states, STATE.SHOWING)) return "hidden";
+  return placed(node, page);
 }
 
 function kindOf(role: number, states: readonly number[]): Focused["kind"] {
@@ -186,11 +201,8 @@ export function toWindow(rect: Rect, page: Rect | null, window: { width: number;
   };
 }
 
-export interface Focused {
+export interface Focused extends Placed {
   kind: "password" | "text" | "other";
-  rect: Rect | null;
-  /** Its page's rect in the same units (toWindow). */
-  page: Rect | null;
   /** The addresses of the web documents it is in, innermost first ("" when one has none). */
   documents: readonly string[];
 }
@@ -208,5 +220,6 @@ export async function focusedField(root: A11yNode, limit: Limits = limits()): Pr
   });
   const found = hit as Visit | null;
   if (!found) return null;
-  return { kind: kindOf(found.role, found.states), ...(await placed(found.node, found.page)), documents: found.documents };
+  const { node, page } = found;
+  return { kind: kindOf(found.role, found.states), ...(await placed(node, page)), documents: found.documents, again: () => placeAgain(node, page) };
 }

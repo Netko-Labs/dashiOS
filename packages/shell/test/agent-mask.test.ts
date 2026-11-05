@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { focusedField, hasState, passwordFields, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
-import { AGENT_MASK, AgentMask, FIELD_PAD, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
+import { focusedField, hasState, passwordFields, placeAgain, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
+import { AGENT_MASK, AgentMask, FIELD_PAD, type FilledField, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
 import { answeredByPerson, PERSON_PRESS_MS, personAnswered } from "../src/agents/person.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { bits, browser, tree } from "./fixtures/a11y-tree.ts";
@@ -79,6 +79,15 @@ describe("the accessibility walk", () => {
     expect((await passwordFields(firefox)).rects).toEqual([{ rect: field, page }]);
   });
 
+  test("a field found again: placed while it shows, hidden while not, gone with its page", async () => {
+    const rect = { x: 1, y: 2, width: 3, height: 4 };
+    expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [STATE.SHOWING], rect }), null)).toEqual({ rect, page: null });
+    expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [], rect }), null)).toBe("hidden");
+    expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [STATE.SHOWING, STATE.DEFUNCT], rect }), null)).toBe("gone");
+    const forgotten = { ...tree({ role: ROLE.ENTRY }), states: () => Promise.reject(new Error("unknown object")) };
+    expect(await placeAgain(forgotten, null)).toBe("gone");
+  });
+
   test("a walk gives up at its limits instead of holding a picture", async () => {
     const wide = tree({ role: ROLE.APPLICATION, children: Array.from({ length: 50 }, () => ({ role: ROLE.FRAME, states: [STATE.SHOWING] })) });
     const { complete } = await passwordFields(wide, { nodes: 10, deadline: Date.now() + 1000 });
@@ -139,6 +148,40 @@ describe("what agents' pictures blank", () => {
       },
     });
     await expect(refusing.update()).rejects.toThrow();
+  });
+});
+
+describe("fields Dashi filled", () => {
+  test("their blanks follow the field, leave while it's hidden, and go with its page", async () => {
+    const sent: Array<Record<string, unknown>> = [];
+    const forgotten: string[] = [];
+    const at = (y: number) => ({ x: 10, y, width: 100, height: 20 });
+    const field = (name: string, again?: () => Promise<Awaited<ReturnType<NonNullable<FilledField["again"]>>>>): FilledField => ({
+      window: 3,
+      rect: at(1),
+      again,
+      forget: () => forgotten.push(name),
+    });
+    const mask = new AgentMask({
+      request: async (_method, params) => sent.push(params),
+      windows: async () => [window(3, null)],
+      atspi: async () => null,
+      handedOver: () => [],
+      isVault: () => false,
+      filled: () => [
+        // Scrolled: blanked where it is now (no page: as the app says).
+        field("moved", async () => ({ rect: at(50), page: null })),
+        field("hidden", async () => "hidden"),
+        field("gone", async () => "gone"),
+        // Found nowhere in time, or never followed: blanked where it was.
+        field("slow", () => new Promise(() => {})),
+        field("plain"),
+      ],
+    });
+    await mask.update();
+    const ys = (sent[0]?.rects as Array<{ y: number }>).map((r) => r.y + FIELD_PAD);
+    expect(ys).toEqual([50, 1, 1]);
+    expect(forgotten).toEqual(["gone"]);
   });
 });
 
