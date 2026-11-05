@@ -6,13 +6,12 @@
  * field but for dashi-secretd.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { Passwords } from "../../agents/secrets/passwords.ts";
 import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { Button, Caption, Choices, Group, Note, Page, Row, useSurface } from "../ui.tsx";
 import { Payments } from "./payments.tsx";
 

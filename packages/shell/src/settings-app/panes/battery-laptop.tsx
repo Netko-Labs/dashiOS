@@ -8,7 +8,7 @@
  * reports the knob, and battery health only on a laptop.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Text } from "@mirinjs/metal";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
@@ -16,7 +16,6 @@ import { chargeTarget } from "../../power/battery-health.ts";
 import { type BoostChoice, CHARGE_LIMIT_MIN, type EppChoice } from "../../power/modes/settings.ts";
 import { useModes } from "../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../power/modes/types.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Row, Slider } from "../ui.tsx";

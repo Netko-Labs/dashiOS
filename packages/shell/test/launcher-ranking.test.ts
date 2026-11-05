@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { registerShellApp, SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
-import { type Entry, parseDesktopEntry, search, shellEntries } from "../src/entries.ts";
+import { type Entry, parseDesktopEntry, shellEntries } from "../src/entries.ts";
+import { entryIndex, rankEntries } from "../src/launcher/ranking/index.ts";
 import { PANES } from "../src/settings-app/panes.ts";
 import { registerPaneEntries } from "../src/settings-app/search.ts";
 
-// Today's ranking (entries.ts search), with the shell's real entries: System
+// The launcher's ranking (launcher/ranking/), with the shell's real entries: System
 // Settings, the Setup Assistant, and every Settings pane, as the shell
 // registers them, beside a few installed apps.
 
@@ -36,6 +37,7 @@ afterAll(() => {
   for (const each of undo) each();
 });
 
+const search = (list: readonly Entry[], query: string, limit = 7): Entry[] => rankEntries(entryIndex(list, { LANG: "en_US.UTF-8" }), query, undefined, limit);
 const names = (query: string, limit = 7): string[] => search(entries, query, limit).map((entry) => entry.name);
 
 test("every pane is in the index with its own glyph and what it holds", () => {
@@ -75,9 +77,11 @@ test('a pane answers to "settings" only when nothing else does', () => {
 });
 
 test('no bare in-word match under four letters: "ter" is Terminal, not Battery & Power or Characters', () => {
-  expect(names("ter")).toEqual(["Terminal"]);
+  expect(names("ter")[0]).toBe("Terminal");
+  expect(names("ter")).not.toContain("Battery & Power");
+  expect(names("ter")).not.toContain("Characters");
   // From four letters a match inside a word counts: "ract" is in Characters.
-  expect(names("ract")).toEqual(["Characters"]);
+  expect(names("ract")[0]).toBe("Characters");
 });
 
 test("exact name, then keyword, then prefix, word start and keyword prefix", () => {

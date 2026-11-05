@@ -58,7 +58,12 @@ systemd --user
   and stops them, and listens on a socket of their own.
 - **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
-  screen consents before an agent sees or does anything.
+  screen consents before an agent sees or does anything. The tools it lists
+  are the agents' part of the shell's action registry (`docs/actions.md`).
+- **dashi-open** (`session/dashi-open`, `bin/dashi-open.ts`) hands a
+  `dashi://` link to the session (`$XDG_RUNTIME_DIR/dashi-links.sock`); the
+  shell's `x-scheme-handler/dashi` entry runs it for `xdg-open`. A link never
+  runs a destructive action (`docs/actions.md`).
 - **dashi-secretd** (`crates/dashi-secretd`, `docs/secrets.md`) is the vault:
   a system service with its own user (`dashi-secret`), socket-activated on
   `/run/dashi-secretd/socket`. The login opens it through PAM
@@ -161,6 +166,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
+| `dashi://` link → shell | `$XDG_RUNTIME_DIR/dashi-links.sock`, one JSON line each way, from `dashi-open` (the `x-scheme-handler/dashi` entry) | `docs/actions.md` |
 | share picker ↔ shell | `$XDG_RUNTIME_DIR/dashi-share.sock`, one JSON line each way | `src/share-picker/protocol.ts` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
@@ -178,7 +184,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-agent`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-portal`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-agent`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-open`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-portal`, `/usr/bin/dashi-greeter` | `session/` |
 | `/etc/xdg/xdg-desktop-portal-wlr/Dashi` | `session/xdg-desktop-portal-wlr.conf` |
 | `/usr/share/xdg-desktop-portal/portals/dashi.portal`, `/usr/share/xdg-desktop-portal/dashi-portals.conf` | `session/` |
 | `/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service`, `/usr/lib/systemd/user/dashi-portal.service` | `session/` |

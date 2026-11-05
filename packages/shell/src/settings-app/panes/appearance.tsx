@@ -8,15 +8,14 @@
  * (`appearance.pointerSize`, pointer.ts).
  */
 
-import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
+import { darkColors, lightColors, type Palette, Switch, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row, useSurface } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot, useSurface } from "../ui.tsx";
 
 const CORNER_LABELS: Record<CornerName, string> = { none: "None", small: "Small", medium: "Medium", large: "Large" };
 const CORNER_OPTIONS = CORNER_NAMES.map((value) => ({ value, label: CORNER_LABELS[value] }));
@@ -125,9 +124,11 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         <AppearancePreviews flags={flags} settings={settings} />
       </Group>
       <Group>
-        <Row label="Dark Mode" detail="Menus, the Dock, and apps that follow the system switch together.">
-          <Switch testID="appearance-dark-mode" on={dark} onChange={(on) => flags.set({ dark: on })} />
-        </Row>
+        <Spot pane="appearance" row="dark-mode">
+          <Row label="Dark Mode" detail="Menus, the Dock, and apps that follow the system switch together.">
+            <Switch testID="appearance-dark-mode" on={dark} onChange={(on) => flags.set({ dark: on })} />
+          </Row>
+        </Spot>
         <Row label="Accent color" detail="Selections, switches, and sliders.">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <View
@@ -137,9 +138,11 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
             <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
           </View>
         </Row>
-        <Row stack label="Window corners" detail="How round windows are, app content included.">
-          <CornerChoices settings={settings} />
-        </Row>
+        <Spot pane="appearance" row="window-corners">
+          <Row stack label="Window corners" detail="How round windows are, app content included.">
+            <CornerChoices settings={settings} />
+          </Row>
+        </Spot>
         <Row label="Highlight the active window" detail="A ring in the accent color around the window you're typing in.">
           <Switch
             testID="appearance-highlight-window"

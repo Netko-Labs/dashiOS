@@ -97,6 +97,8 @@ export class SwitcherController {
     /** What an app is called (the Dock's name), for typing to find it. */
     private readonly nameOf: (group: AppGroup) => string = (group) => group.appId,
     private readonly keys: SwitcherKeys = { begin() {}, end() {} },
+    /** The chosen window's app was brought forward: the launcher's ranking counts it (launcher/ranking/). */
+    private readonly opened: (window: CompositorWindow) => void = () => {},
   ) {}
 
   /** Tab, ⇧Tab, and the arrows (only Tab and ⇧Tab start a session). */
@@ -311,6 +313,9 @@ export class SwitcherController {
     }
     const chosen = chosenWindow(session.shown, session.selection);
     // Focusing a minimized or hidden window brings it back too, unless the person just put it away (H, M).
-    if (commit && chosen && !session.putAway.has(chosen.id)) await this.compositor.request("focus", { window: chosen.id });
+    if (commit && chosen && !session.putAway.has(chosen.id)) {
+      this.opened(chosen);
+      await this.compositor.request("focus", { window: chosen.id });
+    }
   }
 }

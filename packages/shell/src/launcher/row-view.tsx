@@ -4,9 +4,14 @@
  * panel's 5 px padding and 12 px corners, the name at 13, what follows it at
  * 12, the kind at 11. One line each (VS-2). The selected row is a kombu wash
  * behind ink, with a 3 px kombu bar at its left edge (CO-6).
+ *
+ * At the right end a row shows one thing: a setting's control (its switch,
+ * which Space flips, or its value), else the key that does it (a menu
+ * item's shortcut, a verb's key, the digit ❖ picks it with while ❖ is held),
+ * else its kind. Keys are drawn as glyphs (@dashi/ui Shortcut).
  */
 
-import { KEY_GLYPHS, useColors } from "@dashi/ui";
+import { KEY_GLYPHS, Shortcut, Switch, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { Row, RowIcon } from "./rows.ts";
 
@@ -17,6 +22,7 @@ const BAR = { width: 3, height: 20 };
 
 function Icon({ icon }: { icon: RowIcon }) {
   const colors = useColors();
+  if ("none" in icon) return null;
   if ("image" in icon) return <Image source={icon.image} style={{ width: ICON, height: ICON }} />;
   // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4).
   return (
@@ -26,10 +32,31 @@ function Icon({ icon }: { icon: RowIcon }) {
   );
 }
 
-export function ResultRow({ row, selected, onPress, onHover }: { row: Row; selected: boolean; onPress: () => void; onHover: () => void }) {
+export interface ResultRowProps {
+  row: Row;
+  selected: boolean;
+  onPress: () => void;
+  onHover: () => void;
+  /** Right-click: the row's action list. */
+  onContextMenu?: () => void;
+  /** ❖ is held: the digit that picks this row (1–9). */
+  digit?: number;
+}
+
+/** What the right end shows (see the module comment). */
+function RightEnd({ row, digit, quiet }: { row: Row; digit: number | undefined; quiet: string }) {
+  if (digit !== undefined) return <Shortcut keys={`❖${digit}`} color={quiet} size={11} />;
+  if (row.control?.kind === "switch") return <Switch testID={`launcher:switch:${row.id}`} on={row.control.on} />;
+  if (row.control?.kind === "value") return <Text style={{ fontSize: 12, color: quiet }}>{row.control.text}</Text>;
+  if (row.shortcut) return <Shortcut keys={row.shortcut} color={quiet} size={11} />;
+  if (row.kind !== "") return <Text style={{ fontSize: 11, color: quiet }}>{row.kind}</Text>;
+  return null;
+}
+
+export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit }: ResultRowProps) {
   const colors = useColors();
   // On the wash every word is ink: muted ink there would fall under 4.5:1.
-  const ink = selected ? colors.onSelection : colors.text;
+  const ink = selected ? colors.onSelection : row.danger ? colors.critical : colors.text;
   const quiet = selected ? colors.onSelection : colors.textMuted;
   return (
     <View
@@ -38,6 +65,7 @@ export function ResultRow({ row, selected, onPress, onHover }: { row: Row; selec
       onHoverChange={(hovered) => {
         if (hovered) onHover();
       }}
+      {...(onContextMenu ? { onContextMenu } : {})}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -46,7 +74,8 @@ export function ResultRow({ row, selected, onPress, onHover }: { row: Row; selec
         paddingLeft: 10,
         paddingRight: 12,
         borderRadius: 7,
-        ...(selected ? { backgroundColor: colors.selectionWash } : { hoverBackgroundColor: colors.hover }),
+        // One mark only: the pointer moves the selection, so a row has no hover tint of its own.
+        ...(selected ? { backgroundColor: colors.selectionWash } : {}),
       }}
     >
       {selected && (
@@ -69,6 +98,15 @@ export function ResultRow({ row, selected, onPress, onHover }: { row: Row; selec
             {row.title}
           </Text>
         </View>
+        {row.chord !== undefined && <Shortcut keys={row.chord} color={ink} size={12} />}
+        {row.badge !== undefined && (
+          <View
+            testID={`launcher:badge:${row.id}`}
+            style={{ flexShrink: 0, paddingLeft: 5, paddingRight: 5, height: 16, borderRadius: 4, justifyContent: "center", backgroundColor: colors.button }}
+          >
+            <Text style={{ fontSize: 11, color: ink }}>{row.badge}</Text>
+          </View>
+        )}
         {row.detail !== undefined && (
           <View style={{ flexShrink: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontSize: 12, color: quiet }}>
@@ -77,7 +115,7 @@ export function ResultRow({ row, selected, onPress, onHover }: { row: Row; selec
           </View>
         )}
       </View>
-      {row.kind !== "" && <Text style={{ fontSize: 11, color: quiet }}>{row.kind}</Text>}
+      <RightEnd row={row} digit={digit} quiet={quiet} />
       {row.more && <Svg markup={KEY_GLYPHS["→"] ?? ""} size={12} color={quiet} />}
     </View>
   );

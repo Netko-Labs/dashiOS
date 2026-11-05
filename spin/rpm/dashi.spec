@@ -89,6 +89,8 @@ install -Dm0755 session/dashi-agent %{buildroot}%{_bindir}/dashi-agent
 install -Dm0755 session/dashi-applet %{buildroot}%{_bindir}/dashi-applet
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
+# dashi:// links into the session (src/actions/links.ts); the shell writes the x-scheme-handler/dashi entry.
+install -Dm0755 session/dashi-open %{buildroot}%{_bindir}/dashi-open
 # The screen-share picker, xdg-desktop-portal-wlr's chooser in a Dashi session (src/share-picker/).
 install -Dm0755 session/dashi-share-picker %{buildroot}%{_bindir}/dashi-share-picker
 install -Dm0644 session/xdg-desktop-portal-wlr.conf %{buildroot}%{_sysconfdir}/xdg/xdg-desktop-portal-wlr/Dashi
@@ -113,6 +115,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_bindir}/dashi-agent
 %{_bindir}/dashi-applet
 %{_bindir}/dashi-dialog
+%{_bindir}/dashi-open
 %{_bindir}/dashi-share-picker
 %dir %{_sysconfdir}/xdg/xdg-desktop-portal-wlr
 %config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal-wlr/Dashi

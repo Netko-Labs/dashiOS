@@ -10,7 +10,7 @@
  * (/etc/systemd/logind.conf), shown as it is.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { batteryGlyph } from "../../glyphs.ts";
@@ -18,12 +18,11 @@ import { describeAction } from "../../power/policy.ts";
 import { describeBattery } from "../../system/battery-details.ts";
 import { useEnergy } from "../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../system/profiles.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { BLANK_CHOICES, blankChoice, SLEEP_CHOICES, sleepChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
 import { BatteryHealthGroup, PowerModeGroup, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
 import { Failure, Value } from "./parts.tsx";
@@ -73,13 +72,15 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
               <Value testID="battery-cycles">{String(battery.cycles)}</Value>
             </Row>
           )}
-          <Row label="Show percentage in menu bar">
-            <Switch
-              testID="battery-menubar"
-              on={menuBar.batteryPercent ?? false}
-              onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
-            />
-          </Row>
+          <Spot pane="battery" row="battery-percentage">
+            <Row label="Show percentage in menu bar">
+              <Switch
+                testID="battery-menubar"
+                on={menuBar.batteryPercent ?? false}
+                onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
+              />
+            </Row>
+          </Spot>
         </Group>
       )}
       {battery && services.battery && <BatteryUsage monitor={services.battery} />}

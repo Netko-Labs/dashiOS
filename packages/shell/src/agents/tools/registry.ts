@@ -2,11 +2,18 @@
  * The tools agents can call (`catalog`), what each needs the person to allow
  * (`scopeOf`), and their arguments checked into a `Call` (`parseCall`).
  * Carrying them out is run.ts.
+ *
+ * Each tool is also an action (actions/tools.ts, docs/actions.md):
+ * `TOOL_ACTIONS` is the registry's "tools" source, and `tools/list` is
+ * written from those actions, so what agents are offered and what the
+ * person's launcher, keys, and links reach are one list.
  */
 
+import { mcpListing, toolAction } from "../../actions/tools.ts";
+import type { ActionDef } from "../../actions/types.ts";
 import type { Scope } from "../consent.ts";
 import { calendarTools } from "./calendar.ts";
-import { type Args, fail, listing, stray, type ToolDef } from "./define.ts";
+import { checkToolArgs, type ToolDef } from "./define.ts";
 import { fileTools } from "./files.ts";
 import { inputTools } from "./input.ts";
 import { machineTools } from "./machine.ts";
@@ -65,8 +72,11 @@ export const TOOLS: readonly ToolDef[] = [
 
 const byName = new Map<string, ToolDef>(TOOLS.map((tool) => [tool.name, tool]));
 
-/** `tools/list`. */
-export const catalog = () => TOOLS.map(listing);
+/** Every tool as an action, in the same order. */
+export const TOOL_ACTIONS: readonly ActionDef[] = TOOLS.map(toolAction);
+
+/** `tools/list`, written from the actions. */
+export const catalog = () => mcpListing(TOOL_ACTIONS);
 
 /** What the person must have allowed before `call` runs. */
 export function scopeOf(call: Call): Scope {
@@ -80,15 +90,7 @@ export function parseCall(params: Record<string, unknown>): Call | CallError {
   const name = typeof params.name === "string" ? params.name : "";
   const tool = byName.get(name);
   if (!tool) return { unknown: name };
-  const given = params.arguments;
-  if (given !== undefined && given !== null && (typeof given !== "object" || Array.isArray(given))) return fail("`arguments` must be an object.");
-  const args = (given ?? {}) as Args;
-  const extra = stray(args, tool.properties);
-  if (extra !== undefined) {
-    const takes = Object.keys(tool.properties);
-    return fail(`\`${extra}\` is not an argument of ${name}; ${takes.length > 0 ? `it takes ${takes.join(", ")}` : "it takes none"}.`);
-  }
-  return tool.parse(args);
+  return checkToolArgs(tool, params.arguments);
 }
 
 /**

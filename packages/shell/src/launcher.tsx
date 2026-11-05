@@ -1,25 +1,57 @@
 /**
  * The launcher (❖Space or a tap of ❖): a search field over installed apps,
- * Settings panes, files (through LocalSearch), and sums. What it lists is
- * launcher/rows.ts; how the selection moves is launcher/selection.ts.
+ * Settings panes and settings, open windows, Dashi's commands, the menus of
+ * running apps, files (through LocalSearch), and sums. What it lists is
+ * launcher/rows.ts, ranked by launcher/ranking/ over launcher/items.ts; what
+ * a row can do is launcher/verbs.ts; how the selection moves is
+ * launcher/selection.ts.
  *
  * - The selection is a row's id: files that land late never put another row
  *   under it, and Enter acts on the row highlighted when it is pressed.
  * - ↑ ↓ (and ⌃P ⌃N) wrap; Page Up and Page Down, Home and End (launcher/keys.ts);
- *   the pointer over a row selects it. Esc clears the field, then closes.
+ *   the pointer over a row selects it. Esc steps out: the action list or a
+ *   chip, then the typed words, then the launcher.
+ * - ↩ does the row's thing, ⇧↩ and stays open; ❖↩ and ⌥↩ the second and
+ *   third (New window, Bring here, Show in Files), ❖C copies, ❖1–9 picks a
+ *   row (the digits show while ❖ is held).
+ * - ❖K or a right-click turns the rows into the selected row's actions, in
+ *   place: the chip names it, typing filters, Esc goes back.
+ * - Space on a setting with a switch flips it; Enter opens Settings there.
  * - A sum is the first row: Enter copies it, and it says so in place.
  * - Nothing found offers Did you mean, Search files, and Find in Software.
  * - With nothing typed: Recent, else a few things to try, then All apps.
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
+import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import type { Outcome } from "./actions/types.ts";
 import { iconPath } from "./apps.ts";
 import type { Entry } from "./entries.ts";
+import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
+import { Field } from "./launcher/field.tsx";
+import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
+import { launcherIndex } from "./launcher/items.ts";
+import type { LauncherCommand } from "./launcher/keys.ts";
+import { chordWhen, collision } from "./launcher/person-keys.ts";
+import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
 import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
-import { buildSections, FILE_ROWS, type FileRow, filesStateFor, placeholderFor, type Row, selectable } from "./launcher/rows.ts";
+import { buildSections, FILE_ROWS, type FileRow, fileNameMatches, filesStateFor, placeholderFor, type Row, type Section, selectable } from "./launcher/rows.ts";
 import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
+import {
+  type Effect,
+  filterVerbs,
+  hintFor,
+  historyId,
+  KEYS,
+  presentedVerbs,
+  spaceFlips,
+  type Verb,
+  type VerbContext,
+  verbRow,
+  verbsFor,
+} from "./launcher/verbs.ts";
+import type { WorldSnapshot } from "./launcher/world.ts";
 
 export type { FileRow } from "./launcher/rows.ts";
 
@@ -30,6 +62,8 @@ export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, rad
 export const FILE_DELAY_MS = 120;
 /** Rows of All apps drawn at once; the selection scrolls them. */
 const ALL_APPS_ROWS = 8;
+/** How long a notice ("Copied") stays at the field's right end. */
+const NOTICE_MS = 2_000;
 
 /** Files for the launcher: whether it can look now (the placeholder says), and the looking; null when it couldn't. */
 export interface LauncherFiles {
@@ -40,30 +74,61 @@ export interface LauncherFiles {
 /** The compositor's keys for the launcher while it is open (launcher/keys.ts). */
 export interface LauncherKeySource {
   subscribe(listener: (move: Move) => void): () => void;
+  subscribeCommands?(listener: (command: LauncherCommand) => void): () => void;
+  /** Set shortcut… listens for a chord (every ❖ chord is the launcher's meanwhile). */
+  record?(on: boolean): void;
 }
 
 export interface LauncherProps {
   entries: readonly Entry[];
   /** Shown while the field is empty. */
   recent?: readonly Entry[];
-  /** Start an entry. False when it could not be: the launcher stays open and says so. */
-  onOpen: (entry: Entry) => boolean;
+  /** Start an entry. False when it could not be: the launcher stays open and says so. `stay`: ⇧↩, it stays open. */
+  onOpen: (entry: Entry, stay?: boolean) => boolean;
   /** Files named like the query; without it the launcher looks through apps and settings only. */
   files?: LauncherFiles;
-  onOpenFile?: (file: FileRow) => void;
+  onOpenFile?: (file: FileRow, stay?: boolean) => void;
   /** Look for `query` in Files (the folder walk works with LocalSearch off too). */
   onSearchFiles?: (query: string) => void;
   onFindSoftware?: (query: string) => void;
-  /** Put the answer on the clipboard; whether it worked. */
+  /** Put text on the clipboard; whether it worked. */
   copy?: (text: string) => Promise<boolean>;
   keys?: LauncherKeySource;
+  /** The registry's actions and the open windows (launcher/world.ts). */
+  world?: LauncherWorldStore;
+  /** The person's aliases and keys (launcher/prefs.ts). */
+  prefs?: LauncherPrefsStore;
+  /** The ranking's history (launcher/ranking/store.ts). */
+  ranking?: LauncherRanking;
+  /** What the rows' other verbs reach. */
+  host?: LauncherHost;
+  /** A link's action, waiting for Return. */
+  presented?: Presented | null;
+  /** The person's languages, for Dashi's own words (ranking/locale.ts). */
+  languages?: readonly string[];
   onClose: () => void;
 }
 
-const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software") };
+const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software"), command: iconPath("settings") };
 
-export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSearchFiles, onFindSoftware, copy, keys, onClose }: LauncherProps) {
+const NO_WORLD: WorldSnapshot = { actions: [], windows: [], serial: 0 };
+const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => undefined, keyOf: () => undefined };
+const noStore = { subscribe: () => () => {}, getSnapshot: () => NO_WORLD };
+const noPrefs = { subscribe: () => () => {}, getSnapshot: () => NO_PREFS };
+
+/** Where the launcher is: searching, a row's action list, giving an alias or a key, or a link's action. */
+type Mode =
+  | { kind: "search" }
+  | { kind: "actions"; row: Row }
+  | { kind: "alias"; address: string; title: string }
+  | { kind: "shortcut"; address: string; title: string; when: string | null }
+  | { kind: "presented"; presented: Presented };
+
+export function Launcher(props: LauncherProps) {
+  const { entries, recent = [], files, keys, onClose, host, ranking } = props;
   const colors = useColors();
+  const world = useSyncExternalStore(props.world?.subscribe ?? noStore.subscribe, props.world?.getSnapshot ?? noStore.getSnapshot);
+  const prefs = useSyncExternalStore(props.prefs?.subscribe ?? noPrefs.subscribe, props.prefs?.getSnapshot ?? noPrefs.getSnapshot);
   const [query, setQuery] = useState("");
   const [held, setHeld] = useState<string | null>(null);
   const [allApps, setAllApps] = useState(false);
@@ -73,6 +138,13 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
   const [lastFileCount, setLastFileCount] = useState(0);
   const [copied, setCopied] = useState<{ query: string; ok: boolean } | null>(null);
   const [failed, setFailed] = useState<Entry | null>(null);
+  const [mode, setMode] = useState<Mode>(() => (props.presented ? { kind: "presented", presented: props.presented } : { kind: "search" }));
+  // The action list's own field and selection, and the destructive verb asking to be pressed again.
+  const [filter, setFilter] = useState("");
+  const [heldVerb, setHeldVerb] = useState<string | null>(null);
+  const [asking, setAsking] = useState<string | null>(null);
+  const [digits, setDigits] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const offset = useRef(0);
 
   const text = query.trim();
@@ -88,7 +160,7 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
         if (!current) return;
         setFound({ query: text, files: hits });
         if (hits === null) setFilesOff(true);
-        else setLastFileCount(Math.min(hits.length, FILE_ROWS));
+        else setLastFileCount(Math.min(hits.filter((hit) => fileNameMatches(hit.name, text)).length, FILE_ROWS));
       });
     }, FILE_DELAY_MS);
     return () => {
@@ -97,80 +169,440 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
     };
   }, [files, waiting, text]);
 
-  const sections = buildSections({ query, entries, recent, files: filesState, allApps, copied, failed, icons: ICONS });
-  const rows = selectable(sections);
-  const ids = rows.map((row) => row.id);
-  const selected = resolveSelection(ids, held);
-  const latest = useRef(ids);
-  latest.current = ids;
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
-  const move = (how: Move) => setHeld((now) => moveSelection(latest.current, now, how));
+  // A link that arrives while the launcher is open takes its place.
+  useEffect(() => {
+    if (props.presented) setMode({ kind: "presented", presented: props.presented });
+  }, [props.presented]);
+
+  const index = useMemo(
+    () => launcherIndex({ entries, actions: world.actions, windows: world.windows, ...(props.languages ? { languages: props.languages } : {}) }),
+    [entries, world.actions, world.windows, props.languages],
+  );
+  const ctx: VerbContext = {
+    windows: world.windows,
+    actions: world.actions,
+    aliasOf: prefs.aliasOf,
+    keyOf: prefs.keyOf,
+    ...(host ? { pinned: (entry: Entry) => host.pinned(entry) } : {}),
+  };
+
+  const sections = buildSections({
+    query,
+    entries,
+    recent,
+    files: filesState,
+    index,
+    windows: world.windows,
+    aliases: prefs.aliases,
+    ...(ranking ? { signals: ranking } : {}),
+    allApps,
+    copied,
+    failed,
+    icons: ICONS,
+  });
+  const rows = selectable(sections);
+  const selected = resolveSelection(
+    rows.map((row) => row.id),
+    held,
+  );
+  const selectedRow = rows.find((row) => row.id === selected);
+
+  // The action list, or what the alias and shortcut fields offer.
+  const verbs: Verb[] =
+    mode.kind === "actions"
+      ? filterVerbs(verbsFor(mode.row, ctx), filter)
+      : mode.kind === "presented"
+        ? filterVerbs(presentedVerbs(mode.presented.action, mode.presented.args, ctx), filter)
+        : [];
+  const shortcutFound = mode.kind === "shortcut" && mode.when !== null && host ? collision(mode.when, host.keymap(), (bind) => host.describe(bind)) : null;
+  const editRows: Row[] =
+    mode.kind === "alias"
+      ? aliasRows(filter, mode.title, mode.address, prefs.aliases, (address) => host?.describe(address) ?? address)
+      : mode.kind === "shortcut"
+        ? shortcutRows(mode.when, mode.title, shortcutFound)
+        : [];
+  const verbRows = verbs.map((each) => verbRow(each, asking === each.id));
+  const verbIds = verbRows.map((row) => row.id);
+  const selectedVerbId = resolveSelection(verbIds, heldVerb);
+  const listIds = mode.kind === "search" ? rows.map((row) => row.id) : verbIds;
+
+  const latest = useRef(listIds);
+  latest.current = listIds;
+  const mover = (how: Move) => {
+    if (mode.kind === "search") setHeld((now) => moveSelection(latest.current, now, how));
+    else setHeldVerb((now) => moveSelection(latest.current, now, how));
+    setAsking(null);
+  };
+  const move = useRef(mover);
+  move.current = mover;
   // The compositor's keys (⌃N, Page Down, Home…) move it as ↑ and ↓ do; `latest` is read when they come.
-  useEffect(() => keys?.subscribe((how) => setHeld((now) => moveSelection(latest.current, now, how))), [keys]);
+  useEffect(() => keys?.subscribe((how) => move.current(how)), [keys]);
+
+  const say = (outcome: Outcome) => setNotice(outcome.ok ? { text: outcome.text, ok: true } : { text: outcome.error, ok: false });
+  const sayDone = (text: string, ok = true) => setNotice({ text, ok });
+  const finish = (stay: boolean) => {
+    if (!stay) onClose();
+  };
+
+  const backToSearch = () => {
+    if (mode.kind === "shortcut") keys?.record?.(false);
+    setMode({ kind: "search" });
+    setFilter("");
+    setHeldVerb(null);
+    setAsking(null);
+  };
 
   const restart = (next: string) => {
     setQuery(next);
     setHeld(null);
     setAllApps(false);
     setFailed(null);
+    setNotice(null);
   };
 
-  const act = (row: Row | undefined) => {
-    if (!row) return;
-    const action = row.action;
-    switch (action.kind) {
+  const openActions = (row: Row | undefined) => {
+    if (!row || verbsFor(row, ctx).length < 2) return;
+    setMode({ kind: "actions", row });
+    setFilter("");
+    setHeldVerb(null);
+    setAsking(null);
+  };
+
+  /** What the ranking learns: this row was chosen for what was typed (or opened, with nothing typed). */
+  const learn = (row: Row | undefined) => {
+    const id = row ? historyId(row) : null;
+    if (!ranking || !id || row?.id.startsWith("try:")) return;
+    if (row?.action.kind === "open-file") ranking.opened(id);
+    else if (text) ranking.picked(text, id);
+    else ranking.opened(id);
+  };
+
+  const ran = (outcome: Outcome, stay: boolean) => {
+    if (outcome.ok) finish(stay);
+    else say(outcome);
+  };
+
+  const perform = (effect: Effect, row: Row | undefined, stay = false): void => {
+    const runOf = (promise: Promise<Outcome> | undefined) => void promise?.then((outcome) => ran(outcome, stay));
+    switch (effect.kind) {
       case "open":
-        if (!onOpen(action.entry)) {
-          setFailed(action.entry);
-          setHeld(`failed:${action.entry.id}`);
+        learn(row);
+        if (!props.onOpen(effect.entry, stay)) {
+          setFailed(effect.entry);
+          setHeld(`failed:${effect.entry.id}`);
         }
         return;
-      case "open-file":
-        return onOpenFile?.(action.file);
-      case "copy":
-        if (!copy) return setCopied({ query: text, ok: false });
-        void copy(action.text).then((ok) => setCopied({ query: text, ok }));
+      case "focus":
+        learn(row);
+        void host?.focus(effect.window).then(() => finish(stay));
         return;
+      case "run":
+        learn(row);
+        if (effect.item.action) runOf(host?.run(effect.item.action));
+        return;
+      case "run-args":
+        runOf(host?.run(effect.action, effect.args));
+        return;
+      case "reveal":
+        learn(row);
+        if (effect.item.action?.place) host?.reveal(effect.item.action.place);
+        finish(stay);
+        return;
+      case "toggle":
+        if (effect.item.action) void host?.run(effect.item.action).then((outcome) => !outcome.ok && say(outcome));
+        return;
+      case "open-file":
+        learn(row);
+        return props.onOpenFile?.(effect.file, stay);
+      case "copy": {
+        const isAnswer = row?.id === "answer";
+        if (!props.copy) return isAnswer ? setCopied({ query: text, ok: false }) : sayDone("Couldn't copy", false);
+        void props.copy(effect.text).then((ok) => (isAnswer ? setCopied({ query: text, ok }) : sayDone(ok ? "Copied" : "Couldn't copy", ok)));
+        if (mode.kind !== "search") backToSearch();
+        return;
+      }
       case "type":
-        return restart(action.query);
+        return restart(effect.query);
       case "search-files":
-        return onSearchFiles?.(action.query);
+        return props.onSearchFiles?.(effect.query);
       case "find-software":
-        return onFindSoftware?.(action.query);
+        return props.onFindSoftware?.(effect.query);
       case "all-apps":
         offset.current = 0;
         setAllApps(true);
         setHeld(null);
         return;
+      case "new-window":
+        learn(row);
+        if (host?.newWindow(effect.entry)) finish(stay);
+        else sayDone(`Couldn't open a new ${effect.entry.name} window`, false);
+        return;
+      case "bring-here":
+        void host?.bringHere(effect.window).then(() => finish(stay));
+        return;
+      case "minimize":
+        void host?.minimize(effect.window);
+        return backToSearch();
+      case "close":
+        void host?.close(effect.window);
+        return backToSearch();
+      case "quit":
+        void host?.quit(effect.windows);
+        sayDone(`Quitting ${effect.name}`);
+        return backToSearch();
+      case "show-in-files":
+        host?.showInFiles(effect.file);
+        return finish(stay);
+      case "trash":
+        void host?.trash(effect.file).then((ok) => sayDone(ok ? `Moved “${effect.file.name}” to the Trash` : "Couldn't move it to the Trash", ok));
+        return backToSearch();
+      case "pin":
+        host?.pin(effect.entry, effect.pin);
+        sayDone(effect.pin ? "Kept in Dock" : "Removed from Dock");
+        return backToSearch();
+      case "alias":
+        setMode({ kind: "alias", address: effect.address, title: effect.title });
+        setFilter(prefs.aliasOf(effect.address) ?? "");
+        return;
+      case "unalias":
+        props.prefs?.setAlias(effect.address, null);
+        sayDone("Alias removed");
+        return backToSearch();
+      case "shortcut":
+        setMode({ kind: "shortcut", address: effect.address, title: effect.title, when: null });
+        setFilter("");
+        keys?.record?.(true);
+        return;
+      case "unshortcut":
+        props.prefs?.setKey(effect.address, null);
+        sayDone("Shortcut removed");
+        return backToSearch();
+      case "forget":
+        ranking?.forget(effect.id);
+        sayDone("Ranking reset");
+        return backToSearch();
+      case "forget-all":
+        ranking?.forgetAll();
+        sayDone("All ranking reset");
+        return backToSearch();
     }
   };
 
-  const drawn = (section: (typeof sections)[number]): Row[] => {
+  /** Do `verb`, asking first in place when it says to. */
+  const doVerb = (verb: Verb | undefined, row: Row | undefined, stay = false) => {
+    if (!verb) return;
+    if (verb.confirm && asking !== verb.id) {
+      setAsking(verb.id);
+      setHeldVerb(`verb:${verb.id}`);
+      if (mode.kind === "search" && row) setMode({ kind: "actions", row });
+      return;
+    }
+    setAsking(null);
+    perform(verb.effect, row, stay);
+  };
+
+  /** The row the keys act on: the action list's row, or the selected one. */
+  const target = (): Row | undefined => (mode.kind === "actions" ? mode.row : mode.kind === "search" ? selectedRow : undefined);
+  const byKey = (key: string) => {
+    const row = target();
+    if (row)
+      doVerb(
+        verbsFor(row, ctx).find((each) => each.key === key),
+        row,
+      );
+  };
+
+  const submit = (stay = false) => {
+    switch (mode.kind) {
+      case "search":
+        return doVerb(selectedRow ? verbsFor(selectedRow, ctx)[0] : undefined, selectedRow, stay);
+      case "actions":
+      case "presented":
+        return doVerb(
+          verbs.find((each) => `verb:${each.id}` === selectedVerbId),
+          mode.kind === "actions" ? mode.row : undefined,
+          stay,
+        );
+      case "alias": {
+        const alias = aliasToKeep(filter);
+        if (!alias) return;
+        props.prefs?.setAlias(mode.address, alias);
+        sayDone(`“${alias}” is ${mode.title} now`);
+        return backToSearch();
+      }
+      case "shortcut":
+        if (!mode.when || !mayKeep(mode.when, shortcutFound)) return;
+        props.prefs?.setKey(mode.address, mode.when);
+        sayDone("Shortcut kept");
+        return backToSearch();
+    }
+  };
+
+  const command = (cmd: LauncherCommand) => {
+    switch (cmd.kind) {
+      case "actions":
+        return mode.kind === "actions" ? backToSearch() : mode.kind === "search" ? openActions(selectedRow) : undefined;
+      case "secondary":
+        return byKey(KEYS.secondary);
+      case "third":
+        return byKey(KEYS.third);
+      case "copy":
+        return byKey(KEYS.copy);
+      case "quit":
+        return byKey(KEYS.quit);
+      case "alias":
+        return byKey(KEYS.alias);
+      case "shortcut":
+        return byKey(KEYS.shortcut);
+      case "keep-open":
+        return submit(true);
+      case "pick": {
+        const row = mode.kind === "search" ? drawnRows()[cmd.digit - 1] : undefined;
+        if (row) doVerb(verbsFor(row, ctx)[0], row);
+        return;
+      }
+      case "digits":
+        return setDigits(cmd.shown);
+      case "record":
+        if (mode.kind === "shortcut") setMode({ ...mode, when: chordWhen(cmd.chord) });
+        return;
+    }
+  };
+  const commands = useRef(command);
+  commands.current = command;
+  useEffect(() => keys?.subscribeCommands?.((cmd) => commands.current(cmd)), [keys]);
+  // Recording ends with the launcher, however it closes.
+  useEffect(() => () => keys?.record?.(false), [keys]);
+
+  const onChangeText = (next: string) => {
+    if (mode.kind !== "search") {
+      setFilter(next);
+      setHeldVerb(null);
+      setAsking(null);
+      return;
+    }
+    // Space on a row with a switch flips it, unless it is the next letter of the row's name.
+    if (next === `${query} ` && selectedRow && spaceFlips(selectedRow, query)) {
+      const flip = verbsFor(selectedRow, ctx).find((each) => each.key === KEYS.flip);
+      if (flip) return perform(flip.effect, selectedRow);
+    }
+    restart(next);
+  };
+
+  const onKey = (key: "Escape" | "ArrowUp" | "ArrowDown") => {
+    if (key === "ArrowDown") return move.current("down");
+    if (key === "ArrowUp") return move.current("up");
+    // Esc steps out: the action list or a chip, then All apps, then the typed words, then the launcher.
+    if (mode.kind !== "search") return backToSearch();
+    if (allApps && !query) return setAllApps(false);
+    if (query) return restart("");
+    onClose();
+  };
+
+  const drawn = (section: Section): Row[] => {
     if (section.id !== "all") return section.rows;
-    const index = Math.max(
+    const at = Math.max(
       0,
       section.rows.findIndex((row) => row.id === selected),
     );
-    offset.current = keepInView(index, offset.current, ALL_APPS_ROWS, section.rows.length);
+    offset.current = keepInView(at, offset.current, ALL_APPS_ROWS, section.rows.length);
     return section.rows.slice(offset.current, offset.current + ALL_APPS_ROWS);
   };
+  /** The rows on screen, top to bottom: what ❖1–9 pick. */
+  function drawnRows(): Row[] {
+    return sections.flatMap((section) => drawn(section));
+  }
+  const digitOf = new Map(
+    digits && mode.kind === "search"
+      ? drawnRows()
+          .slice(0, 9)
+          .map((row, at) => [row.id, at + 1] as const)
+      : [],
+  );
 
   let list: ReactNode = null;
-  if (sections.length > 0) {
-    list = (
-      <View testID="launcher:list" style={{ flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator, padding: LAUNCHER.padding }}>
-        {sections.map((section) => (
-          <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
-            {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
-            {drawn(section).map((row) => (
-              <ResultRow key={row.id} row={row} selected={row.id === selected} onPress={() => act(row)} onHover={() => setHeld(row.id)} />
-            ))}
-            {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
-          </View>
+  const listBox = (children: ReactNode) => (
+    <View testID="launcher:list" style={{ flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator, padding: LAUNCHER.padding }}>
+      {children}
+    </View>
+  );
+  if (mode.kind === "search" && sections.length > 0) {
+    list = listBox(
+      sections.map((section) => (
+        <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
+          {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
+          {drawn(section).map((row) => (
+            <ResultRow
+              key={row.id}
+              row={row}
+              selected={row.id === selected}
+              onPress={() => doVerb(verbsFor(row, ctx)[0], row)}
+              onHover={() => setHeld(row.id)}
+              onContextMenu={() => {
+                setHeld(row.id);
+                openActions(row);
+              }}
+              {...(digitOf.has(row.id) ? { digit: digitOf.get(row.id) as number } : {})}
+            />
+          ))}
+          {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
+        </View>
+      )),
+    );
+  } else if (mode.kind === "actions" || mode.kind === "presented") {
+    list = listBox(
+      <View testID="launcher:section:actions" style={{ flexDirection: "column" }}>
+        {verbRows.map((row, at) => (
+          <ResultRow
+            key={row.id}
+            row={row}
+            selected={row.id === selectedVerbId}
+            onPress={() => doVerb(verbs[at], mode.kind === "actions" ? mode.row : undefined)}
+            onHover={() => setHeldVerb(row.id)}
+          />
         ))}
-      </View>
+      </View>,
+    );
+  } else if (editRows.length > 0) {
+    list = listBox(
+      <View testID={`launcher:section:${mode.kind}`} style={{ flexDirection: "column" }}>
+        {editRows.map((row) => (
+          <ResultRow key={row.id} row={row} selected={row.shortcut !== undefined} onPress={() => submit()} onHover={() => {}} />
+        ))}
+      </View>,
     );
   }
+
+  const chip =
+    mode.kind === "actions"
+      ? { title: mode.row.title, icon: mode.row.icon }
+      : mode.kind === "presented"
+        ? { title: mode.presented.action.title }
+        : mode.kind === "alias"
+          ? { title: `Alias for ${mode.title}` }
+          : mode.kind === "shortcut"
+            ? { title: `Shortcut for ${mode.title}` }
+            : undefined;
+  const placeholder =
+    mode.kind === "search"
+      ? placeholderFor(files !== undefined && !filesOff)
+      : mode.kind === "alias"
+        ? "An alias, like ff"
+        : mode.kind === "shortcut"
+          ? "Press the keys"
+          : "Search actions";
+  const hints =
+    mode.kind === "search"
+      ? text
+        ? hintFor(selectedRow, ctx)
+        : []
+      : [{ keys: "Esc", label: "back" }, ...(mode.kind === "presented" ? [{ keys: KEYS.primary, label: "run" }] : [])];
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
@@ -189,36 +621,16 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
           overflow: "hidden",
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: LAUNCHER.field }}>
-          <Svg markup={SEARCH} size={18} color={colors.textMuted} />
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
-            <TextInput
-              testID="launcher:field"
-              value={query}
-              autoFocus
-              onChangeText={restart}
-              onSubmitEditing={() => act(rows.find((row) => row.id === selected))}
-              onKeyPress={(key) => {
-                if (key === "ArrowDown") return move("down");
-                if (key === "ArrowUp") return move("up");
-                // Esc steps out: All apps, then the typed words, then the launcher.
-                if (allApps && !query) return setAllApps(false);
-                if (query) return restart("");
-                onClose();
-              }}
-              // Empty, the field is only as wide as its caret, and the placeholder is drawn after it:
-              // Metal hides a focused field's own placeholder, and this one is always focused.
-              style={{ ...(query ? { flex: 1 } : { width: 8 }), fontSize: LAUNCHER.fieldText, color: colors.text }}
-            />
-            {!query && (
-              <View testID="launcher:placeholder" style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: LAUNCHER.fieldText, color: colors.textMuted }}>
-                  {placeholderFor(files !== undefined && !filesOff)}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+        <Field
+          value={mode.kind === "search" ? query : filter}
+          placeholder={placeholder}
+          {...(chip ? { chip } : {})}
+          hints={hints}
+          notice={notice}
+          onChangeText={onChangeText}
+          onSubmit={() => submit()}
+          onKey={onKey}
+        />
         {list}
       </View>
     </View>

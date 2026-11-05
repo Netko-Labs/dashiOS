@@ -8,13 +8,12 @@
  * more before it unpairs.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { CHEVRON_LEFT } from "../control-center/glyphs.ts";
 import { batteryGlyph } from "../glyphs.ts";
 import { Button } from "../menus/sheets.tsx";
-import { Switch } from "../wifi/switch.tsx";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
 import { type BluetoothState, type BluetoothStore, type Busy, useBluetooth } from "./store.ts";

@@ -10,6 +10,8 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
+import { linksEntry, startActions } from "./actions/index.ts";
+import { RadioSource } from "./actions/sources/radios.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
 import { Grants } from "./agents/consent.ts";
@@ -64,12 +66,17 @@ import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { withSwitcher } from "./keymap.ts";
-import { currentKeymap } from "./keymap-state.ts";
+import { currentKeymap, setPersonRules } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
 import { AppIndex } from "./launcher/app-index.ts";
 import { LaunchFailures } from "./launcher/failures.ts";
+import type { LauncherHost, Presented } from "./launcher/host.ts";
 import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
+import { LauncherPrefs } from "./launcher/prefs.ts";
+import { languagesOf, messageLocales, RankingMemory } from "./launcher/ranking/index.ts";
 import { FILE_ROWS } from "./launcher/rows.ts";
+import { shellLauncherHost } from "./launcher/shell-host.ts";
+import { LauncherWorld } from "./launcher/world.ts";
 import { LAUNCHER, Launcher, type LauncherFiles } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
@@ -525,6 +532,8 @@ const installedApp = (appId: string): Entry | undefined => matchEntry(catalog, a
 nameApp = (window) => appFor(apps, window, installedApp).name;
 void spaces?.controller.relabel();
 const pins = new PinStore({ defaults: apps.map((app) => app.id) });
+// The launcher's ranking history (launcher/ranking/): what is opened from the Dock and the switcher counts too.
+const rankingMemory = new RankingMemory();
 const dock = new DockController({
   catalog,
   pins,
@@ -534,6 +543,7 @@ const dock = new DockController({
   prefs: dockPrefs,
   openDockSettings: () => settingsApp.open("desktop-dock"),
   onPress: () => void overview?.leave(),
+  opened: (appId) => rankingMemory.opened(appId),
 });
 // What keeps the computer awake (inhibit/): the portal's Inhibit, through dashi-portal, and
 // org.freedesktop.ScreenSaver; idle neither blanks nor sleeps while an app holds it, and an app
@@ -806,11 +816,38 @@ const launcherKeys = new LauncherKeys();
 // Copying an answer: wl-copy, a child of the shell, so the compositor serves it data-control.
 const launcherClipboard = systemClipboard();
 const launchFailures = new LaunchFailures(notifications.store);
-/** The launcher's own keys come and go with it (launcher/keys.ts), as the switcher's do. */
+/** The launcher's own keys come and go with it (launcher/keys.ts), as the switcher's do; every ❖ chord is its own while Set shortcut… records. */
 const launcherKeymap = {
-  begin: () => void compositor?.request("keymap", withLauncher(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
+  begin: () =>
+    void compositor
+      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording))
+      .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   end: () => void compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
+launcherKeys.onRecording = () => {
+  if (overlays.has("launcher")) launcherKeymap.begin();
+};
+// The person's aliases and keys (settings.json `launcher`; launcher/person-keys.ts): a key they set
+// reaches the compositor at once, and an edit of the file by hand too.
+const launcherPrefs = new LauncherPrefs(settingsStore);
+let personKeys = "";
+const followPersonKeys = () => {
+  const rules = launcherPrefs.rules();
+  const text = JSON.stringify(rules);
+  if (text === personKeys) return;
+  personKeys = text;
+  setPersonRules(rules);
+  if (overlays.has("launcher")) launcherKeymap.begin();
+  else if (!overlays.has("switcher"))
+    void compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+};
+followPersonKeys();
+const stopFollowingPersonKeys = settingsStore.subscribe(followPersonKeys);
+/** The person's languages, for Dashi's own words in the launcher (launcher/ranking/locale.ts). */
+const launcherLanguages = languagesOf(messageLocales(process.env));
+// Made once the action registry is (below): what the launcher lists besides the apps, and what its verbs reach.
+let launcherWorld: LauncherWorld | null = null;
+let launcherHost: LauncherHost | null = null;
 
 /** Start `entry` from the launcher; false when it could not be started at all. One that quits at once is a notification. */
 function launchFromLauncher(entry: Entry): boolean {
@@ -836,9 +873,10 @@ function showLauncher(): void {
   if (!overlays.has("launcher")) openLauncher();
 }
 
-function openLauncher(): void {
+function openLauncher(presented: Presented | null = null): void {
   const close = () => closeOverlay("launcher");
   const entries = appIndex.entries();
+  void launcherWorld?.refresh();
   void overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
     // Its keys come with the surface and go with it, however it closes.
     launcherKeymap.begin();
@@ -859,15 +897,15 @@ function openLauncher(): void {
       <Launcher
         entries={entries}
         recent={recentEntries(entries, launcherRecents.list())}
-        onOpen={(entry) => {
+        onOpen={(entry, stay) => {
           if (!launchFromLauncher(entry)) return false;
-          close();
+          if (!stay) close();
           return true;
         }}
         files={launcherFiles}
-        onOpenFile={(file) => {
+        onOpenFile={(file, stay) => {
           openFile(file.url);
-          close();
+          if (!stay) close();
         }}
         onSearchFiles={(query) => {
           if (openWith("dev.dashi.files", { DASHI_FILES_SEARCH: query })) close();
@@ -877,6 +915,12 @@ function openLauncher(): void {
         }}
         copy={(text) => launcherClipboard.writeText(text)}
         keys={launcherKeys}
+        {...(launcherWorld ? { world: launcherWorld } : {})}
+        prefs={launcherPrefs}
+        ranking={rankingMemory}
+        {...(launcherHost ? { host: launcherHost } : {})}
+        presented={presented}
+        languages={launcherLanguages}
         onClose={close}
       />,
       () => {
@@ -981,6 +1025,7 @@ const switcherController = compositor
       { show: showSwitcher, hide: () => closeOverlay("switcher"), pictures: switcherPictures },
       (group) => identifier()({ appId: group.appId, title: group.title, count: group.windows.length, away: false }).name,
       switcherKeys,
+      (window) => rankingMemory.opened(installedApp(window.appId)?.id ?? window.appId),
     )
   : null;
 
@@ -1007,23 +1052,107 @@ function selectArea(window: number | null): void {
   });
   captureArea();
 }
+// The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
+// keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
+const actions = startActions({
+  compositor,
+  agents,
+  confirmPerson: (question) => agentUi.confirmPerson(question),
+  entries: () => catalog,
+  launch: launchEntry,
+  appMenus: appMenus.store,
+  appName: (window) => nameApp?.(window) ?? window.appId,
+  arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,
+  runMenu: (action) => menus.run(action, "Dashi"),
+  openSettings: (pane, row) => settingsApp.open(pane, row),
+  keymap: currentKeymap(),
+});
+// Wi-Fi and Bluetooth as settings with state, from Control Center's own store (actions/sources/radios.ts).
+const radioSource = new RadioSource({
+  wifi: () => menus.shared.devices.getSnapshot().wifi,
+  bluetooth: () => menus.shared.devices.getSnapshot().bluetooth,
+  network: () => {
+    const network = system.store.getSnapshot().network;
+    return network?.kind === "wifi" && network.ssid ? network.ssid : null;
+  },
+  setWifi: (on) => menus.shared.devices.setWifi(on),
+  setBluetooth: (on) => menus.shared.devices.setBluetooth(on),
+  subscribe: (listener) => {
+    const offs = [menus.shared.devices.subscribe(listener), system.store.subscribe(listener)];
+    return () => {
+      for (const off of offs) off();
+    };
+  },
+});
+const stopRadioSource = actions.registry.add(radioSource);
+void menus.shared.devices.refresh();
+// What the launcher lists besides the apps (launcher/world.ts): the registry's actions for the person, and the
+// windows, named as the switcher names them; a setting's switch redraws when Control Center flips it.
+launcherWorld = new LauncherWorld({
+  actions: () => actions.registry.list({ who: "person" }),
+  onActions: (listener) => actions.registry.subscribe(listener),
+  windows: () => compositor?.windows() ?? Promise.resolve([]),
+  onWindows: (listener) =>
+    compositor?.on((event) => {
+      if (event.event === "window-opened" || event.event === "window-closed" || event.event === "window-state") listener();
+    }) ?? (() => {}),
+  appOf: (window) => {
+    const entry = installedApp(window.appId);
+    return { entryId: entry?.id ?? null, name: appFor(apps, window, installedApp).name, icon: entry?.icon ?? iconPath("generic") };
+  },
+  desktopOf: (window) => {
+    const desktops = spaces?.controller.getSnapshot();
+    if (!desktops || window.space === undefined || window.space === desktops.current) return undefined;
+    return desktops.labels[window.space];
+  },
+  onState: (listener) => {
+    const offs = [flags.subscribe(listener), menus.shared.devices.subscribe(listener), system.store.subscribe(listener), settingsStore.subscribe(listener)];
+    return () => {
+      for (const off of offs) off();
+    };
+  },
+});
+launcherHost = shellLauncherHost({
+  compositor,
+  actions,
+  openSettings: (pane, row) => settingsApp.open(pane, row),
+  launch: (entry) => launchEntry(entry),
+  currentSpace: () => spaces?.controller.getSnapshot().current ?? null,
+  openFile,
+  pins,
+  keymap: currentKeymap,
+});
+// A dashi:// link that must not run by itself (destructive, an agent's tool) opens in the launcher, filled in, for Return.
+if (compositor) {
+  actions.setPresenter((action, args) => {
+    if (overlays.has("launcher")) closeOverlay("launcher");
+    openLauncher({ action, args });
+    return true;
+  });
+}
 const stopShortcuts = compositor
   ? startShortcuts(compositor, {
       appShortcut,
       toggleLauncher: () => (overlays.has("launcher") ? closeOverlay("launcher") : openLauncher()),
+      // While the launcher is open, holding ❖ shows the digits ❖1–9 pick instead (launcher/keys.ts).
       showSheet: () => {
+        if (overlays.has("launcher") && launcherKeys.digits(true)) return;
         if (!overlays.has("sheet")) openSheet();
       },
-      hideSheet: () => closeOverlay("sheet"),
+      hideSheet: () => {
+        launcherKeys.digits(false);
+        closeOverlay("sheet");
+      },
       forceQuit: () => forceQuit.open(),
       settings: () => settingsApp.open(),
       toggleAutohide: () => dockPrefs.toggleAutohide(),
       overview: { toggle: () => overview?.toggle() },
       ...(spaces ? { spaces: spaces.controller } : {}),
       switcher: switcherController ?? new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
-      tile,
-      arrow: (window, arrow) => arranger?.arrow(window, arrow) ?? Promise.resolve(),
-      fullscreen: (window) => arranger?.toggleFullscreen(window) ?? Promise.resolve(),
+      runAddress: async (address, window) => {
+        const outcome = await actions.runAddress(address, window);
+        if (!outcome.ok) console.error(`dashi-shell: the keymap binds ${address}: ${outcome.error}`);
+      },
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),
       powerKey: () => power.powerKey(),
@@ -1043,7 +1172,10 @@ const setupTimer = setTimeout(() => {
 // Desktop entries for the first-party apps, so other launchers and `gio open` can start them (desktop-entries.ts).
 // Only in the person's own session: a development run would write the developer's applications folder.
 if (shouldWriteEntries(process.env, developmentRun)) {
-  void installDesktopEntries(installedSpecs(), { bun: process.execPath, root: shellDir, host: METAL_HOST });
+  const entryContext = { bun: process.execPath, root: shellDir, host: METAL_HOST };
+  // And the dashi:// handler beside them (actions/entry.ts).
+  const links = linksEntry(entryContext);
+  void installDesktopEntries(installedSpecs(), entryContext, links ? { extra: [links] } : {});
 }
 let autostart: ReturnType<typeof startAutostart> | null = null;
 const autostartTimer = setTimeout(() => {
@@ -1119,6 +1251,16 @@ const quit = () => {
     ["power", () => power.close()],
     ["agents", () => agents?.close()],
     ["agent sheets", () => agentUi.close()],
+    ["launcher world", () => launcherWorld?.close()],
+    [
+      "radios",
+      () => {
+        stopRadioSource();
+        radioSource.close();
+      },
+    ],
+    ["person keys", stopFollowingPersonKeys],
+    ["actions", () => actions.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
     ["screen recording", () => captureTools?.close()],
@@ -1139,6 +1281,7 @@ const quit = () => {
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],
+    ["ranking history", () => rankingMemory.close()],
     ["force quit", () => forceQuit.close()],
     ["settings app", () => settingsApp.close()],
     ["settings services", () => paneServices?.close()],

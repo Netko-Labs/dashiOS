@@ -9,10 +9,12 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { fractionAt, fractionOf, type Range, valueAt } from "./controls.ts";
+import { PageContext } from "./spot.tsx";
 
 export { Button, Caption, type Choice, Choices, Group, Note, Row, type Surface, Tile, useSurface } from "@dashi/ui";
+export { Spot } from "./spot.tsx";
 
 /**
  * A pane: its title, then its content scrolling under it when it is taller than the window. With
@@ -22,11 +24,23 @@ export { Button, Caption, type Choice, Choices, Group, Note, Row, type Surface, 
 export function Page({ title, children }: { title: string; children: ReactNode }) {
   const colors = useColors();
   const unified = useWindowChrome().titleBar === "unified";
+  const testID = `pane:${title}`;
+  // Where the page is, so a row asked for by its address can be scrolled to (spot.tsx).
+  const bounds = useRef<Bounds | null>(null);
+  const page = useMemo(() => ({ testID, bounds }), [testID]);
   return (
-    <ScrollView testID={`pane:${title}`} style={{ flex: 1, flexDirection: "column", gap: 16, padding: 24, paddingTop: unified ? 8 : 20 }}>
-      {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
-      {children}
-    </ScrollView>
+    <PageContext.Provider value={page}>
+      <ScrollView
+        testID={testID}
+        onLayout={(laid) => {
+          bounds.current = laid;
+        }}
+        style={{ flex: 1, flexDirection: "column", gap: 16, padding: 24, paddingTop: unified ? 8 : 20 }}
+      >
+        {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
+        {children}
+      </ScrollView>
+    </PageContext.Provider>
   );
 }
 

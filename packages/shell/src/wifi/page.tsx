@@ -6,14 +6,13 @@
  * quiet "Searching…" at the end of the list, so rows do not jump as it fills.
  */
 
-import { CHECK, useColors } from "@dashi/ui";
+import { CHECK, Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef } from "react";
 import { CHEVRON_LEFT, LOCK } from "../control-center/glyphs.ts";
 import { wifiGlyph } from "../glyphs.ts";
 import { joinMessage } from "./networks.ts";
 import { type JoinState, useWifi, type WifiState, type WifiStore } from "./store.ts";
-import { Switch } from "./switch.tsx";
 import type { WifiNetwork } from "./types.ts";
 
 /** The card shows this many pixels of rows, then scrolls. */

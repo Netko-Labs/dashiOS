@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
+import { runAction } from "../src/actions/run.ts";
+import { arrangeActions } from "../src/actions/sources/windows.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
+import { KEYMAP } from "../src/keymap.ts";
 import { type KeyChord, resolveChord } from "../src/keymap-match.ts";
 import type { Tile } from "../src/layout.ts";
 import { buildMenu, isEnabled, type MenuContext, type MenuEntry } from "../src/menus/model.ts";
@@ -77,34 +81,72 @@ describe("the Window menu", () => {
 describe("the ⌃❖ keys", () => {
   const chord = (key: string): KeyChord => ({ mods: ["super", "ctrl"], key });
 
-  test("arrows, Return, C, and R are bound before the reserved ⌃❖ chords", () => {
-    expect(resolveChord(chord("Left"), "dev.dashi.files")).toEqual({ kind: "bind", name: "tile-left" });
-    expect(resolveChord(chord("Up"), "dev.dashi.files")).toEqual({ kind: "bind", name: "tile-up" });
-    expect(resolveChord(chord("Down"), "foot")).toEqual({ kind: "bind", name: "tile-down" });
-    expect(resolveChord(chord("Return"), "dev.dashi.files")).toEqual({ kind: "bind", name: "tile-fill" });
-    expect(resolveChord(chord("KP_Enter"), "dev.dashi.files")).toEqual({ kind: "bind", name: "tile-fill" });
-    expect(resolveChord(chord("c"), "foot")).toEqual({ kind: "bind", name: "tile-center" });
-    expect(resolveChord(chord("r"), "dev.dashi.files")).toEqual({ kind: "bind", name: "tile-restore" });
-    expect(resolveChord(chord("f"), "dev.dashi.files")).toEqual({ kind: "bind", name: "fullscreen" });
+  test("arrows, Return, C, R, and F are bound to the registry's addresses, before the reserved ⌃❖ chords", () => {
+    const bound = (name: string) => ({ kind: "bind" as const, name });
+    expect(resolveChord(chord("Left"), "dev.dashi.files")).toEqual(bound("dashi://window/arrange/left"));
+    expect(resolveChord(chord("Up"), "dev.dashi.files")).toEqual(bound("dashi://window/arrange/up"));
+    expect(resolveChord(chord("Down"), "foot")).toEqual(bound("dashi://window/arrange/down"));
+    expect(resolveChord(chord("Return"), "dev.dashi.files")).toEqual(bound("dashi://window/arrange/fill"));
+    expect(resolveChord(chord("KP_Enter"), "dev.dashi.files")).toEqual(bound("dashi://window/arrange/fill"));
+    expect(resolveChord(chord("c"), "foot")).toEqual(bound("dashi://window/arrange/center"));
+    expect(resolveChord(chord("r"), "dev.dashi.files")).toEqual(bound("dashi://window/arrange/restore"));
+    expect(resolveChord(chord("f"), "dev.dashi.files")).toEqual(bound("dashi://window/full-screen"));
     expect(resolveChord(chord("x"), "dev.dashi.files")).toEqual({ kind: "swallow" });
   });
 
-  test("the bindings reach the arranger: arrows chain, the rest arrange", async () => {
-    const done: unknown[] = [];
+  test("an address binding goes to the registry, with the focused window", async () => {
+    const ran: unknown[] = [];
     const actions = {
-      hardware: { run: async () => false },
-      tile: async (window: number, to: string) => void done.push(["tile", window, to]),
-      arrow: async (window: number, arrow: string) => void done.push(["arrow", window, arrow]),
+      hardware: { run: async () => true },
+      runAddress: async (address: string, window: number | null) => void ran.push([address, window]),
     } as unknown as ShellActions;
     const compositor = { request: async () => ({}), windows: async () => [] } as unknown as Requests;
-    for (const name of ["tile-left", "tile-up", "tile-fill", "tile-center", "tile-restore"]) await runBinding(name, 7, compositor, actions);
-    await runBinding("tile-left", null, compositor, actions);
+    await runBinding("dashi://window/arrange/left", 7, compositor, actions);
+    await runBinding("dashi://window/full-screen", null, compositor, actions);
+    // Before the hardware keys, which would have taken anything.
+    expect(ran).toEqual([
+      ["dashi://window/arrange/left", 7],
+      ["dashi://window/full-screen", null],
+    ]);
+  });
+
+  test("the bound addresses reach the arranger: arrows chain, the rest arrange, nothing without a window", async () => {
+    const done: unknown[] = [];
+    const registry = new ActionRegistry();
+    registry.add(
+      fixedSource(
+        "windows",
+        arrangeActions({
+          windows: async () => [],
+          appName: () => "",
+          focus: async () => {},
+          arrow: async (window, arrow) => void done.push(["arrow", window, arrow]),
+          tile: async (window, to) => void done.push(["tile", window, to]),
+          fullscreen: async (window) => void done.push(["fullscreen", window]),
+          keymap: KEYMAP,
+        }),
+      ),
+    );
+    const deps = { context: (window: number | null) => ({ window }), log: () => {}, reveal: () => {}, confirmLink: async () => false };
+    const press = async (when: string, window: number | null) => {
+      const rule = KEYMAP.rules.find((each) => each.when === when);
+      const action = rule?.bind ? registry.get(rule.bind) : undefined;
+      if (!action) throw new Error(`nothing bound to ${when}`);
+      return runAction(action, {}, "person", deps, window);
+    };
+    for (const when of ["super+ctrl+Left", "super+ctrl+Up", "super+ctrl+Return|KP_Enter", "super+ctrl+c", "super+ctrl+r", "super+ctrl+f"]) await press(when, 7);
+    expect(await press("super+ctrl+Left", null)).toEqual({ ok: false, error: "No window is focused." });
     expect(done).toEqual([
       ["arrow", 7, "left"],
       ["arrow", 7, "up"],
       ["tile", 7, "fill"],
       ["tile", 7, "center"],
       ["tile", 7, "restore"],
+      ["fullscreen", 7],
     ]);
+    // Each shows its key, from the keymap.
+    expect(registry.get("dashi://window/arrange/left")?.shortcut).toBe("⌃❖←");
+    expect(registry.get("dashi://window/arrange/fill")?.shortcut).toBe("⌃❖↩");
+    expect(registry.get("dashi://window/full-screen")?.shortcut).toBe("⌃❖F");
   });
 });
