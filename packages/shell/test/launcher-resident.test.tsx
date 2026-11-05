@@ -30,6 +30,7 @@ function fakeHosts() {
     });
     const host = {
       send: (tree: string) => lines.push(tree.startsWith('{"hide"') ? "hide" : `tree ${tree}`),
+      hide: () => lines.push("hide"),
       onEvent: (listener: (event: NativeEvent) => void) => listeners.push(listener),
       onClose: (listener: () => void) => closers.push(listener),
       simulate() {},

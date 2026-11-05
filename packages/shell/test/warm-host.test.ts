@@ -21,6 +21,7 @@ function fakeHosts() {
     spawned.push(record);
     return {
       send() {},
+      hide() {},
       onEvent() {},
       onClose: (listener) => closers.push(listener),
       simulate() {},
