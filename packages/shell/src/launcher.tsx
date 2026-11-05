@@ -18,17 +18,23 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
+import { BUDGET } from "./launcher/budget.ts";
 import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, filesStateFor, placeholderFor, type Row, selectable } from "./launcher/rows.ts";
 import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
+import { logTiming, timingNow } from "./launcher/timing.ts";
 
 export type { FileRow } from "./launcher/rows.ts";
 
 /** The surface, and the measures of the panel on it (docs/design.html LA-1, TY-1, RA-1: the launcher's row). */
 export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
 
-/** A pause in typing before asking for files, so each keystroke doesn't. */
-export const FILE_DELAY_MS = 120;
+/**
+ * Files are asked as soon as the rows are drawn: one question at a time over one
+ * LocalSearch connection, a newer one replacing one still waiting (file-search.ts),
+ * so typing never queues them up, and they have 80 ms to fill their slots (launcher/budget.ts).
+ */
+export const FILE_DELAY_MS = 0;
 /** Rows of All apps drawn at once; the selection scrolls them. */
 const ALL_APPS_ROWS = 8;
 
@@ -84,9 +90,11 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
     if (!files || !waiting) return;
     let current = true;
     const timer = setTimeout(() => {
+      const asked = timingNow();
       void files.find(text).then((hits) => {
         // An answer for what was typed before is dropped.
         if (!current) return;
+        if (asked !== null) logTiming("files", performance.now() - asked, BUDGET.filesMs);
         setFound({ query: text, files: hits });
         if (hits === null) setFilesOff(true);
         else setLastFileCount(Math.min(hits.length, FILE_ROWS));
@@ -101,7 +109,17 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
   // Answers in the Region's numbers and the person's clock (answers/).
   const prefs = useClockPrefs();
   const answers = { locale: prefs.locale, hour24: usesHour24(prefs) };
+  const working = timingNow();
   const sections = buildSections({ query, entries, recent, files: filesState, allApps, copied, failed, icons: ICONS, answers });
+  if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
+  // Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts).
+  const typedAt = useRef<number | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: it runs once each typed query is committed, which is the moment it times
+  useEffect(() => {
+    if (typedAt.current === null) return;
+    logTiming("keystroke → rows sent", performance.now() - typedAt.current, 16);
+    typedAt.current = null;
+  }, [query]);
   const rows = selectable(sections);
   const ids = rows.map((row) => row.id);
   const selected = resolveSelection(ids, held);
@@ -113,6 +131,7 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
   useEffect(() => keys?.subscribe((how) => setHeld((now) => moveSelection(latest.current, now, how))), [keys]);
 
   const restart = (next: string) => {
+    typedAt.current = timingNow();
     setQuery(next);
     setHeld(null);
     setAllApps(false);

@@ -72,6 +72,7 @@ import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
 import { FILE_ROWS } from "./launcher/rows.ts";
 import { LAUNCHER, Launcher, type LauncherFiles } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
+import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "./local-search.ts";
 import { LockController } from "./lock/index.ts";
 import { MenuBar } from "./menubar.tsx";
 import { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
@@ -108,7 +109,6 @@ import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
-import { hasProgram, run } from "./system/exec.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
 import { startSystem } from "./system/start.ts";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
@@ -797,7 +797,9 @@ const stopAppIndex = appIndex.start();
 const launcherRecents = new RecentApps();
 // Read now, at startup, so the first tap doesn't.
 launcherRecents.list();
-const fileSearch = new FileSearch({ run, home: homedir(), installed: hasProgram("tinysparql") });
+// Files over one LocalSearch D-Bus connection, ranked by name then recency (local-search.ts).
+const localSearch = new LocalSearchEndpoint();
+const fileSearch = new FileSearch({ ask: (query, limit) => findFiles(localSearch.ask, query, homedir(), limit), installed: hasLocalSearch() });
 const launcherFiles: LauncherFiles = {
   isAvailable: () => fileSearch.isAvailable(),
   find: async (query) => (await fileSearch.find(query, FILE_ROWS))?.map((hit) => ({ ...hit, icon: fileIcon(iconNamesFor(hit)) })) ?? null,
@@ -1077,6 +1079,7 @@ const quit = () => {
       },
     ],
     ["region", () => region.close()],
+    ["file search", () => localSearch.close()],
     ["autostart", () => autostart?.close()],
     ["lock watch", stopClosingOnLock],
     ["polkit", () => polkit.close()],
