@@ -19,6 +19,11 @@ export const SESSION_VARIABLES: readonly string[] = [
   "XDG_DATA_DIRS",
   // Lets D-Bus-activated apps find the keyring started for this session.
   "GNOME_KEYRING_CONTROL",
+  // GTK apps started on demand ask the portal for their dialogs too (dashi-session).
+  "GTK_USE_PORTAL",
+  "GDK_DEBUG",
+  // dashi-portal, activated by xdg-desktop-portal, draws its dialogs with the session's Metal host.
+  "DASHI_METAL_HOST",
 ];
 
 type Environment = Readonly<Record<string, string | undefined>>;

@@ -1,10 +1,13 @@
 /**
  * Every window on the desktop, from the compositor (the `shell.toplevels`
- * capability), as a store React components subscribe to.
+ * capability), as a store React components subscribe to. The portal's
+ * dialogs (dev.dashi.portal) are left out: each is a sheet of an app's window
+ * (portal-host/), not an app of its own for the Dock or the switcher.
  */
 
 import type { NativeHostTransport, Toplevel, ToplevelAction } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
+import { PORTAL_APP_ID } from "./portal-host/protocol.ts";
 
 export class ToplevelStore {
   private readonly windows = new Map<number, Toplevel>();
@@ -32,6 +35,7 @@ export class ToplevelStore {
     transport.onToplevel((event) => {
       if (this.transport !== transport) return;
       if (event.type === "changed") {
+        if (event.toplevel.appId === PORTAL_APP_ID) return;
         this.onReport?.(event.toplevel);
         this.windows.set(event.toplevel.id, event.toplevel);
       } else {

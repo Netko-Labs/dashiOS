@@ -1,0 +1,7 @@
+# Dashi's portal backend (packages/shell/apps/portal, run by dashi-portal).
+# dashi-portals.conf picks it for everything but screen capture (wlr) and
+# secrets (gnome-keyring, until Dashi's vault).
+[portal]
+DBusName=org.freedesktop.impl.portal.desktop.dashi
+Interfaces=org.freedesktop.impl.portal.FileChooser;org.freedesktop.impl.portal.Settings;org.freedesktop.impl.portal.Access;org.freedesktop.impl.portal.AppChooser;org.freedesktop.impl.portal.Inhibit;org.freedesktop.impl.portal.Print;org.freedesktop.impl.portal.Notification;org.freedesktop.impl.portal.Account;org.freedesktop.impl.portal.Email;org.freedesktop.impl.portal.DynamicLauncher;
+UseIn=Dashi

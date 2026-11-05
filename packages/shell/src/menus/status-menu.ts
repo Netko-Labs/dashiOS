@@ -6,6 +6,7 @@
  */
 
 import type { ExtraMenuRow } from "../extras/index.ts";
+import type { AllowSleep } from "../inhibit/menu.ts";
 import type { LaptopAction } from "../laptop/menu.ts";
 import { type Battery, formatMinutes } from "../system/battery.ts";
 import type { MenuEntry } from "./model.ts";
@@ -17,7 +18,9 @@ export type StatusMenuAction =
   /** An app using significant energy was chosen: Activity Monitor shows what it is doing. */
   | { kind: "activity-monitor" }
   /** A laptop row: the power mode, the charge, the graphics card's holders (laptop/menu.ts). */
-  | { kind: "laptop"; action: LaptopAction };
+  | { kind: "laptop"; action: LaptopAction }
+  /** "Allow Sleep" under what keeps the computer awake (inhibit/menu.ts). */
+  | AllowSleep;
 
 /** What the battery's menu shows beyond the battery: the battery monitor's draw and heavy apps (battery/). */
 export interface BatteryUse {

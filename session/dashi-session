@@ -114,6 +114,16 @@ export ELECTRON_OZONE_PLATFORM_HINT=auto
 # color-scheme, which the shell sets through gsettings), so Qt and KDE apps go
 # dark without Plasma. A theme the person chose themselves (qt6ct, kde) wins.
 export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-xdgdesktopportal}"
+# GTK apps draw their own file chooser and print dialog unless told to ask
+# the portal (Dashi's, dashi.portal): GTK 3 and Firefox read GTK_USE_PORTAL,
+# GTK 4 GDK_DEBUG=portals. A GDK_DEBUG the person set keeps its own flags.
+export GTK_USE_PORTAL=1
+case ",${GDK_DEBUG:-}," in
+  *,portals,*) ;;
+  ,,) GDK_DEBUG=portals ;;
+  *) GDK_DEBUG="$GDK_DEBUG,portals" ;;
+esac
+export GDK_DEBUG
 
 # A tty login has no locale; apps and the Metal host's text system want UTF-8.
 export LANG="${LANG:-C.UTF-8}"
@@ -155,7 +165,7 @@ if [ "$print_only" = 1 ]; then
   echo "metal host:  ${DASHI_METAL_HOST:-(the shell's default)}"
   echo "nested:      $nested"
   echo "log:         ${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/dashi/dashi.log (linked from $XDG_RUNTIME_DIR/dashi.log)"
-  env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
+  env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|GTK_USE_PORTAL|GDK_DEBUG|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
   exit 0
 fi
 

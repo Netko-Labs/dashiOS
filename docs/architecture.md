@@ -19,6 +19,9 @@ greetd
             ├─ mirin-metal-host ×N  one per shell surface (layer-shell), draws React with GPUI
             └─ apps/<name>/main.tsx Bun, one process per first-party app
                └─ mirin-metal-host  its window
+systemd --user (D-Bus activated)
+└─ dashi-portal (apps/portal)       Bun: xdg-desktop-portal's backend for Dashi
+   └─ mirin-metal-host ×N           one per open dialog, from a warm host
 ```
 
 - **The greeter** (`packages/greeter`, `session/dashi-greeter`) is Dashi's
@@ -70,6 +73,58 @@ greetd
   window as a live picture (`src/share-picker/`), and it prints the choice
   as the portal reads it (`Monitor: <output>`, `Window: <toplevel id>`), or
   nothing when the person cancels.
+- **dashi-portal** (`session/dashi-portal`, `apps/portal`) is Dashi's
+  xdg-desktop-portal backend; see "The portal" below.
+
+## The portal
+
+Apps ask the desktop for files, permissions, Open With, printing, the look,
+and keeping the screen awake through xdg-desktop-portal, which hands each
+request to a backend. `session/dashi-portals.conf` makes Dashi's the default;
+screen capture stays with xdg-desktop-portal-wlr and Secret with
+gnome-keyring. xdg-desktop-portal-gtk is not installed.
+
+- **The process.** `dashi-portal` owns `org.freedesktop.impl.portal.desktop.dashi`
+  and serves `/org/freedesktop/portal/desktop`. xdg-desktop-portal starts it
+  by D-Bus activation (`org.freedesktop.impl.portal.desktop.dashi.service`,
+  which starts the `dashi-portal` user unit); `dashi.portal` lists FileChooser,
+  Settings, Access, AppChooser, Inhibit, Print, Notification, Account, Email
+  and DynamicLauncher. Its bus connection is an `FdService` (`src/dbus/fd-service.ts`:
+  a worker thread blocks in `poll` and reads the socket with SCM_RIGHTS),
+  because Print's document arrives as a file descriptor, which Bun's own
+  sockets drop. A checkout's session links the files into the user's data
+  folder instead (`src/session/portal-files.ts`).
+- **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
+  first-party apps are, one host per dialog, taken from a warm host
+  (`src/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
+  Each is a sheet on the window that asked: xdg-desktop-portal passes that
+  window as `wayland:HANDLE` (an xdg-foreign export) or `x11:XID`. mirin's
+  host can't import a foreign handle itself, so the shell does the
+  parenting: before opening the window, dashi-portal tells the shell
+  (`dev.dashi.Shell.Portal1.ExpectSheet`, `src/portal-host/protocol.ts`) the
+  one-off title it will have; when that window asks to be placed, the shell
+  resolves the handle (IPC `window-for-handle`) and attaches the dialog to
+  it (IPC `attach`). The compositor keeps a sheet under its parent's title
+  bar, above it, on its Space, without a title bar of its own, and gives it
+  the keyboard and the presses the parent would get. With no parent the
+  dialog is an ordinary window; a question from an app with no window
+  waits as a menu bar item (an applet) that opens it.
+- **What is the shell's stays the shell's.** Holds (Inhibit) go to the
+  shell's `InhibitStore` (`src/inhibit/`), which idle reads: while an app
+  holds, the screens don't blank and the computer doesn't sleep; the
+  battery menu lists the holds with Allow Sleep. The shell also serves
+  `org.freedesktop.ScreenSaver` for apps that skip the portal. A caller
+  that leaves the bus (an app that dies, or dashi-portal) lets go of its
+  holds; xdg-desktop-portal closes a dead app's Request, and its hold goes
+  with it. "Add to Dock" (DynamicLauncher) pins the launcher
+  xdg-desktop-portal writes (`src/portal-host/launchers.ts`).
+- **Interfaces.** FileChooser opens on recent files that pass the app's
+  filters, with search (LocalSearch, as the launcher's) focused, then
+  folders; Settings serves `org.freedesktop.appearance` and the GTK keys from
+  Dashi's own settings (Control Center's Dark Mode, settings.json), with
+  SettingChanged; Print sends jobs to CUPS over IPP (`apps/portal/print/`);
+  Notification goes into Dashi's notification server; Email opens the
+  default mail app with the draft.
 
 ## Channels
 
@@ -91,13 +146,18 @@ greetd
 | shell ↔ cardwire | D-Bus system bus: `org.opengamingcollective.cardwire` (packaged as dashi-graphics); the shell decides the graphics policy | `docs/hardware.md` (cardwire), `src/graphics/` |
 | shell ↔ tuned-ppd | D-Bus system bus, the power-profiles API, on the shell's one kept system-bus connection (`src/system/system-bus.ts`) | `src/system/profiles.ts` |
 | kernel log → shell | `journalctl -k -b 0 -f -o json`, followed for a graphics card falling off the bus (Xid 79, pciehp Link Down on its port) | `src/graphics/lost-card.ts` |
+| xdg-desktop-portal → dashi-portal | D-Bus session bus: `org.freedesktop.impl.portal.*` at `/org/freedesktop/portal/desktop` | `apps/portal/` |
+| dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/portal-host/protocol.ts` |
+| app → shell, keep awake | D-Bus session bus: `org.freedesktop.ScreenSaver` (Inhibit, UnInhibit) | `src/inhibit/screensaver.ts` |
 
 ## Installed Layout
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-portal`, `/usr/bin/dashi-greeter` | `session/` |
 | `/etc/xdg/xdg-desktop-portal-wlr/Dashi` | `session/xdg-desktop-portal-wlr.conf` |
+| `/usr/share/xdg-desktop-portal/portals/dashi.portal`, `/usr/share/xdg-desktop-portal/dashi-portals.conf` | `session/` |
+| `/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service`, `/usr/lib/systemd/user/dashi-portal.service` | `session/` |
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |

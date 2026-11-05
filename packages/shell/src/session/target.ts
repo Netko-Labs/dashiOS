@@ -8,12 +8,14 @@
  * Installed, the unit is in /usr/lib/systemd/user and the portal config in
  * /usr/share/xdg-desktop-portal. A checkout has neither, so the files in its
  * session/ are linked into the user's config: `systemctl --user link` for the
- * unit, a symlink in ~/.config/xdg-desktop-portal for the config.
+ * unit, a symlink in ~/.config/xdg-desktop-portal for the config; the portal
+ * backend's files are portal-files.ts's.
  */
 
 import { existsSync, lstatSync, mkdirSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { forgetCheckoutPortal, linkCheckoutPortal } from "./portal-files.ts";
 
 export const TARGET = "dashi-session.target";
 const PORTALS = "dashi-portals.conf";
@@ -51,6 +53,9 @@ export async function startSessionTarget(deps: TargetDeps): Promise<void> {
   if (!deps.which("systemctl")) return;
   const files = deps.env.DASHI_SESSION_FILES;
   if (files) await linkCheckoutFiles(files, deps);
+  // Dashi's portal backend: a checkout's, or (installed) the system's (session/portal-files.ts).
+  if (files) linkCheckoutPortal(files, deps.env, deps.log);
+  else forgetCheckoutPortal(deps.env);
   // The portal may have failed to start earlier in this login (its target
   // was down); clear that so it's activated again on demand.
   await deps.run(["systemctl", "--user", "reset-failed", "xdg-desktop-portal.service"]);

@@ -74,16 +74,19 @@ crates/dashi-comp/src/
                     pointer (constraints, relative, gestures, cursor-shape),
                     inhibit, text (text-input, input-method, virtual keyboard),
                     security (security-context), sync (explicit and implicit),
-                    toplevel_meta (icons, bell), activation (+ dialog, foreign)
+                    toplevel_meta (icons, bell), activation (+ dialog)
   protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
                     toplevel, wlr-screencopy (copy_with_damage paced to the
                     refresh, at most 60 fps), ext-image-copy-capture
-                    (image_capture.rs), ext-foreign-toplevel-list
+                    (image_capture.rs), ext-foreign-toplevel-list,
+                    xdg-foreign (ported from smithay, with handles the IPC can look up:
+                    `window-for-handle`)
   render/           scene, title bars, cursor, capture, presentation (present.rs),
                     rounded corners (rounded.rs), live pictures the shell places
                     (thumbnails/: `space-previews`, `window-thumbnails`)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
-                    grabs (a move grab survives a Space change), edge holds (edge_hold.rs)
+                    grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
+                    sheets (a window attached under another's title bar: IPC `attach`)
   input/            keyboard and pointer routing, decorations, constraints, gestures
   keys/             keymap, bindings, ❖ phases
   xwayland/         Xwayland and the X11 window manager

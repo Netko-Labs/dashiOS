@@ -45,6 +45,8 @@ export interface CompositorWindow {
   icon?: WindowIcon;
   /** Its ext-foreign-toplevel-list identifier: what a screen-share picker answers with (share-picker/). Absent until listed. */
   toplevel?: string;
+  /** The window it is a sheet of (IPC `attach`: a portal dialog, portal-host/); present only for a sheet. */
+  sheetOf?: number;
 }
 
 /** A window's own icon: an icon theme name, a picture on disk, or both. */
@@ -184,7 +186,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel } = value;
+  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -204,6 +206,7 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     ...(isNumber(space) && Number.isInteger(space) && space >= 0 ? { space } : {}),
     ...withIcon(parseWindowIcon(icon)),
     ...(typeof toplevel === "string" && toplevel.length > 0 && toplevel.length <= 256 ? { toplevel } : {}),
+    ...(isNumber(sheetOf) && Number.isInteger(sheetOf) && sheetOf > 0 ? { sheetOf } : {}),
   };
 }
 

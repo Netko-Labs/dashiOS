@@ -23,6 +23,7 @@ them until the compositor side pins them down here.
   get an `error`, never a dropped connection.
 - Event, unsolicited, only after `subscribe`: `{"event": "<name>", ...}`.
 - Window ids are positive integers, never reused within a session.
+- A `Window` also says `sheetOf: int|null`, the window it is a sheet of (`attach`).
 - Coordinates are global logical pixels unless a field says otherwise.
 
 ## Requests
@@ -44,6 +45,8 @@ them until the compositor side pins them down here.
 | `fullscreen` | `{window, on: bool}` | `{}` |
 | `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window |
 | `animation-target` | `{targets: [{window, rect: Frame\|null}]}` | `{}`; where minimize shrinks to |
+| `window-for-handle` | `{handle}`: a portal's parent window, `wayland:<xdg-foreign handle>` or `x11:<X window id, hex>` | `{window: int\|null}`; null for a handle that names no window (unknown, revoked, or a window gone) |
+| `attach` | `{window, parent: int\|null}` | `{}`; `window` becomes a sheet of `parent` (null: an ordinary window again): no title bar, centred under the parent's title bar and kept there, above it, on its Space, off screen with it; the keyboard goes to the sheet when the parent would get it, and a press inside the parent only brings the sheet forward. A window not yet placed is placed there (an answer to `window-placing`). A sheet whose parent closes becomes an ordinary window. Refused for a parent that is itself a sheet.; *see* `src/portal-host/sheets.ts` |
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
 "normal"|"minimized"|"hidden", zoomed, frame: Frame|null, titleBar: int,

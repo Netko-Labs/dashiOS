@@ -96,12 +96,12 @@ export class ObjectRegistry {
     return [...names].sort();
   }
 
-  /** Answer a method call; never rejects. */
-  async handle(call: Message): Promise<Reply> {
+  /** Answer a method call; never rejects. `fds` are the descriptors that came with it. */
+  async handle(call: Message, fds: readonly number[] = []): Promise<Reply> {
     if (this.inFlight >= this.maxInFlight) return fail(ERRORS.limitsExceeded, "too many calls in progress");
     this.inFlight++;
     try {
-      return await this.dispatch(call);
+      return await this.dispatch(call, fds);
     } catch (error) {
       return errorReply(error);
     } finally {
@@ -109,12 +109,12 @@ export class ObjectRegistry {
     }
   }
 
-  private async dispatch(call: Message): Promise<Reply> {
+  private async dispatch(call: Message, fds: readonly number[]): Promise<Reply> {
     const path = call.path as string;
     const member = call.member as string;
     const iface = call.interface;
     const object = this.objects.get(path);
-    const context: CallContext = { sender: call.sender, path, interface: iface, member };
+    const context: CallContext = { sender: call.sender, path, interface: iface, member, ...(fds.length > 0 ? { fds } : {}) };
 
     if (iface === INTROSPECTABLE && member === "Introspect") {
       const children = this.children(path);

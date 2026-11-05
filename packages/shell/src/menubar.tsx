@@ -25,6 +25,7 @@ import { ExtraItems } from "./extras/view.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { laptopEntries } from "./laptop/menu.ts";
 import type { Laptop } from "./laptop/start.ts";
+import { keepAwake, keepAwakeEntries } from "./inhibit/index.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { batteryEntries, extraEntries, type StatusMenuAction } from "./menus/status-menu.ts";
 import { RecordingButton } from "./recorder/indicator.tsx";
@@ -199,6 +200,8 @@ export function MenuBar({
         )
       : [];
     const entries = batteryEntries(battery, { watts: use?.watts ?? null, apps: use?.significant ?? [] }, sections);
+    // What keeps the computer awake, above Battery Settings (inhibit/menu.ts).
+    entries.splice(-2, 0, ...keepAwakeEntries(keepAwake().awake(), (id) => installed?.(id)?.name ?? id, { kind: "allow-sleep" as const }));
     void menus.toggleStatusMenu("battery", bounds.x + bounds.width, entries, appName, output);
   };
   const openExtraMenu = (extra: MenuBarExtra, right: number) => {

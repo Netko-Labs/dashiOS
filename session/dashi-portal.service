@@ -1,0 +1,15 @@
+# Dashi's portal backend, started by D-Bus activation when
+# xdg-desktop-portal first asks for it (org.freedesktop.impl.portal.desktop.dashi.service),
+# and ended with the graphical session.
+[Unit]
+Description=Dashi portal backend (dialogs, settings, keep-awake)
+PartOf=graphical-session.target
+After=graphical-session.target
+Requisite=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.impl.portal.desktop.dashi
+ExecStart=/usr/bin/dashi-portal
+Restart=on-failure
+Slice=session.slice

@@ -19,6 +19,7 @@ pub(crate) use overview::Overview;
 pub(crate) use spaces::{MAX_SPACES, Spaces};
 pub(crate) mod grabs;
 mod placement;
+mod sheets;
 mod windows;
 
 pub(crate) use actions::valid_frame;

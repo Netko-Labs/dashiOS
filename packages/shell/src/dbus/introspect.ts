@@ -42,6 +42,11 @@ export interface CallContext {
   path: string;
   interface: string | undefined;
   member: string;
+  /**
+   * The descriptors that came with the call (`h` arguments index them), on a
+   * connection that carries them (fd-service.ts); open until the handler settles.
+   */
+  fds?: readonly number[];
 }
 
 const escapeXml = (text: string): string => text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);

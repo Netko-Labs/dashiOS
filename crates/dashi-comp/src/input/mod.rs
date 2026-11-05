@@ -141,6 +141,19 @@ impl Dashi {
                 let on_decoration = free && self.decoration_at(at).is_some();
                 // So is a press on the resize border around a window Dashi frames.
                 let on_border = free && !on_decoration && self.resize_edge_at(at).is_some();
+                // A press in a window with a sheet on it brings the sheet forward and
+                // goes no further; so does its release (wm/sheets.rs).
+                if free && !on_decoration && !on_border && self.sheet_takes_press(at).is_some() {
+                    self.focus_at(at, serial);
+                    self.swallowed_buttons.push(button);
+                    return;
+                }
+                if !pressed
+                    && let Some(held) = self.swallowed_buttons.iter().position(|b| *b == button)
+                {
+                    self.swallowed_buttons.remove(held);
+                    return;
+                }
                 if free && !on_decoration && !on_border {
                     self.focus_at(at, serial);
                 }

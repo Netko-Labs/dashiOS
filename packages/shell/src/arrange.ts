@@ -32,6 +32,8 @@ export class Arranger {
 
   /** Runs after a window entered or left full screen (fullscreen.ts follows the bars). */
   afterFullscreen: (() => void) | null = null;
+  /** A new window someone else places (a portal dialog that is a sheet: portal-host/sheets.ts); true takes it. */
+  claim: ((window: Placing) => boolean) | null = null;
 
   constructor(private readonly compositor: Compositor) {}
 
@@ -42,7 +44,7 @@ export class Arranger {
     const stop = this.compositor.on((event) => {
       const run = (work: Promise<unknown>) => work.catch((error) => console.error("dashi-shell: arranging:", error));
       if (event.event === "outputs-changed") run(this.refresh());
-      else if (event.event === "window-placing") run(this.place(event.window));
+      else if (event.event === "window-placing") run(this.claim?.(event.window) ? Promise.resolve() : this.place(event.window));
       else if (event.event === "zoom") run(this.zoom(event.window));
       else if (event.event === "fullscreen") run(this.fullscreen(event.window, event.on));
     });
@@ -107,7 +109,8 @@ export class Arranger {
     }
   }
 
-  private async place(window: Placing): Promise<void> {
+  /** Where a new window goes, as any other (also for a claimed one that could not be placed its own way). */
+  async place(window: Placing): Promise<void> {
     await this.ready;
     const usable = await this.usableFor({ placing: window.id });
     if (!usable) return;

@@ -114,6 +114,8 @@ pub(crate) struct Dashi {
     pub resize_cursor: Option<smithay::input::pointer::CursorIcon>,
     /// The last press on a title bar, for double-clicks.
     pub last_bar_press: Option<(u64, std::time::Instant)>,
+    /// Buttons whose press went to a window's sheet instead of the window; their release goes nowhere (wm/sheets.rs).
+    pub swallowed_buttons: Vec<u32>,
     pub cursors: Cursors,
     /// Where the shell's layer surfaces take the pointer (IPC `input-region`).
     pub layer_regions: crate::handlers::layer_regions::LayerRegions,
@@ -136,7 +138,8 @@ pub(crate) struct Dashi {
         smithay::wayland::selection::ext_data_control::DataControlState,
         smithay::wayland::selection::wlr_data_control::DataControlState,
     )>,
-    pub xdg_foreign_state: smithay::wayland::xdg_foreign::XdgForeignState,
+    /// xdg-foreign's exported windows, by handle (protocols/xdg_foreign.rs).
+    pub xdg_foreign: crate::protocols::xdg_foreign::ForeignExports,
     /// ext-foreign-toplevel-list, for capture pickers (protocols/toplevel_list.rs).
     pub toplevel_list: Option<crate::protocols::toplevel_list::ToplevelList>,
     /// Explicit sync, when the drawing GPU supports it (handlers/sync.rs).
@@ -215,7 +218,7 @@ impl Dashi {
         crate::handlers::security::create_global(&dh);
         crate::handlers::toplevel_meta::create_globals(&dh);
         crate::render::present::create_global(&dh);
-        let xdg_foreign_state = smithay::wayland::xdg_foreign::XdgForeignState::new::<Self>(&dh);
+        crate::protocols::xdg_foreign::create_globals(&dh);
         let xwayland_shell_state =
             smithay::wayland::xwayland_shell::XWaylandShellState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
@@ -285,6 +288,7 @@ impl Dashi {
             dnd_icon: None,
             resize_cursor: None,
             last_bar_press: None,
+            swallowed_buttons: Vec::new(),
             cursors: Cursors::default(),
             text: Text::default(),
             xdg_decoration_state,
@@ -298,7 +302,7 @@ impl Dashi {
             primary_selection_state,
             data_control,
             shortcuts_inhibit_state,
-            xdg_foreign_state,
+            xdg_foreign: Default::default(),
             toplevel_list,
             syncobj_state: None,
             xwayland_shell_state,
@@ -435,6 +439,7 @@ impl Dashi {
 
     /// After each turn of the loop: settle the space and send what is queued.
     pub(crate) fn after_dispatch(&mut self) {
+        self.follow_sheets();
         self.space.refresh();
         self.popups.cleanup();
         self.foreign_refresh();

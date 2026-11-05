@@ -57,6 +57,7 @@ import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
+import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
@@ -74,6 +75,7 @@ import { OverlaySlots } from "./overlay-slots.ts";
 import { OverviewController } from "./overview/index.ts";
 import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
 import { startPolkit } from "./polkit/index.ts";
+import { PortalSheets, pinNextLauncher, startPortalHost } from "./portal-host/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { powerOffReason } from "./power/nested.ts";
 import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
@@ -488,6 +490,26 @@ const dock = new DockController({
   openDockSettings: () => settingsApp.open("desktop-dock"),
   onPress: () => void overview?.leave(),
 });
+// What keeps the computer awake (inhibit/): the portal's Inhibit, through dashi-portal, and
+// org.freedesktop.ScreenSaver; idle neither blanks nor sleeps while an app holds it, and an app
+// that leaves the bus lets go. dashi-portal's dialogs hang from the windows that asked, as sheets
+// (portal-host/sheets.ts), and its "Add to Dock" pins the web app it installs.
+const holds = keepAwake();
+idle?.holdWith({ screen: () => holds.blocks(InhibitFlag.idle), sleep: () => holds.blocks(InhibitFlag.suspend) });
+const stopFollowingHolds = holds.subscribe(() => idle?.holdsChanged());
+const portalSheets = compositor && arranger ? new PortalSheets(compositor, (window) => arranger.place(window)) : null;
+if (arranger && portalSheets) arranger.claim = (window) => portalSheets.claim(window);
+const portalHost = startPortalHost({
+  store: holds,
+  screenSaver: { locked: () => polkitLock?.isLocked ?? false, lock: () => void lockScreen?.lock(), idleSeconds: () => 0 },
+  expectSheet: (title, parent) => portalSheets?.expect(title, parent) ?? false,
+  addToDock: (appId) =>
+    void pinNextLauncher(appId, (id) => {
+      appCatalog.notice(id);
+      pins.pin(id);
+    }),
+});
+const stopTellingScreenSavers = polkitLock?.onChange((locked) => void portalHost.then((host) => host?.lockChanged(locked))) ?? (() => {});
 // Apps whose windows asked for focus and were refused get a badge (dock/attention.ts).
 const attention = compositor ? new AttentionStore({ compositor, catalog, toplevels }) : null;
 
@@ -559,7 +581,13 @@ const menus = startMenus({
       : 0,
   runDock: (action) => dock.run(action).catch((error) => console.error(`dashi-shell: Dock “${action.kind}” failed:`, error)),
   runStatus: (action) =>
-    action.kind === "extra" ? extras.choose(action.key, action.id) : action.kind === "laptop" ? laptop.run(action.action) : settingsApp.open("battery"),
+    action.kind === "extra"
+      ? extras.choose(action.key, action.id)
+      : action.kind === "laptop"
+        ? laptop.run(action.action)
+        : action.kind === "allow-sleep"
+          ? keepAwake().ignoreAll()
+          : settingsApp.open("battery"),
   laptop,
   statusClosed: (key) => extras.menuClosed(key),
   showShortcuts: (appName) => {
@@ -965,6 +993,14 @@ const quit = () => {
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],
     ["idle", () => idle?.stop()],
+    [
+      "keep awake",
+      () => {
+        stopFollowingHolds();
+        stopTellingScreenSavers();
+        void portalHost.then((host) => host?.close());
+      },
+    ],
     ["arranging", stopArranging],
     [
       "full screen",
