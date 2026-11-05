@@ -227,6 +227,7 @@ pub(crate) fn handle(
             }
             Ok(json!({}))
         }
+        "applet-clients" => applet_clients(state, connection, params),
         "layout" => done(state.set_zones(params)),
         "keyboard" => done(state.set_keyboard(params)),
         "input" => done(state.set_input(params)),
@@ -248,6 +249,25 @@ pub(crate) fn handle(
         }
         method => Err(format!("unknown method: {method}")),
     }
+}
+
+/// `applet-clients {applets: [{pid, layerShell}]}`: only the shell may.
+fn applet_clients(
+    state: &mut Dashi,
+    connection: ConnectionId,
+    params: &Map<String, Value>,
+) -> Result<Value, String> {
+    let from_shell = match (state.ipc.peer_pid(connection), state.session_client) {
+        (Some(peer), Some(shell)) => session::trust::descends_from(peer, shell),
+        _ => false,
+    };
+    if !from_shell {
+        return Err("applet-clients is only for the shell".into());
+    }
+    let list = session::applets::AppletClients::parse(params)?;
+    state.applet_clients.set(list);
+    state.close_ungranted_layers();
+    Ok(json!({}))
 }
 
 /// `capture {path, window?, rect?}`: only the shell may.

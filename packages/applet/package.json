@@ -1,0 +1,35 @@
+{
+  "name": "@dashi/applet",
+  "version": "0.4.0",
+  "type": "module",
+  "description": "Dashi's applet SDK: the client for the menu bar's applets channel, popovers drawn with Metal, applet.json (the manifest), packages and their signatures, and the dashi-applet CLI.",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest.ts",
+    "./permissions": "./src/permissions.ts",
+    "./protocol": "./src/protocol.ts",
+    "./package": "./src/package.ts",
+    "./signing": "./src/signing/index.ts",
+    "./catalog": "./src/catalog.ts",
+    "./popover": "./src/popover.tsx",
+    "./manifest.schema.json": "./manifest.schema.json"
+  },
+  "bin": {
+    "dashi-applet": "./src/cli/main.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "@dashi/ui": "*",
+    "@mirinjs/metal": "*",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}

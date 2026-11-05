@@ -60,6 +60,8 @@ cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.jso
 [ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"
 mkdir -p "$modules/@dashi/ui"
 cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
+mkdir -p "$modules/@dashi/applet"
+cp -r "$repo/packages/applet/src" "$repo/packages/applet/package.json" "$repo/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
 git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
 tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 

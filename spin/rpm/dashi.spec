@@ -45,6 +45,8 @@ Recommends:     dashi-greeter = %{version}-%{release}
 # videos, and songs.
 Requires:       gvfs
 Requires:       bubblewrap
+# Applets from the Applet Store run in bubblewrap too; their D-Bus permissions go through the proxy (docs/applets.md).
+Requires:       xdg-dbus-proxy
 # The screen recorder (⇧❖5, src/recorder/): wf-recorder over dashi-comp's screencopy.
 Requires:       wf-recorder
 Recommends:     gvfs-fuse
@@ -73,6 +75,8 @@ rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
 install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
+# The applet SDK's CLI (@dashi/applet, in node_modules): new, dev, pack, publish.
+install -Dm0755 session/dashi-applet %{buildroot}%{_bindir}/dashi-applet
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
 # The Setup Assistant's optional software, run as root through pkexec.
@@ -88,6 +92,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
+%{_bindir}/dashi-applet
 %{_bindir}/dashi-dialog
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras

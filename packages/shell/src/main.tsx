@@ -20,7 +20,7 @@ import { AutoAppearance } from "./appearance/auto.ts";
 import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
-import { appletsSocketPath, serveApplets } from "./applets/index.ts";
+import { startApplets } from "./applets/start.tsx";
 import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
@@ -492,7 +492,8 @@ const appMenus = startAppMenus({
 const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
 const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
-const stopApplets = serveApplets({ path: appletsSocketPath(), extras });
+// Applets: everyone's socket, and the installed ones in their sandboxes (applets/start.tsx).
+const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName });
 const tray = mayServeTray(process.env) ? startTray(extras) : Promise.resolve(null);
 
 // The menu bar's menus and Control Center (menus/, control-center/).

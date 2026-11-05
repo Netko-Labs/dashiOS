@@ -99,6 +99,7 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | --- | --- | --- |
 | `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts`; `cursor: true` draws the pointer (and a drag's icon) into a screen or `rect` capture | the capture |
 | `screencopy-clients` | `{paths: string[]}`: executables allowed to use screencopy | `{}` |
+| `applet-clients` | `{applets: [{pid, layerShell: bool}]}`, up to 64: the processes that run applets (docs/applets.md), the whole list each time; shell only | `{}`; a Wayland client under one of these processes may open layer surfaces only while its `layerShell` is true (an open popover); when it turns false or the process leaves the list, that client's layer surfaces are closed. Clients under no applet are unaffected |
 | `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default) |
 
 ## In the 0.2.0 compositor

@@ -7,13 +7,17 @@
   "scripts": {
     "fmt-lint": "biome check .",
     "fmt-lint:fix": "biome check --fix .",
-    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/greeter && tsc --noEmit -p packages/shell",
-    "test": "bun test packages/dashi-ui packages/greeter packages/shell",
+    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/applet && tsc --noEmit -p packages/greeter && tsc --noEmit -p packages/shell",
+    "test": "bun test packages/dashi-ui packages/applet packages/greeter packages/shell",
     "shell": "bun run --cwd packages/shell start"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
+    "@dashi/ui": "workspace:*",
+    "@mirinjs/metal": "file:../mirin/packages/mirin-metal",
     "@types/bun": "^1.2.0",
+    "@types/react": "^19.2.0",
+    "react": "^19.2.0",
     "typescript": "^5.9.0"
   },
   "packageManager": "bun@1.4.4"
