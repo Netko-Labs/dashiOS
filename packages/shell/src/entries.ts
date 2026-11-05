@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { type App, displayName, iconPath, launch, resolvePinned, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
+import { type Localized, localizedDesktop } from "./launcher/ranking/locale.ts";
 
 export { calculate } from "./launcher-math.ts";
 
@@ -27,6 +28,8 @@ export interface Entry extends App {
    * `t3code-nightly`), as GNOME and KDE allow.
    */
   hidden?: true;
+  /** Its Name[xx], GenericName[xx] and Keywords[xx] in the person's language, for the ranking (launcher/ranking/). */
+  localized?: Localized;
 }
 
 /**
@@ -75,7 +78,9 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   if (splitList(fields.get("NotShowIn")).includes("Dashi")) return null;
   const argv = parseExec(exec);
   if (!argv.length) return null;
+  const localized = localizedDesktop(text);
   return {
+    ...(localized.name || localized.genericName || localized.keywords.length > 0 ? { localized } : {}),
     id,
     name,
     exec: argv,
