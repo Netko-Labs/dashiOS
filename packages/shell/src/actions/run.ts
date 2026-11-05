@@ -1,8 +1,9 @@
 /**
  * Carrying an action out for the person: from the launcher, a key, or a
- * `dashi://` link. Whatever asked, it runs as the person and is written in
- * the agents' activity log as "you" (agents/consent.ts), beside what agents
- * did. An action that asks agents every time (force quitting, the Trash)
+ * `dashi://` link. Whatever asked, it runs as the person. What the launcher
+ * chose and what a link opened are written in the agents' activity log as
+ * "you" (agents/consent.ts), beside what agents did; a key the person
+ * pressed is not (⌃❖← a hundred times a day is typing, not activity). An action that asks agents every time (force quitting, the Trash)
  * asks the person too, on a sheet of its own: the tool asks, and the
  * person's sheet answers (agents/server.ts `runAsPerson`).
  *
@@ -17,8 +18,8 @@ import { mayUse } from "./registry.ts";
 import type { ActionContext, ActionDef, Args, Outcome } from "./types.ts";
 import { failed } from "./types.ts";
 
-/** Who asked: the person themselves (the launcher, a key), or a link from outside. */
-export type Origin = "person" | "link";
+/** Who asked: the person themselves (the launcher), a key the person bound (never logged: the activity log is not a keylogger), or a link from outside. */
+export type Origin = "person" | "key" | "link";
 
 export interface RunDeps {
   /** What carrying it out reaches (the focused window, the tools as the person). */
@@ -75,16 +76,16 @@ export async function runAction(action: ActionDef, args: Args, origin: Origin, d
   }
   const checked = action.check(args);
   if (!checked.ok) return failed(checked.error);
-  return finish(action, checked.run, deps, window);
+  return finish(action, checked.run, deps, window, origin !== "key");
 }
 
-async function finish(action: ActionDef, run: (ctx: ActionContext) => Promise<Outcome>, deps: RunDeps, window: number | null): Promise<Outcome> {
+async function finish(action: ActionDef, run: (ctx: ActionContext) => Promise<Outcome>, deps: RunDeps, window: number | null, logged = true): Promise<Outcome> {
   let outcome: Outcome;
   try {
     outcome = await run(deps.context(window));
   } catch (error) {
     outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
   }
-  deps.log({ tool: action.address, outcome: outcome.ok ? "ok" : outcome.error === "Cancelled." ? "cancelled" : "error" });
+  if (logged) deps.log({ tool: action.address, outcome: outcome.ok ? "ok" : outcome.error === "Cancelled." ? "cancelled" : "error" });
   return outcome;
 }

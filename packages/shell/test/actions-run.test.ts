@@ -61,6 +61,14 @@ describe("running an action for the person", () => {
     expect(log).toEqual([{ tool: "dashi://test/thing", outcome: "ok" }]);
   });
 
+  test("a key the person pressed runs the same way and is never written in the activity log", async () => {
+    const thing = action();
+    const { given, log } = deps();
+    expect(await runAction(thing, {}, "key", given)).toEqual({ ok: true, text: "Done." });
+    expect(thing.ran).toBe(1);
+    expect(log).toEqual([]);
+  });
+
   test("arguments that don't fit say so and run nothing", async () => {
     const thing = action();
     const { given, log } = deps();

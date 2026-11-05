@@ -64,7 +64,7 @@ export interface Actions {
   readonly registry: ActionRegistry;
   /** Run `action` for the person (the launcher); `window` is the one focused when they asked. */
   run(action: ActionDef, args?: Args, window?: number | null): Promise<Outcome>;
-  /** A key the keymap binds to an address (keymap.ts): run it for the person, on the window focused when it was pressed. */
+  /** A key the keymap binds to an address (keymap.ts): run it for the person, on the window focused when it was pressed; not logged. */
   runAddress(address: string, window: number | null): Promise<Outcome>;
   /** A `dashi://` link from outside: a destructive action is opened, never run (run.ts). */
   openLink(url: string): Promise<Outcome>;
@@ -185,7 +185,7 @@ export function startActions(options: ActionsOptions): Actions {
   return {
     registry,
     run: (action, args = {}, window = null) => runAction(action, args, "person", deps, window),
-    runAddress: (address, window) => runFrom("person", address, window),
+    runAddress: (address, window) => runFrom("key", address, window),
     openLink: (url) => runFrom("link", url, null),
     setPresenter(next) {
       present = next;
