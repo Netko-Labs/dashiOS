@@ -24,7 +24,7 @@ impl Dashi {
         if self.overview.is_some() {
             return self.overview_rect(id).map(small);
         }
-        let slide = self.spaces.slide.filter(|_| self.held != Some(id));
+        let slide = self.spaces.slide.filter(|_| !self.goes_along(id));
         if let Some(mut frame) = frame_of(self, window) {
             if let Some(offset) = slide
                 .and_then(|_| self.slide_offset(self.spaces.current, self.screen_width_at(frame)))

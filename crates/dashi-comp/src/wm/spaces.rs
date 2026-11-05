@@ -59,6 +59,11 @@ fn ease(t: f64) -> f64 {
 
 impl Dashi {
     /// Whether a window is on screen now: shown, and on the current Space.
+    /// Window `id` goes along when the Space changes: held in a move grab, or carried (`space-switch {carry}`).
+    pub(crate) fn goes_along(&self, id: WindowId) -> bool {
+        self.held == Some(id) || self.carried == Some(id)
+    }
+
     pub(crate) fn on_current_space(&self, id: WindowId) -> bool {
         self.windows
             .get(id)
@@ -96,14 +101,29 @@ impl Dashi {
         Ok(self.spaces.answer())
     }
 
-    /// `space-switch {space, progress?}`: hold part of the way (a swipe), or go there.
+    /// `space-switch {space, progress?, carry?}`: hold part of the way (a
+    /// swipe), or go there, carrying window `carry` along if asked.
     pub(crate) fn switch_space(
         &mut self,
         target: usize,
         progress: Option<f64>,
+        carry: Option<WindowId>,
     ) -> Result<Value, String> {
         if target >= self.spaces.count {
             return Err(format!("no Space {target}"));
+        }
+        if let Some(id) = carry {
+            let shown = self
+                .windows
+                .get(id)
+                .is_some_and(|e| e.announced && e.placed && e.shown == Shown::Normal);
+            if !shown || !self.on_current_space(id) {
+                return Err(format!("window {id} is not on the Space that shows"));
+            }
+            if progress.is_some() {
+                return Err("`carry` goes with a whole switch, not `progress`".into());
+            }
+            self.carried = (target != self.spaces.current).then_some(id);
         }
         match progress {
             Some(at) => {
@@ -203,6 +223,7 @@ impl Dashi {
         // Space's own windows were mapped over it.
         let carried = self
             .held
+            .or(self.carried.take())
             .filter(|id| self.on_current_space(*id) && self.focus_window(*id).is_ok());
         if carried.is_none() {
             self.focus_topmost();
@@ -258,18 +279,17 @@ impl Dashi {
     /// A window held in a move grab goes to `target` with the switch, and
     /// stays on screen under the pointer (wm/grabs/move_grab.rs).
     fn carry_held(&mut self, target: usize) {
-        let Some(id) = self.held else {
-            return;
-        };
-        let Some(entry) = self.windows.get_mut(id) else {
-            return;
-        };
-        if entry.space == target || entry.shown != Shown::Normal {
-            return;
+        for id in [self.held, self.carried].into_iter().flatten() {
+            let Some(entry) = self.windows.get_mut(id) else {
+                continue;
+            };
+            if entry.space == target || entry.shown != Shown::Normal {
+                continue;
+            }
+            entry.space = target;
+            self.ipc
+                .emit("window-space", json!({ "window": id, "space": target }));
         }
-        entry.space = target;
-        self.ipc
-            .emit("window-space", json!({ "window": id, "space": target }));
     }
 
     /// Off screen, remembering where (a window on a Space that is not shown).
@@ -298,7 +318,7 @@ impl Dashi {
             return;
         }
         // Carried across: it never left the screen.
-        if self.held == Some(id) && self.space.element_location(&entry.window).is_some() {
+        if self.goes_along(id) && self.space.element_location(&entry.window).is_some() {
             return;
         }
         let (window, at) = (entry.window.clone(), entry.away_at);

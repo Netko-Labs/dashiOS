@@ -100,7 +100,7 @@ windows; an X11 window's `pid` is its own
 | `spaces` | `{}` | *see* `parseSpaces`, `src/agents/desktop/spaces.ts` |
 | `space-add` | `{at?}` | `{count, current, space}`: a new Space at the end, or at index `at` (0 to `count`): the Spaces from there move up one, their windows with them (`window-space` for each), and so do what shows and a slide under way; *see* `src/spaces/controller.ts` (a full-screen window's own Desktop goes in beside the one it came from, `src/spaces/fullscreen.ts`). Refused at 16 Spaces |
 | `space-remove` | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
-| `space-switch` | `{space, progress?}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after |
+| `space-switch` | `{space, progress?, carry?: window}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after. `carry` does the same for a window on the Space that shows (an error otherwise, and with `progress`): it stays where it is on screen while the Spaces slide under it, is put on the new Space as the slide ends, and has the keyboard there (the shell's full-screen Desktops, `src/spaces/fullscreen.ts`) |
 | `space-move` | `{window, space}` | `{}` |
 | `overview` | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}` |
 

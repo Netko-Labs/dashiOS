@@ -130,9 +130,10 @@ export class SpacesController {
   }
 
   /** Show Space `index` (the windows slide unless Reduce motion is on). */
-  async switchTo(index: number): Promise<void> {
+  /** Show Space `index`; `carry`, a window on the Space that shows, stays on screen and goes along (`space-switch {carry}`). */
+  async switchTo(index: number, carry?: number): Promise<void> {
     if (index === this.state.current || index < 0 || index >= this.state.count) return;
-    await this.ask("space-switch", { space: index });
+    await this.ask("space-switch", { space: index, ...(carry === undefined ? {} : { carry }) });
   }
 
   /** A Spaces key (keymap.ts); false when `name` is not one. */

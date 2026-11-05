@@ -200,10 +200,11 @@ where
         let Some(mut frame_at) = state.space.element_location(window) else {
             continue;
         };
-        // A window held in a move grab stays under the pointer while the Spaces slide.
+        // A window held in a move grab stays under the pointer while the Spaces slide (one carried stays put).
         let held = state
-            .held
-            .is_some_and(|id| state.windows.get(id).is_some_and(|e| &e.window == window));
+            .windows
+            .by_window(window)
+            .is_some_and(|e| state.goes_along(e.id));
         if let Some(offset) = state
             .slide_offset(state.spaces.current, output_geo.size.w)
             .filter(|_| !held)

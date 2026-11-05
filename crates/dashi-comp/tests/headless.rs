@@ -1019,6 +1019,62 @@ fn a_desktop_comes_back_in_the_order_its_windows_had() {
 }
 
 #[test]
+fn a_switch_carries_the_window_asked_and_keeps_it_on_screen() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    ipc.request("subscribe", json!({}));
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.game", "Game");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 120, "y": 80 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut client, "space");
+
+    // Only a window on the Space that shows, and not with `progress`.
+    assert!(ipc.request("space-switch", json!({ "space": 1, "carry": 999 }))["error"].is_string());
+    assert!(
+        ipc.request(
+            "space-switch",
+            json!({ "space": 1, "carry": id, "progress": 0.5 })
+        )["error"]
+            .is_string()
+    );
+
+    assert_eq!(
+        ipc.request("space-switch", json!({ "space": 1, "carry": id }))["result"]["count"],
+        2
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 1 })
+    );
+    wait_event(&mut ipc, &mut client, "space");
+    let carried = window_named(&mut ipc, id);
+    assert_eq!(carried["space"], 1);
+    assert_eq!(
+        (carried["frame"]["x"].as_i64(), carried["focused"].as_bool()),
+        (Some(120), Some(true)),
+        "on screen where it was, with the keyboard"
+    );
+
+    // Carried once: the next switch leaves it where it is.
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut client, "space");
+    let left = window_named(&mut ipc, id);
+    assert_eq!(
+        (left["space"].as_u64(), left["frame"].is_null()),
+        (Some(1), true)
+    );
+}
+
+#[test]
 fn a_window_held_against_an_edge_is_told_after_a_while() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();

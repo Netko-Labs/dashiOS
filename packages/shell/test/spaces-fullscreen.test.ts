@@ -177,9 +177,12 @@ function fakeCompositor(windows: Window[], count = 1) {
           return {};
         case "space-switch": {
           const previous = state.current;
-          // The slide ends a little later.
+          const carried = state.windows.find((each) => each.id === params.carry);
+          if (params.carry !== undefined && (carried?.space ?? -1) !== state.current) throw new Error("not on the Space that shows");
+          // The slide ends a little later; a carried window lands on the new Space then.
           setTimeout(() => {
             state.current = params.space as number;
+            if (carried) moved(carried, state.current);
             spaceEvent(previous);
           }, 5);
           return answer();
@@ -237,15 +240,15 @@ async function desk(windows: Window[], count = 2, settings: SpacesSettings = SET
 }
 
 describe("a full-screen window's own Desktop", () => {
-  test("entering: a Desktop right after its own, the window moved there, full screen, then the slide", async () => {
+  test("entering: a Desktop right after its own, full screen where it is, then carried there", async () => {
     const { fake, desktops, saved, toggle } = await desk([win(1, 0), win(2, 1)]);
     await toggle(1, true);
     expect(fake.moves()).toEqual([
       ["space-add", { at: 1 }],
-      ["space-move", { window: 1, space: 1 }],
       ["fullscreen", { window: 1, on: true }],
-      ["space-switch", { space: 1 }],
+      ["space-switch", { space: 1, carry: 1 }],
     ]);
+    expect(fake.state.windows.find((each) => each.id === 1)?.space).toBe(1);
     const snapshot = desktops.getSnapshot();
     expect(snapshot.fullscreen).toEqual([null, 1, null]);
     expect(snapshot.current).toBe(1);
@@ -255,21 +258,36 @@ describe("a full-screen window's own Desktop", () => {
     expect(fake.state.windows.find((each) => each.id === 2)?.space).toBe(2);
   });
 
-  test("leaving: back on its Desktop, out of full screen there, the slide, then its Desktop goes", async () => {
+  test("leaving: out of full screen where it is, carried back as its Desktop slides in, then its Desktop goes", async () => {
     const { fake, desktops, saved, toggle } = await desk([win(1, 0), win(2, 1)]);
     await toggle(1, true);
     fake.requests.length = 0;
     await toggle(1, false);
     expect(fake.moves()).toEqual([
-      ["space-move", { window: 1, space: 0 }],
       ["fullscreen", { window: 1, on: false }],
-      ["space-switch", { space: 0 }],
+      ["space-switch", { space: 0, carry: 1 }],
       ["space-remove", { space: 1 }],
     ]);
     expect(desktops.getSnapshot().fullscreen).toEqual([null, null]);
     expect(desktops.getSnapshot().current).toBe(0);
     expect(fake.state.windows.map((each) => each.space)).toEqual([0, 1]);
     expect(saved).toEqual([]);
+  });
+
+  test("carried only once its app has drawn it at the new size", async () => {
+    const { fake, toggle } = await desk([win(1, 0), win(2, 1)]);
+    const game = fake.state.windows.find((each) => each.id === 1);
+    if (!game) throw new Error("no window 1");
+    game.configuring = { width: 1646, height: 937 };
+    const drew = setTimeout(() => {
+      game.configuring = undefined;
+    }, 60);
+    const began = Date.now();
+    await toggle(1, true);
+    clearTimeout(drew);
+    const switched = fake.requests.findIndex(([method]) => method === "space-switch");
+    expect(switched).toBeGreaterThan(-1);
+    expect(Date.now() - began).toBeGreaterThanOrEqual(60);
   });
 
   test("its dialogs come along, and go back with it", async () => {

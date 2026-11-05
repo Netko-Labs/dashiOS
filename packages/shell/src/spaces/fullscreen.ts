@@ -6,12 +6,15 @@
  *   - Entering full screen (any way: arrange.ts calls `around`), a Desktop is
  *     added right after the one the window was on (after the full-screen
  *     ones from there already, so two go in the order they came), the window
- *     and its dialogs move there, it goes full screen there, and the screen
- *     slides to it: one motion, the picture already full screen.
- *   - Leaving (any way), it goes back to the Desktop on its left (the one it
- *     came from, or the nearest left of it if that one was removed), out of
- *     full screen there, at the frame from before; the screen slides back,
- *     and its Desktop is removed once the slide is over.
+ *     fills the screen where it is, and once its app has drawn it at that
+ *     size it is carried to its Desktop (`space-switch {carry}`): the Spaces
+ *     slide under it, out of sight, so the one motion seen is the window
+ *     filling the screen. Its dialogs go there too.
+ *   - Leaving (any way), it leaves full screen where it is, back at the frame
+ *     from before; once drawn so, it is carried to the Desktop on its left
+ *     (the one it came from, or the nearest left of it if that one was
+ *     removed), which slides in under it, and its Desktop is removed once
+ *     the slide is over.
  *   - Closed, minimized, or hidden while full screen: as leaving, the window
  *     staying closed, minimized, or hidden.
  *   - A new window while a full-screen Desktop shows opens on the Desktop it
@@ -32,6 +35,10 @@ import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./s
 
 /** A slide takes 250 ms (comp/src/wm/spaces.rs); a Desktop left is removed at the latest this long after. */
 const SLIDE_WAIT_MS = 1000;
+/** How long an app may take to draw a window at its new size before it is carried anyway. */
+const DRAW_WAIT_MS = 500;
+/** How often to look whether it has. */
+const DRAW_POLL_MS = 16;
 
 export type FullscreenCompositor = Pick<Compositor, "request" | "on" | "windows">;
 export type FullscreenSpaces = Pick<SpacesController, "fullscreenSlots" | "getSnapshot" | "insertFullscreen" | "removeFullscreen" | "switchTo">;
@@ -43,6 +50,8 @@ export interface FullscreenDesktopsDeps {
   changed?(): void;
   /** How long to wait for a slide before the Desktop it left is removed anyway. */
   slideWaitMs?: number;
+  /** How long to wait for an app to draw its window at a new size. */
+  drawWaitMs?: number;
 }
 
 const report = (what: string) => (error: unknown) => console.error(`dashi-shell: ${what}:`, error instanceof Error ? error.message : error);
@@ -97,19 +106,23 @@ export class FullscreenDesktops {
     if (!this.enabled || slotOf(slots, window.id) !== null || slots.length >= MAX_SPACES || origin === null) return toggle();
     const at = insertionPoint(slots, origin);
     if (!(await desktops.insertFullscreen(window.id, at))) return toggle();
+    const shows = from === desktops.getSnapshot().current;
     // Its dialogs come along (its sheets hang on it wherever it goes).
     const dialogs = (await this.windows()).filter((each) => each.parent === window.id && each.sheetOf === undefined && (each.space ?? from) === from);
-    await this.move(window.id, at);
-    for (const dialog of dialogs) await this.move(dialog.id, at);
+    // Not on screen (an agent's): it waits on its Desktop, full screen there.
+    if (!shows) await this.move(window.id, at);
     try {
-      // Full screen while it waits there: the screen slides to it as it will stay.
       await toggle();
     } catch (error) {
-      await this.move(window.id, origin);
+      if (!shows) await this.move(window.id, origin);
       await desktops.removeFullscreen(window.id);
       throw error;
     }
-    await desktops.switchTo(at);
+    for (const dialog of dialogs) await this.move(dialog.id, at);
+    if (!shows) return desktops.switchTo(at);
+    // Filling the screen where it is; once drawn so, the Spaces slide under it, out of sight.
+    await this.drawn(window.id);
+    await this.slideTo(at, window.id);
   }
 
   private async leave(id: number, toggle: () => Promise<void>): Promise<void> {
@@ -117,10 +130,17 @@ export class FullscreenDesktops {
     const index = slotOf(slots, id);
     const origin = index === null ? null : nearestDesktop(slots, index);
     if (index === null || origin === null) return toggle();
-    // Back on its Desktop first, with what was left on its own: out of full screen there, so the slide shows it as it will stay.
-    await this.gather(index, origin);
+    if (this.deps.desktops.getSnapshot().current !== index) {
+      // Its Desktop is not the one that shows: back on its own, out of full screen there.
+      await this.gather(index, origin);
+      await toggle();
+      return this.deps.desktops.removeFullscreen(id);
+    }
+    // Out of full screen where it is; once drawn at its own frame, its Desktop slides in under it.
     await toggle();
-    await this.slideTo(origin);
+    await this.drawn(id);
+    await this.gather(index, origin, id);
+    await this.slideTo(origin, id);
     await this.deps.desktops.removeFullscreen(id);
   }
 
@@ -151,15 +171,25 @@ export class FullscreenDesktops {
     if (this.deps.desktops.getSnapshot().current === space) await this.deps.desktops.switchTo(origin);
   }
 
-  /** Everything on Space `index` to Space `into`. */
-  private async gather(index: number, into: number): Promise<void> {
+  /** Everything on Space `index` to Space `into` (but `except`, carried there). */
+  private async gather(index: number, into: number, except?: number): Promise<void> {
     for (const window of await this.windows()) {
-      if ((window.space ?? -1) === index && window.sheetOf === undefined) await this.move(window.id, into);
+      if ((window.space ?? -1) === index && window.sheetOf === undefined && window.id !== except) await this.move(window.id, into);
     }
   }
 
-  /** Switch to `target` and wait for the slide to end (or a while). */
-  private async slideTo(target: number): Promise<void> {
+  /** Until window `id`'s app has drawn it at the size it was last asked to take (its `configuring` gone), or a while. */
+  private async drawn(id: number): Promise<void> {
+    const until = Date.now() + (this.deps.drawWaitMs ?? DRAW_WAIT_MS);
+    for (;;) {
+      const window = (await this.windows()).find((each) => each.id === id);
+      if (!window?.configuring || Date.now() >= until) return;
+      await new Promise((resolve) => setTimeout(resolve, DRAW_POLL_MS));
+    }
+  }
+
+  /** Switch to `target` (carrying window `carry` along) and wait for the slide to end (or a while). */
+  private async slideTo(target: number, carry?: number): Promise<void> {
     const { compositor, desktops } = this.deps;
     if (desktops.getSnapshot().current === target) return;
     let stop = (): void => {};
@@ -170,7 +200,7 @@ export class FullscreenDesktops {
         if (event.event === "space" && event.current === target) resolve();
       });
     });
-    await desktops.switchTo(target);
+    await desktops.switchTo(target, carry);
     await arrived;
     stop();
     clearTimeout(timer);

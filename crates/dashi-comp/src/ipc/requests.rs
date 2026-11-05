@@ -198,7 +198,11 @@ pub(crate) fn handle(
                         .ok_or("`progress` must be a number")?,
                 ),
             };
-            state.switch_space(space, progress)
+            let carry = match params.get("carry") {
+                None | Some(Value::Null) => None,
+                Some(value) => Some(value.as_u64().ok_or("`carry` must be a window id")?),
+            };
+            state.switch_space(space, progress, carry)
         }
         "space-move" => {
             let space = params
