@@ -1,10 +1,13 @@
 /**
  * Every portal dialog's frame: the one toolbar row (the title, and what the
- * dialog puts beside it, a search field for the file chooser), the content,
- * and the buttons at the bottom right, the default one in the accent. Esc is
- * Cancel and Enter the default button, through the KeySink, when nothing in
- * the dialog takes the keyboard. As a sheet the window has no title bar of
- * its own: the toolbar is its top edge, hung under the app's title bar.
+ * dialog puts beside it: Back, Up, the folder pop-up and the search field
+ * for the file chooser), the content, and the buttons at the bottom right,
+ * the default one in the accent. Esc is Cancel and Enter the default button,
+ * through the KeySink, when nothing in the dialog takes the keyboard; a
+ * button that grants something (Allow, Share) is never pressed by Enter, so
+ * a Return meant for the app can't give away the camera. As a sheet the
+ * window has no title bar of its own: the toolbar is its top edge, hung
+ * under the app's title bar.
  */
 
 import { AppWindow, Button, type KeyInput, KeySink, useColors } from "@dashi/ui";
@@ -17,10 +20,14 @@ export interface FrameButton {
   onPress: () => void;
   primary?: boolean;
   disabled?: boolean;
+  /** It grants access or shares something: only a click presses it, never Enter. */
+  grants?: boolean;
 }
 
 export interface PortalFrameProps {
   title: string;
+  /** Controls at the toolbar's start, before the title (Back and Up). */
+  leading?: ReactNode;
   /** Controls at the toolbar's end. */
   toolbar?: ReactNode;
   buttons: readonly FrameButton[];
@@ -30,13 +37,20 @@ export interface PortalFrameProps {
   onKey?: (key: KeyInput) => void;
   /** What goes at the bottom left, beside the buttons (a filter menu, an "Always" box). */
   footer?: ReactNode;
+  /** Above everything: a popup menu. */
+  overlay?: ReactNode;
   children: ReactNode;
 }
 
-export function PortalFrame({ title, toolbar, buttons, onCancel, keys = true, onKey, footer, children }: PortalFrameProps) {
-  const primary = buttons.find((button) => button.primary && !button.disabled);
+/** The button Enter presses: the default one, unless it is disabled or grants something (then none). */
+export function enterButton(buttons: readonly FrameButton[]): FrameButton | undefined {
+  return buttons.find((button) => button.primary && !button.disabled && !button.grants);
+}
+
+export function PortalFrame({ title, leading, toolbar, buttons, onCancel, keys = true, onKey, footer, overlay, children }: PortalFrameProps) {
+  const primary = enterButton(buttons);
   return (
-    <AppWindow title={title} toolbar={toolbar}>
+    <AppWindow title={title} leading={leading} toolbar={toolbar} overlay={overlay}>
       {keys && (
         <KeySink
           testID="portal:keys"

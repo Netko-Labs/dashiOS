@@ -81,7 +81,8 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
       onCancel={() => answer(false)}
       buttons={[
         { label: "Don’t Share", testID: "account:deny", onPress: () => answer(false) },
-        { label: "Share", testID: "account:share", onPress: () => answer(true), primary: true },
+        // Sharing is a click, never a stray Enter.
+        { label: "Share", testID: "account:share", onPress: () => answer(true), primary: true, grants: true },
       ]}
     >
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Share your name and picture with ${app.name}?`}</Text>

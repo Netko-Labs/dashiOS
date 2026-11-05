@@ -21,6 +21,21 @@ export interface PrintChoice {
   media: string | null;
 }
 
+/** The most copies one job prints. */
+export const MAX_COPIES = 999;
+
+/**
+ * The Copies field's text as a count: a whole number from 1 to 999, else
+ * null. The field keeps what is typed (empty while it is being retyped, "0"
+ * on the way to "05"), and Print waits for a count that reads.
+ */
+export function parseCopies(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^\d{1,4}$/.test(trimmed)) return null;
+  const copies = Number(trimmed);
+  return copies >= 1 && copies <= MAX_COPIES ? copies : null;
+}
+
 /** `1-3, 5, 8-` as 1-based inclusive ranges; null when it doesn't read (a range backwards, a 0, junk). `last` closes an open end. */
 export function parseRanges(text: string, last = 9999): Array<[number, number]> | null {
   const trimmed = text.trim();

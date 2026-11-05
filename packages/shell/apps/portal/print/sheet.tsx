@@ -1,7 +1,9 @@
 /**
  * The print sheet: the printer, copies, pages and two-sided printing in
  * view, paper size and color under "More", Save as PDF as a button beside
- * Cancel and Print. Printers are CUPS's, as Settings would list them.
+ * Cancel and Print. Printers are CUPS's, as Settings would list them. Esc
+ * cancels and Enter prints from anywhere in the sheet, a field included;
+ * Copies keeps what is typed, and Print waits until it reads as a count.
  */
 
 import { Button, Choices, Row, TextField, useColors } from "@dashi/ui";
@@ -14,29 +16,38 @@ import { CheckBox, PortalFrame } from "../ui/frame.tsx";
 import type { ShowDialog } from "../windows.ts";
 import { defaultPrinter, listPrinters, printPdf } from "./cups.ts";
 import type { PrintDeps, SheetAnswer, SheetRequest } from "./index.ts";
-import { everydayMedia, jobOptions, mediaLabel, type PrintChoice, parseRanges } from "./settings.ts";
+import { everydayMedia, jobOptions, MAX_COPIES, mediaLabel, type PrintChoice, parseCopies, parseRanges } from "./settings.ts";
 
 function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value: SheetAnswer) => void }) {
   const colors = useColors();
   const [choice, setChoice] = useState<PrintChoice>(request.start);
   const [more, setMore] = useState(false);
   const [rangeMode, setRangeMode] = useState(request.start.pages !== "");
+  // The field's own text: clearing it to type a new count must not snap back to 1.
+  const [copiesText, setCopiesText] = useState(String(request.start.copies));
+  const copies = parseCopies(copiesText);
   const printer = request.printers.find((each) => each.name === choice.printer) ?? null;
   const update = (patch: Partial<PrintChoice>) => setChoice({ ...choice, ...patch });
   const rangesOk = !rangeMode || (parseRanges(choice.pages, request.pages ?? 9999)?.length ?? 0) > 0;
-  const canPrint = printer?.accepting && rangesOk && choice.copies >= 1;
+  const canPrint = printer?.accepting === true && rangesOk && copies !== null;
   const twoSided = printer?.sides.some((side) => side.startsWith("two-sided")) === true;
   const media = printer ? everydayMedia(printer) : [];
-  const final = (): PrintChoice => ({ ...choice, pages: rangeMode ? choice.pages : "" });
+  const final = (): PrintChoice => ({ ...choice, copies: copies ?? choice.copies, pages: rangeMode ? choice.pages : "" });
+  const cancel = (): void => answer(null);
+  const print = (): void => {
+    if (canPrint) answer({ kind: "print", choice: final() });
+  };
+  const fieldKeys = (key: "Escape" | "ArrowUp" | "ArrowDown"): void => {
+    if (key === "Escape") cancel();
+  };
   return (
     <PortalFrame
       title={`Print “${request.title}”`}
-      keys={false}
-      onCancel={() => answer(null)}
+      onCancel={cancel}
       footer={<Button label="Save as PDF…" testID="print:pdf" onPress={() => answer({ kind: "pdf", choice: final() })} />}
       buttons={[
-        { label: "Cancel", testID: "print:cancel", onPress: () => answer(null) },
-        { label: "Print", testID: "print:print", onPress: () => canPrint && answer({ kind: "print", choice: final() }), primary: true, disabled: !canPrint },
+        { label: "Cancel", testID: "print:cancel", onPress: cancel },
+        { label: "Print", testID: "print:print", onPress: print, primary: true, disabled: !canPrint },
       ]}
     >
       {request.printers.length === 0 ? (
@@ -52,15 +63,14 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         </Row>
       )}
       {printer && !printer.accepting && <Text style={{ fontSize: 12, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>}
-      <Row label="Copies">
+      <Row label="Copies" {...(copies === null ? { detail: `A number from 1 to ${MAX_COPIES}` } : {})}>
         <TextField
           testID="print:copies"
           width={60}
-          value={String(choice.copies)}
-          onChangeText={(text) => {
-            const copies = Number.parseInt(text, 10);
-            update({ copies: Number.isFinite(copies) ? Math.max(1, Math.min(999, copies)) : 1 });
-          }}
+          value={copiesText}
+          onChangeText={(text) => setCopiesText(text.replace(/[^0-9]/g, "").slice(0, 4))}
+          onSubmit={print}
+          onKeyPress={fieldKeys}
         />
       </Row>
       <Row label={request.pages ? `Pages (${request.pages})` : "Pages"}>
@@ -74,7 +84,17 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
             value={rangeMode ? "range" : "all"}
             onChange={(mode) => setRangeMode(mode === "range")}
           />
-          {rangeMode && <TextField testID="print:range" width={120} placeholder="1-3, 5" value={choice.pages} onChangeText={(pages) => update({ pages })} />}
+          {rangeMode && (
+            <TextField
+              testID="print:range"
+              width={120}
+              placeholder="1-3, 5"
+              value={choice.pages}
+              onChangeText={(pages) => update({ pages })}
+              onSubmit={print}
+              onKeyPress={fieldKeys}
+            />
+          )}
         </View>
       </Row>
       {twoSided && <CheckBox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}

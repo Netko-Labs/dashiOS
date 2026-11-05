@@ -4,7 +4,8 @@
  * filter and the choices. It opens on Recents, the files lately used that
  * the app takes, with the search field ready; typing searches the way the
  * launcher does (LocalSearch, src/file-search.ts) and the folder last shown;
- * the sidebar goes to folders. Loads run one at a time by generation, so a
+ * the sidebar goes to folders; Back returns to the place before, Up to the
+ * folder this one is in. Loads run one at a time by generation, so a
  * slow folder can't overwrite the one the person went to after it.
  */
 
@@ -52,6 +53,8 @@ export interface ChooserState {
   problem: string | null;
   /** What is typed in the search field. */
   query: string;
+  /** Where Back goes, the last place on top (searches aren't kept: Back leaves one). */
+  history: Place[];
 }
 
 /** The rows that show: folders always (but in folder mode only folders), files the filter lets through, no hidden ones; folders first, then newest first in Recents and search, by name in a folder. */
@@ -76,6 +79,33 @@ export function recentFolders(rows: readonly Row[], home: string): Row[] {
 }
 
 export const tilde = (path: string, home: string): string => (path === home ? "~" : path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path);
+
+/** A folder's name as the chooser shows it: Home for the home folder, Computer for the root. */
+export const folderName = (path: string, home: string): string => (path === home ? "Home" : path === "/" ? "Computer" : basename(path) || path);
+
+/** The folder pop-up's rows: `path` itself, then each folder it is in, up to the root. */
+export function folderTrail(path: string, home: string): Array<{ name: string; path: string }> {
+  const trail: Array<{ name: string; path: string }> = [];
+  let at = path;
+  for (let guard = 0; guard < 64; guard++) {
+    trail.push({ name: folderName(at, home), path: at });
+    const parent = dirname(at);
+    if (parent === at) break;
+    at = parent;
+  }
+  return trail;
+}
+
+/** The folder above `path`, or null at the root. */
+export const parentOf = (path: string): string | null => (dirname(path) === path ? null : dirname(path));
+
+const samePlace = (a: Place, b: Place): boolean =>
+  a.kind === b.kind &&
+  (a.kind !== "folder" || (b.kind === "folder" && a.path === b.path)) &&
+  (a.kind !== "search" || (b.kind === "search" && a.query === b.query));
+
+/** The most places Back remembers. */
+const HISTORY = 50;
 
 export class ChooserModel {
   private state: ChooserState;
@@ -103,6 +133,7 @@ export class ChooserModel {
       replace: null,
       problem: null,
       query: "",
+      history: [],
     };
     void this.load(place);
   }
@@ -113,6 +144,11 @@ export class ChooserModel {
   };
 
   getSnapshot = (): ChooserState => this.state;
+
+  /** The home folder, which the chooser calls Home. */
+  get home(): string {
+    return this.sources.home;
+  }
 
   private set(patch: Partial<ChooserState>): void {
     this.state = { ...this.state, ...patch };
@@ -132,15 +168,56 @@ export class ChooserModel {
     });
   }
 
+  /** Goes to `place`; Back returns to where it was. */
   go(place: Place): void {
+    if (samePlace(place, this.state.place)) return void this.load(place);
+    this.remember();
+    // Going to where Back would go is going back: the place isn't kept twice.
+    const top = this.state.history.at(-1);
+    if (top && samePlace(top, place)) this.set({ history: this.state.history.slice(0, -1) });
     void this.load(place);
+  }
+
+  /** Back: the place before this one, if there is one. */
+  back(): void {
+    const previous = this.state.history.at(-1);
+    if (!previous) return;
+    this.set({ history: this.state.history.slice(0, -1), query: "" });
+    void this.load(previous);
+  }
+
+  /** Up: the folder this folder is in. */
+  up(): void {
+    const parent = this.state.place.kind === "folder" ? parentOf(this.state.place.path) : null;
+    if (parent !== null) this.go({ kind: "folder", path: parent });
+  }
+
+  canGoBack(): boolean {
+    return this.state.history.length > 0;
+  }
+
+  canGoUp(): boolean {
+    return this.state.place.kind === "folder" && parentOf(this.state.place.path) !== null;
+  }
+
+  /** Keeps the place showing for Back, unless it is a search or is on top already. */
+  private remember(): void {
+    const { place, history } = this.state;
+    if (place.kind === "search") return;
+    const top = history.at(-1);
+    if (top && samePlace(top, place)) return;
+    this.set({ history: [...history, place].slice(-HISTORY) });
   }
 
   /** Typing in the search field: a search from two characters, back to where it was when emptied. */
   search(query: string): void {
     this.set({ query });
     const text = query.trim();
-    if (text.length >= 2) return void this.load({ kind: "search", query: text });
+    if (text.length >= 2) {
+      // Back from a search's results (or from a folder opened there) returns to where the search began.
+      this.remember();
+      return void this.load({ kind: "search", query: text });
+    }
     if (this.state.place.kind !== "search") return;
     const back = this.state.lastFolder && this.request.mode !== "open";
     this.go(back && this.state.lastFolder ? { kind: "folder", path: this.state.lastFolder } : { kind: "recents" });

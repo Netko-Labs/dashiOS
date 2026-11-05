@@ -82,11 +82,18 @@ export function accessInterface(requests: Requests, ask: AskAccess): InterfaceSp
   };
 }
 
+/**
+ * The line under the question when the app gave none. It names no Settings
+ * pane: none lists these permissions yet (xdg-desktop-portal keeps them),
+ * and copy points only at things that exist.
+ */
+export const accessFallback = (app: string): string => `Dashi remembers your answer, so ${app} won’t ask again.`;
+
 function AccessSheet({ request, app, answer }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void }) {
   const colors = useColors();
   const [choices, setChoices] = useState<Record<string, string>>(() => Object.fromEntries(request.choices.map((c) => [c.id, c.initial])));
   const reply = (granted: boolean) => answer({ granted, choices: Object.entries(choices) });
-  const detail = [request.subtitle, request.body].filter(Boolean).join("\n\n") || "You can change this later in Settings › Privacy.";
+  const detail = [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
   const camera = /camera|video/i.test(`${request.icon ?? ""} ${request.title}`);
   return (
     <PortalFrame
@@ -94,7 +101,8 @@ function AccessSheet({ request, app, answer }: { request: AccessRequest; app: Ap
       onCancel={() => reply(false)}
       buttons={[
         { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false) },
-        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), primary: true },
+        // Allow is the one that goes ahead, but only a click gives access: Enter never does.
+        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), primary: true, grants: true },
       ]}
     >
       <Question
