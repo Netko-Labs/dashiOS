@@ -14,6 +14,11 @@ export interface RankItem {
   keywords?: readonly string[];
   /** Words it answers to only when no other item matches at all ("settings" for a Settings pane), besides its kind's (intents.ts). */
   fallback?: readonly string[];
+  /**
+   * Words that narrow it but never find it alone: a menu row's app and menu
+   * ("notes new" and "file new" find Notes › File › New Note; "notes" doesn't).
+   */
+  qualifiers?: readonly string[];
   /** One of the shell's own (System Settings): wins a tie over an installed app. */
   own?: boolean;
   /**

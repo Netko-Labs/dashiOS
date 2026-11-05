@@ -31,6 +31,8 @@ interface Prepared<T extends RankItem> {
   bonus: number;
   /** Its first name, folded, for the last tie-break. */
   sortName: string;
+  /** Folded words of its qualifiers (RankItem.qualifiers), one by one. */
+  qualifiers: string[];
 }
 
 export interface RankIndex<T extends RankItem> {
@@ -112,6 +114,18 @@ export function buildIndex<T extends RankItem>(items: readonly T[], intents: Int
       demoted: isDemoted,
       bonus: RANK_KINDS.length - RANK_KINDS.indexOf(item.kind) + (item.own ? 1 : 0),
       sortName: names[0]?.text ?? "",
+      qualifiers: [
+        ...new Set(
+          (item.qualifiers ?? [])
+            .flatMap((each) =>
+              each
+                .trim()
+                .split(/\s+/)
+                .map((word) => prepare(word).text),
+            )
+            .filter(Boolean),
+        ),
+      ],
     };
   });
   return { prepared };
@@ -174,10 +188,39 @@ function bestHit<T extends RankItem>(entry: Prepared<T>, query: Query, missing: 
 }
 
 /** `query`'s matches in `index`, best first. */
+const queryOf = (text: string): Query => ({
+  text,
+  mask: charMask(text),
+  first: charMask(text.slice(0, 1)),
+  firstTwo: charMask(text.slice(0, 2)),
+  long: text.length >= 4,
+});
+
+/**
+ * `words` without the ones that begin one of `qualifiers`, or null unless at
+ * least one went and one is left: a qualifier narrows, it never finds alone.
+ */
+function withoutQualifiers(words: readonly string[], qualifiers: readonly string[]): string | null {
+  const rest = words.filter((word) => !qualifiers.some((qualifier) => qualifier.startsWith(word)));
+  return rest.length > 0 && rest.length < words.length ? rest.join(" ") : null;
+}
+
+/** How `entry` matches what is left of the query once its qualifiers are taken out, or null. */
+function qualifiedHit<T extends RankItem>(entry: Prepared<T>, words: readonly string[]): Hit | null {
+  const rest = withoutQualifiers(words, entry.qualifiers);
+  if (rest === null) return null;
+  const rq = queryOf(rest);
+  if (bitCount(rq.mask & ~entry.mask) !== 0 || (!rq.long && (rq.first & entry.startMask) === 0)) return null;
+  return bestHit(entry, rq, 0);
+}
+
 export function rank<T extends RankItem>(index: RankIndex<T>, query: string, options: RankOptions = {}): RankResult<T>[] {
   const text = prepare(query).text;
   if (!text) return [];
-  const q: Query = { text, mask: charMask(text), first: charMask(text.slice(0, 1)), firstTwo: charMask(text.slice(0, 2)), long: text.length >= 4 };
+  const q = queryOf(text);
+  // Folding joins the words ("view sort" is "viewsort"): a qualifier needs them apart.
+  const spaced = query.trim().split(/\s+/);
+  const words = spaced.length > 1 ? spaced.map((word) => prepare(word).text).filter(Boolean) : null;
   const tolerance = q.long ? 1 : 0;
   const { signals } = options;
   const picks = signals?.picks(text) ?? NO_PICKS;
@@ -185,14 +228,19 @@ export function rank<T extends RankItem>(index: RankIndex<T>, query: string, opt
   const strong: Ranked<T>[] = [];
   const weak: Ranked<T>[] = [];
   for (const entry of index.prepared) {
-    if (!q.long && (q.first & entry.startMask) === 0) continue;
-    const missing = bitCount(q.mask & ~entry.mask);
-    if (missing > tolerance) continue;
-    let hit = bestHit(entry, q, missing);
+    let hit: Hit | null = null;
     let list = strong;
-    if (!hit && missing === 0) {
-      for (const keyword of entry.fallback) if (fits(q, keyword)) hit = better(hit, matchKeyword(text, keyword));
-      list = weak;
+    const missing = bitCount(q.mask & ~entry.mask);
+    if ((q.long || (q.first & entry.startMask) !== 0) && missing <= tolerance) {
+      hit = bestHit(entry, q, missing);
+      if (!hit && missing === 0) {
+        for (const keyword of entry.fallback) if (fits(q, keyword)) hit = better(hit, matchKeyword(text, keyword));
+        list = weak;
+      }
+    }
+    if (!hit && words && entry.qualifiers.length > 0) {
+      hit = qualifiedHit(entry, words);
+      list = strong;
     }
     if (!hit) continue;
     keep(list, { item: entry.item, match: hit.kind, score: score(entry, hit, picks, signals), sortName: entry.sortName }, limit);

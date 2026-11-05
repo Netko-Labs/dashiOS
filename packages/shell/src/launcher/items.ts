@@ -139,11 +139,14 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
     // "System Settings" from the Dashi menu is the System Settings app: one row.
     if (kind === "command" && named.has(fold(action.title))) continue;
     seen.add(action.address);
+    // A menu row answers to its own words ("New Note"); its app and menu only narrow ("notes new").
+    const path = kind === "menu" ? action.title.split(" › ") : [];
     items.push({
       id: action.address,
       kind,
-      names: [action.title],
-      keywords: actionWords(action),
+      ...(kind === "menu" && path.length > 1
+        ? { names: [path[path.length - 1] as string], keywords: [], qualifiers: path.slice(0, -1) }
+        : { names: [action.title], keywords: actionWords(action) }),
       ...(kind === "menu" ? { foreign: true } : {}),
       ...(action.source === "dashi" || action.source === "settings" || action.source === "controls" ? { own: true } : {}),
       action,
