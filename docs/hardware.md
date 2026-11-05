@@ -261,3 +261,66 @@ while a screen is connected to the blocked card. Both are Dashi's policy
 `dashi-graphics` ships no `cardwire.toml` (cardwired writes that file
 itself); the shell sets the two properties to `false` when it finds them on,
 and sets `Mode` itself.
+
+## asusd
+
+ASUS's USB lid lighting has no kernel driver: the Slash bar, AniMe Matrix and
+Aura RGB are asusd's (asusctl, Open Gaming Collective,
+<https://github.com/OpenGamingCollective/asusctl>). Everything else the G14
+has is a kernel interface dashi-hardware already drives. So on an ASUS
+machine asusd is installed **for lighting only**, configured to leave the
+platform profile, EPP and the charge limit to Dashi's recipe (one writer per
+knob). Read from asusctl 6.5.0 (Terra's Fedora build) and upstream's source
+on 2026-11-05.
+
+Packaging: Terra (enabled by dashi-release) carries `asusctl`, so Dashi's
+COPR need not. It is installed with ASUS Control (milestone 8), on ASUS
+machines, not before (nothing earlier needs USB lighting). The kernel covers
+the rest from first boot.
+
+| | |
+| --- | --- |
+| Bus | system |
+| Name | `xyz.ljones.Asusd` |
+| Daemon | `asusd`, unit `asusd.service` |
+| Config | `/etc/asusd/asusd.ron` (and `aura.ron`, `fan_curves.ron`) |
+
+### Keeping asusd off Dashi's knobs
+
+In `/etc/asusd/asusd.ron`:
+
+- `change_platform_profile_on_ac: false` and
+  `change_platform_profile_on_battery: false` — asusd won't set a platform
+  profile when the cable changes (Dashi's Automatic does).
+- `platform_profile_linked_epp: false` — asusd won't write EPP with the
+  profile (the recipe owns EPP).
+- The charge limit is the open question (spec, milestone 2): asusd stores a
+  `charge_control_end_threshold` and re-applies it at start-up, and there is
+  no config flag to disable that alone. Set asusd's stored value to `100` (no
+  limit) so it writes nothing meaningful, and let Dashi's boot unit write the
+  real limit after; or, if that races, don't enable `asusd.service`'s
+  charge restoration path. Dashi owns `charge-limit` either way.
+
+asusd must not own fan curves either: Dashi writes `asus_custom_fan_curve`
+through the kernel (above). Leave asusd's `fan_curves.ron` at its defaults and
+don't drive its fan interface.
+
+### Slash (the lid bar)
+
+Interface `xyz.ljones.Slash` at `/xyz/ljones` on `xyz.ljones.Asusd`.
+Properties (read-write unless noted): `Enabled` `b`, `Brightness` `y`,
+`Interval` `y`, `Mode` `y` (the animation), and the when-to-show flags
+`ShowOnBoot`, `ShowOnShutdown`, `ShowOnSleep`, `ShowOnBattery`,
+`ShowOnLidClosed`, `ShowBatteryWarning` (all `b`). This is what ASUS
+Control's lighting preview drives.
+
+### Keyboard and Aura lighting
+
+Interface `xyz.ljones.Aura` at `/xyz/ljones/Aura`. `Brightness` (read-write),
+`LedMode` and `LedModeData` (the effect), `LedPower` (per-zone power), and the
+read-only `DeviceType`, `SupportedBrightness`, `SupportedBasicModes`,
+`SupportedBasicZones`, `SupportedPowerZones`; `AllModeData()` returns every
+mode's effect, `DirectAddressingRaw(packets)` writes raw per-key colour. The
+G14's own keyboard backlight (white, 3 levels) is a kernel LED
+(`kbd-backlight` above); Aura is for RGB and per-key models. AniMe Matrix is a
+third interface (`xyz.ljones.Anime`), absent on the G14.
