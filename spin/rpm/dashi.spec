@@ -14,6 +14,9 @@ BuildRequires:  systemd-rpm-macros
 Requires:       dashi-comp = %{version}-%{release}
 # The vault apps and agents use (the Secret Service; sign-in for agents).
 Requires:       dashi-secretd = %{version}-%{release}
+# Power modes, the charge limit, the laptop's keys and lights (docs/hardware.md);
+# D-Bus activated, so it costs nothing on a machine that never asks.
+Requires:       dashi-hardware = %{version}-%{release}
 Requires:       dashi-bun
 Requires:       mirin-metal-host
 # The Terminal's engine (apps/terminal runs it).

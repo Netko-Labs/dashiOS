@@ -7,7 +7,7 @@
 # specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
 # COPR enabled for libghostty-vt-devel 1.4).
 #
-#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-secretd dashi-greeter dashi-release dashi-live
+#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-hardware dashi-secretd dashi-greeter dashi-release dashi-live
 #   all: every spec in spin/rpm (mirin-metal-host from ../mirin's HEAD; dashi-bun
 #   downloads Bun's release, with spectool)
 #
@@ -30,7 +30,7 @@ sha=$(git rev-parse --short=7 HEAD)
 stamp() { TZ=UTC git -C "$1" log -1 --format=%cd --date=format-local:%Y%m%d.%H%M%S; }
 snapshot="$version~beta.$(stamp "$repo").$sha"
 packages=("$@")
-[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-secretd dashi-greeter dashi-release dashi-live)
+[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-hardware dashi-secretd dashi-greeter dashi-release dashi-live)
 if [ "${packages[0]}" = all ]; then
   packages=()
   for spec in "$repo"/spin/rpm/*.spec; do packages+=("$(basename "$spec" .spec)"); done
