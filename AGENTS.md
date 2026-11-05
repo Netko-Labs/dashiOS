@@ -30,6 +30,9 @@ the same change.
   this doc change together.
 - `docs/applets.md` - the applets channel (programs' items in the menu bar,
   beside tray icons); the protocol, its limits, and examples.
+- `docs/actions.md` - the action registry (every command at a `dashi://`
+  address, shared by the launcher, the keymap, links, and agents' MCP tools),
+  the address scheme, and the links socket.
 - `docs/secrets.md` - the vault and secrets for agents: the socket protocol,
   sign-in, codes, passkeys, payments, the agent sandbox.
 - `docs/hardware.md` - dashi-hardware's contract (the hardware helper's D-Bus

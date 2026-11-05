@@ -38,16 +38,16 @@ export function PersonConfirmSheet({ question, onAnswer }: { question: PersonQue
           alignItems: "center",
           gap: 4,
           padding: 22,
-          borderRadius: 18,
+          borderRadius: 12,
           backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{question.title}</Text>
+        <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{question.title}</Text>
         <View style={{ marginTop: 6 }}>
-          <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center" }}>{question.detail}</Text>
+          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{question.detail}</Text>
         </View>
         <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
           <Button label="Cancel" onPress={() => onAnswer(false)} />
