@@ -145,7 +145,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
         onAdd={() => void controller.add()}
         onRemove={(index) => void controller.remove(index)}
         onRename={(index, text) => controller.rename(index, text)}
-        onHover={(hovered) => view.hover(hovered)}
+        onHover={(hovered, part) => view.hover(hovered, part)}
         // A dragged window can't go onto a full-screen Desktop: its picture doesn't lift.
         onOverSpace={(index, over) => view.overSpace(index, over && (controller.getSnapshot().fullscreen[index] ?? null) === null)}
         onEscape={() => void deps.leaveOverview()}

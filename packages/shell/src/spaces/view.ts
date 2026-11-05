@@ -26,6 +26,8 @@ export class RowViewStore {
   private closing: unknown = null;
   private dragging: number | null = null;
   private over: number | null = null;
+  /** The parts of the row the pointer is on. */
+  private readonly hovered = new Set<string>();
 
   constructor(private readonly timers: Timers = realTimers) {}
 
@@ -41,11 +43,18 @@ export class RowViewStore {
     return this.dragging;
   }
 
-  /** The pointer came onto the row (it opens) or left it (it closes a moment later). */
-  hover(hovered: boolean): void {
+  /**
+   * The pointer came onto a part of the row (it opens) or left it (it closes
+   * a moment later, once it is on none). A part that takes the pointer from
+   * the row under it (the ×, which occludes) counts as the row, so moving
+   * onto it doesn't close the row.
+   */
+  hover(hovered: boolean, part = "row"): void {
     if (this.closing !== null) this.timers.clear(this.closing);
     this.closing = null;
-    if (hovered) {
+    if (hovered) this.hovered.add(part);
+    else this.hovered.delete(part);
+    if (this.hovered.size > 0) {
       this.set({ open: true });
       return;
     }
@@ -73,6 +82,7 @@ export class RowViewStore {
   reset(): void {
     if (this.closing !== null) this.timers.clear(this.closing);
     this.closing = null;
+    this.hovered.clear();
     this.dragging = null;
     this.over = null;
     this.set({ open: false, lifted: null });

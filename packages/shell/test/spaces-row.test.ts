@@ -116,6 +116,24 @@ describe("the row opening", () => {
     expect(CLOSE_AFTER_MS).toBeGreaterThan(0);
   });
 
+  test("moving onto a × (which takes the pointer from the row) keeps the row open", () => {
+    const timers = manualTimers();
+    const view = new RowViewStore(timers);
+    view.hover(true);
+    // The × occludes the row: the row hears the pointer leave, in either order with the × hearing it come.
+    view.hover(false);
+    view.hover(true, "close-1");
+    timers.run();
+    expect(view.getSnapshot().open).toBe(true);
+    view.hover(true, "close-2");
+    view.hover(false, "close-1");
+    timers.run();
+    expect(view.getSnapshot().open).toBe(true);
+    view.hover(false, "close-2");
+    timers.run();
+    expect(view.getSnapshot().open).toBe(false);
+  });
+
   test("a dragged window lifts the picture it is over, only while dragging and open", () => {
     const view = new RowViewStore(manualTimers());
     view.overSpace(1, true);

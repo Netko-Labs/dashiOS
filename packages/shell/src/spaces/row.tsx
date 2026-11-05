@@ -43,7 +43,8 @@ export interface RowProps {
   onRemove(index: number): void;
   onRename(index: number, name: string): void;
   /** The pointer came onto the row or left it. */
-  onHover(hovered: boolean): void;
+  /** The pointer is on (or left) a part of the row: "row", or a × that takes the pointer from it. */
+  onHover(hovered: boolean, part?: string): void;
   /** The pointer came onto Desktop `index`'s picture or name, or left it (where a dragged window would go). */
   onOverSpace(index: number, over: boolean): void;
   /** Esc while the row has the keyboard (after a click or a rename): leave Mission Control. */
@@ -173,7 +174,10 @@ export function SpacesRow(props: RowProps) {
             testID={`space-${index + 1}-remove`}
             occlude
             onPress={() => props.onRemove(index)}
-            onHoverChange={hover(index, setOverClose)}
+            onHoverChange={(over) => {
+              hover(index, setOverClose)(over);
+              props.onHover(over, `close-${index}`);
+            }}
             style={{
               ...at({ x: rect.x - CLOSE / 4, y: rect.y - CLOSE / 4, width: CLOSE, height: CLOSE }),
               borderRadius: CLOSE / 2,
