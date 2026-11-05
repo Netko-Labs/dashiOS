@@ -39,6 +39,8 @@ smithay::backend::renderer::element::render_elements! {
     Memory=MemoryRenderBufferRenderElement<R>,
     /// A window drawn small (the overview, a flight to the Dock).
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,
+    /// A window's main surface drawn small, its corners rounded.
+    ScaledRounded=RescaleRenderElement<rounded::RoundedElement<R>>,
     /// A plain shape (where a dragged window would tile).
     Solid=SolidColorRenderElement,
     /// A piece of a live picture the shell placed (thumbnails/): a window's surface,

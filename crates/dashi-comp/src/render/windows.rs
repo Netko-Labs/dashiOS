@@ -145,21 +145,11 @@ pub(crate) fn framed_window<R>(
         );
     }
     // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window.
-    let framed = matches!(decor, Decor::Standard | Decor::Unified) && state.chrome_style.radius > 0;
-    let rounded = framed
-        .then(|| super::rounded::program(renderer.gles()))
-        .flatten()
-        .zip(
-            window
-                .wl_surface()
-                .map(|surface| Id::from_wayland_resource(&*surface)),
-        );
-    let radius = (f64::from(state.chrome_style.radius) * scale.x) as f32;
-    let top = decor == Decor::Unified;
-    elements.extend(tree.into_iter().map(|element| match &rounded {
-        Some((program, root)) if element.id() == root => DashiElement::Rounded(
-            super::rounded::RoundedElement::new(element, program.clone(), radius, top),
-        ),
+    let rounding = rounding(state, renderer, window, decor == Decor::Unified, scale.x);
+    elements.extend(tree.into_iter().map(|element| match &rounding {
+        Some(rounding) if element.id() == &rounding.root => {
+            DashiElement::Rounded(rounding.element(element))
+        }
         _ => DashiElement::Surface(element),
     }));
     if let (Decor::Standard, Some(image)) = (decor, image) {
@@ -194,6 +184,8 @@ pub(crate) fn arriving_window<R>(
     let sides = depth_of(state, renderer, window, placed, spot);
     let surface_at =
         (at - window.geometry().loc - spot.origin).to_physical_precise_round(spot.scale);
+    // Drawn without its title bar: all four corners round, as its edge does.
+    let rounding = rounding(state, renderer, window, true, spot.scale.x);
     elements.extend(sides.front.map(DashiElement::Depth));
     elements.extend(
         window
@@ -201,7 +193,12 @@ pub(crate) fn arriving_window<R>(
                 renderer, surface_at, spot.scale, 1.0,
             )
             .into_iter()
-            .map(DashiElement::Surface),
+            .map(|element| match &rounding {
+                Some(rounding) if element.id() == &rounding.root => {
+                    DashiElement::Rounded(rounding.element(element))
+                }
+                _ => DashiElement::Surface(element),
+            }),
     );
     elements.extend(sides.back.map(DashiElement::Depth));
 }
@@ -236,12 +233,21 @@ pub(crate) fn overview_window<R>(
         .to_physical(scale)
         .to_i32_round();
     let about = (inner - origin).to_physical(scale).to_i32_round();
+    // Rounded as in its frame, at its small size (the corners its edge and shadow follow).
+    let unified = state
+        .windows
+        .by_window(window)
+        .is_some_and(|entry| entry.decor == Decor::Unified);
+    let rounding = rounding(state, renderer, window, unified, scale.x * s);
     elements.extend(
         window
             .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
             .into_iter()
-            .map(|element| {
-                DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s))
+            .map(|element| match &rounding {
+                Some(rounding) if element.id() == &rounding.root => DashiElement::ScaledRounded(
+                    RescaleRenderElement::from_element(rounding.element(element), about, s),
+                ),
+                _ => DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s)),
             }),
     );
     let image = state
@@ -250,20 +256,70 @@ pub(crate) fn overview_window<R>(
         .and_then(|entry| entry.title_image.as_ref());
     if let Some(image) = image.filter(|_| bar > 0.0) {
         let at = (rect.loc - origin).to_physical(scale);
+        // The whole bar, shrunk to fit (not its top-left cut out at the small size).
+        let own = Size::from((outer_w, bar));
         let size = Size::from((
             rect.size.w.round() as i32,
             (bar * s).round().max(1.0) as i32,
         ));
-        push_memory(renderer, at, &image.buffer, Some(size), elements);
+        push_memory(renderer, at, &image.buffer, Some((own, size)), elements);
     }
     elements.extend(sides.back.map(DashiElement::Depth));
+}
+
+/// How a framed window's main surface is rounded: which surface, the shader, and the corners.
+struct Rounding {
+    root: Id,
+    program: smithay::backend::renderer::gles::GlesTexProgram,
+    /// In the pixels it is drawn at.
+    radius: f32,
+    top: bool,
+}
+
+impl Rounding {
+    fn element<R: Renderer>(
+        &self,
+        element: WaylandSurfaceRenderElement<R>,
+    ) -> super::rounded::RoundedElement<R> {
+        super::rounded::RoundedElement::new(element, self.program.clone(), self.radius, self.top)
+    }
+}
+
+/// The rounding for a window Dashi frames (none for others, or with square corners chosen);
+/// `pixels`: physical pixels per logical one where it is drawn (its scale, times how small).
+fn rounding<R>(
+    state: &Dashi,
+    renderer: &mut R,
+    window: &Window,
+    top: bool,
+    pixels: f64,
+) -> Option<Rounding>
+where
+    R: Renderer + GlesAccess,
+{
+    let decor = state.windows.by_window(window)?.decor;
+    let framed = matches!(decor, Decor::Standard | Decor::Unified);
+    if !framed || state.chrome_style.radius <= 0 {
+        return None;
+    }
+    let program = super::rounded::program(renderer.gles())?;
+    let root = window
+        .wl_surface()
+        .map(|surface| Id::from_wayland_resource(&*surface))?;
+    Some(Rounding {
+        root,
+        program,
+        radius: (f64::from(state.chrome_style.radius) * pixels) as f32,
+        top,
+    })
 }
 
 pub(crate) fn push_memory<R>(
     renderer: &mut R,
     at: Point<f64, Physical>,
     buffer: &MemoryRenderBuffer,
-    size: Option<Size<i32, Logical>>,
+    // Drawn at another size: (its own, the one to draw it at).
+    fit: Option<(Size<f64, Logical>, Size<i32, Logical>)>,
     elements: &mut Vec<DashiElement<R>>,
 ) where
     R: Renderer + ImportAll + ImportMem + GlesAccess,
@@ -274,8 +330,8 @@ pub(crate) fn push_memory<R>(
         at,
         buffer,
         None,
-        None,
-        size,
+        fit.map(|(own, _)| Rectangle::from_size(own)),
+        fit.map(|(_, size)| size),
         Kind::Unspecified,
     ) {
         Ok(element) => elements.push(DashiElement::Memory(element)),
