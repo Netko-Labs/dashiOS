@@ -24,7 +24,7 @@ import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
-import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
+import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
@@ -491,7 +491,7 @@ toplevels.onReport = (toplevel) => void appCatalog.notice(toplevel.appId);
 const installedApp = (appId: string): Entry | undefined => matchEntry(catalog, appId);
 nameApp = (window) => appFor(apps, window, installedApp).name;
 void spaces?.controller.relabel();
-const pins = new PinStore({ defaults: apps.map((app) => app.id) });
+const pins = new PinStore({ defaults: dockDefaults(apps) });
 const dock = new DockController({
   catalog,
   pins,
