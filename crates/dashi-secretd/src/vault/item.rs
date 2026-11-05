@@ -20,6 +20,9 @@ pub struct Data {
     /// The portal's Secret: one secret per app id, made on first use.
     #[serde(default)]
     pub app_secrets: BTreeMap<String, Secret>,
+    /// Passkeys, for the virtual security key (fido/).
+    #[serde(default)]
+    pub passkeys: Vec<Passkey>,
     /// What was imported already ("gnome-keyring:login"), so it happens once.
     #[serde(default)]
     pub imported: Vec<String>,
@@ -122,6 +125,28 @@ pub struct Login {
     pub created: u64,
     pub modified: u64,
     #[serde(default)]
+    pub last_used: Option<u64>,
+}
+
+/// A passkey: a P-256 key for one site (its relying party id), made and used
+/// only inside the vault. The private key never leaves; only signatures do.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Passkey {
+    pub id: u64,
+    #[serde(rename = "rpId")]
+    pub rp_id: String,
+    #[serde(rename = "credentialId")]
+    pub credential_id: super::bytes::Bytes,
+    #[serde(rename = "userHandle")]
+    pub user_handle: super::bytes::Bytes,
+    #[serde(rename = "userName")]
+    pub user_name: String,
+    #[serde(rename = "privateKey")]
+    pub private_key: Secret,
+    #[serde(rename = "signCount")]
+    pub sign_count: u32,
+    pub created: u64,
+    #[serde(default, rename = "lastUsed")]
     pub last_used: Option<u64>,
 }
 

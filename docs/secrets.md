@@ -259,6 +259,53 @@ Settings › Passwords also lists the vault's logins (site, account, Ask or
 Never for agents, Delete) and adds new ones (site, account, password,
 two-factor setup key). Agents' pictures blank Settings while it shows.
 
+## Passkeys
+
+dashi-secretd makes a virtual FIDO2 security key itself (`src/fido/`), so
+every browser sees a USB key and needs no extension:
+
+- **The device** (`uhid.rs`): `/dev/uhid`, which a udev rule
+  (`70-dashi-secretd-uhid.rules`) gives the `dashi-secret` user alone
+  (`uhid` is loaded at boot by `modules-load.d`); a HID device with FIDO's
+  usage page (0xF1D0), 64-byte reports. systemd's `fido_id` tags its hidraw
+  node, and the person's browser gets it (uaccess).
+- **CTAPHID** (`ctaphid.rs`): INIT (a channel per browser), PING, WINK,
+  CBOR, CANCEL; KEEPALIVE every 100 ms while the person is asked; no U2F.
+- **CTAP2** (`ctap2.rs`): `authenticatorGetInfo` (FIDO_2_0, resident keys,
+  built-in user verification, ES256), `authenticatorMakeCredential` ("none"
+  attestation, AAGUID `dashi-vault-key1`) and `authenticatorGetAssertion`.
+  No PIN (`PIN_NOT_SET`, `PIN_AUTH_INVALID`). Every passkey is resident,
+  P-256, and kept in the vault of the person at the screen; its private key
+  never leaves `store.rs`, only signatures do, over the site's id hash, so
+  a passkey works for its own site only. The counter grows with each use.
+- **Every use asks**, whoever started it, and needs the fingerprint or the
+  password (below). Not checked with a browser yet: the VM checks do that.
+
+## Asking the person
+
+A passkey made or used (and, later, a payment) is a question dashi-secretd
+asks (`src/fido/approval.rs`): the shell keeps a connection open
+(`watch-approvals`) and gets `{"event": "approve", id, kind, rp, user}`; it
+shows the sheet (`src/approval-sheet.tsx`, on the consent sheets' layer, so
+agents' pictures blank it). A yes must be proven:
+
+- **the fingerprint**: dashi-secretd itself asks fprintd (`fprint.rs`;
+  its polkit rule lets the `dashi-secret` user verify, never enroll) as the
+  question opens, and a match answers it;
+- **the password**: `approve {id, password}`, checked against the vault
+  (and slowed after wrong tries like every password).
+
+`deny {id}` needs no proof. Only the question's owner (uid) can answer it,
+never an agent's cgroup; no answer in a minute is a no.
+
+| Op | Fields | Reply |
+| --- | --- | --- |
+| `watch-approvals` | | `{}`, then events on the same connection |
+| `approve` | `id, password` | |
+| `deny` | `id` | |
+| `passkeys` | | `passkeys: [{id, rpId, userName, created, lastUsed}]` |
+| `delete-passkey` | `id` | |
+
 ## The test site
 
 `packages/shell/test/fixtures/sign-in-site/server.ts` (a small Bun server):

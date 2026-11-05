@@ -100,5 +100,16 @@ fn main() {
         "dashi-secretd: serving {}",
         if dev { "a development vault" } else { "vaults" }
     );
-    server::serve(listener, Arc::new(Mutex::new(daemon)));
+    let approvals = daemon.approvals.clone();
+    let daemon = Arc::new(Mutex::new(daemon));
+    // The virtual security key, where /dev/uhid is ours (the udev rule gives it to dashi-secret).
+    if !dev {
+        let (daemon, approvals) = (daemon.clone(), approvals);
+        std::thread::spawn(move || {
+            if let Err(error) = dashi_secretd::fido::serve(daemon, approvals) {
+                eprintln!("dashi-secretd: no security key for passkeys ({error})");
+            }
+        });
+    }
+    server::serve(listener, daemon);
 }

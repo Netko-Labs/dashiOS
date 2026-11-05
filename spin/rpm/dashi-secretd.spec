@@ -20,6 +20,8 @@ BuildRequires:  systemd-rpm-macros
 Requires:       systemd
 # The PAM helper is run by pam_exec.
 Requires:       pam
+# The fingerprint reader, when there is one, for passkeys and payments.
+Recommends:     fprintd
 # The agent sandbox (dashi-agent, in the dashi package) and its bus filter.
 Recommends:     xdg-dbus-proxy
 Recommends:     tpm2-tss
@@ -82,6 +84,9 @@ fi
 %{_datadir}/dbus-1/services/dev.dashi.SecretService.service
 %{_datadir}/dbus-1/services/dev.dashi.SecretPortal.service
 %{_datadir}/xdg-desktop-portal/portals/dashi-secret.portal
+%{_udevrulesdir}/70-dashi-secretd-uhid.rules
+%{_modulesloaddir}/dashi-secretd.conf
+%{_datadir}/polkit-1/rules.d/50-dashi-secretd.rules
 %dir %{_datadir}/dashi
 %dir %{_datadir}/dashi/pam
 %{_datadir}/dashi/pam/dashi-secretd

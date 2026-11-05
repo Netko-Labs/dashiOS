@@ -7,6 +7,7 @@ pub mod bridge;
 pub mod caller;
 pub mod client;
 pub mod daemon;
+pub mod fido;
 pub mod import;
 pub mod server;
 pub mod totp;

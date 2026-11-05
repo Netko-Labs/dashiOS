@@ -189,6 +189,20 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
                 true,
             ))
         }
+        Request::Passkeys {} => {
+            let passkeys: Vec<_> = vault
+                .data
+                .passkeys
+                .iter()
+                .map(|p| json!({ "id": p.id, "rpId": p.rp_id, "userName": p.user_name, "created": p.created, "lastUsed": p.last_used }))
+                .collect();
+            Ok((Reply::Plain(json!({ "passkeys": passkeys })), false))
+        }
+        Request::DeletePasskey { id } => {
+            let before = vault.data.passkeys.len();
+            vault.data.passkeys.retain(|p| p.id != id);
+            Ok((Reply::ok(), before != vault.data.passkeys.len()))
+        }
         _ => Err("unknown request".into()),
     }
 }

@@ -19,8 +19,11 @@ use std::{
 
 use serde_json::json;
 
+use std::sync::Arc;
+
 use crate::{
     caller::Caller,
+    fido::approval::Approvals,
     import,
     vault::{Sealer, Vault, crypto::KdfParams, store::Store},
 };
@@ -40,6 +43,8 @@ pub struct Daemon {
     /// A development daemon, run as you, takes the login's ops from you too
     /// (`--dev-pam-uid`, refused for the system daemon; see the binary).
     dev_pam: Option<u32>,
+    /// Questions to the person (passkeys, payments), answered through `approve`.
+    pub approvals: Arc<Approvals>,
 }
 
 pub fn now() -> u64 {
@@ -62,7 +67,17 @@ impl Daemon {
             failures: HashMap::new(),
             kdf,
             dev_pam: None,
+            approvals: Arc::new(Approvals::default()),
         }
+    }
+
+    /// Run `f` on `uid`'s unlocked vault and save it; false when it is locked (or can't be saved).
+    pub fn with_data(&mut self, uid: u32, f: &mut dyn FnMut(&mut crate::vault::Data)) -> bool {
+        let Some(vault) = self.open.get_mut(&uid) else {
+            return false;
+        };
+        f(&mut vault.data);
+        self.save(uid).is_ok()
     }
 
     /// For a development daemon only: `uid` may send the login's ops.
@@ -147,6 +162,30 @@ impl Daemon {
                     vault.change_password(old.expose(), new.expose(), self.sealer.as_ref());
                 self.count(uid, changed)?;
                 self.save(uid)?;
+                Ok(Reply::ok())
+            }
+            // The server keeps the connection for events; nothing to answer here.
+            Request::WatchApprovals {} => Ok(Reply::ok()),
+            Request::Approve { id, password } => {
+                if !self.approvals.is_open(uid, id) {
+                    return Err("that question isn't open".into());
+                }
+                self.throttle(uid)?;
+                let vault = self.open.get(&uid).ok_or("the vault is locked")?;
+                let right = vault.verify(password.expose(), self.sealer.as_ref());
+                self.count(
+                    uid,
+                    if right {
+                        Ok(())
+                    } else {
+                        Err("wrong password".to_string())
+                    },
+                )?;
+                self.approvals.answer(uid, id, true);
+                Ok(Reply::ok())
+            }
+            Request::Deny { id } => {
+                self.approvals.answer(uid, id, false);
                 Ok(Reply::ok())
             }
             request => {

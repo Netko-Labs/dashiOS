@@ -140,6 +140,23 @@ pub enum Request {
         #[serde(default, rename = "forAgent")]
         for_agent: bool,
     },
+    // Questions to the person (passkeys, payments), for the shell.
+    /// This connection stays open and hears `{"event": "approve", id, kind, …}`.
+    WatchApprovals {},
+    /// Yes to question `id`, proven by the login password.
+    Approve {
+        id: u64,
+        password: Secret,
+    },
+    Deny {
+        id: u64,
+    },
+    /// The passkeys, without their keys (Settings › Passwords).
+    Passkeys {},
+    DeletePasskey {
+        id: u64,
+    },
+
     /// The login's current one-time code (its TOTP secret stays here).
     Code {
         id: u64,

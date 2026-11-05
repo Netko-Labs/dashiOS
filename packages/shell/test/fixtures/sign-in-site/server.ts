@@ -72,9 +72,10 @@ export function start(port = 0): Site {
     async fetch(request) {
       const url = new URL(request.url);
       const [session, now] = stage(request);
-      const form = request.method === "POST" ? await request.formData() : null;
+      // Passkeys post JSON; the rest, forms.
       const passkey = await passkeys(request, url);
       if (passkey) return passkey;
+      const form = request.method === "POST" ? await request.formData() : null;
       switch (`${request.method} ${url.pathname}`) {
         case "GET /":
           if (now === "in") return go("/account", session);

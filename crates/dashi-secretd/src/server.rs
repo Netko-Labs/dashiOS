@@ -81,6 +81,8 @@ fn serve_connection(mut stream: UnixStream, daemon: &Mutex<Daemon>) {
     let Ok(read_half) = stream.try_clone() else {
         return;
     };
+    // Replies and the approvals' events share the writer, a line at a time.
+    let writer = Arc::new(Mutex::new(stream));
     let mut reader = BufReader::new(read_half);
     while let Ok(Some(line)) = read_line(&mut reader) {
         if line.iter().all(u8::is_ascii_whitespace) {
@@ -90,11 +92,19 @@ fn serve_connection(mut stream: UnixStream, daemon: &Mutex<Daemon>) {
         let result = match serde_json::from_slice::<Request>(&line) {
             Err(_) => Err("not a request dashi-secretd knows".into()),
             Ok(request) => match daemon.lock() {
-                Ok(mut daemon) => daemon.handle(&caller, request),
+                Ok(mut daemon) => {
+                    let watch = matches!(request, Request::WatchApprovals {});
+                    let result = daemon.handle(&caller, request);
+                    if watch && result.is_ok() {
+                        daemon.approvals.watch(caller.uid, writer.clone());
+                    }
+                    result
+                }
                 Err(_) => Err("dashi-secretd is not well".into()),
             },
         };
-        if reply(&mut stream, result).is_err() {
+        let sent = writer.lock().map(|mut stream| reply(&mut stream, result));
+        if !matches!(sent, Ok(Ok(()))) {
             return;
         }
     }

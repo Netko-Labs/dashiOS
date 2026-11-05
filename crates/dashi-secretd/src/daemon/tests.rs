@@ -5,6 +5,60 @@ use serde_json::{Value, json};
 use super::*;
 use crate::vault::{NoTpm, crypto::KdfParams};
 
+#[test]
+fn a_passkey_question_is_answered_yes_only_with_the_password() {
+    use std::{
+        io::{BufRead, BufReader},
+        os::unix::net::UnixStream,
+        sync::Mutex,
+    };
+    let (mut d, _dir) = logged_in();
+    let (shell, ours) = UnixStream::pair().unwrap();
+    d.approvals.watch(ME, Arc::new(Mutex::new(ours)));
+    let approvals = d.approvals.clone();
+    let what = json!({ "kind": "passkey-sign-in", "rp": "signin.localhost" });
+    let asking = std::thread::spawn(move || approvals.ask(ME, what, |_| {}));
+    let mut line = String::new();
+    BufReader::new(shell).read_line(&mut line).unwrap();
+    let id = serde_json::from_str::<Value>(&line).unwrap()["id"]
+        .as_u64()
+        .unwrap();
+    // An agent can't answer; a wrong password doesn't; the right one does.
+    assert!(
+        ask(
+            &mut d,
+            &agent(),
+            json!({ "op": "approve", "id": id, "password": PASSWORD })
+        )
+        .is_err()
+    );
+    assert!(
+        ask(
+            &mut d,
+            &me(),
+            json!({ "op": "approve", "id": id, "password": "d3Jvbmc=" })
+        )
+        .is_err()
+    );
+    assert!(d.approvals.is_open(ME, id));
+    ask(
+        &mut d,
+        &me(),
+        json!({ "op": "approve", "id": id, "password": PASSWORD }),
+    )
+    .unwrap();
+    assert!(asking.join().unwrap());
+    // A question that's gone can't be answered again.
+    assert!(
+        ask(
+            &mut d,
+            &me(),
+            json!({ "op": "approve", "id": id, "password": PASSWORD })
+        )
+        .is_err()
+    );
+}
+
 const ME: u32 = 1000;
 const PASSWORD: &str = "Y29ycmVjdCBob3JzZQ=="; // "correct horse"
 

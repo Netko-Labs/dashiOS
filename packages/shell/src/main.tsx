@@ -14,6 +14,7 @@ import { createAgentUi } from "./agent-sheets.tsx";
 import { Grants } from "./agents/consent.ts";
 import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
+import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
@@ -22,6 +23,7 @@ import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { appletsSocketPath, serveApplets } from "./applets/index.ts";
+import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
@@ -327,6 +329,9 @@ const polkit = startPolkit({
 const agentStore = new AgentStore();
 // Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
 const passwords = startPasswords();
+// The vault's questions to the person (a passkey, a payment): fingerprint or password.
+const approvalUi = createApprovalUi();
+watchApprovals(approvalUi);
 // A sheet's yes counts only if the person pressed it (agents/person.ts).
 const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
 

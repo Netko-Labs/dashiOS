@@ -58,7 +58,7 @@
       <tr><td>3</td><td>Graphics switching</td><td>1, 2</td><td>Graphics A, B, D</td></tr>
       <tr><td>4</td><td>Desktops, moving windows, the switcher</td><td>–</td><td><a href="0.4.0.html#desktops-names-and-previews">Desktops</a> B (A's renaming, F) · <a href="0.4.0.html#moving-windows-between-desktops">Moving</a> A, B, C, F · <a href="0.4.0.html#the-app-switcher">Switcher</a> C, E, F · <a href="0.4.0.html#system-dialogs-a-dashi-portal">Portal</a> G</td></tr>
       <tr><td>5</td><td>The Dashi portal</td><td>4 (thumbnails, for the share picker)</td><td>Portal A, C, D, F, H, I, J, K</td></tr>
-      <tr><td>6</td><td>Secrets for agents</td><td>5 (Secret moves off gnome-keyring), 2 (uhid, for passkeys)</td><td><a href="0.4.0.html#secrets-for-agents">Secrets</a> A–I</td></tr>
+      <tr><td>6</td><td>Secrets for agents</td><td>5 (Secret moves off gnome-keyring)</td><td><a href="0.4.0.html#secrets-for-agents">Secrets</a> A–I</td></tr>
       <tr><td>7</td><td>The applet SDK</td><td>2 (polkit actions to grant)</td><td><a href="0.4.0.html#the-applet-sdk">SDK</a> A, B, D, E</td></tr>
       <tr><td>8</td><td>The Applet Store and ASUS Control</td><td>2, 3, 7</td><td><a href="0.4.0.html#the-applet-store">Store</a> A, C, E, F · <a href="0.4.0.html#the-asus-control-applet">ASUS Control</a> A, C, F · CPU A–E (the UI)</td></tr>
     </table>
@@ -271,7 +271,7 @@
       </ul>
       <h4>Then: passkeys</h4>
       <ul class="todo">
-        <li>A virtual FIDO2 security key through <code>dashi-hardware</code> (uhid); <code>dashi-secretd</code> holds the keys and signs. Each use asks for the fingerprint reader or the password. <span class="from">Secrets C</span></li>
+        <li>A virtual FIDO2 security key that <code>dashi-secretd</code> makes itself over uhid (a udev rule gives its user <code>/dev/uhid</code>); it holds the keys and signs. Each use asks for the fingerprint reader or the password. <span class="from">Secrets C</span></li>
       </ul>
       <h4>Last: payments and the token proxy</h4>
       <ul class="todo">
@@ -345,7 +345,7 @@
     <h2>New pieces</h2>
     <table>
       <tr><th>Piece</th><th>What it is</th><th>Runs as</th><th>Milestone</th></tr>
-      <tr><td><code>dashi-hardware</code></td><td>Rust system service: firmware attributes, profiles, charge limit, fans, the SMU, uhid</td><td>root, polkit per action</td><td>2</td></tr>
+      <tr><td><code>dashi-hardware</code></td><td>Rust system service: firmware attributes, profiles, charge limit, fans, the SMU</td><td>root, polkit per action</td><td>2</td></tr>
       <tr><td><code>data/models/</code></td><td>The model database, matched on DMI</td><td>read by the helper and the shell</td><td>2</td></tr>
       <tr><td><code>dashi-graphics</code></td><td>cardwire, packaged</td><td>root</td><td>3</td></tr>
       <tr><td><code>dashi-share-picker</code></td><td>The wlr portal's chooser</td><td>you</td><td>4</td></tr>
