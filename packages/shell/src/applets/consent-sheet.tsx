@@ -8,9 +8,8 @@
  */
 
 import { asksForPassword, cannotDo, describePermission, type Manifest } from "@dashi/applet";
-import { useColors } from "@dashi/ui";
+import { Button, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { Button } from "../consent.tsx";
 
 /** The sheet's surface, with room for its shadow and a long list. */
 export const APPLET_CONSENT = { width: 460, height: 520 } as const;
@@ -82,8 +81,8 @@ export function AppletConsentSheet({ manifest, reviewed, update, onAnswer }: App
           )}
         </View>
         <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-          <Button label={update ? "Not Now" : "Cancel"} onPress={() => onAnswer(false)} />
-          <Button label={update ? "Allow" : "Add Applet"} primary onPress={() => onAnswer(true)} />
+          <Button label={update ? "Not Now" : "Cancel"} testID="consent-cancel" onPress={() => onAnswer(false)} />
+          <Button label={update ? "Allow" : "Add Applet"} testID="consent-add" primary onPress={() => onAnswer(true)} />
         </View>
       </View>
     </View>

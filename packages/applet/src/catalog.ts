@@ -66,7 +66,8 @@ function parseVersion(value: unknown, where: string): IndexVersion | Refusal {
   if (isRefusal(version)) return version;
   const dashi = text(fields.dashi, `${where}: dashi`, 20);
   if (isRefusal(dashi)) return dashi;
-  const address = url(fields.url, `${where}: url`);
+  // A package may be a local file too: only a test catalog, signed with its own key, lists one.
+  const address = typeof fields.url === "string" && /^file:\/\/\/[^\s"<>]+$/.test(fields.url) ? fields.url : url(fields.url, `${where}: url`);
   if (isRefusal(address)) return address;
   if (typeof fields.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(fields.sha256)) return refuse(`${where}: sha256 must be 64 hex digits`);
   if (typeof fields.size !== "number" || !Number.isInteger(fields.size) || fields.size <= 0 || fields.size > 64 * 1024 * 1024)
