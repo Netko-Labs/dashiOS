@@ -904,6 +904,7 @@ fn a_plain_client_sees_no_privileged_protocols() {
             // xdg_toplevel_icon_manager_v1 is off for now (handlers/toplevel_meta.rs).
             "xdg_system_bell_v1",
             "zxdg_exporter_v2",
+            "zxdg_importer_v2",
         ] {
             assert!(
                 seen.iter().any(|g| g == modern),
@@ -1054,4 +1055,41 @@ fn nothing_of_a_session_outlives_its_compositor() {
         );
         sleep(Duration::from_millis(20));
     }
+}
+
+#[test]
+fn portal_parents_and_sheets_are_checked() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+
+    // A handle nobody exported, or one of no kind the portal passes, names no window.
+    for handle in [
+        "wayland:nothing-exported-this",
+        "x11:3e00004",
+        "x11:zz",
+        "other:1",
+        "",
+    ] {
+        assert_eq!(
+            ipc.request("window-for-handle", json!({ "handle": handle }))["result"],
+            json!({ "window": null }),
+            "{handle}"
+        );
+    }
+    assert!(
+        ipc.request("window-for-handle", json!({}))["error"]
+            .as_str()
+            .unwrap()
+            .contains("handle")
+    );
+    assert_eq!(
+        ipc.request("attach", json!({ "window": 1, "parent": 2 }))["error"],
+        "no window 1"
+    );
+    assert!(
+        ipc.request("attach", json!({ "window": 1, "parent": "2" }))["error"]
+            .as_str()
+            .unwrap()
+            .contains("parent")
+    );
 }
