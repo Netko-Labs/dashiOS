@@ -65,6 +65,7 @@ import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
+import { RankingMemory } from "./launcher/ranking/index.ts";
 import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
@@ -511,6 +512,8 @@ const installedApp = (appId: string): Entry | undefined => matchEntry(catalog, a
 nameApp = (window) => appFor(apps, window, installedApp).name;
 void spaces?.controller.relabel();
 const pins = new PinStore({ defaults: apps.map((app) => app.id) });
+// The launcher's ranking history (launcher/ranking/): what is opened from the Dock and the switcher counts too.
+const rankingMemory = new RankingMemory();
 const dock = new DockController({
   catalog,
   pins,
@@ -520,6 +523,7 @@ const dock = new DockController({
   prefs: dockPrefs,
   openDockSettings: () => settingsApp.open("desktop-dock"),
   onPress: () => void overview?.leave(),
+  opened: (appId) => rankingMemory.opened(appId),
 });
 // What keeps the computer awake (inhibit/): the portal's Inhibit, through dashi-portal, and
 // org.freedesktop.ScreenSaver; idle neither blanks nor sleeps while an app holds it, and an app
@@ -910,6 +914,7 @@ const switcherController = compositor
       { show: showSwitcher, hide: () => closeOverlay("switcher"), pictures: switcherPictures },
       (group) => identifier()({ appId: group.appId, title: group.title, count: group.windows.length, away: false }).name,
       switcherKeys,
+      (window) => rankingMemory.opened(installedApp(window.appId)?.id ?? window.appId),
     )
   : null;
 
@@ -1067,6 +1072,7 @@ const quit = () => {
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],
+    ["ranking history", () => rankingMemory.close()],
     ["force quit", () => forceQuit.close()],
     ["settings app", () => settingsApp.close()],
     ["settings services", () => paneServices?.close()],
