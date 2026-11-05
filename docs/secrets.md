@@ -403,27 +403,9 @@ fields in iframes from a payment provider) are refused by the page check or
 filled wrongly: the broker doesn't guess. A payment the person allowed is
 counted even if the page changed before the card was typed.
 
-### Provider tokens (designed, not built)
-
-Stripe's shared payment tokens, Visa Intelligent Commerce and Mastercard
-Agent Pay give an agent a credential locked to one merchant and one amount,
-so the agent may hold it: it is worthless anywhere else. None can be tested
-without an account, so none is integrated; the interface they will take:
-
-```ts
-interface PaymentProvider {
-  id: "stripe-spt" | "visa-ic" | "mastercard-agent-pay";
-  /** Whether `merchant` takes this provider's tokens (its checkout says so). */
-  accepts(merchant: string): Promise<boolean>;
-  /** One credential for this merchant and amount, made after the person's yes. */
-  issue(request: { merchant: string; cents: number; currency: string; expiresInSeconds: number }): Promise<{ token: string; expires: number }>;
-}
-```
-
-Providers run inside dashi-secretd (their account keys are vault items, like
-API tokens); `pay` tries them first where `accepts` says yes, with the same
-limits and the same question, and returns the scoped token instead of
-typing a card. The agent passes it to the merchant's agent checkout.
+Payment-provider tokens (Stripe shared payment tokens, Visa Intelligent
+Commerce, Mastercard Agent Pay) were considered and dropped: agents pay
+with cards only.
 
 ## Tokens that stay home (designed, not built)
 

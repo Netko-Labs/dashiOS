@@ -66,7 +66,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Passkeys: a virtual FIDO2 key over uhid in dashi-secretd (unit-tested only)
 - [x] `pay` with limits, single-use cards, "Pay for you" never always-allowed
 - [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
-- [ ] Provider tokens and the token proxy: designed in docs/secrets.md only
+- [ ] The token proxy: designed in docs/secrets.md only (payment-provider tokens dropped)
 - [x] VM, packages installed: the vault made at a password login, `secret-tool` store/lookup, a lookup from a `dashi-agent-*` scope refused; `list_logins` (no secrets) after the scope sheet; `sign_in` on the test site (the person's Allow Once; the page reached /2fa)
 - [x] fill_code's sheet ignored the person's Allow Once: it opened under a still pointer, and dashi-comp moved pointer focus only on motion (it now enters what is under the pointer before a press). A call the agent gives up on (`notifications/cancelled`) takes its sheet down; a waiting sheet no longer holds the agent's other calls
 - [x] Chromium (Helium) without `--force-renderer-accessibility`: the shell wakes its web tree and places fields by their page. Firefox: its first GetExtents answers nothing (asked again)

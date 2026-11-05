@@ -23,7 +23,7 @@ pub struct Data {
     /// Passkeys, for the virtual security key (fido/).
     #[serde(default)]
     pub passkeys: Vec<Passkey>,
-    /// Cards for payments: single-use virtual cards first.
+    /// Cards for payments (single-use virtual cards recommended).
     #[serde(default)]
     pub cards: Vec<Card>,
     /// What agents may spend, and what they spent.

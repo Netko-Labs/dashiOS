@@ -277,7 +277,7 @@
       </ul>
       <h4>Last: payments and the token proxy</h4>
       <ul class="todo">
-        <li><code>pay</code>, with a new scope "Pay for you" that "Always Allow" never covers. Limits per payment and per month; each payment needs the fingerprint or the password. Single-use virtual cards first, filled like a login; provider tokens (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) where a merchant takes them. <span class="from">Secrets E</span></li>
+        <li><code>pay</code>, with a new scope "Pay for you" that "Always Allow" never covers. Limits per payment and per month; each payment needs the fingerprint or the password. Cards only (single-use virtual cards recommended), filled like a login; payment-provider tokens were dropped. <span class="from">Secrets E</span></li>
         <li>The token proxy in the agent sandbox: requests to listed hosts get their real credentials added on the way out, with a CA that only the sandbox trusts. The agent sees a placeholder. <span class="from">Secrets F</span></li>
       </ul>
       <h4>Checks</h4>

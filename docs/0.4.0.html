@@ -1494,7 +1494,7 @@ $ bun run publish
             <div class="r" style="justify-content:flex-end;gap:5px"><span class="btn">Deny</span><span class="btn p">Pay with ◎</span></div>
           </div>
         </div>
-        <div class="cap"><h4><span class="k">E</span>Payments with a limit</h4><p>A <code>pay {merchant, amount}</code> tool. You confirm the merchant and the total with your fingerprint. The agent gets a payment credential locked to that merchant and amount (a Stripe shared payment token, Visa Intelligent Commerce, Mastercard Agent Pay), or B fills a single-use virtual card. The real card number never moves.</p>
+        <div class="cap"><h4><span class="k">E</span>Payments with a limit</h4><p>A <code>pay {merchant, amount}</code> tool. You confirm the merchant and the total with your fingerprint. B fills the card, ideally a single-use virtual card. The real card number never moves.</p>
           <ul class="pc"><li class="y">A leaked credential is worth one purchase</li><li class="y">Spending limits per task</li><li class="n">Providers and countries vary; accounts needed</li><li class="n">Card fields in iframes are hard to check</li></ul></div>
       </div>
       <div class="prop pick">
@@ -1551,7 +1551,7 @@ $ bun run publish
         <li>IPC: <code>capture-mask {client, rects | windows}</code> for agent captures (H); <code>run.ts</code> applies it to every agent screenshot and recording.</li>
         <li>The virtual FIDO2 key is <code>dashi-secretd</code>'s own, over uhid (a udev rule gives its user <code>/dev/uhid</code>). The proxy runs in the agent sandbox, with a CA that only the sandbox trusts.</li>
         <li>Sources: the broker asks each enabled vault for logins matching the site and lists them in the consent sheet with where each comes from. When both have one, the most recently used login is listed first. 1Password: a broker process running as you, outside every agent sandbox, asks the 1Password app for one item per approved use (the CLI's desktop integration, or 1Password's SDK), types it in, and drops it. Agents can't reach the broker's socket or the 1Password app's.</li>
-        <li>Payments: single-use virtual cards first (any issuer that offers them, filled by B), then a provider token (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) where the merchant takes one.</li>
+        <li>Payments: cards only, filled by B; single-use virtual cards (any issuer that offers them) recommended. Payment-provider tokens (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) were dropped.</li>
       </ul>
     </div>
 
