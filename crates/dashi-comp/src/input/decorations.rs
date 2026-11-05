@@ -40,18 +40,9 @@ impl Dashi {
 
     /// The window decoration at `pos`, when it is the topmost thing there.
     pub(crate) fn decoration_at(&self, pos: Point<f64, Logical>) -> Option<(u64, Window, Part)> {
-        if self.lock.locked {
+        // Over a full-screen window the hidden menu bar is not in the way of its lights.
+        if self.lock.locked || self.top_layer_at(pos) {
             return None;
-        }
-        if let Some(output) = self.space.output_under(pos).next() {
-            let origin = self.space.output_geometry(output)?.loc.to_f64();
-            let layers = layer_map_for_output(output);
-            if [Layer::Overlay, Layer::Top]
-                .into_iter()
-                .any(|layer| self.layer_at(&layers, layer, pos - origin).is_some())
-            {
-                return None;
-            }
         }
         for window in self.space.elements().rev() {
             let Some(entry) = self

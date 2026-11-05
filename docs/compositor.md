@@ -157,7 +157,15 @@ Each milestone ends with the shell running on it in the VM.
 - **Window controls:** 0.1.0's "Shapes": a circle closes, a bar minimizes, a
   rounded square zooms (ume #D0596F, broth #E5B13F, kombu #4A9A7E), gray on an
   unfocused window, lit and the hovered one grown 1.18× under the pointer;
-  the same as the shell gives GTK apps (appearance/gtk-css.ts).
+  the same as the shell gives GTK apps (appearance/gtk-css.ts). A unified
+  window (dashi-chrome-v1) keeps them in full screen, where they are when
+  windowed and working the same (the square, with or without ⌥, leaves full
+  screen: the shell's call), since its app keeps their place (`controls`)
+  clear in its toolbar; the hidden menu bar is not in their way. A title bar
+  goes in full screen, and windows without Dashi's chrome stay edge to edge.
+  Wherever a window is drawn small or moving (the overview, a flight to the
+  Dock, a Desktop sliding in, the shell's window and Desktop pictures), its
+  title bar or lights shrink with it, whole, at the same spot.
 - **Modern protocols (done):** fractional scale (each surface hears the
   scale of the screen it is mostly on) and viewporter, single-pixel buffers,
   alpha modifier, content type, cursor-shape, pointer constraints and

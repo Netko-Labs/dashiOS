@@ -513,6 +513,8 @@
       <li>Controls are vertically centered in the bar; a press within 8 px of one counts; under the pointer the group lights and the hovered control grows 1.18×.</li>
       <li>Unfocused windows show gray controls, lit again on hover.</li>
       <li>Standard bar 28 with a centered SemiBold 13 title, clear of 84 px each side. A unified window gives the app a 38 px toolbar strip and keeps a 76 × 38 corner for the controls.</li>
+      <li>A unified window keeps its controls in full screen, in the same corner and working the same; its toolbar never shows an empty gap where they were. A standard title bar leaves in full screen, and a window without Dashi's chrome (a game, a video player, an app with its own title bar) stays edge to edge.</li>
+      <li>Wherever a window is drawn small or moving (Mission Control, minimizing to the Dock, a Desktop sliding in, window and Desktop pictures), its controls or title bar shrink with it, at the same spot (<code>render/windows.rs</code>, <code>render/thumbnails/draw.rs</code>).</li>
       <li>An app with no toolbar controls (Terminal) takes the standard bar, not a unified one, and keeps it current with the window title (<code>setTitle</code>): one slim line, "Terminal — 96×26" today.</li>
       <li>The zoom control uses a lighter kombu (<code>#4A9A7E</code>) than the accent so an 11 px square reads on the bar.</li>
       <li>Windows resize from any edge: 6 px outside and 3 px inside the frame.</li>
@@ -543,6 +545,7 @@
     <table>
       <tr><th>When</th><th>What happens</th></tr>
       <tr><td>A window enters full screen (any way: ⌥ and the square, ⌃❖F, View › Enter Full Screen, the app itself, an agent)</td><td>A Desktop goes in right after the one it was on (after the full-screen ones from there already). The window fills the screen where it is; once its app has drawn it at that size (at most 500 ms), it is carried to its Desktop while the Desktops slide under it, out of sight. Its dialogs go there too. What is seen is one motion: the window filling the screen.</td></tr>
+      <tr><td>It is full screen</td><td>A unified window (its controls in its toolbar) keeps them where they are when windowed: the circle closes, the bar minimizes, and the square (with or without ⌥) leaves full screen. Any other window covers the screen edge to edge, with no title bar.</td></tr>
       <tr><td>It leaves full screen (any way)</td><td>It goes back to its frame or tile where it is; once drawn so, the Desktop it came from (the nearest on its left, if that one was removed) slides in under it, in 250 ms, with the window in front and the keyboard. Then its Desktop goes away.</td></tr>
       <tr><td>It closes, quits, minimizes, or hides</td><td>As leaving: the screen slides back and its Desktop goes; a minimized one comes back from the Dock at its old frame, out of full screen.</td></tr>
       <tr><td>A new window opens while it shows</td><td>The app's own dialogs and sheets stay on its Desktop, above it. Any other window opens on the Desktop it came from, and the screen slides there.</td></tr>
@@ -558,6 +561,7 @@
       <li id="wi-5"><b class="rid">WI-5</b><div>A tiled or filled window keeps the frame it had before, and Back to Previous Size gives it back; the row is disabled when there is nothing to go back to. Moving or resizing the window by hand ends the tile.</div></li>
       <li id="wi-6"><b class="rid">WI-6</b><div>A full-screen window has a Desktop to itself, next to the one it came from, and goes back there when it leaves full screen. Entering and leaving are each one motion: the window changes size where it is and stays on screen while the Desktops slide under it (<code>space-switch {carry}</code>); no Desktop is ever shown without it, and no picture of it at the wrong size.</div></li>
       <li id="wi-7"><b class="rid">WI-7</b><div>Nothing but the app's own dialogs and sheets opens over a full-screen window; any other window opens on the Desktop it came from, and the screen goes there to show it.</div></li>
+      <li id="wi-8"><b class="rid">WI-8</b><div>A window's controls never go missing. A unified window keeps them in full screen, and every picture of a window, small or moving, shows its controls or title bar shrunk with it.</div></li>
     </ol>
 
     <h2>Motion</h2>
