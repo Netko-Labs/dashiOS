@@ -35,6 +35,7 @@ import { Field } from "./launcher/field.tsx";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
 import type { LauncherCommand } from "./launcher/keys.ts";
+import { linkTitle } from "./launcher/link-args.ts";
 import { chordWhen, collision } from "./launcher/person-keys.ts";
 import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
 import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
@@ -385,6 +386,8 @@ export function Launcher(props: LauncherProps) {
         return backToSearch();
       case "quit":
         void host?.quit(effect.windows);
+        // Quit is done once asked, like the other verbs: the launcher goes (⇧↩ stays and says so).
+        if (!stay) return finish(false);
         sayDone(`Quitting ${effect.name}`);
         return backToSearch();
       case "show-in-files":
@@ -530,6 +533,8 @@ export function Launcher(props: LauncherProps) {
     if (key === "ArrowDown") return move.current("down");
     if (key === "ArrowUp") return move.current("up");
     // Esc steps out: the action list or a chip, then All apps, then the typed words, then the launcher.
+    // A link opened the launcher for its action alone: Esc closes it.
+    if (mode.kind === "presented") return onClose();
     if (mode.kind !== "search") return backToSearch();
     if (allApps && !query) return setAllApps(false);
     if (query) return restart("");
@@ -632,7 +637,7 @@ export function Launcher(props: LauncherProps) {
     mode.kind === "actions"
       ? { title: mode.row.title, icon: mode.row.icon }
       : mode.kind === "presented"
-        ? { title: mode.presented.action.title }
+        ? { title: linkTitle(mode.presented.action, mode.presented.args) }
         : mode.kind === "alias"
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
@@ -651,7 +656,12 @@ export function Launcher(props: LauncherProps) {
       ? text
         ? hintFor(selectedRow, ctx)
         : []
-      : [{ keys: "Esc", label: "back" }, ...(mode.kind === "presented" ? [{ keys: KEYS.primary, label: "run" }] : [])];
+      : mode.kind === "presented"
+        ? [
+            { keys: "Esc", label: "close" },
+            { keys: KEYS.primary, label: "run" },
+          ]
+        : [{ keys: "Esc", label: "back" }];
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
