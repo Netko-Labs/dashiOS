@@ -229,7 +229,11 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
         borderColor: colors.separator,
       }}
     >
-      <Text style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>{state.error ?? noteCount(rows.length)}</Text>
+      <View testID="status" style={{ flexShrink: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>
+          {state.error ?? state.notice ?? noteCount(rows.length)}
+        </Text>
+      </View>
       {row && <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${words} ${words === 1 ? "word" : "words"}`}</Text>}
     </View>
   );

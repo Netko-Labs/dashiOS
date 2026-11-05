@@ -5,11 +5,17 @@
  * Typing is kept apart from the disk: `draft` is what the editor shows, and a
  * save follows a short quiet (`SAVE_MS`) or the next thing that would leave
  * the note (another note, a delete, quitting). A file that changes on disk
- * (`reload`, from the folder watcher) replaces the draft only when nothing
- * typed is waiting to be saved.
+ * (`reload`, from the folder watcher) replaces the draft when nothing typed
+ * is waiting to be saved. When something is, it is saved at once, and every
+ * save first reads the file again (conflict.ts): if the file changed since
+ * the editor read it, and differently from what was typed, the file's
+ * version stays the note and the typing is kept beside it as "Title
+ * (conflict)", which the editor goes on with, and a line in the window says
+ * so. A change on disk is never written over without a word.
  */
 
 import { continueList, toggleCheck } from "./checklist.ts";
+import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
 import { neighbor, type Row, type Source, step, visibleRows } from "./list.ts";
 import type { NotesStore } from "./store.ts";
 import { serializeNote } from "./text.ts";
@@ -38,6 +44,8 @@ export interface NotesState {
   focusTitle: boolean;
   /** The last thing that went wrong, for a line in the window. */
   error: string | null;
+  /** Something the person should know that isn't an error (a conflict copy was saved); cleared when another note opens. */
+  notice: string | null;
 }
 
 const fingerprint = (draft: Draft): string => serializeNote({ ...draft, heading: false });
@@ -55,6 +63,7 @@ export class NotesModel {
     session: 0,
     focusTitle: false,
     error: null,
+    notice: null,
   };
   private readonly listeners = new Set<() => void>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -105,11 +114,14 @@ export class NotesModel {
   /** Opens a note (null closes the editor). */
   select(id: string | null, options: { focusTitle?: boolean } = {}): void {
     if (id === this.state.selected && this.state.draft !== null) return;
+    const shown = this.state.notice;
     this.leave();
     const note = this.isDeleted() ? undefined : this.state.notes.find((each) => each.id === id);
     const draft = note ? { title: note.title, body: note.body } : null;
     this.onDisk = draft ? fingerprint(draft) : "";
-    this.set({ selected: id, draft, session: this.state.session + 1, focusTitle: options.focusTitle ?? false, error: null });
+    // A notice from leaving this note (its typing saved as a conflict copy) stays; an older one goes.
+    const notice = this.state.notice === shown ? null : this.state.notice;
+    this.set({ selected: id, draft, session: this.state.session + 1, focusTitle: options.focusTitle ?? false, error: null, notice });
   }
 
   moveSelection(by: -1 | 1): void {
@@ -138,16 +150,34 @@ export class NotesModel {
     this.flush();
   }
 
-  /** Writes what is typed. */
+  /** Writes what is typed, unless the file changed under it (conflict.ts). */
   flush(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     const { draft, selected } = this.state;
-    // Nothing typed since it was read or last written: leave the file (and its modified time) alone.
-    if (!draft || !selected || this.isDeleted() || fingerprint(draft) === this.onDisk) return;
+    if (!draft || !selected || this.isDeleted()) return;
+    const mine = fingerprint(draft);
+    const current = this.readFresh(selected);
+    const disk = current ? fingerprint(current) : null;
+    switch (saveOutcome({ base: this.onDisk, disk, mine })) {
+      case "nothing":
+        // Nothing typed since it was read or last written: leave the file (and its modified time) alone.
+        return;
+      case "same":
+        this.onDisk = mine;
+        return;
+      case "theirs":
+        if (current) this.adopt(current);
+        return;
+      case "conflict":
+        if (current) this.keepBoth(draft, current);
+        return;
+      case "ours":
+        break;
+    }
     try {
       const saved = this.store.save(selected, draft);
-      this.onDisk = fingerprint(draft);
+      this.onDisk = fingerprint(saved);
       this.refresh();
       this.set({ selected: saved.id, error: null });
     } catch (error) {
@@ -260,11 +290,10 @@ export class NotesModel {
       }
       return;
     }
-    const disk = fingerprint({ title: note.title, body: note.body });
-    if (!this.dirty && disk !== this.onDisk) {
-      this.onDisk = disk;
-      this.set({ draft: { title: note.title, body: note.body }, session: this.state.session + 1 });
-    }
+    if (fingerprint(note) === this.onDisk) return;
+    // Typing is waiting: save it now, which keeps both versions if they differ (flush).
+    if (this.dirty) this.flush();
+    else this.adopt(note);
   }
 
   dispose(): void {
@@ -273,6 +302,42 @@ export class NotesModel {
   }
 
   // Internals
+
+  /** The note as its file holds it now, or null when it can't be read (gone, unreadable). */
+  private readFresh(id: string): Note | null {
+    try {
+      return this.store.read(id);
+    } catch {
+      return null;
+    }
+  }
+
+  /** The editor takes the file's version of the open note. */
+  private adopt(note: Note): void {
+    this.onDisk = fingerprint(note);
+    this.set({ draft: { title: note.title, body: note.body }, session: this.state.session + 1 });
+  }
+
+  /**
+   * Both the file and the typing changed: the file's version stays the note,
+   * and the typing becomes a new note beside it, "Title (conflict)", in the
+   * same folder. The editor goes on with that copy, so what is on screen
+   * doesn't change under the person's fingers, and the window says so.
+   */
+  private keepBoth(draft: Draft, current: Note): void {
+    const title = conflictTitle(draft.title || current.title);
+    let copy: Note;
+    try {
+      copy = this.store.create({ folder: current.folder, title, body: draft.body });
+    } catch (error) {
+      // Nothing is written over: the typing stays in the editor, unsaved, and the line says why.
+      this.set({ error: `Couldn't save: ${(error as Error).message}` });
+      return;
+    }
+    this.onDisk = fingerprint(copy);
+    this.refresh();
+    this.set({ selected: copy.id, draft: { title: copy.title, body: draft.body }, error: null, notice: conflictNotice(current.title, copy.title) });
+  }
 
   /** The open row is in Recently Deleted (its ids are file names there, not note ids). */
   private isDeleted(): boolean {
