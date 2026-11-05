@@ -102,6 +102,15 @@ export class RecentApps {
     return next;
   }
 
+  /** Take `id` out (an app that quit as soon as it started is not one to offer again); the file follows. */
+  forget(id: string): readonly string[] {
+    const next = this.list().filter((other) => other !== id);
+    if (next.length === this.list().length) return next;
+    this.ids = next;
+    this.writing = this.writing.then(() => this.save(this.path, next));
+    return next;
+  }
+
   /** Resolves when every write asked for so far is done (tests, shutdown). */
   settled(): Promise<void> {
     return this.writing;

@@ -186,6 +186,19 @@ describe("recents", () => {
     expect(writes).toEqual([["terminal"], ["files", "terminal"]]);
   });
 
+  test("an app that quit as soon as it started is forgotten, and the file follows", async () => {
+    const writes: string[][] = [];
+    const recents = new RecentApps(join(tmpdir(), "unused.json"), async (_path, ids) => {
+      writes.push([...ids]);
+    });
+    recents.remember("terminal");
+    recents.remember("quits-demo");
+    expect(recents.forget("quits-demo")).toEqual(["terminal"]);
+    recents.forget("not-there");
+    await recents.settled();
+    expect(writes).toEqual([["terminal"], ["quits-demo", "terminal"], ["terminal"]]);
+  });
+
   test("the file is written 0600, atomically", async () => {
     const dir = mkdtempSync(join(tmpdir(), "dashi-recents-"));
     const path = join(dir, "dashi", "recents.json");
