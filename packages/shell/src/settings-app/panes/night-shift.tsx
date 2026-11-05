@@ -12,7 +12,7 @@ import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import { clockLabel, clockText, DEFAULT_SCHEDULE, DEFAULT_WARMTH, describeWarmth, FROM_HOURS, scheduleOf, TO_HOURS, timeChoices, WARMTH } from "../night.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Row, Slider } from "../ui.tsx";
+import { Caption, Choices, Group, Row, Slider, Spot } from "../ui.tsx";
 
 export function NightShiftSection({ settings, flags }: { settings: SettingsStore; flags: FlagsStore }) {
   const colors = useColors();
@@ -24,9 +24,11 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
     <>
       <Caption above>Night Shift</Caption>
       <Group testID="night-shift">
-        <Row label="Night Shift" detail="Warms the colors of the screens, easier on the eyes in the evening.">
-          <Switch testID="night-switch" on={night} onChange={(on) => flags.set({ night: on })} />
-        </Row>
+        <Spot pane="displays" row="night-shift">
+          <Row label="Night Shift" detail="Warms the colors of the screens, easier on the eyes in the evening.">
+            <Switch testID="night-switch" on={night} onChange={(on) => flags.set({ night: on })} />
+          </Row>
+        </Spot>
         <Row
           stack
           label="Schedule"

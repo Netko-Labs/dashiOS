@@ -9,19 +9,23 @@ import { join } from "node:path";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { Atspi } from "./atspi/client.ts";
+import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
+import { type ToolResult, toolError } from "./context.ts";
 import { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
-import { LockWatch } from "./lock.ts";
+import { LOCKED, LockWatch } from "./lock.ts";
 import { AgentMask } from "./mask.ts";
 import { identify, peerPid } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
+import { runCall } from "./run.ts";
 import { isConfined } from "./sandbox.ts";
-import type { SecretsShared } from "./secrets/session-secrets.ts";
+import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import type { LoginSource } from "./secrets/sources.ts";
 import { Vault } from "./secrets/vault.ts";
 import { isVaultWindow } from "./secrets/vault-view.ts";
 import { Session } from "./session.ts";
+import type { Call } from "./tools/index.ts";
 
 export interface Agents {
   /** The kept answers; System Settings lists and revokes them through this one. */
@@ -30,6 +34,15 @@ export interface Agents {
   stop(id: number): void;
   /** Cut every agent off (⌃❖Esc). */
   stopAll(): void;
+  /** The stores and controllers tools reach (the action registry reads settings through them: actions/). */
+  readonly desktop: Desktop;
+  /**
+   * Carry out a tool's call for the person (the launcher, a key, a link:
+   * actions/run.ts): the same code an agent's call runs, named as "you",
+   * seeing what the person sees. A tool that asks every time asks `confirm`,
+   * the person's own sheet. Nothing runs while the screen is locked.
+   */
+  runAsPerson(call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult>;
   close(): void;
 }
 
@@ -107,6 +120,28 @@ export function startAgents({
   secrets.touched = (window) => mask.prompts.touched(window);
   const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets };
   let nextId = 0;
+  // The person's calls: never confined (no sign-in for them), named "You" where a sheet would name an agent.
+  const personSecrets = new SessionSecrets(secrets, ui, false);
+  const you = () => ({ name: "You", detail: "", claims: null, remote: false });
+  const runAsPerson = async (call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult> => {
+    if (lock.isLocked) return toolError(LOCKED);
+    const signal = new AbortController().signal;
+    return runCall(call, {
+      compositor,
+      ui,
+      desktop,
+      hands,
+      mask,
+      secrets: personSecrets.run(0, you, signal),
+      agent: "You",
+      status: () => {},
+      tile,
+      arrangement,
+      mayName: () => true,
+      confirm,
+      signal,
+    });
+  };
 
   const stopSessions = (stopping: Session[]) => {
     const names = stopping.map((session) => session.peer.name);
@@ -135,6 +170,8 @@ export function startAgents({
     console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
     return {
       grants,
+      desktop,
+      runAsPerson,
       stop() {},
       stopAll() {},
       close() {
@@ -192,6 +229,8 @@ export function startAgents({
 
   return {
     grants,
+    desktop,
+    runAsPerson,
     stop(id) {
       const session = sessions.get(id);
       if (session) stopSessions([session]);

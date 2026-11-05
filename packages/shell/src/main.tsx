@@ -10,6 +10,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
+import { linksEntry, startActions } from "./actions/index.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
 import { Grants } from "./agents/consent.ts";
@@ -1007,6 +1008,21 @@ function selectArea(window: number | null): void {
   });
   captureArea();
 }
+// The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
+// keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
+const actions = startActions({
+  compositor,
+  agents,
+  confirmPerson: (question) => agentUi.confirmPerson(question),
+  entries: () => catalog,
+  launch: launchEntry,
+  appMenus: appMenus.store,
+  appName: (window) => nameApp?.(window) ?? window.appId,
+  arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,
+  runMenu: (action) => menus.run(action, "Dashi"),
+  openSettings: (pane, row) => settingsApp.open(pane, row),
+  keymap: currentKeymap(),
+});
 const stopShortcuts = compositor
   ? startShortcuts(compositor, {
       appShortcut,
@@ -1021,9 +1037,10 @@ const stopShortcuts = compositor
       overview: { toggle: () => overview?.toggle() },
       ...(spaces ? { spaces: spaces.controller } : {}),
       switcher: switcherController ?? new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
-      tile,
-      arrow: (window, arrow) => arranger?.arrow(window, arrow) ?? Promise.resolve(),
-      fullscreen: (window) => arranger?.toggleFullscreen(window) ?? Promise.resolve(),
+      runAddress: async (address, window) => {
+        const outcome = await actions.runAddress(address, window);
+        if (!outcome.ok) console.error(`dashi-shell: the keymap binds ${address}: ${outcome.error}`);
+      },
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),
       powerKey: () => power.powerKey(),
@@ -1043,7 +1060,10 @@ const setupTimer = setTimeout(() => {
 // Desktop entries for the first-party apps, so other launchers and `gio open` can start them (desktop-entries.ts).
 // Only in the person's own session: a development run would write the developer's applications folder.
 if (shouldWriteEntries(process.env, developmentRun)) {
-  void installDesktopEntries(installedSpecs(), { bun: process.execPath, root: shellDir, host: METAL_HOST });
+  const entryContext = { bun: process.execPath, root: shellDir, host: METAL_HOST };
+  // And the dashi:// handler beside them (actions/entry.ts).
+  const links = linksEntry(entryContext);
+  void installDesktopEntries(installedSpecs(), entryContext, links ? { extra: [links] } : {});
 }
 let autostart: ReturnType<typeof startAutostart> | null = null;
 const autostartTimer = setTimeout(() => {
@@ -1119,6 +1139,7 @@ const quit = () => {
     ["power", () => power.close()],
     ["agents", () => agents?.close()],
     ["agent sheets", () => agentUi.close()],
+    ["actions", () => actions.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
     ["screen recording", () => captureTools?.close()],

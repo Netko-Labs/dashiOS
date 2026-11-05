@@ -11,7 +11,7 @@ import { resolveDock } from "../../dock/settings.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
 
 export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
   const data = useSettings(settings).data;
@@ -21,23 +21,27 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Desktop & Dock">
       <Group testID="dock-settings">
-        <Row stack label="Style" detail="The Dock floats above the bottom edge; the taskbar fills it, with a button for each window.">
-          <Choices
-            testID="dock-style"
-            value={dock.style}
-            options={[
-              { value: "dock", label: "Dock" },
-              { value: "taskbar", label: "Taskbar" },
-            ]}
-            onChange={(style) => settings.patch("dock", { style })}
-          />
-        </Row>
-        <Row
-          label="Automatically hide and show"
-          detail="The Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back."
-        >
-          <Switch testID="dock-autohide" on={dock.autohide} onChange={(autohide) => settings.patch("dock", { autohide })} />
-        </Row>
+        <Spot pane="desktop-dock" row="style">
+          <Row stack label="Style" detail="The Dock floats above the bottom edge; the taskbar fills it, with a button for each window.">
+            <Choices
+              testID="dock-style"
+              value={dock.style}
+              options={[
+                { value: "dock", label: "Dock" },
+                { value: "taskbar", label: "Taskbar" },
+              ]}
+              onChange={(style) => settings.patch("dock", { style })}
+            />
+          </Row>
+        </Spot>
+        <Spot pane="desktop-dock" row="autohide">
+          <Row
+            label="Automatically hide and show"
+            detail="The Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back."
+          >
+            <Switch testID="dock-autohide" on={dock.autohide} onChange={(autohide) => settings.patch("dock", { autohide })} />
+          </Row>
+        </Spot>
         <Row label="Show the Dock" detail="Turned off, there is no Dock at all.">
           <Switch testID="dock-visible" on={dock.visible} onChange={(visible) => settings.patch("dock", { visible })} />
         </Row>

@@ -7,6 +7,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { type DesktopAction, desktopActions } from "./actions/desktop-actions.ts";
 import { type App, displayName, iconPath, type LaunchWatch, launch, resolvePinned, SETTINGS_APP_ID, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
@@ -40,6 +41,8 @@ export interface Entry extends App {
   hidden?: true;
   /** Its Name[xx], GenericName[xx] and Keywords[xx] in the person's language, for the ranking (launcher/ranking/). */
   localized?: Localized;
+  /** Its `[Desktop Action]` groups ("New Private Window"): commands of the app in the action registry (actions/). */
+  actions?: DesktopAction[];
 }
 
 /**
@@ -91,6 +94,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   // What kind of app it is ("Web Browser"), after its name on the launcher's row; not when it only repeats the name.
   const generic = fields.get("GenericName");
   const localized = localizedDesktop(text);
+  const actions = desktopActions(text, parseExec);
   return {
     ...(localized.name || localized.genericName || localized.keywords.length > 0 ? { localized } : {}),
     id,
@@ -99,6 +103,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
     ...(yes("NoDisplay") ? { hidden: true as const } : {}),
+    ...(actions.length > 0 ? { actions } : {}),
     // The freedesktop key, and KDE's older one (Steam sets both).
     ...(yes("PrefersNonDefaultGPU") || yes("X-KDE-RunOnDiscreteGpu") ? { gpu: "discrete" as const } : {}),
     ...(generic && generic.toLowerCase() !== name.toLowerCase() ? { detail: generic } : {}),

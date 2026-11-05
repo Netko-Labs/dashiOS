@@ -1,30 +1,27 @@
 /**
  * What the keymap's bindings and ❖ itself do (keymap.ts says which chords).
  * The compositor reports them over IPC; these are the shell's actions,
- * carried out through the same IPC. Add a binding name here and a rule in
- * keymap.ts to make a new shortcut; the hardware keys' names (volume,
- * brightness, media) are system/keys.ts's.
+ * carried out through the same IPC. A binding that is a `dashi://` address
+ * is an action of the registry (actions/, docs/actions.md), run for the
+ * person on the focused window: binding a key to anything the registry
+ * holds is one rule in keymap.ts. The other names are the older closed list
+ * below, moving to addresses one kind at a time; the hardware keys' names
+ * (volume, brightness, media) are system/keys.ts's.
  */
 
 import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
-import type { Arrange } from "./layout.ts";
 import { takeScreenshot } from "./screenshots.ts";
 import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
-import { ARROWS, type Arrow } from "./tiling.ts";
 
 export interface ShellActions {
   toggleLauncher(): void;
   showSheet(): void;
   hideSheet(): void;
   switcher: SwitcherController;
-  /** Fill, center, or give a window its own frame back; or tile it (arrange.ts). */
-  tile(window: number, to: Arrange): Promise<void>;
-  /** ⌃❖ and an arrow: a half, a quarter, its own size, or the next screen (arrange.ts, tiling.ts). */
-  arrow?(window: number, arrow: Arrow): Promise<void>;
-  /** Enter or leave full screen (arrange.ts). */
-  fullscreen?(window: number): Promise<void>;
+  /** A binding that is a `dashi://` address: the registry runs it for the person, on `window` (actions/start.ts). */
+  runAddress?(address: string, window: number | null): Promise<void>;
   /** Volume, brightness, and media keys (system/keys.ts). */
   hardware: Pick<HardwareKeys, "run">;
   /** Lock the screen (lock/). */
@@ -51,6 +48,9 @@ export interface ShellActions {
   launcher?: { binding(name: string): boolean };
 }
 
+/** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
+const ADDRESS = "dashi://";
+
 /** The compositor client's requests the actions use. */
 export type Requests = Pick<Compositor, "request" | "windows">;
 
@@ -66,6 +66,8 @@ export function sameApp(a: CompositorWindow, b: CompositorWindow): boolean {
 
 /** Run a binding; `window` is the window focused when it was pressed. */
 export async function runBinding(name: string, window: number | null, compositor: Requests, actions: ShellActions, chord?: PressedChord): Promise<void> {
+  // An address: the action registry's, whatever it is (arranging windows is bound so: keymap.ts).
+  if (name.startsWith(ADDRESS)) return actions.runAddress?.(name, window);
   // The hardware keys act on the system, whatever window has focus.
   if (await actions.hardware.run(name)) return;
   if (actions.spaces?.binding(name)) return;
@@ -114,24 +116,7 @@ export async function runBinding(name: string, window: number | null, compositor
   }
   // The rest act on the focused window, if there is one.
   if (window === null) return;
-  const arrow = ARROWS.find((candidate) => `tile-${candidate}` === name);
-  if (arrow) {
-    await actions.arrow?.(window, arrow);
-    return;
-  }
   switch (name) {
-    case "tile-fill":
-      await actions.tile(window, "fill");
-      return;
-    case "tile-center":
-      await actions.tile(window, "center");
-      return;
-    case "tile-restore":
-      await actions.tile(window, "restore");
-      return;
-    case "fullscreen":
-      await actions.fullscreen?.(window);
-      return;
     case "close-window":
       // ❖W in one of Dashi's own apps: its own ❖W row first (Terminal's
       // Close Tab), as any other ❖ chord there; the window closes when it has none.
