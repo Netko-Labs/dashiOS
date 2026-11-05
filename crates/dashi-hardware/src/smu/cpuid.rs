@@ -32,16 +32,14 @@ fn family_model(eax: u32) -> (u32, u32) {
 
 #[cfg(target_arch = "x86_64")]
 fn cpuid(leaf: u32) -> (u32, u32, u32) {
-    // SAFETY: CPUID with a constant leaf is always available on x86-64 and
-    // has no side effects; it reads nothing and writes only the out registers.
-    let result = unsafe { std::arch::x86_64::__cpuid(leaf) };
+    // CPUID is always available on x86-64 and has no side effects.
+    let result = std::arch::x86_64::__cpuid(leaf);
     (result.ebx, result.edx, result.ecx)
 }
 
 #[cfg(target_arch = "x86_64")]
 fn cpuid_eax(leaf: u32) -> (u32, u32, u32, u32) {
-    // SAFETY: as above.
-    let r = unsafe { std::arch::x86_64::__cpuid(leaf) };
+    let r = std::arch::x86_64::__cpuid(leaf);
     (r.eax, r.ebx, r.ecx, r.edx)
 }
 

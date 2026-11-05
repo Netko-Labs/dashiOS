@@ -111,7 +111,12 @@ pub(crate) fn set_all_core(smn: &mut dyn Smn, mp1: &Mp1, offset: i32) -> Result<
 }
 
 /// Send one core's offset.
-pub(crate) fn set_per_core(smn: &mut dyn Smn, mp1: &Mp1, core: u32, offset: i32) -> Result<(), String> {
+pub(crate) fn set_per_core(
+    smn: &mut dyn Smn,
+    mp1: &Mp1,
+    core: u32,
+    offset: i32,
+) -> Result<(), String> {
     let arg = per_core_arg(core, offset)?;
     finish(request(smn, mp1, MSG_SET_PER_CORE, arg))
 }
@@ -142,10 +147,10 @@ mod tests {
     fn the_writable_check_sees_a_locked_down_bus() {
         let mp1 = strix_point();
         let mut ok = SimSmu::new();
-        assert_eq!(writable(&mut ok, &mp1).unwrap(), true);
+        assert!(writable(&mut ok, &mp1).unwrap());
         let mut locked = SimSmu::new();
         locked.writable = false;
-        assert_eq!(writable(&mut locked, &mp1).unwrap(), false);
+        assert!(!writable(&mut locked, &mp1).unwrap());
     }
 
     #[test]
@@ -172,7 +177,10 @@ mod tests {
     fn an_unknown_message_is_an_error() {
         let mp1 = strix_point();
         let mut smu = SimSmu::new();
-        assert_eq!(request(&mut smu, &mp1, 0x999, 0).unwrap(), Response::UnknownCommand);
+        assert_eq!(
+            request(&mut smu, &mp1, 0x999, 0).unwrap(),
+            Response::UnknownCommand
+        );
     }
 
     #[test]
@@ -180,6 +188,9 @@ mod tests {
         let mp1 = strix_point();
         // No mailbox modelled: the response register never changes.
         let mut smu = SimSmu::new().with_mailbox(None);
-        assert_eq!(request(&mut smu, &mp1, MSG_SET_ALL_CORE, 0).unwrap(), Response::TimedOut);
+        assert_eq!(
+            request(&mut smu, &mp1, MSG_SET_ALL_CORE, 0).unwrap(),
+            Response::TimedOut
+        );
     }
 }

@@ -35,6 +35,7 @@ impl SimSmu {
     }
 
     /// Set which addresses answer (none when the family is unknown).
+    #[cfg(test)]
     pub(crate) fn with_mailbox(mut self, mp1: Option<Mp1>) -> Self {
         self.mp1 = mp1;
         self

@@ -55,7 +55,10 @@ fn values_are_clamped_to_the_range_and_written() {
     let limit = knob(&found, Knob::ChargeLimit);
     assert_eq!(limit.set(&sysfs, Value::U32(5)).ok(), Some(Value::U32(20)));
     assert_eq!(limit.set(&sysfs, Value::U32(80)).ok(), Some(Value::U32(80)));
-    assert_eq!(tree.read("class/power_supply/BAT1/charge_control_end_threshold"), "80");
+    assert_eq!(
+        tree.read("class/power_supply/BAT1/charge_control_end_threshold"),
+        "80"
+    );
 }
 
 #[test]
@@ -85,8 +88,14 @@ fn quiet_is_low_power_and_both_handlers_follow() {
     );
     assert!(profile.set(&sysfs, Value::Str("low-power".into())).is_ok());
     assert_eq!(tree.read("firmware/acpi/platform_profile"), "quiet");
-    assert_eq!(tree.read("class/platform-profile/platform-profile-0/profile"), "low-power");
-    assert_eq!(tree.read("class/platform-profile/platform-profile-1/profile"), "quiet");
+    assert_eq!(
+        tree.read("class/platform-profile/platform-profile-0/profile"),
+        "low-power"
+    );
+    assert_eq!(
+        tree.read("class/platform-profile/platform-profile-1/profile"),
+        "quiet"
+    );
     assert_eq!(profile.read(&sysfs), Some(Value::Str("low-power".into())));
     assert!(profile.set(&sysfs, Value::Str("turbo".into())).is_err());
 }
@@ -97,9 +106,19 @@ fn without_the_legacy_file_each_handler_is_written() {
     std::fs::remove_file(tree.path.join("firmware/acpi/platform_profile")).expect("removable");
     let found = discover(&sysfs, None);
     let profile = knob(&found, Knob::PlatformProfile);
-    assert!(profile.set(&sysfs, Value::Str("performance".into())).is_ok());
-    assert_eq!(tree.read("class/platform-profile/platform-profile-0/profile"), "performance");
-    assert_eq!(tree.read("class/platform-profile/platform-profile-1/profile"), "performance");
+    assert!(
+        profile
+            .set(&sysfs, Value::Str("performance".into()))
+            .is_ok()
+    );
+    assert_eq!(
+        tree.read("class/platform-profile/platform-profile-0/profile"),
+        "performance"
+    );
+    assert_eq!(
+        tree.read("class/platform-profile/platform-profile-1/profile"),
+        "performance"
+    );
 }
 
 #[test]
@@ -109,7 +128,9 @@ fn cpufreq_knobs_reach_every_cpu() {
     assert!(epp.set(&sysfs, Value::Str("power".into())).is_ok());
     for cpu in ["cpu0", "cpu11", "cpu23"] {
         assert_eq!(
-            tree.read(&format!("devices/system/cpu/{cpu}/cpufreq/energy_performance_preference")),
+            tree.read(&format!(
+                "devices/system/cpu/{cpu}/cpufreq/energy_performance_preference"
+            )),
             "power"
         );
     }
@@ -117,12 +138,21 @@ fn cpufreq_knobs_reach_every_cpu() {
 
     let cap = knob(&found, Knob::CpuMaxFreq);
     assert_eq!(cap.read(&sysfs), Some(Value::U32(0)), "no cap at first");
-    assert_eq!(cap.set(&sysfs, Value::U32(3_900_000)).ok(), Some(Value::U32(3_900_000)));
-    assert_eq!(tree.read("devices/system/cpu/cpu7/cpufreq/scaling_max_freq"), "3900000");
+    assert_eq!(
+        cap.set(&sysfs, Value::U32(3_900_000)).ok(),
+        Some(Value::U32(3_900_000))
+    );
+    assert_eq!(
+        tree.read("devices/system/cpu/cpu7/cpufreq/scaling_max_freq"),
+        "3900000"
+    );
     assert_eq!(cap.read(&sysfs), Some(Value::U32(3_900_000)));
     assert_eq!(cap.set(&sysfs, Value::U32(0)).ok(), Some(Value::U32(0)));
     assert_eq!(cap.read(&sysfs), Some(Value::U32(0)));
-    assert_eq!(cap.set(&sysfs, Value::U32(1)).ok(), Some(Value::U32(605_264)));
+    assert_eq!(
+        cap.set(&sysfs, Value::U32(1)).ok(),
+        Some(Value::U32(605_264))
+    );
 
     let boost = knob(&found, Knob::Boost);
     assert!(boost.set(&sysfs, Value::Bool(false)).is_ok());
@@ -136,7 +166,9 @@ fn booleans_and_the_mux() {
     assert_eq!(overdrive.read(&sysfs), Some(Value::Bool(true)));
     assert!(overdrive.set(&sysfs, Value::Bool(false)).is_ok());
     assert_eq!(
-        tree.read("class/firmware-attributes/asus-armoury/attributes/panel_overdrive/current_value"),
+        tree.read(
+            "class/firmware-attributes/asus-armoury/attributes/panel_overdrive/current_value"
+        ),
         "0"
     );
     let mux = knob(&found, Knob::GpuMux);
@@ -150,7 +182,10 @@ fn booleans_and_the_mux() {
 fn the_keyboard_light_has_four_levels() {
     let (_tree, sysfs, found) = g14();
     let light = knob(&found, Knob::KbdBacklight);
-    assert_eq!(light.describe(&sysfs), json!({"value": 0, "min": 0, "max": 3}));
+    assert_eq!(
+        light.describe(&sysfs),
+        json!({"value": 0, "min": 0, "max": 3})
+    );
     assert_eq!(light.set(&sysfs, Value::U32(9)).ok(), Some(Value::U32(3)));
 }
 

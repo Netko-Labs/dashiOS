@@ -34,7 +34,12 @@ fn fan_indices(sysfs: &Sysfs, hwmon: &str) -> Vec<u32> {
     let mut indices: Vec<u32> = sysfs
         .list(&format!("{HWMON}/{hwmon}"))
         .iter()
-        .filter_map(|file| file.strip_prefix("fan")?.strip_suffix("_input")?.parse().ok())
+        .filter_map(|file| {
+            file.strip_prefix("fan")?
+                .strip_suffix("_input")?
+                .parse()
+                .ok()
+        })
         .collect();
     indices.sort_unstable();
     indices
@@ -90,7 +95,9 @@ fn default_label(id: &str) -> String {
         "cpu" => "CPU fan".into(),
         "gpu" => "Graphics fan".into(),
         "mid" => "Middle fan".into(),
-        other => other.strip_prefix("fan").map_or_else(|| other.to_owned(), |n| format!("Fan {n}")),
+        other => other
+            .strip_prefix("fan")
+            .map_or_else(|| other.to_owned(), |n| format!("Fan {n}")),
     }
 }
 
@@ -113,7 +120,10 @@ impl Fan {
 
     fn points(&self, sysfs: &Sysfs) -> usize {
         (1..=16)
-            .take_while(|p| self.point_file(*p, "temp").is_some_and(|f| sysfs.exists(&f)))
+            .take_while(|p| {
+                self.point_file(*p, "temp")
+                    .is_some_and(|f| sysfs.exists(&f))
+            })
             .count()
     }
 
@@ -135,7 +145,9 @@ impl Fan {
         validate(points, self.points(sysfs))?;
         for (i, (temp, duty)) in points.iter().enumerate() {
             let write = |what: &str, value: u8| -> io::Result<()> {
-                let file = self.point_file(i + 1, what).ok_or_else(|| io::Error::other("no curve"))?;
+                let file = self
+                    .point_file(i + 1, what)
+                    .ok_or_else(|| io::Error::other("no curve"))?;
                 sysfs.write(&file, &value.to_string())
             };
             write("temp", *temp).map_err(|e| e.to_string())?;
@@ -157,7 +169,10 @@ impl Fan {
 
 pub(crate) fn validate(points: &[(u8, u8)], expected: usize) -> Result<(), String> {
     if points.len() != expected {
-        return Err(format!("a curve has {expected} points, not {}", points.len()));
+        return Err(format!(
+            "a curve has {expected} points, not {}",
+            points.len()
+        ));
     }
     if let Some((temp, _)) = points.iter().find(|(t, _)| *t > MAX_TEMP) {
         return Err(format!("{temp} °C is above {MAX_TEMP} °C"));
@@ -168,7 +183,9 @@ pub(crate) fn validate(points: &[(u8, u8)], expected: usize) -> Result<(), Strin
             return Err(format!("temperatures must rise: {t0} °C then {t1} °C"));
         }
         if p1 < p0 {
-            return Err(format!("the fan can't slow down as it warms: {p0} then {p1}"));
+            return Err(format!(
+                "the fan can't slow down as it warms: {p0} then {p1}"
+            ));
         }
     }
     Ok(())
@@ -197,7 +214,10 @@ mod tests {
     fn a_curve_is_checked_then_written_and_enabled() {
         let tree = TempTree::fixture("ga403wr");
         let sysfs = Sysfs::fake(&tree.path);
-        let gpu = discover(&sysfs).into_iter().find(|f| f.id == "gpu").expect("a GPU fan");
+        let gpu = discover(&sysfs)
+            .into_iter()
+            .find(|f| f.id == "gpu")
+            .expect("a GPU fan");
         let good: Vec<(u8, u8)> = (0..8).map(|i| (40 + i * 7, 20 + i * 25)).collect();
         assert!(gpu.set_curve(&sysfs, &good).is_ok());
         assert_eq!(gpu.curve(&sysfs).as_deref(), Some(good.as_slice()));

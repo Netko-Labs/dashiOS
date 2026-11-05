@@ -86,9 +86,10 @@ impl Value {
     pub(crate) fn from_json(kind: Kind, value: &serde_json::Value) -> Option<Self> {
         match (kind, value) {
             (Kind::Str, serde_json::Value::String(s)) => Some(Value::Str(s.clone())),
-            (Kind::U32, serde_json::Value::Number(n)) => {
-                n.as_u64().and_then(|n| u32::try_from(n).ok()).map(Value::U32)
-            }
+            (Kind::U32, serde_json::Value::Number(n)) => n
+                .as_u64()
+                .and_then(|n| u32::try_from(n).ok())
+                .map(Value::U32),
             (Kind::Bool, serde_json::Value::Bool(b)) => Some(Value::Bool(*b)),
             _ => None,
         }

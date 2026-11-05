@@ -46,9 +46,9 @@ fn numbers(text: &str) -> Vec<u32> {
 
 pub(super) fn discover(sysfs: &Sysfs, knob: Knob) -> Option<Found> {
     let (name, unit) = attribute(knob)?;
-    let device = devices(sysfs)
-        .into_iter()
-        .find(|device| sysfs.exists(&format!("{CLASS}/{device}/attributes/{name}/current_value")))?;
+    let device = devices(sysfs).into_iter().find(|device| {
+        sysfs.exists(&format!("{CLASS}/{device}/attributes/{name}/current_value"))
+    })?;
     let dir = format!("{CLASS}/{device}/attributes/{name}");
     let read = |file: &str| sysfs.read(&format!("{dir}/{file}"));
     let possible = read("possible_values").map(|text| numbers(&text));

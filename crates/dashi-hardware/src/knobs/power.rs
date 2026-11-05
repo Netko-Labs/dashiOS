@@ -35,7 +35,9 @@ pub(super) fn discover(sysfs: &Sysfs, knob: Knob) -> Option<Found> {
         Knob::ChargeLimit => {
             let batteries: Vec<String> = batteries(sysfs)
                 .into_iter()
-                .filter(|bat| sysfs.exists(&format!("{SUPPLIES}/{bat}/charge_control_end_threshold")))
+                .filter(|bat| {
+                    sysfs.exists(&format!("{SUPPLIES}/{bat}/charge_control_end_threshold"))
+                })
                 .collect();
             if batteries.is_empty() {
                 return None;
@@ -54,7 +56,8 @@ pub(super) fn discover(sysfs: &Sysfs, knob: Knob) -> Option<Found> {
                 .list(LEDS)
                 .into_iter()
                 .find(|name| name.ends_with("::kbd_backlight"))?;
-            let max = u32::try_from(sysfs.read_u64(&format!("{LEDS}/{led}/max_brightness"))?).ok()?;
+            let max =
+                u32::try_from(sysfs.read_u64(&format!("{LEDS}/{led}/max_brightness"))?).ok()?;
             if max == 0 {
                 return None;
             }
@@ -108,11 +111,16 @@ impl Power {
         match self {
             Power::ChargeLimit { batteries } => {
                 for bat in batteries {
-                    sysfs.write(&format!("{SUPPLIES}/{bat}/charge_control_end_threshold"), &n.to_string())?;
+                    sysfs.write(
+                        &format!("{SUPPLIES}/{bat}/charge_control_end_threshold"),
+                        &n.to_string(),
+                    )?;
                 }
                 Ok(())
             }
-            Power::KbdBacklight { led } => sysfs.write(&format!("{LEDS}/{led}/brightness"), &n.to_string()),
+            Power::KbdBacklight { led } => {
+                sysfs.write(&format!("{LEDS}/{led}/brightness"), &n.to_string())
+            }
         }
     }
 }

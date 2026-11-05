@@ -76,7 +76,10 @@ pub(crate) fn read_trimmed(path: &Path) -> Option<String> {
 
 pub(crate) fn write_existing(path: &Path, value: &str) -> io::Result<()> {
     use std::io::Write;
-    let mut file = fs::OpenOptions::new().write(true).truncate(true).open(path)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(path)?;
     file.write_all(value.as_bytes())
 }
 
@@ -108,10 +111,8 @@ pub(crate) mod testing {
         pub(crate) fn empty() -> Self {
             static NEXT: AtomicU32 = AtomicU32::new(0);
             let n = NEXT.fetch_add(1, Ordering::Relaxed);
-            let path = std::env::temp_dir().join(format!(
-                "dashi-hardware-test-{}-{n}",
-                std::process::id()
-            ));
+            let path = std::env::temp_dir()
+                .join(format!("dashi-hardware-test-{}-{n}", std::process::id()));
             let _ = fs::remove_dir_all(&path);
             fs::create_dir_all(&path).expect("test: the temporary directory can be made");
             Self { path }
@@ -151,7 +152,10 @@ pub(crate) mod testing {
 
     fn copy_dir(from: &Path, to: &Path) {
         fs::create_dir_all(to).expect("test: a directory can be made");
-        for entry in fs::read_dir(from).expect("test: the fixture exists").flatten() {
+        for entry in fs::read_dir(from)
+            .expect("test: the fixture exists")
+            .flatten()
+        {
             let target = to.join(entry.file_name());
             if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 copy_dir(&entry.path(), &target);

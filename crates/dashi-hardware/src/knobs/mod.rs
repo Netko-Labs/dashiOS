@@ -12,6 +12,7 @@ use std::io;
 use serde_json::{Map, json};
 
 pub(crate) use cpu::cpus as cpu_names;
+pub(crate) use power::batteries as batteries_present;
 pub(crate) use value::{Kind, Value};
 
 use crate::model::Model;
@@ -175,7 +176,11 @@ impl Found {
                 if choices.contains(&s) {
                     Ok(Value::Str(s))
                 } else {
-                    Err(format!("{}: {s} is not one of {}", self.knob.name(), choices.join(", ")))
+                    Err(format!(
+                        "{}: {s} is not one of {}",
+                        self.knob.name(),
+                        choices.join(", ")
+                    ))
                 }
             }
             (Spec::Bool, Value::Bool(b)) => Ok(Value::Bool(b)),
@@ -221,7 +226,9 @@ impl Found {
         let mut out = Map::new();
         out.insert(
             "value".into(),
-            self.read(sysfs).map(|v| v.json()).unwrap_or(serde_json::Value::Null),
+            self.read(sysfs)
+                .map(|v| v.json())
+                .unwrap_or(serde_json::Value::Null),
         );
         match &self.spec {
             Spec::Choices(choices) => {

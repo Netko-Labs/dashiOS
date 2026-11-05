@@ -106,7 +106,10 @@ impl Profile {
 
     pub(super) fn write(&self, sysfs: &Sysfs, value: &Value) -> io::Result<()> {
         let Value::Str(name) = value else {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "a profile is a string"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "a profile is a string",
+            ));
         };
         if let Some(choices) = &self.legacy
             && let Some(kernel) = to_kernel(name, choices)
@@ -133,13 +136,10 @@ impl Profile {
         if wrote {
             Ok(())
         } else {
-            Err(io::Error::new(io::ErrorKind::NotFound, "no profile handler takes it"))
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "no profile handler takes it",
+            ))
         }
-    }
-
-    /// The next profile, as the firmware's mode key (Fn F5) cycles them.
-    pub(crate) fn next(current: &str, choices: &[String]) -> Option<String> {
-        let at = choices.iter().position(|c| c == current)?;
-        choices.get((at + 1) % choices.len()).cloned()
     }
 }

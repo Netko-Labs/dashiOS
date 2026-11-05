@@ -61,13 +61,19 @@ impl PciSmn {
 impl Smn for PciSmn {
     fn read(&mut self, addr: u32) -> io::Result<u32> {
         // RyzenAdj aligns the index to 4 bytes on a read.
-        let mut file = std::fs::OpenOptions::new().read(true).write(true).open(&self.config)?;
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&self.config)?;
         self.seek_u32(&mut file, REG_INDEX, addr & !0x3)?;
         self.read_u32(&mut file, REG_DATA)
     }
 
     fn write(&mut self, addr: u32, data: u32) -> io::Result<()> {
-        let mut file = std::fs::OpenOptions::new().read(true).write(true).open(&self.config)?;
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&self.config)?;
         self.seek_u32(&mut file, REG_INDEX, addr)?;
         self.seek_u32(&mut file, REG_DATA, data)
     }

@@ -41,7 +41,10 @@ pub(super) fn discover(sysfs: &Sysfs, knob: Knob) -> Option<Found> {
             (Spec::Bool, Cpu::Boost)
         }
         Knob::Epp => {
-            let available = sysfs.read(&file(first.as_deref()?, "energy_performance_available_preferences"))?;
+            let available = sysfs.read(&file(
+                first.as_deref()?,
+                "energy_performance_available_preferences",
+            ))?;
             // "custom" names a raw number written elsewhere, not a choice.
             let choices: Vec<String> = available
                 .split_whitespace()

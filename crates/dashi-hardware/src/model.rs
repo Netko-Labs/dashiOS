@@ -45,7 +45,10 @@ pub(crate) struct Undervolt {
     pub(crate) cpu: [i32; 2],
     #[serde(default)]
     pub(crate) per_core: bool,
+    /// Whether the graphics has its own offset (Strix Point has none). The
+    /// helper has no graphics-offset path yet; carried for the model.
     #[serde(default)]
+    #[allow(dead_code)]
     pub(crate) graphics: bool,
 }
 
@@ -66,6 +69,9 @@ pub(crate) struct KeyboardLight {
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct UsbLight {
+    /// The lid light's USB id (`0b05:19b6`). Carried for asusd and the shell;
+    /// the helper only reports that the light exists.
+    #[allow(dead_code)]
     pub(crate) usb: String,
 }
 
@@ -159,7 +165,10 @@ pub(crate) fn load_all(dir: &Path) -> Vec<Model> {
         if !is_model {
             continue;
         }
-        match fs::read_to_string(&path).map_err(|e| e.to_string()).and_then(|text| Model::parse(&text)) {
+        match fs::read_to_string(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|text| Model::parse(&text))
+        {
             Ok(model) => models.push(model),
             Err(error) => eprintln!("dashi-hardware: {}: {error}", path.display()),
         }
@@ -220,7 +229,10 @@ mod tests {
             ]}"#,
         )
         .expect("parses");
-        assert!(model.matches(&dmi(&[("sys_vendor", "LENOVO"), ("product_name", "21KV0011")])));
+        assert!(model.matches(&dmi(&[
+            ("sys_vendor", "LENOVO"),
+            ("product_name", "21KV0011")
+        ])));
         assert!(!model.matches(&dmi(&[("sys_vendor", "LENOVO"), ("product_name", "20KV")])));
         assert!(model.matches(&dmi(&[("board_name", "GA403WR")])));
     }
@@ -242,7 +254,13 @@ mod tests {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/models");
         let all = load_all(&dir);
         assert!(all.iter().any(|m| m.id == "GA403WR"));
-        let found = find(&dir, &dmi(&[("sys_vendor", "ASUSTeK COMPUTER INC."), ("board_name", "GA403WR")]));
+        let found = find(
+            &dir,
+            &dmi(&[
+                ("sys_vendor", "ASUSTeK COMPUTER INC."),
+                ("board_name", "GA403WR"),
+            ]),
+        );
         assert_eq!(found.map(|m| m.id), Some("GA403WR".to_owned()));
     }
 }

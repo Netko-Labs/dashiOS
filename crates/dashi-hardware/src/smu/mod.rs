@@ -30,7 +30,7 @@ pub(crate) enum Unavailable {
 }
 
 impl Unavailable {
-    fn reason(self) -> &'static str {
+    pub(crate) fn reason(self) -> &'static str {
         match self {
             Unavailable::UnsupportedCpu => "unsupported-cpu",
             Unavailable::Lockdown => "lockdown",
@@ -204,7 +204,10 @@ mod tests {
     #[test]
     fn lockdown_blocks_it() {
         let tree = TempTree::fixture("ga403wr");
-        tree.file("kernel/security/lockdown", "none [integrity] confidentiality");
+        tree.file(
+            "kernel/security/lockdown",
+            "none [integrity] confidentiality",
+        );
         let sysfs = Sysfs::fake(&tree.path);
         assert!(kernel_lockdown(&sysfs));
         let result = CurveOptimizer::probe(&sysfs, Some(&g14_model()), sim());
@@ -218,7 +221,8 @@ mod tests {
     fn a_model_without_undervolt_is_not_in_the_database() {
         let tree = TempTree::fixture("ga403wr");
         let sysfs = Sysfs::fake(&tree.path);
-        let model = Model::parse(r#"{"id":"X","name":"X","match":{"board_name":"GA403WR"}}"#).unwrap();
+        let model =
+            Model::parse(r#"{"id":"X","name":"X","match":{"board_name":"GA403WR"}}"#).unwrap();
         assert_eq!(
             CurveOptimizer::probe(&sysfs, Some(&model), sim()).err(),
             Some(Unavailable::NotInDatabase)
