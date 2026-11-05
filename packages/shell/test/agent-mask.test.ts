@@ -13,7 +13,6 @@ function window(id: number, pid: number | null, appId = "firefox"): CompositorWi
     pid,
     focused: false,
     state: "normal",
-    zoomed: false,
     frame: { x: 0, y: 0, width: 800, height: 600 },
     titleBar: 30,
   } as CompositorWindow;

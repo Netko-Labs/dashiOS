@@ -8,18 +8,21 @@
 
 import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
-import { TILES, type Tile } from "./layout.ts";
+import type { Arrange } from "./layout.ts";
 import { takeScreenshot } from "./screenshots.ts";
 import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
+import { ARROWS, type Arrow } from "./tiling.ts";
 
 export interface ShellActions {
   toggleLauncher(): void;
   showSheet(): void;
   hideSheet(): void;
   switcher: SwitcherController;
-  /** Snap a window into a tile (arrange.ts). */
-  tile(window: number, tile: Tile): Promise<void>;
+  /** Fill, center, or give a window its own frame back; or tile it (arrange.ts). */
+  tile(window: number, to: Arrange): Promise<void>;
+  /** ⌃❖ and an arrow: a half, a quarter, its own size, or the next screen (arrange.ts, tiling.ts). */
+  arrow?(window: number, arrow: Arrow): Promise<void>;
   /** Enter or leave full screen (arrange.ts). */
   fullscreen?(window: number): Promise<void>;
   /** Volume, brightness, and media keys (system/keys.ts). */
@@ -107,12 +110,21 @@ export async function runBinding(name: string, window: number | null, compositor
   }
   // The rest act on the focused window, if there is one.
   if (window === null) return;
-  const tile = TILES.find((candidate) => `tile-${candidate}` === name);
-  if (tile) {
-    await actions.tile(window, tile);
+  const arrow = ARROWS.find((candidate) => `tile-${candidate}` === name);
+  if (arrow) {
+    await actions.arrow?.(window, arrow);
     return;
   }
   switch (name) {
+    case "tile-fill":
+      await actions.tile(window, "fill");
+      return;
+    case "tile-center":
+      await actions.tile(window, "center");
+      return;
+    case "tile-restore":
+      await actions.tile(window, "restore");
+      return;
     case "fullscreen":
       await actions.fullscreen?.(window);
       return;

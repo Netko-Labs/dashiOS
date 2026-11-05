@@ -24,8 +24,6 @@ export interface CompositorWindow {
   pid: number | null;
   focused: boolean;
   state: "normal" | "minimized" | "hidden";
-  /** Has a remembered frame to go back to (tiled or zoomed). */
-  zoomed: boolean;
   /** The window fills its screen over the menu bar and Dock (comp/src/fullscreen.rs). Absent from older compositors. */
   fullscreen?: boolean;
   /** The outer frame, title bar included; null unless on screen. */
@@ -111,10 +109,16 @@ export type CompositorEvent =
   | { event: "super"; phase: SuperPhase }
   /** A new window waits for the shell to place it (arrange.ts). */
   | { event: "window-placing"; window: Placing }
-  /** The zoom control, a title-bar double click, or the Dock asked to zoom. */
-  | { event: "zoom"; window: number }
+  /** An app (its own title bar's double-click) or a taskbar asked for the window to be maximized (`on`) or not. */
+  | { event: "zoom"; window: number; on?: boolean }
+  /** A press on the square in dashi-comp's title bar, or a double-click on the bar (`double`), with ⌥ or not (arrange.ts decides). */
+  | { event: "window-control"; window: number; control: "zoom"; alt: boolean; double: boolean }
+  /** The person began to move or resize a window (past the drag's slop): its frame then, and where the press was. */
+  | { event: "window-grab"; window: number; kind: "move" | "resize"; frame: Frame; pointer: Point }
+  /** A dragged window was let go over drag-to-tile zone `zone` (its index in the last `layout`), whose `frame` showed. */
+  | { event: "window-drop"; window: number; zone: number; frame: Frame }
   /**
-   * An app, or the green light, asked for a window to enter or leave full
+   * An app, or a taskbar, asked for a window to enter or leave full
    * screen (arrange.ts decides; IPC `fullscreen {window, on}` does it).
    */
   | { event: "fullscreen"; window: number; on: boolean }
@@ -186,9 +190,9 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
+  const { id, appId, title, pid, focused, state, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
-  if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
+  if (typeof focused !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
   return {
     id,
@@ -197,7 +201,6 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     pid: isNumber(pid) ? pid : null,
     focused,
     state,
-    zoomed,
     frame: parseFrame(frame),
     titleBar: isNumber(titleBar) ? titleBar : 0,
     ...(attention === true ? { attention } : {}),
@@ -244,7 +247,24 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return { event: "window-placing", window: placing };
     }
     case "zoom":
-      return isNumber(value.window) ? { event: "zoom", window: value.window } : null;
+      if (!isNumber(value.window)) return null;
+      return typeof value.on === "boolean" ? { event: "zoom", window: value.window, on: value.on } : { event: "zoom", window: value.window };
+    case "window-control":
+      return isNumber(value.window) && value.control === "zoom"
+        ? { event: "window-control", window: value.window, control: "zoom", alt: value.alt === true, double: value.double === true }
+        : null;
+    case "window-grab": {
+      const frame = parseFrame(value.frame);
+      const pointer = isRecord(value.pointer) && isNumber(value.pointer.x) && isNumber(value.pointer.y) ? { x: value.pointer.x, y: value.pointer.y } : null;
+      if (!isNumber(value.window) || (value.kind !== "move" && value.kind !== "resize") || !frame || !pointer) return null;
+      return { event: "window-grab", window: value.window, kind: value.kind, frame, pointer };
+    }
+    case "window-drop": {
+      const frame = parseFrame(value.frame);
+      return isNumber(value.window) && isNumber(value.zone) && Number.isInteger(value.zone) && value.zone >= 0 && frame
+        ? { event: "window-drop", window: value.window, zone: value.zone, frame }
+        : null;
+    }
     case "fullscreen":
       return isNumber(value.window) && typeof value.on === "boolean" ? { event: "fullscreen", window: value.window, on: value.on } : null;
     case "bars-edge":

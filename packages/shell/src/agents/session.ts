@@ -8,7 +8,7 @@
  */
 
 import type { Compositor } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange, Tile } from "../layout.ts";
 import { LineBuffer } from "../lines.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";
@@ -42,7 +42,8 @@ export interface SessionContext {
   lock: { readonly isLocked: boolean };
   /** The menu bar's list changed. */
   publish(): void;
-  tile(window: number, tile: Tile): Promise<void>;
+  tile(window: number, to: Arrange): Promise<void>;
+  arrangement(window: number): Tile | null;
   /** Login sources, the accessibility bus, and the windows handed to the person. */
   secrets: SecretsShared;
 }
@@ -301,6 +302,7 @@ export class Session {
           agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
           status: (text) => this.setStatus(text),
           tile: this.ctx.tile,
+          arrangement: this.ctx.arrangement,
           mayName: () => this.granted.has("see"),
           confirm: (question) => this.confirm(question, signal),
           signal,

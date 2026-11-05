@@ -112,8 +112,12 @@ impl Dispatch<ZwlrForeignToplevelHandleV1, WindowId> for Dashi {
             }
             handle_v1::Request::Close => state.close_window(id),
             handle_v1::Request::SetMinimized => state.park_window(id, Shown::Minimized),
-            handle_v1::Request::SetMaximized | handle_v1::Request::UnsetMaximized => {
-                state.ipc.emit("zoom", json!({ "window": id }));
+            handle_v1::Request::SetMaximized => {
+                state.ipc.emit("zoom", json!({ "window": id, "on": true }));
+                Ok(())
+            }
+            handle_v1::Request::UnsetMaximized => {
+                state.ipc.emit("zoom", json!({ "window": id, "on": false }));
                 Ok(())
             }
             handle_v1::Request::SetFullscreen { .. } => {
@@ -215,7 +219,7 @@ impl Dashi {
         };
         let (app_id, title) = names(&entry.window);
         let mut states = Vec::new();
-        if entry.restore.is_some() {
+        if entry.maximized {
             states.push(handle_v1::State::Maximized as u32);
         }
         if entry.shown == Shown::Minimized {

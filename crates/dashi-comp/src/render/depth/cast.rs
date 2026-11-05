@@ -19,7 +19,7 @@ use super::{
 use crate::{
     render::titlebar::Decor,
     state::Dashi,
-    wm::{WindowId, frame_of, toplevel_surface},
+    wm::{WindowId, toplevel_surface},
 };
 
 /// How a window is drawn, for its depth.
@@ -143,16 +143,12 @@ pub(crate) fn window_depth(
     };
     let geometry_now = entry.window.geometry();
     let bbox = entry.window.bbox();
-    // A tile or a filled window is one while its frame is where the shell put it.
-    let arranged = entry
-        .arranged
-        .filter(|(at, _)| frame_of(state, &entry.window).is_some_and(|frame| frame.loc == *at));
     let role = geometry::role(Facts {
         fullscreen: entry.fullscreen.is_some(),
         own_shadow: bbox.size.w > geometry_now.size.w || bbox.size.h > geometry_now.size.h,
         sheet: entry.sheet_of.is_some(),
-        arranged: arranged.is_some(),
-        filled: arranged.is_some_and(|(_, filled)| filled),
+        tiled: entry.tiled,
+        filled: entry.maximized,
     });
     if role == Role::Bare {
         return Sides::default();

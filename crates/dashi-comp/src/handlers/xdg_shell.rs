@@ -204,12 +204,8 @@ impl Dashi {
         else {
             return;
         };
-        let payload = if event == "fullscreen" {
-            serde_json::json!({ "window": id, "on": on })
-        } else {
-            serde_json::json!({ "window": id })
-        };
-        self.ipc.emit(event, payload);
+        self.ipc
+            .emit(event, serde_json::json!({ "window": id, "on": on }));
     }
 }
 

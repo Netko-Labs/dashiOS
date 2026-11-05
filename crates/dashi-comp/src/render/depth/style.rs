@@ -40,7 +40,7 @@ pub(crate) struct Style {
     /// focus cross-fades between the two over `fade`.
     pub focused: Shadow,
     pub other: Shadow,
-    /// A window framed with `remember` (a tile) and with `maximized` (Fill).
+    /// A window framed with `tiled` (a tile) and with `maximized` (Fill).
     pub tiled: Shadow,
     pub filled: Shadow,
     /// A window attached as a sheet (`attach`).

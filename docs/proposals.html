@@ -143,17 +143,17 @@
     <h2>What's here</h2>
     <table>
       <tr><th>Topic</th><th>In short</th><th></th></tr>
-      <tr><td><a href="#found-in-the-tiling-code">Found in the tiling code</a></td><td>Seven bugs and gaps in today's zoom, fill, restore and tiling paths.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#the-green-control">The green control</a></td><td>A click fills the screen; ⌥ goes full screen; a press-and-hold menu tiles.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#tiling-shortcuts">Tiling shortcuts</a></td><td>Halves on all four arrows, quarters by chaining, Fill, Center, Back.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#drag-to-tile">Drag to tile</a></td><td>Whether dragging gets top and bottom halves too.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill done">built</span></td></tr>
+      <tr><td><a href="#found-in-the-tiling-code">Found in the tiling code</a></td><td>Seven bugs and gaps in today's zoom, fill, restore and tiling paths.</td><td><span class="pill done">Built</span></td></tr>
+      <tr><td><a href="#the-green-control">The green control</a></td><td>A click fills the screen; ⌥ goes full screen; a press-and-hold menu tiles.</td><td><span class="pill done">Built</span></td></tr>
+      <tr><td><a href="#tiling-shortcuts">Tiling shortcuts</a></td><td>Halves on all four arrows, quarters by chaining, Fill, Center, Back.</td><td><span class="pill done">Built</span></td></tr>
+      <tr><td><a href="#drag-to-tile">Drag to tile</a></td><td>Whether dragging gets top and bottom halves too.</td><td><span class="pill done">Built</span></td></tr>
+      <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill done">Built</span></td></tr>
       <tr><td><a href="#the-roast">The roast</a></td><td>13 reports: what hits every app, then each app's top fixes and big idea.</td><td><span class="pill wip">open</span></td></tr>
       <tr><td><a href="#order-of-work">Order of work</a></td><td>Three waves: embarrassment first, then platform pieces, then the big ideas.</td><td><span class="pill wip">open</span></td></tr>
     </table>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2>Found in the tiling code</h2>
+    <h2 id="found-in-the-tiling-code" data-toc="Found in the tiling code">Found in the tiling code <span class="pill done">Built</span></h2>
     <p>How it works today: the shell's <code>Arranger</code> (<code>packages/shell/src/arrange.ts</code>) asks the compositor to <code>frame</code> a window with <code>remember: true</code>; the compositor keeps the frame it had as <code>restore</code> and gives it back on <code>restore</code> (<code>crates/dashi-comp/src/wm/actions.rs:187-219</code>). Tiles are <code>left</code>, <code>right</code>, four quarters, <code>fill</code> and <code>restore</code> (<code>layout.ts:32</code>); there is no top or bottom half. The green control asks for full screen and, with ⌥, zoom; a double-click on the title bar zooms (<code>input/decorations.rs:96-117</code>).</p>
     <div class="bugs">
       <div class="bug"><b>1 · Zoom on a tiled window shrinks it back instead of filling.</b>The compositor reports <code>zoomed</code> whenever it remembers a frame (<code>wm/windows.rs:283</code>), and a tile remembers one; <code>Arranger.zoom</code> restores any window that says zoomed (<code>arrange.ts:143</code>). So ⌥-green, double-click and Window › Zoom on a left-tiled window put it back to its old size. <small>Confirmed in the VM: Files tiled left reports <code>zoomed: true</code>.</small></div>
@@ -167,7 +167,7 @@
     <p>Not bugs, but worth keeping in mind: the agent tool <code>tile_window</code> takes its choices from <code>TILES</code> (<code>agents/tools/windows.ts:97</code>), so new tiles reach agents for free; and its description promises "zoomed (tiled or filling the screen)", which changes meaning once bug 1 is fixed.</p>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2>The green control</h2>
+    <h2 id="the-green-control" data-toc="The green control">The green control <span class="pill done">Built</span></h2>
     <p>Today a click on the green square goes full screen: the menu bar and Dock leave, and getting back needs the pointer at the top edge or ⌃❖F. That is the Mac's default. Most of the time the person wanted a big window, not a different mode.</p>
     <div class="props">
       <div class="prop pick">
@@ -230,7 +230,7 @@
           <ul class="pc"><li class="y">Both camps served</li><li class="y">Cheap</li><li class="n">A setting for something that should just be right</li><li class="n">Two behaviours to support</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A, with D as the follow-up.</b> A click fills, a second click goes back, ⌥-click is Full Screen, and a double-click on the title bar does what the click does. The press-and-hold menu comes after the keys exist, so it can show them. Not C: a menu that opens on passing hovers fights the title bar people drag. Not F: if A is right, a setting only hides that it is.</p>
+    <p class="verdict"><b>Recommendation: A, with D as the follow-up.</b> <small>Built in 0.4.0: A (the press-and-hold menu, D, is still to come).</small> A click fills, a second click goes back, ⌥-click is Full Screen, and a double-click on the title bar does what the click does. The press-and-hold menu comes after the keys exist, so it can show them. Not C: a menu that opens on passing hovers fights the title bar people drag. Not F: if A is right, a setting only hides that it is.</p>
     <div class="spec">
       <h5>One Fill</h5>
       <ul>
@@ -243,7 +243,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2>Tiling shortcuts</h2>
+    <h2 id="tiling-shortcuts" data-toc="Tiling shortcuts">Tiling shortcuts <span class="pill done">Built</span></h2>
     <p>The ⌃❖ arrows already arrange windows; ⌃ alone moves between Desktops, and ❖ alone moves the caret (❖← is the start of the line in every text field, and in Terminal it sends ⌃A). So arrangement stays on ⌃❖. The question is what each key means.</p>
     <div class="props">
       <div class="prop pick">
@@ -318,7 +318,7 @@
           <ul class="pc"><li class="y">Smallest change</li><li class="y">Nothing moves</li><li class="n">Three modifiers for a half</li><li class="n">Keeps the mixed meanings of ↑ and ↓</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A.</b> Arrows are directions, Return fills, C centers, R goes back, F stays Full Screen as on the Mac (⌃⌘F). The same arrow again moves the window to the next screen on that side, which also fixes bug 6. Thirds (D) can come later as a Desktop &amp; Dock option if anyone asks.</p>
+    <p class="verdict"><b>Recommendation: A.</b> <small>Built in 0.4.0.</small> Arrows are directions, Return fills, C centers, R goes back, F stays Full Screen as on the Mac (⌃⌘F). The same arrow again moves the window to the next screen on that side, which also fixes bug 6. Thirds (D) can come later as a Desktop &amp; Dock option if anyone asks.</p>
     <table class="keys">
       <tr><th>Chord</th><th>Does</th><th>Today</th><th>Checked against</th></tr>
       <tr><td>⌃❖←, ⌃❖→</td><td>Left, right half. From top or bottom half: that quarter. From the opposite half: back to own size. Again: the next screen that way, same half.</td><td>Left, right half</td><td>⌃← ⌃→ are Desktops (<code>keymap.ts:86-87</code>); rules match ⌃, ⌥ and ❖ exactly (<code>keymap-match.ts:31-47</code>), so no clash.</td></tr>
@@ -332,7 +332,7 @@
     <p>Shift isn't matched unless a rule names it (<code>keymap-match.ts:26-27,47</code>), so ⇧⌃❖← also tiles today; that stays harmless. The Window menu grows to Fill, Center, a Move &amp; Resize submenu (Left, Right, Top, Bottom, four quarters) and Back to Previous Size, each showing its chord; Agents get the new tiles through <code>TILES</code>.</p>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2>Drag to tile</h2>
+    <h2 id="drag-to-tile" data-toc="Drag to tile">Drag to tile <span class="pill done">Built</span></h2>
     <p>Dragging a window against a side tiles it to that half, against a side's ends to a quarter, and against the menu bar to Fill (<code>layout.ts:75-99</code>). Holding against the left or right edge for 400 ms carries the window to the next Desktop (<code>edge-hold</code>, <code>docs/compositor-ipc.md</code>). The bottom edge belongs to the Dock.</p>
     <div class="props">
       <div class="prop pick">
@@ -380,7 +380,7 @@
           <ul class="pc"><li class="y">Symmetric with the top</li><li class="n">The Dock lives there (autohide reveal, drops on tiles)</li><li class="n">Misfires while aiming at the Dock</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A now, C once the green control's menu exists.</b> The zones already match the recommended green control (the menu bar is Fill). Top and bottom halves are one chord away, and C gives them a drag target later without taking the bottom edge from the Dock (not D) or slowing Fill (not B).</p>
+    <p class="verdict"><b>Recommendation: A now, C once the green control's menu exists.</b> <small>Built in 0.4.0: A, with the menu bar now the new Fill.</small> The zones already match the recommended green control (the menu bar is Fill). Top and bottom halves are one chord away, and C gives them a drag target later without taking the bottom edge from the Dock (not D) or slowing Fill (not B).</p>
 
     <!-- ════════════════════════════════════════════════════════════ -->
     <h2>Depth between windows</h2>
@@ -421,7 +421,7 @@
           <ul class="pc"><li class="y">For tilers and two-screen setups</li><li class="y">Off by default, so kombu keeps its job</li><li class="n">One more setting</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><span class="pill done">built</span> <b>Recommendation: A + B by default; C as an Appearance option, off by default; no D.</b> Depth should come from light, not color: kombu means "yours, selected" everywhere else, so a kombu ring all day would spend that meaning (the roast found kombu already overused, <a href="#across-every-app">below</a>). Those who tile or use two screens can turn the ring on.</p>
+    <p class="verdict"><span class="pill done">Built</span> <b>Recommendation: A + B by default; C as an Appearance option, off by default; no D.</b> Depth should come from light, not color: kombu means "yours, selected" everywhere else, so a kombu ring all day would spend that meaning (the roast found kombu already overused, <a href="#across-every-app">below</a>). Those who tile or use two screens can turn the ring on.</p>
     <div class="spec">
       <h5>How the compositor draws it</h5>
       <ul>
@@ -443,7 +443,7 @@
       <h5>As built (0.4.0)</h5>
       <ul>
         <li>As recommended, with the starting values above; the real ones are in <a href="design.html#window-depth">the design guidelines</a>. The request is <code>window-style</code>, and the shell sends each mode's values already chosen, so Dark Mode resends it.</li>
-        <li>A filled window loses its hairline as well as its shadow (it would double the menu bar's edge); the ring stays. Tiles and Fill are known by the frame the shell gave them (<code>frame {remember, maximized}</code>): moved off it, a window is an ordinary one again.</li>
+        <li>A filled window loses its hairline as well as its shadow (it would double the menu bar's edge); the ring stays. Tiles and Fill are what the shell says they are (<code>frame {tiled}</code>, <code>frame {maximized}</code>): moved or resized by hand, a window is an ordinary one again.</li>
         <li>Not built: Increase Contrast (there is no such setting yet), the menu shadow on app popups (they are left as they are), and shadows on the shell's switcher and Desktops pictures.</li>
       </ul>
     </div>

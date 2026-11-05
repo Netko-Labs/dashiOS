@@ -312,11 +312,6 @@ impl Dashi {
         let Some(id) = self.x11_announced(surface) else {
             return;
         };
-        let payload = if event == "fullscreen" {
-            json!({ "window": id, "on": on })
-        } else {
-            json!({ "window": id })
-        };
-        self.ipc.emit(event, payload);
+        self.ipc.emit(event, json!({ "window": id, "on": on }));
     }
 }

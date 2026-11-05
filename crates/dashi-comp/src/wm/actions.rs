@@ -1,6 +1,7 @@
 //! What the shell does to windows over IPC: focus, close, minimize, hide,
-//! frame, restore. The compositor carries them out; whether to is the shell's
-//! decision (docs/compositor-ipc.md, "Session and windows").
+//! frame. The compositor carries them out; whether to is the shell's
+//! decision (docs/compositor-ipc.md, "Session and windows"). Which frame a
+//! window had before it was tiled or filled is the shell's to remember too.
 
 use smithay::{
     desktop::Window,
@@ -182,39 +183,24 @@ impl Dashi {
         }
     }
 
-    /// Move and size its frame. `remember` keeps the frame it had for `restore`
-    /// (a tile, a zoom); `maximized` tells the client it is zoomed.
+    /// Move and size its frame; `maximized` tells the client it fills the
+    /// screen (the shell's Fill), `tiled` that the shell made it a tile (its
+    /// depth, render/depth/). A window held in a move grab is held at its
+    /// new frame from there (move_grab.rs).
     pub(crate) fn frame_window(
         &mut self,
         id: WindowId,
         frame: Rectangle<i32, Logical>,
-        remember: bool,
         maximized: bool,
+        tiled: bool,
     ) -> Result<(), String> {
         let window = self.window_of(id)?;
-        let current = frame_of(self, &window);
-        if let Some(entry) = self.windows.get_mut(id) {
-            if remember {
-                entry.restore = entry.restore.or(current);
-            } else {
-                entry.restore = None;
-            }
-            entry.arranged = (remember || maximized).then_some((frame.loc, maximized));
-        }
         self.apply_frame(&window, frame, maximized);
-        Ok(())
-    }
-
-    /// Back to the frame it had before a tile or zoom.
-    pub(crate) fn restore_window(&mut self, id: WindowId) -> Result<(), String> {
-        let window = self.window_of(id)?;
-        self.show_window(id);
-        let restore = self.windows.get_mut(id).and_then(|entry| {
-            entry.arranged = None;
-            entry.restore.take()
-        });
-        if let Some(frame) = restore {
-            self.apply_frame(&window, frame, false);
+        if let Some(entry) = self.windows.get_mut(id) {
+            entry.tiled = tiled && !maximized;
+        }
+        if self.held == Some(id) {
+            self.held_reframed = true;
         }
         Ok(())
     }
@@ -222,6 +208,10 @@ impl Dashi {
     /// Size and place a window by its outer frame (title bar included).
     fn apply_frame(&mut self, window: &Window, frame: Rectangle<i32, Logical>, maximized: bool) {
         let bar = super::windows::bar_of(self, window);
+        if let Some(entry) = self.windows.by_window_mut(window) {
+            entry.maximized = maximized;
+            entry.tiled = false;
+        }
         if let Some(toplevel) = window.toplevel() {
             toplevel.with_pending_state(|state| {
                 state.size = Some(Size::from((frame.size.w, (frame.size.h - bar).max(1))));

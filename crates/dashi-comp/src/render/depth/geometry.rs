@@ -18,7 +18,7 @@ pub(crate) enum Role {
     Bare,
     /// Placed by hand: the focused or the other shadow, cross-faded.
     Free,
-    /// Framed with `remember` (a tile).
+    /// Framed with `tiled` (a tile).
     Tiled,
     /// Framed with `maximized` (Fill).
     Filled,
@@ -33,9 +33,9 @@ pub(crate) struct Facts {
     /// Its surfaces reach past its geometry: the client draws its own shadow.
     pub own_shadow: bool,
     pub sheet: bool,
-    /// Its frame is where the shell put it with `remember` or `maximized`.
-    pub arranged: bool,
-    /// That was with `maximized`.
+    /// The shell framed it as a tile (`frame {tiled}`).
+    pub tiled: bool,
+    /// The shell's Fill (`frame {maximized}`).
     pub filled: bool,
 }
 
@@ -44,9 +44,9 @@ pub(crate) fn role(facts: Facts) -> Role {
         Role::Bare
     } else if facts.sheet {
         Role::Sheet
-    } else if facts.arranged && facts.filled {
+    } else if facts.filled {
         Role::Filled
-    } else if facts.arranged {
+    } else if facts.tiled {
         Role::Tiled
     } else {
         Role::Free
@@ -226,26 +226,18 @@ mod tests {
         assert_eq!(role(free), Role::Free);
         assert_eq!(
             role(Facts {
-                arranged: true,
+                tiled: true,
                 ..free
             }),
             Role::Tiled
         );
-        // Fill is arranged too; maximized says which.
+        // Fill wins over a tile.
         let filled = Facts {
-            arranged: true,
+            tiled: true,
             filled: true,
             ..free
         };
         assert_eq!(role(filled), Role::Filled);
-        // Moved away from where the shell put it: an ordinary window again.
-        assert_eq!(
-            role(Facts {
-                arranged: false,
-                ..filled
-            }),
-            Role::Free
-        );
         assert_eq!(
             role(Facts {
                 fullscreen: true,
@@ -263,7 +255,7 @@ mod tests {
         assert_eq!(
             role(Facts {
                 sheet: true,
-                arranged: true,
+                tiled: true,
                 ..free
             }),
             Role::Sheet

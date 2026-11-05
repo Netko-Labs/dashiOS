@@ -255,7 +255,7 @@
       <li id="vs-3"><b class="rid">VS-3</b><div>No permanent footer bar. A strip under the content may appear for something that is happening (progress, an error with its action) and leaves when it's done.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/notes.md">Notes</a>, <a href="roast/editor.md">Text Editor</a>, <a href="roast/preview.md">Preview</a> roasts · <code>AppWindow</code>'s <code>footer</code> (<code>window.tsx:49-50</code>); Notes' standing note count</span></div></li>
       <li id="vs-4"><b class="rid">VS-4</b><div>Tabs live in the toolbar row, never in a row of their own.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a> roast</span></div></li>
       <li id="vs-5"><b class="rid">VS-5</b><div>State notices ("Offline · showing saved results") are a chip in the toolbar, not a box above the content.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/software.md">Software</a> roast · <code>apps/software/states.tsx:30-49</code></span></div></li>
-      <li id="vs-6" class="proposed"><b class="rid">VS-6</b><div>Full screen and Fill are different things: making a window bigger never hides the menu bar unless the person asked for full screen.<span class="tags"><span class="pill open">Proposed</span>green control and tiling, see Window management</span></div></li>
+      <li id="vs-6"><b class="rid">VS-6</b><div>Full screen and Fill are different things: making a window bigger never hides the menu bar unless the person asked for full screen.</div></li>
     </ol>
 
     <h2 id="brand">Name and mark</h2>
@@ -520,27 +520,31 @@
     </ul>
 
     <h2 id="window-management">Window management</h2>
-    <p>What makes a window bigger, and where tiles go. The compositor reports presses on the controls and the title bar (<code>crates/dashi-comp/src/input/decorations.rs</code>); the shell decides what they do (<code>packages/shell/src/arrange.ts</code>, tile geometry in <code>layout.ts</code>, keys in <code>keymap.ts</code>, the Window menu in <code>menus/model.ts</code>).</p>
-    <h3 id="window-management-today">Today</h3>
+    <p>What makes a window bigger, and where tiles go. The compositor reports presses on the controls and the title bar, and the start of the person's drags and resizes (<code>crates/dashi-comp/src/input/decorations.rs</code>, <code>wm/grabs/</code>); the shell decides what they do and remembers how each window is arranged (<code>packages/shell/src/arrange.ts</code>, tile geometry in <code>layout.ts</code>, the arrows' steps in <code>tiling.ts</code>, keys in <code>keymap.ts</code>, the Window menu in <code>menus/model.ts</code>).</p>
+    <h3 id="window-management-today">Gestures and keys</h3>
     <table>
       <tr><th>Gesture</th><th>Does</th></tr>
-      <tr><td>Press the square</td><td><strong>Full screen</strong>: the window covers its whole screen, the menu bar and Dock leave, and pushing the pointer against the top edge brings the menu bar back.</td></tr>
-      <tr><td>⌥ and press the square, or double-click the title bar</td><td><strong>Zoom</strong>: the window fills the usable area (menu bar and Dock stay), with no gap. Again: back to its own frame.</td></tr>
-      <tr><td>⌃❖← ⌃❖→</td><td>Tile to the left or right half</td></tr>
-      <tr><td>⌃❖↑</td><td>Fill: the usable area inside a 6 px gap</td></tr>
-      <tr><td>⌃❖↓</td><td>Restore the window's own frame</td></tr>
+      <tr><td>Press the square</td><td><strong>Fill</strong>: the window takes the whole usable area (menu bar and Dock stay), with no gap, and the app is told it is maximized. Again, or on a tiled window: back to its own frame.</td></tr>
+      <tr><td>⌥ and press the square</td><td><strong>Full screen</strong>: the window covers its whole screen, the menu bar and Dock leave, and pushing the pointer against the top edge brings the menu bar back. The square on a full-screen window leaves full screen, back to the frame it had before (tiled or filled again, if it was).</td></tr>
+      <tr><td>Double-click the title bar</td><td>What the square does (an app's own title bar too)</td></tr>
+      <tr><td>⌃❖← ⌃❖→ ⌃❖↑ ⌃❖↓</td><td>The half on that side</td></tr>
+      <tr><td>From a half, an arrow</td><td>At right angles: that quarter (⌃❖← then ⌃❖↑ is the top left). The opposite way: back to its own frame. The same way again: the next screen that way, the same half (nothing with one screen). From a quarter, an arrow moves it to the next quarter, or past the edge to the next screen.</td></tr>
+      <tr><td>⌃❖↩</td><td>Fill</td></tr>
+      <tr><td>⌃❖C</td><td>Center: its own size, in the middle of the usable area</td></tr>
+      <tr><td>⌃❖R</td><td>Back to Previous Size: the frame it had before it was tiled or filled</td></tr>
       <tr><td>⌃❖F</td><td>Full screen on or off</td></tr>
       <tr><td>Drag against a side</td><td>The half on that side; the side's top or bottom 48 px give the quarters; the menu bar's edge gives Fill. A preview shows after 150 ms.</td></tr>
-      <tr><td>Window menu</td><td>Tile Left, Tile Right, Fill, Restore; View (or Window): Enter Full Screen, Zoom</td></tr>
+      <tr><td>Drag a tiled or filled window</td><td>It gets its own size back under the pointer once it moves 4 pt, and is no longer tiled. Resizing it by hand ends the tile too.</td></tr>
+      <tr><td>Window menu</td><td>Fill, Center, the four halves and four quarters, Back to Previous Size (only when there is one to go back to), each with its keys; the tile the window is in is checked. View (or Window): Enter Full Screen.</td></tr>
     </table>
-    <p class="small muted">There is no top or bottom half: <code>TILES</code> in <code>layout.ts</code> has left, right, the four quarters, and fill. Tiles keep a 6 px gap between them and around them; Zoom keeps none.</p>
+    <p class="small muted"><code>TILES</code> in <code>layout.ts</code> has the four halves, the four quarters, and fill. Tiles keep a 6 px gap between them and around them; Fill keeps none (on a 1646 × 937 screen with the Dock: x 0, y 28, 1646 × 838).</p>
     <h3 id="window-management-rules">Rules</h3>
     <ol class="rules">
-      <li id="wi-1" class="proposed"><b class="rid">WI-1</b><div>The square never hides the menu bar by surprise. Pressing it fills the usable area, menu bar and Dock still there; pressing it again restores the window's own frame. ⌥ and the square enters full screen; double-clicking the title bar fills.<span class="tags"><span class="pill open">Proposed</span>green control, see proposals.html · today the square is full screen (<code>arrange.ts</code>, <code>decorations.rs</code>)</span></div></li>
-      <li id="wi-2" class="proposed"><b class="rid">WI-2</b><div>⌃❖ and an arrow tiles to that half: ← left, → right, ↑ top, ↓ bottom. Fill and Restore keep their own keys, listed in the Window menu.<span class="tags"><span class="pill open">Proposed</span>tiling, see proposals.html · today ↑ fills and ↓ restores, and there are no top and bottom halves</span></div></li>
-      <li id="wi-3" class="proposed"><b class="rid">WI-3</b><div>The keys, drag-to-tile, and the Window menu offer the same tiles, and the menu shows each tile's key.<span class="tags"><span class="pill open">Proposed</span>tiling, see proposals.html</span></div></li>
+      <li id="wi-1"><b class="rid">WI-1</b><div>The square never hides the menu bar by surprise. Pressing it fills the usable area, menu bar and Dock still there; pressing it again, or on a tiled window, restores the window's own frame. ⌥ and the square enters full screen; double-clicking the title bar does what the square does.</div></li>
+      <li id="wi-2"><b class="rid">WI-2</b><div>⌃❖ and an arrow tiles to that half: ← left, → right, ↑ top, ↓ bottom. Fill (⌃❖↩), Center (⌃❖C), and Back to Previous Size (⌃❖R) keep their own keys, listed in the Window menu.</div></li>
+      <li id="wi-3"><b class="rid">WI-3</b><div>The keys, drag-to-tile, and the Window menu offer the same tiles, and the menu shows each tile's key.</div></li>
       <li id="wi-4"><b class="rid">WI-4</b><div>Full screen is always there for the person who asks: ⌃❖F, the Window or View menu, and an app's own button or F11.</div></li>
-      <li id="wi-5"><b class="rid">WI-5</b><div>A tiled window keeps the frame it had before, and Restore gives it back.</div></li>
+      <li id="wi-5"><b class="rid">WI-5</b><div>A tiled or filled window keeps the frame it had before, and Back to Previous Size gives it back; the row is disabled when there is nothing to go back to. Moving or resizing the window by hand ends the tile.</div></li>
     </ol>
 
     <h2>Motion</h2>
@@ -833,8 +837,6 @@
     <h2>Open questions</h2>
     <table>
       <tr><th>Question</th><th>Today</th></tr>
-      <tr><td>The green control and tiling keys</td><td>The square is full screen and ⌃❖↑ fills; the owner asked for Fill on the square and top and bottom halves. Options in <a href="proposals.html">proposals.html</a>.</td></tr>
-      <tr><td>Two kinds of "fill"</td><td>Zoom fills the usable area with no gap; the Fill tile keeps a 6 px gap. Pick one, or say why both.</td></tr>
       <tr><td>The error color</td><td>The <code>critical</code> token is <code>#D4483B</code>; the brand says errors are ume (<code>#D0596F</code>), and ume text on white is only 3.9:1. Pick one token for errors and give it an AA ink.</td></tr>
       <tr><td>metal-ui or <code>@dashi/ui</code></td><td>The convention says metal-ui first; no first-party app imports it. Ship a Dashi theme for metal-ui and migrate, or rewrite the convention to match the code.</td></tr>
       <tr><td>Borrowed names</td><td>"Night Shift", "Spaces", "Control Center", and "Setup Assistant" are macOS's words, and "Mission Control" appears in code comments. Keep, rename, or decide case by case.</td></tr>
@@ -1028,12 +1030,14 @@ const KEY = {
   "❖": `<svg viewBox="0 0 16 16"><path d="${[diamond(8, 4.2), diamond(11.8, 8), diamond(8, 11.8), diamond(4.2, 8)].join("")}" fill="#000"/></svg>`,
   "⌃": stroke("M4 9.5L8 5.5L12 9.5"), "⌥": stroke("M2.5 5h3.5l4 7h3.5M10 5h3.5"), "⇧": stroke("M8 2.5L13 8H10.5V13.5H5.5V8H3Z"),
   "←": stroke("M12.5 8H3.5M7 4.5L3.5 8L7 11.5"), "→": stroke("M3.5 8H12.5M9 4.5L12.5 8L9 11.5"), "↑": stroke("M8 12.5V3.5M4.5 7L8 3.5L11.5 7"), "↓": stroke("M8 3.5V12.5M4.5 9L8 12.5L11.5 9"),
+  "↩": stroke("M12.5 3.5V8.5H3.5M7 5L3.5 8.5L7 12"),
 };
-const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓]|[^❖⌃⌥⇧←→↑↓]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
+const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓↩]|[^❖⌃⌥⇧←→↑↓↩]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
 const SHORTCUTS = [
   ["❖Space", "Launcher"], ["❖Tab, ⇧❖Tab", "Switch apps"], ["❖`", "Next window of the app"], ["❖Q", "Quit the app"], ["❖W", "Close the window (Dashi's apps)"],
   ["❖M", "Minimize"], ["❖H", "Hide the app"], ["❖,", "System Settings"], ["⇧❖3", "Screenshot of the screen"], ["⇧❖4", "Screenshot of an area (Space: a window)"], ["⇧❖5", "Screenshot and recording toolbar (again: stop recording)"],
-  ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Desktop"], ["⌃❖←, ⌃❖→", "Tile left and right"], ["⌃❖↑", "Fill (proposed: top half)"], ["⌃❖↓", "Restore (proposed: bottom half)"],
+  ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Desktop"], ["⌃❖←, ⌃❖→", "Left and right half"], ["⌃❖↑, ⌃❖↓", "Top and bottom half"],
+  ["⌃❖←, ⌃❖↑", "From a half, an arrow at right angles: that quarter (here the top left)"], ["⌃❖↩", "Fill"], ["⌃❖C", "Center"], ["⌃❖R", "Back to Previous Size"],
   ["⌃❖F", "Full screen"], ["⌃❖Q", "Lock the screen"], ["⌥❖Esc", "Force Quit"], ["⌥❖D", "Dock autohide on or off"],
 ];
 document.getElementById("shortcuts").innerHTML = `<tr><th style="width:38%">Keys</th><th>Does</th></tr>` + SHORTCUTS.map(([k, d]) => `<tr><td>${k.split(", ").map(keys).join(" ")}</td><td>${d}</td></tr>`).join("") + `<tr><td colspan="2" class="small muted">From <code>packages/shell/src/keymap.ts</code>. ⌃❖, ⌥❖, and ⌃⌥❖ combinations not listed are reserved for Dashi.</td></tr>`;

@@ -87,11 +87,17 @@ export const KEYMAP: Keymap = {
     { when: "ctrl+Right", bind: "space-right" },
     ...Array.from({ length: 9 }, (_, index) => ({ when: `ctrl+${index + 1}`, bind: `space-${index + 1}` })),
 
-    // ⌃❖ arrows arrange the focused window.
+    // ⌃❖ arrows arrange the focused window: the half on that side, then a
+    // quarter, its own size, or the next screen (tiling.ts). ⌃❖↩ fills,
+    // ⌃❖C centers, ⌃❖R gives back its own size (arrange.ts). Like every
+    // ⌃❖ rule, above the reserved super+ctrl+* below.
     { when: "super+ctrl+Left", bind: "tile-left" },
     { when: "super+ctrl+Right", bind: "tile-right" },
-    { when: "super+ctrl+Up", bind: "tile-fill" },
-    { when: "super+ctrl+Down", bind: "tile-restore" },
+    { when: "super+ctrl+Up", bind: "tile-up" },
+    { when: "super+ctrl+Down", bind: "tile-down" },
+    { when: "super+ctrl+Return|KP_Enter", bind: "tile-fill" },
+    { when: "super+ctrl+c", bind: "tile-center" },
+    { when: "super+ctrl+r", bind: "tile-restore" },
     // ⌃❖F: full screen (arrange.ts), for any window, as on the Mac.
     { when: "super+ctrl+f", bind: "fullscreen" },
     // ⌃❖Q: lock the screen, as on the Mac.

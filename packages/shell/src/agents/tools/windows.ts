@@ -1,6 +1,6 @@
 /** Windows and apps: what is open, opening and arranging it, ending it, and locking the screen. */
 
-import { TILES } from "../../layout.ts";
+import { ARRANGE } from "../../layout.ts";
 import { fail, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
 
 /** A process id: Linux allows up to 2^22, and 0 and 1 are never an app. */
@@ -13,7 +13,7 @@ export const windowTools: readonly ToolDef[] = [
     name: "list_windows",
     title: "List windows",
     description:
-      "Every window, front to back: id, app id and name, title, process id, whether it is focused, minimized, hidden, zoomed (tiled or filling the screen), or full screen (covering its whole screen, menu bar and Dock included), and its frame in screen points.",
+      "Every window, front to back: id, app id and name, title, process id, whether it is focused, minimized, or hidden, how it is arranged (`arrangement`: a half, a quarter, or fill, from tile_window, the keys, or a drag; null at its own size), whether it is full screen (covering its whole screen, menu bar and Dock included), and its frame in screen points.",
     scope: "see",
     readOnly: true,
     destructive: false,
@@ -89,18 +89,19 @@ export const windowTools: readonly ToolDef[] = [
   {
     name: "tile_window",
     title: "Arrange a window",
-    description: "Snap a window to half or a quarter of the screen, fill the screen, or restore its previous frame.",
+    description:
+      "Arrange a window on its screen: a half (left, right, top, bottom) or a quarter, with a small gap; fill (all of the area the menu bar and Dock leave, no gap, and the app is told it is maximized); center (its own size, centered); or restore (back to the size and place it had before it was arranged; does nothing if it is not arranged).",
     scope: "act",
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { window: windowProp, tile: { type: "string", enum: TILES } },
+    properties: { window: windowProp, tile: { type: "string", enum: ARRANGE } },
     required: ["window", "tile"],
     parse: (args) => {
       const window = windowArg(args);
       if (typeof window !== "number") return window;
-      const tile = TILES.find((candidate) => candidate === args.tile);
-      return tile ? { name: "tile_window", window, tile } : fail(`\`tile\` must be one of: ${TILES.join(", ")}.`);
+      const tile = ARRANGE.find((candidate) => candidate === args.tile);
+      return tile ? { name: "tile_window", window, tile } : fail(`\`tile\` must be one of: ${ARRANGE.join(", ")}.`);
     },
   },
   {

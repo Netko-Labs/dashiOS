@@ -8,7 +8,7 @@
 
 import type { AppMenu, PublishedMenus } from "../app-menus/protocol.ts";
 import type { CompositorWindow } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange, Tile } from "../layout.ts";
 import { sameApp } from "../shortcuts.ts";
 import type { EditCommand } from "./keystrokes.ts";
 
@@ -46,12 +46,12 @@ export type MenuAction =
   | { kind: "new-window"; appId: string }
   | { kind: "close-window"; window: number }
   | { kind: "minimize"; window: number }
-  | { kind: "zoom"; window: number }
   /** Enter full screen, or leave it. */
   | { kind: "fullscreen"; window: number }
   /** Type the app's chord for an Edit row into the window (keystrokes.ts). */
   | { kind: "edit"; window: number; command: EditCommand }
-  | { kind: "tile"; window: number; tile: Tile }
+  /** Tile, fill, center, or back to its own frame (arrange.ts). */
+  | { kind: "tile"; window: number; tile: Arrange }
   /** Put the window on Desktop `space` (from 0), or on a new one. */
   | { kind: "move-to-space"; window: number; space: number | "new" }
   | { kind: "bring-to-front"; window: number }
@@ -89,6 +89,8 @@ export interface MenuContext {
   app?: PublishedMenus | null;
   /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. */
   desktops?: { labels: readonly string[]; current: number };
+  /** How the focused window is arranged (arrange.ts): a tile or Fill; absent or null at its own frame. */
+  arrangement?: Tile | null;
 }
 
 const SEPARATOR: MenuEntry = { kind: "separator" };
@@ -154,12 +156,10 @@ const editMenu = (ctx: MenuContext): MenuEntry[] => [
   editItem(ctx, "Find…", "find", "❖F"),
 ];
 
-const zoomItem = (ctx: MenuContext): MenuEntry => item("Zoom", ctx.focused && { kind: "zoom", window: ctx.focused.id });
-
 const fullScreenItem = (ctx: MenuContext): MenuEntry =>
   item(ctx.focused?.fullscreen ? "Exit Full Screen" : "Enter Full Screen", ctx.focused && { kind: "fullscreen", window: ctx.focused.id }, "⌃❖F");
 
-const viewMenu = (ctx: MenuContext): MenuEntry[] => [fullScreenItem(ctx), zoomItem(ctx)];
+const viewMenu = (ctx: MenuContext): MenuEntry[] => [fullScreenItem(ctx)];
 
 /** The app published menus but no View of its own: Dashi's View is gone from the bar, so Full Screen moves to Window. */
 const lacksViewMenu = (ctx: MenuContext): boolean => !!ctx.app && !ctx.app.menus.some((menu) => menu.id === "view" && menu.items.length > 0);
@@ -171,12 +171,41 @@ export function appWindows(ctx: MenuContext): CompositorWindow[] {
   return ctx.windows.filter((window) => sameApp(window, focused)).sort((a, b) => a.id - b.id);
 }
 
+/** The tiles the Window menu offers, with their keys: a quarter is a half, then an arrow at right angles (tiling.ts). */
 const TILE_ITEMS: ReadonlyArray<[string, Tile, string]> = [
-  ["Tile Left", "left", "⌃❖←"],
-  ["Tile Right", "right", "⌃❖→"],
-  ["Fill", "fill", "⌃❖↑"],
-  ["Restore", "restore", "⌃❖↓"],
+  ["Left Half", "left", "⌃❖←"],
+  ["Right Half", "right", "⌃❖→"],
+  ["Top Half", "top", "⌃❖↑"],
+  ["Bottom Half", "bottom", "⌃❖↓"],
+  ["Top Left Quarter", "top-left", "⌃❖← ↑"],
+  ["Top Right Quarter", "top-right", "⌃❖→ ↑"],
+  ["Bottom Left Quarter", "bottom-left", "⌃❖← ↓"],
+  ["Bottom Right Quarter", "bottom-right", "⌃❖→ ↓"],
 ];
+
+/**
+ * The rows that arrange the focused window: Fill and Center, the tiles, and
+ * Back to Previous Size, which is there only when the window is arranged
+ * (a full-screen window is arranged by none of them). The tile the window
+ * is in is checked.
+ */
+function arrangeItems(ctx: MenuContext): { top: MenuEntry[]; tiles: MenuEntry[]; back: MenuEntry } {
+  const focused = ctx.focused;
+  const window = focused && focused.state === "normal" && !focused.fullscreen ? focused.id : null;
+  const arrangement = ctx.arrangement ?? null;
+  const row = (label: string, to: Arrange, keys: string): MenuEntry => ({
+    kind: "item",
+    label,
+    keys,
+    ...(to === arrangement ? { checked: true } : {}),
+    action: window === null ? null : { kind: "tile", window, tile: to },
+  });
+  return {
+    top: [row("Fill", "fill", "⌃❖↩"), row("Center", "center", "⌃❖C")],
+    tiles: TILE_ITEMS.map(([label, tile, keys]) => row(label, tile, keys)),
+    back: item("Back to Previous Size", window !== null && arrangement !== null ? { kind: "tile", window, tile: "restore" } : null, "⌃❖R"),
+  };
+}
 
 /** Desktops a window can go to; as many as the compositor allows (comp/src/wm/spaces.rs). */
 const MOST_DESKTOPS = 16;
@@ -201,12 +230,15 @@ const windowLabel = (window: CompositorWindow, ctx: MenuContext): string => {
 const windowMenu = (ctx: MenuContext): MenuEntry[] => {
   const focused = ctx.focused;
   const listed = appWindows(ctx);
+  const arrange = arrangeItems(ctx);
   return [
     item("Minimize", focused && { kind: "minimize", window: focused.id }, "❖M"),
-    zoomItem(ctx),
+    ...arrange.top,
     ...(lacksViewMenu(ctx) ? [fullScreenItem(ctx)] : []),
     SEPARATOR,
-    ...TILE_ITEMS.map(([label, tile, keys]) => item(label, focused && { kind: "tile", window: focused.id, tile }, keys)),
+    ...arrange.tiles,
+    SEPARATOR,
+    arrange.back,
     ...moveToItems(ctx),
     SEPARATOR,
     item("Bring All to Front", focused && { kind: "bring-to-front", window: focused.id }),

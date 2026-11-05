@@ -33,7 +33,6 @@ pub(crate) fn handle(
         "close" => done(state.close_window(window(params)?)),
         "minimize" => done(state.park_window(window(params)?, Shown::Minimized)),
         "hide" => done(state.park_window(window(params)?, Shown::Hidden)),
-        "restore" => done(state.restore_window(window(params)?)),
         "place" => {
             let at = Point::from((coord(params, "x")?, coord(params, "y")?));
             done(state.place_window(window(params)?, at))
@@ -46,9 +45,9 @@ pub(crate) fn handle(
                 int(params, "height")?,
             )
             .ok_or("frame: x, y, width, and height are required (a positive size, within range)")?;
-            let remember = flag(params, "remember");
             let maximized = flag(params, "maximized");
-            done(state.frame_window(window(params)?, frame, remember, maximized))
+            let tiled = flag(params, "tiled");
+            done(state.frame_window(window(params)?, frame, maximized, tiled))
         }
         "keymap" => {
             state.keys.keymap = Keymap::parse(params)?;

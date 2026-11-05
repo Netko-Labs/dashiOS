@@ -97,6 +97,9 @@ pub(crate) struct Dashi {
     pub thumbnails: crate::render::thumbnails::Thumbnails,
     /// The window held in a move grab, which goes along when the Space changes.
     pub held: Option<crate::wm::WindowId>,
+    /// The shell framed the held window (`frame` while it is dragged): the
+    /// grab holds it at its new frame from the next motion (move_grab.rs).
+    pub held_reframed: bool,
     /// A held window against a screen edge (`edge-hold`).
     pub edge_hold: crate::wm::EdgeHold,
     pub bars: crate::wm::Bars,
@@ -286,6 +289,7 @@ impl Dashi {
             spaces: Default::default(),
             thumbnails: Default::default(),
             held: None,
+            held_reframed: false,
             edge_hold: Default::default(),
             bars: Default::default(),
             wallpaper: Default::default(),

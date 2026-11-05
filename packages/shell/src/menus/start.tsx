@@ -167,6 +167,7 @@ export function startMenus(options: MenusOptions): Menus {
       focused,
       canLaunch: focused !== null && entryFor(focused.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
+      arrangement: focused ? (options.arranger?.arrangement(focused.id) ?? null) : null,
       ...desktopsNow(),
     };
   };
@@ -254,6 +255,7 @@ export function startMenus(options: MenusOptions): Menus {
       canLaunch: entryFor(window.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
       app,
+      arrangement: options.arranger?.arrangement(window.id) ?? null,
       ...desktopsNow(),
     };
     return windowMenus(ctx);

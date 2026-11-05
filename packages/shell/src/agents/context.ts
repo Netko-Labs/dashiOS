@@ -1,7 +1,7 @@
 /** What running a tool needs, and the shape of what it answers. */
 
 import type { Compositor } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange, Tile } from "../layout.ts";
 import type { Atspi } from "./atspi/client.ts";
 import type { Placed, Rect } from "./atspi/tree.ts";
 import type { Question } from "./confirm.ts";
@@ -66,8 +66,10 @@ export interface RunContext {
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */
   status(text: string): void;
-  /** Snap a window into a tile (arrange.ts). */
-  tile(window: number, tile: Tile): Promise<void>;
+  /** Tile, fill, center, or give a window its own frame back (arrange.ts). */
+  tile(window: number, to: Arrange): Promise<void>;
+  /** How the shell arranged a window (a tile, Fill), or null at its own frame (arrange.ts). */
+  arrangement(window: number): Tile | null;
   /**
    * Whether this agent may read window titles and app ids, i.e. holds the
    * "see" scope. Only list_windows is allowed to say what a window is called

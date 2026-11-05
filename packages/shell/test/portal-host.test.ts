@@ -65,7 +65,7 @@ test("a sheet hangs below an app's own title bar and toolbar, guessed by the kin
   expect(sheetTop({ appId: "org.gnome.Nautilus", titleBar: 0 })).toBe(SHEET_TOPS.other);
 
   const sent: Array<[string, unknown]> = [];
-  const helium = { id: 3, appId: "net.imput.helium", title: "Helium", pid: 1, focused: true, state: "normal", zoomed: false, frame: null, titleBar: 0 };
+  const helium = { id: 3, appId: "net.imput.helium", title: "Helium", pid: 1, focused: true, state: "normal", frame: null, titleBar: 0 };
   const sheets = new PortalSheets(
     {
       request: async (method, params) => {

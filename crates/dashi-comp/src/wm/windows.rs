@@ -46,12 +46,12 @@ pub(crate) struct Entry {
     pub shown: Shown,
     /// Where its frame was when it last left the screen (minimized, hidden).
     pub parked_at: Option<Point<i32, Logical>>,
-    /// The frame to go back to (`restore`) after a tile or zoom (`frame` with `remember`).
-    pub restore: Option<Rectangle<i32, Logical>>,
-    /// Where the shell put its frame with `remember` (a tile) or `maximized`
-    /// (Fill, the bool), until it is framed or restored otherwise: its depth
-    /// is a tile's or a filled window's while its frame is still there.
-    pub arranged: Option<(Point<i32, Logical>, bool)>,
+    /// The client was last told it is maximized (`frame` with `maximized`: the shell's Fill).
+    pub maximized: bool,
+    /// The shell framed it as a tile (`frame` with `tiled`), until another
+    /// frame, Fill, full screen, or the person moves or resizes it: its
+    /// depth is a tile's (render/depth/).
+    pub tiled: bool,
     /// How it is framed: by the client, by dashi-comp's title bar, or unified.
     pub decor: Decor,
     /// The app asked for the unified style (dashi-chrome-v1).
@@ -111,8 +111,8 @@ impl Windows {
             placing: false,
             shown: Shown::Normal,
             parked_at: None,
-            restore: None,
-            arranged: None,
+            maximized: false,
+            tiled: false,
             decor: Decor::None,
             unified: false,
             title_image: None,
@@ -177,6 +177,12 @@ impl Windows {
 
     pub(crate) fn by_window(&self, window: &Window) -> Option<&Entry> {
         self.entries.iter().find(|entry| &entry.window == window)
+    }
+
+    pub(crate) fn by_window_mut(&mut self, window: &Window) -> Option<&mut Entry> {
+        self.entries
+            .iter_mut()
+            .find(|entry| &entry.window == window)
     }
 
     pub(crate) fn entries_mut(&mut self) -> impl Iterator<Item = &mut Entry> {
@@ -288,7 +294,6 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "pid": pid,
         "focused": focused,
         "state": entry.shown.name(),
-        "zoomed": entry.restore.is_some(),
         "frame": frame,
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),

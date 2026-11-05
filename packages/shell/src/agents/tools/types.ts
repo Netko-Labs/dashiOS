@@ -2,7 +2,7 @@
 
 import type { CornerName } from "../../corners.ts";
 import type { DockStyle } from "../../dock/settings.ts";
-import type { Tile } from "../../layout.ts";
+import type { Arrange } from "../../layout.ts";
 import type { PageId } from "../../setup/flow.ts";
 import type { ProfileId } from "../../system/profiles.ts";
 import type { Chord } from "./keys.ts";
@@ -47,7 +47,7 @@ export type Call =
   | { name: "launch_app"; app: string }
   | { name: "open_in_preview"; path: string }
   | { name: "focus_window" | "minimize_window" | "close_window"; window: number }
-  | { name: "tile_window"; window: number; tile: Tile }
+  | { name: "tile_window"; window: number; tile: Arrange }
   | { name: "force_quit_app"; target: { window: number } | { pid: number } }
   | { name: "lock_screen" }
   | { name: "list_spaces" }
