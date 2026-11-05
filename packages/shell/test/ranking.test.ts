@@ -43,6 +43,18 @@ describe("an app over a Settings pane that matches as well (the wave 1 VM run)",
     });
   }
 
+  test('a command or setting that matches as well as an app comes after it ("s" was Sleep in the VM)', () => {
+    const items = buildIndex([
+      { id: "dev.dashi.software", kind: "app", names: ["Software"] },
+      { id: "dev.dashi.settings", kind: "app", names: ["System Settings"], own: true },
+      { id: "dashi://dashi/sleep", kind: "command", names: ["Sleep"] },
+      { id: "dashi://settings/sound/show-in-menu-bar", kind: "setting", names: ["Show Sound in menu bar"] },
+    ]);
+    const kinds = rank(items, "s").map((result) => result.item.kind);
+    expect(kinds.slice(0, 2)).toEqual(["app", "app"]);
+    expect(rank(items, "sleep")[0]?.item.id).toBe("dashi://dashi/sleep");
+  });
+
   test("a pane is the Top hit when it is clearly the match: its whole name, or one of its words, or nothing else matches", () => {
     expect(top("sound")).toBe("Sound");
     expect(top("notifications")).toBe("Notifications");

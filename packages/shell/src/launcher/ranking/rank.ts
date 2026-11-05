@@ -61,11 +61,14 @@ const FRECENCY_HALF = 4;
 const EXACT_FLOOR = TIER.exact * BAND;
 const DEMOTE = (TIER.exact + 1) * BAND;
 /**
- * What a Settings pane gives up in its tier when it is not clearly the match
- * (a part of its name, not the whole of it or of a keyword): any app, setting
- * or command matching as well comes first ("no" is Notes, "s" System
- * Settings, "a" Activity Monitor). Less than a band, so it never drops a tier.
+ * What anything but an app gives up in its tier when it is not clearly the
+ * match (a part of its name, not the whole of it or of a keyword): an app
+ * matching as well comes first ("no" is Notes, not Notifications; "s" is an
+ * app, not Sleep; "a" Activity Monitor, not About). A Settings pane gives up
+ * the most, so a setting or command still beats it. Less than a band, so
+ * nothing drops a tier.
  */
+const YIELD = 30;
 const PANE_YIELD = 50;
 const NO_PICKS: ReadonlyMap<string, number> = new Map();
 
@@ -223,7 +226,7 @@ function keep<T extends RankItem>(list: Ranked<T>[], result: Ranked<T>, limit: n
 function score<T extends RankItem>(entry: Prepared<T>, hit: Hit, picks: ReadonlyMap<string, number>, signals: RankSignals | undefined): number {
   const { item } = entry;
   let value = TIER[hit.kind] * BAND + hit.close + entry.bonus;
-  if (item.kind === "pane" && TIER[hit.kind] < TIER.keyword) value -= PANE_YIELD;
+  if (item.kind !== "app" && TIER[hit.kind] < TIER.keyword) value -= item.kind === "pane" ? PANE_YIELD : YIELD;
   if (signals) {
     const opened = signals.frecency(item.id);
     if (opened > 0) value += (FRECENCY * opened) / (opened + FRECENCY_HALF);
