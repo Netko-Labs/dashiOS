@@ -52,6 +52,15 @@ greetd
   the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
   `--text-info`, `--scale`, and `--calendar`; `--file-selection`, `--forms`,
   `--color-selection`, and `--notification` exit 255 for now.
+- **dashi-hardware** (`crates/dashi-hardware`) is Dashi's one privileged
+  helper for what a laptop's kernel exposes: firmware attributes, platform
+  profiles, the charge limit, fan curves, the keyboard light, cpufreq boost
+  and EPP, and AMD's SMU mailbox (the Curve Optimizer). A Rust system-bus
+  service (`dev.dashi.Hardware1`), D-Bus activated, root, with a polkit
+  action per kind of change. It enforces ranges and decides no policy; the
+  shell (`src/power/`, `src/graphics/`) and ASUS Control call it. Its
+  contract is `docs/hardware.md`. Graphics switching is cardwire's own
+  daemon (`dashi-graphics`), which the shell talks to directly.
 
 ## Channels
 
@@ -68,6 +77,8 @@ greetd
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
+| shell/applets ↔ dashi-hardware | D-Bus system bus: `dev.dashi.Hardware1` (polkit per method) | `docs/hardware.md` |
+| shell ↔ cardwire | D-Bus system bus: `org.opengamingcollective.cardwire` | `docs/hardware.md` (cardwire) |
 
 ## Installed Layout
 
@@ -77,6 +88,7 @@ greetd
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |
+| `/usr/libexec/dashi/dashi-hardware`, `/usr/share/dashi/models/` | `crates/dashi-hardware`, `data/models/` |
 | `/usr/share/dashi/shell/` | `packages/shell` (with its `node_modules`, `@dashi/ui` included) |
 | `/usr/libexec/dashi/mirin-metal-host` | `../mirin/crates/mirin-metal` |
 | `/usr/libexec/dashi/bin/bun` | `dashi-bun` |

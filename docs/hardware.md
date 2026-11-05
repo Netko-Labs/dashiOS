@@ -79,28 +79,41 @@ Fan curves and the Curve Optimizer have their own methods (below), under the
 ```json
 {
   "model": "GA403WR",            // the database entry matched, or null
+  "modelName": "ROG Zephyrus G14 (2025)",  // the database entry's name, or null
   "vendor": "ASUSTeK COMPUTER INC.",
   "product": "ROG Zephyrus G14 GA403WR_GA403WR",
   "laptop": true,                 // DMI chassis type, and a battery present
   "knobs": {
     "platform-profile": {"value": "balanced", "choices": ["low-power", "balanced", "performance"]},
-    "charge-limit": {"value": 100, "min": 20, "max": 100},
-    "ppt-spl": {"value": 80, "min": 15, "max": 80, "unit": "W"}
+    "charge-limit": {"value": 100, "min": 20, "max": 100, "unit": "%"},
+    "ppt-spl": {"value": 80, "min": 15, "max": 80, "unit": "W"},
+    "gpu-mux": {"value": 1, "min": 0, "max": 1, "pendingReboot": false}
   },
   "fans": [{"id": "cpu", "label": "CPU fan", "rpm": 2300, "curve": true}],
-  "lighting": {"keyboard": {"levels": 3}, "slash": true, "aura": false},
+  "lighting": {"keyboard": {"levels": 3, "rgb": false}, "slash": true, "aura": false, "anime": false},
   "hotkeys": {"mode": "KEY_PROG3", "lighting": "KEY_KBDILLUMTOGGLE", "rog": "KEY_PROG1", "micMute": "KEY_MICMUTE"},
   "quirks": ["d3cold-drops"],
   "recipes": { /* the model's mode recipes, see below, or null for tuned's defaults */ }
 }
 ```
 
+`modelName` is the database entry's display name (`null` with no match).
+Each knob carries `value` plus its range (`min`/`max`, and `unit` when it has
+one) or `choices`; `gpu-mux` adds `pendingReboot` (it applies at the next
+boot). `lighting.keyboard` is the number of brightness steps (`levels`, from
+the model, else the kernel's `max_brightness`) and whether it's RGB;
+`slash`, `aura` and `anime` say whether each USB light is present.
+
 ## The model database
 
 One JSON file per model in `data/models/`, matched on DMI
-(`sys_vendor` and `product_name` or `board_name`, exact or a prefix). What the
-kernel reports always wins: the file can narrow a range and name things, not
-invent a knob. Schema (`data/models/schema.json`):
+(`sys_vendor`, `product_name`, `board_name` or `product_family`, exact or a
+`*`-suffixed prefix; `match` may be a list, matching if any entry does). What
+the kernel reports always wins: the file can narrow a range and name things,
+not invent a knob. It is a JSON Schema (`data/models/schema.json`), installed
+to `/usr/share/dashi/models/`. Beyond the fields below it may carry `fans`
+(fan id → label) and `limits` (knob → `[min, max]`, narrowing the kernel's
+range). Example:
 
 ```json
 {

@@ -30,16 +30,19 @@ say() { echo "finish-install: $*"; }
 root=
 nvidia=auto
 kernel=auto
+graphics=auto
 while (($#)); do
   case $1 in
     --root) root=${2:?--root needs a directory}; shift 2 ;;
     --nvidia) nvidia=${2:-}; shift 2 ;;
     --kernel) kernel=${2:-}; shift 2 ;;
+    --graphics) graphics=${2:-}; shift 2 ;;
     *) echo "finish-install: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 case $nvidia in auto | yes | no) ;; *) echo "finish-install: --nvidia auto, yes, or no" >&2; exit 2 ;; esac
 case $kernel in auto | cachyos | both) ;; *) echo "finish-install: --kernel auto, cachyos, or both" >&2; exit 2 ;; esac
+case $graphics in auto | yes | no) ;; *) echo "finish-install: --graphics auto, yes, or no" >&2; exit 2 ;; esac
 [[ $EUID -eq 0 ]] || { echo "finish-install: run as root" >&2; exit 1; }
 
 # Whether this machine has an NVIDIA GPU (a display controller from vendor 0x10de).
@@ -50,6 +53,16 @@ has_nvidia() {
     [[ $(cat "$device/class" 2>/dev/null) == 0x03* ]] && return 0
   done
   return 1
+}
+
+# Whether this machine has two or more GPUs (display controllers, class
+# 0x03), which graphics switching (dashi-graphics, cardwire) is for.
+has_two_gpus() {
+  local device count=0
+  for device in /sys/bus/pci/devices/*; do
+    [[ $(cat "$device/class" 2>/dev/null) == 0x03* ]] && count=$((count + 1))
+  done
+  [[ $count -ge 2 ]]
 }
 
 # The installed packages whose names match the extended regex $1.
@@ -73,7 +86,10 @@ if [[ -n $root ]]; then
   if [[ $kernel == auto ]]; then
     if [[ $(/usr/libexec/dashi/default-kernel --check) == cachyos ]]; then kernel=cachyos; else kernel=both; fi
   fi
-  say "NVIDIA's driver: $nvidia; kernels: $kernel"
+  if [[ $graphics == auto ]]; then
+    if has_two_gpus; then graphics=yes; else graphics=no; fi
+  fi
+  say "NVIDIA's driver: $nvidia; kernels: $kernel; graphics switching: $graphics"
   # The installer usually has these mounted for its own chroot; mount what it hasn't.
   mounted=()
   cleanup() {
@@ -91,11 +107,11 @@ if [[ -n $root ]]; then
   if [[ -d /sys/firmware/efi/efivars && -d $root/sys/firmware/efi/efivars ]] && ! mountpoint -q "$root/sys/firmware/efi/efivars"; then
     mount -t efivarfs efivarfs "$root/sys/firmware/efi/efivars" && mounted+=("$root/sys/firmware/efi/efivars")
   fi
-  chroot "$root" /usr/libexec/dashi/finish-install --nvidia "$nvidia" --kernel "$kernel"
+  chroot "$root" /usr/libexec/dashi/finish-install --nvidia "$nvidia" --kernel "$kernel" --graphics "$graphics"
   exit
 fi
 
-[[ $nvidia != auto && $kernel != auto ]] || { echo "finish-install: inside the installed system, say --nvidia yes|no and --kernel cachyos|both" >&2; exit 2; }
+[[ $nvidia != auto && $kernel != auto && $graphics != auto ]] || { echo "finish-install: inside the installed system, say --nvidia yes|no, --kernel cachyos|both and --graphics yes|no" >&2; exit 2; }
 
 # The kernels, newest last, from their modules directories.
 kernels() { find /lib/modules -mindepth 2 -maxdepth 2 -name vmlinuz -printf '%h\n' | sed 's|.*/||' | sort -V; }
@@ -147,6 +163,25 @@ if [[ -n $machine_id && -f $rescue ]]; then
     rm -f -- "$rescue" "/boot/initramfs-0-rescue-$machine_id.img" "/boot/loader/entries/$machine_id-0-rescue.conf"
     /usr/lib/kernel/install.d/51-dracut-rescue.install add "$newest" "/boot/$machine_id/$newest" "/lib/modules/$newest/vmlinuz" \
       || say "couldn't make the rescue entry"
+  fi
+fi
+
+# 3b. Graphics switching on a two-GPU machine: cardwire (dashi-graphics), and
+# `bpf` in the kernel's lsm= list, which its eBPF LSM hook needs. CachyOS's
+# kernel already carries bpf in CONFIG_LSM, so the cmdline only needs it when
+# an explicit lsm= is set without it.
+if [[ $graphics == yes ]]; then
+  if ! rpm -q --quiet dashi-graphics; then
+    say "installing dashi-graphics (cardwire) for graphics switching"
+    dnf -y -q install dashi-graphics || say "couldn't install dashi-graphics; the card won't switch"
+  fi
+  if command -v grubby > /dev/null; then
+    cmdline=$(grubby --info=ALL 2>/dev/null | sed -n 's/^args="\(.*\)"$/\1/p' | head -n 1)
+    lsm=$(printf '%s\n' "$cmdline" | tr ' ' '\n' | sed -n 's/^lsm=//p' | head -n 1)
+    if [[ -n $lsm && ,$lsm, != *,bpf,* ]]; then
+      say "adding bpf to the kernel's lsm= list"
+      grubby --update-kernel=ALL --args="lsm=$lsm,bpf" || say "couldn't add bpf to lsm=; set it by hand"
+    fi
   fi
 fi
 
