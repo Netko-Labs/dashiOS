@@ -5,7 +5,7 @@ import { alwaysUse, orderChoices, parseAppChooser, parseGioDefault, subjectOf } 
 import { installReply, launcherName, parseInstall } from "../apps/portal/dynamic-launcher.tsx";
 import { composeEmail, mailtoUri, parseDraft, thunderbirdCompose } from "../apps/portal/email.ts";
 import { InhibitBackend } from "../apps/portal/inhibit.ts";
-import { NotificationBackend, notifyCall, parseIcon, parseNotification } from "../apps/portal/notification.ts";
+import { NotificationBackend, notifyCall, parseIcon, parseNotification, withFdIcon } from "../apps/portal/notification.ts";
 import { type Exporter, Requests } from "../apps/portal/request.ts";
 import { accentTriple, changedSettings, namespaceWanted, readAll, settingsInterface, settingsTable } from "../apps/portal/settings.ts";
 import type { ShellLink } from "../apps/portal/shell.ts";
@@ -298,4 +298,11 @@ test("DynamicLauncher: the name and icon offered, given back on Add", () => {
   expect((results.get("name") as Variant).value).toBe("Budget");
   expect(results.get("icon")).toBe(icon);
   expect(installReply(request, null)[0]).toBe(1);
+});
+
+test("Notification v2: a picture sent as a descriptor is read as bytes", () => {
+  const value = dict({ title: variant("s", "Hi"), icon: variant("(sv)", ["file-descriptor", variant("h", 0)]) });
+  const read = withFdIcon(value, [42], (fd) => (fd === 42 ? new Uint8Array([1, 2, 3]) : null));
+  expect(parseNotification(read).icon).toEqual({ bytes: new Uint8Array([1, 2, 3]) });
+  expect(parseNotification(withFdIcon(value, [], () => null)).icon).toBeNull();
 });

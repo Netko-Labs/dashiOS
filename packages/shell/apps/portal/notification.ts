@@ -10,7 +10,7 @@
  *   signal ActionInvoked(s app_id, s id, s action, av parameter)
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { fstatSync, mkdirSync, readSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type InterfaceSpec, Variant, variant } from "../../src/dbus/index.ts";
 import { cleanString, str, type Vardict, vardict } from "./vardict.ts";
@@ -84,6 +84,37 @@ export function parseNotification(value: unknown): PortalNotification {
     buttons: parseButtons(dict),
     category: str(dict, "category") ?? null,
   };
+}
+
+/**
+ * Version 2 sends a picture as `("file-descriptor", <h>)`, a sealed file the
+ * call carries; read here (it is closed once the call is answered) into the
+ * `bytes` form the rest reads.
+ */
+export function withFdIcon(value: unknown, fds: readonly number[], read: (fd: number) => Uint8Array | null = readIcon): unknown {
+  if (!(value instanceof Map)) return value;
+  const icon = value.get("icon");
+  if (!(icon instanceof Variant) || icon.signature !== "(sv)" || !Array.isArray(icon.value)) return value;
+  const [kind, inner] = icon.value as [unknown, unknown];
+  if (kind !== "file-descriptor" || !(inner instanceof Variant) || inner.signature !== "h") return value;
+  const fd = typeof inner.value === "number" ? fds[inner.value] : undefined;
+  const bytes = fd === undefined ? null : read(fd);
+  const next = new Map(value);
+  if (bytes) next.set("icon", variant("(sv)", ["bytes", variant("ay", bytes)]));
+  else next.delete("icon");
+  return next;
+}
+
+function readIcon(fd: number): Uint8Array | null {
+  try {
+    const size = fstatSync(fd).size;
+    if (size <= 0 || size > 4 << 20) return null;
+    const out = new Uint8Array(size);
+    const got = readSync(fd, out, 0, size, 0);
+    return out.subarray(0, got);
+  } catch {
+    return null;
+  }
 }
 
 /** The Notify call for a portal notification from `appId`. */
@@ -174,7 +205,10 @@ export class NotificationBackend {
     return {
       name: NOTIFICATION,
       methods: {
-        AddNotification: { in: "ssa{sv}", handler: ([appId, id, notification]) => this.add(text(appId), text(id), notification) },
+        AddNotification: {
+          in: "ssa{sv}",
+          handler: ([appId, id, notification], call) => this.add(text(appId), text(id), withFdIcon(notification, call.fds ?? [])),
+        },
         RemoveNotification: { in: "ss", handler: ([appId, id]) => this.remove(text(appId), text(id)) },
       },
       signals: { ActionInvoked: "sssav" },
