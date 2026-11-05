@@ -153,6 +153,16 @@ fn main() {
                     } => vt.select(phase, x, y, clicks),
                     Input::SelectAll => vt.select_all(),
                     Input::Copy => send(&mut out, &Output::Copied { text: vt.copy() }),
+                    Input::Colors { fg, bg, palette } => {
+                        vt.set_colors(&fg, &bg, &palette);
+                        force = true;
+                    }
+                    Input::Running => send(
+                        &mut out,
+                        &Output::Running {
+                            program: pty.foreground(),
+                        },
+                    ),
                 }
             }
             Ok(Message::Closed) => {

@@ -5,7 +5,7 @@
  * (engine.ts).
  */
 
-import { runApp } from "../kit/index.ts";
+import { runApp, systemClipboard } from "../kit/index.ts";
 import { engineBinary } from "./engine.ts";
 import { TERMINAL_SIZE, TerminalWindow } from "./view.tsx";
 
@@ -29,7 +29,7 @@ const retitle = (title: string): void => setTitle(title);
 // terminal's anywhere else; the window has no toolbar to put in it.
 const app = runApp(
   { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE, titleBar: "standard" },
-  <TerminalWindow binary={binary} onExit={() => quit()} newWindow={newWindow} setTitle={retitle} />,
+  <TerminalWindow binary={binary} onExit={() => quit()} newWindow={newWindow} setTitle={retitle} clipboard={systemClipboard()} />,
 );
 quit = app.quit;
 setTitle = (title) => app.host.setTitle(title);

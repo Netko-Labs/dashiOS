@@ -9,7 +9,12 @@ import { Button, Sheet, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 
-export type SheetState = { kind: "open" } | { kind: "save-as"; after: "close" | null } | { kind: "unsaved"; name: string } | { kind: "replace" };
+export type SheetState =
+  | { kind: "open" }
+  | { kind: "save-as"; after: "close" | null }
+  | { kind: "unsaved"; name: string }
+  | { kind: "replace" }
+  | { kind: "revert"; name: string };
 
 export function PathSheet({
   testID,

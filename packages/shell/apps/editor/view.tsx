@@ -11,9 +11,9 @@
 import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { AppWindow, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Clipboard } from "../kit/index.ts";
 import { useAppMenus } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
@@ -38,6 +38,10 @@ export interface EditorWindowProps {
   /** Types a chord into the window (GPUI's spelling, "ctrl-v"): Paste and Select All reach the input this way. */
   press: (keystroke: string) => void;
   scroll: (dy: number, fromTop: boolean) => void;
+  /** Gives the text the keyboard back, the caret where it was (after a sheet, Esc in Find, a Save from the toolbar). */
+  focusText: () => void;
+  /** Names the window after its document: the Window menu, the switcher, and the Dock's list show it. */
+  setTitle: (title: string) => void;
 }
 
 const isFolder = (path: string): boolean => {
@@ -59,12 +63,11 @@ function openProblem(path: string): string | null {
   }
 }
 
-export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll }: EditorWindowProps) {
+export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
   const colors = useColors();
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [sheet, setSheet] = useState<SheetState | null>(null);
-  // Bumped to give the keyboard to the text, or to the Find field.
-  const [textFocus, setTextFocus] = useState(0);
+  // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
   // Save As asks once before it replaces another file: this is the path it asked about.
   const replacing = useRef<string | null>(null);
@@ -74,17 +77,20 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
   const base = state.path !== null ? dirname(state.path) : homedir();
   const stats = useMemo(() => formatStats(textStats(state.text)), [state.text]);
   const { find } = state;
+  useEffect(() => {
+    setTitle(name);
+  }, [name, setTitle]);
 
+  // The text keeps its input (and its caret) through all of these: it is focused, never mounted again.
   const closeSheet = (): void => {
     setSheet(null);
-    setTextFocus((n) => n + 1);
+    focusText();
   };
   const save = (after: "close" | null): void => {
     const result = model.save();
     if (result === "needs-path") return setSheet({ kind: "save-as", after });
-    setSheet(null);
-    if (result === "saved" && after === "close") quit(false);
-    else setTextFocus((n) => n + 1);
+    if (result === "saved" && after === "close") return quit(false);
+    closeSheet();
   };
   const requestClose = (): void => {
     if (dirty) setSheet({ kind: "unsaved", name });
@@ -135,7 +141,7 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
       close: requestClose,
       save: () => save(null),
       saveAs: () => setSheet({ kind: "save-as", after: null }),
-      revert: () => model.revert(),
+      revert: () => setSheet({ kind: "revert", name }),
       undo: () => model.undo(),
       redo: () => model.redo(),
       paste: () => press("ctrl-v"),
@@ -167,7 +173,7 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
         onChangeText={(query) => model.setQuery(query)}
         onSubmit={() => model.findNext(1)}
         onKeyPress={(key) => {
-          if (key === "Escape") setTextFocus((n) => n + 1);
+          if (key === "Escape") focusText();
           else model.findNext(key === "ArrowUp" ? -1 : 1);
         }}
       />
@@ -213,6 +219,20 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
             onCancel={closeSheet}
           />
         );
+      case "revert":
+        return (
+          <ConfirmSheet
+            testID="revert"
+            title={`Revert “${sheet.name}” to the last saved version?`}
+            message="Your changes since then are set aside. Edit › Undo brings them back."
+            confirmLabel="Revert"
+            onConfirm={() => {
+              model.revert();
+              closeSheet();
+            }}
+            onCancel={closeSheet}
+          />
+        );
     }
   })();
 
@@ -247,7 +267,6 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
         text={state.text}
         prefs={state.prefs}
         session={state.session}
-        focus={textFocus}
         onChange={(text) => model.edit(text)}
         onEscape={() => find.query !== "" && model.setQuery("")}
         scroll={scroll}
