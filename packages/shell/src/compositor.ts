@@ -28,6 +28,12 @@ export interface CompositorWindow {
   fullscreen?: boolean;
   /** The outer frame, title bar included; null unless on screen. */
   frame: Frame | null;
+  /**
+   * The outer size its app was last asked to take, while it has not yet
+   * acked and committed that configure (its `frame` still has the old size).
+   * Absent once it has, and for X11 windows.
+   */
+  configuring?: { width: number; height: number };
   /** The compositor's title bar height (0 when the app draws its own). */
   titleBar: number;
   /**
@@ -190,7 +196,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
+  const { id, appId, title, pid, focused, state, frame, configuring, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -202,6 +208,7 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     focused,
     state,
     frame: parseFrame(frame),
+    ...withSize(configuring),
     titleBar: isNumber(titleBar) ? titleBar : 0,
     ...(attention === true ? { attention } : {}),
     ...(x11 === true ? { x11 } : {}),
@@ -214,6 +221,11 @@ export function parseWindow(value: unknown): CompositorWindow | null {
 }
 
 const withIcon = (icon: WindowIcon | null): { icon?: WindowIcon } => (icon ? { icon } : {});
+
+const withSize = (value: unknown): { configuring?: { width: number; height: number } } =>
+  isRecord(value) && isNumber(value.width) && isNumber(value.height) && value.width > 0 && value.height > 0
+    ? { configuring: { width: value.width, height: value.height } }
+    : {};
 
 export function parseEvent(value: unknown): CompositorEvent | null {
   if (!isRecord(value)) return null;

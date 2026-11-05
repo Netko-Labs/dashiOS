@@ -207,15 +207,26 @@ impl Dashi {
             entry.maximized = maximized;
         }
         if let Some(toplevel) = window.toplevel() {
-            toplevel.with_pending_state(|state| {
+            let unmaximized = toplevel.with_pending_state(|state| {
+                let was = state.states.contains(xdg_toplevel::State::Maximized);
                 state.size = Some(Size::from((frame.size.w, (frame.size.h - bar).max(1))));
                 if maximized {
                     state.states.set(xdg_toplevel::State::Maximized);
                 } else {
                     state.states.unset(xdg_toplevel::State::Maximized);
                 }
+                was && !maximized
             });
             toplevel.send_pending_configure();
+            if unmaximized {
+                // The configure that ends maximized may be answered with the
+                // size the app had before it was maximized, whatever its size
+                // says (GPUI does: it keeps its own "windowed" bounds); a size
+                // is only a suggestion outside maximized and full screen. A
+                // second configure, no longer a change of state, gives it
+                // this size.
+                toplevel.send_configure();
+            }
         } else if let Some(x11) = window.x11_surface() {
             let size = Size::from((frame.size.w, (frame.size.h - bar).max(1)));
             let _ = x11.set_maximized(maximized);

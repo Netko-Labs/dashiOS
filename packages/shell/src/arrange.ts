@@ -8,8 +8,10 @@
  * Previous Size gives back. A drag or a resize by the person ends the
  * arrangement: the compositor reports the grab, the shell decides. Full
  * screen is on top of all that: leaving it gives back the frame from before
- * (its tile, if it was tiled or filled). A window's size is the one last
- * asked for until its app has drawn it (pending-frames.ts).
+ * (its tile, if it was tiled or filled). A window's size is the one its
+ * app was last asked to take until it has drawn it (`configuring`). One
+ * arranging runs at a time, in the order asked, so a burst of keys acts as
+ * the keys pressed one by one.
  */
 
 import { type Compositor, type CompositorEvent, type CompositorWindow, type Placing, parseFrame, parsePointer } from "./compositor.ts";
@@ -30,7 +32,6 @@ import {
   tileFrame,
   usableFor,
 } from "./layout.ts";
-import { PendingFrames } from "./pending-frames.ts";
 import { type Arrow, arrowStep, screenToward } from "./tiling.ts";
 
 /** How long the pointer rests in a drag zone before its preview shows. */
@@ -65,8 +66,8 @@ export class Arranger {
   private readonly dragFrom = new Map<number, Rect>();
   /** The frame each full-screen window had before: given back when it leaves. */
   private readonly beforeFullscreen = new Map<number, Rect>();
-  /** The sizes asked for that the apps have not drawn yet. */
-  private readonly pending = new PendingFrames();
+  /** The arranging under way, the next waits for. */
+  private queue: Promise<unknown> = Promise.resolve();
   /** The drag-to-tile zones last sent, in order: which tile each is, on which screen. */
   private zones: Array<{ tile: Tile; frame: Rect; usable: Rect }> = [];
   /** The first refresh; placing and arranging wait for it, since they need the screens. */
@@ -85,16 +86,16 @@ export class Arranger {
     // about once, and a second asking would never come.
     const stop = this.compositor.on((event) => {
       const run = (work: Promise<unknown>) => work.catch((error) => console.error("dashi-shell: arranging:", error));
-      if (event.event === "outputs-changed") run(this.refresh());
+      if (event.event === "outputs-changed") run(this.serial(() => this.refresh()));
       else if (event.event === "window-placing") run(this.claim?.(event.window) ? Promise.resolve() : this.place(event.window));
       else if (event.event === "window-control") run(this.control(event.window, event.alt));
       else if (event.event === "zoom") run(this.zoom(event.window, event.on));
       else if (event.event === "fullscreen") run(this.fullscreen(event.window, event.on));
-      else if (event.event === "window-grab") run(this.grabbed(event));
-      else if (event.event === "window-drop") run(this.dropped(event));
+      else if (event.event === "window-grab") run(this.serial(() => this.grabbed(event)));
+      else if (event.event === "window-drop") run(this.serial(() => this.dropped(event)));
       else if (event.event === "window-closed") this.closed(event.id);
     });
-    this.ready = this.refresh();
+    this.ready = this.serial(() => this.refresh());
     try {
       await this.ready;
     } catch (error) {
@@ -175,13 +176,19 @@ export class Arranger {
 
   /** Ask for a frame (Fill also tells the app it is maximized), and hold to its size until the app has drawn it. */
   private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
-    this.pending.asked(id, frame);
     await this.compositor.request("frame", { window: id, ...frame, ...(tile === "fill" ? { maximized: true } : {}) });
   }
 
-  /** A window's frame as it is about to be: where it is, at the size last asked for (pending-frames.ts). */
+  /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */
   private current(window: CompositorWindow): Rect | null {
-    return window.frame ? this.pending.frameOf(window.id, window.frame) : null;
+    return window.frame ? { ...window.frame, ...window.configuring } : null;
+  }
+
+  /** Run `work` after the arranging before it: one at a time, in the order asked. */
+  private serial<T>(work: () => Promise<T>): Promise<T> {
+    const next = this.queue.then(work, work);
+    this.queue = next.catch(() => {});
+    return next;
   }
 
   /** How the shell arranged a window: a tile, Fill, or null at its own frame (the menus, agents). */
@@ -197,7 +204,11 @@ export class Arranger {
   }
 
   /** Tile it, fill, center it at its own size, or give it its own frame back (the Window menu, ⌃❖↩ ⌃❖C ⌃❖R, agents). */
-  async arrange(id: number, to: Arrange): Promise<void> {
+  arrange(id: number, to: Arrange): Promise<void> {
+    return this.serial(() => this.arrangeNow(id, to));
+  }
+
+  private async arrangeNow(id: number, to: Arrange): Promise<void> {
     const frame = await this.frameOf(id);
     if (!frame) return;
     if (to === "restore") return this.back(id);
@@ -210,7 +221,11 @@ export class Arranger {
   }
 
   /** ⌃❖ and an arrow: the half, the quarter, its own size, or the next screen (tiling.ts). */
-  async arrow(id: number, arrow: Arrow): Promise<void> {
+  arrow(id: number, arrow: Arrow): Promise<void> {
+    return this.serial(() => this.arrowNow(id, arrow));
+  }
+
+  private async arrowNow(id: number, arrow: Arrow): Promise<void> {
     const frame = await this.frameOf(id);
     if (!frame) return;
     const arranged = this.arranged.get(id);
@@ -248,7 +263,6 @@ export class Arranger {
   private closed(id: number): void {
     this.forget(id);
     this.beforeFullscreen.delete(id);
-    this.pending.forget(id);
   }
 
   /**
@@ -256,23 +270,27 @@ export class Arranger {
    * back when it is filled or tiled; with ⌥, full screen. On a full-screen
    * window it leaves full screen.
    */
-  async control(id: number, alt: boolean): Promise<void> {
-    await this.ready;
-    const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    if (!window || window.state !== "normal") return;
-    if (alt || window.fullscreen) return this.fullscreen(id, !(window.fullscreen ?? false));
-    if (this.arranged.has(id)) return this.back(id);
-    await this.arrange(id, "fill");
+  control(id: number, alt: boolean): Promise<void> {
+    return this.serial(async () => {
+      await this.ready;
+      const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
+      if (!window || window.state !== "normal") return;
+      if (alt || window.fullscreen) return this.fullscreenNow(id, !(window.fullscreen ?? false));
+      if (this.arranged.has(id)) return this.back(id);
+      await this.arrangeNow(id, "fill");
+    });
   }
 
   /**
    * An app asked to be maximized (its own title bar's double-click), or a
    * taskbar did: as the square. Asked not to be, it only ever goes back.
    */
-  async zoom(id: number, on?: boolean): Promise<void> {
-    if (!(await this.frameOf(id))) return;
-    if (on === false || this.arranged.has(id)) return this.back(id);
-    await this.arrange(id, "fill");
+  zoom(id: number, on?: boolean): Promise<void> {
+    return this.serial(async () => {
+      if (!(await this.frameOf(id))) return;
+      if (on === false || this.arranged.has(id)) return this.back(id);
+      await this.arrangeNow(id, "fill");
+    });
   }
 
   /**
@@ -283,9 +301,9 @@ export class Arranger {
   private async grabbed(event: EventOf<"window-grab">): Promise<void> {
     const arranged = this.arranged.get(event.window);
     this.forget(event.window);
-    // A resize by hand: its size is the person's, whatever was asked before.
-    if (event.kind === "resize") return this.pending.forget(event.window);
-    const from = this.pending.frameOf(event.window, event.frame);
+    if (event.kind === "resize") return;
+    // At the size it is being asked to take, if its app has not drawn that yet (the compositor says so).
+    const from = event.frame;
     if (!arranged) {
       this.dragFrom.set(event.window, from);
       return;
@@ -313,7 +331,11 @@ export class Arranger {
    * had before, or its tile on that screen if it was tiled or filled. The
    * compositor picks the screen the window is mostly on.
    */
-  async fullscreen(id: number, on: boolean): Promise<void> {
+  fullscreen(id: number, on: boolean): Promise<void> {
+    return this.serial(() => this.fullscreenNow(id, on));
+  }
+
+  private async fullscreenNow(id: number, on: boolean): Promise<void> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
     if (!window || window.state !== "normal" || (window.fullscreen ?? false) === on) return;
@@ -322,7 +344,6 @@ export class Arranger {
     // Leaving: the frame it goes back to is asked for at once, so nothing
     // meanwhile takes the full-screen size for its own.
     const back = on ? null : this.frameAfterFullscreen(id);
-    if (back) this.pending.asked(id, back.frame);
     await this.compositor.request("fullscreen", { window: id, on });
     if (back) await this.frame(id, back.frame, back.tile);
     this.afterFullscreen?.();
@@ -339,9 +360,11 @@ export class Arranger {
   }
 
   /** Enter full screen, or leave it (⌃❖F, the View menu). */
-  async toggleFullscreen(id: number): Promise<void> {
-    await this.ready;
-    const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    if (window) await this.fullscreen(id, !(window.fullscreen ?? false));
+  toggleFullscreen(id: number): Promise<void> {
+    return this.serial(async () => {
+      await this.ready;
+      const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
+      if (window) await this.fullscreenNow(id, !(window.fullscreen ?? false));
+    });
   }
 }
