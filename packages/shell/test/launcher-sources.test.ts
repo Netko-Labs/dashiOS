@@ -5,7 +5,7 @@ import type { CompositorWindow } from "../src/compositor.ts";
 import type { Entry } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "../src/launcher/editing.ts";
-import { actionKind, entryAddress, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/items.ts";
+import { actionKind, entryAddress, type LauncherItem, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/items.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
 import {
   aliasIndex,
@@ -21,6 +21,7 @@ import {
   withKey,
 } from "../src/launcher/person-keys.ts";
 import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
+import { actionRow } from "../src/launcher/row-model.ts";
 import { buildSections, fileNameMatches, type ListInput, selectable, shortFolder } from "../src/launcher/rows.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
 import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
@@ -90,6 +91,21 @@ describe("what the launcher lists", () => {
     expect(items.map((item) => item.names[0])).toEqual(["System Settings", "Lock Screen"]);
     expect(items[0]?.address).toBe("dashi://app/dev.dashi.settings");
     expect(entryAddress({ id: "dev.dashi.settings/appearance" })).toBe("dashi://settings/appearance");
+  });
+
+  test("agent tools: no row for one that only reads, one row with Dashi's command of the same name, no model-facing detail", () => {
+    expect(actionKind(action("dashi://tool/list-windows", { source: "tools", who: "both", readOnly: true }))).toBeNull();
+    const items = launcherItems({
+      entries: [],
+      actions: [
+        action("dashi://dashi/lock-screen", { title: "Lock Screen", source: "dashi" }),
+        action("dashi://tool/lock-screen", { title: "Lock the screen", source: "tools", who: "both" }),
+        action("dashi://tool/record-screen", { title: "Record the screen", source: "tools", who: "both", description: "For a model." }),
+      ],
+    });
+    expect(items.map((item) => item.id)).toEqual(["dashi://dashi/lock-screen", "dashi://tool/record-screen"]);
+    const row = actionRow(items[1] as LauncherItem, { app: () => undefined, dashi: "/dashi.svg" });
+    expect(row.detail).toBeUndefined();
   });
 
   test("a Settings pane doesn't hide the command of the same name (Lock Screen, the VM run)", () => {

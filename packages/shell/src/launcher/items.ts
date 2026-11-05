@@ -82,8 +82,9 @@ export function actionKind(action: ActionDef): RankKind | null {
     case "dashi":
       return "command";
     // An agent tool that needs an argument waits for a link to fill it in (the presenter): no row of its own.
+    // One that only reads (list_windows, get_settings) answers a model, not a person: no row either.
     case "tools":
-      return action.who === "both" && (action.required ?? []).length === 0 ? "command" : null;
+      return action.who === "both" && !action.readOnly && (action.required ?? []).length === 0 ? "command" : null;
     default:
       return "command";
   }
@@ -126,9 +127,12 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
     });
   }
   const seen = new Set<string>();
+  // An agent tool that is also one of Dashi's commands (dashi://tool/lock-screen, dashi://dashi/lock-screen) is one row: Dashi's.
+  const commands = new Set((sources.actions ?? []).filter((action) => action.source === "dashi").map((action) => action.address.split("/").pop()));
   for (const action of sources.actions ?? []) {
     const kind = actionKind(action);
     if (kind === null || seen.has(action.address)) continue;
+    if (action.source === "tools" && commands.has(action.address.split("/").pop())) continue;
     // "System Settings" from the Dashi menu is the System Settings app: one row.
     if (kind === "command" && named.has(fold(action.title))) continue;
     seen.add(action.address);

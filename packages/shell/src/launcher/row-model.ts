@@ -182,7 +182,8 @@ export function actionRow(item: LauncherItem, icons: { app(id: string): string |
   const icon = action.icon?.startsWith("/") ? action.icon : ((appId && icons.app(appId)) ?? icons.dashi);
   return {
     ...base,
-    ...(action.description && item.kind !== "menu" ? { detail: action.description } : {}),
+    // An agent tool's description is written for a model, not a person: no detail.
+    ...(action.description && item.kind !== "menu" && action.source !== "tools" ? { detail: action.description } : {}),
     kind: item.kind === "menu" ? "Menu" : "Command",
     icon: { image: icon },
     action: { kind: "run", item },
