@@ -1,12 +1,14 @@
 /**
- * Files for the launcher, as Spotlight finds them: names matching what was
- * typed, newest first, from LocalSearch (the indexer GNOME uses, which keeps
- * a SPARQL database of the home folder). The query goes through the
- * `tinysparql` command with the typed text as a bound parameter, never
- * spliced into the SPARQL. A system without LocalSearch finds no files.
+ * Files by name, from LocalSearch (the indexer GNOME uses, which keeps a
+ * SPARQL database of the home folder). Files and the file chooser ask through
+ * the `tinysparql` command (`searchFiles`), with the typed text as a bound
+ * parameter, never spliced into the SPARQL; the launcher, which asks on every
+ * keystroke, keeps one D-Bus connection instead (local-search.ts) and holds
+ * it in `FileSearch`. A system without LocalSearch finds no files.
  */
 
 import { basename, dirname } from "node:path";
+import { LatestOnly, SUPERSEDED } from "./launcher/budget.ts";
 
 export interface FileHit {
   /** `file://` URL, as LocalSearch stores it. */
@@ -96,21 +98,27 @@ export const RETRY_MS = 60_000;
 
 /**
  * File search as the launcher sees it: whether it can search right now (the
- * placeholder says so), and the search. A missing `tinysparql` is off for
- * good; LocalSearch not answering is off for a minute, then asked again.
+ * placeholder says so), and the search, one question at a time (a newer one
+ * replaces one still waiting: launcher/budget.ts). Without LocalSearch it is
+ * off for good; LocalSearch not answering is off for a minute, then asked again.
+ * The launcher asks over one D-Bus connection (local-search.ts); Files and the
+ * file chooser use `searchFiles` above.
  */
 export class FileSearch {
   private failedAt: number | null = null;
+  private readonly asks: LatestOnly<{ query: string; limit: number }, FileHit[] | null>;
 
   constructor(
     private readonly options: {
-      run: (command: readonly string[]) => Promise<string | null>;
-      home: string;
-      /** Whether `tinysparql` is on PATH; asked once. */
+      /** Files named like `query`, best first, at most `limit`; null when LocalSearch couldn't answer. */
+      ask: (query: string, limit: number) => Promise<FileHit[] | null>;
+      /** Whether LocalSearch is installed; asked once. */
       installed: boolean;
       now?: () => number;
     },
-  ) {}
+  ) {
+    this.asks = new LatestOnly(({ query, limit }) => options.ask(query, limit));
+  }
 
   /** Whether a search could find files now. */
   isAvailable(): boolean {
@@ -119,10 +127,16 @@ export class FileSearch {
     return (this.options.now ?? Date.now)() - this.failedAt >= RETRY_MS;
   }
 
-  /** Files named like `query`, or null when file search is off. */
+  /**
+   * Files named like `query`, or null when file search is off. An ask a newer
+   * one replaced before it ran is empty: whoever made it has moved on.
+   */
   async find(query: string, limit = 4): Promise<FileHit[] | null> {
     if (!this.isAvailable()) return null;
-    const hits = await askLocalSearch(query, this.options.run, this.options.home, limit);
+    const text = query.trim();
+    if (text.length < MIN_QUERY) return [];
+    const hits = await this.asks.ask({ query: text, limit }).catch(() => null);
+    if (hits === SUPERSEDED) return [];
     this.failedAt = hits === null ? (this.options.now ?? Date.now)() : null;
     return hits;
   }

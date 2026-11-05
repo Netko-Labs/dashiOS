@@ -589,6 +589,8 @@
       <tr><td>Dock and taskbar entrance (login, turned on, a new style or screen, autohide reveal after 120 at the edge)</td><td>panel 420 ms rising and fading in (80% up by ~115); icons 380 ms each, 22 ms apart, starting a third of the way; 640 ms in all</td><td>panel ease-out quint; icons a damped spring, ~2 px past their place</td><td><code>dock/slide.tsx</code></td></tr>
       <tr><td>Dock and taskbar exit (autohide, 600 after leaving)</td><td>180 ms; the icons stay put</td><td>ease-in cubic</td><td><code>dock/slide.tsx</code></td></tr>
       <tr><td>Switcher appears</td><td>after 150 ms held</td><td>—</td><td><code>switcher.tsx</code></td></tr>
+      <tr><td>Launcher opens (fades in from 0.96 of its size, about its top middle; it closes at once)</td><td>160 ms</td><td>ease-out cubic</td><td><code>wm/layer_motion.rs</code> (<code>layer-motion</code>, sent by <code>launcher/resident.tsx</code>)</td></tr>
+      <tr><td>Launcher list height (follows its rows; on a resident host)</td><td>120 ms</td><td>ease-out cubic</td><td>mirin <code>height.rs</code> (<code>heightTransitionMs</code>)</td></tr>
       <tr><td>Scroll bars</td><td>shown 0.9 s after scrolling, fade 0.3 s</td><td>linear</td><td>mirin <code>scrollbar.rs</code></td></tr>
       <tr><td>Night Shift</td><td>1500 ms</td><td>fade</td><td><code>night-shift.ts</code></td></tr>
     </table>

@@ -10,11 +10,13 @@ use smithay::{
             memory::MemoryRenderBufferRenderElement,
             solid::SolidColorRenderElement,
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
+            utils::RescaleRenderElement,
         },
     },
     desktop::{Window, layer_map_for_output},
     input::pointer::{CursorImageStatus, CursorImageSurfaceData},
     output::Output,
+    reexports::wayland_server::Resource,
     utils::{Logical, Point, Rectangle, Scale},
     wayland::{compositor::with_states, shell::wlr_layer::Layer},
 };
@@ -147,7 +149,15 @@ where
             .into_iter()
             .filter(|layer| top || *layer == Layer::Overlay)
         {
-            layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
+            layer_elements(
+                &layers,
+                layer,
+                renderer,
+                layer_offset,
+                scale,
+                &mut elements,
+                Some(&mut *state),
+            );
         }
         // Where a dragged window would tile, over the windows.
         if let Some(preview) = state.zones.preview {
@@ -253,7 +263,15 @@ where
         return elements;
     }
     for layer in [Layer::Bottom, Layer::Background] {
-        layer_elements(&layers, layer, renderer, layer_offset, scale, &mut elements);
+        layer_elements(
+            &layers,
+            layer,
+            renderer,
+            layer_offset,
+            scale,
+            &mut elements,
+            None,
+        );
     }
     // Behind everything: the wallpaper, across this screen.
     if let Some(wallpaper) = state
@@ -265,6 +283,8 @@ where
     elements
 }
 
+/// One layer's surfaces; with `state`, a surface coming in with motion (`layer-motion`) is drawn
+/// faded and scaled about its top middle, as far as its entrance has got.
 fn layer_elements<R>(
     layers: &smithay::desktop::LayerMap,
     layer: Layer,
@@ -272,20 +292,40 @@ fn layer_elements<R>(
     offset: Point<i32, Logical>,
     scale: Scale<f64>,
     elements: &mut Vec<DashiElement<R>>,
+    mut state: Option<&mut Dashi>,
 ) where
     R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
+    let now = std::time::Instant::now();
     for surface in layers.layers_on(layer).rev() {
         let Some(geometry) = layers.layer_geometry(surface) else {
             continue;
         };
         let at = (geometry.loc + offset).to_physical_precise_round(scale);
+        let drawn =
+            surface.render_elements::<WaylandSurfaceRenderElement<R>>(renderer, at, scale, 1.0);
+        let step = state.as_deref_mut().and_then(|state| {
+            let reduce = state.chrome_style.reduce_motion;
+            state
+                .layer_motion
+                .step(&surface.wl_surface().id(), !drawn.is_empty(), reduce, now)
+        });
+        let Some(step) = step else {
+            elements.extend(drawn.into_iter().map(DashiElement::Surface));
+            continue;
+        };
+        let about = (geometry.loc + offset + Point::from((geometry.size.w / 2, 0)))
+            .to_physical_precise_round(scale);
         elements.extend(
             surface
-                .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, at, scale, 1.0)
+                .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, at, scale, step.alpha)
                 .into_iter()
-                .map(DashiElement::Surface),
+                .map(|element| {
+                    DashiElement::Scaled(RescaleRenderElement::from_element(
+                        element, about, step.scale,
+                    ))
+                }),
         );
     }
 }

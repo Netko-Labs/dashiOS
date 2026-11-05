@@ -317,16 +317,16 @@ describe("failures", () => {
     failures.close();
   });
 
-  test("file search: off without tinysparql; off for a while after LocalSearch fails to answer", async () => {
-    expect(new FileSearch({ run: async () => "", home: "/home/alexk", installed: false }).isAvailable()).toBe(false);
+  test("file search: off without LocalSearch; off for a while after it fails to answer", async () => {
+    expect(new FileSearch({ ask: async () => [], installed: false }).isAvailable()).toBe(false);
     let now = 0;
-    let answer: string | null = null;
-    const search = new FileSearch({ run: async () => answer, home: "/home/alexk", installed: true, now: () => now });
+    let answer: FileRow[] | null = null;
+    const search = new FileSearch({ ask: async () => answer, installed: true, now: () => now });
     expect(search.isAvailable()).toBe(true);
     expect(await search.find("tea")).toBeNull();
     expect(search.isAvailable()).toBe(false);
     now = RETRY_MS;
-    answer = "Results:\n  file:///home/alexk/tea.md, text/markdown\n";
+    answer = [file("tea.md")];
     expect(search.isAvailable()).toBe(true);
     expect((await search.find("tea"))?.map((hit) => hit.name)).toEqual(["tea.md"]);
   });

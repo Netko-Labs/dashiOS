@@ -6,6 +6,7 @@ export { DBusError, ERRORS, ProtocolError } from "./errors.ts";
 export { FdService, type FdServiceOptions } from "./fd-service.ts";
 export { FdConnection, type FdConnectOptions, type Received } from "./fds.ts";
 export type { CallContext, InterfaceSpec, MethodSpec, PropertySpec } from "./introspect.ts";
+export { closeFd, pipePair } from "./libc.ts";
 export { marshal, Writer } from "./marshal.ts";
 export { decodeMessage, encodeMessage, FrameBuffer, type Message, MessageType } from "./message.ts";
 export type { MatchRule } from "./signals.ts";

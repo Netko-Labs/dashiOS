@@ -8,6 +8,7 @@
  */
 
 import { KEYMAP, type Keymap, type Rule, withRules } from "./keymap.ts";
+import { withTypeAheadOnTap } from "./launcher/type-ahead.ts";
 
 let machineRules: readonly Rule[] = [];
 let personRules: readonly Rule[] = [];
@@ -25,4 +26,9 @@ export function setPersonRules(rules: readonly Rule[]): void {
 /** Dashi's keymap with this machine's rules and the person's keys. */
 export function currentKeymap(): Keymap {
   return withRules(KEYMAP, [...personRules, ...machineRules]);
+}
+
+/** The keymap while nothing holds the keys: the current one, and the launcher's typing from a ❖ tap on. */
+export function idleKeymap(): Keymap {
+  return withTypeAheadOnTap(currentKeymap());
 }

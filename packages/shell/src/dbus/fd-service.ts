@@ -38,6 +38,13 @@ interface Pending {
   timer: ReturnType<typeof setTimeout>;
 }
 
+/** Bytes waiting to be written, with descriptors for their first byte; `owned` ones are closed once sent. */
+interface Outgoing {
+  bytes: Uint8Array;
+  fds: readonly number[];
+  owned: boolean;
+}
+
 export interface FdServiceOptions {
   address?: string;
   bus?: BusKind;
@@ -53,7 +60,7 @@ export class FdService {
   private readonly pending = new Map<number, Pending>();
   private readonly registry = new ObjectRegistry();
   private readonly closeListeners = new Set<(error?: Error) => void>();
-  private outgoing: { bytes: Uint8Array; fds: readonly number[] }[] = [];
+  private outgoing: Outgoing[] = [];
   private queued = 0;
   private retry: ReturnType<typeof setTimeout> | null = null;
 
@@ -202,8 +209,12 @@ export class FdService {
     return this.serial;
   }
 
-  /** Call a method and resolve with the reply's values (descriptors in replies are closed). */
-  call(spec: CallSpec, timeoutMs = CALL_TIMEOUT_MS): Promise<unknown[]> {
+  /**
+   * Call a method and resolve with the reply's values (descriptors in replies are closed).
+   * `fds` go with the call (an `h` in the body is an index into them); they become the
+   * connection's, closed here once they are sent, or when it closes first.
+   */
+  call(spec: CallSpec, timeoutMs = CALL_TIMEOUT_MS, fds: readonly number[] = []): Promise<unknown[]> {
     const serial = this.nextSerial();
     const message: Message = {
       type: MessageType.MethodCall,
@@ -215,10 +226,17 @@ export class FdService {
       body: [...(spec.body ?? [])],
       ...(spec.interface === undefined ? {} : { interface: spec.interface }),
       ...(spec.destination === undefined ? {} : { destination: spec.destination }),
+      ...(fds.length > 0 ? { unixFds: fds.length } : {}),
     };
-    const frame = encodeMessage(message);
+    let frame: Uint8Array;
+    try {
+      frame = encodeMessage(message);
+    } catch (error) {
+      for (const fd of fds) closeFd(fd);
+      throw error;
+    }
     if (spec.noReply) {
-      this.write(frame);
+      this.write(frame, fds, true);
       return Promise.resolve([]);
     }
     return new Promise<unknown[]>((resolve, reject) => {
@@ -228,7 +246,7 @@ export class FdService {
       }, timeoutMs);
       this.pending.set(serial, { resolve, reject, timer });
       try {
-        this.write(frame);
+        this.write(frame, fds, true);
       } catch (error) {
         clearTimeout(timer);
         this.pending.delete(serial);
@@ -259,13 +277,18 @@ export class FdService {
 
   // Output: a full socket keeps the rest queued and tries again a moment later.
 
-  private write(bytes: Uint8Array, fds: readonly number[] = []): void {
-    if (this.closed) throw new DBusError(ERRORS.disconnected, "the connection is closed");
+  /** Queue `bytes` with `fds` on their first byte; `owned` descriptors are closed once sent (or on failure). */
+  private write(bytes: Uint8Array, fds: readonly number[] = [], owned = false): void {
+    const refuse = (error: DBusError): never => {
+      if (owned) for (const fd of fds) closeFd(fd);
+      throw error;
+    };
+    if (this.closed) refuse(new DBusError(ERRORS.disconnected, "the connection is closed"));
     if (this.queued + bytes.length > MAX_QUEUED_BYTES) {
       this.shutdown(new Error("the peer is not reading; output queue is full"));
-      throw new DBusError(ERRORS.disconnected, "the connection is closed");
+      refuse(new DBusError(ERRORS.disconnected, "the connection is closed"));
     }
-    this.outgoing.push({ bytes, fds });
+    this.outgoing.push({ bytes, fds, owned });
     this.queued += bytes.length;
     this.flush();
   }
@@ -273,7 +296,7 @@ export class FdService {
   private flush(): void {
     const socket = this.socket;
     while (socket !== null && this.outgoing.length > 0) {
-      const head = this.outgoing[0] as { bytes: Uint8Array; fds: readonly number[] };
+      const head = this.outgoing[0] as Outgoing;
       let sent: number;
       try {
         sent = sendWithFds(socket, head.bytes, head.fds);
@@ -288,7 +311,9 @@ export class FdService {
         return;
       }
       this.queued -= sent;
-      if (sent < head.bytes.length) this.outgoing[0] = { bytes: head.bytes.subarray(sent), fds: [] };
+      // The descriptors rode the first byte: the peer has its own copies now.
+      if (head.owned) for (const fd of head.fds) closeFd(fd);
+      if (sent < head.bytes.length) this.outgoing[0] = { bytes: head.bytes.subarray(sent), fds: [], owned: false };
       else this.outgoing.shift();
     }
   }
@@ -306,6 +331,8 @@ export class FdService {
     this.worker = null;
     closeFd(socket);
     for (const fd of this.parked.splice(0)) closeFd(fd);
+    for (const { fds, owned } of this.outgoing.splice(0)) if (owned) for (const fd of fds) closeFd(fd);
+    this.queued = 0;
     for (const [serial, pending] of this.pending) {
       clearTimeout(pending.timer);
       pending.reject(new DBusError(ERRORS.disconnected, error?.message ?? "the connection closed"));

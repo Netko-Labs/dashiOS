@@ -114,7 +114,14 @@ export type CompositorEvent =
   | { event: "window-closed"; id: number }
   | { event: "shortcut"; name: string }
   /** A chord the keymap binds, and the window focused when it was pressed. */
-  | { event: "binding"; name: string; window: number | null; chord?: { key: string; shift: boolean; ctrl: boolean; alt: boolean } }
+  | {
+      event: "binding";
+      name: string;
+      window: number | null;
+      chord?: { key: string; shift: boolean; ctrl: boolean; alt: boolean };
+      /** What the key typed ("a", "A", "é"); absent for Return, BackSpace, the arrows. */
+      text?: string;
+    }
   /** ❖ alone: tapped, held, used in a chord, or let go. */
   | { event: "super"; phase: SuperPhase }
   /** A new window waits for the shell to place it (arrange.ts). */
@@ -256,6 +263,7 @@ export function parseEvent(value: unknown): CompositorEvent | null {
             ...(typeof value.key === "string" && value.key.length <= 64
               ? { chord: { key: value.key, shift: value.shift === true, ctrl: value.ctrl === true, alt: value.alt === true } }
               : {}),
+            ...(typeof value.text === "string" && value.text.length > 0 && value.text.length <= 16 ? { text: value.text } : {}),
           }
         : null;
     case "window-placing": {

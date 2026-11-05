@@ -81,6 +81,8 @@ pub(crate) struct Dashi {
     pub session_lock_state: smithay::wayland::session_lock::SessionLockManagerState,
     pub zones: crate::wm::Zones,
     pub motion: crate::wm::Motion,
+    /// Shell surfaces that come in with motion (`layer-motion`).
+    pub layer_motion: crate::wm::LayerMotion,
     /// Screens turned off in Displays (not in the space).
     pub disabled_outputs: Vec<smithay::output::Output>,
     /// Touchpad and mouse settings (input/settings.rs), for devices plugged in later too.
@@ -283,6 +285,7 @@ impl Dashi {
             session_lock_state,
             zones: Default::default(),
             motion: Default::default(),
+            layer_motion: Default::default(),
             disabled_outputs: Vec::new(),
             primary_output: None,
             vrr_modes: Default::default(),
