@@ -3,9 +3,10 @@
  * window, open, save, close), Edit (Undo on the app's own history, Paste and
  * Select All typed into the text, Find), and View (the font). The ❖
  * shortcuts are real: the shell matches a pressed chord against the enabled
- * rows (app-menus/shortcut.ts). ❖W and ❖Q stay the shell's, so Close shows
- * no shortcut. Copy and Cut are missing because Metal's input has no
- * selection to copy; Copy All copies the whole document.
+ * rows (app-menus/shortcut.ts). The shell offers ❖W to the app's own row
+ * first, so ❖W is Close, which asks before it drops changes; ❖Q stays the
+ * shell's. Copy and Cut are missing because Metal's input has no selection
+ * to copy; Copy All copies the whole document.
  */
 
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
@@ -49,10 +50,10 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "new", label: "New", shortcut: "❖N" },
         { id: "open", label: "Open…", shortcut: "❖O" },
         { type: "separator" },
-        { id: "close", label: "Close" },
+        { id: "close", label: "Close", shortcut: "❖W" },
         { id: "save", label: "Save", shortcut: "❖S", enabled: context.dirty || !context.hasFile },
         { id: "save-as", label: "Save As…", shortcut: "⇧❖S" },
-        { id: "revert", label: "Revert to Saved", enabled: context.dirty && context.hasFile },
+        { id: "revert", label: "Revert to Saved…", enabled: context.dirty && context.hasFile },
       ],
     },
     {
