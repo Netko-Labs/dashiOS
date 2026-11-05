@@ -39,7 +39,7 @@ them until the compositor side pins them down here.
 | `close` | `{window}` | `{}`; asks the client to close |
 | `minimize` | `{window}` | `{}` |
 | `hide` | `{window}` | `{}` |
-| `frame` | `{window, x, y, width, height, maximized?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`) |
+| `frame` | `{window, x, y, width, height, maximized?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). Ending maximized (a `frame` without it after one with it) sends the app two configures, so an app that answers the first with the size it had before it was maximized (GPUI does) takes this one at the second. A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`) |
 | `place` | `{window, x, y}` | `{}`; answers `window-placing` |
 | `fullscreen` | `{window, on: bool}` | `{}` |
 | `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window |
@@ -48,13 +48,17 @@ them until the compositor side pins them down here.
 | `attach` | `{window, parent: int\|null, top?: int}` | `{}`; `window` becomes a sheet of `parent` (null: an ordinary window again): no title bar, centred under the parent's title bar (or `top` points, 0 to 512, below the top of the parent's frame: for a parent that draws its own title bar and toolbar, whose height only the shell can guess) and kept there, above it, on its Space, off screen with it; the keyboard goes to the sheet when the parent would get it, and a press inside the parent only brings the sheet forward. A window not yet placed is placed there (an answer to `window-placing`). A sheet whose parent closes becomes an ordinary window. Refused for a parent that is itself a sheet.; *see* `src/portal-host/sheets.ts` |
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
-"normal"|"minimized"|"hidden", frame: Frame|null, titleBar: int,
+"normal"|"minimized"|"hidden", frame: Frame|null, configuring: {width, height}|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
 string|null, path: string|null}, toplevel?: string}`; `toplevel` is the
 window's ext-foreign-toplevel-list identifier (what a screen-share picker
 answers with; absent until the list has it); `icon` is what the app gave
 (xdg-toplevel-icon): a theme icon name and/or a PNG the compositor saved under
-`$XDG_RUNTIME_DIR/dashi-comp-icons/`; an X11 window's `pid` is its own
+`$XDG_RUNTIME_DIR/dashi-comp-icons/`; `configuring` is the outer size an
+xdg app was last asked to take (`frame`, full screen, a resize) while it has
+not yet acked and committed that configure (until then `frame` has the old
+size; the position is already the new one), null once it has and for X11
+windows; an X11 window's `pid` is its own
 (`_NET_WM_PID`); `Frame` is
 `{x, y, width, height}` (outer frame, title bar included).
 
@@ -154,7 +158,7 @@ hidden) keep getting frame callbacks, so they stay live.
 | `window-space` | `window, space` |
 | `zoom` | `window, on`: an app asked to be maximized (`on: true`, xdg `set_maximized`, X11 `_NET_WM_STATE`; Dashi's unified title bars ask so on a double-click) or not (`on: false`), or a taskbar did (wlr-foreign-toplevel). The shell decides (`src/arrange.ts`) |
 | `window-control` | `window, control: "zoom", alt, double`: a press on the square of a title bar dashi-comp draws (or of a unified window's lights), or a double-click on its title bar (`double: true`); `alt` is whether ⌥ was held. The compositor does nothing else with it: what it means (Fill, its own frame back, full screen) is the shell's |
-| `window-grab` | `window, kind: "move"\|"resize", frame, pointer: {x, y}`: the person began to move (a title bar drag or an app's `move`, once the pointer has gone 4 points from the press; until then the window stays put) or resize (the first motion) a window; `frame` is its frame then and `pointer` where the press was. A resize also ends the window's maximized state. The shell decides the rest (a tiled window dragged out gets its own size back: a `frame` the grab then holds) |
+| `window-grab` | `window, kind: "move"\|"resize", frame, pointer: {x, y}`: the person began to move (a title bar drag or an app's `move`, once the pointer has gone 4 points from the press; until then the window stays put) or resize (the first motion) a window; `frame` is its frame then (at its `configuring` size, if its app has not drawn that yet) and `pointer` where the press was. A resize also ends the window's maximized state. The shell decides the rest (a tiled window dragged out gets its own size back: a `frame` the grab then holds) |
 | `window-drop` | `window, zone, frame`: a dragged window was let go while zone `zone` (its index in the last `layout`) showed its preview, `frame`. The shell frames it (`frame`) |
 | `fullscreen` | `window, on` |
 | `shortcut` | `name` |

@@ -9,7 +9,7 @@
 
 use crate::{
     state::Dashi,
-    wm::{Shown, frame_of, rect_json},
+    wm::{Shown, frame_to_be, rect_json},
 };
 use serde_json::json;
 use smithay::{
@@ -66,7 +66,8 @@ impl Dashi {
     }
 
     /// The person began to move or resize `window` from `pointer`: the shell
-    /// hears it, with the frame the window had then (`window-grab`).
+    /// hears it, with the frame the window had then, at the size its app was
+    /// asked to take if it has not drawn that yet (`window-grab`).
     pub(crate) fn report_grab(
         &mut self,
         window: &Window,
@@ -75,7 +76,7 @@ impl Dashi {
     ) {
         let (Some(id), Some(frame)) = (
             self.windows.by_window(window).map(|entry| entry.id),
-            frame_of(self, window),
+            frame_to_be(self, window),
         ) else {
             return;
         };

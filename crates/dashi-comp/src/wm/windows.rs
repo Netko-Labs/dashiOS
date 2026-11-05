@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use smithay::{
     desktop::Window,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
-    utils::{Logical, Point, Rectangle},
+    utils::{Logical, Point, Rectangle, Size},
     wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData},
 };
 
@@ -260,6 +260,36 @@ pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
     state.bar_height(window)
 }
 
+/// The outer size an xdg window was last asked to take (`frame`, full
+/// screen, a resize), while its app has not yet acked and committed that
+/// configure: until then its frame still has the old size. None once it has
+/// (whatever size it then chose), and for X11 windows, which take a size at once.
+pub(crate) fn configuring(state: &Dashi, window: &Window) -> Option<Size<i32, Logical>> {
+    let toplevel = window.toplevel()?;
+    let in_flight = with_states(toplevel.wl_surface(), |states| {
+        states
+            .data_map
+            .get::<XdgToplevelSurfaceData>()
+            .and_then(|data| data.lock().ok())
+            .is_some_and(|data| {
+                !data.pending_configures().is_empty()
+                    || data.configure_serial != data.current_serial
+            })
+    });
+    if !in_flight {
+        return None;
+    }
+    let size = toplevel.with_pending_state(|pending| pending.size)?;
+    Some(Size::from((size.w, size.h + bar_of(state, window))))
+}
+
+/// Its frame as it is about to be: where it is, at the size it is being
+/// configured to while its app has not drawn that yet.
+pub(crate) fn frame_to_be(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
+    let frame = frame_of(state, window)?;
+    Some(configuring(state, window).map_or(frame, |size| Rectangle::new(frame.loc, size)))
+}
+
 /// A window in the IPC's `Window` shape.
 pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
     let surface = toplevel_surface(&entry.window);
@@ -287,6 +317,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "focused": focused,
         "state": entry.shown.name(),
         "frame": frame,
+        "configuring": configuring(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),
         "space": entry.space,

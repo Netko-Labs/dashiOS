@@ -103,9 +103,10 @@ describe("the ⌃❖ arrows", () => {
  * A compositor holding `windows`, carrying out `frame` and `fullscreen`, and
  * keeping what it was asked. As dashi-comp does, full screen says
  * `outputs-changed` while it is asked; leaving, the app still draws at the
- * screen's size for a while (where its old frame was). With `lag`, an app
- * is slow as a busy Metal app is: a frame moves the window at once, but its
- * size changes only at `catchUp()`.
+ * screen's size for a while (where its old frame was), and `configuring`
+ * says the size it was asked to take. With `lag`, an app is slow as a busy
+ * Metal app is: a frame moves the window at once, but its size changes only
+ * at `catchUp()`, and until then `configuring` says what it will be.
  */
 function fake(
   windows: Array<CompositorWindow & { away?: Rect | null }>,
@@ -113,7 +114,6 @@ function fake(
   lag = false,
 ) {
   const requests: Array<[string, Record<string, unknown>]> = [];
-  const undrawn = new Map<number, { width: number; height: number }>();
   let listener: ((event: CompositorEvent) => void) | null = null;
   const compositor = {
     on: (each: (event: CompositorEvent) => void) => {
@@ -128,18 +128,18 @@ function fake(
       const window = windows.find((candidate) => candidate.id === params.window);
       if (window && method === "frame") {
         const size = { width: Number(params.width), height: Number(params.height) };
-        if (lag) undrawn.set(window.id, size);
-        window.frame = {
-          x: Number(params.x),
-          y: Number(params.y),
-          ...(lag && window.frame ? { width: window.frame.width, height: window.frame.height } : size),
-        };
+        const drawn = lag && window.frame ? { width: window.frame.width, height: window.frame.height } : size;
+        window.frame = { x: Number(params.x), y: Number(params.y), ...drawn };
+        if (lag) window.configuring = size;
+        else delete window.configuring;
       }
       if (window && method === "fullscreen") {
         const on = params.on === true;
         if (on) window.away = window.frame;
         window.fullscreen = on;
         window.frame = on ? { ...SCREEN } : { x: window.away?.x ?? 0, y: window.away?.y ?? 0, width: SCREEN.width, height: SCREEN.height };
+        if (on) delete window.configuring;
+        else if (window.away) window.configuring = { width: window.away.width, height: window.away.height };
         listener?.({ event: "outputs-changed" });
       }
       return {};
@@ -154,10 +154,9 @@ function fake(
   /** The apps draw at the sizes they were asked for. */
   const catchUp = () => {
     for (const window of windows) {
-      const size = undrawn.get(window.id);
-      if (size && window.frame) window.frame = { ...window.frame, ...size };
+      if (window.configuring && window.frame) window.frame = { ...window.frame, ...window.configuring };
+      delete window.configuring;
     }
-    undrawn.clear();
   };
   return { compositor, requests, frames, emit, catchUp };
 }
@@ -426,6 +425,7 @@ describe("full screen and back", () => {
     world.requests.length = 0;
     // The Dock comes back meanwhile, and the app has not yet taken its frame back: it reports the screen's size.
     window.frame = { x: OWN.x, y: OWN.y, width: SCREEN.width, height: SCREEN.height };
+    window.configuring = { width: OWN.width, height: OWN.height };
     outputs[0] = { ...outputs[0], usable: rect(0, 28, 1646, 800) } as (typeof outputs)[number];
     await world.emit({ event: "outputs-changed" });
     // It was asked for its own frame, which still fits: nothing to send, and nothing at the full-screen size.
@@ -504,7 +504,87 @@ describe("a slow app: the size asked for counts until it is drawn", () => {
     await arranger.arrow(7, "left");
     await emit({ event: "window-grab", window: 7, kind: "resize", frame: rect(6, 34, 800, 600), pointer: { x: 806, y: 300 } });
     window.frame = rect(6, 34, 700, 500);
+    delete window.configuring;
     await arranger.arrange(7, "center");
     expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(473, 197, 700, 500) }]);
+  });
+});
+
+describe("bursts of keys", () => {
+  type Step = { kind: "arrow"; arrow: "left" | "right" | "up" | "down" } | { kind: "arrange"; to: "fill" | "center" | "restore" } | { kind: "fullscreen" };
+  const run = (arranger: Arranger, step: Step): Promise<void> =>
+    step.kind === "arrow" ? arranger.arrow(7, step.arrow) : step.kind === "arrange" ? arranger.arrange(7, step.to) : arranger.toggleFullscreen(7);
+
+  test("⌃❖↑ ⌃❖R ⌃❖↓ ⌃❖↩ ⌃❖C at once, the app drawing none of it yet: its own size, centered", async () => {
+    const { arranger, frames } = await started(files(), undefined, true);
+    const steps: Step[] = [
+      { kind: "arrow", arrow: "up" },
+      { kind: "arrange", to: "restore" },
+      { kind: "arrow", arrow: "down" },
+      { kind: "arrange", to: "fill" },
+      { kind: "arrange", to: "center" },
+    ];
+    await Promise.all(steps.map((step) => run(arranger, step)));
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(423, 147, 800, 600) }]);
+    expect(arranger.arrangement(7)).toBeNull();
+  });
+
+  test("keys pressed together act in order: ← then ↑ is the top left", async () => {
+    const { arranger, frames } = await started();
+    await Promise.all([arranger.arrow(7, "left"), arranger.arrow(7, "up")]);
+    expect(arranger.arrangement(7)).toBe("top-left");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("top-left", USABLE) }]);
+  });
+
+  test("any burst ends where the same keys pressed slowly end, however late the app draws", async () => {
+    const choices: Step[] = [
+      { kind: "arrow", arrow: "left" },
+      { kind: "arrow", arrow: "right" },
+      { kind: "arrow", arrow: "up" },
+      { kind: "arrow", arrow: "down" },
+      { kind: "arrange", to: "fill" },
+      { kind: "arrange", to: "center" },
+      { kind: "arrange", to: "restore" },
+      { kind: "fullscreen" },
+    ];
+    // A fixed seed: the same bursts every run.
+    let seed = 20261105;
+    const random = (below: number) => {
+      seed = (seed * 1103515245 + 12345) % 2 ** 31;
+      return seed % below;
+    };
+    const name = (step: Step) => (step.kind === "arrow" ? step.arrow : step.kind === "arrange" ? step.to : "fullscreen");
+    for (let burst = 0; burst < 200; burst++) {
+      const steps = Array.from({ length: 3 + random(4) }, () => choices[random(choices.length)] as Step);
+      const slow = await started();
+      for (const step of steps) await run(slow.arranger, step);
+      const fast = await started(files(), undefined, true);
+      const catchUpAt = random(steps.length + 1);
+      await Promise.all(
+        steps.map(async (step, index) => {
+          if (index === catchUpAt) fast.catchUp();
+          await run(fast.arranger, step);
+        }),
+      );
+      fast.catchUp();
+      const label = steps.map(name).join(" ");
+      expect({ burst: label, frame: fast.window.frame, fullscreen: fast.window.fullscreen ?? false, arrangement: fast.arranger.arrangement(7) }).toEqual({
+        burst: label,
+        frame: slow.window.frame,
+        fullscreen: slow.window.fullscreen ?? false,
+        arrangement: slow.arranger.arrangement(7),
+      });
+    }
+  });
+});
+
+describe("configuring", () => {
+  test("a window says the size it is being asked to take, only while its app has not drawn it", () => {
+    const base = { id: 3, appId: "foot", title: "foot", pid: 42, focused: true, state: "normal" };
+    expect(parseEvent({ event: "window-opened", window: { ...base, configuring: { width: 760, height: 508 } } })).toMatchObject({
+      window: { configuring: { width: 760, height: 508 } },
+    });
+    expect(parseEvent({ event: "window-opened", window: { ...base, configuring: null } })).not.toHaveProperty("window.configuring");
+    expect(parseEvent({ event: "window-opened", window: { ...base, configuring: { width: 0, height: 5 } } })).not.toHaveProperty("window.configuring");
   });
 });
