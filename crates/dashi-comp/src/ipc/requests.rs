@@ -138,6 +138,9 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "overview" => state.overview_request(params),
+        // Live pictures the shell places (render/thumbnails/).
+        "space-previews" => done(state.set_space_previews(params)),
+        "window-thumbnails" => done(state.set_window_thumbnails(params)),
         "spaces" => {
             let count = match params.get("count") {
                 None => None,

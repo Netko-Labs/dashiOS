@@ -73,12 +73,29 @@ impl Dashi {
             return;
         }
         self.zones.preview = None;
-        self.zones.current = zone.map(|index| (index, Instant::now()));
-        let Some(index) = zone else { return };
+        self.zones.current = None;
+        if let Some(index) = zone {
+            self.zone_wait(index);
+        }
+    }
+
+    /// The pointer pushed on out through the screen's edge (edge_hold.rs): not
+    /// resting, so the zone it is in waits again and shows no preview meanwhile.
+    pub(crate) fn drag_pushed(&mut self) {
+        if let Some((index, _)) = self.zones.current {
+            self.zones.preview = None;
+            self.zone_wait(index);
+        }
+    }
+
+    /// Wait in zone `index` from now; its preview shows if the pointer is still resting there then.
+    fn zone_wait(&mut self, index: usize) {
+        let since = Instant::now();
+        self.zones.current = Some((index, since));
         let _ = self.loop_handle.insert_source(
             Timer::from_duration(self.zones.dwell),
             move |_, _, state| {
-                if state.zones.current.map(|(i, _)| i) == Some(index) {
+                if state.zones.current == Some((index, since)) {
                     state.zones.preview = state.zones.zones.get(index).map(|(_, frame)| *frame);
                 }
                 TimeoutAction::Drop

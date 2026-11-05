@@ -52,6 +52,8 @@ export type MenuAction =
   /** Type the app's chord for an Edit row into the window (keystrokes.ts). */
   | { kind: "edit"; window: number; command: EditCommand }
   | { kind: "tile"; window: number; tile: Tile }
+  /** Put the window on Desktop `space` (from 0), or on a new one. */
+  | { kind: "move-to-space"; window: number; space: number | "new" }
   | { kind: "bring-to-front"; window: number }
   | { kind: "focus"; window: number }
   | { kind: "help" }
@@ -85,6 +87,8 @@ export interface MenuContext {
   canOpenHelp: boolean;
   /** The menus the focused app published (app-menus/); absent or null with none. */
   app?: PublishedMenus | null;
+  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. */
+  desktops?: { labels: readonly string[]; current: number };
 }
 
 const SEPARATOR: MenuEntry = { kind: "separator" };
@@ -174,6 +178,21 @@ const TILE_ITEMS: ReadonlyArray<[string, Tile, string]> = [
   ["Restore", "restore", "⌃❖↓"],
 ];
 
+/** Desktops a window can go to; as many as the compositor allows (comp/src/wm/spaces.rs). */
+const MOST_DESKTOPS = 16;
+
+/** "Move to" a Desktop by its name, for every Desktop but the window's own, and a new one. */
+const moveToItems = (ctx: MenuContext): MenuEntry[] => {
+  const { focused, desktops } = ctx;
+  if (!focused || !desktops || desktops.labels.length === 0) return [];
+  const own = focused.space ?? desktops.current;
+  const others = desktops.labels.flatMap((label, space) =>
+    space === own ? [] : [item(`Move to ${label}`, { kind: "move-to-space", window: focused.id, space })],
+  );
+  const fresh = desktops.labels.length < MOST_DESKTOPS ? [item("Move to New Desktop", { kind: "move-to-space", window: focused.id, space: "new" })] : [];
+  return [SEPARATOR, ...others, ...fresh];
+};
+
 const windowLabel = (window: CompositorWindow, ctx: MenuContext): string => {
   const title = window.title.trim() || ctx.appName;
   return window.state === "normal" ? title : `${title} (${window.state})`;
@@ -188,6 +207,7 @@ const windowMenu = (ctx: MenuContext): MenuEntry[] => {
     ...(lacksViewMenu(ctx) ? [fullScreenItem(ctx)] : []),
     SEPARATOR,
     ...TILE_ITEMS.map(([label, tile, keys]) => item(label, focused && { kind: "tile", window: focused.id, tile }, keys)),
+    ...moveToItems(ctx),
     SEPARATOR,
     item("Bring All to Front", focused && { kind: "bring-to-front", window: focused.id }),
     ...(listed.length > 0 ? [SEPARATOR] : []),

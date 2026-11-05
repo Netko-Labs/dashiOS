@@ -28,11 +28,7 @@ use smithay::{
     },
 };
 
-use crate::{
-    state::Dashi,
-    wm::Windows,
-    wm::grabs::{MoveSurfaceGrab, ResizeSurfaceGrab},
-};
+use crate::{state::Dashi, wm::Windows, wm::grabs::ResizeSurfaceGrab};
 
 impl XdgShellHandler for Dashi {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
@@ -93,13 +89,13 @@ impl XdgShellHandler for Dashi {
                 return;
             };
 
-            let grab = MoveSurfaceGrab {
+            self.begin_move(
+                &pointer,
                 start_data,
                 window,
                 initial_window_location,
-            };
-
-            pointer.set_grab(self, grab, serial, Focus::Clear);
+                serial,
+            );
         }
     }
 

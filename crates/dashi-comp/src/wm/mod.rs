@@ -3,6 +3,7 @@
 
 mod actions;
 mod decor;
+mod edge_hold;
 mod fullscreen;
 mod motion;
 mod overview;
@@ -12,9 +13,10 @@ pub(crate) use zones::Zones;
 mod space_list;
 mod spaces;
 pub(crate) use decor::ChromeStyle;
+pub(crate) use edge_hold::EdgeHold;
 pub(crate) use fullscreen::Bars;
 pub(crate) use overview::Overview;
-pub(crate) use spaces::Spaces;
+pub(crate) use spaces::{MAX_SPACES, Spaces};
 pub(crate) mod grabs;
 mod placement;
 mod windows;

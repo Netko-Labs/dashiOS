@@ -115,7 +115,11 @@ impl Dashi {
                 app_id: &app_id,
             })
             .cloned();
-        if self.overview_open() && !matches!(action, Some(Action::Bind(_))) {
+        // The overview keeps keys from the windows; a shell surface given the keyboard there (its Desktops row) gets them.
+        if self.overview_open()
+            && !self.keyboard_on_layer()
+            && !matches!(action, Some(Action::Bind(_)))
+        {
             self.keys.taken.insert(keycode, Taken::Swallowed);
             let key = info.names.last().cloned().unwrap_or_default();
             self.overview_key(&key);

@@ -43,6 +43,8 @@ export interface CompositorWindow {
   space?: number;
   /** The icon the app gave (xdg-toplevel-icon): a theme name, and/or a PNG the compositor saved. */
   icon?: WindowIcon;
+  /** Its ext-foreign-toplevel-list identifier: what a screen-share picker answers with (share-picker/). Absent until listed. */
+  toplevel?: string;
 }
 
 /** A window's own icon: an icon theme name, a picture on disk, or both. */
@@ -93,6 +95,10 @@ export function parsePointer(answer: unknown): Point | null {
 
 export type SuperPhase = "tap" | "hold" | "chord" | "up";
 
+export type ScreenEdge = "left" | "right" | "top" | "bottom";
+const SCREEN_EDGES: readonly ScreenEdge[] = ["left", "right", "top", "bottom"];
+const isScreenEdge = (value: unknown): value is ScreenEdge => SCREEN_EDGES.some((edge) => edge === value);
+
 export type CompositorEvent =
   | { event: "window-opened"; window: CompositorWindow }
   | { event: "window-closed"; id: number }
@@ -128,6 +134,10 @@ export type CompositorEvent =
   | { event: "overview-pick"; window: number | null }
   /** A key the open overview kept from the focused window: its keysym name, e.g. "Escape". */
   | { event: "overview-key"; key: string }
+  /** A press on a window in the open overview became a drag, at this point (once per drag). */
+  | { event: "overview-drag"; window: number; x: number; y: number }
+  /** A window held in a move grab rested against a screen's edge for 400 ms (count 1), and each 400 ms more (spaces/edge.ts decides). */
+  | { event: "edge-hold"; edge: ScreenEdge; output: string; window: number; count: number; preview: boolean }
   /** A window dragged in the open overview was let go at this point (global logical). */
   | { event: "overview-drop"; window: number; x: number; y: number }
   /** The Space that shows, or how many there are, changed (comp/src/spaces/; spaces/). */
@@ -174,7 +184,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } = value;
+  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon, toplevel } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -193,6 +203,7 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     ...(fullscreen === true ? { fullscreen } : {}),
     ...(isNumber(space) && Number.isInteger(space) && space >= 0 ? { space } : {}),
     ...withIcon(parseWindowIcon(icon)),
+    ...(typeof toplevel === "string" && toplevel.length > 0 && toplevel.length <= 256 ? { toplevel } : {}),
   };
 }
 
@@ -274,6 +285,13 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return value.window === null || isNumber(value.window) ? { event: "overview-pick", window: value.window } : null;
     case "overview-key":
       return typeof value.key === "string" ? { event: "overview-key", key: value.key } : null;
+    case "overview-drag":
+      return isNumber(value.window) && isNumber(value.x) && isNumber(value.y) ? { event: "overview-drag", window: value.window, x: value.x, y: value.y } : null;
+    case "edge-hold": {
+      const { edge, output, window, count, preview } = value;
+      if (!isScreenEdge(edge) || typeof output !== "string" || !isNumber(window) || !isNumber(count)) return null;
+      return { event: "edge-hold", edge, output, window, count, preview: preview === true };
+    }
     case "overview-drop":
       return isNumber(value.window) && isNumber(value.x) && isNumber(value.y) ? { event: "overview-drop", window: value.window, x: value.x, y: value.y } : null;
     case "space":

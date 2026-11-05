@@ -41,6 +41,8 @@ export interface ActionDeps {
   openSettings?(): void;
   /** Tells an app its own row was chosen (app-menus/); a run without it does nothing. */
   selectAppItem?(pid: number, id: string): void;
+  /** Puts a window on a Desktop, or on a new one (spaces/); a run without Desktops does nothing. */
+  moveToSpace?(window: number, space: number | "new"): Promise<void>;
 }
 
 export type AboutTarget = { kind: "dashi" } | { kind: "app"; appId: string; name: string; pid: number | null };
@@ -96,6 +98,9 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return;
     case "tile":
       await deps.arranger?.tile(action.window, action.tile);
+      return;
+    case "move-to-space":
+      await deps.moveToSpace?.(action.window, action.space);
       return;
     case "fullscreen":
       await deps.arranger?.toggleFullscreen?.(action.window);

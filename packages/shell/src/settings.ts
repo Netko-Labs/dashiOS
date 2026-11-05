@@ -21,7 +21,7 @@
  *                     "pointerSize": 24, "x11Apps": "sharp",
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
- *     "spaces": { "count": 3, "switchOnActivate": true }
+ *     "spaces": { "count": 3, "names": ["Work", null, "Games"], "switchOnActivate": true }
  *   }
  *
  * `accelSpeed` is -1 to 1; `scrollSpeed` is a factor from 0.25 to 4 on how
@@ -33,6 +33,8 @@
  * `menuBar.batteryPercent` (default false) and `menuBar.sound` (default true)
  * are what the status area shows. `spaces.count` is
  * how many Spaces there are (1 to 16; the shell keeps it as they come and go),
+ * `spaces.names` what each Desktop is called, in order (null: after its apps;
+ * spaces/names.ts),
  * `spaces.switchOnActivate` whether activating an app's window on another
  * Space switches there (true) or brings the window here (spaces/).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
@@ -63,6 +65,7 @@ import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
+import { parseSpaceNames, type SpaceNames } from "./spaces/names.ts";
 import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
 import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING, X11_SCALINGS, type X11Scaling } from "./xwayland-scale.ts";
@@ -102,7 +105,7 @@ export interface Settings {
   /** The Dock (dock/settings.ts); every key has a value. */
   dock: DockSettings;
   /** Spaces (spaces/): no count leaves them as they are. */
-  spaces: { count?: number; switchOnActivate: boolean };
+  spaces: { count?: number; names?: SpaceNames; switchOnActivate: boolean };
 }
 
 export interface Loaded {
@@ -277,8 +280,14 @@ export function parseSettings(value: unknown): Loaded {
     autohide: dock.boolean("autohide"),
     visible: dock.boolean("visible"),
   });
-  const spaces = new Section("spaces", value.spaces, problems).only(["count", "switchOnActivate"]);
-  settings.spaces = defined({ count: spaces.number("count", 1, 16, true), switchOnActivate: spaces.boolean("switchOnActivate") ?? true });
+  const spaces = new Section("spaces", value.spaces, problems).only(["count", "names", "switchOnActivate"]);
+  const names = spaces.get("names") === undefined ? undefined : parseSpaceNames(spaces.get("names"));
+  if (names === null) problems.push("spaces.names must be a list of up to 16 names (or null)");
+  settings.spaces = defined({
+    count: spaces.number("count", 1, 16, true),
+    names: names ?? undefined,
+    switchOnActivate: spaces.boolean("switchOnActivate") ?? true,
+  });
   const appearance = new Section("appearance", value.appearance, problems).only([
     "cornerRadius",
     "reduceMotion",

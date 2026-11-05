@@ -17,7 +17,7 @@
  *     "clock": { "hour24": true, "showDate": false },
  *     "region": { "formats": "de_DE.UTF-8", "firstWeekday": "monday" },
  *     "displays": { "eDP-1": { "scale": 1.5 } },
- *     "spaces": { "count": 3, "switchOnActivate": true },
+ *     "spaces": { "count": 3, "names": ["Work", null], "switchOnActivate": true },
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
  *     "graphics": { "mode": "automatic" }
  *   }
@@ -41,6 +41,7 @@ import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
 import { isFormatsLocale } from "../region/locale.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
+import { parseSpaceNames, type SpaceNames } from "../spaces/names.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
   FRAME_RATES,
@@ -154,6 +155,8 @@ export interface RegionSettings {
 /** Spaces (spaces/): how many there are, kept as they change, and whether activating an app's window on another Space goes there. */
 export interface SpacesSettings {
   count?: number;
+  /** What each Desktop is called; null after its apps (spaces/names.ts). */
+  names?: SpaceNames;
   switchOnActivate?: boolean;
 }
 
@@ -261,7 +264,7 @@ const SECTIONS = {
   dock: { path: ["dock"], fields: { style: oneOf(...DOCK_STYLES), autohide: isBoolean, visible: isBoolean } },
   clock: { path: ["clock"], fields: { hour24: isBoolean, showDate: isBoolean } },
   region: { path: ["region"], fields: { formats: isFormatsLocale, firstWeekday: oneOf(...WEEKDAYS) } },
-  spaces: { path: ["spaces"], fields: { count: numberIn(1, 16, true), switchOnActivate: isBoolean } },
+  spaces: { path: ["spaces"], fields: { count: numberIn(1, 16, true), names: (value) => parseSpaceNames(value) !== null, switchOnActivate: isBoolean } },
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;

@@ -80,8 +80,10 @@ crates/dashi-comp/src/
                     refresh, at most 60 fps), ext-image-copy-capture
                     (image_capture.rs), ext-foreign-toplevel-list
   render/           scene, title bars, cursor, capture, presentation (present.rs),
-                    rounded corners (rounded.rs)
-  wm/               windows, placement mechanics, frames, fullscreen, spaces, overview, grabs
+                    rounded corners (rounded.rs), live pictures the shell places
+                    (thumbnails/: `space-previews`, `window-thumbnails`)
+  wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
+                    grabs (a move grab survives a Space change), edge holds (edge_hold.rs)
   input/            keyboard and pointer routing, decorations, constraints, gestures
   keys/             keymap, bindings, ❖ phases
   xwayland/         Xwayland and the X11 window manager

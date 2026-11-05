@@ -176,6 +176,7 @@ impl Dashi {
         if target == previous {
             return;
         }
+        self.carry_held(target);
         let ids: Vec<WindowId> = self.windows.ids().collect();
         for id in &ids {
             self.space_unmap(*id);
@@ -231,6 +232,23 @@ impl Dashi {
         }
     }
 
+    /// A window held in a move grab goes to `target` with the switch, and
+    /// stays on screen under the pointer (wm/grabs/move_grab.rs).
+    fn carry_held(&mut self, target: usize) {
+        let Some(id) = self.held else {
+            return;
+        };
+        let Some(entry) = self.windows.get_mut(id) else {
+            return;
+        };
+        if entry.space == target || entry.shown != Shown::Normal {
+            return;
+        }
+        entry.space = target;
+        self.ipc
+            .emit("window-space", json!({ "window": id, "space": target }));
+    }
+
     /// Off screen, remembering where (a window on a Space that is not shown).
     fn space_unmap(&mut self, id: WindowId) {
         let Some(entry) = self.windows.get(id) else {
@@ -253,6 +271,10 @@ impl Dashi {
             return;
         };
         if entry.space != self.spaces.current || entry.shown != Shown::Normal || !entry.placed {
+            return;
+        }
+        // Carried across: it never left the screen.
+        if self.held == Some(id) && self.space.element_location(&entry.window).is_some() {
             return;
         }
         let (window, at) = (entry.window.clone(), entry.away_at);

@@ -1,12 +1,16 @@
 //! A minimal Wayland client for the tests: one xdg toplevel that draws a
-//! solid shm buffer once it is configured.
+//! solid shm buffer once it is configured; a movable one asks to be moved
+//! (xdg_toplevel.move) when a button is pressed in it, as apps that draw
+//! their own title bars do.
 
 use std::{io::Write, os::fd::AsFd, path::Path};
 
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
     globals::{GlobalListContents, registry_queue_init},
-    protocol::{wl_buffer, wl_compositor, wl_registry, wl_shm, wl_shm_pool, wl_surface},
+    protocol::{
+        wl_buffer, wl_compositor, wl_pointer, wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_surface,
+    },
 };
 use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
@@ -22,11 +26,30 @@ pub struct State {
     surface: Option<wl_surface::WlSurface>,
     shm: Option<wl_shm::WlShm>,
     drawn: bool,
+    /// Set for a movable window: a press asks to move it.
+    mover: Option<(wl_seat::WlSeat, xdg_toplevel::XdgToplevel)>,
+    /// Moves asked for.
+    pub moves: usize,
 }
 
 impl Client {
     /// Connect to the compositor at `runtime_dir/display` and open a window.
     pub fn open(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
+        Self::open_with(runtime_dir, display, app_id, title, false)
+    }
+
+    /// A window that asks to be moved when a button is pressed in it.
+    pub fn open_movable(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
+        Self::open_with(runtime_dir, display, app_id, title, true)
+    }
+
+    fn open_with(
+        runtime_dir: &Path,
+        display: &str,
+        app_id: &str,
+        title: &str,
+        movable: bool,
+    ) -> Self {
         let stream = std::os::unix::net::UnixStream::connect(runtime_dir.join(display))
             .expect("the Wayland socket");
         let connection = Connection::from_socket(stream).expect("a Wayland connection");
@@ -42,9 +65,15 @@ impl Client {
         toplevel.set_app_id(app_id.into());
         toplevel.set_title(title.into());
         surface.commit();
+        let mover = movable.then(|| {
+            let seat: wl_seat::WlSeat = globals.bind(&qh, 1..=7, ()).expect("wl_seat");
+            seat.get_pointer(&qh, ());
+            (seat, toplevel.clone())
+        });
         let mut state = State {
             surface: Some(surface),
             shm: Some(shm),
+            mover,
             ..State::default()
         };
         queue.roundtrip(&mut state).expect("a roundtrip");
@@ -152,7 +181,32 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for State {
     }
 }
 
+impl Dispatch<wl_pointer::WlPointer, ()> for State {
+    fn event(
+        state: &mut Self,
+        _: &wl_pointer::WlPointer,
+        event: wl_pointer::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        let wl_pointer::Event::Button {
+            serial,
+            state: wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),
+            ..
+        } = event
+        else {
+            return;
+        };
+        if let Some((seat, toplevel)) = &state.mover {
+            toplevel._move(seat, serial);
+            state.moves += 1;
+        }
+    }
+}
+
 delegate_noop!(State: ignore wl_compositor::WlCompositor);
+delegate_noop!(State: ignore wl_seat::WlSeat);
 delegate_noop!(State: ignore wl_surface::WlSurface);
 delegate_noop!(State: ignore wl_shm::WlShm);
 delegate_noop!(State: ignore wl_shm_pool::WlShmPool);

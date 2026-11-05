@@ -257,6 +257,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "x11": entry.window.x11_surface().is_some(),
         "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
             .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
+        "toplevel": state.toplevel_list.as_ref().and_then(|list| list.identifier_of(entry.id)),
     })
 }
 

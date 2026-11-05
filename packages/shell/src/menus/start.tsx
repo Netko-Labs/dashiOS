@@ -46,6 +46,11 @@ export interface MenusOptions {
   catalog?: readonly Entry[];
   compositor: Compositor | null;
   arranger: Arranger | null;
+  /** The Desktops, for the Window menu's "Move to" rows (spaces/). */
+  desktops?: {
+    getSnapshot(): { labels: readonly string[]; current: number };
+    move(window: number, space: number | "new"): Promise<void>;
+  };
   system: SystemStore;
   /** Control Center's slider set the brightness to `level` (0..1): at 0 the built-in screen goes off. */
   brightnessChanged?: (level: number) => void;
@@ -148,6 +153,11 @@ export function startMenus(options: MenusOptions): Menus {
   const pairing = new PairingPrompt(openOverlay, bluetooth, () => controller.close());
   pairing.start();
 
+  const desktopsNow = (): Pick<MenuContext, "desktops"> => {
+    const desktops = options.desktops?.getSnapshot();
+    return desktops ? { desktops: { labels: desktops.labels, current: desktops.current } } : {};
+  };
+
   const context = async (appName: string): Promise<MenuContext> => {
     const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
     const focused = windows.find((window) => window.focused) ?? null;
@@ -157,6 +167,7 @@ export function startMenus(options: MenusOptions): Menus {
       focused,
       canLaunch: focused !== null && entryFor(focused.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
+      ...desktopsNow(),
     };
   };
 
@@ -225,6 +236,7 @@ export function startMenus(options: MenusOptions): Menus {
     openForceQuit: () => options.openForceQuit(),
     openSettings: () => options.openSettings?.(),
     selectAppItem: (pid, id) => void appMenus.select(pid, id),
+    moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
   };
 
   const run = (action: MenuAction): void => {
@@ -242,6 +254,7 @@ export function startMenus(options: MenusOptions): Menus {
       canLaunch: entryFor(window.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
       app,
+      ...desktopsNow(),
     };
     return windowMenus(ctx);
   };

@@ -10,7 +10,7 @@ import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
 import { TILES, type Tile } from "./layout.ts";
 import { takeScreenshot } from "./screenshots.ts";
-import type { SwitcherController } from "./switcher.tsx";
+import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
 
 export interface ShellActions {
@@ -64,6 +64,8 @@ export async function runBinding(name: string, window: number | null, compositor
   // The hardware keys act on the system, whatever window has focus.
   if (await actions.hardware.run(name)) return;
   if (actions.spaces?.binding(name)) return;
+  // Bound only while the switcher is open (keymap.ts SWITCHER_RULES).
+  if (name.startsWith("switcher-")) return switcherBinding(name, chord?.key, actions.switcher);
   switch (name) {
     case "app-chord": {
       // A ❖ chord in one of Dashi's own apps: its menu item with that
@@ -150,6 +152,25 @@ export async function runBinding(name: string, window: number | null, compositor
     }
     default:
       console.error(`dashi-shell: the keymap binds “${name}”, but no action has that name`);
+  }
+}
+
+/** A switcher session's key: a step, ⌫, or a key typed (or acted on). */
+function switcherBinding(name: string, key: string | undefined, switcher: SwitcherController): void {
+  switch (name) {
+    case "switcher-down":
+      return switcher.step("down");
+    case "switcher-up":
+      return switcher.step("up");
+    case "switcher-left":
+      return switcher.step("left");
+    case "switcher-right":
+      return switcher.step("right");
+    case "switcher-erase":
+      return switcher.erase();
+    case "switcher-key":
+      if (key) switcher.type(key);
+      return;
   }
 }
 
