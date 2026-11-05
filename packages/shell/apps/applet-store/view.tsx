@@ -7,6 +7,7 @@
 
 import type { IndexApplet, InstalledApplet } from "@dashi/applet";
 import { AppWindow, ConfirmSheet, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
 import { BACK, CATEGORY_GLYPHS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "../software/glyphs.ts";
@@ -145,7 +146,10 @@ export function StoreWindow() {
   const ask = asks[0];
   const overlay =
     ask?.kind === "consent" ? (
-      <AppletConsentSheet manifest={ask.entry.manifest} reviewed={ask.entry.reviewed} update={ask.update} onAnswer={answer} />
+      // The shell's consent sheet fills the surface it is given: here, the whole window, over its content.
+      <View occlude style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: "#00000026" }}>
+        <AppletConsentSheet manifest={ask.entry.manifest} reviewed={ask.entry.reviewed} update={ask.update} onAnswer={answer} />
+      </View>
     ) : ask?.kind === "remove" ? (
       <ConfirmSheet
         testID="remove-sheet"
