@@ -1,7 +1,7 @@
 /**
  * Installed apps for the launcher: freedesktop `.desktop` entries (the XDG
  * application directories) plus Dashi's own pinned apps, with icons resolved
- * from the icon theme, ranked search, and launching.
+ * from the icon theme, and launching (the launcher ranks them: launcher/ranking/).
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -18,12 +18,8 @@ export { calculate } from "./launcher-math.ts";
 export interface Entry extends App {
   /** Other words people search for ("browser" for Firefox). */
   keywords: string[];
-  /** Whole queries that mean this entry above anything named so ("settings" is System Settings). */
-  intents?: string[];
-  /** Words it answers to only when nothing else matches ("settings" for a Settings pane). */
+  /** Words it answers to only when nothing else matches ("settings" for a Settings pane; launcher/ranking/). */
   fallbackKeywords?: string[];
-  /** Found by its name, but below every other match unless the query is its name or one of its keywords (Setup Assistant). */
-  demoted?: true;
   /** A one-color SVG drawn on a neutral tile instead of `icon` (a Settings pane's glyph). */
   glyph?: string;
   /** A few muted words after the name, on the same line ("Web Browser", "Dark Mode, accent, corners"). */
@@ -231,19 +227,17 @@ export function pinnedKeywords(app: Pick<App, "id" | "exec">): string[] {
 }
 
 /**
- * How the shell's own apps are found. System Settings answers to the words
- * people use for settings, and "settings", "preferences" and "control panel"
- * mean it above anything else named so. The Setup Assistant, run once in a
- * lifetime, answers to "setup", "welcome" and "first run" only, and sits
- * below every other match of its name ("set" is System Settings).
+ * How the shell's own apps are found: System Settings by the words people use
+ * for settings. That "settings" means System Settings above anything else
+ * named so, and that the Setup Assistant answers to "setup", "welcome" and
+ * "first run" only, are the ranking's intents (launcher/ranking/intents.ts).
  */
-const SHELL_APP_WORDS: Readonly<Record<string, Pick<Entry, "keywords" | "intents" | "demoted" | "detail">>> = {
+const SHELL_APP_WORDS: Readonly<Record<string, Pick<Entry, "keywords" | "detail">>> = {
   [SETTINGS_APP_ID]: {
     keywords: ["settings", "preferences", "control panel", "system", "options", "configuration"],
-    intents: ["settings", "preferences", "control panel"],
     detail: "all your settings",
   },
-  [SETUP_APP_ID]: { keywords: ["setup", "welcome", "first run"], demoted: true, detail: "run first-time setup again" },
+  [SETUP_APP_ID]: { keywords: ["setup", "welcome", "first run"], detail: "run first-time setup again" },
 };
 
 /** Every launchable app: Dashi's pinned apps first, then the shell's own and the first-party ones, then the installed ones. */
@@ -316,51 +310,6 @@ export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
     }
   }
   return withDistinctNames(entries);
-}
-
-/** A query this short never matches inside a word: "ter" is Terminal, not Battery. */
-export const MIN_INSIDE_WORD = 4;
-/** Where a demoted entry's tiers start: below every tier of the others. */
-const DEMOTED = 10;
-
-/** The tier of a match on part of the name or a keyword, or null for none. */
-function partialTier(name: string, keywords: readonly string[], q: string): number | null {
-  if (name.startsWith(q)) return 3;
-  if (name.split(/[\s\-_.]+/).some((word) => word.startsWith(q))) return 4;
-  if (q.length >= MIN_INSIDE_WORD && name.includes(q)) return 5;
-  if (keywords.some((word) => word.startsWith(q))) return 6;
-  return null;
-}
-
-/**
- * Entries matching `query`: an intent ("settings" is System Settings), the
- * exact name, then an exact keyword (an app called Terminal before the ones
- * whose generic name is "Terminal"), then name prefix, word start, inside a
- * word (from `MIN_INSIDE_WORD` letters), then keyword prefix. A demoted
- * entry's prefix and word matches come after everyone else's; fallback
- * keywords count only when nothing else matched.
- */
-export function search(entries: readonly Entry[], query: string, limit = 7): Entry[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const score = (entry: Entry): number | null => {
-    const name = entry.name.toLowerCase();
-    if (entry.intents?.includes(q)) return 0;
-    if (name === q) return 1;
-    if (entry.keywords.includes(q)) return 2;
-    const tier = partialTier(name, entry.keywords, q);
-    return tier !== null && entry.demoted ? tier + DEMOTED : tier;
-  };
-  const fallback = (entry: Entry): number | null => (entry.fallbackKeywords?.some((word) => word.startsWith(q)) ? 0 : null);
-  const rank = (by: (entry: Entry) => number | null) =>
-    entries
-      .flatMap((entry) => {
-        const score = by(entry);
-        return score === null ? [] : [{ entry, score }];
-      })
-      .sort((a, b) => a.score - b.score || Number(b.entry.shell === true) - Number(a.entry.shell === true) || a.entry.name.localeCompare(b.entry.name));
-  const ranked = rank(score);
-  return (ranked.length > 0 ? ranked : rank(fallback)).slice(0, limit).map(({ entry }) => entry);
 }
 
 /** Start `entry`; `watch` hears whether it quit as it started (apps.ts). */

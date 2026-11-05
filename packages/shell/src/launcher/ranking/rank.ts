@@ -71,11 +71,13 @@ export function buildIndex<T extends RankItem>(items: readonly T[], intents: Int
   }
   const demoted = new Set(intents.demoted);
   const prepared = items.map((item): Prepared<T> => {
-    const fallbackWords = new Set((intents.fallback[item.kind] ?? []).map((word) => prepare(word).text));
+    const fallbackWords = new Set([...(intents.fallback[item.kind] ?? []), ...(item.fallback ?? [])].map((word) => prepare(word).text));
     const isDemoted = demoted.has(item.id);
     const names = unique(item.names.map(prepare));
     // A demoted item answers to its name and its intents only, not to its keywords.
-    const words = isDemoted ? [] : unique((item.keywords ?? []).map(prepare)).filter((word) => !names.some((name) => name.text === word.text));
+    const words = isDemoted
+      ? []
+      : unique([...(item.keywords ?? []), ...(item.fallback ?? [])].map(prepare)).filter((word) => !names.some((name) => name.text === word.text));
     const keywords = words.filter((word) => !fallbackWords.has(word.text));
     const fallback = words.filter((word) => fallbackWords.has(word.text));
     const own = phrases.get(item.id) ?? [];

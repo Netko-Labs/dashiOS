@@ -9,9 +9,8 @@ import { KEYMAP } from "../src/keymap.ts";
 import { AppIndex, nearestExisting } from "../src/launcher/app-index.ts";
 import { failureNotice, LaunchFailures, RETRY } from "../src/launcher/failures.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
-import { buildSections, type FileRow, filesStateFor, type ListInput, placeholderFor, selectable } from "../src/launcher/rows.ts";
+import { buildSections, type FileRow, filesStateFor, found, type ListInput, placeholderFor, selectable } from "../src/launcher/rows.ts";
 import { keepInView, moveSelection, resolveSelection } from "../src/launcher/selection.ts";
-import { didYouMean, typoDistance } from "../src/launcher/suggest.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { parseRecents, RecentApps, recentEntries, remember } from "../src/recents.ts";
 
@@ -151,17 +150,16 @@ describe("selection by id", () => {
 });
 
 describe("did you mean", () => {
-  test("one typo from four letters: a letter missing, extra, wrong, or two swapped", () => {
-    expect(typoDistance("fierfox", "firefox")).toBe(1);
-    expect(typoDistance("firefx", "firefox")).toBe(1);
-    expect(typoDistance("fireefox", "firefox")).toBe(1);
-    expect(typoDistance("fyrefox", "firefox")).toBe(1);
-    expect(typoDistance("frefx", "firefox")).toBeGreaterThan(1);
+  test("the ranking's typos, from four letters, only when nothing else matched", () => {
     const entries = [app("Firefox"), app("Terminal"), app("Hidden", { hidden: true })];
-    expect(didYouMean(entries, "fierfox")?.name).toBe("Firefox");
-    expect(didYouMean(entries, "termnal")?.name).toBe("Terminal");
-    expect(didYouMean(entries, "fir")).toBeNull();
-    expect(didYouMean(entries, "hiden")).toBeNull();
+    const suggestion = (query: string) => found(list({ query, entries }), 5).suggestion?.entry?.name ?? null;
+    expect(suggestion("fierfox")).toBe("Firefox");
+    // Letters in order from a word start are a match of their own, not a typo.
+    expect(found(list({ query: "termnal", entries }), 5).items.map((item) => item.entry?.name)).toEqual(["Terminal"]);
+    expect(suggestion("fir")).toBeNull();
+    expect(suggestion("hiden")).toBeNull();
+    // A typo is never a result of its own.
+    expect(found(list({ query: "fierfox", entries }), 5).items).toEqual([]);
   });
 });
 

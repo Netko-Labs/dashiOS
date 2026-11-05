@@ -27,7 +27,8 @@ export const ENTRIES: Entry[] = [
   app(SETUP_APP_ID, "Setup Assistant", [...SHELL, "setup", "assistant", "welcome", "first run", "language", "region", "time zone", "dev.dashi.setup"], {
     shell: true,
   }),
-  ...PANES.map((pane): Entry => ({ ...paneEntry(pane), keywords: paneKeywords(pane), shell: true })),
+  // As settings-app/search.ts registers them: "settings" only when nothing else answers (paneLook).
+  ...PANES.map((pane): Entry => ({ ...paneEntry(pane), keywords: paneKeywords(pane), fallbackKeywords: ["settings"], shell: true })),
 ];
 
 export const index = (entries: readonly Entry[] = ENTRIES, env: Record<string, string> = { LANG: "en_US.UTF-8" }) => entryIndex(entries, env);

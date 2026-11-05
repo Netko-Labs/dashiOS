@@ -2,7 +2,7 @@
  * The launcher's entries (entries.ts) as ranking items: an installed app
  * with its localized name and keywords, a Settings pane with Dashi's words
  * for it in the person's language. `rankEntries` answers like today's
- * `search()`, so the launcher can switch to it in one line.
+ * the old `search()` did, for anyone who wants entries back.
  */
 
 import { SETTINGS_APP_ID } from "../../apps.ts";
@@ -30,6 +30,7 @@ export function entryItem(entry: Entry, languages: readonly string[]): EntryItem
       ...(localized?.genericName ? [localized.genericName] : []),
       ...dashiWords(entry.id, languages),
     ],
+    ...(entry.fallbackKeywords ? { fallback: entry.fallbackKeywords } : {}),
     ...(entry.shell ? { own: true } : {}),
     entry,
   };
@@ -41,7 +42,7 @@ export function entryIndex(entries: readonly Entry[], env: Readonly<Record<strin
   return buildIndex(entries.filter((entry) => !entry.hidden).map((entry) => entryItem(entry, languages)));
 }
 
-/** The entries matching `query`, best first: `search()`'s answer, ranked by this module. */
+/** The entries matching `query`, best first. */
 export function rankEntries(index: RankIndex<EntryItem>, query: string, signals?: RankSignals, limit = 7): Entry[] {
   return rank(index, query, { limit, ...(signals ? { signals } : {}) }).map((result) => result.item.entry);
 }

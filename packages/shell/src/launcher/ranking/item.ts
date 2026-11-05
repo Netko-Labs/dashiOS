@@ -12,6 +12,8 @@ export interface RankItem {
   names: readonly string[];
   /** Other words it is found by ("browser" for Firefox), in any language. */
   keywords?: readonly string[];
+  /** Words it answers to only when no other item matches at all ("settings" for a Settings pane), besides its kind's (intents.ts). */
+  fallback?: readonly string[];
   /** One of the shell's own (System Settings): wins a tie over an installed app. */
   own?: boolean;
   /**

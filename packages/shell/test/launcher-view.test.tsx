@@ -118,7 +118,7 @@ async function mount(props: Partial<LauncherProps> & Pick<LauncherProps, "entrie
   return { opened, closed, type, key, enter, hover, rows, has, tree, unmount, emit, node };
 }
 
-const TEAS = ["Tea Alpha", "Tea Beta", "Tea Delta", "Tea Epsilon", "Tea Gamma"].map(app);
+const TEAS = ["Tea Alpha", "Tea Bravo", "Tea Delta", "Tea Ember", "Tea Gamma"].map(app);
 const TEA_FILES = ["tea-notes.md", "teapot.txt", "tea.csv"];
 
 /** Every row id the tests look for. */
@@ -145,7 +145,7 @@ test("bug 1: files landing late move nothing, and Enter opens the app that was h
   await launcher.type("tea");
   for (let i = 0; i < 3; i++) await launcher.key("ArrowDown");
   const before = launcher.rows();
-  expect(before.selected).toBe("entry:app.tea-epsilon");
+  expect(before.selected).toBe("entry:app.tea-ember");
 
   // The files come in while the fourth app is highlighted.
   await settle(FILE_DELAY_MS + 20);
@@ -155,10 +155,10 @@ test("bug 1: files landing late move nothing, and Enter opens the app that was h
   const after = launcher.rows();
   expect(after.ids.slice(0, before.ids.length)).toEqual(before.ids);
   expect(after.ids.length).toBe(before.ids.length + 3);
-  expect(after.selected).toBe("entry:app.tea-epsilon");
+  expect(after.selected).toBe("entry:app.tea-ember");
 
   await launcher.enter();
-  expect(launcher.opened).toEqual(["Tea Epsilon"]);
+  expect(launcher.opened).toEqual(["Tea Ember"]);
 });
 
 test("slots are held for files while the next answer comes, so the panel keeps its rows", async () => {
@@ -172,7 +172,7 @@ test("slots are held for files while the next answer comes, so the panel keeps i
   await launcher.type("tea ");
   // Asked again for "tea " is the same words: nothing changes. A new word holds the slots.
   await launcher.type("tea b");
-  expect(launcher.rows().ids).toEqual(["entry:app.tea-beta"]);
+  expect(launcher.rows().ids).toEqual(["entry:app.tea-bravo"]);
   expect(launcher.has("launcher:section:files")).toBe(true);
 });
 
@@ -194,9 +194,9 @@ test("↑ and ↓ wrap at both ends; the pointer over a row selects it; the comp
   expect(launcher.rows().selected).toBe("entry:app.tea-alpha");
   keys.binding("launcher-down");
   await settle();
-  expect(launcher.rows().selected).toBe("entry:app.tea-beta");
+  expect(launcher.rows().selected).toBe("entry:app.tea-bravo");
   await launcher.enter();
-  expect(launcher.opened).toEqual(["Tea Beta"]);
+  expect(launcher.opened).toEqual(["Tea Bravo"]);
 });
 
 test("Esc clears the field first, then closes", async () => {
