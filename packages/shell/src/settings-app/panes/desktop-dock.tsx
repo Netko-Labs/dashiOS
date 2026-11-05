@@ -44,22 +44,17 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
       </Group>
       <Caption keys="⌥❖D">Hiding is also in the Dock's right-click menu, and on</Caption>
       <Group testID="spaces-settings">
-        <Row
-          label="When switching to an application, switch to a Space with open windows for the application"
-          detail="Turned off, the window comes to the Space you are on instead."
-        >
+        <Row label="Go to an app's desktop" detail="Opening an app goes to the desktop its window is on, instead of bringing the window to you.">
           <Switch testID="spaces-switch-on-activate" on={switchOnActivate} onChange={(on) => settings.patch("spaces", { switchOnActivate: on })} />
         </Row>
         <Row
-          label="Full-screen apps get their own desktop"
-          detail="A game or a video in full screen moves to a desktop of its own, next to the one it came from, and goes back when it leaves full screen. Turned off, it stays on its desktop."
+          label="Give full-screen apps their own desktop"
+          detail="A game or video in full screen gets a desktop next to yours, and comes back when it leaves."
         >
           <Switch testID="spaces-fullscreen-desktop" on={fullscreenDesktop} onChange={(on) => settings.patch("spaces", { fullscreenDesktop: on })} />
         </Row>
       </Group>
-      <Caption>
-        Move between Spaces with ⌃← and ⌃→, jump with ⌃1 to ⌃9, or swipe sideways with three fingers. Mission Control (⌃↑) shows them at the top.
-      </Caption>
+      <Caption>Move between desktops with ⌃← and ⌃→, jump with ⌃1 to ⌃9, or swipe sideways with three fingers. Overview (⌃↑) shows them all.</Caption>
     </Page>
   );
 }
