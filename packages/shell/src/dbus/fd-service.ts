@@ -123,8 +123,7 @@ export class FdService {
     this.worker = worker;
     worker.onmessage = (event: MessageEvent<ReaderChunk>) => this.receive(event.data);
     worker.onerror = (event) => this.shutdown(new Error(`the bus reader failed: ${event.message}`));
-    // The reader must not keep the process alive by itself.
-    worker.unref();
+    // Like a socket, an open connection keeps the process alive; close() ends the reader.
     worker.postMessage({ socket } satisfies ReaderStart);
     // Anything that came with the handshake's last line.
     this.decode();
