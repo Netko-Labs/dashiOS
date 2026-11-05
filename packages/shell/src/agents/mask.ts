@@ -16,6 +16,7 @@
 import type { CompositorWindow } from "../compositor.ts";
 import type { Atspi } from "./atspi/client.ts";
 import { limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
+import { FillPrompts } from "./fill-prompts.ts";
 
 /** The name agents' captures use. */
 export const AGENT_MASK = "agent";
@@ -51,13 +52,17 @@ export interface MaskInputs {
   fields: ReadonlyArray<{ window: number; rect: Rect }>;
   /** Screencopy clients recording for an agent. */
   pids: readonly number[];
+  /** Windows Dashi just typed a card or a password into: their popups are blanked (fill-prompts.ts). */
+  popups?: readonly number[];
+  /** Windows their apps opened since: blanked whole. */
+  opened?: readonly number[];
 }
 
 /** The `capture-mask` request for `inputs`. */
 export function maskRequest(inputs: MaskInputs): Record<string, unknown> {
   return {
     client: AGENT_MASK,
-    windows: [...new Set([...inputs.handedOver, ...inputs.vault])],
+    windows: [...new Set([...inputs.handedOver, ...inputs.vault, ...(inputs.opened ?? [])])],
     rects: [...inputs.fields, ...(inputs.filled ?? [])].map(({ window, rect }) => ({
       window,
       x: Math.floor(rect.x - FIELD_PAD),
@@ -67,6 +72,7 @@ export function maskRequest(inputs: MaskInputs): Record<string, unknown> {
     })),
     layers: [...SHEET_LAYERS],
     pids: [...inputs.pids],
+    popups: [...(inputs.popups ?? [])],
   };
 }
 
@@ -84,8 +90,12 @@ export interface MaskDeps {
 
 export class AgentMask {
   private recorders: number[] = [];
+  /** What an app may show back after a fill (its popups, a new window). */
+  readonly prompts: FillPrompts;
 
-  constructor(private readonly deps: MaskDeps) {}
+  constructor(private readonly deps: MaskDeps) {
+    this.prompts = new FillPrompts(() => deps.windows());
+  }
 
   /** A recorder runs for an agent (its pid), or stopped (null). */
   recording(pid: number | null): void {
@@ -94,14 +104,19 @@ export class AgentMask {
 
   /** Look again and tell dashi-comp; throws if it can't be told (then no picture may be taken). */
   async update(): Promise<void> {
-    const windows = (await this.deps.windows()).filter((w) => w.state === "normal" && w.frame !== null);
+    const all = await this.deps.windows();
+    const windows = all.filter((w) => w.state === "normal" && w.frame !== null);
     const fields = await this.passwordFields(windows);
+    const filled = await this.filledFields(windows);
+    const prompts = this.prompts.blank(all);
     const request = maskRequest({
       handedOver: this.deps.handedOver(),
       vault: windows.filter((w) => this.deps.isVault(w)).map((w) => w.id),
       fields,
-      filled: await this.filledFields(windows),
+      filled,
       pids: this.recorders,
+      popups: prompts.popups,
+      opened: prompts.windows,
     });
     await this.deps.request("capture-mask", request);
   }
@@ -114,6 +129,8 @@ export class AgentMask {
   private async filledFields(windows: readonly CompositorWindow[]): Promise<Array<{ window: number; rect: Rect }>> {
     const found = await Promise.all(
       (this.deps.filled?.() ?? []).map(async (field) => {
+        // A field still around (even one now gone) keeps its window's prompts blanked a while.
+        this.prompts.touched(field.window);
         const window = windows.find((w) => w.id === field.window);
         if (!field.again || !window?.frame) return [field];
         const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), AGAIN_MS));

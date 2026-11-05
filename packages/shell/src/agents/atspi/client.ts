@@ -32,6 +32,11 @@ class Node implements A11yNode {
     readonly path: string,
   ) {}
 
+  /** Which object it is on the bus. */
+  get key(): string {
+    return `${this.name}${this.path}`;
+  }
+
   private async call(iface: string, member: string, signature?: string, body?: unknown[]): Promise<unknown> {
     const [value] = await this.bus.call(
       { destination: this.name, path: this.path, interface: iface, member, ...(signature ? { signature, body } : {}) },

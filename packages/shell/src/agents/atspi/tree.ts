@@ -31,6 +31,8 @@ export interface A11yNode {
   parent?(): Promise<A11yNode | null>;
   /** Ask for its attributes (what wakes Chromium's tree: Atspi.wake). */
   attributes?(): Promise<void>;
+  /** Which object it is (its bus name and path), where that can be told. */
+  readonly key?: string;
 }
 
 /** How far up a field's documents are looked for. */
@@ -88,9 +90,22 @@ export async function placeAgain(node: A11yNode, page: A11yNode | null): Promise
   } catch {
     return "gone";
   }
-  if (hasState(states, STATE.DEFUNCT)) return "gone";
+  if (hasState(states, STATE.DEFUNCT) || (page && !(await stillThere(page)))) return "gone";
   if (!hasState(states, STATE.SHOWING)) return "hidden";
   return placed(node, page);
+}
+
+/**
+ * Whether a page is still in its app's tree. Chromium keeps a page's nodes
+ * answering, as they were, after the tab moved on (measured in the VM); the
+ * new page takes the old one's place among its parent's children.
+ */
+async function stillThere(page: A11yNode): Promise<boolean> {
+  if (!page.key || !page.parent) return true;
+  const parent = await page.parent().catch(() => null);
+  if (!parent) return true;
+  const children = await parent.children().catch(() => null);
+  return children === null || children.some((child) => child.key === page.key);
 }
 
 function kindOf(role: number, states: readonly number[]): Focused["kind"] {

@@ -93,6 +93,7 @@ export function startAgents({ compositor, ui, store, tile, desktop, sources = ()
       ),
     isVault: isVaultWindow,
   });
+  secrets.touched = (window) => mask.prompts.touched(window);
   const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, secrets };
   let nextId = 0;
 

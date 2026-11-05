@@ -71,7 +71,9 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Chromium (Helium) without `--force-renderer-accessibility`: the shell wakes its web tree and places fields by their page. Firefox: its first GetExtents answers nothing (asked again)
 - [x] Sheets are solid; the scope sheet fits 1280×720 points (its list scrolls)
 - [x] VM, Firefox and Helium: sign_in, fill_code, a passkey made and used (the person's password on dashi-secretd's sheet), `pay` on the checkout; agents' pictures blank the password, code and card fields, and a filled field's blank goes with its page
-- [ ] A blank for a window's field is painted over windows above it (an agent sees a dark box over the window in front)
+- [x] A blank for a window's field is painted over windows above it: clipped by the opaque windows in front (VM: Helium's field behind Firefox)
+- [x] Firefox's "Securely save this card?" (last four, expiry) and "Save password?" after a fill: the window's popups are blanked a minute after its filled fields were last seen, each for its whole life, and new windows of the app whole (VM: agent pictures blank them, the person's ⇧❖3 shows them)
+- [ ] A prompt that opens over ten minutes after a fill (FILLED_MS) isn't blanked; an app that shows a secret in its main window outside a filled field isn't either
 
 ## 7 · The applet SDK
 - [x] `packages/applet` (`@dashi/applet`), manifest and schema, protocol v2 (hello, popover, dismiss, submenus), layer-shell grants per pid (`applet-clients`), the sandbox (bwrap + xdg-dbus-proxy), `dashi-applet` CLI

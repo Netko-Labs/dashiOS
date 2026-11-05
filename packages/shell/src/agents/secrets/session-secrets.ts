@@ -21,6 +21,8 @@ export interface SecretsShared {
   vault: SecretsRun["vault"];
   /** Windows handed to the person now (the mask blanks them). */
   handedOver: Set<number>;
+  /** Dashi typed a secret into a window: what its app shows next is blanked a while (fill-prompts.ts). */
+  touched?(window: number): void;
 }
 
 /** A field Dashi typed a secret into, in its window's content coordinates when typed, and how to find it again. */
@@ -84,6 +86,7 @@ export class SessionSecrets {
         const now = Date.now();
         const kept = (this.shared.filled.get(window) ?? []).filter((f) => f.until > now);
         this.shared.filled.set(window, [...kept, { rect, until: now + FILLED_MS, again }].slice(-16));
+        this.shared.touched?.(window);
       },
       ask: (summary, logins) => this.ui.signIn({ agent, who: who(), summary, logins }, signal),
       handOver: async (window, reason) => {

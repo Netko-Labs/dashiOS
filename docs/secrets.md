@@ -167,6 +167,24 @@ every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
   found again through AT-SPI before each picture, so the blank follows it
   as the page scrolls, leaves while it is hidden (another tab), and goes
   with its page; a field not found within 300 ms is blanked where it was.
+  A page is gone when its app forgets its node (Firefox) or when it is no
+  longer among its parent's children (Chromium keeps the old page's nodes
+  answering, as they were, after the tab moved on);
+- what an app shows back after Dashi typed a card or a password into one of
+  its windows (`src/agents/fill-prompts.ts`): Firefox's "Securely save this
+  card? •••• 4242 12/34" and "Save password?" (with its Show button) are
+  xdg_popups of the window. From the fill until a minute after its fields
+  were last seen, that window's popups are blanked, and dashi-comp keeps
+  each popup blanked for as long as it lives (a prompt left open is never
+  shown); every window of the same app that opened since the fill is blanked
+  whole while it lives. Popups opened after that minute (menus) are the
+  agent's to see again. A password Dashi types counts as a filled field too,
+  so a page's "show password" can't show it.
+
+A field's blank stops where an opaque window in front covers it (its
+declared opaque region, less its rounded corners), so a field in a window
+behind isn't a dark box over the one in front; while windows move
+(the overview, a slide, a flight) nothing is clipped.
 
 A sheet waiting for the person doesn't hold the agent's pictures: it is
 blanked in them like the rest, so a screenshot taken meanwhile returns at
@@ -463,7 +481,9 @@ a passkey, pays a test amount, and its recordings show blanks where the
 secrets were. The steps are in the 0.4.0 handoff. Use an ordinary browser,
 started without accessibility flags. `bun packages/shell/bin/dashi-a11y-probe.ts
 [PID] [--wake] [--find]` (in the session) shows what the shell sees of an
-app: its password fields, the focused field, the documents around it.
+app: its password fields, the focused field, the documents around it;
+`bin/dashi-a11y-again.ts PID [WAIT]` asks for a password field again after
+you navigate the page (what the mask does for a filled field).
 
 ## What this can't fix
 

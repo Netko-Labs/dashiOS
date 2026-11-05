@@ -6,13 +6,18 @@
 //! opaque in the picture before anyone sees it, where it is drawn: in its
 //! frame, small in the overview, flying to the Dock, sliding with its Space
 //! (drawn.rs), and in any live picture of the shell's that shows it
-//! (thumbnails/), which is blanked whole.
+//! (thumbnails/), which is blanked whole. A window's popups may be blanked
+//! without the window (after Dashi typed a card or a password into it: a
+//! browser's "save this card?" prompt), and a popup blanked once stays
+//! blanked while it lives. A field's blank stops where an opaque window in
+//! front covers it (mask_cover.rs).
 
 use std::collections::HashMap;
 
 use serde_json::{Map, Value};
 use smithay::{
     desktop::layer_map_for_output,
+    reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
     utils::{Logical, Point, Rectangle},
 };
 
@@ -34,11 +39,19 @@ pub(crate) struct Mask {
     pub layers: Vec<String>,
     /// Screencopy and image-copy clients whose frames get this mask.
     pub pids: Vec<u32>,
+    /// Windows whose popups are blanked (not the windows).
+    pub popups: Vec<u64>,
+    /// Popups blanked by an earlier request, kept blanked while they live.
+    pub kept: Vec<WlSurface>,
 }
 
 impl Mask {
     fn is_empty(&self) -> bool {
-        self.windows.is_empty() && self.rects.is_empty() && self.layers.is_empty()
+        self.windows.is_empty()
+            && self.rects.is_empty()
+            && self.layers.is_empty()
+            && self.popups.is_empty()
+            && self.kept.is_empty()
     }
 }
 
@@ -89,6 +102,7 @@ pub(crate) fn parse(params: &Map<String, Value>) -> Result<(String, Mask), Strin
             .collect()
     };
     let windows = ids("windows")?;
+    let popups = ids("popups")?;
     let pids = ids("pids")?.into_iter().map(|p| p as u32).collect();
     let layers = list(params, "layers")?
         .iter()
@@ -123,12 +137,14 @@ pub(crate) fn parse(params: &Map<String, Value>) -> Result<(String, Mask), Strin
             rects,
             layers,
             pids,
+            popups,
+            kept: Vec::new(),
         },
     ))
 }
 
 /// `rect` grown out to whole logical pixels: never a sliver of what is under it.
-fn outward(rect: Rectangle<f64, Logical>) -> Rectangle<i32, Logical> {
+pub(super) fn outward(rect: Rectangle<f64, Logical>) -> Rectangle<i32, Logical> {
     let (x0, y0) = (rect.loc.x.floor(), rect.loc.y.floor());
     let (x1, y1) = (
         (rect.loc.x + rect.size.w).ceil(),
@@ -179,7 +195,25 @@ pub(crate) fn blank(
 
 impl Dashi {
     pub(crate) fn set_capture_mask(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let (client, mask) = parse(params)?;
+        let (client, mut mask) = parse(params)?;
+        // The popups blanked before stay blanked while they live, and so do those blanked now.
+        let mut kept = self
+            .capture_masks
+            .0
+            .get(&client)
+            .map(|old| old.kept.clone())
+            .unwrap_or_default();
+        kept.retain(Resource::is_alive);
+        for id in &mask.popups {
+            for (surface, _) in self.popup_rects(*id) {
+                if !kept.contains(&surface) {
+                    kept.push(surface);
+                }
+            }
+        }
+        let over = kept.len().saturating_sub(MAX_ENTRIES);
+        kept.drain(..over);
+        mask.kept = kept;
         if mask.is_empty() && mask.pids.is_empty() {
             self.capture_masks.0.remove(&client);
         } else {
@@ -222,9 +256,22 @@ impl Dashi {
                 let bar = f64::from(self.bar_height(&window)) * by;
                 let content = outer.loc + Point::from((0.0, bar));
                 let at = content + rect.loc.to_f64().upscale(by);
-                out.push(outward(Rectangle::new(at, rect.size.to_f64().upscale(by))));
+                let field = outward(Rectangle::new(at, rect.size.to_f64().upscale(by)));
+                // Where an opaque window in front covers the field, its blank would only hide that window.
+                out.extend(Rectangle::subtract_rects_many([field], self.covered(*id)));
             }
             out.extend(self.pictures_of(*id));
+        }
+        if !mask.popups.is_empty() || !mask.kept.is_empty() {
+            for id in self.windows.ids() {
+                let whole = mask.popups.contains(&id);
+                out.extend(
+                    self.popup_rects(id)
+                        .into_iter()
+                        .filter(|(surface, _)| whole || mask.kept.contains(surface))
+                        .map(|(_, rect)| rect),
+                );
+            }
         }
         for output in self.space.outputs() {
             let Some(origin) = self.space.output_geometry(output).map(|g| g.loc) else {
@@ -243,7 +290,10 @@ impl Dashi {
     }
 
     /// A masked window as drawn now: the window, its outer frame there, and its scale.
-    fn drawn(&self, id: u64) -> Option<(smithay::desktop::Window, Rectangle<f64, Logical>, f64)> {
+    pub(super) fn drawn(
+        &self,
+        id: u64,
+    ) -> Option<(smithay::desktop::Window, Rectangle<f64, Logical>, f64)> {
         let window = self.windows.get(id)?.window.clone();
         let (outer, by) = self.drawn_frame(id)?;
         Some((window, outer, by))
@@ -371,6 +421,7 @@ mod tests {
             "rects": [{ "window": 3, "x": 10, "y": 20, "width": 200, "height": 30 }, { "x": 0, "y": 0, "width": 5, "height": 5 }],
             "layers": ["dashi.agent-consent"],
             "pids": [4242],
+            "popups": [5],
         })))
         .unwrap();
         assert_eq!(client, "agent");
@@ -378,6 +429,9 @@ mod tests {
         assert_eq!(mask.rects[0].0, Some(3));
         assert_eq!(mask.rects[1].0, None);
         assert_eq!(mask.pids, vec![4242]);
+        assert_eq!(mask.popups, vec![5]);
+        assert!(mask.kept.is_empty());
+        assert!(parse(&params(json!({ "client": "agent", "popups": [-1] }))).is_err());
         assert!(parse(&params(json!({ "windows": [1] }))).is_err());
         assert!(
             parse(&params(

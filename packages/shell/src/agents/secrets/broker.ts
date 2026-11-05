@@ -126,6 +126,8 @@ async function typeLogin(ctx: BrokerContext, chosen: Login, site: string, submit
   const source = ctx.sources.find((s) => s.id === chosen.source);
   if (!source) return toolError("That login's source is turned off.");
   if (ctx.cancelled?.()) return toolError(GAVE_UP);
+  // Blanked as it is wherever it goes (a page's "show password" makes it text), and the app's "save password?" with it.
+  ctx.filled?.(now.focused);
   await typeSecret(ctx, await source.password(chosen));
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
   return text(

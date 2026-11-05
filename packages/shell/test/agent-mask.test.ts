@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { focusedField, hasState, passwordFields, placeAgain, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
+import { type A11yNode, focusedField, hasState, passwordFields, placeAgain, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
 import { AGENT_MASK, AgentMask, FIELD_PAD, type FilledField, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
 import { answeredByPerson, PERSON_PRESS_MS, personAnswered } from "../src/agents/person.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
@@ -88,6 +88,20 @@ describe("the accessibility walk", () => {
     expect(await placeAgain(forgotten, null)).toBe("gone");
   });
 
+  test("a field whose page the tab left is gone, though Chromium still answers for it", async () => {
+    const rect = { x: 1, y: 2, width: 3, height: 4 };
+    const field = tree({ role: ROLE.ENTRY, states: [STATE.SHOWING], rect });
+    const page = (key: string, children: () => A11yNode[]): A11yNode => ({
+      ...tree({ role: ROLE.DOCUMENT_WEB, states: [STATE.SHOWING], rect }),
+      key,
+      parent: async () => ({ ...tree({ role: ROLE.FRAME }), children: async () => children() }),
+    });
+    const left: A11yNode = page(":1.5/doc/164", () => [{ ...tree({ role: ROLE.DOCUMENT_WEB }), key: ":1.5/doc/183" }]);
+    expect(await placeAgain(field, left)).toBe("gone");
+    const staying: A11yNode = page(":1.5/doc/164", () => [{ ...tree({ role: ROLE.DOCUMENT_WEB }), key: ":1.5/doc/164" }]);
+    expect(await placeAgain(field, staying)).toEqual({ rect, page: rect });
+  });
+
   test("a walk gives up at its limits instead of holding a picture", async () => {
     const wide = tree({ role: ROLE.APPLICATION, children: Array.from({ length: 50 }, () => ({ role: ROLE.FRAME, states: [STATE.SHOWING] })) });
     const { complete } = await passwordFields(wide, { nodes: 10, deadline: Date.now() + 1000 });
@@ -97,13 +111,21 @@ describe("the accessibility walk", () => {
 
 describe("what agents' pictures blank", () => {
   test("the request covers sheets, the vault, handed-over windows, and padded password fields", () => {
-    const request = maskRequest({ handedOver: [4], vault: [7, 4], fields: [{ window: 3, rect: { x: 100, y: 240, width: 240, height: 28 } }], pids: [999] });
+    const request = maskRequest({
+      handedOver: [4],
+      vault: [7, 4],
+      fields: [{ window: 3, rect: { x: 100, y: 240, width: 240, height: 28 } }],
+      pids: [999],
+      popups: [3],
+      opened: [8],
+    });
     expect(request).toEqual({
       client: AGENT_MASK,
-      windows: [4, 7],
+      windows: [4, 7, 8],
       rects: [{ window: 3, x: 100 - FIELD_PAD, y: 240 - FIELD_PAD, width: 240 + 2 * FIELD_PAD, height: 28 + 2 * FIELD_PAD }],
       layers: [...SHEET_LAYERS],
       pids: [999],
+      popups: [3],
     });
     expect(SHEET_LAYERS).toContain("dashi.agent-consent");
   });

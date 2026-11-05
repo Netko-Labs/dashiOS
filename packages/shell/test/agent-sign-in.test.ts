@@ -40,17 +40,21 @@ interface Harness {
   ctx: BrokerContext;
   typed: unknown[];
   asked: Array<{ summary: string; logins: readonly unknown[] }>;
+  /** Fields blanked for agents, and how much was typed by then. */
+  blanked: Array<{ kind: unknown; typedBefore: number }>;
 }
 
 /** A broker context: `fields` is what each look at the focused field finds, in turn (the last repeats). */
 function harness(options: { sources: LoginSource[]; fields: FieldInfo[]; answer?: SignInAnswer; approvals?: Map<string, Approval>; now?: number }): Harness {
   const typed: unknown[] = [];
   const asked: Harness["asked"] = [];
+  const blanked: Harness["blanked"] = [];
   let look = 0;
   const ctx: BrokerContext = {
     sources: options.sources,
     inspect: async () => options.fields[Math.min(look++, options.fields.length - 1)] as FieldInfo,
     type: async (payload) => void typed.push(payload),
+    filled: (placed) => void blanked.push({ kind: (placed as { kind?: unknown }).kind, typedBefore: typed.length }),
     ask: async (summary, logins) => {
       asked.push({ summary, logins });
       return options.answer ?? { allow: "once", login: (logins[0] as { key: string }).key };
@@ -60,7 +64,7 @@ function harness(options: { sources: LoginSource[]; fields: FieldInfo[]; answer?
     now: () => options.now ?? 1_000_000,
     sleep: async () => {},
   };
-  return { ctx, typed, asked };
+  return { ctx, typed, asked, blanked };
 }
 
 const everything = (value: unknown) => JSON.stringify(value);
@@ -74,6 +78,8 @@ describe("signing an agent in", () => {
     expect(h.typed).toEqual([{ keys: [{ text: "alexk" }, { name: "Tab" }] }, { keys: [{ text: PASSWORD }] }, { keys: [{ name: "Return" }] }]);
     expect(everything(result)).not.toContain(PASSWORD);
     expect(everything(result)).toContain("alexk");
+    // The password field is blanked for agents (and the app's "save password?" after it) before it holds the password.
+    expect(h.blanked).toEqual([{ kind: "password", typedBefore: 1 }]);
     expect(h.asked[0]?.summary).toBe("sign in to github.com");
     // The sheet shows logins, never a secret.
     expect(everything(h.asked)).not.toContain(PASSWORD);
