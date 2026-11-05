@@ -185,7 +185,14 @@ impl Dashi {
         for id in &ids {
             self.space_map(*id);
         }
-        self.focus_topmost();
+        // A window carried across stays in front, with the keyboard; the
+        // Space's own windows were mapped over it.
+        let carried = self
+            .held
+            .filter(|id| self.on_current_space(*id) && self.focus_window(*id).is_ok());
+        if carried.is_none() {
+            self.focus_topmost();
+        }
         self.emit_space(previous);
     }
 

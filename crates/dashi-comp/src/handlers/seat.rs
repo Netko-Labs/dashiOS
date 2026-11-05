@@ -66,6 +66,9 @@ impl SeatHandler for Dashi {
         set_data_device_focus(&self.display_handle, seat, client.clone());
         set_primary_focus(&self.display_handle, seat, client);
         if seat == &self.seat {
+            if let Some(surface) = focused {
+                self.windows.used(surface);
+            }
             self.x11_focus(focused);
         }
     }
