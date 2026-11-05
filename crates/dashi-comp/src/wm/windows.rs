@@ -68,6 +68,10 @@ pub(crate) struct Entry {
     pub icon: crate::handlers::toplevel_meta::Icon,
     /// The window it is a sheet of (IPC `attach`; wm/sheets.rs).
     pub sheet_of: Option<WindowId>,
+    /// As a sheet: how far below the top of its parent's frame it hangs
+    /// (`attach {top}`: an app's own title bar and toolbar); None is under
+    /// the title bar dashi-comp draws.
+    pub sheet_top: Option<i32>,
     /// When it last got the person's keyboard (a count, higher is later; 0 never).
     pub used: u64,
 }
@@ -112,6 +116,7 @@ impl Windows {
             icon: Default::default(),
             hover: None,
             sheet_of: None,
+            sheet_top: None,
             used: 0,
         });
         id
