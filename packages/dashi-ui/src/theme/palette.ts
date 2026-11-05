@@ -110,7 +110,7 @@ export const darkColors: Palette = {
   osdOff: "#f5f5f726",
   batteryLow: "#ff5a4f",
   selection: "#3E8A72",
-  selectionWash: "#3E8A7224",
+  selectionWash: "#3E8A7238",
   onSelection: "#f5f5f7",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
