@@ -231,4 +231,9 @@ describe("the matchers", () => {
     expect(fuzzyScore("tedit", prepare("Text Editor"))).not.toBeNull();
     expect(fuzzyScore("sset", prepare("System Settings"))).not.toBeNull();
   });
+
+  test("three letters spread through one word only as an abbreviation: a word is looked for as itself", () => {
+    expect(fuzzyScore("tea", prepare("Terminal"))).toBeNull();
+    expect(fuzzyScore("trm", prepare("Terminal"))).not.toBeNull();
+  });
 });

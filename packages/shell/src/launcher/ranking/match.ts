@@ -204,8 +204,16 @@ function inOrder(query: string, target: Folded, n: number): boolean {
   return k === query.length;
 }
 
-/** Three letters in order inside one word, from its start ("msg" in Messages): a weak fuzzy match. */
+/** Vowels: an abbreviation drops them ("msg"), a word keeps them ("tea"). */
+const VOWEL = /[aeiouy]/;
+
+/**
+ * Three letters in order inside one word, from its start ("msg" in Messages): a weak fuzzy match,
+ * for abbreviations only. Three letters with a vowel after the first read as a word ("tea"), and a
+ * word is looked for as itself, not spread through another one (Terminal).
+ */
 function oneWord(query: string, target: Folded): number | null {
+  if (VOWEL.test(query.slice(1))) return null;
   for (const each of target.words) {
     if (each[0] !== query[0]) continue;
     let k = 1;
