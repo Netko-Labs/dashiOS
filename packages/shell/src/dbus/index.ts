@@ -3,6 +3,7 @@ export { busAddress, socketPaths } from "./address.ts";
 export { BUS_NAME, getNameOwner, listNames, NameFlags, type NameResult, nameHasOwner, releaseName, requestName } from "./bus.ts";
 export { type ConnectOptions, DBusConnection } from "./connection.ts";
 export { DBusError, ERRORS, ProtocolError } from "./errors.ts";
+export { FdService, type FdServiceOptions } from "./fd-service.ts";
 export { FdConnection, type FdConnectOptions, type Received } from "./fds.ts";
 export type { CallContext, InterfaceSpec, MethodSpec, PropertySpec } from "./introspect.ts";
 export { marshal, Writer } from "./marshal.ts";

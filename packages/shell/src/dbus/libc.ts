@@ -135,11 +135,20 @@ export function pipePair(): { read: number; write: number } {
 
 /** `poll` on one descriptor without waiting: which of `events` (plus errors and hang-up) are ready. */
 export function pollNow(fd: number, events: number): number {
+  return pollWait(fd, events, 0);
+}
+
+/**
+ * `poll` on one descriptor for up to `timeoutMs` (-1: until something is
+ * ready). It blocks the thread it runs on, so only a worker calls it with a
+ * timeout (fd-reader.ts).
+ */
+export function pollWait(fd: number, events: number, timeoutMs: number): number {
   const entry = new ArrayBuffer(8);
   const view = new DataView(entry);
   view.setInt32(0, fd, true);
   view.setInt16(4, events, true);
-  const ready = libc().poll(ptr(new Uint8Array(entry)), 1n, 0);
+  const ready = libc().poll(ptr(new Uint8Array(entry)), 1n, timeoutMs);
   return ready > 0 ? view.getInt16(6, true) : 0;
 }
 
