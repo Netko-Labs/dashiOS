@@ -89,6 +89,7 @@ export class GraphicsController {
     if (!this.deps.card) return;
     const backend = this.deps.backend;
     if (backend) {
+      void backend.takeOver();
       this.stopMode = backend.onModeChanged((mode) => {
         this.publish({ mode });
         void this.decide();

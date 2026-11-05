@@ -32,6 +32,9 @@ const ROOT = "/org/opengamingcollective/cardwire";
 const MODE = `${CARDWIRE}.Mode`;
 const GPU = `${CARDWIRE}.Gpu`;
 const SMART = `${CARDWIRE}.SmartPolicy`;
+const CONFIG = `${CARDWIRE}.Config`;
+/** cardwire's own switching, which would fight Dashi's Automatic policy (policy.ts): Dashi is the one decider. */
+const OWN_SWITCHES = ["BatteryAutoSwitch", "ExternalDisplayAutoSwitch"] as const;
 
 export type CardwireMode = "integrated" | "hybrid" | "manual" | "smart";
 const MODE_CODES: readonly CardwireMode[] = ["integrated", "hybrid", "manual", "smart"];
@@ -99,6 +102,8 @@ export interface GraphicsBackend {
   allowed(): Promise<AppPolicy[]>;
   /** The mode changed (another tool, cardwire's own switches). */
   onModeChanged(listener: (mode: CardwireMode | null) => void): () => void;
+  /** Turns cardwire's own battery and external-screen switching off, so only Dashi decides. */
+  takeOver(): Promise<void>;
 }
 
 export interface CardwireBus {
@@ -139,6 +144,16 @@ export function cardwireClient(link: CardwireBus): GraphicsBackend {
     },
     holders: async (gpu) => parseLsof((await call(gpu.path, GPU, "Lsof"))?.[0]),
     allowed: async () => parsePolicies((await call(ROOT, SMART, "GetAppPolicies"))?.[0]).filter((policy) => policy.allowed),
+    takeOver: async () => {
+      const bus = await link.bus().catch(() => null);
+      if (!bus) return;
+      const where = { destination: CARDWIRE, path: ROOT, interface: CONFIG };
+      const config = await getAllProperties(bus, where).catch(() => null);
+      for (const name of OWN_SWITCHES) {
+        if (config?.get(name) !== true) continue;
+        await setProperty(bus, where, name, variant("b", false)).catch(() => {});
+      }
+    },
     onModeChanged: (listener) => {
       listeners.add(listener);
       if (!watching) {
@@ -169,5 +184,7 @@ export function shadowGraphics(real: GraphicsBackend): GraphicsBackend {
       told = mode;
       return true;
     },
+    // A development run leaves the host's cardwire configuration alone.
+    takeOver: async () => {},
   };
 }

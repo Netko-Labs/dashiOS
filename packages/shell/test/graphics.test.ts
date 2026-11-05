@@ -138,6 +138,27 @@ test("the cardwire client: no service is no cardwire; Mode reads and sets as a n
   expect(await client.mode()).toBe("integrated");
 });
 
+test("the cardwire client: Dashi turns cardwire's own switching off, and only what is on", async () => {
+  const config = new Map<string, unknown>([
+    ["BatteryAutoSwitch", true],
+    ["ExternalDisplayAutoSwitch", false],
+    ["AutoApplyGpuState", true],
+  ]);
+  const sets: string[] = [];
+  const bus = new FakeBus()
+    .on("/org/opengamingcollective/cardwire", "org.freedesktop.DBus.Properties", "GetAll", ([iface]) =>
+      iface === "org.opengamingcollective.cardwire.Config" ? [config] : [new Map()],
+    )
+    .on("/org/opengamingcollective/cardwire", "org.freedesktop.DBus.Properties", "Set", ([iface, name, value]) => {
+      sets.push(`${String(iface)} ${String(name)}=${String((value as { value: unknown }).value)}`);
+      return [];
+    });
+  await cardwireClient(bus.link()).takeOver();
+  expect(sets).toEqual(["org.opengamingcollective.cardwire.Config BatteryAutoSwitch=false"]);
+  // Without cardwire there is nothing to turn off, and nothing throws.
+  await cardwireClient(new FakeBus().link()).takeOver();
+});
+
 function fakeBackend(mode: CardwireMode) {
   const state = { mode, sets: [] as CardwireMode[] };
   const gpu: CardwireGpu = { path: "/g/1", name: "RTX", pci: CARD.pci, card: 0, isDefault: false, discrete: true, driver: "nvidia" };
@@ -152,6 +173,7 @@ function fakeBackend(mode: CardwireMode) {
     holders: async () => [],
     allowed: async () => [],
     onModeChanged: () => () => {},
+    takeOver: async () => {},
   };
   return { backend, state };
 }
