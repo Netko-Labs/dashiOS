@@ -7,13 +7,23 @@
 
 import { closeSync, openSync, readSync } from "node:fs";
 import type { CompositorWindow } from "../../compositor.ts";
-import { fieldAt, focusedField, limits } from "../atspi/tree.ts";
+import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/tree.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
 import { payWith } from "../secrets/pay.ts";
 import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
+
+/** How long a browser just woken (Atspi.wake) takes to publish its page: about a second in the VM's Helium. */
+const WOKEN_MS = 1200;
+
+/** A field as the app placed it, in the window's content points (what the mask takes). */
+function placeIn(window: CompositorWindow, field: Placed): Rect | null {
+  if (!field.rect) return null;
+  const frame = window.frame ?? { width: 0, height: 0 };
+  return toWindow(field.rect, field.page, { width: frame.width, height: frame.height - window.titleBar });
+}
 
 /** What an agent outside the sandbox is told. */
 export const UNCONFINED =
@@ -54,18 +64,29 @@ function brokerFor(window: CompositorWindow, ctx: RunContext): BrokerContext {
     inspect: async () => {
       const cmdline = window.pid !== null ? cmdlineOf(window.pid) : null;
       const atspi = await ctx.secrets.atspi();
-      if (window.pid === null || !atspi) return { focused: null, cmdline };
-      // What the last focus event named, walked up for its documents; else a search of the tree.
-      const leaf = await atspi.focusedIn(window.pid).catch(() => null);
-      const focused = leaf ? await fieldAt(leaf).catch(() => null) : null;
-      if (focused) return { focused, cmdline };
-      const app = await atspi.appFor(window.pid).catch(() => null);
-      return { focused: app ? await focusedField(app, limits(1500, 8000)) : null, cmdline };
+      const pid = window.pid;
+      if (pid === null || !atspi) return { focused: null, cmdline };
+      const look = async () => {
+        // What the last focus event named, walked up for its documents; else a search of the tree.
+        const leaf = await atspi.focusedIn(pid).catch(() => null);
+        const focused = leaf ? await fieldAt(leaf).catch(() => null) : null;
+        if (focused) return focused;
+        const app = await atspi.appFor(pid).catch(() => null);
+        return app ? await focusedField(app, limits(1500, 8000)) : null;
+      };
+      // Chromium publishes its pages only once asked (Atspi.wake): wake it, and once more if the page still says nothing.
+      if (await atspi.wake?.(pid).catch(() => false)) await Bun.sleep(WOKEN_MS);
+      const focused = await look();
+      if (focused || !(await atspi.wake?.(pid, true).catch(() => false))) return { focused, cmdline };
+      await Bun.sleep(WOKEN_MS);
+      return { focused: await look(), cmdline };
     },
     type: (payload) => ctx.hands.send(window, payload, ctx.agent, ctx.status),
     ask: (summary, logins) => ctx.secrets.ask(summary, logins),
     approvals: ctx.secrets.approvals,
-    filled: (rect) => ctx.secrets.filled(window.id, rect),
+    filled: (field) => ctx.secrets.filled(window.id, placeIn(window, field)),
+    cancelled: () => ctx.signal.aborted,
+    exclusive: (work) => ctx.secrets.exclusive(work),
     status: ctx.status,
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -103,7 +124,7 @@ export async function payCall(call: Extract<Call, { name: "pay" }>, ctx: RunCont
     ...broker,
     cards: () => ctx.secrets.vault.cards(),
     pay: (merchant: string, cents: number, card: number) => ctx.secrets.vault.pay(merchant, cents, card),
-    filled: (rect: Parameters<RunContext["secrets"]["filled"]>[1]) => ctx.secrets.filled(window.id, rect),
+    filled: (field: Placed) => ctx.secrets.filled(window.id, placeIn(window, field)),
   };
   return payWith(pay, call.site, call.cents, call.card);
 }

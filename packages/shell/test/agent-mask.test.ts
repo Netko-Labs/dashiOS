@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { focusedField, hasState, passwordFields, ROLE, STATE } from "../src/agents/atspi/tree.ts";
+import { focusedField, hasState, passwordFields, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
 import { AGENT_MASK, AgentMask, FIELD_PAD, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
 import { answeredByPerson, PERSON_PRESS_MS, personAnswered } from "../src/agents/person.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
@@ -29,7 +29,8 @@ describe("the accessibility walk", () => {
   test("it finds the password fields that show, and not those on hidden tabs", async () => {
     const { rects, complete } = await passwordFields(browser("https://github.com/login"));
     expect(complete).toBe(true);
-    expect(rects).toEqual([{ x: 100, y: 240, width: 240, height: 28 }]);
+    // The page has no extents in the made-up tree: the field is placed as the app says.
+    expect(rects).toEqual([{ rect: { x: 100, y: 240, width: 240, height: 28 }, page: null }]);
   });
 
   test("the focused field comes with the addresses of the documents around it, innermost first", async () => {
@@ -38,6 +39,19 @@ describe("the accessibility walk", () => {
     const framed = await focusedField(browser("https://evil.example/", { frameUrl: "https://github.com/login" }));
     expect(framed?.documents).toEqual(["https://github.com/login", "https://evil.example/"]);
     expect(await focusedField(browser("https://github.com/login", { focus: null }))).toBeNull();
+  });
+
+  test("a web field is placed in its window by its page, whatever units and origin the browser uses", () => {
+    // Measured in the VM: Helium at scale 1.5, its window's content 596×436 points; the code field
+    // shows at 88, 179 points in it, 436×36. Helium says (device pixels, from an origin of its own):
+    const page = { x: 39, y: 81, width: 882, height: 596 };
+    const field = { x: 165, y: 297, width: 654, height: 54 };
+    const placed = toWindow(field, page, { width: 596, height: 436 });
+    expect(Math.round(placed.x)).toBe(88);
+    expect(Math.round(placed.y)).toBe(179);
+    expect([Math.round(placed.width), Math.round(placed.height)]).toEqual([436, 36]);
+    // Outside a web page, as the app says.
+    expect(toWindow(field, null, { width: 596, height: 436 })).toEqual(field);
   });
 
   test("a walk gives up at its limits instead of holding a picture", async () => {

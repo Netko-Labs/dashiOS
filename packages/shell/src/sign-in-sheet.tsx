@@ -10,7 +10,7 @@ import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { SignInAsk, SignInChoice } from "./agents/presence.ts";
-import { AgentMark, Button } from "./consent.tsx";
+import { AgentMark, Button, opaque } from "./consent.tsx";
 
 /** The sheet's surface, room for its shadow and five logins. */
 export const SIGN_IN = { width: 480, height: 470 } as const;
@@ -35,7 +35,7 @@ export function SignInSheet({ ask, onAnswer }: { ask: SignInAsk; onAnswer: (choi
           gap: 4,
           padding: 22,
           borderRadius: 18,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",

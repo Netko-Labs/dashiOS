@@ -8,7 +8,7 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Turn } from "./agents/presence.ts";
-import { Button } from "./consent.tsx";
+import { Button, opaque } from "./consent.tsx";
 
 export const TURN = { width: 560, height: 96 } as const;
 
@@ -29,7 +29,7 @@ export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void })
           paddingLeft: 16,
           paddingRight: 10,
           borderRadius: 14,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.agent,
           shadow: "xl",

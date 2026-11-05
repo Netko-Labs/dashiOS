@@ -10,7 +10,7 @@ const CODE = "492039";
 const FIREFOX = ["/usr/lib64/firefox/firefox"];
 
 function field(kind: Focused["kind"], documents: string[] = ["https://github.com/login"]): FieldInfo {
-  return { focused: { kind, rect: null, documents }, cmdline: FIREFOX };
+  return { focused: { kind, rect: null, page: null, documents }, cmdline: FIREFOX };
 }
 
 function login(over: Partial<Login> = {}): Login {

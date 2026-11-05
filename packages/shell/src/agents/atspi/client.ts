@@ -8,7 +8,7 @@
 import { DBusConnection } from "../../dbus/index.ts";
 import { unwrap } from "../../dbus/properties.ts";
 import { variant } from "../../dbus/variant.ts";
-import type { A11yNode, Rect } from "./tree.ts";
+import { type A11yNode, documents, limits, type Rect } from "./tree.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";
 const ACCESSIBLE = "org.a11y.atspi.Accessible";
@@ -16,6 +16,8 @@ const ACCESSIBLE = "org.a11y.atspi.Accessible";
 const CALL_MS = 300;
 /** ATSPI_COORD_TYPE_WINDOW. */
 const WINDOW_COORDS = 1;
+/** How long a woken app takes to publish its views (Chromium: measured well under this in the VM). */
+const WAKE_MS = 400;
 
 function rectOf(value: unknown): Rect | null {
   if (!Array.isArray(value) || value.length !== 4 || !value.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
@@ -69,6 +71,11 @@ class Node implements A11yNode {
     return typeof name === "string" && typeof path === "string" && path !== "/org/a11y/atspi/null" ? new Node(this.bus, name, path) : null;
   }
 
+  /** Its attributes, asked only for the asking's sake (see Atspi.wake). */
+  async attributes(): Promise<void> {
+    await this.call(ACCESSIBLE, "GetAttributes");
+  }
+
   async url(): Promise<string | null> {
     for (const name of ["DocURL", "URI"]) {
       const value = await this.call("org.a11y.atspi.Document", "GetAttributeValue", "s", [name]).catch(() => null);
@@ -82,6 +89,8 @@ export class Atspi {
   private readonly pids = new Map<string, number | null>();
   /** What last took the focus in each app (by its bus name), from focus events. */
   private readonly focus = new Map<string, string>();
+  /** Apps asked to publish their whole tree already (wake). */
+  private readonly woken = new Set<string>();
 
   private constructor(private readonly bus: DBusConnection) {}
 
@@ -152,6 +161,34 @@ export class Atspi {
     const value = typeof unwrap(pid) === "number" ? (pid as number) : null;
     this.pids.set(name, value);
     return value;
+  }
+
+  /**
+   * Chromium (Chrome, Helium, Electron) publishes only its windows until an
+   * assistive technology asks a node for its attributes, as Orca does
+   * (AtkGetAttributes turns its web tree on: ax_platform_node_auralinux.cc);
+   * IsEnabled and ScreenReaderEnabled alone don't. So ask, once per app: true
+   * when this woke it now (its tree is built in a moment), false when it was
+   * awake already or has no tree to give.
+   */
+  async wake(pid: number, again = false): Promise<boolean> {
+    const app = await this.appFor(pid);
+    if (!(app instanceof Node) || (this.woken.has(app.name) && !again)) return false;
+    this.woken.add(app.name);
+    const ask = (nodes: readonly A11yNode[]) => Promise.all(nodes.map((node) => (node instanceof Node ? node.attributes().catch(() => {}) : undefined)));
+    // The windows first: that publishes the browser's own views, among them
+    // each tab's document, still empty; asked in turn, the documents fill in.
+    await ask([app, ...(await app.children().catch(() => []))]);
+    await Bun.sleep(WAKE_MS);
+    await ask(await documents(app, limits(1000, 4000)));
+    return true;
+  }
+
+  /** Every app on the bus, with the process that serves it. */
+  async apps(): Promise<Array<{ pid: number | null; app: A11yNode }>> {
+    const root = new Node(this.bus, "org.a11y.atspi.Registry", "/org/a11y/atspi/accessible/root");
+    const apps = await root.children().catch(() => []);
+    return Promise.all(apps.map(async (app) => ({ pid: app instanceof Node ? await this.pidOf(app.name) : null, app })));
   }
 
   /** The tree of the app that runs as `pid` (the window's process). */

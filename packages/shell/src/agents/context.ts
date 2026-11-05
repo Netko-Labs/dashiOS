@@ -22,13 +22,15 @@ export interface SecretsRun {
   /** The enabled login sources, in order. */
   sources(): readonly LoginSource[];
   /** The accessibility bus (null where there is none). */
-  atspi(): Promise<Pick<Atspi, "appFor" | "focusedIn"> | null>;
+  atspi(): Promise<(Pick<Atspi, "appFor" | "focusedIn"> & Partial<Pick<Atspi, "wake">>) | null>;
   /** Ask the person which login, on the sheet. */
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** A field Dashi typed a secret into (a code, a card): agents' pictures blank it for a while. */
   filled(window: number, rect: Rect | null): void;
   /** Dashi's vault, for cards and payments. */
   vault: Pick<Vault, "cards" | "pay">;
+  /** Run `work` with this agent's other calls held (Dashi checking a field and typing into it). */
+  exclusive<T>(work: () => Promise<T>): Promise<T>;
   /** Give the window to the person until they press Done (true), pausing this agent. */
   handOver(window: number, reason: string): Promise<boolean>;
 }
@@ -79,4 +81,6 @@ export interface RunContext {
    * locking all come back false. The answer is never kept.
    */
   confirm(question: Question): Promise<boolean>;
+  /** Aborted when the agent gives up on this call, or leaves: sheets come down, nothing more is typed. */
+  signal: AbortSignal;
 }

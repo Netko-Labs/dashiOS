@@ -7,6 +7,7 @@
  * logs, or shows in the menu bar holds a secret.
  */
 
+import type { Placed } from "../atspi/tree.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
 import { checkField, type FieldInfo } from "./field-check.ts";
 import { findLogins, type Login, type LoginSource, loginKey, SOURCE_LABELS } from "./sources.ts";
@@ -48,7 +49,11 @@ export interface BrokerContext {
   /** This connection's approvals, by login key. */
   approvals: Map<string, Approval>;
   /** A field a code was typed into (its window coordinates): agents' pictures blank it. */
-  filled?(rect: { x: number; y: number; width: number; height: number } | null): void;
+  filled?(field: Placed): void;
+  /** Whether the agent gave up on this call (then nothing is typed). */
+  cancelled?(): boolean;
+  /** Run the typing with this agent's other calls held. */
+  exclusive?<T>(work: () => Promise<T>): Promise<T>;
   status(text: string): void;
   now(): number;
   sleep(ms: number): Promise<void>;
@@ -91,6 +96,10 @@ async function typeSecret(ctx: BrokerContext, secret: Uint8Array): Promise<void>
 
 const isResult = (value: Login | ToolResult): value is ToolResult => "content" in value;
 
+/** What a call the agent gave up on answers (no one reads it), having typed nothing. */
+export const GAVE_UP = "The call was given up on before anything was typed.";
+const run = <T>(work: () => Promise<T>): Promise<T> => work();
+
 export async function signIn(ctx: BrokerContext, site: string, account: string | null, submit: boolean): Promise<ToolResult> {
   // The page first: no sheet for a field Dashi won't fill anyway.
   const before = await ctx.inspect();
@@ -98,6 +107,12 @@ export async function signIn(ctx: BrokerContext, site: string, account: string |
   if (!start.ok) return toolError(start.reason);
   const chosen = await choose(ctx, site, account, "password", `sign in to ${site}`);
   if (isResult(chosen)) return chosen;
+  if (ctx.cancelled?.()) return toolError(GAVE_UP);
+  return (ctx.exclusive ?? run)(() => typeLogin(ctx, chosen, site, submit));
+}
+
+/** The page checked again, then the account and the password typed (this agent's other calls held). */
+async function typeLogin(ctx: BrokerContext, chosen: Login, site: string, submit: boolean): Promise<ToolResult> {
   ctx.status(`Signing in to ${site}`);
   let now = checkField(await ctx.inspect(), "code", site);
   if (!now.ok) return toolError(now.reason);
@@ -110,6 +125,7 @@ export async function signIn(ctx: BrokerContext, site: string, account: string |
   if (!now.ok) return toolError(`${now.reason} Nothing secret was typed.`);
   const source = ctx.sources.find((s) => s.id === chosen.source);
   if (!source) return toolError("That login's source is turned off.");
+  if (ctx.cancelled?.()) return toolError(GAVE_UP);
   await typeSecret(ctx, await source.password(chosen));
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
   return text(
@@ -123,14 +139,20 @@ export async function fillCode(ctx: BrokerContext, site: string, account: string
   if (!before.ok) return toolError(before.reason);
   const chosen = await choose(ctx, site, account, "code", `enter a one-time code for ${site}`);
   if (isResult(chosen)) return chosen;
+  if (ctx.cancelled?.()) return toolError(GAVE_UP);
+  return (ctx.exclusive ?? run)(() => typeCode(ctx, chosen, site, submit));
+}
+
+async function typeCode(ctx: BrokerContext, chosen: Login, site: string, submit: boolean): Promise<ToolResult> {
   ctx.status(`Entering a code for ${site}`);
   const now = checkField(await ctx.inspect(), "code", site);
   if (!now.ok) return toolError(`${now.reason} No code was typed.`);
   const source = ctx.sources.find((s) => s.id === chosen.source);
   if (!source) return toolError("That login's source is turned off.");
+  if (ctx.cancelled?.()) return toolError(GAVE_UP);
   const code = new TextEncoder().encode(await source.code(chosen));
   // A code field is no password field: blank it in agents' pictures before it holds the code.
-  ctx.filled?.(now.focused.rect);
+  ctx.filled?.(now.focused);
   await typeSecret(ctx, code);
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
   return text(`Dashi entered the one-time code for ${chosen.account} on ${site}; you never see it.${submit ? " It pressed Return." : ""}`, {

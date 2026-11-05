@@ -219,9 +219,8 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
   } else {
     ctx.status(rect ? "Looking at part of the screen" : "Taking a screenshot");
   }
-  // The consent sheet is never in an agent's picture.
-  await ctx.ui.whenNoSheet();
-  // Nor is a secret: password fields, the vault, a window handed to the person (mask.ts).
+  // Never in an agent's picture, blanked (mask.ts): consent sheets (so a screenshot needn't wait for
+  // the person to answer one), password fields, the vault, a window handed to the person.
   try {
     await ctx.mask.update();
   } catch {

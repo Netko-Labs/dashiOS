@@ -94,50 +94,68 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & { close(): voi
     },
   });
 
+  /** Queue a sheet; if its caller gives up (`signal`), it comes down, or never comes up. */
+  const queue = (entry: Sheet, signal: AbortSignal | undefined) => {
+    if (signal?.aborted) return entry.resolve(DENY);
+    signal?.addEventListener("abort", () => sheets.cancel(entry), { once: true });
+    sheets.enqueue(entry);
+  };
+
   return {
-    ask(ask) {
+    ask(ask, signal) {
       return new Promise((resolve) =>
-        sheets.enqueue({
-          agent: ask.agent,
-          view: (answer) => <ConsentSheet ask={ask} onAnswer={(allow, scopes) => answer({ allow, scopes })} />,
-          resolve,
-        }),
+        queue(
+          {
+            agent: ask.agent,
+            view: (answer) => <ConsentSheet ask={ask} onAnswer={(allow, scopes) => answer({ allow, scopes })} />,
+            resolve,
+          },
+          signal,
+        ),
       );
     },
-    confirm(confirm) {
+    confirm(confirm, signal) {
       return new Promise((resolve) =>
-        sheets.enqueue({
-          agent: confirm.agent,
-          view: (answer) => <ConfirmSheet confirm={confirm} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />,
-          resolve: (answer) => resolve(answer.allow !== "deny"),
-        }),
+        queue(
+          {
+            agent: confirm.agent,
+            view: (answer) => <ConfirmSheet confirm={confirm} onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)} />,
+            resolve: (answer) => resolve(answer.allow !== "deny"),
+          },
+          signal,
+        ),
       );
     },
-    signIn(ask) {
+    signIn(ask, signal) {
       // On the queue's Answer: "always" stands for "Allow for This Task", the login's key rides in `scopes`.
       return new Promise((resolve) =>
-        sheets.enqueue({
-          agent: ask.agent,
-          size: SIGN_IN,
-          view: (answer) => (
-            <SignInSheet
-              ask={ask}
-              onAnswer={(choice) =>
-                answer(choice.allow === "deny" || !choice.login ? DENY : { allow: choice.allow === "task" ? "always" : "once", scopes: [choice.login] })
-              }
-            />
-          ),
-          resolve: (answer) =>
-            resolve(
-              answer.allow === "deny"
-                ? { allow: "deny", login: null }
-                : { allow: answer.allow === "always" ? "task" : "once", login: answer.scopes[0] ?? null },
+        queue(
+          {
+            agent: ask.agent,
+            size: SIGN_IN,
+            view: (answer) => (
+              <SignInSheet
+                ask={ask}
+                onAnswer={(choice) =>
+                  answer(choice.allow === "deny" || !choice.login ? DENY : { allow: choice.allow === "task" ? "always" : "once", scopes: [choice.login] })
+                }
+              />
             ),
-        }),
+            resolve: (answer) =>
+              resolve(
+                answer.allow === "deny"
+                  ? { allow: "deny", login: null }
+                  : { allow: answer.allow === "always" ? "task" : "once", login: answer.scopes[0] ?? null },
+              ),
+          },
+          signal,
+        ),
       );
     },
-    turn(turn) {
+    turn(turn, signal) {
       endTurn(turn.agent, false);
+      if (signal?.aborted) return Promise.resolve(false);
+      signal?.addEventListener("abort", () => endTurn(turn.agent, false), { once: true });
       return new Promise((resolve) => {
         const host = spawnNativeHost(METAL_HOST, {
           title: "Your turn",

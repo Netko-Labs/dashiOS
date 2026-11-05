@@ -57,8 +57,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     target = { kind: "screen", output: display.name };
     area = display.frame;
   }
-  // The consent sheet is never in an agent's recording.
-  await ctx.ui.whenNoSheet();
+  // Consent sheets are blanked in the recording with the rest of the mask (below), so it needn't wait for one.
   ctx.status("Recording the screen");
   let file: string;
   // The video gets the agent's blanks too: the recorder's pid is masked before

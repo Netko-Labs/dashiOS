@@ -60,6 +60,12 @@ export class SheetQueue<E extends QueuedSheet> {
     this.showNext();
   }
 
+  /** One sheet whose caller gave up: it comes down (or never shows) as "Don't Allow"; the next comes up. */
+  cancel(entry: E): void {
+    this.release([entry], DENY);
+    this.showNext();
+  }
+
   /** Everything comes down as "Don't Allow". */
   close(): void {
     this.release([...this.queue], DENY);

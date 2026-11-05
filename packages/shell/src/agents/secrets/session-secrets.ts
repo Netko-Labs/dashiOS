@@ -26,8 +26,6 @@ export interface SecretsShared {
 /** How long a field Dashi filled stays blank in agents' pictures. */
 export const FILLED_MS = 10 * 60_000;
 
-const exclusive = (call: Call) => call.name === "sign_in" || call.name === "fill_code" || call.name === "pay";
-
 export class SessionSecrets {
   readonly approvals = new Map<string, Approval>();
   private paused: Promise<void> | null = null;
@@ -39,11 +37,20 @@ export class SessionSecrets {
     readonly confined: boolean,
   ) {}
 
-  /** Run `work` for `call` once nothing it must wait for is going on. */
+  /** Run `work` for `call` once nothing it must wait for is going on: a hand-over, or Dashi typing a secret. */
   async around<T>(call: Call, work: () => Promise<T>): Promise<T> {
     while (call.name !== "hand_over" && this.paused) await this.paused;
     while (this.running) await this.running;
-    if (!exclusive(call)) return work();
+    return work();
+  }
+
+  /**
+   * Run `work` alone: while Dashi checks a field and types a secret, this
+   * agent's other calls wait, so its own clicks can't move the focus. Only
+   * the typing is held, not the sheet before it: a screenshot needn't wait for the person.
+   */
+  async exclusive<T>(work: () => Promise<T>): Promise<T> {
+    while (this.running) await this.running;
     let done = () => {};
     this.running = new Promise((resolve) => {
       done = resolve;
@@ -56,21 +63,22 @@ export class SessionSecrets {
     }
   }
 
-  /** The secrets part of a call's RunContext. */
-  run(agent: number, who: () => Who): SecretsRun {
+  /** The secrets part of a call's RunContext; `signal` aborts when the agent gives up on the call. */
+  run(agent: number, who: () => Who, signal?: AbortSignal): SecretsRun {
     return {
       confined: this.confined,
       approvals: this.approvals,
       sources: this.shared.sources,
       atspi: this.shared.atspi,
       vault: this.shared.vault,
+      exclusive: (work) => this.exclusive(work),
       filled: (window, rect) => {
         if (!rect) return;
         const now = Date.now();
         const kept = (this.shared.filled.get(window) ?? []).filter((f) => f.until > now);
         this.shared.filled.set(window, [...kept, { rect, until: now + FILLED_MS }].slice(-16));
       },
-      ask: (summary, logins) => this.ui.signIn({ agent, who: who(), summary, logins }),
+      ask: (summary, logins) => this.ui.signIn({ agent, who: who(), summary, logins }, signal),
       handOver: async (window, reason) => {
         this.shared.handedOver.add(window);
         let resume = () => {};
@@ -78,7 +86,7 @@ export class SessionSecrets {
           resume = resolve;
         });
         try {
-          return await this.ui.turn({ agent, who: who(), reason });
+          return await this.ui.turn({ agent, who: who(), reason }, signal);
         } finally {
           this.shared.handedOver.delete(window);
           this.paused = null;

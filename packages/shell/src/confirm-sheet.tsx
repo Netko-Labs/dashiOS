@@ -8,7 +8,7 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Confirm } from "./agents/index.ts";
-import { AgentMark, Button } from "./consent.tsx";
+import { AgentMark, Button, opaque } from "./consent.tsx";
 
 export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer: (yes: boolean) => void }) {
   const colors = useColors();
@@ -26,7 +26,7 @@ export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer
           gap: 4,
           padding: 22,
           borderRadius: 18,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",

@@ -164,6 +164,23 @@ every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
 - every password field that is showing (AT-SPI, role `PASSWORD_TEXT`, state
   `SHOWING`), 8 points larger all round, in each window of the app that has it.
 
+A sheet waiting for the person doesn't hold the agent's pictures: it is
+blanked in them like the rest, so a screenshot taken meanwhile returns at
+once.
+
+Chromium (Chrome, Helium, Electron apps) builds its web pages' accessibility
+tree only once an assistive tool asks for more than the window's frame. So
+before it looks, the shell wakes each app once (`Atspi.wake` in
+`src/agents/atspi/client.ts`): it asks the app and its windows, then its
+web documents, for their attributes, which turns on Chromium's web tree
+(`--force-renderer-accessibility` isn't needed); `org.a11y.Status.IsEnabled`
+alone gives only the frame. Firefox and GTK apps answer at once. Chromium
+also reports AT-SPI's window coordinates in device pixels from an origin of
+its own, so a web field is placed by its page (the outermost web document):
+the page fills the window's content below the toolbar with equal borders at
+left, right and bottom, and page width over content width is the scale
+(`toWindow` in `src/agents/atspi/tree.ts`).
+
 Captures name the mask (`capture {mask: "agent"}`). An agent's recording is
 a wf-recorder the shell starts gated: a shell that waits for a line, then
 `exec`s wf-recorder with the same pid, so the pid is in the mask before the
@@ -182,6 +199,21 @@ received it, a layer by namespace or a window by id, as the person's
 consent sheet's yes counts only if the person pressed on the sheet within the
 last 2 seconds and no agent pressed there since (`src/agents/person.ts`); a
 no always counts. Anything else (an older compositor, an error) is a no.
+
+A press goes to what is under the pointer at that moment, even when it
+appeared under a still pointer (a code's sheet where the sign-in's sheet
+was): dashi-comp enters that surface before the press, so the press it
+counts as the sheet's is the one the sheet gets.
+
+Sheets are solid (the launcher's glass without its alpha), so the page under
+a question can't be read through it. The scope sheet fits a 1280×720-point
+screen; its permissions list scrolls.
+
+An agent that gives up on a call (MCP's `notifications/cancelled`, sent on
+a client's timeout) gets no reply to it; a sheet or "Your turn" it was
+waiting on comes down at once, and that is no refusal: the next call asks
+again. Nothing is typed for a call given up on, even if the person answered
+just before. An agent that disconnects has all its sheets taken down.
 
 ## Signing in, codes, "Your turn"
 
@@ -215,8 +247,9 @@ Before the sheet and again just before typing, the broker checks the field
 - the browser wasn't started with remote debugging (CDP, Marionette).
 
 The secret is fetched only then, typed through the agent's hands (one
-`agent-input` request), and dropped; a sign-in runs alone, so the agent's own
-input can't move the focus meanwhile. Results say what was typed for whom,
+`agent-input` request), and dropped; the typing runs alone, so the agent's own
+input can't move the focus meanwhile (only the typing: the agent's other
+calls go on while a sheet waits for the person). Results say what was typed for whom,
 never what. Agents outside the sandbox (`dashi-agent`) are refused, and told
 how to get in.
 
@@ -422,7 +455,10 @@ PAM opens the vault, and the test site served from the checkout:
 `bun packages/shell/test/fixtures/sign-in-site/server.ts` in the guest):
 an agent through `vm/agent` signs in on the test site, enters a code, uses
 a passkey, pays a test amount, and its recordings show blanks where the
-secrets were. The steps are in the 0.4.0 handoff.
+secrets were. The steps are in the 0.4.0 handoff. Use an ordinary browser,
+started without accessibility flags. `bun packages/shell/bin/dashi-a11y-probe.ts
+[PID] [--wake] [--find]` (in the session) shows what the shell sees of an
+app: its password fields, the focused field, the documents around it.
 
 ## What this can't fix
 

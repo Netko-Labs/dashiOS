@@ -12,7 +12,7 @@ import { useState } from "react";
 import { SHEET_LAYERS } from "./agents/mask.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
 import { METAL_HOST } from "./apps.ts";
-import { Button } from "./consent.tsx";
+import { Button, opaque } from "./consent.tsx";
 
 export const APPROVAL = { width: 460, height: 300 } as const;
 
@@ -39,7 +39,7 @@ function ApprovalSheet({ question, onApprove, onDeny }: { question: Question; on
           gap: 6,
           padding: 22,
           borderRadius: 18,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",

@@ -15,7 +15,7 @@
 
 import type { CompositorWindow } from "../compositor.ts";
 import type { Atspi } from "./atspi/client.ts";
-import { limits, passwordFields, type Rect } from "./atspi/tree.ts";
+import { limits, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
 
 /** The name agents' captures use. */
 export const AGENT_MASK = "agent";
@@ -25,6 +25,8 @@ export const SHEET_LAYERS = ["dashi.agent-consent"] as const;
 export const FIELD_PAD = 8;
 /** The whole AT-SPI look before a picture: past this, what was found is used. */
 const LOOK_MS = 500;
+/** A browser woken for its first picture (Atspi.wake) publishes its page within this. */
+const WOKEN_MS = 1200;
 
 export interface MaskInputs {
   /** Fields Dashi typed a secret into (a code, a card), in their window's content coordinates. */
@@ -60,7 +62,7 @@ export interface MaskDeps {
   request(method: string, params: Record<string, unknown>): Promise<unknown>;
   windows(): Promise<CompositorWindow[]>;
   /** The accessibility bus, joined on first use; null where there is none. */
-  atspi(): Promise<Pick<Atspi, "appFor"> | null>;
+  atspi(): Promise<(Pick<Atspi, "appFor"> & Partial<Pick<Atspi, "wake">>) | null>;
   handedOver(): readonly number[];
   /** Fields Dashi typed a secret into, still blanked. */
   filled?(): ReadonlyArray<{ window: number; rect: Rect }>;
@@ -95,18 +97,22 @@ export class AgentMask {
   private async passwordFields(windows: readonly CompositorWindow[]): Promise<Array<{ window: number; rect: Rect }>> {
     const atspi = await this.deps.atspi().catch(() => null);
     if (!atspi) return [];
-    const budget = limits(LOOK_MS);
-    const byPid = new Map<number, number[]>();
+    const byPid = new Map<number, CompositorWindow[]>();
     for (const window of windows) {
-      if (window.pid !== null) byPid.set(window.pid, [...(byPid.get(window.pid) ?? []), window.id]);
+      if (window.pid !== null) byPid.set(window.pid, [...(byPid.get(window.pid) ?? []), window]);
     }
     const found = await Promise.all(
-      [...byPid].map(async ([pid, ids]) => {
+      [...byPid].map(async ([pid, appWindows]) => {
+        // A browser that publishes nothing yet is woken first (Atspi.wake), or its password fields would go unseen.
+        if (await atspi.wake?.(pid).catch(() => false)) await Bun.sleep(WOKEN_MS);
         const app = await atspi.appFor(pid).catch(() => null);
         if (!app) return [];
-        const { rects } = await passwordFields(app, budget);
-        // AT-SPI doesn't say which of an app's windows a field is in: each of them gets it.
-        return ids.flatMap((window) => rects.map((rect) => ({ window, rect })));
+        const { rects } = await passwordFields(app, limits(LOOK_MS));
+        // AT-SPI doesn't say which of an app's windows a field is in: each of them gets it, placed by its page.
+        return appWindows.flatMap((window) => {
+          const content = { width: window.frame?.width ?? 0, height: (window.frame?.height ?? 0) - window.titleBar };
+          return rects.map(({ rect, page }) => ({ window: window.id, rect: toWindow(rect, page, content) }));
+        });
       }),
     );
     return found.flat();

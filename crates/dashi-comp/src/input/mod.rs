@@ -16,8 +16,8 @@ use smithay::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
         KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
     },
-    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, RelativeMotionEvent},
-    utils::SERIAL_COUNTER,
+    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, PointerHandle, RelativeMotionEvent},
+    utils::{Logical, Point, SERIAL_COUNTER},
 };
 
 use crate::state::Dashi;
@@ -170,6 +170,11 @@ impl Dashi {
                 }
                 if free && !on_decoration && !on_border {
                     self.focus_at(at, serial);
+                    // The press goes to what is under the pointer now, even if that
+                    // appeared under a still pointer (a sheet where the last one was):
+                    // pointer focus moves only on motion, and input-origin already
+                    // counts this press as the new surface's.
+                    self.refresh_pointer_focus(&pointer, at, event.time_msec());
                 }
                 pointer.button(
                     self,
@@ -250,5 +255,34 @@ impl Dashi {
             InputEvent::GestureHoldEnd { event } => self.on_hold_end::<I>(&event),
             _ => {}
         }
+    }
+}
+
+impl Dashi {
+    /// If the surface under the pointer is no longer the one it last entered
+    /// (one appeared or went away under it), enter the new one where the pointer is.
+    fn refresh_pointer_focus(
+        &mut self,
+        pointer: &PointerHandle<Self>,
+        at: Point<f64, Logical>,
+        time: u32,
+    ) {
+        if pointer.is_grabbed() {
+            return;
+        }
+        let under = self.surface_under(at);
+        if pointer.current_focus() == under.as_ref().map(|(surface, _)| surface.clone()) {
+            return;
+        }
+        pointer.motion(
+            self,
+            under,
+            &MotionEvent {
+                location: at,
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+            },
+        );
+        pointer.frame(self);
     }
 }

@@ -13,11 +13,16 @@ import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { AgentInfo, Allow, Ask } from "./agents/index.ts";
 
-/** The sheet's surface, with room for its shadow and for every scope's row (SCOPES). */
-export const CONSENT = { width: 500, height: 740 } as const;
+/** Short enough for a 1280×720-point screen (its list scrolls, MORE_HEIGHT at most), with room for its shadow. */
+export const CONSENT = { width: 500, height: 640 } as const;
 export const STOPPED = { width: 380, height: 130 } as const;
+
+/** A sheet's card: the launcher's glass made solid, so the page under a question can't be read through it. */
+export function opaque(color: string): string {
+  return /^#[0-9a-f]{8}$/i.test(color) ? color.slice(0, 7) : color;
+}
 /** The permissions list, opened up: it scrolls rather than grow the sheet past a small screen. */
-const MORE_HEIGHT = 330;
+const MORE_HEIGHT = 300;
 
 const SPARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" fill="#000"/></svg>`;
 const CHECK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" stroke="#000" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -92,7 +97,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
           gap: 4,
           padding: 22,
           borderRadius: 18,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",
@@ -103,7 +108,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
           <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text }}>{title}</Text>
         </View>
         <Text style={{ fontSize: 12, color: colors.textMuted }}>{origin}</Text>
-        <ScrollView style={{ alignSelf: "stretch", marginTop: 12, ...(more ? { height: MORE_HEIGHT } : {}) }}>
+        <ScrollView style={{ alignSelf: "stretch", marginTop: 12, ...(more ? { height: MORE_HEIGHT } : { maxHeight: MORE_HEIGHT }) }}>
           <View style={{ flexDirection: "column", flexShrink: 0 }}>
             {shown.map((scope, index) => {
               const on = checked.has(scope.id);
@@ -208,7 +213,7 @@ export function StoppedNote({ names }: { names: readonly string[] }) {
           paddingLeft: 24,
           paddingRight: 24,
           borderRadius: 16,
-          backgroundColor: colors.launcher,
+          backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.dockBorder,
           shadow: "xl",

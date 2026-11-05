@@ -86,13 +86,13 @@ export interface AgentInfo {
 /** What the agents server needs from the shell's UI. */
 export interface AgentUi {
   /** Show the sheet (queued behind others); resolves with the person's answer. */
-  ask(ask: Ask): Promise<Answer>;
+  ask(ask: Ask, signal?: AbortSignal): Promise<Answer>;
   /** Ask about one action, in the same queue; resolves true only if the person goes ahead. */
-  confirm(confirm: Confirm): Promise<boolean>;
+  confirm(confirm: Confirm, signal?: AbortSignal): Promise<boolean>;
   /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
-  signIn(ask: SignInAsk): Promise<SignInChoice>;
+  signIn(ask: SignInAsk, signal?: AbortSignal): Promise<SignInChoice>;
   /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */
-  turn(turn: Turn): Promise<boolean>;
+  turn(turn: Turn, signal?: AbortSignal): Promise<boolean>;
   /** Take down this agent's sheets (it left, the screen locked, or nobody answered). */
   dismiss(agent: number): void;
   /** Say who ⌃❖Esc or Stop just cut off. */

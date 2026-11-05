@@ -78,30 +78,36 @@ describe("one connection's secrets", () => {
     expect(handedOver.has(3)).toBe(false);
   });
 
-  test("a sign-in runs alone: the agent's own click waits for it", async () => {
+  test("while Dashi types a secret the agent's own click waits; while the person is asked, nothing does", async () => {
     const secrets = new SessionSecrets(
       { sources: () => [], atspi: async () => null, handedOver: new Set(), filled: new Map(), vault: NO_VAULT },
       { signIn: async () => ({ allow: "deny", login: null }), turn: async () => true },
       true,
     );
     const order: string[] = [];
+    // A sign-in waiting on its sheet holds nothing: a screenshot goes ahead.
+    let answer = () => {};
+    const asking = secrets.around(call("sign_in"), () => new Promise<void>((r) => (answer = r)));
+    await secrets.around(call("screenshot"), async () => void order.push("screenshot"));
+    expect(order).toEqual(["screenshot"]);
+    // The typing does hold the agent's other calls.
     let finish = () => {};
-    const signing = secrets.around(
-      call("sign_in"),
+    const typing = secrets.exclusive(
       () =>
         new Promise<void>((r) => {
           finish = () => {
-            order.push("signed in");
+            order.push("typed");
             r();
           };
         }),
     );
     const click = secrets.around(call("click"), async () => void order.push("clicked"));
     await Bun.sleep(5);
-    expect(order).toEqual([]);
+    expect(order).toEqual(["screenshot"]);
     finish();
-    await Promise.all([signing, click]);
-    expect(order).toEqual(["signed in", "clicked"]);
+    answer();
+    await Promise.all([typing, click, asking]);
+    expect(order).toEqual(["screenshot", "typed", "clicked"]);
   });
 
   test("the sheet is asked with who is asking", async () => {

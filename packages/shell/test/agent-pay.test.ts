@@ -9,7 +9,7 @@ const NUMBER = "4242424242424242";
 const rect = (y: number): Rect => ({ x: 10, y, width: 200, height: 24 });
 
 function field(kind: Focused["kind"], y: number, documents = ["http://signin.localhost:8443/checkout"]): FieldInfo {
-  return { focused: { kind, rect: rect(y), documents }, cmdline: ["firefox"] };
+  return { focused: { kind, rect: rect(y), page: null, documents }, cmdline: ["firefox"] };
 }
 
 const card = (over: Partial<CardSummary> = {}): CardSummary => ({
@@ -38,7 +38,7 @@ function harness(options: { fields: FieldInfo[]; cards?: CardSummary[]; refuse?:
       paid.push([merchant, cents, id]);
       return { number: new TextEncoder().encode(NUMBER), cvc: new TextEncoder().encode("123"), expiry: "12/34" };
     },
-    filled: (r) => void filled.push(r),
+    filled: (f) => void filled.push(f.rect),
   };
   return { ctx, typed, filled, paid };
 }

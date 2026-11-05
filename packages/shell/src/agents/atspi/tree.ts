@@ -29,6 +29,8 @@ export interface A11yNode {
   url(): Promise<string | null>;
   /** Its parent, when the tree can be walked up (the focus is found by events, then its documents by its ancestors). */
   parent?(): Promise<A11yNode | null>;
+  /** Ask for its attributes (what wakes Chromium's tree: Atspi.wake). */
+  attributes?(): Promise<void>;
 }
 
 /** How far up a field's documents are looked for. */
@@ -39,15 +41,31 @@ export async function fieldAt(node: A11yNode): Promise<Focused | null> {
   const [role, states] = await Promise.all([node.role(), node.states()]);
   if (!hasState(states, STATE.FOCUSED)) return null;
   const documents: string[] = [];
+  let page: A11yNode | null = null;
   let current: A11yNode | null = node;
   for (let depth = 0; current?.parent && depth < MAX_DEPTH; depth++) {
     current = await current.parent().catch(() => null);
     if (!current) break;
     const up = await current.role().catch(() => -1);
-    if (up === ROLE.DOCUMENT_WEB) documents.push((await current.url().catch(() => null)) ?? "");
+    if (up === ROLE.DOCUMENT_WEB) {
+      documents.push((await current.url().catch(() => null)) ?? "");
+      page = current;
+    }
     if (up === ROLE.APPLICATION) break;
   }
-  return { kind: kindOf(role, states), rect: await node.extents().catch(() => null), documents };
+  return { kind: kindOf(role, states), ...(await placed(node, page)), documents };
+}
+
+/** A node's extents, with its page's (the outermost web document around it) to place it by. */
+async function placed(node: A11yNode, page: A11yNode | null): Promise<Placed> {
+  const [rect, pageRect] = await Promise.all([node.extents().catch(() => null), page ? page.extents().catch(() => null) : null]);
+  return { rect, page: pageRect };
+}
+
+/** Where something is, as the app says, and where its page is in the same units (null outside a web page). */
+export interface Placed {
+  rect: Rect | null;
+  page: Rect | null;
 }
 
 function kindOf(role: number, states: readonly number[]): Focused["kind"] {
@@ -74,15 +92,17 @@ interface Visit {
   states: readonly number[];
   /** The web documents it is in, innermost first. */
   documents: readonly string[];
+  /** The outermost of them, the page. */
+  page: A11yNode | null;
 }
 
 /** Every node, breadth first, until `visit` says stop or the limits are reached; a node that isn't showing keeps its children to itself. */
 async function walk(root: A11yNode, limit: Limits, visit: (v: Visit) => boolean): Promise<boolean> {
-  let queue: Array<{ node: A11yNode; documents: readonly string[] }> = [{ node: root, documents: [] }];
+  let queue: Array<{ node: A11yNode; documents: readonly string[]; page: A11yNode | null }> = [{ node: root, documents: [], page: null }];
   let seen = 0;
   while (queue.length > 0) {
     const next: typeof queue = [];
-    for (const { node, documents } of queue) {
+    for (const { node, documents, page: outer } of queue) {
       if (++seen > limit.nodes || Date.now() > limit.deadline) return false;
       let role: number;
       let states: readonly number[];
@@ -92,35 +112,75 @@ async function walk(root: A11yNode, limit: Limits, visit: (v: Visit) => boolean)
         continue;
       }
       let inside = documents;
+      let page = outer;
       if (role === ROLE.DOCUMENT_WEB) {
         const url = await node.url().catch(() => null);
         inside = [url ?? "", ...documents];
+        page ??= node;
       }
-      if (visit({ node, role, states, documents: inside })) return true;
+      if (visit({ node, role, states, documents: inside, page })) return true;
       const showing = role === ROLE.APPLICATION || hasState(states, STATE.SHOWING);
       if (!showing) continue;
       const children = await node.children().catch(() => []);
-      for (const child of children) next.push({ node: child, documents: inside });
+      for (const child of children) next.push({ node: child, documents: inside, page });
     }
     queue = next;
   }
   return true;
 }
 
-/** Where the password fields that are showing are, in their windows' coordinates. */
-export async function passwordFields(root: A11yNode, limit: Limits = limits()): Promise<{ rects: Rect[]; complete: boolean }> {
+/** The web documents that are showing. */
+export async function documents(root: A11yNode, limit: Limits = limits()): Promise<A11yNode[]> {
   const found: A11yNode[] = [];
-  const complete = await walk(root, limit, ({ node, role, states }) => {
-    if (role === ROLE.PASSWORD_TEXT && hasState(states, STATE.SHOWING)) found.push(node);
+  await walk(root, limit, ({ node, role }) => {
+    if (role === ROLE.DOCUMENT_WEB) found.push(node);
     return false;
   });
-  const rects = (await Promise.all(found.map((node) => node.extents().catch(() => null)))).filter((rect): rect is Rect => rect !== null);
+  return found;
+}
+
+/** Where the password fields that are showing are, as the app says (place them with toWindow). */
+export async function passwordFields(
+  root: A11yNode,
+  limit: Limits = limits(),
+): Promise<{ rects: Array<{ rect: Rect; page: Rect | null }>; complete: boolean }> {
+  const found: Array<{ node: A11yNode; page: A11yNode | null }> = [];
+  const complete = await walk(root, limit, ({ node, role, states, page }) => {
+    if (role === ROLE.PASSWORD_TEXT && hasState(states, STATE.SHOWING)) found.push({ node, page });
+    return false;
+  });
+  const all = await Promise.all(found.map(({ node, page }) => placed(node, page)));
+  const rects = all.flatMap(({ rect, page }) => (rect ? [{ rect, page }] : []));
   return { rects, complete };
+}
+
+/**
+ * An app's rect in its window's content coordinates (points). Apps report
+ * AT-SPI's window coordinates their own way: Chromium on Wayland in device
+ * pixels, from a window origin it guesses (measured in the VM: off by its
+ * frame). So a web field is placed by its page instead: the page fills the
+ * window's content below the toolbar, borders equal at left, right and
+ * bottom, and their ratio is the app's scale. Outside a web page the rect is
+ * taken as it comes.
+ */
+export function toWindow(rect: Rect, page: Rect | null, window: { width: number; height: number }): Rect {
+  if (!page || page.width <= 0 || window.width <= 0) return rect;
+  const scale = Math.min(4, Math.max(1, Math.round((page.width / window.width) * 4) / 4));
+  const border = Math.max(0, (window.width - page.width / scale) / 2);
+  const top = window.height - page.height / scale - border;
+  return {
+    x: border + (rect.x - page.x) / scale,
+    y: top + (rect.y - page.y) / scale,
+    width: rect.width / scale,
+    height: rect.height / scale,
+  };
 }
 
 export interface Focused {
   kind: "password" | "text" | "other";
   rect: Rect | null;
+  /** Its page's rect in the same units (toWindow). */
+  page: Rect | null;
   /** The addresses of the web documents it is in, innermost first ("" when one has none). */
   documents: readonly string[];
 }
@@ -138,5 +198,5 @@ export async function focusedField(root: A11yNode, limit: Limits = limits()): Pr
   });
   const found = hit as Visit | null;
   if (!found) return null;
-  return { kind: kindOf(found.role, found.states), rect: await found.node.extents().catch(() => null), documents: found.documents };
+  return { kind: kindOf(found.role, found.states), ...(await placed(found.node, found.page)), documents: found.documents };
 }
