@@ -27,7 +27,7 @@ import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
-import { Compositor } from "./compositor.ts";
+import { Compositor, type CompositorWindow } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
 import { DEFAULT_CORNERS } from "./corners.ts";
@@ -162,6 +162,8 @@ const regionSetup = chooseRegion();
 const region = startRegion({ settings: settingsStore, backend: regionSetup.backend });
 const dockPrefs = new DockPrefs((change) => settingsStore.patch("dock", change));
 settingsStore.subscribe(() => dockPrefs.apply(resolveDock(settingsStore.getSnapshot().data.dock)));
+/** What the Dock calls a window's app; set once the app catalog is read (below), for Desktops named after their apps. */
+let nameApp: ((window: CompositorWindow) => string) | null = null;
 // Spaces: desktops side by side (spaces/). The count lives in settings.json; the
 // compositor keeps each window's Space and slides them, the rest is decided here.
 const spaces = compositor
@@ -171,6 +173,8 @@ const spaces = compositor
       screen: () => whereIsPerson(),
       leaveOverview: (): Promise<void> => overview?.leave(0) ?? Promise.resolve(),
       saveCount: (count) => settingsStore.patch("spaces", { count }),
+      saveNames: (names) => settingsStore.patch("spaces", { names: names.length > 0 ? names : undefined }),
+      appName: (window) => nameApp?.(window) ?? window.appId,
     })
   : null;
 const stopDisplays = compositor
@@ -466,6 +470,8 @@ const catalog = appCatalog.entries;
 toplevels.onReport = (toplevel) => void appCatalog.notice(toplevel.appId);
 /** The installed app a window's app id stands for, as the Dock matches it; every surface names apps through it. */
 const installedApp = (appId: string): Entry | undefined => matchEntry(catalog, appId);
+nameApp = (window) => appFor(apps, window, installedApp).name;
+void spaces?.controller.relabel();
 const pins = new PinStore({ defaults: apps.map((app) => app.id) });
 const dock = new DockController({
   catalog,
@@ -502,6 +508,7 @@ const menus = startMenus({
   catalog,
   compositor,
   arranger,
+  ...(spaces ? { desktops: spaces.controller } : {}),
   system: system.store,
   brightnessChanged: system.brightnessChanged,
   notifications: notifications.store,
