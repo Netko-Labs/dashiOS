@@ -795,6 +795,8 @@ const onScreen = (output: string | undefined): { output?: string } => (output ==
 const appIndex = new AppIndex();
 const stopAppIndex = appIndex.start();
 const launcherRecents = new RecentApps();
+// Read now, at startup, so the first tap doesn't.
+launcherRecents.list();
 const fileSearch = new FileSearch({ run, home: homedir(), installed: hasProgram("tinysparql") });
 const launcherFiles: LauncherFiles = {
   isAvailable: () => fileSearch.isAvailable(),
