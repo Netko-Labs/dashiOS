@@ -499,7 +499,16 @@ const settingsApp = startSettingsApp({
 // The Setup Assistant: at a person's first login, and from Settings > About and the launcher (setup/).
 // The launcher finds each Settings pane ("display" opens Displays).
 registerPaneEntries((pane) => settingsApp.open(pane));
-const setupAssistant = startSetupAssistant({ compositor, settings: settingsStore, region: region.store, flags, wifi: wifiStore, system: system.store });
+const setupAssistant = startSetupAssistant({
+  compositor,
+  settings: settingsStore,
+  region: region.store,
+  flags,
+  wifi: wifiStore,
+  system: system.store,
+  // Its last page teaches ❖ (setup/pages/done.tsx): Try it opens the launcher.
+  openLauncher: () => showLauncher(),
+});
 // Auto appearance: Dark Mode by the time of day, when appearance.auto is on (appearance/auto.ts).
 const autoAppearance = new AutoAppearance({ flags, enabled: () => settingsStore.getSnapshot().data.appearance.auto === true });
 const stopAutoAppearance = autoAppearance.start();
@@ -610,6 +619,8 @@ const menus = startMenus({
   sleep: () => void power.suspend(),
   openForceQuit: () => forceQuit.open(),
   openSettings: () => settingsApp.open(),
+  // Search… in the Dashi menu (launcher.tsx, below).
+  openSearch: () => showLauncher(),
   // Without a compositor the Dock cannot hear the pointer, so it never autohides (dock/presenter.ts).
   // The Dock is on the primary screen only.
   dockInset: (output) =>
@@ -811,6 +822,11 @@ function launchFromLauncher(entry: Entry): boolean {
 function openWith(appId: string, env: Record<string, string>): boolean {
   const entry = appIndex.entries().find((each) => each.id === appId);
   return entry ? launchEntry({ ...entry, env: { ...entry.env, ...env } }) !== null : false;
+}
+
+/** The launcher, unless it is up already (Search… in the Dashi menu, Try it in the Setup Assistant). */
+function showLauncher(): void {
+  if (!overlays.has("launcher")) openLauncher();
 }
 
 function openLauncher(): void {

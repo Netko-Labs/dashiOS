@@ -38,6 +38,8 @@ export interface ActionDeps {
   openForceQuit(): void;
   /** Opens System Settings (settings-app/); a run without it does nothing. */
   openSettings?(): void;
+  /** Opens the launcher (the Dashi menu's Search…); a run without it does nothing. */
+  openSearch?(): void;
   /** Tells an app its own row was chosen (app-menus/); a run without it does nothing. */
   selectAppItem?(pid: number, id: string): void;
   /** Puts a window on a Desktop, or on a new one (spaces/); a run without Desktops does nothing. */
@@ -75,6 +77,8 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return deps.openForceQuit();
     case "settings":
       return deps.openSettings?.();
+    case "search":
+      return deps.openSearch?.();
     case "help":
       return deps.openHelp();
     case "shortcuts":
