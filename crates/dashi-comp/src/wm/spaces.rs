@@ -162,6 +162,8 @@ impl Dashi {
                 if t < 1.0 {
                     return TimeoutAction::ToDuration(frame);
                 }
+                // Where it ends is read back: a Space added meanwhile moves it up one.
+                let toward = slide.to;
                 state.spaces.slide = None;
                 if !back {
                     state.switch_space_now(toward);

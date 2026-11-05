@@ -12,7 +12,7 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   appearance: ["dark mode", "light mode", "theme", "accent", "corners", "reduce motion", "highlight", "active window", "focus ring"],
   wallpaper: ["background", "desktop picture", "live wallpaper"],
   displays: ["display", "monitor", "screen", "resolution", "scale", "refresh rate", "rotation", "arrangement"],
-  "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops"],
+  "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops", "full screen", "fullscreen", "full-screen apps", "games"],
   keyboard: ["layout", "input source", "key repeat", "shortcuts"],
   trackpad: ["touchpad", "tap to click", "natural scrolling", "gestures", "scrolling speed"],
   mouse: ["pointer", "tracking speed", "scrolling speed"],

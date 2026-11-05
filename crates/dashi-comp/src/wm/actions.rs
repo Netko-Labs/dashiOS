@@ -148,7 +148,16 @@ impl Dashi {
         if was_focused {
             self.focus_topmost();
         }
+        self.emit_window_state(id);
         Ok(())
+    }
+
+    /// Tell the shell a window was minimized, hidden, or shown again (`window-state`).
+    fn emit_window_state(&mut self, id: WindowId) {
+        if let Some(entry) = self.windows.get(id).filter(|entry| entry.announced) {
+            let event = serde_json::json!({ "window": id, "state": entry.shown.name() });
+            self.ipc.emit("window-state", event);
+        }
     }
 
     /// Back on screen where it was, if it was parked.
@@ -162,10 +171,12 @@ impl Dashi {
         entry.shown = Shown::Normal;
         let window = entry.window.clone();
         let at = entry.parked_at.take().unwrap_or_default();
+        let space = entry.space;
+        self.emit_window_state(id);
         if let Some(x11) = window.x11_surface() {
             let _ = x11.set_suspended(false);
         }
-        if entry.space != self.spaces.current {
+        if space != self.spaces.current {
             // Back, but on a Space that is not shown: it waits there.
             let bar = super::windows::bar_of(self, &window);
             if let Some(entry) = self.windows.get_mut(id) {
@@ -238,8 +249,37 @@ impl Dashi {
             let _ = x11.set_maximized(maximized);
             let _ = x11.configure(Rectangle::new(x11.geometry().loc, size));
         }
+        // Off screen (minimized, hidden, on a Space that is not shown), it takes the frame where it waits.
+        if let Some(id) = self.windows.by_window(window).map(|entry| entry.id)
+            && self.waits_off_screen(id)
+        {
+            self.wait_at(id, frame.loc);
+            return;
+        }
         let activate = self.is_focused(window);
         self.map_frame_at(window, frame.loc, activate);
+    }
+
+    /// Placed, but not on screen: minimized, hidden, or on a Space that is not shown.
+    pub(crate) fn waits_off_screen(&self, id: WindowId) -> bool {
+        self.windows.get(id).is_some_and(|entry| {
+            entry.placed && (entry.shown != Shown::Normal || entry.space != self.spaces.current)
+        })
+    }
+
+    /// Where a window off screen comes back: its outer frame at `at` (global logical).
+    pub(crate) fn wait_at(&mut self, id: WindowId, at: Point<i32, Logical>) {
+        let Some(window) = self.windows.get(id).map(|entry| entry.window.clone()) else {
+            return;
+        };
+        let bar = super::windows::bar_of(self, &window);
+        if let Some(entry) = self.windows.get_mut(id) {
+            if entry.shown == Shown::Normal {
+                entry.away_at = Some((at.x, at.y + bar).into());
+            } else {
+                entry.parked_at = Some(at);
+            }
+        }
     }
 
     pub(crate) fn is_focused(&self, window: &Window) -> bool {

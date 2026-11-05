@@ -31,6 +31,8 @@ export interface Desktop {
   wifi: Pick<WifiStore, "getSnapshot" | "refresh" | "rescan" | "join" | "dismissFailure">;
   /** What Force Quit Applications lists, and ending one of those. */
   forceQuit: Pick<ForceQuit, "apps" | "end">;
+  /** The Desktops as the shell names them, full-screen windows' own included (spaces/). Absent without them. */
+  spaces?: { getSnapshot(): { labels: readonly string[]; fullscreen: readonly (number | null)[] } };
   /** The display arrangement (display-config/): resolution, rotation, main display, positions. Absent without a compositor. */
   displays?: Pick<DisplayManager, "monitors" | "setMode" | "setRotation" | "setPrimary" | "arrange">;
   /** Remember a screen's scale as Settings does, so the next start keeps what was set. */

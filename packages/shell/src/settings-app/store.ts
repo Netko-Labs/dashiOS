@@ -160,6 +160,8 @@ export interface SpacesSettings {
   /** What each Desktop is called; null after its apps (spaces/names.ts). */
   names?: SpaceNames;
   switchOnActivate?: boolean;
+  /** A full-screen window gets a Desktop of its own (spaces/fullscreen.ts); on when unset. */
+  fullscreenDesktop?: boolean;
 }
 
 export interface DisplaySettings {
@@ -273,7 +275,10 @@ const SECTIONS = {
   dock: { path: ["dock"], fields: { style: oneOf(...DOCK_STYLES), autohide: isBoolean, visible: isBoolean } },
   clock: { path: ["clock"], fields: { hour24: isBoolean, showDate: isBoolean } },
   region: { path: ["region"], fields: { formats: isFormatsLocale, firstWeekday: oneOf(...WEEKDAYS) } },
-  spaces: { path: ["spaces"], fields: { count: numberIn(1, 16, true), names: (value) => parseSpaceNames(value) !== null, switchOnActivate: isBoolean } },
+  spaces: {
+    path: ["spaces"],
+    fields: { count: numberIn(1, 16, true), names: (value) => parseSpaceNames(value) !== null, switchOnActivate: isBoolean, fullscreenDesktop: isBoolean },
+  },
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;

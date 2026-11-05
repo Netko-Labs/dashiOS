@@ -22,7 +22,8 @@
  *                     "pointerSize": 24, "x11Apps": "sharp",
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
- *     "spaces": { "count": 3, "names": ["Work", null, "Games"], "switchOnActivate": true }
+ *     "spaces": { "count": 3, "names": ["Work", null, "Games"], "switchOnActivate": true,
+ *                 "fullscreenDesktop": true }
  *   }
  *
  * `accelSpeed` is -1 to 1; `scrollSpeed` is a factor from 0.25 to 4 on how
@@ -37,7 +38,9 @@
  * `spaces.names` what each Desktop is called, in order (null: after its apps;
  * spaces/names.ts),
  * `spaces.switchOnActivate` whether activating an app's window on another
- * Space switches there (true) or brings the window here (spaces/).
+ * Space switches there (true) or brings the window here (spaces/);
+ * `spaces.fullscreenDesktop` (default true) whether a full-screen window gets
+ * a Desktop of its own, uncounted and unnamed here (spaces/fullscreen.ts).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
  * round every window is (corners.ts). `reduceMotion` turns the compositor's
  * window animations off. `highlightActiveWindow` (default false) rings the
@@ -114,7 +117,7 @@ export interface Settings {
   /** The Dock (dock/settings.ts); every key has a value. */
   dock: DockSettings;
   /** Spaces (spaces/): no count leaves them as they are. */
-  spaces: { count?: number; names?: SpaceNames; switchOnActivate: boolean };
+  spaces: { count?: number; names?: SpaceNames; switchOnActivate: boolean; fullscreenDesktop: boolean };
 }
 
 export interface Loaded {
@@ -142,7 +145,7 @@ export function defaults(): Settings {
       wallpaper: { mode: DEFAULT_WALLPAPER_MODE },
     },
     dock: { ...DOCK_DEFAULTS },
-    spaces: { switchOnActivate: true },
+    spaces: { switchOnActivate: true, fullscreenDesktop: true },
   };
 }
 
@@ -290,13 +293,14 @@ export function parseSettings(value: unknown): Loaded {
     autohide: dock.boolean("autohide"),
     visible: dock.boolean("visible"),
   });
-  const spaces = new Section("spaces", value.spaces, problems).only(["count", "names", "switchOnActivate"]);
+  const spaces = new Section("spaces", value.spaces, problems).only(["count", "names", "switchOnActivate", "fullscreenDesktop"]);
   const names = spaces.get("names") === undefined ? undefined : parseSpaceNames(spaces.get("names"));
   if (names === null) problems.push("spaces.names must be a list of up to 16 names (or null)");
   settings.spaces = defined({
     count: spaces.number("count", 1, 16, true),
     names: names ?? undefined,
     switchOnActivate: spaces.boolean("switchOnActivate") ?? true,
+    fullscreenDesktop: spaces.boolean("fullscreenDesktop") ?? true,
   });
   const appearance = new Section("appearance", value.appearance, problems).only([
     "cornerRadius",

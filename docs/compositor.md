@@ -42,7 +42,13 @@ shell's client:
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and
-  `controls.rs` (server-side title bars), `cursor.rs`.
+  `controls.rs` (server-side title bars), `cursor.rs`. A Space can be added
+  at an index (`space_list.rs`), and a window on a Space that is not shown
+  can be placed, framed, and put into or out of full screen there: it waits
+  off screen and shows so when its Space does. That is what the shell needs
+  to give a full-screen window a Desktop of its own and slide to it once
+  (`packages/shell/src/spaces/fullscreen.ts`); `window-state` tells it when a
+  window is minimized or hidden however that happened.
 - **Session:** `lock.rs`, `idle/` (`protocols`, `ipc`), `keys/` (keymap,
   bindings, ❖ phases), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,

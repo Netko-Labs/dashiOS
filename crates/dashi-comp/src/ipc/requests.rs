@@ -35,7 +35,13 @@ pub(crate) fn handle(
         "hide" => done(state.park_window(window(params)?, Shown::Hidden)),
         "place" => {
             let at = Point::from((coord(params, "x")?, coord(params, "y")?));
-            done(state.place_window(window(params)?, at))
+            let space = match params.get("space") {
+                None => None,
+                Some(value) => {
+                    Some(value.as_u64().ok_or("`space` must be a Space's index")? as usize)
+                }
+            };
+            done(state.place_window(window(params)?, at, space))
         }
         "frame" => {
             let frame = valid_frame(
@@ -164,7 +170,13 @@ pub(crate) fn handle(
             };
             state.configure_spaces(count, follow)
         }
-        "space-add" => state.add_space(),
+        "space-add" => {
+            let at = match params.get("at") {
+                None => None,
+                Some(value) => Some(value.as_u64().ok_or("`at` must be a Space's index")? as usize),
+            };
+            state.add_space(at)
+        }
         "space-remove" => {
             let space = params
                 .get("space")

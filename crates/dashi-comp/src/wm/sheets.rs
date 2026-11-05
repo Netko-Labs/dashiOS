@@ -51,7 +51,7 @@ impl Dashi {
             if unplaced {
                 // The first place it goes is its place on the parent.
                 let at = self.sheet_spot(child, parent).unwrap_or_default();
-                self.place_window(child, at)?;
+                self.place_window(child, at, None)?;
             }
             self.follow_sheets();
             if self

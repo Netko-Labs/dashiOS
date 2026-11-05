@@ -39,8 +39,16 @@ impl Dashi {
         if on == entry.fullscreen.is_some() {
             return Ok(());
         }
+        // A window waiting on a Space that is not shown is full screen there
+        // when it shows (the shell moves a window to its own Desktop first).
+        let away = entry.shown == Shown::Normal && self.waits_off_screen(id);
         if on {
-            let frame = frame_of(self, &window).ok_or("the window is not on screen")?;
+            let frame = if away {
+                self.away_frame(id)
+            } else {
+                frame_of(self, &window)
+            }
+            .ok_or("the window is not on screen")?;
             let center = frame.loc.to_f64() + frame.size.to_f64().downscale(2.0).to_point();
             let output = self
                 .space
@@ -56,9 +64,15 @@ impl Dashi {
                 entry.tiled = false;
             }
             configure(&window, Some(screen.size), Some(&output));
-            self.space.map_element(window.clone(), screen.loc, true);
             super::actions::x11_follow(&window, screen.loc);
-            self.space.raise_element(&window, true);
+            if away {
+                if let Some(entry) = self.windows.get_mut(id) {
+                    entry.away_at = Some(screen.loc);
+                }
+            } else {
+                self.space.map_element(window.clone(), screen.loc, true);
+                self.space.raise_element(&window, true);
+            }
         } else {
             let restore = self
                 .windows
@@ -72,13 +86,29 @@ impl Dashi {
                 None,
             );
             if let Some(frame) = restore {
-                let bar = self.bar_height(&window);
-                self.space
-                    .map_element(window.clone(), (frame.loc.x, frame.loc.y + bar), true);
+                // Off screen (on another Space, minimized, hidden), it comes back there.
+                if self.waits_off_screen(id) {
+                    self.wait_at(id, frame.loc);
+                } else {
+                    self.space
+                        .map_element(window.clone(), (frame.loc.x, frame.loc.y + bar), true);
+                }
             }
         }
         self.ipc.emit("outputs-changed", json!({}));
         Ok(())
+    }
+
+    /// The outer frame of a window waiting on a Space that is not shown, where it will show.
+    fn away_frame(&self, id: WindowId) -> Option<Rectangle<i32, Logical>> {
+        let entry = self.windows.get(id)?;
+        let at = entry.away_at?;
+        let bar = self.bar_height(&entry.window);
+        let size = entry.window.geometry().size;
+        Some(Rectangle::new(
+            (at.x, at.y - bar).into(),
+            (size.w, size.h + bar).into(),
+        ))
     }
 
     /// The window that is full screen on `output` and showing, if any.

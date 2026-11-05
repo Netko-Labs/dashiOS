@@ -8,7 +8,9 @@
  * click on a picture or a name goes there; a double-click on a name edits it
  * in place (Return keeps it, Esc puts it back; empty goes back to the
  * automatic name). A window dragged out of the overview and dropped on a
- * picture, a name, or the + moves there (start.tsx).
+ * picture, a name, or the + moves there (start.tsx). A full-screen window's
+ * Desktop (fullscreen.ts) is named after its app and is not renamed; its ×
+ * takes the window out of full screen.
  */
 
 import { useColors } from "@dashi/ui";
@@ -59,7 +61,9 @@ const at = (rect: Rect) => ({ position: "absolute" as const, left: rect.x, top: 
 export function SpacesRow(props: RowProps) {
   const { width, aspect } = props;
   const colors = useColors();
-  const { count, current, labels } = useSyncExternalStore(props.desktops.subscribe, props.desktops.getSnapshot);
+  const { count, current, labels, fullscreen } = useSyncExternalStore(props.desktops.subscribe, props.desktops.getSnapshot);
+  const isFullscreen = (index: number) => (fullscreen[index] ?? null) !== null;
+  const desktops = fullscreen.filter((slot) => slot === null).length;
   const view = useSyncExternalStore(props.view.subscribe, props.view.getSnapshot);
   const shape = rowShape(view.open, width, count, aspect);
   const names = shape.layout.labels;
@@ -68,13 +72,14 @@ export function SpacesRow(props: RowProps) {
   const [overClose, setOverClose] = useState<number | null>(null);
   const [renaming, setRenaming] = useState<{ index: number; text: string } | null>(null);
   const lastPress = useRef<{ index: number; at: number; timer: ReturnType<typeof setTimeout> } | null>(null);
-  const showsClose = (index: number) => count > 1 && renaming === null && (overLabel === index || overClose === index);
+  // The last Desktop stays; a full-screen one's × leaves full screen.
+  const showsClose = (index: number) => (isFullscreen(index) || desktops > 1) && renaming === null && (overLabel === index || overClose === index);
   const hover = (index: number, set: typeof setOverLabel) => (hovered: boolean) => set((was) => (hovered ? index : was === index ? null : was));
 
   const pressName = (index: number) => {
     const last = lastPress.current;
     if (last) clearTimeout(last.timer);
-    if (last && last.index === index && Date.now() - last.at < DOUBLE_CLICK_MS) {
+    if (last && last.index === index && Date.now() - last.at < DOUBLE_CLICK_MS && !isFullscreen(index)) {
       lastPress.current = null;
       setRenaming({ index, text: labels[index] ?? "" });
       return;

@@ -525,7 +525,7 @@
     <table>
       <tr><th>Gesture</th><th>Does</th></tr>
       <tr><td>Press the square</td><td><strong>Fill</strong>: the window takes the whole usable area (menu bar and Dock stay), with no gap, and the app is told it is maximized. Again, or on a tiled window: back to its own frame.</td></tr>
-      <tr><td>⌥ and press the square</td><td><strong>Full screen</strong>: the window covers its whole screen, the menu bar and Dock leave, and pushing the pointer against the top edge brings the menu bar back. The square on a full-screen window leaves full screen, back to the frame it had before (tiled or filled again, if it was).</td></tr>
+      <tr><td>⌥ and press the square</td><td><strong>Full screen</strong>: the window gets a Desktop of its own and covers its whole screen there, the menu bar and Dock leave, and pushing the pointer against the top edge brings the menu bar back. The square on a full-screen window leaves full screen, back on its Desktop at the frame it had before (tiled or filled again, if it was). See <a href="#fullscreen-desktops">Full screen gets its own Desktop</a>.</td></tr>
       <tr><td>Double-click the title bar</td><td>What the square does (an app's own title bar too)</td></tr>
       <tr><td>⌃❖← ⌃❖→ ⌃❖↑ ⌃❖↓</td><td>The half on that side</td></tr>
       <tr><td>From a half, an arrow</td><td>At right angles: that quarter (⌃❖← then ⌃❖↑ is the top left). The opposite way: back to its own frame. The same way again: the next screen that way, the same half (nothing with one screen). From a quarter, an arrow moves it to the next quarter, or past the edge to the next screen.</td></tr>
@@ -538,6 +538,17 @@
       <tr><td>Window menu</td><td>Fill, Center, the four halves and four quarters, Back to Previous Size (only when there is one to go back to), each with its keys; the tile the window is in is checked. View (or Window): Enter Full Screen.</td></tr>
     </table>
     <p class="small muted"><code>TILES</code> in <code>layout.ts</code> has the four halves, the four quarters, and fill. Tiles keep a 6 px gap between them and around them; Fill keeps none (on a 1646 × 937 screen with the Dock: x 0, y 28, 1646 × 838).</p>
+    <h3 id="fullscreen-desktops">Full screen gets its own Desktop</h3>
+    <p>As on a Mac, a window in full screen moves to a Desktop of its own, so a game or a video sits one swipe away from everything else (<code>packages/shell/src/spaces/fullscreen.ts</code>; Desktop &amp; Dock › "Full-screen apps get their own desktop", settings.json <code>spaces.fullscreenDesktop</code>, on by default; turned off, full screen stays on the Desktop it is on).</p>
+    <table>
+      <tr><th>When</th><th>What happens</th></tr>
+      <tr><td>A window enters full screen (any way: ⌥ and the square, ⌃❖F, View › Enter Full Screen, the app itself, an agent)</td><td>A Desktop goes in right after the one it was on (after the full-screen ones from there already), the window and its dialogs move there and fill the screen, and the screen slides to it: one 250 ms slide of the finished picture.</td></tr>
+      <tr><td>It leaves full screen (any way)</td><td>It goes back to the Desktop it came from (the nearest on its left, if that one was removed) at the frame or tile it had, the screen slides there, and its Desktop goes away.</td></tr>
+      <tr><td>It closes, quits, minimizes, or hides</td><td>As leaving: the screen slides back and its Desktop goes; a minimized one comes back from the Dock at its old frame, out of full screen.</td></tr>
+      <tr><td>A new window opens while it shows</td><td>The app's own dialogs and sheets stay on its Desktop, above it. Any other window opens on the Desktop it came from, and the screen slides there.</td></tr>
+      <tr><td>Mission Control's Desktops row</td><td>It is named after its app, can't be renamed, and takes no dropped window (the window springs back); its × takes the window out of full screen. ⌃← ⌃→, ⌃1…⌃9 (by its place in the row), and swipes go to it like any Desktop.</td></tr>
+    </table>
+    <p class="small muted">Full-screen Desktops are not counted in settings.json <code>spaces.count</code> and have no entry in <code>spaces.names</code>: the file reads as if they never were. A restart of the shell finds them again: a Desktop whose one window is full screen is that window's.</p>
     <h3 id="window-management-rules">Rules</h3>
     <ol class="rules">
       <li id="wi-1"><b class="rid">WI-1</b><div>The square never hides the menu bar by surprise. Pressing it fills the usable area, menu bar and Dock still there; pressing it again, or on a tiled window, restores the window's own frame. ⌥ and the square enters full screen; double-clicking the title bar does what the square does.</div></li>
@@ -545,6 +556,8 @@
       <li id="wi-3"><b class="rid">WI-3</b><div>The keys, drag-to-tile, and the Window menu offer the same tiles, and the menu shows each tile's key.</div></li>
       <li id="wi-4"><b class="rid">WI-4</b><div>Full screen is always there for the person who asks: ⌃❖F, the Window or View menu, and an app's own button or F11.</div></li>
       <li id="wi-5"><b class="rid">WI-5</b><div>A tiled or filled window keeps the frame it had before, and Back to Previous Size gives it back; the row is disabled when there is nothing to go back to. Moving or resizing the window by hand ends the tile.</div></li>
+      <li id="wi-6"><b class="rid">WI-6</b><div>A full-screen window has a Desktop to itself, next to the one it came from, and goes back there when it leaves full screen. Entering and leaving are each one slide: the window changes size off screen, never on the Desktop being looked at.</div></li>
+      <li id="wi-7"><b class="rid">WI-7</b><div>Nothing but the app's own dialogs and sheets opens over a full-screen window; any other window opens on the Desktop it came from, and the screen goes there to show it.</div></li>
     </ol>
 
     <h2>Motion</h2>
@@ -831,7 +844,7 @@
       <tr><td>the Shapes</td><td>The window controls: circle (close), bar (minimize), square (bigger).</td></tr>
       <tr><td>the ingredients</td><td>Kombu, ume, broth, shiso: the colors with jobs.</td></tr>
       <tr><td>unified toolbar</td><td>An app's 38 px toolbar that shares its row with the window controls; the window's one chrome row.</td></tr>
-      <tr><td>Desktop</td><td>One of the person's workspaces (<code>spaces/</code> in the code); Overview shows them all.</td></tr>
+      <tr><td>Desktop</td><td>One of the person's workspaces (<code>spaces/</code> in the code); Overview shows them all. A full-screen window's own Desktop is called after its app.</td></tr>
     </table>
 
     <h2>Open questions</h2>

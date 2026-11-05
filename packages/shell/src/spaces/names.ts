@@ -9,6 +9,7 @@
 
 import type { CompositorWindow } from "../compositor.ts";
 import { MAX_SPACES, spaceLabel } from "./model.ts";
+import { desktopOrdinal, type Slots } from "./slots.ts";
 
 /** The longest name kept, in characters. */
 export const MAX_NAME = 32;
@@ -84,7 +85,25 @@ export function autoName(index: number, windows: readonly CompositorWindow[], ap
   return more > 0 ? `${listed} +${more}` : listed;
 }
 
-/** What each of `count` Desktops is called: the given name, else after its apps, else "Desktop N". */
-export function spaceLabels(count: number, names: SpaceNames, windows: readonly CompositorWindow[], appName: (window: CompositorWindow) => string): string[] {
-  return Array.from({ length: count }, (_, index) => names[index] ?? autoName(index, windows, appName) ?? spaceLabel(index));
+/**
+ * What each of `count` Spaces is called: a full-screen window's Desktop
+ * (`slots`, slots.ts) after its app, always; the others by their given name
+ * (`names` has one per Desktop, full-screen ones skipped), else after their
+ * apps, else "Desktop N" (N is its place in the row, as ⌃N goes there).
+ */
+export function spaceLabels(
+  count: number,
+  names: SpaceNames,
+  windows: readonly CompositorWindow[],
+  appName: (window: CompositorWindow) => string,
+  slots: Slots = [],
+): string[] {
+  return Array.from({ length: count }, (_, index) => {
+    const owner = slots[index] ?? null;
+    if (owner !== null) {
+      const window = windows.find((each) => each.id === owner);
+      return (window && appName(window)) || spaceLabel(index);
+    }
+    return names[desktopOrdinal(slots, index)] ?? autoName(index, windows, appName) ?? spaceLabel(index);
+  });
 }

@@ -8,7 +8,9 @@
  * Previous Size gives back. A drag or a resize by the person ends the
  * arrangement: the compositor reports the grab, the shell decides. Full
  * screen is on top of all that: leaving it gives back the frame from before
- * (its tile, if it was tiled or filled). A window's size is the one its
+ * (its tile, if it was tiled or filled), and a full-screen window may get a
+ * Desktop of its own (`desktops`, spaces/fullscreen.ts), which also says
+ * where a new window opens while one shows. A window's size is the one its
  * app was last asked to take until it has drawn it (`configuring`). One
  * arranging runs at a time, in the order asked, so a burst of keys acts as
  * the keys pressed one by one.
@@ -58,6 +60,16 @@ interface Arranged {
 
 type EventOf<Name extends CompositorEvent["event"]> = Extract<CompositorEvent, { event: Name }>;
 
+/** Full-screen windows' own Desktops (spaces/fullscreen.ts). */
+export interface FullscreenDesktopsHook {
+  /** Enter or leave full screen around the window's own Desktop; `toggle` is the request and the frame after. */
+  around(window: CompositorWindow, on: boolean, toggle: () => Promise<void>): Promise<void>;
+  /** The Space a new window opens on; null for the one that shows. */
+  spaceFor(window: Placing): Promise<number | null>;
+  /** A new window opened on that Space (not the one that shows). */
+  opened(space: number): Promise<void>;
+}
+
 export class Arranger {
   private outputs: Output[] = [];
   private opened = 0;
@@ -75,6 +87,8 @@ export class Arranger {
 
   /** Runs after a window entered or left full screen (fullscreen.ts follows the bars). */
   afterFullscreen: (() => void) | null = null;
+  /** Full-screen windows' own Desktops; none, and full screen stays on the Desktop it is on. */
+  desktops: FullscreenDesktopsHook | null = null;
   /** A new window someone else places (a portal dialog that is a sheet: portal-host/sheets.ts); true takes it. */
   claim: ((window: Placing) => boolean) | null = null;
 
@@ -170,8 +184,11 @@ export class Arranger {
     // An app that asked for a spot (X11 apps do) gets it; the rest cascade.
     const { x, y } = window.position ?? placeNew(window, usable, this.opened++);
     const fitted = fitFrame({ x, y, width: window.width, height: window.height }, usable);
-    await this.compositor.request("place", { window: window.id, x: fitted.x, y: fitted.y });
+    // While a full-screen Desktop shows, another app's window opens on the Desktop it came from.
+    const space = (await this.desktops?.spaceFor(window).catch(() => null)) ?? null;
+    await this.compositor.request("place", { window: window.id, x: fitted.x, y: fitted.y, ...(space === null ? {} : { space }) });
     if (fitted.width !== window.width || fitted.height !== window.height) await this.frame(window.id, fitted);
+    if (space !== null) await this.desktops?.opened(space);
   }
 
   /**
@@ -348,8 +365,11 @@ export class Arranger {
     // Leaving: the frame it goes back to is asked for at once, so nothing
     // meanwhile takes the full-screen size for its own.
     const back = on ? null : this.frameAfterFullscreen(id);
-    await this.compositor.request("fullscreen", { window: id, on });
-    if (back) await this.frame(id, back.frame, back.tile);
+    const toggle = async () => {
+      await this.compositor.request("fullscreen", { window: id, on });
+      if (back) await this.frame(id, back.frame, back.tile);
+    };
+    await (this.desktops ? this.desktops.around(window, on, toggle) : toggle());
     this.afterFullscreen?.();
   }
 
