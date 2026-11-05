@@ -33,6 +33,8 @@ export interface DockControllerDeps {
   openDockSettings?(): void;
   /** A click on an icon is about to bring something forward (Mission Control leaves). */
   onPress?(): void;
+  /** An app was opened or brought forward from the Dock: the launcher's ranking counts it (launcher/ranking/). */
+  opened?(appId: string): void;
   graceMs?: number;
 }
 
@@ -60,7 +62,10 @@ export class DockController {
   press(entry: DockEntry): void {
     this.deps.onPress?.();
     const action = clickAction(entry);
-    if (action.kind === "activate") this.deps.toplevels.act(action.id, "activate");
+    if (action.kind === "activate") {
+      this.deps.toplevels.act(action.id, "activate");
+      this.deps.opened?.(entry.app.id);
+    }
     if (action.kind === "launch") this.open(entry.app);
   }
 
@@ -68,13 +73,17 @@ export class DockController {
   pressButton(button: TaskbarButton): void {
     this.deps.onPress?.();
     const action = taskbarClick(button);
-    if (action.kind === "activate") this.deps.toplevels.act(action.window, "activate");
+    if (action.kind === "activate") {
+      this.deps.toplevels.act(action.window, "activate");
+      this.deps.opened?.(button.entry.app.id);
+    }
     if (action.kind === "minimize") this.deps.toplevels.act(action.window, "minimize");
     if (action.kind === "launch") this.open(button.entry.app);
   }
 
   open(app: App): void {
     if (this.deps.launch(app) === null) return;
+    this.deps.opened?.(app.id);
     this.setStarting(new Set(this.starting).add(app.id));
     const timer = setTimeout(() => {
       this.timers.delete(timer);

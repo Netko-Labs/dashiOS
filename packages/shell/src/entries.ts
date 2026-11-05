@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { type App, displayName, iconPath, type LaunchWatch, launch, resolvePinned, SETTINGS_APP_ID, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
+import { type Localized, localizedDesktop } from "./launcher/ranking/locale.ts";
 
 export { calculate } from "./launcher-math.ts";
 
@@ -37,6 +38,8 @@ export interface Entry extends App {
    * `t3code-nightly`), as GNOME and KDE allow.
    */
   hidden?: true;
+  /** Its Name[xx], GenericName[xx] and Keywords[xx] in the person's language, for the ranking (launcher/ranking/). */
+  localized?: Localized;
 }
 
 /**
@@ -87,7 +90,9 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   if (!argv.length) return null;
   // What kind of app it is ("Web Browser"), after its name on the launcher's row; not when it only repeats the name.
   const generic = fields.get("GenericName");
+  const localized = localizedDesktop(text);
   return {
+    ...(localized.name || localized.genericName || localized.keywords.length > 0 ? { localized } : {}),
     id,
     name,
     exec: argv,
