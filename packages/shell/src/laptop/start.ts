@@ -32,7 +32,7 @@ import type { Battery } from "../system/battery.ts";
 import type { OsdController } from "../system/osd-state.ts";
 import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import type { SystemStore } from "../system/store.ts";
-import { systemBus } from "../system/system-bus.ts";
+import { hardwareBus, systemBus } from "../system/system-bus.ts";
 import { ChargeKeeper } from "./charge.ts";
 import { LAPTOP_BINDING_NAMES, LAPTOP_BINDINGS, LIGHT_STEP_BINDINGS, laptopKeyRules, nextLightLevel } from "./hotkeys.ts";
 import type { LaptopAction } from "./menu.ts";
@@ -71,7 +71,7 @@ const powerSourceOf = (battery: Battery | null): PowerSource =>
 
 export function startLaptop(options: LaptopOptions): Laptop {
   const { settings, system, notifications, compositor } = options;
-  const real: HardwareApi = hardwareClient(systemBus());
+  const real: HardwareApi = hardwareClient(hardwareBus());
   const hardware = options.developmentRun ? shadowHardware(real) : real;
   const profilesReal = powerProfiles(systemBus());
   const profiles = options.developmentRun ? shadowProfiles(profilesReal) : profilesReal;
