@@ -141,7 +141,12 @@ export function Choices<T extends string | number>({
   );
 }
 
-/** A push button: the accent for the one that goes ahead, red (`danger`) for one that can't be taken back. */
+/**
+ * A push button: kombu for the one that goes ahead, ume (`danger`) for one
+ * that can't be taken back. A secondary button has an edge, so it reads
+ * against any ground; `isDefault` rings it in kombu: it is what Enter presses
+ * (a destructive sheet's Cancel).
+ */
 export function Button({
   label,
   onPress,
@@ -149,6 +154,7 @@ export function Button({
   primary,
   danger,
   disabled,
+  isDefault,
 }: {
   label: string;
   onPress: () => void;
@@ -156,10 +162,12 @@ export function Button({
   primary?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  isDefault?: boolean;
 }) {
   const colors = useColors();
-  const fill = disabled ? colors.button : danger ? colors.critical : primary ? colors.selection : colors.button;
+  const fill = disabled ? colors.button : danger ? colors.umeFill : primary ? colors.selection : colors.button;
   const strong = !disabled && (primary || danger);
+  const edge = strong ? fill : disabled ? colors.separator : isDefault ? colors.selection : colors.controlEdge;
   return (
     <View
       testID={testID}
@@ -172,6 +180,8 @@ export function Button({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: fill,
+        borderWidth: isDefault && !strong && !disabled ? 2 : 1,
+        borderColor: edge,
         hoverBackgroundColor: strong || disabled ? fill : colors.separator,
       }}
     >

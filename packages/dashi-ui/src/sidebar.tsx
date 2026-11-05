@@ -14,7 +14,7 @@ export interface SidebarItemProps {
   testID: string;
   /** A glyph on a tile of this color (Settings' panes). */
   tile?: { glyph: string; tint: string };
-  /** A bare glyph in the text's color (a Files-style list). */
+  /** A bare glyph in muted ink, white when selected (a Files-style list). */
   glyph?: string;
   /** Quiet text at the end: a count. */
   badge?: string;
@@ -42,7 +42,8 @@ export function SidebarItem({ label, selected, onPress, testID, tile, glyph, bad
       }}
     >
       {tile && <Tile glyph={tile.glyph} tint={tile.tint} />}
-      {glyph !== undefined && <Svg markup={glyph} size={16} color={selected ? "#ffffff" : colors.selection} />}
+      {/* Kombu marks the selected row only; a glyph at rest is muted ink (CO-2). */}
+      {glyph !== undefined && <Svg markup={glyph} size={16} color={selected ? "#ffffff" : colors.textMuted} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: selected ? "semibold" : "normal", color: ink }}>
           {label}

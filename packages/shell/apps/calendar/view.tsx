@@ -8,7 +8,7 @@
  * menu bar's ❖ shortcuts come through useAppMenus).
  */
 
-import { AppWindow, KeySink, type MenuItem, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -79,6 +79,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const [editing, setEditing] = useState<Editing | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [keys, setKeys] = useState(0);
+  const [hiddenProblem, setHiddenProblem] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const tick = setInterval(() => {
@@ -224,32 +225,17 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     </>
   );
 
-  const message = state.error ?? state.notice ?? (state.problems.length > 0 ? state.problems[0] : null);
-  const footer =
+  // A message floats over the calendar as a notice until dismissed; an unreadable event's, too (it only hides here).
+  const problem = state.problems[0] ?? null;
+  const message = state.error ?? state.notice ?? (problem !== hiddenProblem ? problem : null);
+  const notice =
     message === null ? undefined : (
-      <View
-        testID="footer"
-        style={{
-          minHeight: 26,
-          flexShrink: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          paddingHorizontal: 16,
-          borderTopWidth: 1,
-          borderColor: colors.separator,
-        }}
-      >
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>
-            {message}
-          </Text>
-        </View>
-        <View testID="footer:dismiss" onPress={() => model.dismissMessages()}>
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>{state.error !== null || state.notice !== null ? "Dismiss" : ""}</Text>
-        </View>
-      </View>
+      <Notice
+        testID="message"
+        tone={state.error ? "error" : "info"}
+        text={message}
+        onDismiss={() => (state.error !== null || state.notice !== null ? model.dismissMessages() : setHiddenProblem(problem))}
+      />
     );
 
   const editingCalendar = sheet?.kind === "edit-calendar" ? sheet : null;
@@ -323,7 +309,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       title={title}
       toolbar={toolbar}
       overlay={overlay}
-      footer={footer}
+      notice={notice}
       sidebar={
         <Sidebar
           anchor={anchor}

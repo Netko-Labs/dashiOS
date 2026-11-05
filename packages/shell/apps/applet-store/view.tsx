@@ -11,7 +11,7 @@ import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
 import { BACK, CATEGORY_GLYPHS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "../software/glyphs.ts";
-import { back, CATEGORY_LABELS, canGoBack, goTo, type Nav, type Page, pageTitle, push, START, search } from "./nav.ts";
+import { back, CATEGORY_LABELS, canGoBack, goTo, type Nav, type Page, push, START, search } from "./nav.ts";
 import { AppletPage } from "./page.tsx";
 import { InstalledPage, ListPage, UpdatesPage } from "./pages.tsx";
 import { type Actions, ActionsContext, useStoreState } from "./rows.tsx";
@@ -173,7 +173,7 @@ export function StoreWindow() {
 
   return (
     <ActionsContext.Provider value={actions}>
-      <AppWindow title="Applet Store" subtitle={pageTitle(nav.page) || undefined} sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
+      <AppWindow title="Applet Store" sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
         <PageView page={nav.page} query={query} />
       </AppWindow>
     </ActionsContext.Provider>

@@ -196,13 +196,8 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
     ) : undefined;
 
   return (
-    <AppWindow
-      title="Activity Monitor"
-      subtitle={scopeLabel}
-      toolbar={toolbar}
-      overlay={overlay}
-      footer={<Summary tab={tab} state={state} processes={state.rows.filter((row) => !row.kernel).length} />}
-    >
+    // One chrome row: the scope is the view button's own label, and the summary is content under the table.
+    <AppWindow title="Activity Monitor" toolbar={toolbar} overlay={overlay}>
       <Table
         testID="processes"
         columns={columns}
@@ -221,6 +216,7 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
           )
         }
       />
+      <Summary tab={tab} state={state} processes={state.rows.filter((row) => !row.kernel).length} />
     </AppWindow>
   );
 }

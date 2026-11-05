@@ -1,8 +1,9 @@
 /**
  * Text Editor's window: the unified toolbar with the document's name (and
- * "Edited" while it has changes), its folder, New, Open, Save, and the Find
- * field; the text; and a footer with the counts, Find's place, and the
- * encoding and line endings. Each window is its own process with one
+ * "Edited" while it has changes), a quiet line with its folder, the counts
+ * or Find's place, and an encoding or line ending that isn't UTF-8 and LF,
+ * then New, Open, Save, and the Find field; the text; and a notice over it
+ * when something needs saying. Each window is its own process with one
  * document, as Preview's are: New opens another window, and Open opens in
  * this one only while it is an untouched Untitled.
  */
@@ -10,7 +11,7 @@
 import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { AppWindow, SearchField, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Clipboard } from "../kit/index.ts";
@@ -223,32 +224,25 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
         : find.current < 0
           ? `${find.matches.length.toLocaleString("en-US")} ${find.matches.length === 1 ? "match" : "matches"}`
           : `${find.current + 1} of ${find.matches.length} · line ${lineOf(state.text, find.matches[find.current] ?? 0)}`;
-  const footer = (
-    <View
-      testID="footer"
-      style={{
-        height: 26,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        paddingHorizontal: 16,
-        borderTopWidth: 1,
-        borderColor: colors.separator,
-      }}
-    >
-      <View style={{ flex: 1, minWidth: 0 }} onPress={state.notice ? () => model.dismissNotice() : undefined}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: state.notice?.tone === "error" ? colors.critical : colors.textMuted }}>
-          {state.notice?.text ?? stats}
+  // One chrome row: the folder, the counts (or Find's place), and an unusual encoding are a quiet line in the
+  // toolbar, and a notice floats over the text until dismissed.
+  const encoding =
+    state.encoding === "utf-8" && state.lineEnding === "lf" ? null : `${ENCODING_LABELS[state.encoding]} · ${LINE_ENDING_LABELS[state.lineEnding]}`;
+  const status = [folderLabel(state.path), findStatus ?? stats, encoding].filter((part) => part !== null).join(" · ");
+  const toolbarWithStatus = (
+    <>
+      <View style={{ flexShrink: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          {status}
         </Text>
       </View>
-      {findStatus !== null && <Text style={{ fontSize: 11, color: colors.textMuted }}>{findStatus}</Text>}
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${ENCODING_LABELS[state.encoding]} · ${LINE_ENDING_LABELS[state.lineEnding]}`}</Text>
-    </View>
+      {toolbar}
+    </>
   );
+  const notice = state.notice ? <Notice tone={state.notice.tone} text={state.notice.text} onDismiss={() => model.dismissNotice()} /> : undefined;
 
   return (
-    <AppWindow title={editedTitle(state.path, dirty)} subtitle={folderLabel(state.path) ?? undefined} toolbar={toolbar} overlay={overlay} footer={footer}>
+    <AppWindow title={editedTitle(state.path, dirty)} toolbar={toolbarWithStatus} overlay={overlay} notice={notice}>
       <TextArea
         text={state.text}
         prefs={state.prefs}
