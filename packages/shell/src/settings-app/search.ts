@@ -9,7 +9,7 @@ import { PANES, type PaneId } from "./panes.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  appearance: ["dark mode", "light mode", "theme", "accent", "corners", "reduce motion"],
+  appearance: ["dark mode", "light mode", "theme", "accent", "corners", "reduce motion", "highlight", "active window", "focus ring"],
   wallpaper: ["background", "desktop picture", "live wallpaper"],
   displays: ["display", "monitor", "screen", "resolution", "scale", "refresh rate", "rotation", "arrangement"],
   "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops"],

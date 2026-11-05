@@ -1,28 +1,30 @@
 //! One screen's elements, front to back: the cursor, the overlay and top
-//! layers, the windows from the top down (each with its title bar), then the
-//! bottom and background layers.
+//! layers, the windows from the top down (each with its title bar, edge, and
+//! shadow: windows.rs), then the bottom and background layers.
 
 use smithay::{
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
-            AsRenderElements, Element, Id, Kind,
+            AsRenderElements, Kind,
             memory::MemoryRenderBufferRenderElement,
+            solid::SolidColorRenderElement,
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
         },
     },
     desktop::{Window, layer_map_for_output},
     input::pointer::{CursorImageStatus, CursorImageSurfaceData},
     output::Output,
-    utils::{Logical, Physical, Point, Rectangle, Scale},
-    wayland::{compositor::with_states, seat::WaylandFocus, shell::wlr_layer::Layer},
+    utils::{Logical, Point, Rectangle, Scale},
+    wayland::{compositor::with_states, shell::wlr_layer::Layer},
 };
 
-use super::{DashiElement, rounded::GlesAccess, titlebar::Decor};
-use crate::state::Dashi;
-use smithay::backend::renderer::element::{
-    solid::SolidColorRenderElement, utils::RescaleRenderElement,
+use super::{
+    DashiElement,
+    rounded::GlesAccess,
+    windows::{Spot, arriving_window, framed_window, overview_window},
 };
+use crate::state::Dashi;
 
 /// What to draw: an area of the space at a scale, with the layers of one
 /// output; for a window capture, that window alone.
@@ -110,6 +112,12 @@ where
         }
         return elements;
     }
+    let spot = Spot {
+        origin,
+        scale,
+        area: view.area,
+        depth: view.only.is_none(),
+    };
     // A window dragged in Mission Control: over the shell's Desktops row and
     // its pictures, so the person sees what they carry onto one; drawn here
     // instead of in its place among the windows.
@@ -124,7 +132,7 @@ where
             ))
         });
     if let Some((_, window, rect)) = &dragged {
-        overview_window(state, renderer, window, *rect, origin, scale, &mut elements);
+        overview_window(state, renderer, window, *rect, &spot, &mut elements);
     }
     if view.only.is_none() {
         // The shell's live pictures, over its panels (super::thumbnails).
@@ -179,13 +187,13 @@ where
                 renderer,
                 &window,
                 flight.now().0,
-                origin,
-                scale,
+                &spot,
                 &mut elements,
             );
         }
     }
-    for window in state.space.elements().rev() {
+    let shown: Vec<Window> = state.space.elements().rev().cloned().collect();
+    for window in &shown {
         if view.only.as_ref().is_some_and(|only| only != window) {
             continue;
         }
@@ -202,64 +210,28 @@ where
         {
             frame_at += offset;
         }
-        if let Some(id) = state.windows.by_window(window).map(|e| e.id)
-            && let Some(flight) = state.motion.flights.get(&id).copied()
-        {
+        let id = state.windows.by_window(window).map(|e| e.id);
+        if let Some(flight) = id.and_then(|id| state.motion.flights.get(&id).copied()) {
             overview_window(
                 state,
                 renderer,
                 window,
                 flight.now().0,
-                origin,
-                scale,
+                &spot,
                 &mut elements,
             );
             continue;
         }
         if state.overview.is_some() {
-            if let Some(id) = state.windows.by_window(window).map(|e| e.id)
+            if let Some(id) = id
                 && dragged.as_ref().is_none_or(|(held, _, _)| *held != id)
                 && let Some(rect) = state.overview_rect(id)
             {
-                overview_window(state, renderer, window, rect, origin, scale, &mut elements);
+                overview_window(state, renderer, window, rect, &spot, &mut elements);
             }
             continue;
         }
-        let entry = state.windows.by_window(window);
-        let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
-        let image = entry.and_then(|entry| entry.title_image.as_ref());
-        let on_view = |at: Point<i32, Logical>| -> Point<i32, Physical> {
-            (at - origin).to_physical_precise_round(scale)
-        };
-        if let (Decor::Unified, Some(image)) = (decor, image) {
-            push_memory(renderer, on_view(frame_at), &image.buffer, &mut elements);
-        }
-        let surface_at = on_view(frame_at - window.geometry().loc);
-        let surfaces = window
-            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0);
-        // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window.
-        let framed =
-            matches!(decor, Decor::Standard | Decor::Unified) && state.chrome_style.radius > 0;
-        let rounded = framed
-            .then(|| super::rounded::program(renderer.gles()))
-            .flatten()
-            .zip(
-                window
-                    .wl_surface()
-                    .map(|surface| Id::from_wayland_resource(&*surface)),
-            );
-        let radius = (f64::from(state.chrome_style.radius) * scale.x) as f32;
-        let top = decor == Decor::Unified;
-        elements.extend(surfaces.into_iter().map(|element| match &rounded {
-            Some((program, root)) if element.id() == root => DashiElement::Rounded(
-                super::rounded::RoundedElement::new(element, program.clone(), radius, top),
-            ),
-            _ => DashiElement::Surface(element),
-        }));
-        if let (Decor::Standard, Some(image)) = (decor, image) {
-            let bar_at = Point::from((frame_at.x, frame_at.y - state.bar_height(window)));
-            push_memory(renderer, on_view(bar_at), &image.buffer, &mut elements);
-        }
+        framed_window(state, renderer, window, frame_at, &spot, &mut elements);
     }
     // The Space sliding in from beside: its windows, from where they wait.
     if let Some(slide) = state.spaces.slide.filter(|_| view.only.is_none())
@@ -272,16 +244,7 @@ where
             .filter_map(|e| e.away_at.map(|at| (e.window.clone(), at)))
             .collect();
         for (window, at) in arriving.into_iter().rev() {
-            let surface_at =
-                ((at + offset - window.geometry().loc) - origin).to_physical_precise_round(scale);
-            elements.extend(
-                window
-                    .render_elements::<WaylandSurfaceRenderElement<R>>(
-                        renderer, surface_at, scale, 1.0,
-                    )
-                    .into_iter()
-                    .map(DashiElement::Surface),
-            );
+            arriving_window(state, renderer, &window, at + offset, &spot, &mut elements);
         }
     }
     if view.only.is_some() {
@@ -298,29 +261,6 @@ where
         elements.push(DashiElement::Memory(wallpaper));
     }
     elements
-}
-
-fn push_memory<R>(
-    renderer: &mut R,
-    at: Point<i32, Physical>,
-    buffer: &smithay::backend::renderer::element::memory::MemoryRenderBuffer,
-    elements: &mut Vec<DashiElement<R>>,
-) where
-    R: Renderer + ImportAll + ImportMem + GlesAccess,
-    R::TextureId: Clone + Send + 'static,
-{
-    match MemoryRenderBufferRenderElement::from_buffer(
-        renderer,
-        at.to_f64(),
-        buffer,
-        None,
-        None,
-        None,
-        Kind::Unspecified,
-    ) {
-        Ok(element) => elements.push(DashiElement::Memory(element)),
-        Err(error) => tracing::warn!(?error, "drawing the compositor's own image"),
-    }
 }
 
 fn layer_elements<R>(
@@ -467,60 +407,5 @@ fn cursor_elements<R>(
             .into_iter()
             .map(DashiElement::Surface),
         );
-    }
-}
-
-/// A window drawn small where the overview puts it (`rect`: its outer frame there).
-fn overview_window<R>(
-    state: &Dashi,
-    renderer: &mut R,
-    window: &Window,
-    rect: Rectangle<f64, Logical>,
-    origin: Point<i32, Logical>,
-    scale: Scale<f64>,
-    elements: &mut Vec<DashiElement<R>>,
-) where
-    R: Renderer + ImportAll + ImportMem + GlesAccess,
-    R::TextureId: Clone + Send + 'static,
-{
-    let geometry = window.geometry();
-    let bar = f64::from(state.bar_height(window));
-    let outer_w = f64::from(geometry.size.w.max(1));
-    let s = rect.size.w / outer_w;
-    let inner = rect.loc + Point::from((0.0, bar * s));
-    // Drawn at full size at its small spot, then shrunk about that spot (popups and subsurfaces too).
-    let surface_at = (inner - geometry.loc.to_f64() - origin.to_f64())
-        .to_physical(scale)
-        .to_i32_round();
-    let about = (inner - origin.to_f64()).to_physical(scale).to_i32_round();
-    elements.extend(
-        window
-            .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
-            .into_iter()
-            .map(|element| {
-                DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s))
-            }),
-    );
-    let image = state
-        .windows
-        .by_window(window)
-        .and_then(|entry| entry.title_image.as_ref());
-    if let Some(image) = image.filter(|_| bar > 0.0) {
-        let at = (rect.loc - origin.to_f64()).to_physical(scale);
-        let size = smithay::utils::Size::from((
-            (rect.size.w).round() as i32,
-            (bar * s).round().max(1.0) as i32,
-        ));
-        if let Ok(element) = MemoryRenderBufferRenderElement::from_buffer(
-            renderer,
-            at,
-            &image.buffer,
-            None,
-            None,
-            Some(size),
-            Kind::Unspecified,
-        ) {
-            elements.push(DashiElement::Memory(element));
-        }
     }
 }

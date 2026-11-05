@@ -147,7 +147,7 @@
       <tr><td><a href="#the-green-control">The green control</a></td><td>A click fills the screen; ⌥ goes full screen; a press-and-hold menu tiles.</td><td><span class="pill wip">open</span></td></tr>
       <tr><td><a href="#tiling-shortcuts">Tiling shortcuts</a></td><td>Halves on all four arrows, quarters by chaining, Fill, Center, Back.</td><td><span class="pill wip">open</span></td></tr>
       <tr><td><a href="#drag-to-tile">Drag to tile</a></td><td>Whether dragging gets top and bottom halves too.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill done">built</span></td></tr>
       <tr><td><a href="#the-roast">The roast</a></td><td>13 reports: what hits every app, then each app's top fixes and big idea.</td><td><span class="pill wip">open</span></td></tr>
       <tr><td><a href="#order-of-work">Order of work</a></td><td>Three waves: embarrassment first, then platform pieces, then the big ideas.</td><td><span class="pill wip">open</span></td></tr>
     </table>
@@ -421,7 +421,7 @@
           <ul class="pc"><li class="y">For tilers and two-screen setups</li><li class="y">Off by default, so kombu keeps its job</li><li class="n">One more setting</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A + B by default; C as an Appearance option, off by default; no D.</b> Depth should come from light, not color: kombu means "yours, selected" everywhere else, so a kombu ring all day would spend that meaning (the roast found kombu already overused, <a href="#across-every-app">below</a>). Those who tile or use two screens can turn the ring on.</p>
+    <p class="verdict"><span class="pill done">built</span> <b>Recommendation: A + B by default; C as an Appearance option, off by default; no D.</b> Depth should come from light, not color: kombu means "yours, selected" everywhere else, so a kombu ring all day would spend that meaning (the roast found kombu already overused, <a href="#across-every-app">below</a>). Those who tile or use two screens can turn the ring on.</p>
     <div class="spec">
       <h5>How the compositor draws it</h5>
       <ul>
@@ -439,6 +439,12 @@
         <li><b>Overview and the switcher:</b> thumbnails get a scaled shadow so they lift off the wallpaper; the hover highlight stays Overview's own.</li>
         <li><b>Screenshots:</b> ⇧❖4 then Space captures the window without its shadow; agents' captures are unchanged.</li>
         <li><b>Damage:</b> the shadow's rectangle joins the window's damage when it moves, resizes or changes focus (two windows per focus change); nothing else redraws. Check frame time in the VM with ten overlapping windows before shipping.</li>
+      </ul>
+      <h5>As built (0.4.0)</h5>
+      <ul>
+        <li>As recommended, with the starting values above; the real ones are in <a href="design.html#window-depth">the design guidelines</a>. The request is <code>window-style</code>, and the shell sends each mode's values already chosen, so Dark Mode resends it.</li>
+        <li>A filled window loses its hairline as well as its shadow (it would double the menu bar's edge); the ring stays. Tiles and Fill are known by the frame the shell gave them (<code>frame {remember, maximized}</code>): moved off it, a window is an ordinary one again.</li>
+        <li>Not built: Increase Contrast (there is no such setting yet), the menu shadow on app popups (they are left as they are), and shadows on the shell's switcher and Desktops pictures.</li>
       </ul>
     </div>
 

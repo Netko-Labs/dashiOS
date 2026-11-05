@@ -81,8 +81,9 @@ crates/dashi-comp/src/
                     (image_capture.rs), ext-foreign-toplevel-list,
                     xdg-foreign (ported from smithay, with handles the IPC can look up:
                     `window-for-handle`)
-  render/           scene, title bars, cursor, capture, presentation (present.rs),
-                    rounded corners (rounded.rs), live pictures the shell places
+  render/           scene, one window's elements (windows.rs), title bars, cursor,
+                    capture, presentation (present.rs), rounded corners (rounded.rs),
+                    depth between windows (depth/: `window-style`), live pictures the shell places
                     (thumbnails/: `space-previews`, `window-thumbnails`)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
@@ -139,6 +140,14 @@ Each milestone ends with the shell running on it in the VM.
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title
   bar, all four on a unified window; a texture shader on the main surface
   (render/rounded.rs), so such a surface is never scanned out directly.
+- **Depth between windows (done, 0.4.0):** the shell's `window-style` look:
+  a shadow under each window (deeper on the focused one, cross-faded), a
+  hairline just inside its frame, an optional ring outside the focused one's;
+  one closed-form pixel shader per side (render/depth/: a Gaussian-blurred
+  rounded rectangle by erf on its distance field, no blur pass), cut out
+  where the window is, clipped to the window's screen, drawing and damaging
+  only the bands around the frame. Full screen windows and clients that draw
+  their own shadow get none.
 - **Window controls:** 0.1.0's "Shapes": a circle closes, a bar minimizes, a
   rounded square zooms (ume #D0596F, broth #E5B13F, kombu #4A9A7E), gray on an
   unfocused window, lit and the hovered one grown 1.18× under the pointer;

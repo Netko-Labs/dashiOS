@@ -14,7 +14,9 @@ use smithay::{
             Element, Id, Kind, RenderElement, UnderlyingStorage,
             surface::WaylandSurfaceRenderElement,
         },
-        gles::{GlesFrame, GlesRenderer, GlesTexProgram, Uniform, UniformName, UniformType},
+        gles::{
+            GlesError, GlesFrame, GlesRenderer, GlesTexProgram, Uniform, UniformName, UniformType,
+        },
         utils::{CommitCounter, DamageSet, OpaqueRegions},
     },
     utils::{Buffer, Physical, Point, Rectangle, Scale, Transform},
@@ -72,6 +74,8 @@ pub(crate) trait GlesAccess: Renderer {
     fn gles_frame<'a, 'frame, 'buffer>(
         frame: &'a mut Self::Frame<'frame, 'buffer>,
     ) -> &'a mut GlesFrame<'frame, 'buffer>;
+    /// A GLES frame's error as this renderer's.
+    fn gles_error(error: GlesError) -> Self::Error;
 }
 
 impl GlesAccess for GlesRenderer {
@@ -83,6 +87,10 @@ impl GlesAccess for GlesRenderer {
         frame: &'a mut Self::Frame<'frame, 'buffer>,
     ) -> &'a mut GlesFrame<'frame, 'buffer> {
         frame
+    }
+
+    fn gles_error(error: GlesError) -> Self::Error {
+        error
     }
 }
 

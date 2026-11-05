@@ -107,6 +107,8 @@ pub(crate) struct Dashi {
     pub shell_pid: Arc<std::sync::atomic::AtomicI32>,
     pub foreign: crate::protocols::foreign_toplevel::ForeignToplevels,
     pub chrome_style: ChromeStyle,
+    /// The depth between windows (`window-style`; render/depth/).
+    pub window_style: crate::render::depth::Style,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
     /// The icon a client gave the drag it started (wl_data_device.start_drag),
@@ -291,6 +293,7 @@ impl Dashi {
             shell_pid,
             foreign: Default::default(),
             chrome_style: ChromeStyle::default(),
+            window_style: Default::default(),
             chrome_objects: Vec::new(),
             layer_regions: Default::default(),
             cursor_status: CursorImageStatus::default_named(),

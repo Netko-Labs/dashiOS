@@ -199,6 +199,7 @@ impl Dashi {
             } else {
                 entry.restore = None;
             }
+            entry.arranged = (remember || maximized).then_some((frame.loc, maximized));
         }
         self.apply_frame(&window, frame, maximized);
         Ok(())
@@ -208,10 +209,10 @@ impl Dashi {
     pub(crate) fn restore_window(&mut self, id: WindowId) -> Result<(), String> {
         let window = self.window_of(id)?;
         self.show_window(id);
-        let restore = self
-            .windows
-            .get_mut(id)
-            .and_then(|entry| entry.restore.take());
+        let restore = self.windows.get_mut(id).and_then(|entry| {
+            entry.arranged = None;
+            entry.restore.take()
+        });
         if let Some(frame) = restore {
             self.apply_frame(&window, frame, false);
         }

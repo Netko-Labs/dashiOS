@@ -48,6 +48,10 @@ pub(crate) struct Entry {
     pub parked_at: Option<Point<i32, Logical>>,
     /// The frame to go back to (`restore`) after a tile or zoom (`frame` with `remember`).
     pub restore: Option<Rectangle<i32, Logical>>,
+    /// Where the shell put its frame with `remember` (a tile) or `maximized`
+    /// (Fill, the bool), until it is framed or restored otherwise: its depth
+    /// is a tile's or a filled window's while its frame is still there.
+    pub arranged: Option<(Point<i32, Logical>, bool)>,
     /// How it is framed: by the client, by dashi-comp's title bar, or unified.
     pub decor: Decor,
     /// The app asked for the unified style (dashi-chrome-v1).
@@ -74,6 +78,8 @@ pub(crate) struct Entry {
     pub sheet_top: Option<i32>,
     /// When it last got the person's keyboard (a count, higher is later; 0 never).
     pub used: u64,
+    /// Its shadow and edge as last drawn (render/depth/).
+    pub depth: crate::render::depth::Cache,
 }
 
 pub(crate) struct Windows {
@@ -106,6 +112,7 @@ impl Windows {
             shown: Shown::Normal,
             parked_at: None,
             restore: None,
+            arranged: None,
             decor: Decor::None,
             unified: false,
             title_image: None,
@@ -118,6 +125,7 @@ impl Windows {
             sheet_of: None,
             sheet_top: None,
             used: 0,
+            depth: Default::default(),
         });
         id
     }

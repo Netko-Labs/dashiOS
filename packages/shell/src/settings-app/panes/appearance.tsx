@@ -2,7 +2,9 @@
  * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from, the same
  * switch as Control Center's Dark Mode tile, the accent color, and how round
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
- * file, so a pick shows on the open windows at once), and the pointer's size
+ * file, so a pick shows on the open windows at once), whether the focused
+ * window wears the accent ring (`appearance.highlightActiveWindow`,
+ * appearance/window-style.ts), and the pointer's size
  * (`appearance.pointerSize`, pointer.ts).
  */
 
@@ -137,6 +139,13 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         </Row>
         <Row stack label="Window corners" detail="How round windows are, app content included.">
           <CornerChoices settings={settings} />
+        </Row>
+        <Row label="Highlight the active window" detail="A ring in the accent color around the window you're typing in.">
+          <Switch
+            testID="appearance-highlight-window"
+            on={appearance.highlightActiveWindow === true}
+            onChange={(highlightActiveWindow) => settings.patch("appearance", { highlightActiveWindow })}
+          />
         </Row>
         <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
           <Choices

@@ -82,6 +82,10 @@ pub(crate) fn handle(
             }
             Ok(json!({}))
         }
+        "window-style" => {
+            state.window_style = render::depth::style::parse(params)?;
+            Ok(json!({}))
+        }
         "capture" => capture(state, connection, params),
         "agent-input" => done(state.agent_input(params)),
         // Secrets for agents (0.4.0): blanked captures, and whose presses were whose.
