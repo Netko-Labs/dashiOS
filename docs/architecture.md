@@ -52,6 +52,15 @@ greetd
   the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
   `--text-info`, `--scale`, and `--calendar`; `--file-selection`, `--forms`,
   `--color-selection`, and `--notification` exit 255 for now.
+- **dashi-share-picker** (`session/dashi-share-picker`,
+  `bin/dashi-share-picker.ts`) is xdg-desktop-portal-wlr's `chooser_cmd`
+  (`session/xdg-desktop-portal-wlr.conf`, installed as
+  `/etc/xdg/xdg-desktop-portal-wlr/Dashi`). When an app asks to share the
+  screen, the portal runs it; it asks the shell over
+  `$XDG_RUNTIME_DIR/dashi-share.sock`, the shell shows every screen and
+  window as a live picture (`src/share-picker/`), and it prints the choice
+  as the portal reads it (`Monitor: <output>`, `Window: <toplevel id>`), or
+  nothing when the person cancels.
 
 ## Channels
 
@@ -66,6 +75,7 @@ greetd
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
+| share picker ↔ shell | `$XDG_RUNTIME_DIR/dashi-share.sock`, one JSON line each way | `src/share-picker/protocol.ts` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
 
@@ -73,7 +83,8 @@ greetd
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-greeter` | `session/` |
+| `/etc/xdg/xdg-desktop-portal-wlr/Dashi` | `session/xdg-desktop-portal-wlr.conf` |
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |

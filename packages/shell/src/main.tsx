@@ -86,6 +86,7 @@ import { machineDesktop } from "./settings-app/machine-desktop.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
 import { startSetupAssistant } from "./setup/start.tsx";
+import { startSharePicker } from "./share-picker/index.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { runClosers } from "./shutdown.ts";
@@ -499,6 +500,17 @@ const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
 const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
 const stopApplets = serveApplets({ path: appletsSocketPath(), extras });
+// Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
+const stopSharePicker = compositor
+  ? startSharePicker({
+      compositor,
+      open: openOverlay,
+      screen: () => whereIsPerson(),
+      currentSpace: () => spaces?.controller.getSnapshot().current ?? 0,
+      appName: (window) => nameApp?.(window) ?? window.appId,
+      notifications: notifications.store,
+    })
+  : () => {};
 const tray = mayServeTray(process.env) ? startTray(extras) : Promise.resolve(null);
 
 // The menu bar's menus and Control Center (menus/, control-center/).
@@ -930,6 +942,7 @@ const quit = () => {
     ["menus", () => menus.close()],
     ["app menus", () => appMenus.close()],
     ["applets", stopApplets],
+    ["share picker", stopSharePicker],
     ["battery monitor", () => batteryMonitor.stop()],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],

@@ -75,6 +75,9 @@ install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
+# The screen-share picker, xdg-desktop-portal-wlr's chooser in a Dashi session (src/share-picker/).
+install -Dm0755 session/dashi-share-picker %{buildroot}%{_bindir}/dashi-share-picker
+install -Dm0644 session/xdg-desktop-portal-wlr.conf %{buildroot}%{_sysconfdir}/xdg/xdg-desktop-portal-wlr/Dashi
 # The Setup Assistant's optional software, run as root through pkexec.
 install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
 install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
@@ -89,6 +92,9 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
 %{_bindir}/dashi-dialog
+%{_bindir}/dashi-share-picker
+%dir %{_sysconfdir}/xdg/xdg-desktop-portal-wlr
+%config(noreplace) %{_sysconfdir}/xdg/xdg-desktop-portal-wlr/Dashi
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
 %{_datadir}/polkit-1/actions/dev.dashi.extras.policy
