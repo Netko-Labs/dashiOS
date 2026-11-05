@@ -1,0 +1,1587 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashi 0.4.0 · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    /* Proposals: a grid of cards, each a mockup over a caption. */
+    .props { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0 8px; }
+    .prop { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+    .prop.pick { border-color: var(--kombu); box-shadow: 0 0 0 1.5px var(--kombu), var(--shadow-sm); }
+    .prop .mk { height: 236px; position: relative; overflow: hidden; background: var(--wall); color: #1d1d1f; font-size: 11px; line-height: 1.3; }
+    .prop .mk.tall { height: 300px; }
+    .prop .mk.plain { background: var(--wash); color: var(--ink); }
+    .prop .cap { padding: 13px 16px 15px; flex: 1; }
+    .prop .cap h4 { margin: 0 0 4px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+    .prop .cap h4 .k { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); font-size: 12px; flex: none; }
+    .prop.pick .cap h4::after { content: "Recommended"; margin-left: auto; font-size: 11px; font-weight: 600; color: #fff; background: var(--kombu); padding: 1px 8px; border-radius: 99px; }
+    .prop .cap p { margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+    .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 9px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+    .pc li { margin: 0; color: var(--ink-muted); padding-left: 14px; position: relative; }
+    .pc li::before { position: absolute; left: 0; font-weight: 700; }
+    .pc .y::before { content: "+"; color: var(--kombu); }
+    .pc .n::before { content: "–"; color: var(--ume); }
+    .verdict { border-left: 3px solid var(--kombu); padding: 4px 0 4px 16px; margin: 18px 0 8px; }
+    .verdict b { color: var(--accent); }
+    .spec { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 20px; margin: 14px 0; font-size: 14px; }
+    .spec h5 { font-size: 12px; color: var(--ink-muted); margin: 12px 0 2px; font-weight: 600; }
+    .spec ul { margin: 4px 0 10px; }
+    .found { font: 12.5px/1.5 var(--mono); background: var(--code-bg); border-radius: var(--radius); padding: 12px 16px; white-space: pre; overflow-x: auto; }
+
+    /* The mockup kit: wallpapers, the menu bar, glass, rows, controls. */
+    :root { --wall: radial-gradient(90% 80% at 85% 100%, #e88a55aa 0%, transparent 60%), linear-gradient(135deg, #191433 0%, #3b2a7a 50%, #8a4fb8 100%); }
+    .kelp { --wall: radial-gradient(80% 70% at 15% 100%, #5fae95aa, transparent 60%), linear-gradient(160deg, #0f2620, #2f6f5a 70%, #4a9a7e); }
+    .broth { --wall: radial-gradient(70% 70% at 80% 10%, #f0c35ecc, transparent 60%), linear-gradient(200deg, #3a1d10, #8a4a1c 60%, #c8901c); }
+    .mb { position: absolute; top: 0; left: 0; right: 0; height: 20px; display: flex; align-items: center; gap: 10px; padding: 0 9px; background: #f5f5f7c7; border-bottom: 1px solid #0000002b; font-size: 10.5px; z-index: 3; }
+    .mb b { font-weight: 700; }
+    .mb .r { margin-left: auto; display: flex; gap: 9px; align-items: center; }
+    .mb .on { background: #1d1d1f1f; border-radius: 4px; padding: 1px 5px; }
+    .mb svg { width: 12px; height: 12px; display: block; }
+    .gl { position: absolute; background: #f6f6f8f2; border: 1px solid #0000002b; border-radius: 11px; box-shadow: 0 14px 28px -8px #0006; padding: 7px; color: #1d1d1f; z-index: 4; }
+    .gl.dk { background: #232325f2; border-color: #ffffff26; color: #f5f5f7; }
+    .gl .h { font-size: 9.5px; font-weight: 600; opacity: .55; padding: 5px 6px 2px; }
+    .gl .r { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; padding: 2px 6px; border-radius: 6px; }
+    .gl .r.sel { background: var(--kombu); color: #fff; }
+    .gl .r small { opacity: .6; font-size: 9.5px; }
+    .gl hr { border: 0; border-top: 1px solid #0000001f; margin: 4px 6px; }
+    .gl.dk hr { border-top-color: #ffffff1f; }
+    .gl .t { font-weight: 650; font-size: 12px; padding: 3px 6px; }
+    .sw { width: 24px; height: 14px; border-radius: 7px; background: var(--kombu); position: relative; flex: none; }
+    .sw::after { content: ""; position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+    .sw.off { background: #1d1d1f33; } .sw.off::after { right: auto; left: 2px; }
+    .sg { display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: #1d1d1f12; font-size: 10px; }
+    .sg span { flex: 1; text-align: center; padding: 3px 6px; border-radius: 5px; white-space: nowrap; }
+    .sg span.on { background: #fff; box-shadow: 0 1px 2px #0003; font-weight: 600; }
+    .gl.dk .sg { background: #ffffff14; } .gl.dk .sg span.on { background: #ffffff2e; }
+    .sl { height: 4px; border-radius: 2px; background: #1d1d1f22; position: relative; flex: 1; }
+    .sl i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--v); border-radius: 2px; background: var(--kombu); }
+    .sl i::after { content: ""; position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0005; }
+    .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .tl { border-radius: 9px; background: #1d1d1f0d; padding: 6px 7px; display: flex; gap: 6px; align-items: center; font-size: 10px; }
+    .tl b { display: block; font-size: 10.5px; }
+    .tl .o { width: 20px; height: 20px; border-radius: 50%; background: #1d1d1f1f; display: grid; place-items: center; flex: none; }
+    .tl.on .o { background: var(--kombu); color: #fff; }
+    .tl .o svg { width: 11px; height: 11px; }
+    .gl.dk .tl { background: #ffffff10; }
+    .ic { width: var(--s, 30px); height: var(--s, 30px); border-radius: calc(var(--s, 30px) * .24); background: linear-gradient(var(--c, #5fae95), color-mix(in srgb, var(--c, #5fae95), #000 35%)); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: calc(var(--s, 30px) * .42); flex: none; box-shadow: inset 0 0 0 1px #ffffff2e; }
+    .w { position: absolute; background: #fff; border-radius: 6px; box-shadow: 0 6px 14px -4px #0007; overflow: hidden; }
+    .w::before { content: ""; display: block; height: 9px; background: #EEEBE4; border-bottom: 1px solid #D9D5CC; }
+    .w[style*="display:grid"]::before { grid-column: 1 / -1; }
+    .w.d { background: #1e1e20; } .w.d::before { background: #2C2C2E; border-color: #ffffff14; }
+    .w .x { position: absolute; top: 2.5px; left: 4px; display: flex; gap: 2.5px; }
+    .w .x i { width: 4px; height: 4px; border-radius: 50%; background: #d0596f; } .w .x i + i { background: #e5b13f; } .w .x i + i + i { background: #4a9a7e; }
+    .w .ln { margin: 5px 6px 0; height: 3px; border-radius: 2px; background: #1d1d1f1a; }
+    .w.d .ln { background: #ffffff1f; }
+    .th { position: relative; border-radius: 7px; overflow: hidden; background: var(--wall); box-shadow: 0 4px 10px -3px #0007; flex: none; }
+    .th.cur { outline: 2px solid #fff; outline-offset: 1px; }
+    .th .w::before { height: 4px; } .th .w { border-radius: 3px; } .th .w .x { display: none; }
+    .lb { color: #fff; font-size: 10px; font-weight: 600; text-align: center; text-shadow: 0 1px 2px #0008; }
+    .dock { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px 5px; border-radius: 12px; background: #f5f5f799; border: 1px solid #ffffff73; z-index: 3; }
+    .dock .ic { --s: 22px; }
+    .osd { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #f5f5f7e6; border-radius: 14px; padding: 12px 16px; text-align: center; box-shadow: 0 14px 28px -8px #0006; z-index: 5; min-width: 120px; }
+    .osd svg { width: 30px; height: 30px; display: block; margin: 0 auto 6px; }
+    .osd b { display: block; font-size: 12px; }
+    .ghost { opacity: .55; outline: 1.5px dashed #fff; }
+    .ptr { position: absolute; width: 12px; height: 16px; z-index: 9; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Cpath d='M1 1l0 12.5 3.2-3 2.3 5 2-1-2.3-4.8 4.3-.2z' fill='%23111' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") no-repeat; }
+    .kbd { display: inline-block; font: 600 9.5px var(--font); padding: 1px 5px; border-radius: 4px; background: #ffffffd9; color: #1d1d1f; border: 1px solid #0000002b; }
+    .note { position: absolute; font-size: 9.5px; color: #fff; background: #0000008c; padding: 2px 7px; border-radius: 99px; z-index: 8; white-space: nowrap; }
+    .diagram { padding: 14px; display: grid; gap: 8px; align-content: center; height: 100%; font-size: 11px; color: var(--ink); }
+    .diagram .bx { border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 9px; background: var(--bg-raised); }
+    .diagram .bx b { display: block; font-size: 11.5px; }
+    .diagram .bx small { color: var(--ink-muted); }
+    .diagram .bx.acc { border-color: var(--kombu); background: var(--accent-wash); }
+    .diagram .ar { text-align: center; color: var(--ink-faint); font-size: 12px; line-height: 1; }
+    .diagram .row { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
+    .codemk { position: absolute; inset: 10px; margin: 0; font: 10.5px/1.5 var(--mono); background: #1d1d1f; color: #e6e6e8; border-radius: 9px; padding: 10px 12px; overflow: hidden; white-space: pre; }
+    .codemk .c { color: #8a8a8f; } .codemk .s { color: #9fd3bf; } .codemk .k { color: #f0a7b6; }
+    /* A Settings window, small. */
+    .stw { position: absolute; inset: 28px 16px 12px; background: #fff; border-radius: 9px; box-shadow: 0 14px 28px -8px #0007; display: grid; grid-template-columns: 92px 1fr; overflow: hidden; z-index: 2; }
+    .stw .sb { background: #f2f1ee; padding: 8px 5px; font-size: 10px; border-right: 1px solid #0000001a; }
+    .stw .sb div { padding: 3px 6px; border-radius: 5px; display: flex; gap: 5px; align-items: center; white-space: nowrap; }
+    .stw .sb div.on { background: var(--kombu); color: #fff; }
+    .stw .sb i { width: 10px; height: 10px; border-radius: 3px; background: var(--c, #999); flex: none; }
+    .stw .pn { padding: 9px 11px; overflow: hidden; }
+    .stw .pn .t { font-weight: 700; font-size: 12.5px; margin-bottom: 6px; }
+    .grp { background: #1d1d1f08; border: 1px solid #0000001a; border-radius: 7px; margin-bottom: 7px; }
+    .grp .r { display: flex; justify-content: space-between; align-items: center; padding: 3px 8px; min-height: 22px; font-size: 10.5px; gap: 8px; }
+    .grp .r + .r { border-top: 1px solid #0000000f; }
+    .grp .r small { display: block; opacity: .55; font-size: 9px; }
+    .btn { display: inline-block; font-size: 9.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; background: #1d1d1f14; white-space: nowrap; }
+    .btn.p { background: var(--kombu); color: #fff; }
+    .ntf { position: absolute; right: 8px; top: 26px; width: 210px; background: #f6f6f8f2; border: 1px solid #0000002b; border-radius: 11px; box-shadow: 0 14px 28px -8px #0006; padding: 8px 9px; display: flex; gap: 8px; z-index: 5; font-size: 10.5px; }
+    .ntf b { display: block; font-size: 11px; }
+    .ntf p { margin: 1px 0 5px; opacity: .75; }
+    .bar { height: 5px; border-radius: 3px; background: #1d1d1f1a; overflow: hidden; } .bar i { display: block; height: 100%; width: var(--v); background: var(--c, var(--kombu)); }
+    @media (max-width: 760px) { .props { grid-template-columns: 1fr; } .pc { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Release spec · proposals</div>
+    <h1>Dashi 0.4.0</h1>
+    <p class="lede">Laptops first: graphics switching, power that follows the machine, ASUS hardware done properly, and applets anyone can write and share. Then three things people touch every hour: Desktops, moving windows between them, and the app switcher.</p>
+
+    <div class="callout open"><div>◆</div><p>Each topic has at least five options with a mockup, what each costs, and one recommendation. Every recommendation was <span class="pill done">picked</span> on 2026-11-04. Mockups are drawn in HTML at a small scale; measures follow the <a href="design.html">design guidelines</a>, and the final ones come from <code>@dashi/ui</code>. Cards outlined in green are the recommendation.</p></div>
+
+    <h2>What 0.4.0 holds</h2>
+    <table>
+      <tr><th>Topic</th><th>For</th><th>In short</th><th></th></tr>
+      <tr><td><a href="#laptop-features-where-they-live">Laptop features</a></td><td>Laptops</td><td>Where laptop-only controls live, and how Dashi knows it is on a laptop.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#graphics-switching-with-cardwire">Graphics switching</a></td><td>Two-GPU laptops</td><td>cardwire's Integrated, Hybrid and Smart modes, the apps using the graphics card, and a lost card.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#asus-support-asusctl-and-the-kernel">ASUS support</a></td><td>ASUS laptops</td><td>asusctl, the kernel's asus-armoury attributes, hotkeys, a per-model database.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#power-management">Power management</a></td><td>Everyone, laptops most</td><td>Power modes that work out of the box, automatic rules, battery health.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#asus-power-states-in-sync">ASUS power states in sync</a></td><td>ASUS laptops</td><td>One Dashi mode drives the firmware profile, power limits, the graphics card and the fans; the hardware key drives Dashi.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#cpu-tuning-and-undervolt">CPU tuning and undervolt</a></td><td>Laptops</td><td>Curve Optimizer where the chip allows it, power limits where it doesn't, and a way back from a bad value.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#the-applet-sdk">Applet SDK</a></td><td>Developers</td><td>A package, a manifest, popovers drawn by Metal, permissions, a dev loop.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#the-applet-store">Applet Store</a></td><td>Everyone</td><td>A new mirin app that installs applets from a GitHub repository.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#the-asus-control-applet">ASUS Control</a></td><td>ASUS laptops</td><td>The first store applet: everything ROG Control Center does, and more.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#desktops-names-and-previews">Desktops: names and previews</a></td><td>Everyone</td><td>Rename a Desktop; see it, not just its name.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#moving-windows-between-desktops">Moving windows between Desktops</a></td><td>Everyone</td><td>Drag a window to another Desktop from anywhere, not only Mission Control.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#the-app-switcher">The app switcher</a></td><td>Everyone</td><td>Windows, not only apps; search; actions while ❖ is held.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#system-dialogs-a-dashi-portal">System dialogs</a></td><td>Everyone</td><td>Dashi's own portal for every dialog GTK's served (file picker, permissions, Open With, printing, keep-awake), and a screen-share picker. No GTK portal.</td><td><span class="pill done">picked</span></td></tr>
+      <tr><td><a href="#secrets-for-agents">Secrets for agents</a></td><td>Everyone, agents most</td><td>A vault agents can use but never read: sign-in, passkeys, codes, payments, tokens. Dashi's vault and 1Password both.</td><td><span class="pill done">picked</span></td></tr>
+    </table>
+
+    <h2>Found on the laptop</h2>
+    <p>The reference machine is the ROG Zephyrus G14 (GA403WR): Ryzen AI 9 HX 370 with a Radeon 890M, an RTX 5070 Ti Laptop GPU, a 2880 × 1800 OLED, kernel 7.3 (CachyOS). What its kernel already offers, read on 2026-11-04:</p>
+    <div class="found">/sys/class/firmware-attributes/asus-armoury/attributes/
+  ppt_pl1_spl     80   15..80 W     ppt_pl2_sppt   80   25..80 W     ppt_pl3_fppt  80  35..80 W
+  nv_tgp          95   80..95 W     nv_dynamic_boost 25  0..25 W     nv_temp_target 87  75..87 °C
+  nv_base_tgp     80                panel_overdrive  1  0;1          boot_sound     1   0;1
+  dgpu_disable     0   0;1          gpu_mux_mode     1  0;1          charge_mode    1   0;1;2
+/sys/class/platform-profile/
+  platform-profile-0  amd-pmf    balanced  [low-power balanced performance]
+  platform-profile-1  asus-wmi   balanced  [quiet balanced performance]
+/sys/class/hwmon/   asus (fan1 2300 rpm, fan2 2600 rpm)   asus_custom_fan_curve (pwm1, pwm2: 8 points each)
+/sys/class/leds/asus::kbd_backlight   0..3, kbd_rgb_mode   ·   USB 0b05:19b6 (the lid's Slash LEDs)
+BAT1 charge_control_end_threshold 100   ·   amd_pstate active, EPP balance_performance, boost 1</div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card"><div class="eyebrow" style="color:var(--ume)">Power modes are missing</div><p style="margin:0">Neither power-profiles-daemon nor tuned-ppd is installed, so Battery &amp; Power leaves its power mode row out (<code>system/profiles.ts</code>), and nothing drives the two platform profiles. The firmware sits at Balanced forever. 0.4.0 fixes the base before it adds anything.</p></div>
+      <div class="card"><div class="eyebrow" style="color:var(--ume)">The graphics card fell off the bus</div><p style="margin:0">Twice in two days (2026-11-03 23:42, 2026-11-04 16:59): pciehp "Link Down", then NVIDIA Xid 79 while Steam used the card. Steam hung in the kernel, Chromium apps (T3 Code, 1Password) froze probing the card, and shutdown hung on an unkillable process. The likely trigger is fine-grained runtime D3cold. 0.4.0's graphics work has to notice a lost card and survive it.</p></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Laptop features: where they live</h2>
+    <p>Some controls only make sense on a laptop: the battery's charge limit, the graphics card, fans, the lid. Dashi knows it is on one from the firmware's chassis type (<code>/sys/class/dmi/id/chassis_type</code> 8, 9, 10, 14, 31 or 32) together with a system battery, and leaves these controls out everywhere else. The question is where they go.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span>File</span><span>Edit</span><span class="r"><span class="on">82%</span><span>Tue 18:40</span></span></div>
+          <div class="gl" style="right:30px;top:24px;width:200px">
+            <div class="r"><b style="font-size:11.5px">Battery</b><small>82% · 4 h 10 min left</small></div>
+            <div class="r"><div class="sg" style="flex:1"><span>Low Power</span><span class="on">Balanced</span><span>High</span></div></div>
+            <hr>
+            <div class="h">Using the graphics card</div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#2a475e">S</span>Steam</span><span class="btn">Quit</span></div>
+            <hr>
+            <div class="r"><span>Charge to 80%</span><span class="sw"></span></div>
+            <div class="r"><span>Battery &amp; Power Settings…</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>The battery menu is the hub</h4><p>The menu bar's battery opens the everyday laptop controls: the power mode, apps keeping the graphics card awake, the charge limit.</p>
+          <ul class="pc"><li class="y">Where people already look</li><li class="y">One click, no window</li><li class="n">Room for three or four rows only</li><li class="n">Not on desktops, by design</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span class="on">◐</span><span>18:40</span></span></div>
+          <div class="gl" style="right:12px;top:24px;width:214px">
+            <div class="tiles">
+              <div class="tl on"><span class="o"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M9 1L3 9h4l-1 6 6-8H8z"/></svg></span><span><b>Balanced</b>Power mode</span></div>
+              <div class="tl"><span class="o"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="4" width="8" height="8" rx="1.5"/><path d="M6 1.5v2M10 1.5v2M6 12.5v2M10 12.5v2M1.5 6h2M1.5 10h2M12.5 6h2M12.5 10h2"/></svg></span><span><b>Integrated</b>Graphics</span></div>
+              <div class="tl on"><span class="o"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 7c0-3 1-5.5 3-5.5s2.5 3-1.5 5zM9 8c3 0 5.5 1 5.5 3s-3 2.5-5-1.5zM8 9c0 3-1 5.5-3 5.5S2.5 11.5 6.5 9.5zM7 8C4 8 1.5 7 1.5 5S4.5 2.5 6.5 6.5z"/></svg></span><span><b>Quiet</b>Fans</span></div>
+              <div class="tl"><span class="o"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 7h1M7 7h1M10 7h1M5 9.5h6"/></svg></span><span><b>Low</b>Keyboard light</span></div>
+            </div>
+            <div class="r" style="margin-top:6px"><small>Display</small></div>
+            <div class="r"><div class="sl"><i style="--v:62%"></i></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>A laptop row in Control Center</h4><p>Four tiles that appear only on laptops: power mode, graphics, fans, keyboard light. A click toggles, a long press opens the choices.</p>
+          <ul class="pc"><li class="y">Glanceable state</li><li class="y">Fits Control Center's model</li><li class="n">Vendor tiles (fans) need a provider</li><li class="n">Control Center grows by a row</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="stw"><div class="sb"><div><i style="--c:#4a9a7e"></i>Wi‑Fi</div><div><i style="--c:#6e56cf"></i>Displays</div><div class="on"><i style="--c:#fff"></i>Battery</div><div><i style="--c:#e5b13f"></i>Keyboard</div><div><i style="--c:#d0596f"></i>Graphics</div></div>
+            <div class="pn"><div class="t">Battery &amp; Power</div>
+              <div class="grp"><div class="r">Power mode<div class="sg" style="width:150px"><span>Low</span><span class="on">Balanced</span><span>High</span></div></div><div class="r"><span>Automatic<small>Follows the power source and the battery level.</small></span><span class="sw"></span></div></div>
+              <div class="grp"><div class="r"><span>Charge limit<small>Stops at 80% to keep the battery healthy.</small></span><div class="sg" style="width:96px"><span class="on">80%</span><span>100%</span></div></div><div class="r">Charge to full once<span class="btn">Charge Now</span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Spread into the panes people know</h4><p>Battery &amp; Power gains modes and the charge limit, Displays the panel overdrive, Keyboard the backlight, and a new Graphics pane the cards.</p>
+          <ul class="pc"><li class="y">Vendor-neutral, as a Mac is</li><li class="y">Search finds each setting where it belongs</li><li class="n">No single place to "tune the laptop"</li><li class="n">Each pane needs a laptop check</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="stw"><div class="sb"><div><i style="--c:#4a9a7e"></i>Wi‑Fi</div><div><i style="--c:#6e56cf"></i>Displays</div><div class="on"><i style="--c:#fff"></i>Laptop</div><div><i style="--c:#e5b13f"></i>Keyboard</div></div>
+            <div class="pn"><div class="t">Laptop</div>
+              <div class="grp"><div class="r">Power mode<span class="btn">Balanced ▾</span></div><div class="r">Graphics<span class="btn">Integrated ▾</span></div><div class="r">Fans<span class="btn">Quiet ▾</span></div></div>
+              <div class="grp"><div class="r">Charge limit<span class="btn">80% ▾</span></div><div class="r">Keyboard light off after<span class="btn">30 s ▾</span></div><div class="r">Panel overdrive<span class="sw off"></span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>One "Laptop" pane</h4><p>Everything laptop-only in one Settings pane, the way PC vendors' utilities gather it.</p>
+          <ul class="pc"><li class="y">One place to look</li><li class="y">Easy to leave out on a desktop</li><li class="n">Duplicates Battery and Displays</li><li class="n">"Laptop" is not a thing people look for</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="stw"><div class="sb"><div><i style="--c:#4a9a7e"></i>Wi‑Fi</div><div><i style="--c:#6e56cf"></i>Displays</div><div><i style="--c:#e5b13f"></i>Battery</div><div style="margin-top:6px;opacity:.55">Hardware</div><div class="on"><i style="--c:#fff"></i>ASUS</div></div>
+            <div class="pn"><div class="t">ASUS</div>
+              <div class="grp"><div class="r"><span>ROG Zephyrus G14<small>GA403WR · BIOS 311</small></span></div></div>
+              <div class="grp"><div class="r">Fan curves<span class="btn">Edit…</span></div><div class="r">Lid lights<span class="btn">Edit…</span></div><div class="r">Boot sound<span class="sw"></span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>A vendor pane</h4><p>A pane named after the maker shows when Dashi supports the machine's vendor tools (asusd, Lenovo's, Framework's).</p>
+          <ul class="pc"><li class="y">Room for everything a vendor has</li><li class="y">Clear what is vendor-specific</li><li class="n">Settings grows a plug-in point</li><li class="n">A store applet does this better</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, B and C together.</b> Settings stays vendor-neutral (C), the battery menu (A) and a Control Center row (B) hold what people change every day, and vendor depth (fan curves, lid lights) lives in the <a href="#the-asus-control-applet">ASUS Control</a> applet rather than in Settings (not E).</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Graphics switching with cardwire</h2>
+    <p><a href="https://opengamingcollective.github.io/cardwire/">cardwire</a> (Open Gaming Collective, supergfxctl's successor) blocks a GPU with eBPF LSM hooks instead of unbinding it: the card stays bound, apps that open it get <code>ENOENT</code>, and switching needs no logout. Modes are <b>Integrated</b> (the graphics card is hidden), <b>Hybrid</b> (both), <b>Smart</b> (hidden unless an app is allowed) and Manual. It has a D-Bus service (<code>org.opengamingcollective.cardwire</code>) with per-app policies, battery and external-display auto-switching, and it restarts <code>nvidia-powerd</code> when the mode changes. Dashi already routes apps to one GPU (<code>gpu-env.ts</code>); cardwire makes the other one sleep for real.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span class="on">◐</span><span>18:40</span></span></div>
+          <div class="gl" style="right:12px;top:24px;width:220px">
+            <div class="r"><b style="font-size:11.5px">Graphics</b><small>Graphics card asleep</small></div>
+            <div class="r"><div class="sg" style="flex:1"><span>Integrated</span><span class="on">Smart</span><span>Hybrid</span></div></div>
+            <div class="r"><small>Apps you allow use the graphics card; the rest use the built-in one.</small></div>
+            <hr><div class="h">Allowed</div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#2a475e">S</span>Steam</span><small>Running</small></div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#e86f86">B</span>Blender</span><small></small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A Graphics control in Control Center</h4><p>The tile's long press shows the three modes, what the card is doing, and the apps allowed to use it.</p>
+          <ul class="pc"><li class="y">Mode and state in one look</li><li class="y">Smart explained in a line</li><li class="n">Three modes to understand</li><li class="n">Manual left to the command line</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="mb"><b>Steam</b><span class="r"><span class="on">74%</span><span>18:40</span></span></div>
+          <div class="gl" style="right:30px;top:24px;width:206px">
+            <div class="r"><b style="font-size:11.5px">Battery</b><small>74% · 1 h 50 min left</small></div>
+            <hr>
+            <div class="h">Using the graphics card</div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#2a475e">S</span>Steam<small>· 38 W</small></span><span class="btn">Quit</span></div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#6e56cf">H</span>Helium<small>· video</small></span><span class="btn">Quit</span></div>
+            <hr>
+            <div class="r"><small>Quitting both lets the card sleep and adds about 2 h.</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>"Using the graphics card" in the battery menu</h4><p>Lists the processes holding the card open (cardwire's <code>--lsof</code>, else <code>/proc/*/fd</code> on the card's nodes), with their draw and a Quit button.</p>
+          <ul class="pc"><li class="y">Answers "why is my battery dying"</li><li class="y">Works in every mode</li><li class="n">Per-app draw is an estimate</li><li class="n">Lists only what it can see</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="dock" style="bottom:6px"><span class="ic" style="--c:#4a9a7e">F</span><span class="ic" style="--c:#2a475e">S</span><span class="ic" style="--c:#e86f86">B</span><span class="ic" style="--c:#6e56cf">T</span></div>
+          <div class="gl" style="left:96px;bottom:42px;width:190px">
+            <div class="r">Open</div><div class="r">Options ▸</div><hr>
+            <div class="h">Graphics</div>
+            <div class="r sel">✓ Automatic</div>
+            <div class="r">Built-in graphics</div>
+            <div class="r">Graphics card</div>
+            <hr><div class="r">Quit</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Per app, in the Dock's menu</h4><p>Each app's menu picks Automatic, Built-in or the graphics card; Dashi writes it as a cardwire Smart policy and the app's environment.</p>
+          <ul class="pc"><li class="y">The choice sits on the app</li><li class="y">Replaces "Launch using…" hacks</li><li class="n">Takes effect on the next launch</li><li class="n">Hidden for single-GPU machines</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Steam</b><span class="r"><span class="on">74%</span><span>18:40</span></span></div>
+          <div class="ntf"><span class="ic" style="--s:24px;--c:#3e8a72">⚡</span><div><b>Switching to built-in graphics</b><p>You're on battery. Steam is still using the graphics card; it switches when Steam quits.</p><span class="btn">Quit Steam</span> <span class="btn">Keep Hybrid</span></div></div>
+          <div class="note" style="left:12px;bottom:12px">Unplugged at 18:39</div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Automatic: follow the power source</h4><p>On battery, Integrated; plugged in or with an external screen on the card's ports, Hybrid. Apps already on the card are never pulled off; Dashi says so once.</p>
+          <ul class="pc"><li class="y">Nothing to learn</li><li class="y">cardwire has the switches built in</li><li class="n">Games launched on battery get the slow GPU</li><li class="n">Needs a clear "why" when it waits</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="stw"><div class="sb"><div><i style="--c:#6e56cf"></i>Displays</div><div class="on"><i style="--c:#fff"></i>Graphics</div><div><i style="--c:#e5b13f"></i>Battery</div></div>
+            <div class="pn"><div class="t">Graphics</div>
+              <div class="grp"><div class="r"><span>Radeon 890M<small>Built in · drives this screen</small></span><small>Active</small></div><div class="r"><span>GeForce RTX 5070 Ti<small>Graphics card · 0 W, asleep</small></span><small style="color:var(--kombu)">Asleep</small></div></div>
+              <div class="grp"><div class="r">Mode<div class="sg" style="width:150px"><span>Integrated</span><span class="on">Smart</span><span>Hybrid</span></div></div><div class="r"><span>Graphics card only<small>Fastest for games; restarts the computer.</small></span><span class="btn">Restart…</span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>A Graphics pane in Settings</h4><p>Both cards with what they drive and whether they sleep, the mode, and the MUX (<code>gpu_mux_mode</code>, "Graphics card only") behind a restart.</p>
+          <ul class="pc"><li class="y">The full picture, once</li><li class="y">Home for the MUX and Ultimate mode</li><li class="n">Rarely visited</li><li class="n">Card names are jargon; keep them small</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="mb"><b>Steam</b><span class="r"><span>74%</span><span>18:40</span></span></div>
+          <div class="ntf" style="width:226px"><span class="ic" style="--s:24px;--c:#d0596f">!</span><div><b>The graphics card stopped responding</b><p>Steam can't use it. Save your work and restart to bring it back. Apps on the built-in graphics keep working.</p><span class="btn p">Restart…</span> <span class="btn">Details</span></div></div>
+          <div class="gl" style="left:16px;bottom:14px;width:178px"><div class="t">Restarting</div><div class="r"><small>Steam isn't closing. Dashi will restart without it in 10 s.</small></div><div class="r"><div class="bar" style="flex:1;--v:60%"><i></i></div></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>When the card is lost</h4><p>Dashi watches the kernel log for Xid 79 and the PCIe link going down, says so plainly, stops starting apps on that card, and restarts without waiting on processes stuck in the driver.</p>
+          <ul class="pc"><li class="y">The 2026-11-04 failure, handled</li><li class="y">Shutdown no longer hangs</li><li class="n">Reading the journal needs care</li><li class="n">A stuck process can only be skipped</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: D by default, with A, B and F.</b> Automatic switching is the default, Control Center shows and overrides it, the battery menu names what keeps the card awake, and a lost card is handled (F) before anything else ships. C rides on cardwire's Smart policies later; E is the Settings home for the MUX.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li>Package cardwire (and its BPF LSM requirement: <code>lsm=…,bpf</code> on the kernel command line) as <code>dashi-graphics</code>; installed by finish-install on two-GPU machines. It conflicts with supergfxctl and switcherooctl.</li>
+        <li><code>src/graphics/</code> in the shell: the cardwire D-Bus client, the mode policy (power source, external screens), the holders list, and the lost-card watch (journal: <code>NVRM: Xid … 79</code>, pciehp "Link Down" on the card's port).</li>
+        <li>Lost card: <code>gpu-env.ts</code> stops offloading to it; the shutdown path (<code>shutdown.ts</code>) gives stuck processes 10 s, then asks logind to reboot regardless.</li>
+        <li>Separately, on this laptop: try disabling D3cold for the card (<code>d3cold_allowed=0</code>, a udev rule) and watch for drops; if they stop, ship it in <code>dashi-nvidia</code> for this model.</li>
+      </ul>
+      <h5>Open</h5>
+      <ul><li>cardwire says it is Wayland-only and early (breaking changes). Steam is an X11 app here: check that its block and allow work through Xwayland before shipping.</li><li>Does Integrated mode let the card reach D3cold, the state it failed to wake from?</li></ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>ASUS support: asusctl and the kernel</h2>
+    <p>Most of what ASUS's Armoury Crate does now has a kernel interface: <code>asus-armoury</code> firmware attributes (power limits, GPU power, panel overdrive, boot sound, MUX), the <code>platform_profile</code> class, the battery's <code>charge_control_end_threshold</code>, <code>asus_custom_fan_curve</code> in hwmon, and <code>asus::kbd_backlight</code>. What has no kernel driver is USB lighting: Aura RGB on some models, AniMe Matrix and the Slash bar on the lid. <a href="https://asus-linux.org/manual/asusctl-manual/">asusctl</a>'s daemon <code>asusd</code> covers all of it over D-Bus.</p>
+    <div class="props">
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:2"><div class="bx"><b>Shell</b><small>src/asus/</small></div><div class="bx"><b>ASUS Control</b><small>applet</small></div></div>
+          <div class="ar">↓ D-Bus (system bus)</div>
+          <div class="bx acc"><b>asusd</b><small>profiles · fans · Aura · Slash · AniMe · armoury · charge limit</small></div>
+          <div class="ar">↓</div>
+          <div class="row" style="--n:2"><div class="bx"><b>Kernel</b><small>sysfs</small></div><div class="bx"><b>USB HID</b><small>lighting</small></div></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>asusd for everything</h4><p>Ship asusctl from the COPR and talk only to <code>asusd</code>.</p>
+          <ul class="pc"><li class="y">One mature service</li><li class="y">Model quirks are theirs</li><li class="n">asusd also wants to own profiles and charge limits, as Dashi does</li><li class="n">Its D-Bus API changes between majors</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Shell</b><small>src/asus/ · src/power/</small></div>
+          <div class="ar">↓ polkit action dev.dashi.hardware</div>
+          <div class="bx acc"><b>dashi-hardware</b><small>a small root helper: validated writes to an allow-list of sysfs paths</small></div>
+          <div class="ar">↓</div>
+          <div class="bx"><b>Kernel</b><small>firmware-attributes · platform_profile · hwmon · leds · power_supply</small></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">B</span>The kernel only</h4><p>A small privileged helper writes the kernel's attributes. No asusd.</p>
+          <ul class="pc"><li class="y">Same code for Lenovo, Dell, HP (firmware-attributes is generic)</li><li class="y">Dashi owns its policy</li><li class="n">No lid lights, no RGB on USB models</li><li class="n">A root helper to keep safe</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Shell and ASUS Control</b></div>
+          <div class="row" style="--n:2"><div class="ar">↓ power, limits, fans, battery</div><div class="ar">↓ lighting only</div></div>
+          <div class="row" style="--n:2"><div class="bx acc"><b>dashi-hardware</b><small>kernel attributes, any vendor</small></div><div class="bx"><b>asusd</b><small>Aura · Slash · AniMe (profiles and charge limit left to Dashi)</small></div></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">C</span>Kernel first, asusd for lighting</h4><p>Everything with a kernel interface goes through Dashi's helper; asusd is installed on ASUS machines for USB lighting only, configured not to touch profiles or the charge limit.</p>
+          <ul class="pc"><li class="y">One owner per setting</li><li class="y">Works on other vendors' laptops</li><li class="n">Two paths to maintain</li><li class="n">asusd's own profile handling must be off</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span>18:40</span></span></div>
+          <div class="osd"><svg viewBox="0 0 16 16" fill="#1d1d1f"><path d="M8 7c0-3 1-5.5 3-5.5s2.5 3-1.5 5zM9 8c3 0 5.5 1 5.5 3s-3 2.5-5-1.5zM8 9c0 3-1 5.5-3 5.5S2.5 11.5 6.5 9.5zM7 8C4 8 1.5 7 1.5 5S4.5 2.5 6.5 6.5z"/><circle cx="8" cy="8" r="1.2"/></svg><b>Performance</b><small style="opacity:.6">Fn F5</small></div>
+          <div class="note" style="left:12px;bottom:12px"><span class="kbd">Fn F5</span> mode · <span class="kbd">Fn F4</span> light · <span class="kbd">ROG</span> ASUS Control</div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>The keys do what they say</h4><p>The laptop's own keys (Fn F5 for the mode, Fn F4 for lighting, the ROG key, mic mute) become Dashi actions with an on-screen display, in the style of volume and brightness.</p>
+          <ul class="pc"><li class="y">The hardware feels finished</li><li class="y">Uses the keymap already there</li><li class="n">Keycodes differ per model</li><li class="n">Some keys only reach asusd</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><pre class="codemk"><span class="c">// spin/dashi-hardware/models/asus/GA403WR.json</span>
+{
+  <span class="k">"match"</span>: { <span class="k">"board_name"</span>: <span class="s">"GA403WR"</span> },
+  <span class="k">"name"</span>: <span class="s">"ROG Zephyrus G14 (2025)"</span>,
+  <span class="k">"fans"</span>: [<span class="s">"cpu"</span>, <span class="s">"gpu"</span>],
+  <span class="k">"lighting"</span>: { <span class="k">"keyboard"</span>: <span class="s">"white-3"</span>, <span class="k">"lid"</span>: <span class="s">"slash"</span> },
+  <span class="k">"screen"</span>: { <span class="k">"overdrive"</span>: true, <span class="k">"rates"</span>: [60, 120] },
+  <span class="k">"graphics"</span>: { <span class="k">"mux"</span>: true, <span class="k">"d3cold"</span>: <span class="s">"off"</span> },
+  <span class="k">"undervolt"</span>: { <span class="k">"cpu"</span>: [-40, 0], <span class="k">"perCore"</span>: true, <span class="k">"graphics"</span>: false },
+  <span class="k">"keys"</span>: { <span class="k">"KEY_PROG1"</span>: <span class="s">"asus-control"</span> }
+}</pre></div>
+        <div class="cap"><h4><span class="k">E</span>A per-model database</h4><p>One JSON file per model says what it has and needs (fans, lighting, quirks such as D3cold), matched on DMI. People add their model by pull request; what the kernel reports always wins.</p>
+          <ul class="pc"><li class="y">Quirks written down once</li><li class="y">The UI shows only what exists</li><li class="n">Needs contributors per model</li><li class="n">Can drift from the firmware</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: C, D and E.</b> A vendor-neutral helper for kernel attributes, asusd only for lighting, the hotkeys wired to Dashi, and a model database for what the kernel can't say.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Power management</h2>
+    <p>Dashi's power modes go through <code>powerprofilesctl</code> (<code>system/profiles.ts</code>), and the laptop has no daemon behind it, so there are no modes at all today. Fedora's default is <b>tuned-ppd</b>: tuned, with power-profiles-daemon's D-Bus API on top. The first job is to require it; the rest is what Dashi does with three modes.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Shell</b><small>src/power/modes · Battery &amp; Power · battery menu</small></div>
+          <div class="ar">↓ net.hadess.PowerProfiles (D-Bus), not the CLI</div>
+          <div class="bx acc"><b>tuned-ppd</b><small>power-saver · balanced · performance</small></div>
+          <div class="ar">↓ tuned profiles</div>
+          <div class="row" style="--n:3"><div class="bx"><b>platform_profile</b><small>amd-pmf, asus-wmi</small></div><div class="bx"><b>amd_pstate EPP</b><small>per CPU</small></div><div class="bx"><b>PCIe, USB, audio</b><small>runtime PM</small></div></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>Fix the base: require tuned-ppd</h4><p><code>dashi-release</code> requires tuned-ppd; the shell talks to its D-Bus API and watches it, instead of running the CLI.</p>
+          <ul class="pc"><li class="y">Modes appear on every laptop</li><li class="y">Fedora's own default</li><li class="n">tuned's profiles need a Dashi tune</li><li class="n">Conflicts with asusd's profile handling</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Notes</b><span class="r"><span class="on">64%</span><span>18:40</span></span></div>
+          <div class="gl" style="right:30px;top:24px;width:200px">
+            <div class="r"><b style="font-size:11.5px">Battery</b><small>64% · on battery</small></div>
+            <hr><div class="h">Power mode</div>
+            <div class="r sel">✓ Automatic <small style="opacity:.85">Balanced now</small></div>
+            <div class="r">Low Power</div>
+            <div class="r">Balanced</div>
+            <div class="r">High Performance</div>
+            <hr><div class="r"><small>Automatic picks Balanced on battery, High Performance plugged in, Low Power below 20%.</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Automatic as the default</h4><p>A fourth choice, Automatic, picks the mode from the power source and the battery level, and says which one it picked.</p>
+          <ul class="pc"><li class="y">Right for most people, no setup</li><li class="y">A manual pick still wins</li><li class="n">The rules are Dashi's, not the person's</li><li class="n">"Automatic" hides what runs</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="stw"><div class="sb"><div class="on"><i style="--c:#fff"></i>Battery</div><div><i style="--c:#6e56cf"></i>Displays</div></div>
+            <div class="pn"><div class="t">Power mode rules</div>
+              <div class="grp"><div class="r">Plugged in<span class="btn">High Performance ▾</span></div><div class="r">On battery<span class="btn">Balanced ▾</span></div><div class="r">Battery below 20%<span class="btn">Low Power ▾</span></div><div class="r">While a game is open<span class="btn">High Performance ▾</span></div><div class="r">Lid closed, external screen<span class="btn">Balanced ▾</span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Rules people edit</h4><p>Automatic's rules are visible and editable, one row per situation, read top to bottom.</p>
+          <ul class="pc"><li class="y">No surprises</li><li class="y">Covers games and docks</li><li class="n">A settings page to maintain</li><li class="n">Rules can contradict each other</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="mb"><b>Steam</b><span class="r"><span class="on" style="display:flex;gap:3px;align-items:center"><svg viewBox="0 0 16 16" fill="#1d1d1f"><path d="M9 1L3 9h4l-1 6 6-8H8z"/></svg>98%</span><span>18:40</span></span></div>
+          <div class="w d" style="left:20px;top:34px;width:240px;height:150px"><span class="x"><i></i><i></i><i></i></span><div style="color:#fff;font-size:20px;font-weight:800;padding:40px 0;text-align:center;opacity:.8">A game</div></div>
+          <div class="gl" style="right:12px;top:24px;width:180px"><div class="r"><small>High Performance while "A game" is open. Back to Balanced when it closes.</small></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Games raise the mode</h4><p>A game (Steam's <code>SteamAppId</code>, GameMode's requests, a full-screen window on the graphics card) raises the mode while it runs; the bolt in the menu bar says so.</p>
+          <ul class="pc"><li class="y">No toggling before playing</li><li class="y">GameMode-aware games ask on their own</li><li class="n">Detection can miss</li><li class="n">On battery it drains faster</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="stw"><div class="sb"><div class="on"><i style="--c:#fff"></i>Battery</div><div><i style="--c:#6e56cf"></i>Displays</div></div>
+            <div class="pn"><div class="t">Battery health</div>
+              <div class="grp"><div class="r"><span>Charge limit<small>Keeping it below full slows wear.</small></span><div class="sg" style="width:110px"><span>60%</span><span class="on">80%</span><span>100%</span></div></div><div class="r"><span>Charge to full once<small>For a trip: back to 80% after.</small></span><span class="btn">Charge Now</span></div><div class="r"><span>Full by 8:00 on weekdays</span><span class="sw off"></span></div></div>
+              <div class="grp"><div class="r"><span>Health<small>94% of its design capacity · 212 cycles</small></span></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Battery health</h4><p>The charge limit (<code>charge_control_end_threshold</code>, any vendor that has it), a one-time full charge, and an optional schedule.</p>
+          <ul class="pc"><li class="y">Real value for a laptop always plugged in</li><li class="y">Generic kernel interface</li><li class="n">Some firmware forgets it on reboot; Dashi rewrites it at boot</li><li class="n">Schedules need the machine awake</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <svg viewBox="0 0 400 236" style="width:100%;height:100%">
+            <text x="16" y="24" font-size="12" font-weight="700" fill="currentColor">Last 24 hours</text>
+            <rect x="16" y="40" width="90" height="140" fill="#3e8a7222"/><rect x="106" y="40" width="70" height="140" fill="#d0596f22"/><rect x="176" y="40" width="130" height="140" fill="#3e8a7222"/><rect x="306" y="40" width="78" height="140" fill="#e5b13f2a"/>
+            <polyline points="16,60 60,80 106,96 140,150 176,170 200,120 240,70 306,60 340,90 384,120" fill="none" stroke="#3e8a72" stroke-width="2.5" stroke-linejoin="round"/>
+            <line x1="16" y1="180" x2="384" y2="180" stroke="currentColor" stroke-opacity=".2"/>
+            <g font-size="10" fill="currentColor" fill-opacity=".6"><text x="20" y="198">Balanced</text><text x="110" y="198">High Performance</text><text x="180" y="198">Balanced</text><text x="310" y="198">Low Power</text><text x="16" y="220">00:00</text><text x="190" y="220">12:00</text><text x="350" y="220">Now</text></g>
+          </svg>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Modes on the battery chart</h4><p>Battery &amp; Power's chart (<code>battery/chart.ts</code>) shades the time spent in each mode, and Insights says what a mode costs: "High Performance used 31% in 2 hours".</p>
+          <ul class="pc"><li class="y">Builds on the history already kept</li><li class="y">Teaches what modes are worth</li><li class="n">Needs mode changes in the history</li><li class="n">More to read on the pane</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A first, then B and E.</b> Require tuned-ppd so modes exist, make Automatic the default with its rules written in one sentence, and add battery health. C and F follow once Automatic has been lived with; D comes with the graphics work.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>ASUS power states in sync</h2>
+    <p>On the G14 one choice is spread over many knobs: two platform profiles (amd-pmf and asus-wmi, which the kernel's <code>platform_profile</code> class keeps together), the CPU's EPP, its power limits (PPT), the graphics card's power (TGP, dynamic boost, temperature target) and the fan curves. Today they drift apart: the firmware is at Balanced, the Fn F5 key changes it behind Dashi's back, and Dashi doesn't know.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk plain" style="padding:12px">
+          <table style="margin:0;font-size:10.5px">
+            <tr><th></th><th>Low Power</th><th>Balanced</th><th>High Performance</th></tr>
+            <tr><td>Firmware profile</td><td>quiet</td><td>balanced</td><td>performance</td></tr>
+            <tr><td>CPU EPP</td><td>power</td><td>balance_power</td><td>performance</td></tr>
+            <tr><td>CPU power (PPT)</td><td>25 W</td><td>45 W</td><td>80 W</td></tr>
+            <tr><td>Graphics card</td><td>80 W, no boost</td><td>80 W +15</td><td>95 W +25</td></tr>
+            <tr><td>Fans</td><td>firmware</td><td>firmware</td><td>firmware</td></tr>
+            <tr><td>Screen</td><td>60 Hz</td><td>120 Hz</td><td>120 Hz</td></tr>
+          </table>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>One mode, everything follows</h4><p>Each Dashi mode is a recipe over the knobs the machine has (from the kernel and the model database). Setting the mode applies the recipe in one step.</p>
+          <ul class="pc"><li class="y">One choice, coherent state</li><li class="y">Defaults chosen once, per model</li><li class="n">tuned and Dashi both write EPP; pick one</li><li class="n">Defaults need measuring</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="gl" style="left:16px;right:16px;top:14px;bottom:14px">
+            <div class="t">Balanced <small style="opacity:.55;font-weight:500">· edit recipe</small></div>
+            <div class="r"><span style="width:96px">CPU power</span><div class="sl"><i style="--v:45%"></i></div><small style="width:34px;text-align:right">45 W</small></div>
+            <div class="r"><span style="width:96px">Graphics power</span><div class="sl"><i style="--v:20%"></i></div><small style="width:34px;text-align:right">80 W</small></div>
+            <div class="r"><span style="width:96px">Graphics boost</span><div class="sl"><i style="--v:60%"></i></div><small style="width:34px;text-align:right">15 W</small></div>
+            <div class="r"><span style="width:96px">Temperature limit</span><div class="sl"><i style="--v:80%"></i></div><small style="width:34px;text-align:right">85 °C</small></div>
+            <div class="r"><span>Fans</span><div class="sg" style="width:150px"><span class="on">Firmware</span><span>Custom curve…</span></div></div>
+            <div class="r"><span>Screen</span><div class="sg" style="width:150px"><span>60 Hz</span><span class="on">120 Hz</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Recipes people edit</h4><p>Each mode's recipe opens as sliders inside each attribute's real range (<code>min_value</code> to <code>max_value</code>), with Restore Defaults.</p>
+          <ul class="pc"><li class="y">G-Helper-level control</li><li class="y">Ranges come from the firmware</li><li class="n">Easy to make a mode pointless</li><li class="n">Belongs in an advanced place</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:3"><div class="bx"><b>Fn F5</b><small>firmware cycles</small></div><div class="bx"><b>Menu bar</b><small>a person picks</small></div><div class="bx"><b>Automatic</b><small>a rule fires</small></div></div>
+          <div class="ar">↓ all three land in one place ↓</div>
+          <div class="bx acc"><b>src/power/modes</b><small>the one mode · applies the recipe · OSD · menu bar · Control Center</small></div>
+          <div class="ar">↑ watches platform_profile (poll on sysfs) and tuned-ppd's ActiveProfile</div>
+          <div class="bx"><b>Kernel and tuned-ppd</b></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">C</span>Both ways</h4><p>A change from the firmware key or another tool shows up in Dashi (it polls <code>platform_profile</code>, which notifies on change) and pulls the rest of the recipe along.</p>
+          <ul class="pc"><li class="y">The key and the menu never disagree</li><li class="y">Automatic yields to a key press</li><li class="n">Fn F5 has three steps; keep modes at three</li><li class="n">Loops to guard against</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="gl" style="left:16px;right:16px;top:14px;bottom:14px">
+            <div class="t">High Performance</div>
+            <div class="r"><span></span><div style="display:flex;gap:28px;font-size:9.5px;opacity:.6;margin-right:4px"><span>Plugged in</span><span>On battery</span></div></div>
+            <div class="r">CPU power<div style="display:flex;gap:20px"><span class="btn">80 W</span><span class="btn">45 W</span></div></div>
+            <div class="r">Graphics card<div style="display:flex;gap:20px"><span class="btn">95 W</span><span class="btn">80 W</span></div></div>
+            <div class="r">Screen<div style="display:flex;gap:20px"><span class="btn">120 Hz</span><span class="btn">60 Hz</span></div></div>
+            <div class="r">Keyboard light<div style="display:flex;gap:20px"><span class="btn">Always</span><span class="btn">30 s</span></div></div>
+            <hr><div class="r"><small>Unplugging keeps High Performance but uses the right column.</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Plugged in and on battery</h4><p>Each mode has two columns, so High Performance on battery doesn't pull 80 W from it. Switching the cable switches columns, not modes.</p>
+          <ul class="pc"><li class="y">What G-Helper users expect</li><li class="y">Safe battery behavior by default</li><li class="n">Six recipes instead of three</li><li class="n">More to explain</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Meet</b><span class="r"><span class="on">● Camera</span><span>18:40</span></span></div>
+          <div class="ntf"><span class="ic" style="--s:24px;--c:#3e8a72">~</span><div><b>Quiet while you're on a call</b><p>Fans held low and the graphics card asleep while the camera is on.</p><span class="btn">Not Now</span></div></div>
+          <div class="gl" style="left:14px;bottom:14px;width:170px"><div class="h">Quiet when</div><div class="r">The camera is on<span class="sw"></span></div><div class="r">It's after 22:00<span class="sw off"></span></div><div class="r">The lid is closed<span class="sw off"></span></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Quiet when it matters</h4><p>Situations that hold the fans low: a call (the camera or microphone in use, from PipeWire), late hours, a closed lid on a dock.</p>
+          <ul class="pc"><li class="y">Solves the fan-noise-on-a-call problem</li><li class="y">Uses signals Dashi already has</li><li class="n">Can throttle a build mid-call</li><li class="n">One more automatic thing</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, C and D.</b> One mode with a recipe per model, kept in sync both ways, with plugged-in and battery columns. Editing recipes (B) lives in ASUS Control's advanced view; E is a later Automatic rule.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li><code>src/power/modes/</code>: the mode store, the recipe per model (from the model database, else tuned's defaults), the appliers (tuned-ppd, firmware attributes through <code>dashi-hardware</code>, screen rate through the compositor), and the watchers.</li>
+        <li>Tuned: a Dashi profile set (<code>dashi-powersave</code>, <code>dashi-balanced</code>, <code>dashi-performance</code>) that leaves EPP and the platform profile to the recipe, so one writer owns each knob.</li>
+        <li>asusd, if installed for lighting, runs with its profile and charge-limit handling off.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>CPU tuning and undervolt</h2>
+    <p>On AMD, undervolting means the Curve Optimizer: an offset that the SMU firmware applies to every core's voltage curve. It does work on the HX 370 (Strix Point). Earlier reports of it being "refused" came from tools passing −2 as a 32-bit <code>0xFFFFFFFE</code>, while the SMU expects a 20-bit value (<code>0x100000 − 2</code>). G-Helper encodes the value this way on Windows, and <a href="https://github.com/D0minatorX/rogcontrol/issues/2">ROG Control's fix</a> was tested on this model and BIOS.</p>
+    <div class="found">Tested on this laptop, 2026-11-04: GA403WR, BIOS 312, RyzenAdj 0.19.0 over PCI config space, no ryzen_smu
+  --set-coall=-5         rejected by the SMU (the 32-bit form)
+  --set-coall=1048571    accepted (0x100000 − 5)
+stress-ng, 24 threads, matrixprod --verify, 60 s, plugged in, Balanced:
+  offset  0        91.9 °C   60.1 W   3429 MHz
+  offset −5        92.1 °C   59.0 W   3368 MHz   13 036 ops/s   0 failures
+  offset  0 again  92.2 °C   57.2 W   3344 MHz   13 060 ops/s
+Set back to 0 afterwards (the SMU forgets the offset at reboot anyway).</div>
+    <p>At −5 the difference was within run-to-run noise: the chip sat at its 92 °C limit in every run. G-Helper's range is −40 to 0, set for all cores or per core (MP1 <code>0x4C</code> and <code>0x4B</code>). Strix Point has no graphics offset. The SMU forgets the offset at reboot. Sending it needs PCI config writes, which kernel lockdown blocks, so it doesn't work with Secure Boot on.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="gl" style="left:16px;right:16px;top:16px">
+            <div class="t">Undervolt</div>
+            <div class="r"><span style="width:84px">All cores</span><div class="sl"><i style="--v:55%"></i></div><small style="width:34px;text-align:right">−15</small></div>
+            <div class="r"><span>Set each core<small style="display:block">For the cores that tolerate more.</small></span><span class="sw"></span></div>
+            <div class="r"><small>Lower runs cooler at the same speed. Too low and the computer can freeze; Dashi undoes it if it does.</small></div>
+            <div class="r"><span></span><span class="btn p">Try for 2 Minutes</span></div>
+          </div>
+          <div class="note" style="left:16px;bottom:12px">With Secure Boot on: "Turn off Secure Boot to undervolt."</div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Curve Optimizer</h4><p>An all-core offset, or one per core, sent by <code>dashi-hardware</code> straight to the SMU mailbox, encoded as the SMU expects. The slider shows only after a zero write is accepted. Because the SMU forgets it, the offset is applied again at login and after waking, but only after a clean boot.</p>
+          <ul class="pc"><li class="y">Works on this laptop (tested)</li><li class="y">No extra package or kernel module</li><li class="n">Not with Secure Boot on</li><li class="n">Gains need measuring per chip</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="gl" style="left:16px;right:16px;top:16px">
+            <div class="t">Cooler and quieter</div>
+            <div class="r"><span style="width:84px">Sustained</span><div class="sl"><i style="--v:42%"></i></div><small style="width:34px;text-align:right">45 W</small></div>
+            <div class="r"><span style="width:84px">Short bursts</span><div class="sl"><i style="--v:58%"></i></div><small style="width:34px;text-align:right">55 W</small></div>
+            <div class="r"><span style="width:84px">Peak</span><div class="sl"><i style="--v:70%"></i></div><small style="width:34px;text-align:right">65 W</small></div>
+            <hr>
+            <div class="r"><small>About 8 °C cooler under load, 6% slower in long tasks. Ranges from the firmware: 15–80 W.</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Power limits</h4><p>The three PPT limits from <code>asus-armoury</code> (SPL, SPPT, FPPT), named for what they do. The undervolt people want is mostly "less heat"; this gets most of it on any chip.</p>
+          <ul class="pc"><li class="y">Works on this laptop</li><li class="y">Safe: the firmware enforces the range</li><li class="n">Slower under long loads</li><li class="n">Estimates need measuring</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:16px;right:16px;top:16px">
+            <div class="t">Processor</div>
+            <div class="r"><span>Boost clock<small style="display:block">Faster bursts, more heat.</small></span><div class="sg" style="width:150px"><span class="on">Always</span><span>Plugged in</span><span>Off</span></div></div>
+            <div class="r"><span>Prefer</span><div class="sg" style="width:150px"><span>Battery</span><span class="on">Balance</span><span>Speed</span></div></div>
+            <div class="r"><span>Top speed on battery</span><div class="sl" style="max-width:110px"><i style="--v:70%"></i></div><small>3.9 GHz</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Boost and preference</h4><p>cpufreq <code>boost</code>, amd_pstate's EPP, and a frequency cap on battery, all generic, for AMD and Intel alike.</p>
+          <ul class="pc"><li class="y">Every laptop</li><li class="y">Boost off is the biggest heat cut</li><li class="n">Overlaps the power mode recipe</li><li class="n">EPP has one writer: the recipe</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:220px;text-align:center;padding:12px">
+            <div class="t" style="font-size:12.5px">Keep these settings?</div>
+            <div class="r" style="justify-content:center"><small>They go back in 18 seconds unless you keep them.</small></div>
+            <div class="r" style="justify-content:center;gap:6px;margin-top:6px"><span class="btn">Revert</span><span class="btn p">Keep</span></div>
+          </div>
+          <div class="note" style="left:12px;bottom:12px">If the computer freezes, the next start uses the defaults</div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A way back</h4><p>Anything that can freeze the machine applies with a countdown, as Displays does. Values are written at login only after a clean boot; two failed boots in a row reset them.</p>
+          <ul class="pc"><li class="y">No bricked sessions</li><li class="y">Same pattern as display changes</li><li class="n">Boot counting needs a system unit</li><li class="n">Slower to experiment</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="gl" style="left:16px;right:16px;top:16px">
+            <div class="t">Graphics card</div>
+            <div class="r"><span style="width:94px">Power</span><div class="sl"><i style="--v:100%"></i></div><small style="width:34px;text-align:right">95 W</small></div>
+            <div class="r"><span style="width:94px">Dynamic boost</span><div class="sl"><i style="--v:100%"></i></div><small style="width:34px;text-align:right">25 W</small></div>
+            <div class="r"><span style="width:94px">Temperature limit</span><div class="sl"><i style="--v:100%"></i></div><small style="width:34px;text-align:right">87 °C</small></div>
+            <div class="r"><span style="width:94px">Clock offset</span><div class="sl"><i style="--v:50%"></i></div><small style="width:34px;text-align:right">0 MHz</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Graphics card limits</h4><p><code>nv_tgp</code>, <code>nv_dynamic_boost</code> and <code>nv_temp_target</code> from the firmware; clock offsets through NVML, later.</p>
+          <ul class="pc"><li class="y">The firmware ones work today</li><li class="y">A big lever for heat in games</li><li class="n">NVML needs the card awake</li><li class="n">Clock offsets can crash games</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: all five.</b> All of it goes in ASUS Control's advanced view; C also goes in Settings, for every laptop. The Curve Optimizer is sent by Dashi itself, not by RyzenAdj or ryzen_smu. It ships behind a capability check and the countdown, and the boot guard (D) covers it.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The applet SDK</h2>
+    <p>Today an applet is a process on <code>$XDG_RUNTIME_DIR/dashi-applets.sock</code> that sends a glyph, a label and a one-level menu (<a href="applets.md">applets.md</a>), with a small client in the app kit (<code>apps/kit/applet.ts</code>). That's enough for a timer, not for ASUS Control. The SDK turns it into something people can build, share and trust.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk plain tall"><pre class="codemk"><span class="c">// applet.json</span>
+{
+  <span class="k">"id"</span>: <span class="s">"dev.netko.asus-control"</span>,
+  <span class="k">"name"</span>: <span class="s">"ASUS Control"</span>,
+  <span class="k">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="k">"dashi"</span>: <span class="s">"&gt;=0.4"</span>,
+  <span class="k">"entry"</span>: <span class="s">"src/main.tsx"</span>,
+  <span class="k">"when"</span>: { <span class="k">"vendor"</span>: <span class="s">"ASUSTeK COMPUTER INC."</span> },
+  <span class="k">"permissions"</span>: [
+    <span class="s">"hardware.power"</span>, <span class="s">"hardware.lighting"</span>,
+    <span class="s">"dbus.system:xyz.ljones.Asusd"</span>, <span class="s">"notifications"</span>
+  ]
+}
+
+<span class="c">// src/main.tsx</span>
+<span class="k">import</span> { defineApplet } <span class="k">from</span> <span class="s">"@dashi/applet"</span>;
+<span class="k">export default</span> defineApplet({
+  glyph: FAN, label: (s) =&gt; s.mode,
+  menu: (s) =&gt; [...], popover: Panel,
+});</pre></div>
+        <div class="cap"><h4><span class="k">A</span>A package and a manifest</h4><p><code>@dashi/applet</code> wraps the socket (reconnects, whole-state sends, typed messages); <code>applet.json</code> says who the applet is, when it applies, and what it may touch.</p>
+          <ul class="pc"><li class="y">Same protocol, nicer to use</li><li class="y">The manifest is what the store and sandbox read</li><li class="n">A package to version and keep stable</li><li class="n">Bun-only for the typed side</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk tall kelp">
+          <div class="mb"><b>Files</b><span class="r"><span class="on" style="display:flex;gap:3px;align-items:center"><svg viewBox="0 0 16 16" fill="#1d1d1f"><path d="M8 7c0-3 1-5.5 3-5.5s2.5 3-1.5 5zM9 8c3 0 5.5 1 5.5 3s-3 2.5-5-1.5zM8 9c0 3-1 5.5-3 5.5S2.5 11.5 6.5 9.5zM7 8C4 8 1.5 7 1.5 5S4.5 2.5 6.5 6.5z"/></svg>Quiet</span><span>82%</span><span>18:40</span></span></div>
+          <div class="gl" style="right:60px;top:24px;width:230px">
+            <div class="t">Weather <small style="opacity:.5;font-weight:500">· an applet's own popover</small></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:4px 6px"><span style="font-size:30px;font-weight:300">21°</span><span><b style="font-size:11px">Clear</b><br><small style="opacity:.6">Kyoto · H 25° L 16°</small></span></div>
+            <div style="display:flex;justify-content:space-between;padding:4px 6px;font-size:9.5px;text-align:center"><span>Now<br><b>21°</b></span><span>19:00<br><b>20°</b></span><span>20:00<br><b>19°</b></span><span>21:00<br><b>18°</b></span><span>22:00<br><b>17°</b></span></div>
+            <hr><div class="r"><span>Use Celsius</span><span class="sw"></span></div>
+          </div>
+          <div class="note" style="left:12px;bottom:12px">Drawn by the applet's own Metal host, placed by the shell</div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Popovers drawn with Metal</h4><p>An applet can open a popover under its item: a React tree with <code>@dashi/ui</code> and metal-ui components, in the applet's own process and Metal host. The shell only places it and closes it.</p>
+          <ul class="pc"><li class="y">Real UI, not just menus</li><li class="y">Third-party code never runs in the shell</li><li class="n">A Metal host per open popover (warm-host helps)</li><li class="n">New protocol: popover, placement, dismiss</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span class="on">◐</span><span>18:40</span></span></div>
+          <div class="gl" style="right:12px;top:24px;width:214px">
+            <div class="tiles"><div class="tl on"><span class="o">⌁</span><span><b>Wi‑Fi</b>Home</span></div><div class="tl on"><span class="o">ᛒ</span><span><b>Bluetooth</b>On</span></div></div>
+            <div class="h" style="margin-top:4px">From applets</div>
+            <div class="tiles"><div class="tl on"><span class="o">V</span><span><b>VPN</b>Connected</span></div><div class="tl"><span class="o">☕</span><span><b>Stay Awake</b>Off</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Tiles in Control Center</h4><p>An applet may offer a Control Center tile (title, state, one action) instead of, or besides, a menu bar item.</p>
+          <ul class="pc"><li class="y">Keeps the menu bar short</li><li class="y">Small, declarative surface</li><li class="n">Control Center needs an order and a limit</li><li class="n">Later: one surface at a time</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:250px;padding:12px">
+            <div style="display:flex;gap:8px;align-items:center"><span class="ic" style="--c:#3e8a72">A</span><div><b style="font-size:12px">Add "ASUS Control"?</b><br><small style="opacity:.6">by Netko Labs · reviewed</small></div></div>
+            <div class="h" style="margin-top:6px">It will be able to</div>
+            <div class="r">Change power and fan settings</div>
+            <div class="r">Change keyboard and lid lights</div>
+            <div class="r">Show notifications</div>
+            <div class="r"><small>It can't read your files or use the network.</small></div>
+            <div class="r" style="justify-content:flex-end;gap:6px"><span class="btn">Cancel</span><span class="btn p">Add Applet</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Permissions people can read</h4><p>Applets run in bubblewrap (already required by <code>dashi</code>) with only what the manifest asks for; hardware goes through Dashi's helper with its own polkit actions, never raw sysfs.</p>
+          <ul class="pc"><li class="y">Safe to install from a store</li><li class="y">Plain-language consent, once</li><li class="n">Permission names to design carefully</li><li class="n">Some applets need the network; say so</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk"><pre class="codemk" style="inset:12px">$ bunx @dashi/applet new weather
+<span class="c">  created weather/ (applet.json, src/main.tsx)</span>
+$ cd weather &amp;&amp; bun run dev
+<span class="s">  ✓ connected to dashi-applets.sock</span>
+<span class="s">  ✓ "Weather" in the menu bar (dev)</span>
+<span class="c">  watching src/ · reload on save</span>
+<span class="c">  18:40:02</span> select refresh
+<span class="c">  18:40:09</span> popover open 280×190
+$ bun run pack
+<span class="s">  ✓ weather-0.1.0.dashi-applet (41 KB, sha256 6f1c…)</span>
+$ bun run publish
+<span class="c">  opens a pull request on Netko-Labs/dashi-applets</span></pre></div>
+        <div class="cap"><h4><span class="k">E</span>A dev loop</h4><p><code>new</code>, <code>dev</code> (hot reload, a "dev" badge, message log), <code>pack</code> and <code>publish</code>. In the VM through <code>vm/agent</code> too.</p>
+          <ul class="pc"><li class="y">Minutes to a first applet</li><li class="y">Publishing is a pull request</li><li class="n">A CLI to maintain</li><li class="n">Needs a GitHub account to publish</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, B, D and E.</b> A typed package with a manifest, popovers in the applet's own Metal host, a sandbox with readable permissions, and a dev loop. Tiles (C) wait until Control Center has room rules.</p>
+    <div class="spec">
+      <h5>Protocol additions (applets.md, version 2)</h5>
+      <ul>
+        <li><code>{"type":"hello","manifest":{…}}</code> first; the shell checks it against the installed manifest.</li>
+        <li><code>{"type":"popover","id","width","height"}</code> → the shell answers with where to place the surface; the applet's Metal window asks for that role; <code>{"type":"dismiss"}</code> either way.</li>
+        <li>Nested menus (the one-level limit goes), tooltips once Metal has them.</li>
+      </ul>
+      <h5>Where it lives</h5>
+      <ul><li><code>packages/applet</code> (<code>@dashi/applet</code>), the client moved out of <code>apps/kit/applet.ts</code>; the sandbox launcher in <code>src/applets/</code>; installed applets in <code>~/.local/share/dashi/applets/&lt;id&gt;/</code>.</li></ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The Applet Store</h2>
+    <p>A new app, built on mirin like the others, that lists and installs applets from a GitHub repository. No server: the repository is the catalog, its releases hold the packages, and GitHub's pull requests are the review.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk plain tall"><div class="diagram">
+          <div class="bx"><b>github.com/Netko-Labs/dashi-applets</b><small>applets/&lt;id&gt;/applet.json · README · screenshots/ · source or a pinned repo + commit</small></div>
+          <div class="ar">↓ CI on merge: check, build, pack, sign</div>
+          <div class="row" style="--n:2"><div class="bx acc"><b>index.json</b><small>every applet, version, sha256, permissions, size</small></div><div class="bx"><b>Releases</b><small>&lt;id&gt;-&lt;version&gt;.dashi-applet + .minisig</small></div></div>
+          <div class="ar">↓ raw.githubusercontent.com, no API token</div>
+          <div class="bx"><b>Applet Store</b><small>fetches the index, checks Dashi's signature on it, checks the package against the author key the index lists, verifies sha256, unpacks</small></div>
+          <div class="ar">↓</div>
+          <div class="bx"><b>~/.local/share/dashi/applets/&lt;id&gt;/</b><small>started by the shell in its sandbox</small></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>The repository is the catalog</h4><p>One repository, an index built by CI, packages as release assets. Dashi's key signs the index; each package is signed by its author, whose key the index lists and every update must match.</p>
+          <ul class="pc"><li class="y">Free, reviewable, forkable</li><li class="y">A different index URL makes a different store</li><li class="n">GitHub rate limits on raw files</li><li class="n">The signing key needs care</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk tall">
+          <div class="w" style="left:12px;right:12px;top:12px;bottom:12px;background:#fff"><span class="x"><i></i><i></i><i></i></span>
+            <div style="margin:8px;height:84px;border-radius:9px;background:linear-gradient(120deg,#2f6f5a,#5fae95);color:#fff;padding:10px 12px"><small style="opacity:.8">Featured</small><div style="font-size:15px;font-weight:750">ASUS Control</div><small>Fans, power and lights for ROG and TUF laptops.</small></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px;font-size:10px">
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#6e56cf">W</span><span><b>Weather</b><br><small style="opacity:.6">Get</small></span></div>
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#d0596f">P</span><span><b>Pomodoro</b><br><small style="opacity:.6">Get</small></span></div>
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#e5b13f">C</span><span><b>Clipboard</b><br><small style="opacity:.6">Get</small></span></div>
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#4f9a3e">V</span><span><b>WireGuard</b><br><small style="opacity:.6">Open</small></span></div>
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#2a475e">G</span><span><b>GPU Stats</b><br><small style="opacity:.6">Get</small></span></div>
+              <div style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:26px;--c:#8a4fb8">T</span><span><b>Tailscale</b><br><small style="opacity:.6">Get</small></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>A showcase window</h4><p>A featured banner, then a grid, in the style of a phone's app store.</p>
+          <ul class="pc"><li class="y">Inviting, good for discovery</li><li class="y">Featured slot for Dashi's picks</li><li class="n">Needs artwork per applet</li><li class="n">Grand for a small catalog</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk tall kelp">
+          <div class="w" style="left:12px;right:12px;top:12px;bottom:12px;background:#fff;display:grid;grid-template-columns:96px 1fr"><span class="x"><i></i><i></i><i></i></span>
+            <div style="background:#f2f1ee;padding:8px 6px 6px;font-size:10px;border-right:1px solid #0000001a">
+              <div style="background:#1d1d1f12;border-radius:5px;padding:3px 6px;margin-bottom:6px;opacity:.6">⌕ Search</div>
+              <div style="padding:3px 6px;border-radius:5px;background:var(--kombu);color:#fff">Discover</div><div style="padding:3px 6px">Hardware</div><div style="padding:3px 6px">Productivity</div><div style="padding:3px 6px">Network</div><div style="padding:3px 6px">Status</div><div style="padding:3px 6px;margin-top:6px">Installed</div><div style="padding:3px 6px">Updates <b style="color:var(--ume)">2</b></div>
+            </div>
+            <div style="padding:8px 10px;font-size:10.5px">
+              <b style="font-size:12.5px">Hardware</b>
+              <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #0000000f"><span class="ic" style="--s:28px;--c:#3e8a72">A</span><span style="flex:1"><b>ASUS Control</b><br><small style="opacity:.6">Fans, power and lights · Netko Labs</small></span><span class="btn p">Open</span></div>
+              <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #0000000f"><span class="ic" style="--s:28px;--c:#2a475e">G</span><span style="flex:1"><b>GPU Stats</b><br><small style="opacity:.6">Graphics load in the menu bar</small></span><span class="btn">Get</span></div>
+              <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #0000000f"><span class="ic" style="--s:28px;--c:#e5b13f">L</span><span style="flex:1"><b>Legion Toolkit</b><br><small style="opacity:.6">For Lenovo Legion laptops</small></span><span class="btn">Get</span></div>
+              <div style="display:flex;gap:8px;align-items:center;padding:6px 0"><span class="ic" style="--s:28px;--c:#6e56cf">F</span><span style="flex:1"><b>Framework Battery</b><br><small style="opacity:.6">Charge limits and cycles</small></span><span class="btn">Get</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A list with categories</h4><p>Search and categories in a sidebar, compact rows, Installed and Updates: the shape of Dashi's Software app, so the two feel related.</p>
+          <ul class="pc"><li class="y">Scales from 5 to 500 applets</li><li class="y">Reuses Software's components</li><li class="n">Less of a showcase</li><li class="n">Category list to curate</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span class="on">＋</span><span>18:40</span></span></div>
+          <div class="gl" style="right:40px;top:24px;width:210px">
+            <div class="r"><b style="font-size:11.5px">Add to the menu bar</b></div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#6e56cf">W</span>Weather</span><span class="btn">Add</span></div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#d0596f">P</span>Pomodoro</span><span class="btn">Add</span></div>
+            <div class="r"><span style="display:flex;gap:6px;align-items:center"><span class="ic" style="--s:16px;--c:#3e8a72">A</span>ASUS Control<small>· for this laptop</small></span><span class="btn p">Add</span></div>
+            <hr><div class="r">Browse the Applet Store…</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Add from the menu bar</h4><p>⌥-click on the status area (or a + while arranging items) offers a short list, starting with the ones that match this machine.</p>
+          <ul class="pc"><li class="y">Discovery where applets live</li><li class="y">Suggests ASUS Control on ASUS</li><li class="n">Another control in the menu bar</li><li class="n">Not a replacement for the store</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk tall broth">
+          <div class="w" style="left:12px;right:12px;top:12px;bottom:12px;background:#fff;padding:10px 12px"><span class="x"><i></i><i></i><i></i></span>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:4px"><span class="ic" style="--s:44px;--c:#3e8a72">A</span><div style="flex:1"><b style="font-size:14px">ASUS Control</b><br><small style="opacity:.6">Netko Labs · 0.1.0 · 212 KB · <span style="color:var(--kombu)">Reviewed</span></small></div><span class="btn p">Get</span></div>
+            <div style="display:flex;gap:6px;margin:10px 0"><div style="flex:1;height:70px;border-radius:7px;background:var(--wall)"></div><div style="flex:1;height:70px;border-radius:7px;background:linear-gradient(160deg,#0f2620,#4a9a7e)"></div><div style="flex:1;height:70px;border-radius:7px;background:linear-gradient(200deg,#3a1d10,#c8901c)"></div></div>
+            <div style="font-size:10.5px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px">
+              <div><b>It can</b><br><small>Change power, fans and lights · Show notifications</small></div>
+              <div><b>Works on</b><br><small>ASUS ROG and TUF laptops · this one ✓</small></div>
+              <div><b>Source</b><br><small style="color:var(--kombu)">github.com/Netko-Labs/asus-control</small></div>
+              <div><b>Updated</b><br><small>4 Nov 2026 · what's new</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>An applet's page</h4><p>Screenshots, what it can do in the manifest's words, whether it fits this machine, where its source is, and Reviewed for applets checked by Dashi's maintainers.</p>
+          <ul class="pc"><li class="y">Trust before install</li><li class="y">"Works on" from the manifest's <code>when</code></li><li class="n">Screenshots to keep current</li><li class="n">Reviewed is a promise to keep</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:3"><div class="bx"><b>Pull request</b><small>bun run publish</small></div><div class="bx"><b>CI</b><small>manifest, permissions, size, build from source, lint</small></div><div class="bx"><b>Review</b><small>a maintainer, for "Reviewed"</small></div></div>
+          <div class="ar">↓ merge</div>
+          <div class="row" style="--n:2"><div class="bx acc"><b>Release and index</b><small>signed, then live</small></div><div class="bx"><b>Updates</b><small>the store checks daily; one click, or automatic</small></div></div>
+          <div class="ar">↓ a bad release</div>
+          <div class="bx"><b>Pull from the index</b><small>the store disables a pulled version and offers the last good one</small></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">F</span>Submissions and updates</h4><p>Publishing is a pull request; CI builds from source so the package matches the code; a pulled version is disabled on machines that have it.</p>
+          <ul class="pc"><li class="y">No backend to run</li><li class="y">A kill switch for bad releases</li><li class="n">Review is work for maintainers</li><li class="n">Builds from source in CI take setup</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, C, E and F.</b> The repository as the catalog with signed releases, a list-shaped store window that matches Software, a page that earns trust, and pull-request publishing with a kill switch. D is a small later addition.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The ASUS Control applet</h2>
+    <p>The first applet in the store, and the reason for the SDK. It does everything ROG Control Center (asusctl's own app) does, and what people install G-Helper for on Windows, on top of Dashi's power modes and graphics switching instead of beside them. It is named for what it controls and draws no ASUS or ROG logos.</p>
+    <table>
+      <tr><th>Feature</th><th>ROG Control Center</th><th>G-Helper (Windows)</th><th>ASUS Control</th></tr>
+      <tr><td>Power profiles</td><td>✓</td><td>✓</td><td>✓ the Dashi mode, in sync both ways</td></tr>
+      <tr><td>Fan curves per profile</td><td>✓</td><td>✓</td><td>✓ with the live temperature on the curve</td></tr>
+      <tr><td>CPU power limits (PPT)</td><td>✓ armoury</td><td>✓</td><td>✓ plugged-in and battery columns</td></tr>
+      <tr><td>Graphics power, boost, temperature</td><td>✓ armoury</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Graphics mode, MUX</td><td>supergfxctl, separate</td><td>✓</td><td>✓ cardwire, Smart per app</td></tr>
+      <tr><td>Undervolt</td><td>—</td><td>✓ AMD</td><td>✓ where the processor accepts it</td></tr>
+      <tr><td>Battery charge limit</td><td>✓</td><td>✓</td><td>✓ plus "full once" and a schedule (Dashi's)</td></tr>
+      <tr><td>Keyboard lighting</td><td>✓</td><td>✓</td><td>✓ and a timeout on battery</td></tr>
+      <tr><td>Slash, AniMe Matrix</td><td>✓</td><td>✓ AniMe</td><td>✓ through asusd</td></tr>
+      <tr><td>Panel overdrive, boot sound</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>Refresh rate on battery</td><td>—</td><td>✓</td><td>✓ in the recipe</td></tr>
+      <tr><td>Sensors: temperatures, fans, watts</td><td>partial</td><td>✓</td><td>✓ with an hour of history</td></tr>
+      <tr><td>Hotkeys (Fn F5, the ROG key)</td><td>partial</td><td>✓</td><td>✓ with Dashi's on-screen display</td></tr>
+      <tr><td>Apps keeping the graphics card awake</td><td>—</td><td>✓ stop GPU apps</td><td>✓</td></tr>
+      <tr><td>Warning when the graphics card is lost</td><td>—</td><td>—</td><td>✓</td></tr>
+    </table>
+    <p class="small muted">The other two columns are from their documentation and release notes, as of November 2026; check them again before claiming parity.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk tall kelp">
+          <div class="mb"><b>Files</b><span class="r"><span class="on" style="display:flex;gap:3px;align-items:center"><svg viewBox="0 0 16 16" fill="#1d1d1f"><path d="M8 7c0-3 1-5.5 3-5.5s2.5 3-1.5 5zM9 8c3 0 5.5 1 5.5 3s-3 2.5-5-1.5zM8 9c0 3-1 5.5-3 5.5S2.5 11.5 6.5 9.5zM7 8C4 8 1.5 7 1.5 5S4.5 2.5 6.5 6.5z"/></svg></span><span>82%</span><span>18:40</span></span></div>
+          <div class="gl" style="right:58px;top:24px;width:228px">
+            <div class="r"><b style="font-size:11.5px">ASUS Control</b><small>CPU 54 °C · 2300 rpm</small></div>
+            <div class="r"><div class="sg" style="flex:1"><span>Quiet</span><span class="on">Balanced</span><span>Performance</span></div></div>
+            <div class="h">Graphics</div>
+            <div class="r"><div class="sg" style="flex:1"><span>Integrated</span><span class="on">Smart</span><span>Hybrid</span></div></div>
+            <div class="h">Battery</div>
+            <div class="r">Charge limit<div class="sg" style="width:96px"><span class="on">80%</span><span>100%</span></div></div>
+            <div class="h">Lights</div>
+            <div class="r"><span style="width:56px">Keyboard</span><div class="sl"><i style="--v:66%"></i></div></div>
+            <div class="r">Lid<span class="btn">Spectrum ▾</span></div>
+            <hr><div class="r">ASUS Control…<small>❖,</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A compact popover</h4><p>One column of the everyday controls with a live line (temperature, fan), then the full window.</p>
+          <ul class="pc"><li class="y">Fast, one click</li><li class="y">Same order as the window</li><li class="n">Fits only the everyday set</li><li class="n">Repeats the battery menu's mode</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk tall">
+          <div class="mb"><b>Files</b><span class="r"><span class="on">▾</span><span>82%</span><span>18:40</span></span></div>
+          <div class="gl" style="right:58px;top:24px;width:236px">
+            <div class="sg" style="margin:2px 2px 6px"><span class="on">Power</span><span>Fans</span><span>Graphics</span><span>Lights</span></div>
+            <div class="r">Mode<span class="btn">Balanced ▾</span></div>
+            <div class="r"><span style="width:70px">CPU power</span><div class="sl"><i style="--v:45%"></i></div><small>45 W</small></div>
+            <div class="r"><span style="width:70px">Graphics</span><div class="sl"><i style="--v:20%"></i></div><small>80 W</small></div>
+            <div class="r"><span style="width:70px">Boost</span><div class="sl"><i style="--v:60%"></i></div><small>15 W</small></div>
+            <div class="r">Boost clock<span class="sw"></span></div>
+            <div class="r">Screen on battery<span class="btn">60 Hz ▾</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>A tabbed popover</h4><p>Four tabs in the popover: Power, Fans, Graphics, Lights. No window at all.</p>
+          <ul class="pc"><li class="y">Everything without a window</li><li class="y">G-Helper's single-panel feel</li><li class="n">Tabs in a popover feel cramped</li><li class="n">Fan curves need more room</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk tall broth">
+          <div class="w" style="left:10px;right:10px;top:10px;bottom:10px;background:#fff;display:grid;grid-template-columns:90px 1fr"><span class="x"><i></i><i></i><i></i></span>
+            <div style="background:#f2f1ee;padding:8px 5px 6px;font-size:10px;border-right:1px solid #0000001a">
+              <div style="padding:3px 6px">Overview</div><div style="padding:3px 6px">Power</div><div style="padding:3px 6px;border-radius:5px;background:var(--kombu);color:#fff">Fans</div><div style="padding:3px 6px">Graphics</div><div style="padding:3px 6px">Battery</div><div style="padding:3px 6px">Lighting</div><div style="padding:3px 6px">Screen</div><div style="padding:3px 6px">Keys</div><div style="padding:3px 6px">Sensors</div>
+            </div>
+            <div style="padding:8px 10px;font-size:10.5px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:12.5px">Fans</b><div class="sg" style="width:150px"><span>Quiet</span><span class="on">Balanced</span><span>Perf.</span></div></div>
+              <svg viewBox="0 0 260 150" style="width:100%;height:150px;margin-top:6px">
+                <g stroke="#1d1d1f" stroke-opacity=".08"><path d="M20 10v120M80 10v120M140 10v120M200 10v120M260 10v120M20 130h240M20 90h240M20 50h240M20 10h240"/></g>
+                <polyline points="20,130 60,120 100,104 140,84 170,62 200,40 230,22 260,12" fill="none" stroke="#3e8a72" stroke-width="2.4"/>
+                <polyline points="20,130 60,124 100,112 140,96 170,78 200,58 230,36 260,20" fill="none" stroke="#6e56cf" stroke-width="2" stroke-dasharray="4 3"/>
+                <g fill="#fff" stroke="#3e8a72" stroke-width="2"><circle cx="60" cy="120" r="4"/><circle cx="100" cy="104" r="4"/><circle cx="140" cy="84" r="4"/><circle cx="170" cy="62" r="4"/><circle cx="200" cy="40" r="4"/><circle cx="230" cy="22" r="4"/></g>
+                <line x1="112" y1="10" x2="112" y2="130" stroke="#d0596f" stroke-width="1.5"/><text x="116" y="20" font-size="9" fill="#d0596f">54 °C now</text>
+                <g font-size="8" fill="#1d1d1f" fill-opacity=".5"><text x="20" y="143">30 °C</text><text x="232" y="143">100 °C</text></g>
+              </svg>
+              <div style="display:flex;gap:12px;font-size:9.5px"><span style="color:#3e8a72">━ CPU fan 2300 rpm</span><span style="color:#6e56cf">┅ GPU fan 2600 rpm</span><span style="margin-left:auto" class="btn">Restore</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A full window</h4><p>A Settings-shaped window for depth: fan curves you drag (8 points per fan, <code>asus_custom_fan_curve</code>), recipes, lighting, keys, sensors.</p>
+          <ul class="pc"><li class="y">Room for every feature</li><li class="y">Looks like the rest of Dashi</li><li class="n">An app's worth of work</li><li class="n">Two places to keep in step</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk tall">
+          <div class="gl dk" style="left:12px;right:12px;top:12px;bottom:12px;padding:10px">
+            <div class="t">Right now</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 6px">
+              <svg viewBox="0 0 80 60"><path d="M10 50a30 30 0 0 1 60 0" fill="none" stroke="#ffffff26" stroke-width="7" stroke-linecap="round"/><path d="M10 50a30 30 0 0 1 36 -29" fill="none" stroke="#5fae95" stroke-width="7" stroke-linecap="round"/><text x="40" y="48" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">54°</text><text x="40" y="59" fill="#fff" fill-opacity=".6" font-size="7" text-anchor="middle">CPU</text></svg>
+              <svg viewBox="0 0 80 60"><path d="M10 50a30 30 0 0 1 60 0" fill="none" stroke="#ffffff26" stroke-width="7" stroke-linecap="round"/><path d="M10 50a30 30 0 0 1 14 -24" fill="none" stroke="#5fae95" stroke-width="7" stroke-linecap="round"/><text x="40" y="48" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">41°</text><text x="40" y="59" fill="#fff" fill-opacity=".6" font-size="7" text-anchor="middle">Graphics</text></svg>
+              <svg viewBox="0 0 80 60"><path d="M10 50a30 30 0 0 1 60 0" fill="none" stroke="#ffffff26" stroke-width="7" stroke-linecap="round"/><path d="M10 50a30 30 0 0 1 48 -22" fill="none" stroke="#e5b13f" stroke-width="7" stroke-linecap="round"/><text x="40" y="48" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">23 W</text><text x="40" y="59" fill="#fff" fill-opacity=".6" font-size="7" text-anchor="middle">Draw</text></svg>
+            </div>
+            <svg viewBox="0 0 300 50" style="width:100%;height:46px"><polyline points="0,40 30,38 60,30 90,34 120,20 150,24 180,12 210,18 240,28 270,30 300,26" fill="none" stroke="#5fae95" stroke-width="2"/></svg>
+            <div class="tiles" style="margin-top:4px"><div class="tl on"><span class="o">⚡</span><span><b>Balanced</b>Mode</span></div><div class="tl"><span class="o">▣</span><span><b>Smart</b>Graphics</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A dashboard</h4><p>Gauges and a draw graph first, controls second: a gaming-utility look.</p>
+          <ul class="pc"><li class="y">Satisfying to watch</li><li class="y">Sensors front and center</li><li class="n">Not Dashi's calm voice</li><li class="n">Gauges cost vertical space</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Files</b><span class="r"><span>82%</span><span class="on">◐</span><span>18:40</span></span></div>
+          <div class="gl" style="right:12px;top:24px;width:214px">
+            <div class="tiles"><div class="tl on"><span class="o">⌁</span><span><b>Wi‑Fi</b>Home</span></div><div class="tl on"><span class="o">ᛒ</span><span><b>Bluetooth</b>On</span></div>
+              <div class="tl on"><span class="o">⚡</span><span><b>Balanced</b>ASUS</span></div><div class="tl"><span class="o">▣</span><span><b>Smart</b>Graphics</span></div><div class="tl on"><span class="o">✷</span><span><b>Lid lights</b>Spectrum</span></div><div class="tl"><span class="o">≋</span><span><b>Fans</b>Firmware</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Only Control Center tiles</h4><p>No menu bar item: four tiles in Control Center, each opening the window at its section.</p>
+          <ul class="pc"><li class="y">Menu bar stays clean</li><li class="y">Uses SDK tiles</li><li class="n">Waits for tiles (SDK C)</li><li class="n">No live line in the menu bar</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk tall">
+          <div class="w" style="left:10px;right:10px;top:10px;bottom:10px;background:#fff;padding:12px"><span class="x"><i></i><i></i><i></i></span>
+            <b style="font-size:12.5px">Lighting</b>
+            <div style="margin:10px auto 6px;width:220px;height:46px;border-radius:8px;background:#26262a;position:relative;overflow:hidden">
+              <div style="position:absolute;left:24px;top:14px;display:flex;gap:4px;transform:rotate(-20deg)"><i style="width:10px;height:3px;border-radius:2px;background:#ff5f7e;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#ff9f5f;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#f0c35e;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#5fae95;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#5f9fff;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#8b76e8;display:block"></i><i style="width:10px;height:3px;border-radius:2px;background:#fff3;display:block"></i></div>
+              <small style="position:absolute;right:8px;bottom:5px;color:#fff9;font-size:8.5px">Lid · live preview</small>
+            </div>
+            <div class="grp"><div class="r">Lid animation<span class="btn">Spectrum ▾</span></div><div class="r"><span style="width:60px">Brightness</span><div class="sl"><i style="--v:60%"></i></div></div><div class="r">Show on battery<span class="sw off"></span></div><div class="r">At startup and shutdown<span class="sw"></span></div></div>
+            <div class="grp"><div class="r"><span style="width:60px">Keyboard</span><div class="sl"><i style="--v:66%"></i></div></div><div class="r">Off after, on battery<span class="btn">30 s ▾</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Lighting, previewed</h4><p>The lid's Slash bar drawn live as it will play, its animation, brightness and when it shows; the keyboard's level and timeout.</p>
+          <ul class="pc"><li class="y">See it before the lid shows it</li><li class="y">Battery-aware by default</li><li class="n">Each lighting kind drawn differently</li><li class="n">Aura RGB zones need their own view</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A for the menu bar, C for the window, F inside it.</b> A short popover with a live line, and a Settings-shaped window for fans, recipes, lighting, keys and sensors. Its own repository (<code>Netko-Labs/asus-control</code>), published through the store, using the SDK's popover and permissions.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Desktops: names and previews</h2>
+    <p>Mission Control's Spaces row (<code>spaces/row.tsx</code>) shows "Desktop 1", "Desktop 2"… as text labels, with + and ×. Names can't change and nothing shows what is on a Desktop until you go there. Previews are drawn by the compositor: the shell says where each Desktop's picture goes, and dashi-comp draws that Space's windows scaled into it, as the overview already draws windows (no pixels from TypeScript).</p>
+    <div class="props">
+      <div class="prop">
+        <div class="mk">
+          <div style="position:absolute;inset:0;background:#0006"></div>
+          <div style="position:absolute;top:10px;left:0;right:0;display:flex;gap:10px;justify-content:center;z-index:2">
+            <div><div class="th cur" style="width:84px;height:52px"><div class="w" style="left:8px;top:8px;width:44px;height:30px"></div><div class="w d" style="left:40px;top:16px;width:36px;height:28px"></div></div><div class="lb" style="margin-top:3px">Work</div></div>
+            <div><div class="th kelp" style="width:84px;height:52px"><div class="w" style="left:14px;top:10px;width:56px;height:34px"></div></div><div class="lb" style="margin-top:3px;background:#fff;color:#1d1d1f;border-radius:4px;text-shadow:none;outline:2px solid var(--kombu)">Writing|</div></div>
+            <div><div class="th broth" style="width:84px;height:52px"><div class="w d" style="left:6px;top:6px;width:72px;height:40px"></div></div><div class="lb" style="margin-top:3px">Games</div></div>
+            <div style="width:30px;height:52px;border-radius:7px;border:1.5px dashed #fff8;display:grid;place-items:center;color:#fff;font-size:16px">+</div>
+          </div>
+          <div class="w" style="left:60px;top:100px;width:130px;height:90px"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div><div class="ln" style="width:60%"></div></div>
+          <div class="w d" style="left:210px;top:110px;width:120px;height:80px"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Thumbnails, always</h4><p>Each Desktop is a live picture with its name under it; a double-click on the name edits it in place. Return keeps it, Esc puts it back.</p>
+          <ul class="pc"><li class="y">See before you go</li><li class="y">Renaming where the name is</li><li class="n">The row is taller all the time</li><li class="n">Many Desktops shrink each picture</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div style="position:absolute;inset:0;background:#0006"></div>
+          <div style="position:absolute;top:8px;left:0;right:0;display:flex;gap:14px;justify-content:center;z-index:2">
+            <span class="lb" style="background:#ffffff2e;border-radius:6px;padding:2px 9px">Work</span><span class="lb" style="padding:2px 9px">Writing</span><span class="lb" style="padding:2px 9px">Games</span>
+          </div>
+          <div class="note" style="left:50%;top:30px;transform:translateX(-50%);background:none;opacity:.8">↓ pointer at the top: the row opens</div>
+          <div style="position:absolute;top:56px;left:0;right:0;display:flex;gap:10px;justify-content:center;z-index:2;opacity:.98">
+            <div><div class="th cur" style="width:80px;height:50px"><div class="w" style="left:8px;top:8px;width:44px;height:30px"></div><div class="w d" style="left:40px;top:16px;width:36px;height:28px"></div></div><div class="lb" style="margin-top:3px">Work</div></div>
+            <div><div class="th kelp" style="width:80px;height:50px"><div class="w" style="left:14px;top:10px;width:52px;height:32px"></div></div><div class="lb" style="margin-top:3px">Writing</div></div>
+            <div><div class="th broth" style="width:80px;height:50px"><div class="w d" style="left:6px;top:6px;width:68px;height:38px"></div></div><div class="lb" style="margin-top:3px">Games</div></div>
+          </div>
+          <div class="ptr" style="left:200px;top:14px"></div>
+          <div class="w" style="left:70px;top:132px;width:120px;height:80px;opacity:.85"><span class="x"><i></i><i></i><i></i></span></div>
+          <div class="w d" style="left:210px;top:136px;width:110px;height:76px;opacity:.85"><span class="x"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Names, opening into pictures</h4><p>The row stays one line of names; with the pointer at the top (or while dragging a window) it opens into thumbnails. Rename as in A.</p>
+          <ul class="pc"><li class="y">Keeps the row one line high</li><li class="y">Pictures when they help</li><li class="n">A motion to tune</li><li class="n">Thumbnails hidden at first glance</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div style="position:absolute;inset:0;background:#0005"></div>
+          <div style="position:absolute;top:12px;left:0;right:0;display:flex;gap:10px;justify-content:center;z-index:2">
+            <div class="th cur" style="width:96px;height:60px"><div class="w" style="left:8px;top:10px;width:50px;height:34px"></div><span class="lb" style="position:absolute;left:5px;bottom:4px;background:#d0596f;border-radius:4px;padding:0 5px;text-shadow:none">● Work</span></div>
+            <div class="th" style="width:96px;height:60px;--wall:linear-gradient(160deg,#0f2620,#4a9a7e)"><div class="w" style="left:20px;top:8px;width:56px;height:36px"></div><span class="lb" style="position:absolute;left:5px;bottom:4px;background:#3e8a72;border-radius:4px;padding:0 5px;text-shadow:none">● Writing</span></div>
+            <div class="th" style="width:96px;height:60px;--wall:linear-gradient(200deg,#3a1d10,#c8901c)"><div class="w d" style="left:6px;top:6px;width:84px;height:46px"></div><span class="lb" style="position:absolute;left:5px;bottom:4px;background:#6e56cf;border-radius:4px;padding:0 5px;text-shadow:none">● Games</span></div>
+          </div>
+          <div class="mb" style="top:auto;bottom:0;border-top:1px solid #0000002b;border-bottom:0"><b>Notes</b><span class="r"><span class="on" style="color:#d0596f">● Work</span><span>18:40</span></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Names with a color</h4><p>A Desktop gets a name and an ingredient color; the color marks its picture and, optionally, a dot in the menu bar.</p>
+          <ul class="pc"><li class="y">Tell Desktops apart at a glance</li><li class="y">Colors from the palette</li><li class="n">One more thing to set</li><li class="n">Colors fight wallpapers</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div style="position:absolute;inset:0;background:#0006"></div>
+          <div style="position:absolute;top:10px;bottom:10px;left:8px;width:84px;display:flex;flex-direction:column;gap:6px;z-index:2">
+            <div class="th cur" style="width:80px;height:48px"><div class="w" style="left:8px;top:8px;width:44px;height:28px"></div></div><div class="lb" style="margin-top:-4px">Work</div>
+            <div class="th kelp" style="width:80px;height:48px"><div class="w" style="left:14px;top:8px;width:50px;height:30px"></div></div><div class="lb" style="margin-top:-4px">Writing</div>
+            <div class="th" style="width:80px;height:48px"><div class="w d" style="left:6px;top:6px;width:66px;height:36px"></div></div><div class="lb" style="margin-top:-4px">Games</div>
+          </div>
+          <div class="w" style="left:120px;top:30px;width:140px;height:96px"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div></div>
+          <div class="w d" style="left:270px;top:60px;width:110px;height:120px"><span class="x"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A strip down the side</h4><p>Desktops stacked on the left of Mission Control, leaving the full height to the windows.</p>
+          <ul class="pc"><li class="y">No vertical space taken</li><li class="y">Fits many Desktops</li><li class="n">Unlike any Mac or Windows habit</li><li class="n">Takes width on narrow screens</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Notes</b><span class="on">Writing ▾</span><span class="r"><span>82%</span><span>18:40</span></span></div>
+          <div class="gl" style="left:40px;top:24px;width:300px">
+            <div style="display:flex;gap:8px;padding:4px">
+              <div><div class="th" style="width:84px;height:52px"><div class="w" style="left:8px;top:8px;width:44px;height:30px"></div></div><div style="font-size:10px;text-align:center;margin-top:3px">Work</div></div>
+              <div><div class="th cur kelp" style="width:84px;height:52px;outline-color:var(--kombu)"><div class="w" style="left:14px;top:10px;width:52px;height:32px"></div></div><div style="font-size:10px;text-align:center;margin-top:3px;font-weight:600">Writing</div></div>
+              <div><div class="th broth" style="width:84px;height:52px"><div class="w d" style="left:6px;top:6px;width:72px;height:40px"></div></div><div style="font-size:10px;text-align:center;margin-top:3px">Games</div></div>
+            </div>
+            <hr><div class="r">Rename "Writing"…</div><div class="r">New Desktop</div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>The current Desktop in the menu bar</h4><p>The menu bar names the Desktop you're on; a click shows all of them as pictures, with Rename and New Desktop.</p>
+          <ul class="pc"><li class="y">Previews without Mission Control</li><li class="y">Always know where you are</li><li class="n">Takes menu bar room</li><li class="n">Off by default with one Desktop</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div style="position:absolute;inset:0;background:#0005"></div>
+          <div style="position:absolute;top:12px;left:0;right:0;display:flex;gap:10px;justify-content:center;z-index:2">
+            <div><div class="th cur" style="width:84px;height:52px"><div class="w" style="left:8px;top:8px;width:60px;height:36px"></div></div><div class="lb" style="margin-top:3px">Code</div></div>
+            <div><div class="th broth" style="width:84px;height:52px"><div class="w" style="left:8px;top:8px;width:60px;height:36px"></div></div><div class="lb" style="margin-top:3px">Mail, Calendar</div></div>
+            <div><div class="th" style="width:84px;height:52px"><div class="w d" style="left:6px;top:6px;width:72px;height:40px"></div></div><div class="lb" style="margin-top:3px">Steam</div></div>
+          </div>
+          <div class="note" style="left:50%;bottom:16px;transform:translateX(-50%)">Named after what's on them until you rename them</div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Names that write themselves</h4><p>A Desktop without a name is called after its main apps ("Mail, Calendar"), and "Desktop 2" only when empty. A name you give sticks, saved with <code>spaces.count</code> in settings.</p>
+          <ul class="pc"><li class="y">Useful names with no effort</li><li class="y">Rename only when you care</li><li class="n">Names change as windows move</li><li class="n">"Main app" needs a rule</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B, with A's renaming and F's names.</b> The row stays one line high and opens into thumbnails when the pointer or a dragged window reaches it. Names are edited in place, and a Desktop you haven't named is called after the apps on it. E can come later as an option.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li>IPC: <code>space-previews {output, rects: [{space, x, y, w, h}]}</code>; dashi-comp draws each Space's windows and wallpaper scaled into its rect under the overview layer, live, and clears them when the overview closes.</li>
+        <li>Settings: <code>spaces.names: (string | null)[]</code> beside <code>spaces.count</code>; the row's text field is metal-ui's input.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Moving windows between Desktops</h2>
+    <p>Today a window moves to another Desktop only in Mission Control: drag it out of the overview and drop it on a label or the + (<code>overview-drop</code>). Outside Mission Control there is no way to carry a window across.</p>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk">
+          <div style="position:absolute;inset:0;background:#0006"></div>
+          <div style="position:absolute;top:10px;left:0;right:0;display:flex;gap:10px;justify-content:center;z-index:2">
+            <div><div class="th cur" style="width:84px;height:52px"><div class="w d" style="left:40px;top:16px;width:36px;height:28px"></div></div><div class="lb" style="margin-top:3px">Work</div></div>
+            <div><div class="th kelp" style="width:92px;height:58px;outline:2px solid var(--kombu);outline-offset:2px;transform:translateY(-3px)"><div class="w" style="left:14px;top:10px;width:52px;height:34px"></div><div class="w ghost" style="left:44px;top:20px;width:40px;height:30px"></div></div><div class="lb" style="margin-top:3px">Writing</div></div>
+            <div><div class="th broth" style="width:84px;height:52px"><div class="w d" style="left:6px;top:6px;width:72px;height:40px"></div></div><div class="lb" style="margin-top:3px">Games</div></div>
+          </div>
+          <div class="w" style="left:178px;top:62px;width:90px;height:62px;transform:rotate(-2deg);z-index:6"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div></div>
+          <div class="ptr" style="left:222px;top:84px"></div>
+          <div class="w d" style="left:70px;top:140px;width:120px;height:76px;opacity:.8"><span class="x"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Drop on a picture</h4><p>In Mission Control, a dragged window over a Desktop's picture lifts the picture and shows where the window will sit; letting go moves it there.</p>
+          <ul class="pc"><li class="y">What's there today, made visible</li><li class="y">Uses the previews above</li><li class="n">Only inside Mission Control</li><li class="n">Needs the row open while dragging</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b>Notes</b><span class="r"><span>82%</span><span>18:40</span></span></div>
+          <div class="w" style="left:300px;top:60px;width:150px;height:110px;z-index:4"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div><div class="ln" style="width:70%"></div></div>
+          <div class="ptr" style="left:392px;top:64px"></div>
+          <div style="position:absolute;right:0;top:20px;bottom:0;width:26px;background:linear-gradient(90deg,transparent,#5fae95aa);z-index:3"></div>
+          <div class="note" style="right:32px;top:184px">Hold at the edge · Writing →</div>
+          <div class="w d" style="left:30px;top:50px;width:150px;height:110px;opacity:.9"><span class="x"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Push against the edge</h4><p>Drag a window by its title bar against the left or right edge and hold: after a beat the next Desktop slides in with the window still in hand.</p>
+          <ul class="pc"><li class="y">Works anywhere, no mode</li><li class="y">A known habit from other desktops</li><li class="n">Fights edge snapping; needs the hold</li><li class="n">Multi-screen edges are ambiguous</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="mb"><b>Notes</b><span class="r"><span>82%</span><span>18:40</span></span></div>
+          <div style="position:absolute;left:-150px;top:20px;bottom:0;width:150px;background:var(--wall)"></div>
+          <div class="w" style="left:150px;top:60px;width:140px;height:100px;z-index:4"><span class="x"><i></i><i></i><i></i></span><div class="ln"></div></div>
+          <div class="ptr" style="left:220px;top:66px"></div>
+          <div class="note" style="left:50%;bottom:18px;transform:translateX(-50%)">Holding the window: three-finger swipe or <span class="kbd">❖</span> <span class="kbd">→</span> carries it</div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Carry it while you switch</h4><p>While a window is held, the usual ways of changing Desktop (a three-finger swipe, <span class="kbd" style="font-size:11px">❖→</span>) take it along; letting go drops it on the new one.</p>
+          <ul class="pc"><li class="y">No new gesture to learn</li><li class="y">Precise: one Desktop per swipe</li><li class="n">Two hands on a mouse</li><li class="n">The swipe must not drop the window</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="mb"><b>Notes</b><span class="on" style="outline:1.5px solid var(--kombu)">Writing ▾</span><span class="r"><span>82%</span><span>18:40</span></span></div>
+          <div class="gl" style="left:40px;top:24px;width:200px;display:flex;gap:6px">
+            <div class="th" style="width:58px;height:38px"></div><div class="th cur kelp" style="width:58px;height:38px;outline-color:var(--kombu)"><div class="w ghost" style="left:12px;top:8px;width:30px;height:22px"></div></div><div class="th broth" style="width:58px;height:38px"></div>
+          </div>
+          <div class="w" style="left:130px;top:96px;width:120px;height:84px;z-index:6;transform:rotate(2deg)"><span class="x"><i></i><i></i><i></i></span></div>
+          <div class="ptr" style="left:120px;top:58px"></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Spring-loaded menu bar</h4><p>Drag a window onto the Desktop name in the menu bar; the pictures spring open; drop on one.</p>
+          <ul class="pc"><li class="y">Precise, any Desktop</li><li class="y">Works with a mouse</li><li class="n">Needs E from the previous section</li><li class="n">A small target at the top</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="dock" style="bottom:8px"><span class="ic" style="--c:#4a9a7e">F</span><span class="ic" style="--c:#e86f86">N</span><span style="width:1px;background:#0003;margin:0 3px"></span><span style="display:flex;gap:3px;align-items:center"><span class="th cur" style="width:34px;height:22px"></span><span class="th kelp" style="width:34px;height:22px;outline:2px solid var(--kombu)"></span><span class="th broth" style="width:34px;height:22px"></span></span></div>
+          <div class="w" style="left:150px;top:80px;width:110px;height:76px;transform:rotate(-2deg);z-index:6"><span class="x"><i></i><i></i><i></i></span></div>
+          <div class="ptr" style="left:212px;top:150px"></div>
+          <div class="note" style="left:12px;top:12px">The Dock shows Desktops while a window is dragged</div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Desktops in the Dock, while dragging</h4><p>Small pictures of each Desktop appear at the Dock's end only while a window is being dragged.</p>
+          <ul class="pc"><li class="y">Close to where the pointer is</li><li class="y">Also in taskbar layout</li><li class="n">The Dock may be hidden</li><li class="n">Dock grows mid-drag</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="w" style="left:30px;top:30px;width:220px;height:150px"><span class="x"><i></i><i></i><i></i></span></div>
+          <div class="gl" style="left:110px;top:40px;width:170px">
+            <div class="r">Minimize</div><div class="r">Zoom</div><hr>
+            <div class="r sel">Move to ▸</div>
+            <div class="r">Tile Left</div><div class="r">Tile Right</div><hr><div class="r">Close</div>
+          </div>
+          <div class="gl" style="left:282px;top:84px;width:140px">
+            <div class="r">Work</div><div class="r sel">Writing</div><div class="r">Games</div><hr><div class="r">New Desktop</div><div class="r"><small>Other screen ▸</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>"Move to" in the window's menu</h4><p>A right-click on the title bar (and the Window menu) lists Desktops by name and New Desktop. The fallback for anyone who doesn't drag.</p>
+          <ul class="pc"><li class="y">Accessible, keyboard-friendly</li><li class="y">Cheap: the request exists</li><li class="n">Not a drag</li><li class="n">Apps with their own title bars need the Window menu</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: A, B, C and F.</b> Drops on pictures in Mission Control, edge-push and carry-while-switching everywhere else, and Move to in the window's menu for everyone. The compositor keeps the grab across a Space change; the shell decides when the edge hold fires.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li>dashi-comp: a move grab survives <code>space-switch</code>, the held window going with it (<code>wm/space_list.rs</code>); an <code>edge-hold {edge, output}</code> event while a window is held at an edge for 400 ms.</li>
+        <li>Shell: the hold's policy (screen edges with no neighbouring screen only, never while snapping previews), and the "Move to" menu built from <code>spaces.names</code>.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>The app switcher</h2>
+    <p>❖Tab shows one 64-point icon per app, most recent first, and the selected app's name (<code>switcher.tsx</code>). Letting go focuses that app's front window. It can't pick a window, can't find an app by name, and does nothing but switch.</p>
+    <div class="props">
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:10px;padding:12px;border-radius:18px">
+            <div style="position:relative;padding:6px;border-radius:12px;background:#1d1d1f1a"><span class="ic" style="--s:44px;--c:#6e56cf">H</span><b style="position:absolute;right:0;top:0;background:var(--ume);color:#fff;font-size:9px;border-radius:99px;padding:0 5px">3</b></div>
+            <div style="padding:6px"><span class="ic" style="--s:44px;--c:#e86f86">N</span></div>
+            <div style="padding:6px;position:relative"><span class="ic" style="--s:44px;--c:#1d1d1f">T</span><b style="position:absolute;right:0;top:0;background:#1d1d1f99;color:#fff;font-size:9px;border-radius:99px;padding:0 5px">2</b></div>
+            <div style="padding:6px"><span class="ic" style="--s:44px;--c:#2a475e">S</span></div>
+          </div>
+          <div class="note" style="left:50%;bottom:22px;transform:translateX(-50%)">Helium · 3 windows · <span class="kbd">`</span> next window</div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Counts, and ` for windows</h4><p>Icons stay; a badge counts an app's windows, and ❖` steps through the selected app's windows.</p>
+          <ul class="pc"><li class="y">Smallest change</li><li class="y">Mac habit</li><li class="n">Picking a window is blind</li><li class="n">` is awkward on some layouts</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:8px;padding:10px;border-radius:16px">
+            <div style="width:86px;padding:4px;border-radius:9px;background:#1d1d1f1a"><div class="w" style="position:relative;width:78px;height:54px"><div class="ln"></div><div class="ln" style="width:60%"></div></div><div style="font-size:9px;margin-top:4px;display:flex;gap:4px;align-items:center"><span class="ic" style="--s:12px;--c:#6e56cf"></span>Docs · Helium</div></div>
+            <div style="width:86px;padding:4px"><div class="w" style="position:relative;width:78px;height:54px"><div class="ln"></div></div><div style="font-size:9px;margin-top:4px;display:flex;gap:4px;align-items:center"><span class="ic" style="--s:12px;--c:#e86f86"></span>Groceries</div></div>
+            <div style="width:86px;padding:4px"><div class="w d" style="position:relative;width:78px;height:54px"><div class="ln"></div></div><div style="font-size:9px;margin-top:4px;display:flex;gap:4px;align-items:center"><span class="ic" style="--s:12px;--c:#1d1d1f"></span>~/dashiOS</div></div>
+            <div style="width:86px;padding:4px"><div class="w" style="position:relative;width:78px;height:54px"><div class="ln"></div></div><div style="font-size:9px;margin-top:4px;display:flex;gap:4px;align-items:center"><span class="ic" style="--s:12px;--c:#6e56cf"></span>Mail · Helium</div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Every window, as a picture</h4><p>A live thumbnail per window with its title, most recent first, as Windows' Alt-Tab does.</p>
+          <ul class="pc"><li class="y">Pick the exact window</li><li class="y">Thumbnails come from the compositor</li><li class="n">Long when many windows are open</li><li class="n">Loses the per-app model</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 12px;border-radius:18px;text-align:center">
+            <div style="display:flex;gap:10px;justify-content:center">
+              <div style="padding:6px;border-radius:12px;background:#1d1d1f1a"><span class="ic" style="--s:40px;--c:#6e56cf">H</span></div>
+              <div style="padding:6px"><span class="ic" style="--s:40px;--c:#e86f86">N</span></div>
+              <div style="padding:6px"><span class="ic" style="--s:40px;--c:#1d1d1f">T</span></div>
+              <div style="padding:6px"><span class="ic" style="--s:40px;--c:#2a475e">S</span></div>
+            </div>
+            <b style="font-size:11.5px;display:block;margin:4px 0 6px">Helium</b>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <div><div class="w" style="position:relative;width:70px;height:46px;outline:2px solid var(--kombu)"><div class="ln"></div></div><small style="font-size:8.5px">Docs</small></div>
+              <div><div class="w" style="position:relative;width:70px;height:46px"><div class="ln"></div></div><small style="font-size:8.5px">Mail</small></div>
+              <div><div class="w" style="position:relative;width:70px;height:46px;opacity:.5"><div class="ln"></div></div><small style="font-size:8.5px;opacity:.6">Minimized</small></div>
+            </div>
+          </div>
+          <div class="note" style="left:50%;bottom:10px;transform:translateX(-50%)"><span class="kbd">Tab</span> apps · <span class="kbd">`</span> or <span class="kbd">↓</span> windows</div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Apps, then their windows</h4><p>The icon row as today; the selected app's windows appear under it as pictures after a short hold, picked with ` or the arrows.</p>
+          <ul class="pc"><li class="y">Fast for apps, exact for windows</li><li class="y">Same quick ❖Tab flip</li><li class="n">Two levels to explain</li><li class="n">Panel changes height as you step</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);display:flex;gap:8px;padding:12px;border-radius:18px;align-items:flex-end">
+            <div style="text-align:center"><div style="display:flex;gap:8px"><div style="padding:6px;border-radius:12px;background:#1d1d1f1a"><span class="ic" style="--s:40px;--c:#6e56cf">H</span></div><div style="padding:6px"><span class="ic" style="--s:40px;--c:#e86f86">N</span></div></div><small style="font-size:9px;opacity:.6">Work · here</small></div>
+            <div style="width:1px;align-self:stretch;background:#0002"></div>
+            <div style="text-align:center;opacity:.7"><div style="display:flex;gap:8px"><div style="padding:6px"><span class="ic" style="--s:40px;--c:#1d1d1f">T</span></div><div style="padding:6px"><span class="ic" style="--s:40px;--c:#2a475e">S</span></div></div><small style="font-size:9px;opacity:.6">Games</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>This Desktop first</h4><p>Apps with windows on this Desktop come first; the rest follow, labeled with their Desktop's name, and choosing one goes there.</p>
+          <ul class="pc"><li class="y">Desktops feel separate</li><li class="y">Uses Desktop names</li><li class="n">Breaks pure recency</li><li class="n">An app on two Desktops shows twice</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 12px;border-radius:18px;width:250px">
+            <div style="display:flex;gap:6px;align-items:center;background:#1d1d1f12;border-radius:8px;padding:4px 8px;font-size:11px"><span style="opacity:.5">⌕</span><b>te</b><span style="opacity:.4">|</span></div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:8px">
+              <div style="padding:6px;border-radius:12px;background:#1d1d1f1a"><span class="ic" style="--s:40px;--c:#1d1d1f">T</span></div>
+              <div style="padding:6px"><span class="ic" style="--s:40px;--c:#e86f86">N</span></div>
+            </div>
+            <div style="font-size:10px;text-align:center;margin-top:4px"><b>Terminal</b> · <span style="opacity:.6">Notes: "Grocery <b>te</b>mplate"</span></div>
+          </div>
+          <div class="note" style="left:50%;bottom:24px;transform:translateX(-50%)">Keep <span class="kbd">❖</span> held and type</div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Type to find</h4><p>Typing while ❖ is held filters by app name and window title; letting go of ❖ picks the first match.</p>
+          <ul class="pc"><li class="y">Fast with 20 windows open</li><li class="y">Matches titles too</li><li class="n">❖ plus letters are shortcuts elsewhere</li><li class="n">Only while the panel is up</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="gl" style="left:50%;top:44%;transform:translate(-50%,-50%);display:flex;gap:10px;padding:12px;border-radius:18px">
+            <div style="padding:6px;border-radius:12px;background:#1d1d1f1a"><span class="ic" style="--s:44px;--c:#6e56cf">H</span></div>
+            <div style="padding:6px"><span class="ic" style="--s:44px;--c:#e86f86">N</span></div>
+            <div style="padding:6px;opacity:.45"><span class="ic" style="--s:44px;--c:#1d1d1f">T</span></div>
+            <div style="padding:6px"><span class="ic" style="--s:44px;--c:#2a475e">S</span></div>
+          </div>
+          <div class="note" style="left:50%;bottom:30px;transform:translateX(-50%)"><span class="kbd">Q</span> quit · <span class="kbd">H</span> hide · <span class="kbd">M</span> minimize · <span class="kbd">W</span> close window · pointer picks</div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Act without switching</h4><p>While ❖ is held: Q quits the selected app, H hides it, M minimizes, W closes the window; the pointer hovers to select and clicks to pick. Hidden and minimized apps are dimmed.</p>
+          <ul class="pc"><li class="y">Clean up in one gesture</li><li class="y">Mouse works too</li><li class="n">Q by mistake quits an app (the app's own save prompt still shows)</li><li class="n">Keys to show somewhere</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: C, E and F.</b> Keep the fast app row, show the selected app's windows under it after a hold, filter by typing, and allow quit, hide, minimize and close while ❖ is held. A's badges come free with C.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li>IPC: <code>window-thumbnails {rects: [{window, x, y, w, h}]}</code> for the panel's layer; dashi-comp draws live, scaled windows there (shared with Desktop previews).</li>
+        <li>Shell: the switcher keeps windows per app (not only the first), a query string, and the action keys in <code>keymap.ts</code> while a session is open. The panel's size grows by the window row; <code>switcherSize</code> learns it.</li>
+        <li>Tests: grouping, filtering, and step order in a new <code>test/switcher.test.ts</code>; the panel in the VM.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>System dialogs: a Dashi portal</h2>
+    <p>When an app asks the desktop for a file, the color scheme, a permission, the "Open With" list, a printer, or to keep the screen awake, it asks xdg-desktop-portal, which hands the request to a backend. Dashi has none of its own (<code>session/dashi-portals.conf</code>): GTK's backend answers everything but screen sharing, so those dialogs are GNOME's, not Dashi's. Keeping the screen awake likely does nothing, because GTK's backend passes it to <code>org.gnome.SessionManager</code>, which Dashi doesn't run. In 0.4.0, <code>xdg-desktop-portal-dashi</code> serves every interface GTK's did, and <code>xdg-desktop-portal-gtk</code> leaves Dashi's dependencies. Screen capture stays with the wlroots portal (not GTK), with Dashi's picker in front of it.</p>
+    <table>
+      <tr><th>Interface</th><th>Today</th><th>0.4.0</th></tr>
+      <tr><td>FileChooser</td><td>GTK's dialog</td><td>Dashi, drawn by Metal, using Files' code</td></tr>
+      <tr><td>Settings</td><td>GTK, read back from gsettings</td><td>Dashi, from Dashi's own settings: <code>org.freedesktop.appearance</code> (color scheme, accent color, contrast, reduced motion), plus the <code>org.gnome.desktop.interface</code> keys sandboxed GTK apps read (fonts, icons, cursor, text scale)</td></tr>
+      <tr><td>Access (camera, microphone)</td><td>GTK's dialog</td><td>Dashi</td></tr>
+      <tr><td>AppChooser ("Open With")</td><td>GTK's dialog</td><td>Dashi</td></tr>
+      <tr><td>Inhibit (keep awake)</td><td>GTK, through a GNOME service Dashi doesn't run</td><td>Dashi, held by the shell's idle handling; <code>org.freedesktop.ScreenSaver</code> too, for apps that skip the portal</td></tr>
+      <tr><td>Print</td><td>GTK's print dialog</td><td>Dashi: a print sheet over CUPS</td></tr>
+      <tr><td>Notification</td><td>GTK, passed on to Dashi's notification server</td><td>Dashi, straight into Notification Center, with buttons and default actions</td></tr>
+      <tr><td>Account (name and picture)</td><td>GTK's dialog</td><td>Dashi</td></tr>
+      <tr><td>Email</td><td>GTK, opens the mail app</td><td>Dashi, opens the default mail app with the draft filled in</td></tr>
+      <tr><td>DynamicLauncher (web apps)</td><td>GTK's dialog</td><td>Dashi: "Add to Dock" sheet</td></tr>
+      <tr><td>ScreenCast, Screenshot</td><td>wlroots portal</td><td>wlroots portal, with Dashi's picker as its <code>chooser_cmd</code></td></tr>
+      <tr><td>Secret</td><td>gnome-keyring</td><td>See <a href="#secrets-for-agents">Secrets for agents</a></td></tr>
+    </table>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px"><div class="x"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div></div>
+          <div style="position:absolute;left:44px;right:44px;top:23px;height:130px;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 10px 22px -6px #0008;display:grid;grid-template-columns:62px 1fr;font-size:9.5px;overflow:hidden;z-index:2">
+            <div style="background:#f2f1ee;padding:6px 5px;line-height:1.75"><b style="opacity:.5;font-size:8px">PLACES</b><br>Recents<br><b>Documents</b><br>Downloads<br>Pictures</div>
+            <div style="padding:6px 8px;line-height:1.75;position:relative"><div style="background:#1d1d1f0f;border-radius:4px;padding:0 4px">Invoice-0412.pdf</div><div>Lease 2026.pdf</div><div>Notes.md</div><div>Taxes/</div>
+              <div style="position:absolute;right:8px;bottom:6px;display:flex;gap:5px"><span class="btn">Cancel</span><span class="btn p">Open</span></div></div>
+          </div>
+          <div class="note" style="left:14px;bottom:4px">Slides down from Helium's title bar</div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A sheet on the app's window</h4><p>The picker opens as a sheet below the title bar of the window that asked, using xdg-foreign. It moves with the window and blocks only that window.</p>
+          <ul class="pc"><li class="y">Clear which app asked</li><li class="y">Other windows stay usable</li><li class="n">Cramped on small windows</li><li class="n">Needs the parent handle (no handle: a centered window)</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="w" style="left:50%;top:50%;transform:translate(-50%,-50%);width:250px;height:140px;display:grid;grid-template-columns:62px 1fr;font-size:9.5px"><div class="x"><i></i><i></i><i></i></div>
+            <div style="background:#f2f1ee;padding:6px 5px;line-height:1.75">Recents<br>Home<br><b>Documents</b><br>Downloads<br>Trash</div>
+            <div style="padding:6px 8px;line-height:1.75"><b style="font-size:10.5px">Open, for Helium</b><div style="display:flex;gap:6px;margin-top:4px"><span class="ic" style="--s:26px;--c:#d0596f">P</span><span class="ic" style="--s:26px;--c:#d0596f">P</span><span class="ic" style="--s:26px;--c:#6e56cf">M</span><span class="ic" style="--s:26px;--c:#5fae95">▤</span></div><div style="display:flex;gap:5px;justify-content:flex-end;margin-top:22px"><span class="btn">Cancel</span><span class="btn p">Open</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Files, in a choosing mode</h4><p>A separate Files window with icon and list views, Quick Look and tags, and Open in place of the toolbar.</p>
+          <ul class="pc"><li class="y">Everything Files can do</li><li class="y">Works with no parent window</li><li class="n">Easy to lose behind other windows</li><li class="n">Heavy for "pick one PDF"</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:240px;padding:10px">
+            <div style="display:flex;gap:6px;align-items:center;background:#1d1d1f12;border-radius:8px;padding:4px 8px;font-size:11px"><span style="opacity:.5">⌕</span><b>lea</b><span style="opacity:.4">|</span></div>
+            <div class="r"><span><span class="ic" style="--s:16px;--c:#d0596f;display:inline-grid;vertical-align:middle">P</span> <b>Lea</b>se 2026.pdf</span><small>Documents · Mon</small></div>
+            <div class="r"><span><span class="ic" style="--s:16px;--c:#5fae95;display:inline-grid;vertical-align:middle">▤</span> <b>Lea</b>rning plan.md</span><small>Notes · Sep</small></div>
+            <div class="r"><small>Only the PDFs and Markdown files Helium accepts</small><span class="btn">Browse…</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Recent files and search first</h4><p>The sheet opens on recent files that match the app's filters, with the search field focused. Browse… expands it to the folders.</p>
+          <ul class="pc"><li class="y">Usually one keystroke and Return</li><li class="y">Same search as Files</li><li class="n">Needs a recent-files index</li><li class="n">Browsing is one step further away</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px"><div class="x"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div></div>
+          <div style="position:absolute;left:70px;right:70px;top:23px;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 10px 22px -6px #0008;padding:10px;text-align:center;font-size:10px;z-index:2">
+            <span class="ic" style="--s:28px;--c:#6e56cf;margin:0 auto">H</span>
+            <b style="display:block;font-size:11px;margin:5px 0 2px">Helium wants to use the camera</b>
+            <small style="opacity:.65">You can change this in Settings › Privacy.</small>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:8px"><span class="btn">Don't Allow</span><span class="btn p">Allow</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Permissions as a sheet</h4><p>Camera and microphone prompts (the Access interface) appear as a sheet on the asking window, written as a question, and remembered in Settings › Privacy.</p>
+          <ul class="pc"><li class="y">Can't be mistaken for another app</li><li class="y">Same shape as the file picker</li><li class="n">Background apps have no window</li><li class="n">Privacy pane is new work</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk broth">
+          <div class="mb"><b>Helium</b><span>File</span><span>Edit</span><span class="r"><span class="on" style="background:#e5b13f;color:#1d1d1f">● Camera</span><span>Tue 18:40</span></span></div>
+          <div class="gl" style="right:40px;top:26px;width:200px">
+            <div class="r"><b style="font-size:11px">Helium wants the camera</b></div>
+            <div class="r"><small>Asked 2 seconds ago from "Meet – Standup"</small></div>
+            <div class="r" style="justify-content:flex-end;gap:5px"><span class="btn">Don't Allow</span><span class="btn p">Allow</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Permissions in the menu bar</h4><p>The prompt hangs from a privacy indicator in the menu bar, which stays while the camera is on.</p>
+          <ul class="pc"><li class="y">Works for background apps</li><li class="y">Prompt and "in use" share one place</li><li class="n">Far from what you were doing</li><li class="n">Easy to miss</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:220px;padding:8px 10px">
+            <div class="t" style="font-size:11px">Open "Lease 2026.pdf" with</div>
+            <div class="r" style="background:#1d1d1f12;border-radius:6px;padding:3px 5px"><span><span class="ic" style="--s:16px;--c:#d0596f;display:inline-grid;vertical-align:middle">P</span> Preview</span><small>default</small></div>
+            <div class="r" style="padding:3px 5px"><span><span class="ic" style="--s:16px;--c:#6e56cf;display:inline-grid;vertical-align:middle">H</span> Helium</span></div>
+            <div class="r" style="padding:3px 5px"><span><span class="ic" style="--s:16px;--c:#3e8a72;display:inline-grid;vertical-align:middle">↓</span> Find in Software…</span></div>
+            <hr><div class="r"><small>Always use for PDFs</small><span class="sw"></span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">F</span>Open With, short</h4><p>A small list: the default first, the other apps that open the type, and Software for more. Ticking "Always" writes the mime default, as Files' Get Info does.</p>
+          <ul class="pc"><li class="y">One list for apps and Files</li><li class="y">Changes the default where you are</li><li class="n">Long lists need a search</li><li class="n">Flatpak apps' types need reading</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:260px;padding:10px">
+            <div class="t" style="font-size:11px">Share with Helium</div>
+            <div style="display:flex;gap:8px;margin:6px 0">
+              <div style="text-align:center"><div class="th" style="--wall:linear-gradient(135deg,#5fae95,#2f6e5b);width:70px;height:44px;outline:2px solid var(--kombu)"></div><small style="font-size:8.5px">Built-in screen</small></div>
+              <div style="text-align:center"><div class="th" style="--wall:#f2f1ee;width:70px;height:44px"><div class="w" style="inset:4px"><div class="ln"></div></div></div><small style="font-size:8.5px">Notes</small></div>
+              <div style="text-align:center"><div class="th" style="--wall:#2c2c2e;width:70px;height:44px"><div class="w d" style="inset:4px"><div class="ln"></div></div></div><small style="font-size:8.5px">Terminal</small></div>
+            </div>
+            <div class="r"><small>Hide notifications while sharing</small><span class="sw"></span></div>
+            <div class="r" style="justify-content:flex-end;gap:5px"><span class="btn">Cancel</span><span class="btn p">Share</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">G</span>Pick what to share, by picture</h4><p>Screens and windows as live pictures (the switcher's thumbnails), passed to the wlroots portal as its <code>chooser_cmd</code>. Notifications are hidden while sharing.</p>
+          <ul class="pc"><li class="y">No guessing at "HDMI-A-1"</li><li class="y">Keeps the working capture path</li><li class="n">Output format is the wlroots portal's</li><li class="n">No region sharing yet</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="mb"><b>Files</b><span>File</span><span>Edit</span><span class="r"><span class="on">82%</span><span>Tue 18:40</span></span></div>
+          <div class="gl" style="right:30px;top:24px;width:210px">
+            <div class="r"><b style="font-size:11.5px">Battery</b><small>82% · 4 h 10 min left</small></div>
+            <hr>
+            <div class="r"><small>Keeping the screen awake</small></div>
+            <div class="r"><span><span class="ic" style="--s:14px;--c:#2a475e;display:inline-grid;vertical-align:middle">▶</span> Celluloid <small style="opacity:.6">· Playing</small></span><span class="btn">Allow Sleep</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">H</span>Keep-awake you can see</h4><p>Apps that keep the screen or the computer awake are listed in the battery menu, with their reason and a way to override them.</p>
+          <ul class="pc"><li class="y">Explains "why didn't it sleep?"</li><li class="y">Cheap once Inhibit is Dashi's</li><li class="n">Reasons are whatever apps send</li><li class="n">Desktops without a battery need another spot</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px"><div class="x"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div></div>
+          <div style="position:absolute;left:40px;right:40px;top:23px;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 10px 22px -6px #0008;padding:8px;display:grid;grid-template-columns:70px 1fr;gap:9px;font-size:9.5px;z-index:2">
+            <div style="background:#f2f1ee;border-radius:4px;height:92px;position:relative"><div class="ln" style="position:absolute;left:8px;right:8px;top:10px;height:3px;background:#1d1d1f22"></div><div style="position:absolute;left:8px;right:16px;top:18px;height:3px;background:#1d1d1f22"></div><div style="position:absolute;left:8px;right:12px;top:26px;height:3px;background:#1d1d1f22"></div><small style="position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:8px">1 of 3</small></div>
+            <div style="line-height:1.9">
+              <div style="display:flex;justify-content:space-between;align-items:center">Printer<b>Brother HL-L2350</b></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">Copies<span>1</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">Pages<span>All</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">Two-sided<span class="sw"></span></div>
+              <div style="display:flex;gap:5px;justify-content:flex-end;margin-top:4px"><span class="btn">PDF</span><span class="btn">Cancel</span><span class="btn p">Print</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">I</span>A print sheet</h4><p>A preview, the printer, copies, pages and two-sided printing, with paper size and color under "More". Save as PDF is a button, not a fake printer.</p>
+          <ul class="pc"><li class="y">The everyday choices in view</li><li class="y">Printers from CUPS, as Settings shows them</li><li class="n">The preview needs the app's rendered pages</li><li class="n">Printer-specific options under "More"</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px"><div class="x"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div></div>
+          <div style="position:absolute;left:66px;right:66px;top:23px;background:#fff;border-radius:0 0 8px 8px;box-shadow:0 10px 22px -6px #0008;padding:10px;text-align:center;font-size:10px;z-index:2">
+            <b style="display:block;font-size:11px">Share your name and picture with Fractal?</b>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin:8px 0"><span class="ic" style="--s:30px;--c:#e86f86;border-radius:50%">A</span><span style="text-align:left">Alex Kim<br><small style="opacity:.6">alexk</small></span></div>
+            <small style="opacity:.65">"To set up your profile"</small>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:8px"><span class="btn">Don't Share</span><span class="btn p">Share</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">J</span>Account, as a sheet</h4><p>What the app will get (name, user name and picture) and the reason it gave, with the same sheet shape as permissions.</p>
+          <ul class="pc"><li class="y">Shows exactly what is shared</li><li class="y">Picture from Users &amp; Accounts</li><li class="n">Rare: few apps ask</li><li class="n">No way to edit what's sent</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:44%;transform:translate(-50%,-50%);width:220px;padding:10px;text-align:center">
+            <span class="ic" style="--s:34px;--c:#3e8a72;margin:0 auto">Y</span>
+            <b style="display:block;font-size:11px;margin:5px 0 1px">Add "YNAB" to the Dock?</b>
+            <small style="opacity:.65">Opens app.ynab.com in its own Helium window.</small>
+            <div class="r" style="margin-top:6px"><small>Name</small><span style="border:1px solid #0002;border-radius:4px;padding:0 5px;font-size:10px">YNAB</span></div>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:6px"><span class="btn">Cancel</span><span class="btn p">Add</span></div>
+          </div>
+          <div class="dock" style="opacity:.9"><span class="ic" style="--s:20px;--c:#6e56cf"></span><span class="ic" style="--s:20px;--c:#e86f86"></span><span class="ic" style="--s:20px;--c:#1d1d1f"></span><span class="ic" style="--s:20px;--c:#3e8a72;outline:2px dashed #fff;outline-offset:1px"></span></div>
+        </div>
+        <div class="cap"><h4><span class="k">K</span>Web apps: "Add to Dock"</h4><p>When a browser installs a web app (the DynamicLauncher interface), Dashi asks once, with the icon and an editable name, and the app appears in the Dock and Launchpad.</p>
+          <ul class="pc"><li class="y">Web apps feel like apps</li><li class="y">Removed like any app</li><li class="n">Icons from sites can be poor</li><li class="n">Each browser asks differently</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Picked: the full Dashi portal, with A and C, plus D, F, G, H, I, J and K.</b> The file picker is a sheet on the asking window that opens on recent files and search. Permissions and Account are sheets too, with E's menu bar item for apps that have no window. Open With is a short list, screen sharing uses pictures, keep-awake shows in the battery menu, printing is a sheet, and web apps join the Dock. Notifications and Email need no new UI. GTK's portal is gone.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li>A <code>dashi-portal</code> process in the shell package (Bun, D-Bus name <code>org.freedesktop.impl.portal.desktop.dashi</code>, D-Bus activated) and <code>dashi.portal</code> listing FileChooser, Settings, Access, AppChooser, Inhibit, Print, Notification, Account, Email and DynamicLauncher. Its dialogs are Metal windows parented through xdg-foreign, which dashi-comp already serves.</li>
+        <li><code>dashi-portals.conf</code>: <code>default=dashi</code>, ScreenCast and Screenshot on <code>wlr</code>, nothing on <code>gtk</code>. <code>dashi.spec</code> drops <code>Requires: xdg-desktop-portal-gtk</code>.</li>
+        <li>Apps that would draw their own dialog are pointed at the portal in <code>dashi-session</code>: <code>GTK_USE_PORTAL=1</code> (GTK 3, Firefox) and <code>GDK_DEBUG=portals</code> (GTK 4). Qt already is (<code>QT_QPA_PLATFORMTHEME=xdgdesktopportal</code>). Chromium and Electron use the portal when one is running. A GTK app that ignores all of this still shows GTK's own dialog: GTK is no longer the portal, but it can't be removed from GTK apps.</li>
+        <li>Print sends jobs to CUPS through the IPP client the printers pane uses, and the app's pages come in as the PDF the portal hands over.</li>
+        <li>Inhibit is held in the shell, which decides what idle does: while an app holds it, the shell doesn't blank, lock or sleep. dashi-comp's idle-inhibit protocol already covers a visible Wayland surface; this covers apps that ask through D-Bus, and asks made while the window is hidden. <code>org.freedesktop.ScreenSaver</code> is served as well, for Firefox, mpv and others that skip the portal.</li>
+        <li>The share picker is <code>dashi-share-picker</code>, set as the wlroots portal's <code>chooser_cmd</code>. It prints the output or the window the person chose.</li>
+        <li>Tests: request and response parsing for each interface, filter matching, mime defaults; the dialogs and parenting in the VM with Helium, Firefox, a GTK 4 app, a Flatpak and a Qt app, with <code>xdg-desktop-portal-gtk</code> uninstalled.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Secrets for agents</h2>
+    <p>Today, gnome-keyring hands any password to any program running as you: an agent in a terminal can run <code>secret-tool lookup</code> and read everything. An agent driving the screen through <code>dashi-mcp</code> sees whatever is on screen. Dashi's agent layer already has scopes, consent sheets, "Always Allow" grants per agent, an activity log, and screenshots that wait until no consent sheet is showing (<code>src/agents/</code>). The goal is a store whose secrets agents can <em>use</em> (to sign in, confirm a person, pay) but never <em>read</em>.</p>
+    <div class="grid two" style="margin:14px 0">
+      <div class="card"><div class="eyebrow">The rules</div><p style="margin:0">A secret never enters an agent's context: not as text, a picture, a file, or an environment variable. Each use is approved on a sheet only the person's seat can answer, scoped to the task, and logged. Where possible the agent gets something that is useless anywhere else: a passkey signature, a single-use card, a token that only works for one host.</p></div>
+      <div class="card"><div class="eyebrow" style="color:var(--ume)">What this can't fix</div><p style="margin:0">Once signed in, the agent acts as you on that site until the session ends. An agent with DevTools access to a browser (CDP) can read field values and cookies, so filling is safe only in a browser the agent drives through the screen. A program outside the agent sandbox with ptrace rights could read another process's memory, which is why the vault runs as its own user.</p></div>
+    </div>
+    <div class="props">
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="w" style="left:16px;right:16px;top:14px;bottom:14px;display:grid;grid-template-columns:70px 1fr;grid-template-rows:auto 1fr;font-size:9.5px"><div class="x"><i></i><i></i><i></i></div>
+            <div style="background:#f2f1ee;padding:6px 5px;line-height:1.8"><b>Passwords</b><br>Passkeys<br>Codes<br>Cards<br>Tokens</div>
+            <div style="padding:6px 8px">
+              <div style="display:grid;grid-template-columns:1fr 60px 52px;gap:2px 6px;line-height:1.7"><b style="opacity:.5;font-size:8px">SITE</b><b style="opacity:.5;font-size:8px">ACCOUNT</b><b style="opacity:.5;font-size:8px">AGENTS</b>
+                <span>github.com</span><span>alexk</span><span style="color:var(--kombu)">Ask</span>
+                <span>ynab.com</span><span>alex@…</span><span style="color:var(--kombu)">Ask</span>
+                <span>bank.example</span><span>4471…</span><span style="color:var(--ume)">Never</span>
+                <span>uniqlo.com</span><span>alex@…</span><span style="color:var(--kombu)">Ask</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Dashi's vault</h4><p><code>dashi-secretd</code> runs as its own system user and owns the vault file, which your user can't read. It unlocks at login and with the fingerprint reader. It serves <code>org.freedesktop.secrets</code> and the portal's Secret, replacing gnome-keyring. Every item says whether agents may ask for it. Callers are identified by pidfd and cgroup, and agents run in <code>dashi-agent-*.scope</code>.</p>
+          <ul class="pc"><li class="y">Agents can't read the vault, even as you</li><li class="y">One store for apps, Flatpaks and agents</li><li class="n">Replaces gnome-keyring: import, then no turning back</li><li class="n">Has to be very correct</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px"><div class="x"><i></i><i></i><i></i></div>
+            <div style="margin:12px auto;width:120px;font-size:9px"><b>Sign in to GitHub</b><div style="border:1px solid #0002;border-radius:3px;padding:1px 4px;margin-top:4px">alexk</div><div style="border:1px solid #0002;border-radius:3px;padding:1px 4px;margin-top:3px">••••••••••••</div></div></div>
+          <div class="gl" style="left:50%;bottom:16px;transform:translateX(-50%);width:270px;padding:9px;z-index:3">
+            <div class="r"><span class="ic" style="--s:20px;--c:#d97757">C</span><b style="font-size:10.5px;flex:1;margin-left:6px">Claude wants to sign in to github.com as alexk</b></div>
+            <div class="r"><small>Dashi fills it in. Claude sees dots.</small></div>
+            <div class="r" style="justify-content:flex-end;gap:5px"><span class="btn">Deny</span><span class="btn">Allow for This Task</span><span class="btn p">Allow Once</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Sign in for the agent</h4><p>A <code>sign_in {site}</code> tool. After you allow it, Dashi types the user name and password into the focused fields with its own keyboard, but only if the field really is a password field (AT-SPI says so) and the page really is that site (the browser reports its URL).</p>
+          <ul class="pc"><li class="y">Works on any site with a password</li><li class="y">Same consent sheet as other agent tools</li><li class="n">Needs the page's address from the browser</li><li class="n">Not safe if the agent has DevTools</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:230px;padding:12px;text-align:center">
+            <div style="font-size:26px;line-height:1">◎</div>
+            <b style="display:block;font-size:11px;margin:4px 0 2px">Claude wants to use your passkey for github.com</b>
+            <small style="opacity:.65">Touch the fingerprint reader to allow.</small>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:8px"><span class="btn">Deny</span></div>
+          </div>
+          <div class="note" style="left:12px;bottom:12px">Every browser sees a security key</div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Passkeys, as a security key</h4><p>Dashi shows browsers a virtual FIDO2 security key (uhid), backed by the vault, so every browser supports it with no extension. Each sign-in is signed only for that site and needs your fingerprint, whether you or an agent started it.</p>
+          <ul class="pc"><li class="y">Nothing that could leak: only a signature</li><li class="y">Can't be phished: tied to the site</li><li class="n">Only sites with passkeys</li><li class="n">uhid needs the system helper; backing up passkeys</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="w" style="left:30px;right:30px;top:20px;height:100px"><div class="x"><i></i><i></i><i></i></div>
+            <div style="margin:12px auto;width:150px;font-size:9px;text-align:center"><b>Two-factor code</b><div style="display:flex;gap:3px;justify-content:center;margin-top:5px"><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span><span style="border:1px solid #0002;border-radius:3px;width:14px">•</span></div></div></div>
+          <div class="ntf" style="top:132px"><span class="ic" style="--s:24px;--c:#3e8a72">✓</span><div><b>Code filled for github.com</b><p>Claude asked; you allowed it 9 seconds ago.</p></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>One-time codes</h4><p>The vault keeps TOTP secrets and fills the 6-digit code the same way B fills a password, within the same approval. Codes sent by email or text stay the person's job.</p>
+          <ul class="pc"><li class="y">Two-factor without handing over the phone</li><li class="y">Rides on B's checks</li><li class="n">TOTP secrets move off the phone app</li><li class="n">Doesn't cover SMS or push</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk kelp">
+          <div class="gl" style="left:50%;top:50%;transform:translate(-50%,-50%);width:240px;padding:10px">
+            <div class="r"><span class="ic" style="--s:20px;--c:#d97757">C</span><b style="font-size:10.5px;flex:1;margin-left:6px">Claude wants to pay Uniqlo</b><b style="font-size:12px">$48.90</b></div>
+            <div class="r"><small>2 items · ships to Home</small></div>
+            <div class="r"><span>Card</span><small>Visa ··4242 → single-use card</small></div>
+            <div class="r"><small>This task can spend up to $100.</small></div>
+            <div class="r" style="justify-content:flex-end;gap:5px"><span class="btn">Deny</span><span class="btn p">Pay with ◎</span></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">E</span>Payments with a limit</h4><p>A <code>pay {merchant, amount}</code> tool. You confirm the merchant and the total with your fingerprint. The agent gets a payment credential locked to that merchant and amount (a Stripe shared payment token, Visa Intelligent Commerce, Mastercard Agent Pay), or B fills a single-use virtual card. The real card number never moves.</p>
+          <ul class="pc"><li class="y">A leaked credential is worth one purchase</li><li class="y">Spending limits per task</li><li class="n">Providers and countries vary; accounts needed</li><li class="n">Card fields in iframes are hard to check</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Agent's command</b><small>gh api user · Authorization: dashi:github</small></div>
+          <div class="ar">↓ only proxy the agent's sandbox can reach</div>
+          <div class="bx acc"><b>dashi-secretd proxy</b><small>api.github.com? swap in the real token · any other host? refuse</small></div>
+          <div class="ar">↓ TLS</div>
+          <div class="bx"><b>api.github.com</b><small>sees the token; the agent never did</small></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">F</span>Tokens that stay home</h4><p>For agents' commands and MCP servers: they hold placeholders like <code>dashi:github</code>, and a proxy inside the agent sandbox swaps in the real API token, only for the hosts that token is meant for.</p>
+          <ul class="pc"><li class="y">CLI and API keys out of dotfiles</li><li class="y">A stolen placeholder is worthless</li><li class="n">A local CA, trusted only in the sandbox</li><li class="n">Tools that pin certificates break</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="w" style="left:14px;right:14px;top:14px;bottom:14px;outline:3px solid #e5b13f"><div class="x"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div><div class="ln" style="width:70%"></div></div>
+          <div class="gl" style="left:50%;top:24px;transform:translateX(-50%);width:250px;padding:8px;z-index:3">
+            <div class="r"><b style="font-size:10.5px">Your turn: sign in to the bank</b><span class="btn p">Done</span></div>
+            <div class="r"><small>Claude is paused and can't see this window until you press Done.</small></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">G</span>Your turn</h4><p>When the agent reaches something it shouldn't do (a "Never" item, a bank, a CAPTCHA), it hands the window to you. Captures of that window are blanked for the agent until you press Done.</p>
+          <ul class="pc"><li class="y">Works for anything</li><li class="y">No secret ever stored for it</li><li class="n">Needs you there</li><li class="n">Agents must learn to ask</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="th" style="position:absolute;left:24px;right:24px;top:18px;bottom:30px;--wall:linear-gradient(135deg,#5fae95,#2f6e5b)">
+            <div class="w" style="left:10px;top:10px;width:46%;height:70%"><div class="ln"></div><div style="margin:8px 6px 0;height:9px;background:#1d1d1f;border-radius:2px"></div><div class="ln" style="width:50%"></div></div>
+            <div style="position:absolute;right:10px;top:10px;width:40%;height:70%;background:#1d1d1f;border-radius:4px;display:grid;place-items:center;color:#fff8;font-size:9px">Passwords</div>
+          </div>
+          <div class="note" style="left:50%;bottom:8px;transform:translateX(-50%)">What the agent's screenshot gets</div>
+        </div>
+        <div class="cap"><h4><span class="k">H</span>Blanked in the agent's picture</h4><p>The shell tells dashi-comp what to blank in agent captures: the vault's windows, consent sheets, password fields (from AT-SPI), and windows in G's hand-off. This works like Android's FLAG_SECURE, and only for agents. Your own screenshots and screen sharing are unchanged.</p>
+          <ul class="pc"><li class="y">Pixels can't leak what text can't</li><li class="y">Mechanism in Rust, decisions in the shell</li><li class="n">Field positions depend on accessibility</li><li class="n">Unknown fields aren't blanked</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk broth">
+          <div class="stw"><div class="sb"><div><i style="--c:#4a9a7e"></i>Wi‑Fi</div><div><i style="--c:#6e56cf"></i>Agents</div><div class="on"><i style="--c:#fff"></i>Passwords</div></div>
+            <div class="pn"><div class="t">Passwords</div>
+              <div class="grp"><div class="r"><span>Dashi<small>Passkeys, app secrets, tokens, logins</small></span><span class="sw"></span></div><div class="r"><span>1Password<small>Logins, codes and cards from your vault</small></span><span class="sw"></span></div></div><div class="grp"><div class="r">Save new logins to<div class="sg" style="width:120px"><span>Dashi</span><span class="on">1Password</span></div></div></div>
+            </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">I</span>Dashi and 1Password, both</h4><p>Both are sources, and each can be turned on in Settings › Passwords. When an agent asks to sign in, the broker looks in both and the consent sheet names where the login comes from. 1Password items are read through its desktop app integration and go straight into the field. New logins are saved wherever you choose. Dashi's vault always holds app secrets (the Secret Service), passkeys and API tokens. Bitwarden can be added the same way.</p>
+          <ul class="pc"><li class="y">No migration for 1Password users</li><li class="y">Use whichever vault has the login</li><li class="n">The same login can live in both</li><li class="n">1Password's Linux API sets the limits</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Picked: all of it in 0.4.0, with Dashi's vault and 1Password both supported (I).</b> Build in this order: the vault and blanked captures (A, H), because nothing else is safe without them; then sign-in with one-time codes (B, D) from either vault, and "Your turn" (G); then passkeys through a virtual security key (C); then payments with limits (E) and the token proxy (F). Dashi's vault replaces gnome-keyring for apps; logins, codes and cards can come from either vault, whichever is more convenient.</p>
+    <div class="spec">
+      <h5>Build</h5>
+      <ul>
+        <li><code>dashi-secretd</code>: a system service with its own user. The vault is encrypted with a key unlocked at login (PAM) and wrapped by the TPM where there is one. It serves the Secret Service and portal Secret to apps, with agents' cgroups filtered out, and a private socket for the shell's tools.</li>
+        <li>Agent tools in <code>src/agents/tools</code>: <code>list_logins</code> (sites and account names only), <code>sign_in</code>, <code>fill_code</code>, <code>pay</code>, <code>hand_over</code>. New scopes "Sign in for you" and "Pay for you", which "Always Allow" never covers for payments.</li>
+        <li>Consent sheets accept only the person's seat, never <code>agent-input</code>; payments and passkeys need the fingerprint reader or the password.</li>
+        <li>IPC: <code>capture-mask {client, rects | windows}</code> for agent captures (H); <code>run.ts</code> applies it to every agent screenshot and recording.</li>
+        <li>The virtual FIDO2 key goes through <code>dashi-hardware</code> (uhid). The proxy runs in the agent sandbox, with a CA that only the sandbox trusts.</li>
+        <li>Sources: the broker asks each enabled vault for logins matching the site and lists them in the consent sheet with where each comes from. When both have one, the most recently used login is listed first. 1Password: a broker process running as you, outside every agent sandbox, asks the 1Password app for one item per approved use (the CLI's desktop integration, or 1Password's SDK), types it in, and drops it. Agents can't reach the broker's socket or the 1Password app's.</li>
+        <li>Payments: single-use virtual cards first (any issuer that offers them, filled by B), then a provider token (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) where the merchant takes one.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Order of work</h2>
+    <table>
+      <tr><th></th><th>Work</th><th>Why first</th></tr>
+      <tr><td>1</td><td>tuned-ppd required; power modes over D-Bus; the lost-graphics-card watch and a shutdown that can't hang</td><td>Fixes what broke on the laptop this week.</td></tr>
+      <tr><td>2</td><td><code>dashi-hardware</code> helper and the model database; mode recipes in sync both ways; charge limit; power limits and the Curve Optimizer with the boot guard</td><td>Everything ASUS builds on it.</td></tr>
+      <tr><td>3</td><td>cardwire packaged; Automatic graphics; "Using the graphics card"</td><td>Battery life, and needs 1 for the lost-card handling.</td></tr>
+      <tr><td>4</td><td>Desktop previews and names; moving windows; the switcher; the share picker</td><td>Independent of the rest; they share compositor work (thumbnails).</td></tr>
+      <tr><td>5</td><td><code>xdg-desktop-portal-dashi</code>, every interface: keep-awake and Settings first, then the file picker, permissions, Open With, Account, web apps, printing; GTK's portal removed last</td><td>Keep-awake is broken today; the dialogs are the most visible GNOME leftovers.</td></tr>
+      <tr><td>6</td><td><code>dashi-secretd</code> and blanked agent captures; sign-in and codes from either vault; hand-over; passkeys; payments; the token proxy</td><td>Replaces gnome-keyring once the portal is Dashi's; agents get safer before they get more powerful.</td></tr>
+      <tr><td>7</td><td><code>@dashi/applet</code>, protocol v2 with popovers, the sandbox</td><td>Needed by the store and ASUS Control.</td></tr>
+      <tr><td>8</td><td>Applet Store and <code>Netko-Labs/dashi-applets</code>; ASUS Control as its first applet</td><td>Last: built on everything above.</td></tr>
+    </table>
+
+    <h2>Open questions</h2>
+    <ul>
+      <li><span class="pill open">open</span> Does turning off D3cold for the graphics card stop it falling off the bus on this laptop, and what does that cost at idle?</li>
+      <li><span class="pill open">open</span> cardwire under Xwayland (Steam): do Smart's allow and block reach X11 apps?</li>
+      <li><span class="pill open">open</span> asusd and tuned-ppd together: can asusd be kept away from the platform profile and charge limit by configuration, or only by not running parts of it?</li>
+      <li><span class="pill done">answered</span> Undervolt on Strix Point: yes, with the 20-bit encoding; tested on this laptop. Dashi sends it itself.</li>
+      <li><span class="pill open">open</span> How far can this chip go? A per-core search (G-Helper users start near −15) with the verified load above. It has to run on real hardware, one step at a time, with the boot guard in place.</li>
+      <li><span class="pill done">decided</span> Applet signing: both. Dashi's key signs the index, the index lists each applet's author key, and updates must be signed by that same author key.</li>
+      <li><span class="pill open">open</span> What 1Password lets a desktop broker do on Linux: one item per approval through the app integration, without a service account, and whether 1Password for Agents has a non-browser path.</li>
+      <li><span class="pill open">open</span> Which browsers report the page address in a way Dashi can trust for sign-in (AT-SPI document URL, an extension, or neither), and which keep DevTools closed to agents?</li>
+      <li><span class="pill open">open</span> Can a popover from an applet's own Metal host be placed exactly under its menu bar item without a new Wayland role?</li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>

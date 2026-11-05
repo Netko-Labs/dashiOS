@@ -9,6 +9,8 @@ const PAGES = [
   ["brand.html", "Brand"],
   ["mascot.html", "Kombu"],
   ["design.html", "Design"],
+  ["0.4.0.html", "0.4.0"],
+  ["plan.html", "Plan"],
 ];
 
 /** The mark: the bowl and its three wisps of steam (packages/shell/icons/setup.svg). */

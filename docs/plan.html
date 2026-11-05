@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashi 0.4.0 plan · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    /* A milestone: what it is for, the work as a checklist, then how it is checked. */
+    .ms { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; padding: 4px 22px 14px; margin: 16px 0 10px; box-shadow: var(--shadow-sm); }
+    .ms h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); margin: 16px 0 4px; font-weight: 650; }
+    .ms .goal { margin: 12px 0 2px; }
+    .todo { list-style: none; padding-left: 0; margin: 4px 0 8px; }
+    .todo li { position: relative; padding-left: 24px; margin: 5px 0; }
+    .todo li::before { content: ""; position: absolute; left: 0; top: 4px; width: 13px; height: 13px; border: 1.5px solid var(--line-strong); border-radius: 4px; }
+    .todo li .from { font-size: 12px; color: var(--ink-faint); margin-left: 4px; white-space: nowrap; }
+    .done-when { border-left: 3px solid var(--kombu); padding: 3px 0 3px 14px; margin: 12px 0 4px; }
+    .done-when b { color: var(--accent); }
+    .deps { font-size: 13px; color: var(--ink-muted); margin: 2px 0 0; }
+    .flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; font-size: 13px; }
+    .flow div { border: 1px solid var(--line-strong); border-radius: 10px; padding: 8px 11px; background: var(--bg-raised); }
+    .flow div b { display: block; font-size: 13.5px; }
+    .flow div small { color: var(--ink-muted); }
+    .flow .lane { grid-column: 1 / -1; border: 0; background: none; padding: 6px 0 0; font-size: 12px; font-weight: 650; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+    @media (max-width: 760px) { .flow { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Release plan · build order</div>
+    <h1>Dashi 0.4.0 plan</h1>
+    <p class="lede">How 0.4.0 gets built: the recommended proposals from the <a href="0.4.0.html">0.4.0 spec</a>, in eight milestones, each with its work, the files it touches, and how it is checked before the next one starts.</p>
+
+    <div class="callout open"><div>◆</div><p>Only the <span class="pill done">picked</span> proposals are here; the alternatives and their mockups stay in the spec. Where the spec left a choice of how to build something, this plan makes one and lists it under <a href="#choices-this-plan-makes">Choices this plan makes</a>, so each can be changed before work reaches it.</p></div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>At a glance</h2>
+    <div class="flow">
+      <div class="lane">Laptop base</div>
+      <div><b>1 · Power base</b><small>tuned-ppd, modes over D-Bus, the lost-card watch, a shutdown that can't hang</small></div>
+      <div><b>2 · dashi-hardware</b><small>the helper, the model database, recipes in sync, charge limit, power limits, Curve Optimizer, boot guard</small></div>
+      <div><b>3 · Graphics</b><small>cardwire as dashi-graphics, Automatic, "Using the graphics card"</small></div>
+      <div class="lane">Everyone</div>
+      <div><b>4 · Desktops &amp; switcher</b><small>thumbnails, names, moving windows, the switcher, the share picker</small></div>
+      <div><b>5 · Dashi portal</b><small>every interface GTK's served; GTK's portal removed</small></div>
+      <div><b>6 · Secrets</b><small>dashi-secretd, blanked captures, sign-in, codes, passkeys, payments, the proxy</small></div>
+      <div class="lane">Applets</div>
+      <div><b>7 · @dashi/applet</b><small>the SDK, protocol v2, popovers, the sandbox, the dev loop</small></div>
+      <div><b>8 · Store &amp; ASUS Control</b><small>the Applet Store app, Netko-Labs/dashi-applets, asus-control</small></div>
+    </div>
+    <table>
+      <tr><th></th><th>Milestone</th><th>Needs</th><th>Spec sections</th></tr>
+      <tr><td>1</td><td>Power base and a lost card</td><td>–</td><td><a href="0.4.0.html#power-management">Power</a> A · <a href="0.4.0.html#graphics-switching-with-cardwire">Graphics</a> F</td></tr>
+      <tr><td>2</td><td><code>dashi-hardware</code> and power in sync</td><td>1</td><td><a href="0.4.0.html#asus-support-asusctl-and-the-kernel">ASUS support</a> C, D, E · <a href="0.4.0.html#asus-power-states-in-sync">Power states</a> A, C, D · Power B, E · <a href="0.4.0.html#cpu-tuning-and-undervolt">CPU</a> A–E (the helper side) · <a href="0.4.0.html#laptop-features-where-they-live">Laptop features</a> A, B, C</td></tr>
+      <tr><td>3</td><td>Graphics switching</td><td>1, 2</td><td>Graphics A, B, D</td></tr>
+      <tr><td>4</td><td>Desktops, moving windows, the switcher</td><td>–</td><td><a href="0.4.0.html#desktops-names-and-previews">Desktops</a> B (A's renaming, F) · <a href="0.4.0.html#moving-windows-between-desktops">Moving</a> A, B, C, F · <a href="0.4.0.html#the-app-switcher">Switcher</a> C, E, F · <a href="0.4.0.html#system-dialogs-a-dashi-portal">Portal</a> G</td></tr>
+      <tr><td>5</td><td>The Dashi portal</td><td>4 (thumbnails, for the share picker)</td><td>Portal A, C, D, F, H, I, J, K</td></tr>
+      <tr><td>6</td><td>Secrets for agents</td><td>5 (Secret moves off gnome-keyring), 2 (uhid, for passkeys)</td><td><a href="0.4.0.html#secrets-for-agents">Secrets</a> A–I</td></tr>
+      <tr><td>7</td><td>The applet SDK</td><td>2 (polkit actions to grant)</td><td><a href="0.4.0.html#the-applet-sdk">SDK</a> A, B, D, E</td></tr>
+      <tr><td>8</td><td>The Applet Store and ASUS Control</td><td>2, 3, 7</td><td><a href="0.4.0.html#the-applet-store">Store</a> A, C, E, F · <a href="0.4.0.html#the-asus-control-applet">ASUS Control</a> A, C, F · CPU A–E (the UI)</td></tr>
+    </table>
+    <p>Milestone 4 doesn't depend on 1–3, so it can start alongside 1. Milestones 5 and 6 follow in order. Milestone 7 can start once 2's polkit actions exist.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>How the release is run</h2>
+    <ul>
+      <li><b>One branch.</b> Work lands on <code>release/0.4.0</code>, off <code>main</code>, as 0.3.0 did, with a commit at each checkpoint. <code>tasks/todo.md</code> gets one checklist per milestone, ticked as each item is verified.</li>
+      <li><b>The VM first.</b> Compositor and shell changes are checked in the VM (<code>vm/vm desktop</code>, <code>vm/agent</code>), never by running the checkout's session on the laptop. The laptop gets 0.4.0 as packages once a milestone passes in the VM.</li>
+      <li><b>Hardware on the laptop, from the command line.</b> What only real hardware can show (firmware attributes, the SMU, the graphics card) is checked by running <code>dashi-hardware</code>'s CLI on the laptop, not the session. Each such step is listed and asked for before it runs.</li>
+      <li><b>One writer per knob.</b> EPP, the platform profiles, the charge limit and the power limits each have exactly one owner (the mode recipe through <code>dashi-hardware</code>). tuned's Dashi profiles and asusd are configured to leave them alone.</li>
+      <li><b>Policy stays in TypeScript.</b> New compositor requests draw or report; the shell decides (when an edge hold fires, which Desktop a window goes to, what a capture hides).</li>
+      <li><b>Docs in the same commit.</b> <code>docs/compositor-ipc.md</code> with every IPC change (and <code>test/ipc-contract.test.ts</code>), <code>docs/applets.md</code> with protocol v2, <code>design.html</code> with any new measure.</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>1 · Power base and a lost card</h2>
+    <div class="ms">
+      <p class="goal">Fix what broke on the laptop this week: power modes that exist, and a graphics card that can fall off the bus without hanging Steam's shutdown and every Chromium app.</p>
+      <h4>Work</h4>
+      <ul class="todo">
+        <li><code>spin/rpm/dashi-release.spec</code>: require <code>tuned-ppd</code> (and conflict with power-profiles-daemon). <span class="from">Power A</span></li>
+        <li><code>src/system/profiles.ts</code>: talk to the power-profiles D-Bus API that tuned-ppd serves and watch <code>ActiveProfile</code>, instead of running the CLI. The mode row in Battery &amp; Power and the battery menu shows on every machine that has modes.</li>
+        <li><code>src/graphics/lost-card.ts</code>: follow the kernel log for NVIDIA <code>Xid … 79</code> and pciehp "Link Down" on the card's own port, and say so once, plainly. <span class="from">Graphics F</span></li>
+        <li><code>src/gpu-env.ts</code>: once the card is lost, stop offloading to it; <code>PrefersNonDefaultGPU</code> apps start on the integrated GPU, with a note.</li>
+        <li><code>src/shutdown.ts</code>: give processes 10 s, then ask logind to power off or restart regardless of what is stuck in the driver.</li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li><code>test/lost-card.test.ts</code>: the journal lines from 2026-11-03 and 2026-11-04 match; others with "Xid" or "Link Down" for a different device don't.</li>
+        <li><code>test/profiles.test.ts</code>: the D-Bus property parsing, and the change signal moving the row.</li>
+        <li>VM: tuned-ppd installed by the release package, the mode row present and in sync with <code>tuned-adm active</code>. A fake loss written to <code>/dev/kmsg</code> as root shows the notice. Shutdown with a process stuck reading a FUSE file that never answers finishes in about 15 s.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> a fresh VM install shows power modes, a simulated card loss is announced and survived, and shutdown never waits on a stuck process for more than 15 s.</p>
+      <p class="deps">Separate and asked first: turning off D3cold for the card on the laptop (<code>d3cold_allowed=0</code> through a udev rule), to see whether the drops stop. It changes the host's driver configuration, so it waits for a yes.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>2 · dashi-hardware and power in sync</h2>
+    <div class="ms">
+      <p class="goal">One privileged helper for everything a laptop's kernel exposes, a model database for what the kernel can't say, and one power mode that drives all of it, both ways.</p>
+      <h4>The helper</h4>
+      <ul class="todo">
+        <li><code>crates/dashi-hardware</code>: a Rust system service on the system bus (<code>dev.dashi.Hardware1</code>, D-Bus activated, its own systemd unit), with a polkit action per kind of change. Mode, charge limit and keyboard light are allowed for the active session; power limits, the Curve Optimizer and fan curves ask for the password once (<code>auth_admin_keep</code>). <span class="from">ASUS support C</span></li>
+        <li>Backends: firmware attributes (<code>/sys/class/firmware-attributes/*</code>, asus-armoury first), both platform profiles, <code>charge_control_end_threshold</code>, hwmon fan curves, cpufreq boost and amd_pstate EPP, and the SMU mailbox.</li>
+        <li>The SMU: the Curve Optimizer sent the way RyzenAdj reaches the SMU (PCI config space), with negative offsets encoded as <code>0x100000 + offset</code>, all-core on MP1 <code>0x4C</code> and per-core on <code>0x4B</code>. Available only when a zero write is accepted and kernel lockdown is off. <span class="from">CPU A</span></li>
+        <li>The helper clamps every value to the model database's range for this machine. The shell's ranges are for display; the helper's are the ones enforced.</li>
+        <li>A <code>--sysfs-root</code> option for tests, pointing the helper at a fake tree (the G14's, captured from the laptop) so the VM and CI can exercise it.</li>
+      </ul>
+      <h4>The model database</h4>
+      <ul class="todo">
+        <li><code>data/models/*.json</code>, installed to <code>/usr/share/dashi/models/</code>, matched on DMI: fans, lighting, hotkey codes, quirks (D3cold), undervolt ranges, and the mode recipes. What the kernel reports always wins over the file. <span class="from">ASUS support E</span></li>
+        <li>The first entry is the GA403WR, with the attributes read on 2026-11-04 and <code>"undervolt": { "cpu": [-40, 0], "perCore": true, "graphics": false }</code>.</li>
+        <li>A laptop check (chassis type from DMI, a battery present) that the laptop-only rows and panes use.</li>
+      </ul>
+      <h4>Power modes</h4>
+      <ul class="todo">
+        <li><code>src/power/modes/</code>: the mode store, a recipe per model (from the database, else tuned's defaults), appliers (tuned-ppd, firmware attributes through the helper, screen refresh through the compositor) and watchers. <span class="from">Power states A</span></li>
+        <li>Two columns per mode, plugged in and on battery; the cable switches columns, not modes. <span class="from">Power states D</span></li>
+        <li>Both ways: a change of <code>platform_profile</code> from Fn F5 or another tool shows in Dashi and pulls the rest of the recipe along, with a guard against write loops. Modes stay at three to match the key. <span class="from">Power states C</span></li>
+        <li>Automatic as the default: the mode follows the power source and battery level, a manual pick wins, and the battery menu says what Automatic chose and why, in one line. <span class="from">Power B</span></li>
+        <li>tuned profiles <code>dashi-powersave</code>, <code>dashi-balanced</code> and <code>dashi-performance</code> that leave EPP and the platform profile to the recipe, mapped in tuned-ppd's configuration.</li>
+      </ul>
+      <h4>Battery, keys and limits</h4>
+      <ul class="todo">
+        <li>Battery health: the charge limit, a one-time full charge, and an optional schedule, for any vendor with the kernel interface. A boot unit writes the limit again for firmware that forgets it. <span class="from">Power E</span></li>
+        <li>The keys: Fn F5 (mode), Fn F4 (keyboard light), the ROG key and mic mute become actions in <code>keymap.ts</code>, with the on-screen display that volume and brightness use. Keycodes come from the model database. <span class="from">ASUS support D</span></li>
+        <li>Power limits (SPL, SPPT, FPPT), boost and EPP with a battery frequency cap, and the graphics card's firmware limits (<code>nv_tgp</code>, <code>nv_dynamic_boost</code>, <code>nv_temp_target</code>) as helper methods. <span class="from">CPU B, C, E</span></li>
+        <li>The boot guard: a system unit counts boots. Tuning values are written at login, and again after waking, only after a clean boot; two failed boots in a row reset them. Anything that can freeze the machine applies with a countdown, as Displays does. <span class="from">CPU D</span></li>
+      </ul>
+      <h4>Where it shows</h4>
+      <ul class="todo">
+        <li>The battery menu as the hub: the mode, what Automatic chose, the charge limit. <span class="from">Laptop features A</span></li>
+        <li>A laptop row in Control Center: power mode and keyboard light now; graphics in 3; fans when ASUS Control provides them in 8. <span class="from">Laptop features B</span></li>
+        <li>Settings: Battery &amp; Power gains modes, the charge limit and boost; Displays the panel overdrive; Keyboard the backlight. <span class="from">Laptop features C, CPU C</span></li>
+        <li>The Curve Optimizer, power limits and the card's limits get their sliders in ASUS Control's advanced view (milestone 8). In this milestone they are reached through the helper's CLI.</li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li><code>cargo test -p dashi-hardware</code>: the SMU encoding (−5 is <code>0xFFFFB</code>), clamping to the database's ranges, DMI matching, and each backend against the fake tree.</li>
+        <li>Shell tests: recipe resolution per column, Automatic's choices, and the both-ways guard (one key press makes one change).</li>
+        <li>VM, with the fake G14 tree: the battery menu, the Control Center row, the panes, a simulated Fn F5, a cable change, and the boot guard resetting after two failed boots.</li>
+        <li>On the laptop, from the CLI, asked first: read every attribute; set each mode and see both platform profiles follow; set the charge limit to 80 and reboot; the Curve Optimizer at −5 under <code>stress-ng</code>, then back to 0.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> Fn F5 and the battery menu always agree, unplugging switches to the battery column, the charge limit survives a reboot, and a bad tuning value can't outlive two failed boots.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>3 · Graphics switching</h2>
+    <div class="ms">
+      <p class="goal">The graphics card sleeps on battery, wakes when it's useful, and Dashi can say what is keeping it awake.</p>
+      <h4>Work</h4>
+      <ul class="todo">
+        <li><code>spin/rpm/dashi-graphics.spec</code>: package cardwire. It needs <code>bpf</code> in the kernel's <code>lsm=</code> list, which finish-install adds on two-GPU machines. It conflicts with supergfxctl and switcherooctl.</li>
+        <li><code>src/graphics/</code>: the cardwire D-Bus client, the mode policy, and the holders list (cardwire's <code>--lsof</code>, else <code>/proc/*/fd</code> on the card's device nodes).</li>
+        <li>Automatic by default: Integrated on battery; Hybrid when plugged in or when a screen is connected to the card's ports. Apps already on the card are never pulled off; Dashi says once that it is waiting for them. <span class="from">Graphics D</span></li>
+        <li>"Using the graphics card" in the battery menu: each holder, its estimated draw, and Quit. <span class="from">Graphics B</span></li>
+        <li>The Graphics tile in Control Center's laptop row; its long press shows the three modes, the card's state and the apps allowed on it. <span class="from">Graphics A</span></li>
+        <li>A Graphics pane in Settings for the cards and the MUX switch (<code>gpu_mux_mode</code>, through the helper, applied at the next restart).</li>
+        <li>The lost-card watch from milestone 1 feeds the policy: a lost card puts the tile in a "Not responding" state and stops Automatic switching until restart.</li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li>Tests for the policy (power source, external screen, apps on the card) and the holders parsing.</li>
+        <li>VM (one GPU): cardwire absent leaves the tile and the menu section out, with no errors.</li>
+        <li>On the laptop, after the VM pass and with packages: Integrated on battery with the card in D3cold, Hybrid when plugged in, Steam on the card through Xwayland (the open question), and the holders list naming it.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> on battery the card is asleep with nothing on it, the battery menu explains any exception, and the laptop survives a lost card the way the VM did.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>4 · Desktops, moving windows, the switcher</h2>
+    <div class="ms">
+      <p class="goal">See Desktops, not just their names; drag windows between them from anywhere; and an app switcher that reaches windows. All of it rests on one new compositor feature: live, scaled pictures of windows.</p>
+      <h4>Compositor</h4>
+      <ul class="todo">
+        <li>A thumbnail renderer in <code>crates/dashi-comp/src/render/</code>, shared by two requests: <code>space-previews {output, rects: [{space, x, y, w, h}]}</code> (each Space's windows and wallpaper, under the overview layer) and <code>window-thumbnails {rects: [{window, x, y, w, h}]}</code> (on the switcher's layer). Live while shown, cleared when the shell asks.</li>
+        <li>A move grab that survives <code>space-switch</code>, the held window going with it (<code>wm/grabs/move_grab.rs</code>, <code>wm/space_list.rs</code>).</li>
+        <li>An <code>edge-hold {edge, output}</code> event while a window is held against a screen edge for 400 ms.</li>
+      </ul>
+      <h4>Desktops</h4>
+      <ul class="todo">
+        <li><code>src/spaces/row.tsx</code>: the row stays one line high and opens into thumbnails when the pointer or a dragged window reaches it. <span class="from">Desktops B</span></li>
+        <li>Names edited in place with metal-ui's input; <code>spaces.names: (string | null)[]</code> beside <code>spaces.count</code> in <code>settings.ts</code>. <span class="from">Desktops A's renaming</span></li>
+        <li>A Desktop with no name is called after the apps on it ("Helium, Terminal"). <span class="from">Desktops F</span></li>
+      </ul>
+      <h4>Moving windows</h4>
+      <ul class="todo">
+        <li>Drop on a Desktop's picture in Mission Control (<code>src/overview/</code>), and on the opened row. <span class="from">Moving A</span></li>
+        <li>Push against an edge: the shell's policy for <code>edge-hold</code>, only on edges with no screen beyond, never while a snap preview shows. <span class="from">Moving B</span></li>
+        <li>Carry it while you switch: the Desktop shortcuts and swipes work mid-drag. <span class="from">Moving C</span></li>
+        <li>"Move to" in the window's menu, built from <code>spaces.names</code>. <span class="from">Moving F</span></li>
+      </ul>
+      <h4>The switcher</h4>
+      <ul class="todo">
+        <li><code>src/switcher.tsx</code>: windows kept per app; holding on an app shows its windows under the app row, with their badges. <span class="from">Switcher C</span></li>
+        <li>Typing filters apps and windows while ❖ is held. <span class="from">Switcher E</span></li>
+        <li>Q, H, M and W quit, hide, minimize and close while ❖ is held (the keys in <code>keymap.ts</code> for the switcher's session only). <span class="from">Switcher F</span></li>
+        <li>The panel grows by the window row; <code>switcherSize</code> learns it.</li>
+      </ul>
+      <h4>The share picker</h4>
+      <ul class="todo">
+        <li><code>dashi-share-picker</code>, set as xdg-desktop-portal-wlr's <code>chooser_cmd</code>: it asks the shell to show the picker (the shell has the thumbnails) and prints the screen or window chosen, in the form the wlr portal reads. <span class="from">Portal G</span></li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li><code>cargo test</code> for the grab across a Space change and the hold timer; the new requests in <code>docs/compositor-ipc.md</code> and <code>test/ipc-contract.test.ts</code>.</li>
+        <li><code>test/switcher.test.ts</code>: grouping, filtering, step order. Tests for automatic names.</li>
+        <li>VM through <code>vm/agent</code> (it records mid-drag): open the row, rename, drag a window to an edge and hold, carry it with the shortcut, drop on a picture, the switcher's window row and actions, and sharing a window in Helium.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> every way of moving a window in the spec works in the VM, recorded, and the switcher reaches any window by keyboard alone.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>5 · The Dashi portal</h2>
+    <div class="ms">
+      <p class="goal">Every dialog GTK's portal drew is Dashi's, and <code>xdg-desktop-portal-gtk</code> is no longer installed.</p>
+      <h4>The process</h4>
+      <ul class="todo">
+        <li><code>dashi-portal</code> in the shell package: Bun, D-Bus name <code>org.freedesktop.impl.portal.desktop.dashi</code>, D-Bus activated through a user unit. <code>dashi.portal</code> lists FileChooser, Settings, Access, AppChooser, Inhibit, Print, Notification, Account, Email and DynamicLauncher.</li>
+        <li>Dialogs are Metal windows parented to the asking window through xdg-foreign (<code>wayland:</code> handles); X11 parents (<code>x11:</code>) are mapped to their window by the compositor. Each opens as a sheet on that window. <span class="from">Portal A</span></li>
+        <li>Prompts are drawn from a warm host, so a dialog opens as fast as a sheet in Dashi's own apps.</li>
+      </ul>
+      <h4>Interfaces, in this order</h4>
+      <ul class="todo">
+        <li><b>Inhibit</b>, held in the shell, which decides what idle does, plus <code>org.freedesktop.ScreenSaver</code> for apps that skip the portal. Shown in the battery menu: what is keeping the screen awake. <span class="from">Portal H</span></li>
+        <li><b>Settings</b>: color scheme, accent and contrast, and the <code>org.gnome.desktop.interface</code> keys GTK apps read.</li>
+        <li><b>FileChooser</b>: opens on recent files and search (<code>recents.ts</code>, <code>file-search.ts</code>), then folders; open, save, folders, filters and choices. <span class="from">Portal C</span></li>
+        <li><b>Access</b>: permissions as a sheet; apps with no window get a menu bar item that opens it. <span class="from">Portal D</span></li>
+        <li><b>AppChooser</b>: Open With as a short list from <code>default-handlers.ts</code>, with "Always" and "Other…". <span class="from">Portal F</span></li>
+        <li><b>Account</b>: name and picture, as a sheet, from <code>src/accounts/</code>. <span class="from">Portal J</span></li>
+        <li><b>DynamicLauncher</b>: "Add to Dock" for web apps; the entry goes to <code>~/.local/share/applications</code> and the Dock. <span class="from">Portal K</span></li>
+        <li><b>Print</b>: a print sheet; jobs go to CUPS over IPP, from the PDF the portal hands over. <span class="from">Portal I</span></li>
+        <li><b>Notification</b> into Dashi's notifications, and <b>Email</b> to the default mail handler: no new UI.</li>
+      </ul>
+      <h4>Removing GTK's portal, last</h4>
+      <ul class="todo">
+        <li><code>session/dashi-portals.conf</code>: <code>default=dashi</code>; ScreenCast and Screenshot on wlr; Secret on gnome-keyring until milestone 6.</li>
+        <li><code>session/dashi-session</code>: <code>GTK_USE_PORTAL=1</code> and <code>GDK_DEBUG=portals</code> (Qt already uses the portal).</li>
+        <li><code>spin/rpm/dashi.spec</code>: drop <code>Requires: xdg-desktop-portal-gtk</code>; install <code>dashi.portal</code>, the D-Bus service file and the user unit.</li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li>Tests per interface: request and response parsing, filter matching, MIME defaults, inhibit bookkeeping (an app that dies releases its hold).</li>
+        <li>VM with <code>xdg-desktop-portal-gtk</code> removed: open, save and Open With from Helium, Firefox, a GTK 4 app, a Flatpak and a Qt app; a video in Firefox keeps the screen on; printing to a CUPS PDF printer; "Add to Dock" from Helium.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> the image installs without <code>xdg-desktop-portal-gtk</code>, and every app in the VM matrix shows Dashi's dialogs.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>6 · Secrets for agents</h2>
+    <div class="ms">
+      <p class="goal">A vault that agents can use but never read, from Dashi or 1Password: they sign in, enter codes, use passkeys and pay within limits, and no secret ever reaches the agent's context or its pictures.</p>
+      <h4>First: the vault and blanked captures</h4>
+      <ul class="todo">
+        <li><code>crates/dashi-secretd</code>: a Rust system service with its own user. The vault is encrypted with a key unlocked at login through PAM and wrapped by the TPM where there is one. Callers are identified by pidfd and cgroup; anything in a <code>dashi-agent-*.scope</code> is refused. <span class="from">Secrets A</span></li>
+        <li>A small bridge running as you serves the Secret Service and the portal's Secret interface on the session bus, so apps keep working; <code>dashi-portals.conf</code> moves Secret to it and gnome-keyring goes. The login keyring is imported once, at the first login after the upgrade.</li>
+        <li>IPC <code>capture-mask {client, rects | windows}</code>; <code>src/agents/run.ts</code> applies it to every agent screenshot and recording: password fields (found through AT-SPI), the vault's windows and every consent sheet. <span class="from">Secrets H</span></li>
+        <li>Consent from the person only: the compositor marks input that comes from <code>agent-input</code>, and consent sheets ignore it.</li>
+      </ul>
+      <h4>Then: sign-in, codes, your turn</h4>
+      <ul class="todo">
+        <li>Agent tools in <code>src/agents/tools/secrets.ts</code>: <code>list_logins</code> (sites and account names only), <code>sign_in</code>, <code>fill_code</code>, <code>hand_over</code>. A new scope, "Sign in for you", in <code>consent.ts</code>. <span class="from">Secrets B, D, G</span></li>
+        <li>Filling: the field must be a password field (AT-SPI) on a page whose address matches the login's site; the value is typed by the broker and never returned to the agent.</li>
+        <li>Two sources: Dashi's vault and 1Password. The broker asks each enabled one for logins matching the site; the consent sheet names where each comes from, most recently used first. Settings › Passwords has a switch per source and where new logins are saved. <span class="from">Secrets I</span></li>
+        <li>The 1Password broker runs as you, outside every agent sandbox, and asks the 1Password app for one item per approved use (the CLI's desktop integration), then drops it.</li>
+        <li>One-time codes: TOTP computed in <code>dashi-secretd</code>, or read from 1Password; codes sent by email or text are left to "Your turn".</li>
+        <li>"Your turn": the agent pauses, a banner says what's needed, and Done hands back.</li>
+      </ul>
+      <h4>Then: passkeys</h4>
+      <ul class="todo">
+        <li>A virtual FIDO2 security key through <code>dashi-hardware</code> (uhid); <code>dashi-secretd</code> holds the keys and signs. Each use asks for the fingerprint reader or the password. <span class="from">Secrets C</span></li>
+      </ul>
+      <h4>Last: payments and the token proxy</h4>
+      <ul class="todo">
+        <li><code>pay</code>, with a new scope "Pay for you" that "Always Allow" never covers. Limits per payment and per month; each payment needs the fingerprint or the password. Single-use virtual cards first, filled like a login; provider tokens (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) where a merchant takes them. <span class="from">Secrets E</span></li>
+        <li>The token proxy in the agent sandbox: requests to listed hosts get their real credentials added on the way out, with a CA that only the sandbox trusts. The agent sees a placeholder. <span class="from">Secrets F</span></li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li><code>cargo test -p dashi-secretd</code>: encryption, caller checks (an agent-scope caller is refused), TOTP against RFC 6238's vectors, CTAP2 messages.</li>
+        <li>Shell tests: the mask covers what it must, consent ignores agent input, logins listed without secrets, the source order.</li>
+        <li>VM, with a local test site served from the checkout (a login, TOTP, WebAuthn, and a Stripe test-mode checkout), never a real account: an agent through <code>vm/agent</code> signs in, enters a code, uses a passkey, pays a test amount, and its recordings show blanks where secrets were.</li>
+        <li>1Password on the laptop, after the VM pass: one item per approval through the desktop integration (the open question).</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> an agent completes the test site's sign-in, code, passkey and payment, and no secret appears in its transcript, its tool results or any capture it took.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>7 · The applet SDK</h2>
+    <div class="ms">
+      <p class="goal">Anyone can write an applet with real UI in an afternoon, and installing one from a stranger is safe.</p>
+      <h4>Work</h4>
+      <ul class="todo">
+        <li><code>packages/applet</code> (<code>@dashi/applet</code>): the client moved out of <code>apps/kit/applet.ts</code>, with reconnects, whole-state sends and typed messages; <code>applet.json</code>, the manifest, with its schema. <span class="from">SDK A</span></li>
+        <li>Protocol v2 in <code>src/applets/protocol.ts</code> and <code>docs/applets.md</code>: <code>hello</code> with the manifest first; <code>popover</code> and <code>dismiss</code>; nested menus.</li>
+        <li>Popovers drawn by the applet's own Metal host; the shell places them under the item and closes them. <span class="from">SDK B</span></li>
+        <li>The sandbox: <code>src/applets/sandbox.ts</code> runs each applet in bubblewrap with only what its manifest asks for; hardware through <code>dashi-hardware</code>'s polkit actions, never raw sysfs; the consent sheet lists the permissions in plain words, once. Installed applets live in <code>~/.local/share/dashi/applets/&lt;id&gt;/</code>. <span class="from">SDK D</span></li>
+        <li>The dev loop: <code>dashi-applet new</code>, <code>dev</code> (hot reload, a "dev" badge, the message log), <code>pack</code> and <code>publish</code>; <code>dev</code> runs against the VM through <code>vm/agent</code>. <span class="from">SDK E</span></li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li>Tests: protocol v1 applets still work; manifest validation; the sandbox's bubblewrap arguments per permission; popover placement at each screen edge.</li>
+        <li>VM: <code>dashi-applet new weather</code> to a working popover in the menu bar; an applet asking for a permission it didn't declare is refused.</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> a new applet with a popover runs sandboxed in the VM from <code>new</code> to <code>pack</code>, and the existing tray and applets are unchanged.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>8 · The Applet Store and ASUS Control</h2>
+    <div class="ms">
+      <p class="goal">Applets install from one reviewable repository, and the first one does everything ROG Control Center does, and more.</p>
+      <h4>The catalog</h4>
+      <ul class="todo">
+        <li><code>Netko-Labs/dashi-applets</code>: one folder per applet; CI builds each from source, packs it, and publishes it as a release asset; CI builds the index. <span class="from">Store A, F</span></li>
+        <li>Signing: Dashi's key signs the index; the index lists each applet's author key; every update must be signed by that same key.</li>
+        <li>Publishing is a pull request. A pulled version is listed in the index, and the store disables it on machines that have it.</li>
+      </ul>
+      <h4>The store app</h4>
+      <ul class="todo">
+        <li>A new first-party app on <code>apps/kit</code>, shaped like Software and reusing its components: search, categories in a sidebar, compact rows, Installed and Updates. <span class="from">Store C</span></li>
+        <li>An applet's page: screenshots, what it can do in the manifest's words, whether it fits this machine, its source, and "Reviewed" for those Dashi's maintainers checked. <span class="from">Store E</span></li>
+        <li>Install, update and remove through the sandbox launcher from milestone 7; signatures checked before anything runs.</li>
+      </ul>
+      <h4>ASUS Control (<code>Netko-Labs/asus-control</code>)</h4>
+      <ul class="todo">
+        <li>The popover: one column of everyday controls with a live line (temperature, fan), then "Open ASUS Control". <span class="from">ASUS Control A</span></li>
+        <li>The window, shaped like Settings: fan curves you drag (8 points per fan), mode recipes (editing them is Power states B), keys, sensors, and the advanced view with the Curve Optimizer (with its countdown), power limits, boost and the card's limits. <span class="from">ASUS Control C, CPU A–E</span></li>
+        <li>Lighting, previewed: the lid's Slash bar drawn as it will play, its animation, brightness and when it shows; the keyboard's level and timeout. <span class="from">ASUS Control F</span></li>
+        <li>asusd packaged for USB lighting only, with its profile and charge-limit handling off, and installed on ASUS machines.</li>
+        <li>Fans in Control Center's laptop row, provided by ASUS Control.</li>
+      </ul>
+      <h4>Checks</h4>
+      <ul>
+        <li>CI in both repositories: build from source, sign, index; a tampered package or an update signed by a different key is refused by the store's tests.</li>
+        <li>VM, with the fake G14 tree: install ASUS Control from a test index, every pane, the countdown reverting a value.</li>
+        <li>On the laptop, with packages: fan curves, lighting, and a per-core Curve Optimizer search, one step at a time, with the boot guard in place (the open question of how far this chip goes).</li>
+      </ul>
+      <p class="done-when"><b>Done when</b> ASUS Control installs from the store on a fresh laptop install and covers every ROG Control Center feature the G14 has.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>New pieces</h2>
+    <table>
+      <tr><th>Piece</th><th>What it is</th><th>Runs as</th><th>Milestone</th></tr>
+      <tr><td><code>dashi-hardware</code></td><td>Rust system service: firmware attributes, profiles, charge limit, fans, the SMU, uhid</td><td>root, polkit per action</td><td>2</td></tr>
+      <tr><td><code>data/models/</code></td><td>The model database, matched on DMI</td><td>read by the helper and the shell</td><td>2</td></tr>
+      <tr><td><code>dashi-graphics</code></td><td>cardwire, packaged</td><td>root</td><td>3</td></tr>
+      <tr><td><code>dashi-share-picker</code></td><td>The wlr portal's chooser</td><td>you</td><td>4</td></tr>
+      <tr><td><code>dashi-portal</code></td><td>The portal backend, in the shell package</td><td>you</td><td>5</td></tr>
+      <tr><td><code>dashi-secretd</code></td><td>Rust vault service, and its session-bus bridge</td><td>its own user; the bridge as you</td><td>6</td></tr>
+      <tr><td>1Password broker</td><td>One item per approval from the 1Password app</td><td>you, outside agent sandboxes</td><td>6</td></tr>
+      <tr><td><code>@dashi/applet</code></td><td>The SDK and the <code>dashi-applet</code> CLI</td><td>–</td><td>7</td></tr>
+      <tr><td>Applet Store</td><td>A first-party app</td><td>you</td><td>8</td></tr>
+      <tr><td><code>Netko-Labs/dashi-applets</code>, <code>Netko-Labs/asus-control</code></td><td>The catalog, and the first applet</td><td>–</td><td>8</td></tr>
+    </table>
+
+    <h2>Contract changes</h2>
+    <table>
+      <tr><th>Where</th><th>Change</th><th>Milestone</th></tr>
+      <tr><td>IPC</td><td><code>space-previews</code>, <code>window-thumbnails</code> (requests); <code>edge-hold</code> (event); a move grab that survives <code>space-switch</code></td><td>4</td></tr>
+      <tr><td>IPC</td><td><code>capture-mask</code>; agent input marked as such, ignored by consent sheets</td><td>6</td></tr>
+      <tr><td>Applets</td><td>Protocol v2: <code>hello</code>, <code>popover</code>, <code>dismiss</code>, nested menus</td><td>7</td></tr>
+      <tr><td>Settings</td><td><code>power.mode</code> (with <code>automatic</code>), <code>power.chargeLimit</code>, the boot guard's tuning values</td><td>2</td></tr>
+      <tr><td>Settings</td><td><code>graphics.mode</code></td><td>3</td></tr>
+      <tr><td>Settings</td><td><code>spaces.names</code></td><td>4</td></tr>
+      <tr><td>Settings</td><td><code>passwords.sources</code>, <code>passwords.saveTo</code>, payment limits</td><td>6</td></tr>
+      <tr><td>Packages</td><td><code>dashi-release</code> requires tuned-ppd; <code>dashi</code> drops xdg-desktop-portal-gtk and gnome-keyring; new specs for dashi-hardware, dashi-graphics, dashi-secretd</td><td>1, 2, 3, 5, 6</td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Choices this plan makes</h2>
+    <p>Each is the plan's recommendation; any of them can change before its milestone starts.</p>
+    <table>
+      <tr><th>Choice</th><th>Recommended</th><th>Why</th></tr>
+      <tr><td>How the shell reaches the helper</td><td>A system D-Bus service with polkit per method</td><td>A mode change on every cable plug can't be a <code>pkexec</code> prompt; polkit lets everyday changes through and asks only for tuning.</td></tr>
+      <tr><td>The helper's and the vault's language</td><td>Rust</td><td>They run privileged or hold secrets; the workspace already builds Rust and packages it.</td></tr>
+      <tr><td>Who enforces ranges</td><td>The helper, from the model database</td><td>A bug in the shell, or an applet, can't write a value the machine doesn't take.</td></tr>
+      <tr><td>Applet popovers</td><td>A layer-shell surface the shell grants to that applet while the popover is open</td><td>Privileged protocols are already granted per client by the shell; it answers the open question without a new Wayland role, if placement is exact enough.</td></tr>
+      <tr><td>Consent that agents can't click</td><td>The compositor marks agent input; consent sheets ignore it</td><td><code>agent-input</code> can borrow the person's seat, so the sheet has to know where a click came from.</td></tr>
+      <tr><td>Secrets testing</td><td>A local test site in the VM, Stripe in test mode</td><td>No real account or card is ever used while building.</td></tr>
+      <tr><td>Applet signatures</td><td>Ed25519 (minisign's format)</td><td>Small keys, a tool authors can install, and checks that are simple to write in the store.</td></tr>
+      <tr><td>Where asusd arrives</td><td>Milestone 8, with ASUS Control</td><td>Nothing before that needs USB lighting; the kernel covers the rest.</td></tr>
+    </table>
+
+    <h2>Open questions, by milestone</h2>
+    <ul>
+      <li><span class="pill open">1</span> Does turning off D3cold for the card stop the drops, and what does it cost at idle? Tried only with a yes.</li>
+      <li><span class="pill open">2</span> Can asusd be kept off the platform profile and charge limit by configuration alone? (Matters again in 8.)</li>
+      <li><span class="pill open">3</span> Do cardwire's allow and block reach X11 apps through Xwayland (Steam)? Does Integrated let the card reach D3cold?</li>
+      <li><span class="pill open">6</span> What 1Password lets a desktop broker do on Linux: one item per approval through the app integration, without a service account.</li>
+      <li><span class="pill open">6</span> Which browsers report a page address Dashi can trust for sign-in, and keep DevTools closed to agents?</li>
+      <li><span class="pill open">7</span> Is a layer-shell popover from an applet's own host placed exactly under its item?</li>
+      <li><span class="pill open">8</span> How far can this chip go? The per-core search on the laptop, with the boot guard.</li>
+    </ul>
+
+    <h2>Shipping 0.4.0</h2>
+    <ul class="todo">
+      <li>All eight milestones ticked in <code>tasks/todo.md</code>, each verified in the VM and, where it needs hardware, on the laptop.</li>
+      <li>Every check green: <code>bun run typecheck</code>, <code>bun run test</code>, <code>bun run fmt-lint</code>, <code>cargo fmt --all --check</code>, <code>cargo clippy --workspace --all-targets -- -D warnings</code>, <code>cargo test --workspace</code>.</li>
+      <li>Packages built with <code>spin/build-rpms all</code> from a clean HEAD and published to COPR; the image rebuilt.</li>
+      <li>A fresh install in the VM with <code>vm/vm install</code>, and an upgrade from 0.3.0 (the keyring import, tuned-ppd installed, GTK's portal removed).</li>
+      <li>The laptop upgraded from packages, then the hardware checks from milestones 2, 3, 6 and 8.</li>
+      <li>The docs: <code>compositor-ipc.md</code>, <code>applets.md</code>, <code>architecture.md</code> (the new services), <code>design.html</code>, and the 0.4.0 spec's picks marked as shipped.</li>
+    </ul>
+  </main>
+</div>
+</body>
+</html>
