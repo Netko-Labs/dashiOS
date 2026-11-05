@@ -6,6 +6,7 @@
  * computer awake. Without a session bus, it says so and the shell goes on.
  */
 
+import { BUS_PATH } from "../dbus/bus.ts";
 import { BUS_NAME, type ConnectOptions, DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec, NameFlags, requestName } from "../dbus/index.ts";
 import { type InhibitStore, SCREENSAVER, SCREENSAVER_PATHS, type ScreenSaverHost, screenSaverInterface } from "../inhibit/index.ts";
 import { PORTAL_BACKEND, PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "./protocol.ts";
@@ -75,7 +76,22 @@ export async function startPortalHost(deps: PortalHostDeps, options: ConnectOpti
     console.error("dashi-shell: no keep-awake or portal host, no session bus:", error instanceof Error ? error.message : error);
     return null;
   }
-  const isPortal = async (sender: string | undefined) => sender !== undefined && (await getNameOwner(connection, PORTAL_BACKEND).catch(() => null)) === sender;
+  // dashi-portal owns its name on one connection and calls the shell on another, so the
+  // caller counts as the portal when it is the owner's own process.
+  const pidOf = async (name: string): Promise<number | null> => {
+    const [pid] = await connection
+      .call({ destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "GetConnectionUnixProcessID", signature: "s", body: [name] })
+      .catch(() => [null]);
+    return typeof pid === "number" && Number.isInteger(pid) && pid > 0 ? pid : null;
+  };
+  const isPortal = async (sender: string | undefined) => {
+    if (sender === undefined) return false;
+    const owner = await getNameOwner(connection, PORTAL_BACKEND).catch(() => null);
+    if (owner === null) return false;
+    if (owner === sender) return true;
+    const [ownerPid, senderPid] = await Promise.all([pidOf(owner), pidOf(sender)]);
+    return ownerPid !== null && ownerPid === senderPid;
+  };
   connection.export(SHELL_PATH, [portalHostInterface(deps, isPortal)]);
   const screenSaver = screenSaverInterface({ ...deps.screenSaver, store: deps.store });
   const exported = SCREENSAVER_PATHS.map((path) => connection.export(path, [screenSaver]));
