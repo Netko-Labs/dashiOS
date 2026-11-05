@@ -104,7 +104,7 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
         );
       })}
       <View style={{ ...at(layout.name), alignItems: "center", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text, textAlign: "center" }}>
           {query ? `${name}  ·  “${query}”` : name}
         </Text>
       </View>
@@ -133,7 +133,7 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
                   <Text style={{ fontSize: 10, color: colors.textMuted }}>{badge}</Text>
                 </View>
               ) : null}
-              <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? colors.text : colors.textMuted }}>
+              <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? colors.text : colors.textMuted, textAlign: "center" }}>
                 {window.title || name}
               </Text>
             </View>
