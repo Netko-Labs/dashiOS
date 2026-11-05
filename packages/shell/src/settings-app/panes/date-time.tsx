@@ -6,13 +6,12 @@
  * shell follow them at once.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../clock.ts";
 import { TimezonePicker } from "../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../region/store.ts";
 import { describeZone } from "../../region/timezones.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Page, Row } from "../ui.tsx";

@@ -8,12 +8,11 @@
  * (`appearance.pointerSize`, pointer.ts).
  */
 
-import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
+import { darkColors, lightColors, type Palette, Switch, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row, Spot, useSurface } from "../ui.tsx";

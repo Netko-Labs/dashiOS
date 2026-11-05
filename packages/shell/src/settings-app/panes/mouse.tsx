@@ -1,6 +1,6 @@
 /** Mouse: natural scrolling, tracking and scrolling speed, and the acceleration curve. Written to settings.json `input.mouse`. */
 
-import { Switch } from "../../wifi/switch.tsx";
+import { Switch } from "@dashi/ui";
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";

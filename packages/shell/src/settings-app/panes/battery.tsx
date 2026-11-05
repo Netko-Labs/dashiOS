@@ -10,7 +10,7 @@
  * (/etc/systemd/logind.conf), shown as it is.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { batteryGlyph } from "../../glyphs.ts";
@@ -18,7 +18,6 @@ import { describeAction } from "../../power/policy.ts";
 import { describeBattery } from "../../system/battery-details.ts";
 import { useEnergy } from "../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../system/profiles.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { BLANK_CHOICES, blankChoice, SLEEP_CHOICES, sleepChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";

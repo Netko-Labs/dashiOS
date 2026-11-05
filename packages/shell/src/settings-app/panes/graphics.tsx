@@ -6,6 +6,7 @@
  * says so here too. The pane is listed only on a machine with a graphics card.
  */
 
+import { Switch } from "@dashi/ui";
 import { useMemo } from "react";
 import { chooseGpu, readCards } from "../../gpu.ts";
 import { cardState, useGraphics } from "../../graphics/controller.ts";
@@ -14,7 +15,6 @@ import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../graphics/policy.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import type { GraphicsChoice } from "../../power/modes/settings.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { Button, Caption, Choices, Group, Note, Page, Row } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 

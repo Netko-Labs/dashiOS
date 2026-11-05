@@ -1,7 +1,7 @@
 /** Notifications: Do Not Disturb, the same switch as in Control Center. */
 
+import { Switch } from "@dashi/ui";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { Caption, Group, Page, Row, Spot } from "../ui.tsx";
 
 export function NotificationsPane({ flags }: { flags: FlagsStore }) {

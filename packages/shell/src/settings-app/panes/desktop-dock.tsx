@@ -7,8 +7,8 @@
  * `spaces.fullscreenDesktop`: a full-screen app gets a Desktop of its own).
  */
 
+import { Switch } from "@dashi/ui";
 import { resolveDock } from "../../dock/settings.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";

@@ -9,7 +9,7 @@
  * sheet.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { LOCK } from "../../control-center/glyphs.ts";
@@ -19,7 +19,6 @@ import { type EthernetInfo, useNetInfo, type VpnConnection } from "../../network
 import { chooseNetwork } from "../../wifi/flow.ts";
 import { joinMessage } from "../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../wifi/store.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import type { SavedNetwork, WifiNetwork } from "../../wifi/types.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Row } from "../ui.tsx";

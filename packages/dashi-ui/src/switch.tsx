@@ -1,14 +1,25 @@
-/** An on/off switch, macOS style: a pill that takes the accent color when on, with its knob at the end. */
+/**
+ * An on/off switch, macOS style: a pill that takes the accent color when on,
+ * with its knob at the end. Settings, Control Center's pages, and the
+ * launcher's rows (a setting with state) all draw this one.
+ */
 
-import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
+import { useColors } from "./theme/index.ts";
 
-export function Switch({ on, testID, onChange }: { on: boolean; testID: string; onChange: (on: boolean) => void }) {
+export interface SwitchProps {
+  on: boolean;
+  testID: string;
+  /** Without it the switch only shows its state (a launcher row, where Space flips it). */
+  onChange?: (on: boolean) => void;
+}
+
+export function Switch({ on, testID, onChange }: SwitchProps) {
   const colors = useColors();
   return (
     <View
       testID={testID}
-      onPress={() => onChange(!on)}
+      {...(onChange ? { onPress: () => onChange(!on) } : {})}
       style={{
         width: 38,
         height: 22,

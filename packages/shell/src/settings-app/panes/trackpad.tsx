@@ -5,7 +5,7 @@
  * default (libinput's), which is what the switches show until then.
  */
 
-import { Switch } from "../../wifi/switch.tsx";
+import { Switch } from "@dashi/ui";
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
