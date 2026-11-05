@@ -87,6 +87,13 @@ export XDG_CURRENT_DESKTOP=Dashi
 export XDG_SESSION_DESKTOP=dashi
 export XDG_SESSION_TYPE=wayland
 export DESKTOP_SESSION=dashi
+# logind's class for this session. greetd sets only XDG_SESSION_ID, and user
+# services check the class (LocalSearch, behind file search, runs only for
+# "user"), so ask logind, and this is a person's session whatever it says.
+if [ -z "${XDG_SESSION_CLASS:-}" ]; then
+  XDG_SESSION_CLASS=$(loginctl show-session "${XDG_SESSION_ID:-auto}" -p Class --value 2>/dev/null || true)
+  export XDG_SESSION_CLASS="${XDG_SESSION_CLASS:-user}"
+fi
 
 # Flatpak apps: their desktop entries and icons are in flatpak's exports,
 # which /etc/profile.d/flatpak.sh adds only for a login shell; a display
