@@ -156,7 +156,7 @@ hidden) keep getting frame callbacks, so they stay live.
 | `person-input` | `window: int\|null` (throttled) |
 | `overview` | `active` |
 | `overview-pick` | `window: int\|null` |
-| `overview-key` | `key` (keysym name) |
+| `overview-key` | `key` (keysym name); not while a shell layer surface holds the keyboard (a press gave it the keyboard: the Desktops row, renaming), whose keys are its own |
 | `overview-drag` | `window, x, y`: a press on a window in the open overview became a drag (once per drag; the pointer still reaches the shell's surfaces, so the Desktops row sees where it goes) |
 | `overview-drop` | `window, x, y` (over the shell's surfaces too: a drag that began in the overview ends there) |
 | `space` | `current, previous, count` |

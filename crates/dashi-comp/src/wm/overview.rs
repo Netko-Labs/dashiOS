@@ -3,8 +3,9 @@
 //! shows them small, and reports what the person does with them: a press on
 //! one or on the background (`overview-pick`), a window starting to be
 //! dragged (`overview-drag`) and where it was let go (`overview-drop`, over
-//! the shell's Desktops row too), and keys (`overview-key`). The shell decides what each
-//! means; closing flies the windows back.
+//! the shell's Desktops row too), and keys (`overview-key`; not while a
+//! shell surface holds the keyboard: those are its own). The shell decides
+//! what each means; closing flies the windows back.
 
 use std::{
     collections::HashMap,
@@ -260,6 +261,22 @@ impl Dashi {
             (window, false) => self.ipc.emit("overview-pick", json!({ "window": window })),
             (None, true) => {}
         }
+    }
+
+    /// Whether the keyboard is on a layer surface (the shell's, given it by a press there).
+    pub(crate) fn keyboard_on_layer(&self) -> bool {
+        let Some(focus) = self
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus())
+        else {
+            return false;
+        };
+        self.space.outputs().any(|output| {
+            smithay::desktop::layer_map_for_output(output)
+                .layer_for_surface(&focus, smithay::desktop::WindowSurfaceType::TOPLEVEL)
+                .is_some()
+        })
     }
 
     /// A key while the overview is open, unless the keymap bound it.
