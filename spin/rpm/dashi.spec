@@ -23,9 +23,12 @@ Requires:       curl
 Requires:       glib2
 Requires:       gsettings-desktop-schemas
 Requires:       wl-clipboard
+# Dashi's own portal backend (dashi-portal, apps/portal) draws every dialog;
+# the wlroots one shares the screen. GTK's is not needed.
 Requires:       xdg-desktop-portal
-Requires:       xdg-desktop-portal-gtk
 Requires:       xdg-desktop-portal-wlr
+# The print sheet sends jobs to CUPS (apps/portal/print/).
+Recommends:     cups
 Requires:       adwaita-cursor-theme
 Requires:       rsms-inter-fonts
 Requires:       google-noto-sans-fonts
@@ -75,6 +78,15 @@ install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
 install -Dm0755 session/dashi-dialog %{buildroot}%{_bindir}/dashi-dialog
+%{_bindir}/dashi-portal
+%{_datadir}/xdg-desktop-portal/portals/dashi.portal
+%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service
+%{_userunitdir}/dashi-portal.service
+# Dashi's xdg-desktop-portal backend (apps/portal), D-Bus activated through its user unit.
+install -Dm0755 session/dashi-portal %{buildroot}%{_bindir}/dashi-portal
+install -Dm0644 session/dashi.portal %{buildroot}%{_datadir}/xdg-desktop-portal/portals/dashi.portal
+install -Dm0644 session/org.freedesktop.impl.portal.desktop.dashi.service %{buildroot}%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service
+install -Dm0644 session/dashi-portal.service %{buildroot}%{_userunitdir}/dashi-portal.service
 # The Setup Assistant's optional software, run as root through pkexec.
 install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
 install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
@@ -89,6 +101,10 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
 %{_bindir}/dashi-dialog
+%{_bindir}/dashi-portal
+%{_datadir}/xdg-desktop-portal/portals/dashi.portal
+%{_datadir}/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service
+%{_userunitdir}/dashi-portal.service
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
 %{_datadir}/polkit-1/actions/dev.dashi.extras.policy

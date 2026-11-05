@@ -1,0 +1,6 @@
+# D-Bus activation of Dashi's portal backend: xdg-desktop-portal asks for the
+# name, and systemd starts the dashi-portal user unit.
+[D-BUS Service]
+Name=org.freedesktop.impl.portal.desktop.dashi
+Exec=/usr/bin/dashi-portal
+SystemdService=dashi-portal.service
