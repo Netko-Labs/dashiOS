@@ -30,8 +30,8 @@ export interface Frame {
   rows: number;
   full: boolean;
   /** The terminal's ink and ground as they are now (the app's palette, or a program's OSC 10/11); absent until either is set. */
-  fg?: string;
-  bg?: string;
+  ink?: string;
+  ground?: string;
   cursor: Cursor;
   lines: { y: number; spans: Span[] }[];
   /** Scrollback: total rows, the view's first row, how many it shows. */
@@ -55,8 +55,8 @@ export interface Screen {
   cursor: Cursor;
   scroll: [number, number, number];
   /** The terminal's own ink and ground, when it has said them (Frame). */
-  fg?: string;
-  bg?: string;
+  ink?: string;
+  ground?: string;
 }
 
 export const EMPTY_SCREEN: Screen = {
@@ -98,8 +98,8 @@ function parseFrame(value: Record<string, unknown>): Frame | null {
     cols,
     rows,
     full: full === true,
-    ...(typeof value.fg === "string" && HEX.test(value.fg) ? { fg: value.fg } : {}),
-    ...(typeof value.bg === "string" && HEX.test(value.bg) ? { bg: value.bg } : {}),
+    ...(typeof value.ink === "string" && HEX.test(value.ink) ? { ink: value.ink } : {}),
+    ...(typeof value.ground === "string" && HEX.test(value.ground) ? { ground: value.ground } : {}),
     cursor: {
       x: typeof cursor.x === "number" ? cursor.x : 0,
       y: typeof cursor.y === "number" ? cursor.y : 0,
@@ -147,7 +147,7 @@ export function applyFrame(screen: Screen, frame: Frame): Screen {
   for (const line of frame.lines) {
     if (line.y >= 0 && line.y < frame.rows) lines[line.y] = line.spans;
   }
-  const colors = { ...(frame.fg ? { fg: frame.fg } : {}), ...(frame.bg ? { bg: frame.bg } : {}) };
+  const colors = { ...(frame.ink ? { ink: frame.ink } : {}), ...(frame.ground ? { ground: frame.ground } : {}) };
   return { cols: frame.cols, rows: frame.rows, lines, cursor: frame.cursor, scroll: frame.scroll, ...colors };
 }
 

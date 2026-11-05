@@ -21,9 +21,9 @@ export interface Look {
 }
 
 /** What the grid paints with: the terminal's own ground and ink (a program may have set them), else the palette's. */
-export function lookFor(palette: TerminalPalette, dark: boolean, accent: string, fg: string | undefined, bg: string | undefined): Look {
-  const ink = fg ?? palette.ink;
-  return { ground: bg ?? palette.ground, ink, selection: `${accent}${dark ? "66" : "40"}`, cursor: `${ink}${dark ? "cc" : "b3"}` };
+export function lookFor(palette: TerminalPalette, dark: boolean, accent: string, ownInk: string | undefined, ownGround: string | undefined): Look {
+  const ink = ownInk ?? palette.ink;
+  return { ground: ownGround ?? palette.ground, ink, selection: `${accent}${dark ? "66" : "40"}`, cursor: `${ink}${dark ? "cc" : "b3"}` };
 }
 
 function color(value: string | undefined, look: Look, fallback: string): string {

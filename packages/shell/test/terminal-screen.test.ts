@@ -14,7 +14,7 @@ const frame = (overrides: Partial<Frame>): Frame => ({
 describe("dashi-term's lines", () => {
   test("a frame parses, with its spans' flags and colors", () => {
     const message = parseEngineLine(
-      '{"t":"frame","cols":4,"rows":2,"full":true,"fg":"#ffffff","bg":"#000000","cursor":{"x":1,"y":0,"visible":true,"style":"bar"},"lines":[{"y":0,"spans":[{"s":"hi","fg":"#ff0000","b":true},{"s":"  ","sel":true}]}],"scroll":[10,8,2]}',
+      '{"t":"frame","cols":4,"rows":2,"full":true,"ink":"#ffffff","ground":"#000000","cursor":{"x":1,"y":0,"visible":true,"style":"bar"},"lines":[{"y":0,"spans":[{"s":"hi","fg":"#ff0000","b":true},{"s":"  ","sel":true}]}],"scroll":[10,8,2]}',
     );
     expect(message).toEqual({
       t: "frame",
@@ -22,8 +22,8 @@ describe("dashi-term's lines", () => {
         cols: 4,
         rows: 2,
         full: true,
-        fg: "#ffffff",
-        bg: "#000000",
+        ink: "#ffffff",
+        ground: "#000000",
         cursor: { x: 1, y: 0, visible: true, style: "bar" },
         lines: [
           {
@@ -55,9 +55,11 @@ describe("dashi-term's lines", () => {
     expect(parseEngineLine('{"t":"running"}')).toBeNull();
   });
 
-  test("a frame's own colors are kept only when they are colors", () => {
-    const message = parseEngineLine('{"t":"frame","cols":1,"rows":1,"fg":"red","bg":"#10203","cursor":{},"lines":[]}');
-    expect(message?.t === "frame" && [message.frame.fg, message.frame.bg]).toEqual([undefined, undefined]);
+  test("a frame's own colors are kept only when they are colors; an older engine's fg and bg are not taken for them", () => {
+    const message = parseEngineLine('{"t":"frame","cols":1,"rows":1,"ink":"red","ground":"#10203","cursor":{},"lines":[]}');
+    expect(message?.t === "frame" && [message.frame.ink, message.frame.ground]).toEqual([undefined, undefined]);
+    const older = parseEngineLine('{"t":"frame","cols":1,"rows":1,"fg":"#000000","bg":"#000000","cursor":{},"lines":[]}');
+    expect(older?.t === "frame" && [older.frame.ink, older.frame.ground]).toEqual([undefined, undefined]);
   });
 
   test("an unknown cursor style falls back to a block", () => {
@@ -101,9 +103,9 @@ describe("the screen", () => {
 
   test("the terminal's ink and ground follow the frames that carry them (a program's own, too)", () => {
     const plain = applyFrame(EMPTY_SCREEN, frame({}));
-    expect([plain.fg, plain.bg]).toEqual([undefined, undefined]);
-    const set = applyFrame(plain, frame({ fg: "#1d1d1f", bg: "#102030" }));
-    expect([set.fg, set.bg]).toEqual(["#1d1d1f", "#102030"]);
+    expect([plain.ink, plain.ground]).toEqual([undefined, undefined]);
+    const set = applyFrame(plain, frame({ ink: "#1d1d1f", ground: "#102030" }));
+    expect([set.ink, set.ground]).toEqual(["#1d1d1f", "#102030"]);
   });
 
   test("the grid a window holds, and the cell under the pointer", () => {

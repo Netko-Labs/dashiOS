@@ -104,11 +104,13 @@ pub(crate) struct Frame {
     pub rows: u16,
     pub full: bool,
     /// The terminal's ink and ground as they are now (a program may have set
-    /// them); absent until the app or a program sets them.
+    /// them); absent until the app or a program sets them. Named apart from
+    /// the `fg`/`bg` that dashi-term 0.2 always sent, so an app never takes
+    /// those for colors to paint with.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub fg: Option<String>,
+    pub ink: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub bg: Option<String>,
+    pub ground: Option<String>,
     pub cursor: Cursor,
     pub lines: Vec<Line>,
     /// Scrollback: total rows, the view's first row, and how many it shows.
@@ -247,7 +249,10 @@ mod tests {
     fn frames_leave_unset_colors_out() {
         let frame = Frame::default();
         let json = serde_json::to_string(&Output::Frame(frame)).expect("json");
-        assert!(!json.contains("\"fg\""), "{json}");
+        assert!(
+            !json.contains("\"ink\"") && !json.contains("\"ground\""),
+            "{json}"
+        );
     }
 
     #[test]

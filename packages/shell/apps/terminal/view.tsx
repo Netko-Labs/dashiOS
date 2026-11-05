@@ -146,7 +146,7 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
   const front = activeTab(tabs);
   const screen = front?.screen ?? EMPTY_SCREEN;
   // One object while nothing it is made of changes, so the rows' memo holds.
-  const look = useMemo(() => lookFor(palette, dark, colors.selection, screen.fg, screen.bg), [palette, dark, colors.selection, screen.fg, screen.bg]);
+  const look = useMemo(() => lookFor(palette, dark, colors.selection, screen.ink, screen.ground), [palette, dark, colors.selection, screen.ink, screen.ground]);
   const engine = (): Engine | undefined => (front ? engines.current.get(front.id) : undefined);
   const windowTitle = terminalTitle(front?.title ?? "Terminal", screen.cols, screen.rows);
   useEffect(() => setWindowTitle(windowTitle), [windowTitle, setWindowTitle]);
