@@ -1,4 +1,5 @@
 import type { Grants } from "../agents/consent.ts";
+import type { Passwords } from "../agents/secrets/passwords.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
@@ -19,6 +20,8 @@ export interface PaneContext {
   region: RegionStore;
   /** The agents' kept answers; revoking one also cuts it off in a live session. */
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  /** Dashi's vault and the login sources (Settings › Passwords). */
+  passwords?: Passwords;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

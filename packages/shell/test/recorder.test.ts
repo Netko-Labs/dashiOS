@@ -95,6 +95,39 @@ describe("ScreenRecorder", () => {
     expect(recorder.ownsCapture(Date.now() + 5000)).toBe(false);
   }, 5000);
 
+  test("an agent's recording waits until its blanks are set, and doesn't start without them", async () => {
+    const order: string[] = [];
+    const gated = (): RecorderProcess => ({ ...fakeProcess(), pid: 4242, go: () => order.push("go") });
+    const recorder = (process: RecorderProcess) =>
+      new ScreenRecorder({
+        allow: () => () => {},
+        spawn: (_argv, isGated) => {
+          order.push(`spawn gated=${isGated}`);
+          return process;
+        },
+        exists: (path) => path === WF_RECORDER,
+        directory: () => videos,
+      });
+    const one = recorder(gated());
+    await one.start({ kind: "screen", output: "Virtual-1" }, { beforeCapture: async (pid) => void order.push(`mask ${pid}`) });
+    expect(order).toEqual(["spawn gated=true", "mask 4242", "go"]);
+    await one.stop();
+    order.length = 0;
+    const refused = recorder(gated());
+    await expect(
+      refused.start(
+        { kind: "screen", output: "Virtual-1" },
+        {
+          beforeCapture: async () => {
+            throw new Error("no compositor");
+          },
+        },
+      ),
+    ).rejects.toThrow("couldn't blank");
+    expect(order).not.toContain("go");
+    expect(refused.getSnapshot().kind).toBe("idle");
+  }, 5000);
+
   test("refuses without wf-recorder, and a second recording", async () => {
     const missing = new ScreenRecorder({ allow: () => () => {}, exists: () => false, directory: () => "/videos" });
     await expect(missing.start({ kind: "screen", output: "x" })).rejects.toThrow("wf-recorder");

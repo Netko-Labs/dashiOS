@@ -4,6 +4,8 @@
 pub(crate) mod canvas;
 pub(crate) mod capture;
 pub(crate) mod cursor;
+// Agents (0.4.0, secrets): what their pictures blank.
+pub(crate) mod mask;
 pub(crate) mod present;
 pub(crate) mod rounded;
 mod scene;

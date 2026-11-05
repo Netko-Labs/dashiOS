@@ -21,6 +21,7 @@ export type PaneId =
   | "language-region"
   | "lock-screen"
   | "notifications"
+  | "passwords"
   | "agents"
   | "about"
   | "network"
@@ -60,6 +61,7 @@ export const PANES: readonly PaneInfo[] = [
   { id: "lock-screen", title: "Lock Screen", glyph: LOCK, tint: "#636366", group: 2 },
   { id: "users", title: "Users & Accounts", glyph: PERSON, tint: "#8e8e93", group: 2 },
   { id: "notifications", title: "Notifications", glyph: BELL, tint: "#ff453a", group: 2 },
+  { id: "passwords", title: "Passwords", glyph: LOCK, tint: "#a2845e", group: 2 },
   { id: "agents", title: "Agents", glyph: SPARKLE, tint: "#6E56CF", group: 2 },
   { id: "about", title: "About", glyph: INFO, tint: "#8e8e93", group: 3 },
 ];

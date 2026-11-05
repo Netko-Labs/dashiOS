@@ -119,7 +119,11 @@ export type Call =
   | { name: "type_text"; window: number; text: string }
   | { name: "press_keys"; window: number; keys: string; chords: Chord[] }
   | { name: "list_menus"; window: number | null }
-  | { name: "choose_menu_item"; window: number; menu: string; item: string };
+  | { name: "choose_menu_item"; window: number; menu: string; item: string }
+  | { name: "list_logins"; site: string | null }
+  | { name: "sign_in" | "fill_code"; window: number; site: string; account: string | null; submit: boolean }
+  | { name: "hand_over"; window: number; reason: string }
+  | { name: "pay"; window: number; site: string; cents: number; card: string | null };
 
 export type ToolName = Call["name"];
 

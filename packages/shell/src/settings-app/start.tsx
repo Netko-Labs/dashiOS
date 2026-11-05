@@ -9,6 +9,7 @@
 
 import { homedir } from "node:os";
 import type { Grants } from "../agents/consent.ts";
+import type { Passwords } from "../agents/secrets/passwords.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
@@ -41,6 +42,8 @@ export interface SettingsAppOptions {
   region: RegionStore;
   flags: FlagsStore;
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  /** Dashi's vault and the login sources (Settings › Passwords). */
+  passwords?: Passwords;
   lock(): void;
   /** Opens the Setup Assistant (About has a button for it). */
   openSetup(): void;
@@ -92,6 +95,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       flags: options.flags,
       screens,
       grants: options.grants,
+      ...(options.passwords ? { passwords: options.passwords } : {}),
       layouts: loadLayouts(),
       chooser: portalChooser(),
       services: options.services(),

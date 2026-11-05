@@ -68,6 +68,10 @@ pub(crate) struct Dashi {
     /// Executables the shell lets copy the screen (`screencopy-clients`).
     pub screencopy_paths: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>>,
     pub capture_activity: crate::protocols::screencopy::Activity,
+    /// What agents' pictures blank, by client (`capture-mask`).
+    pub capture_masks: crate::render::mask::Masks,
+    /// Whose presses were whose: the person's or an agent's (`input-origin`).
+    pub origins: crate::session::origin::Origins,
     pub activation_state: smithay::wayland::xdg_activation::XdgActivationState,
     #[expect(dead_code, reason = "kept alive: it owns the xdg-dialog global")]
     pub dialog_state: smithay::wayland::shell::xdg::dialog::XdgDialogState,
@@ -259,6 +263,8 @@ impl Dashi {
             agent_cursor: None,
             screencopy_paths,
             capture_activity: Default::default(),
+            capture_masks: Default::default(),
+            origins: Default::default(),
             activation_state,
             dialog_state,
             lock: Default::default(),

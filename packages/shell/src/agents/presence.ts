@@ -46,6 +46,29 @@ export interface Confirm {
   action: string;
 }
 
+/** "<agent> wants to sign in to github.com": which saved login, and for how long (secrets/broker.ts). */
+export interface SignInAsk {
+  agent: number;
+  who: Who;
+  /** A phrase after "wants to": "sign in to github.com". */
+  summary: string;
+  logins: ReadonlyArray<{ key: string; account: string; site: string; source: string }>;
+}
+
+/** The person's answer: which login (its key), for this once or the whole task. */
+export interface SignInChoice {
+  allow: "once" | "task" | "deny";
+  login: string | null;
+}
+
+/** "Your turn": the person does something in a window, then presses Done. */
+export interface Turn {
+  agent: number;
+  who: Who;
+  /** What the agent asks the person to do. */
+  reason: string;
+}
+
 export type Allow = "once" | "always" | "deny";
 
 export interface Answer {
@@ -66,6 +89,10 @@ export interface AgentUi {
   ask(ask: Ask): Promise<Answer>;
   /** Ask about one action, in the same queue; resolves true only if the person goes ahead. */
   confirm(confirm: Confirm): Promise<boolean>;
+  /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
+  signIn(ask: SignInAsk): Promise<SignInChoice>;
+  /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */
+  turn(turn: Turn): Promise<boolean>;
   /** Take down this agent's sheets (it left, the screen locked, or nobody answered). */
   dismiss(agent: number): void;
   /** Say who ⌃❖Esc or Stop just cut off. */

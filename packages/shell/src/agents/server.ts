@@ -4,16 +4,23 @@
  * here as a compositor shortcut event; Stop in the menu bar calls `stop`.
  */
 
-import { chmodSync, existsSync, unlinkSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Compositor } from "../compositor.ts";
 import type { Tile } from "../layout.ts";
+import { Atspi } from "./atspi/client.ts";
 import { Grants } from "./consent.ts";
 import { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LockWatch } from "./lock.ts";
+import { AgentMask } from "./mask.ts";
 import { identify, peerPid } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
+import { isConfined } from "./sandbox.ts";
+import type { SecretsShared } from "./secrets/session-secrets.ts";
+import type { LoginSource } from "./secrets/sources.ts";
+import { Vault } from "./secrets/vault.ts";
+import { isVaultWindow } from "./secrets/vault-view.ts";
 import { Session } from "./session.ts";
 
 export interface Agents {
@@ -39,15 +46,40 @@ export interface AgentsOptions {
   tile(window: number, tile: Tile): Promise<void>;
   /** The stores and controllers tools reach besides windows (desktop/). */
   desktop: Desktop;
+  /** The login sources sign-in uses (secrets/passwords.ts); none without. */
+  sources?: () => readonly LoginSource[];
+  /** Dashi's vault, for cards and payments. */
+  vault?: Pick<Vault, "cards" | "pay">;
 }
 
-export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOptions): Agents {
+/** A file's text, or null. */
+const readText = (path: string): string | null => {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+};
+
+export function startAgents({ compositor, ui, store, tile, desktop, sources = () => [], vault = new Vault() }: AgentsOptions): Agents {
   const sessions = new Map<number, Session>();
   const publish = () => store.set([...sessions.values()].map((session) => session.info()));
   const lock = new LockWatch(compositor);
   const grants = new Grants();
   const hands = new Hands(compositor);
-  const context = { compositor, ui, desktop, hands, grants, lock, publish, tile };
+  // The accessibility bus, joined when a picture first needs it; a failure is tried again next time.
+  let atspi: Atspi | null = null;
+  const joinAtspi = async () => (atspi ??= await Atspi.connect());
+  const secrets: SecretsShared = { sources, atspi: joinAtspi, handedOver: new Set(), filled: new Map(), vault };
+  const mask = new AgentMask({
+    request: (method, params) => compositor.request(method, params),
+    windows: () => compositor.windows(),
+    atspi: joinAtspi,
+    handedOver: () => [...secrets.handedOver],
+    filled: () => [...secrets.filled].flatMap(([window, fields]) => fields.filter((f) => f.until > Date.now()).map(({ rect }) => ({ window, rect }))),
+    isVault: isVaultWindow,
+  });
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, secrets };
   let nextId = 0;
 
   const stopSessions = (stopping: Session[]) => {
@@ -99,10 +131,19 @@ export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOpti
           socket.terminate();
           return;
         }
-        const session = new Session(++nextId, identify(pid), socket, context, (gone) => {
-          sessions.delete(gone.id);
-          publish();
-        });
+        const peer = identify(pid);
+        const confined = isConfined(readText, pid, peer.remote);
+        const session = new Session(
+          ++nextId,
+          peer,
+          socket,
+          context,
+          (gone) => {
+            sessions.delete(gone.id);
+            publish();
+          },
+          confined,
+        );
         socket.data = { session };
         sessions.set(session.id, session);
         publish();
@@ -139,6 +180,7 @@ export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOpti
       hands.close();
       for (const session of sessions.values()) session.stop("disconnected");
       server.stop(true);
+      atspi?.close();
       if (existsSync(path)) unlinkSync(path);
     },
   };

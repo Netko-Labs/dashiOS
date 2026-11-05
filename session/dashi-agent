@@ -1,0 +1,35 @@
+#!/usr/bin/sh
+# dashi-agent: run an agent (Claude Code, Codex, any program) in Dashi's agent
+# sandbox, so it can use your secrets through Dashi but never read them:
+#
+#   dashi-agent claude            # once: claude mcp add dashi -- dashi-mcp
+#   dashi-agent --name work -- codex
+#
+# The sandbox is packages/shell/src/agents/sandbox.ts (docs/secrets.md). This
+# finds the shell and Bun the way dashi-mcp does.
+set -eu
+
+self=$(readlink -f -- "$0")
+base=$(dirname -- "$(dirname -- "$self")")
+if [ -f "$base/share/dashi/shell/bin/dashi-agent.ts" ]; then
+  script=$base/share/dashi/shell/bin/dashi-agent.ts
+elif [ -f "$base/packages/shell/bin/dashi-agent.ts" ]; then
+  script=$base/packages/shell/bin/dashi-agent.ts
+else
+  echo "dashi-agent: can't find the shell next to $self" >&2
+  exit 1
+fi
+
+bun=${DASHI_BUN:-}
+if [ -z "$bun" ] && [ -x "$base/libexec/dashi/bin/bun" ]; then bun=$base/libexec/dashi/bin/bun; fi
+[ -n "$bun" ] || bun=$(command -v bun 2>/dev/null || true)
+if [ -z "$bun" ]; then
+  for candidate in /usr/libexec/dashi/bin/bun "${HOME:-/nonexistent}/.bun/bin/bun" /usr/local/bin/bun /usr/bin/bun; do
+    if [ -x "$candidate" ]; then bun=$candidate; break; fi
+  done
+fi
+if [ ! -x "${bun:-}" ]; then
+  echo "dashi-agent: bun not found; install it (https://bun.sh) or set DASHI_BUN" >&2
+  exit 1
+fi
+exec "$bun" "$script" "$@"

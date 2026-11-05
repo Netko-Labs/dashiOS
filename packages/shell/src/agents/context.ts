@@ -2,10 +2,36 @@
 
 import type { Compositor } from "../compositor.ts";
 import type { Tile } from "../layout.ts";
+import type { Atspi } from "./atspi/client.ts";
+import type { Rect } from "./atspi/tree.ts";
 import type { Question } from "./confirm.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/types.ts";
+import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
+import type { Approval, SheetLogin, SignInAnswer } from "./secrets/broker.ts";
+import type { LoginSource } from "./secrets/sources.ts";
+import type { Vault } from "./secrets/vault.ts";
+
+/** What the secrets tools need from the connection (desktop/secrets.ts). */
+export interface SecretsRun {
+  /** Whether the agent runs in Dashi's sandbox (or on another machine): sign-in is only for those. */
+  confined: boolean;
+  /** This connection's approvals of logins, by login key ("Allow for This Task", "Allow Once"). */
+  approvals: Map<string, Approval>;
+  /** The enabled login sources, in order. */
+  sources(): readonly LoginSource[];
+  /** The accessibility bus (null where there is none). */
+  atspi(): Promise<Pick<Atspi, "appFor" | "focusedIn"> | null>;
+  /** Ask the person which login, on the sheet. */
+  ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
+  /** A field Dashi typed a secret into (a code, a card): agents' pictures blank it for a while. */
+  filled(window: number, rect: Rect | null): void;
+  /** Dashi's vault, for cards and payments. */
+  vault: Pick<Vault, "cards" | "pay">;
+  /** Give the window to the person until they press Done (true), pausing this agent. */
+  handOver(window: number, reason: string): Promise<boolean>;
+}
 
 export interface ToolResult {
   content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }>;
@@ -30,6 +56,10 @@ export interface RunContext {
   desktop: Desktop;
   /** The agent seat: pointer and keyboard input in one window (desktop/hands.ts). */
   hands: Hands;
+  /** What its pictures blank (mask.ts): updated before every capture. */
+  mask: AgentMask;
+  /** Signing in and handing over (desktop/secrets.ts). */
+  secrets: SecretsRun;
   /** What the agent's cursor is called on screen: its process name. */
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */

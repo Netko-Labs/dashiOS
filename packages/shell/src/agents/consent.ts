@@ -32,6 +32,18 @@ export const SCOPES = [
   { id: "calendar", label: "Read your calendar", detail: "List your calendars and the events in them: their titles, times, places, and notes" },
   { id: "calendar_write", label: "Add to your calendar", detail: "Add events to your calendar (it can't change or delete the ones there)" },
   {
+    id: "signin",
+    label: "Sign in for you",
+    detail:
+      "See which sites you have logins for and their account names, and ask you to let Dashi sign it in or enter a one-time code. Each login is asked about on screen; Dashi types the password or code, and the agent never sees it",
+  },
+  {
+    id: "pay",
+    label: "Pay for you",
+    detail:
+      "Ask to pay a site with one of your saved cards, within your limits. Every payment asks for your fingerprint or password, and this permission is never kept: Always Allow doesn't cover it",
+  },
+  {
     id: "settings",
     label: "Change settings",
     detail:
@@ -67,8 +79,11 @@ export function choices(needs: ReadonlySet<Scope>, granted: ReadonlySet<Scope>):
  * choosing "always"; an earlier "Allow Once" must not turn permanent here.
  */
 export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessionOnly: ReadonlySet<Scope>): Set<Scope> {
-  return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))]);
+  return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))].filter((scope) => !NEVER_KEPT.has(scope)));
 }
+
+/** Scopes "Always Allow" never keeps: allowed for the connection at most (paying). */
+export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay"]);
 
 function stateDir(): string {
   const base = process.env.XDG_STATE_HOME || join(homedir(), ".local/state");
@@ -93,7 +108,8 @@ export class Grants {
       const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
       if (typeof agents === "object" && agents !== null) {
         for (const [key, scopes] of Object.entries(agents)) {
-          if (Array.isArray(scopes)) this.byAgent.set(key, new Set(scopes.filter(isScope)));
+          // A kept "pay" (a file edited by hand) is not honored.
+          if (Array.isArray(scopes)) this.byAgent.set(key, new Set(scopes.filter(isScope).filter((scope) => !NEVER_KEPT.has(scope))));
         }
       }
     } catch {

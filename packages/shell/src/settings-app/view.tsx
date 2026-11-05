@@ -30,6 +30,7 @@ import { LockScreenPane } from "./panes/lock-screen.tsx";
 import { MousePane } from "./panes/mouse.tsx";
 import { NetworkPane } from "./panes/network.tsx";
 import { NotificationsPane } from "./panes/notifications.tsx";
+import { PasswordsPane } from "./panes/passwords.tsx";
 import { SoundPane } from "./panes/sound.tsx";
 import { TrackpadPane } from "./panes/trackpad.tsx";
 import { UsersPane } from "./panes/users.tsx";
@@ -65,6 +66,8 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       return <LockScreenPane settings={ctx.settings} lock={ctx.lock} />;
     case "notifications":
       return <NotificationsPane flags={ctx.flags} />;
+    case "passwords":
+      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : null;
     case "agents":
       return <AgentsPane grants={ctx.grants} home={ctx.home} />;
     case "about":

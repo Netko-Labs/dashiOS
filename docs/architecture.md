@@ -47,6 +47,16 @@ systemd --user (D-Bus activated)
 - **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
   screen consents before an agent sees or does anything.
+- **dashi-secretd** (`crates/dashi-secretd`, `docs/secrets.md`) is the vault:
+  a system service with its own user (`dashi-secret`), socket-activated on
+  `/run/dashi-secretd/socket`. The login opens it through PAM
+  (`dashi-secretd-pam`, run by `pam_exec`); it refuses every caller in an
+  agent's cgroup. **dashi-secret-bridge** (a user unit the supervisor starts)
+  serves it to apps as the Secret Service and the portal's Secret; without
+  the vault, the supervisor starts gnome-keyring as before.
+- **dashi-agent** (`session/dashi-agent`, `src/agents/sandbox.ts`) runs an
+  agent in the agent sandbox, a `dashi-agent-*.scope` with bubblewrap, so it
+  can use secrets through Dashi but never read them.
 - **dashi-dialog** (`session/dashi-dialog`, `apps/dialog`) shows a dialog for
   a shell script, on Zenity's command line, stdin, stdout, and exit status
   (0 OK, 1 Cancel or closed, 5 timed out, 255 an error), so it can stand in
@@ -141,6 +151,8 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
 | share picker ↔ shell | `$XDG_RUNTIME_DIR/dashi-share.sock`, one JSON line each way | `src/share-picker/protocol.ts` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
+| PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
+| app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
 | shell/applets ↔ dashi-hardware | D-Bus system bus: `dev.dashi.Hardware1` (polkit per method); the shell decides the mode, the helper writes | `docs/hardware.md`, `src/laptop/`, `src/power/modes/` |
 | shell ↔ cardwire | D-Bus system bus: `org.opengamingcollective.cardwire` (packaged as dashi-graphics); the shell decides the graphics policy | `docs/hardware.md` (cardwire), `src/graphics/` |
@@ -154,10 +166,11 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 
 | Path | From |
 | --- | --- |
-| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-portal`, `/usr/bin/dashi-greeter` | `session/` |
+| `/usr/bin/dashi-session`, `/usr/bin/dashi-mcp`, `/usr/bin/dashi-agent`, `/usr/bin/dashi-dialog`, `/usr/bin/dashi-share-picker`, `/usr/bin/dashi-portal`, `/usr/bin/dashi-greeter` | `session/` |
 | `/etc/xdg/xdg-desktop-portal-wlr/Dashi` | `session/xdg-desktop-portal-wlr.conf` |
 | `/usr/share/xdg-desktop-portal/portals/dashi.portal`, `/usr/share/xdg-desktop-portal/dashi-portals.conf` | `session/` |
 | `/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service`, `/usr/lib/systemd/user/dashi-portal.service` | `session/` |
+| `/usr/libexec/dashi/dashi-secretd`, `dashi-secretd-pam`, `dashi-secret-bridge` | `crates/dashi-secretd` |
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |

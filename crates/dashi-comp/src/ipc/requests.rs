@@ -84,6 +84,15 @@ pub(crate) fn handle(
         }
         "capture" => capture(state, connection, params),
         "agent-input" => done(state.agent_input(params)),
+        // Secrets for agents (0.4.0): blanked captures, and whose presses were whose.
+        "capture-mask" => {
+            shell_only(state, connection, "capture-mask")?;
+            done(state.set_capture_mask(params))
+        }
+        "input-origin" => {
+            let target = session::origin::parse_target(params)?;
+            Ok(state.origins.describe(&target, std::time::Instant::now()))
+        }
         "idle" => {
             let timeouts = params
                 .get("timeouts")
@@ -290,19 +299,31 @@ fn window_for_handle(state: &Dashi, handle: &str) -> Option<u64> {
         .map(|entry| entry.id)
 }
 
-/// `capture {path, window?, rect?}`: only the shell may.
+/// Refuse `method` unless the connection is the shell's (the session client or under it).
+fn shell_only(state: &Dashi, connection: ConnectionId, method: &str) -> Result<(), String> {
+    let from_shell = match (state.ipc.peer_pid(connection), state.session_client) {
+        (Some(peer), Some(shell)) => session::trust::descends_from(peer, shell),
+        _ => false,
+    };
+    if from_shell {
+        Ok(())
+    } else {
+        Err(format!("{method} is only for the shell"))
+    }
+}
+
+/// `capture {path, window?, rect?, cursor?, mask?}`: only the shell may.
 fn capture(
     state: &mut Dashi,
     connection: ConnectionId,
     params: &Map<String, Value>,
 ) -> Result<Value, String> {
-    let from_shell = match (state.ipc.peer_pid(connection), state.session_client) {
-        (Some(peer), Some(shell)) => session::trust::descends_from(peer, shell),
-        _ => false,
+    shell_only(state, connection, "capture")?;
+    // A mask named but never set blanks nothing; one that is set, what it covers.
+    let mask = match params.get("mask") {
+        None | Some(Value::Null) => None,
+        Some(_) => Some(text(params, "mask")?.to_owned()),
     };
-    if !from_shell {
-        return Err("capture is only for the shell".into());
-    }
     let path = render::capture::check_path(text(params, "path")?)?.to_owned();
     let (area, output, only) = if params.contains_key("window") {
         let id = window(params)?;
@@ -354,7 +375,10 @@ fn capture(
         cursor,
         only,
     };
-    let picture = backend::capture(state, &view)?;
+    let mut picture = backend::capture(state, &view)?;
+    if let Some(name) = &mask {
+        state.apply_mask(state.capture_masks.named(name), area, scale, &mut picture);
+    }
     render::capture::save_png(&path, &picture)?;
     Ok(json!({ "width": picture.width, "height": picture.height, "scale": scale }))
 }

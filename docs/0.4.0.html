@@ -1473,7 +1473,7 @@ $ bun run publish
           <div class="note" style="left:12px;bottom:12px">Every browser sees a security key</div>
         </div>
         <div class="cap"><h4><span class="k">C</span>Passkeys, as a security key</h4><p>Dashi shows browsers a virtual FIDO2 security key (uhid), backed by the vault, so every browser supports it with no extension. Each sign-in is signed only for that site and needs your fingerprint, whether you or an agent started it.</p>
-          <ul class="pc"><li class="y">Nothing that could leak: only a signature</li><li class="y">Can't be phished: tied to the site</li><li class="n">Only sites with passkeys</li><li class="n">uhid needs the system helper; backing up passkeys</li></ul></div>
+          <ul class="pc"><li class="y">Nothing that could leak: only a signature</li><li class="y">Can't be phished: tied to the site</li><li class="n">Only sites with passkeys</li><li class="n">Backing up passkeys</li></ul></div>
       </div>
       <div class="prop pick">
         <div class="mk broth">
@@ -1549,7 +1549,7 @@ $ bun run publish
         <li>Agent tools in <code>src/agents/tools</code>: <code>list_logins</code> (sites and account names only), <code>sign_in</code>, <code>fill_code</code>, <code>pay</code>, <code>hand_over</code>. New scopes "Sign in for you" and "Pay for you", which "Always Allow" never covers for payments.</li>
         <li>Consent sheets accept only the person's seat, never <code>agent-input</code>; payments and passkeys need the fingerprint reader or the password.</li>
         <li>IPC: <code>capture-mask {client, rects | windows}</code> for agent captures (H); <code>run.ts</code> applies it to every agent screenshot and recording.</li>
-        <li>The virtual FIDO2 key goes through <code>dashi-hardware</code> (uhid). The proxy runs in the agent sandbox, with a CA that only the sandbox trusts.</li>
+        <li>The virtual FIDO2 key is <code>dashi-secretd</code>'s own, over uhid (a udev rule gives its user <code>/dev/uhid</code>). The proxy runs in the agent sandbox, with a CA that only the sandbox trusts.</li>
         <li>Sources: the broker asks each enabled vault for logins matching the site and lists them in the consent sheet with where each comes from. When both have one, the most recently used login is listed first. 1Password: a broker process running as you, outside every agent sandbox, asks the 1Password app for one item per approved use (the CLI's desktop integration, or 1Password's SDK), types it in, and drops it. Agents can't reach the broker's socket or the 1Password app's.</li>
         <li>Payments: single-use virtual cards first (any issuer that offers them, filled by B), then a provider token (Stripe shared payment tokens, Visa Intelligent Commerce, Mastercard Agent Pay) where the merchant takes one.</li>
       </ul>
