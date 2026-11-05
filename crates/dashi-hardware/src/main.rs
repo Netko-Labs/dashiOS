@@ -1,5 +1,8 @@
 //! dashi-hardware: Dashi's privileged hardware helper (docs/hardware.md).
 
+mod fans;
+mod knobs;
+mod model;
 mod sysfs;
 
 fn main() {

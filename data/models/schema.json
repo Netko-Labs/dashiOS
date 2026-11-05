@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Netko-Labs/dashiOS/data/models/schema.json",
+  "title": "Dashi model database entry",
+  "description": "One laptop model: what the kernel can't say about it (names, hotkeys, lighting, quirks, the Curve Optimizer's range) and its power mode recipes. Read by dashi-hardware (docs/hardware.md). What the kernel reports always wins: an entry narrows ranges and names things, it never adds a knob.",
+  "type": "object",
+  "required": ["id", "match", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": {
+      "description": "The model's identifier, also the file's name (GA403WR.json).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "match": {
+      "description": "DMI values (/sys/class/dmi/id/*) that identify the model. Every key given must match; a value ending in * matches as a prefix. A list matches when any of its entries does.",
+      "oneOf": [
+        { "$ref": "#/$defs/match" },
+        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/match" } }
+      ]
+    },
+    "name": { "description": "The name people know it by.", "type": "string" },
+    "fans": {
+      "description": "Labels for the fans the kernel reports, by fan id (cpu, gpu, mid, fan1, …).",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "limits": {
+      "description": "Narrower ranges for numeric knobs, [min, max], inside what the kernel reports.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/knob" },
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 0 },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "undervolt": {
+      "description": "The Curve Optimizer: its range (negative is lower voltage), whether cores can be set one by one, and whether the graphics has an offset. Without it the Curve Optimizer is unavailable (not-in-database).",
+      "type": "object",
+      "required": ["cpu"],
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": -60, "maximum": 30 },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "perCore": { "type": "boolean" },
+        "graphics": { "type": "boolean" }
+      }
+    },
+    "hotkeys": {
+      "description": "The evdev key names the model's own keys send.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "$ref": "#/$defs/key" },
+        "lighting": { "$ref": "#/$defs/key" },
+        "rog": { "$ref": "#/$defs/key" },
+        "micMute": { "$ref": "#/$defs/key" }
+      }
+    },
+    "lighting": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "keyboard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "levels": { "type": "integer", "minimum": 1 }, "rgb": { "type": "boolean" } }
+        },
+        "slash": { "$ref": "#/$defs/usbLight" },
+        "anime": { "$ref": "#/$defs/usbLight" },
+        "aura": { "$ref": "#/$defs/usbLight" }
+      }
+    },
+    "quirks": {
+      "description": "Known problems the shell works around. d3cold-drops: the graphics card can fail to wake from D3cold.",
+      "type": "array",
+      "items": { "type": "string", "enum": ["d3cold-drops"] },
+      "uniqueItems": true
+    },
+    "recipes": {
+      "description": "Each power mode's knob values, plugged in and on battery. Knobs the machine lacks are skipped.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "low-power": { "$ref": "#/$defs/recipe" },
+        "balanced": { "$ref": "#/$defs/recipe" },
+        "performance": { "$ref": "#/$defs/recipe" }
+      }
+    }
+  },
+  "$defs": {
+    "match": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "sys_vendor": { "type": "string" },
+        "product_name": { "type": "string" },
+        "board_name": { "type": "string" },
+        "product_family": { "type": "string" }
+      }
+    },
+    "key": { "type": "string", "pattern": "^(KEY|BTN)_[A-Z0-9_]+$" },
+    "usbLight": {
+      "type": "object",
+      "required": ["usb"],
+      "additionalProperties": false,
+      "properties": { "usb": { "type": "string", "pattern": "^[0-9a-f]{4}:[0-9a-f]{4}$" } }
+    },
+    "knob": {
+      "enum": [
+        "platform-profile", "charge-limit", "kbd-backlight", "panel-overdrive", "boost", "epp", "cpu-max-freq",
+        "ppt-spl", "ppt-sppt", "ppt-fppt", "nv-tgp", "nv-dynamic-boost", "nv-temp-target", "gpu-mux"
+      ]
+    },
+    "column": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/knob" },
+      "additionalProperties": { "type": ["string", "integer", "boolean"] }
+    },
+    "recipe": {
+      "type": "object",
+      "required": ["plugged", "battery"],
+      "additionalProperties": false,
+      "properties": { "plugged": { "$ref": "#/$defs/column" }, "battery": { "$ref": "#/$defs/column" } }
+    }
+  }
+}
