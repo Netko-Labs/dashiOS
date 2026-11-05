@@ -5,6 +5,7 @@ import type { Tile } from "../layout.ts";
 import type { Question } from "./confirm.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/types.ts";
+import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
 
 export interface ToolResult {
@@ -30,6 +31,8 @@ export interface RunContext {
   desktop: Desktop;
   /** The agent seat: pointer and keyboard input in one window (desktop/hands.ts). */
   hands: Hands;
+  /** What its pictures blank (mask.ts): updated before every capture. */
+  mask: AgentMask;
   /** What the agent's cursor is called on screen: its process name. */
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */

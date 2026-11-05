@@ -324,7 +324,8 @@ const polkit = startPolkit({
 
 // Agents (MCP) run here too; they start below, once what they reach exists.
 const agentStore = new AgentStore();
-const agentUi = createAgentUi();
+// A sheet's yes counts only if the person pressed it (agents/person.ts).
+const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
 
 // Notifications: org.freedesktop.Notifications on the session bus, with banners
 // at the top right. If the bus is missing or the name is taken, it logs and

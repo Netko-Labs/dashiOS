@@ -22,12 +22,17 @@ export type RecorderState =
 export interface RecorderProcess {
   exited: Promise<number>;
   kill(signal: "SIGINT" | "SIGKILL"): void;
+  /** A gated process (spawn's `gated`): its pid, which wf-recorder keeps when it starts. */
+  pid?: number;
+  /** A gated process: start wf-recorder now. */
+  go?(): void;
 }
 
 export interface RecorderDeps {
   /** Let `path` use screencopy until the returned function runs (screen-capture.ts). */
   allow(path: string): () => void;
-  spawn?(argv: string[]): RecorderProcess;
+  /** `gated`: wait, before wf-recorder starts, for `go()` (the pid is known first). */
+  spawn?(argv: string[], gated?: boolean): RecorderProcess;
   exists?(path: string): boolean;
   directory?(): string;
   now?(): number;
@@ -46,9 +51,23 @@ const FINISH_MS = 10_000;
 
 const sleep = (ms: number) => new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), ms));
 
-function spawnRecorder(argv: string[]): RecorderProcess {
-  const child = Bun.spawn(argv, { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
-  return { exited: child.exited, kill: (signal) => child.kill(signal) };
+function spawnRecorder(argv: string[], gated = false): RecorderProcess {
+  if (!gated) {
+    const child = Bun.spawn(argv, { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+    return { exited: child.exited, kill: (signal) => child.kill(signal) };
+  }
+  // A shell that waits for a line, then becomes wf-recorder (exec keeps the
+  // pid): the compositor is told the pid before the first frame is copied.
+  const child = Bun.spawn(["/bin/sh", "-c", 'read -r _ && exec "$0" "$@"', ...argv], { stdin: "pipe", stdout: "ignore", stderr: "ignore" });
+  return {
+    exited: child.exited,
+    kill: (signal) => child.kill(signal),
+    pid: child.pid,
+    go: () => {
+      child.stdin.write("\n");
+      void child.stdin.end();
+    },
+  };
 }
 
 export class ScreenRecorder {
@@ -84,7 +103,7 @@ export class ScreenRecorder {
   }
 
   /** Start recording `target`; resolves with the file it is writing, rejects with why it couldn't. */
-  async start(target: RecordTarget, options: { microphone?: boolean } = {}): Promise<string> {
+  async start(target: RecordTarget, options: { microphone?: boolean; beforeCapture?: (pid: number) => Promise<void> } = {}): Promise<string> {
     if (this.state.kind !== "idle") throw new Error("A recording is already running.");
     if (!this.available()) throw new Error("Screen recording needs wf-recorder (dnf install wf-recorder).");
     this.set({ kind: "starting" });
@@ -99,7 +118,21 @@ export class ScreenRecorder {
         directory,
         recordingName(new Date((this.deps.now ?? Date.now)()), codec.extension, (name) => exists(join(directory, name))),
       );
-      const process = (this.deps.spawn ?? spawnRecorder)([WF_RECORDER, ...recorderArgs({ target, file, codec, microphone: options.microphone ?? false })]);
+      const argv = [WF_RECORDER, ...recorderArgs({ target, file, codec, microphone: options.microphone ?? false })];
+      const process = (this.deps.spawn ?? spawnRecorder)(argv, options.beforeCapture !== undefined);
+      if (options.beforeCapture) {
+        // An agent's recording: its blanks reach the compositor before wf-recorder copies a frame.
+        try {
+          if (process.pid === undefined || !process.go) throw new Error("no pid");
+          await options.beforeCapture(process.pid);
+        } catch {
+          process.kill("SIGKILL");
+          this.release();
+          this.set({ kind: "idle" });
+          throw new Error("The recording was not started: Dashi couldn't blank what agents must not see.");
+        }
+        process.go();
+      }
       const early = await Promise.race([process.exited, sleep(STARTUP_MS)]);
       if (early !== "timeout") {
         rmSync(file, { force: true });

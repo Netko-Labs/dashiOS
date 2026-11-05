@@ -13,6 +13,7 @@ import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
 import { recordScreen } from "./desktop/record.ts";
+import { AGENT_MASK } from "./mask.ts";
 import { descendsFrom } from "./peer.ts";
 import { named, noWindow, subject } from "./subject.ts";
 import type { Call, Rect } from "./tools/index.ts";
@@ -210,12 +211,19 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
   }
   // The consent sheet is never in an agent's picture.
   await ctx.ui.whenNoSheet();
+  // Nor is a secret: password fields, the vault, a window handed to the person (mask.ts).
+  try {
+    await ctx.mask.update();
+  } catch {
+    return toolError("The screenshot was not taken: Dashi couldn't blank what agents must not see.");
+  }
   const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, `${crypto.randomUUID()}.png`);
   try {
     const answer = (await ctx.compositor.request("capture", {
       path,
+      mask: AGENT_MASK,
       ...(id !== null ? { window: id } : {}),
       ...(rect ? { rect } : {}),
     })) as Record<string, unknown>;

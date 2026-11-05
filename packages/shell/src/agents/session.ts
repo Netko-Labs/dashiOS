@@ -16,6 +16,7 @@ import { type ToolResult, toolError } from "./context.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
+import type { AgentMask } from "./mask.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
 import type { AgentInfo, AgentUi, Who } from "./presence.ts";
@@ -31,6 +32,8 @@ export interface SessionContext {
   compositor: Compositor;
   ui: AgentUi;
   desktop: Desktop;
+  /** What agents' pictures blank, shared by every connection. */
+  mask: AgentMask;
   /** The agent seat, shared by every connection. */
   hands: Hands;
   grants: Grants;
@@ -249,6 +252,7 @@ export class Session {
         ui: this.ctx.ui,
         desktop: this.ctx.desktop,
         hands: this.ctx.hands,
+        mask: this.ctx.mask,
         agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
         status: (text) => this.setStatus(text),
         tile: this.ctx.tile,

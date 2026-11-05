@@ -33,6 +33,20 @@ impl Dashi {
             _ => false,
         };
         self.note_input(deliberate);
+        // The person's own presses, against what gets them (session/origin.rs);
+        // a pointer press goes to what the pointer is over.
+        if deliberate {
+            let focus = match &event {
+                InputEvent::Keyboard { .. } => {
+                    self.seat.get_keyboard().and_then(|k| k.current_focus())
+                }
+                _ => self.seat.get_pointer().and_then(|p| {
+                    let at = p.current_location();
+                    self.surface_under(at).map(|(surface, _)| surface)
+                }),
+            };
+            self.note_person_press(focus);
+        }
         match event {
             InputEvent::Keyboard { event, .. } => {
                 self.on_key(event.key_code(), event.state(), Event::time_msec(&event));

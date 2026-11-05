@@ -97,9 +97,16 @@ string|null, path: string|null}}`; `icon` is what the app gave
 
 | Method | Params | Result |
 | --- | --- | --- |
-| `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts`; `cursor: true` draws the pointer (and a drag's icon) into a screen or `rect` capture | the capture |
+| `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts`; `cursor: true` draws the pointer (and a drag's icon) into a screen or `rect` capture; `mask: name` blanks what `capture-mask` set for that name | the capture |
 | `screencopy-clients` | `{paths: string[]}`: executables allowed to use screencopy | `{}` |
-| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default) |
+| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default). Its clicks, presses and keys are noted as the agent's (`input-origin`) |
+
+### Secrets for agents (0.4.0, `docs/secrets.md`)
+
+| Method | Params | Result |
+| --- | --- | --- |
+| `capture-mask` | `{client, windows?: int[], rects?: [{window?, x, y, width, height}], layers?: string[], pids?: int[]}`, at most 256 of each; shell only | `{}`; sets (replaces) what is blanked, painted opaque, in the pictures for `client` (a name: `"agent"`): those windows with their popups and title bars, those rects (in a window's content coordinates when `window` is set, else global; a window not on screen adds nothing), and those shell layers by namespace. `capture {mask: client}` applies it, and so does every screencopy or image-copy frame for a client whose pid is in `pids` (a recorder the shell started for an agent). While the overview is open, a Space slides, or a window flies to the Dock, a mask with anything in it blanks the whole picture. A mask with nothing in it is dropped |
+| `input-origin` | `{namespace}` (a shell layer) or `{window}` | `{person: ms\|null, agent: ms\|null}`: how long ago the person's own hands (libinput) and an agent (`agent-input`, even on the person's borrowed seat) last pressed a button or a key there, within the last minute. Consent sheets count a yes only when the person's press is recent and no agent's is newer (`src/agents/person.ts`) |
 
 ## In the 0.2.0 compositor
 

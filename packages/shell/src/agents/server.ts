@@ -8,12 +8,15 @@ import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Compositor } from "../compositor.ts";
 import type { Tile } from "../layout.ts";
+import { Atspi } from "./atspi/client.ts";
 import { Grants } from "./consent.ts";
 import { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LockWatch } from "./lock.ts";
+import { AgentMask } from "./mask.ts";
 import { identify, peerPid } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
+import { isVaultWindow } from "./secrets/vault-view.ts";
 import { Session } from "./session.ts";
 
 export interface Agents {
@@ -47,7 +50,16 @@ export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOpti
   const lock = new LockWatch(compositor);
   const grants = new Grants();
   const hands = new Hands(compositor);
-  const context = { compositor, ui, desktop, hands, grants, lock, publish, tile };
+  // The accessibility bus, joined when a picture first needs it; a failure is tried again next time.
+  let atspi: Atspi | null = null;
+  const mask = new AgentMask({
+    request: (method, params) => compositor.request(method, params),
+    windows: () => compositor.windows(),
+    atspi: async () => (atspi ??= await Atspi.connect()),
+    handedOver: () => [],
+    isVault: isVaultWindow,
+  });
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile };
   let nextId = 0;
 
   const stopSessions = (stopping: Session[]) => {
@@ -139,6 +151,7 @@ export function startAgents({ compositor, ui, store, tile, desktop }: AgentsOpti
       hands.close();
       for (const session of sessions.values()) session.stop("disconnected");
       server.stop(true);
+      atspi?.close();
       if (existsSync(path)) unlinkSync(path);
     },
   };

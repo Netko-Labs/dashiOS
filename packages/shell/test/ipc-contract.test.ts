@@ -27,3 +27,20 @@ test("every IPC method the shell sends is one the compositor handles", () => {
   expect(sent.size).toBeGreaterThan(20);
   expect([...sent].filter((method) => !handled.has(method)).sort()).toEqual([]);
 });
+
+// Secrets for agents (0.4.0): the masks and whose presses were whose are
+// documented, handled, and sent by the shell, all three.
+test("capture-mask and input-origin are in the doc, the compositor, and the shell", () => {
+  const doc = readFileSync(join(repo, "docs/compositor-ipc.md"), "utf8");
+  const handled = readFileSync(join(repo, "crates/dashi-comp/src/ipc/requests.rs"), "utf8");
+  const shell = ["packages/shell/src/agents/mask.ts", "packages/shell/src/agents/person.ts"].map((file) => readFileSync(join(repo, file), "utf8")).join("\n");
+  for (const method of ["capture-mask", "input-origin"]) {
+    expect(doc).toContain(`| \`${method}\` |`);
+    expect(handled).toContain(`"${method}" =>`);
+    expect(shell).toContain(`"${method}"`);
+  }
+  // Every agent capture names its mask.
+  for (const file of ["packages/shell/src/agents/run.ts", "packages/shell/src/agents/desktop/record.ts"]) {
+    expect(readFileSync(join(repo, file), "utf8")).toContain("mask: AGENT_MASK");
+  }
+});

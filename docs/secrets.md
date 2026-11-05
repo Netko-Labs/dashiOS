@@ -149,6 +149,39 @@ Dashi's sign-in tools work only for a confined agent (or one on another
 machine, over SSH, whose only view of this one is what MCP returns). An
 agent started outside `dashi-agent` is told so.
 
+## Blanked captures
+
+The shell decides what agents' pictures blank; dashi-comp paints it
+(`capture-mask`, `docs/compositor-ipc.md`), like Android's FLAG_SECURE but
+only for agents: the person's own screenshots and screen sharing are
+unchanged. Before every agent screenshot, every still of a recording, and
+every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
+`agent` mask to:
+
+- every consent sheet (the `dashi.agent-consent` layer);
+- the vault's windows (Settings while its Passwords pane shows);
+- windows handed to the person ("Your turn") until they press Done;
+- every password field that is showing (AT-SPI, role `PASSWORD_TEXT`, state
+  `SHOWING`), 8 points larger all round, in each window of the app that has it.
+
+Captures name the mask (`capture {mask: "agent"}`). An agent's recording is
+a wf-recorder the shell starts gated: a shell that waits for a line, then
+`exec`s wf-recorder with the same pid, so the pid is in the mask before the
+first frame is copied. If the mask can't be set, the screenshot or the
+recording is refused. A field AT-SPI doesn't report isn't blanked; anything
+moving faster than the mask (the overview, a Space sliding, a window flying
+to the Dock) blanks the whole picture.
+
+## Consent from the person only
+
+`agent-input` may borrow the person's seat, so a click on a sheet doesn't
+say whose it was. dashi-comp notes each button and key press against what
+received it, a layer by namespace or a window by id, as the person's
+(libinput) or an agent's (`agent-input`), and answers `input-origin`. A
+consent sheet's yes counts only if the person pressed on the sheet within the
+last 2 seconds and no agent pressed there since (`src/agents/person.ts`); a
+no always counts. Anything else (an older compositor, an error) is a no.
+
 ## What this can't fix
 
 - Once signed in, the agent acts as the person on that site until the
