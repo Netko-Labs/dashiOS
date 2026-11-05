@@ -5,8 +5,7 @@
  * Dock) paints from the palette directly.
  */
 
-import { useColors } from "./appearance.ts";
-import { darkColors } from "./palette.ts";
+import { useDark } from "./appearance.ts";
 
 export interface Surface {
   window: string;
@@ -23,5 +22,5 @@ export const LIGHT_SURFACE: Surface = { window: "#f5f5f7", sidebar: "#e8e8ec", c
 export const DARK_SURFACE: Surface = { window: "#1e1e20", sidebar: "#29292c", card: "#2c2c2f", field: "#232326", stripe: "#252528" };
 
 export function useSurface(): Surface {
-  return useColors() === darkColors ? DARK_SURFACE : LIGHT_SURFACE;
+  return useDark() ? DARK_SURFACE : LIGHT_SURFACE;
 }

@@ -139,4 +139,16 @@ describe("the model never writes over a change on disk", () => {
     expect(readdirSync(root).filter((name) => name.endsWith(".md"))).toEqual(["Groceries.md"]);
     model.dispose();
   });
+
+  test("the notice goes when the person dismisses it, and the copy stays open", () => {
+    const model = open();
+    model.edit({ body: "- milk\n- eggs" });
+    sync("# Groceries\n\n- milk\n- bread\n");
+    model.reload();
+    expect(model.getSnapshot().notice).not.toBeNull();
+    model.dismissNotice();
+    expect(model.getSnapshot().notice).toBeNull();
+    expect(model.getSnapshot().selected).toBe("Groceries (conflict).md");
+    model.dispose();
+  });
 });
