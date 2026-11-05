@@ -331,7 +331,7 @@ CI builds the index. No server.
 applets/<id>/applet.json            the manifest
 applets/<id>/source.json            {"url": "https://github.com/…", "commit": "<40 hex>"}
 applets/<id>/author.pub             the author's minisign key; set by the first pull request, never changed
-applets/<id>/versions/<v>.json      {"sha256", "size", "released"}: the package the author built and signed
+applets/<id>/versions/<v>.json      {"sha256", "size", "released", "bun"}: the package the author built and signed, and its Bun
 applets/<id>/versions/<v>.minisig   the author's signature on it
 applets/<id>/screenshots/…
 applets/<id>/review.json            {"reviewed": true, "by": "…"}: maintainers only
@@ -339,7 +339,7 @@ applets/<id>/pulled.json            [{"version", "reason"}]: maintainers only, t
 ```
 
 CI on a pull request validates the manifest, rebuilds each new version from
-its source at the pinned commit with the Bun in `build.json`, refuses it
+its source at the pinned commit with the catalog's Bun (a version built with another is refused), refuses it
 unless the bytes match `versions/<v>.json`, and checks the signature against
 `author.pub` (and that `author.pub` didn't change). On merge it uploads
 `<id>-<version>.dashi-applet` and its `.minisig` to the release

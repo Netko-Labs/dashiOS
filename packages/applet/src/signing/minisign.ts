@@ -88,6 +88,27 @@ export function verify(message: Uint8Array, signature: string, publicKey: Public
   return { ok: true, trustedComment: comment, keyId: keyIdText(key.keyId) };
 }
 
+/**
+ * Only the trusted comment's signature, which needs no file: that `key`
+ * made this .minisig, and what its comment says. The catalog checks this
+ * before the package is rebuilt; `verify` checks the file itself.
+ */
+export function verifyTrustedComment(signature: string, publicKey: PublicKey | string): Verified {
+  const key = typeof publicKey === "string" ? parsePublicKey(publicKey) : publicKey;
+  if (!key) return { ok: false, reason: "the public key is not a minisign key" };
+  const lines = signature.split("\n").map((line) => line.replace(/\r$/, ""));
+  const sig = decode(lines[1] ?? "");
+  if (!sig || sig.byteLength !== SIGNATURE_LENGTH) return { ok: false, reason: "the signature is malformed" };
+  if (!equal(sig.slice(2, 10), key.keyId)) return { ok: false, reason: `signed by key ${keyIdText(sig.slice(2, 10))}, not ${keyIdText(key.keyId)}` };
+  const trusted = lines[2];
+  const global = decode(lines[3] ?? "");
+  if (!trusted?.startsWith("trusted comment: ") || !global || global.byteLength !== 64) return { ok: false, reason: "the signature has no trusted comment" };
+  const comment = trusted.slice("trusted comment: ".length);
+  if (!edVerify(null, Buffer.concat([sig.slice(10), Buffer.from(comment)]), publicKeyObject(key.key), global))
+    return { ok: false, reason: "the trusted comment was changed, or another key signed it" };
+  return { ok: true, trustedComment: comment, keyId: keyIdText(key.keyId) };
+}
+
 export interface KeyPair {
   /** The .pub file. */
   publicKey: string;

@@ -6,7 +6,7 @@
  *   applets/<id>/applet.json              the manifest
  *   applets/<id>/source.json              {"url", "commit"}: where CI builds it from
  *   applets/<id>/author.pub               the author's key (the first time; it may not change)
- *   applets/<id>/versions/<v>.json        {"sha256", "size", "released"}: the package the author built
+ *   applets/<id>/versions/<v>.json        {"sha256", "size", "released", "bun"}: the package the author built
  *   applets/<id>/versions/<v>.minisig     the author's signature on it
  *   applets/<id>/screenshots/…            the manifest's screenshots
  *
@@ -117,7 +117,7 @@ export async function publish(dir: string, args: readonly string[]): Promise<num
   const released = new Date().toISOString().slice(0, 10);
   writeFileSync(
     join(target, "versions", `${manifest.version}.json`),
-    `${JSON.stringify({ sha256: packed.sha256, size: packed.bytes.byteLength, released }, null, 2)}\n`,
+    `${JSON.stringify({ sha256: packed.sha256, size: packed.bytes.byteLength, released, bun: Bun.version }, null, 2)}\n`,
   );
   writeFileSync(join(target, "versions", `${manifest.version}.minisig`), signature);
   for (const shot of manifest.screenshots) {
