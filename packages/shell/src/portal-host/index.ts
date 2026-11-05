@@ -10,4 +10,4 @@ export {
   sheetTitle,
 } from "./protocol.ts";
 export { type PortalHost, type PortalHostDeps, portalHostInterface, startPortalHost } from "./service.ts";
-export { PortalSheets, parseHandleAnswer, type SheetHost } from "./sheets.ts";
+export { PortalSheets, parseHandleAnswer, SHEET_TOPS, type SheetHost, sheetTop } from "./sheets.ts";

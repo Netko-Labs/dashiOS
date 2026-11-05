@@ -43,6 +43,15 @@ struct Press {
     dragging: bool,
 }
 
+impl Overview {
+    fn dragged(&self) -> Option<WindowId> {
+        self.press
+            .as_ref()
+            .filter(|press| press.dragging && !self.closing)
+            .and_then(|press| press.window)
+    }
+}
+
 fn ease(t: f64) -> f64 {
     let t = t.clamp(0.0, 1.0);
     1.0 - (1.0 - t).powi(3)
@@ -248,6 +257,13 @@ impl Dashi {
         self.overview.as_ref().is_some_and(|o| o.press.is_some())
     }
 
+    /// The window being dragged in the overview, if one is: drawn in front
+    /// of everything but the pointer, over the shell's row and its pictures
+    /// (render/scene.rs), so the person sees what they carry onto a Desktop.
+    pub(crate) fn overview_dragged(&self) -> Option<WindowId> {
+        self.overview.as_ref().and_then(Overview::dragged)
+    }
+
     /// The release: a pick (a window or the background), or a drop.
     pub(crate) fn overview_release(&mut self, at: Point<f64, Logical>) {
         let Some(press) = self.overview.as_mut().and_then(|o| o.press.take()) else {
@@ -288,6 +304,36 @@ impl Dashi {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn pressed(window: Option<WindowId>, dragging: bool, closing: bool) -> Overview {
+        Overview {
+            targets: HashMap::new(),
+            from: HashMap::new(),
+            progress: 1.0,
+            closing,
+            press: Some(Press {
+                window,
+                at: (0.0, 0.0).into(),
+                dragging,
+            }),
+        }
+    }
+
+    #[test]
+    fn only_a_window_dragged_in_the_open_overview_goes_in_front() {
+        assert_eq!(pressed(Some(3), true, false).dragged(), Some(3));
+        assert_eq!(
+            pressed(Some(3), false, false).dragged(),
+            None,
+            "pressed, not dragged yet"
+        );
+        assert_eq!(pressed(None, true, false).dragged(), None, "the background");
+        assert_eq!(
+            pressed(Some(3), true, true).dragged(),
+            None,
+            "closing: back in its place"
+        );
+    }
 
     #[test]
     fn rects_are_checked() {

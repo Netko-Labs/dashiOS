@@ -269,7 +269,12 @@ pub(crate) fn handle(
                         .ok_or("`parent` must be a window id or null")?,
                 ),
             };
-            done(state.attach_sheet(window(params)?, parent))
+            let top = params
+                .contains_key("top")
+                .then(|| coord(params, "top"))
+                .transpose()?
+                .map(|top| top.clamp(0, 512));
+            done(state.attach_sheet(window(params)?, parent, top))
         }
         "window-for-handle" => {
             Ok(json!({ "window": window_for_handle(state, text(params, "handle")?) }))

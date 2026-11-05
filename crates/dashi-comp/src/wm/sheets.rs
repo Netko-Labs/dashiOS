@@ -1,7 +1,9 @@
 //! Sheets: a window attached to another (IPC `attach`), the way a portal's
 //! file chooser hangs from the window that asked for it. The shell decides
 //! which window is whose sheet; this keeps it there: centred under the
-//! parent's title bar, on top of it, on its Space, gone while the parent is
+//! parent's title bar (or `top` below its frame's top, where an app draws
+//! its own title bar and toolbar: the shell knows how tall), on top of it,
+//! on its Space, gone while the parent is
 //! off screen, and with the keyboard whenever the parent would get it. A
 //! press inside the parent goes to the sheet instead (`sheet_takes_press`).
 //! A sheet has no title bar of its own (wm/decor.rs).
@@ -12,11 +14,14 @@ use super::windows::{WindowId, frame_of, toplevel_surface};
 use crate::state::Dashi;
 
 impl Dashi {
-    /// Make `child` a sheet of `parent`, or (None) an ordinary window again.
+    /// Make `child` a sheet of `parent`, hanging `top` below the parent's
+    /// frame's top (None: under dashi-comp's title bar), or (no parent) an
+    /// ordinary window again.
     pub(crate) fn attach_sheet(
         &mut self,
         child: WindowId,
         parent: Option<WindowId>,
+        top: Option<i32>,
     ) -> Result<(), String> {
         if self.windows.get(child).is_none() {
             return Err(format!("no window {child}"));
@@ -36,6 +41,7 @@ impl Dashi {
             return Err(format!("no window {child}"));
         };
         entry.sheet_of = parent;
+        entry.sheet_top = top.filter(|_| parent.is_some());
         entry.title_image = None;
         let unplaced = !entry.placed;
         if let Some(surface) = toplevel_surface(&entry.window) {
@@ -68,12 +74,16 @@ impl Dashi {
             .last()
     }
 
-    /// Where `child`'s frame goes on `parent`: centred, its top at the parent's content.
+    /// Where `child`'s frame goes on `parent`: centred, its top at the
+    /// parent's content (below dashi-comp's title bar, or `top` below the frame's top).
     fn sheet_spot(&self, child: WindowId, parent: WindowId) -> Option<Point<i32, Logical>> {
         let parent = self.windows.get(parent)?;
         let child = self.windows.get(child)?;
         let frame = frame_of(self, &parent.window)?;
-        let bar = self.bar_height(&parent.window);
+        let bar = child
+            .sheet_top
+            .unwrap_or_else(|| self.bar_height(&parent.window))
+            .clamp(0, (frame.size.h - 1).max(0));
         let width = child.window.geometry().size.w;
         Some(Point::from((
             frame.loc.x + (frame.size.w - width) / 2,

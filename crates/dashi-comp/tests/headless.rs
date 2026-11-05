@@ -1298,6 +1298,52 @@ fn nothing_of_a_session_outlives_its_compositor() {
 }
 
 #[test]
+fn a_sheet_hangs_where_the_shell_says_on_a_window_that_draws_its_own_bar() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The test client draws its own frame: dashi-comp gives it no title bar.
+    let mut parent = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Parent");
+    let parent_id = wait_event(&mut ipc, &mut parent, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": parent_id, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut parent, "window-opened");
+    let mut sheet = Client::open(compositor.dir.path(), &display, "dev.dashi.portal", "Open");
+    let sheet_id = wait_event(&mut ipc, &mut sheet, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+
+    // Below the app's own title bar and toolbar, as tall as the shell says.
+    let attach = json!({ "window": sheet_id, "parent": parent_id, "top": 60 });
+    assert_eq!(ipc.request("attach", attach)["result"], json!({}));
+    wait_event(&mut ipc, &mut sheet, "window-opened");
+    let frame = |ipc: &mut Ipc| {
+        let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+        let sheet = windows
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|w| w["id"] == sheet_id)
+            .cloned()
+            .unwrap();
+        (sheet["frame"]["x"].as_i64(), sheet["frame"]["y"].as_i64())
+    };
+    assert_eq!(frame(&mut ipc), (Some(100), Some(160)));
+
+    // Without `top`, at the top of the parent's content: it has no bar of dashi-comp's.
+    let again = json!({ "window": sheet_id, "parent": parent_id });
+    assert_eq!(ipc.request("attach", again)["result"], json!({}));
+    assert_eq!(frame(&mut ipc), (Some(100), Some(100)));
+    let bad = json!({ "window": sheet_id, "parent": parent_id, "top": "60" });
+    assert!(ipc.request("attach", bad)["error"].is_string());
+}
+
+#[test]
 fn portal_parents_and_sheets_are_checked() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();

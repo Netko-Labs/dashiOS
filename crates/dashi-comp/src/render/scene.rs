@@ -110,6 +110,22 @@ where
         }
         return elements;
     }
+    // A window dragged in Mission Control: over the shell's Desktops row and
+    // its pictures, so the person sees what they carry onto one; drawn here
+    // instead of in its place among the windows.
+    let dragged = state
+        .overview_dragged()
+        .filter(|_| view.only.is_none())
+        .and_then(|id| {
+            Some((
+                id,
+                state.windows.get(id)?.window.clone(),
+                state.overview_rect(id)?,
+            ))
+        });
+    if let Some((_, window, rect)) = &dragged {
+        overview_window(state, renderer, window, *rect, origin, scale, &mut elements);
+    }
     if view.only.is_none() {
         // The shell's live pictures, over its panels (super::thumbnails).
         elements.extend(super::thumbnails::thumbnail_elements(
@@ -202,6 +218,7 @@ where
         }
         if state.overview.is_some() {
             if let Some(id) = state.windows.by_window(window).map(|e| e.id)
+                && dragged.as_ref().is_none_or(|(held, _, _)| *held != id)
                 && let Some(rect) = state.overview_rect(id)
             {
                 overview_window(state, renderer, window, rect, origin, scale, &mut elements);
