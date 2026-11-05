@@ -1,6 +1,6 @@
 /**
  * The launcher's math, as Spotlight does it: `2+3*4`, `(4+5)/3`, `2^10`,
- * `-3 x 7`, `15%`. × and ÷ bind tighter than + and −, ^ tighter still (and
+ * `-3 x 7`, `15%`, `15% of 80`. × and ÷ bind tighter than + and −, ^ tighter still (and
  * to the right); `%` is a hundredth. A query is math only when it has an
  * operator between numbers (a lone `42` is a search), and anything else in
  * it (a letter, a stray bracket) makes it not math at all.
@@ -104,7 +104,8 @@ function evaluate(tokens: readonly Token[]): number {
 
 /** The answer to `query` when it is math, else null (a search, a division by zero, a number too large). */
 export function calculate(query: string): number | null {
-  const tokens = tokenize(query);
+  // "15% of 80" is 15% times 80.
+  const tokens = tokenize(query.replace(/%\s*of\b/gi, "% *"));
   if (!tokens) return null;
   const numbers = tokens.filter((token) => token.kind === "number").length;
   // Something to work out: an operator, and a number for it (`-5` and `42` are searches; `50%` is math).

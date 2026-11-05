@@ -75,8 +75,55 @@ export function iconNamesFor(hit: Pick<FileHit, "mime">): string[] {
 
 /** Ask LocalSearch for files named like `query`; empty for a short query or when it cannot be asked. */
 export async function searchFiles(query: string, run: (command: readonly string[]) => Promise<string | null>, home: string, limit = 4): Promise<FileHit[]> {
+  return (await askLocalSearch(query, run, home, limit)) ?? [];
+}
+
+/** `searchFiles`, but null when LocalSearch could not answer (not installed, not running). */
+export async function askLocalSearch(
+  query: string,
+  run: (command: readonly string[]) => Promise<string | null>,
+  home: string,
+  limit = 4,
+): Promise<FileHit[] | null> {
   const text = query.trim();
   if (text.length < MIN_QUERY) return [];
   const output = await run(fileSearchCommand(text, limit));
-  return output === null ? [] : parseFileResults(output, home).slice(0, limit);
+  return output === null ? null : parseFileResults(output, home).slice(0, limit);
+}
+
+/** After a failed ask, how long the launcher says "File search is off" before trying LocalSearch again. */
+export const RETRY_MS = 60_000;
+
+/**
+ * File search as the launcher sees it: whether it can search right now (the
+ * placeholder says so), and the search. A missing `tinysparql` is off for
+ * good; LocalSearch not answering is off for a minute, then asked again.
+ */
+export class FileSearch {
+  private failedAt: number | null = null;
+
+  constructor(
+    private readonly options: {
+      run: (command: readonly string[]) => Promise<string | null>;
+      home: string;
+      /** Whether `tinysparql` is on PATH; asked once. */
+      installed: boolean;
+      now?: () => number;
+    },
+  ) {}
+
+  /** Whether a search could find files now. */
+  isAvailable(): boolean {
+    if (!this.options.installed) return false;
+    if (this.failedAt === null) return true;
+    return (this.options.now ?? Date.now)() - this.failedAt >= RETRY_MS;
+  }
+
+  /** Files named like `query`, or null when file search is off. */
+  async find(query: string, limit = 4): Promise<FileHit[] | null> {
+    if (!this.isAvailable()) return null;
+    const hits = await askLocalSearch(query, this.options.run, this.options.home, limit);
+    this.failedAt = hits === null ? (this.options.now ?? Date.now)() : null;
+    return hits;
+  }
 }

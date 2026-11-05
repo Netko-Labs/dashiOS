@@ -9,6 +9,7 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
+import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
 import { Grants } from "./agents/consent.ts";
@@ -51,10 +52,10 @@ import {
   startDock,
   TileStore,
 } from "./dock/index.ts";
-import { type Entry, fileIcon, launchEntry, loadEntries } from "./entries.ts";
+import { type Entry, fileIcon, launchEntry } from "./entries.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
-import { iconNamesFor, searchFiles } from "./file-search.ts";
+import { FileSearch, iconNamesFor } from "./file-search.ts";
 import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
 import { FullscreenBars } from "./fullscreen.ts";
@@ -65,7 +66,11 @@ import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
-import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
+import { AppIndex } from "./launcher/app-index.ts";
+import { LaunchFailures } from "./launcher/failures.ts";
+import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
+import { FILE_ROWS } from "./launcher/rows.ts";
+import { LAUNCHER, Launcher, type LauncherFiles } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
 import { MenuBar } from "./menubar.tsx";
@@ -82,7 +87,7 @@ import { startPolkit } from "./polkit/index.ts";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "./portal-host/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { powerOffReason } from "./power/nested.ts";
-import { loadRecents, recentEntries, rememberLaunch } from "./recents.ts";
+import { RecentApps, recentEntries } from "./recents.ts";
 import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
 import { chooseRegion, startRegion } from "./region/index.ts";
@@ -103,7 +108,7 @@ import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
-import { run } from "./system/exec.ts";
+import { hasProgram, run } from "./system/exec.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
 import { startSystem } from "./system/start.ts";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
@@ -772,11 +777,49 @@ const whereIsPerson = (): Promise<string | undefined> => (compositor ? activeScr
 /** `{ output }` for a surface, or nothing for the compositor's choice. */
 const onScreen = (output: string | undefined): { output?: string } => (output === undefined ? {} : { output });
 
+// The launcher (launcher.tsx). Nothing on a ❖ tap touches the disk: the apps are an index built
+// once and kept fresh by inotify (launcher/app-index.ts), the history is held in memory
+// (recents.ts), icons were resolved when the index was built, and file search knows
+// whether it can look (file-search.ts).
+const appIndex = new AppIndex();
+const stopAppIndex = appIndex.start();
+const launcherRecents = new RecentApps();
+const fileSearch = new FileSearch({ run, home: homedir(), installed: hasProgram("tinysparql") });
+const launcherFiles: LauncherFiles = {
+  isAvailable: () => fileSearch.isAvailable(),
+  find: async (query) => (await fileSearch.find(query, FILE_ROWS))?.map((hit) => ({ ...hit, icon: fileIcon(iconNamesFor(hit)) })) ?? null,
+};
+const launcherKeys = new LauncherKeys();
+// Copying an answer: wl-copy, a child of the shell, so the compositor serves it data-control.
+const launcherClipboard = systemClipboard();
+const launchFailures = new LaunchFailures(notifications.store);
+/** The launcher's own keys come and go with it (launcher/keys.ts), as the switcher's do. */
+const launcherKeymap = {
+  begin: () => void compositor?.request("keymap", withLauncher(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
+  end: () => void compositor?.request("keymap", currentKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+};
+
+/** Start `entry` from the launcher; false when it could not be started at all. One that quits at once is a notification. */
+function launchFromLauncher(entry: Entry): boolean {
+  const pid = launchEntry(entry, { failed: () => launchFailures.quit(entry.name, () => launchFromLauncher(entry)) });
+  if (pid === null) return false;
+  launcherRecents.remember(entry.id);
+  return true;
+}
+
+/** Open a first-party app with a word for it to look for (`env`); false when it isn't installed. */
+function openWith(appId: string, env: Record<string, string>): boolean {
+  const entry = appIndex.entries().find((each) => each.id === appId);
+  return entry ? launchEntry({ ...entry, env: { ...entry.env, ...env } }) !== null : false;
+}
+
 function openLauncher(): void {
   const close = () => closeOverlay("launcher");
-  const entries = loadEntries();
-  void overlays.showOn("launcher", whereIsPerson, (onClosed, output) =>
-    openOverlay(
+  const entries = appIndex.entries();
+  void overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
+    // Its keys come with the surface and go with it, however it closes.
+    launcherKeymap.begin();
+    return openOverlay(
       {
         title: "Launcher",
         width: LAUNCHER.width,
@@ -792,28 +835,33 @@ function openLauncher(): void {
       },
       <Launcher
         entries={entries}
-        recent={recentEntries(entries, loadRecents())}
+        recent={recentEntries(entries, launcherRecents.list())}
         onOpen={(entry) => {
-          rememberLaunch(entry.id);
-          launchEntry(entry);
+          if (!launchFromLauncher(entry)) return false;
           close();
+          return true;
         }}
-        findFiles={findLauncherFiles}
+        files={launcherFiles}
         onOpenFile={(file) => {
           openFile(file.url);
           close();
         }}
+        onSearchFiles={(query) => {
+          if (openWith("dev.dashi.files", { DASHI_FILES_SEARCH: query })) close();
+        }}
+        onFindSoftware={(query) => {
+          if (openWith("dev.dashi.software", { DASHI_SOFTWARE_SEARCH: query })) close();
+        }}
+        copy={(text) => launcherClipboard.writeText(text)}
+        keys={launcherKeys}
         onClose={close}
       />,
-      onClosed,
-    ),
-  );
-}
-
-/** Files for the launcher, each with its icon. */
-async function findLauncherFiles(query: string): Promise<FileRow[]> {
-  const hits = await searchFiles(query, run, homedir());
-  return hits.map((hit) => ({ ...hit, icon: fileIcon(iconNamesFor(hit)) }));
+      () => {
+        launcherKeymap.end();
+        onClosed();
+      },
+    );
+  });
 }
 
 /** Opens a file or folder in its default app, as Files would. */
@@ -958,6 +1006,7 @@ const stopShortcuts = compositor
       powerKey: () => power.powerKey(),
       screenshotArea: selectArea,
       captureToolbar: (window) => captureTools?.toolbar(window),
+      launcher: launcherKeys,
     })
   : () => {};
 
@@ -1071,6 +1120,13 @@ const quit = () => {
     ["settings app", () => settingsApp.close()],
     ["settings services", () => paneServices?.close()],
     ["overlays", () => overlays.closeAll()],
+    [
+      "launcher",
+      () => {
+        stopAppIndex();
+        launchFailures.close();
+      },
+    ],
     ["screens", stopFollowingScreens],
     ["xwayland-scale", stopXwaylandScaling],
     [

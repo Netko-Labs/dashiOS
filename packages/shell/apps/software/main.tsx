@@ -3,7 +3,8 @@
  * Flathub installed with flatpak, and the system's updates through PackageKit.
  * Nothing installs or updates until the person clicks (or an agent asks and
  * they say yes on screen). `DASHI_SOFTWARE_FAKE=1` stands in for the package
- * tools in checks (src/software/stand-in.ts).
+ * tools in checks (src/software/stand-in.ts). `DASHI_SOFTWARE_SEARCH` opens it
+ * on a search (the launcher's "Find … in Software").
  */
 
 import { runPower } from "../../src/menus/session.ts";
@@ -16,6 +17,6 @@ const services = createServices(() => runPower("restart"));
 runApp(
   { id: "dev.dashi.software", title: "Software", size: SOFTWARE_SIZE },
   <ServicesContext.Provider value={services}>
-    <SoftwareWindow />
+    <SoftwareWindow initialQuery={process.env.DASHI_SOFTWARE_SEARCH?.trim() ?? ""} />
   </ServicesContext.Provider>,
 );

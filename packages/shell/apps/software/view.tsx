@@ -51,11 +51,12 @@ function pageLabel(page: Page): string {
 const inSidebar = (nav: Nav, page: Page): boolean =>
   nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
 
-export function SoftwareWindow() {
+/** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"). */
+export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } = {}) {
   const { store, restart } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [nav, setNav] = useState<Nav>(START);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [ask, setAsk] = useState<Ask | null>(null);
   // Bumped when a sheet closes, so the search field takes the keyboard back.
   const [focus, setFocus] = useState(0);
