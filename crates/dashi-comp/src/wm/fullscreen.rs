@@ -60,7 +60,10 @@ impl Dashi {
             let screen = self.space.output_geometry(&output).ok_or("no screen")?;
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.fullscreen = Some((output.name(), frame));
-                entry.title_image = None;
+                // Its title bar goes; a unified window's lights stay (wm/decor.rs).
+                if !entry.decor.drawn(true) {
+                    entry.title_image = None;
+                }
                 entry.tiled = false;
             }
             configure(&window, Some(screen.size), Some(&output));

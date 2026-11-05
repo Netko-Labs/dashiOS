@@ -187,6 +187,11 @@ pub(crate) fn arriving_window<R>(
     // Drawn without its title bar: all four corners round, as its edge does.
     let rounding = rounding(state, renderer, window, true, spot.scale.x);
     elements.extend(sides.front.map(DashiElement::Depth));
+    // A unified window's lights, over it as in its frame.
+    if let Some(image) = lights_of(state, window) {
+        let lights_at = (at - spot.origin).to_physical_precise_round(spot.scale);
+        push_memory(renderer, lights_at, &image, None, elements);
+    }
     elements.extend(
         window
             .render_elements::<WaylandSurfaceRenderElement<R>>(
@@ -239,6 +244,24 @@ pub(crate) fn overview_window<R>(
         .by_window(window)
         .is_some_and(|entry| entry.decor == Decor::Unified);
     let rounding = rounding(state, renderer, window, unified, scale.x * s);
+    // Its title bar or lights, the whole image shrunk with it at the same spot.
+    let title = state
+        .windows
+        .by_window(window)
+        .and_then(|entry| entry.title_image.as_ref())
+        .filter(|image| image.shows(bar))
+        .map(|image| {
+            let own = image.size().to_f64();
+            let size = Size::from((
+                (own.w * s).round().max(1.0) as i32,
+                (own.h * s).round().max(1.0) as i32,
+            ));
+            (image.buffer.clone(), own, size)
+        });
+    let at = (rect.loc - origin).to_physical(scale);
+    if let Some((buffer, own, size)) = title.as_ref().filter(|_| unified) {
+        push_memory(renderer, at, buffer, Some((*own, *size)), elements);
+    }
     elements.extend(
         window
             .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
@@ -250,21 +273,20 @@ pub(crate) fn overview_window<R>(
                 _ => DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s)),
             }),
     );
-    let image = state
-        .windows
-        .by_window(window)
-        .and_then(|entry| entry.title_image.as_ref());
-    if let Some(image) = image.filter(|_| bar > 0.0) {
-        let at = (rect.loc - origin).to_physical(scale);
-        // The whole bar, shrunk to fit (not its top-left cut out at the small size).
-        let own = Size::from((outer_w, bar));
-        let size = Size::from((
-            rect.size.w.round() as i32,
-            (bar * s).round().max(1.0) as i32,
-        ));
-        push_memory(renderer, at, &image.buffer, Some((own, size)), elements);
+    if let Some((buffer, own, size)) = title.as_ref().filter(|_| !unified) {
+        push_memory(renderer, at, buffer, Some((*own, *size)), elements);
     }
     elements.extend(sides.back.map(DashiElement::Depth));
+}
+
+/// A unified window's lights image, when it has one.
+fn lights_of(state: &Dashi, window: &Window) -> Option<MemoryRenderBuffer> {
+    state
+        .windows
+        .by_window(window)
+        .filter(|entry| entry.decor == Decor::Unified)
+        .and_then(|entry| entry.title_image.as_ref())
+        .map(|image| image.buffer.clone())
 }
 
 /// How a framed window's main surface is rounded: which surface, the shader, and the corners.

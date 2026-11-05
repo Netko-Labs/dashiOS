@@ -18,21 +18,44 @@ use smithay::{
 
 use super::{Thumb, fit, on_preview};
 use crate::{
-    render::{DashiElement, GlesAccess},
+    render::{DashiElement, GlesAccess, titlebar::Decor},
     state::Dashi,
 };
 
 /// Window pictures are numbered after the Desktop pictures, which are never this many.
 const WINDOW_SLOTS: usize = 1 << 12;
 
-/// One window to draw small: where its outer frame goes, and its title bar.
+/// One window to draw small: where its outer frame goes, and its title bar
+/// or (a unified window's) lights, which shrink with it at the same spot.
 struct Small {
     slot: usize,
     window: Window,
     outer: Rectangle<f64, Logical>,
     bar: f64,
-    title: Option<MemoryRenderBuffer>,
+    title: Option<Title>,
     crop: Rectangle<i32, Logical>,
+}
+
+/// A window's title bar or lights image, its size at full size, and whether it is lights.
+struct Title {
+    buffer: MemoryRenderBuffer,
+    size: Size<i32, Logical>,
+    lights: bool,
+}
+
+/// The title image `window` shows now, with a bar `bar` high.
+fn title_of(state: &Dashi, window: &Window, bar: i32) -> Option<Title> {
+    let image = state
+        .windows
+        .by_window(window)?
+        .title_image
+        .as_ref()
+        .filter(|image| image.shows(f64::from(bar)))?;
+    Some(Title {
+        buffer: image.buffer.clone(),
+        size: image.size(),
+        lights: image.look.decor == Decor::Unified,
+    })
 }
 
 /// The pictures on `output` for a view of `area` at `scale`.
@@ -69,7 +92,7 @@ where
             slot: WINDOW_SLOTS + index,
             outer: fit(size, *rect),
             bar: f64::from(bar),
-            title: entry.title_image.as_ref().map(|image| image.buffer.clone()),
+            title: title_of(state, &window, bar),
             window,
             crop: *rect,
         });
@@ -100,11 +123,7 @@ where
                 frame.loc - Point::from((0, bar)),
                 frame.size + Size::from((0, bar)),
             );
-            let title = state
-                .windows
-                .by_window(&window)
-                .and_then(|entry| entry.title_image.as_ref())
-                .map(|image| image.buffer.clone());
+            let title = title_of(state, &window, bar);
             jobs.push(Small {
                 slot: index,
                 outer: on_preview(pictured, rect, outer),
@@ -196,6 +215,11 @@ fn small_window<R>(
         .to_physical(scale)
         .to_i32_round();
     let about = (inner - origin.to_f64()).to_physical(scale).to_i32_round();
+    // A unified window's lights are over its surfaces; a title bar is above them.
+    let lights = job.title.as_ref().is_some_and(|title| title.lights);
+    if lights {
+        small_title(state, renderer, job, origin, scale, crop, elements);
+    }
     let surfaces = job
         .window
         .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0);
@@ -205,26 +229,46 @@ fn small_window<R>(
             elements.push(DashiElement::ThumbSurface(thumb));
         }
     }
-    let Some(title) = job.title.as_ref().filter(|_| job.bar > 0.0) else {
+    if !lights {
+        small_title(state, renderer, job, origin, scale, crop, elements);
+    }
+}
+
+/// `job`'s title bar or lights: the whole image, shrunk with the window, at its top-left.
+fn small_title<R>(
+    state: &mut Dashi,
+    renderer: &mut R,
+    job: &Small,
+    origin: Point<i32, Logical>,
+    scale: Scale<f64>,
+    crop: Rectangle<i32, Physical>,
+    elements: &mut Vec<DashiElement<R>>,
+) where
+    R: Renderer + ImportAll + ImportMem + GlesAccess,
+    R::TextureId: Clone + Send + 'static,
+{
+    let Some(title) = job.title.as_ref() else {
         return;
     };
+    let by = job.outer.size.w / f64::from(job.window.geometry().size.w.max(1));
     let at = (job.outer.loc - origin.to_f64()).to_physical(scale);
+    let own = title.size.to_f64();
     let size = Size::from((
-        job.outer.size.w.round() as i32,
-        (job.bar * by).round().max(1.0) as i32,
+        (own.w * by).round().max(1.0) as i32,
+        (own.h * by).round().max(1.0) as i32,
     ));
     match MemoryRenderBufferRenderElement::from_buffer(
         renderer,
         at,
-        title,
+        &title.buffer,
         None,
         None,
         Some(size),
         Kind::Unspecified,
     ) {
-        Ok(bar) => {
-            let id = state.thumbnails.id(job.slot, bar.id());
-            if let Some(thumb) = Thumb::new(bar, crop.loc, 1.0, scale, crop, id) {
+        Ok(image) => {
+            let id = state.thumbnails.id(job.slot, image.id());
+            if let Some(thumb) = Thumb::new(image, crop.loc, 1.0, scale, crop, id) {
                 elements.push(DashiElement::ThumbMemory(thumb));
             }
         }
