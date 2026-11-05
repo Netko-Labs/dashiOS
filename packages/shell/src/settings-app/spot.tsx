@@ -17,6 +17,9 @@ import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncEx
 export const LIT_MS = 2_500;
 /** Room left above the row once it is scrolled to. */
 const ABOVE = 24;
+/** The row and its page report their layout in either order: look again this often, this many times. */
+const LAYOUT_POLL_MS = 50;
+const LAYOUT_POLLS = 20;
 
 export interface RowTarget {
   pane: string;
@@ -98,9 +101,17 @@ export function Spot({ pane, row, children }: { pane: string; row: string; child
 
   useEffect(() => {
     if (!lit || !host) return;
+    let polls = 0;
+    const poll = setInterval(() => {
+      revealNow.current();
+      if (scrolled.current === lit.serial || ++polls >= LAYOUT_POLLS) clearInterval(poll);
+    }, LAYOUT_POLL_MS);
     revealNow.current();
     const timer = setTimeout(() => host.focus.clear(lit.serial), LIT_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearInterval(poll);
+      clearTimeout(timer);
+    };
   }, [lit, host]);
 
   return (

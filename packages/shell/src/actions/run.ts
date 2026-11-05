@@ -33,11 +33,17 @@ export interface RunDeps {
   confirmLink(action: ActionDef, args: Args): Promise<boolean>;
 }
 
-/** What a link to `action` does: open its place, open it for the person to finish, or run it. */
+/**
+ * What a link to `action` does: open its place, open it for the person to
+ * finish, or run it. Besides what is destructive, an agent tool that changes
+ * something is opened too: tools carry an agent's reach (notes, files,
+ * displays), more than a link should have without the person.
+ */
 export function linkDecision(action: ActionDef, args: Args): "reveal" | "present" | "run" {
   if (action.place && Object.keys(args).length === 0) return "reveal";
   // Its own sheet asks anyway (force quit, restart): the sheet is the opening.
-  if (action.destructive && !action.asksEveryTime) return "present";
+  if (action.asksEveryTime) return "run";
+  if (action.destructive || (action.tool !== undefined && !action.readOnly)) return "present";
   return "run";
 }
 

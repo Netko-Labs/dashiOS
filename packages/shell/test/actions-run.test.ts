@@ -124,6 +124,12 @@ describe("a link from outside", () => {
     expect(linkDecision(action(), {})).toBe("run");
     expect(linkDecision(action({ destructive: true, asksEveryTime: true }), {})).toBe("run");
     expect(linkDecision(action({ destructive: true }), {})).toBe("present");
+    // A tool that changes something carries an agent's reach: opened too. One that asks every time asks.
+    const tool = (name: string) => TOOL_ACTIONS.find((each) => each.tool === name) as ActionDef;
+    expect(linkDecision(tool("create_note"), { title: "x" })).toBe("present");
+    expect(linkDecision(tool("close_window"), { window: "w3" })).toBe("present");
+    expect(linkDecision(tool("force_quit_app"), { pid: 4 })).toBe("run");
+    expect(linkDecision(tool("trash_file"), { path: "/home/alexk/a" })).toBe("run");
   });
 
   test("a settings address opens Settings at its row; with a value it sets it", async () => {

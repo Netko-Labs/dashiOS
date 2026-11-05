@@ -143,6 +143,9 @@ One request per connection. A link comes from anywhere, so:
   in: the launcher shows it ready for Return when it has taken links
   (`actions.setPresenter`), otherwise a sheet asks "Run “…”?" and shows the
   link. Arguments that don't fit say so and open nothing.
+- An agent tool that changes something (`dashi://tool/create-note`,
+  `…/close-window`) is opened the same way: a tool carries an agent's reach,
+  more than a link should have without the person.
 - An action that asks every time (force quit, Restart) asks on its own sheet;
   that sheet is the opening.
 - Anything else runs.

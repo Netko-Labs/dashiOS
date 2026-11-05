@@ -74,16 +74,26 @@ export function appOf(pid: number, windows: readonly CompositorWindow[], deps: P
   return window ? { appId: window.appId, name: deps.appName(window), window: window.id } : null;
 }
 
+/** Publishes closer together than this are read once (an app may publish on every keystroke). */
+const SETTLE_MS = 100;
+
 /** Every running app's menus, read again when one publishes or a window comes or goes. */
 export class MenuSource implements ActionSource {
   readonly id = "menus";
   private current: ActionDef[] = [];
   private readonly listeners = new Set<() => void>();
   private serial = 0;
+  private pending: ReturnType<typeof setTimeout> | null = null;
   private readonly offs: Array<() => void>;
 
   constructor(private readonly deps: MenuDeps) {
-    this.offs = [deps.store.onPublished(() => void this.refresh()), deps.onWindows?.(() => void this.refresh()) ?? (() => {})];
+    const soon = () => {
+      this.pending ??= setTimeout(() => {
+        this.pending = null;
+        void this.refresh();
+      }, SETTLE_MS);
+    };
+    this.offs = [deps.store.onPublished(soon), deps.onWindows?.(soon) ?? (() => {})];
   }
 
   actions = (): readonly ActionDef[] => this.current;
@@ -106,5 +116,6 @@ export class MenuSource implements ActionSource {
 
   close(): void {
     for (const off of this.offs) off();
+    if (this.pending) clearTimeout(this.pending);
   }
 }
