@@ -110,6 +110,12 @@ where
         }
         return elements;
     }
+    if view.only.is_none() {
+        // The shell's live pictures, over its panels (super::thumbnails).
+        elements.extend(super::thumbnails::thumbnail_elements(
+            state, renderer, output, view.area, scale,
+        ));
+    }
     let layers = layer_map_for_output(output);
     if view.only.is_none() {
         let top = state.shows_top_layers(output);
@@ -170,7 +176,14 @@ where
         let Some(mut frame_at) = state.space.element_location(window) else {
             continue;
         };
-        if let Some(offset) = state.slide_offset(state.spaces.current, output_geo.size.w) {
+        // A window held in a move grab stays under the pointer while the Spaces slide.
+        let held = state
+            .held
+            .is_some_and(|id| state.windows.get(id).is_some_and(|e| &e.window == window));
+        if let Some(offset) = state
+            .slide_offset(state.spaces.current, output_geo.size.w)
+            .filter(|_| !held)
+        {
             frame_at += offset;
         }
         if let Some(id) = state.windows.by_window(window).map(|e| e.id)

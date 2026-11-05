@@ -1,8 +1,9 @@
 //! The overview (Mission Control): the shell lays the windows out
 //! (packages/shell/src/overview/plan.ts) and the compositor flies them there,
 //! shows them small, and reports what the person does with them: a press on
-//! one or on the background (`overview-pick`), a window dragged somewhere
-//! (`overview-drop`), and keys (`overview-key`). The shell decides what each
+//! one or on the background (`overview-pick`), a window starting to be
+//! dragged (`overview-drag`) and where it was let go (`overview-drop`, over
+//! the shell's Desktops row too), and keys (`overview-key`). The shell decides what each
 //! means; closing flies the windows back.
 
 use std::{
@@ -222,15 +223,28 @@ impl Dashi {
         }
     }
 
-    /// The pointer moved while the overview is open: past a few pixels, a press on a window drags it.
+    /// The pointer moved while the overview is open: past a few pixels, a
+    /// press on a window drags it, and the shell hears so once (`overview-drag`).
     pub(crate) fn overview_motion(&mut self, at: Point<f64, Logical>) {
-        if let Some(press) = self.overview.as_mut().and_then(|o| o.press.as_mut())
-            && press.window.is_some()
-            && !press.dragging
-        {
-            let moved = ((at.x - press.at.x).powi(2) + (at.y - press.at.y).powi(2)).sqrt();
-            press.dragging = moved > DRAG_START;
+        let Some(press) = self.overview.as_mut().and_then(|o| o.press.as_mut()) else {
+            return;
+        };
+        let Some(window) = press.window.filter(|_| !press.dragging) else {
+            return;
+        };
+        let moved = ((at.x - press.at.x).powi(2) + (at.y - press.at.y).powi(2)).sqrt();
+        press.dragging = moved > DRAG_START;
+        if press.dragging {
+            self.ipc.emit(
+                "overview-drag",
+                json!({ "window": window, "x": at.x, "y": at.y }),
+            );
         }
+    }
+
+    /// A press in the overview is held: its release is the overview's, wherever it is (over the shell's row too).
+    pub(crate) fn overview_pressed(&self) -> bool {
+        self.overview.as_ref().is_some_and(|o| o.press.is_some())
     }
 
     /// The release: a pick (a window or the background), or a drop.

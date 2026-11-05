@@ -693,6 +693,184 @@ fn spaces_keep_their_windows() {
     assert!(ipc.request("spaces", json!({ "count": 0 }))["error"].is_string());
 }
 
+/// A movable window placed at `x, y`, with the shell listening: its id.
+fn movable_window(compositor: &Compositor, ipc: &mut Ipc, x: i64, y: i64) -> (Client, u64) {
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client =
+        Client::open_movable(compositor.dir.path(), &display, "dev.dashi.test", "Held");
+    let id = wait_event(ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": x, "y": y }));
+    wait_event(ipc, &mut client, "window-opened");
+    (client, id)
+}
+
+/// The person's pointer, moved by an agent borrowing the seat (the person is away).
+fn hand(ipc: &mut Ipc, window: u64, x: f64, y: f64, action: &str) -> Value {
+    let params = json!({ "window": window, "label": "Test", "pointer": { "x": x, "y": y }, "action": action, "borrow": { "idleMs": 0 } });
+    ipc.request("agent-input", params)
+}
+
+/// Press in the window until the client has asked to be moved and the compositor holds it.
+fn grab(ipc: &mut Ipc, client: &mut Client, window: u64, x: f64, y: f64) {
+    assert_eq!(hand(ipc, window, x, y, "press")["result"], json!({}));
+    let start = Instant::now();
+    while client.state.moves == 0 {
+        client.dispatch();
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "the client never asked to move"
+        );
+        sleep(Duration::from_millis(10));
+    }
+    // Requests are handled in order with the client's, a little later: let it land.
+    sleep(Duration::from_millis(100));
+    ipc.request("windows", json!({}));
+}
+
+fn window_named(ipc: &mut Ipc, id: u64) -> Value {
+    let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+    windows
+        .as_array()
+        .and_then(|list| list.iter().find(|w| w["id"] == id).cloned())
+        .expect("the window is listed")
+}
+
+#[test]
+fn a_held_window_goes_along_when_the_space_changes() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (mut client, id) = movable_window(&compositor, &mut ipc, 400, 300);
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut client, "space");
+
+    grab(&mut ipc, &mut client, id, 40.0, 40.0);
+    // Dragged 30 to the right and 20 down.
+    assert_eq!(hand(&mut ipc, id, 70.0, 60.0, "move")["result"], json!({}));
+    let moved = window_named(&mut ipc, id)["frame"].clone();
+    assert_eq!(
+        (moved["x"].as_i64(), moved["y"].as_i64()),
+        (Some(430), Some(320))
+    );
+
+    // The Desktop changes mid-drag (a shortcut, a swipe): the window comes along, still held.
+    assert_eq!(
+        ipc.request("space-switch", json!({ "space": 1 }))["result"]["count"],
+        2
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 1 })
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "space"),
+        json!({ "event": "space", "current": 1, "previous": 0, "count": 2 })
+    );
+    let carried = window_named(&mut ipc, id);
+    assert_eq!(carried["space"], 1);
+    assert_eq!(carried["frame"]["x"], 430, "on screen, where it was held");
+
+    // Still in hand: it follows the pointer on the new Desktop, and stays there when let go.
+    // (Points are in the window, which moves with the pointer: 50 in is 10 further right.)
+    assert_eq!(hand(&mut ipc, id, 50.0, 40.0, "move")["result"], json!({}));
+    assert_eq!(
+        hand(&mut ipc, id, 40.0, 40.0, "release")["result"],
+        json!({})
+    );
+    let dropped = window_named(&mut ipc, id);
+    assert_eq!(
+        (dropped["frame"]["x"].as_i64(), dropped["space"].as_u64()),
+        (Some(440), Some(1))
+    );
+
+    // Let go, it stays on its Desktop when the person goes back.
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut client, "space");
+    let left = window_named(&mut ipc, id);
+    assert_eq!(
+        (left["space"].as_u64(), left["frame"].is_null()),
+        (Some(1), true)
+    );
+}
+
+#[test]
+fn a_window_held_against_an_edge_is_told_after_a_while() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (mut client, id) = movable_window(&compositor, &mut ipc, 0, 300);
+    grab(&mut ipc, &mut client, id, 30.0, 40.0);
+    // To the screen's left edge (the window's left side is there).
+    let began = Instant::now();
+    assert_eq!(hand(&mut ipc, id, 0.0, 40.0, "move")["result"], json!({}));
+    let hold = wait_event(&mut ipc, &mut client, "edge-hold");
+    assert!(
+        began.elapsed() >= Duration::from_millis(380),
+        "held for 400 ms first"
+    );
+    assert_eq!(
+        hold,
+        json!({ "event": "edge-hold", "edge": "left", "output": "HEADLESS-1", "window": id, "count": 1, "preview": false })
+    );
+    // Still there: told again.
+    assert_eq!(wait_event(&mut ipc, &mut client, "edge-hold")["count"], 2);
+
+    // Off the edge, then let go: no more.
+    assert_eq!(hand(&mut ipc, id, 60.0, 40.0, "move")["result"], json!({}));
+    assert_eq!(
+        hand(&mut ipc, id, 60.0, 40.0, "release")["result"],
+        json!({})
+    );
+    ipc.events.retain(|e| e["event"] != "edge-hold");
+    sleep(Duration::from_millis(900));
+    client.dispatch();
+    ipc.request("windows", json!({}));
+    assert!(
+        ipc.events.iter().all(|e| e["event"] != "edge-hold"),
+        "a hold ends when the window leaves the edge"
+    );
+}
+
+#[test]
+fn pictures_are_checked_and_cleared() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (_client, id) = movable_window(&compositor, &mut ipc, 100, 100);
+    let rect = json!({ "window": id, "x": 10, "y": 10, "w": 160, "h": 100 });
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [rect] }))["result"],
+        json!({})
+    );
+    // A window that closed meanwhile is left out, not an error.
+    let gone = json!({ "window": 999, "x": 10, "y": 10, "w": 160, "h": 100 });
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [gone] }))["result"],
+        json!({})
+    );
+    let flat = json!({ "rects": [{ "window": id, "x": 0, "y": 0, "w": 0, "h": 9 }] });
+    assert!(ipc.request("window-thumbnails", flat)["error"].is_string());
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [] }))["result"],
+        json!({})
+    );
+
+    let desktops = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 100, "y": 40, "w": 192, "h": 108 }] });
+    assert_eq!(ipc.request("space-previews", desktops)["result"], json!({}));
+    let nowhere = json!({ "output": "DP-9", "rects": [] });
+    assert!(ipc.request("space-previews", nowhere)["error"].is_string());
+    let beyond = json!({ "output": "HEADLESS-1", "rects": [{ "space": 99, "x": 0, "y": 0, "w": 9, "h": 9 }] });
+    assert!(ipc.request("space-previews", beyond)["error"].is_string());
+    let clear = json!({ "output": "HEADLESS-1", "rects": [] });
+    assert_eq!(ipc.request("space-previews", clear)["result"], json!({}));
+    // Windows name their entry in ext-foreign-toplevel-list (what the share picker answers with).
+    assert!(window_named(&mut ipc, id)["toplevel"].is_string());
+}
+
 #[test]
 fn the_overview_opens_on_a_plan_and_closes() {
     let compositor = Compositor::start(&[]);

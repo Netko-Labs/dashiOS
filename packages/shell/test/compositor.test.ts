@@ -67,3 +67,22 @@ test("X11 windows say so", () => {
   expect(parseWindow({ ...window, x11: true })?.x11).toBe(true);
   expect(parseWindow({ ...window, x11: false })).not.toHaveProperty("x11");
 });
+
+test("an edge hold names its edge, screen, and window", () => {
+  const hold = { event: "edge-hold", edge: "left", output: "eDP-1", window: 4, count: 2, preview: true } as const;
+  expect(parseEvent(hold)).toEqual(hold);
+  expect(parseEvent({ ...hold, preview: undefined })).toEqual({ ...hold, preview: false });
+  expect(parseEvent({ ...hold, edge: "middle" })).toBeNull();
+  expect(parseEvent({ ...hold, window: "4" })).toBeNull();
+});
+
+test("an overview drag says which window and where", () => {
+  expect(parseEvent({ event: "overview-drag", window: 4, x: 10, y: 20 })).toEqual({ event: "overview-drag", window: 4, x: 10, y: 20 });
+  expect(parseEvent({ event: "overview-drag", window: 4 })).toBeNull();
+});
+
+test("a window's ext-foreign-toplevel-list identifier comes along", () => {
+  expect(parseWindow({ ...window, toplevel: "a1b2" })?.toplevel).toBe("a1b2");
+  expect(parseWindow({ ...window, toplevel: "" })).not.toHaveProperty("toplevel");
+  expect(parseWindow({ ...window, toplevel: 7 })).not.toHaveProperty("toplevel");
+});

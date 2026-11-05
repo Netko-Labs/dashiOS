@@ -126,7 +126,9 @@ impl Dashi {
                     self.note_chord();
                 }
                 let at = pointer.current_location();
-                if self.overview_open() && !self.top_layer_at(at) {
+                // A drag that started on the overview ends there, over the shell's row too.
+                let overview_release = !pressed && self.overview_pressed();
+                if self.overview_open() && (overview_release || !self.top_layer_at(at)) {
                     if pressed {
                         self.overview_press(at);
                     } else {

@@ -48,7 +48,9 @@ them until the compositor side pins them down here.
 `Window` is `{id, appId, title, pid: int|null, focused, state:
 "normal"|"minimized"|"hidden", zoomed, frame: Frame|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
-string|null, path: string|null}}`; `icon` is what the app gave
+string|null, path: string|null}, toplevel?: string}`; `toplevel` is the
+window's ext-foreign-toplevel-list identifier (what a screen-share picker
+answers with; absent until the list has it); `icon` is what the app gave
 (xdg-toplevel-icon): a theme icon name and/or a PNG the compositor saved under
 `$XDG_RUNTIME_DIR/dashi-comp-icons/`; an X11 window's `pid` is its own
 (`_NET_WM_PID`); `Frame` is
@@ -89,9 +91,24 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | `spaces` | `{}` | *see* `parseSpaces`, `src/agents/desktop/spaces.ts` |
 | `space-add` | `{}` | the new Space; *see* `src/spaces/controller.ts` |
 | `space-remove` | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
-| `space-switch` | `{space, progress?}` | `{}`; `progress` follows a swipe |
+| `space-switch` | `{space, progress?}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after |
 | `space-move` | `{window, space}` | `{}` |
 | `overview` | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}` |
+
+### Live pictures
+
+Pictures of windows the shell places, drawn by the compositor every frame
+while set (no pixels from TypeScript): in front of the shell's own layer
+surfaces (its panels are opaque) and behind the pointer, each cut to its
+rect. Rects are global logical `{x, y, w, h}`, a positive size; at most 64
+per request. Each request replaces what it set before; empty `rects` clears
+it. Windows in a picture that are not on screen (another Space's, minimized,
+hidden) keep getting frame callbacks, so they stay live.
+
+| Method | Params | Result |
+| --- | --- | --- |
+| `space-previews` | `{output, rects: [{space, x, y, w, h}]}` | `{}`; each Space's windows (top first, as they stand or wait on that Space) and the wallpaper, that screen scaled into its rect (the rect should have the screen's shape); an unknown screen or a `space` past 15 is an error. Per screen: one screen's request leaves the others' |
+| `window-thumbnails` | `{rects: [{window, x, y, w, h}]}` | `{}`; each window (title bar included) as large as fits its rect, never larger than it is, centered; windows that are gone are left out |
 
 ### Capture and agents
 
@@ -140,8 +157,10 @@ string|null, path: string|null}}`; `icon` is what the app gave
 | `overview` | `active` |
 | `overview-pick` | `window: int\|null` |
 | `overview-key` | `key` (keysym name) |
-| `overview-drop` | `window, x, y` |
+| `overview-drag` | `window, x, y`: a press on a window in the open overview became a drag (once per drag; the pointer still reaches the shell's surfaces, so the Desktops row sees where it goes) |
+| `overview-drop` | `window, x, y` (over the shell's surfaces too: a drag that began in the overview ends there) |
 | `space` | `current, previous, count` |
+| `edge-hold` | `edge: "left"\|"right"\|"top"\|"bottom", output, window, count, preview`: the window held in a move grab has rested against that edge of that screen for 400 ms, and again every 400 ms it stays (`count` 1, 2, …); `preview` is whether a drag-to-tile preview shows. Pushing on outward at the edge is not resting for the `layout` zones: their wait starts over, so a push shows no tile preview. What a hold does is the shell's |
 | `gesture` | `kind: "swipe"`, then `phase: "begin", fingers` / `"update", dx, dy` / `"end", cancelled` |
 | `idle` | `seconds` |
 | `active` | |

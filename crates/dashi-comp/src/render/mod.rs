@@ -8,6 +8,7 @@ pub(crate) mod present;
 pub(crate) mod rounded;
 mod scene;
 pub(crate) mod text;
+pub(crate) mod thumbnails;
 pub(crate) mod titlebar;
 
 use smithay::backend::renderer::{
@@ -32,4 +33,8 @@ smithay::backend::renderer::element::render_elements! {
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,
     /// A plain shape (where a dragged window would tile).
     Solid=SolidColorRenderElement,
+    /// A piece of a live picture the shell placed (thumbnails/): a window's surface,
+    ThumbSurface=thumbnails::Thumb<WaylandSurfaceRenderElement<R>>,
+    /// or a title bar or wallpaper in it.
+    ThumbMemory=thumbnails::Thumb<MemoryRenderBufferRenderElement<R>>,
 }

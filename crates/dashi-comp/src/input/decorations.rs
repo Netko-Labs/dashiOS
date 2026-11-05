@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use serde_json::json;
 use smithay::{
     desktop::{Window, layer_map_for_output},
-    input::pointer::{Focus, GrabStartData},
+    input::pointer::GrabStartData,
     utils::{Logical, Point, Serial},
     wayland::shell::wlr_layer::Layer,
 };
@@ -16,7 +16,7 @@ use smithay::{
 use crate::{
     render::titlebar::{Decor, Part, part_at},
     state::Dashi,
-    wm::{Shown, frame_of, grabs::MoveSurfaceGrab},
+    wm::{Shown, frame_of},
 };
 
 /// Two presses on a title bar this close together are a double-click.
@@ -211,11 +211,12 @@ impl Dashi {
             button,
             location: pos,
         };
-        let grab = MoveSurfaceGrab {
+        self.begin_move(
+            &pointer,
             start_data,
             window,
             initial_window_location,
-        };
-        pointer.set_grab(self, grab, serial, Focus::Clear);
+            serial,
+        );
     }
 }

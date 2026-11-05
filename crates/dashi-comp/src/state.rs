@@ -87,6 +87,12 @@ pub(crate) struct Dashi {
     pub claims: crate::input::Claims,
     pub overview: Option<crate::wm::Overview>,
     pub spaces: crate::wm::Spaces,
+    /// Live pictures the shell placed (`space-previews`, `window-thumbnails`).
+    pub thumbnails: crate::render::thumbnails::Thumbnails,
+    /// The window held in a move grab, which goes along when the Space changes.
+    pub held: Option<crate::wm::WindowId>,
+    /// A held window against a screen edge (`edge-hold`).
+    pub edge_hold: crate::wm::EdgeHold,
     pub bars: crate::wm::Bars,
     pub wallpaper: crate::wallpaper::Wallpaper,
     /// The session's client (`-c`): it and the processes under it are the shell.
@@ -264,6 +270,9 @@ impl Dashi {
             claims: Default::default(),
             overview: None,
             spaces: Default::default(),
+            thumbnails: Default::default(),
+            held: None,
+            edge_hold: Default::default(),
             bars: Default::default(),
             wallpaper: Default::default(),
             session_client: None,
@@ -372,6 +381,10 @@ impl Dashi {
         self.space.elements().for_each(|window| {
             window.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         });
+        // Off screen but in a live picture (render/thumbnails/): they draw on, at the screen's pace.
+        for window in self.pictured_off_screen() {
+            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
+        }
         for layer in layer_map_for_output(output).layers() {
             layer.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         }
