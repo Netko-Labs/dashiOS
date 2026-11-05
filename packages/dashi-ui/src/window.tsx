@@ -42,6 +42,11 @@ export function useTitleBarInset(): TitleBarInset {
 export interface AppWindowProps {
   /** The window's name, on one line. */
   title: string;
+  /**
+   * A short word about it, after the title on the same line, muted ("All Notes — 3 notes").
+   * Never a second line: short of room, both are cut with an ellipsis.
+   */
+  detail?: string;
   /** Controls at the toolbar's start, before the title (back and forward). */
   leading?: ReactNode;
   /** The toolbar's controls, at its end. */
@@ -61,7 +66,7 @@ export interface AppWindowProps {
   children: ReactNode;
 }
 
-export function AppWindow({ title, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
+export function AppWindow({ title, detail, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
   const colors = useColors();
   const surface = useSurface();
   const inset = useTitleBarInset();
@@ -108,10 +113,19 @@ export function AppWindow({ title, leading, toolbar, center, sidebar, sidebarWid
               {leading}
               {center}
               {center === undefined && inset.unified && (
-                <View style={{ flexShrink: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-                    {title}
-                  </Text>
+                <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexShrink: 1, minWidth: 0 }}>
+                    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+                      {title}
+                    </Text>
+                  </View>
+                  {detail ? (
+                    <View testID="window-title-detail" style={{ flexShrink: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+                        {` — ${detail}`}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               )}
               {center === undefined && <View style={{ flex: 1 }} />}

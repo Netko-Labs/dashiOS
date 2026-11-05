@@ -46,6 +46,9 @@ export function preview(body: string): string {
   return "";
 }
 
+/** "1 note", "3 notes": the count after the list's name on the title line. */
+export const noteCount = (count: number): string => `${count} ${count === 1 ? "note" : "notes"}`;
+
 /** Words in the title and body, as the note counts them under its date. */
 export function wordCount(text: string): number {
   // A checklist's box is not a word.

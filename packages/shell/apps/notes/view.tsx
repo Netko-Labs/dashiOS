@@ -20,7 +20,7 @@ import { DEFAULT_FOLDER_NAME } from "./names.ts";
 import { NoteList } from "./rows.tsx";
 import { NotesSheet, type SheetState } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
-import { wordCount } from "./text.ts";
+import { noteCount, wordCount } from "./text.ts";
 
 export const NOTES_SIZE = { width: 980, height: 640 } as const;
 
@@ -217,10 +217,11 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
   ) : undefined;
 
-  // One chrome row: the counts are the sidebar's badges, the words follow the note's date, and an error or a conflict copy floats as a notice.
+  // One chrome row: the count follows the title on its line (and the sidebar's badges), the words follow the note's date, and an error or a conflict copy floats as a notice.
   return (
     <AppWindow
       title={title}
+      detail={noteCount(rows.length)}
       toolbar={toolbar}
       overlay={overlay}
       notice={

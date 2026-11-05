@@ -149,20 +149,31 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
       <View
         testID="view-menu"
         onPress={(event) => setViewMenu({ x: Math.max((event.bounds?.x ?? 0) - 40, 8), y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
-        style={{ height: 28, flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, borderRadius: 7, hoverBackgroundColor: colors.button }}
+        style={{
+          height: 28,
+          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          paddingHorizontal: 8,
+          borderRadius: 7,
+          hoverBackgroundColor: colors.button,
+        }}
       >
-        <Text style={{ fontSize: 12, color: colors.text }}>{scopeLabel}</Text>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+          {scopeLabel}
+        </Text>
         <Text style={{ fontSize: 9, color: colors.textMuted }}>▼</Text>
       </View>
       <View style={{ width: 8 }} />
-      <Segmented testID="tabs" options={TABS} value={tab} onChange={chooseTab} segmentWidth={74} />
+      <Segmented testID="tabs" options={TABS} value={tab} onChange={chooseTab} segmentWidth={66} />
       <View style={{ width: 8 }} />
       <SearchField
         key={focus}
         testID="search"
         value={query}
         onChangeText={setQuery}
-        width={190}
+        width={160}
         autoFocus
         onKeyPress={(key) => {
           if (key === "ArrowUp" || key === "ArrowDown") {
