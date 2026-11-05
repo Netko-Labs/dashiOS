@@ -30,6 +30,8 @@ the same change.
   this doc change together.
 - `docs/applets.md` - the applets channel (programs' items in the menu bar,
   beside tray icons); the protocol, its limits, and examples.
+- `docs/secrets.md` - the vault and secrets for agents: the socket protocol,
+  sign-in, codes, passkeys, payments, the agent sandbox.
 - `docs/hardware.md` - dashi-hardware's contract (the hardware helper's D-Bus
   interface, the model database, and cardwire's API); the service and its
   callers change with it.
@@ -63,6 +65,9 @@ the same change.
 ## Repository Layout
 
 - `crates/dashi-comp` - the Wayland compositor.
+- `crates/dashi-hardware` - the privileged hardware helper (`docs/hardware.md`):
+  firmware attributes, power profiles, the charge limit, fans, the SMU; the
+  model database is `data/models/`, a captured laptop `data/fixtures/`.
 - `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
   (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`).
