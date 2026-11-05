@@ -12,6 +12,11 @@
  * NVIDIA card. Dashi's own apps get nothing here: their Metal hosts choose
  * for themselves, and Terminal's programs must see every GPU (prime-run).
  * A variable the person set wins over both.
+ *
+ * Once the graphics card is lost (graphics/lost-card.ts: it fell off the
+ * bus), nothing is offloaded to it any more: an app that asks for it starts
+ * on the screens' GPU instead, and the shell says so (`onRedirect`), since
+ * anything that opens the lost card hangs in its driver.
  */
 
 import { existsSync } from "node:fs";
@@ -71,13 +76,35 @@ export function gpuEnvs(display: Card | null, cards: readonly Card[], exists: (p
 /** What an app is, as far as its GPU goes. */
 export interface GpuApp {
   id: string;
+  /** What the person calls it, for the note when it can't have the card. */
+  name?: string;
   /** Its desktop entry asks for the discrete GPU. */
   gpu?: "discrete";
 }
 
-/** The variables to add for `app`, given the environment it starts from. */
-export function gpuEnvFor(app: GpuApp, envs: GpuEnvs, current: Readonly<Record<string, string | undefined>>): Record<string, string> {
+/** The variables to add for `app`, given the environment it starts from; `cardLost` sends every app to the screens' GPU. */
+export function gpuEnvFor(app: GpuApp, envs: GpuEnvs, current: Readonly<Record<string, string | undefined>>, cardLost = false): Record<string, string> {
   if (app.id.startsWith("dev.dashi.")) return {};
   if (STEERING.some((name) => current[name] !== undefined)) return {};
-  return app.gpu === "discrete" ? envs.discrete : envs.display;
+  return app.gpu === "discrete" && !cardLost ? envs.discrete : envs.display;
+}
+
+/** Whether the graphics card is lost, set once by the lost-card watch; and who to tell when an app that wanted it starts without it. */
+const lostCard: { lost: boolean; onRedirect: ((app: GpuApp) => void) | null } = { lost: false, onRedirect: null };
+
+/** The graphics card fell off the bus: from now on no app is offloaded to it. */
+export function markCardLost(onRedirect?: (app: GpuApp) => void): void {
+  lostCard.lost = true;
+  if (onRedirect) lostCard.onRedirect = onRedirect;
+}
+
+export function isCardLost(): boolean {
+  return lostCard.lost;
+}
+
+/** The variables for `app` on this machine now: what `gpuEnvFor` says, with the lost card in mind (and the note when it matters). */
+export function launchEnvFor(app: GpuApp, envs: GpuEnvs, current: Readonly<Record<string, string | undefined>>): Record<string, string> {
+  const vars = gpuEnvFor(app, envs, current, lostCard.lost);
+  if (lostCard.lost && app.gpu === "discrete" && Object.keys(envs.discrete).length > 0 && vars === envs.display) lostCard.onRedirect?.(app);
+  return vars;
 }

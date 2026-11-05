@@ -9,7 +9,8 @@
  * (`isRealSession`) serves every power path, and it fails closed.
  *
  * Suspend, restart, and power off are logind's (`Manager.Suspend`, `Reboot`,
- * `PowerOff` on the system bus, power/machine.ts), not `systemctl`'s.
+ * `PowerOff` on the system bus, power/machine.ts), not `systemctl`'s; restart
+ * and power off give the apps 10 s first, then go regardless (shutdown.ts).
  *
  * Logging out has no compositor IPC yet. On the real display (dashi-comp
  * owns DRM/KMS, started from a login) it ends the login session with
@@ -20,7 +21,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import { type MachineAction, powerMachine } from "../power/machine.ts";
+import type { MachineAction } from "../power/machine.ts";
+import { powerAfterApps } from "../shutdown.ts";
 import { spawnDetached } from "./launch.ts";
 import type { PowerKind } from "./model.ts";
 
@@ -102,7 +104,7 @@ export function planPower(what: "sleep" | PowerKind, real: boolean): "machine" |
  * Runs a power action now (the sheet already asked). `machine` asks logind;
  * it is only called for a real session.
  */
-export function runPower(what: "sleep" | PowerKind, above: Above = compositorAbove(), machine: (what: MachineAction) => Promise<void> = powerMachine): void {
+export function runPower(what: "sleep" | PowerKind, above: Above = compositorAbove(), machine: (what: MachineAction) => Promise<void> = powerAfterApps): void {
   const { compositor, nested } = above;
   switch (planPower(what, isRealSession(above))) {
     case "refuse":

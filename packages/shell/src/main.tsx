@@ -55,6 +55,7 @@ import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
+import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { KEYMAP } from "./keymap.ts";
 import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
@@ -88,7 +89,7 @@ import { createPaneServices, type PaneServices } from "./settings-app/services.t
 import { startSetupAssistant } from "./setup/start.tsx";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
-import { runClosers } from "./shutdown.ts";
+import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { startSpaces } from "./spaces/index.ts";
 import { type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore, switcherSize } from "./switcher.tsx";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
@@ -526,6 +527,34 @@ const menus = startMenus({
   },
 });
 
+// Restart and Shut Down give the apps 10 s, then go regardless of what is stuck (shutdown.ts).
+configureMachineEnd({
+  processes: async () => {
+    const windows = compositor ? await compositor.windows() : [];
+    const byPid = new Map(
+      windows.flatMap((window) => (window.pid === null || window.pid === process.pid ? [] : [[window.pid, appFor(apps, window, installedApp).name] as const])),
+    );
+    return [...byPid].map(([pid, name]) => ({ pid, name }));
+  },
+  waiting: (names, seconds, what) =>
+    notifications.store.notify({
+      appName: "Dashi",
+      appIcon: "",
+      summary: what === "restart" ? "Restarting" : "Shutting Down",
+      body: `${names.join(", ")} ${names.length === 1 ? "isn’t" : "aren’t"} closing. Dashi will ${what === "restart" ? "restart" : "shut down"} without ${names.length === 1 ? "it" : "them"} in ${seconds} s.`,
+      actions: [],
+      urgency: "critical",
+      expireTimeout: 0,
+      imagePath: "",
+      desktopEntry: "",
+      category: "system",
+      transient: true,
+      resident: false,
+    }),
+});
+// The graphics card falling off the bus is said once, and apps stop being offloaded to it (graphics/).
+const lostCard = startLostCardWatch({ notifications: notifications.store, restart: () => menus.confirmPower("restart") });
+
 // A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar.
 const stopHoldingBars = menus.controller.subscribe(() => {
   const open = menus.controller.getSnapshot().popover !== null;
@@ -882,6 +911,7 @@ const quit = () => {
     ["app menus", () => appMenus.close()],
     ["applets", stopApplets],
     ["battery monitor", () => batteryMonitor.stop()],
+    ["lost card watch", () => lostCard.close()],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],

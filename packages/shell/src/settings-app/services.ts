@@ -19,9 +19,10 @@ import type { AudioBackend } from "../sound/types.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { EnergyStore } from "../system/energy.ts";
 import { run } from "../system/exec.ts";
-import { powerprofilesctl, shadowProfiles } from "../system/profiles.ts";
+import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
+import { systemBus } from "../system/system-bus.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";
 
@@ -69,7 +70,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
   const real = wpctlLevels(run);
   const energy = new EnergyStore({
     battery: () => readBatteryDetails(),
-    profiles: fake ? shadowProfiles(powerprofilesctl(run)) : powerprofilesctl(run),
+    profiles: fake ? shadowProfiles(powerProfiles(systemBus())) : powerProfiles(systemBus()),
     lid: fake ? fakeLid() : logindLid(),
   });
   const prompt = new PasswordChangePrompt(openOverlay, accounts.passwords);

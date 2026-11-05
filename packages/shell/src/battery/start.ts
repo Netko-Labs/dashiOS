@@ -1,12 +1,12 @@
-/** The battery monitor on the machine's own sources: /sys, /proc, the compositor's windows, power-profiles-daemon. */
+/** The battery monitor on the machine's own sources: /sys, /proc, the compositor's windows, the power-profiles daemon (tuned-ppd). */
 
 import { readSnapshot, sysconf } from "../../apps/activity-monitor/read.ts";
 import { type App, appFor } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import { readPowerSupplies } from "../system/battery.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
-import { run } from "../system/exec.ts";
-import { powerprofilesctl } from "../system/profiles.ts";
+import { powerProfiles } from "../system/profiles.ts";
+import { systemBus } from "../system/system-bus.ts";
 import { HistoryFile } from "./file.ts";
 import { BatteryMonitor } from "./monitor.ts";
 
@@ -19,7 +19,7 @@ export interface BatteryMonitorOptions {
 export function startBatteryMonitor(options: BatteryMonitorOptions): BatteryMonitor {
   const pageSize = sysconf("PAGESIZE", 4096);
   const uid = process.getuid?.() ?? -1;
-  const profiles = powerprofilesctl(run);
+  const profiles = powerProfiles(systemBus());
   const monitor = new BatteryMonitor({
     supplies: readPowerSupplies,
     processes: () => readSnapshot({ io: false, sockets: false, ownUid: uid, pageSize, names: new Map() }).processes,
