@@ -2,7 +2,8 @@
  * Preview's window: the toolbar, the picture area, the PDF's page strip, and
  * the sheets. The state that is slow (files, tools) is the Viewer's; what
  * lives here is how the picture is looked at: the zoom, the pan, which sheet
- * is up, and the keys.
+ * is up, and the keys. A file dropped anywhere on the window opens in it
+ * (drop.ts); with no file open, the window offers only that and Open….
  */
 
 import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
@@ -12,6 +13,7 @@ import { chooseFile } from "../../src/portal/file-chooser.ts";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { Canvas } from "./canvas.tsx";
 import type { Size } from "./dimensions.ts";
+import { useDropArea } from "./drop.ts";
 import * as glyphs from "./glyphs.ts";
 import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";
 import { factsFor } from "./info.ts";
@@ -198,8 +200,8 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   useAppMenus(menus, run);
 
   const moreItems: MenuItem[] = [
-    { label: "Open With…", onPress: openWithSheet },
-    { label: "Show in Files", onPress: reveal },
+    { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.format },
+    { label: "Show in Files", onPress: reveal, disabled: !snap.path },
     { label: "Save Turned Copy", onPress: saveCopy, disabled: !canSaveCopy },
     { label: "Move to Trash…", onPress: () => setSheet({ kind: "trash" }), disabled: !snap.path },
   ];
@@ -274,9 +276,15 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       onTurnRight={() => void viewer.rotate(1)}
       onInfo={showInfo}
       onMore={(bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) - 120, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 })}
+      hasFile={snap.path !== null}
       hasPicture={picture !== null}
     />
   );
+  const drop = useDropArea((path) => {
+    setSheet(null);
+    setMenu(null);
+    void viewer.open(path);
+  });
 
   const content = picture ? (
     <Canvas picture={picture} scale={scale} pan={pan} onPan={setPan} onArea={setArea} area={area} />
@@ -288,9 +296,9 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     <EmptyState
       testID="empty"
       title="No file open"
-      message="Open an image or a PDF here, or with Preview from Files."
+      message="Drop an image or a PDF here, or choose one."
       glyph={glyphs.PICTURE}
-      action={<Button testID="open" label="Open…" onPress={openFile} />}
+      action={<Button testID="open" label="Open…" primary onPress={openFile} />}
     />
   );
 
@@ -311,7 +319,15 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       overlay={overlay}
     >
       {sheet === null && menu === null && <KeySink testID="keys" onKey={onKey} />}
-      {content}
+      <View testID="drop-area" onDrop={drop.onDrop} style={{ flex: 1, flexDirection: "column", minHeight: 0, minWidth: 0, position: "relative" }}>
+        {content}
+        {drop.over && (
+          <View
+            testID="drop-target"
+            style={{ position: "absolute", left: 4, top: 4, right: 4, bottom: 4, borderWidth: 2, borderColor: colors.selection, borderRadius: 8 }}
+          />
+        )}
+      </View>
     </AppWindow>
   );
 }

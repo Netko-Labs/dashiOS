@@ -22,6 +22,8 @@ export interface ToolbarProps {
   onTurnRight: () => void;
   onInfo: () => void;
   onMore: (bounds: { x: number; y: number; width: number; height: number } | undefined) => void;
+  /** A file is open (it may still be loading, or not showable). Without one the toolbar holds nothing: there is nothing to act on. */
+  hasFile: boolean;
   hasPicture: boolean;
 }
 
@@ -33,6 +35,8 @@ function Divider() {
 export function PreviewToolbar(props: ToolbarProps) {
   const colors = useColors();
   const { hasPicture } = props;
+  // The empty window's way in is its Open… button and drops; a row of disabled glyphs would only say "not yet".
+  if (!props.hasFile) return null;
   return (
     <>
       <ToolbarButton glyph={glyphs.CHEVRON_LEFT} testID="previous" disabled={!props.canPrevious} onPress={props.onPrevious} />
@@ -46,11 +50,13 @@ export function PreviewToolbar(props: ToolbarProps) {
       <ToolbarButton glyph={glyphs.CHEVRON_RIGHT} testID="next" disabled={!props.canNext} onPress={props.onNext} />
       <Divider />
       <ToolbarButton glyph={glyphs.ZOOM_OUT} testID="zoom-out" disabled={!hasPicture} onPress={props.onZoomOut} />
-      <View testID="zoom-level" style={{ minWidth: 46, alignItems: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
-          {props.zoomLabel}
-        </Text>
-      </View>
+      {props.zoomLabel !== "" && (
+        <View testID="zoom-level" style={{ minWidth: 46, alignItems: "center" }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+            {props.zoomLabel}
+          </Text>
+        </View>
+      )}
       <ToolbarButton glyph={glyphs.ZOOM_IN} testID="zoom-in" disabled={!hasPicture} onPress={props.onZoomIn} />
       <ToolbarButton glyph={glyphs.FIT} testID="fit" disabled={!hasPicture} onPress={props.onFit} />
       <ToolbarButton glyph={glyphs.ACTUAL} testID="actual" disabled={!hasPicture} onPress={props.onActual} />
