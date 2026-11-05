@@ -125,7 +125,9 @@ export function powerProfiles(link: ProfilesBus, targets: readonly PropertyTarge
       } catch {
         return false;
       }
-      return (await read())?.active === id;
+      // tuned-ppd switches its tuned profile after answering; the property follows (and is watched).
+      if (known) known = { ...known, active: id };
+      return true;
     },
     watch: (listener) => {
       listeners.add(listener);

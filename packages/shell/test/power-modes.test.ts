@@ -280,3 +280,22 @@ test("Fn F5 again from a column that uses a lower profile: the next mode, not th
   expect(store.getSnapshot().effective?.mode).toBe("low-power");
   expect(hardware.writes.at(-1)?.["platform-profile"]).toBe("low-power");
 });
+
+test("tuned-ppd alone (no helper): Automatic sets its profile; a change from another program is taken, once", async () => {
+  const profiles = fakeProfiles("balanced");
+  const store = new ModeStore({ profiles: profiles.source, hardware: null, settings: () => ({}), saveChoice: () => {} });
+  profiles.source.watch((read) => read && store.setProfiles(read.available, read.active));
+  store.setProfiles(["power-saver", "balanced", "performance"], "balanced");
+  store.setMachine(null);
+  store.setPowerSource({ plugged: true, percent: 50 });
+  await flush();
+  await store.idle();
+  await flush();
+  expect(profiles.sets).toEqual(["performance"]);
+  // `powerprofilesctl set power-saver` in a terminal.
+  store.setProfiles(["power-saver", "balanced", "performance"], "power-saver");
+  await flush();
+  await store.idle();
+  expect(store.getSnapshot().effective?.mode).toBe("low-power");
+  expect(profiles.sets).toEqual(["performance"]);
+});
