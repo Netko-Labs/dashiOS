@@ -164,50 +164,6 @@ pub(crate) fn framed_window<R>(
     elements.extend(sides.back.map(DashiElement::Depth));
 }
 
-/// A window of a Space sliding in, drawn from where it waits (`at`: its geometry's top-left).
-pub(crate) fn arriving_window<R>(
-    state: &mut Dashi,
-    renderer: &mut R,
-    window: &Window,
-    at: Point<i32, Logical>,
-    spot: &Spot,
-    elements: &mut Vec<DashiElement<R>>,
-) where
-    R: Renderer + ImportAll + ImportMem + GlesAccess,
-    R::TextureId: Clone + Send + 'static,
-{
-    let placed = Placement {
-        frame: Rectangle::new(at, window.geometry().size).to_f64(),
-        small: 1.0,
-        ring: true,
-    };
-    let sides = depth_of(state, renderer, window, placed, spot);
-    let surface_at =
-        (at - window.geometry().loc - spot.origin).to_physical_precise_round(spot.scale);
-    // Drawn without its title bar: all four corners round, as its edge does.
-    let rounding = rounding(state, renderer, window, true, spot.scale.x);
-    elements.extend(sides.front.map(DashiElement::Depth));
-    // A unified window's lights, over it as in its frame.
-    if let Some(image) = lights_of(state, window) {
-        let lights_at = (at - spot.origin).to_physical_precise_round(spot.scale);
-        push_memory(renderer, lights_at, &image, None, elements);
-    }
-    elements.extend(
-        window
-            .render_elements::<WaylandSurfaceRenderElement<R>>(
-                renderer, surface_at, spot.scale, 1.0,
-            )
-            .into_iter()
-            .map(|element| match &rounding {
-                Some(rounding) if element.id() == &rounding.root => {
-                    DashiElement::Rounded(rounding.element(element))
-                }
-                _ => DashiElement::Surface(element),
-            }),
-    );
-    elements.extend(sides.back.map(DashiElement::Depth));
-}
-
 /// A window drawn small where the overview puts it (`rect`: its outer frame there).
 pub(crate) fn overview_window<R>(
     state: &mut Dashi,
@@ -277,16 +233,6 @@ pub(crate) fn overview_window<R>(
         push_memory(renderer, at, buffer, Some((*own, *size)), elements);
     }
     elements.extend(sides.back.map(DashiElement::Depth));
-}
-
-/// A unified window's lights image, when it has one.
-fn lights_of(state: &Dashi, window: &Window) -> Option<MemoryRenderBuffer> {
-    state
-        .windows
-        .by_window(window)
-        .filter(|entry| entry.decor == Decor::Unified)
-        .and_then(|entry| entry.title_image.as_ref())
-        .map(|image| image.buffer.clone())
 }
 
 /// How a framed window's main surface is rounded: which surface, the shader, and the corners.

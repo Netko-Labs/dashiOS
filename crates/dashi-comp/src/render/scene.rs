@@ -22,7 +22,7 @@ use smithay::{
 use super::{
     DashiElement,
     rounded::GlesAccess,
-    windows::{Spot, arriving_window, framed_window, overview_window},
+    windows::{Spot, framed_window, overview_window},
 };
 use crate::state::Dashi;
 
@@ -245,7 +245,8 @@ where
             .filter_map(|e| e.away_at.map(|at| (e.window.clone(), at)))
             .collect();
         for (window, at) in arriving.into_iter().rev() {
-            arriving_window(state, renderer, &window, at + offset, &spot, &mut elements);
+            // Drawn as in its frame (its title bar or lights, its corners, its depth), where it waits.
+            framed_window(state, renderer, &window, at + offset, &spot, &mut elements);
         }
     }
     if view.only.is_some() {
