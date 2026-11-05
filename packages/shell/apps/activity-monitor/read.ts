@@ -34,7 +34,7 @@ export interface ProcessSample {
   cpuTicks: number;
   threads: number;
   starttime: number;
-  /** Resident memory in bytes. */
+  /** The memory that is its own, in bytes (RssAnon + RssShmem; proc.ts). */
   memory: number;
   kernel: boolean;
   /** Only for the user's own processes (others' io is not readable), and only when asked. */
@@ -58,6 +58,8 @@ export interface ReadOptions {
   io: boolean;
   /** Count each own process's sockets (the Network tab). */
   sockets: boolean;
+  /** Read kernel threads too (true when absent); without them a look skips their status files. */
+  kernel?: boolean;
   ownUid: number;
   pageSize: number;
   /** Names worked out from command lines, by pid and start time (pids are reused). */
@@ -100,8 +102,9 @@ function countSockets(pid: number): number | null {
 
 function readProcess(pid: number, options: ReadOptions): ProcessSample | null {
   const stat = parseStat(read(`${PROC}/${pid}/stat`) ?? "");
+  if (!stat || (options.kernel === false && isKernelThread(stat))) return null;
   const status = parseStatus(read(`${PROC}/${pid}/status`) ?? "");
-  if (!stat || !status) return null;
+  if (!status) return null;
   // Short names are the kernel's own and can change (an app renames itself once it starts);
   // only names worked out from a cut-short one and the command line are kept.
   let name = stat.comm;

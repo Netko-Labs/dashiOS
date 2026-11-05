@@ -2,7 +2,7 @@
 
 const UNITS = ["bytes", "KB", "MB", "GB", "TB"] as const;
 
-/** 1536 → "1.5 KB"; binary steps, as the Mac's Activity Monitor. */
+/** 1536 → "1.5 KB"; binary steps. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "—";
   if (bytes < 1024) return `${Math.round(bytes)} bytes`;
@@ -20,7 +20,7 @@ export function formatRate(bytesPerSecond: number): string {
   return `${formatBytes(bytesPerSecond)}/s`;
 }
 
-/** Seconds of CPU time as the Mac writes them: "4.52", "1:02.30", "3:04:05.67". */
+/** Seconds of CPU time: "4.52", "1:02.30", "3:04:05.67". */
 export function formatCpuTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "—";
   const hundredths = Math.round(seconds * 100);
