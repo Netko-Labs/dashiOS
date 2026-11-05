@@ -87,8 +87,8 @@ export interface MenuContext {
   canOpenHelp: boolean;
   /** The menus the focused app published (app-menus/); absent or null with none. */
   app?: PublishedMenus | null;
-  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. */
-  desktops?: { labels: readonly string[]; current: number };
+  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. `fullscreen` says which are full-screen windows' own (spaces/slots.ts). */
+  desktops?: { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
   /** How the focused window is arranged (arrange.ts): a tile or Fill; absent or null at its own frame. */
   arrangement?: Tile | null;
 }
@@ -210,13 +210,15 @@ function arrangeItems(ctx: MenuContext): { top: MenuEntry[]; tiles: MenuEntry[];
 /** Desktops a window can go to; as many as the compositor allows (comp/src/wm/spaces.rs). */
 const MOST_DESKTOPS = 16;
 
-/** "Move to" a Desktop by its name, for every Desktop but the window's own, and a new one. */
+/** "Move to" a Desktop by its name, for every Desktop but the window's own and full-screen ones, and a new one; none for a full-screen window on its own. */
 const moveToItems = (ctx: MenuContext): MenuEntry[] => {
   const { focused, desktops } = ctx;
   if (!focused || !desktops || desktops.labels.length === 0) return [];
+  const fullscreen = desktops.fullscreen ?? [];
+  if (fullscreen.includes(focused.id)) return [];
   const own = focused.space ?? desktops.current;
   const others = desktops.labels.flatMap((label, space) =>
-    space === own ? [] : [item(`Move to ${label}`, { kind: "move-to-space", window: focused.id, space })],
+    space === own || (fullscreen[space] ?? null) !== null ? [] : [item(`Move to ${label}`, { kind: "move-to-space", window: focused.id, space })],
   );
   const fresh = desktops.labels.length < MOST_DESKTOPS ? [item("Move to New Desktop", { kind: "move-to-space", window: focused.id, space: "new" })] : [];
   return [SEPARATOR, ...others, ...fresh];

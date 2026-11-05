@@ -51,6 +51,8 @@ export interface CompositorWindow {
   toplevel?: string;
   /** The window it is a sheet of (IPC `attach`: a portal dialog, portal-host/); present only for a sheet. */
   sheetOf?: number;
+  /** The window it is a dialog of (its xdg parent, or the X11 window it is transient for); present only for a dialog. */
+  parent?: number;
 }
 
 /** A window's own icon: an icon theme name, a picture on disk, or both. */
@@ -68,6 +70,8 @@ export interface Placing {
   height: number;
   /** Where an X11 app asked its frame to open, when that is on screen. */
   position?: { x: number; y: number };
+  /** The window it is a dialog of, when it is one (`CompositorWindow.parent`). */
+  parent?: number;
 }
 
 /** Where a window shrinks to when it minimizes, and grows from on restore: its Dock tile (global logical pixels); null forgets it. */
@@ -156,6 +160,8 @@ export type CompositorEvent =
   | { event: "space"; current: number; previous: number; count: number }
   /** A window was put on another Space (or its Space was renumbered). */
   | { event: "window-space"; window: number; space: number }
+  /** A window was minimized, hidden, or shown again (by the shell, the person, or the app itself). */
+  | { event: "window-state"; window: number; state: CompositorWindow["state"] }
   /** A touchpad swipe the shell claimed (IPC `gestures`): its start, each move, and its end (gestures.ts). */
   | { event: "gesture"; kind: "swipe"; phase: "begin"; fingers: number }
   | { event: "gesture"; kind: "swipe"; phase: "update"; dx: number; dy: number }
@@ -196,7 +202,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, frame, configuring, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf } = value;
+  const { id, appId, title, pid, focused, state, frame, configuring, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf, parent } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -217,8 +223,11 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     ...withIcon(parseWindowIcon(icon)),
     ...(typeof toplevel === "string" && toplevel.length > 0 && toplevel.length <= 256 ? { toplevel } : {}),
     ...(isNumber(sheetOf) && Number.isInteger(sheetOf) && sheetOf > 0 ? { sheetOf } : {}),
+    ...(isWindowId(parent) ? { parent } : {}),
   };
 }
+
+const isWindowId = (value: unknown): value is number => isNumber(value) && Number.isInteger(value) && value > 0;
 
 const withIcon = (icon: WindowIcon | null): { icon?: WindowIcon } => (icon ? { icon } : {});
 
@@ -252,10 +261,11 @@ export function parseEvent(value: unknown): CompositorEvent | null {
     case "window-placing": {
       const window = value.window;
       if (!isRecord(window)) return null;
-      const { id, appId, title, width, height, position } = window;
+      const { id, appId, title, width, height, position, parent } = window;
       if (!isNumber(id) || !isNumber(width) || !isNumber(height)) return null;
       const placing: Placing = { id, appId: String(appId ?? ""), title: String(title ?? ""), width, height };
       if (isRecord(position) && isNumber(position.x) && isNumber(position.y)) placing.position = { x: position.x, y: position.y };
+      if (isWindowId(parent)) placing.parent = parent;
       return { event: "window-placing", window: placing };
     }
     case "zoom":
@@ -335,6 +345,10 @@ export function parseEvent(value: unknown): CompositorEvent | null {
         : null;
     case "window-space":
       return isNumber(value.window) && isNumber(value.space) ? { event: "window-space", window: value.window, space: value.space } : null;
+    case "window-state":
+      return isNumber(value.window) && (value.state === "normal" || value.state === "minimized" || value.state === "hidden")
+        ? { event: "window-state", window: value.window, state: value.state }
+        : null;
     case "idle":
       return isNumber(value.seconds) ? { event: "idle", seconds: value.seconds } : null;
     case "active":

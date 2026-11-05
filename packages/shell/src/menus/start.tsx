@@ -48,7 +48,7 @@ export interface MenusOptions {
   arranger: Arranger | null;
   /** The Desktops, for the Window menu's "Move to" rows (spaces/). */
   desktops?: {
-    getSnapshot(): { labels: readonly string[]; current: number };
+    getSnapshot(): { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
     move(window: number, space: number | "new"): Promise<void>;
   };
   system: SystemStore;
@@ -155,7 +155,9 @@ export function startMenus(options: MenusOptions): Menus {
 
   const desktopsNow = (): Pick<MenuContext, "desktops"> => {
     const desktops = options.desktops?.getSnapshot();
-    return desktops ? { desktops: { labels: desktops.labels, current: desktops.current } } : {};
+    return desktops
+      ? { desktops: { labels: desktops.labels, current: desktops.current, ...(desktops.fullscreen ? { fullscreen: desktops.fullscreen } : {}) } }
+      : {};
   };
 
   const context = async (appName: string): Promise<MenuContext> => {

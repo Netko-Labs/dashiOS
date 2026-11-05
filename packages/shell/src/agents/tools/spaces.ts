@@ -16,7 +16,7 @@ export const spaceTools: readonly ToolDef[] = [
     name: "list_spaces",
     title: "List Spaces",
     description:
-      "The Spaces (desktops side by side, as on a Mac): each one's number and name, which one shows, and the ids of the windows on it. Only the windows of the Space that shows are on screen; list_windows gives each window's `space` too.",
+      "The Spaces (desktops side by side, as on a Mac): each one's number and name, which one shows, and the ids of the windows on it. A window in full screen gets a Space of its own (`fullScreenOf`), named after its app, which goes away when it leaves full screen. Only the windows of the Space that shows are on screen; list_windows gives each window's `space` too.",
     scope: "see",
     readOnly: true,
     destructive: false,

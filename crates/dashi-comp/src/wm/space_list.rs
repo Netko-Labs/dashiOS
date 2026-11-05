@@ -1,5 +1,7 @@
 //! Adding and removing Spaces (`space-add`, `space-remove`); spaces.rs keeps
-//! the rest: which Space each window is on, and switching between them.
+//! the rest: which Space each window is on, and switching between them. A
+//! Space can be added at an index (the shell puts a full-screen window's
+//! Desktop beside the one it came from): the Spaces from there move up one.
 
 use serde_json::{Value, json};
 
@@ -7,15 +9,46 @@ use super::{spaces::MAX_SPACES, windows::WindowId};
 use crate::state::Dashi;
 
 impl Dashi {
-    /// `space-add`: a new Space at the end.
-    pub(crate) fn add_space(&mut self) -> Result<Value, String> {
+    /// `space-add {at?}`: a new Space at the end, or at index `at`; the
+    /// Spaces from `at` on move up one (their windows with them, and what
+    /// shows, and a slide under way).
+    pub(crate) fn add_space(&mut self, at: Option<usize>) -> Result<Value, String> {
         if self.spaces.count >= MAX_SPACES {
             return Err(format!("there are already {MAX_SPACES} Spaces"));
         }
+        let at = at.unwrap_or(self.spaces.count);
+        if at > self.spaces.count {
+            return Err(format!("`at` must be 0–{}", self.spaces.count));
+        }
+        let mut previous = self.spaces.current;
+        let ids: Vec<WindowId> = self.windows.ids().collect();
+        for id in &ids {
+            if let Some(entry) = self.windows.get_mut(*id)
+                && entry.space >= at
+            {
+                entry.space += 1;
+                if entry.announced {
+                    let space = entry.space;
+                    self.ipc
+                        .emit("window-space", json!({ "window": id, "space": space }));
+                }
+            }
+        }
+        let shift = |index: &mut usize| {
+            if *index >= at {
+                *index += 1;
+            }
+        };
+        shift(&mut self.spaces.current);
+        shift(&mut previous);
+        if let Some(slide) = self.spaces.slide.as_mut() {
+            shift(&mut slide.from);
+            shift(&mut slide.to);
+        }
         self.spaces.count += 1;
-        self.emit_space(self.spaces.current);
+        self.emit_space(previous);
         let mut answer = self.spaces.answer();
-        answer["space"] = json!(self.spaces.count - 1);
+        answer["space"] = json!(at);
         Ok(answer)
     }
 

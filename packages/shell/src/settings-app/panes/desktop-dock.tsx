@@ -2,8 +2,9 @@
  * Desktop & Dock: how the Dock looks (the floating Dock or a taskbar across
  * the bottom), whether it hides until the pointer reaches the screen's
  * bottom edge, and whether it is shown at all. All of it is settings.json
- * `dock`, which the shell applies as it changes. Spaces' one setting is here
- * too, as on the Mac (settings.json `spaces.switchOnActivate`).
+ * `dock`, which the shell applies as it changes. Spaces' settings are here
+ * too, as on the Mac (settings.json `spaces.switchOnActivate`, and
+ * `spaces.fullscreenDesktop`: a full-screen app gets a Desktop of its own).
  */
 
 import { resolveDock } from "../../dock/settings.ts";
@@ -16,6 +17,7 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
   const data = useSettings(settings).data;
   const dock = resolveDock(data.dock);
   const switchOnActivate = data.spaces.switchOnActivate ?? true;
+  const fullscreenDesktop = data.spaces.fullscreenDesktop ?? true;
   return (
     <Page title="Desktop & Dock">
       <Group testID="dock-settings">
@@ -47,6 +49,12 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
           detail="Turned off, the window comes to the Space you are on instead."
         >
           <Switch testID="spaces-switch-on-activate" on={switchOnActivate} onChange={(on) => settings.patch("spaces", { switchOnActivate: on })} />
+        </Row>
+        <Row
+          label="Full-screen apps get their own desktop"
+          detail="A game or a video in full screen moves to a desktop of its own, next to the one it came from, and goes back when it leaves full screen. Turned off, it stays on its desktop."
+        >
+          <Switch testID="spaces-fullscreen-desktop" on={fullscreenDesktop} onChange={(on) => settings.patch("spaces", { fullscreenDesktop: on })} />
         </Row>
       </Group>
       <Caption>

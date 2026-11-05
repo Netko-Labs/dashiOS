@@ -3,8 +3,9 @@
  * Mission Control shows at the top of the screen the person is on (row.tsx),
  * opening into live pictures (shelf.ts, drawn by the compositor in the rects
  * sent here with `space-previews`), what a click, the +, the ×, a rename,
- * and a dropped window do, and pushing a held window against a screen's
- * side (edge.ts, from the compositor's `edge-hold`).
+ * and a dropped window do (never onto a full-screen Desktop: the controller
+ * refuses, and it springs back), and pushing a held window against a
+ * screen's side (edge.ts, from the compositor's `edge-hold`).
  */
 
 import { parseOutputs } from "../arrange.ts";
@@ -145,7 +146,8 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
         onRemove={(index) => void controller.remove(index)}
         onRename={(index, text) => controller.rename(index, text)}
         onHover={(hovered) => view.hover(hovered)}
-        onOverSpace={(index, over) => view.overSpace(index, over)}
+        // A dragged window can't go onto a full-screen Desktop: its picture doesn't lift.
+        onOverSpace={(index, over) => view.overSpace(index, over && (controller.getSnapshot().fullscreen[index] ?? null) === null)}
         onEscape={() => void deps.leaveOverview()}
       />,
     );
@@ -167,7 +169,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
   /** A window held against a screen's side: the next Desktop, if the policy says so (edge.ts). */
   const held = async (event: Extract<CompositorEvent, { event: "edge-hold" }>) => {
     const outputs = parseOutputs(await compositor.request("outputs"));
-    const target = edgeHoldTarget(event, outputs, controller.getSnapshot());
+    const target = edgeHoldTarget(event, outputs, controller.getSnapshot(), controller.getSnapshot().fullscreen);
     if (target !== null) await controller.switchTo(target);
   };
 

@@ -39,9 +39,9 @@ them until the compositor side pins them down here.
 | `close` | `{window}` | `{}`; asks the client to close |
 | `minimize` | `{window}` | `{}` |
 | `hide` | `{window}` | `{}` |
-| `frame` | `{window, x, y, width, height, maximized?: bool, tiled?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. `tiled` says the shell made it a tile: it casts the `window-style` `tiled` shadow until another `frame` without it, Fill, full screen, or the person moves or resizes it (the app is not told). The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). Ending maximized (a `frame` without it after one with it) sends the app two configures, so an app that answers the first with the size it had before it was maximized (GPUI does) takes this one at the second. A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`) |
-| `place` | `{window, x, y}` | `{}`; answers `window-placing` |
-| `fullscreen` | `{window, on: bool}` | `{}` |
+| `frame` | `{window, x, y, width, height, maximized?: bool, tiled?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. `tiled` says the shell made it a tile: it casts the `window-style` `tiled` shadow until another `frame` without it, Fill, full screen, or the person moves or resizes it (the app is not told). The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). Ending maximized (a `frame` without it after one with it) sends the app two configures, so an app that answers the first with the size it had before it was maximized (GPUI does) takes this one at the second. A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`). A window off screen (minimized, hidden, or on a Space that is not shown) takes the frame where it waits: it comes back there |
+| `place` | `{window, x, y, space?}` | `{}`; answers `window-placing`. With `space` (not the one that shows) the window waits there, off screen and without the keyboard, until that Space shows; *see* `src/arrange.ts`, `src/spaces/fullscreen.ts`. An unknown Space is an error |
+| `fullscreen` | `{window, on: bool}` | `{}`; a window on a Space that is not shown goes full screen there (on the screen its frame is mostly on) and shows so when that Space does; out of full screen off screen (another Space, minimized, hidden), it waits at the frame it had before. A minimized window cannot enter full screen |
 | `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window |
 | `animation-target` | `{targets: [{window, rect: Frame\|null}]}` | `{}`; where minimize shrinks to |
 | `window-for-handle` | `{handle}`: a portal's parent window, `wayland:<xdg-foreign handle>` or `x11:<X window id, hex>` | `{window: int\|null}`; null for a handle that names no window (unknown, revoked, or a window gone) |
@@ -50,7 +50,9 @@ them until the compositor side pins them down here.
 `Window` is `{id, appId, title, pid: int|null, focused, state:
 "normal"|"minimized"|"hidden", frame: Frame|null, configuring: {width, height}|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
-string|null, path: string|null}, toplevel?: string}`; `toplevel` is the
+string|null, path: string|null}, toplevel?: string, sheetOf?: int, parent?: int}`;
+`parent` is the window it is a dialog of (its xdg parent, or the X11 window
+it is transient for), absent for a window of its own; `toplevel` is the
 window's ext-foreign-toplevel-list identifier (what a screen-share picker
 answers with; absent until the list has it); `icon` is what the app gave
 (xdg-toplevel-icon): a theme icon name and/or a PNG the compositor saved under
@@ -96,7 +98,7 @@ windows; an X11 window's `pid` is its own
 | Method | Params | Result |
 | --- | --- | --- |
 | `spaces` | `{}` | *see* `parseSpaces`, `src/agents/desktop/spaces.ts` |
-| `space-add` | `{}` | the new Space; *see* `src/spaces/controller.ts` |
+| `space-add` | `{at?}` | `{count, current, space}`: a new Space at the end, or at index `at` (0 to `count`): the Spaces from there move up one, their windows with them (`window-space` for each), and so do what shows and a slide under way; *see* `src/spaces/controller.ts` (a full-screen window's own Desktop goes in beside the one it came from, `src/spaces/fullscreen.ts`). Refused at 16 Spaces |
 | `space-remove` | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
 | `space-switch` | `{space, progress?}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after |
 | `space-move` | `{window, space}` | `{}` |
@@ -154,9 +156,10 @@ hidden) keep getting frame callbacks, so they stay live.
 | --- | --- |
 | `window-opened` | `window: Window` |
 | `window-closed` | `id` |
-| `window-placing` | `window: {id, appId, title, width, height, position?: {x, y}}`; answer with `place` or `frame` |
+| `window-placing` | `window: {id, appId, title, width, height, position?: {x, y}, parent?}`; answer with `place` or `frame`. `parent` as in `Window` (a dialog's own window) |
 | `window-attention` | `window` |
 | `window-space` | `window, space` |
+| `window-state` | `window, state: "normal"\|"minimized"\|"hidden"`: a window was minimized, hidden, or shown again, whoever asked (the shell, the person at a title bar, the app itself, a taskbar) |
 | `zoom` | `window, on`: an app asked to be maximized (`on: true`, xdg `set_maximized`, X11 `_NET_WM_STATE`; Dashi's unified title bars ask so on a double-click) or not (`on: false`), or a taskbar did (wlr-foreign-toplevel). The shell decides (`src/arrange.ts`) |
 | `window-control` | `window, control: "zoom", alt, double`: a press on the square of a title bar dashi-comp draws (or of a unified window's lights), or a double-click on its title bar (`double: true`); `alt` is whether ⌥ was held. The compositor does nothing else with it: what it means (Fill, its own frame back, full screen) is the shell's |
 | `window-grab` | `window, kind: "move"\|"resize", frame, pointer: {x, y}`: the person began to move (a title bar drag or an app's `move`, once the pointer has gone 4 points from the press; until then the window stays put) or resize (the first motion) a window; `frame` is its frame then (at its `configuring` size, if its app has not drawn that yet) and `pointer` where the press was. A resize also ends the window's maximized state. The shell decides the rest (a tiled window dragged out gets its own size back: a `frame` the grab then holds) |

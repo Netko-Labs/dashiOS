@@ -25,7 +25,7 @@ pub(crate) enum Shown {
 }
 
 impl Shown {
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Shown::Normal => "normal",
             Shown::Minimized => "minimized",
@@ -332,10 +332,31 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "attention": entry.attention,
         "x11": entry.window.x11_surface().is_some(),
         "sheetOf": entry.sheet_of,
+        "parent": parent_of(state, &entry.window),
         "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
             .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
         "toplevel": state.toplevel_list.as_ref().and_then(|list| list.identifier_of(entry.id)),
     })
+}
+
+/// The window `window` is a dialog of: its xdg parent, or the X11 window it
+/// is transient for; None for a window of its own (or one the shell does not know).
+pub(crate) fn parent_of(state: &Dashi, window: &Window) -> Option<WindowId> {
+    if let Some(x11) = window.x11_surface() {
+        let owner = x11.is_transient_for()?;
+        return state
+            .windows
+            .entries()
+            .find(|entry| {
+                entry
+                    .window
+                    .x11_surface()
+                    .is_some_and(|x| x.window_id() == owner)
+            })
+            .map(|entry| entry.id);
+    }
+    let parent = window.toplevel()?.parent()?;
+    window_id_for_surface(state, &parent)
 }
 
 pub(crate) fn rect_json(rect: Rectangle<i32, Logical>) -> Value {

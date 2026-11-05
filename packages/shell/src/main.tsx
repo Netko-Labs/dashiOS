@@ -100,7 +100,7 @@ import { startSharePicker } from "./share-picker/index.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
-import { startSpaces } from "./spaces/index.ts";
+import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { run } from "./system/exec.ts";
@@ -188,6 +188,10 @@ const spaces = compositor
       appName: (window) => nameApp?.(window) ?? window.appId,
     })
   : null;
+// A full-screen window gets a Desktop of its own (spaces/fullscreen.ts; settings.json `spaces.fullscreenDesktop`).
+const fullscreenDesktops =
+  compositor && spaces ? new FullscreenDesktops({ compositor, desktops: spaces.controller, changed: () => void fullscreenBars?.sync() }) : null;
+const stopFullscreenDesktops = fullscreenDesktops?.start() ?? (() => {});
 const stopDisplays = compositor
   ? startDisplays(
       compositor,
@@ -258,6 +262,7 @@ const stopSettings = compositor
       if (liveWallpaper) liveWallpaper.apply(wallpaperChoice);
       else wallpaper?.apply(wallpaperChoice);
       dockPrefs.apply(settings.dock);
+      if (fullscreenDesktops) fullscreenDesktops.enabled = settings.spaces.fullscreenDesktop;
       void spaces?.controller.apply(settings.spaces);
     })
   : () => {};
@@ -270,6 +275,9 @@ const arrangement = (window: number) => arranger?.arrangement(window) ?? null;
 // The menu bar comes down over a full-screen window at the top edge (fullscreen.ts).
 const fullscreenBars = compositor ? new FullscreenBars(compositor, MENU_BAR_HEIGHT) : null;
 if (arranger) arranger.afterFullscreen = () => void fullscreenBars?.sync();
+if (arranger && fullscreenDesktops) arranger.desktops = fullscreenDesktops;
+// The × on a full-screen Desktop in Mission Control takes its window out of full screen.
+if (arranger && spaces) spaces.controller.leaveFullscreen = (window) => void arranger.fullscreen(window, false);
 const stopFullscreenBars = fullscreenBars?.start() ?? (() => {});
 
 // Wi-Fi: NetworkManager on a real session, a stand-in on a development run
@@ -435,6 +443,7 @@ const agents = compositor
         forceQuit,
         rememberScale: (name, scale) => settingsStore.setDisplayScale(name, scale),
         ...(displays ? { displays } : {}),
+        ...(spaces ? { spaces: spaces.controller } : {}),
         corners: {
           get: () => settingsStore.getSnapshot().data.appearance.cornerRadius ?? DEFAULT_CORNERS,
           set: (name) => settingsStore.patch("appearance", { cornerRadius: name }),
@@ -1011,6 +1020,7 @@ const quit = () => {
     ["overview", stopOverview],
     ["gestures", stopGestures],
     ["spaces", () => spaces?.close()],
+    ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
     ["settings file watch", stopWatchingSettings],
