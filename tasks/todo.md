@@ -1,3 +1,70 @@
+# Dashi 0.4.0 (`release/0.4.0`)
+
+The plan is `docs/plan.html` (built from the recommended options in
+`docs/0.4.0.html`). Built overnight on 2026-11-05 in six streams, merged into
+`release/0.4.0`. `[x]` means built with tests passing; "VM:" says what was
+seen working in the VM, and an item without one hasn't run in a session yet.
+Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
+
+## 1 · Power base and a lost card
+- [x] `dashi-release` requires tuned-ppd (conflicts with power-profiles-daemon)
+- [x] Power modes over tuned-ppd's D-Bus API (`src/system/profiles.ts`, one kept system-bus connection)
+- [x] The lost-card watch (`src/graphics/lost-card.ts`, `journalctl -k -f -o json`; this laptop's real 11-03/11-04 lines in the tests); `gpu-env.ts` stops offloading to a lost card
+- [x] Shutdown can't hang: SIGTERM, 10 s, SIGKILL the exact PIDs, then logind regardless; user units stop in 10 s
+- [ ] VM: modes row with tuned-ppd installed (needs the release package in the VM); a fake loss through /dev/kmsg (needs a two-GPU VM or a fake card); shutdown with a stuck FUSE reader
+- [ ] D3cold off for the card on the laptop (`d3cold_allowed=0`): waits for a yes
+
+## 2 · dashi-hardware and power in sync
+- [x] `crates/dashi-hardware`: system-bus service `dev.dashi.Hardware1`, polkit per method, every knob in docs/hardware.md, fan curves, the SMU (Curve Optimizer, 20-bit encoding, lockdown check), the boot guard and countdown tokens, `--sysfs-root` fake mode
+- [x] Model database (`data/models/`, GA403WR) and the G14's captured sysfs (`data/fixtures/ga403wr/`)
+- [x] Read-only `dashi-hardware describe` on the laptop: model, fans, hotkeys, every knob with its range
+- [x] Packaging: dashi-hardware.spec, tuned profiles dashi-{powersave,balanced,performance} + ppd.conf
+- [x] Shell: mode store with plugged/battery columns, both ways (one key press, one change), Automatic, battery health (limit, one full charge, full-by schedule), keys (Fn F5, Fn F4, ROG) with the OSD, ApplySavedTuning at login and wake, the boot-guard notice
+- [x] UI: the battery menu as the hub, Control Center's laptop row, Battery & Power / Displays / Keyboard rows
+- [ ] VM: run `dashi-hardware --sysfs-root data/fixtures/ga403wr serve` and the shell against it
+- [ ] Laptop (asked first): set each mode, charge limit 80 across a reboot, Curve Optimizer −5 under load then 0, a fan curve and reset; check Fn F5's keysym
+
+## 3 · Graphics switching
+- [x] `dashi-graphics.spec` (cardwire from Terra), finish-install adds `bpf` to `lsm=` and installs it on two-GPU machines
+- [x] `src/graphics/`: cardwire client, Automatic policy, holders, "Using the Graphics Card", the Graphics tile and pane (MUX), the lost-card state
+- [ ] cardwire's own battery auto-switch must be off so it doesn't fight Automatic
+- [ ] Laptop: Integrated on battery with the card in D3cold, Hybrid plugged in, Steam through Xwayland
+
+## 4 · Desktops, moving windows, the switcher
+- [x] dashi-comp: `space-previews`, `window-thumbnails`, a move grab across `space-switch`, `edge-hold`
+- [x] Desktops row opening into pictures, names in place, automatic names; drop on a picture, edge push, carry while switching, Move to in the Window menu
+- [x] The switcher: windows per app (live pictures), type to find, Q/H/M/W. VM: the window row with a live picture
+- [x] `dashi-share-picker` as xdg-desktop-portal-wlr's chooser
+- [ ] VM: Mission Control drew one flat gray after the merge (being fixed)
+- [ ] Title-bar right-click menu with Move to (there is no title-bar menu yet)
+
+## 5 · The Dashi portal
+- [x] `dashi-portal` (apps/portal), all ten interfaces; sheets parented through xdg-foreign (IPC `window-for-handle`, `attach`)
+- [x] Inhibit in the shell plus `org.freedesktop.ScreenSaver`; keep-awake in the battery menu
+- [x] `dashi-portals.conf` default=dashi; GTK_USE_PORTAL / GDK_DEBUG; xdg-desktop-portal-gtk dropped from dashi.spec
+- [ ] VM: the app matrix with xdg-desktop-portal-gtk removed (Helium, Firefox, a GTK 4 app, a Flatpak, a Qt app), printing to CUPS-PDF, Add to Dock
+- [ ] Keep-awake on a machine with no battery has nowhere to show
+
+## 6 · Secrets for agents
+- [x] `crates/dashi-secretd` (own user, Argon2id + TPM share + XChaCha20-Poly1305, pidfd/cgroup callers, agent scopes refused), `dashi-secret-bridge` (Secret Service + portal Secret), the gnome-keyring import, pam_exec unlock (optional lines)
+- [x] `capture-mask` and `input-origin`; agent captures blank secrets; consent counts only the person's press
+- [x] `list_logins`, `sign_in`, `fill_code`, `hand_over`; TOTP; Settings › Passwords; 1Password through `op` (tested with a fake `op`)
+- [x] Passkeys: a virtual FIDO2 key over uhid in dashi-secretd (unit-tested only)
+- [x] `pay` with limits, single-use cards, "Pay for you" never always-allowed
+- [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
+- [ ] Provider tokens and the token proxy: designed in docs/secrets.md only
+- [ ] VM: the test site (`packages/shell/test/fixtures/sign-in-site`), sign-in, code, passkey, pay, blanks in recordings (needs the packages installed)
+
+## 7 · The applet SDK
+- [x] `packages/applet` (`@dashi/applet`), manifest and schema, protocol v2 (hello, popover, dismiss, submenus), layer-shell grants per pid (`applet-clients`), the sandbox (bwrap + xdg-dbus-proxy), `dashi-applet` CLI
+- [ ] VM: `dashi-applet new weather`, dev, popover at each edge, pack, install, a permission it didn't declare refused
+
+## 8 · The Applet Store and ASUS Control
+- [x] The Applet Store app, signature checks, the kill switch; the catalog at ~/Developer/dashi-applets and ASUS Control at ~/Developer/asus-control (local repositories, no remotes)
+- [ ] Dashi's index key (`minisign -G`), the GitHub secrets, creating the two repositories on GitHub
+- [ ] VM: install ASUS Control from a test catalog; every pane on the fake G14 tree
+- [ ] Laptop: lighting (Slash mode numbers unchecked), sensors, fan curves, a per-core Curve Optimizer search with the boot guard
+
 # Dashi 0.3.0 (`release/0.3.0`)
 
 Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
