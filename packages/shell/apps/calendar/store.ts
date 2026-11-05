@@ -11,14 +11,22 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { TINT_VALUES } from "@dashi/ui";
 import { isRegularFile, writeAtomic, writeNew } from "../notes/files.ts";
 import { type EventInput, makeEvent } from "./event.ts";
 import { cleanName, isColor, MAX_ICS_BYTES, parseIcs, writeIcs } from "./ics.ts";
 import { type CalEvent, type Calendar, CalendarError, type IcsFile } from "./types.ts";
 
 export const EXTENSION = ".ics";
-/** The colors new calendars take in turn: the Mac's calendar colors. */
-export const PALETTE = ["#0a84ff", "#34c759", "#ff9500", "#af52de", "#ff3b30", "#a2845e", "#ffcc00"] as const;
+/**
+ * The colors new calendars take in turn, and the ones the calendar sheet
+ * offers: Dashi's tints (@dashi/ui), lowercase as the files keep them. No
+ * red among them, since red is for deleting; a color a file brings stays.
+ */
+export const PALETTE: readonly string[] = TINT_VALUES.map((value) => value.toLowerCase());
+
+/** The color the `count`-th new calendar takes. */
+export const paletteColor = (count: number): string => PALETTE[count % PALETTE.length] ?? (PALETTE[0] as string);
 export const DEFAULT_CALENDAR_NAME = "Home";
 /** The most calendars one folder lists, and the most events one file may grow to by adding. */
 export const MAX_CALENDARS = 100;
@@ -96,7 +104,7 @@ export class CalendarStore {
     if (!isRegularFile(path)) throw new CalendarError(`There is no calendar called “${id}”.`);
     if (lstatSync(path).size > MAX_ICS_BYTES) throw new CalendarError("That file is too large to be a calendar.");
     const file = parseIcs(readFileSync(path, "utf8"));
-    return { ...file, id, name: file.name ?? id, color: file.color ?? (PALETTE[index % PALETTE.length] as string) };
+    return { ...file, id, name: file.name ?? id, color: file.color ?? paletteColor(index) };
   }
 
   private write(calendar: Calendar, create = false): void {
@@ -135,7 +143,7 @@ export class CalendarStore {
     const calendar: Calendar = {
       id,
       name: clean,
-      color: color !== undefined && isColor(color) ? color.toLowerCase() : (PALETTE[taken.size % PALETTE.length] as string),
+      color: color !== undefined && isColor(color) ? color.toLowerCase() : paletteColor(taken.size),
       events: [],
       headerExtra: [],
       preserved: [],
@@ -160,7 +168,7 @@ export class CalendarStore {
   }
 
   recolor(id: string, color: string): void {
-    if (!isColor(color)) throw new CalendarError("A color is written like #0a84ff.");
+    if (!isColor(color)) throw new CalendarError("A color is written like #3d7ab0.");
     this.mutate(id, (calendar) => {
       calendar.color = color.toLowerCase();
     });

@@ -285,7 +285,7 @@ describe("ExtrasStore", () => {
     expect(store.getSnapshot().run.states.codecs).toEqual({ status: "waiting" });
     expect(software.installs).toEqual([]);
     expect(runNotice(store.getSnapshot().run)?.action).toBe("try-again");
-    expect(installingContinueLabel(store.getSnapshot().run)).toBe("Skip");
+    expect(installingContinueLabel(store.getSnapshot().run)).toBe("Not now");
     dismiss = false;
     await store.retry();
     expect(store.getSnapshot().run.phase).toBe("finished");

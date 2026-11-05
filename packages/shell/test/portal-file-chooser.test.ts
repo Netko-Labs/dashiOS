@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { accept, type Standing, startFolder, startName } from "../apps/portal/file-chooser/accept.ts";
 import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../apps/portal/file-chooser/filters.ts";
-import { ChooserModel, type Row, recentFolders, type Sources, visibleRows } from "../apps/portal/file-chooser/model.ts";
+import { ChooserModel, folderName, folderTrail, parentOf, type Row, recentFolders, type Sources, visibleRows } from "../apps/portal/file-chooser/model.ts";
 import { type ChooserRequest, chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { encodeBytePath } from "../apps/portal/vardict.ts";
 import { type Variant, variant } from "../src/dbus/index.ts";
@@ -277,4 +277,63 @@ test("a save takes the name of the file picked; the step keys move the pick", as
   expect(model.getSnapshot().name).toBe("learning.pdf");
   model.step(1);
   expect(model.getSnapshot().selected).toEqual(["/h/Docs/Lease.pdf"]);
+});
+
+test("Up goes to the folder this one is in, up to the root; Back retraces the way, searches left out", async () => {
+  const model = new ChooserModel(request({}), fakeSources(), { folder: "/h/Docs", name: "" });
+  await Bun.sleep(1);
+  expect(model.canGoBack()).toBe(false);
+  expect(model.canGoUp()).toBe(false);
+  model.go({ kind: "folder", path: "/h/Docs/Taxes" });
+  expect(model.canGoUp()).toBe(true);
+  model.up();
+  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
+  model.up();
+  model.up();
+  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/" });
+  expect(model.canGoUp()).toBe(false);
+  model.up();
+  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/" });
+  // A search's results aren't a place to come back to: Back leaves them for where it began.
+  model.search("lease");
+  await Bun.sleep(1);
+  model.go({ kind: "folder", path: "/h/Docs" });
+  const back = (): unknown => {
+    model.back();
+    return model.getSnapshot().place;
+  };
+  expect(back()).toEqual({ kind: "folder", path: "/" });
+  expect(back()).toEqual({ kind: "folder", path: "/h" });
+  expect(back()).toEqual({ kind: "folder", path: "/h/Docs" });
+  expect(back()).toEqual({ kind: "folder", path: "/h/Docs/Taxes" });
+  expect(back()).toEqual({ kind: "recents" });
+  expect(model.canGoBack()).toBe(false);
+  expect(back()).toEqual({ kind: "recents" });
+});
+
+test("clearing a search returns where it began without leaving a Back step behind", async () => {
+  const model = new ChooserModel(request({ mode: "save" }), fakeSources(), { folder: "/h/Docs", name: "a.pdf" });
+  await Bun.sleep(1);
+  model.search("lea");
+  model.search("lease");
+  await Bun.sleep(1);
+  expect(model.canGoBack()).toBe(true);
+  model.search("");
+  await Bun.sleep(1);
+  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
+  expect(model.canGoBack()).toBe(false);
+});
+
+test("the folder pop-up lists the folder and each one it is in, named as people know them", () => {
+  expect(folderTrail("/home/alexk/Documents/Taxes", "/home/alexk")).toEqual([
+    { name: "Taxes", path: "/home/alexk/Documents/Taxes" },
+    { name: "Documents", path: "/home/alexk/Documents" },
+    { name: "Home", path: "/home/alexk" },
+    { name: "home", path: "/home" },
+    { name: "Computer", path: "/" },
+  ]);
+  expect(folderTrail("/", "/home/alexk")).toEqual([{ name: "Computer", path: "/" }]);
+  expect(folderName("/media/alexk/USB", "/home/alexk")).toBe("USB");
+  expect(parentOf("/")).toBeNull();
+  expect(parentOf("/home/alexk")).toBe("/home");
 });

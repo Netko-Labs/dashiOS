@@ -26,6 +26,8 @@ import { MonthView } from "./month-view.tsx";
 import { useRegionPrefs } from "./prefs.ts";
 import { CalendarSheet, DeleteCalendarSheet, DeleteEventSheet, ImportPathSheet, type SheetState } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
+import { paletteColor } from "./store.ts";
+import { choosableCalendars, newEventTarget } from "./target.ts";
 import { TimeGrid } from "./time-grid.tsx";
 import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
 
@@ -94,11 +96,9 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const occurrences = useMemo(() => model.occurrences(firstDay), [model, state.calendars, state.hidden, state.view, state.anchor, firstDay]);
   const days = useMemo(() => viewDays(view, anchor, firstDay), [view, anchor, firstDay]);
   const colorOf = (id: string): string => calendars.find((calendar) => calendar.id === id)?.color ?? colors.selection;
-  // New events go where the last one did, else to Home, else to the first calendar that shows.
-  const [lastUsed, setLastUsed] = useState<string | null>(null);
-  const visible = calendars.filter((calendar) => !hidden.includes(calendar.id));
-  const defaultCalendar =
-    (visible.find((calendar) => calendar.id === lastUsed) ?? visible.find((calendar) => calendar.name === "Home") ?? visible[0] ?? calendars[0])?.id ?? "";
+  // New events go to the calendar chosen in the sidebar (or used last), never to a hidden one (target.ts).
+  const [chosen, setChosen] = useState<string | null>(null);
+  const destination = newEventTarget(calendars, hidden, chosen);
   const modal = sheet !== null || editing !== null;
 
   const takeKeys = (): void => setKeys((n) => n + 1);
@@ -112,10 +112,12 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   // ---- Events ----------------------------------------------------------------------
 
   const newEvent = (day: Day = anchor, minutes: number | null = 9 * 60): void => {
-    if (calendars.length === 0) return;
+    if (destination === null) return;
     model.dismissMessages();
     setMenu(null);
-    setEditing({ draft: blankDraft(defaultCalendar, day, minutes), target: null });
+    // Every calendar is hidden: show the one it goes to first (and say so), or it would vanish on Save.
+    if (destination.reveal && !model.reveal(destination.calendarId)) return;
+    setEditing({ draft: blankDraft(destination.calendarId, day, minutes), target: null });
   };
   const openEvent = (occurrence: Occurrence): void => {
     const event = occurrence.event;
@@ -133,9 +135,11 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   };
   const saveEvent = (draft: Draft): void => {
     const target = editing?.target ?? null;
+    // The sheet offers only calendars that show; one hidden meanwhile is shown again rather than swallow the event.
+    if (!model.reveal(draft.calendarId)) return closeOverlay();
     const saved = model.saveEvent(target?.calendarId ?? draft.calendarId, target?.uid ?? null, inputOf(draft), target !== null ? draft.calendarId : undefined);
     if (!saved) return closeOverlay();
-    setLastUsed(draft.calendarId);
+    setChosen(draft.calendarId);
     // Show where it went, unless it is on screen already.
     if (!days.includes(draft.startDay)) model.goTo(draft.startDay);
     closeOverlay();
@@ -242,7 +246,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const overlay = editing ? (
     <EventSheet
       draft={editing.draft}
-      calendars={calendars}
+      calendars={choosableCalendars(calendars, hidden, editing.draft.calendarId)}
       prefs={prefs}
       editing={editing.target === null ? null : { repeating: editing.target.repeating, custom: editing.target.custom }}
       onSave={saveEvent}
@@ -253,9 +257,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     <CalendarSheet
       title="New Calendar"
       initialName=""
-      initialColor={
-        calendars.length === 0 ? "#0a84ff" : (["#0a84ff", "#34c759", "#ff9500", "#af52de", "#ff3b30", "#a2845e", "#ffcc00"][calendars.length % 7] as string)
-      }
+      initialColor={paletteColor(calendars.length)}
       confirmLabel="Create"
       onCancel={closeOverlay}
       onSubmit={(name, color) => {
@@ -325,6 +327,13 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
           calendars={calendars}
           hidden={hidden}
           onToggle={(id) => model.toggle(id)}
+          target={destination?.reveal === false ? destination.calendarId : null}
+          onChoose={(id) => {
+            // A hidden calendar picked as the one for new events shows again: they never go into a hidden one.
+            if (!model.isVisible(id)) model.toggle(id);
+            setChosen(id);
+            takeKeys();
+          }}
           onMenu={calendarMenu}
           onNewCalendar={() => setSheet({ kind: "new-calendar" })}
           onImport={importFile}

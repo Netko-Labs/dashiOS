@@ -12,6 +12,7 @@ import { dollars, parseAmount } from "../../agents/secrets/pay.ts";
 import type { CardSummary, Vault } from "../../agents/secrets/vault.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { Button, Caption, Group, Note, Row, useSurface } from "../ui.tsx";
+import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 
 function Field({
   testID,
@@ -138,34 +139,57 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
   );
 }
 
+function CardRow({ card, onDelete }: { card: CardSummary; onDelete: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const name = card.label || "Card";
+  const detail = asking
+    ? `Delete this card ending ${card.last4}? Agents can't pay with it again, and you can't undo this.`
+    : `•••• ${card.last4} · ${card.expiry}${card.singleUse ? (card.used ? " · used" : " · single use") : ""}`;
+  return (
+    <Row label={name} detail={detail} testID={`payments-card:${card.id}`}>
+      <ConfirmDelete testID={`payments-delete:${card.id}`} onDelete={onDelete} onAsking={setAsking} />
+    </Row>
+  );
+}
+
 export function Payments({ vault }: { vault: Vault }) {
   const colors = useColors();
-  const [cards, setCards] = useState<CardSummary[]>([]);
+  // Null until the vault answers; a failed read says so instead of claiming there are no cards.
+  const [cards, setCards] = useState<CardSummary[] | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
   const refresh = useCallback(() => {
     void vault
       .cards()
-      .then(setCards)
-      .catch(() => setCards([]));
+      .then((list) => setCards(list))
+      .catch((error: unknown) => {
+        console.error("dashi-shell: Payments:", error instanceof Error ? error.message : error);
+        setFailure(`Your cards couldn't be read. ${VAULT_TROUBLE}`);
+      });
   }, [vault]);
   useEffect(() => refresh(), [refresh]);
+  const remove = (card: CardSummary): void => {
+    setFailure(null);
+    void vault
+      .removeCard(card.id)
+      .catch((error: unknown) => {
+        console.error("dashi-shell: Payments:", error instanceof Error ? error.message : error);
+        setFailure(`“${card.label || "Card"}” wasn't deleted. ${VAULT_TROUBLE}`);
+      })
+      .finally(refresh);
+  };
   return (
     <>
       <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Payments</Text>
       <Group testID="payments-cards">
-        {cards.length === 0 ? (
+        {cards === null ? (
+          <Note testID="payments-loading">{failure ? "Cards can't be shown right now." : "Looking…"}</Note>
+        ) : cards.length === 0 ? (
           <Note testID="payments-none">No cards. Agents can't pay until you add one; a single-use virtual card is safest.</Note>
         ) : (
-          cards.map((card) => (
-            <Row
-              key={card.id}
-              label={card.label || "Card"}
-              detail={`•••• ${card.last4} · ${card.expiry}${card.singleUse ? (card.used ? " · used" : " · single use") : ""}`}
-            >
-              <Button testID={`payments-delete:${card.id}`} label="Delete" danger onPress={() => void vault.removeCard(card.id).then(refresh)} />
-            </Row>
-          ))
+          cards.map((card) => <CardRow key={card.id} card={card} onDelete={() => remove(card)} />)
         )}
       </Group>
+      {failure && <Failure testID="payments-failure">{failure}</Failure>}
       <AddCard vault={vault} onSaved={refresh} />
       <Limits vault={vault} />
       <Caption>

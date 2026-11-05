@@ -1,18 +1,35 @@
 /**
  * The file chooser as a sheet: Places on the left (Recents first, then the
- * folders), the search field in the one toolbar row, the rows, and at the
- * bottom the filter and the app's choices beside Cancel and Open (or Save).
- * Saving puts the name field above the rows. It opens on Recents with the
- * search field focused: usually a keystroke and Return.
+ * folders), and in the one toolbar row Back and Up before the title, the
+ * folder pop-up (the folder, and every folder it is in) and the search
+ * field after it; then the rows, and at the bottom the filter and the app's
+ * choices beside Cancel and Open (or Save). Saving puts the name field above
+ * the rows. It opens on Recents with the search field focused: usually a
+ * keystroke and Return. A click only selects; a real double-click (clicks.ts)
+ * or Return opens.
  */
 
-import { Choices, Note, SearchField, SidebarItem, SidebarSection, TextField, useColors } from "@dashi/ui";
+import {
+  CHEVRON_DOWN,
+  Choices,
+  type MenuItem,
+  Note,
+  PopupMenu,
+  SearchField,
+  SidebarItem,
+  SidebarSection,
+  TextField,
+  ToolbarButton,
+  useColors,
+} from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { useEffect, useRef, useState } from "react";
 import { CheckBox, type FrameButton, PortalFrame } from "../ui/frame.tsx";
-import { CLOCK, FILE, FOLDER, HOME } from "../ui/glyphs.ts";
+import { BACK, CLOCK, FILE, FOLDER, HOME, UP } from "../ui/glyphs.ts";
 import { accept } from "./accept.ts";
+import { ClickCounter } from "./clicks.ts";
 import { filterExtension, withExtension } from "./filters.ts";
-import { type ChooserModel, type Row, useChooser } from "./model.ts";
+import { type ChooserModel, folderName, folderTrail, type Row, useChooser } from "./model.ts";
 import type { ChooserAnswer } from "./options.ts";
 import type { PlaceLink } from "./sources.ts";
 
@@ -24,13 +41,14 @@ const formatDate = (ms: number): string => {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(date.getFullYear() === today.getFullYear() ? {} : { year: "numeric" }) });
 };
 
-function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPress: () => void }) {
+/** A row; `onPress` gets where the button went down, so a double-click can be told from two slow clicks. */
+function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPress: (x: number, y: number) => void }) {
   const colors = useColors();
   const ink = selected ? "#ffffff" : colors.text;
   return (
     <View
       testID={`chooser:row:${row.name}`}
-      onPress={onPress}
+      onPointer={(event) => event.phase === "down" && onPress(event.x, event.y)}
       style={{
         height: 30,
         flexShrink: 0,
@@ -63,6 +81,37 @@ function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPr
   );
 }
 
+/** The folder pop-up in the toolbar: the folder showing; pressing it lists the folders it is in. */
+function FolderButton({ name, onPress }: { name: string; onPress: (bounds: { x: number; y: number; height: number } | undefined) => void }) {
+  const colors = useColors();
+  return (
+    <View
+      testID="chooser:folder"
+      onPress={(event) => onPress(event.bounds)}
+      style={{
+        height: 28,
+        maxWidth: 200,
+        flexShrink: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 9,
+        borderRadius: 7,
+        backgroundColor: colors.button,
+        hoverBackgroundColor: colors.separator,
+      }}
+    >
+      <Svg markup={FOLDER} size={14} color={colors.textMuted} />
+      <View style={{ flexShrink: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+          {name}
+        </Text>
+      </View>
+      <Svg markup={CHEVRON_DOWN} size={12} color={colors.textMuted} />
+    </View>
+  );
+}
+
 export interface ChooserViewProps {
   model: ChooserModel;
   places: readonly PlaceLink[];
@@ -78,16 +127,24 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
   const rows = model.visible();
   const folder = state.place.kind === "folder" ? state.place.path : null;
   const saving = request.mode === "save";
+  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  // The rows' clicks; a new place starts over, so a click there is never the second of a double-click.
+  const clicks = useRef(new ClickCounter());
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the place changing is what resets the clicks
+  useEffect(() => clicks.current.reset(), [state.place]);
 
   const go = () => {
+    // The model's state as it is now: a double-click picks a row an instant before this runs.
+    const now = model.getSnapshot();
+    const here = now.place.kind === "folder" ? now.place.path : null;
     const outcome = accept(
       request,
-      { folder, saveFolder: state.lastFolder ?? saveFolder, selected: model.picked(), name: state.name, replacing: state.replace },
+      { folder: here, saveFolder: now.lastFolder ?? saveFolder, selected: model.picked(), name: now.name, replacing: now.replace },
       exists,
     );
     switch (outcome.kind) {
       case "done":
-        return answer({ paths: outcome.paths, choices: Object.entries(state.choices), filter: state.filter });
+        return answer({ paths: outcome.paths, choices: Object.entries(now.choices), filter: now.filter });
       case "open-folder":
         return model.go({ kind: "folder", path: outcome.path });
       case "replace":
@@ -107,23 +164,55 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
   const filterOptions = request.filters.map((filter, index) => ({ value: index, label: filter.name }));
   const filterIndex = state.filter ? Math.max(0, request.filters.indexOf(state.filter)) : 0;
 
+  /** A press on a row: a first click selects; the second of a real double-click opens it (a folder: goes in). */
+  const pressRow = (row: Row, x: number, y: number): void => {
+    if (clicks.current.press({ target: row.path, x, y, time: Date.now() })) {
+      model.pick(row.path);
+      return go();
+    }
+    model.pick(row.path, request.multiple);
+  };
+  /** The folder pop-up, under itself: this folder and each one it is in. */
+  const openTrail = (bounds: { x: number; y: number; height: number } | undefined): void => {
+    if (folder === null) return;
+    setMenu({
+      x: bounds?.x ?? 0,
+      y: (bounds?.y ?? 0) + (bounds?.height ?? 0) + 4,
+      items: folderTrail(folder, model.home).map((each, index) => ({
+        label: each.name,
+        checked: index === 0,
+        onPress: () => model.go({ kind: "folder", path: each.path }),
+      })),
+    });
+  };
+
   return (
     <PortalFrame
       title={request.title}
       keys={false}
       onCancel={() => answer(null)}
+      leading={
+        <>
+          <ToolbarButton testID="chooser:back" glyph={BACK} disabled={!model.canGoBack()} onPress={() => model.back()} />
+          <ToolbarButton testID="chooser:up" glyph={UP} disabled={!model.canGoUp()} onPress={() => model.up()} />
+        </>
+      }
+      overlay={menu ? <PopupMenu testID="chooser:trail" x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} /> : undefined}
       buttons={buttons}
       toolbar={
-        <SearchField
-          testID="chooser:search"
-          autoFocus={!saving}
-          placeholder="Search"
-          width={220}
-          onChangeText={(text) => model.search(text)}
-          value={state.query}
-          onKeyPress={onKeyPress}
-          onSubmit={go}
-        />
+        <>
+          {folder !== null && <FolderButton name={folderName(folder, model.home)} onPress={openTrail} />}
+          <SearchField
+            testID="chooser:search"
+            autoFocus={!saving}
+            placeholder="Search"
+            width={220}
+            onChangeText={(text) => model.search(text)}
+            value={state.query}
+            onKeyPress={onKeyPress}
+            onSubmit={go}
+          />
+        </>
       }
       footer={
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
@@ -190,7 +279,7 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
         <View style={{ flex: 1, flexDirection: "column", gap: 8, minWidth: 0 }}>
           {saving && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text style={{ fontSize: 13, color: colors.text }}>Save As:</Text>
+              <Text style={{ fontSize: 13, color: colors.text }}>Save as</Text>
               <TextField
                 testID="chooser:name"
                 value={state.name}
@@ -201,25 +290,11 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
               />
             </View>
           )}
-          {folder && (
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-              {folder}
-            </Text>
-          )}
           {state.replace && <Note testID="chooser:replace">{`“${state.replace.split("/").pop()}” already exists. Replace it?`}</Note>}
           {state.problem && <Note testID="chooser:problem">{state.problem}</Note>}
           <ScrollView testID="chooser:rows" style={{ flex: 1, flexDirection: "column", gap: 1, minHeight: 0 }}>
             {rows.map((row) => (
-              <FileRow
-                key={row.path}
-                row={row}
-                selected={state.selected.includes(row.path)}
-                onPress={() => {
-                  // A second press on a picked row is Open (a folder: go in).
-                  if (state.selected.length === 1 && state.selected[0] === row.path) return go();
-                  model.pick(row.path, request.multiple);
-                }}
-              />
+              <FileRow key={row.path} row={row} selected={state.selected.includes(row.path)} onPress={(x, y) => pressRow(row, x, y)} />
             ))}
             {!state.loading && rows.length === 0 && (
               <View style={{ padding: 12 }}>

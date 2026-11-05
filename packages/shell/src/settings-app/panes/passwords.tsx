@@ -14,6 +14,7 @@ import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { Button, Caption, Choices, Group, Note, Page, Row, useSurface } from "../ui.tsx";
+import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 import { Payments } from "./payments.tsx";
 
 interface VaultView {
@@ -105,8 +106,12 @@ function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () =>
 }
 
 function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents: (agents: AgentUse) => void; onDelete: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const detail = asking
+    ? `Delete the password${login.hasCode ? " and two-factor code" : ""} for ${login.account}? You can't undo this.`
+    : `${login.account}${login.hasCode ? " · two-factor code" : ""}`;
   return (
-    <Row label={login.site} detail={`${login.account}${login.hasCode ? " · two-factor code" : ""}`} testID={`login:${login.id}`}>
+    <Row label={login.site} detail={detail} testID={`login:${login.id}`}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Choices
           testID={`login-agents:${login.id}`}
@@ -117,7 +122,7 @@ function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents
           ]}
           onChange={onAgents}
         />
-        <Button testID={`login-delete:${login.id}`} label="Delete" danger onPress={onDelete} />
+        <ConfirmDelete testID={`login-delete:${login.id}`} onDelete={onDelete} onAsking={setAsking} />
       </View>
     </Row>
   );
@@ -129,9 +134,20 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
   const prefs = useSyncExternalStore(passwords.prefs.subscribe, passwords.prefs.getSnapshot);
   const [vault, refresh] = useVault(passwords);
   const colors = useColors();
+  // A change that failed says so under the list, and the list is read again either way.
+  const [failure, setFailure] = useState<string | null>(null);
+  const change = (work: Promise<unknown>, failed: string): void => {
+    setFailure(null);
+    void work
+      .catch((error: unknown) => {
+        console.error("dashi-shell: Passwords:", error instanceof Error ? error.message : error);
+        setFailure(`${failed} ${VAULT_TROUBLE}`);
+      })
+      .finally(refresh);
+  };
   const { status } = vault;
   const vaultLine = vault.error
-    ? `Dashi's vault isn't running (${vault.error}).`
+    ? "Dashi's vault isn't running. Log out and in again to start it."
     : !status
       ? "Looking…"
       : !status.unlocked
@@ -187,12 +203,13 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
             <LoginRow
               key={login.id}
               login={login}
-              onAgents={(agents) => void passwords.vault.setAgents(login.id, agents).then(refresh)}
-              onDelete={() => void passwords.vault.remove(login.id).then(refresh)}
+              onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
+              onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
             />
           ))
         )}
       </Group>
+      {failure && <Failure testID="passwords-failure">{failure}</Failure>}
       {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
         <AddLogin passwords={passwords} onSaved={refresh} />
       )}

@@ -6,11 +6,13 @@
  */
 
 import type { IndexApplet, InstalledApplet } from "@dashi/applet";
-import { AppWindow, ConfirmSheet, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
-import { BACK, CATEGORY_GLYPHS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "../software/glyphs.ts";
+import { useAppMenus } from "../kit/index.ts";
+import { BACK, CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "../software/glyphs.ts";
+import { type StorePlace, storeMenus } from "./menus.ts";
 import { back, CATEGORY_LABELS, canGoBack, goTo, type Nav, type Page, push, START, search } from "./nav.ts";
 import { AppletPage } from "./page.tsx";
 import { InstalledPage, ListPage, UpdatesPage } from "./pages.tsx";
@@ -19,16 +21,29 @@ import { useServices } from "./services.ts";
 
 export const STORE_SIZE = { width: 960, height: 640 } as const;
 
-/** The sidebar's tile for each category: Software's glyph for the nearest of its categories, a tint of its own. */
-const CATEGORY_TILES: Readonly<Record<keyof typeof CATEGORY_LABELS, { glyph: string; tint: string }>> = {
-  hardware: { glyph: CATEGORY_GLYPHS.System ?? DISCOVER, tint: "#7a7a82" },
-  productivity: { glyph: CATEGORY_GLYPHS.Office ?? DISCOVER, tint: "#3b8fd0" },
-  network: { glyph: CATEGORY_GLYPHS.Network ?? DISCOVER, tint: "#2f9d8f" },
-  status: { glyph: CATEGORY_GLYPHS.Utility ?? DISCOVER, tint: "#c7892b" },
-  media: { glyph: CATEGORY_GLYPHS.AudioVideo ?? DISCOVER, tint: "#d0527f" },
-  developer: { glyph: CATEGORY_GLYPHS.Development ?? DISCOVER, tint: "#6E56CF" },
-  utilities: { glyph: CATEGORY_GLYPHS.Utility ?? DISCOVER, tint: "#4f8f4f" },
+/** Each category's nearest in Software, whose glyph and tint its tile wears, so one category looks the same in both stores. */
+const NEAREST: Readonly<Record<keyof typeof CATEGORY_LABELS, string>> = {
+  hardware: "System",
+  productivity: "Office",
+  network: "Network",
+  status: "Utility",
+  media: "AudioVideo",
+  developer: "Development",
+  utilities: "Utility",
 };
+
+const tileOf = (id: keyof typeof CATEGORY_LABELS): { glyph: string; tint: string } => {
+  const software = NEAREST[id];
+  return { glyph: CATEGORY_GLYPHS[software] ?? DISCOVER, tint: CATEGORY_TINTS[software] ?? TINTS.goma };
+};
+
+const PLACES: Readonly<Record<StorePlace, Page>> = { discover: { kind: "all" }, installed: { kind: "installed" }, updates: { kind: "updates" } };
+
+/** The sidebar place `page` is, if it is one. */
+function placeOf(page: Page): StorePlace | null {
+  if (page.kind === "all") return "discover";
+  return page.kind === "installed" || page.kind === "updates" ? page.kind : null;
+}
 
 type Ask = { kind: "consent"; entry: IndexApplet; update: boolean } | { kind: "remove"; installed: InstalledApplet } | { kind: "failure"; message: string };
 
@@ -39,7 +54,9 @@ const inSidebar = (nav: Nav, page: Page): boolean => JSON.stringify(nav.page) ==
 export function StoreWindow() {
   const { store } = useServices();
   const state = useStoreState();
-  const [nav, setNav] = useState<Nav>(START);
+  // Without a catalog key nothing from the catalog can be shown, so the window is Installed alone.
+  const ready = store.catalogReady;
+  const [nav, setNav] = useState<Nav>(() => (ready ? START : goTo({ kind: "installed" })));
   const [query, setQuery] = useState("");
   const [asks, setAsks] = useState<Ask[]>([]);
   const [focus, setFocus] = useState(0);
@@ -89,11 +106,39 @@ export function StoreWindow() {
     else store.remove(current.installed.manifest.id);
   };
 
+  // The open applet's page, for the File menu's Get, Update and Remove….
+  const openId = nav.page.kind === "applet" ? nav.page.id : null;
+  const openEntry = openId === null ? undefined : state.index?.applets.find((entry) => entry.manifest.id === openId);
+  const openStatus = openEntry ? store.status(openEntry) : null;
+  const { menus, run } = storeMenus({
+    place: placeOf(nav.page),
+    applet: openStatus
+      ? {
+          canGet: openStatus.kind === "get" && openStatus.version !== null,
+          canUpdate: openStatus.kind === "update" || (openStatus.kind === "pulled" && openStatus.good !== null),
+          canRemove: openStatus.kind !== "get",
+        }
+      : null,
+    catalogReady: ready,
+    loading: state.loading,
+    blocked: asks.length > 0,
+    actions: {
+      search: () => setFocus((n) => n + 1),
+      show: (place) => go(PLACES[place]),
+      checkForUpdates: () => void store.refresh(),
+      get: () => openEntry && actions.get(openEntry),
+      remove: () => openStatus && openStatus.kind !== "get" && actions.remove(openStatus.installed),
+    },
+  });
+  useAppMenus(menus, run);
+
   const updateCount = store.updates().length;
   const sidebar = (
     <>
       <SidebarSection>
-        <SidebarItem testID="nav:all" label="Discover" glyph={DISCOVER} selected={inSidebar(nav, { kind: "all" })} onPress={() => go({ kind: "all" })} />
+        {ready && (
+          <SidebarItem testID="nav:all" label="Discover" glyph={DISCOVER} selected={inSidebar(nav, { kind: "all" })} onPress={() => go({ kind: "all" })} />
+        )}
         <SidebarItem
           testID="nav:installed"
           label="Installed"
@@ -102,34 +147,38 @@ export function StoreWindow() {
           selected={inSidebar(nav, { kind: "installed" })}
           onPress={() => go({ kind: "installed" })}
         />
-        <SidebarItem
-          testID="nav:updates"
-          label="Updates"
-          glyph={UPDATES}
-          badge={updateCount > 0 ? String(updateCount) : undefined}
-          selected={inSidebar(nav, { kind: "updates" })}
-          onPress={() => go({ kind: "updates" })}
-        />
-      </SidebarSection>
-      <SidebarSection title="Categories">
-        {(Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>).map((id) => (
+        {ready && (
           <SidebarItem
-            key={id}
-            testID={`nav:category:${id}`}
-            label={CATEGORY_LABELS[id]}
-            tile={CATEGORY_TILES[id]}
-            selected={inSidebar(nav, { kind: "category", id })}
-            onPress={() => go({ kind: "category", id })}
+            testID="nav:updates"
+            label="Updates"
+            glyph={UPDATES}
+            badge={updateCount > 0 ? String(updateCount) : undefined}
+            selected={inSidebar(nav, { kind: "updates" })}
+            onPress={() => go({ kind: "updates" })}
           />
-        ))}
+        )}
       </SidebarSection>
+      {ready && (
+        <SidebarSection title="Categories">
+          {(Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>).map((id) => (
+            <SidebarItem
+              key={id}
+              testID={`nav:category:${id}`}
+              label={CATEGORY_LABELS[id]}
+              tile={tileOf(id)}
+              selected={inSidebar(nav, { kind: "category", id })}
+              onPress={() => go({ kind: "category", id })}
+            />
+          ))}
+        </SidebarSection>
+      )}
     </>
   );
 
   const toolbar = (
     <>
       {canGoBack(nav) && <ToolbarButton testID="back" glyph={BACK} onPress={() => setNav(back(nav))} />}
-      <ToolbarButton testID="refresh" glyph={REFRESH} disabled={state.loading} onPress={() => void store.refresh()} />
+      {ready && <ToolbarButton testID="refresh" glyph={REFRESH} disabled={state.loading} onPress={() => void store.refresh()} />}
       <SearchField
         key={focus}
         testID="search"
@@ -174,13 +223,14 @@ export function StoreWindow() {
   return (
     <ActionsContext.Provider value={actions}>
       <AppWindow title="Applet Store" sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
-        <PageView page={nav.page} query={query} />
+        <PageView page={nav.page} query={query} catalogReady={ready} />
       </AppWindow>
     </ActionsContext.Provider>
   );
 }
 
-function PageView({ page, query }: { page: Page; query: string }) {
+function PageView({ page, query, catalogReady }: { page: Page; query: string; catalogReady: boolean }) {
+  if (!catalogReady) return <InstalledPage query={query} catalogReady={false} />;
   switch (page.kind) {
     case "all":
     case "category":
