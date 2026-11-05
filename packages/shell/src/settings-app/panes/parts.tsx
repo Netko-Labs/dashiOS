@@ -1,12 +1,13 @@
 /**
  * Small pieces the machine panes (Network, Bluetooth, Sound, Battery & Power,
  * Users & Accounts) share beyond ui.tsx's: a value at the end of a row, a
- * compact button, a pressable list row, and a round icon.
+ * compact button, a pressable list row, a round icon, a Delete that asks
+ * first, and a failure's sentence.
  */
 
 import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 /** A value at the end of a row, muted and right-aligned (several lines stack). */
 export function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -132,6 +133,38 @@ export function RoundIcon({ glyph, lit, size = 28 }: { glyph: string; lit: boole
     </View>
   );
 }
+
+/**
+ * A row's Delete that asks first, in place, as Network's Forget does: "Delete…"
+ * turns into Cancel and Delete, and only that second press deletes. While it
+ * asks, `onAsking` lets the row say what will be lost.
+ */
+export function ConfirmDelete({ testID, onDelete, onAsking }: { testID: string; onDelete: () => void; onAsking?: (asking: boolean) => void }) {
+  const [asking, setAsking] = useState(false);
+  const ask = (next: boolean): void => {
+    setAsking(next);
+    onAsking?.(next);
+  };
+  return asking ? (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <MiniButton testID={`${testID}:cancel`} label="Cancel" onPress={() => ask(false)} />
+      <MiniButton
+        testID={`${testID}:confirm`}
+        label="Delete"
+        tone="critical"
+        onPress={() => {
+          ask(false);
+          onDelete();
+        }}
+      />
+    </View>
+  ) : (
+    <MiniButton testID={testID} label="Delete…" tone="critical" onPress={() => ask(true)} />
+  );
+}
+
+/** What to try when Dashi's vault didn't do what was asked (Passwords, Payments). */
+export const VAULT_TROUBLE = "Try again; if it keeps failing, log out and in again to restart Dashi's vault.";
 
 /** A sentence for a failure, in the critical color, under a group. */
 export function Failure({ children, testID }: { children: string; testID: string }) {

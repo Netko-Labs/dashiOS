@@ -24,6 +24,9 @@ export const BELL = svg(
   `${stroke("M3.6 11.2c.9-.9 1.2-1.9 1.2-3.2V6.6a3.2 3.2 0 0 1 6.4 0V8c0 1.3.3 2.3 1.2 3.2z", 1.4)}${stroke("M6.6 13.4a1.6 1.6 0 0 0 2.8 0", 1.3)}`,
 );
 
+/** Passwords: a key (Lock Screen has the padlock). */
+export const KEY = svg(`<circle cx="5.2" cy="8" r="3" stroke="#000" stroke-width="1.5" fill="none"/>${stroke("M8.2 8h6.2M12.2 8v2.4M14.2 8v1.8", 1.5)}`);
+
 /** Agents: a four-point sparkle and a small one. */
 export const SPARKLE = svg(
   `<path d="M7 1.8l1.3 3.9 3.9 1.3-3.9 1.3L7 12.2 5.7 8.3 1.8 7l3.9-1.3z" fill="#000"/><path d="M12.4 9.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="#000"/>`,

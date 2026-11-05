@@ -3,9 +3,10 @@
  * window (asking again brings it forward), first thing at a person's first
  * login, and again whenever they ask (Settings > About, the launcher, an
  * agent). It runs inside the shell process, so its pages use the shell's own
- * stores directly. Closing the window before the end counts as skipping, but
- * only the first time: a person who finished once is not marked as having
- * skipped by looking again.
+ * stores directly. Only Done and Skip Setup (which asks first) are
+ * remembered: closing the window before the end is not skipping, so the
+ * assistant comes back at the next login until one of the two is chosen. A
+ * person who finished once is not marked as having skipped by looking again.
  */
 
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
@@ -29,9 +30,6 @@ import { Flow, type Machine, type PageId } from "./flow.ts";
 import { isLiveBoot } from "./live.ts";
 import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./state.ts";
 import { SETUP_WINDOW, SetupWindow } from "./view.tsx";
-
-/** How long a closed Setup window waits before its close counts as Skip Setup (the session may be ending). */
-const CLOSE_SETTLE_MS = 2000;
 
 export const SETUP_TITLE = "Setup Assistant";
 
@@ -73,7 +71,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
   const { compositor } = options;
   const statePath = options.statePath ?? setupStatePath();
   let session: Session | null = null;
-  // The shell going away closes the window too; that is not the person skipping.
+  // The shell going away closes the window too; that is not the person's answer.
   let shuttingDown = false;
   // The live session installs nothing (it is gone at the next restart), and
   // without the helper (a checkout run) there is nothing to install with.
@@ -107,7 +105,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
   };
 
   const remember = (outcome: SetupOutcome): void => {
-    // Finishing is always written; skipping or closing never replaces an earlier record.
+    // Finishing is always written; skipping never replaces an earlier record.
     if (outcome === "finished" || readSetupRecord(statePath) === null) writeSetupRecord(outcome, statePath);
   };
 
@@ -158,17 +156,9 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
       <SetupWindow ctx={ctx} />,
       () => {
         // The window went (Done, Skip Setup, its close button, or its host died).
-        // Done and Skip Setup are the person's word. Otherwise wait a moment:
-        // the close button means skip, but a host that went with a logout or
-        // a crash does not, and by then this shell is gone too (or knows it is
-        // shutting down), so a session that ended mid-setup shows it again.
-        if (outcome) {
-          if (!shuttingDown) remember(outcome);
-        } else {
-          setTimeout(() => {
-            if (!shuttingDown) remember("skipped");
-          }, CLOSE_SETTLE_MS);
-        }
+        // Only Done and Skip Setup are the person's word; a closed window
+        // remembers nothing, so setup is offered again at the next login.
+        if (outcome && !shuttingDown) remember(outcome);
         if (session === current) session = null;
         current.stop();
       },

@@ -5,11 +5,12 @@
  * undoes anything.
  */
 
-import { CHECK } from "@dashi/ui";
-import { useSyncExternalStore } from "react";
+import { CHECK, ConfirmSheet, lightColors, TINTS } from "@dashi/ui";
+import { useState, useSyncExternalStore } from "react";
 import { CONTRAST } from "../control-center/glyphs.ts";
 import { wifiGlyph } from "../glyphs.ts";
 import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../settings-app/glyphs.ts";
+import { paneTitle } from "../settings-app/panes.ts";
 import { useWifi } from "../wifi/store.ts";
 import type { SetupContext } from "./context.ts";
 import { DOWNLOAD, PACKAGE } from "./extras/glyphs.ts";
@@ -30,16 +31,17 @@ import { WifiPage } from "./pages/wifi.tsx";
 /** The window's size. */
 export const SETUP_WINDOW = { width: 700, height: 640 } as const;
 
+/** Each page's tile: the same tint as its pane in System Settings (panes.ts), shiso only for Agents. */
 const GLYPHS: Partial<Record<PageId, { glyph: string; tint: string }>> = {
-  language: { glyph: GLOBE, tint: "#0a84ff" },
-  keyboard: { glyph: KEYBOARD, tint: "#8e8e93" },
-  wifi: { glyph: wifiGlyph(3), tint: "#0a84ff" },
-  timezone: { glyph: CLOCK, tint: "#ff9f0a" },
-  appearance: { glyph: CONTRAST, tint: "#5e5ce6" },
-  agents: { glyph: SPARKLE, tint: "#6E56CF" },
-  extras: { glyph: PACKAGE, tint: "#ff9f0a" },
-  installing: { glyph: DOWNLOAD, tint: "#0a84ff" },
-  done: { glyph: CHECK, tint: "#3E8A72" },
+  language: { glyph: GLOBE, tint: TINTS.mizu },
+  keyboard: { glyph: KEYBOARD, tint: TINTS.goma },
+  wifi: { glyph: wifiGlyph(3), tint: TINTS.mizu },
+  timezone: { glyph: CLOCK, tint: TINTS.miso },
+  appearance: { glyph: CONTRAST, tint: TINTS.nori },
+  agents: { glyph: SPARKLE, tint: lightColors.agent },
+  extras: { glyph: PACKAGE, tint: TINTS.kabocha },
+  installing: { glyph: DOWNLOAD, tint: TINTS.kabocha },
+  done: { glyph: CHECK, tint: TINTS.matcha },
 };
 
 function Page({ id, ctx }: { id: PageId; ctx: SetupContext }) {
@@ -74,13 +76,15 @@ export function SetupWindow({ ctx }: { ctx: SetupContext }) {
   const style = GLYPHS[view.page];
   const connected = wifi.current !== null;
   const installs = ctx.extras.hasWork();
+  // Skip Setup asks first, on a sheet over the page.
+  const [asking, setAsking] = useState(false);
   const continueLabel =
     view.page === "welcome"
       ? "Get Started"
       : view.last
         ? "Done"
         : view.page === "wifi" && !connected
-          ? "Skip"
+          ? "Not now"
           : view.page === "extras" && installs
             ? "Install"
             : view.page === "installing"
@@ -109,7 +113,19 @@ export function SetupWindow({ ctx }: { ctx: SetupContext }) {
       hideBack={view.page === "installing" && extras.run.phase === "running"}
       onContinue={onContinue}
       onBack={() => ctx.flow.back()}
-      onSkip={() => ctx.finish("skipped")}
+      onSkip={() => setAsking(true)}
+      overlay={
+        asking ? (
+          <ConfirmSheet
+            testID="setup-skip-sheet"
+            title="Skip setup?"
+            message={`What you chose so far stays. You can run Setup Assistant again from System Settings › ${paneTitle("about")}.`}
+            confirmLabel="Skip Setup"
+            onCancel={() => setAsking(false)}
+            onConfirm={() => ctx.finish("skipped")}
+          />
+        ) : undefined
+      }
     >
       <Page key={view.page} id={view.page} ctx={ctx} />
     </Frame>
