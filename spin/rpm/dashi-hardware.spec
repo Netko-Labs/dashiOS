@@ -95,7 +95,7 @@ echo "enable dashi-hardware-clean.service" >> %{buildroot}%{_presetdir}/80-dashi
 %{_presetdir}/80-dashi-hardware.preset
 
 %changelog
-* Wed Nov 05 2026 PejeDev <hi@peje.dev> - 0.4.0
+* Thu Nov 05 2026 PejeDev <hi@peje.dev> - 0.4.0
 - The hardware helper: firmware attributes, profiles, charge limit, fan
   curves, cpufreq, the SMU Curve Optimizer, the boot guard, and the model
   database. Thin tuned profiles and tuned-ppd's mapping to them.

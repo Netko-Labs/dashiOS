@@ -57,6 +57,6 @@ echo "enable cardwired.service" > %{buildroot}%{_presetdir}/80-dashi-graphics.pr
 %{_presetdir}/80-dashi-graphics.preset
 
 %changelog
-* Wed Nov 05 2026 PejeDev <hi@peje.dev> - 0.4.0
+* Thu Nov 05 2026 PejeDev <hi@peje.dev> - 0.4.0
 - Package cardwire as dashi-graphics; conflict with supergfxctl and
   switcheroo-control; installed by finish-install on two-GPU machines.
