@@ -12,7 +12,6 @@ const win = (appId: string, space: number, state: CompositorWindow["state"] = "n
   pid: null,
   focused: false,
   state,
-  zoomed: false,
   frame: null,
   titleBar: 0,
   space,

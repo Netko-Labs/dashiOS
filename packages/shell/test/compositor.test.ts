@@ -9,7 +9,6 @@ const window = {
   pid: 42,
   focused: true,
   state: "normal",
-  zoomed: false,
 };
 
 describe("window icons", () => {

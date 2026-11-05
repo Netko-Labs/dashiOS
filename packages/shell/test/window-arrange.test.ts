@@ -1,0 +1,330 @@
+import { describe, expect, test } from "bun:test";
+import { Arranger } from "../src/arrange.ts";
+import { type Compositor, type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
+import { carryFrame, centerFrame, dragZones, frameUnderPointer, type Rect, TILES, tileFrame } from "../src/layout.ts";
+import { arrowStep, screenToward } from "../src/tiling.ts";
+
+/** The VM's screen: 1646 × 937 points, the menu bar (28) and the Dock (65 + 6) leaving 838 between them. */
+const SCREEN: Rect = { x: 0, y: 0, width: 1646, height: 937 };
+const USABLE: Rect = { x: 0, y: 28, width: 1646, height: 838 };
+const rect = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
+
+describe("tile frames", () => {
+  test("halves and quarters keep a 6-point gap; Fill is the whole usable area", () => {
+    expect(tileFrame("fill", USABLE)).toEqual(USABLE);
+    expect(tileFrame("left", USABLE)).toEqual(rect(6, 34, 814, 826));
+    expect(tileFrame("right", USABLE)).toEqual(rect(826, 34, 814, 826));
+    expect(tileFrame("top", USABLE)).toEqual(rect(6, 34, 1634, 410));
+    expect(tileFrame("bottom", USABLE)).toEqual(rect(6, 450, 1634, 410));
+    expect(tileFrame("top-left", USABLE)).toEqual(rect(6, 34, 814, 410));
+    expect(tileFrame("top-right", USABLE)).toEqual(rect(826, 34, 814, 410));
+    expect(tileFrame("bottom-left", USABLE)).toEqual(rect(6, 450, 814, 410));
+    expect(tileFrame("bottom-right", USABLE)).toEqual(rect(826, 450, 814, 410));
+  });
+
+  test("every tile stays inside the usable area", () => {
+    for (const tile of TILES) {
+      const frame = tileFrame(tile, USABLE);
+      expect(frame.x).toBeGreaterThanOrEqual(USABLE.x);
+      expect(frame.y).toBeGreaterThanOrEqual(USABLE.y);
+      expect(frame.x + frame.width).toBeLessThanOrEqual(USABLE.x + USABLE.width);
+      expect(frame.y + frame.height).toBeLessThanOrEqual(USABLE.y + USABLE.height);
+    }
+  });
+
+  test("Center keeps the size, centered, and shrinks only what does not fit", () => {
+    expect(centerFrame({ width: 800, height: 600 }, USABLE)).toEqual(rect(423, 147, 800, 600));
+    expect(centerFrame({ width: 2000, height: 600 }, USABLE)).toEqual(rect(0, 147, 1646, 600));
+  });
+
+  test("dragged out of a tile, the window keeps the pressed point under the pointer", () => {
+    // Pressed at the middle of a left half's title bar: the own size is centered on the pointer.
+    expect(frameUnderPointer(rect(6, 34, 814, 826), { width: 600, height: 400 }, { x: 413, y: 44 })).toEqual(rect(113, 34, 600, 400));
+    // Pressed near Fill's left end: the window's left end stays near the pointer.
+    expect(frameUnderPointer(rect(0, 28, 1646, 838), { width: 600, height: 400 }, { x: 100, y: 40 })).toEqual(rect(64, 28, 600, 400));
+  });
+
+  test("a frame carried to another screen keeps its place there", () => {
+    const second = rect(1646, 0, 1280, 800);
+    expect(carryFrame(rect(100, 100, 800, 600), USABLE, second)).toEqual(rect(1746, 72, 800, 600));
+    // Too big for the smaller screen: shrunk to fit.
+    expect(carryFrame(rect(100, 100, 1500, 600), USABLE, second).width).toBe(1280);
+  });
+
+  test("drag zones: corners give quarters, sides halves, the menu bar Fill", () => {
+    const zones = dragZones({ name: "Virtual-1", frame: SCREEN, usable: USABLE, scale: 1 });
+    expect(zones.map((zone) => zone.tile)).toEqual(["top-left", "bottom-left", "left", "top-right", "bottom-right", "right", "fill"]);
+    expect(zones.find((zone) => zone.tile === "fill")?.frame).toEqual(USABLE);
+  });
+});
+
+describe("the ⌃❖ arrows", () => {
+  test("from its own frame or Fill, an arrow is the half on that side", () => {
+    expect(arrowStep(null, "left")).toEqual({ kind: "tile", tile: "left" });
+    expect(arrowStep(null, "up")).toEqual({ kind: "tile", tile: "top" });
+    expect(arrowStep("fill", "down")).toEqual({ kind: "tile", tile: "bottom" });
+    expect(arrowStep("fill", "right")).toEqual({ kind: "tile", tile: "right" });
+  });
+
+  test("from a half: at right angles a quarter, the opposite way back, the same way the next screen", () => {
+    expect(arrowStep("left", "up")).toEqual({ kind: "tile", tile: "top-left" });
+    expect(arrowStep("left", "down")).toEqual({ kind: "tile", tile: "bottom-left" });
+    expect(arrowStep("right", "up")).toEqual({ kind: "tile", tile: "top-right" });
+    expect(arrowStep("top", "left")).toEqual({ kind: "tile", tile: "top-left" });
+    expect(arrowStep("bottom", "right")).toEqual({ kind: "tile", tile: "bottom-right" });
+    expect(arrowStep("left", "right")).toEqual({ kind: "restore" });
+    expect(arrowStep("top", "down")).toEqual({ kind: "restore" });
+    expect(arrowStep("left", "left")).toEqual({ kind: "next-screen", tile: "left" });
+    expect(arrowStep("bottom", "down")).toEqual({ kind: "next-screen", tile: "bottom" });
+  });
+
+  test("from a quarter: to the neighbouring quarter, or past the edge to the next screen", () => {
+    expect(arrowStep("top-left", "right")).toEqual({ kind: "tile", tile: "top-right" });
+    expect(arrowStep("top-left", "down")).toEqual({ kind: "tile", tile: "bottom-left" });
+    expect(arrowStep("bottom-right", "up")).toEqual({ kind: "tile", tile: "top-right" });
+    expect(arrowStep("top-left", "left")).toEqual({ kind: "next-screen", tile: "top-left" });
+    expect(arrowStep("top-left", "up")).toEqual({ kind: "next-screen", tile: "top-left" });
+  });
+
+  test("the next screen is the nearest wholly on that side; none past the last", () => {
+    const left = { name: "a", frame: rect(-1280, 0, 1280, 800) };
+    const middle = { name: "b", frame: SCREEN };
+    const right = { name: "c", frame: rect(1646, 0, 1920, 1080) };
+    const farRight = { name: "d", frame: rect(3566, 0, 1920, 1080) };
+    const screens = [left, middle, right, farRight];
+    expect(screenToward(SCREEN, screens, "left")).toBe(left);
+    expect(screenToward(SCREEN, screens, "right")).toBe(right);
+    expect(screenToward(SCREEN, screens, "up")).toBeNull();
+    expect(screenToward(SCREEN, [middle], "right")).toBeNull();
+  });
+});
+
+/** A compositor holding `windows`, carrying out `frame` and `fullscreen`, and keeping what it was asked. */
+function fake(
+  windows: CompositorWindow[],
+  outputs: Array<{ name: string; frame: Rect; usable: Rect }> = [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }],
+) {
+  const requests: Array<[string, Record<string, unknown>]> = [];
+  let listener: ((event: CompositorEvent) => void) | null = null;
+  const compositor = {
+    on: (each: (event: CompositorEvent) => void) => {
+      listener = each;
+      return () => {
+        listener = null;
+      };
+    },
+    request: async (method: string, params: Record<string, unknown> = {}) => {
+      requests.push([method, params]);
+      if (method === "outputs") return { outputs: outputs.map((output) => ({ ...output, scale: 1 })) };
+      const window = windows.find((candidate) => candidate.id === params.window);
+      if (window && method === "frame") window.frame = { x: Number(params.x), y: Number(params.y), width: Number(params.width), height: Number(params.height) };
+      if (window && method === "fullscreen") window.fullscreen = params.on === true;
+      return {};
+    },
+    windows: async () => windows.map((window) => ({ ...window })),
+  } as unknown as Compositor;
+  const frames = () => requests.filter(([method]) => method === "frame" || method === "fullscreen");
+  const emit = async (event: CompositorEvent) => {
+    listener?.(event);
+    for (let tick = 0; tick < 5; tick++) await new Promise((done) => setTimeout(done, 0));
+  };
+  return { compositor, requests, frames, emit };
+}
+
+const OWN = rect(300, 200, 800, 600);
+const files = (): CompositorWindow => ({
+  id: 7,
+  appId: "dev.dashi.files",
+  title: "Files",
+  pid: 9,
+  focused: true,
+  state: "normal",
+  frame: { ...OWN },
+  titleBar: 0,
+});
+
+async function started(window = files(), outputs?: Parameters<typeof fake>[1]) {
+  const world = fake([window], outputs);
+  const arranger = new Arranger(world.compositor);
+  await arranger.start();
+  world.requests.length = 0;
+  return { ...world, arranger, window };
+}
+
+describe("the square and Fill", () => {
+  test("a click fills, telling the app it is maximized; a second click gives its own frame back", async () => {
+    const { arranger, frames } = await started();
+    await arranger.control(7, false);
+    expect(arranger.arrangement(7)).toBe("fill");
+    await arranger.control(7, false);
+    expect(arranger.arrangement(7)).toBeNull();
+    expect(frames()).toEqual([
+      ["frame", { window: 7, ...USABLE, maximized: true }],
+      ["frame", { window: 7, ...OWN }],
+    ]);
+  });
+
+  test("a click on a tiled window gives its own frame back, not a smaller one (bug 1)", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrow(7, "left");
+    await arranger.control(7, false);
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("⌥ and the square is full screen; on a full-screen window the square leaves it", async () => {
+    const { arranger, frames, window } = await started();
+    await arranger.control(7, true);
+    expect(frames()).toEqual([["fullscreen", { window: 7, on: true }]]);
+    expect(window.fullscreen).toBe(true);
+    await arranger.control(7, false);
+    expect(frames().at(-1)).toEqual(["fullscreen", { window: 7, on: false }]);
+  });
+
+  test("the title bar's double-click does what the square does", async () => {
+    const { emit, frames, arranger } = await started();
+    await emit({ event: "window-control", window: 7, control: "zoom", alt: false, double: true });
+    expect(arranger.arrangement(7)).toBe("fill");
+    expect(frames()).toEqual([["frame", { window: 7, ...USABLE, maximized: true }]]);
+  });
+
+  test("an app's own maximize fills, and unmaximize goes back", async () => {
+    const { emit, frames } = await started();
+    await emit({ event: "zoom", window: 7, on: true });
+    await emit({ event: "zoom", window: 7, on: false });
+    expect(frames()).toEqual([
+      ["frame", { window: 7, ...USABLE, maximized: true }],
+      ["frame", { window: 7, ...OWN }],
+    ]);
+  });
+});
+
+describe("chaining the arrows", () => {
+  test("left, then up is the top-left quarter; back goes to the frame from before the first", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrow(7, "left");
+    await arranger.arrow(7, "up");
+    expect(arranger.arrangement(7)).toBe("top-left");
+    await arranger.arrange(7, "restore");
+    expect(frames()).toEqual([
+      ["frame", { window: 7, ...rect(6, 34, 814, 826) }],
+      ["frame", { window: 7, ...rect(6, 34, 814, 410) }],
+      ["frame", { window: 7, ...OWN }],
+    ]);
+  });
+
+  test("the opposite arrow from a half is its own size; the same arrow on one screen does nothing", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrow(7, "left");
+    await arranger.arrow(7, "left");
+    expect(frames()).toHaveLength(1);
+    await arranger.arrow(7, "right");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+    expect(arranger.arrangement(7)).toBeNull();
+  });
+
+  test("the same arrow again moves the half to the next screen, and back is on that screen", async () => {
+    const second = { name: "HDMI-A-1", frame: rect(1646, 0, 1920, 1080), usable: rect(1646, 28, 1920, 1052) };
+    const { arranger, frames } = await started(files(), [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }, second]);
+    await arranger.arrow(7, "right");
+    await arranger.arrow(7, "right");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("right", second.usable) }]);
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(1946, 200, 800, 600) }]);
+  });
+
+  test("Center puts its own size in the middle and ends the arrangement", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrange(7, "fill");
+    await arranger.arrange(7, "center");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(423, 147, 800, 600) }]);
+    expect(arranger.arrangement(7)).toBeNull();
+  });
+
+  test("back with nothing to go back to does nothing", async () => {
+    const { arranger, frames } = await started();
+    await arranger.arrange(7, "restore");
+    expect(frames()).toEqual([]);
+  });
+
+  test("a full-screen window is not tiled", async () => {
+    const window = { ...files(), fullscreen: true };
+    const { arranger, frames } = await started(window);
+    await arranger.arrow(7, "left");
+    await arranger.arrange(7, "fill");
+    expect(frames()).toEqual([]);
+  });
+});
+
+describe("the person's drags and resizes", () => {
+  test("dragging a tiled window gives its own size back under the pointer, and forgets the tile (bug 2)", async () => {
+    const { arranger, emit, frames } = await started();
+    await arranger.arrow(7, "left");
+    await emit({ event: "window-grab", window: 7, kind: "move", frame: rect(6, 34, 814, 826), pointer: { x: 413, y: 44 } });
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(13, 34, 800, 600) }]);
+    expect(arranger.arrangement(7)).toBeNull();
+  });
+
+  test("a resize by the person forgets the arrangement, and asks nothing", async () => {
+    const { arranger, emit, frames } = await started();
+    await arranger.arrange(7, "fill");
+    await emit({ event: "window-grab", window: 7, kind: "resize", frame: USABLE, pointer: { x: 1646, y: 400 } });
+    expect(arranger.arrangement(7)).toBeNull();
+    expect(frames()).toHaveLength(1);
+  });
+
+  test("a drop on the menu bar fills; back is where the drag began", async () => {
+    const { arranger, emit, frames, window } = await started();
+    await emit({ event: "window-grab", window: 7, kind: "move", frame: { ...OWN }, pointer: { x: 500, y: 210 } });
+    window.frame = rect(400, 20, 800, 600);
+    const zone = dragZones({ name: "Virtual-1", frame: SCREEN, usable: USABLE, scale: 1 }).findIndex((each) => each.tile === "fill");
+    await emit({ event: "window-drop", window: 7, zone, frame: USABLE });
+    expect(arranger.arrangement(7)).toBe("fill");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...USABLE, maximized: true }]);
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("a drop naming a zone that has changed is ignored", async () => {
+    const { arranger, emit, frames } = await started();
+    await emit({ event: "window-drop", window: 7, zone: 0, frame: rect(1, 2, 3, 4) });
+    expect(arranger.arrangement(7)).toBeNull();
+    expect(frames()).toEqual([]);
+  });
+
+  test("a closed window is forgotten", async () => {
+    const { arranger, emit } = await started();
+    await arranger.arrange(7, "left");
+    await emit({ event: "window-closed", id: 7 });
+    expect(arranger.arrangement(7)).toBeNull();
+  });
+});
+
+describe("the events", () => {
+  test("window-control, window-grab, and window-drop are parsed; bad ones are not", () => {
+    expect(parseEvent({ event: "window-control", window: 3, control: "zoom", alt: true, double: false })).toEqual({
+      event: "window-control",
+      window: 3,
+      control: "zoom",
+      alt: true,
+      double: false,
+    });
+    expect(parseEvent({ event: "window-control", window: 3, control: "close" })).toBeNull();
+    expect(parseEvent({ event: "window-grab", window: 3, kind: "move", frame: { x: 1, y: 2, width: 3, height: 4 }, pointer: { x: 5, y: 6 } })).toEqual({
+      event: "window-grab",
+      window: 3,
+      kind: "move",
+      frame: { x: 1, y: 2, width: 3, height: 4 },
+      pointer: { x: 5, y: 6 },
+    });
+    expect(parseEvent({ event: "window-grab", window: 3, kind: "spin", frame: { x: 1, y: 2, width: 3, height: 4 }, pointer: { x: 5, y: 6 } })).toBeNull();
+    expect(parseEvent({ event: "window-drop", window: 3, zone: 2, frame: { x: 1, y: 2, width: 3, height: 4 } })).toEqual({
+      event: "window-drop",
+      window: 3,
+      zone: 2,
+      frame: { x: 1, y: 2, width: 3, height: 4 },
+    });
+    expect(parseEvent({ event: "window-drop", window: 3, zone: -1, frame: { x: 1, y: 2, width: 3, height: 4 } })).toBeNull();
+    expect(parseEvent({ event: "zoom", window: 3, on: false })).toEqual({ event: "zoom", window: 3, on: false });
+    expect(parseEvent({ event: "zoom", window: 3 })).toEqual({ event: "zoom", window: 3 });
+  });
+});

@@ -12,7 +12,6 @@ const WINDOW = {
   pid: 10,
   focused: true,
   state: "normal",
-  zoomed: false,
   frame: { x: 0, y: 0, width: 9, height: 9 },
   titleBar: 0,
 };

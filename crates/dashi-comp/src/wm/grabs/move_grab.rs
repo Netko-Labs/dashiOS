@@ -2,8 +2,16 @@
 //!
 //! The held window (`Dashi::held`) goes along when the Space changes
 //! (spaces.rs); against a screen edge it starts a hold (edge_hold.rs).
+//! It stays put until the pointer has gone a few points from the press (a
+//! click, or the first press of a double-click, moves nothing); then the
+//! shell hears the drag began (`window-grab`) and may frame the window anew
+//! (a tiled one gets its own size back), and the grab holds it from there.
 
-use crate::{state::Dashi, wm::Shown};
+use crate::{
+    state::Dashi,
+    wm::{Shown, frame_of, rect_json},
+};
+use serde_json::json;
 use smithay::{
     desktop::Window,
     input::pointer::{
@@ -17,10 +25,21 @@ use smithay::{
     utils::{Logical, Point, Serial},
 };
 
+/// How far (logical points) the pointer goes from the press before the window moves.
+const DRAG_SLOP: f64 = 4.0;
+
 pub struct MoveSurfaceGrab {
     pub start_data: PointerGrabStartData<Dashi>,
     pub window: Window,
     pub initial_window_location: Point<i32, Logical>,
+    /// Past the slop: the window follows the pointer.
+    pub moving: bool,
+}
+
+/// Whether the pointer at `at` has gone far enough from `press` to be a drag.
+fn past_slop(press: Point<f64, Logical>, at: Point<f64, Logical>) -> bool {
+    let (dx, dy) = (at.x - press.x, at.y - press.y);
+    dx * dx + dy * dy >= DRAG_SLOP * DRAG_SLOP
 }
 
 impl Dashi {
@@ -38,10 +57,37 @@ impl Dashi {
             start_data,
             window,
             initial_window_location,
+            moving: false,
         };
         pointer.set_grab(self, grab, serial, Focus::Clear);
         // After set_grab: it unsets the grab it replaces, which lets go of what that held.
         self.held = held;
+        self.held_reframed = false;
+    }
+
+    /// The person began to move or resize `window` from `pointer`: the shell
+    /// hears it, with the frame the window had then (`window-grab`).
+    pub(crate) fn report_grab(
+        &mut self,
+        window: &Window,
+        kind: &str,
+        pointer: Point<f64, Logical>,
+    ) {
+        let (Some(id), Some(frame)) = (
+            self.windows.by_window(window).map(|entry| entry.id),
+            frame_of(self, window),
+        ) else {
+            return;
+        };
+        self.ipc.emit(
+            "window-grab",
+            json!({
+                "window": id,
+                "kind": kind,
+                "frame": rect_json(frame),
+                "pointer": { "x": pointer.x, "y": pointer.y },
+            }),
+        );
     }
 
     /// Whether the held window can still be moved: on screen, on the Space that shows.
@@ -65,9 +111,23 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
 
         // Minimized, closed, or sent to another Space while held: the drag is over.
         if !data.holds_on_screen(&self.window) {
-            data.drag_released(&self.window);
+            data.drag_cancelled();
             handle.unset_grab(self, data, event.serial, event.time, true);
             return;
+        }
+        if !self.moving {
+            if !past_slop(self.start_data.location, event.location) {
+                return;
+            }
+            self.moving = true;
+            data.report_grab(&self.window, "move", self.start_data.location);
+        }
+        // The shell framed it meanwhile (its own size back, placed for the
+        // pointer at the press): held from that frame on.
+        if std::mem::take(&mut data.held_reframed)
+            && let Some(location) = data.space.element_location(&self.window)
+        {
+            self.initial_window_location = location;
         }
         let delta = event.location - self.start_data.location;
         let new_location = self.initial_window_location.to_f64() + delta;
@@ -109,7 +169,11 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
 
         if !handle.current_pressed().contains(&BTN_LEFT) {
             // No more buttons are pressed, release the grab.
-            data.drag_released(&self.window);
+            if self.moving {
+                data.drag_released(&self.window);
+            } else {
+                data.drag_cancelled();
+            }
             handle.unset_grab(self, data, event.serial, event.time, true);
         }
     }
@@ -205,6 +269,21 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
 
     fn unset(&mut self, data: &mut Dashi) {
         data.held = None;
+        data.held_reframed = false;
         data.edge_hold.end();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_drag_starts_past_the_slop() {
+        let press = Point::from((100.0, 50.0));
+        assert!(!past_slop(press, Point::from((100.0, 50.0))));
+        assert!(!past_slop(press, Point::from((102.0, 52.0))));
+        assert!(past_slop(press, Point::from((104.0, 50.0))));
+        assert!(past_slop(press, Point::from((97.0, 47.0))));
     }
 }

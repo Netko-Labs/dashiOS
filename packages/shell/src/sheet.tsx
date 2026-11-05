@@ -11,8 +11,8 @@ import { Text, View } from "@mirinjs/metal";
 import type { PublishedMenus } from "./app-menus/protocol.ts";
 import { KeyCatcher } from "./overlay.tsx";
 
-/** The card's size; its height fits the longest column (MAX_ROWS rows). The surface adds a margin for the corners and shadow. */
-export const SHEET = { width: 720, height: 380 } as const;
+/** The card's size: five columns; its height fits the longest (MAX_ROWS rows). The surface adds a margin for the corners and shadow. */
+export const SHEET = { width: 860, height: 380 } as const;
 
 type Rows = ReadonlyArray<[string, string]>;
 
@@ -32,7 +32,7 @@ const WINDOW_KEYS: Rows = [
   ["Hide", "❖H"],
   ["Quit", "❖Q"],
 ];
-/** Rows a column holds at most: the System column's length, so the sheet never grows. */
+/** Rows a column holds at most, so the sheet never grows. */
 export const MAX_ROWS = 11;
 
 /**
@@ -86,12 +86,24 @@ const GROUPS: ReadonlyArray<[string, Rows]> = [
       ["Next window", "❖`"],
       ["Overview", "⌃↑"],
       ["Spaces", "⌃← ⌃→"],
-      ["Tile left", "⌃❖←"],
-      ["Tile right", "⌃❖→"],
-      ["Fill", "⌃❖↑"],
-      ["Restore", "⌃❖↓"],
+      ["Lock screen", "⌃❖Q"],
       ["Force Quit", "⌥❖Esc"],
       ["Dock hiding", "⌥❖D"],
+    ],
+  ],
+  [
+    // The arrangements (arrange.ts, tiling.ts): a quarter is a half, then an arrow at right angles.
+    "Windows",
+    [
+      ["Left half", "⌃❖←"],
+      ["Right half", "⌃❖→"],
+      ["Top half", "⌃❖↑"],
+      ["Bottom half", "⌃❖↓"],
+      ["Quarter", "⌃❖← ↑"],
+      ["Fill", "⌃❖↩"],
+      ["Center", "⌃❖C"],
+      ["Back", "⌃❖R"],
+      ["Full screen", "⌃❖F"],
     ],
   ],
 ];

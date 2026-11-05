@@ -39,8 +39,7 @@ them until the compositor side pins them down here.
 | `close` | `{window}` | `{}`; asks the client to close |
 | `minimize` | `{window}` | `{}` |
 | `hide` | `{window}` | `{}` |
-| `restore` | `{window}` | `{}`; back to the remembered frame |
-| `frame` | `{window, x, y, width, height, remember?: bool, maximized?: bool}` | `{}`; `remember` keeps the old frame for `restore` |
+| `frame` | `{window, x, y, width, height, maximized?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`) |
 | `place` | `{window, x, y}` | `{}`; answers `window-placing` |
 | `fullscreen` | `{window, on: bool}` | `{}` |
 | `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window |
@@ -49,7 +48,7 @@ them until the compositor side pins them down here.
 | `attach` | `{window, parent: int\|null, top?: int}` | `{}`; `window` becomes a sheet of `parent` (null: an ordinary window again): no title bar, centred under the parent's title bar (or `top` points, 0 to 512, below the top of the parent's frame: for a parent that draws its own title bar and toolbar, whose height only the shell can guess) and kept there, above it, on its Space, off screen with it; the keyboard goes to the sheet when the parent would get it, and a press inside the parent only brings the sheet forward. A window not yet placed is placed there (an answer to `window-placing`). A sheet whose parent closes becomes an ordinary window. Refused for a parent that is itself a sheet.; *see* `src/portal-host/sheets.ts` |
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
-"normal"|"minimized"|"hidden", zoomed, frame: Frame|null, titleBar: int,
+"normal"|"minimized"|"hidden", frame: Frame|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
 string|null, path: string|null}, toplevel?: string}`; `toplevel` is the
 window's ext-foreign-toplevel-list identifier (what a screen-share picker
@@ -81,7 +80,7 @@ answers with; absent until the list has it); `icon` is what the app gave
 | `keymap` | the bindings; *see* `src/keymap.ts` (`KEYMAP`) | `{}`; matching chords become `binding` events |
 | `bars` | the top-edge band for fullscreen menu bars; *see* `src/fullscreen.ts` | `{}`; `bars-edge` events |
 | `edges` | `{bottom: band, output?}` | the claim's answer; *see* `parseClaimAnswer`, `src/dock/edges.ts`; `edge` events |
-| `layout` | `{zones, dwellMs}`: drag-to-tile zones; *see* `dragZones`, `src/arrange.ts` | `{}` |
+| `layout` | `{zones: [{area, frame}], dwellMs}`: drag-to-tile zones; *see* `dragZones`, `src/arrange.ts` | `{}`; resting `dwellMs` in an `area` while dragging a window shows `frame`; letting go there is a `window-drop` (the compositor frames nothing itself) |
 | `gestures` | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events |
 | `idle` | `{timeouts: number[]}` (seconds) | `{}`; `idle` / `active` events |
 | `keyboard` | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
@@ -153,7 +152,10 @@ hidden) keep getting frame callbacks, so they stay live.
 | `window-placing` | `window: {id, appId, title, width, height, position?: {x, y}}`; answer with `place` or `frame` |
 | `window-attention` | `window` |
 | `window-space` | `window, space` |
-| `zoom` | `window` |
+| `zoom` | `window, on`: an app asked to be maximized (`on: true`, xdg `set_maximized`, X11 `_NET_WM_STATE`; Dashi's unified title bars ask so on a double-click) or not (`on: false`), or a taskbar did (wlr-foreign-toplevel). The shell decides (`src/arrange.ts`) |
+| `window-control` | `window, control: "zoom", alt, double`: a press on the square of a title bar dashi-comp draws (or of a unified window's lights), or a double-click on its title bar (`double: true`); `alt` is whether ⌥ was held. The compositor does nothing else with it: what it means (Fill, its own frame back, full screen) is the shell's |
+| `window-grab` | `window, kind: "move"\|"resize", frame, pointer: {x, y}`: the person began to move (a title bar drag or an app's `move`, once the pointer has gone 4 points from the press; until then the window stays put) or resize (the first motion) a window; `frame` is its frame then and `pointer` where the press was. A resize also ends the window's maximized state. The shell decides the rest (a tiled window dragged out gets its own size back: a `frame` the grab then holds) |
+| `window-drop` | `window, zone, frame`: a dragged window was let go while zone `zone` (its index in the last `layout`) showed its preview, `frame`. The shell frames it (`frame`) |
 | `fullscreen` | `window, on` |
 | `shortcut` | `name` |
 | `binding` | `name, window: int\|null, key?, shift?, ctrl?, alt?` |

@@ -10,7 +10,7 @@
  */
 
 import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange } from "../layout.ts";
 import { sameApp } from "../shortcuts.ts";
 import { type EditCommand, editChord } from "./keystrokes.ts";
 import type { MenuAction, PowerKind } from "./model.ts";
@@ -20,8 +20,7 @@ export interface ActionDeps {
   /** Null without dashi-comp: window rows do nothing. */
   compositor: Pick<Compositor, "request" | "windows"> | null;
   arranger: {
-    tile(window: number, tile: Tile): Promise<void>;
-    zoom(window: number): Promise<void>;
+    arrange(window: number, to: Arrange): Promise<void>;
     toggleFullscreen?(window: number): Promise<void>;
   } | null;
   /** Waits before typing into the window, so the menu's surface has let go of the keyboard; tests pass none. */
@@ -93,11 +92,8 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return request("minimize", action.window);
     case "focus":
       return request("focus", action.window);
-    case "zoom":
-      await deps.arranger?.zoom(action.window);
-      return;
     case "tile":
-      await deps.arranger?.tile(action.window, action.tile);
+      await deps.arranger?.arrange(action.window, action.tile);
       return;
     case "move-to-space":
       await deps.moveToSpace?.(action.window, action.space);

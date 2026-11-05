@@ -7,7 +7,7 @@
 import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Compositor } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange, Tile } from "../layout.ts";
 import { Atspi } from "./atspi/client.ts";
 import { Grants } from "./consent.ts";
 import { Hands } from "./desktop/hands.ts";
@@ -42,8 +42,10 @@ export interface AgentsOptions {
   compositor: Compositor;
   ui: AgentUi;
   store: AgentStore;
-  /** Snap a window into a tile (arrange.ts). */
-  tile(window: number, tile: Tile): Promise<void>;
+  /** Tile, fill, center, or give a window its own frame back (arrange.ts). */
+  tile(window: number, to: Arrange): Promise<void>;
+  /** How the shell arranged a window, or null at its own frame (arrange.ts). */
+  arrangement?(window: number): Tile | null;
   /** The stores and controllers tools reach besides windows (desktop/). */
   desktop: Desktop;
   /** The login sources sign-in uses (secrets/passwords.ts); none without. */
@@ -61,7 +63,16 @@ const readText = (path: string): string | null => {
   }
 };
 
-export function startAgents({ compositor, ui, store, tile, desktop, sources = () => [], vault = new Vault() }: AgentsOptions): Agents {
+export function startAgents({
+  compositor,
+  ui,
+  store,
+  tile,
+  arrangement = () => null,
+  desktop,
+  sources = () => [],
+  vault = new Vault(),
+}: AgentsOptions): Agents {
   const sessions = new Map<number, Session>();
   const publish = () => store.set([...sessions.values()].map((session) => session.info()));
   const lock = new LockWatch(compositor);
@@ -94,7 +105,7 @@ export function startAgents({ compositor, ui, store, tile, desktop, sources = ()
     isVault: isVaultWindow,
   });
   secrets.touched = (window) => mask.prompts.touched(window);
-  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, secrets };
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets };
   let nextId = 0;
 
   const stopSessions = (stopping: Session[]) => {

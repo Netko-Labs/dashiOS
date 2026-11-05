@@ -65,7 +65,7 @@ import { withSwitcher } from "./keymap.ts";
 import { currentKeymap } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
 import { type FileRow, LAUNCHER, Launcher } from "./launcher.tsx";
-import type { Tile } from "./layout.ts";
+import type { Arrange } from "./layout.ts";
 import { LockController } from "./lock/index.ts";
 import { MenuBar } from "./menubar.tsx";
 import { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
@@ -258,10 +258,11 @@ const stopSettings = compositor
     })
   : () => {};
 
-// Where windows open, tiles, drag zones, and zoom (layout.ts).
+// Where windows open, tiles, Fill, drag zones, and the square (arrange.ts, layout.ts).
 const arranger = compositor ? new Arranger(compositor) : null;
 const stopArranging = arranger ? await arranger.start() : () => {};
-const tile = (window: number, to: Tile) => arranger?.tile(window, to) ?? Promise.resolve();
+const tile = (window: number, to: Arrange) => arranger?.arrange(window, to) ?? Promise.resolve();
+const arrangement = (window: number) => arranger?.arrangement(window) ?? null;
 // The menu bar comes down over a full-screen window at the top edge (fullscreen.ts).
 const fullscreenBars = compositor ? new FullscreenBars(compositor, MENU_BAR_HEIGHT) : null;
 if (arranger) arranger.afterFullscreen = () => void fullscreenBars?.sync();
@@ -417,6 +418,7 @@ const agents = compositor
       vault: passwords.vault,
       store: agentStore,
       tile,
+      arrangement,
       desktop: {
         notifications: notifications.store,
         flags,
@@ -932,6 +934,7 @@ const stopShortcuts = compositor
       ...(spaces ? { spaces: spaces.controller } : {}),
       switcher: switcherController ?? new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
       tile,
+      arrow: (window, arrow) => arranger?.arrow(window, arrow) ?? Promise.resolve(),
       fullscreen: (window) => arranger?.toggleFullscreen(window) ?? Promise.resolve(),
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),

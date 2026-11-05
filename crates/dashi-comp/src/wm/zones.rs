@@ -1,11 +1,12 @@
 //! Drag-to-tile (`layout {zones, dwellMs}`): while a window is dragged, the
 //! pointer resting in a zone the shell drew (a screen edge, a corner, the
-//! menu bar) shows where the window would go; letting go there tiles it.
-//! Where the zones are and what each tiles to is the shell's (arrange.ts).
+//! menu bar) shows where the window would go; letting go there tells the
+//! shell (`window-drop`), which frames it. Where the zones are and what each
+//! tiles to is the shell's (arrange.ts).
 
 use std::time::{Duration, Instant};
 
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 use smithay::{
     desktop::Window,
     reexports::calloop::timer::{TimeoutAction, Timer},
@@ -103,16 +104,27 @@ impl Dashi {
         );
     }
 
-    /// The drag ended: over a shown preview, the window takes that frame (and can be restored).
+    /// The drag ended: over a shown preview, the shell hears which zone it
+    /// was let go in (`window-drop`) and frames the window as it decides.
     pub(crate) fn drag_released(&mut self, window: &Window) {
         let preview = self.zones.preview.take();
-        self.zones.current = None;
-        let (Some(frame), Some(id)) = (preview, self.windows.by_window(window).map(|e| e.id))
-        else {
+        let current = self.zones.current.take();
+        let (Some(frame), Some((zone, _)), Some(id)) = (
+            preview,
+            current,
+            self.windows.by_window(window).map(|e| e.id),
+        ) else {
             return;
         };
-        if let Err(error) = self.frame_window(id, frame, true, false) {
-            tracing::debug!(%error, "tiling a dragged window");
-        }
+        self.ipc.emit(
+            "window-drop",
+            json!({ "window": id, "zone": zone, "frame": crate::wm::rect_json(frame) }),
+        );
+    }
+
+    /// The drag ended without a drop (a click, or the window left the screen): no preview, no tile.
+    pub(crate) fn drag_cancelled(&mut self) {
+        self.zones.preview = None;
+        self.zones.current = None;
     }
 }

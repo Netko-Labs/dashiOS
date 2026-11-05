@@ -1,7 +1,8 @@
 //! Presses on what dashi-comp draws round a window: the traffic lights (close,
-//! minimize, full screen or, with ⌥, zoom) and the title bar (drag to move,
-//! double-click to zoom). They never reach the client. Full screen and zoom
-//! are the shell's to decide: the compositor only tells it (`fullscreen`, `zoom`).
+//! minimize, the square) and the title bar (drag to move, double-click). They
+//! never reach the client. What the square and a double-click mean (Fill, its
+//! own size again, full screen) is the shell's to decide: the compositor only
+//! reports them, with ⌥ (`window-control`).
 
 use std::time::{Duration, Instant};
 
@@ -90,16 +91,13 @@ impl Dashi {
             .seat
             .get_keyboard()
             .is_some_and(|keyboard| keyboard.modifier_state().alt);
+        let control =
+            |double: bool| json!({ "window": id, "control": "zoom", "alt": alt, "double": double });
         let result = match part {
             Part::Close => self.close_window(id),
             Part::Minimize => self.park_window(id, Shown::Minimized),
-            Part::Zoom if alt => {
-                self.ipc.emit("zoom", json!({ "window": id }));
-                Ok(())
-            }
             Part::Zoom => {
-                self.ipc
-                    .emit("fullscreen", json!({ "window": id, "on": true }));
+                self.ipc.emit("window-control", control(false));
                 Ok(())
             }
             Part::Bar => {
@@ -109,7 +107,7 @@ impl Dashi {
                     .is_some_and(|(last, at)| last == id && at.elapsed() < DOUBLE_CLICK);
                 let focused = self.focus_window(id);
                 if double {
-                    self.ipc.emit("zoom", json!({ "window": id }));
+                    self.ipc.emit("window-control", control(true));
                 } else {
                     self.last_bar_press = Some((id, Instant::now()));
                     self.start_move(window, pos, button, serial);

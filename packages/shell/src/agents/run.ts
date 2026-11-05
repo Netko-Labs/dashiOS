@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { kindOf } from "../../apps/preview/kinds.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
+import type { Tile } from "../layout.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
 import { recordScreen } from "./desktop/record.ts";
@@ -25,7 +26,7 @@ const LAUNCH_WAIT_MS = 10_000;
 const owns = (entry: Entry, appId: string) =>
   appId !== "" && [entry.id, entry.wmClass].some((id) => id !== undefined && id.toLowerCase() === appId.toLowerCase());
 
-function describe(window: CompositorWindow, entries: readonly Entry[]) {
+function describe(window: CompositorWindow, entries: readonly Entry[], arrangement: Tile | null) {
   return {
     id: `w${window.id}`,
     appId: window.appId,
@@ -34,7 +35,7 @@ function describe(window: CompositorWindow, entries: readonly Entry[]) {
     pid: window.pid,
     focused: window.focused,
     state: window.state,
-    zoomed: window.zoomed,
+    arrangement,
     fullscreen: window.fullscreen ?? false,
     frame: window.frame,
     // Agents count Spaces from 1, as people see them.
@@ -49,7 +50,7 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       ctx.status("Looking at your windows");
       // Hidden entries too: they only name windows (T3 Code's window answers to a NoDisplay one).
       const entries = loadEntries({ withHidden: true });
-      return json({ windows: (await compositor.windows()).map((window) => describe(window, entries)) });
+      return json({ windows: (await compositor.windows()).map((window) => describe(window, entries, ctx.arrangement(window.id))) });
     }
     case "list_apps": {
       ctx.status("Looking at your apps");
@@ -307,6 +308,6 @@ async function startAndWait(entry: Entry, entries: readonly Entry[], ctx: RunCon
     );
   }
   // Without "see", the new window is only an id and the app the agent asked for.
-  const described = ctx.mayName() ? describe(window, entries) : { id: `w${window.id}`, app: entry.name };
+  const described = ctx.mayName() ? describe(window, entries, null) : { id: `w${window.id}`, app: entry.name };
   return text(`${entry.name} is open: ${JSON.stringify(described)}`, { window: described });
 }
