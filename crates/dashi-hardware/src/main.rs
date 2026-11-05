@@ -3,6 +3,7 @@
 mod fans;
 mod knobs;
 mod model;
+mod smu;
 mod sysfs;
 
 fn main() {

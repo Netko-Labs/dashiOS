@@ -11,6 +11,7 @@ use std::io;
 
 use serde_json::{Map, json};
 
+pub(crate) use cpu::cpus as cpu_names;
 pub(crate) use value::{Kind, Value};
 
 use crate::model::Model;
