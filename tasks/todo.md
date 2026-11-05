@@ -27,7 +27,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 ## 3 · Graphics switching
 - [x] `dashi-graphics.spec` (cardwire from Terra), finish-install adds `bpf` to `lsm=` and installs it on two-GPU machines
 - [x] `src/graphics/`: cardwire client, Automatic policy, holders, "Using the Graphics Card", the Graphics tile and pane (MUX), the lost-card state
-- [ ] cardwire's own battery auto-switch must be off so it doesn't fight Automatic
+- [x] cardwire's own battery and external-screen switching turned off by the shell (Config properties), so Automatic is the one decider
 - [ ] Laptop: Integrated on battery with the card in D3cold, Hybrid plugged in, Steam through Xwayland
 
 ## 4 · Desktops, moving windows, the switcher

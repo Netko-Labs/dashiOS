@@ -1,7 +1,7 @@
 {
   "name": "@dashi/greeter",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Dashi's login screen: greetd's greeter, drawn by mirin Metal with @dashi/ui.",
   "scripts": {

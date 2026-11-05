@@ -121,6 +121,10 @@ fi
 %{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
+* Thu Nov 05 2026 PejeDev <hi@peje.dev> - 44-0.4.0
+- Dashi 0.4 beta.
+- tuned-ppd for power modes, in place of power-profiles-daemon.
+
 * Mon Nov 02 2026 PejeDev <hi@peje.dev> - 44-0.3.0
 - Dashi 0.3 beta.
 - libheif-ffmpeg in place of libheif-freeworld, which held libheif's updates back.
