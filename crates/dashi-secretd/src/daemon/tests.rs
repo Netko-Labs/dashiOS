@@ -229,6 +229,8 @@ fn an_agent_is_refused_everything() {
         json!({ "op": "app-secret", "appId": "org.example.App" }),
         json!({ "op": "verify", "password": PASSWORD }),
         json!({ "op": "lock-self" }),
+        json!({ "op": "tokens" }),
+        json!({ "op": "token", "name": "github", "host": "api.github.com" }),
     ] {
         let error = ask(&mut d, &agent(), request.clone()).unwrap_err();
         assert!(error.contains("agents may not"), "{request}: {error}");
