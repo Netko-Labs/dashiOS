@@ -15,6 +15,8 @@ export const FIELD = { height: 48, text: 17 } as const;
 
 export interface FieldProps {
   value: string;
+  /** Bumped when the launcher took a key for itself (Space flipping a switch), so the field shows `value` again. */
+  revision?: number;
   placeholder: string;
   /** What the rows act on, in a chip before the field. */
   chip?: { title: string; icon?: RowIcon };
@@ -33,7 +35,7 @@ function ChipIcon({ icon }: { icon: RowIcon }) {
   return null;
 }
 
-export function Field({ value, placeholder, chip, hints, notice, onChangeText, onSubmit, onKey }: FieldProps) {
+export function Field({ value, revision, placeholder, chip, hints, notice, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: FIELD.height }}>
@@ -64,6 +66,7 @@ export function Field({ value, placeholder, chip, hints, notice, onChangeText, o
         <TextInput
           testID="launcher:field"
           value={value}
+          {...(revision === undefined ? {} : { valueRevision: revision })}
           placeholder={placeholder}
           autoFocus
           onChangeText={onChangeText}

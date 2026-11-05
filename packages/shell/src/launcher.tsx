@@ -289,6 +289,8 @@ export function Launcher(props: LauncherProps) {
     setAsking(null);
   };
 
+  // Bumped to give the field its text back after a key the launcher took (launcher/field.tsx).
+  const [fieldRevision, setFieldRevision] = useState(0);
   const restart = (next: string) => {
     typedAt.current = timingNow();
     setQuery(next);
@@ -524,7 +526,11 @@ export function Launcher(props: LauncherProps) {
     // Space on a row with a switch flips it, unless it is the next letter of the row's name.
     if (next === `${query} ` && selectedRow && spaceFlips(selectedRow, query)) {
       const flip = verbsFor(selectedRow, ctx).find((each) => each.key === KEYS.flip);
-      if (flip) return perform(flip.effect, selectedRow);
+      if (flip) {
+        // The field already shows the space; take it back, so the next letter follows the words.
+        setFieldRevision((revision) => revision + 1);
+        return perform(flip.effect, selectedRow);
+      }
     }
     restart(next);
   };
@@ -682,6 +688,7 @@ export function Launcher(props: LauncherProps) {
       >
         <Field
           value={mode.kind === "search" ? query : filter}
+          revision={fieldRevision}
           placeholder={placeholder}
           {...(chip ? { chip } : {})}
           hints={hints}
