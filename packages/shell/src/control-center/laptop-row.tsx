@@ -67,25 +67,37 @@ function LaptopTile({
       testID={testID}
       onPointer={(event) => press(event.phase)}
       onContextMenu={onOpen}
-      style={{ flex: 1, minWidth: 0, height: 76, flexDirection: "column", gap: 4, padding: 9, borderRadius: 12, backgroundColor: colors.tile }}
+      // The other tiles' shape (panel.tsx): the circle, then the label and what it is set to.
+      style={{
+        flex: 1,
+        minWidth: 0,
+        height: 56,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingLeft: 10,
+        paddingRight: 6,
+        borderRadius: 12,
+        backgroundColor: colors.tile,
+      }}
     >
       <View
         style={{
-          width: 26,
-          height: 26,
-          borderRadius: 13,
+          width: 32,
+          height: 32,
+          borderRadius: 16,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: on ? colors.selection : colors.track,
         }}
       >
-        <Svg markup={glyph} size={15} color={on ? "#ffffff" : colors.text} />
+        <Svg markup={glyph} size={17} color={on ? "#ffffff" : colors.text} />
       </View>
-      <View style={{ flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>
+      <View style={{ flex: 1, flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
           {label}
         </Text>
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
           {detail}
         </Text>
       </View>
