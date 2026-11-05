@@ -48,6 +48,10 @@ pub(crate) struct Entry {
     pub parked_at: Option<Point<i32, Logical>>,
     /// The client was last told it is maximized (`frame` with `maximized`: the shell's Fill).
     pub maximized: bool,
+    /// The shell framed it as a tile (`frame` with `tiled`), until another
+    /// frame, Fill, full screen, or the person moves or resizes it: its
+    /// depth is a tile's (render/depth/).
+    pub tiled: bool,
     /// How it is framed: by the client, by dashi-comp's title bar, or unified.
     pub decor: Decor,
     /// The app asked for the unified style (dashi-chrome-v1).
@@ -74,6 +78,8 @@ pub(crate) struct Entry {
     pub sheet_top: Option<i32>,
     /// When it last got the person's keyboard (a count, higher is later; 0 never).
     pub used: u64,
+    /// Its shadow and edge as last drawn (render/depth/).
+    pub depth: crate::render::depth::Cache,
 }
 
 pub(crate) struct Windows {
@@ -106,6 +112,7 @@ impl Windows {
             shown: Shown::Normal,
             parked_at: None,
             maximized: false,
+            tiled: false,
             decor: Decor::None,
             unified: false,
             title_image: None,
@@ -118,6 +125,7 @@ impl Windows {
             sheet_of: None,
             sheet_top: None,
             used: 0,
+            depth: Default::default(),
         });
         id
     }

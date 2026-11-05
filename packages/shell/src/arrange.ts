@@ -174,9 +174,13 @@ export class Arranger {
     if (fitted.width !== window.width || fitted.height !== window.height) await this.frame(window.id, fitted);
   }
 
-  /** Ask for a frame (Fill also tells the app it is maximized), and hold to its size until the app has drawn it. */
+  /**
+   * Ask for a frame (Fill also tells the app it is maximized; a tile says so for its
+   * shadow, appearance/window-style.ts). Its size shows in `configuring` until the app has drawn it.
+   */
   private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
-    await this.compositor.request("frame", { window: id, ...frame, ...(tile === "fill" ? { maximized: true } : {}) });
+    const kind = tile === "fill" ? { maximized: true } : tile ? { tiled: true } : {};
+    await this.compositor.request("frame", { window: id, ...frame, ...kind });
   }
 
   /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */

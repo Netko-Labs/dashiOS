@@ -18,6 +18,7 @@
  *                   "repeatRate": 30, "repeatDelay": 250 },
  *     "idle": { "blankAfterSeconds": 300 },
  *     "appearance": { "cornerRadius": "medium", "reduceMotion": false,
+ *                     "highlightActiveWindow": false,
  *                     "pointerSize": 24, "x11Apps": "sharp",
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
@@ -39,7 +40,8 @@
  * Space switches there (true) or brings the window here (spaces/).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
  * round every window is (corners.ts). `reduceMotion` turns the compositor's
- * window animations off. `pointerSize` is 24 (the default), 32, 40, or 48
+ * window animations off. `highlightActiveWindow` (default false) rings the
+ * window with the keyboard in the accent color (appearance/window-style.ts). `pointerSize` is 24 (the default), 32, 40, or 48
  * points (pointer.ts); `x11Apps` is "sharp" (the default) or "stretched",
  * how X11 apps meet a scaled screen (xwayland-scale.ts). `wallpaper.path` is a bundled wallpaper's id or an
  * absolute path to a PNG or JPEG (none is the built-in gradient);
@@ -101,7 +103,14 @@ export interface Settings {
   idle: { blankAfterSeconds: number; sleepAfterSeconds: number };
   /** The status area (settings-app/store.ts `MenuBarSettings`); every key has a value. */
   menuBar: { batteryPercent: boolean; sound: boolean };
-  appearance: { cornerRadius: CornerName; reduceMotion: boolean; pointerSize: number; x11Apps: X11Scaling; wallpaper: WallpaperChoice };
+  appearance: {
+    cornerRadius: CornerName;
+    reduceMotion: boolean;
+    highlightActiveWindow: boolean;
+    pointerSize: number;
+    x11Apps: X11Scaling;
+    wallpaper: WallpaperChoice;
+  };
   /** The Dock (dock/settings.ts); every key has a value. */
   dock: DockSettings;
   /** Spaces (spaces/): no count leaves them as they are. */
@@ -127,6 +136,7 @@ export function defaults(): Settings {
     appearance: {
       cornerRadius: DEFAULT_CORNERS,
       reduceMotion: false,
+      highlightActiveWindow: false,
       pointerSize: DEFAULT_POINTER_SIZE,
       x11Apps: DEFAULT_X11_SCALING,
       wallpaper: { mode: DEFAULT_WALLPAPER_MODE },
@@ -291,6 +301,7 @@ export function parseSettings(value: unknown): Loaded {
   const appearance = new Section("appearance", value.appearance, problems).only([
     "cornerRadius",
     "reduceMotion",
+    "highlightActiveWindow",
     "pointerSize",
     "x11Apps",
     "auto",
@@ -298,6 +309,7 @@ export function parseSettings(value: unknown): Loaded {
   ]);
   settings.appearance.cornerRadius = appearance.choice("cornerRadius", CORNER_NAMES) ?? DEFAULT_CORNERS;
   settings.appearance.reduceMotion = appearance.boolean("reduceMotion") ?? false;
+  settings.appearance.highlightActiveWindow = appearance.boolean("highlightActiveWindow") ?? false;
   settings.appearance.pointerSize = appearance.numberChoice("pointerSize", POINTER_SIZES) ?? DEFAULT_POINTER_SIZE;
   settings.appearance.x11Apps = appearance.choice("x11Apps", X11_SCALINGS) ?? DEFAULT_X11_SCALING;
   const wallpaper = new Section("appearance.wallpaper", appearance.get("wallpaper"), problems).only([

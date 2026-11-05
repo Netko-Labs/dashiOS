@@ -239,8 +239,8 @@ describe("chaining the arrows", () => {
     expect(arranger.arrangement(7)).toBe("top-left");
     await arranger.arrange(7, "restore");
     expect(frames()).toEqual([
-      ["frame", { window: 7, ...rect(6, 34, 814, 826) }],
-      ["frame", { window: 7, ...rect(6, 34, 814, 410) }],
+      ["frame", { window: 7, ...rect(6, 34, 814, 826), tiled: true }],
+      ["frame", { window: 7, ...rect(6, 34, 814, 410), tiled: true }],
       ["frame", { window: 7, ...OWN }],
     ]);
   });
@@ -260,7 +260,7 @@ describe("chaining the arrows", () => {
     const { arranger, frames } = await started(files(), [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }, second]);
     await arranger.arrow(7, "right");
     await arranger.arrow(7, "right");
-    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("right", second.usable) }]);
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("right", second.usable), tiled: true }]);
     await arranger.arrange(7, "restore");
     expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(1946, 200, 800, 600) }]);
   });
@@ -389,7 +389,7 @@ describe("full screen and back", () => {
     await arranger.toggleFullscreen(7);
     await arranger.toggleFullscreen(7);
     await settle();
-    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("left", USABLE) }]);
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("left", USABLE), tiled: true }]);
     expect(arranger.arrangement(7)).toBe("left");
     await arranger.arrange(7, "fill");
     await arranger.toggleFullscreen(7);
@@ -533,7 +533,7 @@ describe("bursts of keys", () => {
     const { arranger, frames } = await started();
     await Promise.all([arranger.arrow(7, "left"), arranger.arrow(7, "up")]);
     expect(arranger.arrangement(7)).toBe("top-left");
-    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("top-left", USABLE) }]);
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...tileFrame("top-left", USABLE), tiled: true }]);
   });
 
   test("any burst ends where the same keys pressed slowly end, however late the app draws", async () => {

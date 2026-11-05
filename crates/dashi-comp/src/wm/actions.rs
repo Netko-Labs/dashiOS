@@ -184,16 +184,21 @@ impl Dashi {
     }
 
     /// Move and size its frame; `maximized` tells the client it fills the
-    /// screen (the shell's Fill). A window held in a move grab is held at its
+    /// screen (the shell's Fill), `tiled` that the shell made it a tile (its
+    /// depth, render/depth/). A window held in a move grab is held at its
     /// new frame from there (move_grab.rs).
     pub(crate) fn frame_window(
         &mut self,
         id: WindowId,
         frame: Rectangle<i32, Logical>,
         maximized: bool,
+        tiled: bool,
     ) -> Result<(), String> {
         let window = self.window_of(id)?;
         self.apply_frame(&window, frame, maximized);
+        if let Some(entry) = self.windows.get_mut(id) {
+            entry.tiled = tiled && !maximized;
+        }
         if self.held == Some(id) {
             self.held_reframed = true;
         }
@@ -205,6 +210,7 @@ impl Dashi {
         let bar = super::windows::bar_of(self, window);
         if let Some(entry) = self.windows.by_window_mut(window) {
             entry.maximized = maximized;
+            entry.tiled = false;
         }
         if let Some(toplevel) = window.toplevel() {
             let unmaximized = toplevel.with_pending_state(|state| {

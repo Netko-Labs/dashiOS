@@ -8,7 +8,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 
 ## Proposals waiting for picks (`docs/proposals.html`)
 - [ ] Window management: the green control fills (⌥ = full screen), one Fill, ⌃❖ arrows = four halves with chained quarters, ⌃❖↩ / C / R, and the seven tiling bugs found
-- [ ] Depth between windows: shadow + hairline by default, accent ring as an Appearance option
+- [x] Depth between windows: shadow + hairline by default, accent ring as an Appearance option (`feat/0.4-depth`: IPC `window-style`, render/depth/; not yet in the VM)
 - [ ] The roast of every app (`docs/roast/`): themes, per-app fixes, three waves
 - [x] The design guidelines are one page, `docs/design.html` (brand and Kombu folded in; numbered rules, tagged where the code doesn't follow them yet)
 
@@ -61,7 +61,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] VM: Firefox's Open File as a sheet of its window, with its filters as pills
 - [ ] VM: a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
 - [x] A sheet on a window that draws its own bar hangs below its toolbar (`attach {top}`; VM: Firefox)
-- [ ] Sheets have no shadow
+- [x] Sheets have no shadow: they cast `xl` from the compositor (`window-style`; not yet in the VM)
 - [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
 - [ ] Keep-awake on a machine with no battery has nowhere to show
 

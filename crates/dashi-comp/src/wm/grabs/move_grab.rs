@@ -80,6 +80,10 @@ impl Dashi {
         ) else {
             return;
         };
+        // Moved or resized by hand, a tile is a tile no more.
+        if let Some(entry) = self.windows.get_mut(id) {
+            entry.tiled = false;
+        }
         self.ipc.emit(
             "window-grab",
             json!({

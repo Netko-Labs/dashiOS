@@ -99,6 +99,8 @@ export interface AppearanceSettings {
   cornerRadius?: CornerName;
   /** Window animations off (the compositor's; motion/). */
   reduceMotion?: boolean;
+  /** A ring in the accent color around the window with the keyboard (appearance/window-style.ts); off when not set. */
+  highlightActiveWindow?: boolean;
   /** Dark Mode follows the time of day: dark in the evening and night (appearance/auto.ts). */
   auto?: boolean;
   /** The pointer's size in points (pointer.ts); 24 when not set. */
@@ -244,7 +246,14 @@ const SECTIONS = {
   menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
   appearance: {
     path: ["appearance"],
-    fields: { cornerRadius: oneOf(...CORNER_NAMES), reduceMotion: isBoolean, auto: isBoolean, pointerSize: isPointerSize, x11Apps: oneOf(...X11_SCALINGS) },
+    fields: {
+      cornerRadius: oneOf(...CORNER_NAMES),
+      reduceMotion: isBoolean,
+      highlightActiveWindow: isBoolean,
+      auto: isBoolean,
+      pointerSize: isPointerSize,
+      x11Apps: oneOf(...X11_SCALINGS),
+    },
   },
   wallpaper: {
     path: ["appearance", "wallpaper"],

@@ -46,7 +46,8 @@ pub(crate) fn handle(
             )
             .ok_or("frame: x, y, width, and height are required (a positive size, within range)")?;
             let maximized = flag(params, "maximized");
-            done(state.frame_window(window(params)?, frame, maximized))
+            let tiled = flag(params, "tiled");
+            done(state.frame_window(window(params)?, frame, maximized, tiled))
         }
         "keymap" => {
             state.keys.keymap = Keymap::parse(params)?;
@@ -78,6 +79,10 @@ pub(crate) fn handle(
                     .as_bool()
                     .ok_or("`reduceMotion` must be true or false")?;
             }
+            Ok(json!({}))
+        }
+        "window-style" => {
+            state.window_style = render::depth::style::parse(params)?;
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),

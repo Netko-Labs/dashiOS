@@ -22,6 +22,7 @@ import { AutoAppearance } from "./appearance/auto.ts";
 import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
+import { WindowStyleSync } from "./appearance/window-style.ts";
 import { startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
@@ -218,6 +219,8 @@ const idle = compositor && !idleOff ? new IdlePolicy(compositor) : null;
 // How the compositor draws window chrome: Dark Mode's title bars and the
 // Appearance setting's corners, both over IPC `chrome` (appearance/chrome.ts).
 const chromeStyle = compositor ? new ChromeStyle(compositor) : null;
+// The depth between windows: shadows, the hairline, the optional ring (IPC `window-style`; appearance/window-style.ts).
+const windowStyle = compositor ? new WindowStyleSync(compositor) : null;
 // GTK apps round their own windows to the same radius (appearance/gtk-colors.ts).
 const gtkCorners = new CornerFeed();
 // The wallpaper behind the windows and the lock screen (IPC `wallpaper`; wallpaper/).
@@ -250,6 +253,7 @@ const stopSettings = compositor
       chromeStyle?.setCorners(settings.appearance.cornerRadius);
       gtkCorners.set(settings.appearance.cornerRadius);
       chromeStyle?.setReduceMotion(settings.appearance.reduceMotion);
+      windowStyle?.set({ highlight: settings.appearance.highlightActiveWindow, reduceMotion: settings.appearance.reduceMotion });
       wallpaperChoice = settings.appearance.wallpaper;
       if (liveWallpaper) liveWallpaper.apply(wallpaperChoice);
       else wallpaper?.apply(wallpaperChoice);
@@ -394,8 +398,12 @@ const stopFollowingFlags = flags.subscribe(followFlags);
 const stopNightShift = compositor ? startNightShift(compositor, flags) : () => {};
 // Dark Mode repaints the shell by itself (theme.ts); apps are told here (appearance/).
 const stopAppearance = startAppearance(flags, { ...appearanceDeps, corners: gtkCorners });
-// The compositor's title bars follow Dark Mode too (IPC `chrome`).
-const tellChrome = () => chromeStyle?.setDark(flags.getSnapshot().dark);
+// The compositor's title bars and the windows' depth follow Dark Mode too (IPC `chrome`, `window-style`).
+const tellChrome = () => {
+  const { dark } = flags.getSnapshot();
+  chromeStyle?.setDark(dark);
+  windowStyle?.set({ dark });
+};
 tellChrome();
 const stopChrome = flags.subscribe(tellChrome);
 

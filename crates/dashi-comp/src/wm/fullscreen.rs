@@ -53,6 +53,7 @@ impl Dashi {
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.fullscreen = Some((output.name(), frame));
                 entry.title_image = None;
+                entry.tiled = false;
             }
             configure(&window, Some(screen.size), Some(&output));
             self.space.map_element(window.clone(), screen.loc, true);
