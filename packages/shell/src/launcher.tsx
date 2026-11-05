@@ -16,6 +16,7 @@ import { SEARCH, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { iconPath } from "./apps.ts";
+import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
 import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, filesStateFor, placeholderFor, type Row, selectable } from "./launcher/rows.ts";
@@ -97,7 +98,10 @@ export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSe
     };
   }, [files, waiting, text]);
 
-  const sections = buildSections({ query, entries, recent, files: filesState, allApps, copied, failed, icons: ICONS });
+  // Answers in the Region's numbers and the person's clock (answers/).
+  const prefs = useClockPrefs();
+  const answers = { locale: prefs.locale, hour24: usesHour24(prefs) };
+  const sections = buildSections({ query, entries, recent, files: filesState, allApps, copied, failed, icons: ICONS, answers });
   const rows = selectable(sections);
   const ids = rows.map((row) => row.id);
   const selected = resolveSelection(ids, held);

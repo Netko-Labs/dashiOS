@@ -16,6 +16,7 @@ import { INFO } from "@dashi/ui";
 import { SETTINGS_APP_ID } from "../apps.ts";
 import { calculate, type Entry, search } from "../entries.ts";
 import { type FileHit, MIN_QUERY } from "../file-search.ts";
+import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
 import { didYouMean } from "./suggest.ts";
 
 /** A 2 × 2 grid (All apps), drawn in ink like the panes' glyphs. */
@@ -91,7 +92,7 @@ export function filesStateFor(state: {
   lastCount: number;
 }): FilesState {
   const query = state.query.trim();
-  if (!state.offered || query.length < MIN_QUERY || calculate(query) !== null) return { kind: "none" };
+  if (!state.offered || query.length < MIN_QUERY || answerFor(query) !== null) return { kind: "none" };
   if (state.off) return { kind: "off" };
   if (state.answer?.query !== query) return { kind: "waiting", reserved: Math.min(state.lastCount, FILE_ROWS) };
   return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files };
@@ -110,6 +111,8 @@ export interface ListInput {
   failed?: Entry | null;
   /** Icons for the rows that aren't an app's: the calculator's, Files', Software's. */
   icons: { calculator: string; files: string; software: string };
+  /** The Region, the clock and the zone answers are worked out in (answers/). */
+  answers?: AnswerContext;
 }
 
 /** Instant rows the panel has room for (the answer included), and file rows below them. */
@@ -148,16 +151,16 @@ export function fileRow(file: FileRow): Row {
   };
 }
 
-/** The sum's row: its answer in SemiBold, the sum after it, Enter copies. */
-export function answerRow(query: string, answer: number, icons: ListInput["icons"], copied?: ListInput["copied"]): Row {
+/** The answer's row (a sum, a unit, money, a time): the answer in SemiBold, what it answers after it, Enter copies. */
+export function answerRow(query: string, answer: Answer, icons: ListInput["icons"], copied?: ListInput["copied"]): Row {
   const done = copied && copied.query === query ? (copied.ok ? "Copied" : "Couldn't copy") : "Answer";
   return {
     id: "answer",
-    title: `= ${answer}`,
-    detail: query.trim(),
+    title: answer.title,
+    detail: answer.detail,
     kind: done,
     icon: { image: icons.calculator },
-    action: { kind: "copy", text: String(answer) },
+    action: { kind: "copy", text: answer.copy },
     strong: true,
   };
 }
@@ -276,7 +279,7 @@ export function buildSections(input: ListInput): Section[] {
       return [...failed, { id: "recent", title: "Recent", rows: [...input.recent.map((entry) => entryRow(entry, "recent")), allAppsRow] }];
     return [...failed, { id: "try", title: "Try", aside: "Searches this computer only", rows: [...examples(input.entries, input.icons), allAppsRow] }];
   }
-  const answer = calculate(query);
+  const answer = answerFor(query, input.answers);
   const found = search(input.entries, query, answer === null ? LOCAL_ROWS : LOCAL_ROWS - 1).map((entry) => entryRow(entry));
   const instant = [...(answer === null ? [] : [answerRow(query, answer, input.icons, input.copied)]), ...found];
   const files = filesSection(input.files, query);
