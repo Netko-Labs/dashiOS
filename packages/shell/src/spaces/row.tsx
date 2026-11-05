@@ -146,6 +146,8 @@ export function SpacesRow(props: RowProps) {
               alignItems: "center",
               justifyContent: "center",
               paddingHorizontal: 10,
+              // Room for the × at the left end while it shows, so it never covers the name.
+              paddingLeft: showsClose(index) ? CLOSE : 10,
               borderRadius: rect.height / 2,
               backgroundColor: index === current ? colors.launcher : colors.dock,
               borderWidth: index === current ? 2 : 1,
@@ -153,7 +155,7 @@ export function SpacesRow(props: RowProps) {
               shadow: "md",
             }}
           >
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: index === current ? "semibold" : "normal", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: index === current ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>
               {labels[index] ?? ""}
             </Text>
           </View>

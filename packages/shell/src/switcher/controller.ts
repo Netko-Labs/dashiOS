@@ -81,6 +81,8 @@ interface Session {
   visible: boolean;
   windowsShown: boolean;
   size: { width: number; height: number };
+  /** Windows the person hid or minimized in this session (H, M): letting go of ❖ on one doesn't bring it back. */
+  putAway: Set<number>;
   timer?: ReturnType<typeof setTimeout>;
   hold?: ReturnType<typeof setTimeout>;
 }
@@ -207,6 +209,7 @@ export class SwitcherController {
       visible: false,
       windowsShown: false,
       size: switcherSize(all.length, most),
+      putAway: new Set(),
     };
     this.session = session;
     this.keys.begin();
@@ -256,11 +259,15 @@ export class SwitcherController {
         this.forget(session, (window) => whole.windows.includes(window));
         break;
       case "hide":
-        for (const window of whole.windows.filter((each) => each.state === "normal")) await request("hide", window.id);
+        for (const window of whole.windows.filter((each) => each.state === "normal")) {
+          await request("hide", window.id);
+          session.putAway.add(window.id);
+        }
         this.restate(session, (window) => whole.windows.includes(window) && window.state === "normal", "hidden");
         break;
       case "minimize":
         await request("minimize", target.id);
+        session.putAway.add(target.id);
         this.restate(session, (window) => window.id === target.id, "minimized");
         break;
       case "close":
@@ -303,7 +310,7 @@ export class SwitcherController {
       this.host.hide();
     }
     const chosen = chosenWindow(session.shown, session.selection);
-    // Focusing a minimized or hidden window brings it back too.
-    if (commit && chosen) await this.compositor.request("focus", { window: chosen.id });
+    // Focusing a minimized or hidden window brings it back too, unless the person just put it away (H, M).
+    if (commit && chosen && !session.putAway.has(chosen.id)) await this.compositor.request("focus", { window: chosen.id });
   }
 }

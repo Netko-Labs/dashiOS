@@ -233,4 +233,21 @@ describe("a session", () => {
     expect(closed).toEqual(windows.filter((window) => window.appId === "net.imput.helium").map((window) => window.id));
     expect(compositor.asked.some(([method]) => method === "focus")).toBe(false);
   });
+
+  test("H then letting go of ❖: the app stays hidden", async () => {
+    const windows = desktop();
+    const compositor = fakeCompositor(windows);
+    const controller = new SwitcherController(compositor, { show: () => {}, hide: () => {} }, nameOf);
+    controller.step("next");
+    controller.type("h");
+    await settle();
+    await settle();
+    const hidden = compositor.asked.filter(([method]) => method === "hide").map(([, window]) => window);
+    expect(hidden.length).toBeGreaterThan(0);
+    controller.commit();
+    await settle();
+    await settle();
+    const focused = compositor.asked.filter(([method]) => method === "focus").map(([, window]) => window);
+    expect(focused.filter((window) => hidden.includes(window))).toEqual([]);
+  });
 });
