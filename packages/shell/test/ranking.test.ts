@@ -24,6 +24,37 @@ describe("folding", () => {
   });
 });
 
+describe("an app over a Settings pane that matches as well (the wave 1 VM run)", () => {
+  const withApps = index([
+    ...ENTRIES,
+    { id: "dev.dashi.activity-monitor", name: "Activity Monitor", icon: "", keywords: ["task manager", "processes"] },
+  ]);
+  const top = (query: string): string | undefined => rankEntries(withApps, query, undefined, 3)[0]?.name;
+  // Each row: what was typed, the Top hit, and the pane that used to take it.
+  const Rows: Array<[string, string, string]> = [
+    ["no", "Notes", "Notifications"],
+    ["s", "System Settings", "Sound"],
+    ["a", "Activity Monitor", "About"],
+    ["b", "Backups", "Bluetooth"],
+    ["n", "Notes", "Network"],
+  ];
+  for (const [query, expected, pane] of Rows) {
+    test(`"${query}" is ${expected}, not ${pane}`, () => {
+      const found = rankEntries(withApps, query, undefined, 10).map((entry) => entry.name);
+      expect(found.indexOf(expected)).toBeLessThan(found.indexOf(pane));
+      expect(top(query)).not.toBe(pane);
+    });
+  }
+
+  test("a pane is the Top hit when it is clearly the match: its whole name, or one of its words, or nothing else matches", () => {
+    expect(top("sound")).toBe("Sound");
+    expect(top("notifications")).toBe("Notifications");
+    expect(top("wallpaper")).toBe("Wallpaper");
+    expect(top("dnd")).toBe("Notifications");
+    expect(top("wal")).toBe("Wallpaper");
+  });
+});
+
 describe("the reports' examples", () => {
   // Each row: what was typed, what comes first.
   const First: Array<[string, string]> = [
