@@ -92,6 +92,14 @@ describe("what the launcher lists", () => {
     expect(entryAddress({ id: "dev.dashi.settings/appearance" })).toBe("dashi://settings/appearance");
   });
 
+  test("a Settings pane doesn't hide the command of the same name (Lock Screen, the VM run)", () => {
+    const items = launcherItems({
+      entries: [app("Lock Screen", { id: "dev.dashi.settings/lock-screen" })],
+      actions: [action("dashi://dashi/lock-screen", { title: "Lock Screen" })],
+    });
+    expect(items.map((item) => item.kind)).toEqual(["pane", "command"]);
+  });
+
   test("a window title is found but never above an exact app name; the index is built once per set of lists", () => {
     const entries = [app("Files", { id: "dev.dashi.files" })];
     const windows = [window(3, "Files", "dev.dashi.files")];

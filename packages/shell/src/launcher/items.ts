@@ -111,7 +111,8 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
     const item: EntryItem & LauncherItem = entryItem(entry, languages);
     const address = entryAddress(entry);
     items.push(address ? { ...item, address } : item);
-    named.add(fold(entry.name));
+    // Apps only: a Settings pane and a command may share a name (Lock Screen), and both are rows.
+    if (item.kind === "app") named.add(fold(entry.name));
   }
   for (const window of sources.windows ?? []) {
     items.push({
