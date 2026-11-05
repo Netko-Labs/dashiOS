@@ -403,6 +403,7 @@ const agents = compositor
       compositor,
       ui: agentUi,
       sources: passwords.sources,
+      vault: passwords.vault,
       store: agentStore,
       tile,
       desktop: {

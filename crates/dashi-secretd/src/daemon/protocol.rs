@@ -140,6 +140,36 @@ pub enum Request {
         #[serde(default, rename = "forAgent")]
         for_agent: bool,
     },
+    // Payments (docs/secrets.md, "Payments").
+    Cards {},
+    SaveCard {
+        label: String,
+        number: Secret,
+        expiry: String,
+        cvc: Secret,
+        #[serde(default, rename = "singleUse")]
+        single_use: bool,
+    },
+    DeleteCard {
+        id: u64,
+    },
+    Spending {},
+    /// New limits, in cents; the login password proves it is the person.
+    SetLimits {
+        #[serde(rename = "perPayment")]
+        per_payment: u64,
+        #[serde(rename = "perMonth")]
+        per_month: u64,
+        password: Secret,
+    },
+    /// Pay `merchant` `cents` with card `card`: within the limits, asked of
+    /// the person (finger or password), then the card for the broker to type.
+    Pay {
+        merchant: String,
+        cents: u64,
+        card: u64,
+    },
+
     // Questions to the person (passkeys, payments), for the shell.
     /// This connection stays open and hears `{"event": "approve", id, kind, …}`.
     WatchApprovals {},

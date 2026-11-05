@@ -91,6 +91,11 @@ fn serve_connection(mut stream: UnixStream, daemon: &Mutex<Daemon>) {
         // The request is never echoed or logged: it may hold a password.
         let result = match serde_json::from_slice::<Request>(&line) {
             Err(_) => Err("not a request dashi-secretd knows".into()),
+            Ok(Request::Pay {
+                merchant,
+                cents,
+                card,
+            }) => pay(daemon, &caller, &merchant, cents, card),
             Ok(request) => match daemon.lock() {
                 Ok(mut daemon) => {
                     let watch = matches!(request, Request::WatchApprovals {});
@@ -108,6 +113,45 @@ fn serve_connection(mut stream: UnixStream, daemon: &Mutex<Daemon>) {
             return;
         }
     }
+}
+
+/// A payment: within the limits, then asked of the person (finger or password)
+/// with the daemon free meanwhile, then noted and the card handed over.
+fn pay(
+    daemon: &Mutex<Daemon>,
+    caller: &caller::Caller,
+    merchant: &str,
+    cents: u64,
+    card: u64,
+) -> Result<Reply, String> {
+    let merchant: String = merchant
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(100)
+        .collect();
+    if merchant.is_empty() {
+        return Err("who is being paid?".into());
+    }
+    let approvals = {
+        let daemon = daemon.lock().map_err(|_| "dashi-secretd is not well")?;
+        daemon.pay_check(caller, card, cents)?;
+        daemon.approvals.clone()
+    };
+    let uid = caller.uid;
+    let what = serde_json::json!({ "kind": "pay", "rp": merchant, "user": "", "amount": format!("${}.{:02}", cents / 100, cents % 100) });
+    let finger = approvals.clone();
+    let yes = approvals.ask(uid, what, move |id| {
+        if crate::fido::fprint::verify(uid) {
+            finger.answer(uid, id, true);
+        }
+    });
+    if !yes {
+        return Err("the person did not allow the payment".into());
+    }
+    daemon
+        .lock()
+        .map_err(|_| "dashi-secretd is not well")?
+        .pay_finish(caller, &merchant, card, cents)
 }
 
 pub fn serve(listener: UnixListener, daemon: Arc<Mutex<Daemon>>) {

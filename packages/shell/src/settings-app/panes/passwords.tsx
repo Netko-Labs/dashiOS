@@ -14,6 +14,7 @@ import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
 import { Switch } from "../../wifi/switch.tsx";
 import { Button, Caption, Choices, Group, Note, Page, Row, useSurface } from "../ui.tsx";
+import { Payments } from "./payments.tsx";
 
 interface VaultView {
   status: { exists: boolean; unlocked: boolean; tpm: boolean | null } | null;
@@ -197,6 +198,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
       )}
       {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password (its app asks you to unlock it); its logins aren't listed here.</Caption>}
       <Caption>{vaultLine}</Caption>
+      {status?.unlocked && <Payments vault={passwords.vault} />}
     </Page>
   );
 }

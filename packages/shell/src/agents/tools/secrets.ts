@@ -6,6 +6,7 @@
  * Done, blanked in the agent's pictures meanwhile.
  */
 
+import { parseAmount } from "../secrets/pay.ts";
 import { type Args, fail, type ToolDef, windowArg, windowProp } from "./define.ts";
 import type { CallError } from "./types.ts";
 
@@ -102,6 +103,36 @@ export const secretTools: readonly ToolDef[] = [
       const a = account(args);
       if (a !== null && typeof a === "object") return a;
       return { name: "fill_code", window, site: s, account: a, submit: args.submit === true };
+    },
+  },
+  {
+    name: "pay",
+    title: "Pay for the person",
+    description:
+      "Pay on a checkout page with one of the person's saved cards (a single-use card first): click into the card number field first. " +
+      "Within their limits per payment and per month, the person confirms the site and the amount with their fingerprint or password, every time; " +
+      "then Dashi types the card number, expiry and security code into the fields that follow each other. You never see the card, and those fields are blank in your screenshots. " +
+      "Then press the page's own pay button.",
+    scope: "pay",
+    readOnly: false,
+    destructive: true,
+    properties: {
+      window: windowProp,
+      site: siteProp,
+      amount: { type: "string", description: 'The total the page shows, in dollars: "48.90".' },
+      card: { type: "string", description: "Which card, by its last four digits or its name in Settings (default: a single-use card)." },
+    },
+    required: ["window", "site", "amount"],
+    parse: (args) => {
+      const window = windowArg(args);
+      if (typeof window !== "number") return window;
+      const s = site(args, true);
+      if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
+      const cents = typeof args.amount === "string" ? parseAmount(args.amount) : null;
+      if (cents === null) return fail('`amount` must be the total in dollars, like "48.90".');
+      if (args.card !== undefined && (typeof args.card !== "string" || args.card.length > 100))
+        return fail("`card` must be a card's last four digits or its name.");
+      return { name: "pay", window, site: s, cents, card: typeof args.card === "string" ? args.card : null };
     },
   },
   {

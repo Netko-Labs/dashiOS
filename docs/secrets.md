@@ -190,6 +190,7 @@ Agent tools (`src/agents/tools/secrets.ts`), carried out by
 | Tool | Scope | What it does |
 | --- | --- | --- |
 | `list_logins {site?}` | Sign in for you | Each saved login's site, account, source, whether it has a code, and whether agents may ask (`ask`/`never`). Never a secret |
+| `pay {window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
 | `sign_in {window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
 | `fill_code {window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
 | `hand_over {window, reason}` | Manage windows and apps | "Your turn: <reason>", Done; the agent waits, the window is blank in its pictures |
@@ -305,6 +306,86 @@ never an agent's cgroup; no answer in a minute is a no.
 | `deny` | `id` | |
 | `passkeys` | | `passkeys: [{id, rpId, userName, created, lastUsed}]` |
 | `delete-passkey` | `id` | |
+
+## Payments
+
+`pay {window, site, amount, card?}` (`src/agents/secrets/pay.ts`), behind
+a scope of its own, "Pay for you", which "Always Allow" never keeps
+(`NEVER_KEPT` in `consent.ts`; a kept one in `grants.json` is ignored too).
+
+- **Cards** live in the vault (`save-card`: a Luhn-valid number, MM/YY, a 3
+  or 4 digit code, "single use" or not; `cards` lists them by their last
+  four digits only). A single-use virtual card (from the issuer's app) is
+  refused once used, and is chosen first.
+- **Limits** live in the vault too, where no agent can reach them: per
+  payment and per month (the last 30 days), $100 and $300 until the person
+  changes them in Settings › Passwords, which needs the login password
+  (`set-limits`); never above $10,000 a payment.
+- **Each payment** is `pay {merchant, cents, card}` to dashi-secretd: within
+  the limits, asked of the person ("Pay signin.localhost $4.20?", the
+  fingerprint or the password, as for passkeys), then noted and the card
+  handed to the broker (its number and code as one secret).
+- **Filling**: the focused field must be an editable field on a page of the
+  site (as for logins); the broker types the number, Tab, the expiry, Tab,
+  the code, checking the page at each field. Card fields aren't password
+  fields, so each one Dashi types into is added to the agents' mask for ten
+  minutes (so are one-time code fields). The agent presses the page's own
+  pay button.
+
+| Op | Fields | Reply |
+| --- | --- | --- |
+| `cards` | | `cards: [{id, label, last4, expiry, singleUse, used}]` |
+| `save-card` | `label, number, expiry, cvc, singleUse` | `id` |
+| `delete-card` | `id` | |
+| `spending` | | `perPayment, perMonth, spentThisMonth` (cents) |
+| `set-limits` | `perPayment, perMonth, password` | |
+| `pay` | `merchant, cents, card` | `card` (number, newline, code), `expiry` |
+
+Fields that follow each other in another order (a code before the expiry,
+fields in iframes from a payment provider) are refused by the page check or
+filled wrongly: the broker doesn't guess. A payment the person allowed is
+counted even if the page changed before the card was typed.
+
+### Provider tokens (designed, not built)
+
+Stripe's shared payment tokens, Visa Intelligent Commerce and Mastercard
+Agent Pay give an agent a credential locked to one merchant and one amount,
+so the agent may hold it: it is worthless anywhere else. None can be tested
+without an account, so none is integrated; the interface they will take:
+
+```ts
+interface PaymentProvider {
+  id: "stripe-spt" | "visa-ic" | "mastercard-agent-pay";
+  /** Whether `merchant` takes this provider's tokens (its checkout says so). */
+  accepts(merchant: string): Promise<boolean>;
+  /** One credential for this merchant and amount, made after the person's yes. */
+  issue(request: { merchant: string; cents: number; currency: string; expiresInSeconds: number }): Promise<{ token: string; expires: number }>;
+}
+```
+
+Providers run inside dashi-secretd (their account keys are vault items, like
+API tokens); `pay` tries them first where `accepts` says yes, with the same
+limits and the same question, and returns the scoped token instead of
+typing a card. The agent passes it to the merchant's agent checkout.
+
+## Tokens that stay home (designed, not built)
+
+For an agent's commands and MCP servers: they hold placeholders
+(`dashi:github`), and a proxy swaps in the real API token only for the hosts
+the token is for. The design, for a later stream:
+
+- **Token items** in the vault: `{name, hosts, header}` (`header`: where the
+  token goes, `Authorization: Bearer {}` by default); `token {name, host}`
+  answers only for a listed host.
+- **The proxy** is the shell's (it is the broker, outside every sandbox;
+  dashi-secretd refuses anything in an agent's scope). `dashi-agent` binds
+  its socket into the sandbox and sets `HTTPS_PROXY`; for a listed host the
+  proxy terminates TLS with a leaf certificate from a CA made for that
+  sandbox alone (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`,
+  `GIT_SSL_CAINFO` point at the system's CAs plus it, inside the sandbox
+  only), replaces a placeholder in the header named, and forwards over TLS
+  it verifies itself. Other hosts are tunneled untouched: a placeholder sent
+  there is worthless. Tools that pin certificates break, as the spec says.
 
 ## The test site
 

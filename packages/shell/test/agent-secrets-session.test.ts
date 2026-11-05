@@ -28,6 +28,12 @@ describe("Settings › Passwords", () => {
 });
 
 const who = () => ({ name: "claude", detail: "~/.local/bin/claude", claims: null, remote: false });
+const NO_VAULT = {
+  cards: async () => [],
+  pay: async () => {
+    throw new Error("no vault");
+  },
+};
 const call = (name: Call["name"]): Call => ({ name, window: 3, site: "github.com", account: null, submit: false, reason: "x" }) as Call;
 
 function deferred() {
@@ -44,7 +50,7 @@ describe("one connection's secrets", () => {
     const turns: Turn[] = [];
     const handedOver = new Set<number>();
     const secrets = new SessionSecrets(
-      { sources: () => [], atspi: async () => null, handedOver },
+      { sources: () => [], atspi: async () => null, handedOver, filled: new Map(), vault: NO_VAULT },
       {
         signIn: async () => ({ allow: "deny", login: null }),
         turn: (t) => {
@@ -74,7 +80,7 @@ describe("one connection's secrets", () => {
 
   test("a sign-in runs alone: the agent's own click waits for it", async () => {
     const secrets = new SessionSecrets(
-      { sources: () => [], atspi: async () => null, handedOver: new Set() },
+      { sources: () => [], atspi: async () => null, handedOver: new Set(), filled: new Map(), vault: NO_VAULT },
       { signIn: async () => ({ allow: "deny", login: null }), turn: async () => true },
       true,
     );
@@ -101,7 +107,7 @@ describe("one connection's secrets", () => {
   test("the sheet is asked with who is asking", async () => {
     const asked: SignInAsk[] = [];
     const secrets = new SessionSecrets(
-      { sources: () => [], atspi: async () => null, handedOver: new Set() },
+      { sources: () => [], atspi: async () => null, handedOver: new Set(), filled: new Map(), vault: NO_VAULT },
       {
         signIn: async (ask) => {
           asked.push(ask);

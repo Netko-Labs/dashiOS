@@ -27,6 +27,8 @@ export const FIELD_PAD = 8;
 const LOOK_MS = 500;
 
 export interface MaskInputs {
+  /** Fields Dashi typed a secret into (a code, a card), in their window's content coordinates. */
+  filled?: ReadonlyArray<{ window: number; rect: Rect }>;
   /** Windows handed to the person. */
   handedOver: readonly number[];
   /** The vault's windows. */
@@ -42,7 +44,7 @@ export function maskRequest(inputs: MaskInputs): Record<string, unknown> {
   return {
     client: AGENT_MASK,
     windows: [...new Set([...inputs.handedOver, ...inputs.vault])],
-    rects: inputs.fields.map(({ window, rect }) => ({
+    rects: [...inputs.fields, ...(inputs.filled ?? [])].map(({ window, rect }) => ({
       window,
       x: Math.floor(rect.x - FIELD_PAD),
       y: Math.floor(rect.y - FIELD_PAD),
@@ -60,6 +62,8 @@ export interface MaskDeps {
   /** The accessibility bus, joined on first use; null where there is none. */
   atspi(): Promise<Pick<Atspi, "appFor"> | null>;
   handedOver(): readonly number[];
+  /** Fields Dashi typed a secret into, still blanked. */
+  filled?(): ReadonlyArray<{ window: number; rect: Rect }>;
   /** Whether a window is one of the vault's (Settings showing Passwords). */
   isVault(window: CompositorWindow): boolean;
 }
@@ -82,6 +86,7 @@ export class AgentMask {
       handedOver: this.deps.handedOver(),
       vault: windows.filter((w) => this.deps.isVault(w)).map((w) => w.id),
       fields,
+      filled: this.deps.filled?.() ?? [],
       pids: this.recorders,
     });
     await this.deps.request("capture-mask", request);

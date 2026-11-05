@@ -47,6 +47,8 @@ export interface BrokerContext {
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** This connection's approvals, by login key. */
   approvals: Map<string, Approval>;
+  /** A field a code was typed into (its window coordinates): agents' pictures blank it. */
+  filled?(rect: { x: number; y: number; width: number; height: number } | null): void;
   status(text: string): void;
   now(): number;
   sleep(ms: number): Promise<void>;
@@ -127,6 +129,8 @@ export async function fillCode(ctx: BrokerContext, site: string, account: string
   const source = ctx.sources.find((s) => s.id === chosen.source);
   if (!source) return toolError("That login's source is turned off.");
   const code = new TextEncoder().encode(await source.code(chosen));
+  // A code field is no password field: blank it in agents' pictures before it holds the code.
+  ctx.filled?.(now.focused.rect);
   await typeSecret(ctx, code);
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
   return text(`Dashi entered the one-time code for ${chosen.account} on ${site}; you never see it.${submit ? " It pressed Return." : ""}`, {

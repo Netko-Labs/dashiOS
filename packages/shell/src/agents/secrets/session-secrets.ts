@@ -6,6 +6,7 @@
  * person presses Done, and blanks that window in agents' pictures meanwhile.
  */
 
+import type { Rect } from "../atspi/tree.ts";
 import type { SecretsRun } from "../context.ts";
 import type { AgentUi, Who } from "../presence.ts";
 import type { Call } from "../tools/index.ts";
@@ -15,11 +16,17 @@ import type { Approval } from "./broker.ts";
 export interface SecretsShared {
   sources: SecretsRun["sources"];
   atspi: SecretsRun["atspi"];
+  /** Fields Dashi typed secrets into, by window, until when (the mask blanks them). */
+  filled: Map<number, Array<{ rect: Rect; until: number }>>;
+  vault: SecretsRun["vault"];
   /** Windows handed to the person now (the mask blanks them). */
   handedOver: Set<number>;
 }
 
-const exclusive = (call: Call) => call.name === "sign_in" || call.name === "fill_code";
+/** How long a field Dashi filled stays blank in agents' pictures. */
+export const FILLED_MS = 10 * 60_000;
+
+const exclusive = (call: Call) => call.name === "sign_in" || call.name === "fill_code" || call.name === "pay";
 
 export class SessionSecrets {
   readonly approvals = new Map<string, Approval>();
@@ -56,6 +63,13 @@ export class SessionSecrets {
       approvals: this.approvals,
       sources: this.shared.sources,
       atspi: this.shared.atspi,
+      vault: this.shared.vault,
+      filled: (window, rect) => {
+        if (!rect) return;
+        const now = Date.now();
+        const kept = (this.shared.filled.get(window) ?? []).filter((f) => f.until > now);
+        this.shared.filled.set(window, [...kept, { rect, until: now + FILLED_MS }].slice(-16));
+      },
       ask: (summary, logins) => this.ui.signIn({ agent, who: who(), summary, logins }),
       handOver: async (window, reason) => {
         this.shared.handedOver.add(window);

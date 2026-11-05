@@ -31,7 +31,7 @@ function fromBase64(value: unknown): Uint8Array {
 }
 
 /** One request, one reply; rejects with dashi-secretd's error. */
-export async function vaultCall(request: Record<string, unknown>, path = VAULT_SOCKET): Promise<Record<string, unknown>> {
+export async function vaultCall(request: Record<string, unknown>, path = VAULT_SOCKET, timeoutMs = TIMEOUT_MS): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const lines = new LineBuffer();
     let settled = false;
@@ -42,7 +42,7 @@ export async function vaultCall(request: Record<string, unknown>, path = VAULT_S
       if (error) reject(error);
       else resolve(value ?? {});
     };
-    const timer = setTimeout(() => finish(new Error("dashi-secretd didn't answer")), TIMEOUT_MS);
+    const timer = setTimeout(() => finish(new Error("dashi-secretd didn't answer")), timeoutMs);
     Bun.connect({
       unix: path,
       socket: {
@@ -104,8 +104,8 @@ export interface NewLogin {
 export class Vault {
   constructor(private readonly path = VAULT_SOCKET) {}
 
-  private call(request: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return vaultCall(request, this.path);
+  private call(request: Record<string, unknown>, timeoutMs?: number): Promise<Record<string, unknown>> {
+    return vaultCall(request, this.path, timeoutMs);
   }
 
   async status(): Promise<{ exists: boolean; unlocked: boolean; tpm: boolean | null }> {
@@ -147,4 +147,74 @@ export class Vault {
   async remove(id: number): Promise<void> {
     await this.call({ op: "delete-login", id });
   }
+
+  /** The cards, by their last four digits; never a number. */
+  async cards(): Promise<CardSummary[]> {
+    const reply = await this.call({ op: "cards" });
+    return (Array.isArray(reply.cards) ? reply.cards : []).flatMap((value: unknown) => {
+      if (typeof value !== "object" || value === null) return [];
+      const { id, label, last4, expiry, singleUse, used } = value as Record<string, unknown>;
+      if (typeof id !== "number" || typeof last4 !== "string") return [];
+      return [
+        {
+          id,
+          label: typeof label === "string" ? label : "",
+          last4,
+          expiry: typeof expiry === "string" ? expiry : "",
+          singleUse: singleUse === true,
+          used: used === true,
+        },
+      ];
+    });
+  }
+
+  async saveCard(card: { label: string; number: string; expiry: string; cvc: string; singleUse: boolean }): Promise<void> {
+    await this.call({
+      op: "save-card",
+      label: card.label,
+      number: encodeText(card.number.replace(/\s/g, "")),
+      expiry: card.expiry,
+      cvc: encodeText(card.cvc),
+      singleUse: card.singleUse,
+    });
+  }
+
+  async removeCard(id: number): Promise<void> {
+    await this.call({ op: "delete-card", id });
+  }
+
+  async spending(): Promise<{ perPayment: number; perMonth: number; spentThisMonth: number }> {
+    const reply = await this.call({ op: "spending" });
+    const n = (value: unknown) => (typeof value === "number" ? value : 0);
+    return { perPayment: n(reply.perPayment), perMonth: n(reply.perMonth), spentThisMonth: n(reply.spentThisMonth) };
+  }
+
+  async setLimits(perPayment: number, perMonth: number, password: string): Promise<void> {
+    await this.call({ op: "set-limits", perPayment, perMonth, password: encodeText(password) });
+  }
+
+  /**
+   * Pay: dashi-secretd checks the limits and asks the person (finger or
+   * password); then the card, for the broker to type and drop.
+   */
+  async pay(merchant: string, cents: number, card: number): Promise<{ number: Uint8Array; cvc: Uint8Array; expiry: string }> {
+    const reply = await this.call({ op: "pay", merchant, cents, card }, PAY_TIMEOUT_MS);
+    const both = fromBase64(reply.card);
+    const cut = both.indexOf(10);
+    const result = { number: both.slice(0, cut), cvc: both.slice(cut + 1), expiry: typeof reply.expiry === "string" ? reply.expiry : "" };
+    both.fill(0);
+    return result;
+  }
+}
+
+/** A payment waits for the person (a minute at most, in dashi-secretd). */
+const PAY_TIMEOUT_MS = 75_000;
+
+export interface CardSummary {
+  id: number;
+  label: string;
+  last4: string;
+  expiry: string;
+  singleUse: boolean;
+  used: boolean;
 }

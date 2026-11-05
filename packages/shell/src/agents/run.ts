@@ -13,7 +13,7 @@ import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
 import { recordScreen } from "./desktop/record.ts";
-import { handOver, listLogins, signInCall } from "./desktop/secrets.ts";
+import { handOver, listLogins, payCall, signInCall } from "./desktop/secrets.ts";
 import { AGENT_MASK } from "./mask.ts";
 import { descendsFrom } from "./peer.ts";
 import { named, noWindow, subject } from "./subject.ts";
@@ -179,6 +179,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
     case "sign_in":
     case "fill_code":
       return signInCall(call, ctx);
+    case "pay":
+      return payCall(call, ctx);
     case "hand_over":
       return handOver(call, ctx);
     case "click":

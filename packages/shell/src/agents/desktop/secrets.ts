@@ -1,8 +1,8 @@
 /**
- * Carrying out list_logins, sign_in, fill_code and hand_over
- * (tools/secrets.ts): the broker (secrets/broker.ts) does the signing in;
- * this finds the window, checks the agent is in Dashi's sandbox, and gives
- * the broker its hands and eyes.
+ * Carrying out list_logins, sign_in, fill_code, pay and hand_over
+ * (tools/secrets.ts): the broker (secrets/broker.ts, secrets/pay.ts) does
+ * the signing in and the paying; this finds the window, checks the agent is
+ * in Dashi's sandbox, and gives the broker its hands and eyes.
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
@@ -10,6 +10,7 @@ import type { CompositorWindow } from "../../compositor.ts";
 import { fieldAt, focusedField, limits } from "../atspi/tree.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
+import { payWith } from "../secrets/pay.ts";
 import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
@@ -64,6 +65,7 @@ function brokerFor(window: CompositorWindow, ctx: RunContext): BrokerContext {
     type: (payload) => ctx.hands.send(window, payload, ctx.agent, ctx.status),
     ask: (summary, logins) => ctx.secrets.ask(summary, logins),
     approvals: ctx.secrets.approvals,
+    filled: (rect) => ctx.secrets.filled(window.id, rect),
     status: ctx.status,
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -89,4 +91,19 @@ export async function handOver(call: Extract<Call, { name: "hand_over" }>, ctx: 
   const done = await ctx.secrets.handOver(window.id, call.reason);
   if (!done) return toolError(`The person didn't press Done (the turn was taken down). Ask them before going on with ${subject(window, ctx)}.`);
   return text(`The person pressed Done: ${subject(window, ctx)} is yours again. Take a screenshot to see where things are.`);
+}
+
+export async function payCall(call: Extract<Call, { name: "pay" }>, ctx: RunContext): Promise<ToolResult> {
+  if (!ctx.secrets.confined) return toolError(UNCONFINED);
+  const window = await named(ctx.compositor, call.window);
+  if (!window) return noWindow(call.window);
+  if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
+  const broker = brokerFor(window, ctx);
+  const pay = {
+    ...broker,
+    cards: () => ctx.secrets.vault.cards(),
+    pay: (merchant: string, cents: number, card: number) => ctx.secrets.vault.pay(merchant, cents, card),
+    filled: (rect: Parameters<RunContext["secrets"]["filled"]>[1]) => ctx.secrets.filled(window.id, rect),
+  };
+  return payWith(pay, call.site, call.cents, call.card);
 }

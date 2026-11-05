@@ -8,6 +8,7 @@
 //! - wrong passwords are slowed down.
 
 pub mod logins;
+pub mod payments;
 pub mod protocol;
 pub mod reply;
 pub mod secret_service;
@@ -69,6 +70,32 @@ impl Daemon {
             dev_pam: None,
             approvals: Arc::new(Approvals::default()),
         }
+    }
+
+    /// Before a payment is asked about: who may (the person, never an agent), and whether it is within the limits.
+    pub fn pay_check(&self, caller: &Caller, card: u64, cents: u64) -> Result<(), String> {
+        if caller.is_agent() || caller.uid == 0 {
+            return Err("only the person's shell may pay".into());
+        }
+        let vault = self.open.get(&caller.uid).ok_or("the vault is locked")?;
+        payments::check(vault, card, cents, now())
+    }
+
+    /// After the person said yes: the payment noted, and the card for the broker.
+    pub fn pay_finish(
+        &mut self,
+        caller: &Caller,
+        merchant: &str,
+        card: u64,
+        cents: u64,
+    ) -> Result<Reply, String> {
+        let vault = self
+            .open
+            .get_mut(&caller.uid)
+            .ok_or("the vault is locked")?;
+        let reply = payments::finish(vault, merchant, card, cents, now())?;
+        self.save(caller.uid)?;
+        Ok(reply)
     }
 
     /// Run `f` on `uid`'s unlocked vault and save it; false when it is locked (or can't be saved).
@@ -188,9 +215,40 @@ impl Daemon {
                 self.approvals.answer(uid, id, false);
                 Ok(Reply::ok())
             }
+            Request::SetLimits {
+                per_payment,
+                per_month,
+                password,
+            } => {
+                self.throttle(uid)?;
+                let vault = self.open.get(&uid).ok_or("the vault is locked")?;
+                let right = vault.verify(password.expose(), self.sealer.as_ref());
+                self.count(
+                    uid,
+                    if right {
+                        Ok(())
+                    } else {
+                        Err("wrong password".to_string())
+                    },
+                )?;
+                if per_payment > payments::CEILING || per_month < per_payment {
+                    return Err(
+                        "the limit for a month can't be under the limit for one payment".into(),
+                    );
+                }
+                let vault = self.open.get_mut(&uid).ok_or("the vault is locked")?;
+                vault.data.spending.per_payment = per_payment;
+                vault.data.spending.per_month = per_month;
+                self.save(uid)?;
+                Ok(Reply::ok())
+            }
+            // Asked of the person without the daemon held: the server does it (pay_check, pay_finish).
+            Request::Pay { .. } => Err("pay goes through the server".into()),
             request => {
                 let vault = self.open.get_mut(&uid).ok_or("the vault is locked")?;
-                let (reply, changed) = if secret_service::owns(&request) {
+                let (reply, changed) = if payments::owns(&request) {
+                    payments::handle(vault, request, now())?
+                } else if secret_service::owns(&request) {
                     secret_service::handle(vault, request, now())?
                 } else {
                     logins::handle(vault, request, now())?

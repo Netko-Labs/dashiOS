@@ -122,7 +122,8 @@ export type Call =
   | { name: "choose_menu_item"; window: number; menu: string; item: string }
   | { name: "list_logins"; site: string | null }
   | { name: "sign_in" | "fill_code"; window: number; site: string; account: string | null; submit: boolean }
-  | { name: "hand_over"; window: number; reason: string };
+  | { name: "hand_over"; window: number; reason: string }
+  | { name: "pay"; window: number; site: string; cents: number; card: string | null };
 
 export type ToolName = Call["name"];
 
