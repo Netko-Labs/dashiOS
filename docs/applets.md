@@ -377,8 +377,9 @@ anything runs (`packages/applet/src/catalog.ts`): the index is signed by
 Dashi's key; the package has the size and sha256 the index lists; it is
 signed by the author key the index lists; an update's author key is the one
 the installed version was verified with; a pulled version is never
-installed, and where it is installed the store disables it and offers the
-newest good one.
+installed, and where it is installed it is turned off (by the store, and by
+the shell's look at the index a few minutes after login and daily,
+`src/applet-store/kill-switch.ts`) and the store offers the newest good one.
 
 ### Keys
 
@@ -387,7 +388,7 @@ checks them; signing with real keys is the `minisign` tool's).
 
 - **Dashi's index key**: made once with `minisign -G` (encrypted with a
   passphrase), kept offline by the maintainers. Its public half is in the
-  Applet Store (`apps/applet-store/keys.ts`); its secret half, with the
+  Applet Store (`packages/shell/src/applet-store/keys.ts`); its secret half, with the
   passphrase, is the catalog's GitHub Actions secrets `DASHI_INDEX_KEY` and
   `DASHI_INDEX_KEY_PASSWORD`, used only by the job that signs the index on
   `main`. Rotating it is a Dashi update that ships the new public key beside

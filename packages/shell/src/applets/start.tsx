@@ -7,6 +7,7 @@
 
 import { SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
+import { watchKillSwitch } from "../applet-store/kill-switch.ts";
 import { METAL_HOST } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import { parseScreens } from "../displays.ts";
@@ -109,7 +110,10 @@ export function startApplets({ compositor, extras, openOverlay, primary }: Start
       })
     : null;
   launcher?.start();
+  // Pulled versions are turned off even when the Applet Store isn't opened.
+  const stopKillSwitch = watchKillSwitch();
   return () => {
+    stopKillSwitch();
     stopEveryone();
     void launcher?.stop();
   };

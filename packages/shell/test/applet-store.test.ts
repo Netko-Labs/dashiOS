@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { generateKeys, type KeyPair, readInstalled, sha256, sign, trustedComment, writeTar } from "@dashi/applet";
 import { Catalog, CatalogError } from "../src/applet-store/catalog.ts";
 import { AppletInstaller, statusOf } from "../src/applet-store/installer.ts";
+import { applyKillSwitch } from "../src/applet-store/kill-switch.ts";
 import { hardwareNames, parseBusctlString, readMachine } from "../src/applet-store/machine.ts";
 
 // Throwaway keys for this run only.
@@ -150,7 +151,9 @@ test("the kill switch: a pulled version is disabled where it is installed, and t
   const after = catalogTree({ versions: ["0.1.0", "0.2.0"], pulled: ["0.2.0"] });
   const two = setup(after, one.root);
   const { index } = await two.catalog.load();
-  expect(two.installer.disablePulled(index)).toEqual([MANIFEST.id]);
+  // The shell's daily look does it without the store open.
+  expect(await applyKillSwitch(two.catalog, two.installer)).toEqual([MANIFEST.id]);
+  expect(two.installer.disablePulled(index)).toEqual([]);
   const [installed] = readInstalled(one.root);
   expect(installed?.record.disabled).toEqual({ reason: "pulled", detail: "drains the battery" });
   const pulled = index.applets[0];

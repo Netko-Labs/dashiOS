@@ -8,8 +8,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { Catalog, DEFAULT_INDEX, keyFrom, storeCacheDir } from "../../src/applet-store/catalog.ts";
 import { StoreImages } from "../../src/applet-store/images.ts";
 import { AppletInstaller } from "../../src/applet-store/installer.ts";
+import { DASHI_INDEX_KEY } from "../../src/applet-store/keys.ts";
 import { readMachine } from "../../src/applet-store/machine.ts";
-import { DASHI_INDEX_KEY } from "./keys.ts";
 import { AppletStore } from "./model.ts";
 
 export interface Services {
