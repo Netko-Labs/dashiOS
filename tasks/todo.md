@@ -47,7 +47,8 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Inhibit in the shell plus `org.freedesktop.ScreenSaver`; keep-awake in the battery menu
 - [x] `dashi-portals.conf` default=dashi; GTK_USE_PORTAL / GDK_DEBUG; xdg-desktop-portal-gtk dropped from dashi.spec
 - [x] VM, packages installed and xdg-desktop-portal-gtk removed: Settings.ReadAll, ScreenSaver.Inhibit, Helium's Open File as a sheet of its window (the shell refused the portal's second connection; fixed)
-- [ ] VM: Firefox, a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
+- [x] VM: Firefox's Open File as a sheet of its window, with its filters as pills
+- [ ] VM: a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
 - [ ] A sheet on a CSD window (Helium) starts at its top edge, over its toolbar; sheets have no shadow
 - [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
 - [ ] Keep-awake on a machine with no battery has nowhere to show
@@ -72,12 +73,14 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] VM: `dashi-applet new weather`, `dev` (DEV badge), its popover under the item, a button in it updating the item, a click outside closing it; `pack`, `install`: running in bubblewrap as its own unit, its popover from inside the sandbox
 - [x] One React and one @mirinjs/metal per applet (pack bundles one; dev drops @dashi/ui's nested copies): with two, AppWindow's sidebar ran under the window controls
 - [ ] Popover placement at each screen edge; a permission it didn't declare refused
+- [ ] The switcher's surface shows a pale haze where the panel doesn't reach (sized for the largest window row)
 
 ## 8 · The Applet Store and ASUS Control
 - [x] The Applet Store app, signature checks, the kill switch; the catalog at ~/Developer/dashi-applets and ASUS Control at ~/Developer/asus-control (local repositories, no remotes)
 - [ ] Dashi's index key (`minisign -G`), the GitHub secrets, creating the two repositories on GitHub
 - [x] VM: ASUS Control in dev on the fake G14: the popover (mode, charge limit, lights from the fake tree), a mode picked there followed by the shell, the window's Power pane with the model's recipes; named "ASUS Control" in the menu bar
-- [ ] VM: install ASUS Control from a test catalog; the Fans, Lighting, Advanced panes; "Reading the sensors…" never ends without asus hwmon (the VM)
+- [x] VM: the Applet Store on a test catalog (real packages, throwaway keys, file:// URLs): a catalog that doesn't parse, and one signed by another key, are refused with the reason; the list with Reviewed and Installed; Get → the permissions in plain words → ASUS Control installed and running in its sandbox (the consent sheet squeezed the page; fixed); the popover says when there is nothing to read
+- [ ] VM: ASUS Control's Fans, Lighting, Advanced panes on the fake G14; an update and a pulled version through the store
 - [ ] Laptop: lighting (Slash mode numbers unchecked), sensors, fan curves, a per-core Curve Optimizer search with the boot guard
 
 # Dashi 0.3.0 (`release/0.3.0`)
