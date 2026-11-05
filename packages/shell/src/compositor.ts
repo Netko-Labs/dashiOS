@@ -43,6 +43,8 @@ export interface CompositorWindow {
   space?: number;
   /** The icon the app gave (xdg-toplevel-icon): a theme name, and/or a PNG the compositor saved. */
   icon?: WindowIcon;
+  /** The window it is a sheet of (IPC `attach`: a portal dialog, portal-host/); present only for a sheet. */
+  sheetOf?: number;
 }
 
 /** A window's own icon: an icon theme name, a picture on disk, or both. */
@@ -174,7 +176,7 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } = value;
+  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon, sheetOf } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -193,6 +195,7 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     ...(fullscreen === true ? { fullscreen } : {}),
     ...(isNumber(space) && Number.isInteger(space) && space >= 0 ? { space } : {}),
     ...withIcon(parseWindowIcon(icon)),
+    ...(isNumber(sheetOf) && Number.isInteger(sheetOf) && sheetOf > 0 ? { sheetOf } : {}),
   };
 }
 

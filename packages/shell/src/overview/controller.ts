@@ -122,7 +122,13 @@ export class OverviewController {
       const screens = parseOutputs(outputs).map((output) =>
         inset > 0 ? { ...output, usable: { ...output.usable, y: output.usable.y + inset, height: Math.max(1, output.usable.height - inset) } } : output,
       );
-      await this.compositor.request("overview", { windows: planOverview(windows, screens) });
+      // A sheet goes with its window (portal-host/sheets.ts), not as one of its own.
+      await this.compositor.request("overview", {
+        windows: planOverview(
+          windows.filter((window) => window.sheetOf === undefined),
+          screens,
+        ),
+      });
     } catch (error) {
       // Refused (the screen is locked) or unreachable: it did not open.
       if (generation === this.generation) this.setOpen(false);
