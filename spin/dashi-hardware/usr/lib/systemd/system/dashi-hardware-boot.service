@@ -1,0 +1,19 @@
+[Unit]
+Description=Dashi hardware boot guard (count this boot)
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/release/0.4.0/docs/hardware.md
+DefaultDependencies=no
+After=local-fs.target
+Before=basic.target shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Early at boot: mark this boot unclean until the clean unit runs at
+# shutdown. Two unclean boots in a row clear the saved tuning.
+ExecStart=/usr/libexec/dashi/dashi-hardware boot
+StateDirectory=dashi-hardware
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=basic.target

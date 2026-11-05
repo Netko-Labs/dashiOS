@@ -1,0 +1,23 @@
+[Unit]
+Description=Dashi's hardware helper (dev.dashi.Hardware1)
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/release/0.4.0/docs/hardware.md
+
+[Service]
+Type=dbus
+BusName=dev.dashi.Hardware1
+ExecStart=/usr/libexec/dashi/dashi-hardware serve
+# It writes firmware attributes, hwmon and the PCI root complex's config
+# space (the SMU), so it stays privileged; it is otherwise confined.
+StateDirectory=dashi-hardware
+StateDirectoryMode=0700
+ProtectHome=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+MemoryDenyWriteExecute=yes
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target

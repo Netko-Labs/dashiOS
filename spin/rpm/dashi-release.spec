@@ -11,6 +11,11 @@ Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
 
 Requires:       fedora-repos(44)
+# Power modes need a power-profiles D-Bus provider; Dashi uses tuned-ppd
+# (tuned with power-profiles-daemon's API on top), and the two providers
+# can't both own the bus name, so power-profiles-daemon is out.
+Requires:       tuned-ppd
+Conflicts:      power-profiles-daemon
 # zsh is Dashi's shell: new accounts get it (%posttrans). A plain Requires,
 # not Requires(post): setup requires system-release (this package), so a
 # scriptlet dependency on zsh or shadow-utils (which need filesystem, which

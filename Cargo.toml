@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/dashi-comp"]
+members = ["crates/dashi-comp", "crates/dashi-hardware"]
 # dashi-term links libghostty-vt and is built on its own (its spec, its Cargo.lock).
 exclude = ["crates/dashi-term"]
 
