@@ -63,6 +63,17 @@ impl Dashi {
         if !self.on_current_space(id) {
             return Ok(());
         }
+        // A window with a sheet on it gives the sheet the keyboard (wm/sheets.rs).
+        let window = match self
+            .sheet_on(id)
+            .and_then(|sheet| self.window_of(sheet).ok())
+        {
+            Some(sheet) => {
+                self.space.raise_element(&window, false);
+                sheet
+            }
+            None => window,
+        };
         self.space.raise_element(&window, true);
         if let (Some(keyboard), Some(surface)) =
             (self.seat.get_keyboard(), toplevel_surface(&window))

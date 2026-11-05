@@ -66,6 +66,8 @@ pub(crate) struct Entry {
     pub hover: Option<crate::render::titlebar::Part>,
     /// Its icon (xdg-toplevel-icon), as last told.
     pub icon: crate::handlers::toplevel_meta::Icon,
+    /// The window it is a sheet of (IPC `attach`; wm/sheets.rs).
+    pub sheet_of: Option<WindowId>,
 }
 
 pub(crate) struct Windows {
@@ -104,6 +106,7 @@ impl Windows {
             attention: false,
             icon: Default::default(),
             hover: None,
+            sheet_of: None,
         });
         id
     }
@@ -255,6 +258,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "space": entry.space,
         "attention": entry.attention,
         "x11": entry.window.x11_surface().is_some(),
+        "sheetOf": entry.sheet_of,
         "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
             .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
     })

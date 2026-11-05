@@ -53,7 +53,12 @@ impl Dashi {
         let Some(toplevel) = entry.window.toplevel().cloned() else {
             return;
         };
-        let decor = decor_for(&toplevel, entry.unified);
+        // A sheet hangs from its parent's title bar and has none of its own (wm/sheets.rs).
+        let decor = if entry.sheet_of.is_some() {
+            Decor::None
+        } else {
+            decor_for(&toplevel, entry.unified)
+        };
         if decor == entry.decor {
             return;
         }

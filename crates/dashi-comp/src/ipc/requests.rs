@@ -246,8 +246,45 @@ pub(crate) fn handle(
             state.cursors.set_size(size as u32);
             Ok(json!({}))
         }
+        "attach" => {
+            let parent = match params.get("parent") {
+                None | Some(Value::Null) => None,
+                Some(value) => Some(
+                    value
+                        .as_u64()
+                        .filter(|id| *id > 0)
+                        .ok_or("`parent` must be a window id or null")?,
+                ),
+            };
+            done(state.attach_sheet(window(params)?, parent))
+        }
+        "window-for-handle" => {
+            Ok(json!({ "window": window_for_handle(state, text(params, "handle")?) }))
+        }
         method => Err(format!("unknown method: {method}")),
     }
+}
+
+/// The window a portal's parent handle names: `wayland:<xdg-foreign handle>`
+/// or `x11:<X window id in hex>`; None for anything else, or a window gone.
+fn window_for_handle(state: &Dashi, handle: &str) -> Option<u64> {
+    if let Some(exported) = handle.strip_prefix("wayland:") {
+        let surface = state.xdg_foreign.surface_for(exported)?;
+        return crate::wm::window_id_for_surface(state, surface);
+    }
+    let xid = handle.strip_prefix("x11:")?;
+    let xid = u32::from_str_radix(xid.trim_start_matches("0x"), 16).ok()?;
+    state
+        .windows
+        .entries()
+        .filter(|entry| entry.announced)
+        .find(|entry| {
+            entry
+                .window
+                .x11_surface()
+                .is_some_and(|x11| x11.window_id() == xid)
+        })
+        .map(|entry| entry.id)
 }
 
 /// `capture {path, window?, rect?}`: only the shell may.

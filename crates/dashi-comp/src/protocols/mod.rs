@@ -6,3 +6,4 @@ pub(crate) mod foreign_toplevel;
 pub(crate) mod image_capture;
 pub(crate) mod screencopy;
 pub(crate) mod toplevel_list;
+pub(crate) mod xdg_foreign;
