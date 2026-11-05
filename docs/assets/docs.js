@@ -10,6 +10,7 @@ const PAGES = [
   ["0.4.0.html", "0.4.0"],
   ["plan.html", "Plan"],
   ["proposals.html", "Proposals"],
+  ["betterments.html", "Launcher"],
 ];
 
 /** The mark: the bowl and its three wisps of steam (packages/shell/icons/setup.svg). */
