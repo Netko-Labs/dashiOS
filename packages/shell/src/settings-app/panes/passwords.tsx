@@ -73,7 +73,7 @@ function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () =>
   const [problem, setProblem] = useState<string | null>(null);
   const set = (key: keyof typeof empty) => (text: string) => setForm((current) => ({ ...current, [key]: text }));
   const save = () => {
-    void passwords.vault
+    void passwords
       .save({ site: form.site, account: form.account, password: form.password, ...(form.totp ? { totp: form.totp } : {}) })
       .then(() => {
         setForm(empty);
@@ -122,7 +122,7 @@ function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents
   );
 }
 
-export function PasswordsPane({ passwords, onePasswordReady }: { passwords: Passwords; onePasswordReady: () => boolean }) {
+export function PasswordsPane({ passwords }: { passwords: Passwords }) {
   // Agents' pictures blank this window while the pane shows.
   useEffect(() => vaultShown(), []);
   const prefs = useSyncExternalStore(passwords.prefs.subscribe, passwords.prefs.getSnapshot);
@@ -150,7 +150,9 @@ export function PasswordsPane({ passwords, onePasswordReady }: { passwords: Pass
         </Row>
         <Row
           label="1Password"
-          detail={onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"}
+          detail={
+            passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
+          }
         >
           <Switch
             testID="passwords-source-1password"
@@ -190,8 +192,10 @@ export function PasswordsPane({ passwords, onePasswordReady }: { passwords: Pass
           ))
         )}
       </Group>
-      {status?.unlocked && prefs.saveTo === "dashi" && <AddLogin passwords={passwords} onSaved={refresh} />}
-      {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password: add them in the 1Password app.</Caption>}
+      {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
+        <AddLogin passwords={passwords} onSaved={refresh} />
+      )}
+      {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password (its app asks you to unlock it); its logins aren't listed here.</Caption>}
       <Caption>{vaultLine}</Caption>
     </Page>
   );

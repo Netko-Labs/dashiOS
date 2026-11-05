@@ -66,7 +66,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "notifications":
       return <NotificationsPane flags={ctx.flags} />;
     case "passwords":
-      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} onePasswordReady={ctx.onePasswordReady ?? (() => false)} /> : null;
+      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : null;
     case "agents":
       return <AgentsPane grants={ctx.grants} home={ctx.home} />;
     case "about":

@@ -231,6 +231,30 @@ sandbox). The broker asks each enabled one for logins matching the site
 (`src/agents/secrets/sources.ts`); a source that fails is left out and named.
 Dashi's vault always holds the Secret Service's items (apps' secrets).
 
+### 1Password
+
+`src/agents/secrets/onepassword.ts`, through the `op` CLI's desktop app
+integration (1Password › Settings › Developer › "Integrate with 1Password
+CLI"): `op` asks the 1Password app, which asks the person to unlock it.
+The shell is the broker: it runs as the person, outside every agent sandbox
+(which hides 1Password's sockets, the CLI's configuration, and the app's
+data), and:
+
+- lists `op item list --categories Login --format json` (no secrets: ids,
+  vaults, the username, URLs, tags), kept five minutes;
+- for one approved use, reads that one item's one field:
+  `op read --no-newline op://<vault>/<item>/password`, or
+  `op item get <item> --vault <vault> --otp` for the code; types it, drops it;
+- saves a new login (Settings, "Save new logins to 1Password") as a JSON
+  template on `op item create -`'s stdin, never on a command line.
+
+Items tagged `dashi-never` are "Never" for agents. The CLI doesn't say when
+an item was last used, so Dashi notes its own uses
+(`~/.local/state/dashi/agents/logins-used.json`, ids and times only) for the
+sheet's order. It doesn't say whether an item has a code either: `fill_code`
+finds out. Not checked on a machine with 1Password yet (the plan's open
+question): no service account is needed, and each `op` call may prompt.
+
 Settings › Passwords also lists the vault's logins (site, account, Ask or
 Never for agents, Delete) and adds new ones (site, account, password,
 two-factor setup key). Agents' pictures blank Settings while it shows.

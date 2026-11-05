@@ -22,8 +22,6 @@ export interface PaneContext {
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
-  /** Whether 1Password can be asked (its CLI and app integration). */
-  onePasswordReady?(): boolean;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

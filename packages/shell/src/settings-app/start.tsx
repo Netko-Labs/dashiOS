@@ -44,8 +44,6 @@ export interface SettingsAppOptions {
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
-  /** Whether 1Password can be asked (its CLI and app integration). */
-  onePasswordReady?(): boolean;
   lock(): void;
   /** Opens the Setup Assistant (About has a button for it). */
   openSetup(): void;
@@ -98,7 +96,6 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       screens,
       grants: options.grants,
       ...(options.passwords ? { passwords: options.passwords } : {}),
-      ...(options.onePasswordReady ? { onePasswordReady: options.onePasswordReady } : {}),
       layouts: loadLayouts(),
       chooser: portalChooser(),
       services: options.services(),

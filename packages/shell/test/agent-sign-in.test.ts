@@ -177,6 +177,18 @@ describe("logins from two sources", () => {
     expect(sorted.map((l) => `${l.source}:${l.account}`)).toEqual(["1password:recent", "1password:old", "dashi:never-used", "1password:never-used"]);
   });
 
+  test("the sheet lists both sources' logins, saying where each is from, the most recent first; the chosen one's source types it", async () => {
+    const dashi = source("dashi", [login({ lastUsed: 100 })]);
+    const op = source("1password", [login({ source: "1password", id: "v1/abc", account: "alex-op", lastUsed: 200 })]);
+    const h = harness({ sources: [dashi, op], fields: [field("password")], answer: { allow: "once", login: "1password:v1/abc" } });
+    await signIn(h.ctx, "github.com", null, false);
+    expect(h.asked[0]?.logins).toEqual([
+      { key: "1password:v1/abc", account: "alex-op", site: "github.com", source: "1Password" },
+      { key: "dashi:1", account: "alexk", site: "github.com", source: "Dashi" },
+    ]);
+    expect([dashi.revealed, op.revealed]).toEqual([0, 1]);
+  });
+
   test("a source that fails is left out and named", async () => {
     const { logins, failed } = await findLogins([source("dashi", [login()]), source("1password", [], true)], "github.com");
     expect(logins.length).toBe(1);
