@@ -667,9 +667,10 @@
       <p>Small, mostly app and token changes; each is a day or less, and together they change the first impression.</p>
       <ul>
         <li>The window fixes on this page: Fill on the green control, the new chords, bugs 1–7. <span class="where app">shell</span> <span class="where comp">compositor</span></li>
-        <li><code>AppWindow</code> without <code>subtitle</code> and <code>footer</code>; contrast and job tokens (ume, broth, moss; darker accent fill). <span class="where ui">@dashi/ui</span></li>
-        <li>Confirm before deleting passwords and cards, Revert, closing a running tab; Enter never grants. <span class="where ui">@dashi/ui</span></li>
-        <li>Applet Store opens on Installed without a key; Components unpinned from the default Dock.</li>
+        <li><code>AppWindow</code> without <code>subtitle</code> and <code>footer</code>; contrast and job tokens (ume, broth, moss; darker accent fill). <span class="where ui">@dashi/ui</span> <span class="pill done">Built</span></li>
+        <li>Confirm before deleting passwords and cards, Revert, closing a running tab; Enter never grants. <span class="where ui">@dashi/ui</span> <span class="pill done">Built</span> the shared <code>ConfirmSheet</code> and <code>useConfirm</code> (ume button, Enter and Esc cancel); each app adopts it.</li>
+        <li>Applet Store opens on Installed without a key.</li>
+        <li>Components unpinned from the default Dock. <span class="pill done">Built</span></li>
         <li>Terminal palette, <code>memo</code> fix, ⇧❖W; Editor caret jump, ❖W asks, window titles.</li>
         <li>Calculator locale, paste and spacing; Activity Monitor numbers, one row, sampling in a worker.</li>
         <li>Settings' two Dark Mode controls, the sidebar colors; Calendar's hidden-calendar trap and palette.</li>
@@ -680,7 +681,7 @@
       <h3>Wave 2: the platform pieces</h3>
       <p>Each unlocks several apps at once. Most of these are in mirin or <code>@dashi/ui</code>, not in an app.</p>
       <ul>
-        <li><span class="where mirin">mirin</span> <code>TextInput</code> caret placement and selection, then a document view; modifiers on <code>onPress</code>; tooltips; later the accessibility tree.</li>
+        <li><span class="where mirin">mirin</span> <code>TextInput</code> caret placement and selection, then a document view; modifiers on <code>onPress</code>; later the accessibility tree. (Tooltips needed no mirin change: <code>@dashi/ui</code> draws them from Metal's hover bounds. <span class="pill done">Built</span>)</li>
         <li><span class="where ui">@dashi/ui</span> <code>KeySink</code> on <code>onKeyDown</code> and a focus model; the missing controls; PopupMenu with separators, keys and clamping; one alert frame; a token lint.</li>
         <li><span class="where ui">kit</span> a shared undo stack; a window-visibility signal; Components as the gallery.</li>
         <li><span class="where comp">compositor</span> shadows, the hairline and the optional ring; sheets' shadow.</li>

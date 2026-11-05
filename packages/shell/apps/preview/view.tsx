@@ -2,16 +2,18 @@
  * Preview's window: the toolbar, the picture area, the PDF's page strip, and
  * the sheets. The state that is slow (files, tools) is the Viewer's; what
  * lives here is how the picture is looked at: the zoom, the pan, which sheet
- * is up, and the keys.
+ * is up, and the keys. A file dropped anywhere on the window opens in it
+ * (drop.ts); with no file open, the window offers only that and Open….
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, Notice, PopupMenu, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chooseFile } from "../../src/portal/file-chooser.ts";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { Canvas } from "./canvas.tsx";
 import type { Size } from "./dimensions.ts";
+import { useDropArea } from "./drop.ts";
 import * as glyphs from "./glyphs.ts";
 import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";
 import { factsFor } from "./info.ts";
@@ -47,6 +49,7 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   const [sheet, setSheet] = useState<SheetState>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [thumbnails, setThumbnails] = useState(true);
+  const [dismissedNote, setDismissedNote] = useState<string | null>(null);
 
   const { picture, pdf } = snap;
   const isPdf = snap.kind === "pdf";
@@ -198,13 +201,14 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   useAppMenus(menus, run);
 
   const moreItems: MenuItem[] = [
-    { label: "Open With…", onPress: openWithSheet },
-    { label: "Show in Files", onPress: reveal },
+    { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.format },
+    { label: "Show in Files", onPress: reveal, disabled: !snap.path },
     { label: "Save Turned Copy", onPress: saveCopy, disabled: !canSaveCopy },
     { label: "Move to Trash…", onPress: () => setSheet({ kind: "trash" }), disabled: !snap.path },
   ];
 
-  const subtitle = useMemo(() => {
+  // The picture's size and place in its folder: a quiet line in the toolbar row, not a second line under the title.
+  const detail = useMemo(() => {
     if (!snap.path) return undefined;
     if (pdf) return `${pdf.pages} ${pdf.pages === 1 ? "page" : "pages"}${pdf.title ? ` · ${pdf.title}` : ""}`;
     const parts: string[] = [];
@@ -274,9 +278,15 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       onTurnRight={() => void viewer.rotate(1)}
       onInfo={showInfo}
       onMore={(bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) - 120, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 })}
+      hasFile={snap.path !== null}
       hasPicture={picture !== null}
     />
   );
+  const drop = useDropArea((path) => {
+    setSheet(null);
+    setMenu(null);
+    void viewer.open(path);
+  });
 
   const content = picture ? (
     <Canvas picture={picture} scale={scale} pan={pan} onPan={setPan} onArea={setArea} area={area} />
@@ -288,30 +298,45 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     <EmptyState
       testID="empty"
       title="No file open"
-      message="Open an image or a PDF here, or with Preview from Files."
+      message="Drop an image or a PDF here, or choose one."
       glyph={glyphs.PICTURE}
-      action={<Button testID="open" label="Open…" onPress={openFile} />}
+      action={<Button testID="open" label="Open…" primary onPress={openFile} />}
     />
   );
 
-  const footer = snap.note ? (
-    <View testID="note" style={{ paddingHorizontal: 14, paddingVertical: 6, borderTopWidth: 1, borderColor: colors.separator }}>
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{snap.note}</Text>
-    </View>
-  ) : undefined;
+  // A note about how the picture is shown floats over it until dismissed, instead of a bar under it.
+  const notice = snap.note && snap.note !== dismissedNote ? <Notice testID="note" text={snap.note} onDismiss={() => setDismissedNote(snap.note)} /> : undefined;
 
   return (
     <AppWindow
       title={snap.name || "Preview"}
-      {...(subtitle !== undefined ? { subtitle } : {})}
-      toolbar={toolbar}
+      toolbar={
+        <>
+          {detail !== undefined && (
+            <View style={{ flexShrink: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+                {detail}
+              </Text>
+            </View>
+          )}
+          {toolbar}
+        </>
+      }
       sidebar={pdf && thumbnails ? <Thumbnails pdf={pdf} pageSize={viewer.firstPageSize} onPage={(page) => void viewer.goToPage(page)} /> : undefined}
       sidebarWidth={190}
-      footer={footer}
+      notice={notice}
       overlay={overlay}
     >
       {sheet === null && menu === null && <KeySink testID="keys" onKey={onKey} />}
-      {content}
+      <View testID="drop-area" onDrop={drop.onDrop} style={{ flex: 1, flexDirection: "column", minHeight: 0, minWidth: 0, position: "relative" }}>
+        {content}
+        {drop.over && (
+          <View
+            testID="drop-target"
+            style={{ position: "absolute", left: 4, top: 4, right: 4, bottom: 4, borderWidth: 2, borderColor: colors.selection, borderRadius: 8 }}
+          />
+        )}
+      </View>
     </AppWindow>
   );
 }

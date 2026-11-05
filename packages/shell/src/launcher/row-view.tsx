@@ -87,7 +87,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
             width: BAR.width,
             height: BAR.height,
             borderRadius: 1.5,
-            backgroundColor: colors.selection,
+            backgroundColor: colors.selectionBar,
           }}
         />
       )}

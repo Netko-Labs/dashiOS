@@ -127,6 +127,7 @@ export const KEYMAP: Keymap = {
     { when: "super+space", bind: "launcher" },
     // ❖, opens System Settings (settings-app/).
     { when: "super+comma", bind: "settings" },
+    // ❖W and ⇧❖W (Shift isn't named): the app's own row for the chord first, else the window closes (shortcuts.ts).
     { when: "super+w", app: "metal", bind: "close-window" },
     // ⇧❖3 captures the screen; ⇧❖4 an area dragged out, or with Space the
     // focused window (screenshots.ts, screenshot-area.tsx); ⇧❖5 opens the

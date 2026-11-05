@@ -1,15 +1,15 @@
-/** Discover: Dashi's recommended apps, then Trending, Popular, and Recently Updated from Flathub, a few of each. */
+/** Discover: Dashi's recommended apps (local, always shown), then Trending, Popular, and Recently Updated from Flathub, a few of each. */
 
-import { useColors } from "@dashi/ui";
+import { Button, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { Answer, Collection, Flathub } from "../../src/software/flathub.ts";
 import type { Page } from "../../src/software/flathub-types.ts";
 import { CardGrid } from "./cards.tsx";
-import { useLoad } from "./hooks.ts";
+import { type Load, useLoad } from "./hooks.ts";
 import { RecommendedCards } from "./recommended.tsx";
 import { useServices } from "./services.ts";
-import { Failed, Loading, StaleNote } from "./states.tsx";
+import { StaleNote } from "./states.tsx";
 
 const SECTIONS: ReadonlyArray<{ kind: Collection; title: string; detail: string }> = [
   { kind: "trending", title: "Trending", detail: "What people are installing right now" },
@@ -42,26 +42,52 @@ async function loadSections(catalog: Flathub): Promise<Answer<Loaded>> {
   return { value, stale: results.some((result) => result.status === "fulfilled" && result.value.stale) };
 }
 
+/** Where Flathub's sections would be, while they load or when they can't: one quiet line, and Try Again when it may help. */
+function SectionsState({ state, onRetry }: { state: Exclude<Load<Loaded>, { status: "ready" }>; onRetry: () => void }) {
+  const colors = useColors();
+  const text =
+    state.status === "loading"
+      ? "Loading Trending, Popular, and Recently Updated…"
+      : state.offline
+        ? "You're offline. Trending, Popular, and Recently Updated come back when you're online."
+        : "Flathub didn't answer, so Trending, Popular, and Recently Updated can't be shown right now.";
+  return (
+    <View testID={`sections:${state.status}`} style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>
+      </View>
+      {state.status === "failed" && <Button label="Try Again" testID="retry" onPress={onRetry} />}
+    </View>
+  );
+}
+
+/**
+ * Dashi's recommended apps come first and always show, at once and offline:
+ * the list is local. Flathub's sections follow once they load; while they
+ * load, or when Flathub can't be reached, a line says so in their place.
+ */
 export function Discover({ banner }: { banner?: ReactNode }) {
   const { catalog } = useServices();
   const { state, reload } = useLoad<Loaded>("discover", () => loadSections(catalog));
-  if (state.status === "loading") return <Loading what="Loading apps…" />;
-  if (state.status === "failed") return <Failed state={state} onRetry={reload} />;
   return (
     <ScrollView testID="discover" style={{ flex: 1, flexDirection: "column", gap: 18, padding: 22 }}>
       {banner}
-      {state.stale && <StaleNote />}
+      {state.status === "ready" && state.stale && <StaleNote />}
       <View testID="section:recommended" style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
         <SectionHeader title="Recommended for Dashi" detail="Apps that work well here, picked by Dashi" />
         <RecommendedCards />
       </View>
-      {state.value.map((entry) =>
-        entry === null ? null : (
-          <View key={entry.section.kind} testID={`section:${entry.section.kind}`} style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
-            <SectionHeader title={entry.section.title} detail={entry.section.detail} />
-            <CardGrid apps={entry.page.apps.slice(0, SHOWN)} />
-          </View>
-        ),
+      {state.status === "ready" ? (
+        state.value.map((entry) =>
+          entry === null ? null : (
+            <View key={entry.section.kind} testID={`section:${entry.section.kind}`} style={{ flexShrink: 0, flexDirection: "column", gap: 10 }}>
+              <SectionHeader title={entry.section.title} detail={entry.section.detail} />
+              <CardGrid apps={entry.page.apps.slice(0, SHOWN)} />
+            </View>
+          ),
+        )
+      ) : (
+        <SectionsState state={state} onRetry={reload} />
       )}
     </ScrollView>
   );

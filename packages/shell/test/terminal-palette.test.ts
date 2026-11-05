@@ -1,0 +1,118 @@
+import { describe, expect, test } from "bun:test";
+import { closeCopy, stillRunning } from "../apps/terminal/closing.ts";
+import { lookFor } from "../apps/terminal/line.tsx";
+import { terminalMenus } from "../apps/terminal/menus.ts";
+import { ANSI_NAMES, contrast, DARK_TERMINAL, groundSide, LIGHT_TERMINAL, terminalPalette } from "../apps/terminal/palette.ts";
+import { reservedBy } from "../src/app-menus/reserved.ts";
+import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
+
+const AA = 4.5;
+
+describe("the terminal palette", () => {
+  test("contrast is WCAG's ratio", () => {
+    expect(contrast("#000000", "#ffffff")).toBeCloseTo(21, 5);
+    expect(contrast("#ffffff", "#ffffff")).toBe(1);
+    expect(contrast("#767676", "#ffffff")).toBeCloseTo(4.54, 2);
+  });
+
+  for (const dark of [false, true]) {
+    const palette = terminalPalette(dark);
+    const mode = dark ? "dark" : "light";
+
+    test(`${mode}: 16 colors, all #rrggbb`, () => {
+      expect(palette.ansi).toHaveLength(ANSI_NAMES.length);
+      for (const value of [palette.ground, palette.ink, ...palette.ansi]) expect(value).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    test(`${mode}: the ink and every color programs write text in are AA on the ground`, () => {
+      expect(contrast(palette.ink, palette.ground)).toBeGreaterThanOrEqual(7);
+      const exempt = new Set(groundSide(dark));
+      palette.ansi.forEach((value, index) => {
+        if (exempt.has(index)) return;
+        const ratio = contrast(value, palette.ground);
+        if (ratio < AA) throw new Error(`${mode} ${ANSI_NAMES[index]} ${value} is ${ratio.toFixed(2)}:1 on ${palette.ground}`);
+      });
+    });
+
+    test(`${mode}: the ground's own side stays near the ground (it is a background, not text)`, () => {
+      for (const index of groundSide(dark)) expect(contrast(palette.ansi[index] as string, palette.ground)).toBeLessThan(2);
+    });
+  }
+
+  test("ls's colored backgrounds stay readable: white on red and blue in Light Mode, black on green and yellow in Dark Mode", () => {
+    const [, red, , , blue, , , white] = LIGHT_TERMINAL.ansi as string[];
+    expect(contrast(white as string, red as string)).toBeGreaterThanOrEqual(3);
+    expect(contrast(white as string, blue as string)).toBeGreaterThanOrEqual(3);
+    const [black, , green, yellow] = DARK_TERMINAL.ansi as string[];
+    expect(contrast(black as string, green as string)).toBeGreaterThanOrEqual(3);
+    expect(contrast(black as string, yellow as string)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+test("the grid paints with the palette until a program sets its own ink and ground", () => {
+  expect(lookFor(LIGHT_TERMINAL, false, "#3E8A72", undefined, undefined)).toEqual({
+    ground: LIGHT_TERMINAL.ground,
+    ink: LIGHT_TERMINAL.ink,
+    selection: "#3E8A7240",
+    cursor: `${LIGHT_TERMINAL.ink}b3`,
+  });
+  expect(lookFor(DARK_TERMINAL, true, "#3E8A72", "#ffffff", "#102030")).toMatchObject({ ground: "#102030", ink: "#ffffff", cursor: "#ffffffcc" });
+});
+
+describe("closing a tab that runs something", () => {
+  test("only tabs past their prompt count", () => {
+    expect(stillRunning([null, "sleep", null, ""])).toEqual(["sleep", ""]);
+    expect(stillRunning([null, null])).toEqual([]);
+  });
+
+  test("the tab's question names its program", () => {
+    expect(closeCopy({ kind: "tab", id: 1, program: "ssh" })).toEqual({
+      title: "Close this tab?",
+      message: "“ssh” is still running. Closing the tab stops it.",
+      confirmLabel: "Close tab",
+    });
+    expect(closeCopy({ kind: "tab", id: 1, program: "" }).message).toBe("A program is still running. Closing the tab stops it.");
+  });
+
+  test("the window's question names them when it can, else counts them", () => {
+    expect(closeCopy({ kind: "window", programs: ["vim"] }).message).toBe("“vim” is still running. Closing the window stops it.");
+    expect(closeCopy({ kind: "window", programs: ["vim", "ssh", "make"] }).message).toBe(
+      "3 programs are still running: “vim”, “ssh” and “make”. Closing the window stops them.",
+    );
+    expect(closeCopy({ kind: "window", programs: ["sleep", "sleep"] }).message).toBe("2 programs are still running. Closing the window stops them.");
+    expect(closeCopy({ kind: "window", programs: ["vim"] }).confirmLabel).toBe("Close window");
+  });
+});
+
+describe("the Terminal's menus", () => {
+  const noop = (): void => {};
+  const menus = (tabs: string[]) =>
+    terminalMenus({
+      canCopy: true,
+      tabs,
+      active: 0,
+      actions: {
+        copy: noop,
+        paste: noop,
+        selectAll: noop,
+        newWindow: noop,
+        newTab: noop,
+        closeTab: noop,
+        closeWindow: noop,
+        stepTab: noop,
+        showIndex: noop,
+      },
+    }).menus;
+
+  test("every shortcut reaches the app: ❖W closes the tab and ⇧❖W the window", () => {
+    const rows = menus(["zsh", "vim"]).flatMap((menu) => menu.items.flatMap((row) => ("shortcut" in row && row.shortcut ? [row] : [])));
+    for (const row of rows) {
+      const chord = chordFromShortcut(row.shortcut as string);
+      expect(chord).not.toBeNull();
+      if (chord) expect(reservedBy(chord)).toBeNull();
+    }
+    const byKey = new Map(rows.map((row) => [row.shortcut, "id" in row ? row.id : ""]));
+    expect(byKey.get("❖W")).toBe("close-tab");
+    expect(byKey.get("⇧❖W")).toBe("close-window");
+  });
+});

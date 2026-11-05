@@ -50,6 +50,15 @@ pub(crate) enum Input {
     SelectAll,
     /// Reply with the selected text (`copy`).
     Copy,
+    /// The terminal's own colors (`#rrggbb`): its ink, its ground, and the 16
+    /// ANSI colors programs name. Programs can still change them (OSC 4, 10, 11).
+    Colors {
+        fg: String,
+        bg: String,
+        palette: Vec<String>,
+    },
+    /// Reply with what runs in the foreground instead of the shell (`running`).
+    Running,
 }
 
 fn one() -> u8 {
@@ -82,6 +91,11 @@ pub(crate) enum Output {
     Exit {
         code: i32,
     },
+    /// In reply to `running`: the foreground program's name when it isn't the
+    /// shell (empty when it has none), else null.
+    Running {
+        program: Option<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -89,8 +103,14 @@ pub(crate) struct Frame {
     pub cols: u16,
     pub rows: u16,
     pub full: bool,
-    pub fg: String,
-    pub bg: String,
+    /// The terminal's ink and ground as they are now (a program may have set
+    /// them); absent until the app or a program sets them. Named apart from
+    /// the `fg`/`bg` that dashi-term 0.2 always sent, so an app never takes
+    /// those for colors to paint with.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ink: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ground: Option<String>,
     pub cursor: Cursor,
     pub lines: Vec<Line>,
     /// Scrollback: total rows, the view's first row, and how many it shows.
@@ -143,6 +163,16 @@ pub(crate) fn hex(r: u8, g: u8, b: u8) -> String {
     format!("#{r:02x}{g:02x}{b:02x}")
 }
 
+/// `#rrggbb` as its three channels; None for anything else.
+pub(crate) fn parse_hex(text: &str) -> Option<(u8, u8, u8)> {
+    let digits = text.strip_prefix('#')?;
+    if digits.len() != 6 || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let channel = |at: usize| u8::from_str_radix(&digits[at..at + 2], 16).ok();
+    Some((channel(0)?, channel(2)?, channel(4)?))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,6 +210,49 @@ mod tests {
             }
         );
         assert!(serde_json::from_str::<Input>(r#"{"t":"select-all"}"#).is_ok());
+    }
+
+    #[test]
+    fn colors_and_running_parse() {
+        let input: Input = serde_json::from_str(
+            r##"{"t":"colors","fg":"#1d1d1f","bg":"#fbfaf7","palette":["#000000"]}"##,
+        )
+        .expect("colors");
+        assert_eq!(
+            input,
+            Input::Colors {
+                fg: "#1d1d1f".into(),
+                bg: "#fbfaf7".into(),
+                palette: vec!["#000000".into()]
+            }
+        );
+        assert_eq!(
+            serde_json::from_str::<Input>(r#"{"t":"running"}"#).expect("running"),
+            Input::Running
+        );
+        assert_eq!(
+            serde_json::to_string(&Output::Running { program: None }).expect("json"),
+            r#"{"t":"running","program":null}"#
+        );
+    }
+
+    #[test]
+    fn hex_colors_read_back() {
+        assert_eq!(parse_hex("#1d1D1f"), Some((0x1d, 0x1d, 0x1f)));
+        assert_eq!(parse_hex(&hex(1, 2, 3)), Some((1, 2, 3)));
+        for bad in ["1d1d1f", "#1d1d1", "#1d1d1fff", "#gggggg", ""] {
+            assert_eq!(parse_hex(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn frames_leave_unset_colors_out() {
+        let frame = Frame::default();
+        let json = serde_json::to_string(&Output::Frame(frame)).expect("json");
+        assert!(
+            !json.contains("\"ink\"") && !json.contains("\"ground\""),
+            "{json}"
+        );
     }
 
     #[test]

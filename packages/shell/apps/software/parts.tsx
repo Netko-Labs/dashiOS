@@ -1,6 +1,6 @@
 /** Small pieces the pages share: an app's icon, the verified badge, the progress bar, and the Get / Open / Update pill. */
 
-import { darkColors, useColors } from "@dashi/ui";
+import { darkColors, tintFor, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
@@ -27,14 +27,6 @@ export function useActions(): Actions {
   const actions = useContext(ActionsContext);
   if (!actions) throw new Error("Software's actions are not provided");
   return actions;
-}
-
-const LETTER_TINTS = ["#5b6ad0", "#3b8fd0", "#2f9d8f", "#4f8f4f", "#c7892b", "#d97a2c", "#d0527f", "#6E56CF", "#7a7a82"];
-
-function tintFor(name: string): string {
-  let sum = 0;
-  for (const char of name) sum = (sum * 31 + char.charCodeAt(0)) % 9973;
-  return LETTER_TINTS[sum % LETTER_TINTS.length] ?? "#7a7a82";
 }
 
 /** An app's icon from a file or a URL in the image cache; until it is here, its first letter on a tinted tile. */

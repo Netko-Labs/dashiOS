@@ -2,7 +2,7 @@
  * A note's text: its file is Markdown, its title the first line (a leading
  * "# " is the Markdown way to write it and is what the app writes; a file
  * from elsewhere whose first line is plain stays plain), the rest the body.
- * Also what the list shows (a preview, a date), the footer's word count, and
+ * Also what the list shows (a preview, a date), the note's word count, and
  * search.
  */
 
@@ -46,10 +46,15 @@ export function preview(body: string): string {
   return "";
 }
 
-/** Words in the title and body, as the footer counts them. */
+/** Words in the title and body, as the note counts them under its date. */
 export function wordCount(text: string): number {
   // A checklist's box is not a word.
   return text.replace(/^\s*[-*+]\s+\[[ xX]\]/gm, "").match(/[\p{L}\p{N}][\p{L}\p{N}'’_-]*/gu)?.length ?? 0;
+}
+
+/** The line over a note: "Edited 5 November 2026 at 09:12 · 120 words". */
+export function editedLine(date: string, words?: number): string {
+  return words === undefined ? `Edited ${date}` : `Edited ${date} · ${words} ${words === 1 ? "word" : "words"}`;
 }
 
 export interface Searchable {
@@ -105,9 +110,6 @@ export function listDate(time: number, now: number = Date.now(), locale?: string
   if (days < 7) return at.toLocaleDateString(locale, { weekday: "long" });
   return at.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
 }
-
-/** "12 notes". */
-export const noteCount = (count: number): string => `${count} ${count === 1 ? "note" : "notes"}`;
 
 /** Days left before a deleted note goes for good. */
 export function daysLeft(deletedAt: number, now: number, keepDays: number): number {

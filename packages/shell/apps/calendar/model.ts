@@ -126,6 +126,20 @@ export class CalendarModel {
     this.attempt("Hiding the calendar", () => writeSidecar(this.store.root, { version: 1, hidden }));
   }
 
+  /**
+   * Shows a hidden calendar again and says so: a new event is about to go
+   * into it (target.ts), and must not vanish there. True when it shows.
+   */
+  reveal(calendarId: string): boolean {
+    if (this.isVisible(calendarId)) return true;
+    const hidden = this.state.hidden.filter((id) => id !== calendarId);
+    this.attempt("Showing the calendar", () => writeSidecar(this.store.root, { version: 1, hidden }));
+    if (!this.isVisible(calendarId)) return false;
+    const name = this.calendar(calendarId)?.name ?? calendarId;
+    this.set({ notice: `“${name}” is shown again, so the new event can be seen there.` });
+    return true;
+  }
+
   /** The occurrences the view shows, in visible calendars. */
   occurrences(firstDay: number): Occurrence[] {
     const { view, anchor, calendars, hidden } = this.state;

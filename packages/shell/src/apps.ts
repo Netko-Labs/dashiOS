@@ -1,6 +1,6 @@
 /**
- * Apps the Dock starts with (the first installed choice of each), starting an
- * app, and how a click on an icon maps to an action. What the Dock shows and
+ * Dashi's own app list (the first installed choice of each), which the Dock
+ * starts with, starting an app, and how a click on an icon maps to an action. What the Dock shows and
  * keeps lives in dock/.
  */
 
@@ -48,6 +48,8 @@ interface PinnedSpec {
   icon: string;
   /** Alternatives in preference order; the first installed one is pinned. */
   choices: readonly Choice[];
+  /** In the launcher, but not in a new Dock: a developer's tool. */
+  inDock?: false;
 }
 
 const metalUi = `${mirin}packages/mirin-metal-ui/`;
@@ -63,9 +65,10 @@ const PINNED: readonly PinnedSpec[] = [
     ],
   },
   {
-    // A Metal app: mirin's metal-ui component browser.
+    // A Metal app: mirin's metal-ui component browser. A developer's tool, so it is in the launcher, not the Dock.
     name: "Components",
     icon: "components",
+    inDock: false,
     choices: [
       {
         id: "dev.dashi.components",
@@ -105,6 +108,13 @@ const PINNED: readonly PinnedSpec[] = [
     choices: [{ id: "helium", exec: ["helium", "--ozone-platform=wayland"] }],
   },
 ];
+
+const NOT_IN_DOCK: ReadonlySet<string> = new Set(PINNED.filter((spec) => spec.inDock === false).flatMap((spec) => spec.choices.map((choice) => choice.id)));
+
+/** The app ids a Dock starts with, before the person keeps or removes any: Dashi's own list, less the developer tools. */
+export function dockDefaults(apps: readonly Pick<App, "id">[]): string[] {
+  return apps.filter((app) => !NOT_IN_DOCK.has(app.id)).map((app) => app.id);
+}
 
 /** Whether a command's program (and, for scripts, the script) is installed. */
 function isInstalled(exec: readonly string[], which: (program: string) => string | null): boolean {

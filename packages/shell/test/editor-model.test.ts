@@ -94,9 +94,29 @@ describe("the document", () => {
     expect(editor.getSnapshot().text).toBe("start one");
     editor.redo();
     expect(editor.getSnapshot().text).toBe("start one two");
-    editor.revert();
+    expect(editor.revert()).toBe(true);
     expect(editor.getSnapshot().text).toBe("start");
-    expect(editor.getSnapshot().canUndo).toBe(false);
+    expect(editor.isDirty).toBe(false);
+    // Revert is one Undo step: the changes come back, edited again.
+    editor.undo();
+    expect(editor.getSnapshot().text).toBe("start one two");
+    expect(editor.isDirty).toBe(true);
+  });
+
+  test("Revert reads the file as it is now, and says so when it can't", () => {
+    const path = join(dir, "v.txt");
+    writeFileSync(path, "old");
+    const editor = model();
+    editor.open(path);
+    editor.edit("mine");
+    writeFileSync(path, "theirs");
+    editor.revert();
+    expect(editor.getSnapshot()).toMatchObject({ text: "theirs", saved: "theirs" });
+    editor.edit("mine again");
+    rmSync(path);
+    expect(editor.revert()).toBe(false);
+    expect(editor.getSnapshot()).toMatchObject({ text: "mine again", notice: { tone: "error" } });
+    expect(model().revert()).toBe(false);
   });
 
   test("recovered changes are edited against the file as it is", () => {
@@ -216,6 +236,13 @@ describe("menus", () => {
       expect(chord).not.toBeNull();
       if (chord) expect(reservedBy(chord)).toBeNull();
     }
+  });
+
+  test("❖W is Close, the path that asks, and Revert says it will ask", () => {
+    const { menus } = editorMenus(context());
+    const rows = menus.flatMap((menu) => menu.items);
+    expect(rows.find((row) => "id" in row && row.id === "close")).toMatchObject({ label: "Close", shortcut: "❖W" });
+    expect(rows.find((row) => "id" in row && row.id === "revert")).toMatchObject({ label: "Revert to Saved…" });
   });
 
   test("only enabled rows run", () => {

@@ -15,6 +15,7 @@ import { NOTE } from "./glyphs.ts";
 import type { Row } from "./list.ts";
 import type { Draft } from "./model.ts";
 import { Preview } from "./preview.tsx";
+import { editedLine } from "./text.ts";
 
 const TITLE_SIZE = 24;
 const BODY_SIZE = 14;
@@ -42,6 +43,8 @@ export interface EditorProps {
   emptyMessage: string;
   hasNotes: boolean;
   formatDate: (time: number) => string;
+  /** The open note's words, shown after its date. */
+  words?: number;
 }
 
 export function Editor(props: EditorProps) {
@@ -62,6 +65,7 @@ export function Editor(props: EditorProps) {
     emptyMessage,
     hasNotes,
     formatDate,
+    words,
   } = props;
   const colors = useColors();
   const surface = useSurface();
@@ -133,7 +137,7 @@ export function Editor(props: EditorProps) {
 
   const dated = (
     <View style={{ flexShrink: 0 }}>
-      <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{`Edited ${formatDate(row.modified)}`}</Text>
+      <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{editedLine(formatDate(row.modified), words)}</Text>
     </View>
   );
 

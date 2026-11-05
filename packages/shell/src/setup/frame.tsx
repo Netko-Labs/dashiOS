@@ -28,6 +28,8 @@ export interface FrameProps {
   onSkip: () => void;
   /** Hide the heading's tile and subtitle (the welcome page lays itself out). */
   bare?: boolean;
+  /** Over everything: the sheet that asks before Skip Setup. */
+  overlay?: ReactNode;
 }
 
 function Dots({ index, count }: { index: number; count: number }) {
@@ -41,12 +43,12 @@ function Dots({ index, count }: { index: number; count: number }) {
   );
 }
 
-export function Frame({ info, view, glyph, tint, children, continueLabel, continueDisabled, hideBack, onContinue, onBack, onSkip, bare }: FrameProps) {
+export function Frame({ info, view, glyph, tint, children, continueLabel, continueDisabled, hideBack, onContinue, onBack, onSkip, bare, overlay }: FrameProps) {
   const colors = useColors();
   const surface = useSurface();
   const { controls } = useWindowChrome();
   return (
-    <View style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window }}>
+    <View style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window, position: "relative" }}>
       {controls && <View testID="setup-toolbar" dragRegion style={{ height: Math.ceil(controls.y + controls.height), flexShrink: 0 }} />}
       {!bare && (
         <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 6, paddingTop: controls ? 4 : 22, paddingHorizontal: 56 }}>
@@ -77,7 +79,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
         }}
       >
         <View style={{ width: 210, flexDirection: "row", alignItems: "center" }}>
-          {!view.last && <Button testID="setup-skip" label="Skip Setup" onPress={onSkip} />}
+          {!view.last && <Button testID="setup-skip" label="Skip Setup…" onPress={onSkip} />}
         </View>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Dots index={view.index} count={view.count} />
@@ -87,6 +89,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
           <Button testID="setup-continue" label={continueLabel ?? "Continue"} primary disabled={continueDisabled === true} onPress={onContinue} />
         </View>
       </View>
+      {overlay}
     </View>
   );
 }

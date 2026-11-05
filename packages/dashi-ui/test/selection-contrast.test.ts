@@ -53,11 +53,16 @@ describe.each(Object.entries(MODES))("the launcher's selection in %s mode", (_mo
 
   test.each(Object.entries(WALLPAPERS))("the 3 px kombu bar stands out at 3:1 or more over a %s wallpaper", (_wall, wallpaper) => {
     const glass = over(colors.launcher, wallpaper);
-    expect(contrast(over(colors.selection, glass), glass)).toBeGreaterThanOrEqual(3);
+    expect(contrast(over(colors.selectionBar, glass), glass)).toBeGreaterThanOrEqual(3);
   });
 });
 
-test("white on the full kombu fill is what the wash replaces: it fails CO-6", () => {
+test("white on the brand's kombu fill is what the wash replaced: it fails CO-6", () => {
   // Kept as a record of why the launcher stopped using it (betterments, finding 5).
-  expect(contrast(over("#ffffff", rgba(lightColors.selection)), rgba(lightColors.selection))).toBeLessThan(4.5);
+  // `selection` has since been deepened to pass; the launcher keeps the wash.
+  expect(contrast(over("#ffffff", rgba("#3E8A72")), rgba("#3E8A72"))).toBeLessThan(4.5);
+});
+
+test("the bar is the selection in light mode", () => {
+  expect(lightColors.selectionBar).toBe(lightColors.selection);
 });

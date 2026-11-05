@@ -2,75 +2,38 @@
  * The Terminal's window: the compositor's slim title bar (the front tab's
  * program and the grid's size, one line, through `setTitle`), the tab bar
  * once there are two tabs (tab-bar.tsx; each tab its own dashi-term, all at
- * the window's grid), then the front tab's grid, drawn in the monospace face. The grid takes the keyboard raw (Metal's `onKeyDown`) and
- * sends every key to the engine, which encodes it the way the program asked
+ * the window's grid), then the front tab's grid, drawn in the monospace
+ * face, in Dashi's terminal colors (palette.ts) or the ones a program set.
+ * The grid takes the keyboard raw (Metal's `onKeyDown`) and sends every key
+ * to the engine, which encodes it the way the program asked
  * (libghostty-vt). The wheel scrolls back; dragging selects (two clicks a
  * word, three a line); the menu bar's Edit menu copies and pastes on ❖C/❖V.
+ * Closing a tab or the window while a program runs in it asks first
+ * (closing.ts).
  */
 
-import { AppWindow, useColors, useDark } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, useColors, useDark } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, type PointerInfo, Text, View } from "@mirinjs/metal";
-import { memo, useEffect, useRef, useState } from "react";
-import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type Clipboard, useAppMenus } from "../kit/index.ts";
+import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
 import { type Engine, startEngine } from "./engine.ts";
+import { FONT_SIZE, LINE_HEIGHT, Line, lookFor } from "./line.tsx";
 import { terminalMenus } from "./menus.ts";
-import { applyFrame, cellAt, EMPTY_SCREEN, gridFor, type Span, terminalTitle } from "./screen.ts";
+import { type TerminalPalette, terminalPalette } from "./palette.ts";
+import { applyFrame, cellAt, EMPTY_SCREEN, gridFor, terminalTitle } from "./screen.ts";
 import { TabBar } from "./tab-bar.tsx";
 import { activeTab, addTab, closeTab, NO_TABS, newTab, selectTab, showIndex, stepTab, type Tabs, updateTab } from "./tabs.ts";
 
 export const TERMINAL_SIZE = { width: 760, height: 480 } as const;
-const FONT_SIZE = 13;
-const LINE_HEIGHT = 18;
 const PROBE = "M".repeat(10);
 /** Two presses this close (ms) and this near (cells) count as a double click. */
 const MULTI_CLICK_MS = 400;
 
-interface Look {
-  ground: string;
-  ink: string;
-  selection: string;
-  cursor: string;
+/** The `colors` message: the palette dashi-term resolves programs' colors through. */
+function colorsMessage(palette: TerminalPalette) {
+  return { t: "colors", fg: palette.ink, bg: palette.ground, palette: palette.ansi } as const;
 }
-
-function lookFor(dark: boolean, accent: string): Look {
-  return dark
-    ? { ground: "#1c1c1e", ink: "#e8e8ea", selection: `${accent}66`, cursor: "#e8e8eacc" }
-    : { ground: "#ffffff", ink: "#1d1d1f", selection: `${accent}40`, cursor: "#1d1d1fb3" };
-}
-
-function color(value: string | undefined, look: Look, fallback: string): string {
-  if (value === "fg") return look.ink;
-  if (value === "bg") return look.ground;
-  return value ?? fallback;
-}
-
-const Line = memo(function Line({ spans, look }: { spans: Span[]; look: Look }) {
-  return (
-    <View style={{ flexDirection: "row", height: LINE_HEIGHT, flexShrink: 0, overflow: "hidden" }}>
-      {spans.map((span, index) => {
-        const background = span.sel ? look.selection : span.bg ? color(span.bg, look, look.ground) : undefined;
-        return (
-          <View key={index} style={background ? { backgroundColor: background, flexShrink: 0 } : { flexShrink: 0 }}>
-            <Text
-              style={{
-                fontFamily: "monospace",
-                fontSize: FONT_SIZE,
-                lineHeight: LINE_HEIGHT,
-                color: color(span.fg, look, look.ink),
-                fontWeight: span.b ? "bold" : "normal",
-                fontStyle: span.i ? "italic" : "normal",
-                textDecorationLine: span.u ? "underline" : span.st ? "line-through" : "none",
-                opacity: span.dim ? 0.6 : 1,
-              }}
-            >
-              {span.s}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-});
 
 export interface TerminalWindowProps {
   binary: string;
@@ -78,15 +41,20 @@ export interface TerminalWindowProps {
   newWindow(): void;
   /** Retitle the window (the compositor draws the title bar). */
   setTitle(title: string): void;
-  clipboard?: Clipboard;
+  /** Made once, by main.tsx: finding wl-copy is not a render's work. */
+  clipboard: Clipboard;
 }
 
-export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboard = systemClipboard() }: TerminalWindowProps) {
+export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboard }: TerminalWindowProps) {
   const colors = useColors();
   const dark = useDark();
-  const look = lookFor(dark, colors.selection);
+  const palette = terminalPalette(dark);
   const [tabs, setTabs] = useState<Tabs>(NO_TABS);
   const [cell, setCell] = useState<{ width: number; height: number } | null>(null);
+  /** Closing something that still runs a program: the question on screen. */
+  const [asking, setAsking] = useState<CloseQuestion | null>(null);
+  /** Bumped when a sheet goes, so the grid (mounted again) takes the keyboard back. */
+  const [gridFocus, setGridFocus] = useState(0);
   /** Each tab's dashi-term, by tab id. */
   const engines = useRef(new Map<number, Engine>());
   const nextId = useRef(1);
@@ -94,6 +62,9 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
   /** The grid every tab runs at; null until the cell is measured. */
   const size = useRef<{ cols: number; rows: number } | null>(null);
   const lastPress = useRef({ at: 0, x: -1, y: -1, clicks: 0 });
+  /** The palette a new tab starts with: the one in use now. */
+  const paletteNow = useRef(palette);
+  paletteNow.current = palette;
 
   const resizeMessage = (cols: number, rows: number, measured: { width: number; height: number }) =>
     ({ t: "resize", cols, rows, cw: Math.round(measured.width), ch: Math.round(measured.height) }) as const;
@@ -102,6 +73,30 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
     engines.current.get(id)?.stop();
     engines.current.delete(id);
     setTabs((current) => closeTab(current, id));
+  };
+
+  /** A tab's ×, ❖W: at once at the prompt, else after asking. */
+  const requestCloseTab = (id: number): void => {
+    const engine = engines.current.get(id);
+    if (!engine) return;
+    void engine.running().then((program) => {
+      if (program === null) closeTabById(id);
+      else setAsking({ kind: "tab", id, program });
+    });
+  };
+
+  /** ⇧❖W, Close Window: at once when every tab is at its prompt, else after asking. */
+  const requestCloseWindow = (): void => {
+    void Promise.all([...engines.current.values()].map((engine) => engine.running())).then((answers) => {
+      const programs = stillRunning(answers);
+      if (programs.length === 0) onExit();
+      else setAsking({ kind: "window", programs });
+    });
+  };
+
+  const dismiss = (): void => {
+    setAsking(null);
+    setGridFocus((n) => n + 1);
   };
 
   /** A new tab after the one in front, its shell at the window's grid. */
@@ -115,6 +110,7 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
       else if (message.t === "copied" && message.text) void clipboard.writeText(message.text);
       else if (message.t === "exit") closeTabById(id);
     });
+    engine.send(colorsMessage(paletteNow.current));
     engine.send(resizeMessage(at.cols, at.rows, cell));
     engines.current.set(id, engine);
     setTabs((current) => addTab(current, newTab(id)));
@@ -132,6 +128,10 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
   };
   // biome-ignore lint/correctness/useExhaustiveDependencies: fit reads refs; it runs when the cell is first measured.
   useEffect(fit, [cell]);
+  // Dark Mode changes every tab's colors; programs' own stay theirs.
+  useEffect(() => {
+    for (const engine of engines.current.values()) engine.send(colorsMessage(palette));
+  }, [palette]);
   useEffect(
     () => () => {
       for (const engine of engines.current.values()) engine.stop();
@@ -145,6 +145,8 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
 
   const front = activeTab(tabs);
   const screen = front?.screen ?? EMPTY_SCREEN;
+  // One object while nothing it is made of changes, so the rows' memo holds.
+  const look = useMemo(() => lookFor(palette, dark, colors.selection, screen.ink, screen.ground), [palette, dark, colors.selection, screen.ink, screen.ground]);
   const engine = (): Engine | undefined => (front ? engines.current.get(front.id) : undefined);
   const windowTitle = terminalTitle(front?.title ?? "Terminal", screen.cols, screen.rows);
   useEffect(() => setWindowTitle(windowTitle), [windowTitle, setWindowTitle]);
@@ -163,8 +165,8 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
       selectAll: () => engine()?.send({ t: "select-all" }),
       newWindow,
       newTab: openTab,
-      closeTab: () => front && closeTabById(front.id),
-      closeWindow: onExit,
+      closeTab: () => front && requestCloseTab(front.id),
+      closeWindow: requestCloseWindow,
       stepTab: (delta) => setTabs((current) => stepTab(current, delta)),
       showIndex: (index) => setTabs((current) => showIndex(current, index)),
     },
@@ -191,9 +193,30 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
     engine()?.send({ t: "select", phase: event.phase, x: at.x, y: at.y, clicks });
   };
 
+  const question = asking && closeCopy(asking);
+  const overlay =
+    asking && question ? (
+      <ConfirmSheet
+        testID="close-running"
+        title={question.title}
+        message={question.message}
+        confirmLabel={question.confirmLabel}
+        danger
+        onCancel={dismiss}
+        onConfirm={() => {
+          setAsking(null);
+          if (asking.kind === "window") onExit();
+          else {
+            closeTabById(asking.id);
+            setGridFocus((n) => n + 1);
+          }
+        }}
+      />
+    ) : undefined;
+
   const { cursor } = screen;
   return (
-    <AppWindow title={windowTitle}>
+    <AppWindow title={windowTitle} overlay={overlay}>
       {tabs.list.length > 1 && (
         <TabBar
           tabs={tabs.list}
@@ -201,12 +224,13 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
           ground={look.ground}
           shade={dark ? "#141416" : "#ececee"}
           onSelect={(id) => setTabs((current) => selectTab(current, id))}
-          onClose={closeTabById}
+          onClose={requestCloseTab}
           onNew={openTab}
         />
       )}
       <View style={{ flex: 1, backgroundColor: look.ground, paddingLeft: 8, paddingTop: 6 }}>
         <View
+          key={`grid:${gridFocus}`}
           testID="terminal-grid"
           style={{ flex: 1, position: "relative", overflow: "hidden" }}
           onLayout={(bounds) => {

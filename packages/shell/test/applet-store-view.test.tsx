@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,6 +12,17 @@ import { StoreImages } from "../src/applet-store/images.ts";
 import { AppletInstaller } from "../src/applet-store/installer.ts";
 
 // The Applet Store's window on a stand-in for the Metal host, over a test catalog signed with throwaway keys.
+
+// No menus socket here: the kit's menus client stays quiet (the window registers its menus).
+let runtime: string | undefined;
+beforeAll(() => {
+  runtime = process.env.XDG_RUNTIME_DIR;
+  process.env.XDG_RUNTIME_DIR = mkdtempSync(join(tmpdir(), "dashi-store-runtime-"));
+});
+afterAll(() => {
+  if (runtime === undefined) delete process.env.XDG_RUNTIME_DIR;
+  else process.env.XDG_RUNTIME_DIR = runtime;
+});
 
 const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
@@ -117,4 +128,34 @@ test("the store lists the catalog, puts this computer's first, asks before it ad
   expect(root_.nodeId("applet-consent")).toBeUndefined();
   expect(readInstalled(root)[0]?.record.consent).toEqual(["hardware.power", "notifications"]);
   root_.unmount();
+});
+
+test("without a catalog key the store opens on Installed, says the catalog isn't here yet, and offers no Try Again", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-store-nokey-"));
+  const catalog = new Catalog({ url: "file:///nowhere/index.json", key: null, cacheDir: join(dir, "cache") });
+  const installer = new AppletInstaller({
+    root: join(dir, "applets"),
+    dataRoot: join(dir, "data"),
+    dashiVersion: "0.4.0",
+    download: (url, size) => catalog.download(url, size),
+  });
+  const store = new AppletStore(catalog, installer, async () => ({ vendor: "", product: "", laptop: false }), "0.4.0");
+  expect(store.catalogReady).toBe(false);
+  const transport: NativeTransport = { send() {}, onEvent() {}, onClose() {}, simulate() {}, close() {} };
+  const root = render(
+    <ServicesContext.Provider value={{ store, images: new StoreImages(join(dir, "images")) }}>
+      <StoreWindow />
+    </ServicesContext.Provider>,
+    transport,
+  );
+  await settle(60);
+  expect(root.nodeId("nav:installed")).toBeDefined();
+  expect(root.nodeId("nav:all")).toBeUndefined();
+  expect(root.nodeId("nav:updates")).toBeUndefined();
+  expect(root.nodeId("nav:category:hardware")).toBeUndefined();
+  expect(root.nodeId("refresh")).toBeUndefined();
+  expect(root.nodeId("retry")).toBeUndefined();
+  expect(root.nodeId("installed-empty")).toBeDefined();
+  expect(root.lastTree()).toContain("The applet catalog isn't available yet.");
+  root.unmount();
 });

@@ -6,7 +6,7 @@
  * clipped one, and a press-and-drag on the area (`onPointer`) moves it.
  */
 
-import { darkColors, useColors } from "@dashi/ui";
+import { useDark } from "@dashi/ui";
 import { Image, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { Size } from "./dimensions.ts";
@@ -23,7 +23,7 @@ export interface CanvasProps {
 
 /** The ground behind the picture: a quiet neutral either side of Dark Mode. */
 export function useCanvasColor(): string {
-  return useColors() === darkColors ? "#161618" : "#e4e4e8";
+  return useDark() ? "#161618" : "#e4e4e8";
 }
 
 /**

@@ -67,7 +67,7 @@ export function runNotice(run: ExtrasRun): Notice | null {
 
 /** The primary button's label on the Installing page. */
 export const installingContinueLabel = (run: ExtrasRun): string =>
-  (run.phase === "finished" && isRunOk(run)) || run.phase === "running" ? "Continue" : "Skip";
+  (run.phase === "finished" && isRunOk(run)) || run.phase === "running" ? "Continue" : "Not now";
 
 /** The Done page's line for the run, or null when nothing was started. */
 export function runSummary(run: ExtrasRun): string | null {

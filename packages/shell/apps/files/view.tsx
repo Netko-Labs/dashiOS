@@ -1,7 +1,7 @@
 /**
  * Files' window: the sidebar, a toolbar with back and forward and the view
  * switch around the omnibox (the path and search, omnibox.tsx), the listing
- * in icons or a table, and a footer only while a job runs or a notice stands.
+ * in icons or a table, and a notice over it only while a job runs or a message stands.
  * Sheets and menus are drawn inside it (Metal has no child windows). The
  * keyboard comes through the kit's KeySink: arrows move the selection,
  * Enter opens, Backspace goes back, and typing jumps to a name.
@@ -293,7 +293,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
           }
           toolbar={<Controls onNewFolder={() => setSheet({ kind: "new-folder" })} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
           sidebar={<Sidebar />}
-          footer={<Footer />}
+          notice={<Footer />}
           overlay={overlay}
         >
           {!sheet && !menu && editing === null && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}

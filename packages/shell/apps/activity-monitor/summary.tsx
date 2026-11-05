@@ -1,10 +1,11 @@
 /**
- * The strip under the table, as on the Mac: figures for the open tab on
- * either side of a graph of the last two minutes (CPU load, memory in use,
- * disk and network traffic).
+ * The strip under the table: figures for the open tab on either side of a
+ * graph of the last two minutes (CPU load, memory in use, disk and network
+ * traffic). Processes and threads are counted as the View menu shows them:
+ * kernel threads only when they are shown.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { TINTS, useColors, useSurface } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { formatBytes, formatCount, formatPercent, formatRate } from "./format.ts";
 import { niceMax, sparkline, stacked } from "./graph.ts";
@@ -13,8 +14,11 @@ import type { MonitorState, Tab } from "./monitor.ts";
 export const SUMMARY_HEIGHT = 132;
 const GRAPH = { width: 260, height: 78 } as const;
 
-/** Two colors for two series: the accent, and a blue (red for the CPU's system share, as on the Mac). */
-const BLUE = "#3b82c4";
+/**
+ * Two colors for two series, from Dashi's tints (CO-4): never a job color, so
+ * the CPU's system share isn't an error and a busy disk isn't "selected".
+ */
+const SERIES = { first: TINTS.mizu, second: TINTS.kabocha } as const;
 
 interface Figure {
   label: string;
@@ -79,31 +83,30 @@ function Graph({ title, series, max }: { title: string; series: readonly Series[
   );
 }
 
-export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorState; processes: number }) {
+export function Summary({ tab, state, totals }: { tab: Tab; state: MonitorState; totals: { processes: number; threads: number } }) {
   const colors = useColors();
   const surface = useSurface();
-  const accent = colors.selection;
   let left: Figure[];
   let right: Figure[];
   let graph: { title: string; series: Series[]; max: number };
   switch (tab) {
     case "cpu":
       left = [
-        { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: colors.critical },
-        { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: accent },
+        { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: SERIES.second },
+        { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: SERIES.first },
         { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
       ];
       right = [
-        { label: "Threads", value: formatCount(state.threads) },
-        { label: "Processes", value: formatCount(processes) },
+        { label: "Threads", value: formatCount(totals.threads) },
+        { label: "Processes", value: formatCount(totals.processes) },
         { label: "CPUs", value: formatCount(state.cpus) },
       ];
       graph = {
         title: "CPU LOAD",
         max: 100,
         series: [
-          { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: accent },
-          { values: state.cpuHistory.system, color: colors.critical },
+          { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: SERIES.first },
+          { values: state.cpuHistory.system, color: SERIES.second },
         ],
       };
       break;
@@ -112,7 +115,7 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
       const used = memory ? memory.total - memory.available : 0;
       left = [
         { label: "Physical Memory", value: memory ? formatBytes(memory.total) : "—" },
-        { label: "Memory Used", value: memory ? formatBytes(used) : "—", color: accent },
+        { label: "Memory Used", value: memory ? formatBytes(used) : "—", color: SERIES.first },
         { label: "Cached Files", value: memory ? formatBytes(memory.cached) : "—" },
       ];
       right = [
@@ -120,7 +123,7 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
         { label: "Swap Used", value: memory ? formatBytes(memory.swapTotal - memory.swapFree) : "—" },
         { label: "Swap Size", value: memory ? formatBytes(memory.swapTotal) : "—" },
       ];
-      graph = { title: "MEMORY USED", max: 100, series: [{ values: state.memoryHistory, color: accent }] };
+      graph = { title: "MEMORY USED", max: 100, series: [{ values: state.memoryHistory, color: SERIES.first }] };
       break;
     }
     case "disk": {
@@ -134,15 +137,15 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
       right = [
         { label: "Data read", value: formatBytes(totals.readBytes) },
         { label: "Data written", value: formatBytes(totals.writeBytes) },
-        { label: "Data read/sec", value: formatRate(perSecond.readBytes), color: BLUE },
-        { label: "Data written/sec", value: formatRate(perSecond.writeBytes), color: accent },
+        { label: "Data read/sec", value: formatRate(perSecond.readBytes), color: SERIES.second },
+        { label: "Data written/sec", value: formatRate(perSecond.writeBytes), color: SERIES.first },
       ];
       graph = {
         title: "DATA",
         max: niceMax([...history.read, ...history.write], 64 * 1024),
         series: [
-          { values: history.read, color: BLUE },
-          { values: history.write, color: accent },
+          { values: history.read, color: SERIES.second },
+          { values: history.write, color: SERIES.first },
         ],
       };
       break;
@@ -158,15 +161,15 @@ export function Summary({ tab, state, processes }: { tab: Tab; state: MonitorSta
       right = [
         { label: "Data received", value: formatBytes(totals.bytesIn) },
         { label: "Data sent", value: formatBytes(totals.bytesOut) },
-        { label: "Data received/sec", value: formatRate(perSecond.bytesIn), color: BLUE },
-        { label: "Data sent/sec", value: formatRate(perSecond.bytesOut), color: accent },
+        { label: "Data received/sec", value: formatRate(perSecond.bytesIn), color: SERIES.second },
+        { label: "Data sent/sec", value: formatRate(perSecond.bytesOut), color: SERIES.first },
       ];
       graph = {
         title: "DATA",
         max: niceMax([...history.in, ...history.out], 16 * 1024),
         series: [
-          { values: history.in, color: BLUE },
-          { values: history.out, color: accent },
+          { values: history.in, color: SERIES.second },
+          { values: history.out, color: SERIES.first },
         ],
       };
       break;

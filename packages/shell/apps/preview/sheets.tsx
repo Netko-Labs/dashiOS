@@ -2,7 +2,6 @@
 
 import { Button, Sheet, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useState } from "react";
 import { DOCUMENT } from "./glyphs.ts";
 import type { Handler } from "./handlers.ts";
 import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
@@ -66,7 +65,6 @@ export function OpenWithSheet({
   onClose: () => void;
 }) {
   const colors = useColors();
-  const [hovered, setHovered] = useState<string | null>(null);
   return (
     <Sheet testID="open-with" width={380} onCancel={onClose}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Open With</Text>
@@ -76,35 +74,32 @@ export function OpenWithSheet({
         <Text style={{ fontSize: 12, color: colors.textMuted }}>No other app is installed for this kind of file.</Text>
       ) : (
         <View style={{ flexDirection: "column", gap: 2, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
-          {handlers.map((handler) => {
-            const lit = hovered === handler.id;
-            return (
-              <View
-                key={handler.id}
-                testID={`open-with:${handler.id}`}
-                onHoverChange={(over) => setHovered((now) => (over ? handler.id : now === handler.id ? null : now))}
-                onPress={() => onPick(handler)}
-                style={{
-                  height: 30,
-                  flexShrink: 0,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 8,
-                  borderRadius: 6,
-                  backgroundColor: lit ? colors.selection : "#00000000",
-                }}
-              >
-                <Svg markup={DOCUMENT} size={15} color={lit ? "#ffffff" : colors.textMuted} />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 13, color: lit ? "#ffffff" : colors.text }}>
-                    {handler.name}
-                  </Text>
-                </View>
-                {handler.isDefault && <Text style={{ fontSize: 11, color: lit ? "#ffffffcc" : colors.textMuted }}>Default</Text>}
+          {handlers.map((handler) => (
+            <View
+              key={handler.id}
+              testID={`open-with:${handler.id}`}
+              onPress={() => onPick(handler)}
+              style={{
+                height: 30,
+                flexShrink: 0,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                paddingHorizontal: 8,
+                borderRadius: 6,
+                // A wash under the pointer, never kombu (CO-2).
+                hoverBackgroundColor: colors.button,
+              }}
+            >
+              <Svg markup={DOCUMENT} size={15} color={colors.textMuted} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+                  {handler.name}
+                </Text>
               </View>
-            );
-          })}
+              {handler.isDefault && <Text style={{ fontSize: 11, color: colors.textMuted }}>Default</Text>}
+            </View>
+          ))}
         </View>
       )}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>

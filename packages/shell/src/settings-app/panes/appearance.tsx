@@ -1,6 +1,6 @@
 /**
- * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from, the same
- * switch as Control Center's Dark Mode tile, the accent color, and how round
+ * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from (the
+ * one Dark Mode control here; Control Center's tile is the same switch), the accent color, and how round
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
  * file, so a pick shows on the open windows at once), whether the focused
  * window wears the accent ring (`appearance.highlightActiveWindow`,
@@ -116,19 +116,16 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
 export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
   const colors = useColors();
   const surface = useSurface();
-  const { dark } = useFlags(flags);
   const { appearance } = useSettings(settings).data;
   return (
     <Page title="Appearance">
       <Group>
-        <AppearancePreviews flags={flags} settings={settings} />
+        {/* The previews are Dark Mode's only control: a link or the launcher's Dark Mode row lands here. */}
+        <Spot pane="appearance" row="dark-mode">
+          <AppearancePreviews flags={flags} settings={settings} />
+        </Spot>
       </Group>
       <Group>
-        <Spot pane="appearance" row="dark-mode">
-          <Row label="Dark Mode" detail="Menus, the Dock, and apps that follow the system switch together.">
-            <Switch testID="appearance-dark-mode" on={dark} onChange={(on) => flags.set({ dark: on })} />
-          </Row>
-        </Spot>
         <Row label="Accent color" detail="Selections, switches, and sliders.">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <View
@@ -166,7 +163,7 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
           />
         </Row>
       </Group>
-      <Caption>Dark Mode is the same switch as in Control Center. Auto turns it on at 7 PM and off at 7 AM.</Caption>
+      <Caption>Light and Dark are the same choice as Control Center's Dark Mode. Auto turns Dark Mode on at 7 PM and off at 7 AM.</Caption>
     </Page>
   );
 }
