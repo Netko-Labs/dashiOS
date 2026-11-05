@@ -11,7 +11,8 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Power modes over tuned-ppd's D-Bus API (`src/system/profiles.ts`, one kept system-bus connection)
 - [x] The lost-card watch (`src/graphics/lost-card.ts`, `journalctl -k -f -o json`; this laptop's real 11-03/11-04 lines in the tests); `gpu-env.ts` stops offloading to a lost card
 - [x] Shutdown can't hang: SIGTERM, 10 s, SIGKILL the exact PIDs, then logind regardless; user units stop in 10 s
-- [ ] VM: modes row with tuned-ppd installed (needs the release package in the VM); a fake loss through /dev/kmsg (needs a two-GPU VM or a fake card); shutdown with a stuck FUSE reader
+- [x] VM: the 0.4.0 packages install over 0.3 (dashi-release pulls tuned-ppd; tuned-ppd active on dashi-balanced; the power-profiles API answers)
+- [ ] VM: a fake loss through /dev/kmsg (needs a two-GPU VM or a fake card); shutdown with a stuck FUSE reader
 - [ ] D3cold off for the card on the laptop (`d3cold_allowed=0`): waits for a yes
 
 ## 2 · dashi-hardware and power in sync
@@ -21,7 +22,8 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Packaging: dashi-hardware.spec, tuned profiles dashi-{powersave,balanced,performance} + ppd.conf
 - [x] Shell: mode store with plugged/battery columns, both ways (one key press, one change), Automatic, battery health (limit, one full charge, full-by schedule), keys (Fn F5, Fn F4, ROG) with the OSD, ApplySavedTuning at login and wake, the boot-guard notice
 - [x] UI: the battery menu as the hub, Control Center's laptop row, Battery & Power / Displays / Keyboard rows
-- [ ] VM: run `dashi-hardware --sysfs-root data/fixtures/ga403wr serve` and the shell against it
+- [x] VM, the shell on a fake G14 (`DASHI_HARDWARE_BUS=session`, `dashi-hardware --sysfs-root … serve`): Control Center's laptop row (mode, keyboard light); a click on the mode writes the whole recipe (both profiles, SPL 55→80 W, EPP); a click on the light 0→3; a profile changed behind Dashi's back (Fn F5) pulls the recipe along (SPL 30 W, EPP power) and the tile follows
+- [x] Packaging found in the VM: dashi-hardware and tuned-ppd both owned /etc/tuned/ppd.conf (now a scriptlet); the tuned profiles were outside /usr/lib/tuned/profiles (tuned-ppd refused to start)
 - [ ] Laptop (asked first): set each mode, charge limit 80 across a reboot, Curve Optimizer −5 under load then 0, a fan curve and reset; check Fn F5's keysym
 
 ## 3 · Graphics switching
@@ -33,16 +35,21 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 ## 4 · Desktops, moving windows, the switcher
 - [x] dashi-comp: `space-previews`, `window-thumbnails`, a move grab across `space-switch`, `edge-hold`
 - [x] Desktops row opening into pictures, names in place, automatic names; drop on a picture, edge push, carry while switching, Move to in the Window menu
-- [x] The switcher: windows per app (live pictures), type to find, Q/H/M/W. VM: the window row with a live picture
+- [x] The switcher: windows per app (live pictures), type to find, Q/H/M/W. VM: the row, live pictures, badges, typing, each action; H or M then ❖ up leaves it put away; recency order fixed (the compositor listed oldest first)
 - [x] `dashi-share-picker` as xdg-desktop-portal-wlr's chooser
-- [ ] VM: Mission Control drew one flat gray after the merge (being fixed)
+- [x] VM: Mission Control, the row opening into pictures, rename, drop on a picture, edge push (relative mouse), carry with ⌃2, Move to (agent pictures of the overview were gray: the agents' mask blanked whole frames; fixed)
+- [ ] ⌃→ never arrives through QMP in the VM (QEMU), so switching mid-drag was checked with ⌃2
+- [ ] A dragged window in Mission Control draws under the Desktops row's band
 - [ ] Title-bar right-click menu with Move to (there is no title-bar menu yet)
 
 ## 5 · The Dashi portal
 - [x] `dashi-portal` (apps/portal), all ten interfaces; sheets parented through xdg-foreign (IPC `window-for-handle`, `attach`)
 - [x] Inhibit in the shell plus `org.freedesktop.ScreenSaver`; keep-awake in the battery menu
 - [x] `dashi-portals.conf` default=dashi; GTK_USE_PORTAL / GDK_DEBUG; xdg-desktop-portal-gtk dropped from dashi.spec
-- [ ] VM: the app matrix with xdg-desktop-portal-gtk removed (Helium, Firefox, a GTK 4 app, a Flatpak, a Qt app), printing to CUPS-PDF, Add to Dock
+- [x] VM, packages installed and xdg-desktop-portal-gtk removed: Settings.ReadAll, ScreenSaver.Inhibit, Helium's Open File as a sheet of its window (the shell refused the portal's second connection; fixed)
+- [ ] VM: Firefox, a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
+- [ ] A sheet on a CSD window (Helium) starts at its top edge, over its toolbar; sheets have no shadow
+- [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
 - [ ] Keep-awake on a machine with no battery has nowhere to show
 
 ## 6 · Secrets for agents
@@ -53,16 +60,22 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] `pay` with limits, single-use cards, "Pay for you" never always-allowed
 - [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
 - [ ] Provider tokens and the token proxy: designed in docs/secrets.md only
-- [ ] VM: the test site (`packages/shell/test/fixtures/sign-in-site`), sign-in, code, passkey, pay, blanks in recordings (needs the packages installed)
+- [x] VM, packages installed: the vault made at a password login, `secret-tool` store/lookup, a lookup from a `dashi-agent-*` scope refused; `list_logins` (no secrets) after the scope sheet; `sign_in` on the test site (the person's Allow Once; the page reached /2fa)
+- [ ] fill_code's sheet ignored the person's Allow Once; stale sheets of gone callers pile up and block other calls (being fixed)
+- [ ] Chromium shows no focused field through AT-SPI unless accessibility is forced (`--force-renderer-accessibility`) (being fixed)
+- [ ] Consent sheets are translucent (the page shows through); the scope sheet is cut off at 1280×720 points (being fixed)
 
 ## 7 · The applet SDK
 - [x] `packages/applet` (`@dashi/applet`), manifest and schema, protocol v2 (hello, popover, dismiss, submenus), layer-shell grants per pid (`applet-clients`), the sandbox (bwrap + xdg-dbus-proxy), `dashi-applet` CLI
-- [ ] VM: `dashi-applet new weather`, dev, popover at each edge, pack, install, a permission it didn't declare refused
+- [x] VM: `dashi-applet new weather`, `dev` (DEV badge), its popover under the item, a button in it updating the item, a click outside closing it; `pack`, `install`: running in bubblewrap as its own unit, its popover from inside the sandbox
+- [x] One React and one @mirinjs/metal per applet (pack bundles one; dev drops @dashi/ui's nested copies): with two, AppWindow's sidebar ran under the window controls
+- [ ] Popover placement at each screen edge; a permission it didn't declare refused
 
 ## 8 · The Applet Store and ASUS Control
 - [x] The Applet Store app, signature checks, the kill switch; the catalog at ~/Developer/dashi-applets and ASUS Control at ~/Developer/asus-control (local repositories, no remotes)
 - [ ] Dashi's index key (`minisign -G`), the GitHub secrets, creating the two repositories on GitHub
-- [ ] VM: install ASUS Control from a test catalog; every pane on the fake G14 tree
+- [x] VM: ASUS Control in dev on the fake G14: the popover (mode, charge limit, lights from the fake tree), a mode picked there followed by the shell, the window's Power pane with the model's recipes; named "ASUS Control" in the menu bar
+- [ ] VM: install ASUS Control from a test catalog; the Fans, Lighting, Advanced panes; "Reading the sensors…" never ends without asus hwmon (the VM)
 - [ ] Laptop: lighting (Slash mode numbers unchecked), sensors, fan curves, a per-core Curve Optimizer search with the boot guard
 
 # Dashi 0.3.0 (`release/0.3.0`)
