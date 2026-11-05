@@ -61,9 +61,11 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
 - [ ] Provider tokens and the token proxy: designed in docs/secrets.md only
 - [x] VM, packages installed: the vault made at a password login, `secret-tool` store/lookup, a lookup from a `dashi-agent-*` scope refused; `list_logins` (no secrets) after the scope sheet; `sign_in` on the test site (the person's Allow Once; the page reached /2fa)
-- [ ] fill_code's sheet ignored the person's Allow Once; stale sheets of gone callers pile up and block other calls (being fixed)
-- [ ] Chromium shows no focused field through AT-SPI unless accessibility is forced (`--force-renderer-accessibility`) (being fixed)
-- [ ] Consent sheets are translucent (the page shows through); the scope sheet is cut off at 1280×720 points (being fixed)
+- [x] fill_code's sheet ignored the person's Allow Once: it opened under a still pointer, and dashi-comp moved pointer focus only on motion (it now enters what is under the pointer before a press). A call the agent gives up on (`notifications/cancelled`) takes its sheet down; a waiting sheet no longer holds the agent's other calls
+- [x] Chromium (Helium) without `--force-renderer-accessibility`: the shell wakes its web tree and places fields by their page. Firefox: its first GetExtents answers nothing (asked again)
+- [x] Sheets are solid; the scope sheet fits 1280×720 points (its list scrolls)
+- [x] VM, Firefox and Helium: sign_in, fill_code, a passkey made and used (the person's password on dashi-secretd's sheet), `pay` on the checkout; agents' pictures blank the password, code and card fields, and a filled field's blank goes with its page
+- [ ] A blank for a window's field is painted over windows above it (an agent sees a dark box over the window in front)
 
 ## 7 · The applet SDK
 - [x] `packages/applet` (`@dashi/applet`), manifest and schema, protocol v2 (hello, popover, dismiss, submenus), layer-shell grants per pid (`applet-clients`), the sandbox (bwrap + xdg-dbus-proxy), `dashi-applet` CLI

@@ -367,8 +367,8 @@ a scope of its own, "Pay for you", which "Always Allow" never keeps
 - **Filling**: the focused field must be an editable field on a page of the
   site (as for logins); the broker types the number, Tab, the expiry, Tab,
   the code, checking the page at each field. Card fields aren't password
-  fields, so each one Dashi types into is added to the agents' mask for ten
-  minutes (so are one-time code fields). The agent presses the page's own
+  fields, so each one Dashi types into is added to the agents' mask (so are
+  one-time code fields; see "Blanked captures"). The agent presses the page's own
   pay button.
 
 | Op | Fields | Reply |
