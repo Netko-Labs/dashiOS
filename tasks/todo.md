@@ -44,7 +44,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] `dashi-share-picker` as xdg-desktop-portal-wlr's chooser
 - [x] VM: Mission Control, the row opening into pictures, rename, drop on a picture, edge push (relative mouse), carry with ⌃2, Move to (agent pictures of the overview were gray: the agents' mask blanked whole frames; fixed)
 - [ ] ⌃→ never arrives through QMP in the VM (QEMU), so switching mid-drag was checked with ⌃2
-- [ ] A dragged window in Mission Control draws under the Desktops row's band
+- [x] A dragged window in Mission Control draws over the Desktops row, its pictures, and the menu bar (VM: dropped on Desktop 2)
 - [ ] Title-bar right-click menu with Move to (there is no title-bar menu yet)
 
 ## 5 · The Dashi portal
@@ -54,7 +54,8 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] VM, packages installed and xdg-desktop-portal-gtk removed: Settings.ReadAll, ScreenSaver.Inhibit, Helium's Open File as a sheet of its window (the shell refused the portal's second connection; fixed)
 - [x] VM: Firefox's Open File as a sheet of its window, with its filters as pills
 - [ ] VM: a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
-- [ ] A sheet on a CSD window (Helium) starts at its top edge, over its toolbar; sheets have no shadow
+- [x] A sheet on a window that draws its own bar hangs below its toolbar (`attach {top}`; VM: Firefox)
+- [ ] Sheets have no shadow
 - [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
 - [ ] Keep-awake on a machine with no battery has nowhere to show
 
