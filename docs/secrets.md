@@ -396,6 +396,33 @@ account or card. `bun packages/shell/test/fixtures/sign-in-site/server.ts`
 serves it on `http://signin.localhost:8443/` and prints the two-factor
 setup key.
 
+## Checks
+
+- `cargo test -p dashi-secretd`: encryption at rest, a changed byte and
+  another uid's vault refused, the TPM share, callers (an agent's cgroup
+  refused everything, root only PAM's ops), wrong passwords slowed, logins
+  listed without secrets, "Never" refused, TOTP against RFC 6238's and RFC
+  4226's vectors, the gnome-keyring import, Secret Service storage, CTAPHID
+  framing, CTAP2 messages (signatures verified, bound to the site, never
+  without the person), approvals proven by password, payments within the
+  limits.
+- `dbus-run-session -- sh crates/dashi-secretd/tests/bridge-secret-tool.sh
+  <empty dir> target/debug`: the bridge with libsecret's `secret-tool`
+  (DH sessions), and an agent's scope refused.
+- `bun test` in `packages/shell`: the sandbox's arguments, the mask
+  (`agent-mask.test.ts`), consent from the person only, sign-in and codes
+  (`agent-sign-in.test.ts`), sources and their order, 1Password
+  (`onepassword.test.ts`), payments (`agent-pay.test.ts`), the test site
+  (`sign-in-site.test.ts`, passkeys included), and the shell's vault client
+  against a development dashi-secretd (`vault-client.test.ts`).
+
+In the VM (with the `dashi-secretd` package installed, greetd's login so
+PAM opens the vault, and the test site served from the checkout:
+`bun packages/shell/test/fixtures/sign-in-site/server.ts` in the guest):
+an agent through `vm/agent` signs in on the test site, enters a code, uses
+a passkey, pays a test amount, and its recordings show blanks where the
+secrets were. The steps are in the 0.4.0 handoff.
+
 ## What this can't fix
 
 - Once signed in, the agent acts as the person on that site until the

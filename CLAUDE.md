@@ -60,11 +60,12 @@ the same change.
 ## Repository Layout
 
 - `crates/dashi-comp` - the Wayland compositor.
+- `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
   (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`).
 - `packages/greeter` - `@dashi/greeter`: the login screen, greetd's greeter.
 - `packages/dashi-ui` - `@dashi/ui`: Dashi's own components and palettes.
-- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-dialog`, session target, portal/mime config.
+- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-agent` (the agent sandbox), `dashi-dialog`, session target, portal/mime config.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).
 - `docs/` - architecture, compositor, IPC, and convention docs.
