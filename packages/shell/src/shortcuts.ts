@@ -45,7 +45,7 @@ export interface ShellActions {
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /** The open launcher's keys: ⌃N ⌃P, Page Up and Down, Home and End (launcher/keys.ts); says whether it was one. */
-  launcher?: { binding(name: string): boolean };
+  launcher?: { binding(name: string, chord?: PressedChord): boolean };
 }
 
 /** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
@@ -72,7 +72,7 @@ export async function runBinding(name: string, window: number | null, compositor
   if (await actions.hardware.run(name)) return;
   if (actions.spaces?.binding(name)) return;
   // Bound only while the launcher is open (launcher/keys.ts LAUNCHER_RULES).
-  if (actions.launcher?.binding(name)) return;
+  if (actions.launcher?.binding(name, chord)) return;
   // Bound only while the switcher is open (keymap.ts SWITCHER_RULES).
   if (name.startsWith("switcher-")) return switcherBinding(name, chord?.key, actions.switcher);
   switch (name) {

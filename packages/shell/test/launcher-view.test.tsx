@@ -1,125 +1,17 @@
 import { afterEach, expect, test } from "bun:test";
-import { lightColors } from "@dashi/ui";
-import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import type { Entry } from "../src/entries.ts";
 import { LauncherKeys } from "../src/launcher/keys.ts";
-import type { FileRow } from "../src/launcher/rows.ts";
-import { FILE_DELAY_MS, Launcher, type LauncherFiles, type LauncherProps } from "../src/launcher.tsx";
+import type { LauncherProps } from "../src/launcher.tsx";
+import { FILE_DELAY_MS } from "../src/launcher.tsx";
+import { app, deferredFiles, file, mount as mountWith, settle, unmountLauncher } from "./launcher-harness.tsx";
 
-// The launcher mounted on a stand-in for the Metal host: typing, keys and the
-// pointer sent as the host sends them, what it draws read back from the tree.
+// The launcher's wave 1 behavior, mounted on a stand-in for the Metal host (launcher-harness.tsx).
 
-const settle = (ms = 10): Promise<void> => new Promise((done) => setTimeout(done, ms));
-
-const app = (name: string): Entry => ({ id: `app.${name.toLowerCase().replaceAll(" ", "-")}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
-const file = (name: string): FileRow => ({
-  url: `file:///home/alexk/${name}`,
-  path: `/home/alexk/${name}`,
-  name,
-  folder: "~",
-  mime: "text/plain",
-  icon: "/file.svg",
-});
-
-interface Node {
-  testID?: string;
-  props?: Record<string, unknown>;
-  style?: Record<string, unknown>;
-  children?: Node[];
-  [key: string]: unknown;
-}
-
-/** Files that answer when the test says. */
-function deferredFiles(available = true): LauncherFiles & { answer(rows: FileRow[] | null): void; asked: string[] } {
-  let resolve: ((rows: FileRow[] | null) => void) | null = null;
-  const asked: string[] = [];
-  return {
-    asked,
-    isAvailable: () => available,
-    find: (query) => {
-      asked.push(query);
-      return new Promise((done) => {
-        resolve = done;
-      });
-    },
-    answer: (rows) => resolve?.(rows),
-  };
-}
-
-let mounted: NativeRoot | null = null;
-afterEach(() => {
-  mounted?.unmount();
-  mounted = null;
-});
-
-async function mount(props: Partial<LauncherProps> & Pick<LauncherProps, "entries">) {
-  const listeners: ((event: NativeEvent) => void)[] = [];
-  const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  const opened: string[] = [];
-  const closed: number[] = [];
-  const root = render(
-    <Launcher
-      onOpen={(entry) => {
-        opened.push(entry.name);
-        return true;
-      }}
-      onClose={() => closed.push(1)}
-      {...props}
-    />,
-    transport,
-  );
-  mounted = root;
-  const emit = async (event: NativeEvent): Promise<void> => {
-    for (const listener of listeners) listener(event);
-    await settle();
-  };
-  const node = (testID: string): string => {
-    const id = root.nodeId(testID);
-    if (!id) throw new Error(`no node ${testID}`);
-    return id;
-  };
-  const type = (value: string) => emit({ type: "change", nodeId: node("launcher:field"), value });
-  const key = (value: "Escape" | "ArrowUp" | "ArrowDown") => emit({ type: "key", nodeId: node("launcher:field"), value });
-  const enter = () => emit({ type: "submit", nodeId: node("launcher:field"), value: "" });
-  const hover = (rowId: string) => emit({ type: "hover", nodeId: node(`launcher:row:${rowId}`), hovered: true });
-  /** Which of `candidates` are drawn as rows, top to bottom, and which one wears the selection. */
-  const rows = (candidates: readonly string[] = CANDIDATES): { ids: string[]; selected: string | null } => {
-    // The tree carries native ids; the rows are found by theirs.
-    const byNative = new Map(
-      candidates.flatMap((id) => (root.nodeId(`launcher:row:${id}`) ? [[root.nodeId(`launcher:row:${id}`) as string, id] as const] : [])),
-    );
-    const ids: string[] = [];
-    let selected: string | null = null;
-    const walk = (at: unknown): void => {
-      if (!at || typeof at !== "object") return;
-      const each = at as Node;
-      const native = (each.id ?? each.props?.id) as string | undefined;
-      const row = native === undefined ? undefined : byNative.get(native);
-      if (row !== undefined && !ids.includes(row)) {
-        ids.push(row);
-        // The wash is the row's own background, not a child's.
-        if ((each.background ?? each.props?.background) === lightColors.selectionWash) selected = row;
-      }
-      for (const value of Object.values(each)) {
-        if (Array.isArray(value)) value.forEach(walk);
-        else if (value && typeof value === "object") walk(value);
-      }
-    };
-    walk(JSON.parse(root.lastTree() ?? "null"));
-    return { ids, selected };
-  };
-  const has = (testID: string): boolean => root.nodeId(testID) !== undefined;
-  const tree = (): string => root.lastTree() ?? "";
-  const unmount = () => {
-    root.unmount();
-    mounted = null;
-  };
-  await settle();
-  return { opened, closed, type, key, enter, hover, rows, has, tree, unmount, emit, node };
-}
+afterEach(unmountLauncher);
 
 const TEAS = ["Tea Alpha", "Tea Bravo", "Tea Delta", "Tea Ember", "Tea Gamma"].map(app);
 const TEA_FILES = ["tea-notes.md", "teapot.txt", "tea.csv"];
+
+const mount = (props: Partial<LauncherProps> & Pick<LauncherProps, "entries">) => mountWith(props, CANDIDATES);
 
 /** Every row id the tests look for. */
 const CANDIDATES = [
@@ -204,7 +96,8 @@ test("Esc clears the field first, then closes", async () => {
   await launcher.type("tea");
   await launcher.key("Escape");
   expect(launcher.closed).toEqual([]);
-  expect(launcher.has("launcher:placeholder")).toBe(true);
+  // The field is empty again and full width, its own placeholder showing (Metal draws it after the caret).
+  expect(launcher.tree()).toMatch(/"type":"input","props":\{[^}]*"value":"","placeholder":"An app, a setting, or a sum"[^}]*"flex":1/);
   await launcher.key("Escape");
   expect(launcher.closed).toEqual([1]);
 });

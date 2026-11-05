@@ -24,9 +24,20 @@ import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsO
 import { fold } from "./ranking/fold.ts";
 import type { RankSignals } from "./ranking/item.ts";
 import { type RankIndex, type RankResult, rank } from "./ranking/rank.ts";
-import { actionRow, entryRow, type FileRow, fileRow, type Row, type RowGroup, shownName, windowRow } from "./row-model.ts";
+import { actionRow, entryRow, type FileRow, fileNameMatches, fileRow, type Row, type RowGroup, shownName, windowRow } from "./row-model.ts";
 
-export { entryRow, type FileRow, fileRow, type Row, type RowAction, type RowControl, type RowGroup, type RowIcon } from "./row-model.ts";
+export {
+  entryRow,
+  type FileRow,
+  fileNameMatches,
+  fileRow,
+  type Row,
+  type RowAction,
+  type RowControl,
+  type RowGroup,
+  type RowIcon,
+  shortFolder,
+} from "./row-model.ts";
 
 /** A 2 × 2 grid (All apps), drawn in ink like the panes' glyphs. */
 const GRID = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="2" y="9" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="9" width="5" height="5" rx="1.2" fill="#000"/></svg>`;
@@ -71,7 +82,8 @@ export function filesStateFor(state: {
   if (!state.offered || query.length < MIN_QUERY || calculate(query) !== null) return { kind: "none" };
   if (state.off) return { kind: "off" };
   if (state.answer?.query !== query) return { kind: "waiting", reserved: Math.min(state.lastCount, FILE_ROWS) };
-  return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files };
+  // Only names that answer the words as a name would (row-model.ts `fileNameMatches`): LocalSearch matches inside words.
+  return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files.filter((file) => fileNameMatches(file.name, query)) };
 }
 
 export interface ListInput {
@@ -141,10 +153,12 @@ const indexOf = (input: ListInput): RankIndex<LauncherItem> => input.index ?? la
 function examples(input: ListInput): Row[] {
   const index = indexOf(input);
   return EXAMPLES.flatMap((example): Row[] => {
-    const match = rank(index, example.query, { limit: 1 })[0]?.item;
+    // Shown only when it lands where it says: "wi-fi" on the Wi-Fi switch, not on the Network pane (no Wi-Fi here).
     const sum = calculate(example.query);
-    if (!match && sum === null) return [];
-    const icon = match ? rowFor(match, input).icon : { image: input.icons.calculator };
+    const match = sum === null ? rank(index, example.query, { limit: 1 })[0]?.item : undefined;
+    const row = match ? rowFor(match, input) : null;
+    if (sum === null && (!row || fold(row.title) !== fold(example.title))) return [];
+    const icon = row ? row.icon : { image: input.icons.calculator };
     return [
       { id: `try:${example.query}`, title: example.title, detail: example.detail, kind: example.kind, icon, action: { kind: "type", query: example.query } },
     ];

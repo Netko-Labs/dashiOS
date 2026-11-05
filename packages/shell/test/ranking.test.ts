@@ -25,10 +25,7 @@ describe("folding", () => {
 });
 
 describe("an app over a Settings pane that matches as well (the wave 1 VM run)", () => {
-  const withApps = index([
-    ...ENTRIES,
-    { id: "dev.dashi.activity-monitor", name: "Activity Monitor", icon: "", keywords: ["task manager", "processes"] },
-  ]);
+  const withApps = index([...ENTRIES, { id: "dev.dashi.activity-monitor", name: "Activity Monitor", icon: "", keywords: ["task manager", "processes"] }]);
   const top = (query: string): string | undefined => rankEntries(withApps, query, undefined, 3)[0]?.name;
   // Each row: what was typed, the Top hit, and the pane that used to take it.
   const Rows: Array<[string, string, string]> = [

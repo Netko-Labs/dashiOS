@@ -37,6 +37,7 @@ import { basename, dirname, join } from "node:path";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
+import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
 import { isFormatsLocale } from "../region/locale.ts";
@@ -164,6 +165,14 @@ export interface SpacesSettings {
   fullscreenDesktop?: boolean;
 }
 
+/** The person's launcher aliases and keys, each naming a `dashi://` address (launcher/person-keys.ts). */
+export interface LauncherSettings {
+  /** Alias → address ("ff" → dashi://app/org.mozilla.firefox). */
+  aliases?: Readonly<Record<string, string>>;
+  /** A rule's `when` → address ("super+alt+n" → dashi://app/dev.dashi.notes/menu/new). */
+  keys?: Readonly<Record<string, string>>;
+}
+
 export interface DisplaySettings {
   /** The scale the person chose; it wins over the one picked from the pixel density. */
   scale?: number;
@@ -191,6 +200,8 @@ export interface SettingsData {
   power: PowerSection;
   /** The graphics card's mode (graphics/). */
   graphics: GraphicsSettings;
+  /** The launcher's aliases and keys. */
+  launcher: LauncherSettings;
 }
 
 /** What the shell does with no `idle` setting (the same default as settings.ts). */
@@ -281,6 +292,7 @@ const SECTIONS = {
   },
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
+  launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -379,6 +391,7 @@ export function readSettings(raw: unknown): SettingsData {
     spaces: readSection(root, "spaces") as SpacesSettings,
     power: readSection(root, "power") as PowerSection,
     graphics: readSection(root, "graphics") as GraphicsSettings,
+    launcher: readSection(root, "launcher") as LauncherSettings,
   };
 }
 

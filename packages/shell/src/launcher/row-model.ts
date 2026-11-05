@@ -11,14 +11,15 @@ import type { Entry } from "../entries.ts";
 import type { FileHit } from "../file-search.ts";
 import { PANES } from "../settings-app/panes.ts";
 import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
+import { prepare } from "./ranking/fold.ts";
 
 /** A file row: its hit and the icon resolved for it. */
 export interface FileRow extends FileHit {
   icon: string;
 }
 
-/** An image file, or a one-color glyph drawn on a neutral tile. */
-export type RowIcon = { image: string } | { glyph: string };
+/** An image file, a one-color glyph drawn on a neutral tile, or none (a verb of the action list). */
+export type RowIcon = { image: string } | { glyph: string } | { none: true };
 
 /** What Enter does on a row (verbs.ts adds what the action list and the other keys do). */
 export type RowAction =
@@ -58,10 +59,14 @@ export interface Row {
   /** The key that does it, at the right in place of the kind ("⇧❖N"), so choosing it teaches the key. */
   shortcut?: string;
   control?: RowControl;
+  /** Keys drawn as glyphs after the title (a shortcut being set): fonts may not have ❖. */
+  chord?: string;
   /** The person's alias for it, a small badge after the title. */
   badge?: string;
   /** The title in SemiBold (the answer). */
   strong?: true;
+  /** It closes or destroys something: the title is drawn in the critical color. */
+  danger?: true;
   /** A → at the right end: Enter goes somewhere in the launcher (All apps). */
   more?: true;
 }
@@ -92,12 +97,30 @@ export function entryRow(entry: Entry, prefix = "entry", windows: readonly Launc
   };
 }
 
+/**
+ * Whether a file's name answers `query` as a name would: every word typed
+ * starts a word of the name ("set" is not "sunset.png"; "tea no" is
+ * "tea-notes.md"). LocalSearch matches inside words; the rows don't.
+ */
+export function fileNameMatches(name: string, query: string): boolean {
+  const words = prepare(name).words;
+  const typed = prepare(query).words;
+  return typed.length > 0 && typed.every((word) => words.some((each) => each.startsWith(word)));
+}
+
+/** A folder as a row says it: its last part, with where it starts ("~/…/drafts"); a short one whole. */
+export function shortFolder(folder: string): string {
+  const parts = folder.split("/");
+  if (parts.length <= 3) return folder;
+  return `${parts[0] === "" ? "" : parts[0]}/…/${parts.at(-1)}`;
+}
+
 export function fileRow(file: FileRow): Row {
   const folder = file.mime === "inode/directory";
   return {
     id: `file:${file.url}`,
     title: file.name,
-    detail: file.folder,
+    detail: shortFolder(file.folder),
     kind: folder ? "Folder" : "File",
     icon: { image: file.icon },
     action: { kind: "open-file", file },

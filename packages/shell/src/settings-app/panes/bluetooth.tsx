@@ -16,7 +16,7 @@ import type { BluetoothDevice } from "../../bluetooth/types.ts";
 import { useDevices } from "../../control-center/index.ts";
 import { batteryGlyph } from "../../glyphs.ts";
 import type { PaneServices } from "../services.ts";
-import { Caption, Group, Note, Page, Row } from "../ui.tsx";
+import { Caption, Group, Note, Page, Row, Spot } from "../ui.tsx";
 import { Failure, ListRow, MiniButton, RoundIcon } from "./parts.tsx";
 
 const BUSY = { connecting: "Connecting…", disconnecting: "Disconnecting…", pairing: "Pairing…", forgetting: "Forgetting…" } as const;
@@ -165,9 +165,11 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
   return (
     <Page title="Bluetooth">
       <Group testID="bt-power">
-        <Row label="Bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
-          {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
-        </Row>
+        <Spot pane="bluetooth" row="bluetooth">
+          <Row label="Bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
+            {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
+          </Row>
+        </Spot>
       </Group>
       {missing ? (
         <Group>

@@ -64,6 +64,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
+| `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/sources/radios.ts`); no hardware, no action |
 
 Menu rows read "Notes › File › New Note" with the item's shortcut. Items an
 app keeps from agents (`agents: false`) are offered here, because the
@@ -101,10 +102,13 @@ Everything the person asks for goes through one runner (`actions/run.ts`),
 whatever asked: the launcher (`actions.run`), a key (`actions.runAddress`),
 or a link (`actions.openLink`).
 
-- **As the person.** It runs as the person and is written in the agents'
-  activity log (`$XDG_STATE_HOME/dashi/agents/activity.jsonl`) with
-  `agent: "you"`, the address as the tool, and how it went (`ok`, `error`,
-  `cancelled`, `opened`).
+- **As the person.** It runs as the person. What the launcher chose and
+  what a link opened are written in the agents' activity log
+  (`$XDG_STATE_HOME/dashi/agents/activity.jsonl`) with `agent: "you"`, the
+  address as the tool, and how it went (`ok`, `error`, `cancelled`,
+  `opened`). A key the person pressed (⌃❖←, a key they bound) runs the same
+  way but is not logged (origin `key`, `actions/run.ts`): the log is what
+  was done, not a record of typing.
 - **Same consent.** A tool action runs through `Agents.runAsPerson`
   (`agents/server.ts`): the same code an agent's call runs. A tool that asks
   an agent every time (`force_quit_app`, `trash_file`, the software
@@ -160,6 +164,22 @@ for byte and checks every tool is still called the same way (`parseCall`
 and an action's `check` share `checkToolArgs`). Changing a tool changes the
 fixture in the same commit.
 
+## In the launcher
+
+The launcher (`launcher.tsx`) lists `registry.list({ who: "person" })`
+beside the installed apps and panes (`launcher/items.ts`), ranked by
+`launcher/ranking/`: every setting's row (a switch Space flips, or its
+value), Dashi's commands, the apps' Desktop Actions, the menus running apps
+publish, the arranging commands, and the agents' tools a person uses that
+need no argument. The registry's apps and panes are the entries' rows, and
+the open windows come with their apps' names (`launcher/world.ts`); choosing
+a window runs its `dashi://window/w3` action. Every row's action list (❖K)
+has Copy Address, Set alias… and Set shortcut….
+
+`actions.setPresenter` is the launcher's: a link that must not run by
+itself opens the launcher with the action and its arguments filled in
+(`Presented`, `launcher/host.ts`); Return runs it, as the person.
+
 ## The keymap
 
 A keymap rule's `bind` may be an address (`keymap.ts`): `shortcuts.ts`
@@ -167,6 +187,13 @@ hands any `dashi://` binding to the registry, run for the person on the
 window focused when it was pressed. The compositor carries the name as it
 carries any other. A row shows the key the keymap binds to its address
 (`actions/keys.ts`).
+
+The person's own keys are rules of this kind: Set shortcut… in the
+launcher keeps `launcher.keys` in settings.json (`{ "super+alt+n":
+"dashi://app/dev.dashi.notes/menu/new" }`, `launcher/person-keys.ts`), and
+the shell puts them ahead of Dashi's rules (`keymap-state.ts`) and sends the
+keymap again as soon as the file changes. Aliases (`launcher.aliases`, `{
+"ff": "dashi://app/org.mozilla.firefox" }`) name addresses the same way.
 
 Window arranging is bound so now: ⌃❖←→↑↓ to `dashi://window/arrange/<arrow>`,
 ⌃❖↩ to `…/fill`, ⌃❖C to `…/center`, ⌃❖R to `…/restore`, ⌃❖F to

@@ -59,6 +59,8 @@
  * `power` (`mode` "automatic" or a mode, `chargeLimit`, `fullChargeOnce`, `fullBy`,
  * `fullByDays`, `boost`, `epp`, `batteryMaxKhz`) and `graphics.mode` are the
  * laptop's (power/modes/settings.ts), read through settings-app/store.ts.
+ * `launcher` (`aliases`, `keys`: each names a `dashi://` address) is the
+ * person's launcher aliases and keys (launcher/person-keys.ts), read the same way.
  * Keys left out keep the compositor's own (DASHI_XKB_LAYOUT and the like),
  * except a missing touchpad or mouse setting, which is the device's default.
  */
@@ -243,8 +245,8 @@ export function parseSettings(value: unknown): Loaded {
     return { settings, problems };
   }
   // displays, nightShift, and spaces are read by displays.ts, night-shift.ts, and spaces/; clock and region by clock.ts
-  // and the Setup Assistant (settings-app/store.ts holds their keys).
-  const sections = ["input", "keyboard", "idle", "menuBar", "appearance", "dock", "displays", "nightShift", "clock", "region", "spaces"];
+  // and the Setup Assistant; launcher by the launcher (settings-app/store.ts holds their keys).
+  const sections = ["input", "keyboard", "idle", "menuBar", "appearance", "dock", "displays", "nightShift", "clock", "region", "spaces", "launcher"];
   for (const key of Object.keys(value)) if (!sections.includes(key)) problems.push(`unknown section ${key}`);
 
   const input = new Section("input", value.input, problems).only(["touchpad", "mouse"]);
