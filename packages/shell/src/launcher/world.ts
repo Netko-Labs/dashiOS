@@ -9,6 +9,7 @@
 
 import type { ActionDef } from "../actions/types.ts";
 import type { CompositorWindow } from "../compositor.ts";
+import { spaceLabel } from "../spaces/model.ts";
 import { groupByApp } from "../switcher/model.ts";
 import { type LauncherWindow, windowAddress } from "./items.ts";
 
@@ -32,6 +33,16 @@ export interface WorldSnapshot {
   windows: readonly LauncherWindow[];
   /** Bumped when only a state changed: the rows redraw, the index stays. */
   serial: number;
+}
+
+/**
+ * What a window row calls the Desktop a window is on: its name, unless the
+ * name only repeats the window's app (a Desktop auto-named "Terminal"), then
+ * its place ("Desktop 2"), so the row never reads "Terminal · Terminal".
+ */
+export function desktopWord(label: string | undefined, appName: string, index: number): string {
+  const same = label !== undefined && label.trim().toLocaleLowerCase() === appName.trim().toLocaleLowerCase();
+  return label && !same ? label : spaceLabel(index);
 }
 
 /** The shell's own surfaces are not windows to switch to. */

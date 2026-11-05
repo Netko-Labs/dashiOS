@@ -81,7 +81,7 @@ import { FILE_ROWS } from "./launcher/rows.ts";
 import { shellLauncherHost } from "./launcher/shell-host.ts";
 import { logTiming, markOpen, sinceOpen } from "./launcher/timing.ts";
 import { TYPE_BINDING, TypeAhead, typedFrom, withTyping } from "./launcher/type-ahead.ts";
-import { LauncherWorld } from "./launcher/world.ts";
+import { desktopWord, LauncherWorld } from "./launcher/world.ts";
 import { LAUNCHER, Launcher, type LauncherFiles } from "./launcher.tsx";
 import type { Arrange } from "./layout.ts";
 import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "./local-search.ts";
@@ -1194,7 +1194,7 @@ launcherWorld = new LauncherWorld({
   desktopOf: (window) => {
     const desktops = spaces?.controller.getSnapshot();
     if (!desktops || window.space === undefined || window.space === desktops.current) return undefined;
-    return desktops.labels[window.space];
+    return desktopWord(desktops.labels[window.space], appFor(apps, window, installedApp).name, window.space);
   },
   onState: (listener) => {
     const offs = [flags.subscribe(listener), menus.shared.devices.subscribe(listener), system.store.subscribe(listener), settingsStore.subscribe(listener)];
