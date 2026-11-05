@@ -865,6 +865,10 @@ fn pictures_are_checked_and_cleared() {
     assert!(ipc.request("space-previews", nowhere)["error"].is_string());
     let beyond = json!({ "output": "HEADLESS-1", "rects": [{ "space": 99, "x": 0, "y": 0, "w": 9, "h": 9 }] });
     assert!(ipc.request("space-previews", beyond)["error"].is_string());
+    let elsewhere = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 0, "y": 0, "w": 9, "h": 9, "screen": "DP-9" }] });
+    assert!(ipc.request("space-previews", elsewhere)["error"].is_string());
+    let named = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 0, "y": 0, "w": 9, "h": 9, "screen": "HEADLESS-1" }] });
+    assert_eq!(ipc.request("space-previews", named)["result"], json!({}));
     let clear = json!({ "output": "HEADLESS-1", "rects": [] });
     assert_eq!(ipc.request("space-previews", clear)["result"], json!({}));
     // Windows name their entry in ext-foreign-toplevel-list (what the share picker answers with).

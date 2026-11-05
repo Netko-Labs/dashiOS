@@ -32,10 +32,18 @@ const MOST_IDS: usize = 4096;
 /// A picture's rect, global logical.
 type Rect = Rectangle<i32, Logical>;
 
+/// A Desktop's picture: which Space, where, and which screen of it (by name).
+#[derive(Clone)]
+pub(crate) struct Preview {
+    pub space: usize,
+    pub rect: Rect,
+    pub screen: String,
+}
+
 #[derive(Default)]
 pub(crate) struct Thumbnails {
-    /// Per screen name, each Desktop's picture: (Space, rect).
-    previews: HashMap<String, Vec<(usize, Rect)>>,
+    /// Per screen name, the Desktop pictures drawn on it.
+    previews: HashMap<String, Vec<Preview>>,
     /// Window pictures: (window, rect).
     windows: Vec<(WindowId, Rect)>,
     /// A steady id per (picture, element shown in it), so damage is tracked per picture.
@@ -65,7 +73,10 @@ impl Thumbnails {
 
     /// The Spaces with a picture on any screen.
     pub(crate) fn previewed_spaces(&self) -> impl Iterator<Item = usize> + '_ {
-        self.previews.values().flatten().map(|(space, _)| *space)
+        self.previews
+            .values()
+            .flatten()
+            .map(|preview| preview.space)
     }
 }
 
@@ -134,7 +145,9 @@ pub(crate) fn on_preview(
 }
 
 impl Dashi {
-    /// `space-previews {output, rects: [{space, x, y, w, h}]}`; empty rects clear that screen's.
+    /// `space-previews {output, rects: [{space, x, y, w, h, screen?}]}`: drawn on
+    /// `output`, each a picture of Space `space` as screen `screen` shows it
+    /// (`output` itself when left out); empty rects clear that screen's.
     pub(crate) fn set_space_previews(&mut self, params: &Map<String, Value>) -> Result<(), String> {
         let output = params
             .get("output")
@@ -150,11 +163,31 @@ impl Dashi {
         {
             return Err("`space` must be a Space's index".into());
         }
-        if list.is_empty() {
+        let entries = params
+            .get("rects")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let mut previews = Vec::with_capacity(list.len());
+        for ((space, rect), entry) in list.into_iter().zip(entries) {
+            let screen = match entry.get("screen") {
+                None => output.to_owned(),
+                Some(name) => name
+                    .as_str()
+                    .filter(|name| self.space.outputs().any(|o| o.name() == *name))
+                    .ok_or("`screen` must be a screen's name")?
+                    .to_owned(),
+            };
+            previews.push(Preview {
+                space: space as usize,
+                rect,
+                screen,
+            });
+        }
+        if previews.is_empty() {
             self.thumbnails.previews.remove(output);
         } else {
-            let list = list.into_iter().map(|(s, r)| (s as usize, r)).collect();
-            self.thumbnails.previews.insert(output.to_owned(), list);
+            self.thumbnails.previews.insert(output.to_owned(), previews);
         }
         self.thumbnails_changed();
         Ok(())

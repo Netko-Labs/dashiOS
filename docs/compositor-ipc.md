@@ -107,7 +107,7 @@ hidden) keep getting frame callbacks, so they stay live.
 
 | Method | Params | Result |
 | --- | --- | --- |
-| `space-previews` | `{output, rects: [{space, x, y, w, h}]}` | `{}`; each Space's windows (top first, as they stand or wait on that Space) and the wallpaper, that screen scaled into its rect (the rect should have the screen's shape); an unknown screen or a `space` past 15 is an error. Per screen: one screen's request leaves the others' |
+| `space-previews` | `{output, rects: [{space, x, y, w, h, screen?}]}` | `{}`; drawn on `output`: each Space's windows (top first, as they stand or wait on that Space) and the wallpaper, as screen `screen` (default `output`) shows them, scaled into its rect (the rect should have that screen's shape; the share picker shows every screen this way); an unknown screen or a `space` past 15 is an error. Per screen: one screen's request leaves the others' |
 | `window-thumbnails` | `{rects: [{window, x, y, w, h}]}` | `{}`; each window (title bar included) as large as fits its rect, never larger than it is, centered; windows that are gone are left out |
 
 ### Capture and agents

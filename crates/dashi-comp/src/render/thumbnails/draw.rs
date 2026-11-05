@@ -83,8 +83,19 @@ where
         .get(&output.name())
         .cloned()
         .unwrap_or_default();
-    for (index, (space, rect)) in previews.into_iter().enumerate() {
-        for (window, frame) in space_windows(state, space) {
+    for (index, preview) in previews.into_iter().enumerate() {
+        let rect = preview.rect;
+        // The screen it pictures: this one, or another one shown here (the share picker's).
+        let pictured = state
+            .space
+            .outputs()
+            .find(|o| o.name() == preview.screen)
+            .and_then(|o| state.space.output_geometry(o))
+            .unwrap_or(screen);
+        for (window, frame) in space_windows(state, preview.space) {
+            if frame.intersection(pictured).is_none() {
+                continue;
+            }
             let bar = state.bar_height(&window);
             let outer = Rectangle::new(
                 frame.loc - Point::from((0, bar)),
@@ -97,7 +108,7 @@ where
                 .map(|image| image.buffer.clone());
             jobs.push(Small {
                 slot: index,
-                outer: on_preview(screen, rect, outer),
+                outer: on_preview(pictured, rect, outer),
                 bar: f64::from(bar),
                 title,
                 window,
