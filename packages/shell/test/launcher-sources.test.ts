@@ -22,7 +22,7 @@ import {
 } from "../src/launcher/person-keys.ts";
 import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
 import { rank } from "../src/launcher/ranking/index.ts";
-import { actionRow } from "../src/launcher/row-model.ts";
+import { actionRow, windowRow } from "../src/launcher/row-model.ts";
 import { buildSections, fileNameMatches, type ListInput, selectable, shortFolder } from "../src/launcher/rows.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
 import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
@@ -425,5 +425,25 @@ describe("a window row's Desktop", () => {
     expect(desktopWord(" terminal ", "Terminal", 2)).toBe("Desktop 3");
     expect(desktopWord("Terminal, Files", "Terminal", 1)).toBe("Terminal, Files");
     expect(desktopWord(undefined, "Terminal", 0)).toBe("Desktop 1");
+  });
+});
+
+describe("a window row's words", () => {
+  const window = (title: string, extra: Partial<LauncherWindow> = {}): LauncherWindow => ({
+    id: 3,
+    address: "dashi://window/w3",
+    title,
+    appName: "Notes",
+    entryId: "dev.dashi.notes",
+    state: "normal",
+    icon: "/notes.svg",
+    ...extra,
+  });
+
+  test("the app's name follows the title, but never repeats it", () => {
+    expect(windowRow(window("Groceries")).detail).toBe("Notes");
+    expect(windowRow(window("Notes")).detail).toBeUndefined();
+    expect(windowRow(window("Notes", { desktop: "Desktop 2" })).detail).toBe("Desktop 2");
+    expect(windowRow(window("Groceries", { state: "minimized" })).detail).toBe("Notes · minimized");
   });
 });

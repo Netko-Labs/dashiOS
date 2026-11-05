@@ -138,10 +138,14 @@ function whereIs(window: LauncherWindow): string | null {
 
 export function windowRow(window: LauncherWindow): Row {
   const where = whereIs(window);
+  const title = window.title.trim() || window.appName;
+  // The app's name, unless the title already is it ("Notes · Notes" says it twice).
+  const app = title.toLocaleLowerCase() === window.appName.trim().toLocaleLowerCase() ? null : window.appName;
+  const detail = [app, where].filter((part): part is string => part !== null).join(" · ");
   return {
     id: `window:${window.id}`,
-    title: window.title.trim() || window.appName,
-    detail: where ? `${window.appName} · ${where}` : window.appName,
+    title,
+    ...(detail ? { detail } : {}),
     kind: "Window",
     icon: { image: window.icon },
     action: { kind: "focus", window },
