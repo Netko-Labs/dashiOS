@@ -1,5 +1,5 @@
 /**
- * The Calculator's arithmetic, as the Mac's basic calculator does it, with
+ * The Calculator's arithmetic, the way a pocket calculator does it, with
  * no UI: a pure reducer from a state and a key to the next state.
  *
  * - × and ÷ bind tighter than + and −: 2 + 3 × 4 = 14. Pressing an operator
@@ -54,7 +54,7 @@ export interface CalcState {
   error: boolean;
 }
 
-/** Digits a typed number may have, as on the Mac's basic calculator. */
+/** Digits a typed number may have: what the display holds at its largest size. */
 export const MAX_DIGITS = 9;
 
 export const INITIAL: CalcState = {
