@@ -15,10 +15,7 @@
     },
     "match": {
       "description": "DMI values (/sys/class/dmi/id/*) that identify the model. Every key given must match; a value ending in * matches as a prefix. A list matches when any of its entries does.",
-      "oneOf": [
-        { "$ref": "#/$defs/match" },
-        { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/match" } }
-      ]
+      "oneOf": [{ "$ref": "#/$defs/match" }, { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/match" } }]
     },
     "name": { "description": "The name people know it by.", "type": "string" },
     "fans": {
@@ -116,8 +113,20 @@
     },
     "knob": {
       "enum": [
-        "platform-profile", "charge-limit", "kbd-backlight", "panel-overdrive", "boost", "epp", "cpu-max-freq",
-        "ppt-spl", "ppt-sppt", "ppt-fppt", "nv-tgp", "nv-dynamic-boost", "nv-temp-target", "gpu-mux"
+        "platform-profile",
+        "charge-limit",
+        "kbd-backlight",
+        "panel-overdrive",
+        "boost",
+        "epp",
+        "cpu-max-freq",
+        "ppt-spl",
+        "ppt-sppt",
+        "ppt-fppt",
+        "nv-tgp",
+        "nv-dynamic-boost",
+        "nv-temp-target",
+        "gpu-mux"
       ]
     },
     "column": {
