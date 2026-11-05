@@ -103,13 +103,17 @@ describe("the ⌃❖ arrows", () => {
  * A compositor holding `windows`, carrying out `frame` and `fullscreen`, and
  * keeping what it was asked. As dashi-comp does, full screen says
  * `outputs-changed` while it is asked; leaving, the app still draws at the
- * screen's size for a while (where its old frame was).
+ * screen's size for a while (where its old frame was). With `lag`, an app
+ * is slow as a busy Metal app is: a frame moves the window at once, but its
+ * size changes only at `catchUp()`.
  */
 function fake(
   windows: Array<CompositorWindow & { away?: Rect | null }>,
   outputs: Array<{ name: string; frame: Rect; usable: Rect }> = [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }],
+  lag = false,
 ) {
   const requests: Array<[string, Record<string, unknown>]> = [];
+  const undrawn = new Map<number, { width: number; height: number }>();
   let listener: ((event: CompositorEvent) => void) | null = null;
   const compositor = {
     on: (each: (event: CompositorEvent) => void) => {
@@ -122,7 +126,15 @@ function fake(
       requests.push([method, params]);
       if (method === "outputs") return { outputs: outputs.map((output) => ({ ...output, scale: 1 })) };
       const window = windows.find((candidate) => candidate.id === params.window);
-      if (window && method === "frame") window.frame = { x: Number(params.x), y: Number(params.y), width: Number(params.width), height: Number(params.height) };
+      if (window && method === "frame") {
+        const size = { width: Number(params.width), height: Number(params.height) };
+        if (lag) undrawn.set(window.id, size);
+        window.frame = {
+          x: Number(params.x),
+          y: Number(params.y),
+          ...(lag && window.frame ? { width: window.frame.width, height: window.frame.height } : size),
+        };
+      }
       if (window && method === "fullscreen") {
         const on = params.on === true;
         if (on) window.away = window.frame;
@@ -139,7 +151,15 @@ function fake(
     listener?.(event);
     for (let tick = 0; tick < 5; tick++) await new Promise((done) => setTimeout(done, 0));
   };
-  return { compositor, requests, frames, emit };
+  /** The apps draw at the sizes they were asked for. */
+  const catchUp = () => {
+    for (const window of windows) {
+      const size = undrawn.get(window.id);
+      if (size && window.frame) window.frame = { ...window.frame, ...size };
+    }
+    undrawn.clear();
+  };
+  return { compositor, requests, frames, emit, catchUp };
 }
 
 const OWN = rect(300, 200, 800, 600);
@@ -154,8 +174,8 @@ const files = (): CompositorWindow => ({
   titleBar: 0,
 });
 
-async function started(window = files(), outputs?: Parameters<typeof fake>[1]) {
-  const world = fake([window], outputs);
+async function started(window = files(), outputs?: Parameters<typeof fake>[1], lag = false) {
+  const world = fake([window], outputs, lag);
   const arranger = new Arranger(world.compositor);
   await arranger.start();
   world.requests.length = 0;
@@ -408,6 +428,83 @@ describe("full screen and back", () => {
     window.frame = { x: OWN.x, y: OWN.y, width: SCREEN.width, height: SCREEN.height };
     outputs[0] = { ...outputs[0], usable: rect(0, 28, 1646, 800) } as (typeof outputs)[number];
     await world.emit({ event: "outputs-changed" });
-    expect(world.frames()).toEqual([["frame", { window: 7, ...OWN }]]);
+    // It was asked for its own frame, which still fits: nothing to send, and nothing at the full-screen size.
+    expect(world.frames()).toEqual([]);
+  });
+});
+
+describe("a slow app: the size asked for counts until it is drawn", () => {
+  const lagging = () => started(files(), undefined, true);
+  const centered = rect(423, 147, 800, 600);
+
+  test("back, then at once a tile: the frame to go back to is its own, not the last tile's", async () => {
+    const { arranger, frames, catchUp, window } = await lagging();
+    await arranger.arrow(7, "up");
+    catchUp();
+    await arranger.arrange(7, "restore");
+    // The app still draws the top half, where its own frame is.
+    expect(window.frame).toEqual(rect(300, 200, 1634, 410));
+    await arranger.arrow(7, "down");
+    catchUp();
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("back, then at once Center: its own size, centered", async () => {
+    const { arranger, frames, catchUp } = await lagging();
+    await arranger.arrow(7, "up");
+    catchUp();
+    await arranger.arrange(7, "restore");
+    await arranger.arrange(7, "center");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...centered }]);
+  });
+
+  test("back, a tile, Fill, then Center (the VM's steps): its own size, centered", async () => {
+    const { arranger, frames, catchUp } = await lagging();
+    await arranger.arrow(7, "up");
+    catchUp();
+    await arranger.arrange(7, "restore");
+    await arranger.arrow(7, "down");
+    await arranger.arrange(7, "fill");
+    await arranger.arrange(7, "center");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...centered }]);
+    catchUp();
+    await arranger.arrange(7, "fill");
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...centered }]);
+  });
+
+  test("dragged out of a tile, then tiled again before it is drawn: back is its own size", async () => {
+    const { arranger, emit, frames, catchUp, window } = await lagging();
+    await arranger.arrow(7, "up");
+    catchUp();
+    await arranger.arrange(7, "restore");
+    await arranger.arrow(7, "left");
+    catchUp();
+    await emit({ event: "window-grab", window: 7, kind: "move", frame: rect(6, 34, 814, 826), pointer: { x: 413, y: 44 } });
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(13, 34, 800, 600) }]);
+    // The person drags it on; the app still draws the left half's size.
+    window.frame = rect(500, 200, 814, 826);
+    await arranger.arrow(7, "right");
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(500, 200, 800, 600) }]);
+  });
+
+  test("out of full screen, then at once a tile: back is the frame from before full screen", async () => {
+    const { arranger, frames } = await lagging();
+    await arranger.toggleFullscreen(7);
+    await arranger.toggleFullscreen(7);
+    await arranger.arrow(7, "left");
+    await arranger.arrange(7, "restore");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...OWN }]);
+  });
+
+  test("a resize by hand: what the compositor reports is the size again", async () => {
+    const { arranger, emit, frames, window } = await lagging();
+    await arranger.arrow(7, "left");
+    await emit({ event: "window-grab", window: 7, kind: "resize", frame: rect(6, 34, 800, 600), pointer: { x: 806, y: 300 } });
+    window.frame = rect(6, 34, 700, 500);
+    await arranger.arrange(7, "center");
+    expect(frames().at(-1)).toEqual(["frame", { window: 7, ...rect(473, 197, 700, 500) }]);
   });
 });

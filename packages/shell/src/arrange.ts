@@ -8,10 +8,11 @@
  * Previous Size gives back. A drag or a resize by the person ends the
  * arrangement: the compositor reports the grab, the shell decides. Full
  * screen is on top of all that: leaving it gives back the frame from before
- * (its tile, if it was tiled or filled).
+ * (its tile, if it was tiled or filled). A window's size is the one last
+ * asked for until its app has drawn it (pending-frames.ts).
  */
 
-import { type Compositor, type CompositorEvent, type Placing, parseFrame, parsePointer } from "./compositor.ts";
+import { type Compositor, type CompositorEvent, type CompositorWindow, type Placing, parseFrame, parsePointer } from "./compositor.ts";
 import {
   type Arrange,
   carryFrame,
@@ -22,11 +23,14 @@ import {
   type Output,
   placeNew,
   type Rect,
+  sameOutputs,
+  sameRect,
   screenFor,
   type Tile,
   tileFrame,
   usableFor,
 } from "./layout.ts";
+import { PendingFrames } from "./pending-frames.ts";
 import { type Arrow, arrowStep, screenToward } from "./tiling.ts";
 
 /** How long the pointer rests in a drag zone before its preview shows. */
@@ -53,32 +57,6 @@ interface Arranged {
 
 type EventOf<Name extends CompositorEvent["event"]> = Extract<CompositorEvent, { event: Name }>;
 
-const sameRect = (a: Rect, b: Rect): boolean => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
-
-/** Whether two lists of screens have the same names, frames, usable areas, and scales. */
-const sameOutputs = (a: readonly Output[], b: readonly Output[]): boolean =>
-  a.length === b.length &&
-  a.every((output, index) => {
-    const other = b[index];
-    return (
-      other !== undefined &&
-      output.name === other.name &&
-      output.scale === other.scale &&
-      sameRect(output.frame, other.frame) &&
-      sameRect(output.usable, other.usable)
-    );
-  });
-
-/**
- * How long after leaving full screen a window's reported size is not to be
- * believed: the app still draws at the screen's size until it takes the
- * frame it was given back.
- */
-const SETTLE_MS = 1000;
-
-/** The frame request for `tile`: Fill also tells the app it is maximized. */
-const tileRequest = (window: number, tile: Tile, frame: Rect) => ({ window, ...frame, ...(tile === "fill" ? { maximized: true } : {}) });
-
 export class Arranger {
   private outputs: Output[] = [];
   private opened = 0;
@@ -87,8 +65,8 @@ export class Arranger {
   private readonly dragFrom = new Map<number, Rect>();
   /** The frame each full-screen window had before: given back when it leaves. */
   private readonly beforeFullscreen = new Map<number, Rect>();
-  /** Windows that just left full screen: the frame they were given back, and until when the app may still be drawing at full size. */
-  private readonly settling = new Map<number, { frame: Rect; until: number }>();
+  /** The sizes asked for that the apps have not drawn yet. */
+  private readonly pending = new PendingFrames();
   /** The drag-to-tile zones last sent, in order: which tile each is, on which screen. */
   private zones: Array<{ tile: Tile; frame: Rect; usable: Rect }> = [];
   /** The first refresh; placing and arranging wait for it, since they need the screens. */
@@ -171,16 +149,13 @@ export class Arranger {
   private async fitWindows(): Promise<void> {
     for (const window of await this.compositor.windows()) {
       // A full-screen window fills its screen, whatever the bars leave free.
-      if (window.state !== "normal" || !window.frame || window.fullscreen) continue;
-      // Just out of full screen, the app may still be at the screen's size: fit the frame it was given.
-      const settling = this.settling.get(window.id);
-      const frame = settling && settling.until > Date.now() ? settling.frame : window.frame;
+      const frame = this.current(window);
+      if (window.state !== "normal" || !frame || window.fullscreen) continue;
       const usable = usableFor(frame, this.outputs);
       if (!usable) continue;
-      const tile = this.arranged.get(window.id)?.tile;
+      const tile = this.arranged.get(window.id)?.tile ?? null;
       const fitted = tile ? tileFrame(tile, usable) : fitFrame(frame, usable);
-      if (sameRect(fitted, window.frame)) continue;
-      await this.compositor.request("frame", tile ? tileRequest(window.id, tile, fitted) : { window: window.id, ...fitted });
+      if (!sameRect(fitted, frame)) await this.frame(window.id, fitted, tile);
     }
   }
 
@@ -195,9 +170,18 @@ export class Arranger {
     const { x, y } = window.position ?? placeNew(window, usable, this.opened++);
     const fitted = fitFrame({ x, y, width: window.width, height: window.height }, usable);
     await this.compositor.request("place", { window: window.id, x: fitted.x, y: fitted.y });
-    if (fitted.width !== window.width || fitted.height !== window.height) {
-      await this.compositor.request("frame", { window: window.id, ...fitted });
-    }
+    if (fitted.width !== window.width || fitted.height !== window.height) await this.frame(window.id, fitted);
+  }
+
+  /** Ask for a frame (Fill also tells the app it is maximized), and hold to its size until the app has drawn it. */
+  private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
+    this.pending.asked(id, frame);
+    await this.compositor.request("frame", { window: id, ...frame, ...(tile === "fill" ? { maximized: true } : {}) });
+  }
+
+  /** A window's frame as it is about to be: where it is, at the size last asked for (pending-frames.ts). */
+  private current(window: CompositorWindow): Rect | null {
+    return window.frame ? this.pending.frameOf(window.id, window.frame) : null;
   }
 
   /** How the shell arranged a window: a tile, Fill, or null at its own frame (the menus, agents). */
@@ -209,7 +193,7 @@ export class Arranger {
   private async frameOf(id: number): Promise<Rect | null> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    return window?.frame && window.state === "normal" && !window.fullscreen ? window.frame : null;
+    return window && window.state === "normal" && !window.fullscreen ? this.current(window) : null;
   }
 
   /** Tile it, fill, center it at its own size, or give it its own frame back (the Window menu, ⌃❖↩ ⌃❖C ⌃❖R, agents). */
@@ -222,7 +206,7 @@ export class Arranger {
     const own = this.arranged.get(id)?.own ?? frame;
     if (to !== "center") return this.tileIn(id, to, usable, own);
     this.forget(id);
-    await this.compositor.request("frame", { window: id, ...centerFrame(own, usable) });
+    await this.frame(id, centerFrame(own, usable));
   }
 
   /** ⌃❖ and an arrow: the half, the quarter, its own size, or the next screen (tiling.ts). */
@@ -244,7 +228,7 @@ export class Arranger {
   /** Frame a window as `tile` in `usable`, remembering `own` to go back to. */
   private async tileIn(id: number, tile: Tile, usable: Rect, own: Rect): Promise<void> {
     this.arranged.set(id, { tile, own });
-    await this.compositor.request("frame", tileRequest(id, tile, tileFrame(tile, usable)));
+    await this.frame(id, tileFrame(tile, usable), tile);
   }
 
   /** Its own frame back (Back to Previous Size); nothing when it isn't arranged. */
@@ -253,7 +237,7 @@ export class Arranger {
     if (!arranged) return;
     this.forget(id);
     const usable = usableFor(arranged.own, this.outputs);
-    await this.compositor.request("frame", { window: id, ...(usable ? fitFrame(arranged.own, usable) : arranged.own) });
+    await this.frame(id, usable ? fitFrame(arranged.own, usable) : arranged.own);
   }
 
   private forget(id: number): void {
@@ -264,7 +248,7 @@ export class Arranger {
   private closed(id: number): void {
     this.forget(id);
     this.beforeFullscreen.delete(id);
-    this.settling.delete(id);
+    this.pending.forget(id);
   }
 
   /**
@@ -299,14 +283,16 @@ export class Arranger {
   private async grabbed(event: EventOf<"window-grab">): Promise<void> {
     const arranged = this.arranged.get(event.window);
     this.forget(event.window);
-    if (event.kind === "resize") return;
+    // A resize by hand: its size is the person's, whatever was asked before.
+    if (event.kind === "resize") return this.pending.forget(event.window);
+    const from = this.pending.frameOf(event.window, event.frame);
     if (!arranged) {
-      this.dragFrom.set(event.window, event.frame);
+      this.dragFrom.set(event.window, from);
       return;
     }
-    const frame = frameUnderPointer(event.frame, arranged.own, event.pointer);
+    const frame = frameUnderPointer(from, arranged.own, event.pointer);
     this.dragFrom.set(event.window, frame);
-    await this.compositor.request("frame", { window: event.window, ...frame });
+    await this.frame(event.window, frame);
   }
 
   /** A drag let go in a drag-to-tile zone: that tile, going back to where the drag began. */
@@ -331,22 +317,25 @@ export class Arranger {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
     if (!window || window.state !== "normal" || (window.fullscreen ?? false) === on) return;
-    if (on && window.frame) this.beforeFullscreen.set(id, window.frame);
+    const before = on ? this.current(window) : null;
+    if (before) this.beforeFullscreen.set(id, before);
+    // Leaving: the frame it goes back to is asked for at once, so nothing
+    // meanwhile takes the full-screen size for its own.
+    const back = on ? null : this.frameAfterFullscreen(id);
+    if (back) this.pending.asked(id, back.frame);
     await this.compositor.request("fullscreen", { window: id, on });
-    if (!on) await this.leftFullscreen(id);
+    if (back) await this.frame(id, back.frame, back.tile);
     this.afterFullscreen?.();
   }
 
   /** Out of full screen: the frame from before, or its tile there; nothing known (the shell restarted meanwhile), the compositor's own. */
-  private async leftFullscreen(id: number): Promise<void> {
+  private frameAfterFullscreen(id: number): { frame: Rect; tile: Tile | null } | null {
     const before = this.beforeFullscreen.get(id);
     this.beforeFullscreen.delete(id);
-    if (!before) return;
-    const tile = this.arranged.get(id)?.tile;
+    if (!before) return null;
+    const tile = this.arranged.get(id)?.tile ?? null;
     const usable = usableFor(before, this.outputs);
-    const frame = tile && usable ? tileFrame(tile, usable) : before;
-    this.settling.set(id, { frame, until: Date.now() + SETTLE_MS });
-    await this.compositor.request("frame", tile ? tileRequest(id, tile, frame) : { window: id, ...frame });
+    return tile && usable ? { frame: tileFrame(tile, usable), tile } : { frame: before, tile: null };
   }
 
   /** Enter full screen, or leave it (⌃❖F, the View menu). */

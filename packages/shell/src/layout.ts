@@ -165,3 +165,19 @@ export function screenFor<S extends { frame: Rect }>(frame: Rect, screens: reado
 export function usableFor(frame: Rect, screens: readonly { frame: Rect; usable: Rect }[]): Rect | null {
   return screenFor(frame, screens)?.usable ?? null;
 }
+
+export const sameRect = (a: Rect, b: Rect): boolean => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+
+/** Whether two lists of screens have the same names, frames, usable areas, and scales. */
+export const sameOutputs = (a: readonly Output[], b: readonly Output[]): boolean =>
+  a.length === b.length &&
+  a.every((output, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      output.name === other.name &&
+      output.scale === other.scale &&
+      sameRect(output.frame, other.frame) &&
+      sameRect(output.usable, other.usable)
+    );
+  });
