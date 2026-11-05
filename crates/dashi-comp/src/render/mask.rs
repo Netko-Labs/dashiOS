@@ -3,16 +3,17 @@
 //! (password fields, consent sheets, the vault's windows, a window handed to
 //! the person) and for whom (its agents' screenshots, by name, and the
 //! screencopy clients it started for them, by pid); this paints those areas
-//! opaque in the picture before anyone sees it. Whatever moves in ways the
-//! mask can't follow (the overview, a Space sliding, a window flying to the
-//! Dock) blanks the whole picture instead.
+//! opaque in the picture before anyone sees it, where it is drawn: in its
+//! frame, small in the overview, flying to the Dock, sliding with its Space
+//! (drawn.rs), and in any live picture of the shell's that shows it
+//! (thumbnails/), which is blanked whole.
 
 use std::collections::HashMap;
 
 use serde_json::{Map, Value};
 use smithay::{
     desktop::layer_map_for_output,
-    utils::{Logical, Rectangle},
+    utils::{Logical, Point, Rectangle},
 };
 
 use super::capture::Picture;
@@ -126,6 +127,19 @@ pub(crate) fn parse(params: &Map<String, Value>) -> Result<(String, Mask), Strin
     ))
 }
 
+/// `rect` grown out to whole logical pixels: never a sliver of what is under it.
+fn outward(rect: Rectangle<f64, Logical>) -> Rectangle<i32, Logical> {
+    let (x0, y0) = (rect.loc.x.floor(), rect.loc.y.floor());
+    let (x1, y1) = (
+        (rect.loc.x + rect.size.w).ceil(),
+        (rect.loc.y + rect.size.h).ceil(),
+    );
+    Rectangle::new(
+        (x0 as i32, y0 as i32).into(),
+        ((x1 - x0) as i32, (y1 - y0) as i32).into(),
+    )
+}
+
 /// Paint `rects` (global logical) opaque in `picture`, which shows `area` at `scale`.
 /// `None` blanks all of it.
 pub(crate) fn blank(
@@ -174,46 +188,43 @@ impl Dashi {
         Ok(())
     }
 
-    /// The global areas `mask` covers now; None when only the whole picture is safe.
-    pub(crate) fn mask_rects(&self, mask: &Mask) -> Option<Vec<Rectangle<i32, Logical>>> {
-        if mask.is_empty() {
-            return Some(Vec::new());
-        }
-        if self.overview_open() || self.spaces.slide.is_some() || !self.motion.flights.is_empty() {
-            return None;
-        }
+    /// The global areas `mask` covers now, wherever what it names is drawn.
+    pub(crate) fn mask_rects(&self, mask: &Mask) -> Vec<Rectangle<i32, Logical>> {
         let mut out = Vec::new();
-        let content = |id: u64| {
-            let window = &self.windows.get(id)?.window;
-            let at = self.space.element_location(window)?;
-            Some((window.clone(), at))
-        };
+        if mask.is_empty() {
+            return out;
+        }
         for id in &mask.windows {
-            let Some((window, at)) = content(*id) else {
+            let Some((window, outer, by)) = self.drawn(*id) else {
                 continue;
             };
             let geometry = window.geometry();
-            let mut bbox = window.bbox_with_popups();
-            bbox.loc += at - geometry.loc;
-            out.push(bbox);
-            let bar = self.bar_height(&window);
-            if bar > 0 {
-                out.push(Rectangle::new(
-                    (at.x, at.y - bar).into(),
-                    (geometry.size.w, bar).into(),
-                ));
+            let bar = f64::from(self.bar_height(&window)) * by;
+            let content = outer.loc + Point::from((0.0, bar));
+            let bbox = window.bbox_with_popups();
+            let at = content + (bbox.loc - geometry.loc).to_f64().upscale(by);
+            out.push(outward(Rectangle::new(at, bbox.size.to_f64().upscale(by))));
+            if bar > 0.0 {
+                out.push(outward(Rectangle::new(
+                    outer.loc,
+                    (outer.size.w, bar).into(),
+                )));
             }
+            out.extend(self.pictures_of(*id));
         }
         for (window, rect) in &mask.rects {
-            match window {
-                None => out.push(*rect),
-                Some(id) => {
-                    // A window that isn't on screen shows nothing to blank.
-                    if let Some((_, at)) = content(*id) {
-                        out.push(Rectangle::new(rect.loc + at, rect.size));
-                    }
-                }
+            let Some(id) = window else {
+                out.push(*rect);
+                continue;
+            };
+            // A window that isn't drawn shows nothing to blank.
+            if let Some((window, outer, by)) = self.drawn(*id) {
+                let bar = f64::from(self.bar_height(&window)) * by;
+                let content = outer.loc + Point::from((0.0, bar));
+                let at = content + rect.loc.to_f64().upscale(by);
+                out.push(outward(Rectangle::new(at, rect.size.to_f64().upscale(by))));
             }
+            out.extend(self.pictures_of(*id));
         }
         for output in self.space.outputs() {
             let Some(origin) = self.space.output_geometry(output).map(|g| g.loc) else {
@@ -228,7 +239,22 @@ impl Dashi {
                 }
             }
         }
-        Some(out)
+        out
+    }
+
+    /// A masked window as drawn now: the window, its outer frame there, and its scale.
+    fn drawn(&self, id: u64) -> Option<(smithay::desktop::Window, Rectangle<f64, Logical>, f64)> {
+        let window = self.windows.get(id)?.window.clone();
+        let (outer, by) = self.drawn_frame(id)?;
+        Some((window, outer, by))
+    }
+
+    /// The shell's live pictures that show window `id`, blanked whole.
+    fn pictures_of(&self, id: u64) -> Vec<Rectangle<i32, Logical>> {
+        self.windows
+            .get(id)
+            .map(|entry| self.thumbnails.showing(id, entry.space))
+            .unwrap_or_default()
     }
 
     /// A screencopy or image-copy frame for `client`: blanked if the shell
@@ -262,7 +288,7 @@ impl Dashi {
             return;
         };
         let rects = self.mask_rects(mask);
-        blank(picture, area, scale, rects.as_deref());
+        blank(picture, area, scale, Some(&rects));
     }
 }
 

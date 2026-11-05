@@ -71,6 +71,24 @@ impl Thumbnails {
         self.windows.iter().map(|(id, _)| *id)
     }
 
+    /// Every picture that shows `window` (on Space `space`): its window
+    /// pictures and the Desktop pictures of its Space, for a capture mask
+    /// to blank whole (render/mask.rs).
+    pub(crate) fn showing(&self, window: WindowId, space: usize) -> Vec<Rect> {
+        let windows = self
+            .windows
+            .iter()
+            .filter(|(id, _)| *id == window)
+            .map(|(_, rect)| *rect);
+        let desktops = self
+            .previews
+            .values()
+            .flatten()
+            .filter(|preview| preview.space == space)
+            .map(|preview| preview.rect);
+        windows.chain(desktops).collect()
+    }
+
     /// The Spaces with a picture on any screen.
     pub(crate) fn previewed_spaces(&self) -> impl Iterator<Item = usize> + '_ {
         self.previews

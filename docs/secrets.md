@@ -168,9 +168,10 @@ Captures name the mask (`capture {mask: "agent"}`). An agent's recording is
 a wf-recorder the shell starts gated: a shell that waits for a line, then
 `exec`s wf-recorder with the same pid, so the pid is in the mask before the
 first frame is copied. If the mask can't be set, the screenshot or the
-recording is refused. A field AT-SPI doesn't report isn't blanked; anything
-moving faster than the mask (the overview, a Space sliding, a window flying
-to the Dock) blanks the whole picture.
+recording is refused. A field AT-SPI doesn't report isn't blanked. The
+blanks follow a window where it is drawn: small in the overview, flying to
+the Dock, sliding with its Space; a live picture of a blanked window (the
+switcher's, a Desktop's in Mission Control) is blanked whole.
 
 ## Consent from the person only
 

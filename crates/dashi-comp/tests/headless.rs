@@ -742,6 +742,47 @@ fn window_named(ipc: &mut Ipc, id: u64) -> Value {
 }
 
 #[test]
+fn windows_are_listed_most_recently_used_first() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut open = |title: &str, x: i64| {
+        let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", title);
+        let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+            .as_u64()
+            .unwrap();
+        ipc.request("place", json!({ "window": id, "x": x, "y": 50 }));
+        wait_event(&mut ipc, &mut client, "window-opened");
+        (client, id)
+    };
+    let (_a, first) = open("First", 100);
+    let (_b, second) = open("Second", 300);
+    let (_c, third) = open("Third", 500);
+    let order = |ipc: &mut Ipc| -> Vec<u64> {
+        ipc.request("windows", json!({}))["result"]["windows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|w| w["id"].as_u64().unwrap())
+            .collect()
+    };
+    assert_eq!(
+        order(&mut ipc),
+        vec![third, second, first],
+        "the newest has the keyboard"
+    );
+    ipc.request("focus", json!({ "window": first }));
+    assert_eq!(order(&mut ipc), vec![first, third, second]);
+    // Minimized windows come after those that show.
+    ipc.request("minimize", json!({ "window": first }));
+    assert_eq!(order(&mut ipc).last(), Some(&first));
+}
+
+#[test]
 fn a_held_window_goes_along_when_the_space_changes() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
@@ -749,6 +790,20 @@ fn a_held_window_goes_along_when_the_space_changes() {
     ipc.request("chrome", json!({ "reduceMotion": true }));
     ipc.request("space-add", json!({}));
     wait_event(&mut ipc, &mut client, "space");
+    // A window already waiting on the Space it will be carried to.
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut other = Client::open(compositor.dir.path(), &display, "dev.dashi.other", "There");
+    let there = wait_event(&mut ipc, &mut other, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": there, "x": 300, "y": 200 }));
+    wait_event(&mut ipc, &mut other, "window-opened");
+    ipc.request("space-move", json!({ "window": there, "space": 1 }));
+    wait_event(&mut ipc, &mut other, "window-space");
+    ipc.request("focus", json!({ "window": id }));
 
     grab(&mut ipc, &mut client, id, 40.0, 40.0);
     // Dragged 30 to the right and 20 down.
@@ -775,6 +830,9 @@ fn a_held_window_goes_along_when_the_space_changes() {
     let carried = window_named(&mut ipc, id);
     assert_eq!(carried["space"], 1);
     assert_eq!(carried["frame"]["x"], 430, "on screen, where it was held");
+    // In front of the windows that were there, with the keyboard.
+    assert_eq!(carried["focused"], true);
+    assert_eq!(window_named(&mut ipc, there)["focused"], false);
 
     // Still in hand: it follows the pointer on the new Desktop, and stays there when let go.
     // (Points are in the window, which moves with the pointer: 50 in is 10 further right.)

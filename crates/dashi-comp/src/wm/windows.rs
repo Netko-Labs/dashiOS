@@ -68,11 +68,15 @@ pub(crate) struct Entry {
     pub icon: crate::handlers::toplevel_meta::Icon,
     /// The window it is a sheet of (IPC `attach`; wm/sheets.rs).
     pub sheet_of: Option<WindowId>,
+    /// When it last got the person's keyboard (a count, higher is later; 0 never).
+    pub used: u64,
 }
 
 pub(crate) struct Windows {
     entries: Vec<Entry>,
     next_id: WindowId,
+    /// The last `used` stamp given.
+    used: u64,
 }
 
 impl Default for Windows {
@@ -80,6 +84,7 @@ impl Default for Windows {
         Self {
             entries: Vec::new(),
             next_id: 1,
+            used: 0,
         }
     }
 }
@@ -107,8 +112,18 @@ impl Windows {
             icon: Default::default(),
             hover: None,
             sheet_of: None,
+            used: 0,
         });
         id
+    }
+
+    /// The window whose toplevel is `surface` got the person's keyboard: it is the most recently used.
+    pub(crate) fn used(&mut self, surface: &WlSurface) {
+        self.used += 1;
+        let stamp = self.used;
+        if let Some(entry) = self.by_surface_mut(surface) {
+            entry.used = stamp;
+        }
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = WindowId> + use<> {
@@ -160,13 +175,22 @@ impl Windows {
         Some(self.entries.remove(at))
     }
 
-    /// The announced windows as the shell sees them, oldest first.
+    /// The announced windows as the shell sees them, front to back: those
+    /// that show, most recently used first, then the minimized, then the
+    /// hidden (each latest first); never used, newest first.
     pub(crate) fn describe_all(&self, state: &Dashi) -> Vec<Value> {
-        self.entries
-            .iter()
-            .filter(|entry| entry.announced)
-            .map(|entry| describe(entry, state))
-            .collect()
+        let mut listed: Vec<&Entry> = self.entries.iter().filter(|e| e.announced).collect();
+        listed.sort_by_key(|e| (recency_group(e.shown), std::cmp::Reverse((e.used, e.id))));
+        listed.into_iter().map(|e| describe(e, state)).collect()
+    }
+}
+
+/// Where windows in each state come in the list: on screen, minimized, hidden.
+fn recency_group(shown: Shown) -> u8 {
+    match shown {
+        Shown::Normal => 0,
+        Shown::Minimized => 1,
+        Shown::Hidden => 2,
     }
 }
 

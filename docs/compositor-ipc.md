@@ -34,7 +34,7 @@ them until the compositor side pins them down here.
 | --- | --- | --- |
 | `subscribe` | `{}` | `{}`; events start flowing to this connection |
 | `session` | `{}` | `{waylandDisplay, display: string\|null, xwayland: "off"\|"starting"\|"ready"\|"failed", pointer: {x,y}\|null, locked: bool}` |
-| `windows` | `{}` | `{windows: Window[]}` |
+| `windows` | `{}` | `{windows: Window[]}`, front to back: the windows that show, most recently given the keyboard first, then the minimized, then the hidden (each latest first) |
 | `focus` | `{window}` | `{}`; raises, unminimizes, unhides, switches to its Space |
 | `close` | `{window}` | `{}`; asks the client to close |
 | `minimize` | `{window}` | `{}` |
@@ -126,7 +126,7 @@ hidden) keep getting frame callbacks, so they stay live.
 
 | Method | Params | Result |
 | --- | --- | --- |
-| `capture-mask` | `{client, windows?: int[], rects?: [{window?, x, y, width, height}], layers?: string[], pids?: int[]}`, at most 256 of each; shell only | `{}`; sets (replaces) what is blanked, painted opaque, in the pictures for `client` (a name: `"agent"`): those windows with their popups and title bars, those rects (in a window's content coordinates when `window` is set, else global; a window not on screen adds nothing), and those shell layers by namespace. `capture {mask: client}` applies it, and so does every screencopy or image-copy frame for a client whose pid is in `pids` (a recorder the shell started for an agent). While the overview is open, a Space slides, or a window flies to the Dock, a mask with anything in it blanks the whole picture. A mask with nothing in it is dropped |
+| `capture-mask` | `{client, windows?: int[], rects?: [{window?, x, y, width, height}], layers?: string[], pids?: int[]}`, at most 256 of each; shell only | `{}`; sets (replaces) what is blanked, painted opaque, in the pictures for `client` (a name: `"agent"`): those windows with their popups and title bars, those rects (in a window's content coordinates when `window` is set, else global; a window not on screen adds nothing), and those shell layers by namespace. `capture {mask: client}` applies it, and so does every screencopy or image-copy frame for a client whose pid is in `pids` (a recorder the shell started for an agent). The blanks follow a window where it is drawn: small in the overview, flying to the Dock, sliding with its Space; a `space-previews` or `window-thumbnails` picture that shows a blanked window is blanked whole. A mask with nothing in it is dropped |
 | `input-origin` | `{namespace}` (a shell layer) or `{window}` | `{person: ms\|null, agent: ms\|null}`: how long ago the person's own hands (libinput) and an agent (`agent-input`, even on the person's borrowed seat) last pressed a button or a key there, within the last minute. Consent sheets count a yes only when the person's press is recent and no agent's is newer (`src/agents/person.ts`) |
 
 ## In the 0.2.0 compositor
