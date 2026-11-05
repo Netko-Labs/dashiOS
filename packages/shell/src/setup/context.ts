@@ -21,4 +21,6 @@ export interface SetupContext {
   askPassword(network: WifiNetwork): void;
   /** Close the window, remembering that the person finished or skipped. */
   finish(outcome: "finished" | "skipped"): void;
+  /** Open the launcher (the Done page's Try it); absent where there is none to open. */
+  openLauncher?(): void;
 }

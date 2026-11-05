@@ -26,6 +26,14 @@ export interface Palette {
   batteryLow: string;
   /** The selected row: the kombu accent. */
   selection: string;
+  /**
+   * A selected row in a list that holds text (the launcher): a 14% kombu wash
+   * behind ink, with a 3 px `selection` bar at the row's left edge. Ink on it
+   * passes CO-6 in both modes, where white on full kombu does not.
+   */
+  selectionWash: string;
+  /** Text on `selectionWash`. */
+  onSelection: string;
   /** The chosen app in the switcher, and an open menu bar item: a soft wash. */
   switcherSelection: string;
   /** Secondary buttons on sheets. */
@@ -65,6 +73,8 @@ export const lightColors: Palette = {
   osdOff: "#1d1d1f26",
   batteryLow: "#d7352b",
   selection: "#3E8A72",
+  selectionWash: "#3E8A7224",
+  onSelection: "#1d1d1f",
   switcherSelection: "#1d1d1f24",
   button: "#1d1d1f12",
   checkbox: "#1d1d1f66",
@@ -100,6 +110,8 @@ export const darkColors: Palette = {
   osdOff: "#f5f5f726",
   batteryLow: "#ff5a4f",
   selection: "#3E8A72",
+  selectionWash: "#3E8A7224",
+  onSelection: "#f5f5f7",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
   checkbox: "#f5f5f766",

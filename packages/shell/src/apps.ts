@@ -160,22 +160,32 @@ export function registerShellApp(id: string, open: () => void): () => void {
   };
 }
 
+/** How the launcher draws and finds a shell entry, beyond its `App` (a Settings pane: its glyph, what it holds). */
+export interface ShellEntryLook {
+  /** A one-color SVG drawn on a neutral tile in place of `icon`. */
+  glyph?: string;
+  /** A few muted words after the name, on the same line ("Dark Mode, accent, corners"). */
+  detail?: string;
+  /** Words it answers to only when nothing else matches ("settings" for a pane). */
+  fallbackKeywords?: readonly string[];
+}
+
 /** Other things the launcher finds that open in the shell (a Settings pane), with the words they answer to. */
-const shellEntries = new Map<string, { app: App; keywords: readonly string[] }>();
+const shellEntries = new Map<string, { app: App; keywords: readonly string[]; look: ShellEntryLook }>();
 
 /** Add a launcher entry that opens in the shell; returns the function that takes it back. */
-export function registerShellEntry(app: App, keywords: readonly string[], open: () => void): () => void {
+export function registerShellEntry(app: App, keywords: readonly string[], open: () => void, look: ShellEntryLook = {}): () => void {
   const unregister = registerShellApp(app.id, open);
-  shellEntries.set(app.id, { app, keywords });
+  shellEntries.set(app.id, { app, keywords, look });
   return () => {
     unregister();
     shellEntries.delete(app.id);
   };
 }
 
-/** The registered shell entries, each with its words. */
-export function shellEntryList(): Array<App & { keywords: string[] }> {
-  return [...shellEntries.values()].map(({ app, keywords }) => ({ ...app, keywords: [...keywords] }));
+/** The registered shell entries, each with its words and its look. */
+export function shellEntryList(): Array<App & ShellEntryLook & { keywords: string[] }> {
+  return [...shellEntries.values()].map(({ app, keywords, look }) => ({ ...app, ...look, keywords: [...keywords] }));
 }
 
 /** One of the shell's own apps or a first-party one, whether or not it can be opened from here (a window's app). */
@@ -266,7 +276,15 @@ function machineGpuEnvs(): GpuEnvs {
   return gpuEnvsHere;
 }
 
-export function launch(app: App): number | null {
+/** Who hears that an app quit with an error as it started (the launcher says "Couldn't open …"). */
+export interface LaunchWatch {
+  /** It exited with `code` (not 0) within `withinMs` of starting. */
+  failed(code: number): void;
+  /** How soon counts as "as it started"; 2 s unless said. */
+  withinMs?: number;
+}
+
+export function launch(app: App, watch?: LaunchWatch): number | null {
   const open = app.exec ? undefined : shellOpeners.get(app.id);
   if (open) {
     open();
@@ -284,6 +302,12 @@ export function launch(app: App): number | null {
       stderr: "ignore",
       detached: true,
     });
+    if (watch) {
+      const started = Date.now();
+      void child.exited.then((code) => {
+        if (code !== 0 && Date.now() - started < (watch.withinMs ?? 2000)) watch.failed(code);
+      });
+    }
     return child.pid;
   } catch (error) {
     console.error(`dashi-shell: could not launch ${app.name}:`, error);

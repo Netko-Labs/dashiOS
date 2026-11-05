@@ -57,6 +57,9 @@ if (import.meta.main) {
   const ops = new Operations(store);
   store.start();
   if (start.select.length > 0) store.select(start.select);
+  // The launcher's "Search files for …": open on a search for those words.
+  const searchFor = process.env.DASHI_FILES_SEARCH?.trim();
+  if (searchFor) store.setQuery(searchFor);
   runApp(
     { id: "dev.dashi.files", title: "Files", size: FILES_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
     <FilesWindow store={store} ops={ops} {...(args.info && start.select[0] ? { info: start.select[0] } : {})} />,

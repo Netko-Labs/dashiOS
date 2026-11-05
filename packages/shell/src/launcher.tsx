@@ -1,77 +1,176 @@
 /**
  * The launcher (❖Space or a tap of ❖): a search field over installed apps,
- * files (file-search.ts, through LocalSearch), and simple math. ↑/↓ move,
- * Enter opens, Esc or a click outside closes. With nothing typed it offers
- * the apps opened from it last (recents.ts).
+ * Settings panes, files (through LocalSearch), and sums. What it lists is
+ * launcher/rows.ts; how the selection moves is launcher/selection.ts.
+ *
+ * - The selection is a row's id: files that land late never put another row
+ *   under it, and Enter acts on the row highlighted when it is pressed.
+ * - ↑ ↓ (and ⌃P ⌃N) wrap; Page Up and Page Down, Home and End (launcher/keys.ts);
+ *   the pointer over a row selects it. Esc clears the field, then closes.
+ * - A sum is the first row: Enter copies it, and it says so in place.
+ * - Nothing found offers Did you mean, Search files, and Find in Software.
+ * - With nothing typed: Recent, else a few things to try, then All apps.
  */
 
-import { useColors } from "@dashi/ui";
-import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { useEffect, useState } from "react";
-import { calculate, type Entry, search } from "./entries.ts";
-import type { FileHit } from "./file-search.ts";
+import { SEARCH, useColors } from "@dashi/ui";
+import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { iconPath } from "./apps.ts";
+import type { Entry } from "./entries.ts";
+import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
+import { buildSections, FILE_ROWS, type FileRow, filesStateFor, placeholderFor, type Row, selectable } from "./launcher/rows.ts";
+import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
 
-export const LAUNCHER = { width: 620, height: 440, rowHeight: 44 } as const;
+export type { FileRow } from "./launcher/rows.ts";
 
-/** Rows the panel has room for, apps and files together; files take at most `FILE_ROWS`. */
-const ROWS = 7;
-const FILE_ROWS = 4;
+/** The surface, and the measures of the panel on it (docs/design.html LA-1, TY-1, RA-1: the launcher's row). */
+export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
+
 /** A pause in typing before asking for files, so each keystroke doesn't. */
-const FILE_DELAY_MS = 120;
+export const FILE_DELAY_MS = 120;
+/** Rows of All apps drawn at once; the selection scrolls them. */
+const ALL_APPS_ROWS = 8;
 
-/** A file row: its hit and the icon resolved for it. */
-export interface FileRow extends FileHit {
-  icon: string;
+/** Files for the launcher: whether it can look now (the placeholder says), and the looking; null when it couldn't. */
+export interface LauncherFiles {
+  isAvailable(): boolean;
+  find(query: string): Promise<FileRow[] | null>;
 }
 
-const SEARCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="6" stroke="#000" stroke-width="2" fill="none"/><path d="M13 13l5 5" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>`;
+/** The compositor's keys for the launcher while it is open (launcher/keys.ts). */
+export interface LauncherKeySource {
+  subscribe(listener: (move: Move) => void): () => void;
+}
 
-export function Launcher({
-  entries,
-  recent = [],
-  onOpen,
-  findFiles,
-  onOpenFile,
-  onClose,
-}: {
+export interface LauncherProps {
   entries: readonly Entry[];
   /** Shown while the field is empty. */
   recent?: readonly Entry[];
-  onOpen: (entry: Entry) => void;
-  /** Files named like the query; without it the launcher searches apps only. */
-  findFiles?: (query: string) => Promise<FileRow[]>;
+  /** Start an entry. False when it could not be: the launcher stays open and says so. */
+  onOpen: (entry: Entry) => boolean;
+  /** Files named like the query; without it the launcher looks through apps and settings only. */
+  files?: LauncherFiles;
   onOpenFile?: (file: FileRow) => void;
+  /** Look for `query` in Files (the folder walk works with LocalSearch off too). */
+  onSearchFiles?: (query: string) => void;
+  onFindSoftware?: (query: string) => void;
+  /** Put the answer on the clipboard; whether it worked. */
+  copy?: (text: string) => Promise<boolean>;
+  keys?: LauncherKeySource;
   onClose: () => void;
-}) {
+}
+
+const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software") };
+
+export function Launcher({ entries, recent = [], onOpen, files, onOpenFile, onSearchFiles, onFindSoftware, copy, keys, onClose }: LauncherProps) {
   const colors = useColors();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(0);
-  const [found, setFound] = useState<{ query: string; files: FileRow[] }>({ query: "", files: [] });
-  const suggesting = query.trim() === "";
+  const [held, setHeld] = useState<string | null>(null);
+  const [allApps, setAllApps] = useState(false);
+  const [found, setFound] = useState<{ query: string; files: FileRow[] | null } | null>(null);
+  const [filesOff, setFilesOff] = useState(() => files !== undefined && !files.isAvailable());
+  // How many file rows the last answer had: that many slots are held while the next one comes.
+  const [lastFileCount, setLastFileCount] = useState(0);
+  const [copied, setCopied] = useState<{ query: string; ok: boolean } | null>(null);
+  const [failed, setFailed] = useState<Entry | null>(null);
+  const offset = useRef(0);
+
+  const text = query.trim();
+  const filesState = filesStateFor({ query, offered: files !== undefined, off: filesOff, answer: found, lastCount: lastFileCount });
+  const waiting = filesState.kind === "waiting";
+
   useEffect(() => {
-    if (!findFiles || suggesting) return;
+    if (!files || !waiting) return;
     let current = true;
     const timer = setTimeout(() => {
-      void findFiles(query).then((files) => {
+      void files.find(text).then((hits) => {
         // An answer for what was typed before is dropped.
-        if (current) setFound({ query, files });
+        if (!current) return;
+        setFound({ query: text, files: hits });
+        if (hits === null) setFilesOff(true);
+        else setLastFileCount(Math.min(hits.length, FILE_ROWS));
       });
     }, FILE_DELAY_MS);
     return () => {
       current = false;
       clearTimeout(timer);
     };
-  }, [findFiles, query, suggesting]);
-  const files = !suggesting && found.query === query ? found.files.slice(0, FILE_ROWS) : [];
-  const results = suggesting ? recent : search(entries, query, Math.max(ROWS - files.length, ROWS - FILE_ROWS));
-  const answer = calculate(query);
-  const count = results.length + files.length;
-  const pick = (index: number) => {
-    const entry = results[index];
-    if (entry) return onOpen(entry);
-    const file = files[index - results.length];
-    if (file) onOpenFile?.(file);
+  }, [files, waiting, text]);
+
+  const sections = buildSections({ query, entries, recent, files: filesState, allApps, copied, failed, icons: ICONS });
+  const rows = selectable(sections);
+  const ids = rows.map((row) => row.id);
+  const selected = resolveSelection(ids, held);
+  const latest = useRef(ids);
+  latest.current = ids;
+
+  const move = (how: Move) => setHeld((now) => moveSelection(latest.current, now, how));
+  // The compositor's keys (⌃N, Page Down, Home…) move it as ↑ and ↓ do; `latest` is read when they come.
+  useEffect(() => keys?.subscribe((how) => setHeld((now) => moveSelection(latest.current, now, how))), [keys]);
+
+  const restart = (next: string) => {
+    setQuery(next);
+    setHeld(null);
+    setAllApps(false);
+    setFailed(null);
   };
+
+  const act = (row: Row | undefined) => {
+    if (!row) return;
+    const action = row.action;
+    switch (action.kind) {
+      case "open":
+        if (!onOpen(action.entry)) {
+          setFailed(action.entry);
+          setHeld(`failed:${action.entry.id}`);
+        }
+        return;
+      case "open-file":
+        return onOpenFile?.(action.file);
+      case "copy":
+        if (!copy) return setCopied({ query: text, ok: false });
+        void copy(action.text).then((ok) => setCopied({ query: text, ok }));
+        return;
+      case "type":
+        return restart(action.query);
+      case "search-files":
+        return onSearchFiles?.(action.query);
+      case "find-software":
+        return onFindSoftware?.(action.query);
+      case "all-apps":
+        offset.current = 0;
+        setAllApps(true);
+        setHeld(null);
+        return;
+    }
+  };
+
+  const drawn = (section: (typeof sections)[number]): Row[] => {
+    if (section.id !== "all") return section.rows;
+    const index = Math.max(
+      0,
+      section.rows.findIndex((row) => row.id === selected),
+    );
+    offset.current = keepInView(index, offset.current, ALL_APPS_ROWS, section.rows.length);
+    return section.rows.slice(offset.current, offset.current + ALL_APPS_ROWS);
+  };
+
+  let list: ReactNode = null;
+  if (sections.length > 0) {
+    list = (
+      <View testID="launcher:list" style={{ flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator, padding: LAUNCHER.padding }}>
+        {sections.map((section) => (
+          <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
+            {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
+            {drawn(section).map((row) => (
+              <ResultRow key={row.id} row={row} selected={row.id === selected} onPress={() => act(row)} onHover={() => setHeld(row.id)} />
+            ))}
+            {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
+          </View>
+        ))}
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
@@ -82,101 +181,45 @@ export function Launcher({
         style={{
           width: LAUNCHER.width,
           flexDirection: "column",
-          borderRadius: 16,
+          borderRadius: LAUNCHER.radius,
           backgroundColor: colors.launcher,
           borderWidth: 1,
-          borderColor: colors.dockBorder,
+          borderColor: colors.separator,
           shadow: "xl",
           overflow: "hidden",
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 18, paddingRight: 18, height: 56 }}>
-          <Svg markup={SEARCH} size={20} color={colors.textMuted} />
-          <TextInput
-            value={query}
-            autoFocus
-            placeholder={findFiles ? "Search apps and files" : "Search apps"}
-            onChangeText={(text) => {
-              setQuery(text);
-              setSelected(0);
-            }}
-            onSubmitEditing={() => pick(selected)}
-            onKeyPress={(key) => {
-              if (key === "Escape") onClose();
-              if (key === "ArrowDown") setSelected((index) => Math.min(index + 1, Math.max(count - 1, 0)));
-              if (key === "ArrowUp") setSelected((index) => Math.max(index - 1, 0));
-            }}
-            style={{ flex: 1, fontSize: 22, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-          />
-        </View>
-        {(answer !== null || count > 0) && (
-          <View style={{ flexDirection: "column", borderTopWidth: 1, borderColor: colors.separator, padding: 6 }}>
-            {answer !== null && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, height: LAUNCHER.rowHeight, paddingLeft: 12 }}>
-                <Text style={{ fontSize: 20, fontWeight: "semibold", color: colors.text }}>= {answer}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: LAUNCHER.field }}>
+          <Svg markup={SEARCH} size={18} color={colors.textMuted} />
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+            <TextInput
+              testID="launcher:field"
+              value={query}
+              autoFocus
+              onChangeText={restart}
+              onSubmitEditing={() => act(rows.find((row) => row.id === selected))}
+              onKeyPress={(key) => {
+                if (key === "ArrowDown") return move("down");
+                if (key === "ArrowUp") return move("up");
+                // Esc steps out: All apps, then the typed words, then the launcher.
+                if (allApps && !query) return setAllApps(false);
+                if (query) return restart("");
+                onClose();
+              }}
+              // Empty, the field is only as wide as its caret, and the placeholder is drawn after it:
+              // Metal hides a focused field's own placeholder, and this one is always focused.
+              style={{ ...(query ? { flex: 1 } : { width: 8 }), fontSize: LAUNCHER.fieldText, color: colors.text }}
+            />
+            {!query && (
+              <View testID="launcher:placeholder" style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: LAUNCHER.fieldText, color: colors.textMuted }}>
+                  {placeholderFor(files !== undefined && !filesOff)}
+                </Text>
               </View>
             )}
-            {suggesting && results.length > 0 && (
-              <View style={{ height: 22, paddingLeft: 12, justifyContent: "center" }}>
-                <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>Recent</Text>
-              </View>
-            )}
-            {results.map((entry, index) => (
-              <View
-                key={entry.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
-                  height: LAUNCHER.rowHeight,
-                  paddingLeft: 10,
-                  paddingRight: 12,
-                  borderRadius: 10,
-                  backgroundColor: index === selected ? colors.selection : "#00000000",
-                }}
-                onPress={() => pick(index)}
-              >
-                <Image source={entry.icon} style={{ width: 30, height: 30 }} />
-                <Text style={{ fontSize: 15, color: index === selected ? "#ffffff" : colors.text }}>{entry.name}</Text>
-              </View>
-            ))}
-            {files.length > 0 && (
-              <View style={{ height: 22, paddingLeft: 12, justifyContent: "center" }}>
-                <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>Files</Text>
-              </View>
-            )}
-            {files.map((file, offset) => {
-              const index = results.length + offset;
-              const chosen = index === selected;
-              return (
-                <View
-                  key={file.url}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                    height: LAUNCHER.rowHeight,
-                    paddingLeft: 10,
-                    paddingRight: 12,
-                    borderRadius: 10,
-                    backgroundColor: chosen ? colors.selection : "#00000000",
-                  }}
-                  onPress={() => pick(index)}
-                >
-                  <Image source={file.icon} style={{ width: 30, height: 30 }} />
-                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text numberOfLines={1} style={{ fontSize: 15, color: chosen ? "#ffffff" : colors.text }}>
-                      {file.name}
-                    </Text>
-                    <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffffb3" : colors.textMuted }}>
-                      {file.folder}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
           </View>
-        )}
+        </View>
+        {list}
       </View>
     </View>
   );

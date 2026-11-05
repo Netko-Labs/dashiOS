@@ -71,6 +71,8 @@ export interface MenusOptions {
   openForceQuit(): void;
   /** Opens System Settings. */
   openSettings?(): void;
+  /** Opens the launcher (Search… in the Dashi menu). */
+  openSearch?(): void;
   /** Carries out a chosen row of a Dock icon's menu (dock/). */
   runDock(action: DockMenuAction): void;
   /** Carries out a chosen row of a status item's menu (an extra's or the battery's). */
@@ -238,6 +240,7 @@ export function startMenus(options: MenusOptions): Menus {
     showShortcuts: () => options.showShortcuts(lastAppName),
     openForceQuit: () => options.openForceQuit(),
     openSettings: () => options.openSettings?.(),
+    openSearch: () => options.openSearch?.(),
     selectAppItem: (pid, id) => void appMenus.select(pid, id),
     moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
   };

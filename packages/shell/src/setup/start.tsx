@@ -53,6 +53,8 @@ export interface SetupOptions {
   flags: FlagsStore;
   wifi: WifiStore;
   system: Pick<SystemStore, "subscribe" | "getSnapshot">;
+  /** Opens the launcher: the Done page teaches ❖ with a Try it. */
+  openLauncher?: () => void;
   /** Where "done" is remembered; `$XDG_STATE_HOME/dashi/setup.json` unless a test says otherwise. */
   statePath?: string;
   env?: Readonly<Record<string, string | undefined>>;
@@ -150,6 +152,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
         outcome = how;
         close();
       },
+      ...(options.openLauncher ? { openLauncher: options.openLauncher } : {}),
     };
     const stopWatching = options.settings.watch();
     stops.push(stopWatching);

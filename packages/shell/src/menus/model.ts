@@ -37,6 +37,8 @@ export type MenuAction =
   | { kind: "power"; what: PowerKind }
   | { kind: "lock" }
   | { kind: "force-quit" }
+  /** Open the launcher (launcher.tsx). */
+  | { kind: "search" }
   | { kind: "settings" }
   | { kind: "hide-app"; window: number }
   | { kind: "hide-others"; window: number }
@@ -100,6 +102,8 @@ const item = (label: string, action: MenuAction | null, keys?: string): MenuEntr
 const dashiMenu = (): MenuEntry[] => [
   item("About Dashi", { kind: "about-dashi" }),
   SEPARATOR,
+  // The launcher, so the pointer finds it too; its key is shown, so it is learned.
+  item("Search…", { kind: "search" }, "❖Space"),
   item("System Settings…", { kind: "settings" }, "❖,"),
   SEPARATOR,
   item("Force Quit…", { kind: "force-quit" }, "⌥❖Esc"),

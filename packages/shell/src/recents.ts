@@ -8,6 +8,7 @@
  */
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Entry } from "./entries.ts";
@@ -71,4 +72,50 @@ export function rememberLaunch(id: string, path: string = recentsPath()): string
     console.error("dashi-shell: could not save the recent apps:", error instanceof Error ? error.message : error);
   }
   return next;
+}
+
+/**
+ * The history held in memory for the shell's life: read from disk once, at
+ * the first ask, and written back (off the launcher's path) after each
+ * launch. A ❖ tap reads only memory.
+ */
+export class RecentApps {
+  private ids: string[] | null = null;
+  private writing: Promise<void> = Promise.resolve();
+
+  constructor(
+    private readonly path: string = recentsPath(),
+    private readonly save: (path: string, ids: readonly string[]) => Promise<void> = saveRecents,
+  ) {}
+
+  /** The ids, most recent first. */
+  list(): readonly string[] {
+    this.ids ??= loadRecents(this.path);
+    return this.ids;
+  }
+
+  /** Put `id` first; the file follows, one write after another. */
+  remember(id: string): readonly string[] {
+    const next = remember(this.list(), id);
+    this.ids = next;
+    this.writing = this.writing.then(() => this.save(this.path, next));
+    return next;
+  }
+
+  /** Resolves when every write asked for so far is done (tests, shutdown). */
+  settled(): Promise<void> {
+    return this.writing;
+  }
+}
+
+/** Write `ids` to `path` atomically (a temp file, then a rename), 0600; a failure is logged. */
+export async function saveRecents(path: string, ids: readonly string[]): Promise<void> {
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    const temp = `${path}.${process.pid}.tmp`;
+    await writeFile(temp, `${JSON.stringify({ version: 1, recent: ids }, null, 2)}\n`, { mode: 0o600 });
+    await rename(temp, path);
+  } catch (error) {
+    console.error("dashi-shell: could not save the recent apps:", error instanceof Error ? error.message : error);
+  }
 }
