@@ -66,6 +66,7 @@ import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
+import { InputMethodRunner } from "./input-method.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap, idleKeymap, setPersonRules } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
@@ -267,6 +268,19 @@ const appearanceDeps = sessionDeps();
 const pointer = compositor ? new PointerSync({ compositor, gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run }) : null;
 // Text size: the shell's surfaces (through @dashi/ui) and GTK's (text-size.ts).
 const textSize = new TextSize(compositor ? { gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run } : null).connect();
+// The input method the person picked, run as the shell's own child (input-method.ts); only in a real
+// session, where the shell may change what apps read: a nested run would replace the host's.
+const inputMethod =
+  compositor && appearanceDeps.gate.on
+    ? new InputMethodRunner({
+        has: appearanceDeps.has,
+        env: process.env,
+        spawn: (command) => {
+          const child = Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "inherit" });
+          return { exited: child.exited, kill: () => child.kill() };
+        },
+      })
+    : null;
 // What X11 apps hear (xwayland-scale.ts): the settings say it, X11 scaling below follows.
 let xwaylandChoice: XwaylandChoice = { scaling: DEFAULT_X11_SCALING, pointerSize: DEFAULT_POINTER_SIZE };
 let xwaylandScaling: XwaylandScaling | null = null;
@@ -275,6 +289,7 @@ const stopSettings = compositor
       reduceMotion = settings.appearance.reduceMotion;
       void pointer?.apply(settings.appearance.pointerSize);
       void textSize.apply(settings.appearance.textSize);
+      inputMethod?.apply(settings.inputMethod.engine);
       const choice = { scaling: settings.appearance.x11Apps, pointerSize: settings.appearance.pointerSize };
       if (choice.scaling !== xwaylandChoice.scaling || choice.pointerSize !== xwaylandChoice.pointerSize) {
         xwaylandChoice = choice;
@@ -1384,6 +1399,7 @@ const quit = () => {
     ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
+    ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],

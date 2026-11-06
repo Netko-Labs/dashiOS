@@ -172,7 +172,10 @@ Each milestone ends with the shell running on it in the VM.
   relative pointer, pointer gestures (pinch and hold go to clients; a swipe
   the shell claims goes to it), idle-inhibit (while its surface is on
   screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
-  stay Dashi's), text-input and input-method, virtual keyboard (the shell's
+  stay Dashi's), text-input and input-method (an input method's candidate
+  popup goes under the caret, above it near the screen's bottom, kept on
+  its screen, for windows and layer surfaces alike; the shell runs the input
+  method, `packages/shell/src/input-method.ts`), virtual keyboard (the shell's
   processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
   disconnects Chromium for destroying an icon's buffer after the icon),
   xdg-system-bell

@@ -38,6 +38,7 @@ import { isTextSize } from "@dashi/ui";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
+import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
@@ -86,6 +87,11 @@ export interface IdleSettings {
   blankAfterSeconds?: number;
   /** 0 (or no key) never puts the computer to sleep by itself. */
   sleepAfterSeconds?: number;
+}
+
+/** `inputMethod`: the input method the session runs (input-method.ts); none when not set. */
+export interface InputMethodSettings {
+  engine?: InputMethodName;
 }
 
 /** `menuBar`: what the status area shows beyond its defaults. */
@@ -190,6 +196,7 @@ export interface SettingsData {
   keyboard: KeyboardSettings;
   idle: IdleSettings;
   menuBar: MenuBarSettings;
+  inputMethod: InputMethodSettings;
   appearance: AppearanceSettings;
   wallpaper: WallpaperSettings;
   nightShift: NightShiftSettings;
@@ -260,6 +267,7 @@ const SECTIONS = {
   },
   idle: { path: ["idle"], fields: { blankAfterSeconds: numberIn(0, MAX_BLANK_AFTER), sleepAfterSeconds: numberIn(0, MAX_BLANK_AFTER) } },
   menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
+  inputMethod: { path: ["inputMethod"], fields: { engine: oneOf(...INPUT_METHODS) } },
   appearance: {
     path: ["appearance"],
     fields: {
@@ -385,6 +393,7 @@ export function readSettings(raw: unknown): SettingsData {
     keyboard: readSection(root, "keyboard") as KeyboardSettings,
     idle: readSection(root, "idle") as IdleSettings,
     menuBar: readSection(root, "menuBar") as MenuBarSettings,
+    inputMethod: readSection(root, "inputMethod") as InputMethodSettings,
     appearance: readSection(root, "appearance") as AppearanceSettings,
     wallpaper: readSection(root, "wallpaper") as WallpaperSettings,
     nightShift: readSection(root, "nightShift") as NightShiftSettings,

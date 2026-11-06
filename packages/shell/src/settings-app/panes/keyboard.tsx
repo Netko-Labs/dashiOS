@@ -2,17 +2,20 @@
  * Keyboard: how fast keys repeat, and the layout. The layout list is every
  * layout xkb knows (searchable), with the chosen layout's variants beside it.
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
+ * The input method (settings.json `inputMethod.engine`) is what the session
+ * runs to type other scripts (input-method.ts).
  */
 
 import { SEARCH, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../../input-method.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
+import { Caption, Choices, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
 import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
@@ -124,6 +127,30 @@ function RangeLabels({ low, high }: { low: string; high: string }) {
   );
 }
 
+const INPUT_METHOD_OPTIONS: { value: InputMethodName; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "fcitx5", label: "Fcitx 5" },
+];
+/** Fcitx 5 is installed (the only input method offered: input-method.ts). */
+const HAS_FCITX = Bun.which("fcitx5") !== null;
+
+/** The input method the session runs, or how to get one. */
+function InputMethodRow({ settings, installed }: { settings: SettingsStore; installed: boolean }) {
+  const { inputMethod } = useSettings(settings).data;
+  if (!installed)
+    return <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>;
+  return (
+    <Row stack label="Input method" detail="For Chinese, Japanese, Korean and other scripts, in every app and the launcher.">
+      <Choices
+        testID="keyboard-input-method"
+        value={inputMethod.engine ?? DEFAULT_INPUT_METHOD}
+        options={INPUT_METHOD_OPTIONS}
+        onChange={(engine) => settings.patch("inputMethod", { engine })}
+      />
+    </Row>
+  );
+}
+
 export function KeyboardPane({ settings, layouts, laptop }: { settings: SettingsStore; layouts: XkbLayouts; laptop?: Laptop | null }) {
   const { keyboard } = useSettings(settings).data;
   const rate = keyboard.repeatRate ?? DEFAULTS.repeatRate;
@@ -152,6 +179,9 @@ export function KeyboardPane({ settings, layouts, laptop }: { settings: Settings
         )}
       </Group>
       <Caption>A new layout applies in a moment, to every app.</Caption>
+      <Group>
+        <InputMethodRow settings={settings} installed={HAS_FCITX} />
+      </Group>
       <KeyboardLightSection laptop={laptop ?? null} />
     </Page>
   );
