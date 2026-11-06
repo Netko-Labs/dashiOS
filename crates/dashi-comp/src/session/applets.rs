@@ -66,9 +66,12 @@ impl AppletClients {
     }
 
     /// Whether a client (by its pid, None when unknown) may open a layer surface.
+    /// A client whose process is unknown (one that came in through a
+    /// security-context socket, which an applet could open for a child of its
+    /// own) can't be told apart from an applet's, so it gets none.
     pub(crate) fn may_use_layer_shell(&self, pid: Option<i32>) -> bool {
         match pid {
-            None => true,
+            None => false,
             Some(pid) => self.applet_of(pid).is_none_or(|applet| applet.layer_shell),
         }
     }
@@ -132,5 +135,16 @@ mod tests {
             layer_shell: true,
         }]);
         assert!(clients.may_use_layer_shell(Some(me)));
+    }
+
+    #[test]
+    fn a_client_of_unknown_process_gets_no_layers() {
+        let mut clients = AppletClients::default();
+        assert!(!clients.may_use_layer_shell(None));
+        clients.set(vec![AppletClient {
+            pid: std::process::id() as i32,
+            layer_shell: true,
+        }]);
+        assert!(!clients.may_use_layer_shell(None));
     }
 }
