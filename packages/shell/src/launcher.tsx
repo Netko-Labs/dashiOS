@@ -45,6 +45,7 @@ import {
 import { agentField, PlanList, stepAct } from "./launcher/agents/task-mode.tsx";
 import { BUDGET } from "./launcher/budget.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
+import { type ExtensionSession, useExtensions } from "./launcher/extensions.ts";
 import { Field } from "./launcher/field.tsx";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
@@ -77,7 +78,7 @@ import type { WorldSnapshot } from "./launcher/world.ts";
 export type { FileRow } from "./launcher/rows.ts";
 
 /** The surface, and the measures of the panel on it (docs/design.html LA-1, TY-1, RA-1: the launcher's row). */
-export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
+export const LAUNCHER = { width: 620, height: 520, top: 120, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
 
 /**
  * Files are asked as soon as the rows are drawn: one question at a time over one
@@ -133,6 +134,8 @@ export interface LauncherProps {
   languages?: readonly string[];
   /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
   typeAhead?: TypeAheadSource;
+  /** What comes in from outside Dashi: search providers, applets' and scripts' answers (launcher/extensions.ts). */
+  extensions?: ExtensionSession;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
   /** Agents: Ask, the plan, Now, history (launcher/agents/); without it the launcher knows none. */
@@ -251,6 +254,19 @@ export function Launcher(props: LauncherProps) {
   const clock = useClockPrefs();
   const answers = { locale: clock.locale, hour24: usesHour24(clock) };
   const working = timingNow();
+  // From outside Dashi: providers' rows below the rest, and what a command asks to show (launcher/extensions.ts).
+  // A launcher scope (the clipboard, snippets) asks no provider: its rows are its own.
+  const ext = useExtensions(
+    {
+      session: props.extensions,
+      query,
+      searching: mode.kind === "search" && !scope,
+      restart: (next) => restart(next),
+      select: (id) => setHeld(id),
+      run: (action, args) => void host?.run(action, args).then((outcome) => ran(outcome, false)),
+    },
+    LAUNCHER,
+  );
   const searched = buildSections({
     answers,
     // In a scope its own rows show: the search's are the empty field's, which cost nothing.
@@ -267,17 +283,24 @@ export function Launcher(props: LauncherProps) {
     failed,
     icons: ICONS,
   });
-  // A scope has its own rows only. Otherwise agents' rows go around the local ones, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
+  // From outside Dashi: a command's answer on top and providers' rows below the rest; in a command's own
+  // scope (a pick, a view, its words) only its rows (launcher/extensions.ts).
+  const outside = ext.sections(searched);
+  // A scope has its own rows only, and so does a command from outside. Otherwise agents' rows go around the
+  // rest, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
+  const inOutside = ext.chip !== undefined;
   const sections = scope
     ? scope.sections(query)
-    : withAgents(searched, {
-        query,
-        allApps,
-        snapshot: agents,
-        tabbed: tabbed !== null && tabbed === text,
-        ...(props.agents ? { history: props.agents.history } : {}),
-        now: Math.floor(Date.now() / 1000),
-      });
+    : inOutside
+      ? outside
+      : withAgents(outside, {
+          query,
+          allApps,
+          snapshot: agents,
+          tabbed: tabbed !== null && tabbed === text,
+          ...(props.agents ? { history: props.agents.history } : {}),
+          now: Math.floor(Date.now() / 1000),
+        });
   /** A row's verbs: its scope's, or what verbs.ts gives it. */
   const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
@@ -377,6 +400,7 @@ export function Launcher(props: LauncherProps) {
   };
 
   const ran = (outcome: Outcome, stay: boolean) => {
+    if (ext.shown(outcome)) return;
     if (outcome.ok) finish(stay);
     else say(outcome);
   };
@@ -444,6 +468,7 @@ export function Launcher(props: LauncherProps) {
         learn(row);
         const entering = props.scopes?.find((each) => each.address === effect.item.action?.address);
         if (entering) return enterScope(entering);
+        if (ext.intercept(effect.item)) return;
         if (effect.item.action) runOf(host?.run(effect.item.action));
         return;
       }
@@ -569,6 +594,7 @@ export function Launcher(props: LauncherProps) {
   const submit = (stay = false) => {
     switch (mode.kind) {
       case "search":
+        if (ext.submit()) return;
         return doVerb(selectedRow ? verbsOf(selectedRow)[0] : undefined, selectedRow, stay);
       case "actions":
       case "presented":
@@ -623,8 +649,8 @@ export function Launcher(props: LauncherProps) {
         if (mode.kind === "shortcut") setMode({ ...mode, when: chordWhen(cmd.chord) });
         return;
       case "tab":
-        // In a scope (the clipboard, snippets) ⇥ asks no one: the rows are the scope's own.
-        return scope ? undefined : agentKeys.tab();
+        // In a scope (the clipboard, snippets, a command from outside) ⇥ asks no one: the rows are the scope's own.
+        return scope || inOutside ? undefined : agentKeys.tab();
     }
   };
   const commands = useRef(command);
@@ -659,7 +685,9 @@ export function Launcher(props: LauncherProps) {
     // A link opened the launcher for its action alone: Esc closes it.
     if (mode.kind === "presented") return onClose();
     if (mode.kind !== "search") return backToSearch();
-    // A scope's chip next: back to the whole launcher, or closed when it was opened for the scope.
+    // A command from outside's own scope first, then a launcher scope's chip: back to the whole launcher,
+    // or closed when it was opened for the scope.
+    if (ext.escape()) return;
     if (scoped) return scoped.alone ? onClose() : enterScope(null);
     if (allApps && !query) return setAllApps(false);
     if (query) return restart("");
@@ -783,10 +811,10 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : (taskField?.chip ?? scope?.chip ?? undefined);
+            : (taskField?.chip ?? scope?.chip ?? ext.chip);
   const placeholder =
     mode.kind === "search"
-      ? (scope?.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
+      ? (scope?.placeholder ?? ext.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
       : taskField
         ? taskField.placeholder
         : mode.kind === "alias"
@@ -799,7 +827,7 @@ export function Launcher(props: LauncherProps) {
       ? scope
         ? scope.hints(selectedRow)
         : text
-          ? [...hintFor(selectedRow, ctx), ...askHint(text, agents)]
+          ? [...hintFor(selectedRow, ctx), ...(inOutside ? [] : askHint(text, agents))]
           : []
       : taskField
         ? taskField.hints

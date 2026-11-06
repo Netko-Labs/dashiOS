@@ -19,6 +19,7 @@
  *   }
  */
 
+import { type AppletCommand, parseCommands } from "./commands.ts";
 import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { parseWhen, type When } from "./when.ts";
@@ -53,6 +54,8 @@ export interface Manifest {
   screenshots: string[];
   /** Its icon, relative to applet.json (an .svg or a .png). */
   icon?: string;
+  /** What it adds to the launcher (commands.ts); none is the default. */
+  commands: AppletCommand[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
@@ -100,6 +103,7 @@ const FIELDS = [
   "permissions",
   "screenshots",
   "icon",
+  "commands",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
@@ -146,6 +150,8 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(screenshots)) return screenshots;
   const icon = fields.icon === undefined ? undefined : insidePath(fields.icon, "icon", /\.(svg|png)$/i);
   if (isRefusal(icon)) return icon;
+  const commands = fields.commands === undefined ? [] : parseCommands(fields.commands);
+  if (isRefusal(commands)) return commands;
   return {
     id: fields.id,
     name,
@@ -162,6 +168,7 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     permissions,
     screenshots,
     ...(icon === undefined ? {} : { icon }),
+    commands,
   };
 }
 
@@ -174,9 +181,10 @@ export function readManifest(json: string): Manifest | Refusal {
   }
 }
 
-/** The manifest as applet.json writes it (permissions by name). */
+/** The manifest as applet.json writes it (permissions by name; no `commands` when it has none). */
 export function manifestJson(manifest: Manifest): Record<string, unknown> {
-  return { ...manifest, permissions: manifest.permissions.map(permissionName) };
+  const { commands, ...rest } = manifest;
+  return { ...rest, permissions: manifest.permissions.map(permissionName), ...(commands.length > 0 ? { commands } : {}) };
 }
 
 /** -1, 0, 1 as semantic versions order (a pre-release before its release). */

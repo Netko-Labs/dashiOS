@@ -2,10 +2,12 @@
  * `dashi-applet dev`'s message log: each line between the applet and the
  * shell, in a few words with the time.
  *
- *   18:40:01 ✓ connected (protocol 2)
+ *   18:40:01 ✓ connected (protocol 3)
  *   18:40:01 ✓ “Weather” in the menu bar (dev)
  *   18:40:02 select refresh
  *   18:40:09 popover open 280×190
+ *   18:40:12 run city #4 for “lis”
+ *   18:40:12 #4 → 1 rows
  */
 
 const time = (now: Date): string => now.toTimeString().slice(0, 8);
@@ -43,7 +45,11 @@ export class MessageLog {
       case "popover":
         return `popover open ${String(fields.width)}×${String(fields.height)} at ${String(fields.x)},${String(fields.y)}${fields.output ? ` on ${String(fields.output)}` : ""}`;
       case "dismiss":
-        return "popover dismissed by the shell";
+        return fields.seq === undefined ? "popover dismissed by the shell" : `view ${String(fields.seq)} dismissed by the launcher`;
+      case "run":
+        return `run ${String(fields.command)} #${String(fields.seq)}${typeof fields.query === "string" ? ` for “${fields.query}”` : ""}${typeof fields.item === "string" ? ` chose ${fields.item}` : ""}`;
+      case "view":
+        return `view ${String(fields.seq)} open ${String(fields.width)}×${String(fields.height)} at ${String(fields.x)},${String(fields.y)}`;
       case "error":
         return `✗ refused: ${String(fields.message)}`;
       default:
@@ -72,7 +78,15 @@ export class MessageLog {
       case "popover":
         return `popover asked ${String(fields.width)}×${String(fields.height)}`;
       case "dismiss":
-        return "popover closed";
+        return fields.seq === undefined ? "popover closed" : `view ${String(fields.seq)} closed`;
+      case "result": {
+        const kind = ["text", "copy", "open", "error"].find((key) => fields[key] !== undefined) ?? "result";
+        return `#${String(fields.seq)} ${kind === "error" ? "✗" : "→"} ${kind}: ${String(fields[kind]).slice(0, 60)}`;
+      }
+      case "items":
+        return `#${String(fields.seq)} → ${Array.isArray(fields.rows) ? fields.rows.length : 0} rows`;
+      case "view":
+        return `#${String(fields.seq)} view asked ${String(fields.height)} tall`;
       default:
         return null;
     }

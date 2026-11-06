@@ -180,6 +180,8 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | xdg-desktop-portal → dashi-portal | D-Bus session bus: `org.freedesktop.impl.portal.*` at `/org/freedesktop/portal/desktop` | `apps/portal/` |
 | dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/portal-host/protocol.ts` |
 | app → shell, keep awake | D-Bus session bus: `org.freedesktop.ScreenSaver` (Inhibit, UnInhibit) | `src/inhibit/screensaver.ts` |
+| program → shell, actions | D-Bus session bus: `dev.dashi.Shell.Actions1` at `/dev/dashi/Shell` (List, Describe, Run; a link's consent) | `docs/actions.md`, `src/actions/dbus.ts` |
+| shell → GNOME search providers | D-Bus session bus: `org.gnome.Shell.SearchProvider2`, read as the launcher's slow sources (results only) | `src/search-providers/` |
 
 ## Installed Layout
 

@@ -14,9 +14,10 @@ import { type Manifest, permissionName } from "@dashi/applet";
 import { nameApplet } from "../apps.ts";
 import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../extras/index.ts";
 import { LineBuffer } from "../lines.ts";
+import type { AppletCommands, CommandMessage } from "./commands.ts";
 import type { AppletGrants } from "./grants.ts";
 import { type PopoverScreen, placePopover } from "./placement.ts";
-import { APPLET_LIMITS, type Applet, type AppletShellMessage, flattenRows, type Placement, PROTOCOL, parseAppletMessage } from "./protocol.ts";
+import { APPLET_LIMITS, type Applet, type AppletShellMessage, flattenRows, type Placement, PROTOCOL, parseAppletMessage, wireMessage } from "./protocol.ts";
 
 /** Messages a connection may send in one second before it is cut off (a clock ticking once a second is far fewer). */
 export const MAX_RATE = 30;
@@ -41,6 +42,8 @@ export interface AppletContext {
   catcher?(placement: Placement, onOutside: () => void): () => void;
   /** The installed applet this connection must be (its own socket in the sandbox). */
   installed?: Manifest;
+  /** The launcher's commands (commands.ts): a version 3 connection answers its applet's. */
+  commands?: Pick<AppletCommands, "attach">;
   now?: () => number;
   parse?: typeof parseAppletMessage;
 }
@@ -75,7 +78,12 @@ export function appletRows(applet: Applet): ExtraMenuRow[] {
 /** Whether a hello's manifest is the installed one: same id, version, and permissions. */
 export function sameManifest(hello: Manifest, installed: Manifest): boolean {
   const names = (manifest: Manifest): string => manifest.permissions.map(permissionName).sort().join("\n");
-  return hello.id === installed.id && hello.version === installed.version && names(hello) === names(installed);
+  return (
+    hello.id === installed.id &&
+    hello.version === installed.version &&
+    names(hello) === names(installed) &&
+    JSON.stringify(hello.commands) === JSON.stringify(installed.commands)
+  );
 }
 
 interface OpenPopover {
@@ -101,6 +109,8 @@ export class AppletConnection implements ExtraActions {
   /** Where each item was last clicked: the popover goes under it. */
   private readonly clicks = new Map<string, { x: number; output: string | null }>();
   private popover: OpenPopover | null = null;
+  /** Its side of the launcher's commands, from a version 3 hello on. */
+  private commands: ReturnType<AppletCommands["attach"]> | null = null;
   private readonly extras: ExtrasStore;
   private readonly now: () => number;
   private readonly parse: typeof parseAppletMessage;
@@ -153,6 +163,8 @@ export class AppletConnection implements ExtraActions {
     this.closed = true;
     this.popover?.close();
     this.popover = null;
+    this.commands?.detach();
+    this.commands = null;
     if (this.version >= 2) void this.context.grants?.forget(this.pid).catch(() => {});
     this.extras.dropWhere((extra) => extra.key.startsWith(this.prefix));
     this.applets.clear();
@@ -188,7 +200,7 @@ export class AppletConnection implements ExtraActions {
 
   private send(message: AppletShellMessage): void {
     if (this.closed) return;
-    const bytes = new TextEncoder().encode(`${JSON.stringify(message)}\n`);
+    const bytes = new TextEncoder().encode(`${JSON.stringify(wireMessage(message))}\n`);
     this.outbox.push(bytes);
     this.queued += bytes.byteLength;
     if (this.queued > MAX_OUTBOX) return this.end();
@@ -208,7 +220,12 @@ export class AppletConnection implements ExtraActions {
     if (message.type !== "hello" && this.context.installed && this.manifest === null) return this.end();
     switch (message.type) {
       case "hello":
-        return this.hello(message.manifest, message.dev);
+        return this.hello(message.manifest, message.dev, message.protocol);
+      case "result":
+      case "items":
+      case "view":
+      case "dismiss-view":
+        return this.command(message);
       case "remove":
         if (this.popover?.id === message.id) this.dismissPopover(true);
         if (this.applets.delete(message.id)) this.extras.drop(this.prefix + message.id);
@@ -230,20 +247,37 @@ export class AppletConnection implements ExtraActions {
     }
   }
 
-  private hello(manifest: Manifest, dev: boolean): void {
+  private command(message: CommandMessage): void {
+    if (!this.commands) return this.refuse(`${message.type === "dismiss-view" ? "dismiss" : message.type}: this applet has no commands`);
+    this.commands.receive(message);
+  }
+
+  private hello(manifest: Manifest, dev: boolean, protocol: number): void {
     if (this.manifest !== null || this.applets.size > 0) return this.refuse("hello comes first, once");
     const installed = this.context.installed;
     if (installed && !sameManifest(manifest, installed)) {
-      this.send({ type: "error", message: `hello: this is not ${installed.id} ${installed.version} as installed (its id, version, or permissions differ)` });
+      this.send({
+        type: "error",
+        message: `hello: this is not ${installed.id} ${installed.version} as installed (its id, version, permissions, or commands differ)`,
+      });
       return this.end();
     }
     this.manifest = manifest;
     nameApplet(manifest.id, manifest.name);
-    this.version = PROTOCOL;
+    // The older of what it speaks and what the shell does.
+    this.version = Math.min(protocol, PROTOCOL);
     // A sandboxed applet is never a developer's.
     this.dev = dev && !installed;
     void this.context.grants?.register(this.pid).catch((error) => console.error("dashi-shell: applet grants:", error));
-    this.send({ type: "welcome", protocol: PROTOCOL });
+    this.send({ type: "welcome", protocol: this.version });
+    // Its commands are carried out on this connection (commands.ts); an installed one's are as installed.
+    if (this.version >= 3 && manifest.commands.length > 0 && this.context.commands) {
+      this.commands = this.context.commands.attach({
+        manifest: installed ?? manifest,
+        send: (message) => this.send(message),
+        grant: (on) => this.context.grants?.set(this.pid, on) ?? Promise.resolve(),
+      });
+    }
   }
 
   private async openPopover(id: string, size: { width: number; height: number }): Promise<void> {

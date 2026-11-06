@@ -23,6 +23,8 @@ export interface PortalHostDeps {
 export interface PortalHost {
   /** Tell ScreenSaver callers the lock screen came or went. */
   lockChanged(locked: boolean): void;
+  /** Serve more interfaces under `dev.dashi.Shell` (the action registry's, actions/dbus.ts). */
+  serve(path: string, interfaces: readonly InterfaceSpec[]): void;
   close(): void;
 }
 
@@ -113,6 +115,9 @@ export async function startPortalHost(deps: PortalHostDeps, options: ConnectOpti
     lockChanged(locked) {
       if (connection.closed) return;
       for (const object of exported) object.emit(SCREENSAVER, "ActiveChanged", locked);
+    },
+    serve: (path, interfaces) => {
+      if (!connection.closed) connection.export(path, interfaces);
     },
     close: () => connection.close(),
   };

@@ -11,13 +11,13 @@
 import {
   type CatalogIndex,
   compareVersions,
+  consentNames,
   type IndexApplet,
   type IndexVersion,
   type InstalledApplet,
   installable,
   installFiles,
   isPulled,
-  permissionName,
   readInstalled,
   removeInstalled,
   sha256,
@@ -64,7 +64,7 @@ export class AppletInstaller {
     if ("error" in unpacked) throw new InstallError(unpacked.error);
     if (unpacked.manifest.id !== applet.manifest.id || unpacked.manifest.version !== version.version)
       throw new InstallError(`the package is ${unpacked.manifest.id} ${unpacked.manifest.version}, not what the index lists`);
-    const asked = new Set(unpacked.manifest.permissions.map(permissionName));
+    const asked = new Set(consentNames(unpacked.manifest));
     installFiles(this.options.root, unpacked, {
       version: version.version,
       sha256: sha256(bytes),

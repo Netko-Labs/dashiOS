@@ -39,6 +39,12 @@ export function templateFiles(name: string, paths = sdkPaths()): Record<string, 
     author: { name: "Alex Kim" },
     categories: ["utilities"],
     permissions: [],
+    // In the launcher before it ever runs (docs/applets.md, Commands): src/main.tsx's `commands` answer them.
+    commands: [
+      { id: "now", title: `${title(name)} now`, keywords: ["temperature"], mode: "instant" },
+      { id: "city", title: `${title(name)} in a city`, keywords: ["forecast"], mode: "pick" },
+      { id: "glance", title: `${title(name)} at a glance`, keywords: ["today"], mode: "view" },
+    ],
   };
   const pkg = {
     name,
@@ -80,9 +86,13 @@ const MAIN = `/**
  * An applet: its state, and what the menu bar shows for it. A click opens
  * the popover; a right-click, the menu. \`bun run dev\` runs it with a "dev"
  * badge and reloads it on save (docs/applets.md).
+ *
+ * It also adds three commands to the launcher (applet.json's \`commands\`):
+ * one that answers at once, one that offers rows as you type, and one that
+ * draws its answer itself where the launcher's rows were.
  */
 
-import { defineApplet, type PopoverProps } from "@dashi/applet";
+import { defineApplet, type PopoverProps, type ViewProps } from "@dashi/applet";
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 
@@ -94,6 +104,27 @@ interface State {
 }
 
 const shown = (state: State): string => \`\${state.unit === "C" ? state.celsius : Math.round((state.celsius * 9) / 5 + 32)}°\`;
+
+const CITIES = [
+  { id: "lisbon", name: "Lisbon", celsius: 19, sky: "clear" },
+  { id: "porto", name: "Porto", celsius: 17, sky: "cloudy" },
+  { id: "oslo", name: "Oslo", celsius: 4, sky: "snow" },
+  { id: "tokyo", name: "Tokyo", celsius: 22, sky: "rain" },
+];
+
+/** The view command's answer, drawn by this applet where the launcher's rows were. */
+function Glance({ state }: ViewProps<State>) {
+  const colors = useColors();
+  return (
+    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 16, padding: 16, backgroundColor: colors.launcher }}>
+      <Text style={{ fontSize: 40, fontWeight: "bold", color: colors.text }}>{shown(state)}</Text>
+      <View style={{ flexDirection: "column", gap: 4 }}>
+        <Text style={{ fontSize: 15, color: colors.text }}>Clear all day</Text>
+        <Text style={{ fontSize: 13, color: colors.textMuted }}>Esc goes back</Text>
+      </View>
+    </View>
+  );
+}
 
 function Panel({ state, set, close }: PopoverProps<State>) {
   const colors = useColors();
@@ -135,5 +166,24 @@ export default defineApplet<State>({
     if (item === "fahrenheit") applet.set({ unit: "F" });
   },
   popover: { width: 260, height: 170, component: Panel },
+  commands: {
+    // instant: the launcher shows the line; Return copies it.
+    now: { run: (_args, applet) => \`\${shown(applet.state)} and clear\` },
+    // pick: rows for what is typed, then what the chosen one comes to (here, text on the clipboard).
+    city: {
+      items: (query) =>
+        CITIES.filter((city) => city.name.toLowerCase().startsWith(query.trim().toLowerCase())).map((city) => ({
+          id: city.id,
+          title: \`\${city.name}, now \${city.celsius}°\`,
+          detail: city.sky,
+        })),
+      choose: (item) => {
+        const city = CITIES.find((each) => each.id === item);
+        return city ? { copy: \`\${city.name}: \${city.celsius}°, \${city.sky}\` } : { error: "There is no such city." };
+      },
+    },
+    // view: drawn by this applet's own Metal host, 160 points tall.
+    glance: { view: { height: 160, component: Glance } },
+  },
 });
 `;

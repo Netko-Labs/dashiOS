@@ -16,17 +16,27 @@
  *                   {"type":"dismiss","id"}                      (it closed)
  *   shell → applet  {"type":"popover","id","x","y","width","height","output","namespace"}  (where to put it)
  *                   {"type":"dismiss","id"}                      (close it: a click outside, the item again)
+ * Version 3 (a hello with `"protocol":3`) adds the launcher's commands
+ * (commands.ts; the manifest declares them):
+ *   shell → applet  {"type":"run","seq","command","args","query"?,"item"?}   (run it; a pick command's rows for `query`; the row chosen)
+ *   applet → shell  {"type":"result","seq","text"|"copy"|"open"|"error"}    (what it came to)
+ *                   {"type":"items","seq","rows":[{"id","title","detail"?}]} (a pick command's rows, drawn by the shell)
+ *                   {"type":"view","seq","height"}                          (a view command draws its answer itself, this tall)
+ *   shell → applet  {"type":"view","seq","x","y","width","height","output","namespace"}  (where)
+ *   either way      {"type":"dismiss","seq"}                                 (the view closed)
  * A connection that starts with anything but `hello` is version 1, and
- * stays so.
+ * stays so. A hello's protocol is the newest the applet speaks; the
+ * connection speaks the older of it and the shell's.
  */
 
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { COMMAND_LIMITS, type CommandResult, type CommandRow, parseResult, parseRows } from "./commands.ts";
 import { type Manifest, parseManifest } from "./manifest.ts";
 import { type AppletMenuRow, parseMenu } from "./menu.ts";
 import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "./parse.ts";
 
-export const PROTOCOL = 2;
+export const PROTOCOL = 3;
 export const APPLETS_SOCKET = "dashi-applets.sock";
 
 /** Where the shell listens; null without a runtime directory. `DASHI_APPLETS_SOCKET` puts it elsewhere (the sandbox's own). */
@@ -72,7 +82,15 @@ export type AppletMessage =
   | { type: "applet"; applet: Applet }
   | { type: "remove"; id: string }
   | { type: "popover"; id: string; width: number; height: number }
-  | { type: "dismiss"; id: string };
+  | { type: "dismiss"; id: string }
+  | { type: "result"; seq: number; result: CommandResult }
+  | { type: "items"; seq: number; rows: CommandRow[] }
+  | { type: "view"; seq: number; height: number }
+  /** `{"type":"dismiss","seq"}`: the view of run `seq` closed. */
+  | { type: "dismiss-view"; seq: number };
+
+/** A command run's number: the shell counts them up from 1. */
+export const MAX_SEQ = 2 ** 31;
 
 /** Where the shell put a popover: the top-left corner in the screen's own points, on `output`, and the size it may take. */
 export interface Placement {
@@ -90,7 +108,10 @@ export type AppletShellMessage =
   | { type: "select"; id: string; item: string }
   | { type: "error"; message: string }
   | ({ type: "popover"; id: string; namespace: string } & Placement)
-  | { type: "dismiss"; id: string };
+  | { type: "dismiss"; id: string }
+  | { type: "run"; seq: number; command: string; args: Record<string, string | number | boolean>; query?: string; item?: string }
+  | ({ type: "view"; seq: number; namespace: string } & Placement)
+  | { type: "dismiss-view"; seq: number };
 
 /** What a glyph may not contain: anything that loads, links, or runs. */
 const GLYPH_FORBIDDEN = /<\s*(image|script|style|foreignObject|use|a)\b|href\s*=|<!(ENTITY|DOCTYPE)|url\s*\(/i;
@@ -171,7 +192,8 @@ function parseSize(fields: Record<string, unknown>): { width: number; height: nu
 
 /**
  * One line from an applet. `version` is the connection's: 1 until a hello
- * is accepted, then 2; version 1 refuses version 2's messages and submenus.
+ * is accepted, then 2 or 3; version 1 refuses version 2's messages and
+ * submenus, version 2 refuses version 3's.
  */
 export function parseAppletMessage(line: string, stat: Stat = fileStat, version = 1): AppletMessage | Refusal {
   if (new TextEncoder().encode(line).byteLength > APPLET_LIMITS.line) return refuse(`a line is longer than ${APPLET_LIMITS.line} bytes`);
@@ -202,9 +224,15 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
       const applet = parseApplet(fields.applet, stat, version >= 2);
       return isRefusal(applet) ? applet : { type: "applet", applet };
     }
+    case "result":
+    case "items":
+    case "view":
+      if (version < 3) return refuse(`“${type}” needs protocol 3: say hello with "protocol":3`);
+      return parseCommandMessage(type, raw);
     case "popover":
     case "dismiss": {
       if (version < 2) return refuse(`“${type}” needs protocol 2: send hello first`);
+      if (type === "dismiss" && version >= 3 && raw.seq !== undefined) return parseCommandMessage("dismiss", raw);
       const fields = record(raw, type, type === "popover" ? ["type", "id", "width", "height"] : ["type", "id"]);
       if (isRefusal(fields)) return fields;
       const appletId = id(fields.id, "id");
@@ -214,7 +242,46 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
       return isRefusal(size) ? size : { type: "popover", id: appletId, ...size };
     }
     default:
-      return refuse(version >= 2 ? 'type must be "applet", "remove", "popover", or "dismiss"' : 'type must be "applet" or "remove"');
+      return refuse(
+        version >= 3
+          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
+          : version >= 2
+            ? 'type must be "applet", "remove", "popover", or "dismiss"'
+            : 'type must be "applet" or "remove"',
+      );
+  }
+}
+
+const COMMAND_FIELDS = {
+  result: ["type", "seq", "text", "copy", "open", "error"],
+  items: ["type", "seq", "rows"],
+  view: ["type", "seq", "height"],
+  dismiss: ["type", "seq"],
+} as const;
+
+/** Version 3's messages about a command run (`seq`). */
+function parseCommandMessage(type: keyof typeof COMMAND_FIELDS, raw: Record<string, unknown>): AppletMessage | Refusal {
+  const checked = record(raw, type, COMMAND_FIELDS[type]);
+  // A result may say `error` itself: only a new object is a refusal (record returns the message when it passes).
+  if (checked !== raw && isRefusal(checked)) return checked;
+  const fields = raw;
+  const seq = integer(fields.seq, `${type}: seq`, 1, MAX_SEQ);
+  if (isRefusal(seq)) return seq;
+  switch (type) {
+    case "result": {
+      const result = parseResult(fields);
+      return isRefusal(result) ? result : { type: "result", seq, result: result.result };
+    }
+    case "items": {
+      const rows = parseRows(fields.rows);
+      return isRefusal(rows) ? rows : { type: "items", seq, rows };
+    }
+    case "view": {
+      const height = integer(fields.height, "view height", COMMAND_LIMITS.view.minHeight, COMMAND_LIMITS.view.maxHeight);
+      return isRefusal(height) ? height : { type: "view", seq, height };
+    }
+    case "dismiss":
+      return { type: "dismiss-view", seq };
   }
 }
 
@@ -227,6 +294,7 @@ export function parseAppletShellMessage(line: string): AppletShellMessage | null
   const { type, fields } = message;
   if (type === "error") return typeof fields.message === "string" ? { type: "error", message: fields.message } : null;
   if (type === "welcome") return isNumber(fields.protocol) ? { type: "welcome", protocol: fields.protocol } : null;
+  if (isNumber(fields.seq)) return parseRunMessage(type, fields, fields.seq);
   if (typeof fields.id !== "string") return null;
   if (type === "activate" && isNumber(fields.x) && isNumber(fields.y)) return { type: "activate", id: fields.id, x: fields.x, y: fields.y };
   if (type === "select" && typeof fields.item === "string") return { type: "select", id: fields.id, item: fields.item };
@@ -240,6 +308,50 @@ export function parseAppletShellMessage(line: string): AppletShellMessage | null
     return {
       type: "popover",
       id: fields.id,
+      x: fields.x as number,
+      y: fields.y as number,
+      width: fields.width as number,
+      height: fields.height as number,
+      output: fields.output as string | null,
+      namespace: fields.namespace,
+    };
+  }
+  return null;
+}
+
+/** A shell message as it goes on the wire: `dismiss-view` is `{"type":"dismiss","seq"}`. */
+export function wireMessage(message: AppletShellMessage): Record<string, unknown> {
+  return message.type === "dismiss-view" ? { type: "dismiss", seq: message.seq } : { ...message };
+}
+
+const isArgValue = (value: unknown): value is string | number | boolean =>
+  typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value));
+
+/** The shell's version 3 messages, each about a command run. */
+function parseRunMessage(type: string, fields: Record<string, unknown>, seq: number): AppletShellMessage | null {
+  if (type === "dismiss") return { type: "dismiss-view", seq };
+  if (type === "run") {
+    if (typeof fields.command !== "string") return null;
+    const args = typeof fields.args === "object" && fields.args !== null && !Array.isArray(fields.args) ? (fields.args as Record<string, unknown>) : {};
+    if (!Object.values(args).every(isArgValue)) return null;
+    return {
+      type: "run",
+      seq,
+      command: fields.command,
+      args: args as Record<string, string | number | boolean>,
+      ...(typeof fields.query === "string" ? { query: fields.query } : {}),
+      ...(typeof fields.item === "string" ? { item: fields.item } : {}),
+    };
+  }
+  if (
+    type === "view" &&
+    [fields.x, fields.y, fields.width, fields.height].every(isNumber) &&
+    typeof fields.namespace === "string" &&
+    (fields.output === null || typeof fields.output === "string")
+  ) {
+    return {
+      type: "view",
+      seq,
       x: fields.x as number,
       y: fields.y as number,
       width: fields.width as number,
