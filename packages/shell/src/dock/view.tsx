@@ -85,13 +85,8 @@ export function Dock({
   const latest = useRef({ layout, appName });
   latest.current = { layout, appName };
 
-  // A right-click on an icon reaches the Dock too (Metal bubbles it): the icon's menu wins.
-  const onIcon = useRef(false);
+  // A right-click on an icon opens the icon's menu only: Metal gives it to the innermost view.
   const openMenu = (key: string, centerX: number) => {
-    onIcon.current = true;
-    setTimeout(() => {
-      onIcon.current = false;
-    }, 0);
     const entry = [...latest.current.layout.pinned, ...latest.current.layout.running].find((each) => each.key === key);
     if (entry) void menus.openDockMenu(centerX, buildDockMenu(entry), latest.current.appName, output);
   };
@@ -104,7 +99,7 @@ export function Dock({
     });
 
   const openOptions = (x: number) => {
-    if (prefs && !onIcon.current) void menus.openDockMenu(x, buildDockOptionsMenu(prefs.snapshot), latest.current.appName, output);
+    if (prefs) void menus.openDockMenu(x, buildDockOptionsMenu(prefs.snapshot), latest.current.appName, output);
   };
 
   const click = (entry: DockEntry) => {
