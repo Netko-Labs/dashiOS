@@ -175,6 +175,7 @@ describe("answers: time zones", () => {
     expect(answer("13pm tokyo")).toBeNull();
     expect(answer("25:00 tokyo")).toBeNull();
     expect(answer("3pm atlantis")).toBeNull();
+    expect(answer("1pm constructor")).toBeNull();
     expect(answer("time machine")).toBeNull();
   });
 
@@ -191,6 +192,9 @@ describe("answers: time zones", () => {
     expect(zoneNamed("NYC")).toEqual({ zone: "America/New_York", place: "NYC" });
     expect(zoneNamed("utc")?.zone).toBe("UTC");
     expect(zoneNamed("atlantis")).toBeNull();
+    // A place named like an Object member is no alias.
+    expect(zoneNamed("constructor")).toBeNull();
+    expect(zoneNamed("toString")).toBeNull();
   });
 
   test("how far ahead a place is", () => {
