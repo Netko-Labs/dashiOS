@@ -152,7 +152,9 @@ export function CalculatorWindow({ clipboard = systemClipboard(), locale: given 
             paddingBottom: insets.bottom,
           }}
         >
-          <Text numberOfLines={1} style={{ fontSize, color: colors.text, textAlign: "right" }}>
+          {/* A line as tall as the font: displayInsets() places the digits' foot from the box's bottom, which a taller
+              default line would push down under the keypad. */}
+          <Text numberOfLines={1} style={{ fontSize, lineHeight: fontSize, color: colors.text, textAlign: "right" }}>
             {text}
           </Text>
         </View>
