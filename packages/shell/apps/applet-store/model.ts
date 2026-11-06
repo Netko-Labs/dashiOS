@@ -63,7 +63,10 @@ export class AppletStore {
   /** Loads the catalog (and applies its kill switch), what is installed, and this machine. */
   async refresh(): Promise<void> {
     this.set({ loading: true, installed: this.installer.installed() });
-    void this.machine().then((machine) => this.set({ machine }));
+    // A machine that can't be read stays unknown (null): fitsHere says so.
+    void this.machine()
+      .then((machine) => this.set({ machine }))
+      .catch(() => undefined);
     try {
       const { index, stale } = await this.catalog.load();
       const justPulled = this.installer.disablePulled(index);
