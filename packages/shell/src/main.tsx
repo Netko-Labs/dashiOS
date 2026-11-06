@@ -550,6 +550,8 @@ const settingsApp = startSettingsApp({
   region: region.store,
   passwords,
   clipboard: () => clipboard?.history ?? null,
+  // Read when the window opens, after the catalog below is.
+  installedApp: (id) => installedApp(id),
   openSetup: () => setupAssistant?.open(),
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.

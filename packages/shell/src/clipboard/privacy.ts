@@ -41,7 +41,7 @@ export const DEFAULT_LEFT_OUT: readonly string[] = [
   "seahorse",
 ];
 
-/** What a left-out entry is called in Settings. */
+/** What a left-out entry is called in Settings (ids of one app share a name: they are one row). */
 export const LEFT_OUT_NAMES: Readonly<Record<string, string>> = {
   "org.keepassxc.KeePassXC": "KeePassXC",
   keepassxc: "KeePassXC",
@@ -54,9 +54,36 @@ export const LEFT_OUT_NAMES: Readonly<Record<string, string>> = {
   seahorse: "Passwords and Keys",
 };
 
-/** The left-out list as Settings shows it: one name per app. */
-export function leftOutNames(list: readonly string[]): string[] {
-  return [...new Set(list.map((id) => LEFT_OUT_NAMES[id] ?? id))];
+const NAMES_FOLDED = new Map(Object.entries(LEFT_OUT_NAMES).map(([id, name]) => [id.toLowerCase(), name]));
+
+/** One app of the left-out list as Settings shows it: its name, and every id the list keeps for it. */
+export interface LeftOutApp {
+  name: string;
+  /** In the list's order; removing the app removes them all. */
+  ids: string[];
+}
+
+/**
+ * The left-out list as Settings shows it: one row per app, in the order the
+ * list first names it. Ids of the same app (KeePassXC's app id and its
+ * program) are one row: by the names Dashi knows for password managers, else
+ * by the installed app an id stands for (`installed`), else each id (in any
+ * case) is its own.
+ */
+export function leftOutApps(list: readonly string[], installed: (id: string) => { name: string } | undefined = () => undefined): LeftOutApp[] {
+  const apps = new Map<string, LeftOutApp>();
+  for (const id of list) {
+    const name = NAMES_FOLDED.get(id.toLowerCase()) ?? installed(id)?.name ?? id;
+    const app = apps.get(name.toLowerCase());
+    if (!app) apps.set(name.toLowerCase(), { name, ids: [id] });
+    else if (!app.ids.includes(id)) app.ids.push(id);
+  }
+  return [...apps.values()];
+}
+
+/** The left-out list without every id of `app`. */
+export function withoutApp(list: readonly string[], app: Pick<LeftOutApp, "ids">): string[] {
+  return list.filter((id) => !app.ids.includes(id));
 }
 
 /** Whether a copy's types alone say it is secret (the hint's value is read separately: `hintIsSecret`). */

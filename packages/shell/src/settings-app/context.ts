@@ -28,6 +28,8 @@ export interface PaneContext {
   answers?: AnswerStatus;
   /** The clipboard history, for Settings › Keyboard's Clear History. */
   clipboard?: Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
+  /** The installed app an app id or program stands for, as the Dock matches it: its name and icon. */
+  installedApp?: (id: string) => { name: string; icon: string } | undefined;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

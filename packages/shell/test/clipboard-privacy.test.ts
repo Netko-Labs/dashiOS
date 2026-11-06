@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { imageSize } from "../src/clipboard/images.ts";
-import { chooseType, concealedByType, DEFAULT_LEFT_OUT, hintIsSecret, isLeftOut, leftOutNames, verdict } from "../src/clipboard/privacy.ts";
+import { chooseType, concealedByType, DEFAULT_LEFT_OUT, hintIsSecret, isLeftOut, leftOutApps, verdict, withoutApp } from "../src/clipboard/privacy.ts";
 import { copyFrom, fileUris } from "../src/clipboard/watch.ts";
 import { parseEvent } from "../src/compositor.ts";
 
@@ -45,7 +45,28 @@ test("password managers are left out by app id or program, any case, from an edi
   expect(isLeftOut({ appId: "dev.dashi.notes", program: "bun" }, DEFAULT_LEFT_OUT)).toBe(false);
   expect(verdict(facts({ app: { appId: "1Password" } }), DEFAULT_LEFT_OUT)).toEqual({ skip: "left out" });
   expect(verdict(facts({ app: { appId: "1Password" } }), [])).toMatchObject({ keep: { kind: "text" } });
-  expect(leftOutNames(DEFAULT_LEFT_OUT)).toEqual(["KeePassXC", "Bitwarden", "1Password", "Passwords and Keys"]);
+});
+
+test("Settings lists each left-out app once, and removing it takes all its ids", () => {
+  const apps = leftOutApps(DEFAULT_LEFT_OUT);
+  expect(apps.map((app) => app.name)).toEqual(["KeePassXC", "Bitwarden", "1Password", "Passwords and Keys"]);
+  expect(apps[1]?.ids).toEqual(["Bitwarden", "bitwarden", "com.bitwarden.desktop"]);
+  expect(withoutApp(DEFAULT_LEFT_OUT, apps[1] as NonNullable<(typeof apps)[1]>)).toEqual([
+    "org.keepassxc.KeePassXC",
+    "keepassxc",
+    "1Password",
+    "1password",
+    "org.gnome.seahorse.Application",
+    "seahorse",
+  ]);
+  // Any case of a known id; an id the installed apps know by name joins its app; the rest stand alone, case folded.
+  const installed = (id: string) => (id === "com.example.Vault" || id === "vault-gtk" ? { name: "Vault" } : undefined);
+  expect(leftOutApps(["KEEPASSXC", "com.example.Vault", "vault-gtk", "Tool", "tool", "other"], installed)).toEqual([
+    { name: "KeePassXC", ids: ["KEEPASSXC"] },
+    { name: "Vault", ids: ["com.example.Vault", "vault-gtk"] },
+    { name: "Tool", ids: ["Tool", "tool"] },
+    { name: "other", ids: ["other"] },
+  ]);
 });
 
 test("a copy read is made into what the history keeps", () => {

@@ -6,10 +6,11 @@
  */
 
 import { Button, Switch, useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
+import { iconPath } from "../../apps.ts";
 import type { ClipboardHistory, HistorySnapshot } from "../../clipboard/history.ts";
-import { DEFAULT_LEFT_OUT, LEFT_OUT_NAMES } from "../../clipboard/privacy.ts";
+import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../clipboard/privacy.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Row, Spot, useSurface } from "../ui.tsx";
@@ -23,7 +24,13 @@ const none = () => () => {};
 /** An app id or program name the list takes (what settings.json keeps). */
 export const isAppEntry = (value: string): boolean => /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
 
-function LeftOutList({ settings, list }: { settings: SettingsStore; list: readonly string[] }) {
+/** The installed app an id stands for: its name and icon (Settings' `installedApp`). */
+export type InstalledApp = (id: string) => { name: string; icon: string } | undefined;
+
+const APP_ICON = 20;
+const GENERIC_ICON = iconPath("generic");
+
+function LeftOutList({ settings, list, installed }: { settings: SettingsStore; list: readonly string[]; installed: InstalledApp }) {
   const colors = useColors();
   const surface = useSurface();
   const [adding, setAdding] = useState("");
@@ -33,27 +40,29 @@ function LeftOutList({ settings, list }: { settings: SettingsStore; list: readon
     settings.patch("clipboard", { leftOut: [...list, id] });
     setAdding("");
   };
+  // One row per app, whatever ids the list keeps for it (KeePassXC's app id and program); Remove takes them all.
+  const apps = leftOutApps(list, installed);
   return (
     <View style={{ flexDirection: "column", gap: 4 }}>
-      {list.map((id) => (
-        <View key={id} testID={`clipboard-left-out:${id}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 28 }}>
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", gap: 6 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
-              {LEFT_OUT_NAMES[id] ?? id}
-            </Text>
-            {LEFT_OUT_NAMES[id] && (
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-                {id}
+      {apps.map((app) => {
+        const icon = app.ids.map((id) => installed(id)?.icon).find((found) => found !== undefined) ?? GENERIC_ICON;
+        const key = app.ids[0] ?? app.name;
+        return (
+          <View key={key} testID={`clipboard-left-out:${key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 28 }}>
+            <Image source={icon} style={{ width: APP_ICON, height: APP_ICON }} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+                {app.name}
               </Text>
-            )}
+            </View>
+            <Button
+              testID={`clipboard-left-out-remove:${key}`}
+              label="Remove"
+              onPress={() => settings.patch("clipboard", { leftOut: withoutApp(list, app) })}
+            />
           </View>
-          <Button
-            testID={`clipboard-left-out-remove:${id}`}
-            label="Remove"
-            onPress={() => settings.patch("clipboard", { leftOut: list.filter((each) => each !== id) })}
-          />
-        </View>
-      ))}
+        );
+      })}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ flex: 1, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
           <TextInput
@@ -71,7 +80,9 @@ function LeftOutList({ settings, list }: { settings: SettingsStore; list: readon
   );
 }
 
-export function ClipboardSection({ settings, history }: { settings: SettingsStore; history?: HistoryControl | null }) {
+const NOT_INSTALLED: InstalledApp = () => undefined;
+
+export function ClipboardSection({ settings, history, installed }: { settings: SettingsStore; history?: HistoryControl | null; installed?: InstalledApp }) {
   const { clipboard } = useSettings(settings).data;
   const snapshot = useSyncExternalStore(history?.subscribe ?? none, history?.getSnapshot ?? (() => EMPTY));
   const [asking, setAsking] = useState(false);
@@ -102,7 +113,7 @@ export function ClipboardSection({ settings, history }: { settings: SettingsStor
           />
         </Row>
         <Row stack label="Never kept from these apps" detail="Password fields, copies marked secret, and Dashi's Passwords are never kept either.">
-          <LeftOutList settings={settings} list={clipboard.leftOut ?? DEFAULT_LEFT_OUT} />
+          <LeftOutList settings={settings} list={clipboard.leftOut ?? DEFAULT_LEFT_OUT} installed={installed ?? NOT_INSTALLED} />
         </Row>
         <Spot pane="keyboard" row="snippets-in-terminals">
           <Row label="Snippets in terminals" detail="A snippet's keyword expands in terminals too. Never in password fields.">
