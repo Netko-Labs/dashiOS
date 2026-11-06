@@ -69,11 +69,12 @@ export function parseAddress(text: string): ParsedAddress | null {
     return null;
   }
   if (segments.length === 0 || segments.length > MAX_SEGMENTS || !segments.every(isSegment)) return null;
-  const query: Record<string, string> = {};
+  // No prototype: `constructor` or `__proto__` in a link is a key like any other.
+  const query: Record<string, string> = Object.create(null);
   const params = new URLSearchParams(search);
   let count = 0;
   for (const [key, value] of params) {
-    if (++count > MAX_ARGS || !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(key) || key in query) return null;
+    if (++count > MAX_ARGS || !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(key) || Object.hasOwn(query, key)) return null;
     query[key] = value;
   }
   // The scheme's "host" is the first segment; it is matched without case, the rest exactly (app ids have capitals).
