@@ -76,6 +76,10 @@ export function planTools(actions: readonly ActionDef[]): PlanTool[] {
     name: action.tool as string,
     description: action.description || action.title,
     schema: { type: "object", properties: action.properties, required: [...(action.required ?? [])], additionalProperties: false },
+    check: (args: Args) => {
+      const checked = action.check(args);
+      return checked.ok ? { ok: true as const } : { ok: false as const, error: checked.error };
+    },
   }));
 }
 

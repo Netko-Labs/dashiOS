@@ -9,6 +9,7 @@
  * person who finished once is not marked as having skipped by looking again.
  */
 
+import type { AnswerStatus } from "../agents/ask/service.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
@@ -53,9 +54,17 @@ export interface SetupOptions {
   system: Pick<SystemStore, "subscribe" | "getSnapshot">;
   /** Opens the launcher: the Done page teaches ❖ with a Try it. */
   openLauncher?: () => void;
+  /** Who can answer the launcher (the Agents page lists the harnesses installed); read when the window opens. */
+  answers?: () => AnswerStatus | null;
   /** Where "done" is remembered; `$XDG_STATE_HOME/dashi/setup.json` unless a test says otherwise. */
   statePath?: string;
   env?: Readonly<Record<string, string | undefined>>;
+}
+
+/** The answers, when the session has them. */
+function answersOf(options: SetupOptions): { answers?: AnswerStatus } {
+  const answers = options.answers?.();
+  return answers ? { answers } : {};
 }
 
 interface Session {
@@ -151,6 +160,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
         close();
       },
       ...(options.openLauncher ? { openLauncher: options.openLauncher } : {}),
+      ...answersOf(options),
     };
     const stopWatching = options.settings.watch();
     stops.push(stopWatching);

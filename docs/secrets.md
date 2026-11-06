@@ -153,6 +153,41 @@ Dashi's sign-in tools work only for a confined agent (or one on another
 machine, over SSH, whose only view of this one is what MCP returns). An
 agent started outside `dashi-agent` is told so.
 
+### A harness in plan mode
+
+When Claude Code, Codex or OpenCode answers the launcher (docs/actions.md,
+"Plan mode"), the shell starts it through `dashi-agent` with a plan profile
+(`DASHI_AGENT_PLAN`, `PlanProfile` in `sandbox.ts`), least access:
+
+- **its home folder is an empty one.** Bound back read-write: only what the
+  CLI keeps its login and sessions in (so the subscription works, and a
+  follow-up resumes): Claude Code `~/.claude` and `~/.claude.json` (or
+  `$CLAUDE_CONFIG_DIR`), Codex `~/.codex` (or `$CODEX_HOME`), OpenCode
+  `opencode/` under the XDG data, config, state and cache folders. Bound
+  back read-only: its install when it is under the home folder (the program
+  itself, a Node script's package, the interpreter's install), and Bun and
+  `dashi-mcp` when Dashi runs from a checkout there. Nothing else of the
+  home folder: no documents, keys, shell start-up files or Dashi settings;
+- **its only Dashi socket is the turn's plan socket** (at
+  `$XDG_RUNTIME_DIR/dashi-plan.sock` inside), which records calls and runs
+  none. Not `dashi-mcp.sock`, no session bus (not even notifications), no
+  token proxy: it answers with its own login, and Dashi's vault tokens never
+  reach it;
+- **its environment is the session's basics** (HOME, USER, PATH, the
+  language, XDG folders, `CLAUDE_CONFIG_DIR`/`CODEX_HOME`) and its turn's
+  own: no `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GITHUB_TOKEN` or the like
+  (OpenCode alone keeps `*_API_KEY` and its provider's variables, since its
+  configured provider may be one; `run.ts` `harnessEnv`);
+- **its own tools are off** (no shell, file edits or web: `--tools ""`,
+  `features.shell_tool=false`, `"*": false`), and it starts in an empty
+  folder of its own (`$XDG_RUNTIME_DIR/dashi-launcher`, inside);
+- as for every agent: its own scope, pid namespace and `/proc`, the cgroup
+  tree read-only, no display, `/run/dashi-secretd` hidden.
+
+It does reach the network, as any agent does: its provider, with its own
+login. `dashi-agent --print` with `DASHI_AGENT_PLAN` set shows the
+command line.
+
 ## Blanked captures
 
 The shell decides what agents' pictures blank; dashi-comp paints it
@@ -536,8 +571,11 @@ not an agent in a sandbox: the shell itself calls the Messages API, so it
 asks `token {name: "anthropic", host: "api.anthropic.com"}` like the proxy
 does (`agents/ask/keys.ts`), hands the key to the Anthropic SDK client for
 that one request, and wipes the bytes. Without the item it uses the
-session's `ANTHROPIC_API_KEY`. Settings › Agents says where the key is from
-the `tokens` list, without asking for it.
+session's `ANTHROPIC_API_KEY`. GPT, the other API answerer, does the same
+with `token {name: "openai", host: "api.openai.com"}` and
+`OPENAI_API_KEY`. Settings › Agents says where the key is from the `tokens`
+list, without asking for it. A harness answering in plan mode gets neither
+key: it uses its own login ("A harness in plan mode").
 
 ### What the proxy can't do
 

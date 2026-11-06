@@ -101,6 +101,52 @@ export interface SandboxOptions {
   bus: string | null;
   /** More arguments for bubblewrap before the command (the token proxy's). */
   extra?: readonly string[];
+  /** A harness answering the launcher in plan mode (planProfile): a private home folder, and only the plan's socket. */
+  plan?: PlanProfile;
+}
+
+/**
+ * A harness answering the launcher (docs/actions.md, "Plan mode";
+ * docs/secrets.md, "A harness in plan mode"): least access. Its home folder
+ * is an empty one, with only what it needs bound back: its login and
+ * sessions read-write (`state`), its install read-only (`readOnly`). No
+ * Dashi MCP socket but this turn's plan socket, no session bus, no token
+ * proxy. It starts in `cwd`, an empty folder of its own.
+ */
+export interface PlanProfile {
+  /** This turn's plan-mode socket (agents/ask/harness/plan-server.ts), outside. */
+  socket: string;
+  readOnly: string[];
+  state: string[];
+  cwd: string;
+}
+
+/** Where the plan socket is inside the sandbox. */
+export const planSocketInside = (runtime: string): string => join(runtime, "dashi-plan.sock");
+
+const isPathList = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string" && item.startsWith("/"));
+
+/** A plan profile from its JSON (dashi-agent gets it in DASHI_AGENT_PLAN); null when it doesn't parse. */
+export function parsePlanProfile(text: string | undefined): PlanProfile | null {
+  if (!text) return null;
+  try {
+    const value = JSON.parse(text) as Record<string, unknown>;
+    const { socket, readOnly, state, cwd } = value;
+    if (typeof socket !== "string" || !socket.startsWith("/") || typeof cwd !== "string" || !cwd.startsWith("/")) return null;
+    if (!isPathList(readOnly) || !isPathList(state)) return null;
+    return { socket, readOnly, state, cwd };
+  } catch {
+    return null;
+  }
+}
+
+/** bubblewrap's arguments for a plan profile, after the runtime directory and home are emptied. */
+function planArgs(env: SandboxEnv, exists: Exists, plan: PlanProfile): string[] {
+  const args: string[] = [];
+  for (const path of plan.readOnly) if (exists(path)) args.push("--ro-bind", path, path);
+  for (const path of plan.state) if (exists(path)) args.push("--bind", path, path);
+  args.push("--bind", plan.socket, planSocketInside(env.runtime), "--dir", plan.cwd, "--chdir", plan.cwd);
+  return args;
 }
 
 /** The token proxy as dashi-agent got it from the shell, and the loopback port it relays to it. */
@@ -176,11 +222,19 @@ export function sandboxArgs(command: readonly string[], options: SandboxOptions)
     "--tmpfs",
     env.runtime,
   ];
-  for (const dir of hidden(env)) if (exists(dir) === "dir") args.push("--tmpfs", dir);
-  for (const path of readOnly(env)) if (exists(path)) args.push("--ro-bind", path, path);
-  const mcp = join(env.runtime, "dashi-mcp.sock");
-  if (exists(mcp)) args.push("--bind", mcp, mcp);
-  if (bus) {
+  const plan = options.plan;
+  if (plan) {
+    // Least access: the home folder goes, and only what the harness needs comes back.
+    args.push("--tmpfs", env.home);
+    for (const dir of hidden(env)) if (exists(dir) === "dir" && !dir.startsWith(`${env.home}/`)) args.push("--tmpfs", dir);
+    args.push(...planArgs(env, exists, plan));
+  } else {
+    for (const dir of hidden(env)) if (exists(dir) === "dir") args.push("--tmpfs", dir);
+    for (const path of readOnly(env)) if (exists(path)) args.push("--ro-bind", path, path);
+    const mcp = join(env.runtime, "dashi-mcp.sock");
+    if (exists(mcp)) args.push("--bind", mcp, mcp);
+  }
+  if (bus && !plan) {
     const inside = join(env.runtime, "bus");
     args.push("--bind", bus, inside, "--setenv", "DBUS_SESSION_BUS_ADDRESS", `unix:path=${inside}`);
   } else {

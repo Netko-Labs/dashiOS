@@ -56,6 +56,8 @@ export interface LauncherAgents extends Store<LauncherAgentsSnapshot> {
   goTo(item: NowItem): Promise<void>;
   /** Settings › Agents. */
   setUp(): void;
+  /** Terminal, to sign a harness in (a "not signed in" failure). */
+  signIn(): void;
   history(): readonly HistoryEntry[];
 }
 

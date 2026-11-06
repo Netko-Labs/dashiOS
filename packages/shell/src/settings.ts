@@ -63,8 +63,8 @@
  * laptop's (power/modes/settings.ts), read through settings-app/store.ts.
  * `launcher` (`aliases`, `keys`: each names a `dashi://` address) is the
  * person's launcher aliases and keys (launcher/person-keys.ts), read the same way.
- * `agents` (`answerer`: "local", "claude", or "none", unset until the person picks;
- * `localModel`) is who answers the launcher's Ask (agents/ask/answerer.ts), read the same way.
+ * `agents` (`answerer`: "claude-code", "codex", "opencode", "local", "claude", "gpt", or
+ * "none", unset until the person picks; `localModel`; `gptModel`) is who answers the launcher's Ask (agents/ask/answerer.ts), read the same way.
  * Keys left out keep the compositor's own (DASHI_XKB_LAYOUT and the like),
  * except a missing touchpad or mouse setting, which is the device's default.
  */

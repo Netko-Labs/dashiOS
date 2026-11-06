@@ -13,6 +13,7 @@
 
 import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
+import { signInCommand } from "../../agents/ask/harness/catalog.ts";
 import type { Step } from "../../agents/ask/plan.ts";
 import type { TaskView } from "../../agents/ask/tasks.ts";
 import { ROW_HEIGHT, SectionHead } from "../row-view.tsx";
@@ -31,11 +32,23 @@ export function stepAct(step: Step): StepAct {
   return null;
 }
 
-/** A failure that Settings fixes (a key, a model to install), not trying again. */
-export const needsSettings = (failure: TaskView["failure"]): boolean => failure?.kind === "no-key" || failure?.kind === "no-model";
+/** A failure that Settings fixes (a key, a model, a harness to install), not trying again. */
+export const needsSettings = (failure: TaskView["failure"]): boolean =>
+  failure?.kind === "no-key" || failure?.kind === "no-model" || failure?.kind === "not-installed";
 
-/** Why no plan came, and what Return does about it. */
-export function failureLine(failure: NonNullable<TaskView["failure"]>): string {
+/** A harness that isn't signed in: its sign-in runs in Terminal. */
+export const needsSignIn = (failure: TaskView["failure"]): boolean => failure?.kind === "not-signed-in";
+
+/** The word for Return at the field's end, on a failure. */
+export const failureKey = (failure: TaskView["failure"]): string => (needsSignIn(failure) ? "Terminal" : needsSettings(failure) ? "Settings" : "Retry");
+
+/**
+ * Why no plan came, and what Return does about it: "Claude Code isn't
+ * signed in. Return opens Terminal to sign in with claude auth login."
+ * (`signIn`: the harness's own sign-in command, typed there.)
+ */
+export function failureLine(failure: NonNullable<TaskView["failure"]>, signIn: string | null = null): string {
+  if (needsSignIn(failure)) return `${failure.text} Return opens Terminal to sign in${signIn ? ` with ${signIn}` : ""}.`;
   return `${failure.text} ${needsSettings(failure) ? "Return opens Settings." : "Return tries again."}`;
 }
 
@@ -188,7 +201,9 @@ export function PlanList({ task, selected, onStep, onHover }: PlanListProps) {
   return (
     <View testID="launcher:section:plan" style={{ flexDirection: "column" }}>
       <SectionHead title={planHead(task)} />
-      {task.phase === "failed" && task.failure && <Words testID="launcher:plan-failure" text={failureLine(task.failure)} tone="critical" />}
+      {task.phase === "failed" && task.failure && (
+        <Words testID="launcher:plan-failure" text={failureLine(task.failure, signInCommand(task.answerer.id))} tone="critical" />
+      )}
       {task.said !== "" && <Words testID="launcher:plan-said" text={`${task.answerer.name}: ${task.said}`} tone="muted" />}
       {task.steps.map((step, index) => (
         <StepRow key={step.id} step={step} index={index} selected={selected === index} onPress={() => onStep(index)} onHover={() => onHover(index)} />

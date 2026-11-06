@@ -1,32 +1,49 @@
 /**
  * Settings › Agents, the launcher's part: who answers an Ask ("Answer
- * requests with": a local model first, Claude, or none; nothing until the
- * person picks), where Claude's key is, which local model, and the history
- * of what agents did, with Undo for settings changes.
+ * requests with": the harnesses installed, a local model, Claude or GPT
+ * with a key, or none; nothing until the person picks; answerer-list.tsx),
+ * where the key is, which model, and the history of what agents did, with
+ * Undo for settings changes.
  */
 
 import { View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { type AnswererChoice, CHOICE_LABELS } from "../../agents/ask/answerer.ts";
+import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
-import type { KeyPlace } from "../../agents/ask/keys.ts";
+import type { KeyPlace, Provider } from "../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../agents/ask/service.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Note, Row } from "../ui.tsx";
+import { AnswererList, useHarnesses } from "./answerer-list.tsx";
 
-/** How the key row says where Claude's key is. */
-export function keyWords(place: KeyPlace | null): string {
+const KEY_NAMES: Readonly<Record<Provider, { who: string; variable: string; host: string }>> = {
+  anthropic: { who: "Claude", variable: "ANTHROPIC_API_KEY", host: "api.anthropic.com" },
+  openai: { who: "GPT", variable: "OPENAI_API_KEY", host: "api.openai.com" },
+};
+
+/** How the key row says where a provider's key is (Claude's by default). */
+export function keyWords(place: KeyPlace | null, provider: Provider = "anthropic"): string {
+  const { who, variable, host } = KEY_NAMES[provider];
   switch (place) {
     case "vault":
-      return "In your vault. Claude never sees it.";
+      return `In your vault. ${who} never sees it.`;
     case "environment":
-      return "From ANTHROPIC_API_KEY in your session. Claude never sees it; your vault can keep it instead.";
+      return `From ${variable} in your session. ${who} never sees it; your vault can keep it instead.`;
     case "none":
-      return "No key yet. In Passwords, add a token called “anthropic” for api.anthropic.com.";
+      return `No key yet. In Passwords, add a token called “${provider}” for ${host}.`;
     default:
       return "Looking…";
   }
+}
+
+/** How GPT's model row says what answers. */
+export function gptModelWords(models: readonly string[] | null | undefined, named: string | undefined): string {
+  if (models === undefined) return "Looking…";
+  if (named) return `Answers with ${named}.`;
+  if (models === null) return "Your key's models will be listed here once it's in.";
+  if (models.length === 0) return "Your key lists no chat model.";
+  return `Answers with ${models[0]}, the most capable your key lists.`;
 }
 
 /** How the model row says what runs here. */
@@ -66,12 +83,17 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
   const choice = data.agents.answerer;
   const [place, setPlace] = useState<KeyPlace | null>(null);
   const [models, setModels] = useState<string[] | null | undefined>(undefined);
+  const [gptModels, setGptModels] = useState<string[] | null | undefined>(undefined);
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => answers.history());
   const [notice, setNotice] = useState<string | null>(null);
+  const harnesses = useHarnesses(answers.harnesses);
 
   useEffect(() => {
     let current = true;
-    if (choice === "claude") void answers.keyPlace().then((found) => current && setPlace(found));
+    setPlace(null);
+    if (choice === "claude") void answers.keyPlace("anthropic").then((found) => current && setPlace(found));
+    if (choice === "gpt") void answers.keyPlace("openai").then((found) => current && setPlace(found));
+    if (choice === "gpt") void answers.gptModels().then((found) => current && setGptModels(found));
     if (choice === "local") void answers.localModels().then((found) => current && setModels(found));
     return () => {
       current = false;
@@ -79,36 +101,55 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
   }, [choice, answers]);
   useEffect(() => answers.onHistory(() => setEntries(answers.history())), [answers]);
 
-  const choose = (value: AnswererChoice | "unset") => {
-    if (value !== "unset") settings.patch("agents", { answerer: value });
-  };
+  const choose = (value: AnswererChoice) => settings.patch("agents", { answerer: value });
+  const gptPills = gptModels && gptModels.length > 1 ? gptModels.slice(0, MODEL_PILLS) : [];
   const undo = (entry: HistoryEntry, index: number) => {
     const step = entry.steps[index];
     if (!step?.undo) return;
     void answers.undo(entry.id, index, step.undo).then((outcome) => setNotice(outcome.ok ? `Undone: ${step.undo?.title}` : outcome.error));
   };
   const pills = models && models.length > 1 ? models.slice(0, MODEL_PILLS) : [];
+  const harnessName = isHarnessId(choice) ? ANSWERERS[choice].name : null;
 
   return (
     <>
       <Group testID="agents-answerer">
-        <Row label="Answer requests with" detail="In the launcher, type what to do, then press Tab to ask." stack>
-          <Choices<AnswererChoice | "unset"> testID="agents-answerer-choice" options={CHOICE_LABELS} value={choice ?? "unset"} onChange={choose} />
-        </Row>
-        {choice === "claude" && <Row testID="agents-key" label="Key" detail={keyWords(place)} />}
-        {choice === "local" && (
-          <Row testID="agents-model" label="Model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
-            {pills.length > 0 && (
-              <Choices
-                testID="agents-model-choice"
-                options={pills.map((name) => ({ value: name, label: name }))}
-                value={data.agents.localModel ?? pills[0] ?? ""}
-                onChange={(name) => settings.patch("agents", { localModel: name })}
-              />
-            )}
-          </Row>
-        )}
+        <Row label="Answer requests with" detail="In the launcher, type what to do, then press Tab to ask." />
+        <AnswererList testID="agents-answerer-choice" chosen={choice} harnesses={harnesses} onChoose={choose} />
       </Group>
+      {(choice === "claude" || choice === "gpt" || choice === "local") && (
+        <Group testID="agents-answerer-detail">
+          {choice === "claude" && <Row testID="agents-key" label="Key" detail={keyWords(place, "anthropic")} />}
+          {choice === "gpt" && <Row testID="agents-key" label="Key" detail={keyWords(place, "openai")} />}
+          {choice === "gpt" && (
+            <Row testID="agents-gpt-model" label="Model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
+              {gptPills.length > 0 && (
+                <Choices
+                  testID="agents-gpt-model-choice"
+                  options={gptPills.map((name) => ({ value: name, label: name }))}
+                  value={data.agents.gptModel ?? gptPills[0] ?? ""}
+                  onChange={(name) => settings.patch("agents", { gptModel: name })}
+                />
+              )}
+            </Row>
+          )}
+          {choice === "local" && (
+            <Row testID="agents-model" label="Model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
+              {pills.length > 0 && (
+                <Choices
+                  testID="agents-model-choice"
+                  options={pills.map((name) => ({ value: name, label: name }))}
+                  value={data.agents.localModel ?? pills[0] ?? ""}
+                  onChange={(name) => settings.patch("agents", { localModel: name })}
+                />
+              )}
+            </Row>
+          )}
+        </Group>
+      )}
+      {harnessName !== null && (
+        <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
+      )}
       <Caption>Only what you type is sent, and only when you ask. Nothing runs until you see the plan and press Return.</Caption>
       <Caption above>History</Caption>
       <Group testID="agents-history">

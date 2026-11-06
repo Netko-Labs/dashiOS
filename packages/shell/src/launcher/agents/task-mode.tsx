@@ -14,7 +14,7 @@ import { oneLine } from "../../agents/ask/plan.ts";
 import type { TaskView } from "../../agents/ask/tasks.ts";
 import { SPARKLE } from "../../settings-app/glyphs.ts";
 import type { Hint } from "../verbs.ts";
-import { needsSettings, stepAct } from "./plan-view.tsx";
+import { failureKey, needsSettings, needsSignIn, stepAct } from "./plan-view.tsx";
 
 export { PlanList, stepAct } from "./plan-view.tsx";
 
@@ -25,6 +25,7 @@ export type TaskSubmit =
   | { kind: "undo"; step: number }
   | { kind: "retry" }
   | { kind: "settings" }
+  | { kind: "sign-in" }
   | { kind: "none" };
 
 /** What Return does on `task`, with `draft` in the field and step `step` selected. */
@@ -36,7 +37,7 @@ export function taskSubmit(task: TaskView, draft: string, step: number | null): 
   if (act === "allow-once" && step !== null && !busy) return { kind: "allow-once", step };
   if (act === "undo" && step !== null) return { kind: "undo", step };
   if (task.phase === "planned") return { kind: "run" };
-  if (task.phase === "failed") return needsSettings(task.failure) ? { kind: "settings" } : { kind: "retry" };
+  if (task.phase === "failed") return needsSignIn(task.failure) ? { kind: "sign-in" } : needsSettings(task.failure) ? { kind: "settings" } : { kind: "retry" };
   return { kind: "none" };
 }
 
@@ -60,7 +61,7 @@ export function agentField(
       : task.phase === "planned" && toRun(task) > 0
         ? [{ keys: "↩", label: `Run ${toRun(task)}` }]
         : task.phase === "failed"
-          ? [{ keys: "↩", label: needsSettings(task.failure) ? "Settings" : "Retry" }]
+          ? [{ keys: "↩", label: failureKey(task.failure) }]
           : [];
   return { glyph, chip, placeholder, hints: [...hints, { keys: "⇥", label: "Edit" }, { keys: "Esc", label: "back" }] };
 }

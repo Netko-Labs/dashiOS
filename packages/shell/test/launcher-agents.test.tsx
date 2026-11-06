@@ -178,6 +178,7 @@ function fakeAgents(snapshot: LauncherAgentsSnapshot): LauncherAgents & { asked:
     stop: () => {},
     goTo: async () => {},
     setUp: () => {},
+    signIn: () => void runs.push("sign-in"),
     history: () => [],
   };
 }

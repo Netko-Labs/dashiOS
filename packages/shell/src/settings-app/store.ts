@@ -190,6 +190,8 @@ export interface AgentsSettings {
   answerer?: AnswererChoice;
   /** The local model to ask by name; the first one installed when unset. */
   localModel?: string;
+  /** The OpenAI model GPT answers with; the most capable chat model the key lists when unset (agents/ask/gpt-models.ts). */
+  gptModel?: string;
 }
 
 /** `clipboard`: clipboard history and snippets (clipboard/; Settings › Keyboard). */
@@ -332,7 +334,7 @@ const SECTIONS = {
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
-  agents: { path: ["agents"], fields: { answerer: isAnswererChoice, localModel: isModelName } },
+  agents: { path: ["agents"], fields: { answerer: isAnswererChoice, localModel: isModelName, gptModel: isModelName } },
   clipboard: {
     path: ["clipboard"],
     fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },
