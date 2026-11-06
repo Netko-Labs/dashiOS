@@ -30,8 +30,12 @@ export interface Notice {
   id: number;
   text: string;
   error: boolean;
-  /** It reports a write Edit › Undo can take back: the notice offers Undo. */
-  undoable?: boolean;
+  /**
+   * It reports a write Edit › Undo can take back: that step (the undo
+   * stack's `undoStep`). The notice offers Undo, and stays, only while Undo
+   * still takes back that step (operations.ts).
+   */
+  undoStep?: number;
 }
 
 export interface FilesState {
@@ -60,6 +64,8 @@ export interface FilesState {
 const DOUBLE_CLICK_MS = 450;
 const NO_KEYS: Modifiers = { shift: false, control: false, alt: false, super: false };
 const SEARCH_DELAY_MS = 180;
+/** How long a notice that only informs stays. */
+export const NOTICE_FADE_MS = 5000;
 
 export class FilesStore {
   private state: FilesState;
@@ -84,7 +90,7 @@ export class FilesStore {
   constructor(
     readonly env: Env,
     start: Location,
-    private readonly options: { watch?: boolean } = {},
+    private readonly options: { watch?: boolean; noticeFadeMs?: number } = {},
   ) {
     this.state = {
       location: start,
@@ -456,12 +462,20 @@ export class FilesStore {
 
   // --- Messages ----------------------------------------------------------------------
 
-  /** A line in the footer: errors stay until dismissed, other notes fade. */
-  say(text: string, error = false, undoable = false): void {
+  /**
+   * A line in the footer: errors stay until dismissed, other notes fade
+   * after `NOTICE_FADE_MS`. One with Undo for `undoStep` stays while that is
+   * what Undo takes back (operations.ts takes it down after): a notice that
+   * faded as its Undo was clicked let the click fall through to the files.
+   */
+  say(text: string, error = false, undoStep: number | null = null): void {
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = null;
     const id = ++this.noticeId;
-    this.patch({ notice: { id, text, error, ...(undoable ? { undoable } : {}) } });
-    if (!error) this.noticeTimer = setTimeout(() => this.state.notice?.id === id && this.patch({ notice: null }), 5000);
+    this.patch({ notice: { id, text, error, ...(undoStep === null ? {} : { undoStep }) } });
+    if (!error && undoStep === null) {
+      this.noticeTimer = setTimeout(() => this.state.notice?.id === id && this.patch({ notice: null }), this.options.noticeFadeMs ?? NOTICE_FADE_MS);
+    }
   }
 
   dismissNotice(): void {

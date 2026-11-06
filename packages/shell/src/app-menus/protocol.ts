@@ -2,9 +2,16 @@
  * The menus channel between an app and the shell, `$XDG_RUNTIME_DIR/dashi-menus.sock`:
  * newline-delimited JSON, one message per line.
  *
- *   app → shell  {"type":"menus","menus":[{"id":"file","items":[{"id":"new","label":"New Note","shortcut":"❖N"}]}]}
+ *   app → shell  {"type":"menus","menus":[{"id":"file","items":[{"id":"new","label":"New Note","shortcut":"❖N"}]}],"typing":true}
  *   shell → app  {"type":"select","id":"new"}
+ *                {"type":"quit"}                    (the app is quitting: its window's close request comes next)
  *                {"type":"error","message":"…"}     (the menus sent were refused; the last good ones stay)
+ *
+ * `typing` (optional) says a text field in the app's window has the
+ * keyboard: then the text chords (❖A, ❖C, ❖X, ❖V, ❖Z, ⇧❖Z) go to the field,
+ * as Ctrl chords, before the app's rows that show them (shortcut.ts
+ * `TEXT_SHORTCUTS`), so ❖A in a rename field selects its text, not the files.
+ * The app sends its menus again whenever it changes.
  *
  * Each "menus" message replaces everything the app published before; an
  * empty list takes its menus down. A menu with id `app` adds rows to the app
@@ -78,13 +85,15 @@ export interface MenuSpec {
   items: readonly MenuItemSpec[];
 }
 
-export type ClientMessage = { type: "menus"; menus: AppMenu[] };
-export type ShellMessage = { type: "select"; id: string } | { type: "error"; message: string };
+export type ClientMessage = { type: "menus"; menus: AppMenu[]; typing?: boolean };
+export type ShellMessage = { type: "select"; id: string } | { type: "quit" } | { type: "error"; message: string };
 
 /** The menus an app published, and which process it is. */
 export interface PublishedMenus {
   pid: number;
   menus: readonly AppMenu[];
+  /** A text field in its window has the keyboard: the text chords are the field's. */
+  typing?: true;
 }
 
 /** Titles the bar gives these menus when the app leaves the title out. */
@@ -236,11 +245,14 @@ export function parseClientMessage(line: string): ClientMessage | Refusal {
   } catch {
     return refuse("not JSON");
   }
-  const fields = record(value, "the message", ["type", "menus"]);
+  const fields = record(value, "the message", ["type", "menus", "typing"]);
   if (isRefusal(fields)) return fields;
   if (fields.type !== "menus") return refuse('type must be "menus"');
+  const typing = optionalBoolean(fields.typing, "typing");
+  if (isRefusal(typing)) return typing;
   const menus = parseMenus(fields.menus);
-  return isRefusal(menus) ? menus : { type: "menus", menus };
+  if (isRefusal(menus)) return menus;
+  return typing ? { type: "menus", menus, typing } : { type: "menus", menus };
 }
 
 /** One line from the shell (the kit's side); null for anything else. */
@@ -254,6 +266,7 @@ export function parseShellMessage(line: string): ShellMessage | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
   const fields = value as Record<string, unknown>;
   if (fields.type === "select" && typeof fields.id === "string") return { type: "select", id: fields.id };
+  if (fields.type === "quit") return { type: "quit" };
   if (fields.type === "error" && typeof fields.message === "string") return { type: "error", message: fields.message };
   return null;
 }

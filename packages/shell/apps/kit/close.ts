@@ -14,11 +14,35 @@
 
 import { useEffect, useRef } from "react";
 
+/**
+ * Why the window is asked to close: `close` (the close control, ❖W), or
+ * `quit` (❖Q, Quit in the app menu, logging out), which the shell says on
+ * the menus channel just before it asks (`quitting`). A question names it:
+ * "Quit Terminal?", not "Close this window?".
+ */
+export type CloseReason = "close" | "quit";
+
 /** What a close request does: close (the app's quit), or keep the window and ask first. */
-export type CloseAnswer = () => void;
+export type CloseAnswer = (reason: CloseReason) => void;
+
+/**
+ * How long the shell's word that the app is quitting holds for the close
+ * request it comes before (the request comes another way, through the
+ * compositor and the Metal host).
+ */
+export const QUIT_HOLDS_MS = 2000;
 
 export class CloseRequests {
   private answers: CloseAnswer[] = [];
+  /** Until when a close request is a quit. */
+  private quitUntil = Number.NEGATIVE_INFINITY;
+
+  constructor(private readonly now: () => number = Date.now) {}
+
+  /** The shell is about to ask the window to close because the app quits. */
+  quitting(): void {
+    this.quitUntil = this.now() + QUIT_HOLDS_MS;
+  }
 
   /** Sets the answer; the newest set wins. Returns the way to take it back. */
   answer(answer: CloseAnswer): () => void {
@@ -35,8 +59,10 @@ export class CloseRequests {
 
   /** A close request came: the app's answer, or `closeNow` when it set none. */
   request(closeNow: () => void): void {
+    const reason: CloseReason = this.now() <= this.quitUntil ? "quit" : "close";
+    this.quitUntil = Number.NEGATIVE_INFINITY;
     const answer = this.answers.at(-1);
-    if (answer) answer();
+    if (answer) answer(reason);
     else closeNow();
   }
 }
@@ -51,5 +77,5 @@ export const closeRequests = new CloseRequests();
 export function useCloseRequest(answer: CloseAnswer, requests: CloseRequests = closeRequests): void {
   const latest = useRef(answer);
   latest.current = answer;
-  useEffect(() => requests.answer(() => latest.current()), [requests]);
+  useEffect(() => requests.answer((reason) => latest.current(reason)), [requests]);
 }

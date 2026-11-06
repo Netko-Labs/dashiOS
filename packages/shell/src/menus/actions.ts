@@ -42,6 +42,8 @@ export interface ActionDeps {
   openSearch?(): void;
   /** Tells an app its own row was chosen (app-menus/); a run without it does nothing. */
   selectAppItem?(pid: number, id: string): void;
+  /** Tells the app owning a window of `pid` that it quits, before the window's close request (kit/close.ts). */
+  appQuitting?(pid: number | null): void;
   /** Puts a window on a Desktop, or on a new one (spaces/); a run without Desktops does nothing. */
   moveToSpace?(window: number, space: number | "new"): Promise<void>;
 }
@@ -108,7 +110,11 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
     case "edit":
       return typeEdit(deps, action.window, action.command);
     case "quit-app":
-      return forEachWindowOfApp(compositor, action.window, (window) => request("close", window.id));
+      return forEachWindowOfApp(compositor, action.window, (window) => {
+        // A question it asks names quitting ("Quit Terminal?"), not closing a window.
+        deps.appQuitting?.(window.pid);
+        return request("close", window.id);
+      });
     case "hide-others":
       return hideOthers(compositor, action.window);
     case "show-all":

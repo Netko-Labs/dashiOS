@@ -13,7 +13,7 @@
 
 import { useSyncExternalStore } from "react";
 import { type AppMenu, enabledItem, type PublishedMenus, type ShellMessage } from "./protocol.ts";
-import { itemForShortcut } from "./shortcut.ts";
+import { isTextShortcut, itemForShortcut } from "./shortcut.ts";
 
 /** One app's end of the channel. */
 export interface MenuOwner {
@@ -40,9 +40,9 @@ export class AppMenuStore {
   getSnapshot = (): PublishedMenus | null => this.active;
 
   /** `owner`'s menus now (an empty list takes them down); a newer connection of the same process replaces an older one. */
-  publish(owner: MenuOwner, menus: readonly AppMenu[]): void {
+  publish(owner: MenuOwner, menus: readonly AppMenu[], typing = false): void {
     if (menus.length === 0) this.byPid.delete(owner.pid);
-    else this.byPid.set(owner.pid, { owner, published: { pid: owner.pid, menus } });
+    else this.byPid.set(owner.pid, { owner, published: { pid: owner.pid, menus, ...(typing ? { typing: true } : {}) } });
     this.update();
     for (const listener of this.publishedListeners) listener();
   }
@@ -95,11 +95,24 @@ export class AppMenuStore {
     return true;
   }
 
-  /** Chooses the enabled item showing `shortcut` in the menus of these processes; false when none shows it. */
+  /**
+   * Chooses the enabled item showing `shortcut` in the menus of these
+   * processes; false when none shows it, or when it is a text chord and a
+   * field has the keyboard (the field answers it: shortcut.ts `TEXT_SHORTCUTS`).
+   */
   shortcut(pids: readonly number[], shortcut: string): boolean {
     const published = this.menusFor(pids);
+    if (published?.typing && isTextShortcut(shortcut)) return false;
     const item = published && itemForShortcut(published.menus, shortcut);
     return Boolean(published && item && this.select(published.pid, item));
+  }
+
+  /** Tells these processes' app that it is quitting, just before its windows are asked to close (kit/close.ts); false when it has no menus channel. */
+  quitting(pids: readonly number[]): boolean {
+    const pid = pids.find((each) => this.byPid.has(each));
+    if (pid === undefined) return false;
+    this.byPid.get(pid)?.owner.send({ type: "quit" });
+    return true;
   }
 
   private update(): void {

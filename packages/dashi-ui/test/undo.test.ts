@@ -1,5 +1,27 @@
 import { expect, test } from "bun:test";
-import { redoLabel, UndoStack, undoLabel, undoMenuItems } from "../src/undo.ts";
+import { redoLabel, UNDO_LIMIT, UndoStack, undoLabel, undoMenuItems } from "../src/undo.ts";
+
+test("undoStep names the step Undo takes back, the same while it is the newest", async () => {
+  let now = 0;
+  const stack = new UndoStack(UNDO_LIMIT, () => now);
+  const noop = { do: () => {}, undo: () => {} };
+  expect(stack.state.undoStep).toBeNull();
+  stack.push({ name: "Move to Trash", ...noop });
+  const trashed = stack.state.undoStep;
+  expect(trashed).not.toBeNull();
+  stack.push({ name: "Key Repeat", joins: "repeat", ...noop });
+  const repeat = stack.state.undoStep;
+  expect(repeat).not.toBe(trashed);
+  // A slider's drag joins its step: still the same one.
+  now += 100;
+  stack.push({ name: "Key Repeat", joins: "repeat", ...noop });
+  expect(stack.state.undoStep).toBe(repeat);
+  await stack.undo();
+  expect(stack.state.undoStep).toBe(trashed);
+  // Redone, it is the same step again, not a new one.
+  await stack.redo();
+  expect(stack.state.undoStep).toBe(repeat);
+});
 
 /** A name that Undo and Redo change back and forth, as a rename does. */
 function renamer(stack: UndoStack, log: string[]) {

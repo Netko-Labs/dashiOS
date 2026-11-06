@@ -16,7 +16,7 @@
 import { AppWindow, ConfirmSheet, useColors, useDark } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type Clipboard, useAppMenus, useCloseRequest } from "../kit/index.ts";
+import { type Clipboard, type CloseReason, useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
 import { type Engine, startEngine } from "./engine.ts";
 import { FONT_SIZE, LINE_HEIGHT, Line, lookFor } from "./line.tsx";
@@ -87,15 +87,15 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
   };
 
   /** ⇧❖W, Close Window: at once when every tab is at its prompt, else after asking. */
-  const requestCloseWindow = (): void => {
+  const requestCloseWindow = (reason: CloseReason = "close"): void => {
     void Promise.all([...engines.current.values()].map((engine) => engine.running())).then((answers) => {
       const programs = stillRunning(answers);
       if (programs.length === 0) onExit();
-      else setAsking({ kind: "window", programs });
+      else setAsking({ kind: "window", programs, ...(reason === "quit" ? { quit: true } : {}) });
     });
   };
 
-  // The close control, ❖Q, the Dock's Quit, logging out: as Close Window.
+  // The close control, ❖Q, the Dock's Quit, logging out: as Close Window, asking "Quit Terminal?" when it quits.
   useCloseRequest(requestCloseWindow);
 
   const dismiss = (): void => {

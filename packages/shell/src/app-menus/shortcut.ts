@@ -92,6 +92,18 @@ export function chordFromShortcut(text: string): PressedChord | null {
   return { key: name, shift: shortcut.includes("⇧"), ctrl: shortcut.includes("⌃"), alt: shortcut.includes("⌥") };
 }
 
+/**
+ * The chords a text field answers itself: Select All, Copy, Cut, Paste, Undo
+ * and Redo. While a field has the keyboard (protocol.ts `typing`) they go to
+ * it, not to the app's rows that show them.
+ */
+export const TEXT_SHORTCUTS: ReadonlySet<string> = new Set(["❖A", "❖C", "❖X", "❖V", "❖Z", "⇧❖Z"]);
+
+/** Whether `shortcut` is one a focused text field answers itself. */
+export function isTextShortcut(shortcut: string): boolean {
+  return TEXT_SHORTCUTS.has(normalizeShortcut(shortcut));
+}
+
 /** The enabled item of `menus` that shows `shortcut`, if any. */
 export function itemForShortcut(menus: readonly AppMenu[], shortcut: string): string | null {
   const wanted = normalizeShortcut(shortcut);

@@ -8,7 +8,7 @@ import pkg from "../../package.json" with { type: "json" };
 import { ownerPids } from "../app-menus/focus.ts";
 import { AppMenuStore } from "../app-menus/store.ts";
 import { type App, appFor, iconPath } from "../apps.ts";
-import type { Arranger } from "../arrange.ts";
+import { type Arranger, parseOutputs } from "../arrange.ts";
 import { PairingPrompt } from "../bluetooth/prompt.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import { BluetoothStore } from "../bluetooth/store.ts";
@@ -30,6 +30,7 @@ import type { WifiStore } from "../wifi/store.ts";
 import { type AboutTarget, type ActionDeps, runMenuAction } from "./actions.ts";
 import { MenuController } from "./controller.ts";
 import { Dialogs } from "./dialogs.tsx";
+import { holdingPlace } from "./holding-place.ts";
 import { findEntry, helpCommand, spawnDetached } from "./launch.ts";
 import { type MenuAction, type MenuContext, type PowerKind, type WindowMenu, windowMenus } from "./model.ts";
 import { PopoverRoot, popoverSurface } from "./popover.tsx";
@@ -138,8 +139,17 @@ export function startMenus(options: MenusOptions): Menus {
             (await compositor.windows())
               .filter((window) => window.pid !== process.pid)
               .map((window) => ({ id: window.id, name: appFor(options.apps, window, entryFor).name })),
-          close: async (window) => void (await compositor.request("close", { window })),
+          close: async (window) => {
+            // The app quits with the session: a question it asks says so ("Quit Terminal?").
+            const pid = (await compositor.windows().catch(() => [])).find((each) => each.id === window)?.pid ?? null;
+            appMenus.quitting(ownerPids(pid));
+            await compositor.request("close", { window });
+          },
           focus: (window) => void compositor.request("focus", { window }).catch(() => {}),
+          place: async (window) => {
+            const frame = (await compositor.windows()).find((each) => each.id === window)?.frame ?? null;
+            return holdingPlace(frame, parseOutputs(await compositor.request("outputs")));
+          },
         }
       : undefined,
   );
@@ -256,6 +266,7 @@ export function startMenus(options: MenusOptions): Menus {
     openSettings: () => options.openSettings?.(),
     openSearch: () => options.openSearch?.(),
     selectAppItem: (pid, id) => void appMenus.select(pid, id),
+    appQuitting: (pid) => void appMenus.quitting(ownerPids(pid)),
     moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
   };
 

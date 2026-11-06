@@ -44,6 +44,13 @@ export interface UndoState {
   redoName: string | null;
   /** An Undo or Redo is running (one at a time). */
   busy: boolean;
+  /**
+   * Which step Undo takes back now (null: none), the same number for as long
+   * as that step is the newest. A notice that offers Undo for one step keeps
+   * it, and offers Undo only while it is still this one (Files' "Moved to
+   * the Trash", design.html PA-2), never a newer step's.
+   */
+  undoStep: number | null;
 }
 
 /** How many steps an app's Undo can take back. */
@@ -78,11 +85,14 @@ interface Step {
   /** The `joins` of a step made of one joinable action, and when it was last joined. */
   joins?: string;
   at?: number;
+  /** Given as it is recorded (`undoStep`). */
+  id?: number;
 }
 
-const EMPTY: UndoState = { canUndo: false, canRedo: false, undoName: null, redoName: null, busy: false };
+const EMPTY: UndoState = { canUndo: false, canRedo: false, undoName: null, redoName: null, busy: false, undoStep: null };
 
 export class UndoStack {
+  private steps = 0;
   private past: Step[] = [];
   private future: Step[] = [];
   /** Open groups, outermost first: what is pushed meanwhile joins the outermost. */
@@ -177,6 +187,7 @@ export class UndoStack {
   }
 
   private record(step: Step): void {
+    step.id = ++this.steps;
     this.past.push(step);
     if (this.past.length > this.limit) this.past.splice(0, this.past.length - this.limit);
     this.future = [];
@@ -211,6 +222,7 @@ export class UndoStack {
       undoName: past?.name ?? null,
       redoName: future?.name ?? null,
       busy: this.running,
+      undoStep: past?.id ?? null,
     };
     for (const listener of this.listeners) listener();
   }

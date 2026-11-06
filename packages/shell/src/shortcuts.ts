@@ -42,6 +42,8 @@ export interface ShellActions {
   overview: { toggle(): void };
   /** Chooses the item of `window`'s app menus that shows `shortcut` ("⇧❖N", app-menus/); false when none does. */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
+  /** Tells the app of the window owned by `pid` that it is quitting, before its close request (app-menus/, kit/close.ts). */
+  appQuitting?(pid: number | null): void;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /**
@@ -142,6 +144,8 @@ export async function runBinding(name: string, window: number | null, compositor
       const focused = windows.find((candidate) => candidate.id === window);
       if (!focused) return;
       for (const each of windows.filter((candidate) => sameApp(candidate, focused))) {
+        // A question it asks names quitting ("Quit Terminal?"), not closing a window.
+        actions.appQuitting?.(each.pid);
         await compositor.request("close", { window: each.id });
       }
       return;
