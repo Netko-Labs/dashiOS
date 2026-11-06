@@ -5,8 +5,7 @@
  * of what agents did, with Undo for settings changes.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AnswererChoice, CHOICE_LABELS } from "../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
@@ -42,16 +41,15 @@ export function modelWords(models: readonly string[] | null | undefined, named: 
 const MODEL_PILLS = 6;
 
 function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (index: number) => void }) {
-  const colors = useColors();
   const undos = entry.steps.flatMap((step, index) => (step.undo && !step.undone && step.outcome === "done" ? [{ index, title: step.undo.title }] : []));
+  // A Row gives the words the room they need (a lone Text with one line and no width shows only "…").
   return (
-    <View testID={`agents-history:${entry.id}`} style={{ flexDirection: "column", gap: 4, padding: 12 }}>
-      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-        {entry.request ? `${entry.who}: ${entry.request}` : entry.who}
-      </Text>
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-        {`${entry.summary} · ${ago(entry.time, Math.floor(Date.now() / 1000))}`}
-      </Text>
+    <Row
+      testID={`agents-history:${entry.id}`}
+      stack={undos.length > 0}
+      label={entry.request ? `${entry.who}: ${entry.request}` : entry.who}
+      detail={`${entry.summary} · ${ago(entry.time, Math.floor(Date.now() / 1000))}`}
+    >
       {undos.length > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {undos.map((undo) => (
@@ -59,7 +57,7 @@ function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (index: nu
           ))}
         </View>
       )}
-    </View>
+    </Row>
   );
 }
 
