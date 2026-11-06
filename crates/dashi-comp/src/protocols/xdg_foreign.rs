@@ -8,7 +8,7 @@
 //! A handle is a capability: it is 32 random characters, and it stops naming
 //! anything once its exporter destroys it.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, io};
 
 use smithay::{
     reexports::{
@@ -56,22 +56,36 @@ impl ForeignExports {
     }
 }
 
-/// A fresh handle from the kernel's randomness; a short read is retried.
-fn new_handle() -> String {
+/// A fresh handle from the kernel's randomness, or why there is none.
+fn new_handle() -> io::Result<String> {
     let mut bytes = [0u8; HANDLE_LENGTH];
-    let mut filled = 0;
-    while filled < bytes.len() {
-        let rest = &mut bytes[filled..];
-        // SAFETY: `rest` is a valid, writable buffer of `rest.len()` bytes for the whole call.
-        let got = unsafe { libc::getrandom(rest.as_mut_ptr().cast(), rest.len(), 0) };
-        if got > 0 {
-            filled += got as usize;
-        }
-    }
-    bytes
+    fill(&mut bytes, getrandom)?;
+    Ok(bytes
         .iter()
         .map(|byte| ALPHABET[*byte as usize % ALPHABET.len()] as char)
-        .collect()
+        .collect())
+}
+
+/// Fills `bytes` from `read`: a short or interrupted read is retried; any
+/// other failure, or a read of nothing, gives up, so a broken source never
+/// spins the event loop.
+fn fill(bytes: &mut [u8], mut read: impl FnMut(&mut [u8]) -> io::Result<usize>) -> io::Result<()> {
+    let mut filled = 0;
+    while filled < bytes.len() {
+        match read(&mut bytes[filled..]) {
+            Ok(0) => return Err(io::ErrorKind::UnexpectedEof.into()),
+            Ok(got) => filled += got,
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Ok(())
+}
+
+fn getrandom(buffer: &mut [u8]) -> io::Result<usize> {
+    // SAFETY: `buffer` is a valid, writable buffer of `buffer.len()` bytes for the whole call.
+    let got = unsafe { libc::getrandom(buffer.as_mut_ptr().cast(), buffer.len(), 0) };
+    usize::try_from(got).map_err(|_| io::Error::last_os_error())
 }
 
 pub(crate) fn create_globals(dh: &DisplayHandle) {
@@ -104,14 +118,31 @@ impl Dispatch<ZxdgExporterV2, ()> for Dashi {
     fn request(
         state: &mut Self,
         _client: &Client,
-        _resource: &ZxdgExporterV2,
+        resource: &ZxdgExporterV2,
         request: zxdg_exporter_v2::Request,
         _data: &(),
         _dh: &DisplayHandle,
         data_init: &mut DataInit<'_, Self>,
     ) {
         if let zxdg_exporter_v2::Request::ExportToplevel { id, surface } = request {
-            let handle = new_handle();
+            let handle = match new_handle() {
+                Ok(handle) => handle,
+                Err(error) => {
+                    // No handle can be made: the export fails instead of waiting forever.
+                    tracing::warn!(%error, "xdg-foreign: no randomness for a handle");
+                    data_init.init(
+                        id,
+                        ExportedData {
+                            handle: String::new(),
+                        },
+                    );
+                    resource.post_error(
+                        zxdg_exporter_v2::Error::InvalidSurface,
+                        "the compositor could not make a handle",
+                    );
+                    return;
+                }
+            };
             let exported = data_init.init(
                 id,
                 ExportedData {
@@ -278,5 +309,47 @@ fn parent_changed(state: &mut Dashi, child: &WlSurface) {
         .cloned();
     if let Some(toplevel) = toplevel {
         XdgShellHandler::parent_changed(state, toplevel);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_broken_source_gives_up_instead_of_spinning() {
+        let mut bytes = [0u8; 8];
+        let mut calls = 0;
+        let result = fill(&mut bytes, |_| {
+            calls += 1;
+            Err(io::Error::from_raw_os_error(libc::ENOSYS))
+        });
+        assert_eq!(result.unwrap_err().raw_os_error(), Some(libc::ENOSYS));
+        assert_eq!(calls, 1);
+        assert!(fill(&mut bytes, |_| Ok(0)).is_err());
+    }
+
+    #[test]
+    fn short_and_interrupted_reads_are_retried() {
+        let mut bytes = [0u8; 8];
+        let mut calls = 0;
+        fill(&mut bytes, |rest| {
+            calls += 1;
+            if calls == 1 {
+                return Err(io::ErrorKind::Interrupted.into());
+            }
+            rest[0] = 7;
+            Ok(1)
+        })
+        .unwrap();
+        assert_eq!(bytes, [7; 8]);
+        assert_eq!(calls, 9);
+    }
+
+    #[test]
+    fn handles_are_long_and_from_the_alphabet() {
+        let handle = new_handle().unwrap();
+        assert_eq!(handle.len(), HANDLE_LENGTH);
+        assert!(handle.bytes().all(|b| ALPHABET.contains(&b)));
     }
 }
