@@ -22,6 +22,7 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "language-region": ["language", "locale", "region", "formats", "first day of week"],
   "lock-screen": ["lock", "screen saver", "display off", "sleep"],
   notifications: ["do not disturb", "banners", "alerts"],
+  passwords: ["vault", "passkeys", "api keys", "tokens", "1password"],
   agents: ["ai", "mcp", "permissions", "privacy"],
   about: ["version", "system information", "hardware"],
   network: ["wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],

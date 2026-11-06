@@ -170,6 +170,35 @@ pub enum Request {
         card: u64,
     },
 
+    // API tokens (docs/secrets.md, "Tokens that stay home"), for the shell's
+    // token proxy and Settings › Passwords.
+    /// The token items, without their tokens.
+    Tokens {},
+    SaveToken {
+        name: String,
+        hosts: Vec<String>,
+        #[serde(default)]
+        header: Option<String>,
+        token: Secret,
+    },
+    UpdateToken {
+        id: u64,
+        #[serde(default)]
+        hosts: Option<Vec<String>>,
+        #[serde(default)]
+        header: Option<String>,
+        #[serde(default)]
+        token: Option<Secret>,
+    },
+    DeleteToken {
+        id: u64,
+    },
+    /// Token `name`, for a request to `host`: refused unless `host` is one of its hosts.
+    Token {
+        name: String,
+        host: String,
+    },
+
     // Questions to the person (passkeys, payments), for the shell.
     /// This connection stays open and hears `{"event": "approve", id, kind, …}`.
     WatchApprovals {},

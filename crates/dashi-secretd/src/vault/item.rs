@@ -1,7 +1,7 @@
 //! What the vault holds, inside its sealed body: Secret Service collections
 //! and items (apps' secrets), logins (a site, an account, a password, maybe a
-//! TOTP secret), and the portal's per-app secrets. Secrets are `Secret`, so
-//! none of this prints one.
+//! TOTP secret), the portal's per-app secrets, cards, and API tokens. Secrets
+//! are `Secret`, so none of this prints one.
 
 use std::collections::BTreeMap;
 
@@ -29,6 +29,9 @@ pub struct Data {
     /// What agents may spend, and what they spent.
     #[serde(default)]
     pub spending: Spending,
+    /// API tokens, swapped in by the shell's proxy for their hosts only.
+    #[serde(default)]
+    pub tokens: Vec<super::token::Token>,
     /// What was imported already ("gnome-keyring:login"), so it happens once.
     #[serde(default)]
     pub imported: Vec<String>,

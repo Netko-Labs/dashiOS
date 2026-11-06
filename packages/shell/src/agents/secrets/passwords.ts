@@ -4,6 +4,7 @@
  * shared by the agents' broker and Settings › Passwords.
  */
 
+import { type TokenRef, token } from "../tokens/model-keys.ts";
 import { dashiSource } from "./dashi-source.ts";
 import { onePasswordSource, opRunner, saveToOnePassword } from "./onepassword.ts";
 import { PasswordPrefsStore } from "./preferences.ts";
@@ -20,6 +21,12 @@ export interface Passwords {
   onePasswordReady(): boolean;
   /** Save a new login where Settings says (Dashi or 1Password). */
   save(login: NewLogin): Promise<void>;
+  /**
+   * Token `name` in the vault, as the placeholder and environment an agent
+   * started through dashi-agent holds (a model key: `ANTHROPIC_API_KEY=dashi:anthropic`);
+   * never the token. Null when it isn't there or the vault doesn't answer.
+   */
+  token(name: string): Promise<TokenRef | null>;
 }
 
 /** `op`, 1Password's CLI, where it is installed. */
@@ -38,6 +45,7 @@ export function startPasswords(): Passwords {
     prefs,
     sources: () => prefs.enabled().flatMap((id) => all[id] ?? []),
     onePasswordReady: () => run !== null,
+    token: (name) => token(name, vault.tokens),
     async save(login) {
       if (prefs.getSnapshot().saveTo === "1password") {
         if (!run) throw new Error("1Password's CLI (op) isn't installed.");
