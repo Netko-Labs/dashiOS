@@ -23,7 +23,7 @@ import {
   signedIn,
   turnPrompt,
 } from "../src/agents/ask/harness/index.ts";
-import { planTools, stepsFrom } from "../src/agents/ask/plan.ts";
+import { planTools, spokenWords, stepsFrom } from "../src/agents/ask/plan.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 import { agentHandlers } from "../src/launcher/agents/handlers.ts";
 import { failureLine } from "../src/launcher/agents/plan-view.tsx";
@@ -386,6 +386,8 @@ describe("a harness answering, end to end with a fake CLI", () => {
       // The bad call was answered with why, and the harness heard each step's number.
       expect(first.reply.text).toContain(`${TOOLS.length} tools | error: Not planned`);
       expect(first.reply.text).toContain("ok: Planned as step 2; nothing runs until the person presses Return.");
+      // None of that chatter shows under the plan (the 0.4 VM run showed it whole).
+      expect(spokenWords(first.reply.text)).toBe("");
       const steps = stepsFrom(first.reply.calls, TOOL_ACTIONS);
       expect(steps.map((step) => [step.title, step.state.kind])).toEqual([
         ["Turn Dark Mode on", "ready"],

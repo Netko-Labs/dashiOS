@@ -440,8 +440,13 @@ export function Launcher(props: LauncherProps) {
     else say(outcome);
   };
 
-  /** Show a task's plan; the field takes a follow-up. */
+  /**
+   * Show a task's plan; the field takes a follow-up. The words asked are the plan's now (its chip; ⇥ edits
+   * them): the search is left empty, so going back to it never puts them in the field again, where they
+   * took the place of what was typed next ("history" right after a plan ran).
+   */
   const openTask = (id: string) => {
+    restart("");
     setMode({ kind: "task", id });
     setFilter("");
     setHeldVerb(null);
@@ -698,6 +703,8 @@ export function Launcher(props: LauncherProps) {
   useEffect(() => keys?.subscribeCommands?.((cmd) => commands.current(cmd)), [keys]);
   // Recording ends with the launcher, however it closes.
   useEffect(() => () => keys?.record?.(false), [keys]);
+  // A failed ask leaves Now once the launcher closes (it was seen); its history line stays.
+  useEffect(() => () => props.agents?.closed?.(), [props.agents]);
 
   const onChangeText = (next: string) => {
     if (mode.kind !== "search") {
@@ -899,7 +906,7 @@ export function Launcher(props: LauncherProps) {
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
             : (taskField?.chip ?? scope?.chip ?? ext.chip);
-  const placeholder =
+  const placeholder: string | readonly string[] =
     mode.kind === "search"
       ? (scope?.placeholder ?? ext.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
       : taskField
@@ -957,7 +964,7 @@ export function Launcher(props: LauncherProps) {
           {...(chip ? { chip } : {})}
           hints={hints}
           notice={notice}
-          {...(access ? { access: { ...fieldAccess(placeholder, list !== null) } } : {})}
+          {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
           onChangeText={onChangeText}
           onSubmit={() => submit()}
           onKey={onKey}

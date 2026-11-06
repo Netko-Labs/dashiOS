@@ -235,6 +235,7 @@ export function startAsk(options: AskOptions): Ask {
     setUp: options.openSettings,
     signIn: () => (options.openTerminal ?? options.openSettings)(),
     history: readHistory,
+    closed: () => tasks.letFailedGo(),
   };
 
   const status: AnswerStatus = {

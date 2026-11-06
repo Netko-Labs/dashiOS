@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { commandActions } from "../src/actions/sources/commands.ts";
 import type { Entry } from "../src/entries.ts";
 import { calculate } from "../src/entries.ts";
 import { FileSearch, RETRY_MS } from "../src/file-search.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { AppIndex, nearestExisting } from "../src/launcher/app-index.ts";
 import { failureNotice, LaunchFailures, RETRY } from "../src/launcher/failures.ts";
+import { launcherIndex } from "../src/launcher/items.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
 import { buildSections, type FileRow, filesStateFor, found, type ListInput, placeholderFor, selectable } from "../src/launcher/rows.ts";
 import { keepInView, moveSelection, resolveSelection } from "../src/launcher/selection.ts";
@@ -160,6 +162,27 @@ describe("did you mean", () => {
     expect(suggestion("hiden")).toBeNull();
     // A typo is never a result of its own.
     expect(found(list({ query: "fierfox", entries }), 5).items).toEqual([]);
+  });
+
+  test("only a single word that looks like a misspelt name: never a sentence on its way, nor a keyword one letter off", () => {
+    const index = launcherIndex({
+      entries: [app("Firefox", { keywords: ["browser"] })],
+      actions: commandActions(async () => {}, KEYMAP),
+    });
+    const suggested = (query: string) => {
+      const item = found(list({ query, index }), 5).suggestion;
+      return item?.entry?.name ?? item?.action?.title ?? null;
+    };
+    // The VM run: "turn on" (Shut Down's "turn off", one letter off) asked "Did you mean Shut Down…?".
+    expect(suggested("turn on")).toBeNull();
+    expect(suggested("turn on the wifi")).toBeNull();
+    expect(suggested("brwoser")).toBeNull();
+    expect(suggested("fierfox")).toBe("Firefox");
+    expect(suggested("restrat")).toBe("Restart…");
+    const titles = buildSections(list({ query: "turn on", index, entries: [app("Files", { id: "dev.dashi.files" })] }))
+      .flatMap((section) => section.rows)
+      .map((row) => row.title);
+    expect(titles.some((title) => title.startsWith("Did you mean"))).toBe(false);
   });
 });
 

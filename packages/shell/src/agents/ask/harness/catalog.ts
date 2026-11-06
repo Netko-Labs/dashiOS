@@ -306,7 +306,8 @@ const opencode: HarnessSpec = {
         error = str(data?.message) ?? str(inner?.message) ?? str(inner?.name) ?? "OpenCode stopped.";
       }
     }
-    return { session, text: error ? "" : text.join("\n").trim(), error };
+    // Each text part its own paragraph: what is shown is the last, its final words (plan.ts `spokenWords`).
+    return { session, text: error ? "" : text.join("\n\n").trim(), error };
   },
   signedOut: (error) => SIGNED_OUT.test(error),
 };

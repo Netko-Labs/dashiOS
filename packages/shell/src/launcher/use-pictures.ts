@@ -1,14 +1,16 @@
 /**
  * The launcher's live window pictures as state (pictures.ts says the rules):
  * which row they open under and which window is picked, what ← and → are
- * for, and the rects sent to the compositor once the frames are laid out,
- * again only when they change, and none once they fold or the launcher goes.
+ * for, and the rects sent to the compositor once the frames are laid out and
+ * hold still (picture-sender.ts), again only when they change, and none once
+ * they fold or the launcher goes.
  */
 
 import { useEffect, useRef, useState } from "react";
 import type { LauncherWindow } from "./items.ts";
+import { PictureSender } from "./picture-sender.ts";
 import type { ArrowsWanted, PictureRect, Pictures } from "./pictures.ts";
-import { arrowsWanted, firstShown, openPictures, picturesToSend, rowWindows, STRIP, sameRects, stepPictures } from "./pictures.ts";
+import { arrowsWanted, firstShown, openPictures, picturesToSend, rowWindows, STRIP, stepPictures } from "./pictures.ts";
 import type { Row } from "./row-model.ts";
 
 type Bounds = { x: number; y: number; width: number; height: number };
@@ -46,9 +48,10 @@ export function usePictures({ selectedRow, windows, searching, arrows, onPicture
   const [pictures, setPictures] = useState<Pictures | null>(null);
   const offset = useRef(0);
   const frames = useRef(new Map<number, Bounds>());
-  const sent = useRef<PictureRect[] | null>(null);
   const tell = useRef(onPictures);
   tell.current = onPictures;
+  const sender = useRef<PictureSender | null>(null);
+  sender.current ??= new PictureSender((rects) => tell.current?.(rects));
 
   const rowWins = searching ? rowWindows(selectedRow, windows) : [];
   const open = searching ? openPictures(pictures, selectedRow?.id ?? null, rowWins.length) : null;
@@ -62,24 +65,16 @@ export function usePictures({ selectedRow, windows, searching, arrows, onPicture
   useEffect(
     () => () => {
       arrows?.("none");
-      if (sent.current && sent.current.length > 0) tell.current?.([]);
-      sent.current = null;
+      sender.current?.stop();
     },
     [arrows],
   );
 
+  // Sent once the frames hold still (picture-sender.ts): a picture never shows where its frame was a moment ago.
   const send = () => {
     const ids = shown.map((window) => window.id);
-    if (ids.length === 0) {
-      frames.current.clear();
-      if (sent.current && sent.current.length > 0) tell.current?.([]);
-      sent.current = [];
-      return;
-    }
-    const rects = picturesToSend(ids, frames.current);
-    if (!rects || sameRects(sent.current, rects)) return;
-    sent.current = rects;
-    tell.current?.(rects);
+    if (ids.length === 0) frames.current.clear();
+    sender.current?.update(ids.length === 0 ? [] : picturesToSend(ids, frames.current));
   };
   const shownKey = shown.map((window) => window.id).join(",");
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs when the windows shown change; `send` reads them

@@ -92,6 +92,35 @@ export function oneLine(text: string, max = 60): string {
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }
 
+/**
+ * Its tools talking, not the answerer to the person: the plan's own answers
+ * echoed back ("Planned as step 1…", "Not planned: …"), a tool count, a log
+ * line's "ok:"/"error:".
+ */
+const CHATTER: readonly RegExp[] = [
+  /\bPlanned as step \d+\b/i,
+  /\bNot planned:/i,
+  /\bDashi has no tool called\b/i,
+  /\bnothing more can be added\b/i,
+  /\b\d+ tools\b/i,
+  /(?:^|[|\n])\s*(?:ok|error):/i,
+];
+
+/**
+ * What an answerer says to the person under its plan: its last paragraph
+ * (its final words, after any tool calls), on one line; nothing when that
+ * is its tools' chatter, never "29 tools | ok: Planned as step 1…".
+ */
+export function spokenWords(text: string, max = 140): string {
+  const last =
+    text
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean)
+      .at(-1) ?? "";
+  return CHATTER.some((pattern) => pattern.test(last)) ? "" : oneLine(last, max);
+}
+
 const quoted = (value: unknown): string => `“${oneLine(String(value), 40)}”`;
 const onOff = (value: unknown): string => (value === true ? "on" : "off");
 

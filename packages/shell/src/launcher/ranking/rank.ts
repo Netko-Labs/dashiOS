@@ -73,6 +73,18 @@ const DEMOTE = (TIER.exact + 1) * BAND;
 const YIELD = 30;
 const PANE_YIELD = 50;
 const NO_PICKS: ReadonlyMap<string, number> = new Map();
+/** The highest tier. */
+const TIERS = TIER.exact;
+/**
+ * Kinds that never rank above an app matching as well or better, whatever
+ * was picked or opened: "s" is an app before Snippets or Sleep, "save" Text
+ * Editor's own name before its File › Save. History still orders them among
+ * themselves and lifts them past an app that matches worse.
+ */
+const YIELDS_TO_APPS: ReadonlySet<RankItem["kind"]> = new Set(["command", "menu"]);
+
+/** `value`, kept under `ceiling` (Infinity: no app to stay under) and still ordered by itself. */
+const under = (value: number, ceiling: number): number => (value < ceiling ? value : ceiling - 1 + value / 1e6);
 
 /** Prepare `items` for ranking: their words folded, the intents attached. */
 export function buildIndex<T extends RankItem>(items: readonly T[], intents: Intents = INTENTS): RankIndex<T> {
@@ -227,23 +239,37 @@ export function rank<T extends RankItem>(index: RankIndex<T>, query: string, opt
   const limit = options.limit ?? Number.POSITIVE_INFINITY;
   const strong: Ranked<T>[] = [];
   const weak: Ranked<T>[] = [];
-  for (const entry of index.prepared) {
-    let hit: Hit | null = null;
-    let list = strong;
-    const missing = bitCount(q.mask & ~entry.mask);
-    if ((q.long || (q.first & entry.startMask) !== 0) && missing <= tolerance) {
-      hit = bestHit(entry, q, missing);
-      if (!hit && missing === 0) {
-        for (const keyword of entry.fallback) if (fits(q, keyword)) hit = better(hit, matchKeyword(text, keyword));
-        list = weak;
+  // The lowest app score in each tier, of the strong matches and the weak: what a command or a menu row stays under.
+  const appFloors = { strong: new Float64Array(TIERS + 2).fill(Number.POSITIVE_INFINITY), weak: new Float64Array(TIERS + 2).fill(Number.POSITIVE_INFINITY) };
+  // Apps first, so a command's or a menu row's ceiling is known when it is scored.
+  for (const apps of [true, false]) {
+    if (!apps) {
+      for (const floors of [appFloors.strong, appFloors.weak])
+        for (let tier = TIERS; tier >= 0; tier--) floors[tier] = Math.min(floors[tier] as number, floors[tier + 1] as number);
+    }
+    for (const entry of index.prepared) {
+      if ((entry.item.kind === "app") !== apps) continue;
+      let hit: Hit | null = null;
+      let isStrong = true;
+      const missing = bitCount(q.mask & ~entry.mask);
+      if ((q.long || (q.first & entry.startMask) !== 0) && missing <= tolerance) {
+        hit = bestHit(entry, q, missing);
+        if (!hit && missing === 0) {
+          for (const keyword of entry.fallback) if (fits(q, keyword)) hit = better(hit, matchKeyword(text, keyword));
+          isStrong = false;
+        }
       }
+      if (!hit && words && entry.qualifiers.length > 0) {
+        hit = qualifiedHit(entry, words);
+        isStrong = true;
+      }
+      if (!hit) continue;
+      const floors = isStrong ? appFloors.strong : appFloors.weak;
+      let value = score(entry, hit, picks, signals);
+      if (apps) floors[TIER[hit.kind]] = Math.min(floors[TIER[hit.kind]] as number, value);
+      else if (YIELDS_TO_APPS.has(entry.item.kind)) value = under(value, floors[TIER[hit.kind]] as number);
+      keep(isStrong ? strong : weak, { item: entry.item, match: hit.kind, score: value, sortName: entry.sortName }, limit);
     }
-    if (!hit && words && entry.qualifiers.length > 0) {
-      hit = qualifiedHit(entry, words);
-      list = strong;
-    }
-    if (!hit) continue;
-    keep(list, { item: entry.item, match: hit.kind, score: score(entry, hit, picks, signals), sortName: entry.sortName }, limit);
   }
   const results = strong.length > 0 ? strong : weak;
   if (limit === Number.POSITIVE_INFINITY) results.sort(order);

@@ -216,3 +216,31 @@ test("view: ⇥ asks, the plan shows its steps under the spark, and Return runs 
   await launcher.key("Escape");
   expect(launcher.has("launcher:section:plan")).toBe(false);
 });
+
+test("view: after a plan ran, the field takes the next words alone; the plan's never come back into it", async () => {
+  const agents = fakeAgents(snap());
+  const keys = new LauncherKeys();
+  const launcher = await mount({ entries: [app("Terminal")], agents, keys }, [ASK_ROW]);
+  const value = (): string | undefined => /"value":"([^"]*)"/.exec(launcher.tree())?.[1];
+  await launcher.type("dark mode and hide the dock");
+  keys.binding("launcher-tab");
+  await new Promise((done) => setTimeout(done, 10));
+  agents.set(snap({ tasks: [{ ...planned(), phase: "done" }] }));
+  await new Promise((done) => setTimeout(done, 10));
+  // On the plan the words are its chip; the field is empty for a follow-up.
+  expect(value()).toBe("");
+  await launcher.key("Escape");
+  // Back to searching: an empty field, not the plan's words for "history" to be typed after.
+  expect(value()).toBe("");
+  await launcher.type("history");
+  expect(value()).toBe("history");
+  // ⇥ on a plan still edits its words.
+  agents.set(snap({ tasks: [planned()] }));
+  await launcher.type("");
+  await launcher.type("dark mode and hide the dock");
+  keys.binding("launcher-tab");
+  await new Promise((done) => setTimeout(done, 10));
+  keys.binding("launcher-tab");
+  await new Promise((done) => setTimeout(done, 10));
+  expect(value()).toBe("dark mode and hide the dock");
+});

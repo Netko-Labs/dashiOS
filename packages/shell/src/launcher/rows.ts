@@ -204,9 +204,16 @@ export function found(input: ListInput, limit: number): { items: LauncherItem[];
   const target = input.aliases?.get(fold(query));
   const aliased = target ? index.prepared.find((each) => each.item.address === target)?.item : undefined;
   const items = aliased ? [aliased, ...strong.filter((item) => item !== aliased)] : strong;
-  const suggestion = items.length === 0 ? (results.find((result) => TYPOS.has(result.match))?.item ?? null) : null;
+  const suggestion = items.length === 0 && looksMisspelt(query) ? (results.find((result) => result.match === "typo")?.item ?? null) : null;
   return { items: items.slice(0, limit), suggestion };
 }
+
+/**
+ * Whether "Did you mean …?" may be asked: a single word, a name misspelt
+ * ("fierfox"). Never a sentence on its way ("turn on" is not "turn off",
+ * Shut Down's words), nor a keyword one letter off.
+ */
+export const looksMisspelt = (query: string): boolean => !/\s/.test(query.trim());
 
 /** The sections' heads and order once two kinds show. */
 const GROUPS: ReadonlyArray<[RowGroup, string]> = [

@@ -237,9 +237,9 @@ export function useExtensions(input: ExtensionsInput, measures: ViewMeasures): E
       }
       const top: Section[] = result && result.query === query ? [{ id: "result", rows: [resultRow(result.text, result.from, result.icon)] }] : [];
       const slow = searching && text.length >= PROVIDER_MIN_QUERY ? slowSections(found && found.query === text ? found : null) : [];
-      // Results from a provider are something found: "Nothing called …" would be wrong above them.
-      const rest = slow.length > 0 ? base.filter((section) => section.id !== "nothing") : base;
-      return [...top, ...rest, ...slow];
+      // A provider's results land below everything already drawn, "Nothing called …" and its rows included:
+      // what is on top (and selected) never moves when they arrive.
+      return [...top, ...base, ...slow];
     },
     ...(scope
       ? {
