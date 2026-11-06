@@ -341,7 +341,7 @@ export class NotesModel {
     }
     this.onDisk = fingerprint(copy);
     this.refresh();
-    this.set({ selected: copy.id, draft: { title: copy.title, body: draft.body }, error: null, notice: conflictNotice(current.title, copy.title) });
+    this.set({ selected: copy.id, draft: { title: copy.title, body: draft.body }, error: null, notice: conflictNotice(copy.title) });
   }
 
   /** The open row is in Recently Deleted (its ids are file names there, not note ids). */

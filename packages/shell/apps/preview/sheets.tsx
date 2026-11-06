@@ -1,8 +1,7 @@
 /** Preview's sheets: file info, the Open With list, and a plain message. */
 
 import { Button, Sheet, useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
-import { DOCUMENT } from "./glyphs.ts";
+import { Image, Text, View } from "@mirinjs/metal";
 import type { Handler } from "./handlers.ts";
 import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
 
@@ -91,7 +90,7 @@ export function OpenWithSheet({
                 hoverBackgroundColor: colors.button,
               }}
             >
-              <Svg markup={DOCUMENT} size={15} color={colors.textMuted} />
+              <Image source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
                   {handler.name}

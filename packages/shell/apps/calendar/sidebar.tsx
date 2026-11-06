@@ -5,7 +5,7 @@
  * lit), so hiding one takes aiming.
  */
 
-import { SidebarSection, useColors } from "@dashi/ui";
+import { rowLook, SelectionBar, SidebarSection, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { CHECK, ELLIPSIS, IMPORT, PLUS } from "./glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
@@ -52,10 +52,11 @@ function CalendarRow({
         alignItems: "center",
         paddingHorizontal: 8,
         borderRadius: 7,
-        backgroundColor: chosen ? colors.button : "#00000000",
-        hoverBackgroundColor: colors.button,
+        backgroundColor: rowLook(colors, chosen).ground,
+        hoverBackgroundColor: rowLook(colors, chosen).hover,
       }}
     >
+      {chosen && <SelectionBar rowHeight={28} />}
       <View
         testID={`calendar-check:${calendar.id}`}
         onPress={onToggle}
@@ -77,7 +78,7 @@ function CalendarRow({
         </View>
       </View>
       <View testID={`calendar-name:${calendar.id}`} onPress={onChoose} style={{ flex: 1, minWidth: 0, height: 28, justifyContent: "center", paddingLeft: 8 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: visible ? colors.text : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: chosen ? colors.onSelection : visible ? colors.text : colors.textMuted }}>
           {calendar.name}
         </Text>
       </View>
@@ -86,7 +87,7 @@ function CalendarRow({
         onPress={(event) => onMenu(event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0))}
         style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.separator }}
       >
-        <Svg markup={ELLIPSIS} size={14} color={colors.textMuted} />
+        <Svg markup={ELLIPSIS} size={14} color={rowLook(colors, chosen).glyph} />
       </View>
     </View>
   );

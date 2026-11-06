@@ -1,6 +1,6 @@
 /** The note list: a column of rows, pinned first, with a date and the first line under each title. */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { FOLDER, PIN_FILLED } from "./glyphs.ts";
 import type { Row } from "./list.ts";
@@ -46,8 +46,8 @@ function NoteRow({
   now: number;
 }) {
   const colors = useColors();
-  const ink = chosen ? "#ffffff" : colors.text;
-  const quiet = chosen ? "#ffffffcc" : colors.textMuted;
+  const look = rowLook(colors, chosen);
+  const { ink, quiet } = look;
   const when = row.deleted ? `${daysLeft(row.deletedAt, now, KEEP_DAYS)} days left` : listDate(row.modified, now);
   return (
     <View
@@ -62,10 +62,11 @@ function NoteRow({
         paddingVertical: 7,
         gap: 2,
         borderRadius: 8,
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
+      {chosen && <SelectionBar />}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: ink }}>

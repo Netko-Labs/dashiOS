@@ -32,7 +32,8 @@ export interface Palette {
    */
   selection: string;
   /**
-   * A selected row in a list that holds text (the launcher): a 14% kombu wash
+   * A selected row in a list, a table or a sidebar (the launcher, every app:
+   * selection.tsx, CO-9): a 14% kombu wash
    * behind ink, with a 3 px `selectionBar` at the row's left edge. Ink on it
    * passes CO-6 in both modes, over any wallpaper.
    */

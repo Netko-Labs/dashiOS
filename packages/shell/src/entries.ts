@@ -189,6 +189,20 @@ export function cachedIcon(name: string, roots: string[] = iconRoots(), resolve:
   return path;
 }
 
+/**
+ * The icon an app wears in the Dock and the launcher, for a list that names
+ * apps by desktop entry (Open With): a pinned app's own (Helium is the
+ * Browser), else its entry's `Icon` from the theme. `id` has no ".desktop".
+ */
+export function entryIcon(
+  id: string,
+  iconName: string,
+  pinned: readonly Pick<App, "id" | "icon">[] = resolvePinned(),
+  resolve: (name: string) => string = cachedIcon,
+): string {
+  return pinned.find((app) => app.id === id)?.icon ?? resolve(iconName);
+}
+
 /** File icons by the names asked for: a launcher keystroke never probes the theme twice for one kind of file. */
 const fileIcons = new Map<string, string>();
 

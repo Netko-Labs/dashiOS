@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { resolvePinned } from "../../src/apps.ts";
 import { dataDirs, desktopFields, resolveIcon } from "../../src/entries.ts";
 
 export interface AppInfo {
@@ -41,7 +42,8 @@ export function appInfo(appId: string, read: (id: string) => string | null = des
   const info: AppInfo = {
     id: appId,
     name: fields?.get("Name") || appId.split(".").pop() || "An app",
-    icon: iconName ? resolveIcon(iconName) : null,
+    // As the Dock draws it: a pinned app wears Dashi's own icon (Helium is the Browser).
+    icon: resolvePinned().find((app) => app.id === appId)?.icon ?? (iconName ? resolveIcon(iconName) : null),
   };
   if (!appId) info.name = "An app";
   cache.set(appId, info);

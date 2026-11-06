@@ -7,7 +7,7 @@
  * Clipboard history and snippets are here too (clipboard-parts.tsx).
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../../input-method.ts";
@@ -23,7 +23,7 @@ import { KeyboardLightSection } from "./laptop-parts.tsx";
 const LIST_HEIGHT = 196;
 
 function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress: () => void }) {
-  const colors = useColors();
+  const look = rowLook(useColors(), chosen);
   return (
     <View
       testID={testID}
@@ -35,11 +35,12 @@ function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: bo
         alignItems: "center",
         paddingHorizontal: 8,
         borderRadius: 6,
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
+      {chosen && <SelectionBar rowHeight={28} />}
+      <Text numberOfLines={1} style={{ fontSize: 12, color: look.ink }}>
         {label}
       </Text>
     </View>

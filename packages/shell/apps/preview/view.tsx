@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { chooseFile } from "../../src/portal/file-chooser.ts";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { Canvas } from "./canvas.tsx";
+import { DETAIL_SIZE, detailChoices, fitDetail } from "./detail.ts";
 import type { Size } from "./dimensions.ts";
 import { useDropArea } from "./drop.ts";
 import * as glyphs from "./glyphs.ts";
@@ -208,17 +209,17 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   ];
 
   // The picture's size and place in its folder: a quiet line in the toolbar row, not a second line under the title.
-  const detail = useMemo(() => {
-    if (!snap.path) return undefined;
-    if (pdf) return `${pdf.pages} ${pdf.pages === 1 ? "page" : "pages"}${pdf.title ? ` · ${pdf.title}` : ""}`;
-    const parts: string[] = [];
-    if (snap.natural) {
-      const size = turned(snap.natural, snap.turns);
-      parts.push(`${size.width} × ${size.height}`);
-    }
-    if (snap.folder.index >= 0 && snap.folder.count > 1) parts.push(`${snap.folder.index + 1} of ${snap.folder.count}`);
-    return parts.join(" · ") || undefined;
+  // A narrow window drops the folder place before it would cut the size (detail.ts).
+  const detailChoicesNow = useMemo(() => {
+    if (!snap.path) return [];
+    return detailChoices({
+      size: snap.natural ? turned(snap.natural, snap.turns) : null,
+      folder: { index: snap.folder.index, count: snap.folder.count },
+      pdf: pdf ? { pages: pdf.pages, title: pdf.title ?? null } : null,
+    });
   }, [snap.path, snap.natural, snap.turns, snap.folder.index, snap.folder.count, pdf]);
+  const [detailRoom, setDetailRoom] = useState(0);
+  const detail = fitDetail(detailChoicesNow, detailRoom);
 
   const facts = snap.path ? factsFor(snap.path, snap.format) : null;
   const extraRows: InfoRow[] = pdf
@@ -312,11 +313,19 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       title={snap.name || "Preview"}
       toolbar={
         <>
-          {detail !== undefined && (
-            <View style={{ flexShrink: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-                {detail}
-              </Text>
+          {detailChoicesNow.length > 0 && (
+            // The room left in the row (from a zero basis it takes nearly all the free space: `flex: 100` beside the
+            // window's own spacer), measured, and the words that fit it whole: never "320 × 18…".
+            <View
+              testID="detail"
+              onLayout={(bounds) => setDetailRoom(bounds.width)}
+              style={{ flex: 100, minWidth: 0, flexDirection: "row", justifyContent: "flex-end" }}
+            >
+              {detail !== null && (
+                <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
+                  {detail}
+                </Text>
+              )}
             </View>
           )}
           {toolbar}

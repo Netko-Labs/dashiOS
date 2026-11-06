@@ -99,7 +99,8 @@ export async function composeEmail(draft: Draft, run: Exec = exec, launch: (comm
   const id = handler.ok ? parseGioDefault(handler.stdout) : null;
   const thunderbird = Bun.which("thunderbird");
   if (id && /thunderbird/i.test(id) && thunderbird) return launch([thunderbird, "-compose", thunderbirdCompose(draft)]);
-  return (await run(["gio", "open", mailtoUri(draft)])).ok;
+  // The mail app inherits gio's pipes and runs on: gio is done when it exits.
+  return (await run(["gio", "open", mailtoUri(draft)], { untilExit: true, timeoutMs: 10_000 })).ok;
 }
 
 export function emailInterface(requests: Requests, compose: (draft: Draft) => Promise<boolean> = composeEmail): InterfaceSpec {

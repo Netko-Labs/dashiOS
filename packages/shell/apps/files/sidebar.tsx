@@ -1,6 +1,6 @@
 /** The sidebar: Favorites, Locations (the computer and its drives, with eject), and the Trash. */
 
-import { SidebarSection, useColors } from "@dashi/ui";
+import { rowLook, SelectionBar, SidebarSection, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
 import { useDropTarget } from "./drop.ts";
@@ -29,7 +29,7 @@ function Row({
 }) {
   const colors = useColors();
   const drop = useDropTarget(dropInto);
-  const ink = current ? "#ffffff" : colors.text;
+  const look = rowLook(colors, current);
   return (
     <View
       testID={`place:${id}`}
@@ -44,14 +44,16 @@ function Row({
         paddingLeft: 8,
         paddingRight: 4,
         borderRadius: 7,
-        backgroundColor: current ? colors.selection : "#00000000",
-        hoverBackgroundColor: current ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
         ...(drop.over ? { borderWidth: 2, borderColor: colors.selection } : {}),
       }}
     >
-      <Svg markup={sidebarGlyph(glyph)} size={16} color={current ? "#ffffff" : colors.selection} />
+      {current && <SelectionBar rowHeight={30} />}
+      {/* Kombu marks the selected row only; a glyph is muted at rest and ink on the wash (CO-2). */}
+      <Svg markup={sidebarGlyph(glyph)} size={16} color={look.glyph} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: current ? "semibold" : "normal", color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: current ? "semibold" : "normal", color: look.ink }}>
           {name}
         </Text>
       </View>
@@ -65,10 +67,10 @@ function Row({
             borderRadius: 5,
             alignItems: "center",
             justifyContent: "center",
-            hoverBackgroundColor: current ? "#ffffff33" : colors.button,
+            hoverBackgroundColor: colors.button,
           }}
         >
-          <Svg markup={action.glyph} size={13} color={current ? "#ffffff" : colors.textMuted} />
+          <Svg markup={action.glyph} size={13} color={look.glyph} />
         </View>
       )}
     </View>

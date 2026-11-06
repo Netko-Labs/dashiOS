@@ -15,7 +15,9 @@ import {
   type MenuItem,
   Note,
   PopupMenu,
+  rowLook,
   SearchField,
+  SelectionBar,
   SidebarItem,
   SidebarSection,
   TextField,
@@ -44,7 +46,7 @@ const formatDate = (ms: number): string => {
 /** A row; `onPress` gets where the button went down, so a double-click can be told from two slow clicks. */
 function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPress: (x: number, y: number) => void }) {
   const colors = useColors();
-  const ink = selected ? "#ffffff" : colors.text;
+  const look = rowLook(colors, selected);
   return (
     <View
       testID={`chooser:row:${row.name}`}
@@ -57,25 +59,27 @@ function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPr
         gap: 8,
         paddingHorizontal: 8,
         borderRadius: 6,
-        backgroundColor: selected ? colors.selection : "#00000000",
-        hoverBackgroundColor: selected ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
-      <Svg markup={row.folder ? FOLDER : FILE} size={16} color={selected ? "#ffffff" : colors.selection} />
+      {selected && <SelectionBar rowHeight={30} />}
+      {/* Kombu marks the selected row only: a glyph is muted at rest (CO-2). */}
+      <Svg markup={row.folder ? FOLDER : FILE} size={16} color={look.glyph} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
           {row.name}
         </Text>
       </View>
       {row.where !== undefined && (
         <View style={{ maxWidth: 200, flexShrink: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? "#ffffffcc" : colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: look.quiet }}>
             {row.where}
           </Text>
         </View>
       )}
       <View style={{ width: 70, flexShrink: 0 }}>
-        <Text style={{ fontSize: 12, color: selected ? "#ffffffcc" : colors.textMuted, textAlign: "right" }}>{formatDate(row.mtime)}</Text>
+        <Text style={{ fontSize: 12, color: look.quiet, textAlign: "right" }}>{formatDate(row.mtime)}</Text>
       </View>
     </View>
   );

@@ -1,13 +1,15 @@
 /**
  * A table in the Mac's style: a header of column titles that sort on a
  * click (an arrow on the sorted one), rows on alternating grounds, and the
- * selected row on the accent. Long tables scroll; Metal lays out only the
+ * selected rows in the one selection look (selection.tsx: the kombu wash,
+ * its 3 px bar, ink). Long tables scroll; Metal lays out only the
  * rows near the viewport (a scroll column of many children is virtualized).
  */
 
 import { type DragFiles, type DropInfo, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
+import { SelectionBar } from "./selection.tsx";
 import { nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
 import { useColors, useSurface } from "./theme/index.ts";
 
@@ -16,7 +18,7 @@ export interface Column<T> extends SortableColumn<T> {
   /** Pixels; columns without one share what is left. */
   width?: number;
   align?: "left" | "right";
-  /** Draws the cell instead of its text (an icon beside the name). */
+  /** Draws the cell instead of its text (an icon beside the name); on a selected row its words are `onSelection` ink. */
   cell?: (row: T, selected: boolean) => ReactNode;
 }
 
@@ -115,7 +117,7 @@ export function Table<T, K extends string | number>({
           {rows.map((row, index) => {
             const key = rowKey(row);
             const chosen = selectedKeys ? selectedKeys.has(key) : key === selected;
-            const ink = chosen ? "#ffffff" : muted?.(row) ? colors.textMuted : colors.text;
+            const ink = chosen ? colors.onSelection : muted?.(row) ? colors.textMuted : colors.text;
             const drags = dragFiles?.(row);
             const drop = onDropRow?.(row) ?? null;
             return (
@@ -139,10 +141,11 @@ export function Table<T, K extends string | number>({
                   flexShrink: 0,
                   flexDirection: "row",
                   borderRadius: 5,
-                  backgroundColor: chosen ? colors.selection : index % 2 === 1 ? surface.stripe : "#00000000",
+                  backgroundColor: chosen ? colors.selectionWash : index % 2 === 1 ? surface.stripe : "#00000000",
                   ...(dropOver === key ? { borderWidth: 2, borderColor: colors.selection } : {}),
                 }}
               >
+                {chosen && <SelectionBar rowHeight={rowHeight} />}
                 {columns.map((column) => (
                   <View key={column.key} style={cellBox(column.width, column.align)}>
                     {column.cell ? (
