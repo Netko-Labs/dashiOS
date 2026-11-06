@@ -1247,6 +1247,11 @@ async function appShortcut(window: number, shortcut: string): Promise<boolean> {
   return appMenus.store.shortcut(appMenus.ownersOf(pid), shortcut);
 }
 
+/** Tells the app owning a window of `pid` that it quits, just before the window is asked to close (kit/close.ts). */
+function appQuitting(pid: number | null): void {
+  appMenus.store.quitting(appMenus.ownersOf(pid));
+}
+
 // Shortcuts (keymap.ts) and ❖ taps and holds, as the compositor reports them.
 // ⇧❖4's selection overlay, made on first use.
 let captureArea: AreaCapture | undefined;
@@ -1409,6 +1414,7 @@ if (compositor) {
 const stopShortcuts = compositor
   ? startShortcuts(compositor, {
       appShortcut,
+      appQuitting,
       toggleLauncher: () => (overlays.has("launcher") ? closeOverlay("launcher") : openLauncher()),
       // While the launcher is open, holding ❖ shows the digits ❖1–9 pick instead (launcher/keys.ts).
       showSheet: () => {

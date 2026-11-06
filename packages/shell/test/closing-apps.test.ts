@@ -105,12 +105,16 @@ test("a window that opens meanwhile doesn't hold the session", async () => {
   expect(outcome).toBe("closed");
 });
 
-test("the sheet's words name one app, two, or count them", () => {
+test("the notice's words name one app, two, or count them, and fit an unsaved document or a running job", () => {
   expect(holdingCopy(["Text Editor"], "logout")).toEqual({
     title: "Waiting for “Text Editor” to close",
-    detail: "Dashi will log out once it closes. It may be asking about unsaved changes.",
+    detail: "It may be asking first.",
     anyway: "Log out anyway",
   });
-  expect(holdingCopy(["Text Editor", "Terminal"], "restart").title).toBe("Waiting for “Text Editor” and “Terminal” to close");
+  expect(holdingCopy(["Terminal"], "logout").detail).not.toContain("unsaved");
+  expect(holdingCopy(["Text Editor", "Terminal"], "restart")).toMatchObject({
+    title: "Waiting for “Text Editor” and “Terminal” to close",
+    detail: "They may be asking first.",
+  });
   expect(holdingCopy(["A", "B", "C"], "shutdown")).toMatchObject({ title: "Waiting for 3 apps to close", anyway: "Shut down anyway" });
 });

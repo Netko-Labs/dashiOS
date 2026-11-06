@@ -1,15 +1,17 @@
 /**
  * Two small sheets from the Dashi and app menus: the question before a
  * restart, shut down, or log out, and the About window. Each is centered on
- * a surface with room around it for its shadow.
+ * a surface with room around it for its shadow. And the notice naming the
+ * app that holds a log out while it asks its own question.
  */
 
-import { useColors } from "@dashi/ui";
+import { Notice, Button as UiButton, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { holdingCopy } from "../closing-apps.ts";
 import { LOGO } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
+import { HOLDING, type HoldingPlace } from "./holding-place.ts";
 import type { PowerKind } from "./model.ts";
 
 /** Panel size, and the margin the shadow needs on each side. */
@@ -112,23 +114,50 @@ export function ConfirmSheet({ what, onConfirm, onCancel }: { what: PowerKind; o
 
 /**
  * While an app holds a log out, restart, or shut down to ask its own question
- * (closing-apps.ts): who it waits for, Cancel, and the way to go anyway. It
- * sits at the top and leaves the keyboard to the app; Esc cancels once it is clicked.
+ * (closing-apps.ts): a notice naming who it waits for, with Cancel and the
+ * way to go anyway. It floats at a screen edge clear of the app's sheet
+ * (holding-place.ts: the foot, or under the menu bar when the window is that
+ * low), its card on the side of that edge, and leaves the keyboard to the
+ * app; Esc cancels once it is clicked.
  */
-export function HoldingSheet({ what, names, onCancel, onAnyway }: { what: PowerKind; names: readonly string[]; onCancel: () => void; onAnyway: () => void }) {
-  const colors = useColors();
+export function HoldingNotice({
+  what,
+  names,
+  edge,
+  onCancel,
+  onAnyway,
+}: {
+  what: PowerKind;
+  names: readonly string[];
+  edge: HoldingPlace["edge"];
+  onCancel: () => void;
+  onAnyway: () => void;
+}) {
   const copy = holdingCopy(names, what);
   return (
-    <Panel>
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: edge === "bottom" ? "flex-end" : "flex-start",
+        // The card sits at its edge; the shadow falls into the rest.
+        padding: HOLDING.shadow,
+        paddingTop: edge === "top" ? 8 : HOLDING.shadow,
+        paddingBottom: edge === "bottom" ? 8 : HOLDING.shadow,
+      }}
+    >
       <KeyCatcher onKey={(key) => key === "Escape" && onCancel()} />
-      <Svg markup={LOGO} size={34} color={colors.text} />
-      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{copy.title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{copy.detail}</Text>
-      <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 6 }}>
-        <Button testID="holding-cancel" label="Cancel" onPress={onCancel} />
-        <Button testID="holding-anyway" label={copy.anyway} onPress={onAnyway} />
-      </View>
-    </Panel>
+      <Notice
+        testID="holding"
+        text={`${copy.title}. ${copy.detail}`}
+        action={
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <UiButton testID="holding-cancel" label="Cancel" onPress={onCancel} />
+            <UiButton testID="holding-anyway" label={copy.anyway} onPress={onAnyway} />
+          </View>
+        }
+      />
+    </View>
   );
 }
 

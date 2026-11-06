@@ -20,7 +20,9 @@ import { appNameEnv } from "../../src/metal-host.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
 import { serveControl } from "./control.ts";
+import { menusClient } from "./menus.ts";
 import { setProcessName } from "./name.ts";
+import { onWindowTyping } from "./typing.ts";
 
 export interface Size {
   width: number;
@@ -43,6 +45,13 @@ export interface AppOptions {
   host?: string;
   /** The exit status when the window is closed or the process is told to stop; 0 by default (a dialog's close is a Cancel, 1). */
   closeCode?: number;
+  /**
+   * While a text field has the keyboard, its text chords (❖A, ❖C, ❖X, ❖V,
+   * ❖Z, ⇧❖Z) go to it before the app's rows that show them (typing.ts); on
+   * by default. Text Editor turns it off: its rows already act on the field
+   * with the keyboard, and its Undo is the document's.
+   */
+  textChordsToFields?: boolean;
 }
 
 export interface RunningApp {
@@ -97,6 +106,10 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     process.exit(code);
   };
   host.onClose(() => finish(closeCode));
+  // A field with the keyboard answers the text chords itself (typing.ts).
+  if (options.textChordsToFields !== false) onWindowTyping(host, (typing) => menusClient().setTyping(typing));
+  // ❖Q, Quit, logging out: the shell says so first, and the close request after is a quit.
+  menusClient().onQuit(() => closeRequests.quitting());
   // Asked to close from outside: the app's answer (close.ts), else at once.
   host.onEvent((event) => {
     if (event.type !== "close-request") return;

@@ -3,8 +3,9 @@
  * window is asked to close, as its close control would (design.html PA-4).
  * An app with nothing to lose closes at once; one that holds its window to
  * ask (Text Editor's unsaved changes, a busy Terminal) keeps the session
- * waiting for its answer. After a moment a sheet names who holds it, with
- * Cancel (the session stays) and “Log out anyway” (it goes, as before:
+ * waiting for its answer. After a moment a notice names who holds it, at the
+ * foot of the screen, clear of the app's own sheet (menus/holding-place.ts),
+ * with Cancel (the session stays) and “Log out anyway” (it goes, as before:
  * apps still open are told to stop, and a hung one is ended). When the last
  * window goes, the session ends without another word.
  *
@@ -76,11 +77,14 @@ export async function closeApps(deps: ClosingDeps, choice: ClosingChoice): Promi
   }
 }
 
-/** The sheet's words: who it waits for, and what the button that goes anyway says. */
+/**
+ * The notice's words: who it waits for, and what the button that goes anyway
+ * says. An app may hold for unsaved changes or for a running job (Terminal),
+ * so the words say only that it may be asking.
+ */
 export function holdingCopy(names: readonly string[], what: PowerKind): { title: string; detail: string; anyway: string } {
   const who = names.length === 1 ? `“${names[0]}”` : names.length === 2 ? `“${names[0]}” and “${names[1]}”` : `${names.length} apps`;
-  const verb = { logout: "log out", restart: "restart", shutdown: "shut down" }[what];
   const anyway = { logout: "Log out anyway", restart: "Restart anyway", shutdown: "Shut down anyway" }[what];
-  const asks = names.length === 1 ? "It may be asking about unsaved changes." : "They may be asking about unsaved changes.";
-  return { title: `Waiting for ${who} to close`, detail: `Dashi will ${verb} once ${names.length === 1 ? "it closes" : "they close"}. ${asks}`, anyway };
+  const asks = names.length === 1 ? "It may be asking first." : "They may be asking first.";
+  return { title: `Waiting for ${who} to close`, detail: asks, anyway };
 }

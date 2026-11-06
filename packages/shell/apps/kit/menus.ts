@@ -75,6 +75,11 @@ export class MenusClient {
   /** Bytes the socket did not take yet. */
   private unsent = new Uint8Array();
   private handler: (id: string) => void = () => {};
+  private quitHandler: () => void = () => {};
+  /** The menus last published (null: none), sent again when `typing` changes. */
+  private menus: readonly MenuSpec[] | null = null;
+  /** A text field has the keyboard (protocol.ts `typing`). */
+  private typing = false;
   private retries = 0;
   private cancelRetry: (() => void) | null = null;
   private closed = false;
@@ -100,19 +105,40 @@ export class MenusClient {
       console.error(`dashi menus: not sent: ${parsed.error}`);
       return;
     }
+    this.menus = menus.length === 0 ? null : menus;
     if (menus.length === 0 && !this.socket) {
       // Nothing was shown, so nothing needs taking down.
       this.line = null;
       return;
     }
-    this.line = `${JSON.stringify({ type: "menus", menus })}\n`;
-    if (this.socket) this.write(this.line);
-    else this.start();
+    this.send(menus);
+  }
+
+  /**
+   * Whether a text field in the window has the keyboard (the Metal host's
+   * `typing`): while one does, the shell gives it the text chords (❖A, ❖C,
+   * ❖Z…) instead of choosing the rows that show them. Sent with the menus.
+   */
+  setTyping(typing: boolean): void {
+    if (typing === this.typing) return;
+    this.typing = typing;
+    if (this.menus) this.send(this.menus);
   }
 
   /** Who hears a chosen item (the latest one set). */
   onSelect(handler: (id: string) => void): void {
     this.handler = handler;
+  }
+
+  /** Who hears that the app is quitting, just before its window is asked to close (the latest one set). */
+  onQuit(handler: () => void): void {
+    this.quitHandler = handler;
+  }
+
+  private send(menus: readonly MenuSpec[]): void {
+    this.line = `${JSON.stringify({ type: "menus", menus, ...(this.typing ? { typing: true } : {}) })}\n`;
+    if (this.socket) this.write(this.line);
+    else this.start();
   }
 
   close(): void {
@@ -143,6 +169,7 @@ export class MenusClient {
           for (const line of lines.push(chunk)) {
             const message = parseShellMessage(line);
             if (message?.type === "select") this.handler(message.id);
+            else if (message?.type === "quit") this.quitHandler();
             else if (message?.type === "error") console.error(`dashi menus: the shell refused the menus: ${message.message}`);
           }
         },

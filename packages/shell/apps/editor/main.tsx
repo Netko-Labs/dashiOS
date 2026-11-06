@@ -37,7 +37,8 @@ const setTitle = (title: string): void => handle.setTitle(title);
 let discard = false;
 
 const app = runApp(
-  { id: "dev.dashi.editor", title: "Text Editor", size: EDITOR_SIZE, host: launch.host },
+  // Its Edit rows already act on whichever field has the keyboard, and its Undo is the document's.
+  { id: "dev.dashi.editor", title: "Text Editor", size: EDITOR_SIZE, host: launch.host, textChordsToFields: false },
   <EditorWindow
     model={model}
     quit={(drop) => {
