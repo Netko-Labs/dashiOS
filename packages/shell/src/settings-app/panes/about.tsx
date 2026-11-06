@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { LOGO } from "../../glyphs.ts";
 import { formatMemory, formatStorage, versionLine } from "../about.ts";
 import type { PaneContext } from "../context.ts";
-import { Button, Group, Page, Row } from "../ui.tsx";
+import { Button, Group, Page, Setting } from "../ui.tsx";
 
 /** The value at the end of a row; several lines (two graphics adapters) stack. */
 function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -39,36 +39,36 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
         </View>
       </View>
       <Group testID="about-system">
-        <Row label="Name">
+        <Setting id="about/name">
           <Value>{info.hostname}</Value>
-        </Row>
+        </Setting>
         {info.base !== null && (
-          <Row label="Based on">
+          <Setting id="about/based-on">
             <Value testID="about-base">{info.base}</Value>
-          </Row>
+          </Setting>
         )}
-        <Row label="Kernel">
+        <Setting id="about/kernel">
           <Value testID="about-kernel">{info.kernel}</Value>
-        </Row>
+        </Setting>
       </Group>
       <Group testID="about-hardware">
-        <Row label="Processor">
+        <Setting id="about/processor">
           <Value testID="about-cpu">{cpu}</Value>
-        </Row>
-        <Row label="Memory">
+        </Setting>
+        <Setting id="about/memory">
           <Value testID="about-memory">{formatMemory(info.memory)}</Value>
-        </Row>
-        <Row label="Graphics">
+        </Setting>
+        <Setting id="about/graphics">
           <Value testID="about-gpu">{info.gpus.length > 0 ? info.gpus : "Unknown"}</Value>
-        </Row>
-        <Row label="Storage" detail={info.disk ? `${formatStorage(info.disk.free)} available` : undefined}>
+        </Setting>
+        <Setting id="about/storage" detail={info.disk ? `${formatStorage(info.disk.free)} available` : null}>
           <Value testID="about-disk">{info.disk ? formatStorage(info.disk.total) : "Unknown"}</Value>
-        </Row>
+        </Setting>
       </Group>
       <Group testID="about-setup">
-        <Row label="Setup Assistant" detail="Language, keyboard, Wi-Fi, time zone, appearance, and agents, one page at a time.">
+        <Setting id="about/setup-assistant">
           <Button testID="about-setup-open" label="Open…" onPress={openSetup} />
-        </Row>
+        </Setting>
       </Group>
     </Page>
   );

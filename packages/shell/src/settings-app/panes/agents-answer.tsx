@@ -15,7 +15,7 @@ import type { KeyPlace, Provider } from "../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../agents/ask/service.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Note, Row } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Note, Setting, Spot } from "../ui.tsx";
 import { AnswererList, useHarnesses } from "./answerer-list.tsx";
 import { ListRow } from "./parts.tsx";
 
@@ -97,7 +97,7 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
   const undos = entry.steps.flatMap((step, index) => (step.undo && !step.undone && step.outcome === "done" ? [{ index, title: step.undo.title }] : []));
   // A Row gives the words the room they need (a lone Text with one line and no width shows only "…").
   return (
-    <Row
+    <Item
       testID={`agents-history:${entry.id}`}
       stack={undos.length > 0}
       label={entry.request ? `${entry.who}: ${entry.request}` : entry.who}
@@ -110,7 +110,7 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
           ))}
         </View>
       )}
-    </Row>
+    </Item>
   );
 }
 
@@ -150,15 +150,15 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
   return (
     <>
       <Group testID="agents-answerer">
-        <Row label="Answer requests with" detail="In the launcher, type what to do, then press Tab to ask." />
+        <Setting id="agents/answer-with" />
         <AnswererList testID="agents-answerer-choice" chosen={choice} harnesses={harnesses} onChoose={choose} />
       </Group>
       {(choice === "claude" || choice === "gpt" || choice === "local") && (
         <Group testID="agents-answerer-detail">
-          {choice === "claude" && <Row testID="agents-key" label="Key" detail={keyWords(place, "anthropic")} />}
-          {choice === "gpt" && <Row testID="agents-key" label="Key" detail={keyWords(place, "openai")} />}
+          {choice === "claude" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "anthropic")} />}
+          {choice === "gpt" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "openai")} />}
           {choice === "gpt" && (
-            <Row testID="agents-gpt-model" label="Model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
+            <Setting id="agents/model" testID="agents-gpt-model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
               {gptPills.length > 0 && (
                 <Choices
                   testID="agents-gpt-model-choice"
@@ -167,10 +167,10 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
                   onChange={(name) => settings.patch("agents", { gptModel: name })}
                 />
               )}
-            </Row>
+            </Setting>
           )}
           {choice === "local" && (
-            <Row testID="agents-model" label="Model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
+            <Setting id="agents/model" testID="agents-model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
               {pills.length > 0 && (
                 <Choices
                   testID="agents-model-choice"
@@ -179,7 +179,7 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
                   onChange={(name) => settings.patch("agents", { localModel: name })}
                 />
               )}
-            </Row>
+            </Setting>
           )}
         </Group>
       )}
@@ -187,7 +187,9 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
         <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
       )}
       <Caption>Only what you type is sent, and only when you ask. Nothing runs until you see the plan and press Return.</Caption>
-      <Caption above>History</Caption>
+      <Spot id="agents/history">
+        <Caption above>History</Caption>
+      </Spot>
       <Group testID="agents-history">
         {entries.length === 0 ? (
           <Note testID="agents-history-none">Nothing yet. What agents do for you is listed here.</Note>

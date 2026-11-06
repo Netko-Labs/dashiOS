@@ -3,8 +3,10 @@
  * to use the camera", as a sheet on the asking window, written as a
  * question, with the app's own reason under it. xdg-desktop-portal asks
  * this for the camera, the microphone, location and background running, and
- * remembers the answer itself (its permission store). An app with no window
- * gets an item in the menu bar that opens the sheet (ui/background.ts).
+ * remembers the answer itself (its permission store), which Settings ›
+ * Privacy & Security lists and takes back one by one; the sheet's button
+ * opens it there. An app with no window gets an item in the menu bar that
+ * opens the sheet (ui/background.ts).
  *
  *   AccessDialog(o handle, s app_id, s parent_window, s title, s subtitle,
  *                s body, a{sv} options) → (u response, a{sv} results)
@@ -12,10 +14,12 @@
  *   results: choices a(ss); response 0 granted, 1 denied
  */
 
-import { glyphs, useColors } from "@dashi/ui";
+import { Button, glyphs, useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { type LinkAnswer, openLink } from "../../src/actions/open-link.ts";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
+import { paneTitle } from "../../src/settings-app/panes.ts";
 import { type AppInfo, appInfo } from "./apps.ts";
 import { type Choice, parseChoices } from "./file-chooser/options.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
@@ -82,14 +86,17 @@ export function accessInterface(requests: Requests, ask: AskAccess): InterfaceSp
   };
 }
 
-/**
- * The line under the question when the app gave none. It names no Settings
- * pane: none lists these permissions yet (xdg-desktop-portal keeps them),
- * and copy points only at things that exist.
- */
+/** The line under the question when the app gave none. */
 export const accessFallback = (app: string): string => `Dashi remembers your answer, so ${app} won’t ask again.`;
 
-function AccessSheet({ request, app, answer }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void }) {
+/** Where the person reviews and takes back what they answered: the pane's name comes from the pane list (CP-7). */
+export const PRIVACY_LINK = "dashi://settings/privacy/apps";
+export const privacyLabel = (): string => `${paneTitle("privacy")}…`;
+
+/** Opens a `dashi://` link in the session (the shell's links socket). */
+export type OpenLink = (url: string) => Promise<LinkAnswer>;
+
+function AccessSheet({ request, app, answer, open }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void; open: OpenLink }) {
   const colors = useColors();
   const [choices, setChoices] = useState<Record<string, string>>(() => Object.fromEntries(request.choices.map((c) => [c.id, c.initial])));
   const reply = (granted: boolean) => answer({ granted, choices: Object.entries(choices) });
@@ -99,6 +106,7 @@ function AccessSheet({ request, app, answer }: { request: AccessRequest; app: Ap
     <PortalFrame
       title={app.name}
       onCancel={() => reply(false)}
+      footer={<Button testID="access:privacy" label={privacyLabel()} onPress={() => void open(PRIVACY_LINK)} />}
       buttons={[
         { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false) },
         // Allow is the one that goes ahead, but only a click gives access: Enter never does.
@@ -130,12 +138,12 @@ function AccessSheet({ request, app, answer }: { request: AccessRequest; app: Ap
 }
 
 /** The sheet on screen. */
-export function askOnScreen(show: ShowDialog): AskAccess {
+export function askOnScreen(show: ShowDialog, open: OpenLink = (url) => openLink(url)): AskAccess {
   return (request, signal) => {
     const app = appInfo(request.appId);
     return show<AccessAnswer | null>(
       { parent: request.parent, title: request.title, width: 440, height: 220 },
-      (answer) => <AccessSheet request={request} app={app} answer={answer} />,
+      (answer) => <AccessSheet request={request} app={app} answer={answer} open={open} />,
       signal,
       null,
     );

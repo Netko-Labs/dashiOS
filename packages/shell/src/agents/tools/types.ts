@@ -1,7 +1,5 @@
 /** What a tool call comes to once its arguments are checked. */
 
-import type { CornerName } from "../../corners.ts";
-import type { DockStyle } from "../../dock/settings.ts";
 import type { Arrange } from "../../layout.ts";
 import type { PageId } from "../../setup/flow.ts";
 import type { ProfileId } from "../../system/profiles.ts";
@@ -14,22 +12,6 @@ export interface Rect {
   width: number;
   height: number;
 }
-
-/** The Control Center switches `set_setting` takes, true or false. */
-export const SWITCHES = ["dark_mode", "do_not_disturb", "night_shift"] as const;
-export type SwitchName = (typeof SWITCHES)[number];
-/** Everything `set_setting` takes: the switches, and how round windows are (a corners.ts name). */
-export const SETTINGS = [...SWITCHES, "window_corners"] as const;
-export type SettingName = (typeof SETTINGS)[number];
-/** The Dock's settings, which `set_setting` takes too: autohide is on or off, the style is a name. */
-export const DOCK_SETTINGS = ["dock_autohide", "dock_style"] as const;
-export type DockSettingName = (typeof DOCK_SETTINGS)[number];
-/** Scrolling speed per device, a factor from 0.25 to 4 (scroll-speed.ts); `set_setting` takes these too. */
-export const SCROLL_SETTINGS = ["trackpad_scroll_speed", "mouse_scroll_speed"] as const;
-export type ScrollSettingName = (typeof SCROLL_SETTINGS)[number];
-/** What the menu bar shows (Settings' Battery & Power and Sound panes); `set_setting` takes these too, true or false. */
-export const MENU_BAR_SETTINGS = ["battery_percentage", "sound_in_menu_bar"] as const;
-export type MenuBarSettingName = (typeof MENU_BAR_SETTINGS)[number];
 
 /** A point in a window's content, in logical pixels from its top left. */
 export interface Point {
@@ -57,12 +39,8 @@ export type Call =
   | { name: "dismiss_notification"; id: number }
   | { name: "clear_notifications" }
   | { name: "get_settings" }
-  | { name: "set_setting"; setting: SwitchName; value: boolean }
-  | { name: "set_setting"; setting: "dock_autohide"; value: boolean }
-  | { name: "set_setting"; setting: "dock_style"; value: DockStyle }
-  | { name: "set_setting"; setting: "window_corners"; value: CornerName }
-  | { name: "set_setting"; setting: ScrollSettingName; value: number }
-  | { name: "set_setting"; setting: MenuBarSettingName; value: boolean }
+  /** A row of System Settings agents may change, by its registry name (settings-app/registry/), with a value its schema took. */
+  | { name: "set_setting"; setting: string; value: boolean | string | number }
   | { name: "get_network" }
   | { name: "list_bluetooth_devices" }
   | { name: "set_bluetooth_connection"; device: string; connected: boolean }

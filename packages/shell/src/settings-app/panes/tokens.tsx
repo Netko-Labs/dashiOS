@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { TokenSummary, VaultTokens } from "../../agents/secrets/vault.ts";
 import { MODEL_KEYS, modelKey } from "../../agents/tokens/model-keys.ts";
 import { DEFAULT_HEADER, placeholder } from "../../agents/tokens/swap.ts";
-import { Button, Caption, Choices, Group, Note, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, Choices, FormRow, Group, Item, Note, Spot, useSurface } from "../ui.tsx";
 import { Failure, MiniButton, VAULT_TROUBLE } from "./parts.tsx";
 
 export type TokenStore = Pick<VaultTokens, "list" | "save" | "update" | "remove">;
@@ -126,46 +126,48 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
     );
   const id = editing ? "tokens-edit" : "tokens-add";
   return (
-    <Group testID={id}>
-      {editing ? (
-        <Row label={`Change ${editing.name}`} detail={`Agents hold ${placeholder(editing.name)}; its name stays.`} />
-      ) : (
-        <>
-          <Row label="Kind">
-            <Choices
-              testID={`${id}-kind`}
-              value={form.kind}
-              options={[...MODEL_KEYS.map((key) => ({ value: key.name as Kind, label: key.label })), { value: "other" as Kind, label: "Other" }]}
-              onChange={(kind) => setForm((current) => formFor(kind, current))}
+    <Spot id="passwords/add-token">
+      <Group testID={id}>
+        {editing ? (
+          <Item label={`Change ${editing.name}`} detail={`Agents hold ${placeholder(editing.name)}; its name stays.`} />
+        ) : (
+          <>
+            <FormRow label="Kind">
+              <Choices
+                testID={`${id}-kind`}
+                value={form.kind}
+                options={[...MODEL_KEYS.map((key) => ({ value: key.name as Kind, label: key.label })), { value: "other" as Kind, label: "Other" }]}
+                onChange={(kind) => setForm((current) => formFor(kind, current))}
+              />
+            </FormRow>
+            <FormRow label="Name" detail={form.name.trim() ? `Agents hold ${placeholder(form.name.trim().toLowerCase())}` : "What agents hold it by"}>
+              <Field testID={`${id}-name`} value={form.name} placeholder="github" onChange={set("name")} />
+            </FormRow>
+          </>
+        )}
+        <FormRow label="Hosts" detail="Only these get it; *.example.com for every host under example.com">
+          <Field testID={`${id}-hosts`} value={form.hosts} placeholder="api.github.com" onChange={set("hosts")} />
+        </FormRow>
+        <FormRow label="Headers" detail="Where the token may go, {} for the token; commas between. Only a header a request sends is changed.">
+          <Field testID={`${id}-headers`} value={form.headers} placeholder={DEFAULT_HEADER} onChange={set("headers")} />
+        </FormRow>
+        <FormRow label="Token" detail={problem ?? (editing ? "Leave empty to keep the one saved" : "Saved in your vault; never shown again")}>
+          <Field testID={`${id}-token`} value={form.token} placeholder={editing ? "New token" : "Token"} secure onChange={set("token")} />
+        </FormRow>
+        <FormRow label="">
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {editing && <Button testID={`${id}-cancel`} label="Cancel" onPress={onDone} />}
+            <Button
+              testID={`${id}-save`}
+              label={editing ? "Save Changes" : "Save Token"}
+              primary
+              disabled={hosts.length === 0 || headers.length === 0 || (!editing && (!form.name.trim() || !token))}
+              onPress={save}
             />
-          </Row>
-          <Row label="Name" detail={form.name.trim() ? `Agents hold ${placeholder(form.name.trim().toLowerCase())}` : "What agents hold it by"}>
-            <Field testID={`${id}-name`} value={form.name} placeholder="github" onChange={set("name")} />
-          </Row>
-        </>
-      )}
-      <Row label="Hosts" detail="Only these get it; *.example.com for every host under example.com">
-        <Field testID={`${id}-hosts`} value={form.hosts} placeholder="api.github.com" onChange={set("hosts")} />
-      </Row>
-      <Row label="Headers" detail="Where the token may go, {} for the token; commas between. Only a header a request sends is changed.">
-        <Field testID={`${id}-headers`} value={form.headers} placeholder={DEFAULT_HEADER} onChange={set("headers")} />
-      </Row>
-      <Row label="Token" detail={problem ?? (editing ? "Leave empty to keep the one saved" : "Saved in your vault; never shown again")}>
-        <Field testID={`${id}-token`} value={form.token} placeholder={editing ? "New token" : "Token"} secure onChange={set("token")} />
-      </Row>
-      <Row label="">
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {editing && <Button testID={`${id}-cancel`} label="Cancel" onPress={onDone} />}
-          <Button
-            testID={`${id}-save`}
-            label={editing ? "Save Changes" : "Save Token"}
-            primary
-            disabled={hosts.length === 0 || headers.length === 0 || (!editing && (!form.name.trim() || !token))}
-            onPress={save}
-          />
-        </View>
-      </Row>
-    </Group>
+          </View>
+        </FormRow>
+      </Group>
+    </Spot>
   );
 }
 
@@ -206,7 +208,9 @@ export function Tokens({ tokens, confirm }: { tokens: TokenStore; confirm: Confi
     });
   return (
     <>
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Tokens</Text>
+      <Spot id="passwords/tokens">
+        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Tokens</Text>
+      </Spot>
       <Group testID="tokens-list">
         {list === null ? (
           <Note testID="tokens-loading">{failure ? "Tokens can't be shown right now." : "Looking…"}</Note>
@@ -214,12 +218,12 @@ export function Tokens({ tokens, confirm }: { tokens: TokenStore; confirm: Confi
           <Note testID="tokens-none">No tokens. Add an API token or a model key below: agents get a placeholder, never the token.</Note>
         ) : (
           list.map((token) => (
-            <Row key={token.id} label={modelKey(token.name)?.label ?? token.name} detail={tokenDetail(token)} testID={`token:${token.id}`}>
+            <Item key={token.id} label={modelKey(token.name)?.label ?? token.name} detail={tokenDetail(token)} testID={`token:${token.id}`}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <MiniButton testID={`token-edit:${token.id}`} label="Edit…" onPress={() => setEditing(token)} />
                 <MiniButton testID={`token-delete:${token.id}`} label="Delete…" tone="critical" onPress={() => remove(token)} />
               </View>
-            </Row>
+            </Item>
           ))
         )}
       </Group>

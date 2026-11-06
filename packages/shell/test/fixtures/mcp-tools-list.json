@@ -851,7 +851,7 @@
     {
       "name": "get_settings",
       "title": "Read settings",
-      "description": "The switches in Control Center: dark_mode, do_not_disturb, and night_shift, each true or false; window_corners, how round windows are: none, small, medium, or large; the Dock's dock_autohide (true or false) and dock_style (\"dock\" or \"taskbar\"); and trackpad_scroll_speed and mouse_scroll_speed, how far a scroll goes as a factor from 0.25 to 4 (1 is normal, 2 twice as far); and what the menu bar shows: battery_percentage (the charge as a number beside the battery) and sound_in_menu_bar (the speaker), each true or false.",
+      "description": "What these rows of System Settings are now, by name: dark_mode, window_corners, highlight_active_window, pointer_size, text_size, reduce_motion, night_shift, dock_style, dock_autohide, trackpad_tap_to_click, trackpad_natural_scrolling, trackpad_scroll_speed, mouse_natural_scrolling, mouse_scroll_speed, sound_in_menu_bar, battery_percentage, date_in_menu_bar, do_not_disturb. The Dock's are left out where there is no Dock. set_setting changes them.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -869,7 +869,7 @@
     {
       "name": "set_setting",
       "title": "Change a setting",
-      "description": "Turn dark_mode (the shell and apps repaint dark), do_not_disturb (notification banners are held back; they still reach the notification center), night_shift (warmer screen colors), or dock_autohide (the Dock slides out of sight until the pointer reaches the screen's bottom edge) on or off (value true or false). Or set window_corners, how round every window is, app content included: value none, small, medium (the default), or large. Or set dock_style to \"dock\" (floating) or \"taskbar\" (a bar across the bottom, a button per window). Or turn battery_percentage or sound_in_menu_bar on or off (value true or false). Or set trackpad_scroll_speed or mouse_scroll_speed, how far a scroll goes, to a number from 0.25 to 4 (1 is normal).",
+      "description": "Change one row of System Settings by its name, to a value it takes. dark_mode, Dark Mode (the shell and apps repaint dark): true or false. window_corners, Window corners (how round windows are, app content included): one of none, small, medium, large. highlight_active_window, Highlight the active window (a ring in the accent color around the window you're typing in): true or false. pointer_size, Pointer size (on every screen and at every scale. Apps that draw their own pointer follow when they next open): one of 24, 32, 40, 48. text_size, Text size (the launcher grows with it, and so do apps that follow GNOME's text size): one of 1, 1.15, 1.3, 1.5. reduce_motion, Reduce motion (windows open, close, minimize, and move without animation): true or false. night_shift, Night Shift (warms the colors of the screens, easier on the eyes in the evening): true or false. dock_style, Dock style (the Dock floats above the bottom edge; the taskbar fills it, with a button for each window): one of dock, taskbar. dock_autohide, Automatically hide and show the Dock (the Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back): true or false. trackpad_tap_to_click, Tap to click (tap the pad with one finger instead of pressing it): true or false. trackpad_natural_scrolling, Trackpad natural scrolling (content follows your fingers): true or false. trackpad_scroll_speed, Trackpad scrolling speed: a number from 0.25 to 4. mouse_natural_scrolling, Mouse natural scrolling (content follows the wheel as if you pushed it): true or false. mouse_scroll_speed, Mouse scrolling speed: a number from 0.25 to 4. sound_in_menu_bar, Show Sound in menu bar (the speaker beside the battery and network icons): true or false. battery_percentage, Show battery percentage in menu bar: true or false. date_in_menu_bar, Show date in the menu bar: true or false. do_not_disturb, Do Not Disturb (banners are held back until you turn it off; they wait in the notification center): true or false.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -877,15 +877,23 @@
             "type": "string",
             "enum": [
               "dark_mode",
-              "do_not_disturb",
-              "night_shift",
               "window_corners",
-              "dock_autohide",
+              "highlight_active_window",
+              "pointer_size",
+              "text_size",
+              "reduce_motion",
+              "night_shift",
               "dock_style",
+              "dock_autohide",
+              "trackpad_tap_to_click",
+              "trackpad_natural_scrolling",
               "trackpad_scroll_speed",
+              "mouse_natural_scrolling",
               "mouse_scroll_speed",
+              "sound_in_menu_bar",
               "battery_percentage",
-              "sound_in_menu_bar"
+              "date_in_menu_bar",
+              "do_not_disturb"
             ]
           },
           "value": {
@@ -898,12 +906,10 @@
                 "enum": ["none", "small", "medium", "large", "dock", "taskbar"]
               },
               {
-                "type": "number",
-                "minimum": 0.25,
-                "maximum": 4
+                "type": "number"
               }
             ],
-            "description": "true for on, false for off; for window_corners one of: none, small, medium, large; for dock_style one of: dock, taskbar; for the scroll speeds a number from 0.25 to 4."
+            "description": "What the setting takes, as this tool's description lists it: true for on and false for off, one of its names, or a number."
           }
         },
         "required": ["name", "value"],

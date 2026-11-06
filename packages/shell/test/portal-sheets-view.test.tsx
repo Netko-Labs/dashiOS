@@ -118,7 +118,11 @@ test("the chooser: a slow second click only selects; a real double-click opens; 
 
 test("an access sheet: Enter never grants; Esc says no; only a click on Allow allows", async () => {
   const { show, mounted } = showHere();
-  const ask = askOnScreen(show);
+  const opened: string[] = [];
+  const ask = askOnScreen(show, async (url) => {
+    opened.push(url);
+    return { ok: true, text: "" };
+  });
   const request = {
     appId: "org.example.Camera",
     parent: "",
@@ -136,9 +140,13 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
   });
   await settle();
   const sheet = mounted();
-  // The line under the question names no Settings pane that doesn't exist.
-  expect(sheet.root.lastTree()).not.toContain("Privacy");
+  // The line under the question, and the way to where the answer can be taken back: a pane that exists.
   expect(sheet.root.lastTree()).toContain("Dashi remembers your answer");
+  expect(sheet.root.lastTree()).toContain("Privacy & Security…");
+  sheet.send({ type: "press", nodeId: sheet.node("access:privacy") });
+  await settle();
+  expect(opened).toEqual(["dashi://settings/privacy/apps"]);
+  expect(answer).toBe("pending");
   sheet.send({ type: "submit", nodeId: sheet.node("portal:keys"), value: "" });
   await settle();
   expect(answer).toBe("pending");

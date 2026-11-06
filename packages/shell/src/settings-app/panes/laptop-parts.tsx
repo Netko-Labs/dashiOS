@@ -7,7 +7,7 @@
 import { Switch } from "@dashi/ui";
 import type { Laptop } from "../../laptop/start.ts";
 import { keyboardLight, lightLabel, useLaptop } from "../../laptop/store.ts";
-import { Caption, Choices, Group, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Setting } from "../ui.tsx";
 
 /** Displays: the built-in panel's overdrive (faster pixels, for games). */
 export function PanelOverdriveSection({ laptop }: { laptop: Laptop | null }) {
@@ -18,9 +18,9 @@ export function PanelOverdriveSection({ laptop }: { laptop: Laptop | null }) {
     <>
       <Caption above>Built-in Display</Caption>
       <Group testID="displays-overdrive">
-        <Row label="Panel overdrive" detail="Pixels change faster: less blur in games, a little more power.">
+        <Setting id="displays/panel-overdrive">
           <Switch testID="displays-overdrive-switch" on={knob.value === true} onChange={(on) => void laptop.store.set("panel-overdrive", on)} />
-        </Row>
+        </Setting>
       </Group>
     </>
   );
@@ -32,14 +32,14 @@ export function KeyboardLightSection({ laptop }: { laptop: Laptop | null }) {
   if (!laptop || !light) return null;
   return (
     <Group testID="keyboard-light">
-      <Row stack label="Keyboard light">
+      <Setting id="keyboard/keyboard-light">
         <Choices
           testID="keyboard-light-level"
           value={light.level}
           options={Array.from({ length: light.max + 1 }, (_, level) => ({ value: level, label: lightLabel(level, light.max) }))}
           onChange={(level) => laptop.setLight(level)}
         />
-      </Row>
+      </Setting>
     </Group>
   );
 }

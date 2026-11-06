@@ -5,7 +5,7 @@
  * and whether snippets expand in terminals. settings.json `clipboard`.
  */
 
-import { Button, Switch, useColors } from "@dashi/ui";
+import { Button, useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { iconPath } from "../../apps.ts";
@@ -13,7 +13,7 @@ import type { ClipboardHistory, HistorySnapshot } from "../../clipboard/history.
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../clipboard/privacy.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Row, Spot, useSurface } from "../ui.tsx";
+import { Caption, Group, Setting, useSurface } from "../ui.tsx";
 
 /** What Settings reaches of the history: how much it holds, and clearing it. */
 export type HistoryControl = Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
@@ -86,20 +86,12 @@ export function ClipboardSection({ settings, history, installed }: { settings: S
   const { clipboard } = useSettings(settings).data;
   const snapshot = useSyncExternalStore(history?.subscribe ?? none, history?.getSnapshot ?? (() => EMPTY));
   const [asking, setAsking] = useState(false);
-  const on = clipboard.history !== false;
   const count = snapshot.entries.length;
   return (
     <>
       <Group testID="clipboard-settings">
-        <Spot pane="keyboard" row="clipboard-history">
-          <Row
-            label="Keep clipboard history"
-            detail="Copies to paste again from the launcher: 200 at most, for 7 days, on this computer only. Turned off, what was kept is deleted."
-          >
-            <Switch testID="clipboard-history" on={on} onChange={(next) => settings.patch("clipboard", { history: next ? undefined : false })} />
-          </Row>
-        </Spot>
-        <Row label="Kept now" detail={count === 0 ? "Nothing" : count === 1 ? "1 copy" : `${count} copies, pinned ones included`}>
+        <Setting id="keyboard/clipboard-history" control="clipboard-history" />
+        <Setting id="keyboard/clipboard-kept" detail={count === 0 ? "Nothing" : count === 1 ? "1 copy" : `${count} copies, pinned ones included`}>
           <Button
             testID="clipboard-clear"
             label={asking ? "Clear All?" : "Clear History"}
@@ -111,19 +103,11 @@ export function ClipboardSection({ settings, history, installed }: { settings: S
               setAsking(false);
             }}
           />
-        </Row>
-        <Row stack label="Never kept from these apps" detail="Password fields, copies marked secret, and Dashi's Passwords are never kept either.">
+        </Setting>
+        <Setting id="keyboard/clipboard-left-out">
           <LeftOutList settings={settings} list={clipboard.leftOut ?? DEFAULT_LEFT_OUT} installed={installed ?? NOT_INSTALLED} />
-        </Row>
-        <Spot pane="keyboard" row="snippets-in-terminals">
-          <Row label="Snippets in terminals" detail="A snippet's keyword expands in terminals too. Never in password fields.">
-            <Switch
-              testID="snippets-in-terminals"
-              on={clipboard.snippetsInTerminals === true}
-              onChange={(next) => settings.patch("clipboard", { snippetsInTerminals: next ? true : undefined })}
-            />
-          </Row>
-        </Spot>
+        </Setting>
+        <Setting id="keyboard/snippets-in-terminals" control="snippets-in-terminals" />
       </Group>
       <Caption keys="⌥❖V">Type “snippet” in the launcher to add one. The history opens with</Caption>
     </>

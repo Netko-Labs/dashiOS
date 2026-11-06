@@ -6,15 +6,15 @@
  */
 
 import { statSync } from "node:fs";
-import { Switch, useColors } from "@dashi/ui";
+import { useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
-import { FRAME_RATES, isVideoPath } from "../../wallpaper/live/choice.ts";
+import { isVideoPath } from "../../wallpaper/live/choice.ts";
 import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../wallpaper/live/tiles.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, Group, Setting, useSurface } from "../ui.tsx";
 
 const TILE = { width: 148, height: 83 };
 
@@ -123,11 +123,11 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
         </>
       )}
       <Group>
-        <Row label="Add Video…" detail="An MP4, WebM, MKV, or MOV from your files; it plays muted, in a loop, and stays where it is.">
+        <Setting id="wallpaper/add-video">
           <Button testID="live-add-video" label="Add Video…" onPress={addVideo} />
-        </Row>
+        </Setting>
         {typing && (
-          <Row stack label="Path of a video" detail="Press Return to use it.">
+          <Setting id="wallpaper/video-path">
             <TextInput
               testID="live-video-path"
               value={typed}
@@ -139,23 +139,10 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
               }}
               style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
             />
-          </Row>
+          </Setting>
         )}
-        <Row label="Pause on battery" detail="Live wallpapers also stop while a window covers the screen, and while the screen is locked or off.">
-          <Switch
-            testID="live-pause-battery"
-            on={wallpaper.pauseOnBattery ?? true}
-            onChange={(pauseOnBattery) => settings.patch("wallpaper", { pauseOnBattery })}
-          />
-        </Row>
-        <Row stack label="Frame rate" detail="Higher is smoother and uses more power.">
-          <Choices
-            testID="live-fps"
-            value={wallpaper.fps ?? 30}
-            options={FRAME_RATES.map((rate) => ({ value: rate, label: `${rate} fps` }))}
-            onChange={(fps) => settings.patch("wallpaper", { fps })}
-          />
-        </Row>
+        <Setting id="wallpaper/pause-on-battery" control="live-pause-battery" />
+        <Setting id="wallpaper/frame-rate" control="live-fps" />
       </Group>
       {note !== null && (
         <View testID="live-note" style={{ flexShrink: 0 }}>

@@ -20,6 +20,7 @@ import type { Arrange } from "../layout.ts";
 import type { MenuAction } from "../menus/model.ts";
 import type { PaneId } from "../settings-app/panes.ts";
 import { isPaneId } from "../settings-app/panes.ts";
+import { type RegistryStores, type RowDef, type SettingValue, valueOf } from "../settings-app/registry/index.ts";
 import type { Arrow } from "../tiling.ts";
 import { withArgs } from "./address.ts";
 import { type PersonQuestion, personTitle } from "./confirm-sheet.tsx";
@@ -30,14 +31,16 @@ import { type Origin, type RunDeps, runAction } from "./run.ts";
 import { AppSource } from "./sources/apps.ts";
 import { commandActions } from "./sources/commands.ts";
 import { MenuSource } from "./sources/menus.ts";
-import { type SettingKey, settingState, settingsActions } from "./sources/settings.ts";
+import { settingsActions } from "./sources/settings.ts";
 import { WindowSource } from "./sources/windows.ts";
 import { type ActionContext, type ActionDef, type Args, failed, type Outcome } from "./types.ts";
 
 export interface ActionsOptions {
   compositor: Compositor | null;
-  /** The agents' server: the tools run as the person through it, and Settings is read through its desktop. */
+  /** The agents' server: the tools run as the person through it. */
   agents: Pick<Agents, "runAsPerson" | "desktop"> | null;
+  /** The settings registry's stores: Settings' rows read their state and change through them; null in a session without them. */
+  settingsStores?: RegistryStores | null;
   /** The person's own sheet (agent-sheets.tsx): only their press answers yes. */
   confirmPerson(question: PersonQuestion): Promise<boolean>;
   /** The installed apps (the shell's catalog). */
@@ -107,12 +110,13 @@ export function startActions(options: ActionsOptions): Actions {
 
   registry.add(fixedSource("tools", TOOL_ACTIONS));
   registry.add(fixedSource("dashi", commandActions(options.runMenu, options.keymap)));
-  const desktop = agents?.desktop;
+  const stores = options.settingsStores;
   registry.add(
     fixedSource(
       "settings",
       settingsActions({
-        state: (setting: SettingKey) => (desktop ? settingState(desktop, setting) : null),
+        state: (row) => (stores ? valueOf(row, stores) : null),
+        ...(stores ? { set: (row: RowDef, value: SettingValue) => row.value?.set(stores, value) } : {}),
         open: (pane, row) => {
           if (isPaneId(pane)) options.openSettings(pane, row);
         },

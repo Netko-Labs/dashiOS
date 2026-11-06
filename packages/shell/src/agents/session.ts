@@ -96,10 +96,18 @@ export class Session {
 
   /**
    * Settings revoked what this agent was allowed for good: the connection stops
-   * holding it (including what it was allowed once) and is asked again.
+   * holding it (including what it was allowed once) and is asked again. With
+   * `scopes`, only those were taken back (Privacy & Security, one at a time).
    */
-  revoke(key: string): void {
+  revoke(key: string, scopes?: readonly Scope[]): void {
     if (grantKey(this.peer, this.claims) !== key) return;
+    if (scopes) {
+      for (const scope of scopes) {
+        this.granted.delete(scope);
+        this.once.delete(scope);
+      }
+      return;
+    }
     this.granted.clear();
     this.once.clear();
   }

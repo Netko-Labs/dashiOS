@@ -13,8 +13,8 @@
  * paying are not plan steps.
  */
 
-import { SETTING_ROWS } from "../../actions/sources/settings.ts";
 import type { ActionDef, Args } from "../../actions/types.ts";
+import { agentRow, describeValue, rowName } from "../../settings-app/registry/index.ts";
 import { label, type Scope } from "../consent.ts";
 import type { ModelCall, PlanTool } from "./answerer.ts";
 
@@ -124,9 +124,6 @@ export function spokenWords(text: string, max = 140): string {
 const quoted = (value: unknown): string => `“${oneLine(String(value), 40)}”`;
 const onOff = (value: unknown): string => (value === true ? "on" : "off");
 
-/** A setting's row title and kind (actions/sources/settings.ts), by its `set_setting` name. */
-const settingRow = (name: unknown) => SETTING_ROWS.find((row) => row.setting === name);
-
 /** Switches whose row title isn't a name to turn on or off: what on and off say. */
 const TOGGLE_WORDS: Readonly<Record<string, readonly [string, string]>> = {
   dock_autohide: ["Hide the Dock automatically", "Keep the Dock in view"],
@@ -138,10 +135,12 @@ const TOGGLE_WORDS: Readonly<Record<string, readonly [string, string]>> = {
 export function settingWords(name: unknown, value: unknown): string {
   const phrase = typeof name === "string" && typeof value === "boolean" ? TOGGLE_WORDS[name] : undefined;
   if (phrase) return value ? phrase[0] : phrase[1];
-  const row = settingRow(name);
-  const title = row?.title ?? oneLine(String(name), 32);
+  // The row's name and its value's words come from the settings registry, by the row's `set_setting` name.
+  const row = agentRow(name);
+  const title = row ? rowName(row) : oneLine(String(name), 32);
   if (typeof value === "boolean") return `Turn ${title} ${onOff(value)}`;
-  return `Set ${title} to ${oneLine(String(value), 24)}`;
+  const shown = row && (typeof value === "string" || typeof value === "number") ? describeValue(row, value).toLowerCase() : String(value);
+  return `Set ${title} to ${oneLine(shown, 24)}`;
 }
 
 /** A step in plain words, from the action and its arguments: what will really happen. */
