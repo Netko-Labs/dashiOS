@@ -59,7 +59,7 @@ function Page({ id, ctx }: { id: PageId; ctx: SetupContext }) {
     case "appearance":
       return <AppearancePage ctx={ctx} />;
     case "agents":
-      return <AgentsPage />;
+      return <AgentsPage ctx={ctx} />;
     case "extras":
       return <ExtrasPage ctx={ctx} />;
     case "installing":

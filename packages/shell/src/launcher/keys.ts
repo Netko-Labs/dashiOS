@@ -44,7 +44,9 @@ export type LauncherCommand =
   /** ❖ held (the digits show) or let go. */
   | { kind: "digits"; shown: boolean }
   /** A chord pressed while Set shortcut… records. */
-  | { kind: "record"; chord: ReportedChord };
+  | { kind: "record"; chord: ReportedChord }
+  /** ⇥: Ask about the words (agents/rows.ts); on a plan, back to the words. */
+  | { kind: "tab" };
 
 const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-actions": { kind: "actions" },
@@ -55,6 +57,7 @@ const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-alias": { kind: "alias" },
   "launcher-shortcut": { kind: "shortcut" },
   "launcher-quit": { kind: "quit" },
+  "launcher-tab": { kind: "tab" },
 };
 
 /** Bound only while the launcher is open, ahead of every other rule. Keysyms as xkb names them (Prior is Page Up). */
@@ -77,6 +80,8 @@ export const LAUNCHER_RULES: Rule[] = [
   { when: "shift+Return|KP_Enter", bind: "launcher-keep-open" },
   { when: "super+c", bind: "launcher-copy" },
   { when: "super+q", bind: "launcher-quit" },
+  // ⇥ (⇧⇥ too): Ask. ❖⇥ is the switcher's still: a rule without ❖ doesn't match with it held.
+  { when: "Tab|ISO_Left_Tab", bind: "launcher-tab" },
   ...Array.from({ length: 9 }, (_, index) => ({ when: `super+${index + 1}`, bind: `launcher-pick-${index + 1}` })),
 ];
 

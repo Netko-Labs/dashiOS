@@ -29,6 +29,18 @@ import type { Outcome } from "./actions/types.ts";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
+import { agentHandlers } from "./launcher/agents/handlers.ts";
+import {
+  ASK_PLACEHOLDER,
+  askHint,
+  firstChoice,
+  type LauncherAgents,
+  type LauncherAgentsSnapshot,
+  SET_UP_ROW,
+  withAgents,
+  withStop,
+} from "./launcher/agents/rows.ts";
+import { agentField, PlanList, stepAct } from "./launcher/agents/task-mode.tsx";
 import { BUDGET } from "./launcher/budget.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
 import { Field } from "./launcher/field.tsx";
@@ -120,6 +132,8 @@ export interface LauncherProps {
   typeAhead?: TypeAheadSource;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
+  /** Agents: Ask, the plan, Now, history (launcher/agents/); without it the launcher knows none. */
+  agents?: LauncherAgents;
   onClose: () => void;
 }
 
@@ -129,6 +143,7 @@ const NO_WORLD: WorldSnapshot = { actions: [], windows: [], serial: 0 };
 const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => undefined, keyOf: () => undefined };
 const noStore = { subscribe: () => () => {}, getSnapshot: () => NO_WORLD };
 const noPrefs = { subscribe: () => () => {}, getSnapshot: () => NO_PREFS };
+const noAgents = { subscribe: () => () => {}, getSnapshot: (): LauncherAgentsSnapshot | null => null };
 
 /** Where the launcher is: searching, a row's action list, giving an alias or a key, or a link's action. */
 type Mode =
@@ -136,13 +151,18 @@ type Mode =
   | { kind: "actions"; row: Row }
   | { kind: "alias"; address: string; title: string }
   | { kind: "shortcut"; address: string; title: string; when: string | null }
-  | { kind: "presented"; presented: Presented };
+  | { kind: "presented"; presented: Presented }
+  /** An Ask's plan: the field takes a follow-up (launcher/agents/task-mode.tsx). */
+  | { kind: "task"; id: string };
 
 export function Launcher(props: LauncherProps) {
   const { entries, recent = [], files, keys, onClose, host, ranking } = props;
   const colors = useColors();
   const world = useSyncExternalStore(props.world?.subscribe ?? noStore.subscribe, props.world?.getSnapshot ?? noStore.getSnapshot);
   const prefs = useSyncExternalStore(props.prefs?.subscribe ?? noPrefs.subscribe, props.prefs?.getSnapshot ?? noPrefs.getSnapshot);
+  const agents = useSyncExternalStore(props.agents?.subscribe ?? noAgents.subscribe, props.agents?.getSnapshot ?? noAgents.getSnapshot);
+  // The words ⇥ was pressed for: Ask (or "Set up an agent…") is offered for them.
+  const [tabbed, setTabbed] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [held, setHeld] = useState<string | null>(null);
   const [allApps, setAllApps] = useState(false);
@@ -213,7 +233,7 @@ export function Launcher(props: LauncherProps) {
   const clock = useClockPrefs();
   const answers = { locale: clock.locale, hour24: usesHour24(clock) };
   const working = timingNow();
-  const sections = buildSections({
+  const local = buildSections({
     answers,
     query,
     entries,
@@ -228,6 +248,15 @@ export function Launcher(props: LauncherProps) {
     failed,
     icons: ICONS,
   });
+  // Agents' rows go around the local ones, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
+  const sections = withAgents(local, {
+    query,
+    allApps,
+    snapshot: agents,
+    tabbed: tabbed !== null && tabbed === text,
+    ...(props.agents ? { history: props.agents.history } : {}),
+    now: Math.floor(Date.now() / 1000),
+  });
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   // Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts).
   const typedAt = useRef<number | null>(null);
@@ -238,11 +267,11 @@ export function Launcher(props: LauncherProps) {
     typedAt.current = null;
   }, [query]);
   const rows = selectable(sections);
-  const selected = resolveSelection(
-    rows.map((row) => row.id),
-    held,
-  );
+  const rowIds = rows.map((row) => row.id);
+  // With nothing held the first row, but never Ask: it is chosen, not given.
+  const selected = held !== null && rowIds.includes(held) ? held : firstChoice(rowIds);
   const selectedRow = rows.find((row) => row.id === selected);
+  const task = mode.kind === "task" ? agents?.tasks.find((each) => each.id === mode.id) : undefined;
 
   // The action list, or what the alias and shortcut fields offer.
   const verbs: Verb[] =
@@ -261,12 +290,19 @@ export function Launcher(props: LauncherProps) {
   const verbRows = verbs.map((each) => verbRow(each, asking === each.id));
   const verbIds = verbRows.map((row) => row.id);
   const selectedVerbId = resolveSelection(verbIds, heldVerb);
-  const listIds = mode.kind === "search" ? rows.map((row) => row.id) : verbIds;
+  const stepIds = task ? task.steps.map((_, at) => `step:${at}`) : [];
+  const listIds = mode.kind === "search" ? rowIds : mode.kind === "task" ? stepIds : verbIds;
+  // A plan's steps start with none selected: ↓ selects the first, ↑ the last.
+  const heldStep = mode.kind === "task" && heldVerb?.startsWith("step:") && stepIds.includes(heldVerb) ? Number(heldVerb.slice(5)) : null;
 
   const latest = useRef(listIds);
   latest.current = listIds;
   const mover = (how: Move) => {
     if (mode.kind === "search") setHeld((now) => moveSelection(latest.current, now, how));
+    else if (mode.kind === "task")
+      setHeldVerb((now) =>
+        now === null ? (latest.current[how === "up" || how === "last" ? latest.current.length - 1 : 0] ?? null) : moveSelection(latest.current, now, how),
+      );
     else setHeldVerb((now) => moveSelection(latest.current, now, how));
     setAsking(null);
   };
@@ -322,6 +358,38 @@ export function Launcher(props: LauncherProps) {
     else say(outcome);
   };
 
+  /** Show a task's plan; the field takes a follow-up. */
+  const openTask = (id: string) => {
+    setMode({ kind: "task", id });
+    setFilter("");
+    setHeldVerb(null);
+    setAsking(null);
+  };
+  // Agents' rows, ⇥, and Return on a plan (launcher/agents/handlers.ts).
+  const agentKeys = agentHandlers({
+    agents: props.agents,
+    snapshot: agents,
+    mode: mode.kind === "search" || mode.kind === "task" ? mode.kind : "other",
+    task,
+    text,
+    draft: filter,
+    selectedRow,
+    openTask,
+    clearDraft: () => setFilter(""),
+    editWords: (words) => {
+      backToSearch();
+      restart(words);
+    },
+    back: backToSearch,
+    close: onClose,
+    say,
+    sayDone,
+    offerSetUp: (words) => {
+      setTabbed(words);
+      setHeld(SET_UP_ROW);
+    },
+  });
+
   const perform = (effect: Effect, row: Row | undefined, stay = false): void => {
     const runOf = (promise: Promise<Outcome> | undefined) => void promise?.then((outcome) => ran(outcome, stay));
     switch (effect.kind) {
@@ -372,6 +440,8 @@ export function Launcher(props: LauncherProps) {
         setAllApps(true);
         setHeld(null);
         return;
+      case "agent":
+        return agentKeys.act(effect.act);
       case "new-window":
         learn(row);
         if (host?.newWindow(effect.entry)) finish(stay);
@@ -477,6 +547,8 @@ export function Launcher(props: LauncherProps) {
         props.prefs?.setKey(mode.address, mode.when);
         sayDone("Shortcut kept");
         return backToSearch();
+      case "task":
+        return agentKeys.submit(heldStep);
     }
   };
 
@@ -508,6 +580,8 @@ export function Launcher(props: LauncherProps) {
       case "record":
         if (mode.kind === "shortcut") setMode({ ...mode, when: chordWhen(cmd.chord) });
         return;
+      case "tab":
+        return agentKeys.tab();
     }
   };
   const commands = useRef(command);
@@ -609,6 +683,7 @@ export function Launcher(props: LauncherProps) {
                 openActions(row);
               }}
               {...(digitOf.has(row.id) ? { digit: digitOf.get(row.id) as number } : {})}
+              {...withStop(row, agentKeys.act)}
             />
           ))}
           {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
@@ -637,7 +712,21 @@ export function Launcher(props: LauncherProps) {
         ))}
       </View>,
     );
+  } else if (mode.kind === "task" && task) {
+    list = listBox(
+      <PlanList
+        task={task}
+        selected={heldStep}
+        onStep={(at) => {
+          const step = task.steps[at];
+          if (step && stepAct(step)) agentKeys.submit(at);
+        }}
+        onHover={(at) => setHeldVerb(`step:${at}`)}
+      />,
+    );
   }
+  // An Ask's plan: the spark in place of the magnifier, the request as the chip, the field for a follow-up.
+  const taskField = mode.kind === "task" ? agentField(task, filter, colors.agent) : null;
 
   const chip =
     mode.kind === "actions"
@@ -648,26 +737,32 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : undefined;
+            : taskField?.chip;
   const placeholder =
     mode.kind === "search"
-      ? placeholderFor(files !== undefined && !filesOff)
-      : mode.kind === "alias"
-        ? "An alias, like ff"
-        : mode.kind === "shortcut"
-          ? "Press the keys"
-          : "Search actions";
+      ? agents?.answerer
+        ? ASK_PLACEHOLDER
+        : placeholderFor(files !== undefined && !filesOff)
+      : taskField
+        ? taskField.placeholder
+        : mode.kind === "alias"
+          ? "An alias, like ff"
+          : mode.kind === "shortcut"
+            ? "Press the keys"
+            : "Search actions";
   const hints =
     mode.kind === "search"
       ? text
-        ? hintFor(selectedRow, ctx)
+        ? [...hintFor(selectedRow, ctx), ...askHint(text, agents)]
         : []
-      : mode.kind === "presented"
-        ? [
-            { keys: "Esc", label: "close" },
-            { keys: KEYS.primary, label: "run" },
-          ]
-        : [{ keys: "Esc", label: "back" }];
+      : taskField
+        ? taskField.hints
+        : mode.kind === "presented"
+          ? [
+              { keys: "Esc", label: "close" },
+              { keys: KEYS.primary, label: "run" },
+            ]
+          : [{ keys: "Esc", label: "back" }];
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
@@ -690,6 +785,7 @@ export function Launcher(props: LauncherProps) {
           value={mode.kind === "search" ? query : filter}
           revision={fieldRevision}
           placeholder={placeholder}
+          {...(taskField ? { glyph: taskField.glyph } : {})}
           {...(chip ? { chip } : {})}
           hints={hints}
           notice={notice}

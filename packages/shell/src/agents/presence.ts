@@ -67,6 +67,8 @@ export interface Turn {
   who: Who;
   /** What the agent asks the person to do. */
   reason: string;
+  /** The window handed over, which "Now" in the launcher brings forward. */
+  window?: number;
 }
 
 export type Allow = "once" | "always" | "deny";

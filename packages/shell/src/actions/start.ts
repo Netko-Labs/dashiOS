@@ -25,14 +25,14 @@ import { withArgs } from "./address.ts";
 import { type PersonQuestion, personTitle } from "./confirm-sheet.tsx";
 import { copyAddress } from "./copy.ts";
 import { linksSocketPath, serveLinks } from "./links.ts";
-import { ActionRegistry, fixedSource } from "./registry.ts";
+import { ActionRegistry, fixedSource, mayUse } from "./registry.ts";
 import { type Origin, type RunDeps, runAction } from "./run.ts";
 import { AppSource } from "./sources/apps.ts";
 import { commandActions } from "./sources/commands.ts";
 import { MenuSource } from "./sources/menus.ts";
 import { type SettingKey, settingState, settingsActions } from "./sources/settings.ts";
 import { WindowSource } from "./sources/windows.ts";
-import type { ActionContext, ActionDef, Args, Outcome } from "./types.ts";
+import { type ActionContext, type ActionDef, type Args, failed, type Outcome } from "./types.ts";
 
 export interface ActionsOptions {
   compositor: Compositor | null;
@@ -74,6 +74,13 @@ export interface Actions {
   setPresenter(present: ((action: ActionDef, args: Args) => boolean) | null): void;
   /** Copy Address (the launcher's action list). */
   copyAddress(action: ActionDef, args?: Args): Promise<boolean>;
+  /**
+   * A step of an agent's plan the person approved with their own press
+   * (agents/ask/tasks.ts): that press is its Allow Once. Only an agents'
+   * tool runs so; it is logged as `by.agent`'s, in task `by.task`. A tool that
+   * asks every time still asks, on the person's sheet.
+   */
+  runApproved(action: ActionDef, args: Args, by: { agent: string; task: string }): Promise<Outcome>;
   close(): void;
 }
 
@@ -193,6 +200,20 @@ export function startActions(options: ActionsOptions): Actions {
       present = next;
     },
     copyAddress: (action, args = {}) => copyAddress(action, args),
+    async runApproved(action, args, by) {
+      if (action.tool === undefined || !mayUse(action, "agents")) return failed("Agents can't use this.");
+      const checked = action.check(args);
+      if (!checked.ok) return failed(checked.error);
+      let outcome: Outcome;
+      try {
+        outcome = await checked.run(context(null));
+      } catch (error) {
+        outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      const word = outcome.ok ? "ok" : outcome.error === "Cancelled." ? "cancelled" : "error";
+      logActivity({ agent: by.agent, claims: null, tool: action.address, outcome: word, task: by.task });
+      return outcome;
+    },
     close() {
       stopLinks();
       windowSource.close();

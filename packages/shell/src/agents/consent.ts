@@ -85,7 +85,8 @@ export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessi
 /** Scopes "Always Allow" never keeps: allowed for the connection at most (paying). */
 export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay"]);
 
-function stateDir(): string {
+/** Where the agents' files are: `$XDG_STATE_HOME/dashi/agents/`. */
+export function stateDir(): string {
   const base = process.env.XDG_STATE_HOME || join(homedir(), ".local/state");
   return join(base, "dashi/agents");
 }
@@ -168,6 +169,8 @@ export interface Activity {
   claims: string | null;
   tool: string | null;
   outcome: string;
+  /** The launcher's Ask a call was a step of (agents/ask/tasks.ts), so the history groups them. */
+  task?: string;
 }
 
 export function logActivity(entry: Activity): void {

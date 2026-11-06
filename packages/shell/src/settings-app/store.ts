@@ -34,6 +34,8 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
+import { isModelName } from "../agents/ask/local.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
@@ -173,6 +175,13 @@ export interface LauncherSettings {
   keys?: Readonly<Record<string, string>>;
 }
 
+/** Who answers the launcher's Ask (agents/ask/answerer.ts); unset until the person picks. */
+export interface AgentsSettings {
+  answerer?: AnswererChoice;
+  /** The local model to ask by name; the first one installed when unset. */
+  localModel?: string;
+}
+
 export interface DisplaySettings {
   /** The scale the person chose; it wins over the one picked from the pixel density. */
   scale?: number;
@@ -202,6 +211,8 @@ export interface SettingsData {
   graphics: GraphicsSettings;
   /** The launcher's aliases and keys. */
   launcher: LauncherSettings;
+  /** Who answers the launcher's Ask. */
+  agents: AgentsSettings;
 }
 
 /** What the shell does with no `idle` setting (the same default as settings.ts). */
@@ -293,6 +304,7 @@ const SECTIONS = {
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
+  agents: { path: ["agents"], fields: { answerer: isAnswererChoice, localModel: isModelName } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -392,6 +404,7 @@ export function readSettings(raw: unknown): SettingsData {
     power: readSection(root, "power") as PowerSection,
     graphics: readSection(root, "graphics") as GraphicsSettings,
     launcher: readSection(root, "launcher") as LauncherSettings,
+    agents: readSection(root, "agents") as AgentsSettings,
   };
 }
 

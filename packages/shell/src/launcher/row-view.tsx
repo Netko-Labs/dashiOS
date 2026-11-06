@@ -20,14 +20,34 @@ export const HEAD_HEIGHT = 22;
 const ICON = 28;
 const BAR = { width: 3, height: 20 };
 
-function Icon({ icon }: { icon: RowIcon }) {
+/** An agent's dot on its row's icon (Now), 6 across. */
+const DOT = 6;
+/** The stop square at a running agent's right end, as the menu bar's pill draws it. */
+const STOP = 9;
+
+function Icon({ icon, agent }: { icon: RowIcon; agent?: Row["agent"] }) {
   const colors = useColors();
   if ("none" in icon) return null;
   if ("image" in icon) return <Image source={icon.image} style={{ width: ICON, height: ICON }} />;
-  // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4).
+  // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4). Only Ask's glyph is shiso (CO-3).
   return (
     <View style={{ width: ICON, height: ICON, borderRadius: 6.7, alignItems: "center", justifyContent: "center", backgroundColor: colors.button }}>
-      <Svg markup={icon.glyph} size={16} color={colors.text} />
+      <Svg markup={icon.glyph} size={16} color={agent === "ask" ? colors.agent : colors.text} />
+      {agent === "dot" && (
+        <View
+          testID="launcher:agent-dot"
+          style={{ position: "absolute", right: -1, bottom: -1, width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: colors.agent }}
+        />
+      )}
+    </View>
+  );
+}
+
+function StopSquare({ id, onStop }: { id: string; onStop: () => void }) {
+  const colors = useColors();
+  return (
+    <View testID={`launcher:stop:${id}`} onPress={onStop} style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ width: STOP, height: STOP, borderRadius: 2, backgroundColor: colors.agentInk }} />
     </View>
   );
 }
@@ -41,6 +61,8 @@ export interface ResultRowProps {
   onContextMenu?: () => void;
   /** ❖ is held: the digit that picks this row (1–9). */
   digit?: number;
+  /** The stop square of a row that has one (`row.stop`). */
+  onStop?: () => void;
 }
 
 /** What the right end shows (see the module comment). */
@@ -53,10 +75,11 @@ function RightEnd({ row, digit, quiet }: { row: Row; digit: number | undefined; 
   return null;
 }
 
-export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit }: ResultRowProps) {
+export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit, onStop }: ResultRowProps) {
   const colors = useColors();
   // On the wash every word is ink: muted ink there would fall under 4.5:1. A destructive row stays red, selected or not.
-  const ink = row.danger ? colors.criticalInk : selected ? colors.onSelection : colors.text;
+  // Ask's words are shiso until it is selected: then they are the selection's ink, like any row's.
+  const ink = row.danger ? colors.criticalInk : selected ? colors.onSelection : row.agent === "ask" ? colors.agentInk : colors.text;
   const quiet = selected ? colors.onSelection : colors.textMuted;
   return (
     <View
@@ -91,7 +114,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
           }}
         />
       )}
-      <Icon icon={row.icon} />
+      <Icon icon={row.icon} {...(row.agent ? { agent: row.agent } : {})} />
       <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, color: ink, ...(row.strong ? { fontWeight: "semibold" } : {}) }}>
@@ -116,6 +139,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
         )}
       </View>
       <RightEnd row={row} digit={digit} quiet={quiet} />
+      {row.stop && onStop && <StopSquare id={row.id} onStop={onStop} />}
       {row.more && <Svg markup={KEY_GLYPHS["→"] ?? ""} size={12} color={quiet} />}
     </View>
   );

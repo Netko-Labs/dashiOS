@@ -508,11 +508,19 @@ A model key is a token item (`src/agents/tokens/model-keys.ts`):
 `anthropic` for `api.anthropic.com` in `x-api-key: {}` (Claude Code reads
 `ANTHROPIC_API_KEY`), `openai` for `api.openai.com` in
 `Authorization: Bearer {}` (`OPENAI_API_KEY`). Settings says "Key: in your
-vault. Claude never sees it." The launcher's answerer asks `token(name)`
-(also `passwords.token(name)`): the placeholder and the environment to
-start it with through dashi-agent (`ANTHROPIC_API_KEY=dashi:anthropic`),
-never the key; null when the vault hasn't it or doesn't answer, so the
-answerer falls back to its own configuration.
+vault. Claude never sees it." An agent started through dashi-agent gets
+`token(name)` (also `passwords.token(name)`): the placeholder and the
+environment to start it with (`ANTHROPIC_API_KEY=dashi:anthropic`), never
+the key; null when the vault hasn't it or doesn't answer, so the agent
+falls back to its own configuration.
+
+The launcher's own answerer (docs/actions.md, "Agents in the launcher") is
+not an agent in a sandbox: the shell itself calls the Messages API, so it
+asks `token {name: "anthropic", host: "api.anthropic.com"}` like the proxy
+does (`agents/ask/keys.ts`), hands the key to the Anthropic SDK client for
+that one request, and wipes the bytes. Without the item it uses the
+session's `ANTHROPIC_API_KEY`. Settings › Agents says where the key is from
+the `tokens` list, without asking for it.
 
 ### What the proxy can't do
 

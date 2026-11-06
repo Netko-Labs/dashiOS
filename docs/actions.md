@@ -119,6 +119,13 @@ or a link (`actions.openLink`).
 - **Agents' tools stay theirs.** An action with `who: "agents"` (screenshots,
   the agent's own pointer and keys, sign-in, paying) is not the person's
   command.
+- **An agent's plan, approved.** A step of the launcher's Ask that the
+  person ran with their own Return (below) goes through
+  `actions.runApproved(action, args, { agent, task })`: only a tool action
+  agents may call, checked by its own `check`, run through the same
+  `runAsPerson` as the person's commands (that press is the step's Allow
+  Once), and logged as the answerer's (`agent: "Claude"`) with the task's id
+  (`task`). A tool that asks every time still asks, on the person's sheet.
 
 ## Links from outside
 
@@ -179,6 +186,57 @@ has Copy Address, Set alias… and Set shortcut….
 `actions.setPresenter` is the launcher's: a link that must not run by
 itself opens the launcher with the action and its arguments filled in
 (`Presented`, `launcher/host.ts`); Return runs it, as the person.
+
+## Agents in the launcher
+
+Local first (docs/betterments.html, "Agents in the launcher",
+recommendation B): the rows above never wait for a model, and no model is
+called while typing. Code: `agents/ask/` (the answerers, the plan, the
+tasks, Now, the history) and `launcher/agents/` (the rows, the plan view,
+the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
+
+- **Who answers.** Settings › Agents (or the Setup Assistant's Agents page):
+  "Answer requests with" a local model (first), Claude, or none;
+  settings.json `agents.answerer` (`"local" | "claude" | "none"`, unset until
+  the person picks) and `agents.localModel`. A local model is Ollama on
+  `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
+  only, with the key from the vault's token item `anthropic` for that host
+  (`VaultTokens.forHost("anthropic", "api.anthropic.com")`,
+  `agents/ask/keys.ts`; "Tokens that stay home", docs/secrets.md) or else
+  the session's `ANTHROPIC_API_KEY`. The key reaches the Anthropic client in
+  the shell's own process only, for each request, and is dropped: never
+  logged, shown, sent to the model, or put in a sandbox. Settings learns
+  where it is from the token list, without asking for the token. No other
+  network path.
+- **Asking.** An Ask row is added last, never selected for you, when an
+  answerer is chosen and the words read like a request (three or more
+  words, a verb first, or a "?"; not a sum the launcher answers), or after
+  ⇥ (a launcher-only rule, `Tab|ISO_Left_Tab` → `launcher-tab`). It says
+  where the words go ("Claude · Anthropic, your key", "Local · stays on this
+  computer"). With nothing picked yet, ⇥ offers "Set up an agent…"; "None"
+  hides Ask. Only the typed words are sent.
+- **The plan.** The answerer is offered the actions a person and agents
+  both use (`who: "both"` with a tool) as tools; its calls come back as
+  numbered steps in Dashi's words (from the action and its arguments, never
+  the model's), each checked by its action and wearing its scope chip
+  ("Change settings · allowed", "· will ask" for a tool that asks every
+  time). Nothing runs until Return. Return runs exactly those calls, in
+  order, if `input-origin` on the launcher's layer says the person's own
+  hands pressed it (`agents/person.ts`, as a consent sheet's yes); if not,
+  every step reads "Not allowed" with "Allow once", which asks again on the
+  person's press. A step's own sheet answered no is "Not allowed" too. A
+  settings change keeps the value it had, for Undo. Typing on a plan and
+  Return sends a follow-up: the model hears how each call went, then the new
+  words. ⇥ goes back to the words to edit them; Esc leaves the plan running.
+- **Now.** An empty launcher lists, above Recent, a pending "Your turn"
+  (Return brings its window forward), the launcher's own tasks (Return shows
+  the plan), and the agents connected over MCP with what each is doing; each
+  has a shiso dot and a stop square.
+- **History.** "history" in the launcher and the list in Settings › Agents
+  read `activity.jsonl` (an MCP agent's calls grouped by connection) and
+  `tasks.jsonl` beside it (one line per plan: the request, each step's words
+  and how it went, and the value to put back), with Undo for settings
+  changes.
 
 ## The keymap
 

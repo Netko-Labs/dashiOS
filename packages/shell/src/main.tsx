@@ -12,11 +12,16 @@ import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
+import { isSettingKey, settingState } from "./actions/sources/settings.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
+import { modelKeys, vaultTokenSource } from "./agents/ask/keys.ts";
+import { TurnWatch } from "./agents/ask/now.ts";
+import { type Ask, startAsk } from "./agents/ask/service.ts";
 import { Grants } from "./agents/consent.ts";
 import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
+import { personAnswered } from "./agents/person.ts";
 import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
 import { serveTokens, tokensSocketPath } from "./agents/tokens/index.ts";
@@ -383,6 +388,12 @@ const approvalUi = createApprovalUi();
 watchApprovals(approvalUi);
 // A sheet's yes counts only if the person pressed it (agents/person.ts).
 const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
+// A "Your turn" is in the launcher's Now too while its banner is up (agents/ask/now.ts).
+const turnWatch = new TurnWatch();
+const showTurn = agentUi.turn;
+agentUi.turn = (turn, signal) => turnWatch.track(turn, showTurn(turn, signal));
+// The launcher's agents (agents/ask/): started once the action registry is, below.
+let askAgents: Ask | null = null;
 
 // Notifications: org.freedesktop.Notifications on the session bus, with banners
 // at the top right. If the bus is missing or the name is taken, it logs and
@@ -512,6 +523,7 @@ const settingsApp = startSettingsApp({
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
   services: paneServicesOf,
 });
@@ -1022,6 +1034,7 @@ function openLauncher(presented: Presented | null = null): void {
         presented={presented}
         languages={launcherLanguages}
         typeAhead={typeAhead}
+        {...(askAgents ? { agents: askAgents.launcher } : {})}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
         onClose={close}
       />,
@@ -1237,6 +1250,28 @@ launcherHost = shellLauncherHost({
   pins,
   keymap: currentKeymap,
 });
+// Agents in the launcher (agents/ask/): Ask, the plan run by the person's own Return, Now, and the history.
+// The answerer is Settings › Agents' choice; Claude's key is the vault's token item, else ANTHROPIC_API_KEY.
+askAgents = startAsk({
+  settings: settingsStore,
+  agents: agentStore,
+  turns: turnWatch,
+  actions: () => actions.registry.list(),
+  runApproved: (action, args, by) => actions.runApproved(action, args, by),
+  runAsPerson: (address, args) => {
+    const action = actions.registry.get(address);
+    return action ? actions.run(action, args) : Promise.resolve({ ok: false, error: `Nothing is at ${address}.` });
+  },
+  personPressed: () =>
+    compositor ? personAnswered((method, params) => compositor.request(method, params), LAUNCHER_MOTION.namespace) : Promise.resolve(false),
+  settingNow: (name) => (agents && isSettingKey(name) ? settingState(agents.desktop, name) : null),
+  focus: async (window) => {
+    await compositor?.request("focus", { window });
+  },
+  stopAgent: (id) => agents?.stop(id),
+  openSettings: () => settingsApp.open("agents"),
+  keys: modelKeys(vaultTokenSource(passwords.vault.tokens)),
+});
 // A dashi:// link that must not run by itself (destructive, an agent's tool) opens in the launcher, filled in, for Return.
 if (compositor) {
   actions.setPresenter((action, args) => {
@@ -1378,6 +1413,7 @@ const quit = () => {
     ],
     ["person keys", stopFollowingPersonKeys],
     ["actions", () => actions.close()],
+    ["ask", () => askAgents?.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
     ["screen recording", () => captureTools?.close()],

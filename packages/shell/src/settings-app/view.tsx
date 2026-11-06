@@ -70,7 +70,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "passwords":
       return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : null;
     case "agents":
-      return <AgentsPane grants={ctx.grants} home={ctx.home} />;
+      return <AgentsPane grants={ctx.grants} home={ctx.home} settings={ctx.settings} {...(ctx.answers ? { answers: ctx.answers } : {})} />;
     case "about":
       return <AboutPane about={ctx.about} openSetup={ctx.openSetup} />;
     case "network":
