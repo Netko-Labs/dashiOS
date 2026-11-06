@@ -7,12 +7,12 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, Text, TextInput, View } from "@mirinjs/metal";
+import { type NativeHostTransport, type NativeRoot, render, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { SHEET_LAYERS } from "./agents/mask.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
-import { METAL_HOST } from "./apps.ts";
 import { Button, opaque } from "./consent.tsx";
+import { spawnShellHost } from "./metal-host.ts";
 
 export const APPROVAL = { width: 460, height: 300 } as const;
 
@@ -83,7 +83,7 @@ export function createApprovalUi(): ApprovalsUi & { close(): void } {
   return {
     show(question, answer) {
       hide(question.id);
-      const host = spawnNativeHost(METAL_HOST, {
+      const host = spawnShellHost({
         title: "Dashi's vault",
         appId: "dev.dashi.shell",
         width: APPROVAL.width,

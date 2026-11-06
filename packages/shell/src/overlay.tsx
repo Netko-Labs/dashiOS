@@ -5,9 +5,10 @@
  * host that dies by itself is the same close.
  */
 
-import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost, TextInput, View } from "@mirinjs/metal";
+import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./apps.ts";
+import { spawnShellHost } from "./metal-host.ts";
 import { WarmHost } from "./warm-host.ts";
 
 /** The spare host overlays open on (warm-host.ts). */
@@ -42,7 +43,7 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
   // Plain overlays take the warm host; one that needs more of a host gets its own.
   const plain = options.capabilities === undefined && options.env === undefined && options.onStderr === undefined;
   const window = { appId: "dev.dashi.shell", ...pick(options) };
-  const host = (plain ? warmHost.take(window) : null) ?? spawnNativeHost(METAL_HOST, { appId: "dev.dashi.shell", ...options });
+  const host = (plain ? warmHost.take(window) : null) ?? spawnShellHost({ appId: "dev.dashi.shell", ...options });
   onHost?.(host);
   const root = render(element, host);
   let open = true;

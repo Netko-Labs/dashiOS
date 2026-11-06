@@ -12,6 +12,7 @@ import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost 
 import type { ReactElement } from "react";
 import { appearance } from "./appearance.ts";
 import type { PopoverPlacement } from "./client.ts";
+import type { WarmHost } from "./warm-host.ts";
 
 /** The Metal host: the session's (`DASHI_METAL_HOST`, which the sandbox sets), else the installed one. */
 export const metalHost = (env: Record<string, string | undefined> = process.env): string => env.DASHI_METAL_HOST ?? "/usr/libexec/dashi/mirin-metal-host";
@@ -45,18 +46,22 @@ export interface PopoverWindowOptions {
   element: ReactElement;
   onClosed(): void;
   spawn?: typeof spawnNativeHost;
+  /** The applet's warm host, taken when one is ready (warm-host.ts). */
+  warm?: WarmHost | null;
 }
 
 let connected = false;
 
 /** Opens `element` where the shell placed it. */
-export function openPopoverWindow({ appId, title, placement, element, onClosed, spawn = spawnNativeHost }: PopoverWindowOptions): OpenPopover {
+export function openPopoverWindow({ appId, title, placement, element, onClosed, spawn = spawnNativeHost, warm = null }: PopoverWindowOptions): OpenPopover {
   if (!connected) {
     connected = true;
     const source = appearance();
     setAppearanceSource({ subscribe: source.subscribe, isDark: source.isDark });
   }
-  const host = spawn(metalHost(), { appId, title, width: placement.width, height: placement.height, surface: popoverSurface(placement) });
+  const shape = { appId, title, width: placement.width, height: placement.height, surface: popoverSurface(placement) };
+  // A warm host draws on its first frame; a new one takes a second or two to start. Either is named for screen readers.
+  const host = warm?.take(shape) ?? spawn(metalHost(), { ...shape, env: { MIRIN_METAL_APP_NAME: title } });
   const root = render(element, host);
   let open = true;
   const finish = (): void => {
