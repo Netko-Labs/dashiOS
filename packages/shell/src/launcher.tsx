@@ -440,8 +440,13 @@ export function Launcher(props: LauncherProps) {
     else say(outcome);
   };
 
-  /** Show a task's plan; the field takes a follow-up. */
+  /**
+   * Show a task's plan; the field takes a follow-up. The words asked are the plan's now (its chip; ⇥ edits
+   * them): the search is left empty, so going back to it never puts them in the field again, where they
+   * took the place of what was typed next ("history" right after a plan ran).
+   */
   const openTask = (id: string) => {
+    restart("");
     setMode({ kind: "task", id });
     setFilter("");
     setHeldVerb(null);
