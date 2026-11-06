@@ -96,6 +96,10 @@ impl Dashi {
             self.close_overview(duration.unwrap_or(CLOSING).min(Duration::from_secs(2)));
             return Ok(json!({}));
         };
+        // It would take presses on the lock screen (session/lock.rs).
+        if self.lock.locked {
+            return Err("the screen is locked".into());
+        }
         let plan = windows.as_array().ok_or("`windows` must be a list")?;
         let mut targets = HashMap::new();
         for placed in plan {

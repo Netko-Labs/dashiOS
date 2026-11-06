@@ -35,7 +35,7 @@ them until the compositor side pins them down here.
 | `subscribe` | `{}` | `{}`; events start flowing to this connection |
 | `session` | `{}` | `{waylandDisplay, display: string\|null, xwayland: "off"\|"starting"\|"ready"\|"failed", pointer: {x,y}\|null, locked: bool}` |
 | `windows` | `{}` | `{windows: Window[]}`, front to back: the windows that show, most recently given the keyboard first, then the minimized, then the hidden (each latest first) |
-| `focus` | `{window}` | `{}`; raises, unminimizes, unhides, switches to its Space |
+| `focus` | `{window}` | `{}`; raises, unminimizes, unhides, switches to its Space. While locked it is raised but not given the keyboard, which stays on the lock screen; the unlock gives it to the window in front (*see* "While locked" below) |
 | `close` | `{window}` | `{}`; asks the client to close |
 | `minimize` | `{window}` | `{}` |
 | `hide` | `{window}` | `{}` |
@@ -43,7 +43,7 @@ them until the compositor side pins them down here.
 | `frame` | `{window, x, y, width, height, maximized?: bool, tiled?: bool}` | `{}`; `maximized` tells the app it is maximized (xdg `Maximized`, X11 `_NET_WM_STATE_MAXIMIZED_*`; the shell's Fill), and its absence that it is not. `tiled` says the shell made it a tile: it casts the `window-style` `tiled` shadow until another `frame` without it, Fill, full screen, or the person moves or resizes it (the app is not told). The frame a window had before a tile or Fill is the shell's to remember (`src/arrange.ts`). Ending maximized (a `frame` without it after one with it) sends the app two configures, so an app that answers the first with the size it had before it was maximized (GPUI does) takes this one at the second. A window held in a move grab is held at the new frame from the next motion on, for the pointer where the press was (what the shell sends on `window-grab`). A window off screen (minimized, hidden, or on a Space that is not shown) takes the frame where it waits: it comes back there |
 | `place` | `{window, x, y, space?}` | `{}`; answers `window-placing`. With `space` (not the one that shows) the window waits there, off screen and without the keyboard, until that Space shows; *see* `src/arrange.ts`, `src/spaces/fullscreen.ts`. An unknown Space is an error |
 | `fullscreen` | `{window, on: bool}` | `{}`; a window on a Space that is not shown goes full screen there (on the screen its frame is mostly on) and shows so when that Space does; out of full screen off screen (another Space, minimized, hidden), it waits at the frame it had before. A minimized window cannot enter full screen |
-| `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window |
+| `send-keys` | `{window, chord: "ctrl+shift+z"}` | `{}`; delivers the chord to that window. Refused while locked ("the screen is locked"), before the window is touched |
 | `animation-target` | `{targets: [{window, rect: Frame\|null}]}` | `{}`; where minimize shrinks to |
 | `layer-motion` | `{namespace, ms: 0 to 300, scale?: 0.5 to 1}` | `{}`, or an error; from now on a layer surface opened with that namespace fades in from `scale` of its size (about its top middle) over `ms`, ease-out cubic, counted from the first frame it draws (the shell's launcher: `dashi.launcher`, 160 ms from 0.96). `ms` 0 stops it for the namespace. Instant with `chrome {reduceMotion}`. Closing is not animated |
 | `window-for-handle` | `{handle}`: a portal's parent window, `wayland:<xdg-foreign handle>` or `x11:<X window id, hex>` | `{window: int\|null}`; null for a handle that names no window (unknown, revoked, or a window gone) |
@@ -88,11 +88,11 @@ windows; an X11 window's `pid` is its own
 | --- | --- | --- |
 | `chrome` | title bar style; *see* `src/appearance/chrome.ts` | `{}` |
 | `window-style` | the depth between windows, the whole look each time; *see* `windowStyle`, `src/appearance/window-style.ts`: `{shadow?: {focused?, other?, tiled?, filled?, sheet?}, edge?: Line & {filled?: bool}, ring?: Line & {on?: bool}, fade?: ms}`, each shadow a list of up to two `{x?, y?, blur?, spread?, alpha?}` (logical pixels as CSS `box-shadow` has them, offsets and spread −128 to 128, blur 0 to 128 for a Gaussian of sigma blur/2; black at `alpha` 0 to 1; the first drawn over the second), a `Line` `{color: "#rrggbb[aa]", width: 0 to 8}`, `fade` 0 to 1000 | `{}`, or an error (nothing changes). Until the first, windows have none. A window casts `focused` while it or its sheet has the keyboard, else `other`, cross-faded over `fade` ms (instant with `chrome {reduceMotion}`); `tiled` while it is a tile (`frame {tiled}`), `filled` while it is filled (`frame {maximized}`, until another `frame` or the person resizes it); `sheet` while attached (`attach`). The shadow is cut out where the window is (a rounded corner shows what is behind) and stays on the screen under the window's middle. `edge` is drawn just inside every frame, following its rounded corners (a filled window's too unless `edge.filled` is false); `ring` just outside the focused window's frame, in place of its edge (fading with the shadows), never on a sheet, and not in the overview. A full screen window, and a client whose surfaces reach past its geometry (it draws its own shadow), get none; neither do popups, layer surfaces, or a capture of one window. Overview windows and flights to the Dock get the shadow and edge at their scale |
-| `keymap` | the bindings; *see* `src/keymap.ts` (`KEYMAP`), plus `afterTap?: Rule[]` | `{}`; matching chords become `binding` events. `afterTap` is a second list of rules the compositor switches to by itself the moment ❖ is tapped (before the `super {phase: "tap"}` event goes out), once, until the next `keymap`: the shell's launcher takes the keys typed after a tap from that instant (`src/launcher/type-ahead.ts`). Without it a tap changes no rules |
+| `keymap` | the bindings; *see* `src/keymap.ts` (`KEYMAP`), plus `afterTap?: Rule[]` and `locked?: Rule[]` | `{}`; matching chords become `binding` events. `afterTap` is a second list of rules the compositor switches to by itself the moment ❖ is tapped (before the `super {phase: "tap"}` event goes out), once, until the next `keymap`: the shell's launcher takes the keys typed after a tap from that instant (`src/launcher/type-ahead.ts`). Without it a tap changes no rules. `locked` is the only list matched while the screen is locked, its `send`, `tap` and `swallow` going to the lock screen (`LOCKED_RULES`: ❖A ❖C ❖X ❖V ❖Z as Ctrl chords, every other ❖ chord swallowed); a key none matches reaches the lock screen as it is. A locked rule that binds or names an `app` is an error (nothing changes) |
 | `bars` | the top-edge band for fullscreen menu bars; *see* `src/fullscreen.ts` | `{}`; `bars-edge` events |
 | `edges` | `{bottom: band, output?}` | the claim's answer; *see* `parseClaimAnswer`, `src/dock/edges.ts`; `edge` events |
 | `layout` | `{zones: [{area, frame}], dwellMs}`: drag-to-tile zones; *see* `dragZones`, `src/arrange.ts` | `{}`; resting `dwellMs` in an `area` while dragging a window shows `frame`; letting go there is a `window-drop` (the compositor frames nothing itself) |
-| `gestures` | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events |
+| `gestures` | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events (none while locked: every swipe goes to the lock screen) |
 | `idle` | `{timeouts: number[]}` (seconds) | `{}`; `idle` / `active` events |
 | `keyboard` | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
 | `input` | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings.ts` | `{}`; devices plugged in later get them too |
@@ -106,7 +106,7 @@ windows; an X11 window's `pid` is its own
 | `space-remove` | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
 | `space-switch` | `{space, progress?, carry?: window}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after. `carry` does the same for a window on the Space that shows (an error otherwise, and with `progress`): it stays where it is on screen while the Spaces slide under it, is put on the new Space as the slide ends, and has the keyboard there (the shell's full-screen Desktops, `src/spaces/fullscreen.ts`) |
 | `space-move` | `{window, space}` | `{}` |
-| `overview` | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}` |
+| `overview` | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}`; opening is refused while locked (it would take the lock screen's presses); locking closes it |
 
 ### Live pictures
 
@@ -130,7 +130,7 @@ hidden) keep getting frame callbacks, so they stay live.
 | `capture` | what and where to save; *see* `src/screenshots.ts`, `src/agents/run.ts`; `cursor: true` draws the pointer (and a drag's icon) into a screen or `rect` capture; `mask: name` blanks what `capture-mask` set for that name | the capture |
 | `screencopy-clients` | `{paths: string[]}`: executables allowed to use screencopy | `{}` |
 | `applet-clients` | `{applets: [{pid, layerShell: bool}]}`, up to 64: the processes that run applets (docs/applets.md), the whole list each time; shell only | `{}`; a Wayland client under one of these processes may open layer surfaces only while its `layerShell` is true (an open popover); when it turns false or the process leaves the list, that client's layer surfaces are closed. Clients under no applet are unaffected, but a client whose process is unknown (one that connected through a security-context socket) may open no layer surface, since it could be an applet's |
-| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default). Its clicks, presses and keys are noted as the agent's (`input-origin`). A `scroll` is a mouse wheel's: its pixels and their 120ths of a notch, 15 px a notch, as libinput reports a real wheel (GPUI reads only the notches) |
+| `agent-input` | an agent's pointer/key action (*see* `src/agents/desktop/hands.ts`), or `{release: true}` | `{}`; on the agent's own seat only with `DASHI_AGENT_SEAT=1` (a second `wl_seat` takes single-seat toolkits' keyboards, GPUI's among them); otherwise every action borrows the person's seat, once they have paused (`borrow.idleMs`, 3000 by default). Its clicks, presses and keys are noted as the agent's (`input-origin`). Refused while locked, except `{release}`. A `scroll` is a mouse wheel's: its pixels and their 120ths of a notch, 15 px a notch, as libinput reports a real wheel (GPUI reads only the notches) |
 
 ### Secrets for agents (0.4.0, `docs/secrets.md`)
 
@@ -155,7 +155,7 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
 | Method | Params | Result |
 | --- | --- | --- |
 | `snippets` | `{keywords: string[]}`, at most 256, each 2 to 32 characters with no spaces or control characters; shell only | `{}`, or an error (nothing changes); replaces the keywords (`[]` stops watching) |
-| `snippet-erase` | `{window, keyword}`; shell only | `{}` once `keyword` is deleted from `window` (BackSpace once per character, as `send-keys` taps keys); an error, and nothing typed, unless `window` has the keyboard and `keyword` is still the last thing typed there |
+| `snippet-erase` | `{window, keyword}`; shell only | `{}` once `keyword` is deleted from `window` (BackSpace once per character, as `send-keys` taps keys); an error, and nothing typed, unless `window` has the keyboard and `keyword` is still the last thing typed there; refused while locked |
 
 ## In the 0.2.0 compositor
 
@@ -171,6 +171,33 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
 - **Xwayland:** `session.display` is set from the start (the X socket listens
   before the server is ready); `session-changed` follows when it is ready or
   fails.
+
+## While locked
+
+From the shell's ext-session-lock `lock` (the `lock {locked: true}` event)
+to its unlock, the keyboard is the lock screen's, and the compositor holds
+it there whatever the shell or a client asks: every change of keyboard focus
+goes through one guard (`session/lock.rs`), and every key is checked against
+it again before it is sent (`keys/locked.rs`).
+
+- The keyboard goes to the lock surface on the pointer's screen (else any);
+  before the lock screen has a surface, or after its client died, to nothing.
+  A key typed then reaches no one.
+- `focus`, a new window, an xdg-activation or foreign-toplevel or X11
+  activation, a Space switch, a closed or minimized window, a click: the
+  window is raised or placed as asked, but neither active nor given the
+  keyboard. A shell sheet that takes the keyboard (a layer surface with
+  `exclusive` keyboard) does not get it either, nor does the window under one
+  that closes.
+- Refused with "the screen is locked": `send-keys`, `snippet-erase`,
+  `agent-input` (but `{release}`), and opening the `overview`.
+- Only the keymap's `locked` rules apply, to the lock screen; no `binding`,
+  no `super` `tap` or `hold`, no claimed `gesture`, no `snippet`.
+- An input method's keyboard grab is let go (it grabs again when a field
+  activates it after the unlock), and the pointer leaves what it was over (a
+  move grab ends).
+- Unlocking gives the keyboard to a shell sheet that takes it, if one came up
+  meanwhile (a Wi-Fi password, a pairing code), else to the window in front.
 
 ## Events
 
@@ -189,7 +216,7 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
 | `fullscreen` | `window, on` |
 | `shortcut` | `name` |
 | `binding` | `name, window: int\|null, key?, text?, shift?, ctrl?, alt?`; `text` is what the key types with the modifiers held ("a", "A", "é", " "), absent for keys that type nothing (Return, BackSpace, Escape, arrows) |
-| `super` | `phase: "tap"\|"hold"\|"chord"\|"up"` |
+| `super` | `phase: "tap"\|"hold"\|"chord"\|"up"`; no `tap` or `hold` while locked (a tap then switches to no `afterTap` rules either) |
 | `bars-edge` | `inside, output?` |
 | `edge` | `edge: "bottom", inside` |
 | `outputs-changed` | |

@@ -259,7 +259,12 @@ impl Dashi {
             return Err("the seat has no keyboard".into());
         };
         if keyboard.current_focus().as_ref() != Some(&surface) {
-            keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+            if seat == &self.seat {
+                // The person's seat, borrowed: its keyboard follows the lock's rule (session/lock.rs).
+                self.set_keyboard_focus(Some(surface), SERIAL_COUNTER.next_serial());
+            } else {
+                keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+            }
         }
         let time = self.start_time.elapsed().as_millis() as u32;
         let send = |state: &mut Dashi, code: Keycode, down: bool| {

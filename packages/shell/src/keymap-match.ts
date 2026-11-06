@@ -65,7 +65,15 @@ function concrete(text: string, pressed: KeyChord, keepShift: boolean): KeyChord
 
 /** What `chord` comes to in a window of `appId`, as for the person: `send` holds the new chord, `tap` presses its chords in turn. */
 export function resolveChord(chord: KeyChord, appId: string, keymap: Keymap = KEYMAP): Resolved {
-  const rule = ruleFor(chord, appId, keymap);
+  return resolveBy(ruleFor(chord, appId, keymap), chord);
+}
+
+/** What `chord` comes to on the lock screen: only the keymap's `locked` rules apply there. */
+export function resolveLocked(chord: KeyChord, keymap: Keymap = KEYMAP): Resolved {
+  return resolveBy((keymap.locked ?? []).find((rule) => matches(keymap, rule, chord, "")) ?? null, chord);
+}
+
+function resolveBy(rule: Rule | null, chord: KeyChord): Resolved {
   if (!rule) return { kind: "keys", chords: [chord] };
   if (rule.send !== undefined) return { kind: "keys", chords: [concrete(rule.send, chord, true)] };
   if (rule.tap !== undefined) return { kind: "keys", chords: rule.tap.map((tap) => concrete(tap, chord, false)) };
