@@ -8,6 +8,8 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
+import { buttonLook } from "./button-look.ts";
+import { useControlState } from "./control-state.tsx";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 
@@ -107,36 +109,54 @@ export function Choices<T extends string | number>({
   value,
   onChange,
   testID,
+  disabled,
+  focused,
 }: {
   options: ReadonlyArray<Choice<T>>;
   value: T;
   onChange: (value: T) => void;
   testID: string;
+  disabled?: boolean;
+  /** Keyboard focus is in the row (the focus model's hook; no ring is drawn yet). */
+  focused?: boolean;
 }) {
-  const colors = useColors();
+  const state = useControlState({ disabled, focused });
   return (
-    <View testID={testID} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-      {options.map((option) => {
-        const chosen = option.value === value;
-        return (
-          <View
-            key={String(option.value)}
-            testID={`${testID}:${option.value}`}
-            onPress={() => onChange(option.value)}
-            style={{
-              height: 26,
-              paddingHorizontal: 12,
-              borderRadius: 13,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: chosen ? colors.selection : colors.button,
-              hoverBackgroundColor: chosen ? colors.selection : colors.separator,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: chosen ? "semibold" : "normal", color: chosen ? "#ffffff" : colors.text }}>{option.label}</Text>
-          </View>
-        );
-      })}
+    <View testID={testID} data-focused={state.focused} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, opacity: state.opacity }}>
+      {options.map((option) => (
+        <Pill
+          key={String(option.value)}
+          label={option.label}
+          chosen={option.value === value}
+          testID={`${testID}:${option.value}`}
+          onPress={disabled ? undefined : () => onChange(option.value)}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** One choice pill: kombu when chosen, the quiet fill otherwise; deeper while held. */
+function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress?: () => void }) {
+  const colors = useColors();
+  const state = useControlState({ disabled: onPress === undefined });
+  const look = buttonLook(colors, chosen ? "primary" : "secondary", { pressed: state.pressed });
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      onPointer={state.onPointer}
+      style={{
+        height: 26,
+        paddingHorizontal: 12,
+        borderRadius: 13,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: look.fill,
+        hoverBackgroundColor: onPress ? look.hover : look.fill,
+      }}
+    >
+      <Text style={{ fontSize: 12, fontWeight: look.weight, color: look.ink }}>{label}</Text>
     </View>
   );
 }
@@ -145,7 +165,8 @@ export function Choices<T extends string | number>({
  * A push button: kombu for the one that goes ahead, ume (`danger`) for one
  * that can't be taken back. A secondary button has an edge, so it reads
  * against any ground; `isDefault` rings it in kombu: it is what Enter presses
- * (a destructive sheet's Cancel).
+ * (a destructive sheet's Cancel). It deepens under the pointer and more while
+ * held; disabled, the whole button is dimmed (UI-4, button-look.ts).
  */
 export function Button({
   label,
@@ -155,6 +176,7 @@ export function Button({
   danger,
   disabled,
   isDefault,
+  focused,
 }: {
   label: string;
   onPress: () => void;
@@ -163,15 +185,18 @@ export function Button({
   danger?: boolean;
   disabled?: boolean;
   isDefault?: boolean;
+  /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
+  focused?: boolean;
 }) {
   const colors = useColors();
-  const fill = disabled ? colors.button : danger ? colors.umeFill : primary ? colors.selection : colors.button;
-  const strong = !disabled && (primary || danger);
-  const edge = strong ? fill : disabled ? colors.separator : isDefault ? colors.selection : colors.controlEdge;
+  const state = useControlState({ disabled, focused });
+  const look = buttonLook(colors, danger ? "danger" : primary ? "primary" : "secondary", { pressed: state.pressed, isDefault });
   return (
     <View
       testID={testID}
+      data-focused={state.focused}
       onPress={disabled ? undefined : onPress}
+      onPointer={state.onPointer}
       style={{
         minWidth: 84,
         height: 28,
@@ -179,15 +204,14 @@ export function Button({
         borderRadius: 7,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: fill,
-        borderWidth: isDefault && !strong && !disabled ? 2 : 1,
-        borderColor: edge,
-        hoverBackgroundColor: strong || disabled ? fill : colors.separator,
+        backgroundColor: look.fill,
+        borderWidth: look.edgeWidth,
+        borderColor: look.edge,
+        hoverBackgroundColor: disabled ? look.fill : look.hover,
+        opacity: state.opacity,
       }}
     >
-      <Text style={{ fontSize: 13, fontWeight: strong ? "semibold" : "normal", color: disabled ? colors.textDisabled : strong ? "#ffffff" : colors.text }}>
-        {label}
-      </Text>
+      <Text style={{ fontSize: 13, fontWeight: look.weight, color: look.ink }}>{label}</Text>
     </View>
   );
 }

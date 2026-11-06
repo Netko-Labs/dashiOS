@@ -1,6 +1,6 @@
 /** A category's apps or search results: cards in a grid, a page at a time ("Show More"). */
 
-import { Button, EmptyState, glyphs } from "@dashi/ui";
+import { Button, EmptyState, glyphs, Loading } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { Answer, CategoryId, Flathub } from "../../src/software/flathub.ts";
@@ -9,7 +9,7 @@ import { CardGrid } from "./cards.tsx";
 import { SectionHeader } from "./discover.tsx";
 import { useLoad } from "./hooks.ts";
 import { useServices } from "./services.ts";
-import { Failed, Loading, StaleNote } from "./states.tsx";
+import { Failed, StaleNote } from "./states.tsx";
 
 const PER_PAGE = 24;
 
@@ -27,7 +27,7 @@ export function Listing({ source }: { source: Source }) {
   current.current = key;
   useEffect(() => setMore({ key, apps: [], page: 1, loading: false }), [key]);
 
-  if (first.state.status === "loading") return <Loading what={source.kind === "search" ? "Searching…" : "Loading…"} />;
+  if (first.state.status === "loading") return <Loading label={source.kind === "search" ? "Searching…" : "Loading…"} />;
   if (first.state.status === "failed") return <Failed state={first.state} onRetry={first.reload} />;
   const page = first.state.value;
   const extra = more.key === key ? more : { key, apps: [], page: 1, loading: false };

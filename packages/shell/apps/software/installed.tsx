@@ -1,6 +1,6 @@
 /** Installed: every Flatpak app on the machine, the person's own and the system's, with Open, Update, and Remove. */
 
-import { Button, EmptyState, Group, glyphs, useColors } from "@dashi/ui";
+import { Button, EmptyState, Group, glyphs, Loading, ProgressBar, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useMemo, useSyncExternalStore } from "react";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
@@ -9,9 +9,8 @@ import { localIcon } from "./format.ts";
 import { INSTALLED } from "./glyphs.ts";
 import { useCatalogIcon } from "./hooks.ts";
 import { appState, busyLabel, whereInstalled } from "./model.ts";
-import { AppIcon, ProgressBar, useActions } from "./parts.tsx";
+import { AppIcon, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
-import { Loading } from "./states.tsx";
 
 export function InstalledRow({ app }: { app: InstalledApp }) {
   const colors = useColors();
@@ -45,7 +44,7 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
       {status.kind === "busy" ? (
         <View style={{ width: 130, flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           <Text style={{ fontSize: 11, color: colors.textMuted }}>{busyLabel(status.operation)}</Text>
-          <ProgressBar fraction={status.operation.status === "running" ? (status.operation.progress?.fraction ?? null) : null} width={130} />
+          <ProgressBar value={status.operation.status === "running" ? (status.operation.progress?.fraction ?? null) : null} width={130} />
         </View>
       ) : (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -70,7 +69,7 @@ export function Installed({ query }: { query: string }) {
       />
     );
   }
-  if (state.installed === null) return <Loading what="Looking at your apps…" />;
+  if (state.installed === null) return <Loading label="Looking at your apps…" />;
   const needle = query.trim().toLowerCase();
   const apps = [...state.installed]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))

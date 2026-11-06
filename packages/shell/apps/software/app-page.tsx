@@ -5,7 +5,7 @@
  * the facts (version, size, license).
  */
 
-import { Button, Group, useColors } from "@dashi/ui";
+import { Button, Group, Loading, ProgressBar, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { AppDetails } from "../../src/software/flathub-types.ts";
@@ -14,9 +14,9 @@ import { useAppState } from "./cards.tsx";
 import { Gallery } from "./gallery.tsx";
 import { useLoad } from "./hooks.ts";
 import { busyLabel } from "./model.ts";
-import { AppIcon, ProgressBar, useActions, VerifiedBadge } from "./parts.tsx";
+import { AppIcon, useActions, VerifiedBadge } from "./parts.tsx";
 import { useServices } from "./services.ts";
-import { Failed, Loading, StaleNote } from "./states.tsx";
+import { Failed, StaleNote } from "./states.tsx";
 
 function Fact({ label, value }: { label: string; value: string }) {
   const colors = useColors();
@@ -61,7 +61,7 @@ function Buttons({ id, name }: { id: string; name: string }) {
     return (
       <View testID="app-busy" style={{ minWidth: 190, flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         <Text style={{ fontSize: 12, color: colors.textMuted }}>{busyLabel(operation)}</Text>
-        <ProgressBar fraction={operation.status === "running" ? (operation.progress?.fraction ?? null) : null} width={190} />
+        <ProgressBar value={operation.status === "running" ? (operation.progress?.fraction ?? null) : null} width={190} />
         {(running || operation.status === "queued") && <Button label="Cancel" testID="cancel" onPress={() => actions.cancel(operation.key)} />}
       </View>
     );
@@ -127,7 +127,7 @@ function Page({ app, stale }: { app: AppDetails; stale: boolean }) {
 export function AppPage({ id }: { id: string }) {
   const { catalog } = useServices();
   const { state, reload } = useLoad<AppDetails>(`app:${id}`, () => catalog.details(id));
-  if (state.status === "loading") return <Loading what="Loading…" />;
+  if (state.status === "loading") return <Loading label="Loading…" />;
   if (state.status === "failed") return <Failed state={state} onRetry={reload} />;
   return <Page app={state.value} stale={state.stale} />;
 }

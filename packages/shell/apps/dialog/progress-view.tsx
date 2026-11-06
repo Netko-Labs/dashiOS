@@ -5,43 +5,13 @@
  * the dialog, as Zenity does.
  */
 
-import { useColors } from "@dashi/ui";
+import { ProgressBar, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
 import { applyProgressLine, endProgress, initialProgress, type ProgressState, timeRemaining } from "./progress.ts";
 import type { ProgressSpec } from "./spec.ts";
 import { readStdinLines } from "./stdin.ts";
-
-const BAR = 6;
-/** A pulsing bar's moving part, as a share of the track, and how far it goes each frame. */
-const PULSE_WIDTH = 0.28;
-const PULSE_STEP = 0.025;
-const FRAME_MS = 40;
-
-function Bar({ percentage, pulsate }: { percentage: number; pulsate: boolean }) {
-  const colors = useColors();
-  const [phase, setPhase] = useState(0);
-  useEffect(() => {
-    if (!pulsate) return;
-    const timer = setInterval(() => setPhase((now) => (now + PULSE_STEP) % 2), FRAME_MS);
-    return () => clearInterval(timer);
-  }, [pulsate]);
-  // Back and forth: 0 to 1 and back again over two units of phase. A pulsing bar's lit
-  // part follows a spacer, both in shares of the track.
-  const at = phase <= 1 ? phase : 2 - phase;
-  const before = pulsate ? at * (1 - PULSE_WIDTH) * 100 : 0;
-  const lit = pulsate ? PULSE_WIDTH * 100 : percentage;
-  return (
-    <View
-      testID="dialog:bar"
-      style={{ height: BAR, flexShrink: 0, flexDirection: "row", borderRadius: BAR / 2, backgroundColor: colors.track, overflow: "hidden" }}
-    >
-      <View style={{ width: `${before}%`, flexShrink: 0 }} />
-      <View style={{ width: `${lit}%`, flexShrink: 0, borderRadius: BAR / 2, backgroundColor: colors.selection }} />
-    </View>
-  );
-}
 
 export function ProgressDialog({ spec, answer }: { spec: ProgressSpec; answer: Answer }) {
   const colors = useColors();
@@ -85,7 +55,7 @@ export function ProgressDialog({ spec, answer }: { spec: ProgressSpec; answer: A
           <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17 }}>{state.text}</Text>
         </View>
       )}
-      <Bar percentage={state.percentage} pulsate={state.pulsate} />
+      <ProgressBar testID="dialog:bar" size="regular" value={state.pulsate ? null : state.percentage / 100} />
       {spec.timeRemaining && (
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
           {remaining ?? " "}

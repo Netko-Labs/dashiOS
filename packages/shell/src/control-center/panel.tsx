@@ -5,7 +5,7 @@
  * not shown.
  */
 
-import { useColors } from "@dashi/ui";
+import { Slider, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactElement, type ReactNode, useEffect } from "react";
 import { BluetoothPage } from "../bluetooth/page.tsx";
@@ -24,7 +24,6 @@ import { type FlagsStore, useFlags } from "./flags.ts";
 import { BLUETOOTH, CHEVRON_RIGHT, CONTRAST, LOCK, MOON, SUNSET } from "./glyphs.ts";
 import { LaptopPageView } from "./laptop-pages.tsx";
 import { type LaptopPage, LaptopRow } from "./laptop-row.tsx";
-import { Slider } from "./slider.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: 340, padding: 12, gap: 8 } as const;
 

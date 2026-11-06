@@ -1,7 +1,6 @@
 /** The questions Software asks before it goes ahead, and the one thing it has to tell: a change that failed. */
 
-import { Button, ConfirmSheet, Sheet, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AlertSheet, ConfirmSheet, WARNING } from "@dashi/ui";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import { RESTART } from "./glyphs.ts";
 import type { Failure } from "./store.ts";
@@ -53,14 +52,16 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (yes: boolean)
 }
 
 export function FailureSheet({ failure, onClose }: { failure: Failure; onClose: () => void }) {
-  const colors = useColors();
+  // It only informs: one button, which Esc and Enter press too (UI-5).
   return (
-    <Sheet testID="failure-sheet" width={420} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{failure.title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{failure.message}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8 }}>
-        <Button label="OK" testID="failure-sheet:ok" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID="failure-sheet"
+      width={420}
+      question={failure.title}
+      message={failure.message}
+      glyph={WARNING}
+      tone="warning"
+      buttons={[{ label: "OK", testID: "failure-sheet:ok", onPress: onClose, kind: "primary" }]}
+    />
   );
 }

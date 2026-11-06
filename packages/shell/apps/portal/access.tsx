@@ -12,14 +12,13 @@
  *   results: choices a(ss); response 0 granted, 1 denied
  */
 
-import { glyphs, useColors } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { AlertWindow, glyphs } from "@dashi/ui";
 import { useState } from "react";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
 import { type AppInfo, appInfo } from "./apps.ts";
 import { type Choice, parseChoices } from "./file-chooser/options.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
-import { CheckBox, PortalFrame, Question } from "./ui/frame.tsx";
+import { CheckBox } from "./ui/frame.tsx";
 import { CAMERA } from "./ui/glyphs.ts";
 import { cleanString, results, str, vardict } from "./vardict.ts";
 import type { ShowDialog } from "./windows.ts";
@@ -90,42 +89,38 @@ export function accessInterface(requests: Requests, ask: AskAccess): InterfaceSp
 export const accessFallback = (app: string): string => `Dashi remembers your answer, so ${app} won’t ask again.`;
 
 function AccessSheet({ request, app, answer }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void }) {
-  const colors = useColors();
   const [choices, setChoices] = useState<Record<string, string>>(() => Object.fromEntries(request.choices.map((c) => [c.id, c.initial])));
   const reply = (granted: boolean) => answer({ granted, choices: Object.entries(choices) });
   const detail = [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
   const camera = /camera|video/i.test(`${request.icon ?? ""} ${request.title}`);
+  // The choices it can draw: on-or-off ones, as check boxes.
+  const boxes = request.choices.filter((choice) => choice.options.length === 0);
   return (
-    <PortalFrame
-      title={app.name}
-      onCancel={() => reply(false)}
+    // The one alert frame (UI-5): the question as the first line, no title row, the app's reason under it.
+    <AlertWindow
+      testID="portal"
+      question={request.title}
+      message={detail}
+      glyph={camera ? CAMERA : glyphs.LOCK}
+      tone="accent"
       buttons={[
-        { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false) },
+        { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false), cancel: true },
         // Allow is the one that goes ahead, but only a click gives access: Enter never does.
-        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), primary: true, grants: true },
+        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), kind: "primary", isDefault: false },
       ]}
     >
-      <Question
-        text={request.title}
-        detail={detail}
-        glyph={
-          <View style={{ width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.selection}24` }}>
-            <Svg markup={camera ? CAMERA : glyphs.LOCK} size={22} color={colors.selection} />
-          </View>
-        }
-      />
-      {request.choices.map((choice) =>
-        choice.options.length === 0 ? (
-          <CheckBox
-            key={choice.id}
-            testID={`access:choice:${choice.id}`}
-            label={choice.label}
-            checked={choices[choice.id] === "true"}
-            onChange={(on) => setChoices({ ...choices, [choice.id]: on ? "true" : "false" })}
-          />
-        ) : null,
-      )}
-    </PortalFrame>
+      {boxes.length > 0
+        ? boxes.map((choice) => (
+            <CheckBox
+              key={choice.id}
+              testID={`access:choice:${choice.id}`}
+              label={choice.label}
+              checked={choices[choice.id] === "true"}
+              onChange={(on) => setChoices({ ...choices, [choice.id]: on ? "true" : "false" })}
+            />
+          ))
+        : undefined}
+    </AlertWindow>
   );
 }
 

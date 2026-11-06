@@ -10,6 +10,8 @@ export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-wid
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
 export const CHEVRON_UP = svg(stroke("M4.5 10l3.5-3.5 3.5 3.5", 1.6));
 export const CHEVRON_DOWN = svg(stroke("M4.5 6.5l3.5 3.5 3.5-3.5", 1.6));
+/** A chevron up over a chevron down: a pop-up button, whose menu opens over it. */
+export const CHEVRON_UP_DOWN = svg(stroke("M5.2 6.2L8 3.4l2.8 2.8", 1.5) + stroke("M5.2 9.8L8 12.6l2.8-2.8", 1.5));
 /** An octagon with an x: stop (quit) a process. */
 export const STOP = svg(`${stroke("M5.5 1.8h5l3.7 3.7v5l-3.7 3.7h-5l-3.7-3.7v-5z", 1.4)}${stroke("M6 6l4 4M10 6l-4 4", 1.5)}`);
 export const WARNING = svg(`${stroke("M8 2.2l6.2 11H1.8z", 1.4)}${stroke("M8 6.4v3.2", 1.6)}<circle cx="8" cy="11.5" r=".9" fill="#000"/>`);

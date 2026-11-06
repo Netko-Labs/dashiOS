@@ -6,7 +6,7 @@
  * restart.
  */
 
-import { Button, EmptyState, Group, glyphs, useColors } from "@dashi/ui";
+import { Button, EmptyState, Group, glyphs, Loading, ProgressBar, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useSyncExternalStore } from "react";
 import type { FlatpakUpdate } from "../../src/software/flatpak-parse.ts";
@@ -15,9 +15,8 @@ import { ago } from "./format.ts";
 import { UPDATES } from "./glyphs.ts";
 import { useCatalogIcon } from "./hooks.ts";
 import { busyLabel, type Operation } from "./model.ts";
-import { AppIcon, ProgressBar, useActions } from "./parts.tsx";
+import { AppIcon, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
-import { Loading } from "./states.tsx";
 
 const SHOWN_PACKAGES = 8;
 
@@ -39,7 +38,7 @@ function Busy({ operation, width = 150 }: { operation: Operation; width?: number
   return (
     <View testID={`busy:${operation.key}`} style={{ width, flexShrink: 0, flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
       <Text style={{ fontSize: 11, color: colors.textMuted }}>{busyLabel(operation)}</Text>
-      <ProgressBar fraction={operation.status === "running" ? (operation.progress?.fraction ?? null) : null} width={width} />
+      <ProgressBar value={operation.status === "running" ? (operation.progress?.fraction ?? null) : null} width={width} />
     </View>
   );
 }
@@ -101,7 +100,7 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
   const systemOp = state.operations.find((operation) => operation.kind === "system-update");
   const restartLikely = (state.system?.restartCauses.length ?? 0) > 0;
 
-  if (state.checkedAt === null && state.checking) return <Loading what="Checking for updates…" />;
+  if (state.checkedAt === null && state.checking) return <Loading label="Checking for updates…" />;
   const errors = [state.appUpdatesError && `Apps: ${state.appUpdatesError}`, state.systemError && `System: ${state.systemError}`].filter(
     (line): line is string => !!line,
   );

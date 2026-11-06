@@ -5,11 +5,11 @@
  */
 
 import type { IndexApplet, InstalledApplet } from "@dashi/applet";
-import { Group, tintFor, useColors } from "@dashi/ui";
+import { Group, ProgressBar, tintFor, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext, useSyncExternalStore } from "react";
 import type { AppletStatus } from "../../src/applet-store/installer.ts";
-import { ProgressBar, VerifiedBadge } from "../software/parts.tsx";
+import { VerifiedBadge } from "../software/parts.tsx";
 import { useServices, useStoreImage } from "./services.ts";
 
 /** What a click asks for; the window provides it (and the sheets that come first). */
@@ -53,7 +53,7 @@ export function StatusButton({ entry, status, testID, wide }: { entry: IndexAppl
     return (
       <View testID={`${testID}:busy`} style={{ minWidth, flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 11, color: colors.textMuted }}>{busy === "installing" ? "Installing…" : "Removing…"}</Text>
-        <ProgressBar fraction={null} width={minWidth} />
+        <ProgressBar value={null} width={minWidth} />
       </View>
     );
   }

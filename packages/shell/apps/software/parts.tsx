@@ -1,8 +1,8 @@
 /** Small pieces the pages share: an app's icon, the verified badge, the progress bar, and the Get / Open / Update pill. */
 
-import { darkColors, tintFor, useColors } from "@dashi/ui";
+import { darkColors, ProgressBar, tintFor, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import type { Installation } from "../../src/software/ids.ts";
 import { VERIFIED, VERIFIED_CHECK } from "./glyphs.ts";
@@ -53,34 +53,6 @@ export function VerifiedBadge({ size = 14 }: { size?: number }) {
   );
 }
 
-/** A bar of `fraction` (0 to 1); without one, a segment that slides, so the person can see it is working. */
-export function ProgressBar({ fraction, width = 120 }: { fraction: number | null; width?: number }) {
-  const colors = useColors();
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (fraction !== null) return;
-    const timer = setInterval(() => setTick((n) => (n + 1) % 20), 120);
-    return () => clearInterval(timer);
-  }, [fraction]);
-  const segment = Math.round(width * 0.3);
-  const left = fraction === null ? Math.round(((width - segment) * (tick <= 10 ? tick : 20 - tick)) / 10) : 0;
-  return (
-    <View style={{ width, height: 4, borderRadius: 2, backgroundColor: colors.track, overflow: "hidden", position: "relative" }}>
-      <View
-        style={{
-          position: "absolute",
-          left,
-          top: 0,
-          height: 4,
-          borderRadius: 2,
-          width: fraction === null ? segment : Math.max(4, Math.round(width * fraction)),
-          backgroundColor: colors.selection,
-        }}
-      />
-    </View>
-  );
-}
-
 /**
  * The small button on a card or row: Get, Open, or Update; while something is
  * being done it shows the progress instead (stopping it is on the app's page).
@@ -98,7 +70,7 @@ export function ActionPill({ state, onGet, testID, wide }: { state: AppState; on
         <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
           {busyLabel(operation)}
         </Text>
-        <ProgressBar fraction={operation.status === "queued" ? null : (operation.progress?.fraction ?? null)} width={minWidth} />
+        <ProgressBar value={operation.status === "queued" ? null : (operation.progress?.fraction ?? null)} width={minWidth} />
       </View>
     );
   }

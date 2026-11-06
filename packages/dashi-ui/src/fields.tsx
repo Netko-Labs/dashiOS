@@ -4,6 +4,7 @@
  */
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { useControlState } from "./control-state.tsx";
 import type { Choice } from "./controls.tsx";
 import { CLEAR, SEARCH } from "./glyphs.ts";
 import { useColors, useSurface } from "./theme/index.ts";
@@ -15,6 +16,8 @@ export function Segmented<T extends string | number>({
   onChange,
   testID,
   segmentWidth,
+  disabled,
+  focused,
 }: {
   options: ReadonlyArray<Choice<T>>;
   value: T;
@@ -22,34 +25,56 @@ export function Segmented<T extends string | number>({
   testID: string;
   /** Every segment this wide; by default each fits its label. */
   segmentWidth?: number;
+  disabled?: boolean;
+  /** Keyboard focus is in it (the focus model's hook; no ring is drawn yet). */
+  focused?: boolean;
 }) {
   const colors = useColors();
-  const surface = useSurface();
+  const state = useControlState({ disabled, focused });
   return (
-    <View testID={testID} style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}>
-      {options.map((option) => {
-        const chosen = option.value === value;
-        return (
-          <View
-            key={String(option.value)}
-            testID={`${testID}:${option.value}`}
-            onPress={() => onChange(option.value)}
-            style={{
-              ...(segmentWidth !== undefined ? { width: segmentWidth } : { paddingHorizontal: 12 }),
-              borderRadius: 6,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: chosen ? surface.card : "#00000000",
-              hoverBackgroundColor: chosen ? surface.card : colors.button,
-              ...(chosen ? { shadow: "xs" as const } : {}),
-            }}
-          >
-            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: chosen ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>
-              {option.label}
-            </Text>
-          </View>
-        );
-      })}
+    <View
+      testID={testID}
+      data-focused={state.focused}
+      style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button, opacity: state.opacity }}
+    >
+      {options.map((option) => (
+        <Segment
+          key={String(option.value)}
+          label={option.label}
+          chosen={option.value === value}
+          width={segmentWidth}
+          testID={`${testID}:${option.value}`}
+          onPress={disabled ? undefined : () => onChange(option.value)}
+        />
+      ))}
+    </View>
+  );
+}
+
+/** One segment: raised when chosen, a wash under the pointer, deeper while held. */
+function Segment({ label, chosen, width, testID, onPress }: { label: string; chosen: boolean; width?: number; testID: string; onPress?: () => void }) {
+  const colors = useColors();
+  const surface = useSurface();
+  const state = useControlState({ disabled: onPress === undefined });
+  const rest = chosen ? surface.card : "#00000000";
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      onPointer={state.onPointer}
+      style={{
+        ...(width !== undefined ? { width } : { paddingHorizontal: 12 }),
+        borderRadius: 6,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: state.pressed && !chosen ? colors.pressed : rest,
+        hoverBackgroundColor: onPress === undefined || chosen ? rest : state.pressed ? colors.pressed : colors.button,
+        ...(chosen ? { shadow: "xs" as const } : {}),
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: chosen ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>
+        {label}
+      </Text>
     </View>
   );
 }

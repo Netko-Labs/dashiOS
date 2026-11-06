@@ -110,7 +110,7 @@ test("the chooser: a slow second click only selects; a real double-click opens; 
   // The folder pop-up lists the folders it is in; choosing one goes there.
   send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
   await settle();
-  send({ type: "press", nodeId: node("chooser:trail:Home") });
+  send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
   await settle();
   expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h" });
   root.unmount();

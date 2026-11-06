@@ -8,14 +8,14 @@
  *     → (u response, a{sv} results{id s, name s, image s})
  */
 
-import { Avatar, useColors } from "@dashi/ui";
+import { AlertWindow, Avatar, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Account } from "../../src/accounts/types.ts";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
 import { fileUri } from "../files/uri.ts";
 import { appInfo } from "./apps.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
-import { PortalFrame } from "./ui/frame.tsx";
+import { PERSON } from "./ui/glyphs.ts";
 import { cleanString, results, str, vardict } from "./vardict.ts";
 import type { ShowDialog } from "./windows.ts";
 
@@ -76,16 +76,19 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
   const app = appInfo(request.appId);
   const name = account.realName || account.userName;
   return (
-    <PortalFrame
-      title={app.name}
-      onCancel={() => answer(false)}
+    // The one alert frame (UI-5): the question first, then what would be shared, then the app's reason.
+    <AlertWindow
+      testID="portal"
+      question={`Share your name and picture with ${app.name}?`}
+      message={request.reason !== "" ? `“${request.reason}”` : undefined}
+      glyph={PERSON}
+      tone="accent"
       buttons={[
-        { label: "Don’t Share", testID: "account:deny", onPress: () => answer(false) },
+        { label: "Don’t Share", testID: "account:deny", onPress: () => answer(false), cancel: true },
         // Sharing is a click, never a stray Enter.
-        { label: "Share", testID: "account:share", onPress: () => answer(true), primary: true, grants: true },
+        { label: "Share", testID: "account:share", onPress: () => answer(true), kind: "primary", isDefault: false },
       ]}
     >
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Share your name and picture with ${app.name}?`}</Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 10, backgroundColor: colors.button }}>
         <Avatar name={name} {...(account.iconFile ? { picture: account.iconFile } : {})} size={44} />
         <View style={{ flexDirection: "column", gap: 2, minWidth: 0 }}>
@@ -97,8 +100,7 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
           </Text>
         </View>
       </View>
-      {request.reason !== "" && <Text style={{ fontSize: 12, color: colors.textMuted }}>{`“${request.reason}”`}</Text>}
-    </PortalFrame>
+    </AlertWindow>
   );
 }
 

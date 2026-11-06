@@ -81,20 +81,6 @@ export function PortalFrame({ title, leading, toolbar, buttons, onCancel, keys =
   );
 }
 
-/** A question with a short line under it: the permission and account sheets' heading. */
-export function Question({ text, detail, glyph }: { text: string; detail?: string; glyph?: ReactNode }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-      {glyph}
-      <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
-        <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{text}</Text>
-        {detail !== undefined && detail !== "" && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{detail}</Text>}
-      </View>
-    </View>
-  );
-}
-
 /** A check box with its label: "Always use for PDFs", "Two-sided". */
 export function CheckBox({ label, checked, onChange, testID }: { label: string; checked: boolean; onChange: (checked: boolean) => void; testID: string }) {
   const colors = useColors();
