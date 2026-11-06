@@ -177,8 +177,12 @@ pub enum Request {
     SaveToken {
         name: String,
         hosts: Vec<String>,
+        /// One header (as before there could be more); `headers` wins when both are sent.
         #[serde(default)]
         header: Option<String>,
+        /// The headers the token may go in, 1 to 4, distinct header names.
+        #[serde(default)]
+        headers: Option<Vec<String>>,
         token: Secret,
     },
     UpdateToken {
@@ -187,6 +191,8 @@ pub enum Request {
         hosts: Option<Vec<String>>,
         #[serde(default)]
         header: Option<String>,
+        #[serde(default)]
+        headers: Option<Vec<String>>,
         #[serde(default)]
         token: Option<Secret>,
     },

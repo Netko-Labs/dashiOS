@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { useConfirm } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/vault.ts";
-import { parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/panes/tokens.tsx";
+import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/panes/tokens.tsx";
 
 // Settings › Passwords' tokens on a stand-in for the Metal host: a vault of the test's, presses and typing as the host sends them.
 
@@ -57,12 +57,21 @@ async function mount(tokens: TokenStore) {
   };
 }
 
-const GITHUB: TokenSummary = { id: 1, name: "github", hosts: ["api.github.com"], header: "Authorization: Bearer {}", lastUsed: null };
-const ANTHROPIC: TokenSummary = { id: 2, name: "anthropic", hosts: ["api.anthropic.com"], header: "x-api-key: {}", lastUsed: null };
+const GITHUB: TokenSummary = { id: 1, name: "github", hosts: ["api.github.com"], headers: ["Authorization: Bearer {}"], lastUsed: null };
+const ANTHROPIC: TokenSummary = {
+  id: 2,
+  name: "anthropic",
+  hosts: ["api.anthropic.com"],
+  headers: ["x-api-key: {}", "Authorization: Bearer {}"],
+  lastUsed: null,
+};
 
 test("a token's line says where it goes and what agents hold; a model key says it stays in the vault", () => {
-  expect(tokenDetail(GITHUB)).toBe("api.github.com · agents hold dashi:github");
-  expect(tokenDetail(ANTHROPIC)).toBe("api.anthropic.com · Key: in your vault. Claude never sees it.");
+  expect(tokenDetail(GITHUB)).toBe("api.github.com · in Authorization · agents hold dashi:github");
+  expect(tokenDetail(ANTHROPIC)).toBe("api.anthropic.com · in x-api-key or Authorization · Key: in your vault. Claude never sees it.");
+  expect(parseHeaders("x-api-key: {}, Authorization: Bearer {}")).toEqual(["x-api-key: {}", "Authorization: Bearer {}"]);
+  // A comma inside a value stays in it.
+  expect(parseHeaders("X-Token: a, {}")).toEqual(["X-Token: a, {}"]);
   expect(parseHosts(" api.github.com,  *.githubusercontent.com uploads.github.com,")).toEqual([
     "api.github.com",
     "*.githubusercontent.com",
@@ -70,14 +79,16 @@ test("a token's line says where it goes and what agents hold; a model key says i
   ]);
 });
 
-test("a model key is added with its host and header filled in", async () => {
+test("a model key is added with its host and both of its SDKs' headers filled in", async () => {
   const { store, calls } = fakeVault([]);
   const view = await mount(store);
   expect(view.has("tokens-none")).toBe(true);
   await view.press("tokens-add-kind:anthropic");
   await view.type("tokens-add-token", "  sk-ant-test  ");
   await view.press("tokens-add-save");
-  expect(calls.saved).toEqual([{ name: "anthropic", hosts: ["api.anthropic.com"], header: "x-api-key: {}", token: "sk-ant-test" }]);
+  expect(calls.saved).toEqual([
+    { name: "anthropic", hosts: ["api.anthropic.com"], headers: ["x-api-key: {}", "Authorization: Bearer {}"], token: "sk-ant-test" },
+  ]);
 });
 
 test("editing keeps the token unless a new one is typed", async () => {
@@ -87,7 +98,7 @@ test("editing keeps the token unless a new one is typed", async () => {
   expect(view.has("tokens-edit")).toBe(true);
   await view.type("tokens-edit-hosts", "api.github.com, uploads.github.com");
   await view.press("tokens-edit-save");
-  expect(calls.updated).toEqual([[1, { hosts: ["api.github.com", "uploads.github.com"], header: "Authorization: Bearer {}" }]]);
+  expect(calls.updated).toEqual([[1, { hosts: ["api.github.com", "uploads.github.com"], headers: ["Authorization: Bearer {}"] }]]);
 });
 
 test("deleting asks on a sheet first, and Cancel keeps it", async () => {

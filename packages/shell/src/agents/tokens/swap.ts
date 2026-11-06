@@ -1,8 +1,10 @@
 /**
  * The token proxy's decisions, pure (docs/secrets.md, "Tokens that stay
  * home"): which hosts a token is for, what a CONNECT asks for, and the swap
- * itself, where a placeholder (`dashi:github`) in the header a token item
- * names becomes that header with the real token. Nothing here touches a
+ * itself, where a placeholder (`dashi:github`) in one of the headers a token
+ * item names becomes that header with the real token (an item may name
+ * several: Anthropic's SDKs send `x-api-key` or `Authorization: Bearer`).
+ * A header the request didn't send is never added. Nothing here touches a
  * socket or the vault.
  */
 
@@ -86,7 +88,8 @@ export function authorized(auth: string | null, key: string): boolean {
 /** A token item for this host, as listed (no token). */
 export interface Candidate {
   name: string;
-  header: string;
+  /** The headers it may go in ("x-api-key: {}", "Authorization: Bearer {}"). */
+  headers: readonly string[];
 }
 
 /** Headers that are the connection's, never forwarded (RFC 9110, 7.6.1), and the proxy's own. */
@@ -124,13 +127,18 @@ function holds(value: string, name: string): boolean {
   return basic !== undefined && marker(name).test(Buffer.from(basic, "base64").toString("latin1"));
 }
 
-/** The token items whose placeholder is in the header they name: only these are asked of the vault. */
-export function wanted(headers: Headers, candidates: readonly Candidate[]): Candidate[] {
-  return candidates.filter((candidate) => {
-    const spec = parseHeaderSpec(candidate.header);
+/** The headers of `specs` the request sent with token `name`'s placeholder in them, parsed. */
+function carrying(headers: Headers, name: string, specs: readonly string[]): Array<{ name: string; template: string; value: string }> {
+  return specs.flatMap((each) => {
+    const spec = parseHeaderSpec(each);
     const value = spec ? headers.get(spec.name) : null;
-    return value !== null && holds(value, candidate.name);
+    return spec && value !== null && holds(value, name) ? [{ ...spec, value }] : [];
   });
+}
+
+/** The token items whose placeholder is in one of the headers they name: only these are asked of the vault. */
+export function wanted(headers: Headers, candidates: readonly Candidate[]): Candidate[] {
+  return candidates.filter((candidate) => carrying(headers, candidate.name, candidate.headers).length > 0);
 }
 
 /**
@@ -151,14 +159,15 @@ export function swapped(value: string, name: string, template: string, token: st
   return template.replace("{}", () => token);
 }
 
-/** Put each token in its header; `tokens` maps a name to its token and header spec, from the vault. */
-export function swapHeaders(headers: Headers, tokens: ReadonlyMap<string, { token: string; header: string }>): Headers {
+/**
+ * Put each token in whichever of its headers the request sent with its
+ * placeholder; `tokens` maps a name to its token and header specs, from the
+ * vault. A header that wasn't sent is never added.
+ */
+export function swapHeaders(headers: Headers, tokens: ReadonlyMap<string, { token: string; headers: readonly string[] }>): Headers {
   const out = new Headers(headers);
-  for (const [name, { token, header }] of tokens) {
-    const spec = parseHeaderSpec(header);
-    const value = spec ? out.get(spec.name) : null;
-    if (!spec || value === null || !holds(value, name)) continue;
-    out.set(spec.name, swapped(value, name, spec.template, token));
+  for (const [name, { token, headers: specs }] of tokens) {
+    for (const spec of carrying(out, name, specs)) out.set(spec.name, swapped(spec.value, name, spec.template, token));
   }
   return out;
 }

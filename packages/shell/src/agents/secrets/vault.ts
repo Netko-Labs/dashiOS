@@ -218,30 +218,52 @@ export interface TokenSummary {
   /** Agents hold `dashi:<name>`. */
   name: string;
   hosts: string[];
-  /** "Authorization: Bearer {}": where the token goes. */
-  header: string;
+  /** Where the token may go, "Authorization: Bearer {}" first by default: the proxy swaps it in whichever the request sent. */
+  headers: string[];
   lastUsed: number | null;
 }
 
 export interface NewToken {
   name: string;
   hosts: string[];
-  header?: string;
+  /** Unset: "Authorization: Bearer {}". */
+  headers?: string[];
   token: string;
 }
 
 export interface TokenChange {
   hosts?: string[];
-  header?: string;
+  headers?: string[];
   /** Empty or absent keeps the token there. */
   token?: string;
 }
 
+const DEFAULT_TOKEN_HEADER = "Authorization: Bearer {}";
+
+/** An item's headers from a reply: `headers`, else the one `header` an older dashi-secretd sends. */
+function headersOf(reply: Record<string, unknown>): string[] {
+  const listed = Array.isArray(reply.headers) ? reply.headers.filter((h): h is string => typeof h === "string") : [];
+  if (listed.length > 0) return listed;
+  return [typeof reply.header === "string" ? reply.header : DEFAULT_TOKEN_HEADER];
+}
+
+/** The headers as dashi-secretd takes them: one as `header` (as it always was), more as `headers`. */
+const headersField = (headers: readonly string[] | undefined): Record<string, unknown> =>
+  !headers || headers.length === 0 ? {} : headers.length === 1 ? { header: headers[0] } : { headers };
+
 function parseToken(value: unknown): TokenSummary | null {
   if (typeof value !== "object" || value === null) return null;
-  const { id, name, hosts, header, lastUsed } = value as Record<string, unknown>;
-  if (typeof id !== "number" || typeof name !== "string" || typeof header !== "string" || !Array.isArray(hosts)) return null;
-  return { id, name, hosts: hosts.filter((h): h is string => typeof h === "string"), header, lastUsed: typeof lastUsed === "number" ? lastUsed : null };
+  const raw = value as Record<string, unknown>;
+  const { id, name, hosts, lastUsed } = raw;
+  if (typeof id !== "number" || typeof name !== "string" || !Array.isArray(hosts)) return null;
+  if (typeof raw.header !== "string" && !Array.isArray(raw.headers)) return null;
+  return {
+    id,
+    name,
+    hosts: hosts.filter((h): h is string => typeof h === "string"),
+    headers: headersOf(raw),
+    lastUsed: typeof lastUsed === "number" ? lastUsed : null,
+  };
 }
 
 /** The vault's token items, for Settings and the token proxy. */
@@ -255,7 +277,7 @@ export class VaultTokens {
 
   async save(token: NewToken): Promise<number> {
     const reply = await vaultCall(
-      { op: "save-token", name: token.name, hosts: token.hosts, ...(token.header ? { header: token.header } : {}), token: encodeText(token.token) },
+      { op: "save-token", name: token.name, hosts: token.hosts, ...headersField(token.headers), token: encodeText(token.token) },
       this.path,
     );
     return typeof reply.id === "number" ? reply.id : -1;
@@ -267,7 +289,7 @@ export class VaultTokens {
         op: "update-token",
         id,
         ...(change.hosts ? { hosts: change.hosts } : {}),
-        ...(change.header ? { header: change.header } : {}),
+        ...headersField(change.headers),
         ...(change.token ? { token: encodeText(change.token) } : {}),
       },
       this.path,
@@ -278,10 +300,10 @@ export class VaultTokens {
     await vaultCall({ op: "delete-token", id }, this.path);
   }
 
-  /** Token `name` for a request to `host`, for the proxy to swap in and drop; refused for a host it isn't for. */
-  async forHost(name: string, host: string): Promise<{ token: Uint8Array; header: string }> {
+  /** Token `name` for a request to `host`, for the proxy (or the shell's own client) to use and drop; refused for a host it isn't for. */
+  async forHost(name: string, host: string): Promise<{ token: Uint8Array; headers: string[] }> {
     const reply = await vaultCall({ op: "token", name, host }, this.path);
-    return { token: fromBase64(reply.token), header: typeof reply.header === "string" ? reply.header : "Authorization: Bearer {}" };
+    return { token: fromBase64(reply.token), headers: headersOf(reply) };
   }
 }
 

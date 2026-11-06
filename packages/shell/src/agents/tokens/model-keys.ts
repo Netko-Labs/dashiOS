@@ -21,17 +21,29 @@ export interface ModelKey {
   /** What Settings calls it. */
   label: string;
   hosts: string[];
-  header: string;
+  /** Every header the provider's SDKs and tools send the key in: the proxy swaps whichever a request carries. */
+  headers: readonly string[];
   /** The variable the provider's tools read their key from. */
   env: string;
   /** The agent that uses it, for Settings: "Key: in your vault. Claude never sees it." */
   agent: string;
 }
 
-/** The providers Dashi knows: their API's host, the header their key goes in, and where their tools look for it. */
+/**
+ * The providers Dashi knows: their API's host, the headers their key goes in, and where their tools look for it.
+ * Anthropic's: `x-api-key` (Claude Code, older SDKs, curl from the docs) and `Authorization: Bearer` (@anthropic-ai/sdk 1.x).
+ * OpenAI's SDKs and tools send the key to api.openai.com as `Authorization: Bearer` only (`api-key` is Azure's, another host).
+ */
 export const MODEL_KEYS: readonly ModelKey[] = [
-  { name: "anthropic", label: "Anthropic key", hosts: ["api.anthropic.com"], header: "x-api-key: {}", env: "ANTHROPIC_API_KEY", agent: "Claude" },
-  { name: "openai", label: "OpenAI key", hosts: ["api.openai.com"], header: DEFAULT_HEADER, env: "OPENAI_API_KEY", agent: "Codex" },
+  {
+    name: "anthropic",
+    label: "Anthropic key",
+    hosts: ["api.anthropic.com"],
+    headers: ["x-api-key: {}", DEFAULT_HEADER],
+    env: "ANTHROPIC_API_KEY",
+    agent: "Claude",
+  },
+  { name: "openai", label: "OpenAI key", hosts: ["api.openai.com"], headers: [DEFAULT_HEADER], env: "OPENAI_API_KEY", agent: "Codex" },
 ];
 
 export const modelKey = (name: string): ModelKey | undefined => MODEL_KEYS.find((key) => key.name === name);
@@ -42,15 +54,15 @@ export interface TokenRef {
   /** `dashi:<name>`: what the agent holds; the proxy swaps it for the token on the way to `hosts`. */
   placeholder: string;
   hosts: string[];
-  header: string;
+  headers: string[];
   /** The environment to start the agent with (`ANTHROPIC_API_KEY=dashi:anthropic` for a model key; empty for others). */
   env: Record<string, string>;
 }
 
-export function tokenRef(item: Pick<TokenSummary, "name" | "hosts" | "header">): TokenRef {
+export function tokenRef(item: Pick<TokenSummary, "name" | "hosts" | "headers">): TokenRef {
   const key = modelKey(item.name);
   const held = placeholder(item.name);
-  return { name: item.name, placeholder: held, hosts: item.hosts, header: item.header, env: key ? { [key.env]: held } : {} };
+  return { name: item.name, placeholder: held, hosts: item.hosts, headers: item.headers, env: key ? { [key.env]: held } : {} };
 }
 
 /** Token `name` from the vault, as a placeholder and its environment; null when the vault doesn't have it or doesn't answer. */

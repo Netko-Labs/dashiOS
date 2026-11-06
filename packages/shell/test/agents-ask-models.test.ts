@@ -250,9 +250,9 @@ test("Claude's key: the vault's token item for api.anthropic.com first, else ANT
       if (name !== ANTHROPIC_TOKEN || host !== ANTHROPIC_HOST) throw new Error("not for that host");
       const token = new TextEncoder().encode("from-vault");
       handed.push(token);
-      return { token, header: "x-api-key: {}" };
+      return { token, headers: ["x-api-key: {}", "Authorization: Bearer {}"] };
     },
-    list: async () => [{ id: 1, name: ANTHROPIC_TOKEN, hosts: [ANTHROPIC_HOST], header: "x-api-key: {}", lastUsed: null }],
+    list: async () => [{ id: 1, name: ANTHROPIC_TOKEN, hosts: [ANTHROPIC_HOST], headers: ["x-api-key: {}"], lastUsed: null }],
   };
   const keys = modelKeys(vaultTokenSource(tokens), { ANTHROPIC_API_KEY: "from-env" });
   expect(await keys.anthropic()).toEqual({ key: "from-vault", place: "vault" });
@@ -266,7 +266,7 @@ test("Claude's key: the vault's token item for api.anthropic.com first, else ANT
   // No such item (or it lists other hosts), or a locked vault: the session's key.
   const other = {
     forHost: async () => Promise.reject(new Error("no such token")),
-    list: async () => [{ id: 2, name: ANTHROPIC_TOKEN, hosts: ["api.example.com"], header: "x-api-key: {}", lastUsed: null }],
+    list: async () => [{ id: 2, name: ANTHROPIC_TOKEN, hosts: ["api.example.com"], headers: ["x-api-key: {}"], lastUsed: null }],
   };
   expect(await modelKeys(vaultTokenSource(other), { ANTHROPIC_API_KEY: " from-env " }).anthropic()).toEqual({ key: "from-env", place: "environment" });
   expect(await keyPlace(modelKeys(vaultTokenSource(other), { ANTHROPIC_API_KEY: "from-env" }))).toBe("environment");

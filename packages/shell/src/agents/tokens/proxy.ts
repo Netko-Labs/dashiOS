@@ -5,7 +5,7 @@
  *
  * - to port 443 of a host a token item lists, it terminates TLS itself with
  *   a leaf certificate from the sandbox's CA (made for that host alone),
- *   puts each token whose placeholder is in the header the item names, and
+ *   puts each token in whichever of the item's headers carries its placeholder, and
  *   forwards the request over TLS it verifies;
  * - anywhere else, it tunnels the bytes untouched: a placeholder sent there
  *   is worthless.
@@ -25,7 +25,7 @@ import { type Authority, type Issued, issueLeaf } from "./x509.ts";
 /** What the proxy asks of the vault. */
 export interface TokenSource {
   list(): Promise<TokenSummary[]>;
-  forHost(name: string, host: string): Promise<{ token: Uint8Array; header: string }>;
+  forHost(name: string, host: string): Promise<{ token: Uint8Array; headers: string[] }>;
 }
 
 export interface ProxyOptions {
@@ -111,7 +111,7 @@ export class SandboxProxy {
       this.listed = { at: now, items: this.options.tokens.list().catch(() => []) };
     }
     const items = await this.listed.items;
-    return items.filter((item) => hostListed(item.hosts, host)).map(({ name, header }) => ({ name, header }));
+    return items.filter((item) => hostListed(item.hosts, host)).map(({ name, headers }) => ({ name, headers }));
   }
 
   private accept(client: net.Socket): void {
@@ -218,11 +218,11 @@ export class SandboxProxy {
     headers.delete("host");
     // The answer goes back as it came; a client that asked for no encoding gets none.
     if (!headers.has("accept-encoding")) headers.set("accept-encoding", "identity");
-    const tokens = new Map<string, { token: string; header: string }>();
+    const tokens = new Map<string, { token: string; headers: readonly string[] }>();
     for (const candidate of wanted(headers, await this.candidates(host))) {
       try {
-        const { token, header } = await this.options.tokens.forHost(candidate.name, host);
-        tokens.set(candidate.name, { token: new TextDecoder().decode(token), header });
+        const { token, headers: specs } = await this.options.tokens.forHost(candidate.name, host);
+        tokens.set(candidate.name, { token: new TextDecoder().decode(token), headers: specs });
         token.fill(0);
         this.note(candidate.name, host);
       } catch {

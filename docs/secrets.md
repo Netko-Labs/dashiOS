@@ -433,8 +433,15 @@ In the vault, beside logins and cards (`src/daemon/tokens.rs`):
   every host under example.com (not example.com itself, and never a whole
   top-level domain). A host matches exactly or under a wildcard; never its
   parent, a look-alike (`api.github.com.evil.example`) or an address.
-- **header**: where the token goes, `Authorization: Bearer {}` by default:
-  a header name and a value with exactly one `{}`.
+- **headers**: where the token may go, 1 to 4, `Authorization: Bearer {}`
+  by default: each a header name and a value with exactly one `{}`, no
+  name twice. The proxy puts the token in whichever of them a request sent
+  with the placeholder, and never adds one that wasn't sent. One provider's
+  tools differ: Claude Code and older Anthropic SDKs send `x-api-key`,
+  `@anthropic-ai/sdk` 1.x sends `Authorization: Bearer`, so the Anthropic
+  key names both. In the vault file the first is `header` (as an item
+  always had) and, when there are more, all of them are `headers`, so an
+  item saved with one header reads as it did.
 - **the token**: printable ASCII without spaces, so no line break can add a
   header of its own.
 
@@ -444,15 +451,18 @@ The last use is written at most once a minute (the proxy asks per request).
 
 | Op | Fields | Reply |
 | --- | --- | --- |
-| `tokens` | | `tokens: [{id, name, hosts, header, created, modified, lastUsed}]`; never a token |
-| `save-token` | `name, hosts, header?, token` | `id`; a name used already is refused |
-| `update-token` | `id, hosts?, header?, token?` | an empty `token` keeps the one there |
+| `tokens` | | `tokens: [{id, name, hosts, header, headers, created, modified, lastUsed}]`; never a token. `header` is the first of `headers` |
+| `save-token` | `name, hosts, headers? \| header?, token` | `id`; a name used already is refused. `headers` wins over `header` (one, as before) |
+| `update-token` | `id, hosts?, headers? \| header?, token?` | an empty `token` keeps the one there |
 | `delete-token` | `id` | |
-| `token` | `name, host` | `token, name, header`, only for a listed `host` |
+| `token` | `name, host` | `token, name, header, headers`, only for a listed `host` |
 
-Settings › Passwords lists them under Tokens (name, hosts, what agents
-hold), adds one (Anthropic key, OpenAI key, or Other: name, hosts, header,
-token), changes one (Edit…: hosts, header, a new token), and deletes one
+Settings › Passwords lists them under Tokens (name, hosts, the headers'
+names, what agents hold: "api.anthropic.com · in x-api-key or
+Authorization"), adds one (Anthropic key and OpenAI key fill in the host
+and every header their SDKs send the key in; Other: name, hosts, headers
+with commas between, token), changes one (Edit…: hosts, headers, a new
+token), and deletes one
 after a confirm sheet (`settings-app/panes/tokens.tsx`). The token is never
 shown again. Agents' pictures blank the pane like the rest of Passwords.
 
@@ -487,9 +497,10 @@ anything in an agent's scope), one per sandbox (`src/agents/tokens/`):
    - **to port 443 of a host a token lists**: the proxy terminates TLS with
      a leaf certificate its sandbox's CA signs for that host alone (made on
      first use, a week at most), reads the request, and for each item listing
-     the host whose placeholder is in the header the item names, asks
-     dashi-secretd for that token for that host. The header becomes the
-     item's template with the token in it, so its shape is the person's, not
+     the host whose placeholder is in one of the headers the item names, asks
+     dashi-secretd for that token for that host. Each of those headers the
+     request sent with the placeholder (only those: none is added) becomes
+     the item's template for it with the token in it, so its shape is the person's, not
      the agent's; `Basic` credentials that hold the placeholder
      (`x-access-token:dashi:github`, as git sends them) get the token in the
      placeholder's place. `dashi:git` is not in `dashi:github`. The request
@@ -509,9 +520,11 @@ starts without the proxy, and dashi-agent says tokens won't reach it.
 ### Model keys
 
 A model key is a token item (`src/agents/tokens/model-keys.ts`):
-`anthropic` for `api.anthropic.com` in `x-api-key: {}` (Claude Code reads
-`ANTHROPIC_API_KEY`), `openai` for `api.openai.com` in
-`Authorization: Bearer {}` (`OPENAI_API_KEY`). Settings says "Key: in your
+`anthropic` for `api.anthropic.com` in `x-api-key: {}` or
+`Authorization: Bearer {}` (Claude Code and older SDKs send the first,
+`@anthropic-ai/sdk` 1.x the second; they read `ANTHROPIC_API_KEY`),
+`openai` for `api.openai.com` in `Authorization: Bearer {}` (`OPENAI_API_KEY`;
+OpenAI's tools send the key to that host no other way). Settings says "Key: in your
 vault. Claude never sees it." An agent started through dashi-agent gets
 `token(name)` (also `passwords.token(name)`): the placeholder and the
 environment to start it with (`ANTHROPIC_API_KEY=dashi:anthropic`), never

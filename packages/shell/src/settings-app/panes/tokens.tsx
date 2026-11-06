@@ -26,11 +26,31 @@ export function parseHosts(text: string): string[] {
     .filter((host) => host !== "");
 }
 
-/** A token's line under its name: what it is for, and what agents hold instead. */
-export function tokenDetail(token: Pick<TokenSummary, "name" | "hosts">): string {
+/**
+ * "x-api-key: {}, Authorization: Bearer {}" as a list: a comma starts a new
+ * header only where a header's name and its colon follow, so a comma inside
+ * a value stays in it.
+ */
+export function parseHeaders(text: string): string[] {
+  return text
+    .split(/,(?=\s*[A-Za-z0-9-]+\s*:)/)
+    .map((header) => header.trim())
+    .filter((header) => header !== "");
+}
+
+/** The headers as the field shows them. */
+export const headersText = (headers: readonly string[]): string => headers.join(", ");
+
+/** The headers' names, for a token's line: "x-api-key or Authorization". */
+export function headerNames(headers: readonly string[]): string {
+  return headers.map((header) => header.split(":")[0]?.trim() ?? header).join(" or ");
+}
+
+/** A token's line under its name: what it is for, the headers it goes in, and what agents hold instead. */
+export function tokenDetail(token: Pick<TokenSummary, "name" | "hosts" | "headers">): string {
   const key = modelKey(token.name);
-  const hosts = token.hosts.join(", ");
-  return key ? `${hosts} · Key: in your vault. ${key.agent} never sees it.` : `${hosts} · agents hold ${placeholder(token.name)}`;
+  const where = `${token.hosts.join(", ")} · in ${headerNames(token.headers)}`;
+  return key ? `${where} · Key: in your vault. ${key.agent} never sees it.` : `${where} · agents hold ${placeholder(token.name)}`;
 }
 
 type Kind = "other" | (typeof MODEL_KEYS)[number]["name"];
@@ -39,16 +59,17 @@ interface Form {
   kind: Kind;
   name: string;
   hosts: string;
-  header: string;
+  /** Comma-separated: "x-api-key: {}, Authorization: Bearer {}". */
+  headers: string;
   token: string;
 }
 
-const EMPTY: Form = { kind: "other", name: "", hosts: "", header: DEFAULT_HEADER, token: "" };
+const EMPTY: Form = { kind: "other", name: "", hosts: "", headers: DEFAULT_HEADER, token: "" };
 
-/** The form for `kind`: a model key fills in its name, host and header. */
+/** The form for `kind`: a model key fills in its name, host and every header its SDKs send the key in. */
 export function formFor(kind: Kind, current: Form): Form {
   const key = modelKey(kind);
-  return key ? { ...current, kind, name: key.name, hosts: key.hosts.join(", "), header: key.header } : { ...EMPTY, kind, token: current.token };
+  return key ? { ...current, kind, name: key.name, hosts: key.hosts.join(", "), headers: headersText(key.headers) } : { ...EMPTY, kind, token: current.token };
 }
 
 function Field({
@@ -80,13 +101,13 @@ function Field({
   );
 }
 
-/** Adds a token, or (with `editing`) changes one: its hosts, its header, and its token if a new one is typed. */
+/** Adds a token, or (with `editing`) changes one: its hosts, its headers, and its token if a new one is typed. */
 function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: TokenSummary | null; onDone: () => void }) {
   const [form, setForm] = useState<Form>(
-    editing ? { kind: "other", name: editing.name, hosts: editing.hosts.join(", "), header: editing.header, token: "" } : EMPTY,
+    editing ? { kind: "other", name: editing.name, hosts: editing.hosts.join(", "), headers: headersText(editing.headers), token: "" } : EMPTY,
   );
   const [problem, setProblem] = useState<string | null>(null);
-  const set = (key: "name" | "hosts" | "header" | "token") => (text: string) => setForm((current) => ({ ...current, [key]: text }));
+  const set = (key: "name" | "hosts" | "headers" | "token") => (text: string) => setForm((current) => ({ ...current, [key]: text }));
   const finish = (work: Promise<unknown>): void => {
     void work
       .then(() => {
@@ -97,12 +118,11 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
   const hosts = parseHosts(form.hosts);
+  const headers = parseHeaders(form.headers);
   const token = form.token.trim();
   const save = (): void =>
     finish(
-      editing
-        ? tokens.update(editing.id, { hosts, header: form.header.trim(), ...(token ? { token } : {}) })
-        : tokens.save({ name: form.name.trim(), hosts, header: form.header.trim(), token }),
+      editing ? tokens.update(editing.id, { hosts, headers, ...(token ? { token } : {}) }) : tokens.save({ name: form.name.trim(), hosts, headers, token }),
     );
   const id = editing ? "tokens-edit" : "tokens-add";
   return (
@@ -127,8 +147,8 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
       <Row label="Hosts" detail="Only these get it; *.example.com for every host under example.com">
         <Field testID={`${id}-hosts`} value={form.hosts} placeholder="api.github.com" onChange={set("hosts")} />
       </Row>
-      <Row label="Header" detail="Where the token goes: {} is the token">
-        <Field testID={`${id}-header`} value={form.header} placeholder={DEFAULT_HEADER} onChange={set("header")} />
+      <Row label="Headers" detail="Where the token may go, {} for the token; commas between. Only a header a request sends is changed.">
+        <Field testID={`${id}-headers`} value={form.headers} placeholder={DEFAULT_HEADER} onChange={set("headers")} />
       </Row>
       <Row label="Token" detail={problem ?? (editing ? "Leave empty to keep the one saved" : "Saved in your vault; never shown again")}>
         <Field testID={`${id}-token`} value={form.token} placeholder={editing ? "New token" : "Token"} secure onChange={set("token")} />
@@ -140,7 +160,7 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
             testID={`${id}-save`}
             label={editing ? "Save Changes" : "Save Token"}
             primary
-            disabled={hosts.length === 0 || !form.header.trim() || (!editing && (!form.name.trim() || !token))}
+            disabled={hosts.length === 0 || headers.length === 0 || (!editing && (!form.name.trim() || !token))}
             onPress={save}
           />
         </View>

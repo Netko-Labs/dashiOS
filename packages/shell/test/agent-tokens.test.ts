@@ -80,13 +80,32 @@ describe("CONNECT", () => {
 
 describe("the swap", () => {
   const tokens = new Map([
-    ["github", { token: "ghp_real", header: "Authorization: Bearer {}" }],
-    ["anthropic", { token: "sk-ant-real", header: "x-api-key: {}" }],
+    ["github", { token: "ghp_real", headers: ["Authorization: Bearer {}"] }],
+    ["openai", { token: "sk-real", headers: ["Authorization: Bearer {}"] }],
   ]);
+  const anthropic = new Map([["anthropic", { token: "sk-ant-real", headers: ["x-api-key: {}", "Authorization: Bearer {}"] }]]);
   test("a placeholder in the header the item names becomes the person's template with the token", () => {
-    const out = swapHeaders(new Headers({ authorization: "token dashi:github", "x-api-key": "dashi:anthropic" }), tokens);
+    const out = swapHeaders(new Headers({ authorization: "token dashi:github" }), tokens);
     expect(out.get("authorization")).toBe("Bearer ghp_real");
-    expect(out.get("x-api-key")).toBe("sk-ant-real");
+  });
+  test("an item with several headers is swapped in whichever the request sent, and none is added", () => {
+    // Older SDKs and Claude Code: x-api-key.
+    const old = swapHeaders(new Headers({ "x-api-key": "dashi:anthropic" }), anthropic);
+    expect(old.get("x-api-key")).toBe("sk-ant-real");
+    expect(old.has("authorization")).toBe(false);
+    // @anthropic-ai/sdk 1.x: Authorization: Bearer.
+    const bearer = swapHeaders(new Headers({ authorization: "Bearer dashi:anthropic" }), anthropic);
+    expect(bearer.get("authorization")).toBe("Bearer sk-ant-real");
+    expect(bearer.has("x-api-key")).toBe(false);
+    // Both sent: both swapped.
+    const both = swapHeaders(new Headers({ authorization: "Bearer dashi:anthropic", "x-api-key": "dashi:anthropic" }), anthropic);
+    expect([both.get("x-api-key"), both.get("authorization")]).toEqual(["sk-ant-real", "Bearer sk-ant-real"]);
+    // Another token's placeholder in one of them is left alone.
+    const other = swapHeaders(new Headers({ authorization: "Bearer dashi:openai", "x-api-key": "dashi:anthropic" }), anthropic);
+    expect(other.get("authorization")).toBe("Bearer dashi:openai");
+    expect(
+      wanted(new Headers({ authorization: "Bearer dashi:anthropic" }), [{ name: "anthropic", headers: ["x-api-key: {}", "Authorization: Bearer {}"] }]),
+    ).toHaveLength(1);
   });
   test("git's Basic credentials get the token in the placeholder's place", () => {
     const basic = `Basic ${btoa("x-access-token:dashi:github")}`;
@@ -97,12 +116,12 @@ describe("the swap", () => {
     const out = swapHeaders(new Headers({ "x-other": "dashi:github", authorization: "Bearer dashi:githubber" }), tokens);
     expect(out.get("x-other")).toBe("dashi:github");
     expect(out.get("authorization")).toBe("Bearer dashi:githubber");
-    expect(wanted(new Headers({ authorization: "Bearer dashi:githubber" }), [{ name: "github", header: "Authorization: Bearer {}" }])).toEqual([]);
+    expect(wanted(new Headers({ authorization: "Bearer dashi:githubber" }), [{ name: "github", headers: ["Authorization: Bearer {}"] }])).toEqual([]);
   });
   test("only the items whose placeholder is there are asked for", () => {
     const candidates = [
-      { name: "github", header: "Authorization: Bearer {}" },
-      { name: "gist", header: "Authorization: Bearer {}" },
+      { name: "github", headers: ["Authorization: Bearer {}"] },
+      { name: "gist", headers: ["Authorization: Bearer {}"] },
     ];
     expect(wanted(new Headers({ authorization: "Bearer dashi:github" }), candidates).map((c) => c.name)).toEqual(["github"]);
     expect(parseHeaderSpec("x-api-key: {}")).toEqual({ name: "x-api-key", template: "{}" });
@@ -136,14 +155,16 @@ describe("the sandbox's arguments", () => {
 });
 
 describe("model keys", () => {
-  const items: TokenSummary[] = [{ id: 1, name: "anthropic", hosts: ["api.anthropic.com"], header: "x-api-key: {}", lastUsed: null }];
+  const items: TokenSummary[] = [
+    { id: 1, name: "anthropic", hosts: ["api.anthropic.com"], headers: ["x-api-key: {}", "Authorization: Bearer {}"], lastUsed: null },
+  ];
   test("token(name) gives the placeholder and the environment, never the key", async () => {
     const ref = await token("anthropic", { list: async () => items });
     expect(ref).toEqual({
       name: "anthropic",
       placeholder: "dashi:anthropic",
       hosts: ["api.anthropic.com"],
-      header: "x-api-key: {}",
+      headers: ["x-api-key: {}", "Authorization: Bearer {}"],
       env: { ANTHROPIC_API_KEY: "dashi:anthropic" },
     });
   });
@@ -163,13 +184,18 @@ describe("model keys", () => {
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-tokens-"));
 const asked: Array<[string, string]> = [];
-const items: TokenSummary[] = [{ id: 1, name: "github", hosts: ["api.github.test"], header: "Authorization: Bearer {}", lastUsed: null }];
+const ANTHROPIC_HEADERS = ["x-api-key: {}", "Authorization: Bearer {}"];
+const items: TokenSummary[] = [
+  { id: 1, name: "github", hosts: ["api.github.test"], headers: ["Authorization: Bearer {}"], lastUsed: null },
+  { id: 2, name: "anthropic", hosts: ["api.anthropic.com"], headers: ANTHROPIC_HEADERS, lastUsed: null },
+];
 const source: TokenSource = {
   list: async () => items,
   forHost: async (name, host) => {
     asked.push([name, host]);
-    if (name !== "github" || host !== "api.github.test") throw new Error(`${name} isn't for that host`);
-    return { token: new TextEncoder().encode("ghp_real"), header: "Authorization: Bearer {}" };
+    if (name === "github" && host === "api.github.test") return { token: new TextEncoder().encode("ghp_real"), headers: ["Authorization: Bearer {}"] };
+    if (name === "anthropic" && host === "api.anthropic.com") return { token: new TextEncoder().encode("sk-ant-real"), headers: ANTHROPIC_HEADERS };
+    throw new Error(`${name} isn't for that host`);
   },
 };
 let upstreamCa: Awaited<ReturnType<typeof makeAuthority>>;
@@ -191,7 +217,12 @@ beforeAll(async () => {
     async fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/moved") return new Response(null, { status: 302, headers: { location: "https://elsewhere.test/" } });
-      return Response.json({ path: `${url.pathname}${url.search}`, authorization: request.headers.get("authorization"), body: await request.text() });
+      return Response.json({
+        path: `${url.pathname}${url.search}`,
+        authorization: request.headers.get("authorization"),
+        ...(request.headers.has("x-api-key") ? { apiKey: request.headers.get("x-api-key") } : {}),
+        body: await request.text(),
+      });
     },
   });
   sandboxCa = await makeAuthority("dashi-agent-test-1.scope");
@@ -242,6 +273,28 @@ describe("the proxy", () => {
     expect(await response.json()).toEqual({ path: "/user?x=1", authorization: "Bearer ghp_real", body: "hello" });
     expect(asked).toEqual([["github", "api.github.test"]]);
     expect(used).toEqual(["github → api.github.test"]);
+  });
+
+  test("api.anthropic.com gets the key in x-api-key or in Authorization: Bearer, whichever was sent", async () => {
+    asked.length = 0;
+    const old = await viaProxy("https://api.anthropic.com/v1/messages", { method: "POST", body: "{}", headers: { "x-api-key": "dashi:anthropic" } });
+    expect(await old.json()).toEqual({ path: "/v1/messages", authorization: null, apiKey: "sk-ant-real", body: "{}" });
+    const sdk = await viaProxy("https://api.anthropic.com/v1/messages", { method: "POST", body: "{}", headers: { authorization: "Bearer dashi:anthropic" } });
+    expect(await sdk.json()).toEqual({ path: "/v1/messages", authorization: "Bearer sk-ant-real", body: "{}" });
+    expect(asked).toEqual([
+      ["anthropic", "api.anthropic.com"],
+      ["anthropic", "api.anthropic.com"],
+    ]);
+  });
+
+  test("an unlisted host gets nothing in either header: both placeholders arrive as sent", async () => {
+    asked.length = 0;
+    const response = await viaProxy(`https://localhost:${upstream.port}/v1/messages`, {
+      headers: { authorization: "Bearer dashi:anthropic", "x-api-key": "dashi:anthropic" },
+      ca: upstreamCa.cert,
+    });
+    expect(await response.json()).toMatchObject({ authorization: "Bearer dashi:anthropic", apiKey: "dashi:anthropic" });
+    expect(asked).toEqual([]);
   });
 
   test("a request without the placeholder asks the vault for nothing", async () => {

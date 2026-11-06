@@ -16,6 +16,8 @@ const MAX_TOKENS: usize = 1_000;
 const MAX_HOSTS: usize = 32;
 const MAX_NAME: usize = 64;
 const MAX_HEADER: usize = 256;
+/// The headers one item may go in (a provider's SDKs send one of a few).
+const MAX_HEADERS: usize = 4;
 const MAX_TOKEN: usize = 8 * 1024;
 /// A token's last use is written at most this often (the proxy asks per request).
 const USE_GRAIN: u64 = 60;
@@ -116,6 +118,33 @@ pub fn normalize_header(input: &str) -> Result<String, String> {
     Ok(format!("{name}: {value}"))
 }
 
+/// The headers an item names, from `headers` (or one `header`, as before
+/// there could be more): each checked, 1 to MAX_HEADERS, no header name twice.
+/// None when neither was sent.
+pub fn headers_of(
+    header: Option<&str>,
+    headers: Option<&[String]>,
+) -> Result<Option<Vec<String>>, String> {
+    let given: Vec<&str> = match (headers, header) {
+        (Some(list), _) => list.iter().map(String::as_str).collect(),
+        (None, Some(one)) => vec![one],
+        (None, None) => return Ok(None),
+    };
+    if given.is_empty() || given.len() > MAX_HEADERS {
+        return Err(format!("a token goes in 1 to {MAX_HEADERS} headers"));
+    }
+    let mut out: Vec<String> = Vec::new();
+    for each in given {
+        let header = normalize_header(each)?;
+        let name = |h: &str| h.split(':').next().unwrap_or("").to_ascii_lowercase();
+        if out.iter().any(|known| name(known) == name(&header)) {
+            return Err(format!("{} is named twice", name(&header)));
+        }
+        out.push(header);
+    }
+    Ok(Some(out))
+}
+
 /// A token goes into a header, so it is printable ASCII without spaces: no
 /// line break can smuggle another header in.
 fn check_token(token: &Secret) -> Result<(), String> {
@@ -163,11 +192,13 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
             name,
             hosts,
             header,
+            headers,
             token,
         } => {
             let name = normalize_name(&name)?;
             let hosts = hosts_of(&hosts)?;
-            let header = normalize_header(header.as_deref().unwrap_or(DEFAULT_HEADER))?;
+            let headers = headers_of(header.as_deref(), headers.as_deref())?
+                .unwrap_or_else(|| vec![DEFAULT_HEADER.to_string()]);
             check_token(&token)?;
             if vault.data.tokens.iter().any(|t| t.name == name) {
                 return Err(format!("there is a token named {name} already"));
@@ -176,26 +207,30 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
                 return Err("the vault is full".into());
             }
             let id = vault.data.next_id();
-            vault.data.tokens.push(Token {
+            let mut item = Token {
                 id,
                 name,
                 hosts,
-                header,
+                header: String::new(),
+                headers: Vec::new(),
                 token,
                 created: now,
                 modified: now,
                 last_used: None,
-            });
+            };
+            item.set_headers(headers);
+            vault.data.tokens.push(item);
             Ok((Reply::Plain(json!({ "id": id })), true))
         }
         Request::UpdateToken {
             id,
             hosts,
             header,
+            headers,
             token,
         } => {
             let hosts = hosts.as_deref().map(hosts_of).transpose()?;
-            let header = header.as_deref().map(normalize_header).transpose()?;
+            let headers = headers_of(header.as_deref(), headers.as_deref())?;
             // An empty token keeps the one there.
             let token = token.filter(|t| !t.expose().is_empty());
             if let Some(token) = &token {
@@ -205,8 +240,8 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
             if let Some(hosts) = hosts {
                 item.hosts = hosts;
             }
-            if let Some(header) = header {
-                item.header = header;
+            if let Some(headers) = headers {
+                item.set_headers(headers);
             }
             if let Some(token) = token {
                 item.token = token;
@@ -236,7 +271,7 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
             }
             Ok((
                 Reply::Secret {
-                    fields: json!({ "name": item.name, "header": item.header }),
+                    fields: json!({ "name": item.name, "header": item.header, "headers": item.all_headers() }),
                     key: "token",
                     secret: item.token.clone(),
                 },
@@ -453,6 +488,80 @@ mod tests {
             .is_err()
         );
         assert!(v.data.tokens.is_empty());
+    }
+
+    #[test]
+    fn a_token_may_go_in_more_than_one_header() {
+        let mut v = vault();
+        ask(
+            &mut v,
+            json!({ "op": "save-token", "name": "anthropic", "hosts": ["api.anthropic.com"], "headers": ["x-api-key:{}", "Authorization: Bearer {}"], "token": GH }),
+            1,
+        )
+        .unwrap();
+        let listed = ask(&mut v, json!({ "op": "tokens" }), 2).unwrap();
+        assert_eq!(
+            listed["tokens"][0]["headers"],
+            json!(["x-api-key: {}", "Authorization: Bearer {}"])
+        );
+        // The first is `header` too, for a reader that knows one.
+        assert_eq!(listed["tokens"][0]["header"], "x-api-key: {}");
+        let reply = ask(
+            &mut v,
+            json!({ "op": "token", "name": "anthropic", "host": "api.anthropic.com" }),
+            3,
+        )
+        .unwrap();
+        assert_eq!(
+            reply["headers"],
+            json!(["x-api-key: {}", "Authorization: Bearer {}"])
+        );
+        // A header name twice, none, or too many is refused.
+        for headers in [
+            json!(["X-Key: {}", "x-key: Bearer {}"]),
+            json!([]),
+            json!(["A: {}", "B: {}", "C: {}", "D: {}", "E: {}"]),
+        ] {
+            assert!(
+                ask(
+                    &mut v,
+                    json!({ "op": "save-token", "name": "y", "hosts": ["y.com"], "headers": headers, "token": GH }),
+                    4
+                )
+                .is_err()
+            );
+        }
+        // One header again, as before.
+        let id = v.data.tokens[0].id;
+        ask(
+            &mut v,
+            json!({ "op": "update-token", "id": id, "header": "X-Token: {}" }),
+            5,
+        )
+        .unwrap();
+        assert_eq!(v.data.tokens[0].all_headers(), vec!["X-Token: {}"]);
+    }
+
+    #[test]
+    fn an_item_saved_with_one_header_still_reads() {
+        // A vault written before an item could name more than one header.
+        let old: Token = serde_json::from_value(json!({
+            "id": 7, "name": "github", "hosts": ["api.github.com"], "header": "Authorization: Bearer {}",
+            "token": GH, "created": 1, "modified": 1
+        }))
+        .unwrap();
+        assert_eq!(old.all_headers(), vec!["Authorization: Bearer {}"]);
+        assert_eq!(old.summary().headers, vec!["Authorization: Bearer {}"]);
+        // And an item with one header is written as before: no `headers`.
+        let mut written = serde_json::to_value(&old).unwrap();
+        assert!(written.get("headers").is_none());
+        let mut two = old.clone();
+        two.set_headers(vec![
+            "x-api-key: {}".into(),
+            "Authorization: Bearer {}".into(),
+        ]);
+        written = serde_json::to_value(&two).unwrap();
+        assert_eq!(written["header"], "x-api-key: {}");
     }
 
     #[test]
