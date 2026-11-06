@@ -176,6 +176,14 @@ fn mistakes_get_errors_not_a_dropped_connection() {
         ipc.request("capture", json!({ "path": "/tmp/x.png" }))["error"],
         "capture is only for the shell"
     );
+    // So may only it ask whose presses were whose.
+    assert_eq!(
+        ipc.request(
+            "input-origin",
+            json!({ "namespace": "dashi.agent-consent" })
+        )["error"],
+        "input-origin is only for the shell"
+    );
     assert!(
         ipc.request("focus", json!({ "window": "1" }))["error"]
             .as_str()
