@@ -126,7 +126,7 @@ function TokenForm({ tokens, editing, onDone }: { tokens: TokenStore; editing: T
     );
   const id = editing ? "tokens-edit" : "tokens-add";
   return (
-    <Spot id="passwords/add-token">
+    <Spot id="passwords/add-token" cards>
       <Group testID={id}>
         {editing ? (
           <Item label={`Change ${editing.name}`} detail={`Agents hold ${placeholder(editing.name)}; its name stays.`} />
@@ -208,25 +208,25 @@ export function Tokens({ tokens, confirm }: { tokens: TokenStore; confirm: Confi
     });
   return (
     <>
-      <Spot id="passwords/tokens">
+      <Spot id="passwords/tokens" cards>
         <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Tokens</Text>
+        <Group testID="tokens-list">
+          {list === null ? (
+            <Note testID="tokens-loading">{failure ? "Tokens can't be shown right now." : "Looking…"}</Note>
+          ) : list.length === 0 ? (
+            <Note testID="tokens-none">No tokens. Add an API token or a model key below: agents get a placeholder, never the token.</Note>
+          ) : (
+            list.map((token) => (
+              <Item key={token.id} label={modelKey(token.name)?.label ?? token.name} detail={tokenDetail(token)} testID={`token:${token.id}`}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <MiniButton testID={`token-edit:${token.id}`} label="Edit…" onPress={() => setEditing(token)} />
+                  <MiniButton testID={`token-delete:${token.id}`} label="Delete…" tone="critical" onPress={() => remove(token)} />
+                </View>
+              </Item>
+            ))
+          )}
+        </Group>
       </Spot>
-      <Group testID="tokens-list">
-        {list === null ? (
-          <Note testID="tokens-loading">{failure ? "Tokens can't be shown right now." : "Looking…"}</Note>
-        ) : list.length === 0 ? (
-          <Note testID="tokens-none">No tokens. Add an API token or a model key below: agents get a placeholder, never the token.</Note>
-        ) : (
-          list.map((token) => (
-            <Item key={token.id} label={modelKey(token.name)?.label ?? token.name} detail={tokenDetail(token)} testID={`token:${token.id}`}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <MiniButton testID={`token-edit:${token.id}`} label="Edit…" onPress={() => setEditing(token)} />
-                <MiniButton testID={`token-delete:${token.id}`} label="Delete…" tone="critical" onPress={() => remove(token)} />
-              </View>
-            </Item>
-          ))
-        )}
-      </Group>
       {failure && <Failure testID="tokens-failure">{failure}</Failure>}
       <TokenForm
         key={editing?.id ?? "new"}

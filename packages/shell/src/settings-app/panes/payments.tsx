@@ -84,7 +84,7 @@ function Limits({ vault }: { vault: Vault }) {
       </Group>
     ) : null;
   return (
-    <Spot id="passwords/payment-limits">
+    <Spot id="passwords/payment-limits" cards>
       <Group testID="payments-limits">
         <FormRow label="Limit per payment" detail={`Now ${dollars(spending.perPayment)}`}>
           <Field testID="payments-per-payment" value={form.perPayment} placeholder="100" onChange={(perPayment) => setForm((f) => ({ ...f, perPayment }))} />
@@ -124,7 +124,7 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
   return (
-    <Spot id="passwords/add-card">
+    <Spot id="passwords/add-card" cards>
       <Group testID="payments-add">
         <FormRow label="Name">
           <Field
@@ -202,18 +202,18 @@ export function Payments({ vault }: { vault: Vault }) {
   };
   return (
     <>
-      <Spot id="passwords/cards">
+      <Spot id="passwords/cards" cards>
         <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Payments</Text>
+        <Group testID="payments-cards">
+          {cards === null ? (
+            <Note testID="payments-loading">{failure ? "Cards can't be shown right now." : "Looking…"}</Note>
+          ) : cards.length === 0 ? (
+            <Note testID="payments-none">No cards. Agents can't pay until you add one; a single-use virtual card is safest.</Note>
+          ) : (
+            cards.map((card) => <CardRow key={card.id} card={card} onDelete={() => remove(card)} />)
+          )}
+        </Group>
       </Spot>
-      <Group testID="payments-cards">
-        {cards === null ? (
-          <Note testID="payments-loading">{failure ? "Cards can't be shown right now." : "Looking…"}</Note>
-        ) : cards.length === 0 ? (
-          <Note testID="payments-none">No cards. Agents can't pay until you add one; a single-use virtual card is safest.</Note>
-        ) : (
-          cards.map((card) => <CardRow key={card.id} card={card} onDelete={() => remove(card)} />)
-        )}
-      </Group>
       {failure && <Failure testID="payments-failure">{failure}</Failure>}
       <AddCard vault={vault} onSaved={refresh} />
       <Limits vault={vault} />

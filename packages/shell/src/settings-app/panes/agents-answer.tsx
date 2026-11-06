@@ -187,16 +187,16 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
         <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
       )}
       <Caption>Only what you type is sent, and only when you ask. Nothing runs until you see the plan and press Return.</Caption>
-      <Spot id="agents/history">
+      <Spot id="agents/history" cards>
         <Caption above>History</Caption>
+        <Group testID="agents-history">
+          {entries.length === 0 ? (
+            <Note testID="agents-history-none">Nothing yet. What agents do for you is listed here.</Note>
+          ) : (
+            entries.map((entry) => <HistoryRow key={entry.id} entry={entry} onUndo={(index) => undo(entry, index)} />)
+          )}
+        </Group>
       </Spot>
-      <Group testID="agents-history">
-        {entries.length === 0 ? (
-          <Note testID="agents-history-none">Nothing yet. What agents do for you is listed here.</Note>
-        ) : (
-          entries.map((entry) => <HistoryRow key={entry.id} entry={entry} onUndo={(index) => undo(entry, index)} />)
-        )}
-      </Group>
       {notice !== null && <Caption>{notice}</Caption>}
     </>
   );

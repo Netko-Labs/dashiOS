@@ -80,8 +80,18 @@ export const PageContext = createContext<{ testID: string; bounds: { current: Bo
 
 const NO_FOCUS = { subscribe: () => () => {}, getSnapshot: (): RowTarget | null => null };
 
-/** A row with an address: scrolled to and lit when it is asked for. */
-export function Spot({ id, children }: { id: SettingId; children: ReactNode }) {
+/** The page's gap between its parts (ui.tsx `Page`), kept inside a Spot that holds several. */
+export const PAGE_GAP = 16;
+
+/** Whether the cards here are lit: a `cards` Spot was asked for (ui.tsx's `Group` reads it). */
+export const SpotLit = createContext(false);
+
+/**
+ * A row with an address: scrolled to and lit when it is asked for. A
+ * section's Spot (`cards`: its heading and its cards) lights its cards, not
+ * the strip behind the heading: an opaque card would hide a light under it.
+ */
+export function Spot({ id, cards = false, children }: { id: SettingId; cards?: boolean; children: ReactNode }) {
   const { pane, row } = rowPlace({ id });
   const colors = useColors();
   const host = useContext(SpotContext);
@@ -124,9 +134,9 @@ export function Spot({ id, children }: { id: SettingId; children: ReactNode }) {
         bounds.current = laid;
         reveal();
       }}
-      style={{ flexDirection: "column", backgroundColor: lit ? colors.switcherSelection : "#00000000" }}
+      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.switcherSelection : "#00000000" }}
     >
-      {children}
+      {cards ? <SpotLit.Provider value={lit !== null}>{children}</SpotLit.Provider> : children}
     </View>
   );
 }

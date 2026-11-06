@@ -35,7 +35,15 @@ export function Caption({ children, above, keys }: { children: string; above?: b
 }
 
 /** A card of rows, a hairline between them. */
-export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
+export function Group({
+  children,
+  testID,
+  wash,
+}: {
+  children: ReactNode;
+  testID?: string /** A color laid over the whole card (Settings lights a card a link lands on). */;
+  wash?: string;
+}) {
   const colors = useColors();
   const surface = useSurface();
   const rows = Children.toArray(children);
@@ -52,13 +60,16 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
         overflow: "hidden",
       }}
     >
-      {rows.map((row, index) => (
-        // The rows of a group never reorder.
-        <Fragment key={index}>
-          {index > 0 && <View style={{ height: 1, marginLeft: 12, backgroundColor: colors.separator }} />}
-          {row}
-        </Fragment>
-      ))}
+      {/* Always there, so lighting the card never remounts its rows. */}
+      <View style={{ flexDirection: "column", backgroundColor: wash ?? "#00000000" }}>
+        {rows.map((row, index) => (
+          // The rows of a group never reorder.
+          <Fragment key={index}>
+            {index > 0 && <View style={{ height: 1, marginLeft: 12, backgroundColor: colors.separator }} />}
+            {row}
+          </Fragment>
+        ))}
+      </View>
     </View>
   );
 }
