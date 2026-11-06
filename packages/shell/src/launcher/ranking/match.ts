@@ -45,6 +45,8 @@ export interface Hit {
 }
 
 const CLOSE = 39;
+/** A prefix that is the name's whole first word is at least this close. */
+const WHOLE_WORD = 30;
 /** Below this many letters a gap inside a word is no match; the fuzzy scorer only looks from three. */
 const GAPS_FROM = 4;
 const FUZZY_FROM = 3;
@@ -65,7 +67,9 @@ function wordStartAt(query: string, target: Folded): number {
 export function matchName(query: string, target: Folded): Hit | null {
   const { text } = target;
   if (text === query) return { kind: "exact", close: CLOSE };
-  if (text.startsWith(query)) return { kind: "prefix", close: cover(query, text) };
+  // The whole first word ("say" in Say hello) is closer than a word only begun ("sa" in Save).
+  if (text.startsWith(query))
+    return { kind: "prefix", close: target.starts[query.length] === 1 ? Math.max(WHOLE_WORD, cover(query, text)) : cover(query, text) };
   const at = wordStartAt(query, target);
   // A word nearer the front is closer: "set" is better in "System Settings" than in "Display Night Setup".
   if (at > 0) return { kind: "word", close: Math.max(0, CLOSE - 4 * (target.word[at] ?? 0)) * (0.5 + 0.5 * (query.length / text.length)) };
