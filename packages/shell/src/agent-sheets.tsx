@@ -5,6 +5,7 @@
  * through `AgentUi`.
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { PersonConfirmSheet, type PersonQuestion } from "./actions/confirm-sheet.tsx";
@@ -89,7 +90,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
         // Enter typed elsewhere can't answer it.
         surface: { layer: "overlay", keyboard: "on-demand", namespace: CONSENT_LAYER },
       });
-      const root = render(entry.view(answer), host);
+      const root = render(<TextSelectionLook>{entry.view(answer)}</TextSelectionLook>, host);
       // A sheet whose host died can't be answered: that's a no.
       host.onClose(gone);
       return { close: () => closeOverlay({ host, root }) };

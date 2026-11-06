@@ -5,6 +5,7 @@
  * host that dies by itself is the same close.
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./apps.ts";
@@ -45,7 +46,7 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
   const window = { appId: "dev.dashi.shell", ...pick(options) };
   const host = (plain ? warmHost.take(window) : null) ?? spawnShellHost({ appId: "dev.dashi.shell", ...options });
   onHost?.(host);
-  const root = render(element, host);
+  const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   let open = true;
   const finish = () => {
     if (!open) return;

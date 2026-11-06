@@ -200,7 +200,7 @@ describe("menus", () => {
     hasFile: true,
     canUndo: false,
     canRedo: false,
-    canCopy: true,
+    hasSelection: false,
     hasMatches: false,
     monospace: false,
     caseSensitive: false,
@@ -213,9 +213,10 @@ describe("menus", () => {
       revert: record("revert"),
       undo: record("undo"),
       redo: record("redo"),
+      cut: record("cut"),
+      copy: record("copy"),
       paste: record("paste"),
       selectAll: record("select-all"),
-      copyAll: record("copy-all"),
       find: record("find"),
       findNext: (step) => ran.push(`find:${step}`),
       replace: record("replace"),
@@ -259,6 +260,23 @@ describe("menus", () => {
     edited.run("undo");
     edited.run("find-previous");
     expect(ran).toEqual(["size:1", "save", "undo", "find:-1"]);
+  });
+
+  test("Cut and Copy take a selection; Paste and Select All are always there", () => {
+    const rows = (selected: boolean) => editorMenus(context({ hasSelection: selected })).menus.flatMap((menu) => menu.items);
+    const row = (selected: boolean, id: string) => rows(selected).find((each) => "id" in each && each.id === id);
+    expect(row(false, "cut")).toMatchObject({ label: "Cut", shortcut: "❖X", enabled: false });
+    expect(row(false, "copy")).toMatchObject({ label: "Copy", shortcut: "❖C", enabled: false });
+    expect(row(true, "copy")).toMatchObject({ enabled: true });
+    expect(row(false, "paste")).toMatchObject({ shortcut: "❖V" });
+    expect(row(false, "select-all")).toMatchObject({ shortcut: "❖A" });
+    expect(row(true, "copy-all")).toBeUndefined();
+    ran.length = 0;
+    editorMenus(context()).run("copy");
+    const selected = editorMenus(context({ hasSelection: true }));
+    selected.run("cut");
+    selected.run("copy");
+    expect(ran).toEqual(["cut", "copy"]);
   });
 });
 

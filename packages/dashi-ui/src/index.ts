@@ -9,7 +9,7 @@ export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
-export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight } from "./selection.tsx";
+export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight, TextSelectionLook } from "./selection.tsx";
 export { EmptyState, type MenuItem, PopupMenu, Sheet, type SheetProps } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { SidebarItem, type SidebarItemProps } from "./sidebar.tsx";

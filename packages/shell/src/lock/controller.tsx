@@ -6,6 +6,7 @@
  * new one takes over, and a restarted shell does the same at startup.
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import type { Compositor } from "../compositor.ts";
 import { runPower } from "../menus/session.ts";
@@ -56,14 +57,16 @@ export class LockController {
     });
     this.host = host;
     this.root = render(
-      <LockScreen
-        name={this.name}
-        picture={accountPicture(this.user)}
-        onSubmit={(password) => this.submit(password)}
-        waitMs={() => this.attempts.waitMs()}
-        // The Dashi menu's own path: logind on a real session, refused anywhere else.
-        onPower={(what) => runPower(what)}
-      />,
+      <TextSelectionLook>
+        <LockScreen
+          name={this.name}
+          picture={accountPicture(this.user)}
+          onSubmit={(password) => this.submit(password)}
+          waitMs={() => this.attempts.waitMs()}
+          // The Dashi menu's own path: logind on a real session, refused anywhere else.
+          onPower={(what) => runPower(what)}
+        />
+      </TextSelectionLook>,
       host,
     );
     host.onClose(() => {

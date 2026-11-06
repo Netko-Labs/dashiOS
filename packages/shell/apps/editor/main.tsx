@@ -10,7 +10,7 @@
 
 import { resolve } from "node:path";
 import { METAL_HOST } from "../../src/apps.ts";
-import { runApp, systemClipboard } from "../kit/index.ts";
+import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { EditorModel } from "./model.ts";
 import { RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./recovery.ts";
@@ -24,7 +24,7 @@ const model = new EditorModel();
 const files = args.files.map((file) => resolve(cwd, file));
 const keeper = new RecoveryKeeper(() => model.recovery());
 
-// The window drives itself through the app once it exists: Paste and Select All, scrolling, and focus.
+// The window drives itself through the app once it exists: Cut, Copy, Paste and Select All, scrolling, and focus.
 const handle = {
   press: (_keystroke: string): void => {},
   scroll: (_dy: number, _fromTop: boolean): void => {},
@@ -39,7 +39,6 @@ const app = runApp(
   { id: "dev.dashi.editor", title: "Text Editor", size: EDITOR_SIZE, host: launch.host },
   <EditorWindow
     model={model}
-    clipboard={systemClipboard()}
     quit={(drop) => {
       discard = drop;
       app.quit();
@@ -58,7 +57,7 @@ handle.scroll = (dy, fromTop) => {
   if (fromTop) app.host.simulate({ kind: "scroll", id, dy: -100_000_000 });
   app.host.simulate({ kind: "scroll", id, dy });
 };
-// A click on the input focuses it and leaves its caret where it was (Metal places no caret on a click yet).
+// A simulated click on the input focuses it and leaves its caret and selection where they were (a real click places the caret).
 handle.focusText = () => {
   const id = app.root.nodeId("text");
   if (id) app.host.simulate({ kind: "click", id });

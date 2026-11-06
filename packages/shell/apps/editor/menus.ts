@@ -1,12 +1,14 @@
 /**
  * Text Editor's menus in the menu bar (the kit's `useAppMenus`): File (new
- * window, open, save, close), Edit (Undo on the app's own history, Paste and
- * Select All typed into the text, Find), and View (the font). The ❖
- * shortcuts are real: the shell matches a pressed chord against the enabled
- * rows (app-menus/shortcut.ts). The shell offers ❖W to the app's own row
- * first, so ❖W is Close, which asks before it drops changes; ❖Q stays the
- * shell's. Copy and Cut are missing because Metal's input has no selection
- * to copy; Copy All copies the whole document.
+ * window, open, save, close), Edit (Undo on the app's own history; Cut,
+ * Copy, Paste, and Select All typed into the field with the keyboard, as its
+ * own keys would be; Find), and View (the font). The ❖ shortcuts are real:
+ * the shell matches a pressed chord against the enabled rows
+ * (app-menus/shortcut.ts), and a chord no enabled row shows reaches the
+ * field as its Ctrl chord, so ❖C still copies in the Find field while the
+ * text has nothing selected. Cut and Copy are enabled while text is
+ * selected. The shell offers ❖W to the app's own row first, so ❖W is Close,
+ * which asks before it drops changes; ❖Q stays the shell's.
  */
 
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
@@ -16,7 +18,8 @@ export interface MenuContext {
   hasFile: boolean;
   canUndo: boolean;
   canRedo: boolean;
-  canCopy: boolean;
+  /** Text is selected in the document: Cut and Copy have something to take. */
+  hasSelection: boolean;
   hasMatches: boolean;
   monospace: boolean;
   caseSensitive: boolean;
@@ -29,9 +32,10 @@ export interface MenuContext {
     revert(): void;
     undo(): void;
     redo(): void;
+    cut(): void;
+    copy(): void;
     paste(): void;
     selectAll(): void;
-    copyAll(): void;
     find(): void;
     findNext(step: 1 | -1): void;
     replace(): void;
@@ -62,9 +66,10 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "undo", label: "Undo", shortcut: "❖Z", enabled: context.canUndo },
         { id: "redo", label: "Redo", shortcut: "⇧❖Z", enabled: context.canRedo },
         { type: "separator" },
+        { id: "cut", label: "Cut", shortcut: "❖X", enabled: context.hasSelection },
+        { id: "copy", label: "Copy", shortcut: "❖C", enabled: context.hasSelection },
         { id: "paste", label: "Paste", shortcut: "❖V" },
         { id: "select-all", label: "Select All", shortcut: "❖A" },
-        { id: "copy-all", label: "Copy All", enabled: context.canCopy },
         { type: "separator" },
         { id: "find", label: "Find…", shortcut: "❖F" },
         { id: "find-next", label: "Find Next", shortcut: "❖G", enabled: context.hasMatches },
@@ -94,9 +99,10 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     revert: actions.revert,
     undo: actions.undo,
     redo: actions.redo,
+    cut: actions.cut,
+    copy: actions.copy,
     paste: actions.paste,
     "select-all": actions.selectAll,
-    "copy-all": actions.copyAll,
     find: actions.find,
     "find-next": () => actions.findNext(1),
     "find-previous": () => actions.findNext(-1),
