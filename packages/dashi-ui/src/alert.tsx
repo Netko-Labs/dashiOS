@@ -13,6 +13,7 @@
 
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { ALERT_WINDOW } from "./alert-size.ts";
 import type { ButtonKind } from "./button-look.ts";
 import { Button } from "./controls.tsx";
 import { KeySink } from "./key-sink.tsx";
@@ -193,7 +194,18 @@ export function AlertWindow({ keys = true, testID = "alert", onCancel, ...props 
         )}
         {/* The strip the window controls sit in, where the window is grabbed. */}
         <View dragRegion style={{ height: Math.max(inset.top, 0), flexShrink: 0 }} />
-        <View dragRegion style={{ flex: 1, flexDirection: "column", gap: 10, padding: 18, paddingTop: inset.top > 0 ? 6 : 18, minHeight: 0 }}>
+        {/* Measured by alert-size.ts, which works out the window's height before it opens. */}
+        <View
+          dragRegion
+          style={{
+            flex: 1,
+            flexDirection: "column",
+            gap: ALERT_WINDOW.bodyGap,
+            padding: ALERT_WINDOW.padding,
+            paddingTop: inset.top > 0 ? ALERT_WINDOW.top : ALERT_WINDOW.padding,
+            minHeight: 0,
+          }}
+        >
           <AlertBody {...props} scroll />
           <AlertButtons buttons={props.buttons} footer={props.footer} />
         </View>

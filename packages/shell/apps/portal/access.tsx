@@ -14,7 +14,7 @@
  *   results: choices a(ss); response 0 granted, 1 denied
  */
 
-import { AlertWindow, Button, glyphs } from "@dashi/ui";
+import { AlertWindow, alertWindowHeight, Button, glyphs } from "@dashi/ui";
 import { useState } from "react";
 import { type LinkAnswer, openLink } from "../../src/actions/open-link.ts";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
@@ -95,13 +95,26 @@ export const privacyLabel = (): string => `${paneTitle("privacy")}…`;
 /** Opens a `dashi://` link in the session (the shell's links socket). */
 export type OpenLink = (url: string) => Promise<LinkAnswer>;
 
+/** The line under the question: the app's own reason, else what Dashi does with the answer. */
+const accessDetail = (request: AccessRequest, app: AppInfo): string =>
+  [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
+
+/** The choices the sheet can draw: on-or-off ones, as check boxes. */
+const checkBoxes = (request: AccessRequest): Choice[] => request.choices.filter((choice) => choice.options.length === 0);
+
+/** The sheet's width, and its height with nothing to spare: the question, the reason, the check boxes (16 each, 8 apart), the buttons. */
+export const ACCESS_WIDTH = 440;
+export function accessHeight(request: AccessRequest, app: AppInfo): number {
+  const boxes = checkBoxes(request).length;
+  return alertWindowHeight({ question: request.title, message: accessDetail(request, app), extra: boxes > 0 ? boxes * 16 + (boxes - 1) * 8 : 0 }, ACCESS_WIDTH);
+}
+
 function AccessSheet({ request, app, answer, open }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void; open: OpenLink }) {
   const [choices, setChoices] = useState<Record<string, string>>(() => Object.fromEntries(request.choices.map((c) => [c.id, c.initial])));
   const reply = (granted: boolean) => answer({ granted, choices: Object.entries(choices) });
-  const detail = [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
+  const detail = accessDetail(request, app);
   const camera = /camera|video/i.test(`${request.icon ?? ""} ${request.title}`);
-  // The choices it can draw: on-or-off ones, as check boxes.
-  const boxes = request.choices.filter((choice) => choice.options.length === 0);
+  const boxes = checkBoxes(request);
   return (
     // The one alert frame (UI-5): the question as the first line, no title row, the app's reason under it.
     <AlertWindow
@@ -137,7 +150,7 @@ export function askOnScreen(show: ShowDialog, open: OpenLink = (url) => openLink
   return (request, signal) => {
     const app = appInfo(request.appId);
     return show<AccessAnswer | null>(
-      { parent: request.parent, title: request.title, width: 440, height: 220 },
+      { parent: request.parent, title: request.title, width: ACCESS_WIDTH, height: accessHeight(request, app) },
       (answer) => <AccessSheet request={request} app={app} answer={answer} open={open} />,
       signal,
       null,

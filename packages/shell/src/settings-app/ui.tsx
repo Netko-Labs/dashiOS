@@ -7,10 +7,10 @@
  * repaints Settings too.
  */
 
-import { useColors } from "@dashi/ui";
+import { Group as Card, useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome } from "@mirinjs/metal";
-import { type ReactNode, useMemo, useRef } from "react";
-import { PageContext } from "./spot.tsx";
+import { type ReactNode, useContext, useMemo, useRef } from "react";
+import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
 /**
  * A row whose label is data, not a setting: a login, a card, a device, a
@@ -18,9 +18,20 @@ import { PageContext } from "./spot.tsx";
  * registry; a pane draws no plain row with a fixed label.
  */
 /** A field of a form (adding a login, a card, a token); the form itself is a registered row, wrapped in its `Spot`. */
-export { Button, Caption, type Choice, Choices, Group, Note, Row as Item, Row as FormRow, Slider, type Surface, Tile, useSurface } from "@dashi/ui";
+export { Button, Caption, type Choice, Choices, Note, Row as Item, Row as FormRow, Slider, type Surface, Tile, useSurface } from "@dashi/ui";
 export { Setting } from "./setting.tsx";
 export { Spot } from "./spot.tsx";
+
+/** A card of rows (@dashi/ui's), lit while a link to its section (a `cards` Spot) shows it. */
+export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
+  const colors = useColors();
+  const lit = useContext(SpotLit);
+  return (
+    <Card {...(testID !== undefined ? { testID } : {})} {...(lit ? { wash: colors.switcherSelection } : {})}>
+      {children}
+    </Card>
+  );
+}
 
 /**
  * A pane: its title, then its content scrolling under it when it is taller than the window. With
@@ -41,7 +52,7 @@ export function Page({ title, children }: { title: string; children: ReactNode }
         onLayout={(laid) => {
           bounds.current = laid;
         }}
-        style={{ flex: 1, flexDirection: "column", gap: 16, padding: 24, paddingTop: unified ? 8 : 20 }}
+        style={{ flex: 1, flexDirection: "column", gap: PAGE_GAP, padding: 24, paddingTop: unified ? 8 : 20 }}
       >
         {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
         {children}

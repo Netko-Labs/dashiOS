@@ -38,31 +38,31 @@ function AgentsSection({ grants, home, onDone }: Pick<PaneContext, "grants" | "h
   const agents = agentPermissions(entries, home);
   return (
     <>
-      <Spot id="privacy/agents">
+      <Spot id="privacy/agents" cards>
         <Caption above>Agents</Caption>
-      </Spot>
-      {agents.length === 0 ? (
-        <Group testID="privacy-agents-none">
-          <Note>No agent has been allowed for good. When one asks and you choose Always Allow, it is listed here.</Note>
-        </Group>
-      ) : (
-        agents.map((agent) => (
-          <Group key={agent.key} testID={`privacy-agent:${agent.key}`}>
-            <Item label={agent.title} detail={agent.detail} />
-            {agent.scopes.map(({ scope, label, since }) => (
-              <Item key={scope} testID={`privacy-agent-scope:${agent.key}:${scope}`} label={label} {...detailProps(sinceWords(since, now, prefs.locale))}>
-                <Revoke
-                  testID={`privacy-agent-revoke:${agent.key}:${scope}`}
-                  onPress={() => {
-                    if (grants.revoke(agent.key, scope as Scope))
-                      onDone(`${agent.title} can no longer ${label.toLowerCase()}. It asks again when it needs to.`);
-                  }}
-                />
-              </Item>
-            ))}
+        {agents.length === 0 ? (
+          <Group testID="privacy-agents-none">
+            <Note>No agent has been allowed for good. When one asks and you choose Always Allow, it is listed here.</Note>
           </Group>
-        ))
-      )}
+        ) : (
+          agents.map((agent) => (
+            <Group key={agent.key} testID={`privacy-agent:${agent.key}`}>
+              <Item label={agent.title} detail={agent.detail} />
+              {agent.scopes.map(({ scope, label, since }) => (
+                <Item key={scope} testID={`privacy-agent-scope:${agent.key}:${scope}`} label={label} {...detailProps(sinceWords(since, now, prefs.locale))}>
+                  <Revoke
+                    testID={`privacy-agent-revoke:${agent.key}:${scope}`}
+                    onPress={() => {
+                      if (grants.revoke(agent.key, scope as Scope))
+                        onDone(`${agent.title} can no longer ${label.toLowerCase()}. It asks again when it needs to.`);
+                    }}
+                  />
+                </Item>
+              ))}
+            </Group>
+          ))
+        )}
+      </Spot>
     </>
   );
 }
@@ -135,52 +135,52 @@ export function PrivacyPane({ grants, home, privacy, settings, installedApp }: P
       <AgentsSection grants={grants} home={home} onDone={(words) => setDone({ section: "agents", words })} />
       <Caption>{done?.section === "agents" ? done.words : "Revoke takes a permission back at once, from a connected agent too."}</Caption>
 
-      <Spot id="privacy/apps">
+      <Spot id="privacy/apps" cards>
         <Caption above>Apps</Caption>
+        {apps.state === "ready" && portal.length > 0 ? (
+          portal.map((group) => <AppGroup key={group.app} testID="privacy-app" {...group} onRevoke={revokeApp("apps")} />)
+        ) : (
+          <Group testID="privacy-apps-none">
+            <Note>
+              {apps.state === "loading"
+                ? "Looking…"
+                : apps.state === "unavailable"
+                  ? "Apps' permissions can't be read on this computer."
+                  : "No app has been given a permission. When one asks for the camera, your location, or to run in the background, your answer is listed here."}
+            </Note>
+          </Group>
+        )}
       </Spot>
-      {apps.state === "ready" && portal.length > 0 ? (
-        portal.map((group) => <AppGroup key={group.app} testID="privacy-app" {...group} onRevoke={revokeApp("apps")} />)
-      ) : (
-        <Group testID="privacy-apps-none">
-          <Note>
-            {apps.state === "loading"
-              ? "Looking…"
-              : apps.state === "unavailable"
-                ? "Apps' permissions can't be read on this computer."
-                : "No app has been given a permission. When one asks for the camera, your location, or to run in the background, your answer is listed here."}
-          </Note>
-        </Group>
-      )}
       <Caption>{done?.section === "apps" ? done.words : "An app asks again the next time it needs what you take back."}</Caption>
 
-      <Spot id="privacy/screen-sharing">
+      <Spot id="privacy/screen-sharing" cards>
         <Caption above>Screen sharing</Caption>
+        {clients.length === 0 && shares.length === 0 ? (
+          <Group testID="privacy-screen-none">
+            <Note>Every app asks before it shares your screen.</Note>
+          </Group>
+        ) : (
+          <>
+            {clients.length > 0 && (
+              <Group testID="privacy-screen-clients">
+                {clients.map((path) => (
+                  <Item
+                    key={path}
+                    testID={`privacy-screen-client:${path}`}
+                    label={programTitle(path, installed)}
+                    detail={`Captures the screen without asking · ${path}`}
+                  >
+                    <Revoke testID={`privacy-screen-client-remove:${path}`} label="Remove" onPress={() => removeClient(path)} />
+                  </Item>
+                ))}
+              </Group>
+            )}
+            {shares.map((group) => (
+              <AppGroup key={group.app} testID="privacy-share" {...group} onRevoke={revokeApp("screen")} />
+            ))}
+          </>
+        )}
       </Spot>
-      {clients.length === 0 && shares.length === 0 ? (
-        <Group testID="privacy-screen-none">
-          <Note>Every app asks before it shares your screen.</Note>
-        </Group>
-      ) : (
-        <>
-          {clients.length > 0 && (
-            <Group testID="privacy-screen-clients">
-              {clients.map((path) => (
-                <Item
-                  key={path}
-                  testID={`privacy-screen-client:${path}`}
-                  label={programTitle(path, installed)}
-                  detail={`Captures the screen without asking · ${path}`}
-                >
-                  <Revoke testID={`privacy-screen-client-remove:${path}`} label="Remove" onPress={() => removeClient(path)} />
-                </Item>
-              ))}
-            </Group>
-          )}
-          {shares.map((group) => (
-            <AppGroup key={group.app} testID="privacy-share" {...group} onRevoke={revokeApp("screen")} />
-          ))}
-        </>
-      )}
       <Caption>{done?.section === "screen" ? done.words : "The menu bar shows whenever the screen is being shared."}</Caption>
     </Page>
   );

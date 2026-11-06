@@ -9,7 +9,7 @@ import { PopUpButton } from "../src/popup-button.tsx";
 import { ProgressBar } from "../src/progress.tsx";
 import { MENU_SEPARATOR, PopupMenu } from "../src/sheet.tsx";
 import { Slider } from "../src/slider.tsx";
-import { Appearance, useColors } from "../src/theme/appearance.ts";
+import { Appearance, setAppearanceSource, useColors } from "../src/theme/appearance.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { AppWindow } from "../src/window.tsx";
 import { fakeHost, settle } from "./host.ts";
@@ -154,6 +154,8 @@ test("a disabled button is the whole button dimmed, and a shown press deepens it
 });
 
 test("Appearance paints its part in the mode it names, whatever Dark Mode is", async () => {
+  // Dark Mode off, whatever an earlier test (an applet reading this computer's switch) left.
+  setAppearanceSource({ subscribe: () => () => {}, isDark: () => false });
   const host = fakeHost();
   const seen: string[] = [];
   function Probe({ name }: { name: string }) {

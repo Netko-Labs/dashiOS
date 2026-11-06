@@ -68,8 +68,8 @@ export function backgroundMenu({ store, ops, actions }: Deps): MenuEntry[] {
     { label: "Select All", onPress: () => store.selectAll() },
     MENU_SEPARATOR,
     { label: "Show Hidden Files", onPress: () => store.toggleHidden(), checked: state.showHidden },
-    { label: "as Icons", onPress: () => store.setView("icons"), checked: state.view === "icons" },
-    { label: "as List", onPress: () => store.setView("list"), checked: state.view === "list" },
+    { label: "View as Icons", onPress: () => store.setView("icons"), checked: state.view === "icons" },
+    { label: "View as List", onPress: () => store.setView("list"), checked: state.view === "list" },
     MENU_SEPARATOR,
     { label: "Refresh", onPress: () => store.reload() },
   ];

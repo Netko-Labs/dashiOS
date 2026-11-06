@@ -85,7 +85,7 @@ function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () =>
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
   return (
-    <Spot id="passwords/add-login">
+    <Spot id="passwords/add-login" cards>
       <Group testID="passwords-add">
         <FormRow label="Site">
           <Field testID="passwords-add-site" value={form.site} placeholder="github.com" onChange={set("site")} />
@@ -199,23 +199,23 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
         <Caption>
           Agents sign in and enter codes through Dashi, which types them: an agent never sees a password or a code, and each use is asked about on screen.
         </Caption>
-        <Spot id="passwords/logins">
+        <Spot id="passwords/logins" cards>
           <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Logins in Dashi</Text>
+          <Group testID="passwords-logins">
+            {vault.logins.length === 0 ? (
+              <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
+            ) : (
+              vault.logins.map((login) => (
+                <LoginRow
+                  key={login.id}
+                  login={login}
+                  onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
+                  onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
+                />
+              ))
+            )}
+          </Group>
         </Spot>
-        <Group testID="passwords-logins">
-          {vault.logins.length === 0 ? (
-            <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
-          ) : (
-            vault.logins.map((login) => (
-              <LoginRow
-                key={login.id}
-                login={login}
-                onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
-                onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
-              />
-            ))
-          )}
-        </Group>
         {failure && <Failure testID="passwords-failure">{failure}</Failure>}
         {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
           <AddLogin passwords={passwords} onSaved={refresh} />

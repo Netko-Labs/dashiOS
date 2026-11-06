@@ -42,8 +42,12 @@ import { Sidebar } from "./sidebar.tsx";
 import { SpotContext, type SpotHost } from "./spot.tsx";
 import { useSurface } from "./ui.tsx";
 
-/** The window's size (the Mac's System Settings opens about this big). */
-export const SETTINGS_WINDOW = { width: 760, height: 640 } as const;
+/**
+ * The window's size (the Mac's System Settings opens about this big): tall
+ * enough for every sidebar row, Graphics' too, with nothing to scroll
+ * (sidebar.tsx `sidebarHeight`); a smaller window scrolls the list.
+ */
+export const SETTINGS_WINDOW = { width: 760, height: 700 } as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {

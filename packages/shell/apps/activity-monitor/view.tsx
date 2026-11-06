@@ -7,7 +7,10 @@
  * arrows move the selection, Return selects (the first match when the
  * selection is filtered away), Esc clears. Nothing typed in the search field
  * quits anything, and the quit sheet has no Return default: a quit is always
- * a click (or ❖K) and then a click. The menu bar's View menu has the same
+ * a click (or ❖K) and then a click. The selection is a process (its pid),
+ * not a place in the list, and the rows hold still while the pointer aims
+ * at one (the Table's `steady`), so the sheet names the process clicked.
+ * The menu bar's View menu has the same
  * choices as the toolbar's, the tabs, and Quit Process….
  */
 
@@ -229,6 +232,8 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
         columns={columns}
         rows={shown}
         rowKey={(row) => row.pid}
+        // The list re-sorts every two seconds: rows hold still while the pointer aims, so a click selects the process aimed at.
+        steady
         selected={selectedRow?.pid ?? null}
         onSelect={setSelected}
         sort={sort}
