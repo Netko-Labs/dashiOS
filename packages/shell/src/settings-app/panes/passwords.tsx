@@ -213,7 +213,8 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
         <AddLogin passwords={passwords} onSaved={refresh} />
       )}
       {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password (its app asks you to unlock it); its logins aren't listed here.</Caption>}
-      <Caption>{vaultLine}</Caption>
+      {/* Locked, missing or still looking, the empty list above already says so: once is enough. */}
+      {(status?.unlocked || vault.logins.length > 0) && <Caption>{vaultLine}</Caption>}
       {status?.unlocked && <Payments vault={passwords.vault} />}
     </Page>
   );

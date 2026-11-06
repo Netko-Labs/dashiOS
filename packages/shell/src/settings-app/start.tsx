@@ -92,6 +92,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
 
   const open = (pane?: PaneId, row?: string): void => {
     if (pane) nav.select(pane);
+    else if (!session) nav.reopen();
     if (pane && row) focus.request(pane, row);
     if (session) {
       void raise();
