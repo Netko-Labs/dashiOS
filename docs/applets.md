@@ -98,7 +98,9 @@ got). `x` and `y` are the top-left corner in that screen's own points;
 The popover is drawn by the applet's own Metal host, never by the shell: a
 layer-shell surface anchored at the screen's top-left with margins `y` and
 `x`, on `output`, with `namespace` (`@dashi/applet`'s `popover.tsx` opens it
-with mirin's `surface` option, which the Metal host supports). The layer
+with mirin's `surface` option, which the Metal host supports), on the
+applet's warm host when one is ready (as a view is, under "Commands"). A
+screen reader calls it by the applet's name (`MIRIN_METAL_APP_NAME`). The layer
 shell is privileged: the shell grants it to that applet's processes for as
 long as the popover is open (`applet-clients`, docs/compositor-ipc.md), and
 the placement is sent only once the grant is in place. Under the popover the
@@ -160,7 +162,14 @@ is given up.
   and says where it is; the applet's own Metal host draws there on a
   layer-shell surface, granted only while it is shown (as a popover's,
   `applet-clients`). Esc, or the launcher closing, sends `dismiss`; the
-  applet sends `dismiss` when it closes the view itself.
+  applet sends `dismiss` when it closes the view itself. The view draws on
+  its first frame: an applet with a popover or a view keeps one Metal host
+  started with no window (`@dashi/applet`'s `warm-host.ts`, mirin's deferred
+  hosts), started 3 s after the applet and again 1.5 s after each use, and
+  opens there. A new host spent a second or two on its GPU context and
+  fonts, under the unit's CPU quota, while the launcher's room stayed empty.
+  An idle one costs a few megabytes of its own; a host binary without
+  deferred hosts gets a new host each time, as before.
 
 A command with `args` asks for them in the field first, one at a time (the
 chip names the command, the placeholder the argument), and runs with them

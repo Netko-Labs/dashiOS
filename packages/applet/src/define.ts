@@ -21,8 +21,9 @@ import { type AppletSpec, AppletsClient, type CommandRun, type PopoverPlacement 
 import type { CommandResult, CommandRow } from "./commands.ts";
 import { type Manifest, readManifest } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
-import { type OpenPopover, openPopoverWindow } from "./popover.tsx";
+import { metalHost, type OpenPopover, openPopoverWindow } from "./popover.tsx";
 import { appletsSocketPath } from "./protocol.ts";
+import { WarmHost } from "./warm-host.ts";
 
 /** How a logged message starts on stderr, for `dashi-applet dev`. */
 export const LOG_MARK = "\u241edashi-applet ";
@@ -59,6 +60,11 @@ export interface AppletDefinition<S> {
   /** Testing and the CLI: a client of your own, the manifest given. */
   client?: AppletsClient;
   manifest?: Manifest;
+  /**
+   * Testing: the warm host the popover and views open on (warm-host.ts), or
+   * null for none. By default one is kept when there is a popover or a view.
+   */
+  warmHost?: WarmHost | null;
 }
 
 /** What a command comes to: a line for the launcher (a string is one), text to copy, something to open, or why not. */
@@ -132,6 +138,8 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
   let state = definition.initial;
   const listeners = new Set<() => void>();
   let popover: OpenPopover | null = null;
+  const warm = warmHostFor(definition, title);
+  warm?.start();
 
   const spec = (): AppletSpec => {
     const pick = <T>(of: Of<S, T> | undefined): T | undefined => (of === undefined ? undefined : value(of, state));
@@ -172,6 +180,7 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
       title,
       placement,
       element: createElement(Popover),
+      warm,
       onClosed: () => {
         popover = null;
         client.dismiss(itemId);
@@ -198,6 +207,7 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
     client,
     stop() {
       handle.closePopover();
+      warm?.stop();
       stopStart?.();
       client.remove(itemId);
       client.close();
@@ -214,9 +224,19 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
     onPopover: placed,
     onDismiss: () => popover?.close(),
   });
-  if (definition.commands) client.onCommands(commandHandlers(definition.commands, handle, manifest, title, listeners));
+  if (definition.commands) client.onCommands(commandHandlers(definition.commands, handle, manifest, title, listeners, warm));
   const stopStart = definition.start?.(handle);
   return handle;
+}
+
+/**
+ * The warm host for an applet with a popover or a view: its views draw at
+ * once in the launcher, not a second or two later (warm-host.ts).
+ */
+function warmHostFor<S>(definition: AppletDefinition<S>, title: string): WarmHost | null {
+  if (definition.warmHost !== undefined) return definition.warmHost;
+  const views = Object.values(definition.commands ?? {}).some((command) => command.view);
+  return definition.popover || views ? new WarmHost({ binary: metalHost(), appName: title }) : null;
 }
 
 const answerOf = (answer: CommandAnswer): CommandResult => (typeof answer === "string" ? { text: answer } : answer);
@@ -229,6 +249,7 @@ function commandHandlers<S>(
   manifest: Manifest | null,
   title: string,
   listeners: Set<() => void>,
+  warm: WarmHost | null,
 ): Parameters<AppletsClient["onCommands"]>[0] {
   const { client } = handle;
   let view: { seq: number; open: OpenPopover | null; args: Args; spec: NonNullable<CommandDefinition<S>["view"]> } | null = null;
@@ -289,6 +310,7 @@ function commandHandlers<S>(
         title,
         placement,
         element: createElement(View),
+        warm,
         onClosed: () => {
           if (view?.seq === seq) view = null;
           client.dismissView(seq);
