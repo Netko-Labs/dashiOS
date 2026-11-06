@@ -40,6 +40,7 @@ import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
+import { barHold, holdingBar } from "./bar-hold.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
@@ -413,7 +414,8 @@ const polkitLock = compositor ? new LockWatch(compositor) : null;
 const polkit = startPolkit({
   developmentRun,
   lock: polkitLock ?? { isLocked: false, onChange: () => () => {} },
-  open: openOverlay,
+  // Its password sheet is the app in front's: the bar keeps that app (bar-hold.ts).
+  open: holdingBar(openOverlay),
 });
 
 // Agents (MCP) run here too; they start below, once what they reach exists.
@@ -751,11 +753,17 @@ configureMachineEnd({
     }),
 });
 // A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar.
-const stopHoldingBars = menus.controller.subscribe(() => {
-  const open = menus.controller.getSnapshot().popover !== null;
-  fullscreenBars?.hold(open);
-  appMenus.hold(open);
+// So does a shell sheet that took the keyboard for the app in front (bar-hold.ts): the bar keeps its menus.
+const holdAppMenus = (): void => appMenus.hold(menus.controller.getSnapshot().popover !== null || barHold.getSnapshot());
+const stopHoldingForPopovers = menus.controller.subscribe(() => {
+  fullscreenBars?.hold(menus.controller.getSnapshot().popover !== null);
+  holdAppMenus();
 });
+const stopHoldingForSheets = barHold.subscribe(holdAppMenus);
+const stopHoldingBars = (): void => {
+  stopHoldingForPopovers();
+  stopHoldingForSheets();
+};
 
 // The Dock sits on the primary screen (dock/start.tsx: the Dock or the taskbar). Unplug that screen
 // and the Dock is opened again on the one that takes over (the menu bars below decide which); a Dock

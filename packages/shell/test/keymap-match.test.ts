@@ -28,6 +28,13 @@ describe("resolveChord", () => {
     expect(resolveChord(chord(["super", "ctrl"], "x"), "helium")).toEqual({ kind: "swallow" });
   });
 
+  test("a shell sheet's field (no window, no app id) gets ❖A ❖C ❖X ❖V ❖Z as Ctrl chords, not an app's menus", () => {
+    for (const key of ["a", "c", "x", "v", "z"]) {
+      expect(resolveChord(chord(["super"], key), "")).toEqual({ kind: "keys", chords: [{ mods: ["ctrl"], key }] });
+    }
+    expect(resolveChord(chord(["super", "shift"], "z"), "")).toEqual({ kind: "keys", chords: [{ mods: ["ctrl", "shift"], key: "z" }] });
+  });
+
   test("taps press each chord; plain keys pass as they are", () => {
     expect(resolveChord(chord(["super"], "BackSpace"), "helium")).toEqual({
       kind: "keys",
@@ -44,7 +51,8 @@ describe("resolveChord", () => {
 describe("inClass", () => {
   test("exact ids and prefixes", () => {
     expect(inClass(KEYMAP, "metal", "dev.dashi.files")).toBe(true);
-    expect(inClass(KEYMAP, "metal", "")).toBe(true);
+    // A shell surface with the keyboard has no app id: it is no Metal app's window.
+    expect(inClass(KEYMAP, "metal", "")).toBe(false);
     expect(inClass(KEYMAP, "terminal", "foot")).toBe(true);
     expect(inClass(KEYMAP, "terminal", "footx")).toBe(false);
     expect(inClass(KEYMAP, "nope", "foot")).toBe(false);

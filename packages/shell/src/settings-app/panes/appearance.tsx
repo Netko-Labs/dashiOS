@@ -51,7 +51,16 @@ function Preview({
 }) {
   const colors = useColors();
   return (
-    <View testID={testID} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 6 }}>
+    // A Tab stop in the previews' group: the arrows move between them, Space or Return picks one (KB-1).
+    <View
+      testID={testID}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{ flexDirection: "column", alignItems: "center", gap: 6, borderRadius: 10 }}
+    >
       <View style={{ width: 132, height: 84, borderRadius: 10, padding: 3, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
         <View style={{ flex: 1, borderRadius: 7, overflow: "hidden", backgroundColor: "#3E8A72" }}>
           {palette === "auto" ? (
@@ -88,7 +97,8 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
     flags.set({ dark: next });
   };
   return (
-    <View style={{ flexDirection: "row", gap: 20, padding: 16, paddingBottom: 12 }}>
+    // One Tab stop, entered at the chosen preview (KB-1).
+    <View testID="appearance-mode" focusGroup accessibilityRole="group" style={{ flexDirection: "row", gap: 20, padding: 16, paddingBottom: 12 }}>
       <Preview testID="appearance-light" palette={lightColors} label="Light" selected={!auto && !dark} onPress={() => pick(false)} />
       <Preview testID="appearance-dark" palette={darkColors} label="Dark" selected={!auto && dark} onPress={() => pick(true)} />
       <Preview testID="appearance-auto" palette="auto" label="Auto" selected={auto} onPress={() => settings.patch("appearance", { auto: true })} />

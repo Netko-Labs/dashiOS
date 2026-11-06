@@ -9,6 +9,7 @@ import { ownerPids } from "../app-menus/focus.ts";
 import { AppMenuStore } from "../app-menus/store.ts";
 import { type App, appFor, iconPath } from "../apps.ts";
 import { type Arranger, parseOutputs } from "../arrange.ts";
+import { holdingBar } from "../bar-hold.ts";
 import { PairingPrompt } from "../bluetooth/prompt.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import { BluetoothStore } from "../bluetooth/store.ts";
@@ -172,11 +173,12 @@ export function startMenus(options: MenusOptions): Menus {
   // On a development run the output switch is remembered in memory, never made the default on the developer's machine.
   const audio = soundBackendFor({ standIn: options.wifi.fake, run: runCommand });
   const sound = new SoundStore(audio);
-  const passwords = new PasswordPrompt(openOverlay, wifi);
+  // Sheets that take the keyboard for the app in front: the bar keeps that app meanwhile (bar-hold.ts).
+  const passwords = new PasswordPrompt(holdingBar(openOverlay), wifi);
   const bluetooth = new BluetoothStore(options.bluetooth.backend);
   // BlueZ's pairing questions (compare a code, type a PIN) come to the store and show on a sheet.
   options.bluetooth.backend.setPairingHandler(bluetooth);
-  const pairing = new PairingPrompt(openOverlay, bluetooth, () => controller.close());
+  const pairing = new PairingPrompt(holdingBar(openOverlay), bluetooth, () => controller.close());
   pairing.start();
 
   const desktopsNow = (): Pick<MenuContext, "desktops"> => {

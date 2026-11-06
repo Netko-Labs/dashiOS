@@ -24,7 +24,15 @@ const TILE = { width: 148, height: 83 };
 function Tile({ tile, selected, onPress }: { tile: WallpaperTile; selected: boolean; onPress: () => void }) {
   const colors = useColors();
   return (
-    <View testID={`wallpaper:${tile.ref}`} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8 }}>
+    <View
+      testID={`wallpaper:${tile.ref}`}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={tile.title}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8, borderRadius: 9 }}
+    >
       <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
         <View style={{ width: TILE.width, height: TILE.height, borderRadius: 6, overflow: "hidden" }}>
           <Image source={tile.image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
@@ -74,7 +82,8 @@ export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; 
   return (
     <Page title="Wallpaper">
       <Group testID="wallpaper-grid">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
+        {/* One Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */}
+        <View focusGroup accessibilityRole="group" style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
           {tiles.map((tile) => (
             <Tile key={tile.ref} tile={tile} selected={tile.ref === selected} onPress={() => choose(tile.ref)} />
           ))}

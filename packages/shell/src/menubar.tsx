@@ -15,6 +15,7 @@ import { type ReactNode, useRef } from "react";
 import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
+import { barHold, useBarHeld } from "./bar-hold.ts";
 import type { BatteryMonitor } from "./battery/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { AgentPill } from "./consent.tsx";
@@ -174,7 +175,11 @@ export function MenuBar({
   const clock = useClockPrefs();
   const active = windows.find((window) => window.activated);
   // An open menu holds the keyboard, which leaves no window active: the name stays as it was.
-  const appName = frozenName ?? (active ? appFor(apps, active, installed).name : "Desktop");
+  // So does a shell sheet that took the keyboard for the app in front (bar-hold.ts).
+  const sheetUp = useBarHeld(barHold);
+  const kept = useRef("Desktop");
+  if (!sheetUp) kept.current = frozenName ?? (active ? appFor(apps, active, installed).name : "Desktop");
+  const appName = frozenName ?? kept.current;
   const openMenu = popover?.kind === "menu" ? popover.id : null;
   // Held while a popover is open, like the name (app-menus/store.ts).
   const titles = barMenus(useAppMenus(appMenus));

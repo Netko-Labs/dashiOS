@@ -22,7 +22,15 @@ function LiveTileView({ tile, selected, onPress }: { tile: LiveTile; selected: b
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View testID={`live:${tile.ref}`} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8 }}>
+    <View
+      testID={`live:${tile.ref}`}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={tile.title}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8, borderRadius: 9 }}
+    >
       <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
         <View
           style={{
@@ -104,7 +112,8 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
   const clips = videoTiles(videos, isFile);
   const grid = (tiles: LiveTile[], testID: string) => (
     <Group testID={testID}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
+      {/* One Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */}
+      <View focusGroup accessibilityRole="group" style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
         {tiles.map((tile) => (
           <LiveTileView key={tile.ref} tile={tile} selected={tile.ref === chosen} onPress={() => choose(tile.ref)} />
         ))}
