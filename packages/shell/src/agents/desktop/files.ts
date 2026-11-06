@@ -66,6 +66,7 @@ export async function trashFile(call: { path: string }, ctx: RunContext): Promis
         ? "The folder and everything in it go to the Trash. You can put it back from there."
         : "It goes to the Trash. You can put it back from there.",
     action: "Move to Trash",
+    danger: true,
   });
   if (!yes) return toolError("The person did not allow that file to be moved to the Trash. Don't ask again unless they agree.");
   ctx.status("Moving a file to the Trash");

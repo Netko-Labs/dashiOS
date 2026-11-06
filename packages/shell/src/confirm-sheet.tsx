@@ -2,13 +2,15 @@
  * The sheet for one action that can't be taken back, such as force quitting
  * an app on an agent's say-so. It looks like the consent sheet (agents/
  * confirm.ts says when it is used) but has no "Always Allow": it asks every
- * time. "Don't Allow" is the neutral button; the one that goes ahead is red.
+ * time. "Don't Allow" is the neutral button; the one that goes ahead is red
+ * only for what loses work or can't be taken back (`danger`), else it is the
+ * primary one: "Show Copies" and "Install" are not alarms.
  */
 
 import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Confirm } from "./agents/index.ts";
-import { AgentMark, Button, opaque } from "./consent.tsx";
+import { AgentMark, Button, goAheadLook, opaque } from "./consent.tsx";
 
 export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer: (yes: boolean) => void }) {
   const colors = useColors();
@@ -42,7 +44,7 @@ export function ConfirmSheet({ confirm, onAnswer }: { confirm: Confirm; onAnswer
         </View>
         <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
           <Button label="Don't Allow" onPress={() => onAnswer(false)} />
-          <Button label={confirm.action} danger onPress={() => onAnswer(true)} />
+          <Button label={confirm.action} {...goAheadLook(confirm.danger)} onPress={() => onAnswer(true)} />
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 12 }}>
           <Text style={{ fontSize: 11.5, color: colors.textMuted }}>It asks every time. Stop every agent with</Text>
