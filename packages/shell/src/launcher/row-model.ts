@@ -11,7 +11,7 @@ import type { Entry } from "../entries.ts";
 import type { FileHit } from "../file-search.ts";
 import { PANES } from "../settings-app/panes.ts";
 import type { AgentAct } from "./agents/acts.ts";
-import { COMMAND_GLYPHS } from "./command-glyphs.ts";
+import { commandGlyph } from "./command-glyphs.ts";
 import { outsideIcon } from "./extension-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
 import { prepare } from "./ranking/fold.ts";
@@ -203,8 +203,8 @@ export function actionRow(item: LauncherItem, icons: { app(id: string): string |
   }
   const appId = /^dashi:\/\/app\/([^/]+)\//.exec(action.address)?.[1];
   const icon = action.icon?.startsWith("/") ? action.icon : ((appId && icons.app(appId)) ?? icons.dashi);
-  // Dashi's own commands draw their own glyph (Sleep a moon, Restart a circle back), not one shared mark.
-  const glyph = action.source === "dashi" ? COMMAND_GLYPHS[action.address.split("/").pop() ?? ""] : undefined;
+  // Dashi's own commands draw their own glyph (Sleep a moon, Restart a circle back, Snippets its brackets), not one shared mark.
+  const glyph = commandGlyph(action);
   return {
     ...base,
     // An agent tool's description is written for a model, not a person: no detail.
