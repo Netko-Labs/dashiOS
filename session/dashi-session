@@ -134,6 +134,9 @@ export GDK_DEBUG
 
 # A tty login has no locale; apps and the Metal host's text system want UTF-8.
 export LANG="${LANG:-C.UTF-8}"
+# React's production build for the shell and the apps (Bun and React read NODE_ENV):
+# the development build checks and warns on every render, two to three times slower.
+export NODE_ENV="${NODE_ENV:-production}"
 
 [ -n "${XDG_RUNTIME_DIR:-}" ] || {
   XDG_RUNTIME_DIR=/run/user/$(id -u)
