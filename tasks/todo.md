@@ -1,3 +1,72 @@
+# Dashi 0.5.0 (plan)
+
+The plan is `docs/0.5.0.html`: what 0.4.0 left undone, in four waves and a
+verification track. Nothing starts until the owner makes the picks at the
+page's end. Each area is its own branch, reviewed in the VM on video, as in
+0.4.0.
+
+## Picks to make
+- [ ] The order of the waves (recommended: as written)
+- [ ] Where the text model lives (recommended: mirin's TextInput, a document view on top)
+- [ ] How a close asks (recommended: a close request mirin hands to the app)
+- [ ] One file browser (recommended: Files' core as a component)
+- [ ] The Applet Store (recommended: a section of Software)
+- [ ] Text size (recommended: every Dashi window, through @dashi/ui's type scale)
+- [ ] KDE runners (recommended: Wave 3, read-only behind the registry)
+- [ ] D3cold for the graphics card (the owner's call)
+
+## Wave 1 · Platform foundations
+- [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
+- [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
+- [ ] Modifiers on onPress (S; PA-10)
+- [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
+- [ ] An undo stack in @dashi/ui (M; PA-2)
+- [ ] A visibility signal; Activity Monitor stops sampling while hidden (S; PA-15)
+- [ ] A settings registry behind every row (M; today `SPOT_ROWS`)
+- [ ] Privacy & Security pane: review and revoke (M)
+- [ ] Components as the @dashi/ui gallery (M; UI-7)
+- [ ] The missing controls: pop-up button, progress, one Slider, one alert frame, menu separators (L; UI-1, UI-2, UI-4, UI-5, PA-5, PA-9)
+
+## Wave 2 · The apps' big ideas
+- [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
+- [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
+- [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
+- [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
+- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
+- [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
+- [ ] Editor's document surface with versioned autosave (L)
+- [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
+- [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
+- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+
+## Wave 3 · Launcher and agents
+- [ ] Agent tools that take arguments, as rows (M)
+- [ ] Context chips: "+ this window", "+ selection" (M)
+- [ ] The close fade, 120 ms (S)
+- [ ] A result's flight to the Dock (M)
+- [ ] KDE runners (S)
+- [ ] Tab, Home and End reaching the input method mid-composition (S)
+- [ ] Orca's first announcement is the field, not the selected row (S)
+- [ ] An applet view's first draw well under 0.7 s (M)
+- [ ] Left from 0.4.0: the green control's press-and-hold menu (M), the bottom edge as a drag zone (S), a title-bar menu with Move to (M), Dashi's apps parent their dialogs (M), late prompts blanked for agents (M), errors in people's words (S)
+
+## Wave 4 · The open design rules
+- [ ] CO-6: 3:1 control edges (S)
+- [ ] UI-6: Enter on a bare Sheet follows the risk (S)
+- [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
+- [ ] CP-7: pane names from the pane list (S)
+- [ ] Text size beyond the launcher (M; TY-1)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+
+## Verification (alongside)
+- [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes
+- [ ] Live Claude and GPT APIs, with the owner's keys as tokens
+- [ ] Codex and OpenCode for real (the 0.4.0 video's OpenCode was a stand-in)
+- [ ] Claude Code in the VM (verified only on the laptop)
+- [ ] Input methods: a click while composing, password fields
+- [ ] D3cold off for the graphics card: waits for the owner's decision
+- [ ] Packages: COPR, a rebuilt image, a fresh install with `vm/vm install`
+
 # Dashi 0.4.0 (`release/0.4.0`)
 
 The plan is `docs/plan.html` (built from the recommended options in
@@ -6,10 +75,21 @@ The plan is `docs/plan.html` (built from the recommended options in
 seen working in the VM, and an item without one hasn't run in a session yet.
 Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 
-## Proposals waiting for picks (`docs/proposals.html`)
-- [ ] Window management: the green control fills (⌥ = full screen), one Fill, ⌃❖ arrows = four halves with chained quarters, ⌃❖↩ / C / R, and the seven tiling bugs found
-- [x] Depth between windows: shadow + hairline by default, accent ring as an Appearance option (`feat/0.4-depth`: IPC `window-style`, render/depth/; not yet in the VM)
-- [ ] The roast of every app (`docs/roast/`): themes, per-app fixes, three waves
+After the spec (2026-11-05, up to `1f59d0b`): window management, depth,
+full-screen Desktops, the launcher's three waves and the app roasts' first
+wave, each reviewed on video in the VM (`~/Developer/dashi-0.4.0-review/`,
+01–13). The release page is `docs/0.4.0.html`; what's left is the 0.5.0 plan
+above.
+
+## Proposals (`docs/proposals.html`, `docs/betterments.html`)
+- [x] Window management: the green control fills (⌥ = full screen), one Fill, ⌃❖ arrows = four halves with chained quarters, ⌃❖↩ / C / R, and the seven tiling bugs found (`feat/0.4-windows`; VM: 01-windows)
+- [x] Depth between windows: shadow + hairline by default, accent ring as an Appearance option (`feat/0.4-depth`: IPC `window-style`, render/depth/; VM: 02-depth)
+- [x] A full-screen window gets its own Desktop; stoplights kept in full screen and small pictures (`feat/0.4-fullscreen-desktops`, `fix/0.4-stoplights`; VM: 03, 04)
+- [x] The roast of every app (`docs/roast/`), wave 1: one chrome row, AA tokens, confirm sheets, tooltips, per-app fixes, one selection look (`feat/0.4-apps-wave1`, `fix/0.4-apps-review`; VM: 07, 08, 09, 11)
+- [x] The launcher, waves 1–3: bugs; one registry, ranking, ❖K, answers, a resident launcher; tokens, Ask and plans, clipboard and snippets, extensions, access (VM: 05, 06, 10, 13)
+- [x] Answerers: Claude Code, Codex, OpenCode, a local model, Claude and GPT (`feat/0.4-answerers`; VM: 12, OpenCode as a stand-in)
+- [x] Input methods in every Metal field (`fix/0.4-ime`, mirin `1cde80e`; VM: 13, Pinyin)
+- [ ] The roast's waves 2 and 3, and the launcher's deferred rows: in the 0.5.0 plan
 - [x] The design guidelines are one page, `docs/design.html` (brand and Kombu folded in; numbered rules, tagged where the code doesn't follow them yet)
 
 ## Packages
@@ -61,7 +141,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] VM: Firefox's Open File as a sheet of its window, with its filters as pills
 - [ ] VM: a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
 - [x] A sheet on a window that draws its own bar hangs below its toolbar (`attach {top}`; VM: Firefox)
-- [x] Sheets have no shadow: they cast `xl` from the compositor (`window-style`; not yet in the VM)
+- [x] Sheets have no shadow: they cast `xl` from the compositor (`window-style`; VM: 02-depth)
 - [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
 - [ ] Keep-awake on a machine with no battery has nowhere to show
 
@@ -72,7 +152,7 @@ Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
 - [x] Passkeys: a virtual FIDO2 key over uhid in dashi-secretd (unit-tested only)
 - [x] `pay` with limits, single-use cards, "Pay for you" never always-allowed
 - [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
-- [ ] The token proxy: designed in docs/secrets.md only (payment-provider tokens dropped)
+- [x] The token proxy (`feat/0.4-vault-tokens`: token items in dashi-secretd, the shell's proxy, Settings › Passwords › Tokens; payment-provider tokens dropped). VM: an Anthropic key saved and named in Settings › Agents (10-launcher-wave3); live APIs untested
 - [x] VM, packages installed: the vault made at a password login, `secret-tool` store/lookup, a lookup from a `dashi-agent-*` scope refused; `list_logins` (no secrets) after the scope sheet; `sign_in` on the test site (the person's Allow Once; the page reached /2fa)
 - [x] fill_code's sheet ignored the person's Allow Once: it opened under a still pointer, and dashi-comp moved pointer focus only on motion (it now enters what is under the pointer before a press). A call the agent gives up on (`notifications/cancelled`) takes its sheet down; a waiting sheet no longer holds the agent's other calls
 - [x] Chromium (Helium) without `--force-renderer-accessibility`: the shell wakes its web tree and places fields by their page. Firefox: its first GetExtents answers nothing (asked again)
