@@ -160,13 +160,11 @@ pub(crate) fn handle_commit(state: &mut Dashi, surface: &WlSurface) {
     if zone_changed {
         state.ipc.emit("outputs-changed", serde_json::json!({}));
     }
+    // While locked a sheet that takes the keyboard waits: the keyboard is the
+    // lock screen's (session/lock.rs), and it gets it after the unlock.
     let exclusive = layer.cached_state().keyboard_interactivity == KeyboardInteractivity::Exclusive;
-    if exclusive
-        && initial_configure_sent
-        && !state.has_keyboard(surface)
-        && let Some(keyboard) = state.seat.get_keyboard()
-    {
-        keyboard.set_focus(state, Some(surface.clone()), SERIAL_COUNTER.next_serial());
+    if exclusive && initial_configure_sent && !state.lock.locked && !state.has_keyboard(surface) {
+        state.set_keyboard_focus(Some(surface.clone()), SERIAL_COUNTER.next_serial());
     }
 }
 

@@ -95,7 +95,8 @@ crates/dashi-comp/src/
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
   input/            keyboard and pointer routing, decorations, constraints, gestures
-  keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs)
+  keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs),
+                    keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager
   ipc/              socket, framing, requests
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes
@@ -127,7 +128,17 @@ Each milestone ends with the shell running on it in the VM.
 ## Better Than 0.1.0
 
 - **The session lock is the compositor's guarantee:** ext-session-lock, so a
-  crashed shell leaves the screen locked, not open.
+  crashed shell leaves the screen locked, not open. While locked the keyboard
+  is the lock screen's whatever asks for it (0.4.1: keys typed on the lock
+  screen could reach a window behind it, after something moved the keyboard
+  there): every change of keyboard focus goes through
+  `Dashi::set_keyboard_focus` (`session/lock.rs`), which gives it only to a
+  lock surface then, and every key is checked again before it is sent
+  (`keys/locked.rs`); `send-keys`, `snippet-erase`, `agent-input` and the
+  overview are refused, only the keymap's `locked` rules apply, no binding,
+  ❖ tap or hold, or claimed swipe goes to the shell, and an input method's
+  grab is let go (docs/compositor-ipc.md, "While locked";
+  `tests/lock.rs` tries each way in).
 - **Games:** direct scanout (done: smithay's DRM compositor puts a client
   buffer on a plane when it can, presentation feedback says zero-copy, and
   per-surface dmabuf feedback offers a scanned-out surface the formats its

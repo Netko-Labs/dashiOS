@@ -129,6 +129,10 @@
     <div class="callout"><div>✓</div><p>0.4.0 is two halves on <code>release/0.4.0</code> (<code>1f59d0b</code>). The <a href="#the-0-4-0-spec">spec</a> below was picked on 2026-11-04 and built as eight milestones (<a href="plan.html">plan</a>): power and graphics, ASUS hardware, Desktops and the switcher, Dashi's portal, secrets for agents, applets and their store. Then came window management, the launcher's three waves (<a href="betterments.html">Launcher</a>) and the first wave of the app roasts (<a href="proposals.html">Proposals</a>), each reviewed in the VM on video. What's left is the <a href="0.5.0.html">0.5.0 plan</a>.</p></div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="dashi-0-4-1">0.4.1</h2>
+    <p><b>A security fix (2026-11-06).</b> Keys typed on the lock screen could reach a window behind it. While locked, anything that moved the keyboard (the shell bringing a window forward, a new window, a sheet, an app activating itself, a Desktop switch) took it off the lock screen, and that window got the typing unseen. Now the keyboard stays on the lock screen until you unlock: nothing types into a window, no ❖ shortcut acts, and the launcher doesn't open behind it.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
     <h2>What's new</h2>
 
     <h3>Window management and tiling</h3>

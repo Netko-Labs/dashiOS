@@ -1,6 +1,6 @@
 [package]
 name = "dashi-comp"
-version = "0.4.0"
+version = "0.4.1"
 description = "Dashi's Wayland compositor"
 edition.workspace = true
 license.workspace = true
@@ -52,4 +52,7 @@ features = [
 png = "0.17"
 tempfile = "3"
 wayland-client = "0.31"
-wayland-protocols = { version = "0.32", features = ["client", "server"] }
+wayland-protocols = { version = "0.32", features = ["client", "server", "staging"] }
+# The lock tests' shell side (tests/lock.rs): a sheet that takes the keyboard, and a virtual keyboard.
+wayland-protocols-misc = { version = "0.3", features = ["client"] }
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }

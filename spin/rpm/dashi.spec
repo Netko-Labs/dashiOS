@@ -144,6 +144,10 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_datadir}/dashi/MIRIN_COMMIT
 
 %changelog
+* Fri Nov 06 2026 PejeDev <hi@peje.dev> - 0.4.1
+- Security: no ❖ shortcut acts and the launcher doesn't open while locked;
+  the lock screen's ❖A ❖C ❖X ❖V ❖Z reach its field as Ctrl chords.
+
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 0.2.0
 - 0.2.0: the rewritten compositor, Dashi's own login screen, native video
   wallpapers, @dashi/ui.
