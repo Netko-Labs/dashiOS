@@ -1,6 +1,7 @@
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
+import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
@@ -25,6 +26,8 @@ export interface PaneContext {
   passwords?: Passwords;
   /** The launcher's Ask: where Claude's key is, the local models, and the agents' history (Settings › Agents). */
   answers?: AnswerStatus;
+  /** The clipboard history, for Settings › Keyboard's Clear History. */
+  clipboard?: Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

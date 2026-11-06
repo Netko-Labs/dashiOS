@@ -2,6 +2,7 @@
  * Keyboard: how fast keys repeat, and the layout. The layout list is every
  * layout xkb knows (searchable), with the chosen layout's variants beside it.
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
+ * Clipboard history and snippets are here too (clipboard-parts.tsx).
  */
 
 import { SEARCH, useColors } from "@dashi/ui";
@@ -13,6 +14,7 @@ import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
+import { ClipboardSection, type HistoryControl } from "./clipboard-parts.tsx";
 import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
@@ -124,7 +126,17 @@ function RangeLabels({ low, high }: { low: string; high: string }) {
   );
 }
 
-export function KeyboardPane({ settings, layouts, laptop }: { settings: SettingsStore; layouts: XkbLayouts; laptop?: Laptop | null }) {
+export function KeyboardPane({
+  settings,
+  layouts,
+  laptop,
+  clipboard,
+}: {
+  settings: SettingsStore;
+  layouts: XkbLayouts;
+  laptop?: Laptop | null;
+  clipboard?: HistoryControl | null;
+}) {
   const { keyboard } = useSettings(settings).data;
   const rate = keyboard.repeatRate ?? DEFAULTS.repeatRate;
   const delay = keyboard.repeatDelay ?? DEFAULTS.repeatDelay;
@@ -153,6 +165,7 @@ export function KeyboardPane({ settings, layouts, laptop }: { settings: Settings
       </Group>
       <Caption>A new layout applies in a moment, to every app.</Caption>
       <KeyboardLightSection laptop={laptop ?? null} />
+      <ClipboardSection settings={settings} history={clipboard ?? null} />
     </Page>
   );
 }

@@ -136,6 +136,24 @@ hidden) keep getting frame callbacks, so they stay live.
 | `capture-mask` | `{client, windows?: int[], rects?: [{window?, x, y, width, height}], layers?: string[], pids?: int[], popups?: int[]}`, at most 256 of each; shell only | `{}`; sets (replaces) what is blanked, painted opaque, in the pictures for `client` (a name: `"agent"`): those windows with their popups and title bars, those rects (in a window's content coordinates when `window` is set, else global; a window not on screen adds nothing; a window's rect stops where a window in front of it declares an opaque region, less that window's corners, except while the overview, a slide or a flight runs), the popups (xdg_popups with their subsurfaces) of the `popups` windows, without the windows, and those shell layers by namespace. A popup blanked once stays blanked for `client` while it lives, whatever later requests say. `capture {mask: client}` applies it, and so does every screencopy or image-copy frame for a client whose pid is in `pids` (a recorder the shell started for an agent). The blanks follow a window where it is drawn: small in the overview, flying to the Dock, sliding with its Space; a `space-previews` or `window-thumbnails` picture that shows a blanked window is blanked whole. A mask with nothing in it is dropped |
 | `input-origin` | `{namespace}` (a shell layer) or `{window}` | `{person: ms\|null, agent: ms\|null}`: how long ago the person's own hands (libinput) and an agent (`agent-input`, even on the person's borrowed seat) last pressed a button or a key there, within the last minute. Consent sheets count a yes only when the person's press is recent and no agent's is newer (`src/agents/person.ts`) |
 
+### Clipboard history and snippets (0.4.0, `packages/shell/src/clipboard/`)
+
+The compositor reports each new copy (`selection`) and never reads it: the
+shell decides whether to keep it (its privacy rules) and reads it itself
+over ext-data-control (`wl-paste`, one of its processes). For snippets the
+compositor watches what the person types into windows for the shell's
+keywords and says when one was typed (`snippet`); what was typed is never
+sent, and only the tail as long as the longest keyword is held, while
+keywords are set. The tail starts over on a click, a chord or a key the
+keymap takes, a key that types nothing (an arrow, Return; BackSpace drops one
+character), and a change of keyboard focus; keys typed into the shell's own
+surfaces and keys an agent or a `send-keys` typed are not watched.
+
+| Method | Params | Result |
+| --- | --- | --- |
+| `snippets` | `{keywords: string[]}`, at most 256, each 2 to 32 characters with no spaces or control characters; shell only | `{}`, or an error (nothing changes); replaces the keywords (`[]` stops watching) |
+| `snippet-erase` | `{window, keyword}`; shell only | `{}` once `keyword` is deleted from `window` (BackSpace once per character, as `send-keys` taps keys); an error, and nothing typed, unless `window` has the keyboard and `keyword` is still the last thing typed there |
+
 ## In the 0.2.0 compositor
 
 - **Done:** every request above, with every event; `wallpaper` also takes
@@ -189,3 +207,5 @@ hidden) keep getting frame callbacks, so they stay live.
 | `wallpaper` | `path: string\|null, ok, error?` |
 | `window-icon` | `window, name: string\|null, path: string\|null` (not sent while xdg-toplevel-icon is off; docs/compositor.md) |
 | `bell` | `window: int\|null` (xdg-system-bell) |
+| `selection` | `mimeTypes: string[], window: int\|null, x11?: true`: the clipboard (not the primary selection) has a new copy, from a Wayland app, a data-control client, or an X11 app (`x11`); its types (at most 64, each at most 256 bytes) and the window that had the person's keyboard then (null for none, or a shell surface). Sent as the compositor takes the copy: a data-control read the shell starts after it gets this copy (or a newer one) |
+| `snippet` | `keyword, window`: one of the `snippets` keywords was just typed into that window (the longest, when two end there). The shell decides; `snippet-erase` deletes it |

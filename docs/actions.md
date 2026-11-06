@@ -66,6 +66,12 @@ Sources on day one (`actions/start.ts`, in this order):
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
 | `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/sources/radios.ts`); no hardware, no action |
 
+Added later by the shell (`main.tsx`, `registry.add`):
+
+| Source | Addresses | What choosing does |
+| --- | --- | --- |
+| `clipboard` | `dashi://clipboard/history` (⌥❖V), `dashi://clipboard/snippets`, `dashi://clipboard/clear`, `dashi://settings/keyboard/clipboard-history` | opens the launcher in the Clipboard or Snippets scope (chosen in the launcher, the scope is entered in place); Clear Clipboard History asks on the person's sheet every time; the history's switch (off deletes what was kept). The person's alone (`clipboard/actions.ts`) |
+
 Menu rows read "Notes › File › New Note" with the item's shortcut. Items an
 app keeps from agents (`agents: false`) are offered here, because the
 person is choosing; greyed-out ones are left out. Window titles and menu
@@ -183,6 +189,32 @@ the open windows come with their apps' names (`launcher/world.ts`); choosing
 a window runs its `dashi://window/w3` action. Every row's action list (❖K)
 has Copy Address, Set alias… and Set shortcut….
 
+### Scopes
+
+A scope narrows the panel to one source's rows behind a chip
+(`launcher/scope.ts`): its own placeholder, rows, verbs (❖K lists them, ↩
+is the first, ❖C the copy verb) and hints. A scope names the address that
+opens it; that action chosen in the launcher enters the scope in place, and
+Esc goes back to the search; opened by a key or a link (⌥❖V binds
+`dashi://clipboard/history`), Esc closes. The two scopes are the
+clipboard's (`clipboard/scope.ts`):
+
+- **Clipboard**: the history (`clipboard/`), pinned copies first, then
+  newest first; ↩ pastes into the window under the launcher (its app's paste
+  chord: ⌃⇧V in a terminal), ❖C copies, ❖K adds Pin, Delete and Clear
+  History (which asks in place). The head counts the copies and says what
+  was not kept, never what it was.
+- **Snippets**: "snippet" in the launcher finds it. The field adds one:
+  a keyword, a space, its text (`;addr Calle de la Luna 12`) and ↩. A
+  snippet's ↩ pastes its text; typed anywhere, its keyword expands at the
+  compositor (docs/compositor-ipc.md, `snippets`), never in a password
+  field or a terminal unless Settings › Keyboard allows terminals.
+  Placeholders: `{date}`, `{time}`, `{clipboard}`, `{cursor}`.
+
+Agents never read the history through the registry; their tool
+`read_clipboard_history` needs the scope "See your clipboard history",
+which Always Allow never keeps, and asks the person every time.
+
 `actions.setPresenter` is the launcher's: a link that must not run by
 itself opens the launcher with the action and its arguments filled in
 (`Presented`, `launcher/host.ts`); Return runs it, as the person.
@@ -263,7 +295,7 @@ keymap again as soon as the file changes. Aliases (`launcher.aliases`, `{
 
 Window arranging is bound so now: ⌃❖←→↑↓ to `dashi://window/arrange/<arrow>`,
 ⌃❖↩ to `…/fill`, ⌃❖C to `…/center`, ⌃❖R to `…/restore`, ⌃❖F to
-`dashi://window/full-screen`.
+`dashi://window/full-screen`. ⌥❖V is `dashi://clipboard/history`.
 
 The other bind names move the same way, one kind at a time: give the
 action an address in its source, change the rule's `bind` to it, delete

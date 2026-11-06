@@ -111,6 +111,8 @@ export const KEYMAP: Keymap = {
     { when: "super+alt+Escape", bind: "force-quit" },
     // ⌥❖D: turn Dock autohide on or off (dock/prefs.ts), as on the Mac. Before the reserved ⌥❖ rule below.
     { when: "super+alt+d", bind: "toggle-autohide" },
+    // ⌥❖V: the clipboard history, in the launcher (clipboard/). Before the reserved ⌥❖ rule below.
+    { when: "super+alt+v", bind: "dashi://clipboard/history" },
     // Reserved for the lock screen, emoji, and Hide Others.
     { when: "super+ctrl+*", swallow: true },
     { when: "super+alt+*", swallow: true },

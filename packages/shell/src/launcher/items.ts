@@ -74,6 +74,9 @@ export function actionKind(action: ActionDef): RankKind | null {
     case "settings":
     case "controls":
       return action.place?.row !== undefined ? "setting" : null;
+    // Clipboard History and Snippets are commands; the history's switch is a setting (clipboard/actions.ts).
+    case "clipboard":
+      return action.place?.row !== undefined ? "setting" : "command";
     // Open windows come with their apps' names (LauncherWindow); arranging the focused one is a command.
     case "windows":
       return WINDOW_ADDRESS.test(action.address) ? null : "command";
@@ -148,7 +151,7 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
         ? { names: [path[path.length - 1] as string], keywords: [], qualifiers: path.slice(0, -1) }
         : { names: [action.title], keywords: actionWords(action) }),
       ...(kind === "menu" ? { foreign: true } : {}),
-      ...(action.source === "dashi" || action.source === "settings" || action.source === "controls" ? { own: true } : {}),
+      ...(action.source === "dashi" || action.source === "settings" || action.source === "controls" || action.source === "clipboard" ? { own: true } : {}),
       action,
       address: action.address,
     });

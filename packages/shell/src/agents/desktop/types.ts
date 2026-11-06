@@ -20,6 +20,17 @@ import type { PageId } from "../../setup/flow.ts";
 import type { WifiStore } from "../../wifi/store.ts";
 import type { SoftwareBackend } from "./software.ts";
 
+/** One copy as an agent reads it: the text, or what a picture or files were. */
+export interface ClipboardCopy {
+  kind: "text" | "image" | "files";
+  /** The text (cut short), the files' paths, or a picture's size. */
+  text: string;
+  app: string | null;
+  /** When it was copied (ISO 8601). */
+  copiedAt: string;
+  pinned: boolean;
+}
+
 export interface Desktop {
   /** The notification center's history, and taking notifications out of it. */
   notifications: Pick<NotificationStore, "getSnapshot" | "remove">;
@@ -55,6 +66,8 @@ export interface Desktop {
   lock(): void;
   /** The shell's screen recorder, for record_screen (recorder/). Absent without a compositor. */
   recorder?: ScreenRecorder;
+  /** The clipboard history, newest first (clipboard/); absent where it isn't kept. */
+  clipboard?: { recent(limit: number): ClipboardCopy[] };
   /** Choose the item of `window`'s app menus that shows `shortcut` ("⇧❖N"); false when none does (app-menus/). */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** The menu bar's menus for a window (its app's own included), and choosing a row. Absent where there is no menu bar. */

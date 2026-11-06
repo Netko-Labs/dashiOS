@@ -59,6 +59,25 @@ pub(crate) fn handle(
             state.keys.keymap = Keymap::parse(params)?;
             Ok(json!({}))
         }
+        "snippets" => {
+            shell_only(state, connection, "snippets")?;
+            let keywords = params
+                .get("keywords")
+                .and_then(Value::as_array)
+                .ok_or("`keywords` must be a list of strings")?
+                .iter()
+                .map(|k| {
+                    k.as_str()
+                        .map(str::to_owned)
+                        .ok_or("`keywords` must be a list of strings")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            done(state.keys.snippets.set(&keywords))
+        }
+        "snippet-erase" => {
+            shell_only(state, connection, "snippet-erase")?;
+            done(state.erase_snippet(window(params)?, text(params, "keyword")?))
+        }
         "send-keys" => {
             let id = window(params)?;
             let chord = Chord::parse(text(params, "chord")?)?;

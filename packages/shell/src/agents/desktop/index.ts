@@ -1,4 +1,5 @@
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
+export { readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { listFolder, openFile, searchFiles, trashFile } from "./files.ts";
 export { handsCall } from "./input.ts";
