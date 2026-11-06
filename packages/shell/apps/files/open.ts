@@ -8,7 +8,8 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { dataDirs, desktopFields } from "../../src/entries.ts";
+import { resolvePinned } from "../../src/apps.ts";
+import { dataDirs, desktopFields, entryIcon } from "../../src/entries.ts";
 import { type Exec, exec } from "./exec.ts";
 import { normalizePath } from "./paths.ts";
 import { fileUri } from "./uri.ts";
@@ -52,6 +53,8 @@ export interface OpenWithApp {
   name: string;
   /** The desktop entry's file. */
   file: string;
+  /** Its icon, as the Dock and the launcher draw it (`entryIcon`). */
+  icon: string;
 }
 
 /** The `.desktop` ids in `gio mime` output ("Registered applications:" and "Recommended applications:" lists), each once, recommended first. */
@@ -86,12 +89,14 @@ export async function appsFor(mime: string, run: Exec = exec, dirs: readonly str
   const outcome = await run(["gio", "mime", mime]);
   if (!outcome.ok) return [];
   const apps: OpenWithApp[] = [];
+  const pinned = resolvePinned();
   for (const id of parseGioMime(outcome.stdout).slice(0, 40)) {
     const found = await findDesktopFile(id, dirs);
     if (!found) continue;
     const fields = desktopFields(found.text);
     if (fields.get("NoDisplay")?.toLowerCase() === "true" || fields.get("Hidden")?.toLowerCase() === "true") continue;
-    apps.push({ id, name: fields.get("Name") ?? id.replace(/\.desktop$/, ""), file: found.file });
+    const bare = id.replace(/\.desktop$/, "");
+    apps.push({ id, name: fields.get("Name") ?? bare, file: found.file, icon: entryIcon(bare, fields.get("Icon") ?? "", pinned) });
   }
   return apps;
 }
