@@ -144,7 +144,8 @@ export function SettingsWindow({ ctx, nav, spots }: { ctx: PaneContext; nav: Nav
   return (
     <PaneStoresContext.Provider value={stores}>
       <SpotContext.Provider value={spots ?? null}>
-        <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
+        {/* The focus ring is kombu in every control inside (KB-2). */}
+        <View testID="settings-window" style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, focusRingColor: colors.focusRing }}>
           <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
           <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
             {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}

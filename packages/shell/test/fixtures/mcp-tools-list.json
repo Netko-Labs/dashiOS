@@ -40,7 +40,7 @@
     {
       "name": "launch_app",
       "title": "Open an app",
-      "description": "Start an installed app by its id or name (see list_apps) and return its first new window, waiting up to 10 seconds for it.",
+      "description": "Open an installed app by its id or name (see list_apps) and return its window: one already open comes forward (restored if minimized); otherwise the app starts and its first new window is returned, waiting up to 10 seconds for it.",
       "inputSchema": {
         "type": "object",
         "properties": {

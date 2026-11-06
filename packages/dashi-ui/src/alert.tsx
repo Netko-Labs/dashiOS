@@ -176,10 +176,11 @@ export interface AlertWindowProps extends AlertProps {
  * clear of the window controls. The words scroll when they are long.
  */
 export function AlertWindow({ keys = true, testID = "alert", onCancel, ...props }: AlertWindowProps) {
+  const colors = useColors();
   const surface = useSurface();
   const inset = useTitleBarInset();
   return (
-    <View testID={testID} style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window, position: "relative" }}>
+    <View testID={testID} style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window, position: "relative", focusRingColor: colors.focusRing }}>
       <TooltipLayer>
         {keys && (
           <KeySink

@@ -76,6 +76,7 @@ function Segment({ label, chosen, width, testID, onPress }: { label: string; cho
         backgroundColor: state.pressed && !chosen ? colors.pressed : rest,
         hoverBackgroundColor: onPress === undefined || chosen ? rest : state.pressed ? colors.pressed : colors.button,
         ...(chosen ? { shadow: "xs" as const } : {}),
+        focusRingColor: colors.focusRing,
       }}
     >
       <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: chosen ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>

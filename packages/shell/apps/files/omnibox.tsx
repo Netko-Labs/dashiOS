@@ -51,12 +51,24 @@ export function Omnibox(props: OmniboxProps) {
   return <Editor key={props.editing ?? "query"} {...props} />;
 }
 
-function Field({ children, testID, onLayout }: { children: React.ReactNode; testID: string; onLayout?: (bounds: Bounds) => void }) {
+function Field({
+  children,
+  testID,
+  onLayout,
+  onPress,
+}: {
+  children: React.ReactNode;
+  testID: string;
+  onLayout?: (bounds: Bounds) => void;
+  /** At rest: the box is the window's first Tab stop, and Space or Return makes it text (KB-1). */
+  onPress?: () => void;
+}) {
   const colors = useColors();
   return (
     <View
       testID={testID}
       {...(onLayout ? { onLayout } : {})}
+      {...(onPress ? { focusable: true, onPress, accessibilityRole: "button" as const, accessibilityLabel: "Path. Press to type a path or search" } : {})}
       style={{
         flex: 1,
         minWidth: 160,
@@ -83,14 +95,15 @@ function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
   const visible = store.visible();
   const chosen = new Set(state.selection);
   const picked = visible.filter((item) => chosen.has(item.path));
+  const edit = (): void => onEdit(editText(state.location, store.env.home));
   return (
-    <Field testID="omnibox">
+    <Field testID="omnibox" onPress={edit}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 0, minWidth: 0, flexShrink: 1, overflow: "hidden" }}>
         {segments.map((segment, index) => (
           <Crumb key={`${index}:${segment.name}`} index={index} name={segment.name} location={segment.location} last={index === segments.length - 1} />
         ))}
       </View>
-      <View testID="omnibox:edit" onPress={() => onEdit(editText(state.location, store.env.home))} style={{ flex: 1, height: HEIGHT, minWidth: 24 }} />
+      <View testID="omnibox:edit" onPress={edit} style={{ flex: 1, height: HEIGHT, minWidth: 24 }} />
       <View testID="status" style={{ flexShrink: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
           {statusLine(visible.length, picked, state.free?.free ?? null)}

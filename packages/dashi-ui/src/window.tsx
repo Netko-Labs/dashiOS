@@ -219,6 +219,7 @@ export function ToolbarButton({
         alignItems: "center",
         justifyContent: "center",
         hoverBackgroundColor: disabled ? "#00000000" : colors.button,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />

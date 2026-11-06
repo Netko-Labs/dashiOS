@@ -13,9 +13,12 @@
 import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
+import { darkColors } from "./theme/palette.ts";
 
 /** The wallpaper shows through, darkened (the compositor draws it behind). */
 const BACKGROUND = "#140e22b8";
+/** The focus ring on the login screen's dark ground, whatever Dark Mode is (KB-2): the dark palette's kombu. */
+export const LOGIN_FOCUS_RING = darkColors.focusRing;
 const TEXT = "#f5f5f7";
 const MUTED = "#f5f5f7b3";
 const WRONG = "#ffb4b4";
@@ -72,7 +75,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
   };
 
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND }}>
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND, focusRingColor: LOGIN_FOCUS_RING }}>
       <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
         <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>

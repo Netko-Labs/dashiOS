@@ -940,7 +940,8 @@ export function Launcher(props: LauncherProps) {
           : [{ keys: "Esc", label: "back" }];
 
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
+    // The focus ring is kombu in every control inside (KB-2).
+    <View testID="launcher-root" style={{ flex: 1, flexDirection: "column", alignItems: "center", focusRingColor: colors.focusRing }}>
       {/* A click anywhere outside the panel closes the launcher. */}
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={onClose} />
       <View
