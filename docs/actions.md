@@ -2,7 +2,8 @@
 
 One registry holds everything the desktop can do: every app and its
 Desktop Actions, every open window, every Settings pane and setting, Dashi's
-own commands, the menus running apps publish, and the agents' tools. Each
+own commands, the menus running apps publish, the agents' tools, applets'
+commands, and your own scripts. Each
 is an *action* at a `dashi://` address. The launcher lists them, agents get
 the ones they may call as MCP tools, the keymap binds keys to their
 addresses, and a `dashi://` link opens one. What the person can do, agents
@@ -29,6 +30,7 @@ Code: `packages/shell/src/actions/`. Tests: `packages/shell/test/actions-*.test.
 | `asksEveryTime` | it asks on a sheet every time, the person included (force quit, the Trash) |
 | `who` | `person`, `agents`, or `both` |
 | `source` | the source that added it |
+| `from` | who outside Dashi supplied it ("Weather", "Script"), shown on its row; absent for Dashi's own |
 | `tool` | the MCP tool it is, for agents; only these are in `tools/list` |
 | `shortcut` | its key in Dashi's notation, from the keymap or the menu that has it |
 | `place` | where it lives in System Settings: `{ pane, row }` |
@@ -65,6 +67,16 @@ Sources on day one (`actions/start.ts`, in this order):
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
 | `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/sources/radios.ts`); no hardware, no action |
+| `applets` | `dashi://applet/<applet id>/<command id>` (`dashi://applet/dev.example.weather/now`) | the applet's command, run in its sandbox over protocol 3 (docs/applets.md, "Version 3: commands", `applets/commands.ts`) |
+| `scripts` | `dashi://script/<file name>` (`dashi://script/hello.sh`) | one of your own scripts, run as you ([below](#your-own-scripts)) |
+
+The last two are added by `extensions/start.ts` once the registry is up.
+Their actions carry `from` ("Weather", "Script"): who outside Dashi
+supplied them. Such a row says so at its right, shows its own icon or a
+neutral puzzle piece (never one of Dashi's glyphs), is ranked as `foreign`
+(never above an exact match of an app's or a setting's name), and one
+titled like a first-party row reads "Weather › System Settings"
+(`launcher/items.ts`).
 
 Menu rows read "Notes › File › New Note" with the item's shortcut. Items an
 app keeps from agents (`agents: false`) are offered here, because the
@@ -179,6 +191,109 @@ has Copy Address, Set alias… and Set shortcut….
 `actions.setPresenter` is the launcher's: a link that must not run by
 itself opens the launcher with the action and its arguments filled in
 (`Presented`, `launcher/host.ts`); Return runs it, as the person.
+
+### What a command from outside shows
+
+An applet's or a script's command may answer with more than a line: its
+`Outcome` carries `show` (`actions/types.ts`), which the launcher takes in
+place of closing (`launcher/extensions.ts`):
+
+- `text`: its answer is the top row, in SemiBold, selected, with where it
+  came from at the right; Return copies it. A link or a D-Bus caller gets
+  the same words as `text`.
+- `pick`: a chip with the command's title goes in the field ("Search
+  Weather"), and each keystroke asks for rows; the one chosen runs.
+- `view`: the command draws its answer itself where the rows were; Esc
+  goes back.
+
+A command from outside that takes arguments asks for them in the field
+first, one at a time, the chip naming it. Esc leaves any of these, as it
+leaves the action list.
+
+### Search providers
+
+GNOME's search providers (`org.gnome.Shell.SearchProvider2`) are read as
+one more source, results only, behind the registry
+(`search-providers/`): the key files in
+`<data dir>/gnome-shell/search-providers/` (version 2; one marked
+`DefaultDisabled=true` stays off), each asked only while its app is
+installed, over one session-bus connection. From two letters typed, each
+provider gets the words (`GetInitialResultSet`); three of its results
+(`GetResultMetas`) go below every instant row and the files, under the
+app's name ("Characters"). Return opens one in its app (`ActivateResult`),
+run as the person and logged as `dashi://search/<provider>`. A provider has
+no arguments and gives no inline answer, so it is never an action of its
+own.
+
+### Budgets
+
+Every source outside the shell (applets' pick commands, search providers)
+is asked with a sequence number and has 80 ms (`launcher/budget.ts`,
+`SlowSources`). An answer for an older query is dropped. One that is late
+says so ("Characters · slow" on its head, "Weather is taking a while…" in a
+pick), its rows still come below the rest, and one late three times isn't
+asked again this session. Nothing already drawn moves; the selection is
+held by row id. Applets and scripts run in units with `CPUQuota=50%`,
+`MemoryMax=768M`, and `Nice=10`; D-Bus providers are started by the bus
+(D-Bus activation), so their limits are their own units'.
+
+## Your own scripts
+
+Executables in `~/.local/share/dashi/commands/` (`$XDG_DATA_HOME`; made at
+the shell's start) are commands, each at `dashi://script/<file name>`, its
+row marked "Script" (`actions/sources/scripts.ts`). A few header lines,
+in the first 40, after any comment marker (`#`, `//`, `--`, `;`), say what
+it is:
+
+```sh
+#!/bin/sh
+# @dashi.title Say hello
+# @dashi.keywords greet, hi
+# @dashi.argument name Name
+# @dashi.argument loud? Loud
+# @dashi.output text
+echo "Hello, $1"
+```
+
+| Header | |
+| --- | --- |
+| `@dashi.title` | required: the row's title (60 characters) |
+| `@dashi.keywords` | words it is found by, separated by commas or spaces |
+| `@dashi.argument NAME [Title]` | an argument, in order; `NAME?` is optional; up to 4. The launcher asks for each in the field; they are passed as `$1`, `$2`… |
+| `@dashi.output` | what is done with what it prints: `text` (the default: a row Return copies), `copy` (the clipboard), `open` (its first line, an `https://` or `dashi://` address), `silent` |
+
+Only regular files that are yours, executable, writable by you alone, and
+1 MB or less are read; the folder is watched. A script runs as you, as a
+transient user unit (`systemd-run --user --pipe --wait`, with
+`RuntimeMaxSec=30` and the units' limits above), from your home folder; a
+non-zero exit says the last line it wrote to stderr. It is your own code,
+so it is `destructive`: a link or a D-Bus caller only opens it for you to
+run, never runs it.
+
+## On D-Bus
+
+The registry is served on the session bus as `dev.dashi.Shell.Actions1`
+at `/dev/dashi/Shell`, on the shell's name `dev.dashi.Shell` beside
+`Portal1` (`actions/dbus.ts`), so GTK and Qt apps, scripts, and tools can
+use it without Dashi's sockets:
+
+| Method | |
+| --- | --- |
+| `List() → a(ssss)` | every action the person may use: address, title, kind, where it came from (`from`, else `source`) |
+| `Describe(s address) → a{sv}` | `title`, `description`, `kind`, `source`, `from`, `destructive`, `readOnly`, `arguments` (its JSON Schema, as text) |
+| `Run(s address, a{sv} args) → s` | what it came to, in words; arguments are text, numbers, or true or false |
+
+A caller is a program, not the person at the screen: `Run` is a link from
+outside ([above](#links-from-outside)), with the same consent: a
+destructive action or an agent tool that changes something is opened for
+the person to finish, a settings address with no arguments opens Settings
+there, and it is logged as "you". An agent's own tools are not listed.
+Errors are D-Bus errors (`UnknownObject` for no such action, `Failed` with
+the reason for one that didn't run).
+
+```sh
+busctl --user call dev.dashi.Shell /dev/dashi/Shell dev.dashi.Shell.Actions1 Run 'sa{sv}' dashi://dashi/lock-screen 0
+```
 
 ## The keymap
 

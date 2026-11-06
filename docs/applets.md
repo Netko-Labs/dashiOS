@@ -20,7 +20,8 @@ user's processes can connect). Newline-delimited JSON, one message per line.
 One connection can show up to 8 applets; they go when it closes. The
 parsers are `@dashi/applet`'s (`packages/applet/src/protocol.ts`); the shell's
 `src/applets/` serves them. What follows first is version 1, which every
-applet speaks; version 2 (below) adds a manifest, popovers, and submenus.
+applet speaks; version 2 (below) adds a manifest, popovers, and submenus;
+version 3, the launcher's commands.
 
 ### Applet → shell
 
@@ -114,6 +115,63 @@ three levels deep; the 40-row limit counts every level, and ids are unique
 across all of them. The bar shows a submenu as a heading with its rows
 indented under it, as it does a tray item's.
 
+## Version 3: commands
+
+A hello with `"protocol":3` speaks version 3 (a hello's protocol is the
+newest the applet speaks; the shell answers with the older of it and its
+own, so a newer applet on an older shell stays at 2). Version 3 adds the
+launcher's commands: the ones the manifest declares
+([applet.json](#appletjson), `commands`), found in the launcher before the
+applet has ever run, at `dashi://applet/<applet id>/<command id>`
+(docs/actions.md). The shell's side is `src/applets/commands.ts`.
+
+```
+shell → applet  {"type":"run","seq":7,"command":"now","args":{}}                        run it
+                {"type":"run","seq":8,"command":"city","args":{},"query":"lis"}         a pick command's rows for what is typed
+                {"type":"run","seq":9,"command":"city","args":{},"item":"lisbon"}       the row chosen
+applet → shell  {"type":"result","seq":7,"text":"21° and clear"}                        a line: the launcher's top row, Return copies it
+                {"type":"result","seq":7,"copy":"21°"}                                  put on the clipboard ("Copied")
+                {"type":"result","seq":7,"open":"https://example.com/forecast"}         opened: https://, or a dashi:// address (as a link)
+                {"type":"result","seq":7,"error":"No signal"}                           why not, said in the field
+                {"type":"items","seq":8,"rows":[{"id":"lisbon","title":"Lisbon, now 19°","detail":"clear"}]}
+                {"type":"view","seq":10,"height":160}                                   a view command draws its own answer, this tall
+shell → applet  {"type":"view","seq":10,"x":416,"y":203,"width":608,"height":160,"output":"eDP-1","namespace":"dashi.applet.dev.example.weather.view"}
+either way      {"type":"dismiss","seq":10}                                             the view closed
+```
+
+Every run has its own `seq`; an answer to a run the shell didn't send on
+that connection is dropped. A result is one of `text` (one line, 2000
+characters), `copy` (16 KB), `open`, or `error`. `items` carries up to 20
+rows (`id`, `title` up to 80, `detail` up to 80), drawn by the shell:
+never applet pixels in the list. A run unanswered after 10 s (rows: 5 s)
+is given up.
+
+- **instant** (`"mode":"instant"`): Return runs it; its result is shown,
+  copied, or opened.
+- **pick**: Return on the command puts a chip with its title in the field
+  ("Search Weather"); every keystroke is a `run` with the `query`, and its
+  `items` are the rows. Like every source outside the shell, it has 80 ms
+  (`src/launcher/budget.ts`): after that the row says "Weather is taking a
+  while…", rows that come late still come, and a command late three times
+  isn't asked again this session ("Weather isn't answering"). Return on a
+  row is a `run` with its `item`. Esc leaves the chip.
+- **view**: the applet answers `view` with a height (40 to 400 points). The
+  launcher holds that much room where its rows were (whole 40-point rows)
+  and says where it is; the applet's own Metal host draws there on a
+  layer-shell surface, granted only while it is shown (as a popover's,
+  `applet-clients`). Esc, or the launcher closing, sends `dismiss`; the
+  applet sends `dismiss` when it closes the view itself.
+
+A command with `args` asks for them in the field first, one at a time (the
+chip names the command, the placeholder the argument), and runs with them
+as `args`. They are checked against the manifest before they are sent.
+
+Commands run in the applet's sandbox, as everything it does. A command's
+row says whose it is ("Weather" at its right), shows the applet's icon or
+a neutral puzzle piece (never Dashi's mark), never ranks above an exact
+match of an app's or a setting's name, and a command titled like one of
+Dashi's own ("System Settings") reads "Weather › System Settings".
+
 ## applet.json
 
 The manifest says who an applet is, when it applies, and what it may touch.
@@ -150,6 +208,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | `categories` | | Up to 3 of `hardware`, `productivity`, `network`, `status`, `media`, `developer`, `utilities`. |
 | `when` | | When it applies: `vendor`, `product`, `board`, `family` (DMI's `sys_vendor`, `product_name`, `board_name`, `product_family`; text or a list, a trailing `*` is a prefix), `laptop` (true or false), `hardware` (names dashi-hardware must report). Every condition given must hold. The store says "fits this machine" from it. |
 | `permissions` | | What it may touch (below). None is the default. |
+| `commands` | | What it adds to the launcher, up to 16: `{id, title, keywords?, args?, mode}`. `id` as an applet's; `title` 60 characters, sentence case; `keywords` up to 12; `args` up to 4 of `{name, type, title?, required?}` (`name` lowercase, `type` one of `string`, `number`, `boolean`); `mode` one of `instant`, `pick`, `view` ([Version 3](#version-3-commands)). `src/commands.ts` parses them. |
 
 ### Permissions
 
@@ -175,11 +234,14 @@ caller's permissions (a later change there).
 ### The consent sheet
 
 Before an applet runs for the first time, and after an update that asks for
-more, Dashi lists its permissions in those words, and what it can't do ("It
+more, Dashi lists its permissions in those words, what it adds to the
+launcher ("Adds 3 commands to the launcher"), and what it can't do ("It
 can't read your files or use the network."), once
 (`src/applets/consent-sheet.tsx`). The Applet Store asks as it adds one; the
 shell asks for one that arrived another way (`dashi-applet install`). The
-answer is kept in its `install.json`.
+answer is kept in its `install.json`: the permissions' names, and
+`launcher.commands` for its commands (`consentNames`, `src/installed.ts`),
+so an applet without permissions that adds commands is asked too.
 
 ## The sandbox
 
@@ -189,6 +251,9 @@ package's files and `install.json`) and keeps its own files in
 (`src/applets/launcher.ts`) runs each one that is allowed, not disabled, and
 for this Dashi, as a systemd user unit (`dashi-applet-<id>.service`) outside
 the shell's own processes, so the compositor never takes it for the shell.
+The unit is held to `CPUQuota=50%`, `MemoryMax=768M` (with its Metal host),
+and `Nice=10` (`UNIT_LIMITS`), so one that runs away while it answers the
+launcher can't starve the shell or the compositor.
 The unit runs `bin/dashi-applet-run.ts`, which starts the D-Bus proxy if the
 permissions need one, then bubblewrap with the arguments
 `src/applets/sandbox.ts` plans:
@@ -240,7 +305,38 @@ export default defineApplet({
 
 It finds `applet.json` beside the running file (or `DASHI_APPLET_MANIFEST`),
 says hello with it, and sends the whole applet again whenever `set` changes
-the state. Underneath is `AppletsClient` (`src/client.ts`): one connection,
+the state.
+
+Its `commands` answer the manifest's, by id: `run` for an instant one (a
+string is a line; `{copy}`, `{open}`, or `{error}` otherwise), `items` and
+`choose` for a pick one, `view` for one that draws its answer itself. What
+`dashi-applet new weather` writes has one of each:
+
+```tsx
+commands: {
+  now: { run: (_args, applet) => `${shown(applet.state)} and clear` },
+  city: {
+    items: (query) => CITIES.filter((city) => city.name.toLowerCase().startsWith(query.toLowerCase()))
+      .map((city) => ({ id: city.id, title: `${city.name}, now ${city.celsius}°`, detail: city.sky })),
+    choose: (item) => ({ copy: describe(item) }),
+  },
+  glance: { view: { height: 160, component: Glance } },
+},
+```
+
+with, in applet.json:
+
+```json
+"commands": [
+  { "id": "now", "title": "Weather now", "keywords": ["temperature"], "mode": "instant" },
+  { "id": "city", "title": "Weather in a city", "keywords": ["forecast"], "mode": "pick" },
+  { "id": "glance", "title": "Weather at a glance", "keywords": ["today"], "mode": "view" }
+]
+```
+
+Underneath, `AppletsClient.onCommands` hears `run`, and `result`, `items`,
+`requestView`, and `dismissView` answer it, once the shell's welcome says
+protocol 3. Underneath is `AppletsClient` (`src/client.ts`): one connection,
 each applet sent whole on change, reconnecting when the shell restarts (and
 saying hello again; an open popover is dismissed), typed messages both ways.
 The app kit's `appletsClient()` (`packages/shell/apps/kit/applet.ts`) is the
@@ -287,7 +383,7 @@ for line in sock.makefile():
 `dashi-applet` (`packages/applet/src/cli/main.ts`):
 
 ```sh
-dashi-applet new weather        # weather/: applet.json, package.json, src/main.tsx (a glyph, a menu, a popover)
+dashi-applet new weather        # weather/: applet.json, package.json, src/main.tsx (a glyph, a menu, a popover, three launcher commands)
 cd weather && bun install
 bun run dev                     # in the menu bar with a "dev" badge; the message log; reload on save
 bun run dev -- --vm             # the same in Dashi's VM (vm/vm ssh; the VM sees ~/Developer at /mnt/developer)
@@ -301,12 +397,20 @@ code). The log reads like this:
 
 ```
   18:40:01 hello as dev.example.weather 0.1.0
-  18:40:01 ✓ connected (protocol 2)
+  18:40:01 ✓ connected (protocol 3)
   18:40:01 ✓ “Weather” in the menu bar (dev)
   18:40:02 select refresh
   18:40:09 popover asked 260×170
   18:40:09 popover open 260×170 at 1100,32 on eDP-1
+  18:40:15 run city #4 for “lis”
+  18:40:15 #4 → 1 rows
+  18:40:16 run city #5 chose lisbon
+  18:40:16 #5 → copy: Lisbon: 19°, clear
 ```
+
+An applet in development that isn't installed has its commands in the
+launcher while `dev` runs (from its own applet.json, without a consent
+sheet: it is the developer's own code).
 
 `publish` packs and checks the signature against `author.pub` in the
 applet's folder, needs a clean git tree with an `origin`, and in a checkout
@@ -420,3 +524,7 @@ checks them; signing with real keys is the `minisign` tool's).
 - XEmbed tray icons (old X11 apps) are not shown; StatusNotifierItem only.
 - Control Center tiles from applets (SDK C) wait for Control Center's room rules.
 - The D-Bus proxy filters hardware calls by method, not by knob (above).
+- A command isn't an MCP tool for agents yet (`agents: true` in a command,
+  proposed): applets' commands are the person's.
+- A view takes no keys: the launcher keeps the keyboard (Esc goes back); it
+  is for showing, and its pointer.
