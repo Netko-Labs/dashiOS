@@ -252,7 +252,8 @@ export function useExtensions(input: ExtensionsInput, measures: { width: number;
       return true;
     },
     shown(outcome) {
-      if (!outcome.ok || !outcome.show) return false;
+      // Only the search shows them (a link's action, run from its own list, closes as any run does).
+      if (!outcome.ok || !outcome.show || !latest.current.searching) return false;
       const show = outcome.show;
       const now = scopeNow.current;
       const { from, icon } = now?.kind === "pick" ? { from: now.from, icon: now.icon } : fromOf(last.current);
