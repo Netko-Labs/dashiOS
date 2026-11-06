@@ -140,8 +140,13 @@ export class GraphicsController {
     void this.decide();
   }
 
-  /** Quits one holder (its pids, exactly), or all of them. */
+  /**
+   * Quits one holder (its pids, exactly), or all of them. Who holds the card
+   * is read again first: a pid from the last look may be another process's now.
+   */
   quit(name?: string): void {
+    const card = this.deps.card;
+    if (!card) return;
     const signal =
       this.deps.signal ??
       ((pid: number) => {
@@ -151,7 +156,8 @@ export class GraphicsController {
           // Gone already.
         }
       });
-    for (const holder of this.snapshot.holders) if (name === undefined || holder.name === name) for (const pid of holder.pids) signal(pid);
+    const now = groupHolders(this.holdingNow(card), this.nameOf, [], null);
+    for (const holder of now) if (name === undefined || holder.name === name) for (const pid of holder.pids) signal(pid);
     setTimeout(() => void this.refresh(), 1500);
   }
 
@@ -159,13 +165,19 @@ export class GraphicsController {
   async refresh(): Promise<void> {
     const card = this.deps.card;
     if (!card) return;
-    const processes = holdingProcesses(this.deps.processes?.() ?? readProcessFds(), card.nodes);
+    const processes = this.holdingNow(card);
     const unseen = this.deps.backend && this.snapshot.cards.length > 0 ? await this.unseenHolders() : [];
-    const appOf = this.deps.appOf ?? (() => null);
-    const holders = groupHolders(processes, (pid, comm) => appOf(pid) ?? comm, unseen, this.deps.cardWatts ? this.deps.cardWatts() : readCardWatts(card.pci));
+    const holders = groupHolders(processes, this.nameOf, unseen, this.deps.cardWatts ? this.deps.cardWatts() : readCardWatts(card.pci));
     this.publish({ holders, power: this.deps.power?.() ?? readCardPower(card.pci) });
     await this.decide();
   }
+
+  private holdingNow(card: GraphicsCard): ProcessFds[] {
+    return holdingProcesses(this.deps.processes?.() ?? readProcessFds(), card.nodes);
+  }
+
+  /** A holder's name: its app's, from its windows; else the process name. */
+  private readonly nameOf = (pid: number, comm: string): string => this.deps.appOf?.(pid) ?? comm;
 
   private async unseenHolders(): Promise<string[]> {
     const backend = this.deps.backend;
