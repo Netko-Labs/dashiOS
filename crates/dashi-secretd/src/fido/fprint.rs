@@ -13,18 +13,28 @@ const SERVICE: &str = "net.reactivated.Fprint";
 /// Scans before giving up on the finger.
 const TRIES: usize = 3;
 
+/// `uid`'s login name. getpwuid_r, with a buffer of our own: verify runs on
+/// several threads at once, and getpwuid's static storage isn't safe there.
 fn user_name(uid: u32) -> Option<String> {
-    // SAFETY: getpwuid returns a pointer to static storage or null; it is read at once.
-    unsafe {
-        let entry = libc::getpwuid(uid);
-        if entry.is_null() {
+    let mut size = 1024;
+    loop {
+        let mut buffer = vec![0 as libc::c_char; size];
+        // SAFETY: an all-zero passwd is valid (null pointers, zero ids); it is only written by getpwuid_r.
+        let mut entry: libc::passwd = unsafe { std::mem::zeroed() };
+        let mut found: *mut libc::passwd = std::ptr::null_mut();
+        // SAFETY: every pointer is to storage we own for the call, `size` is the buffer's length.
+        let error =
+            unsafe { libc::getpwuid_r(uid, &mut entry, buffer.as_mut_ptr(), size, &mut found) };
+        if error == libc::ERANGE && size < 1 << 20 {
+            size *= 2;
+            continue;
+        }
+        if error != 0 || found.is_null() || entry.pw_name.is_null() {
             return None;
         }
-        Some(
-            CStr::from_ptr((*entry).pw_name)
-                .to_string_lossy()
-                .into_owned(),
-        )
+        // SAFETY: pw_name points into `buffer`, still alive, NUL-terminated by getpwuid_r.
+        let name = unsafe { CStr::from_ptr(entry.pw_name) };
+        return Some(name.to_string_lossy().into_owned());
     }
 }
 
@@ -66,4 +76,26 @@ pub fn verify(uid: u32) -> bool {
         Ok(matched)
     };
     run().unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn names_come_from_the_password_database_on_many_threads() {
+        let threads: Vec<_> = (0..8)
+            .map(|_| std::thread::spawn(|| (0..50).map(|_| user_name(0)).collect::<Vec<_>>()))
+            .collect();
+        for thread in threads {
+            assert!(
+                thread
+                    .join()
+                    .unwrap()
+                    .iter()
+                    .all(|n| n.as_deref() == Some("root"))
+            );
+        }
+        assert_eq!(user_name(u32::MAX - 1), None);
+    }
 }
