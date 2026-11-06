@@ -205,22 +205,23 @@
     <p class="lede">Tap ❖ today and you get a box that finds app names. Dashi owns the compositor, every window, every app's menus, every setting, the vault and an agent stack with typed tools, and the launcher uses none of it. This page is the plan to change that: not a copy of Raycast, but the launcher only an OS can build.</p>
 
     <div class="callout open"><div>◆</div><p>Nothing here is <span class="pill done">picked</span> yet. Cards outlined in green are the recommendation; "Today" marks what Dashi does now. On 2026-11-05 five reviewers each roasted the launcher from one point of view, with the code (<code>release/0.4.0</code> at <code>7e49821</code>) and VM screenshots (light mode, 1646 × 937): a <b>keyboard-first power user</b>, a <b>visual and interaction designer</b>, a <b>platform and extension architect</b>, an <b>AI and agent-native product designer</b>, and a <b>newcomer, accessibility and copy</b> reviewer. Their reports are in <a href="launcher-roast/power-user.md"><code>docs/launcher-roast/</code></a>; every finding cites <code>path:line</code> under <code>packages/shell/src/</code> unless it says otherwise. Picks to make are at <a href="#what-i-need-from-you">the end</a>.</p></div>
+    <div class="callout"><div>✓</div><p>In 0.4.0 all three waves are <span class="pill done">Done</span> (merges <code>2b92235</code>, <code>b47c0ba</code>, <code>1edf28f</code>, <code>23ec63c</code>, <code>fc27ed9</code>, then fixes up to <code>1f59d0b</code>). What was left out is marked <span class="pill wip">Deferred</span>.</p></div>
 
     <h2 class="notoc">What's here</h2>
     <table>
       <tr><th>Topic</th><th>In short</th><th>Recommendation</th></tr>
-      <tr><td><a href="#the-roast">The roast</a></td><td>Five voices, then 22 findings merged, including six real bugs.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#the-roast">The roast</a></td><td>Five voices, then 22 findings merged, including six real bugs.</td><td><span class="pill done">Done</span></td></tr>
       <tr><td><a href="#where-raycast-wins">Raycast and Dashi</a></td><td>What Raycast does better today, and what only Dashi can do.</td><td></td></tr>
-      <tr><td><a href="#one-registry">One registry</a></td><td>Every action, setting and menu item as a command at a <code>dashi://</code> address, shared with agents.</td><td>One registry</td></tr>
-      <tr><td><a href="#ranking-and-keys">Ranking and keys</a></td><td>Fuzzy, acronym and learned ranking; ❖K actions; aliases and hotkeys; results that switch.</td><td>Learns; ❖K in place</td></tr>
-      <tr><td><a href="#answers-in-the-row">Answers in the row</a></td><td>Switches for Wi-Fi and Dark Mode, answers you can copy, live window thumbnails.</td><td>Controls in the row</td></tr>
-      <tr><td><a href="#agents">Agents</a></td><td>Local first, Ask only for sentences or ⇥, a plan before acting, a "Now" section.</td><td>Ask row and plan</td></tr>
-      <tr><td><a href="#clipboard-and-snippets">Clipboard and snippets</a></td><td>History from the compositor, with secrets blank and password managers left out.</td><td>In the launcher, ⌥❖V</td></tr>
-      <tr><td><a href="#the-look">The look</a></td><td>A selection that passes AA, glyph per pane, kind labels, motion, an empty state that teaches.</td><td>Wash and bar</td></tr>
-      <tr><td><a href="#newcomers-and-access">Newcomers and access</a></td><td>Taught in Setup Assistant and the menu bar; your language and spelling; a screen reader; text size.</td><td>Teach it on day one</td></tr>
-      <tr><td><a href="#speed">Speed</a></td><td>A resident launcher, a cached index, a typing budget.</td><td>Resident, &lt; 50 ms</td></tr>
+      <tr><td><a href="#one-registry">One registry</a></td><td>Every action, setting and menu item as a command at a <code>dashi://</code> address, shared with agents.</td><td>One registry <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#ranking-and-keys">Ranking and keys</a></td><td>Fuzzy, acronym and learned ranking; ❖K actions; aliases and hotkeys; results that switch.</td><td>Learns; ❖K in place <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#answers-in-the-row">Answers in the row</a></td><td>Switches for Wi-Fi and Dark Mode, answers you can copy, live window thumbnails.</td><td>Controls in the row <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#agents">Agents</a></td><td>Local first, Ask only for sentences or ⇥, a plan before acting, a "Now" section.</td><td>Ask row and plan <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#clipboard-and-snippets">Clipboard and snippets</a></td><td>History from the compositor, with secrets blank and password managers left out.</td><td>In the launcher, ⌥❖V <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#the-look">The look</a></td><td>A selection that passes AA, glyph per pane, kind labels, motion, an empty state that teaches.</td><td>Wash and bar <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#newcomers-and-access">Newcomers and access</a></td><td>Taught in Setup Assistant and the menu bar; your language and spelling; a screen reader; text size.</td><td>Teach it on day one <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#speed">Speed</a></td><td>A resident launcher, a cached index, a typing budget.</td><td>Resident, &lt; 50 ms <span class="pill done">Done</span></td></tr>
       <tr><td><a href="#the-beat-raycast-move">The move</a></td><td>The pitch in one picture.</td><td></td></tr>
-      <tr><td><a href="#order-of-work">Order of work</a></td><td>Bugs first; then registry, ranking and actions; then agents and extensions.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#order-of-work">Order of work</a></td><td>Bugs first; then registry, ranking and actions; then agents and extensions.</td><td><span class="pill done">Done</span></td></tr>
     </table>
 
     <!-- ════════════════════════════════════════════════════════════ -->
@@ -314,7 +315,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="one-registry" data-toc="One registry">One registry: everything is a command <span class="pill open">open</span></h2>
+    <h2 id="one-registry" data-toc="One registry">One registry: everything is a command <span class="pill done">Done</span></h2>
     <p>Today the launcher takes three props (<code>entries</code>, <code>recent</code>, <code>findFiles</code>) and draws them. Every other list of things the OS can do lives somewhere else: the keymap's closed <code>switch</code> of bind names, the menus' <code>MenuAction</code> union, and the agents' <code>TOOLS</code>, where one capability is written up to four times or ends up in only one place.</p>
     <div class="props">
       <div class="prop today">
@@ -371,7 +372,7 @@
           <ul class="pc"><li class="y">Results from existing apps</li><li class="y">A standard</li><li class="n">Results only: no arguments, no inline answer</li><li class="n">No consent, no address</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: C, with D's read side as one more source later.</b> One registry is what makes everything else on this page cheap: once Dark Mode is an action, the launcher's switch, a hotkey, a menu row and an agent's call are the same thing. B saves a month and costs the whole idea. D is worth reading from, behind the registry, but it can't carry arguments or consent, so it can't be the model.</p>
+    <p class="verdict"><b>Recommendation: C, with D's read side as one more source later.</b> <small>Done in 0.4.0: C (<code>78c3970</code>, <code>608b640</code>, <code>63628c2</code>), and D's read side as GNOME search providers (<code>9408a7a</code>).</small> One registry is what makes everything else on this page cheap: once Dark Mode is an action, the launcher's switch, a hotkey, a menu row and an agent's call are the same thing. B saves a month and costs the whole idea. D is worth reading from, behind the registry, but it can't carry arguments or consent, so it can't be the model.</p>
     <div class="spec">
       <h5>An action</h5>
       <ul>
@@ -406,7 +407,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="ranking-and-keys" data-toc="Ranking and keys">Ranking and keys <span class="pill open">open</span></h2>
+    <h2 id="ranking-and-keys" data-toc="Ranking and keys">Ranking and keys <span class="pill done">Done</span></h2>
     <p>Today <code>search()</code> scores six tiers (exact name, exact keyword, name prefix, word start, anywhere, keyword prefix), breaks ties alphabetically and takes no history (<code>entries.ts:254-273</code>). Every pane answers to "settings", so the word floods the list.</p>
     <h3>How results are ranked</h3>
     <div class="props">
@@ -460,7 +461,7 @@
           <ul class="pc"><li class="y">Every taste served</li><li class="n">Settings for something that should just be right</li><li class="n">More to test</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> Match quality decides first, history breaks ties and promotes what you chose for this exact query, and a bare substring inside a word counts only from four letters on. Two keyword fixes ship with it: "settings", "preferences" and "control panel" are an exact intent for System Settings, and a pane matches "settings" only when nothing else does. Setup Assistant answers to "setup", "welcome" and "first run" only. History stays on the machine (a 0600 file, like <code>recents.json</code>), and every row's action list has Reset Ranking. Not C: use without match quality is how "ter" finds Battery. Not D: if B is right, a setting only hides that it is.</p>
+    <p class="verdict"><b>Recommendation: B.</b> Match quality decides first, history breaks ties and promotes what you chose for this exact query, and a bare substring inside a word counts only from four letters on. Two keyword fixes ship with it: "settings", "preferences" and "control panel" are an exact intent for System Settings, and a pane matches "settings" only when nothing else does. Setup Assistant answers to "setup", "welcome" and "first run" only. History stays on the machine (a 0600 file, like <code>recents.json</code>), and every row's action list has Reset Ranking. Not C: use without match quality is how "ter" finds Battery. Not D: if B is right, a setting only hides that it is. <small>Done in 0.4.0 (<code>00f2bbd</code>, <code>315ab29</code>, <code>95ad7d1</code>).</small></p>
 
     <h3>Actions on a result</h3>
     <div class="props">
@@ -515,7 +516,7 @@
           <ul class="pc"><li class="y">Familiar from every desktop</li><li class="n">Keyboard users lose them</li><li class="n">No shortcuts shown</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B, and right-click opens the same list.</b> The action list reuses the field row as its only chrome, so it costs no vertical space. Destructive rows (Quit, Move to Trash, Close Window) are ume and confirm when work could be lost. Not C: a footer is the second bar Dashi refuses everywhere else.</p>
+    <p class="verdict"><b>Recommendation: B, and right-click opens the same list.</b> <small>Done in 0.4.0 (<code>63628c2</code>).</small> The action list reuses the field row as its only chrome, so it costs no vertical space. Destructive rows (Quit, Move to Trash, Close Window) are ume and confirm when work could be lost. Not C: a footer is the second bar Dashi refuses everywhere else.</p>
 
     <h3>Results that switch</h3>
     <div class="props">
@@ -553,7 +554,7 @@
           <ul class="pc"><li class="y">Each surface stays small</li><li class="n">"Where was that window?" has two answers</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B</b>, reusing the switcher's model (<code>switcher/model.ts</code>) so both surfaces name windows the same way. Titles come from other apps: they are shown, never obeyed, and never ranked above an exact app name.</p>
+    <p class="verdict"><b>Recommendation: B</b>, reusing the switcher's model (<code>switcher/model.ts</code>) so both surfaces name windows the same way. Titles come from other apps: they are shown, never obeyed, and never ranked above an exact app name. <small>Done in 0.4.0 (<code>63628c2</code>).</small></p>
 
     <div class="spec">
       <h5>The keyboard contract</h5>
@@ -578,7 +579,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="answers-in-the-row" data-toc="Answers in the row">Answers in the row <span class="pill open">open</span></h2>
+    <h2 id="answers-in-the-row" data-toc="Answers in the row">Answers in the row <span class="pill done">Done</span></h2>
     <p>Half the "settings" searches are "turn X on". Today "wif" gives a gear called Network, and Enter opens a pane (<code>wifi.png</code>). The shell owns that switch; the row can be it.</p>
     <h3>Settings with state</h3>
     <div class="props">
@@ -626,7 +627,7 @@
           <ul class="pc"><li class="y">Room for detail</li><li class="n">Twice as wide, every time</li><li class="n">Another launcher's layout</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B, with C as what Enter does.</b> Space acts in the row; Enter goes to the place, at the exact row. The controls are <code>@dashi/ui</code>'s (Switch moves out of <code>wifi/switch.tsx</code>) and read the same stores as Control Center, so the two never disagree. Not D: it doubles the panel's width for detail that fits on one line.</p>
+    <p class="verdict"><b>Recommendation: B, with C as what Enter does.</b> <small>Done in 0.4.0 (<code>63628c2</code>, <code>ab303c6</code>, <code>3e18771</code>).</small> Space acts in the row; Enter goes to the place, at the exact row. The controls are <code>@dashi/ui</code>'s (Switch moves out of <code>wifi/switch.tsx</code>) and read the same stores as Control Center, so the two never disagree. Not D: it doubles the panel's width for detail that fits on one line.</p>
 
     <h3>Answers and windows</h3>
     <div class="props">
@@ -664,10 +665,10 @@
           <ul class="pc"><li class="y">Previews with no second column</li><li class="y">No capture permission dance</li><li class="n">Compositor thumbnails to build</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B and C.</b> B is small and fixes bug 2 on the way; C follows once windows are results. Copying goes through the data-control the compositor already serves.</p>
+    <p class="verdict"><b>Recommendation: B and C.</b> <small>Done in 0.4.0: B (<code>916894f</code>, <code>f546d20</code>) and C (<code>159e041</code>).</small> B is small and fixes bug 2 on the way; C follows once windows are results. Copying goes through the data-control the compositor already serves.</p>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="agents" data-toc="Agents">Agents in the launcher <span class="pill open">open</span></h2>
+    <h2 id="agents" data-toc="Agents">Agents in the launcher <span class="pill done">Done</span></h2>
     <p>Dashi's agent stack is serious work: a yes counts only when the person pressed it, secrets never reach the model, password fields are blank in captures, agents run in a sandbox. It is reachable only from a terminal (<code>dashi-agent claude</code>), and the launcher doesn't know an agent exists. The rule from the agents review stands over everything here: <b>no model sits between "ter" and Terminal</b>.</p>
     <h3>Asking</h3>
     <div class="props">
@@ -711,7 +712,7 @@
           <ul class="pc"><li class="y">Understands anything</li><li class="n">Slow, costly, never offline</li><li class="n">Sends everything you type</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> Most "AI commands" people need are verbs the registry already has, and those run as the person, in kombu, logged as "you". The Ask row is shiso (its glyph and text only, CO-3) and says where the words go: "Claude · Anthropic, your key" or "Local · stays on this computer". Not C or D: talking is not doing, and D puts a network between you and Terminal.</p>
+    <p class="verdict"><b>Recommendation: B.</b> Most "AI commands" people need are verbs the registry already has, and those run as the person, in kombu, logged as "you". The Ask row is shiso (its glyph and text only, CO-3) and says where the words go: "Claude · Anthropic, your key" or "Local · stays on this computer". Not C or D: talking is not doing, and D puts a network between you and Terminal. <small>Done in 0.4.0 (<code>e7c505d</code>, <code>850a894</code>, <code>df303c5</code>).</small></p>
 
     <h3>A plan before acting</h3>
     <div class="props">
@@ -747,7 +748,7 @@
           <ul class="pc"><li class="y">Fastest</li><li class="n">Not everything can be undone</li><li class="n">You find out after</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> Running the plan is "Allow Once" for those calls and those arguments only; the press is checked with input origin, like a sheet's. After Return each number becomes a spinner, then a check in moss, or "Not allowed" in broth with "Allow once" right there. Settings changes keep an Undo (C's good part) in the history.</p>
+    <p class="verdict"><b>Recommendation: B.</b> Running the plan is "Allow Once" for those calls and those arguments only; the press is checked with input origin, like a sheet's. After Return each number becomes a spinner, then a check in moss, or "Not allowed" in broth with "Allow once" right there. Settings changes keep an Undo (C's good part) in the history. <small>Done in 0.4.0 (<code>3069424</code>, <code>e7c505d</code>).</small></p>
 
     <h3>What is acting now</h3>
     <div class="props">
@@ -777,13 +778,13 @@
           <ul class="pc"><li class="y">❖ is the place to check</li><li class="y">The store already exists</li><li class="n">A follow-up channel to build</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> The selection on a task row is still kombu, because selecting is the person's; only the dot is shiso.</p>
+    <p class="verdict"><b>Recommendation: B.</b> The selection on a task row is still kombu, because selecting is the person's; only the dot is shiso. <small>Done in 0.4.0 (<code>e7c505d</code>).</small></p>
     <div class="spec">
       <h5>Who answers, and what leaves the machine</h5>
       <ul>
         <li><b>Who:</b> Settings › Agents gets "Answer requests with: Claude Code / Codex / Local model / None". The launcher starts it headless through <code>dashi-agent</code> in the sandbox, wired to <code>dashi-mcp</code>, one task per Ask. "None" hides the Ask row entirely.</li>
         <li><b>Keys in the vault:</b> build "Tokens that stay home" (<code>docs/secrets.md:410-427</code>): a model key is a vault token item, swapped in by the sandbox's proxy only for that provider's host. Settings says "Key: in your vault. Claude never sees it."</li>
-        <li><b>Nothing leaves unless asked:</b> only the typed request is sent. Context comes only from chips the person adds with ⇥ ("+ this window", "+ selection"). No model is called while typing, ever. The empty state can say "Searches this computer only", and it is true.</li>
+        <li><b>Nothing leaves unless asked:</b> only the typed request is sent. Context comes only from chips the person adds with ⇥ ("+ this window", "+ selection"). <span class="pill wip">Deferred</span> the chips: today only the typed request is sent. No model is called while typing, ever. The empty state can say "Searches this computer only", and it is true.</li>
         <li><b>Shiso only for agents:</b> the Ask glyph and text, the plan's scope chips, the Now dots. Never a selection, never a category.</li>
         <li><b>History you can read:</b> "history" in the launcher and a list in Settings › Agents read <code>activity.jsonl</code>, grouped by task, with Undo for settings changes.</li>
         <li><b>Failures are rows:</b> no agent set up → "Set up an agent…"; no answer → "Didn't answer · Retry"; a refused scope → "Not allowed · Allow once".</li>
@@ -791,7 +792,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="clipboard-and-snippets" data-toc="Clipboard and snippets">Clipboard history and snippets <span class="pill open">open</span></h2>
+    <h2 id="clipboard-and-snippets" data-toc="Clipboard and snippets">Clipboard history and snippets <span class="pill done">Done</span></h2>
     <p>The compositor already serves ext data-control "for clipboard history, wl-copy: the shell's processes only" (<code>crates/dashi-comp/src/state.rs:145</code>), and nothing in the shell uses it. No other launcher sits at the layer that owns the clipboard and knows which field is a password.</p>
     <div class="props">
       <div class="prop today">
@@ -837,7 +838,7 @@
           <ul class="pc"><li class="y">Works in every app</li><li class="y">Secret snippets filled from the vault</li><li class="n">L: compositor input work</li><li class="n">Must never fire by accident</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B now, D after it.</b> ⌥❖V sits in the system's reserved <code>super+alt</code> space (<code>keymap.ts:111</code>), so no app loses a key. Not C: it splits one feature over two surfaces. Snippets are managed from the launcher ("snippet" lists and adds them).</p>
+    <p class="verdict"><b>Recommendation: B now, D after it.</b> <small>Done in 0.4.0: B and D (<code>d548a30</code>).</small> ⌥❖V sits in the system's reserved <code>super+alt</code> space (<code>keymap.ts:111</code>), so no app loses a key. Not C: it splits one feature over two surfaces. Snippets are managed from the launcher ("snippet" lists and adds them).</p>
     <div class="spec">
       <h5>Privacy rules, all on by default</h5>
       <ul>
@@ -850,7 +851,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="the-look" data-toc="The look">The look <span class="pill open">open</span></h2>
+    <h2 id="the-look" data-toc="The look">The look <span class="pill done">Done</span></h2>
     <p>The panel is 620 px of pale glass with a 44 px saturated slab for the selection, the same gray gear on every pane, no kind labels, and no motion: it snaps between 115 and 379 px as you type. The aim is calm, legible and unmistakably Dashi.</p>
     <h3>The selection</h3>
     <div class="props">
@@ -898,7 +899,7 @@
           <ul class="pc"><li class="y">Calm</li><li class="n">Reads as keyboard focus</li><li class="n">Weak on glass</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B</b>, as <code>selectionWash</code> and <code>onSelection</code> tokens in <code>@dashi/ui</code>'s palette, with the inline hex gone (CO-5). If the full fill is wanted for other lists, C's token is the fallback everywhere a slab stays.</p>
+    <p class="verdict"><b>Recommendation: B</b>, as <code>selectionWash</code> and <code>onSelection</code> tokens in <code>@dashi/ui</code>'s palette, with the inline hex gone (CO-5). If the full fill is wanted for other lists, C's token is the fallback everywhere a slab stays. <small>Done in 0.4.0 (<code>1c3308e</code>; every list since <code>653d8aa</code>).</small></p>
 
     <h3>Rows that say what they are</h3>
     <div class="props">
@@ -940,7 +941,7 @@
           <ul class="pc"><li class="y">Room for a sentence</li><li class="n">Fewer rows fit</li><li class="n">Against VS-2's one line</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> The glyphs are the ones Settings' sidebar already draws (<code>settings-app/panes.ts:47-66</code>), on ink tiles, not tinted (CO-2, CO-4). The Agents pane's glyph stays ink here too: shiso is for an agent acting, not a pane about agents.</p>
+    <p class="verdict"><b>Recommendation: B.</b> The glyphs are the ones Settings' sidebar already draws (<code>settings-app/panes.ts:47-66</code>), on ink tiles, not tinted (CO-2, CO-4). The Agents pane's glyph stays ink here too: shiso is for an agent acting, not a pane about agents. <small>Done in 0.4.0 (<code>916894f</code>; Dashi's commands <code>055357d</code>, <code>7f4f074</code>).</small></p>
 
     <h3>The empty state</h3>
     <div class="props">
@@ -976,13 +977,13 @@
           <ul class="pc"><li class="y">Warm</li><li class="n">200 times a day</li><li class="n">Talks instead of showing</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> The placeholder renders while the field has focus (a Metal fix, or muted Text). Kombu belongs to first launch and empty documents, not to a surface opened hundreds of times a day.</p>
+    <p class="verdict"><b>Recommendation: B.</b> The placeholder renders while the field has focus (a Metal fix, or muted Text). Kombu belongs to first launch and empty documents, not to a surface opened hundreds of times a day. <small>Done in 0.4.0 (<code>916894f</code>).</small></p>
     <div class="spec">
       <h5>Motion, on Dashi's curves</h5>
       <ul>
-        <li>Open: a 160 ms fade from 0.96 scale, ease-out cubic, with the field taking keys on the first frame. Close: 120 ms fade.</li>
+        <li>Open: a 160 ms fade from 0.96 scale, ease-out cubic, with the field taking keys on the first frame. Close: 120 ms fade. <span class="pill done">Done</span> the open fade and the height (<code>d7421ba</code>); <span class="pill wip">Deferred</span> the close fade.</li>
         <li>Height changes animate over 120 ms; slow rows fade into their reserved slots and never push rows above them.</li>
-        <li>Opening a result: its icon flies to its Dock tile or window, the same 300 ms flight as minimize (MO-1), so you see where it went.</li>
+        <li>Opening a result: its icon flies to its Dock tile or window, the same 300 ms flight as minimize (MO-1), so you see where it went. <span class="pill wip">Deferred</span></li>
         <li>All of it is native opacity and transform in Metal and the compositor, never React on a timer (MO-3), and all of it stops with Reduce Motion (<code>appearance.reduceMotion</code>).</li>
       </ul>
       <h5>Measures</h5>
@@ -994,7 +995,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="newcomers-and-access" data-toc="Newcomers and access">Newcomers and access <span class="pill open">open</span></h2>
+    <h2 id="newcomers-and-access" data-toc="Newcomers and access">Newcomers and access <span class="pill done">Done</span></h2>
     <p>Someone who switched this week has never heard the word "launcher". Today nothing tells them it exists, it speaks only English, it forgives no typo, and a screen reader hears nothing.</p>
     <div class="props">
       <div class="prop today">
@@ -1033,7 +1034,7 @@
           <ul class="pc"><li class="y">Thorough</li><li class="n">Everyone skips it</li><li class="n">Not calm (it asks for attention)</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B</b>, plus the teaching empty state above, which does the rest. Not C: the menu bar is full of things that earn their place every minute. Not D: a tour is the opposite of calm.</p>
+    <p class="verdict"><b>Recommendation: B</b>, plus the teaching empty state above, which does the rest. Not C: the menu bar is full of things that earn their place every minute. Not D: a tour is the opposite of calm. <small>Done in 0.4.0 (<code>66d2378</code>, <code>916894f</code>).</small></p>
     <div class="spec">
       <h5>Your language, your spelling, your words</h5>
       <ul>
@@ -1052,7 +1053,7 @@
     </div>
 
     <!-- ════════════════════════════════════════════════════════════ -->
-    <h2 id="speed" data-toc="Speed">Speed <span class="pill open">open</span></h2>
+    <h2 id="speed" data-toc="Speed">Speed <span class="pill done">Done</span></h2>
     <p>A launcher used 200 times a day must open the same, fast, every time. Today each tap runs <code>loadEntries()</code> on the shell's loop (every XDG <code>applications</code> directory, every icon size), asks the compositor for the screen, and takes the one warm Metal host, whose replacement starts 1.5 s later.</p>
     <div class="props">
       <div class="prop today">
@@ -1085,7 +1086,7 @@
           <ul class="pc"><li class="y">Off the shell's loop entirely</li><li class="n">A process and a protocol more</li><li class="n">IPC on every keystroke</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: B.</b> The in-memory index is small (hundreds of entries, thousands of menu rows); ranking it takes well under 2 ms, so it can stay in the shell, with only the slow sources outside. C is the step if the registry grows past that, measured first.</p>
+    <p class="verdict"><b>Recommendation: B.</b> The in-memory index is small (hundreds of entries, thousands of menu rows); ranking it takes well under 2 ms, so it can stay in the shell, with only the slow sources outside. C is the step if the registry grows past that, measured first. <small>Done in 0.4.0 (<code>d7421ba</code>, <code>f998ea5</code>, <code>18b3ee4</code>).</small></p>
     <div class="spec">
       <h5>The typing budget</h5>
       <table>
@@ -1133,50 +1134,50 @@
       <p>Every item here is a finding with a test that would have caught it. Together they make today's launcher honest.</p>
       <table>
         <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
-        <tr><td>Selection held by id; reserved file slots; Enter acts on what is highlighted</td><td>#1</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>The answer row is selectable, first, and Enter copies; no file search for pure math</td><td>#2</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>"Nothing called …" with Search files, Did you mean, Find in Software</td><td>#3</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>Each pane's glyph; a kind label on the same line; section heads</td><td>#4</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td><code>selectionWash</code> and <code>onSelection</code> tokens; no inline hex</td><td>#5</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>Index loaded once and kept fresh by inotify; icons resolved once; recents in memory</td><td>#6</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Keyword fixes: "settings" finds System Settings; Setup Assistant demoted; no bare in-word matches under four letters</td><td>#7</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>Esc clears then closes; wrap, ⌃N/⌃P, Page keys; hover moves the selection</td><td>#17</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>Errors as rows and notifications; placeholder follows what search can do</td><td>#19</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>"Search…" in the Dashi menu; a row on Setup Assistant's last page</td><td>#12</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
-        <tr><td>The placeholder renders while focused</td><td>#12</td><td><span class="where">mirin</span> <span class="sz">S</span></td></tr>
-        <tr><td>Tests for ranking, math, recents and row stability</td><td>#22</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Selection held by id; reserved file slots; Enter acts on what is highlighted <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#1</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>The answer row is selectable, first, and Enter copies; no file search for pure math <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#2</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>"Nothing called …" with Search files, Did you mean, Find in Software <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#3</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Each pane's glyph; a kind label on the same line; section heads <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#4</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td><code>selectionWash</code> and <code>onSelection</code> tokens; no inline hex <span class="pill done">Done</span> <small><code>1c3308e</code></small></td><td>#5</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Index loaded once and kept fresh by inotify; icons resolved once; recents in memory <span class="pill done">Done</span> <small><code>916894f</code>, <code>18b3ee4</code></small></td><td>#6</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Keyword fixes: "settings" finds System Settings; Setup Assistant demoted; no bare in-word matches under four letters <span class="pill done">Done</span> <small><code>95ad7d1</code></small></td><td>#7</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Esc clears then closes; wrap, ⌃N/⌃P, Page keys; hover moves the selection <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#17</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Errors as rows and notifications; placeholder follows what search can do <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#19</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>"Search…" in the Dashi menu; a row on Setup Assistant's last page <span class="pill done">Done</span> <small><code>66d2378</code></small></td><td>#12</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>The placeholder renders while focused <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#12</td><td><span class="where">mirin</span> <span class="sz">S</span></td></tr>
+        <tr><td>Tests for ranking, math, recents and row stability <span class="pill done">Done</span> <small><code>916894f</code>, <code>00f2bbd</code></small></td><td>#22</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
       </table>
     </div>
     <div class="wave w2">
       <h3>Wave 2: the registry, ranking and actions</h3>
       <table>
         <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
-        <tr><td>The action registry, from <code>ToolDef</code>; <code>tools/list</code> generated from it; keymap and menus migrated one kind at a time</td><td>#8, #9</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">L</span></td></tr>
-        <tr><td><code>dashi://</code> addresses, the scheme handler, Copy Address, Settings opening at the row</td><td>#9</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Fuzzy, acronym and typo matching; per-query memory; frecency from everywhere; Reset Ranking</td><td>#7</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>The ❖K action list; ❖↩, ⌥↩, ❖C, ⇧↩, ❖1–9</td><td>#10</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Windows as results; Enter switches; ❖↩ new window</td><td>#10</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
-        <tr><td>Menus, <code>[Desktop Action]</code> groups and Dashi's own commands (Lock, Restart…) as rows</td><td>#11</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Controls in the row for settings with state; units, currency, time zones</td><td>#9, #2</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Aliases; per-command keys bound to addresses, reloaded live</td><td>#21</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
-        <tr><td>Localized names and keywords, accent folding</td><td>#14</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Resident launcher on its own host; per-source budgets; one LocalSearch connection</td><td>#6, #20</td><td><span class="where">shell</span> <span class="where">mirin</span> <span class="sz">M</span></td></tr>
-        <tr><td>Motion on Dashi's curves, off with Reduce Motion; Dashi's measures</td><td>#18</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>The action registry, from <code>ToolDef</code>; <code>tools/list</code> generated from it; keymap and menus migrated one kind at a time <span class="pill done">Done</span> <small><code>78c3970</code>, <code>608b640</code></small></td><td>#8, #9</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">L</span></td></tr>
+        <tr><td><code>dashi://</code> addresses, the scheme handler, Copy Address, Settings opening at the row <span class="pill done">Done</span> <small><code>608b640</code>, <code>4832200</code></small></td><td>#9</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Fuzzy, acronym and typo matching; per-query memory; frecency from everywhere; Reset Ranking <span class="pill done">Done</span> <small><code>00f2bbd</code>, <code>315ab29</code></small></td><td>#7</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>The ❖K action list; ❖↩, ⌥↩, ❖C, ⇧↩, ❖1–9 <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#10</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Windows as results; Enter switches; ❖↩ new window <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#10</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>Menus, <code>[Desktop Action]</code> groups and Dashi's own commands (Lock, Restart…) as rows <span class="pill done">Done</span> <small><code>608b640</code>, <code>63628c2</code></small></td><td>#11</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Controls in the row for settings with state; units, currency, time zones <span class="pill done">Done</span> <small><code>63628c2</code>, <code>f546d20</code></small></td><td>#9, #2</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Aliases; per-command keys bound to addresses, reloaded live <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#21</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>Localized names and keywords, accent folding <span class="pill done">Done</span> <small><code>00f2bbd</code></small></td><td>#14</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Resident launcher on its own host; per-source budgets; one LocalSearch connection <span class="pill done">Done</span> <small><code>d7421ba</code>, <code>f998ea5</code></small></td><td>#6, #20</td><td><span class="where">shell</span> <span class="where">mirin</span> <span class="sz">M</span></td></tr>
+        <tr><td>Motion on Dashi's curves, off with Reduce Motion; Dashi's measures <span class="pill done">Done</span> <small><code>d7421ba</code>, <code>916894f</code>; the close fade <span class="pill wip">Deferred</span></small></td><td>#18</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
       </table>
     </div>
     <div class="wave w3">
       <h3>Wave 3: agents and extensions</h3>
       <table>
         <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
-        <tr><td>The Ask row and the plan, bound to its calls; an answerer chosen in Settings › Agents</td><td>#9, #16</td><td><span class="where agents">agents</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
-        <tr><td>"Now": running tasks, "Your turn", Stop, follow-ups; readable history</td><td>#15</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">M</span></td></tr>
-        <tr><td>Model keys in the vault ("Tokens that stay home")</td><td>#15</td><td><span class="where agents">agents</span> <span class="sz">L</span></td></tr>
-        <tr><td>Applet commands (manifest <code>commands</code>, protocol v3) and resource limits on applet units</td><td>#11, #21</td><td><span class="where">applets</span> <span class="where">shell</span> <span class="where">mirin</span> <span class="sz">L</span></td></tr>
-        <tr><td>Clipboard history with the privacy rules</td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">M</span></td></tr>
-        <tr><td>Snippets expanded at the compositor</td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
-        <tr><td>Live window thumbnails in the row</td><td>—</td><td><span class="where">compositor</span> <span class="sz">M</span></td></tr>
-        <tr><td>The AT-SPI tree in Metal; a text-size setting; input methods on overlays</td><td>#13</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">L</span></td></tr>
-        <tr><td>Your own script commands; GNOME search providers read; <code>dev.dashi.Shell.Actions1</code> served on D-Bus</td><td>#8</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>The Ask row and the plan, bound to its calls; an answerer chosen in Settings › Agents <span class="pill done">Done</span> <small><code>e7c505d</code>, <code>850a894</code>, <code>df303c5</code></small></td><td>#9, #16</td><td><span class="where agents">agents</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
+        <tr><td>"Now": running tasks, "Your turn", Stop, follow-ups; readable history <span class="pill done">Done</span> <small><code>e7c505d</code>, <code>e3ae8b8</code></small></td><td>#15</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">M</span></td></tr>
+        <tr><td>Model keys in the vault ("Tokens that stay home") <span class="pill done">Done</span> <small><code>e37f581</code>, <code>83c8f30</code></small></td><td>#15</td><td><span class="where agents">agents</span> <span class="sz">L</span></td></tr>
+        <tr><td>Applet commands (manifest <code>commands</code>, protocol v3) and resource limits on applet units <span class="pill done">Done</span> <small><code>dae86d9</code>, <code>9408a7a</code></small></td><td>#11, #21</td><td><span class="where">applets</span> <span class="where">shell</span> <span class="where">mirin</span> <span class="sz">L</span></td></tr>
+        <tr><td>Clipboard history with the privacy rules <span class="pill done">Done</span> <small><code>d548a30</code></small></td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Snippets expanded at the compositor <span class="pill done">Done</span> <small><code>d548a30</code></small></td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
+        <tr><td>Live window thumbnails in the row <span class="pill done">Done</span> <small><code>159e041</code></small></td><td>—</td><td><span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>The AT-SPI tree in Metal; a text-size setting; input methods on overlays <span class="pill done">Done</span> <small><code>159e041</code>, <code>ce156b8</code>, <code>0c2a9e8</code></small></td><td>#13</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">L</span></td></tr>
+        <tr><td>Your own script commands; GNOME search providers read; <code>dev.dashi.Shell.Actions1</code> served on D-Bus <span class="pill done">Done</span> <small><code>9408a7a</code></small></td><td>#8</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
       </table>
     </div>
 

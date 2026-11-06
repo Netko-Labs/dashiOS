@@ -122,13 +122,169 @@
 <div class="layout">
   <aside class="toc"></aside>
   <main>
-    <div class="eyebrow">Release spec · proposals</div>
+    <div class="eyebrow">Release · 2026-11-06</div>
     <h1>Dashi 0.4.0</h1>
-    <p class="lede">Laptops first: graphics switching, power that follows the machine, ASUS hardware done properly, and applets anyone can write and share. Then three things people touch every hour: Desktops, moving windows between them, and the app switcher.</p>
+    <p class="lede">Laptops first, then the hours in between: windows that tile and stack with depth, full-screen apps on their own Desktop, and a launcher that searches everything, answers in the row, and hands a sentence to an agent that plans before it acts.</p>
 
-    <div class="callout open"><div>◆</div><p>Each topic has at least five options with a mockup, what each costs, and one recommendation. Every recommendation was <span class="pill done">picked</span> on 2026-11-04. Mockups are drawn in HTML at a small scale; measures follow the <a href="design.html">design guidelines</a>, and the final ones come from <code>@dashi/ui</code>. Cards outlined in green are the recommendation.</p></div>
+    <div class="callout"><div>✓</div><p>0.4.0 is two halves on <code>release/0.4.0</code> (<code>1f59d0b</code>). The <a href="#the-0-4-0-spec">spec</a> below was picked on 2026-11-04 and built as eight milestones (<a href="plan.html">plan</a>): power and graphics, ASUS hardware, Desktops and the switcher, Dashi's portal, secrets for agents, applets and their store. Then came window management, the launcher's three waves (<a href="betterments.html">Launcher</a>) and the first wave of the app roasts (<a href="proposals.html">Proposals</a>), each reviewed in the VM on video. What's left is the <a href="0.5.0.html">0.5.0 plan</a>.</p></div>
 
-    <h2>What 0.4.0 holds</h2>
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>What's new</h2>
+
+    <h3>Window management and tiling</h3>
+    <ul>
+      <li><b>One Fill.</b> The whole usable area, no gap, and the app knows it is maximized. Try: ⌃❖↩, or drag a window to the menu bar.</li>
+      <li><b>The green control fills.</b> A click fills, a second click gives the window's own frame back, ⌥-click is full screen; a title-bar double-click does the same.</li>
+      <li><b>Halves that chain.</b> ⌃❖← → ↑ ↓ are the four halves; an arrow at right angles makes a quarter, the same arrow again moves to the next screen. ⌃❖C centers, ⌃❖R goes back.</li>
+      <li><b>Tiling that keeps up.</b> Sizes go by the app's configure serial, so a slow app doesn't land at the wrong size; leaving Fill or full screen gives back the frame from before.</li>
+    </ul>
+
+    <h3>Depth</h3>
+    <ul>
+      <li><b>Shadows and a hairline.</b> The focused window casts a deeper shadow than the ones behind it; Dark Mode gets stronger shadows and a light edge. Filled and full-screen windows draw none.</li>
+      <li><b>An active-window ring</b>, off by default. Try: Settings › Appearance › Highlight the active window.</li>
+    </ul>
+
+    <h3>Full-screen Desktops</h3>
+    <ul>
+      <li><b>A full-screen window gets a Desktop of its own</b>, next to the one it came from, and goes back to its frame and tile when it leaves. Try: ⌃❖F, ⌥ + green, or an app's own F11; ⌃← and ⌃→ swipe between them.</li>
+      <li>Quitting it closes its Desktop. Try turning it off: Desktop &amp; Dock › Full-screen apps get their own desktop.</li>
+    </ul>
+
+    <h3>Window controls</h3>
+    <ul>
+      <li>Dashi's apps keep their stoplights in full screen, in Mission Control, in the switcher's pictures and while a Desktop slides in.</li>
+      <li>Small pictures are round and their title bars shrink whole; the Desktops row stays open while the pointer is on a ×.</li>
+    </ul>
+
+    <h3>The launcher, waves 1–3</h3>
+    <ul>
+      <li><b>Wave 1, the bugs.</b> An empty state that teaches, rows that hold still while files arrive, an answer row you can copy, and "Nothing called …" with Did you mean, Search files and Find in Software. "settings" finds System Settings. Try: ❖, then "fierfox".</li>
+      <li><b>Wave 2, one search over everything.</b> Apps, windows, settings, menus, Dashi's commands and <code>dashi://</code> links in one ranked list that learns what you pick. Switches flip in the row with Space; units, money and time zones answer in it. Try: "dark mode" Space, "100 usd to eur", "3pm tokyo".</li>
+      <li><b>Actions in place.</b> ❖K lists a row's actions, ❖↩ opens a new window, ❖1–9 picks a row, ⇧❖A gives an alias, ⇧❖K a shortcut. Quit asks in place, in red.</li>
+      <li><b>Speed.</b> A resident launcher that keeps every key from the tap on, one file-search connection with per-source budgets, and React's production build. Try: tap ❖ and type "calc" ↩ at once.</li>
+      <li><b>Wave 3.</b> Agents, tokens, the clipboard, extensions and access, below.</li>
+    </ul>
+
+    <h3>Agents in the launcher</h3>
+    <ul>
+      <li><b>Ask.</b> A sentence gets an Ask row, last and never preselected; ⇥ asks. The answer is a plan in Dashi's words, at most nine steps, and nothing runs until you press Return. Steps that ran have Undo.</li>
+      <li><b>Answerers.</b> Claude Code, Codex, OpenCode, a local model, Claude or GPT with your key. Installed harnesses come first, with what they use and whether they're signed in. Try: Settings › Agents.</li>
+      <li><b>Now and history.</b> What's running shows under Now; a failed ask leaves after 10 s. Agents' history groups each connection's calls and says why one failed.</li>
+    </ul>
+
+    <h3>Tokens that stay home</h3>
+    <ul>
+      <li>API tokens live in the vault. An agent holds a placeholder like <code>dashi:github</code>; a proxy only its sandbox can reach swaps in the token for the hosts the item lists and tunnels every other host untouched (<a href="secrets.md">secrets.md</a>).</li>
+      <li>Try: Settings › Passwords › Tokens › Anthropic key: it fills both headers, and Settings › Agents says where Claude's key is.</li>
+    </ul>
+
+    <h3>Clipboard history and snippets</h3>
+    <ul>
+      <li><b>Clipboard history</b> from the compositor: filter, pin, paste into the app you came from. Secrets and copies made while the screen is shared aren't kept, nor anything from password managers. Try: ⌥❖V, then ❖K on a copy.</li>
+      <li><b>Snippets</b> expand as you type, in any app. Try: add <code>;addr</code> from the launcher's Snippets, then type it in Text Editor.</li>
+      <li>Try: Settings › Keyboard › Never kept from these apps, one row per app with its icon.</li>
+    </ul>
+
+    <h3>Extensions</h3>
+    <ul>
+      <li><b>Applet commands.</b> An applet lists commands in <code>applet.json</code> (protocol 3): a line, a pick list the shell draws, or its own view under the field (<a href="applets.md">applets.md</a>).</li>
+      <li><b>Your scripts.</b> Executables in <code>~/.local/share/dashi/commands/</code> are commands, with header lines for the title and arguments.</li>
+      <li><b>GNOME search providers</b> answer in the list, below what matched, marked slow when they are. Try: "smile" for Characters.</li>
+      <li><b>D-Bus actions.</b> The registry is served as <code>dev.dashi.Shell.Actions1</code>, so any program can list and run Dashi's commands (<a href="actions.md">actions.md</a>).</li>
+    </ul>
+
+    <h3>Access</h3>
+    <ul>
+      <li><b>Orca</b> reads the launcher's rows, and calls the shell's surfaces Dashi and each app by its name (mirin's AccessKit tree).</li>
+      <li><b>Text size.</b> The launcher grows with it, rows and all, and so do apps that follow GNOME's text size. Try: Settings › Appearance › Text size.</li>
+      <li><b>Input methods</b> in every field, the launcher's too: the composition underlined at the caret, candidates under it. Try: Settings › Keyboard › Input method › Fcitx 5.</li>
+      <li><b>Window pictures.</b> → on an app's row shows its windows live; ← → pick, ↩ switches, Esc folds.</li>
+    </ul>
+
+    <h3>The app roasts, wave 1</h3>
+    <ul>
+      <li><b>Everywhere.</b> One chrome row (a title's count shares its line: "All Notes — 3 notes"), text tokens at AA, one confirm sheet, tooltips, tints for each job, and Components off the default Dock.</li>
+      <li><b>Settings.</b> Dashi's tints, deletes that ask, one Dark Mode control; it reopens on the last pane that isn't private, and a search that names a row opens Settings at it, lit.</li>
+      <li><b>Setup Assistant.</b> Skip Setup asks first; the last page teaches ❖.</li>
+      <li><b>Terminal.</b> Dashi's 16 colors in both modes, programs' own colors kept; ❖W or ⇧❖W on a running job asks.</li>
+      <li><b>Text Editor.</b> The caret stays put on Save, closing unsaved text asks, Revert asks, and typing is recovered after a crash.</li>
+      <li><b>Notes.</b> A change on disk is never written over: your typing is kept as a conflict copy, with a notice.</li>
+      <li><b>Calendar.</b> A new event never lands in a hidden calendar; the checkbox hides one again; a day number opens Day view.</li>
+      <li><b>Calculator.</b> Numbers follow your region, one paste, quiet operator keys; the display sits above the keypad.</li>
+      <li><b>Activity Monitor.</b> Right numbers, <code>/proc</code> read off the UI thread, and Return selects instead of quitting.</li>
+      <li><b>Preview.</b> An empty window offers Open… and takes a drop; a narrow window folds its buttons into "…", never cutting them.</li>
+      <li><b>Files and the Dock.</b> A right-click opens only its own menu; Open With shows each app's icon.</li>
+      <li><b>Software and the Applet Store.</b> Recommended for Dashi right away and offline; the store opens on Installed, with menus.</li>
+      <li><b>The file chooser.</b> Back, Up and a folder pop-up in one toolbar row; a slow second click selects, never opens; Enter never grants.</li>
+    </ul>
+
+    <h3>One selection look</h3>
+    <ul>
+      <li>Lists, tables and sidebars select with a kombu wash and a 3 px bar, in both modes, instead of a solid slab (<code>selectionWash</code>, CO-6). Try: Settings' sidebar, Activity Monitor, Notes, Files.</li>
+    </ul>
+
+    <h3>mirin</h3>
+    <ul>
+      <li><code>feat/metal-linux</code> up to <code>1cde80e</code>: resident hosts that hide and open again, with a first-frame event and eased height; an AccessKit tree over AT-SPI; input methods in text fields; a press goes to the innermost view that handles it; a discrete event's updates render before the next; <code>valueRevision</code>; and a placeholder that stays after the caret.</li>
+    </ul>
+
+    <h3>From the spec</h3>
+    <ul>
+      <li>Power modes over tuned-ppd, a watch for a lost graphics card, and a shutdown that can't hang.</li>
+      <li><code>dashi-hardware</code> for ASUS laptops: modes in sync with the hardware key, charge limit, power limits and the Curve Optimizer with a boot guard. Graphics switching through cardwire, with Automatic.</li>
+      <li>Desktops with names and pictures, windows moved between them from anywhere, and a switcher with windows and search.</li>
+      <li>Dashi's own portal for every dialog GTK's served, and a screen-share picker.</li>
+      <li>A vault agents use but never read: sign-in, codes, passkeys, payments with limits.</li>
+      <li>The applet SDK, the Applet Store, and ASUS Control as its first applet.</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Checked in the VM</h2>
+    <p>Each area was reviewed on video in the VM (1646 × 936) before it was merged. The videos are local, in <code>~/Developer/dashi-0.4.0-review/</code>, each folder with its chapters and stills.</p>
+    <table>
+      <tr><th>Video</th><th>What it shows</th></tr>
+      <tr><td><code>01-windows.mp4</code></td><td>Fill, the green control, halves and quarters (no chapters written).</td></tr>
+      <tr><td><code>02-depth.mp4</code></td><td>Shadows that cross-fade with focus, Dark Mode, the ring, none on Fill or full screen, a sheet's shadow, Mission Control.</td></tr>
+      <tr><td><code>03-fullscreen-desktops.mp4</code></td><td>⌃❖F, ⌥ + green and F11 each to their own Desktop, back to the tile, two at once, the setting off.</td></tr>
+      <tr><td><code>04-stoplights/slide.mp4</code></td><td>Stoplights in full screen and Mission Control; a window sliding in with its Desktop; the row open on a ×.</td></tr>
+      <tr><td><code>05-launcher-wave1.mp4</code></td><td>The empty state, rows that hold still, the answer row, "Nothing called" with Did you mean.</td></tr>
+      <tr><td><code>06-launcher-wave2.mp4</code></td><td>No lost keys, ranking, window rows, ❖K, Quit in place, switches, aliases, shortcuts, links, answers.</td></tr>
+      <tr><td><code>07-apps-system.mp4</code></td><td>The selection wash, tooltips, Settings' tints, Calendar, Setup Assistant, Software, the store, the chooser, printing.</td></tr>
+      <tr><td><code>08-apps-terminal-editor.mp4</code></td><td>Terminal's colors and close asking; Text Editor's title, Save, Revert, Undo and recovery.</td></tr>
+      <tr><td><code>09-apps-tools.mp4</code></td><td>Calculator, Activity Monitor, Preview's drop and Open With, Notes' conflict copy.</td></tr>
+      <tr><td><code>10-launcher-wave3.mp4</code></td><td>Tokens, a local model's plan run, clipboard and snippets, applet and script commands, search providers, window pictures, text size Largest.</td></tr>
+      <tr><td><code>11-review-fixes.mp4</code></td><td>One selection look across apps, right-click menus, Calendar's clicks, Software drawn at once, Terminal's background tab, Preview narrow.</td></tr>
+      <tr><td><code>12-answerers.mp4</code></td><td>Settings › Agents, Claude Code not signed in, a plan from OpenCode (a stand-in program) run with Undo.</td></tr>
+      <tr><td><code>13-polish.mp4</code></td><td>The last 16 fixes: glyphs, ranking, failed asks, Settings rows lit, Preview folding, the warm applet view, Pinyin in the launcher and Text Editor. Orca checked over AT-SPI.</td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Not in 0.4.0</h2>
+    <p>Checked against the code on 2026-11-06. Each is planned in <a href="0.5.0.html">0.5.0</a>.</p>
+    <ul>
+      <li><b>Platform pieces.</b> mirin's text selection and caret model (fields know only Select All), modifiers on <code>onPress</code>, a focus model, and asking before a window closes: ❖Q or the close control on a busy Terminal doesn't ask. In <code>@dashi/ui</code>: an undo stack, a visibility signal (Activity Monitor samples while hidden), a registry of settings, a Privacy &amp; Security pane, and Components as a gallery.</li>
+      <li><b>The apps' big ideas.</b> One file browser everywhere, Settings entries with Undo, Software as a trust card with applets folded in, Activity Monitor app-first, Calendar's grid as the editor, Notes as a live page, Editor's document surface, Terminal's shell integration, Preview's page strip, Calculator's expression line.</li>
+      <li><b>Launcher.</b> Agent tools that take arguments as rows, context chips, the close fade, KDE runners, and Tab, Home and End reaching the input method mid-composition (the keymap keeps them).</li>
+      <li><b>Design rules still open.</b> 3:1 control edges (<a href="design.html#co-6">CO-6</a>), Enter on a bare Sheet (<a href="design.html#ui-6">UI-6</a>), the chooser's drives and real icons (<a href="design.html#pa-12">PA-12</a>), text size beyond the launcher, and <a href="design.html#cp-7">CP-7</a>.</li>
+    </ul>
+
+    <h2>Known issues</h2>
+    <ul>
+      <li>Opening the launcher, Orca first announces the selected row, not the field.</li>
+      <li>An applet's view takes about 0.7 s to draw in the VM.</li>
+      <li>Input methods: a click while composing, and password fields, are untested.</li>
+      <li>The live Claude and GPT APIs are untested; Codex's and OpenCode's command lines are unverified (the video's OpenCode is a stand-in).</li>
+      <li>The Claude Code answerer is verified only on the laptop, not in the VM.</li>
+      <li>Everything above ran in the VM; real hardware is untested.</li>
+      <li>D3cold for the graphics card is off only once the owner says yes.</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="the-0-4-0-spec">The 0.4.0 spec</h2>
+    <div class="callout open"><div>◆</div><p>Each topic has at least five options with a mockup, what each costs, and one recommendation. Every recommendation was <span class="pill done">picked</span> on 2026-11-04 and built (<a href="plan.html">plan</a>); what still needs the laptop is in <code>tasks/todo.md</code>. Mockups are drawn in HTML at a small scale; measures follow the <a href="design.html">design guidelines</a>, and the final ones come from <code>@dashi/ui</code>. Cards outlined in green are the recommendation.</p></div>
+
+    <h3 class="notoc">What it holds</h3>
     <table>
       <tr><th>Topic</th><th>For</th><th>In short</th><th></th></tr>
       <tr><td><a href="#laptop-features-where-they-live">Laptop features</a></td><td>Laptops</td><td>Where laptop-only controls live, and how Dashi knows it is on a laptop.</td><td><span class="pill done">picked</span></td></tr>
@@ -1500,12 +1656,12 @@ $ bun run publish
       <div class="prop pick">
         <div class="mk plain"><div class="diagram">
           <div class="bx"><b>Agent's command</b><small>gh api user · Authorization: dashi:github</small></div>
-          <div class="ar">↓ only proxy the agent's sandbox can reach</div>
-          <div class="bx acc"><b>dashi-secretd proxy</b><small>api.github.com? swap in the real token · any other host? refuse</small></div>
+          <div class="ar">↓ the one proxy the agent's sandbox can reach</div>
+          <div class="bx acc"><b>The shell's token proxy</b><small>api.github.com? swap in the real token · any other host? tunneled untouched</small></div>
           <div class="ar">↓ TLS</div>
           <div class="bx"><b>api.github.com</b><small>sees the token; the agent never did</small></div>
         </div></div>
-        <div class="cap"><h4><span class="k">F</span>Tokens that stay home</h4><p>For agents' commands and MCP servers: they hold placeholders like <code>dashi:github</code>, and a proxy inside the agent sandbox swaps in the real API token, only for the hosts that token is meant for.</p>
+        <div class="cap"><h4><span class="k">F</span>Tokens that stay home</h4><p>For agents' commands and MCP servers: they hold placeholders like <code>dashi:github</code>, and a proxy only that sandbox can reach swaps in the real API token, only for the hosts that token is meant for; every other host is tunneled untouched.</p>
           <ul class="pc"><li class="y">CLI and API keys out of dotfiles</li><li class="y">A stolen placeholder is worthless</li><li class="n">A local CA, trusted only in the sandbox</li><li class="n">Tools that pin certificates break</li></ul></div>
       </div>
       <div class="prop pick">

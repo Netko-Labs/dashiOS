@@ -8,6 +8,7 @@ const PAGES = [
   ["distro.html", "Distro"],
   ["design.html", "Design"],
   ["0.4.0.html", "0.4.0"],
+  ["0.5.0.html", "0.5.0"],
   ["plan.html", "Plan"],
   ["proposals.html", "Proposals"],
   ["betterments.html", "Launcher"],

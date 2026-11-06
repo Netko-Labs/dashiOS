@@ -139,6 +139,7 @@
     <p class="lede">Two things. First, the window fixes asked for on 2026-11-05: the green control fills the screen instead of going full screen, tiling gets top and bottom halves and a shortcut map that holds together, and windows get depth so one can be told from the next. Second, every Dashi app was roasted by its own reviewer this morning, and what they found is gathered here into themes, per-app fixes and an order of work.</p>
 
     <div class="callout open"><div>◆</div><p>Nothing here is <span class="pill done">picked</span> yet. Cards outlined in green are the recommendation; "Today" marks what Dashi does now. Bugs cite <code>path:line</code> from <code>release/0.4.0</code> at <code>74d917d</code>; two were confirmed in the VM. The roast's full reports are in <a href="roast/files.md"><code>docs/roast/</code></a>. Picks to make are at <a href="#what-i-need-from-you">the end</a>.</p></div>
+    <div class="callout"><div>✓</div><p>In 0.4.0 the window fixes, depth and the roast's first wave are <span class="pill done">Done</span> (merges <code>d0ea01d</code>, <code>96f97be</code>, <code>109b629</code>, <code>3f9004c</code>, <code>ac17b64</code>). The platform pieces and the big ideas are mostly <span class="pill wip">Deferred</span>; each item says which.</p></div>
 
     <h2>What's here</h2>
     <table>
@@ -148,8 +149,8 @@
       <tr><td><a href="#tiling-shortcuts">Tiling shortcuts</a></td><td>Halves on all four arrows, quarters by chaining, Fill, Center, Back.</td><td><span class="pill done">Built</span></td></tr>
       <tr><td><a href="#drag-to-tile">Drag to tile</a></td><td>Whether dragging gets top and bottom halves too.</td><td><span class="pill done">Built</span></td></tr>
       <tr><td><a href="#depth-between-windows">Depth between windows</a></td><td>Shadows, a hairline edge, an accent ring, dimming.</td><td><span class="pill done">Built</span></td></tr>
-      <tr><td><a href="#the-roast">The roast</a></td><td>13 reports: what hits every app, then each app's top fixes and big idea.</td><td><span class="pill wip">open</span></td></tr>
-      <tr><td><a href="#order-of-work">Order of work</a></td><td>Three waves: embarrassment first, then platform pieces, then the big ideas.</td><td><span class="pill wip">open</span></td></tr>
+      <tr><td><a href="#the-roast">The roast</a></td><td>13 reports: what hits every app, then each app's top fixes and big idea.</td><td><span class="pill done">Wave 1 done</span></td></tr>
+      <tr><td><a href="#order-of-work">Order of work</a></td><td>Three waves: embarrassment first, then platform pieces, then the big ideas.</td><td><span class="pill done">Wave 1 done</span></td></tr>
     </table>
 
     <!-- ════════════════════════════════════════════════════════════ -->
@@ -230,7 +231,7 @@
           <ul class="pc"><li class="y">Both camps served</li><li class="y">Cheap</li><li class="n">A setting for something that should just be right</li><li class="n">Two behaviours to support</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A, with D as the follow-up.</b> <small>Built in 0.4.0: A (the press-and-hold menu, D, is still to come).</small> A click fills, a second click goes back, ⌥-click is Full Screen, and a double-click on the title bar does what the click does. The press-and-hold menu comes after the keys exist, so it can show them. Not C: a menu that opens on passing hovers fights the title bar people drag. Not F: if A is right, a setting only hides that it is.</p>
+    <p class="verdict"><b>Recommendation: A, with D as the follow-up.</b> <small>Built in 0.4.0: A (the press-and-hold menu, D, is still to come).</small> <span class="pill done">Done</span> A, <span class="pill wip">Deferred</span> D. A click fills, a second click goes back, ⌥-click is Full Screen, and a double-click on the title bar does what the click does. The press-and-hold menu comes after the keys exist, so it can show them. Not C: a menu that opens on passing hovers fights the title bar people drag. Not F: if A is right, a setting only hides that it is.</p>
     <div class="spec">
       <h5>One Fill</h5>
       <ul>
@@ -380,7 +381,7 @@
           <ul class="pc"><li class="y">Symmetric with the top</li><li class="n">The Dock lives there (autohide reveal, drops on tiles)</li><li class="n">Misfires while aiming at the Dock</li></ul></div>
       </div>
     </div>
-    <p class="verdict"><b>Recommendation: A now, C once the green control's menu exists.</b> <small>Built in 0.4.0: A, with the menu bar now the new Fill.</small> The zones already match the recommended green control (the menu bar is Fill). Top and bottom halves are one chord away, and C gives them a drag target later without taking the bottom edge from the Dock (not D) or slowing Fill (not B).</p>
+    <p class="verdict"><b>Recommendation: A now, C once the green control's menu exists.</b> <small>Built in 0.4.0: A, with the menu bar now the new Fill.</small> <span class="pill done">Done</span> A, <span class="pill wip">Deferred</span> C. The zones already match the recommended green control (the menu bar is Fill). Top and bottom halves are one chord away, and C gives them a drag target later without taking the bottom edge from the Dock (not D) or slowing Fill (not B).</p>
 
     <!-- ════════════════════════════════════════════════════════════ -->
     <h2>Depth between windows</h2>
@@ -456,24 +457,24 @@
     <h3>Across every app</h3>
     <table>
       <tr><th>Theme</th><th>Where it hit</th><th>Recommendation</th><th></th></tr>
-      <tr><td><b>Two chrome rows</b></td><td><code>AppWindow</code>'s <code>subtitle</code> stacks a second line under the title in Activity Monitor, Editor, Notes, Software, Applet Store and Preview; Notes and Calendar add a permanent footer; Terminal adds a tab bar.</td><td>Remove <code>subtitle</code> and <code>footer</code> from <code>AppWindow</code>; counts go to sidebar badges, scopes to the sidebar, and Terminal's tabs into the title bar. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>The keyboard stops at Up and Down</b></td><td><code>KeySink</code>, a hidden 1×1 text field, reports text, Enter, Esc, Up and Down only (<code>dashi-ui/src/key-sink.tsx:41</code>). Files can't move left in a grid, dialogs can't Tab, no button takes focus. Metal has had <code>onKeyDown</code> with modifiers all along, and Terminal uses it.</td><td>Rebuild <code>KeySink</code> on <code>onKeyDown</code>, then a focus model: Tab order, arrows inside groups, Space and Enter to press, a 2 px kombu ring after keyboard use. Fix the stale comments that say the events don't exist. <span class="sz">M → L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Text you can't click into</b></td><td>Editor (P0: no click-to-place caret, no selection, "Copy All"), Notes (P0: arrow keys only), every form field.</td><td>Caret placement, drag and ⇧ selection, Cut and Copy in Metal's <code>TextInput</code>, then a real document view for Editor and Notes. <span class="sz">L</span></td><td><span class="where mirin">mirin</span></td></tr>
-      <tr><td><b>No Undo</b></td><td>Files (no undo for any write), Notes (no Edit menu), Editor's Revert, Calendar edits, Settings deletions.</td><td>Move Editor's <code>history.ts</code> into the kit as a shared undo stack; Files records every write in it. <span class="sz">M</span></td><td><span class="where ui">kit</span></td></tr>
-      <tr><td><b>Irreversible in one click</b></td><td>Deleting a saved password or card (<code>panes/passwords.tsx:120</code>), Editor's Revert, ❖W ending an <code>ssh</code> tab, Enter granting the camera in an Access sheet, Files' silent "name 2" instead of asking.</td><td>One <code>ConfirmSheet</code> / confirm button in <code>@dashi/ui</code>; Enter presses the safe answer for grants, deletions and replacements; destructive buttons are ume. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Contrast below AA</b></td><td>Muted text 4.2–4.35:1, white on kombu 4.13:1, the secondary button 1.14:1 against the window, Terminal's prompt 1.7:1.</td><td>A darker accent fill for white text, muted ink at about 65%, 3:1 edges on buttons, fields and off switches; a Dashi terminal palette. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Colors doing the wrong jobs</b></td><td>Shiso (agents only) tints Software's and the Applet Store's tiles and Appearance's icon; kombu tints every sidebar glyph and file icon; three reds and no broth or moss tokens, so warnings come out gray.</td><td>Tokens per job: kombu selected, ume destroy, broth warning, moss success, shiso agents; icons ink or muted. <span class="sz">S</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Copied from the Mac</b></td><td>Calculator ("round as on the Mac since Sequoia"), Calendar ("the Mac's calendar colors"), Settings' sidebar (Apple's system hexes), Activity Monitor ("as on the Mac"), Desktop &amp; Dock's sentences word for word.</td><td>Palettes from the ingredients, the copy rewritten in Dashi's voice, and a lint for Apple product names in UI strings. <span class="sz">S–M</span></td><td><span class="where app">apps</span></td></tr>
-      <tr><td><b>Controls rolled by hand</b></td><td>About 20 copies: Switch lives in the Wi-Fi folder, three checkboxes, three month grids, two sliders, two search fields, no select, no progress bar, no tooltips.</td><td>Add Switch, Slider, Checkbox, PopUpButton, Stepper, ProgressBar, Tabs, Tooltip, MonthGrid, an Open With sheet and one alert frame; delete the copies. <span class="sz">L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>The gallery shows the wrong library</b></td><td>Components, pinned second in the Dock, is mirin's metal-ui browser (no Dashi app imports metal-ui) and opens dark on a light desktop.</td><td>Make it the <code>@dashi/ui</code> gallery, every state in both modes side by side, and unpin it from the default Dock. <span class="sz">M</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Pointer features left on the table</b></td><td>Calendar has no drag at all, Preview accepts no drop and doesn't scroll PDFs, Files has no rubber band or ⇧-click; Metal has <code>onPointer</code>, <code>onDrop</code> and <code>onWheel</code>. Only modifiers on <code>onPress</code> are missing.</td><td>Use what exists in the apps; add modifiers to <code>onPress</code> in mirin. <span class="sz">S–L</span></td><td><span class="where app">apps</span> <span class="where mirin">mirin</span></td></tr>
-      <tr><td><b>Five ways to pick a file</b></td><td>The portal chooser has no way up a folder and accepts on a slow second click; <code>dashi-dialog --file-selection</code> exits 255; Editor asks for a typed path; Calendar falls back to one.</td><td>One file browser: Files' core as a component, embedded by the portal, <code>dashi-dialog</code> and Dashi's own apps. <span class="sz">L</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>A store that can't open</b></td><td>The Applet Store's catalog key is <code>null</code> (<code>src/applet-store/keys.ts:9</code>), so everyone gets "isn't set up yet" and a Try Again that can't work.</td><td>Hide Discover until the key exists, or generate the key; then fold applets into Software as a section. <span class="sz">S, then M</span></td><td><span class="where app">app</span></td></tr>
-      <tr><td><b>Consent you can't see or undo</b></td><td>Flatpaks install with no word about what they reach; applets can't be turned off; Agents can only revoke everything; the Access dialog points at a "Settings › Privacy" that doesn't exist.</td><td>One plain-language permission line set for Flatpaks, applets and agents, and a Privacy &amp; Security pane to review and revoke. <span class="sz">M</span></td><td><span class="where app">apps</span></td></tr>
-      <tr><td><b>Work on the UI thread</b></td><td>Activity Monitor reads <code>/proc</code> synchronously every 2 s and is the second-busiest process on an idle VM; Files runs <code>lsblk</code> every 4 s per window; Terminal's <code>memo</code> never holds; dashi-dialog's progress re-renders 25 times a second.</td><td>Workers for sampling, pause when hidden (the kit needs a visibility signal), memoize properly. <span class="sz">S–M</span></td><td><span class="where app">apps</span></td></tr>
-      <tr><td><b>Not accessible</b></td><td>No accessibility tree anywhere in the stack; glyph-only buttons have no names.</td><td>AccessKit to AT-SPI in mirin Metal; <code>label</code> required on glyph-only controls now, so the names exist before the tree does. <span class="sz">L</span></td><td><span class="where mirin">mirin</span></td></tr>
-      <tr><td><b>Locale ignored</b></td><td>Calculator types <code>1,000</code> as 1.000; dashi-dialog's calendar starts on Sunday in English; dates in the chooser skip Region settings.</td><td>One Region helper for numbers, weeks and dates in every process. <span class="sz">S–M</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
-      <tr><td><b>Errors that read like a spec file</b></td><td>"PDF files need poppler-utils (pdftoppm and pdfinfo)", "Is wl-clipboard installed?"</td><td>Make them package dependencies, and say what happened in people's words. <span class="sz">S</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Two chrome rows</b></td><td><code>AppWindow</code>'s <code>subtitle</code> stacks a second line under the title in Activity Monitor, Editor, Notes, Software, Applet Store and Preview; Notes and Calendar add a permanent footer; Terminal adds a tab bar.</td><td>Remove <code>subtitle</code> and <code>footer</code> from <code>AppWindow</code>; counts go to sidebar badges, scopes to the sidebar, and Terminal's tabs into the title bar. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>; Terminal's tabs in the title bar</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>The keyboard stops at Up and Down</b></td><td><code>KeySink</code>, a hidden 1×1 text field, reports text, Enter, Esc, Up and Down only (<code>dashi-ui/src/key-sink.tsx:41</code>). Files can't move left in a grid, dialogs can't Tab, no button takes focus. Metal has had <code>onKeyDown</code> with modifiers all along, and Terminal uses it.</td><td>Rebuild <code>KeySink</code> on <code>onKeyDown</code>, then a focus model: Tab order, arrows inside groups, Space and Enter to press, a 2 px kombu ring after keyboard use. Fix the stale comments that say the events don't exist. <span class="sz">M → L</span> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Text you can't click into</b></td><td>Editor (P0: no click-to-place caret, no selection, "Copy All"), Notes (P0: arrow keys only), every form field.</td><td>Caret placement, drag and ⇧ selection, Cut and Copy in Metal's <code>TextInput</code>, then a real document view for Editor and Notes. <span class="sz">L</span> <span class="pill wip">Deferred</span></td><td><span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>No Undo</b></td><td>Files (no undo for any write), Notes (no Edit menu), Editor's Revert, Calendar edits, Settings deletions.</td><td>Move Editor's <code>history.ts</code> into the kit as a shared undo stack; Files records every write in it. <span class="sz">M</span> <span class="pill wip">Deferred</span></td><td><span class="where ui">kit</span></td></tr>
+      <tr><td><b>Irreversible in one click</b></td><td>Deleting a saved password or card (<code>panes/passwords.tsx:120</code>), Editor's Revert, ❖W ending an <code>ssh</code> tab, Enter granting the camera in an Access sheet, Files' silent "name 2" instead of asking.</td><td>One <code>ConfirmSheet</code> / confirm button in <code>@dashi/ui</code>; Enter presses the safe answer for grants, deletions and replacements; destructive buttons are ume. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>c52d897</code>, <code>b11166f</code>, <code>eb71d9d</code>, <code>946cc7b</code>; Files' "name 2"</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Contrast below AA</b></td><td>Muted text 4.2–4.35:1, white on kombu 4.13:1, the secondary button 1.14:1 against the window, Terminal's prompt 1.7:1.</td><td>A darker accent fill for white text, muted ink at about 65%, 3:1 edges on buttons, fields and off switches; a Dashi terminal palette. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>946cc7b</code>; 3:1 edges on fields and off switches (CO-6)</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Colors doing the wrong jobs</b></td><td>Shiso (agents only) tints Software's and the Applet Store's tiles and Appearance's icon; kombu tints every sidebar glyph and file icon; three reds and no broth or moss tokens, so warnings come out gray.</td><td>Tokens per job: kombu selected, ume destroy, broth warning, moss success, shiso agents; icons ink or muted. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>c52d897</code>, <code>2876b98</code>, <code>653d8aa</code></small></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Copied from the Mac</b></td><td>Calculator ("round as on the Mac since Sequoia"), Calendar ("the Mac's calendar colors"), Settings' sidebar (Apple's system hexes), Activity Monitor ("as on the Mac"), Desktop &amp; Dock's sentences word for word.</td><td>Palettes from the ingredients, the copy rewritten in Dashi's voice, and a lint for Apple product names in UI strings. <span class="sz">S–M</span> <span class="pill done">Done</span> <small><code>54e902f</code>, <code>dc2240c</code>, <code>c52d897</code>, <code>2b7f96d</code>; the lint</small> <span class="pill wip">Deferred</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Controls rolled by hand</b></td><td>About 20 copies: Switch lives in the Wi-Fi folder, three checkboxes, three month grids, two sliders, two search fields, no select, no progress bar, no tooltips.</td><td>Add Switch, Slider, Checkbox, PopUpButton, Stepper, ProgressBar, Tabs, Tooltip, MonthGrid, an Open With sheet and one alert frame; delete the copies. <span class="sz">L</span> <span class="pill done">Done</span> <small>Switch <code>ab303c6</code>, Tooltip and ConfirmSheet <code>be702f7</code>; the rest</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>The gallery shows the wrong library</b></td><td>Components, pinned second in the Dock, is mirin's metal-ui browser (no Dashi app imports metal-ui) and opens dark on a light desktop.</td><td>Make it the <code>@dashi/ui</code> gallery, every state in both modes side by side, and unpin it from the default Dock. <span class="sz">M</span> <span class="pill done">Done</span> <small>unpinned <code>33a8d60</code>; the gallery</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Pointer features left on the table</b></td><td>Calendar has no drag at all, Preview accepts no drop and doesn't scroll PDFs, Files has no rubber band or ⇧-click; Metal has <code>onPointer</code>, <code>onDrop</code> and <code>onWheel</code>. Only modifiers on <code>onPress</code> are missing.</td><td>Use what exists in the apps; add modifiers to <code>onPress</code> in mirin. <span class="sz">S–L</span> <span class="pill done">Done</span> <small>Preview takes drops <code>ba85e35</code>; the rest</small> <span class="pill wip">Deferred</span></td><td><span class="where app">apps</span> <span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>Five ways to pick a file</b></td><td>The portal chooser has no way up a folder and accepts on a slow second click; <code>dashi-dialog --file-selection</code> exits 255; Editor asks for a typed path; Calendar falls back to one.</td><td>One file browser: Files' core as a component, embedded by the portal, <code>dashi-dialog</code> and Dashi's own apps. <span class="sz">L</span> <span class="pill wip">Deferred</span> <small>(the chooser's Back and Up are in, <code>b11166f</code>)</small></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>A store that can't open</b></td><td>The Applet Store's catalog key is <code>null</code> (<code>src/applet-store/keys.ts:9</code>), so everyone gets "isn't set up yet" and a Try Again that can't work.</td><td>Hide Discover until the key exists, or generate the key; then fold applets into Software as a section. <span class="sz">S, then M</span> <span class="pill done">Done</span> <small>Discover hidden <code>cd182d4</code>; the fold</small> <span class="pill wip">Deferred</span></td><td><span class="where app">app</span></td></tr>
+      <tr><td><b>Consent you can't see or undo</b></td><td>Flatpaks install with no word about what they reach; applets can't be turned off; Agents can only revoke everything; the Access dialog points at a "Settings › Privacy" that doesn't exist.</td><td>One plain-language permission line set for Flatpaks, applets and agents, and a Privacy &amp; Security pane to review and revoke. <span class="sz">M</span> <span class="pill wip">Deferred</span> <small>(the dead "Settings › Privacy" line is gone, <code>b11166f</code>)</small></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Work on the UI thread</b></td><td>Activity Monitor reads <code>/proc</code> synchronously every 2 s and is the second-busiest process on an idle VM; Files runs <code>lsblk</code> every 4 s per window; Terminal's <code>memo</code> never holds; dashi-dialog's progress re-renders 25 times a second.</td><td>Workers for sampling, pause when hidden (the kit needs a visibility signal), memoize properly. <span class="sz">S–M</span> <span class="pill done">Done</span> <small>Activity Monitor's worker <code>a01b242</code>, Terminal's memo <code>946cc7b</code>; the visibility signal, Files' <code>lsblk</code>, dashi-dialog</small> <span class="pill wip">Deferred</span></td><td><span class="where app">apps</span></td></tr>
+      <tr><td><b>Not accessible</b></td><td>No accessibility tree anywhere in the stack; glyph-only buttons have no names.</td><td>AccessKit to AT-SPI in mirin Metal; <code>label</code> required on glyph-only controls now, so the names exist before the tree does. <span class="sz">L</span> <span class="pill done">Done</span> <small>mirin's AccessKit tree, the launcher's names <code>159e041</code>, app names for Orca <code>ce156b8</code>; names on every app's controls</small> <span class="pill wip">Deferred</span></td><td><span class="where mirin">mirin</span></td></tr>
+      <tr><td><b>Locale ignored</b></td><td>Calculator types <code>1,000</code> as 1.000; dashi-dialog's calendar starts on Sunday in English; dates in the chooser skip Region settings.</td><td>One Region helper for numbers, weeks and dates in every process. <span class="sz">S–M</span> <span class="pill done">Done</span> <small>Calculator <code>54e902f</code>; the shared helper</small> <span class="pill wip">Deferred</span></td><td><span class="where ui">@dashi/ui</span></td></tr>
+      <tr><td><b>Errors that read like a spec file</b></td><td>"PDF files need poppler-utils (pdftoppm and pdfinfo)", "Is wl-clipboard installed?"</td><td>Make them package dependencies, and say what happened in people's words. <span class="sz">S</span> <span class="pill wip">Deferred</span></td><td><span class="where app">apps</span></td></tr>
     </table>
 
     <h3>App by app</h3>
@@ -482,13 +483,13 @@
       <h3>Files</h3>
       <p class="roast">"Files never overwrites anything, and it never asks either. Drag in a newer report.txt and you get report 2.txt, then report 3.txt, until you're sure you're losing your mind."</p>
       <ol>
-        <li>Move the keyboard to <code>onKeyDown</code>: arrows in two dimensions, ⇧-arrows, Space to peek, ❖⌫ to trash, F2 to rename. <span class="sz">M</span></li>
-        <li>Real selection: ⇧-click, ❖-click, a rubber band; retire the Select toggle that silently stops double-click from opening. <span class="sz">M</span></li>
-        <li>Undo for every write, and a Replace / Keep Both / Skip sheet instead of silent "name 2". <span class="sz">M + M</span></li>
-        <li>One icon family typed by content, not only by name (logs show a blank square today). <span class="sz">S</span></li>
-        <li>Search that doesn't turn into a path field when clicked; New Folder that picks a free name (<code>freeName()</code> exists and is never called). <span class="sz">S</span></li>
+        <li>Move the keyboard to <code>onKeyDown</code>: arrows in two dimensions, ⇧-arrows, Space to peek, ❖⌫ to trash, F2 to rename. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Real selection: ⇧-click, ❖-click, a rubber band; retire the Select toggle that silently stops double-click from opening. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Undo for every write, and a Replace / Keep Both / Skip sheet instead of silent "name 2". <span class="sz">M + M</span> <span class="pill wip">Deferred</span></li>
+        <li>One icon family typed by content, not only by name (logs show a blank square today). <span class="sz">S</span> <span class="pill wip">Deferred</span></li>
+        <li>Search that doesn't turn into a path field when clicked; New Folder that picks a free name (<code>freeName()</code> exists and is never called). <span class="sz">S</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> one file browser, used everywhere; the portal's Open and Save become Files in a sheet.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> one file browser, used everywhere; the portal's Open and Save become Files in a sheet.</p>
       <p class="src">Report: <a href="roast/files.md">roast/files.md</a> · 20 findings, seven P1.</p>
     </div>
 
@@ -496,14 +497,14 @@
       <h3>System Settings and Setup Assistant</h3>
       <p class="roast">"Forgetting a Wi-Fi network asks first. Deleting a saved password doesn't: it takes one click on a bright red button."</p>
       <ol>
-        <li>One confirm pattern for everything irreversible (passwords, cards, Forget, Skip Setup), and errors that show instead of vanishing. <span class="sz">S</span></li>
-        <li>Search in the existing header strip, backed by a registry of every row; no new bar. <span class="sz">M</span></li>
-        <li>Regroup the sidebar and drop Apple's hexes: neutral tiles, shiso for Agents only. <span class="sz">S</span></li>
-        <li>Appearance: one Dark Mode control (the previews), not two that disagree. <span class="sz">S</span></li>
-        <li>Agents as a consent dashboard: each scope its own switch, ordered by risk, with Undo after Revoke. <span class="sz">M</span></li>
+        <li>One confirm pattern for everything irreversible (passwords, cards, Forget, Skip Setup), and errors that show instead of vanishing. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>c52d897</code></small></li>
+        <li>Search in the existing header strip, backed by a registry of every row; no new bar. <span class="sz">M</span> <span class="pill wip">Deferred</span> <small>(the launcher finds the rows, <code>4832200</code>)</small></li>
+        <li>Regroup the sidebar and drop Apple's hexes: neutral tiles, shiso for Agents only. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>c52d897</code></small></li>
+        <li>Appearance: one Dark Mode control (the previews), not two that disagree. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>c52d897</code></small></li>
+        <li>Agents as a consent dashboard: each scope its own switch, ordered by risk, with Undo after Revoke. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p>Setup Assistant: the Wi-Fi page shows both "Skip Setup" and "Skip"; Skip Setup ends setup with no confirmation; closing the window counts as skipping after 2 s.</p>
-      <p class="big"><b>Big idea:</b> every setting an addressable entry, driving search, deep links, the launcher and agent tools, with a "Recently changed" list that names who changed what, agents in shiso, each with Undo.</p>
+      <p>Setup Assistant: the Wi-Fi page shows both "Skip Setup" and "Skip"; Skip Setup ends setup with no confirmation; closing the window counts as skipping after 2 s. <span class="pill done">Done</span> <small><code>c52d897</code></small></p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> every setting an addressable entry, driving search, deep links, the launcher and agent tools, with a "Recently changed" list that names who changed what, agents in shiso, each with Undo.</p>
       <p class="src">Report: <a href="roast/settings.md">roast/settings.md</a> · 20 findings, one P0.</p>
     </div>
 
@@ -511,13 +512,13 @@
       <h3>Terminal</h3>
       <p class="roast">"The first thing you see is a prompt you can't read: the ~ is about #C1C880 on pure white, around 1.7:1. The welcome message is 'get closer to the screen'."</p>
       <ol>
-        <li>A Dashi terminal palette (16 ANSI colors, light and dark) passed to the engine. <span class="sz">M</span></li>
-        <li>A cheap render path: memoize <code>look</code> (<code>view.tsx:87</code>) so unchanged rows stop redrawing up to 125 times a second. <span class="sz">S</span></li>
-        <li>Draw on a fixed cell grid so the cursor stops drifting after emoji and CJK. <span class="sz">M</span></li>
-        <li>Ask before closing a tab with a running process; fix ⇧❖W, which closes only a tab (<code>keymap.ts:119</code>). <span class="sz">S</span></li>
-        <li>Tabs in the title bar, not a second 28 px bar. <span class="sz">M</span></li>
+        <li>A Dashi terminal palette (16 ANSI colors, light and dark) passed to the engine. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>946cc7b</code>, <code>b19e8a6</code></small></li>
+        <li>A cheap render path: memoize <code>look</code> (<code>view.tsx:87</code>) so unchanged rows stop redrawing up to 125 times a second. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>946cc7b</code></small></li>
+        <li>Draw on a fixed cell grid so the cursor stops drifting after emoji and CJK. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Ask before closing a tab with a running process; fix ⇧❖W, which closes only a tab (<code>keymap.ts:119</code>). <span class="sz">S</span> <span class="pill done">Done</span> <small><code>946cc7b</code>, <code>cec131d</code></small></li>
+        <li>Tabs in the title bar, not a second 28 px bar. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> shell integration on by default: tabs named by folder, new tabs where you are, ❖↑ and ❖↓ between prompts, failed commands marked in ume.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> shell integration on by default: tabs named by folder, new tabs where you are, ❖↑ and ❖↓ between prompts, failed commands marked in ume.</p>
       <p class="src">Report: <a href="roast/terminal.md">roast/terminal.md</a></p>
     </div>
 
@@ -525,13 +526,13 @@
       <h3>Text Editor</h3>
       <p class="roast">"It's a text editor where you can't click in the text or select a word. The Edit menu offers 'Copy All', which is what you ship when Copy didn't make it."</p>
       <ol>
-        <li>A real document view in mirin: caret, selection, Cut and Copy, find highlights, a gutter. <span class="sz">L</span> <span class="where mirin">mirin</span></li>
-        <li>Stop remounting the input on ❖S, sheets and Esc, so the caret stays put (<code>text-area.tsx:101</code>). <span class="sz">S</span></li>
-        <li>One close path that never loses work: ❖W asks like File › Close; recovery written continuously, not only at exit. <span class="sz">M</span></li>
-        <li>The document's name as the window title, on one line (every window is "Text Editor" today). <span class="sz">S</span></li>
-        <li>Revert asks first, or is undoable. <span class="sz">S</span></li>
+        <li>A real document view in mirin: caret, selection, Cut and Copy, find highlights, a gutter. <span class="sz">L</span> <span class="where mirin">mirin</span> <span class="pill wip">Deferred</span></li>
+        <li>Stop remounting the input on ❖S, sheets and Esc, so the caret stays put (<code>text-area.tsx:101</code>). <span class="sz">S</span> <span class="pill done">Done</span> <small><code>eb71d9d</code></small></li>
+        <li>One close path that never loses work: ❖W asks like File › Close; recovery written continuously, not only at exit. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>eb71d9d</code></small></li>
+        <li>The document's name as the window title, on one line (every window is "Text Editor" today). <span class="sz">S</span> <span class="pill done">Done</span> <small><code>eb71d9d</code>, <code>b319886</code></small></li>
+        <li>Revert asks first, or is undoable. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>eb71d9d</code></small></li>
       </ol>
-      <p class="big"><b>Big idea:</b> a document surface with continuous versioned autosave: "you never lose a word, and you never get asked."</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> a document surface with continuous versioned autosave: "you never lose a word, and you never get asked."</p>
       <p class="src">Report: <a href="roast/editor.md">roast/editor.md</a> · one P0.</p>
     </div>
 
@@ -539,13 +540,13 @@
       <h3>Notes</h3>
       <p class="roast">"The note count appears three times on one empty screen: the sidebar badge, the toolbar subtitle, and the footer. The window spends two bars on a number that is already in a badge."</p>
       <ol>
-        <li>Drop the subtitle and the footer. <span class="sz">S</span></li>
-        <li>An Edit menu with Undo and Redo, on the kit's shared history. <span class="sz">M</span></li>
-        <li>Save a conflict copy instead of silently overwriting a sync tool's change. <span class="sz">M</span></li>
-        <li>Inline Markdown in Preview, Format items with ❖B, ❖I and ⇧❖L. <span class="sz">M</span></li>
-        <li>Click-to-place caret and selection, from the same mirin work as Editor. <span class="sz">L</span> <span class="where mirin">mirin</span></li>
+        <li>Drop the subtitle and the footer. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>a4dbe9d</code></small></li>
+        <li>An Edit menu with Undo and Redo, on the kit's shared history. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Save a conflict copy instead of silently overwriting a sync tool's change. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>f3ad26e</code></small></li>
+        <li>Inline Markdown in Preview, Format items with ❖B, ❖I and ⇧❖L. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Click-to-place caret and selection, from the same mirin work as Editor. <span class="sz">L</span> <span class="where mirin">mirin</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> one live page that formats Markdown as you type, checkboxes tickable in place, the file still plain Markdown.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> one live page that formats Markdown as you type, checkboxes tickable in place, the file still plain Markdown.</p>
       <p class="src">Report: <a href="roast/notes.md">roast/notes.md</a> · one P0.</p>
     </div>
 
@@ -553,13 +554,13 @@
       <h3>Calendar</h3>
       <p class="roast">"Click Thursday's weekly standup and the sheet opens on the day the series started. Change the time and you've moved every standup ever."</p>
       <ol>
-        <li>Drag to create, move and resize events (<code>onPointer</code> exists). <span class="sz">L</span></li>
-        <li>Open the occurrence that was clicked; ask "This event / This and following / All events". <span class="sz">M</span></li>
-        <li>Keep time zones; show moved instances from Google and Outlook imports. <span class="sz">L</span></li>
-        <li>New events only go to visible calendars, so they can't vanish into a hidden one. <span class="sz">S</span></li>
-        <li>A palette from Dashi's ingredients, not the Mac's calendar colors. <span class="sz">S</span></li>
+        <li>Drag to create, move and resize events (<code>onPointer</code> exists). <span class="sz">L</span> <span class="pill wip">Deferred</span></li>
+        <li>Open the occurrence that was clicked; ask "This event / This and following / All events". <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Keep time zones; show moved instances from Google and Outlook imports. <span class="sz">L</span> <span class="pill wip">Deferred</span></li>
+        <li>New events only go to visible calendars, so they can't vanish into a hidden one. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>dc2240c</code>, <code>8800ebf</code></small></li>
+        <li>A palette from Dashi's ingredients, not the Mac's calendar colors. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>dc2240c</code></small></li>
       </ol>
-      <p class="big"><b>Big idea:</b> the grid is the editor: drag across hours, type the title in place, Enter; a small popover for details.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> the grid is the editor: drag across hours, type the title in place, Enter; a small popover for details.</p>
       <p class="src">Report: <a href="roast/calendar.md">roast/calendar.md</a></p>
     </div>
 
@@ -567,13 +568,13 @@
       <h3>Preview</h3>
       <p class="roast">"To 'read' a PDF you get one page at a time, fitted whole, as a PNG. No wheel, no scroll, no fit-width, no selecting text, no search. It's a fax machine with a sidebar."</p>
       <ol>
-        <li>PDFs as a scrolling document: wheel, pinch, fit-width, pages rendered near the screen. <span class="sz">L</span></li>
-        <li>The title on one line. <span class="sz">S</span></li>
-        <li>An empty state that works: accept drops, Open… as the primary button, recent files, no dead controls. <span class="sz">S–M</span></li>
-        <li>Show progress, and make rotation stick (lossless for JPEG). <span class="sz">M</span></li>
-        <li>Copy, Export and Print. <span class="sz">M</span></li>
+        <li>PDFs as a scrolling document: wheel, pinch, fit-width, pages rendered near the screen. <span class="sz">L</span> <span class="pill wip">Deferred</span></li>
+        <li>The title on one line. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>6b0271c</code></small></li>
+        <li>An empty state that works: accept drops, Open… as the primary button, recent files, no dead controls. <span class="sz">S–M</span> <span class="pill done">Done</span> <small><code>ba85e35</code>; recent files</small> <span class="pill wip">Deferred</span></li>
+        <li>Show progress, and make rotation stick (lossless for JPEG). <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Copy, Export and Print. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> every file a strip of pages on one scrolling surface; edits a non-destructive layer remembered while you browse.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> every file a strip of pages on one scrolling surface; edits a non-destructive layer remembered while you browse.</p>
       <p class="src">Report: <a href="roast/preview.md">roast/preview.md</a> · one P0.</p>
     </div>
 
@@ -581,13 +582,13 @@
       <h3>Calculator</h3>
       <p class="roast">"The comment at the top says it out loud: 'round as on the Mac since Sequoia'. The screenshot is exactly that calculator with its orange swapped for kombu."</p>
       <ol>
-        <li>Separators and the decimal key from the locale: <code>1,000</code> becomes 1.000 today. <span class="sz">M</span></li>
-        <li>One paste behaviour: ⌃V types the clipboard key by key, so a <code>c</code> in it clears the display. <span class="sz">S</span></li>
-        <li>Display spacing: the 0 sits 6 px above the keys under 38 px of nothing. <span class="sz">S</span></li>
-        <li>A window size that behaves: fixed, or a keypad that scales (today Fill floats it in a gray field). <span class="sz">M</span></li>
-        <li>History as a tape in the empty band. <span class="sz">L</span></li>
+        <li>Separators and the decimal key from the locale: <code>1,000</code> becomes 1.000 today. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>54e902f</code></small></li>
+        <li>One paste behaviour: ⌃V types the clipboard key by key, so a <code>c</code> in it clears the display. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>54e902f</code></small></li>
+        <li>Display spacing: the 0 sits 6 px above the keys under 38 px of nothing. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>54e902f</code>, <code>e052fc7</code></small></li>
+        <li>A window size that behaves: fixed, or a keypad that scales (today Fill floats it in a gray field). <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>History as a tape in the empty band. <span class="sz">L</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> an editable expression line with a live result and a remembered tape; it leaves the Mac's calculator behind without adding chrome.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> an editable expression line with a live result and a remembered tape; it leaves the Mac's calculator behind without adding chrome.</p>
       <p class="src">Report: <a href="roast/calculator.md">roast/calculator.md</a></p>
     </div>
 
@@ -595,13 +596,13 @@
       <h3>Activity Monitor</h3>
       <p class="roast">"On an idle VM, Activity Monitor is the second-busiest thing on the machine. It doesn't so much observe the system as join it."</p>
       <ol>
-        <li>Rows by app, with icon and name, helpers folded in (two rows say <code>mirin-metal-host</code> and one says <code>bun</code> today). <span class="sz">M</span></li>
-        <li>An Energy tab; the battery menu sends people here for one and there isn't one. <span class="sz">M</span></li>
-        <li>Sampling off the UI thread, paused when hidden. <span class="sz">M</span></li>
-        <li>Numbers that are right: memory, disk as rates, smoothed CPU. <span class="sz">S–M</span></li>
-        <li>One toolbar row and a labelled "Quit…" button. <span class="sz">S</span></li>
+        <li>Rows by app, with icon and name, helpers folded in (two rows say <code>mirin-metal-host</code> and one says <code>bun</code> today). <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>An Energy tab; the battery menu sends people here for one and there isn't one. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Sampling off the UI thread, paused when hidden. <span class="sz">M</span> <span class="pill done">Done</span> <small>off the UI thread <code>a01b242</code>; paused when hidden</small> <span class="pill wip">Deferred</span></li>
+        <li>Numbers that are right: memory, disk as rates, smoothed CPU. <span class="sz">S–M</span> <span class="pill done">Done</span> <small><code>a01b242</code></small></li>
+        <li>One toolbar row and a labelled "Quit…" button. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>a01b242</code>, <code>a4dbe9d</code></small></li>
       </ol>
-      <p class="big"><b>Big idea:</b> answer "what is slowing, heating or draining my computer, and can I stop it?", sharing one model of an app's cost with the battery menu and Force Quit.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> answer "what is slowing, heating or draining my computer, and can I stop it?", sharing one model of an app's cost with the battery menu and Force Quit.</p>
       <p class="src">Report: <a href="roast/activity-monitor.md">roast/activity-monitor.md</a></p>
     </div>
 
@@ -609,13 +610,13 @@
       <h3>Software</h3>
       <p class="roast">"A 40 KB menu-bar applet that wants to read the battery gets a full consent sheet. A Flatpak that can read your whole home folder and use the camera gets a grey 'Get' pill and nothing else."</p>
       <ol>
-        <li>A permissions block on the app page in plain words; a sheet before installing apps that ask for broad access. <span class="sz">M</span></li>
-        <li>A daily background update check that posts one quiet notification (43 updates were waiting in the VM). <span class="sz">M</span></li>
-        <li>Dashi's recommended list from the local copy, right away and offline, with Dashi's own summaries. <span class="sz">S</span></li>
-        <li>The page name in the single toolbar line. <span class="sz">S</span></li>
-        <li>A busy pill with cancel, and one place that shows the queue. <span class="sz">M</span></li>
+        <li>A permissions block on the app page in plain words; a sheet before installing apps that ask for broad access. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>A daily background update check that posts one quiet notification (43 updates were waiting in the VM). <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Dashi's recommended list from the local copy, right away and offline, with Dashi's own summaries. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>cd182d4</code></small></li>
+        <li>The page name in the single toolbar line. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>1899c83</code></small></li>
+        <li>A busy pill with cancel, and one place that shows the queue. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> the app page as a trust card: who made it, what it can reach, what changed, how many use it.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> the app page as a trust card: who made it, what it can reach, what changed, how many use it.</p>
       <p class="src">Report: <a href="roast/software.md">roast/software.md</a></p>
     </div>
 
@@ -623,12 +624,12 @@
       <h3>Applet Store</h3>
       <p class="roast">"It isn't a store yet, it's a sign saying a store is coming: a shop with every aisle labelled and no shelves."</p>
       <ol>
-        <li>Don't ship a dead store: open on Installed while there is no catalog key, with one quiet line. <span class="sz">S</span></li>
-        <li>The consent sheet on <code>@dashi/ui</code>'s <code>Sheet</code>, with the applet's real icon and only the new permissions on update. <span class="sz">M</span></li>
-        <li>Manage an installed applet: on/off, each permission, Remove with or without its data. <span class="sz">M</span></li>
-        <li>Menus like Software's, so it has shortcuts at all. <span class="sz">S</span></li>
+        <li>Don't ship a dead store: open on Installed while there is no catalog key, with one quiet line. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>cd182d4</code></small></li>
+        <li>The consent sheet on <code>@dashi/ui</code>'s <code>Sheet</code>, with the applet's real icon and only the new permissions on update. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Manage an installed applet: on/off, each permission, Remove with or without its data. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Menus like Software's, so it has shortcuts at all. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>cd182d4</code></small></li>
       </ol>
-      <p class="big"><b>Big idea:</b> make applets a section of Software: one Updates page, one Installed page, one trust language.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> make applets a section of Software: one Updates page, one Installed page, one trust language.</p>
       <p class="src">Report: <a href="roast/applet-store.md">roast/applet-store.md</a> · its first finding is that it can never load its catalog.</p>
     </div>
 
@@ -636,13 +637,13 @@
       <h3>@dashi/ui and Components</h3>
       <p class="roast">"Count the copies: three checkboxes, three month grids, three 'Open With' lists, two search fields, two sliders, and four sidebar-row heights. In practice the design system is a list of suggestions."</p>
       <ol>
-        <li>Components becomes the <code>@dashi/ui</code> gallery, every state, both modes. <span class="sz">M</span></li>
-        <li>Real keyboard and focus in the library. <span class="sz">L</span></li>
-        <li>Fill the control gaps, then delete the copies. <span class="sz">L</span></li>
-        <li>Palette in line with the brand and AA. <span class="sz">S</span></li>
-        <li>No <code>subtitle</code> in <code>AppWindow</code>. <span class="sz">S</span></li>
+        <li>Components becomes the <code>@dashi/ui</code> gallery, every state, both modes. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
+        <li>Real keyboard and focus in the library. <span class="sz">L</span> <span class="pill wip">Deferred</span></li>
+        <li>Fill the control gaps, then delete the copies. <span class="sz">L</span> <span class="pill wip">Deferred</span> <small>(Switch and Tooltip are in, <code>ab303c6</code>, <code>be702f7</code>)</small></li>
+        <li>Palette in line with the brand and AA. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code>, <code>c52d897</code></small></li>
+        <li>No <code>subtitle</code> in <code>AppWindow</code>. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>be702f7</code></small></li>
       </ol>
-      <p class="big"><b>Big idea:</b> the gallery as a live spec: tokens generate <code>design.html</code>'s values, the VM screenshots every exhibit in CI, and a control must be in the gallery before an app may use it.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> the gallery as a live spec: tokens generate <code>design.html</code>'s values, the VM screenshots every exhibit in CI, and a control must be in the gallery before an app may use it.</p>
       <p class="src">Report: <a href="roast/dashi-ui.md">roast/dashi-ui.md</a> · its 17 proposed rules feed the consolidated design guidelines.</p>
     </div>
 
@@ -650,13 +651,13 @@
       <h3>Portal dialogs and dashi-dialog</h3>
       <p class="roast">"The file chooser lets you walk into a folder but never back out, like a hotel whose only fire exit is in the lobby."</p>
       <ol>
-        <li>Real navigation in the chooser: a folder pop-up, Back and Up, a go-to field. <span class="sz">M</span></li>
-        <li>A real double-click; a single click only selects. <span class="sz">S</span></li>
-        <li>A print sheet that works from the keyboard, with a Copies stepper that lets you clear the field. <span class="sz">M</span></li>
-        <li>Access decisions you can review and revoke, and that Enter can't grant by accident. <span class="sz">M</span></li>
-        <li><code>dashi-dialog --file-selection</code> through the same chooser. <span class="sz">M</span></li>
+        <li>Real navigation in the chooser: a folder pop-up, Back and Up, a go-to field. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>b11166f</code>; the go-to field</small> <span class="pill wip">Deferred</span></li>
+        <li>A real double-click; a single click only selects. <span class="sz">S</span> <span class="pill done">Done</span> <small><code>b11166f</code></small></li>
+        <li>A print sheet that works from the keyboard, with a Copies stepper that lets you clear the field. <span class="sz">M</span> <span class="pill done">Done</span> <small><code>b11166f</code></small></li>
+        <li>Access decisions you can review and revoke, and that Enter can't grant by accident. <span class="sz">M</span> <span class="pill done">Done</span> <small>Enter never grants <code>b11166f</code>; review and revoke</small> <span class="pill wip">Deferred</span></li>
+        <li><code>dashi-dialog --file-selection</code> through the same chooser. <span class="sz">M</span> <span class="pill wip">Deferred</span></li>
       </ol>
-      <p class="big"><b>Big idea:</b> one chooser everywhere, Files in a sheet, used by Dashi's own apps first.</p>
+      <p class="big"><span class="pill wip">Deferred</span> <b>Big idea:</b> one chooser everywhere, Files in a sheet, used by Dashi's own apps first.</p>
       <p class="src">Report: <a href="roast/portal-dialogs.md">roast/portal-dialogs.md</a> · one P0.</p>
     </div>
 
@@ -666,37 +667,37 @@
       <h3>Wave 1: remove the embarrassment</h3>
       <p>Small, mostly app and token changes; each is a day or less, and together they change the first impression.</p>
       <ul>
-        <li>The window fixes on this page: Fill on the green control, the new chords, bugs 1–7. <span class="where app">shell</span> <span class="where comp">compositor</span></li>
+        <li>The window fixes on this page: Fill on the green control, the new chords, bugs 1–7. <span class="where app">shell</span> <span class="where comp">compositor</span> <span class="pill done">Done</span> <small><code>6be2379</code>, <code>658b0e4</code>, <code>a11fd80</code>, <code>6beaee2</code></small></li>
         <li><code>AppWindow</code> without <code>subtitle</code> and <code>footer</code>; contrast and job tokens (ume, broth, moss; darker accent fill). <span class="where ui">@dashi/ui</span> <span class="pill done">Built</span></li>
         <li>Confirm before deleting passwords and cards, Revert, closing a running tab; Enter never grants. <span class="where ui">@dashi/ui</span> <span class="pill done">Built</span> the shared <code>ConfirmSheet</code> and <code>useConfirm</code> (ume button, Enter and Esc cancel); each app adopts it.</li>
-        <li>Applet Store opens on Installed without a key.</li>
+        <li>Applet Store opens on Installed without a key. <span class="pill done">Done</span> <small><code>cd182d4</code></small></li>
         <li>Components unpinned from the default Dock. <span class="pill done">Built</span></li>
-        <li>Terminal palette, <code>memo</code> fix, ⇧❖W; Editor caret jump, ❖W asks, window titles.</li>
-        <li>Calculator locale, paste and spacing; Activity Monitor numbers, one row, sampling in a worker.</li>
-        <li>Settings' two Dark Mode controls, the sidebar colors; Calendar's hidden-calendar trap and palette.</li>
-        <li>Portal chooser Back and Up, real double-click, the Copies field; Software's local recommended list; Preview's empty state; Notes' conflict copy.</li>
+        <li>Terminal palette, <code>memo</code> fix, ⇧❖W; Editor caret jump, ❖W asks, window titles. <span class="pill done">Done</span> <small><code>946cc7b</code>, <code>cec131d</code>, <code>eb71d9d</code></small></li>
+        <li>Calculator locale, paste and spacing; Activity Monitor numbers, one row, sampling in a worker. <span class="pill done">Done</span> <small><code>54e902f</code>, <code>a01b242</code></small></li>
+        <li>Settings' two Dark Mode controls, the sidebar colors; Calendar's hidden-calendar trap and palette. <span class="pill done">Done</span> <small><code>c52d897</code>, <code>dc2240c</code></small></li>
+        <li>Portal chooser Back and Up, real double-click, the Copies field; Software's local recommended list; Preview's empty state; Notes' conflict copy. <span class="pill done">Done</span> <small><code>b11166f</code>, <code>cd182d4</code>, <code>ba85e35</code>, <code>f3ad26e</code></small></li>
       </ul>
     </div>
     <div class="wave w2">
       <h3>Wave 2: the platform pieces</h3>
       <p>Each unlocks several apps at once. Most of these are in mirin or <code>@dashi/ui</code>, not in an app.</p>
       <ul>
-        <li><span class="where mirin">mirin</span> <code>TextInput</code> caret placement and selection, then a document view; modifiers on <code>onPress</code>; later the accessibility tree. (Tooltips needed no mirin change: <code>@dashi/ui</code> draws them from Metal's hover bounds. <span class="pill done">Built</span>)</li>
-        <li><span class="where ui">@dashi/ui</span> <code>KeySink</code> on <code>onKeyDown</code> and a focus model; the missing controls; PopupMenu with separators, keys and clamping; one alert frame; a token lint.</li>
-        <li><span class="where ui">kit</span> a shared undo stack; a window-visibility signal; Components as the gallery.</li>
-        <li><span class="where comp">compositor</span> shadows, the hairline and the optional ring; sheets' shadow.</li>
-        <li><span class="where app">Settings</span> the settings registry behind search; one permission language and a Privacy &amp; Security pane.</li>
+        <li><span class="where mirin">mirin</span> <code>TextInput</code> caret placement and selection, then a document view; modifiers on <code>onPress</code>; later the accessibility tree. <span class="pill wip">Deferred</span> the caret, the document view and <code>onPress</code> modifiers; <span class="pill done">Done</span> the accessibility tree (<code>159e041</code>, <code>ce156b8</code>). (Tooltips needed no mirin change: <code>@dashi/ui</code> draws them from Metal's hover bounds. <span class="pill done">Built</span>)</li>
+        <li><span class="where ui">@dashi/ui</span> <code>KeySink</code> on <code>onKeyDown</code> and a focus model; the missing controls; PopupMenu with separators, keys and clamping; one alert frame; a token lint. <span class="pill wip">Deferred</span></li>
+        <li><span class="where ui">kit</span> a shared undo stack; a window-visibility signal; Components as the gallery. <span class="pill wip">Deferred</span></li>
+        <li><span class="where comp">compositor</span> shadows, the hairline and the optional ring; sheets' shadow. <span class="pill done">Done</span> <small><code>886cffc</code></small></li>
+        <li><span class="where app">Settings</span> the settings registry behind search; one permission language and a Privacy &amp; Security pane. <span class="pill wip">Deferred</span></li>
       </ul>
     </div>
     <div class="wave w3">
       <h3>Wave 3: the big ideas</h3>
       <ul>
-        <li>One file browser everywhere (Files, the portal, <code>dashi-dialog</code>, Dashi's apps).</li>
-        <li>Settings as addressable entries, with "Recently changed" and Undo, agents included.</li>
-        <li>Software as the trust card, with applets folded in.</li>
-        <li>Activity Monitor app-first, sharing one cost model with the battery menu and Force Quit.</li>
-        <li>Calendar's grid as the editor; Notes as one live page; Editor's document surface with autosave.</li>
-        <li>Terminal with shell integration; Preview's strip of pages; Calculator's expression line.</li>
+        <li>One file browser everywhere (Files, the portal, <code>dashi-dialog</code>, Dashi's apps). <span class="pill wip">Deferred</span></li>
+        <li>Settings as addressable entries, with "Recently changed" and Undo, agents included. <span class="pill wip">Deferred</span></li>
+        <li>Software as the trust card, with applets folded in. <span class="pill wip">Deferred</span></li>
+        <li>Activity Monitor app-first, sharing one cost model with the battery menu and Force Quit. <span class="pill wip">Deferred</span></li>
+        <li>Calendar's grid as the editor; Notes as one live page; Editor's document surface with autosave. <span class="pill wip">Deferred</span></li>
+        <li>Terminal with shell integration; Preview's strip of pages; Calculator's expression line. <span class="pill wip">Deferred</span></li>
       </ul>
     </div>
 
