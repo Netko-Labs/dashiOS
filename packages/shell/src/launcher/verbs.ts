@@ -14,6 +14,7 @@
 
 import type { ActionDef, Args } from "../actions/types.ts";
 import type { Entry } from "../entries.ts";
+import { agentVerbs } from "./agents/rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./items.ts";
 import { type FileRow, type Row, type RowAction, shownName } from "./row-model.ts";
 
@@ -201,6 +202,7 @@ export function verbsFor(row: Row, ctx: VerbContext): Verb[] {
   }
   if (action.kind === "open-file") return fileVerbs(action.file, row);
   if (action.kind === "copy") return [verb("copy", "Copy", action, { key: KEYS.primary })];
+  if (action.kind === "agent") return agentVerbs(action.act);
   return [verb("do", row.title, action, { key: KEYS.primary })];
 }
 

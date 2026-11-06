@@ -23,6 +23,8 @@ export interface FieldProps {
   hints: readonly Hint[];
   /** A word on what just happened; it takes the hints' place. */
   notice?: { text: string; ok: boolean } | null;
+  /** In place of the magnifier: an agent's plan wears the shiso spark (agents/plan-view.tsx). */
+  glyph?: { markup: string; color: string };
   onChangeText(text: string): void;
   onSubmit(): void;
   onKey(key: "Escape" | "ArrowUp" | "ArrowDown"): void;
@@ -35,11 +37,11 @@ function ChipIcon({ icon }: { icon: RowIcon }) {
   return null;
 }
 
-export function Field({ value, revision, placeholder, chip, hints, notice, onChangeText, onSubmit, onKey }: FieldProps) {
+export function Field({ value, revision, placeholder, chip, hints, notice, glyph, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: FIELD.height }}>
-      <Svg markup={SEARCH} size={18} color={colors.textMuted} />
+      <Svg markup={glyph?.markup ?? SEARCH} size={18} color={glyph?.color ?? colors.textMuted} />
       {chip && (
         <View
           testID="launcher:chip"
