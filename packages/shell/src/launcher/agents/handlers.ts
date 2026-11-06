@@ -39,6 +39,8 @@ export interface AgentHandlers {
   tab(): void;
   /** Return on a plan, with step `step` selected (or none). */
   submit(step: number | null): void;
+  /** Esc on a plan: an answer still being asked for is given up on (the harness or request stopped); a plan stays. */
+  leave(): void;
 }
 
 export function agentHandlers(deps: AgentHandlerDeps): AgentHandlers {
@@ -107,10 +109,18 @@ export function agentHandlers(deps: AgentHandlerDeps): AgentHandlers {
       case "settings":
         remote.setUp();
         return deps.close();
+      case "sign-in":
+        remote.signIn();
+        return deps.close();
       case "none":
         return;
     }
   };
 
-  return { act, tab, submit };
+  const leave = (): void => {
+    const task = deps.task;
+    if (remote && task?.phase === "asking") remote.stop({ kind: "task", id: task.id, name: task.request, status: "planning", phase: task.phase });
+  };
+
+  return { act, tab, submit, leave };
 }

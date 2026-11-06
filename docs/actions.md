@@ -343,9 +343,19 @@ tasks, Now, the history) and `launcher/agents/` (the rows, the plan view,
 the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
 
 - **Who answers.** Settings › Agents (or the Setup Assistant's Agents page):
-  "Answer requests with" a local model (first), Claude, or none;
-  settings.json `agents.answerer` (`"local" | "claude" | "none"`, unset until
-  the person picks) and `agents.localModel`. A local model is Ollama on
+  "Answer requests with", one row each, in this order: the harnesses
+  installed (Claude Code, Codex, OpenCode: "Your Claude subscription",
+  "Your ChatGPT plan", "OpenCode's configured provider", each with "Signed
+  in" or "Not signed in: run `claude auth login` in Terminal" where that can
+  be told without a model call), then a local model, then Claude and GPT
+  with the person's key, then None. A harness that isn't installed goes
+  after the APIs, reads "Not installed. Install it with …" (its install
+  command) and can't be picked. Nothing is checked until the person picks
+  (`agents/ask/choices.ts`, `settings-app/panes/answerer-list.tsx`).
+  settings.json `agents.answerer` (`"claude-code" | "codex" | "opencode" |
+  "local" | "claude" | "gpt" | "none"`, unset until the person picks),
+  `agents.localModel` and `agents.gptModel`. A harness answers through plan
+  mode (below). A local model is Ollama on
   `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
   only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), through the
   official SDK (`@anthropic-ai/sdk`, `agents/ask/claude.ts`):
@@ -361,14 +371,31 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   the session's `ANTHROPIC_API_KEY`. The key reaches the Anthropic client in
   the shell's own process only, for each request, and is dropped: never
   logged, shown, sent to the model, or put in a sandbox. Settings learns
-  where it is from the token list, without asking for the token. No other
-  network path.
+  where it is from the token list, without asking for the token. GPT is
+  OpenAI's Chat Completions on `api.openai.com/v1` only, through the
+  official SDK (`openai`, `agents/ask/gpt.ts`; the base URL fixed whatever
+  `OPENAI_BASE_URL` says, organization and project never read from the
+  session, `store: false`): the model is `agents.gptModel`, else the most
+  capable chat model the key's `/v1/models` lists (`agents/ask/gpt-models.ts`:
+  by generation, a full model over its mini and nano, an alias over its
+  snapshots; audio, realtime, image, search, embedding and Responses-only
+  models left out; nothing hard-coded), and Settings offers the first six as
+  pills. The plan's tools are strict function tools: every property
+  required, the optional ones nullable, and a null that comes back dropped
+  before the action's check (strict holds per call; with several calls in
+  one reply OpenAI doesn't promise it, so the check is what decides). A
+  refusal, a content filter or a reply cut at its length is never a plan,
+  and the SDK's typed errors say what went wrong (a refused key, no such
+  model, no credit left, busy, offline). Its key is the vault's token item
+  `openai` for `api.openai.com`, else `OPENAI_API_KEY`, handled as Claude's
+  is. No other network path, but a harness's own (plan mode).
 - **Asking.** An Ask row is added last, never selected for you, when an
   answerer is chosen and the words read like a request (three or more
   words, a verb first, or a "?"; not a sum the launcher answers), or after
   ⇥ (a launcher-only rule, `Tab|ISO_Left_Tab` → `launcher-tab`). It says
-  where the words go ("Claude · Anthropic, your key", "Local · stays on this
-  computer"). With nothing picked yet, ⇥ offers "Set up an agent…"; "None"
+  where the words go ("Claude Code · your Claude subscription", "Codex ·
+  your ChatGPT plan", "OpenCode · its own provider", "Local · stays on this
+  computer", "Claude · Anthropic, your key", "GPT · OpenAI, your key"). With nothing picked yet, ⇥ offers "Set up an agent…"; "None"
   hides Ask. Only the typed words are sent.
 - **The plan.** The answerer is offered the actions a person and agents
   both use (`who: "both"` with a tool) as tools; its calls come back as
@@ -382,7 +409,9 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   person's press. A step's own sheet answered no is "Not allowed" too. A
   settings change keeps the value it had, for Undo. Typing on a plan and
   Return sends a follow-up: the model hears how each call went, then the new
-  words. ⇥ goes back to the words to edit them; Esc leaves the plan running.
+  words. ⇥ goes back to the words to edit them; Esc leaves the plan running, but
+  Esc while it is still being asked for gives up on it (the request, or the
+  harness and all it started, stopped).
 - **Now.** An empty launcher lists, above Recent, a pending "Your turn"
   (Return brings its window forward), the launcher's own tasks (Return shows
   the plan), and the agents connected over MCP with what each is doing; each
@@ -392,6 +421,74 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   `tasks.jsonl` beside it (one line per plan: the request, each step's words
   and how it went, and the value to put back), with Undo for settings
   changes.
+- **Failures.** One line under the plan's head says why no plan came and
+  what Return does: "Return tries again" (no answer, a timeout, the
+  provider's error), "Return opens Settings" (no key, no model, a harness
+  not installed), or for a harness that isn't signed in, "Claude Code isn't
+  signed in. Return opens Terminal to sign in with claude auth login."
+  (Terminal can't be handed a command yet, so the row names it.)
+
+### Plan mode
+
+How a harness the person already has (Claude Code, Codex, OpenCode) answers
+the launcher with its own login, so a subscription works, without running
+anything (`agents/ask/harness/`; tests `test/agents-ask-harness.test.ts`
+with a fake CLI, `test/fixtures/fake-harness.ts`, that speaks MCP to the
+plan server and prints each CLI's output):
+
+1. **Found.** On PATH, then where its installer puts it (`~/.local/bin`,
+   `~/.claude/local`, `~/.npm-global/bin`, `~/.bun/bin`, `~/.opencode/bin`…),
+   links followed (`detect.ts`). Signed in is asked without a model call:
+   `claude auth status --json` (`loggedIn`), `codex login status` (exit 0),
+   OpenCode's `auth.json` listing a provider (else unknown, and the row
+   doesn't claim either).
+2. **The plan server.** Each turn gets its own socket,
+   `$XDG_RUNTIME_DIR/dashi-plan/<turn>.sock` (0600; a connection from
+   outside that turn's sandbox scope is refused), speaking MCP
+   (`plan-server.ts`): `tools/list` is the plan's tools, the same actions
+   the Claude API answerer is offered (`plan.ts` `planTools`); `tools/call`
+   never runs anything. A call's arguments are parsed as its schema means
+   them (a `"true"` or `"1.5"` sent as text where a boolean or number goes
+   becomes one, as some MCP clients send them), checked by its action, and
+   recorded as the next step; the harness hears "Planned as step N; nothing
+   runs until the person presses Return". A call that doesn't pass is
+   answered with why ("Not planned: … Fix the arguments and call it again")
+   and not recorded; nor is an unknown tool, or a tenth step.
+3. **The run.** `dashi-agent` with a plan profile (`DASHI_AGENT_PLAN`;
+   docs/secrets.md, "A harness in plan mode") runs the CLI headless, its
+   own tools off, with only the plan server for MCP, reached through
+   `dashi-mcp` with `DASHI_MCP_SOCKET` at the socket (`catalog.ts`, the
+   command lines as data):
+   - Claude Code (checked against `claude --help` 2.1.317, and run for real
+     on the build machine): `claude -p` with the prompt on stdin,
+     `--output-format json`, `--system-prompt`, `--tools ""` (no built-in
+     tool), `--strict-mcp-config --mcp-config {dashi}`, `--allowedTools
+     mcp__dashi`, `--permission-mode dontAsk`, `--setting-sources ""` (no
+     hooks or plugins), `--disable-slash-commands`, `--no-chrome`,
+     `--effort low`; a follow-up adds `--resume <session_id>`.
+   - Codex (from its docs; not yet run): `codex exec --json
+     --skip-git-repo-check --sandbox read-only --ignore-user-config` with
+     `-c features.shell_tool=false`, `-c web_search="disabled"`,
+     `-c approval_policy="never"` and `-c mcp_servers.dashi.*` (command, args,
+     env, `default_tools_approval_mode="approve"`, `required=true`), the
+     prompt (Dashi's words first) on stdin as `-`; a follow-up is `exec …
+     resume <thread_id> -`. Output: JSONL, `thread.started` (`thread_id`),
+     `item.completed` (`agent_message`), `turn.failed`/`error`.
+   - OpenCode (from its docs; not yet run): `opencode run --format json
+     --agent dashi-plan [--session <id>] -- <prompt>` with its config in
+     `OPENCODE_CONFIG_CONTENT`: the `dashi` server (`type: local`), tools
+     `{"*": false, "dashi_*": true}`, `permission` denying edits, shell and
+     fetches, and a `dashi-plan` agent with Dashi's prompt. Output: JSON
+     events with `sessionID`, `text` parts, `error`.
+4. **The plan.** When the CLI ends, the recorded calls are the plan, shown
+   and run exactly as any answerer's (one Return, `input-origin` checked,
+   Undo); its words, if any, are the line under the head. Its session is
+   kept with the task, so a follow-up resumes it, told how each step went.
+   A turn has 120 s; Esc (while it plans) or Stop sends SIGTERM to dashi-agent, which stops
+   the CLI and everything in its scope (`systemctl --user stop` of the
+   scope if it hasn't ended 3 s later). A CLI that says it isn't signed in
+   (`Not logged in`, a 401…) is "isn't signed in"; one that isn't
+   installed any more is "isn't installed".
 
 ## The keymap
 

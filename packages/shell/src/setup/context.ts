@@ -1,3 +1,4 @@
+import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { XkbLayouts } from "../settings-app/layouts.ts";
@@ -23,4 +24,6 @@ export interface SetupContext {
   finish(outcome: "finished" | "skipped"): void;
   /** Open the launcher (the Done page's Try it); absent where there is none to open. */
   openLauncher?(): void;
+  /** Who can answer the launcher (the Agents page lists the harnesses installed); absent without a session. */
+  answers?: AnswerStatus;
 }

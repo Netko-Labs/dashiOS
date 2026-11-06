@@ -10,6 +10,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
+import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
 import { isSettingKey, settingState } from "./actions/sources/settings.ts";
@@ -570,6 +571,8 @@ const setupAssistant = startSetupAssistant({
   system: system.store,
   // Its last page teaches ❖ (setup/pages/done.tsx): Try it opens the launcher.
   openLauncher: () => showLauncher(),
+  // Its Agents page lists the harnesses installed (agents/ask/choices.ts).
+  answers: () => askAgents?.status ?? null,
 });
 // Auto appearance: Dark Mode by the time of day, when appearance.auto is on (appearance/auto.ts).
 const autoAppearance = new AutoAppearance({ flags, enabled: () => settingsStore.getSnapshot().data.appearance.auto === true });
@@ -1380,6 +1383,11 @@ askAgents = startAsk({
   },
   stopAgent: (id) => agents?.stop(id),
   openSettings: () => settingsApp.open("agents"),
+  // A harness that isn't signed in signs in there (agents/ask/harness/).
+  openTerminal: () => {
+    const terminal = actions.registry.get(formatAddress(["app", "dev.dashi.terminal"]));
+    if (terminal) void actions.run(terminal, {});
+  },
   keys: modelKeys(vaultTokenSource(passwords.vault.tokens)),
 });
 // A dashi:// link that must not run by itself (destructive, an agent's tool) opens in the launcher, filled in, for Return.

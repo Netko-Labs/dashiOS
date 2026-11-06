@@ -62,6 +62,9 @@ copy_module "$(ls -d "$bun_dir"/@opentelemetry+api@*/node_modules/@opentelemetry
 copy_module "$(ls -d "$bun_dir"/standardwebhooks@*/node_modules/standardwebhooks | head -1)" "$modules/standardwebhooks"
 copy_module "$(ls -d "$bun_dir"/@stablelib+base64@*/node_modules/@stablelib/base64 | head -1)" "$modules/@stablelib/base64"
 copy_module "$(ls -d "$bun_dir"/fast-sha256@*/node_modules/fast-sha256 | head -1)" "$modules/fast-sha256"
+# OpenAI's SDK (the launcher's GPT answerer): the client needs nothing else at run time; ws, zod and undici are
+# optional peers for its realtime and helper subpaths, which Dashi doesn't load.
+copy_module "$(ls -d "$bun_dir"/openai@*/node_modules/openai | head -1)" "$modules/openai"
 mkdir -p "$modules/@mirinjs/metal"
 cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
 [ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"

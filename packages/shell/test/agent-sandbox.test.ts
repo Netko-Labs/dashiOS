@@ -1,5 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { inAgentScope, proxyArgs, type SandboxEnv, sandboxArgs, unitName } from "../src/agents/sandbox.ts";
+import {
+  inAgentScope,
+  type PlanProfile,
+  parsePlanProfile,
+  planSocketInside,
+  proxyArgs,
+  type SandboxEnv,
+  sandboxArgs,
+  unitName,
+} from "../src/agents/sandbox.ts";
 
 const env: SandboxEnv = { home: "/home/alex", runtime: "/run/user/1000", state: "/home/alex/.local/state", config: "/home/alex/.config" };
 const present = new Map<string, "dir" | "file">([
@@ -69,5 +78,57 @@ describe("the agent sandbox", () => {
     ]);
     expect(proxy.join(" ")).not.toContain("secrets");
     expect(proxy.join(" ")).not.toContain("systemd1");
+  });
+});
+
+describe("a harness in plan mode", () => {
+  const plan: PlanProfile = {
+    socket: "/run/user/1000/dashi-plan/claude-code-1.sock",
+    readOnly: ["/home/alex/.local/share/claude/versions/2.1.317", "/home/alex/.local/share/gone"],
+    state: ["/home/alex/.claude", "/home/alex/.claude.json"],
+    cwd: "/run/user/1000/dashi-launcher",
+  };
+  const present = new Map<string, "dir" | "file">([
+    ["/run/dashi-secretd", "dir"],
+    ["/home/alex/.config/op", "dir"],
+    ["/home/alex/.config/dashi", "dir"],
+    ["/run/user/1000/dashi-mcp.sock", "file"],
+    ["/home/alex/.local/share/claude/versions/2.1.317", "file"],
+    ["/home/alex/.claude", "dir"],
+    ["/home/alex/.claude.json", "file"],
+  ]);
+  const planned = sandboxArgs(["/home/alex/.local/share/claude/versions/2.1.317", "-p"], {
+    env,
+    exists: (path) => present.get(path) ?? null,
+    bwrap: "bwrap",
+    unit: "dashi-agent-plan-claude-code-9.scope",
+    bus: null,
+    plan,
+  });
+  const flag = (name: string) => planned.flatMap((arg, i) => (arg === name ? [planned[i + 1] ?? ""] : []));
+
+  test("its home folder is empty but for its login (read-write) and its install (read-only)", () => {
+    expect(flag("--tmpfs")).toEqual(expect.arrayContaining(["/home/alex", "/run/user/1000", "/run/dashi-secretd"]));
+    expect(flag("--ro-bind")).toEqual(["/sys/fs/cgroup", "/home/alex/.local/share/claude/versions/2.1.317"]);
+    expect(flag("--bind")).toEqual(["/home/alex/.claude", "/home/alex/.claude.json", plan.socket]);
+    expect(planned).not.toContain("/home/alex/.config/dashi");
+  });
+
+  test("its only Dashi socket is the turn's plan socket; no bus; it starts in a folder of its own", () => {
+    expect(planned).not.toContain("/run/user/1000/dashi-mcp.sock");
+    const at = planned.indexOf(plan.socket);
+    expect(planned[at + 1]).toBe(planSocketInside("/run/user/1000"));
+    expect(flag("--unsetenv")).toContain("DBUS_SESSION_BUS_ADDRESS");
+    expect(flag("--chdir")).toEqual([plan.cwd]);
+    expect(flag("--dir")).toEqual([plan.cwd]);
+    expect(planned.slice(-3)).toEqual(["--", "/home/alex/.local/share/claude/versions/2.1.317", "-p"]);
+  });
+
+  test("its profile parses only as absolute paths", () => {
+    expect(parsePlanProfile(JSON.stringify(plan))).toEqual(plan);
+    expect(parsePlanProfile(JSON.stringify({ ...plan, state: ["relative"] }))).toBeNull();
+    expect(parsePlanProfile(JSON.stringify({ ...plan, socket: 3 }))).toBeNull();
+    expect(parsePlanProfile("{")).toBeNull();
+    expect(parsePlanProfile(undefined)).toBeNull();
   });
 });

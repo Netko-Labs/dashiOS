@@ -722,6 +722,8 @@ export function Launcher(props: LauncherProps) {
     // A link opened the launcher for its action alone: Esc closes it. Windows' pictures fold first.
     if (pictures.fold()) return;
     if (mode.kind === "presented") return onClose();
+    // Esc while an answer is still coming gives up on it (launcher/agents/handlers.ts `leave`).
+    if (mode.kind === "task") agentKeys.leave();
     if (mode.kind !== "search") return backToSearch();
     // A command from outside's own scope first, then a launcher scope's chip: back to the whole launcher,
     // or closed when it was opened for the scope.

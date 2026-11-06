@@ -1,10 +1,10 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { type AnswererChoice, CHOICE_LABELS } from "../../agents/ask/answerer.ts";
 import { SCOPES } from "../../agents/consent.ts";
 import { SPARKLE } from "../../settings-app/glyphs.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
-import { Caption, Choices, Group, Row } from "../../settings-app/ui.tsx";
+import { AnswererList, useHarnesses } from "../../settings-app/panes/answerer-list.tsx";
+import { Caption, Group, Row } from "../../settings-app/ui.tsx";
 import type { SetupContext } from "../context.ts";
 
 /** What each promise is, in the words the consent sheet uses. */
@@ -18,27 +18,28 @@ const PROMISES = [
 /**
  * What agent-first means and how consent works, with the policy Dashi ships. Nothing is granted
  * here: this page has no switches, so there is no way to pre-allow an agent from the assistant.
- * It does ask who answers the launcher's requests, a local model first; nothing is picked for the
- * person, and choosing allows nothing (agents/ask/answerer.ts).
+ * It does ask who answers the launcher's requests, the harnesses installed first; nothing is picked
+ * for the person, and choosing allows nothing (agents/ask/answerer.ts).
  */
-export function AgentsPage({ ctx }: { ctx: Pick<SetupContext, "settings"> }) {
+export function AgentsPage({ ctx }: { ctx: Pick<SetupContext, "settings" | "answers"> }) {
   const colors = useColors();
   const { data } = useSettings(ctx.settings);
+  const harnesses = useHarnesses(ctx.answers?.harnesses);
   return (
     <>
       <Group testID="setup-answerer">
-        <Row label="Answer your requests with" detail="Type what to do in the launcher, press Tab, and see the plan before anything runs." stack>
-          <Choices<AnswererChoice | "unset">
-            testID="setup-answerer-choice"
-            options={CHOICE_LABELS}
-            value={data.agents.answerer ?? "unset"}
-            onChange={(value) => {
-              if (value !== "unset") ctx.settings.patch("agents", { answerer: value });
-            }}
-          />
-        </Row>
+        <Row label="Answer your requests with" detail="Type what to do in the launcher, press Tab, and see the plan before anything runs." />
+        <AnswererList
+          testID="setup-answerer-choice"
+          chosen={data.agents.answerer}
+          harnesses={harnesses}
+          onChoose={(value) => ctx.settings.patch("agents", { answerer: value })}
+        />
       </Group>
-      <Caption>A local model keeps your words on this computer. Claude uses your Anthropic key. You can change this in System Settings › Agents.</Caption>
+      <Caption>
+        Claude Code, Codex and OpenCode answer with your own subscription. A local model keeps your words on this computer. Claude and GPT use your key. You can
+        change this in System Settings › Agents.
+      </Caption>
       <Group testID="setup-agent-promises">
         {PROMISES.map((text) => (
           <View key={text} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 12 }}>

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AnswererChoice } from "../src/agents/ask/answerer.ts";
+import { hostRunner } from "../src/agents/ask/harness/index.ts";
 import { HistoryLog } from "../src/agents/ask/history.ts";
 import { modelKeys } from "../src/agents/ask/keys.ts";
 import { TurnWatch } from "../src/agents/ask/now.ts";
@@ -23,7 +24,7 @@ test("Settings › Agents says where Claude's key is and what model runs here", 
 
 test("settings.json agents: only the choices and model names it knows are read", () => {
   expect(readSettings({ agents: { answerer: "local", localModel: "qwen3:8b" } }).agents).toEqual({ answerer: "local", localModel: "qwen3:8b" });
-  expect(readSettings({ agents: { answerer: "gpt", localModel: "../x" } }).agents).toEqual({});
+  expect(readSettings({ agents: { answerer: "gemini", localModel: "../x" } }).agents).toEqual({});
   expect(readSettings({}).agents).toEqual({});
 });
 
@@ -109,4 +110,56 @@ test("Claude with no key: the Ask fails with where the key goes, and nothing is 
   expect(sent).toEqual([]);
   expect(await ask.status.keyPlace()).toBe("none");
   done();
+});
+
+test("a harness answers through plan mode: Settings sees it installed, and an Ask comes back as a plan that has run nothing", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-ask-harness-"));
+  const fixture = join(import.meta.dir, "fixtures", "fake-harness.ts");
+  const ran: string[] = [];
+  const host = hostRunner(() => "none.scope");
+  const ask = startAsk({
+    settings: settings("claude-code"),
+    agents: new AgentStore(),
+    turns: new TurnWatch(),
+    actions: () => TOOL_ACTIONS,
+    runApproved: async (action) => {
+      ran.push(action.address);
+      return { ok: true, text: "" };
+    },
+    runAsPerson: async () => ({ ok: true, text: "" }),
+    personPressed: async () => true,
+    settingNow: () => null,
+    focus: async () => {},
+    stopAgent: () => {},
+    openSettings: () => {},
+    keys: modelKeys(null, {}),
+    history: new HistoryLog(dir),
+    harnesses: {
+      env: { HOME: dir, XDG_RUNTIME_DIR: dir, PATH: "/fake/bin" },
+      files: {
+        isExecutable: (path) => path === "/fake/bin/claude",
+        real: (path) => (path === "/fake/bin/claude" ? fixture : null),
+        exists: () => false,
+        head: () => null,
+      },
+      probe: async () => ({ stdout: '{"loggedIn":true}', code: 0 }),
+      run: (argv, options) => host([process.execPath, ...argv], options),
+      shell: { bun: process.execPath, bridge: join(import.meta.dir, "..", "bin", "dashi-mcp.ts"), dashiAgent: "/nonexistent" },
+      direct: true,
+    },
+  });
+  expect(await ask.status.harnesses()).toEqual([
+    { id: "claude-code", installed: true, signedIn: true },
+    { id: "codex", installed: false, signedIn: null },
+    { id: "opencode", installed: false, signedIn: null },
+  ]);
+  const id = ask.launcher.ask("dark mode and open notes") as string;
+  for (let i = 0; i < 200 && ask.tasks.get(id)?.phase === "asking"; i++) await new Promise((resolve) => setTimeout(resolve, 20));
+  const task = ask.tasks.get(id);
+  expect(task?.answerer.name).toBe("Claude Code");
+  expect(task?.phase).toBe("planned");
+  expect(task?.steps.map((step) => step.title)).toEqual(["Turn Dark Mode on", "Open “Notes”"]);
+  expect(ran).toEqual([]);
+  ask.close();
+  rmSync(dir, { recursive: true, force: true });
 });
