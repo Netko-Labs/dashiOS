@@ -95,9 +95,10 @@ export class PrintBackend {
   async prepare(args: readonly unknown[]): Promise<[ResponseCode, Map<string, unknown>]> {
     const [handle, appId, parent, title, settings, pageSetup] = args;
     return this.requests.run(handle, async (signal) => {
-      const { answer } = await this.sheet(text(appId, 256), text(parent, 256), text(title), asDict(settings), null, signal);
+      const app = text(appId, 256);
+      const { answer } = await this.sheet(app, text(parent, 256), text(title), asDict(settings), null, signal);
       if (!answer) return [Response.cancelled, new Map()];
-      const token = this.tokens.keep(answer.choice);
+      const token = this.tokens.keep(app, answer.choice);
       return [
         Response.success,
         new Map<string, unknown>([
@@ -116,10 +117,12 @@ export class PrintBackend {
     const pdf = readDocument(fd);
     const name = text(title) || "Document";
     return this.requests.run(handle, async (signal) => {
-      let choice = this.tokens.take(u32(vardict(options), "token"));
+      const app = text(appId, 256);
+      // A token another app was given is no token: this app is asked, on its own window.
+      let choice = this.tokens.take(u32(vardict(options), "token"), app);
       let printers: Printer[] = [];
       if (!choice) {
-        const asked = await this.sheet(text(appId, 256), text(parent, 256), name, new Map(), pdf, signal);
+        const asked = await this.sheet(app, text(parent, 256), name, new Map(), pdf, signal);
         if (!asked.answer) return [Response.cancelled, new Map()];
         choice = asked.answer.choice;
         printers = asked.printers;

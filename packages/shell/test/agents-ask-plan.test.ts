@@ -57,6 +57,9 @@ test("a long plan is cut, and a model's words are one short line", () => {
 test("settings words for a toggle and a pick, and a fallback for other tools", () => {
   expect(settingWords("night_shift", false)).toBe("Turn Night Shift off");
   expect(settingWords("dock_style", "taskbar")).toBe("Set Dock style to taskbar");
+  expect(settingWords("dock_autohide", true)).toBe("Hide the Dock automatically");
+  // A name the model made up that is an Object member is no toggle's.
+  expect(settingWords("constructor", true)).toBe("Turn constructor on");
   const action = TOOL_ACTIONS.find((each) => each.tool === "set_display_scale");
   if (!action) throw new Error("no set_display_scale");
   expect(describeStep(action, { display: "eDP-1", scale: 1.5 })).toBe("Scale a screen: display “eDP-1”, scale 1.5");

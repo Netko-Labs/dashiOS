@@ -48,11 +48,20 @@ function Limits({ vault }: { vault: Vault }) {
   const [spending, setSpending] = useState<{ perPayment: number; perMonth: number; spentThisMonth: number } | null>(null);
   const [form, setForm] = useState({ perPayment: "", perMonth: "", password: "" });
   const [problem, setProblem] = useState<string | null>(null);
+  // A failed read says so instead of leaving the limits out without a word.
+  const [unread, setUnread] = useState(false);
   const refresh = useCallback(() => {
     void vault
       .spending()
-      .then(setSpending)
-      .catch(() => setSpending(null));
+      .then((next) => {
+        setSpending(next);
+        setUnread(false);
+      })
+      .catch((error: unknown) => {
+        console.error("dashi-shell: Payments:", error instanceof Error ? error.message : error);
+        setSpending(null);
+        setUnread(true);
+      });
   }, [vault]);
   useEffect(() => refresh(), [refresh]);
   const save = () => {
@@ -68,7 +77,12 @@ function Limits({ vault }: { vault: Vault }) {
       })
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
-  if (!spending) return null;
+  if (!spending)
+    return unread ? (
+      <Group testID="payments-limits">
+        <Note testID="payments-limits-unread">The limits can't be shown right now.</Note>
+      </Group>
+    ) : null;
   return (
     <Group testID="payments-limits">
       <Row label="Limit per payment" detail={`Now ${dollars(spending.perPayment)}`}>

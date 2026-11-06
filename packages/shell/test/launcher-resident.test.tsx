@@ -66,6 +66,8 @@ test("one host for the session: each open draws its tree first, then opens; each
   let closed = 0;
   const first = resident.open(OPTIONS, <Text>first</Text>, () => (closed += 1));
   expect(first).not.toBeNull();
+  // The host outlives the window: nothing says it exited.
+  expect(first?.exited).toBeUndefined();
   // Shown already: a second open waits its turn (the overlay slot holds one).
   expect(resident.open(OPTIONS, <Text>again</Text>)).toBeNull();
   await settle();

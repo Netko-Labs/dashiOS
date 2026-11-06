@@ -228,6 +228,33 @@ describe("menus apps publish", () => {
     });
     source.close();
   });
+
+  test("a windows read that fails on the settle timer is caught, and the actions stay as they were", async () => {
+    let changed = () => {};
+    const errors: unknown[] = [];
+    const error = console.error;
+    console.error = (...args: unknown[]) => void errors.push(args);
+    const source = new MenuSource({
+      store,
+      windows: () => Promise.reject(new Error("no compositor")),
+      onWindows: (listener) => {
+        changed = listener;
+        return () => {};
+      },
+      owners: () => [],
+      appName: () => "Notes",
+      focus: async () => {},
+    });
+    try {
+      changed();
+      await Bun.sleep(150);
+      expect(errors.length).toBe(1);
+      expect(source.actions()).toEqual([]);
+    } finally {
+      console.error = error;
+      source.close();
+    }
+  });
 });
 
 describe("settings", () => {

@@ -45,6 +45,8 @@ export function dialogWindows(shell: ShellLink, binary: string = METAL_HOST): Sh
     const parent = parseParentWindow(window.parent);
     const token = `p${randomBytes(6).toString("hex")}`;
     const sheet = parent !== null && (await shell.expectSheet(sheetTitle(token), parent));
+    // The app may have given up while the shell was asked; its abort has fired already.
+    if (signal.aborted) return closed;
     const transport = host({
       appId: PORTAL_APP_ID,
       title: sheet ? sheetTitle(token) : window.title,

@@ -128,15 +128,15 @@ const onOff = (value: unknown): string => (value === true ? "on" : "off");
 const settingRow = (name: unknown) => SETTING_ROWS.find((row) => row.setting === name);
 
 /** Switches whose row title isn't a name to turn on or off: what on and off say. */
-const TOGGLE_WORDS: Readonly<Record<string, readonly [string, string]>> = {
-  dock_autohide: ["Hide the Dock automatically", "Keep the Dock in view"],
-  battery_percentage: ["Show the battery percentage in the menu bar", "Hide the battery percentage in the menu bar"],
-  sound_in_menu_bar: ["Show Sound in the menu bar", "Hide Sound in the menu bar"],
-};
+const TOGGLE_WORDS: ReadonlyMap<string, readonly [string, string]> = new Map([
+  ["dock_autohide", ["Hide the Dock automatically", "Keep the Dock in view"]],
+  ["battery_percentage", ["Show the battery percentage in the menu bar", "Hide the battery percentage in the menu bar"]],
+  ["sound_in_menu_bar", ["Show Sound in the menu bar", "Hide Sound in the menu bar"]],
+]);
 
 /** What setting `name` to `value` is called on a step: "Turn Dark Mode on", "Set Dock style to taskbar". */
 export function settingWords(name: unknown, value: unknown): string {
-  const phrase = typeof name === "string" && typeof value === "boolean" ? TOGGLE_WORDS[name] : undefined;
+  const phrase = typeof name === "string" && typeof value === "boolean" ? TOGGLE_WORDS.get(name) : undefined;
   if (phrase) return value ? phrase[0] : phrase[1];
   const row = settingRow(name);
   const title = row?.title ?? oneLine(String(name), 32);

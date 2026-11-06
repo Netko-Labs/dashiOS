@@ -3,6 +3,7 @@ import { type A11yNode, focusedField, hasState, passwordFields, placeAgain, ROLE
 import { AGENT_MASK, AgentMask, FIELD_PAD, type FilledField, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
 import { answeredByPerson, PERSON_PRESS_MS, personAnswered } from "../src/agents/person.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
+import { DBusError, ERRORS } from "../src/dbus/index.ts";
 import { bits, browser, tree } from "./fixtures/a11y-tree.ts";
 
 function window(id: number, pid: number | null, appId = "firefox"): CompositorWindow {
@@ -83,8 +84,29 @@ describe("the accessibility walk", () => {
     expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [STATE.SHOWING], rect }), null)).toEqual({ rect, page: null });
     expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [], rect }), null)).toBe("hidden");
     expect(await placeAgain(tree({ role: ROLE.ENTRY, states: [STATE.SHOWING, STATE.DEFUNCT], rect }), null)).toBe("gone");
-    const forgotten = { ...tree({ role: ROLE.ENTRY }), states: () => Promise.reject(new Error("unknown object")) };
+    const forgotten = { ...tree({ role: ROLE.ENTRY }), states: () => Promise.reject(new DBusError(ERRORS.unknownObject, "unknown object")) };
     expect(await placeAgain(forgotten, null)).toBe("gone");
+    const quit = { ...tree({ role: ROLE.ENTRY }), states: () => Promise.reject(new DBusError("org.freedesktop.DBus.Error.ServiceUnknown")) };
+    expect(await placeAgain(quit, null)).toBe("gone");
+  });
+
+  test("a field whose query times out isn't gone: it stays blanked where it was", async () => {
+    const slow = { ...tree({ role: ROLE.ENTRY }), states: () => Promise.reject(new DBusError(ERRORS.noReply, "no reply to GetState within 300 ms")) };
+    await expect(placeAgain(slow, null)).rejects.toThrow("no reply");
+    const sent: Array<Record<string, unknown>> = [];
+    const forgotten: string[] = [];
+    const rect = { x: 10, y: 40, width: 100, height: 20 };
+    const mask = new AgentMask({
+      request: async (_method, params) => sent.push(params),
+      windows: async () => [window(3, null)],
+      atspi: async () => null,
+      handedOver: () => [],
+      isVault: () => false,
+      filled: () => [{ window: 3, rect, again: () => placeAgain(slow, null), forget: () => forgotten.push("slow") }],
+    });
+    await mask.update();
+    expect((sent[0]?.rects as Array<{ y: number }>).map((r) => r.y + FIELD_PAD)).toEqual([40]);
+    expect(forgotten).toEqual([]);
   });
 
   test("a field whose page the tab left is gone, though Chromium still answers for it", async () => {
