@@ -6,6 +6,8 @@
  * nodes and time, and skips what isn't showing.
  */
 
+import { DBusError } from "../../dbus/index.ts";
+
 /** AT-SPI roles (AtspiRole) the walk cares about. */
 export const ROLE = { FRAME: 23, PASSWORD_TEXT: 40, TEXT: 61, APPLICATION: 75, ENTRY: 79, DOCUMENT_WEB: 95 } as const;
 /** AT-SPI states (AtspiStateType), as bit numbers in GetState's two words. */
@@ -82,13 +84,27 @@ export interface Placed {
   again?(): Promise<Placed | "gone" | "hidden">;
 }
 
-/** A node placed again, for a field that must stay blank where it moves (scrolling) and no longer once its page is gone. */
+/** The replies that say a node is no more: its object, or the app it was in. */
+const NO_SUCH_NODE = new Set([
+  "org.freedesktop.DBus.Error.UnknownObject",
+  "org.freedesktop.DBus.Error.UnknownMethod",
+  "org.freedesktop.DBus.Error.ServiceUnknown",
+  "org.freedesktop.DBus.Error.NameHasNoOwner",
+]);
+
+/**
+ * A node placed again, for a field that must stay blank where it moves
+ * (scrolling) and no longer once its page is gone. Only an answer that the
+ * node is gone is "gone": a query that fails otherwise (a timeout) throws,
+ * and the field stays blanked where it was.
+ */
 export async function placeAgain(node: A11yNode, page: A11yNode | null): Promise<Placed | "gone" | "hidden"> {
   let states: readonly number[];
   try {
     states = await node.states();
-  } catch {
-    return "gone";
+  } catch (error) {
+    if (error instanceof DBusError && NO_SUCH_NODE.has(error.errorName)) return "gone";
+    throw error;
   }
   if (hasState(states, STATE.DEFUNCT) || (page && !(await stillThere(page)))) return "gone";
   if (!hasState(states, STATE.SHOWING)) return "hidden";
