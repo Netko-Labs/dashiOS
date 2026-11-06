@@ -9,7 +9,9 @@
 
 import { SEARCH, Shortcut, useColors } from "@dashi/ui";
 import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { useState } from "react";
 import { noticeAccess } from "./access.ts";
+import { fitWords, leastRoom, unmeasured, widthKey } from "./fit-words.ts";
 import { STANDARD, useMeasures } from "./measures.ts";
 import type { RowIcon } from "./row-model.ts";
 import type { Hint } from "./verbs.ts";
@@ -20,7 +22,8 @@ export interface FieldProps {
   value: string;
   /** Bumped when the launcher took a key for itself (Space flipping a switch), so the field shows `value` again. */
   revision?: number;
-  placeholder: string;
+  /** The words the empty field shows; several, fullest first, and the fullest that fits whole is shown (fit-words.ts). */
+  placeholder: string | readonly string[];
   /** What the rows act on, in a chip before the field. */
   chip?: { title: string; icon?: RowIcon };
   hints: readonly Hint[];
@@ -42,9 +45,18 @@ function ChipIcon({ icon, size }: { icon: RowIcon; size: number }) {
   return null;
 }
 
+/** Words measured as the field draws them, by size: the same words at the same size are measured once a session. */
+const measured = new Map<string, number>();
+
 export function Field({ value, revision, placeholder, chip, hints, notice, glyph, access, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   const m = useMeasures();
+  const [room, setRoom] = useState<number | null>(null);
+  const [, setMeasuredCount] = useState(0);
+  const choices = typeof placeholder === "string" ? [placeholder] : placeholder;
+  const widthOf = (text: string): number | undefined => measured.get(widthKey(text, m.fieldText));
+  const shown = choices.length > 1 ? fitWords(choices, room, widthOf) : (choices[0] ?? "");
+  const toMeasure = choices.length > 1 ? unmeasured(choices, widthOf) : [];
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: m.field }}>
       <Svg markup={glyph?.markup ?? SEARCH} size={m.searchGlyph} color={glyph?.color ?? colors.textMuted} />
@@ -52,7 +64,9 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
         <View
           testID="launcher:chip"
           style={{
-            flexShrink: 0,
+            // It gives way before the field's least room (a long request at the largest text size).
+            flexShrink: 1,
+            minWidth: 0,
             flexDirection: "row",
             alignItems: "center",
             gap: 6,
@@ -69,13 +83,33 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
           </Text>
         </View>
       )}
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+      <View
+        testID="launcher:field-room"
+        style={{ flex: 1, minWidth: leastRoom(choices, widthOf), flexDirection: "row", alignItems: "center" }}
+        {...(choices.length > 1 ? { onLayout: (bounds: { width: number }) => setRoom(bounds.width) } : {})}
+      >
+        {/* The placeholder's choices, measured once at this size, never seen: then they go. */}
+        {toMeasure.map((text) => (
+          <View
+            key={text}
+            testID={`launcher:measure:${text}`}
+            onLayout={(bounds) => {
+              measured.set(widthKey(text, m.fieldText), bounds.width);
+              setMeasuredCount(measured.size);
+            }}
+            style={{ position: "absolute", left: 0, top: 0, opacity: 0 }}
+          >
+            <Text numberOfLines={1} style={{ fontSize: m.fieldText }}>
+              {text}
+            </Text>
+          </View>
+        ))}
         {/* Metal draws a focused empty field's placeholder, muted, right after the caret. */}
         <TextInput
           testID="launcher:field"
           value={value}
           {...(revision === undefined ? {} : { valueRevision: revision })}
-          placeholder={placeholder}
+          placeholder={shown}
           autoFocus
           onChangeText={onChangeText}
           onSubmitEditing={onSubmit}

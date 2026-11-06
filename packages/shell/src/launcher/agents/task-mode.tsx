@@ -49,11 +49,12 @@ export function agentField(
   task: TaskView | undefined,
   draft: string,
   agentColor: string,
-): { glyph: { markup: string; color: string }; chip?: { title: string }; placeholder: string; hints: Hint[] } {
+): { glyph: { markup: string; color: string }; chip?: { title: string }; placeholder: readonly string[]; hints: Hint[] } {
   const glyph = { markup: SPARKLE, color: agentColor };
-  if (!task) return { glyph, placeholder: "This request has ended", hints: [{ keys: "Esc", label: "back" }] };
+  if (!task) return { glyph, placeholder: ["This request has ended"], hints: [{ keys: "Esc", label: "back" }] };
   const chip = { title: oneLine(task.request, 40) };
-  const placeholder = `Follow up with ${task.answerer.name}`;
+  // Whole or not at all: the answerer's name when it fits beside the chip and the keys, else the short words, which fit at every text size.
+  const placeholder = [`Reply to ${task.answerer.name}`, "Follow up…"];
   const busy = task.phase === "asking" || task.phase === "running";
   const hints: Hint[] =
     draft.trim() && !busy

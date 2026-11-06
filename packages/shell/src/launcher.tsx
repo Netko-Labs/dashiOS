@@ -899,7 +899,7 @@ export function Launcher(props: LauncherProps) {
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
             : (taskField?.chip ?? scope?.chip ?? ext.chip);
-  const placeholder =
+  const placeholder: string | readonly string[] =
     mode.kind === "search"
       ? (scope?.placeholder ?? ext.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
       : taskField
@@ -957,7 +957,7 @@ export function Launcher(props: LauncherProps) {
           {...(chip ? { chip } : {})}
           hints={hints}
           notice={notice}
-          {...(access ? { access: { ...fieldAccess(placeholder, list !== null) } } : {})}
+          {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
           onChangeText={onChangeText}
           onSubmit={() => submit()}
           onKey={onKey}
