@@ -8,6 +8,7 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
+import type { ReactElement } from "react";
 import { Button, opaque } from "../consent.tsx";
 
 export interface PersonQuestion {
@@ -26,7 +27,7 @@ export function personTitle(summary: string): string {
   return text === "" ? "Go ahead?" : `${text.charAt(0).toUpperCase()}${text.slice(1)}?`;
 }
 
-export function PersonConfirmSheet({ question, onAnswer }: { question: PersonQuestion; onAnswer: (yes: boolean) => void }) {
+export function PersonConfirmSheet({ question, onAnswer }: { question: PersonQuestion; onAnswer: (yes: boolean) => void }): ReactElement {
   const colors = useColors();
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
