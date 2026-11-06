@@ -21,7 +21,7 @@
 import type { ActionDef, ActionState, Args, Outcome } from "../../actions/types.ts";
 import { AnswerError, type Answerer, type AnswererInfo, type AnswerFailure, type Turn } from "./answerer.ts";
 import type { HistoryLog, HistoryStep, StepOutcome } from "./history.ts";
-import { oneLine, planTools, resultFor, runnable, type Step, type StepState, settingWords, stepsFrom, type Undo } from "./plan.ts";
+import { oneLine, planTools, resultFor, runnable, type Step, type StepState, settingWords, spokenWords, stepsFrom, type Undo } from "./plan.ts";
 
 export type TaskPhase = "asking" | "planned" | "running" | "done" | "failed" | "stopped";
 
@@ -178,7 +178,8 @@ export class AskTasks {
       task.history = history;
       task.serial++;
       task.steps = stepsFrom(reply.calls, actions);
-      task.said = oneLine(reply.text, 140);
+      // What it says to the person, never its tools' chatter (plan.ts `spokenWords`).
+      task.said = spokenWords(reply.text);
       // Nothing to run (it said it can't): the plan view shows its words, and Now lets it go.
       task.phase = task.steps.length > 0 ? "planned" : "done";
     } catch (error) {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { describeStep, MAX_STEPS, oneLine, planActions, planTools, resultFor, runnable, settingWords, stepsFrom } from "../src/agents/ask/plan.ts";
+import { describeStep, MAX_STEPS, oneLine, planActions, planTools, resultFor, runnable, settingWords, spokenWords, stepsFrom } from "../src/agents/ask/plan.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 
 const call = (name: string, input: unknown, id = name) => ({ id, name, input });
@@ -69,4 +69,19 @@ test("how each step went, for the model's next turn", () => {
   expect(resultFor({ ...ready, state: { kind: "done", text: "Locked." } })).toEqual({ id: "a", text: "Locked.", error: false });
   expect(resultFor({ ...ready, state: { kind: "not-allowed" } }).error).toBe(true);
   expect(resultFor(invalid).text.startsWith("Not run: ")).toBe(true);
+});
+
+test("under a plan only what the answerer says to the person: its last words on one line, never its tools' chatter", () => {
+  // The VM run: a harness's raw output under the plan.
+  expect(spokenWords("OpenCode: 29 tools | ok: Planned as step 1; nothing runs until the person presses Return. | ok: Planned as step 2")).toBe("");
+  expect(spokenWords("Not planned: `value` must be true or false. Fix the arguments and call it again.")).toBe("");
+  expect(spokenWords("Planned as step 1; nothing runs until the person presses Return.\n\nDark Mode goes on, then Notes opens.")).toBe(
+    "Dark Mode goes on, then Notes opens.",
+  );
+  expect(spokenWords("I'll turn Dark Mode on\nand open Notes.")).toBe("I'll turn Dark Mode on and open Notes.");
+  expect(spokenWords("I can't do that here.")).toBe("I can't do that here.");
+  expect(spokenWords("")).toBe("");
+  expect(spokenWords("x".repeat(200))).toHaveLength(140);
+  // Words a person would say about tools are not chatter.
+  expect(spokenWords("No tool here can book a table.")).toBe("No tool here can book a table.");
 });
