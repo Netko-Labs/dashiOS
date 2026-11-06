@@ -162,10 +162,8 @@ export class ResidentHost {
       if (this.shown !== shown || this.host !== host) return;
       host.open(windowOf(options));
     });
-    return {
-      close: () => this.hide(key),
-      exited: Promise.resolve(),
-    };
+    // No `exited`: the host stays up when the window hides, so there is no exit to wait for.
+    return { close: () => this.hide(key) };
   }
 
   /** Hide the window that open `key` showed (a later open is left alone). */
