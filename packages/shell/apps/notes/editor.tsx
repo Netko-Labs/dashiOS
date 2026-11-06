@@ -188,7 +188,7 @@ export function Editor(props: EditorProps) {
             }}
             style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
           >
-            <Text style={{ fontSize: BODY_SIZE }}>{`${draft.body}▏`}</Text>
+            <Text style={{ fontSize: BODY_SIZE }}>{draft.body}</Text>
           </View>
           <TextInput
             key={`body:${session}:${bodyFocus}`}

@@ -4,8 +4,8 @@
  * bar at its left edge (`selectionBar`), and every word and glyph on it is ink
  * (`onSelection`), as the launcher's rows are. No solid kombu fill under white
  * text: muted words would fall under 4.5:1 there, and two looks for one job
- * read as two jobs. Selected text in a field is on the same wash
- * (`TextSelectionLook`).
+ * read as two jobs. Selected text in a field is on the same kombu, washed
+ * deeper since it has no bar (`textSelection`, `TextSelectionLook`).
  */
 
 import { TextInputDefaults, View } from "@mirinjs/metal";
@@ -59,10 +59,10 @@ export function rowLook(colors: Palette, selected: boolean): RowLook {
 }
 
 /**
- * Every text field below it draws its selected text on `selectionWash`, under its own
+ * Every text field below it draws its selected text on `textSelection`, under its own
  * ink (CO-9), in the live palette. A surface's root puts it around its tree once.
  */
 export function TextSelectionLook({ children }: { children: ReactNode }) {
   const colors = useColors();
-  return <TextInputDefaults.Provider value={{ selectionColor: colors.selectionWash }}>{children}</TextInputDefaults.Provider>;
+  return <TextInputDefaults.Provider value={{ selectionColor: colors.textSelection }}>{children}</TextInputDefaults.Provider>;
 }
