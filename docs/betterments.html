@@ -397,7 +397,7 @@
         <tr><th>Source</th><th>Where it runs</th><th>Budget</th><th>Late answers</th></tr>
         <tr><td>Apps, windows, settings, menus, actions</td><td>In memory, in the shell</td><td>2 ms per keystroke for all of them</td><td>Never late</td></tr>
         <tr><td>Files</td><td>One LocalSearch D-Bus connection</td><td>80 ms</td><td>Fill their reserved slots</td></tr>
-        <tr><td>Applets, scripts, D-Bus providers</td><td>Their own unit, with <code>CPUQuota=</code>, <code>MemoryMax=</code>, <code>Nice=</code></td><td>80 ms, then "Weather · slow"</td><td>Append below; dropped for the session after three misses</td></tr>
+        <tr><td>Applets, scripts, D-Bus providers</td><td>Their own unit, with <code>CPUQuota=</code>, <code>MemoryMax=</code>, <code>Nice=</code></td><td>80 ms, then "Weather · slow"</td><td>Append below; dropped for the session after three asks with no answer in 2 s (a late answer is no miss)</td></tr>
         <tr><td>Agents</td><td>Only after ⇥ or a sentence</td><td>None: never on the typing path</td><td>Their own row, last</td></tr>
       </table>
       <ul>

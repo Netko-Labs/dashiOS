@@ -8,6 +8,10 @@
  * | files (one LocalSearch connection)      | 80 ms             | fill the slots held for them                    |
  * | applets, scripts, D-Bus providers       | 80 ms             | append below, marked slow; dropped after three |
  *
+ * A slow source is dropped for the session only when it doesn't answer at all
+ * (`BUDGET.giveUpMs`) three times running; one that answers late is still
+ * worth its rows, and any answer it gives clears its misses.
+ *
  * Pure: the clock and the timers come in, so the tests drive them. Each query
  * has a sequence number; an answer for an older one is dropped, so a slow
  * source can never put rows under the selection for what is typed now.
@@ -24,7 +28,9 @@ export const BUDGET = {
   filesMs: 80,
   /** A slow source, then it is marked slow and its answer appended. */
   slowMs: 80,
-  /** Late this many times and a slow source isn't asked again this session. */
+  /** No answer this long after it was asked counts as a miss (a late answer doesn't). */
+  giveUpMs: 2000,
+  /** This many misses running and a slow source isn't asked again this session. */
   misses: 3,
 } as const;
 
@@ -111,8 +117,8 @@ export interface SlowSnapshot<Row> {
 /**
  * The slow sources for each query: each is asked, given `BUDGET.slowMs`, and
  * marked slow when it overruns; its answer still comes in, below the ones that
- * were on time. A source late `BUDGET.misses` times is dropped for the
- * session. `onChange` hears every change for the current query only.
+ * were on time. A source that doesn't answer at all within `BUDGET.giveUpMs`,
+ * `BUDGET.misses` times running, is dropped for the session. `onChange` hears every change for the current query only.
  */
 export class SlowSources<Row> {
   private seq = 0;
@@ -146,9 +152,23 @@ export class SlowSources<Row> {
     if (asked.length === 0) return seq;
     this.deadline = this.timers.set(() => this.overrun(seq), BUDGET.slowMs);
     for (const source of asked) {
+      // Not answered at all within giveUpMs: a miss. Any answer, even for an older query, clears them.
+      let settled = false;
+      const giveUp = this.timers.set(() => {
+        if (!settled) this.misses.set(source.id, (this.misses.get(source.id) ?? 0) + 1);
+      }, BUDGET.giveUpMs);
       source.ask(query).then(
-        (rows) => this.settle(seq, source.id, { kind: "answered", rows, isLate: this.states.get(source.id)?.kind === "slow" }),
-        () => this.settle(seq, source.id, { kind: "failed" }),
+        (rows) => {
+          settled = true;
+          this.timers.clear(giveUp);
+          this.misses.delete(source.id);
+          this.settle(seq, source.id, { kind: "answered", rows, isLate: this.states.get(source.id)?.kind === "slow" });
+        },
+        () => {
+          settled = true;
+          this.timers.clear(giveUp);
+          this.settle(seq, source.id, { kind: "failed" });
+        },
       );
     }
     this.emit();
@@ -176,7 +196,6 @@ export class SlowSources<Row> {
     for (const [id, state] of this.states) {
       if (state.kind !== "waiting") continue;
       this.states.set(id, { kind: "slow" });
-      this.misses.set(id, (this.misses.get(id) ?? 0) + 1);
     }
     this.emit();
   }

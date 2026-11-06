@@ -102,14 +102,27 @@ describe("slow sources", () => {
     expect(seen.length).toBe(count + 1);
   });
 
-  test("late three times, a source is dropped for the session; a failure isn't a miss", async () => {
+  test("late but answering, a source stays (a provider starting up takes seconds); one that never answers is dropped", async () => {
+    const timers = fakeTimers();
+    const characters = source("characters");
+    const kept = new SlowSources([characters], () => {}, timers);
+    for (let query = 0; query < 6; query++) {
+      kept.start(`smile${query}`);
+      timers.advance(BUDGET.slowMs + 400);
+      characters.answer(["😊"]);
+      await Bun.sleep(0);
+    }
+    expect(kept.isDropped("characters")).toBe(false);
+  });
+
+  test("not answering three times, a source is dropped for the session; a failure isn't a miss", async () => {
     const timers = fakeTimers();
     const weather = source("weather");
     const sources = new SlowSources([weather], () => {}, timers);
     for (let miss = 1; miss <= BUDGET.misses; miss++) {
       expect(sources.isDropped("weather")).toBe(false);
       sources.start(`q${miss}`);
-      timers.advance(BUDGET.slowMs + 1);
+      timers.advance(BUDGET.giveUpMs + 1);
     }
     expect(sources.isDropped("weather")).toBe(true);
     const asked = weather.asked.length;

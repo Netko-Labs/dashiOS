@@ -250,6 +250,6 @@ describe("LocalSearch over D-Bus", () => {
   });
 
   test("the budgets the page sets", () => {
-    expect(BUDGET).toEqual({ openMs: 50, keystrokeMs: 16, instantMs: 2, filesMs: 80, slowMs: 80, misses: 3 });
+    expect(BUDGET).toEqual({ openMs: 50, keystrokeMs: 16, instantMs: 2, filesMs: 80, slowMs: 80, giveUpMs: 2000, misses: 3 });
   });
 });
