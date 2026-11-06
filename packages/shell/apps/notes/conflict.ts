@@ -35,7 +35,7 @@ export function conflictTitle(title: string): string {
   return `${title.trim() || "Untitled"} (conflict)`;
 }
 
-/** The quiet line that says what happened. */
-export function conflictNotice(title: string, copy: string): string {
-  return `“${title.trim() || "Untitled"}” changed on disk while you were typing. Your version is saved as “${copy}”.`;
+/** The quiet line that says what happened, short enough for one line: the copy's name says the rest. */
+export function conflictNotice(copy: string): string {
+  return `Your changes are saved in “${copy}”.`;
 }

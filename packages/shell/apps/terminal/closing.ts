@@ -22,29 +22,21 @@ export function stillRunning(answers: readonly (string | null)[]): string[] {
   return answers.filter((answer): answer is string => answer !== null);
 }
 
-const quoted = (program: string): string => (program === "" ? "A program" : `“${program}”`);
-
-/** “a”, “a” and “b”, “a”, “b” and “c”; null unless every program has a name of its own. */
-function names(programs: readonly string[]): string | null {
+/**
+ * What closing stops: “vim”, “vim” and “ssh”, else a count. Short enough that
+ * the sheet's line never wraps onto a lone word: more than two names, or a
+ * program with none, is counted instead.
+ */
+function stopped(programs: readonly string[]): string {
   const distinct = [...new Set(programs)];
-  if (distinct.length !== programs.length || distinct.includes("")) return null;
-  const marked = distinct.map((program) => `“${program}”`);
-  return marked.length === 1 ? (marked[0] as string) : `${marked.slice(0, -1).join(", ")} and ${marked.at(-1)}`;
+  const named = distinct.length === programs.length && !distinct.includes("");
+  if (named && distinct.length <= 2) return distinct.map((program) => `“${program}”`).join(" and ");
+  return programs.length === 1 ? "a running program" : `${programs.length} running programs`;
 }
 
 export function closeCopy(question: CloseQuestion): CloseCopy {
   if (question.kind === "tab") {
-    return {
-      title: "Close this tab?",
-      message: `${quoted(question.program)} is still running. Closing the tab stops it.`,
-      confirmLabel: "Close tab",
-    };
+    return { title: "Close this tab?", message: `Closing it stops ${stopped([question.program])}.`, confirmLabel: "Close tab" };
   }
-  const count = question.programs.length;
-  const named = names(question.programs);
-  const message =
-    count === 1
-      ? `${quoted(question.programs[0] ?? "")} is still running. Closing the window stops it.`
-      : `${count} programs are still running${named ? `: ${named}` : ""}. Closing the window stops them.`;
-  return { title: "Close this window?", message, confirmLabel: "Close window" };
+  return { title: "Close this window?", message: `Closing it stops ${stopped(question.programs)}.`, confirmLabel: "Close window" };
 }

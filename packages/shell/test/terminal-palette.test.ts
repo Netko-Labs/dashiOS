@@ -68,18 +68,17 @@ describe("closing a tab that runs something", () => {
   test("the tab's question names its program", () => {
     expect(closeCopy({ kind: "tab", id: 1, program: "ssh" })).toEqual({
       title: "Close this tab?",
-      message: "“ssh” is still running. Closing the tab stops it.",
+      message: "Closing it stops “ssh”.",
       confirmLabel: "Close tab",
     });
-    expect(closeCopy({ kind: "tab", id: 1, program: "" }).message).toBe("A program is still running. Closing the tab stops it.");
+    expect(closeCopy({ kind: "tab", id: 1, program: "" }).message).toBe("Closing it stops a running program.");
   });
 
-  test("the window's question names them when it can, else counts them", () => {
-    expect(closeCopy({ kind: "window", programs: ["vim"] }).message).toBe("“vim” is still running. Closing the window stops it.");
-    expect(closeCopy({ kind: "window", programs: ["vim", "ssh", "make"] }).message).toBe(
-      "3 programs are still running: “vim”, “ssh” and “make”. Closing the window stops them.",
-    );
-    expect(closeCopy({ kind: "window", programs: ["sleep", "sleep"] }).message).toBe("2 programs are still running. Closing the window stops them.");
+  test("the window's question names up to two, else counts them, in one short line", () => {
+    expect(closeCopy({ kind: "window", programs: ["vim"] }).message).toBe("Closing it stops “vim”.");
+    expect(closeCopy({ kind: "window", programs: ["vim", "ssh"] }).message).toBe("Closing it stops “vim” and “ssh”.");
+    expect(closeCopy({ kind: "window", programs: ["vim", "ssh", "make"] }).message).toBe("Closing it stops 3 running programs.");
+    expect(closeCopy({ kind: "window", programs: ["sleep", "sleep"] }).message).toBe("Closing it stops 2 running programs.");
     expect(closeCopy({ kind: "window", programs: ["vim"] }).confirmLabel).toBe("Close window");
   });
 });

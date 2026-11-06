@@ -29,9 +29,7 @@ describe("which version a save keeps", () => {
   test("the copy's title and the line that tells the person", () => {
     expect(conflictTitle("Groceries")).toBe("Groceries (conflict)");
     expect(conflictTitle("  ")).toBe("Untitled (conflict)");
-    expect(conflictNotice("Groceries", "Groceries (conflict)")).toBe(
-      "“Groceries” changed on disk while you were typing. Your version is saved as “Groceries (conflict)”.",
-    );
+    expect(conflictNotice("Groceries (conflict)")).toBe("Your changes are saved in “Groceries (conflict)”.");
   });
 });
 
@@ -68,7 +66,7 @@ describe("the model never writes over a change on disk", () => {
     const state = model.getSnapshot();
     expect(state.selected).toBe("Groceries (conflict).md");
     expect(state.draft).toEqual({ title: "Groceries (conflict)", body: "- milk\n- eggs" });
-    expect(state.notice).toBe(conflictNotice("Groceries", "Groceries (conflict)"));
+    expect(state.notice).toBe(conflictNotice("Groceries (conflict)"));
     expect(state.error).toBeNull();
     // Typing on goes into the copy, never the original.
     model.edit({ body: "- milk\n- eggs\n- tea" });
@@ -99,7 +97,7 @@ describe("the model never writes over a change on disk", () => {
     model.edit({ body: "- milk\n- eggs" });
     sync("# Groceries\n\n- bread\n");
     model.select("Errands.md");
-    expect(model.getSnapshot().notice).toBe(conflictNotice("Groceries", "Groceries (conflict)"));
+    expect(model.getSnapshot().notice).toBe(conflictNotice("Groceries (conflict)"));
     // Opening yet another note lets it go.
     model.select("Groceries.md");
     expect(model.getSnapshot().notice).toBeNull();

@@ -233,7 +233,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         <ConfirmSheet
           testID="empty-trash"
           title="Empty the Trash?"
-          message={`${formatCount(state.items.length)} will be deleted for good. This can’t be undone.`}
+          message={`${formatCount(state.items.length)} will be deleted for good.`}
           confirmLabel="Empty Trash"
           danger
           onCancel={close}
@@ -250,7 +250,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         <ConfirmSheet
           testID="delete-forever"
           title={`Delete ${names} immediately?`}
-          message="It will be deleted for good. This can’t be undone."
+          message="You can’t undo this."
           confirmLabel="Delete"
           danger
           onCancel={close}
