@@ -5,17 +5,24 @@
 //!
 //! The GPU is `DASHI_DRM_DEVICE` when set (dashi-session picks the one that
 //! drives a screen, packages/shell/bin/dashi-gpu.ts), else the seat's primary.
+//! Every other GPU is open only while something needs it (sleep.rs).
 
 mod devices;
 mod edid;
 mod feedback;
 mod frame;
+mod holds;
 mod screens;
+mod sleep;
 mod start;
 
+pub(crate) use holds::describe_gpus;
+pub(crate) use sleep::{import_dmabuf, keep_gpu};
 pub(crate) use start::init;
 
-use devices::{advertise_formats, device_added, device_removed, offer_explicit_sync};
+use devices::{
+    advertise_formats, device_added, device_removed, is_drawing_gpu, offer_explicit_sync,
+};
 use frame::{frame_finished, render_device, render_screen};
 use screens::{apply_gamma, connector_disconnected, scan_connectors};
 mod input_devices;
@@ -23,15 +30,20 @@ mod vrr;
 
 pub(crate) use vrr::VrrReport;
 
-use std::{collections::HashMap, path::Path, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    os::fd::OwnedFd,
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+};
 
-use serde_json::json;
+use serde_json::{Value, json};
 use smithay::desktop::utils::OutputPresentationFeedback;
 use smithay::{
     backend::{
         allocator::{
             Fourcc,
-            dmabuf::Dmabuf,
+            dmabuf::{Dmabuf, WeakDmabuf},
             format::FormatSet,
             gbm::{GbmAllocator, GbmBufferFlags, GbmDevice},
         },
@@ -125,6 +137,14 @@ pub(crate) struct UdevData {
     primary_gpu: DrmNode,
     gpus: Gpus,
     devices: HashMap<DrmNode, Device>,
+    /// GPUs let go because nothing needs them (sleep.rs, holds.rs).
+    asleep: HashMap<DrmNode, holds::Asleep>,
+    /// Cards the shell keeps open with nothing on them (`gpu-keep`).
+    kept: HashSet<String>,
+    /// When waking the sleeping GPUs last failed to read a client's buffer.
+    buffer_wake_failed: Option<Instant>,
+    /// Counts device openings, so a sleep timer set for one opening ignores the next.
+    openings: u64,
     libinput: Libinput,
     input_devices: input_devices::InputDevices,
     /// The tint to keep on every screen (`gamma`), as red, green, blue factors.
@@ -137,6 +157,17 @@ struct Device {
     render_node: Option<DrmNode>,
     screens: HashMap<crtc::Handle, Screen>,
     token: RegistrationToken,
+    /// Its device node (`/dev/dri/card0`) and udev's name for it (`card0`).
+    path: PathBuf,
+    card: String,
+    /// The fd the seat opened, handed back to it when the GPU goes to sleep.
+    fd: DeviceFd,
+    /// Client buffers only this GPU could read: it stays open while they live.
+    buffers: Vec<WeakDmabuf>,
+    /// Which opening this is (`UdevData::openings`).
+    generation: u64,
+    /// A sleep timer is set (sleep.rs).
+    release_pending: bool,
 }
 
 struct Screen {
@@ -316,10 +347,24 @@ impl UdevData {
         Ok(lit)
     }
 
-    pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
-        self.gpus
+    /// Import a client's buffer on the drawing GPU, else any open one; one
+    /// only another GPU could read keeps that GPU open while it lives.
+    fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
+        let imported = self
+            .gpus
             .single_renderer(&self.primary_gpu)
-            .is_ok_and(|mut renderer| renderer.import_dmabuf(dmabuf, None).is_ok())
+            .is_ok_and(|mut renderer| renderer.import_dmabuf(dmabuf, None).is_ok());
+        if imported
+            && let Some(node) = dmabuf.node()
+            && node != self.primary_gpu
+            && let Some(device) = self
+                .devices
+                .values_mut()
+                .find(|device| device.render_node == Some(node))
+        {
+            device.buffers.push(dmabuf.weak());
+        }
+        imported
     }
 }
 

@@ -281,6 +281,22 @@ fn the_shells_configuration_is_answered() {
 }
 
 #[test]
+fn no_gpus_are_held_without_a_seat_of_our_own() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(
+        ipc.request("gpus", json!({}))["result"],
+        json!({ "gpus": [] })
+    );
+    assert_eq!(
+        ipc.request("gpu-keep", json!({ "card": "card0", "on": true }))["error"],
+        "no GPU named card0"
+    );
+    assert!(ipc.request("gpu-keep", json!({ "card": "card0" }))["error"].is_string());
+    assert!(ipc.request("gpu-keep", json!({ "on": false }))["error"].is_string());
+}
+
+#[test]
 fn screens_are_described_as_the_shell_parses_them() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();

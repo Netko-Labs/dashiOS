@@ -259,6 +259,14 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
+        "gpus" => Ok(backend::udev::describe_gpus(state)),
+        "gpu-keep" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            done(backend::udev::keep_gpu(state, text(params, "card")?, on))
+        }
         "screencopy-clients" => {
             let paths = params
                 .get("paths")
