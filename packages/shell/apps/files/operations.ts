@@ -34,7 +34,14 @@ export class Operations {
   /** What Edit › Undo takes back: Files' writes, newest last. */
   readonly undo = new UndoStack();
 
-  constructor(private readonly store: FilesStore) {}
+  constructor(private readonly store: FilesStore) {
+    // A notice's Undo is for its own step: once Undo would take back another
+    // (it was undone, or a rename or a new folder came after), the notice goes.
+    this.undo.subscribe(() => {
+      const step = this.store.getSnapshot().notice?.undoStep;
+      if (step !== undefined && step !== this.undo.state.undoStep) this.store.dismissNotice();
+    });
+  }
 
   private get undoEnv(): UndoEnv {
     const { trash, home, run } = this.store.env;
@@ -50,11 +57,14 @@ export class Operations {
     };
   }
 
-  /** Edit › Undo or Redo, or the notice's Undo: a step that fails says why. */
+  /**
+   * Edit › Undo or Redo, or the notice's Undo: a step that fails says why.
+   * One that didn't run (another still running, or none to take) leaves the
+   * notice where it is.
+   */
   async undoStep(way: "undo" | "redo"): Promise<void> {
     try {
-      await (way === "undo" ? this.undo.undo() : this.undo.redo());
-      this.store.dismissNotice();
+      if (await (way === "undo" ? this.undo.undo() : this.undo.redo())) this.store.dismissNotice();
     } catch (error) {
       this.store.say(error instanceof Error ? error.message : String(error), true);
     }
@@ -141,9 +151,11 @@ export class Operations {
       })
       .then((job) => {
         // What was moved or copied before a failure or a Cancel can be taken back too.
-        if (mode === "move" && moves.length > 0) this.undo.push(moveAction(moves, this.undoEnv));
-        if (mode === "copy" && created.length > 0) this.undo.push(copyAction("Copy", created, this.undoEnv));
-        this.finished(job.state, job.message, created, true);
+        const moved = mode === "move" && moves.length > 0;
+        const copied = mode === "copy" && created.length > 0;
+        if (moved) this.undo.push(moveAction(moves, this.undoEnv));
+        if (copied) this.undo.push(copyAction("Copy", created, this.undoEnv));
+        this.finished(job.state, job.message, created, moved || copied);
       });
     return created;
   }
@@ -155,7 +167,7 @@ export class Operations {
       for (const path of paths) created.push(await duplicate(path, ctx));
     });
     if (created.length > 0) this.undo.push(copyAction("Duplicate", created, this.undoEnv));
-    this.finished(job.state, job.message, created, true);
+    this.finished(job.state, job.message, created, created.length > 0);
   }
 
   // --- Making and renaming -----------------------------------------------------------
@@ -286,7 +298,7 @@ export class Operations {
       return `Made ${quote(baseName(created[0] as string))}.`;
     });
     if (created.length > 0) this.undo.push(copyAction("Compress", created, this.undoEnv));
-    this.finished(job.state, job.message, created, true);
+    this.finished(job.state, job.message, created, created.length > 0);
   }
 
   appsFor(item: FileItem): Promise<OpenWithApp[]> {
@@ -320,11 +332,11 @@ export class Operations {
 
   // --- Outcomes ----------------------------------------------------------------------
 
-  /** `undoable`: the step just pushed can be taken back from the notice (its Undo). */
+  /** `undoable`: a step was just pushed, and the notice offers Undo for it (and only it). */
   private finished(state: string, message: string | null, created: readonly string[], undoable = false): void {
     if (state === "cancelled") this.store.say("Cancelled.");
     else if (state === "failed") this.store.say(message ?? "Something went wrong.", true);
-    else if (message) this.store.say(message, false, undoable && this.undo.state.canUndo);
+    else if (message) this.store.say(message, false, undoable ? this.undo.state.undoStep : null);
     this.store.reload();
     const here = this.here;
     const mine = created.filter((path) => here !== null && parentOf(path) === here);

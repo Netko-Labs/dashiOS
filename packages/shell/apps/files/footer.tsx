@@ -54,9 +54,11 @@ export function Footer() {
   // It floats over the listing (AppWindow's notice) only while it has something to say; it is never a bar.
   if (jobs.length === 0 && !state.notice) return null;
   const notice = state.notice;
-  // "Moved “a.txt” to the Trash." with Undo, while that is still what Undo takes back (design.html PA-2).
+  // "Moved “a.txt” to the Trash." with Undo, while that step is still what Undo takes back (design.html PA-2).
   const action =
-    notice?.undoable && undo.canUndo ? <Button testID="footer:undo" label="Undo" disabled={undo.busy} onPress={() => void ops.undoStep("undo")} /> : undefined;
+    notice?.undoStep !== undefined && notice.undoStep === undo.undoStep ? (
+      <Button testID="footer:undo" label="Undo" disabled={undo.busy} onPress={() => void ops.undoStep("undo")} />
+    ) : undefined;
   return (
     <Notice
       testID="footer"
