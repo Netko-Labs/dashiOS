@@ -18,8 +18,12 @@ import type { ActionDef, Args } from "../../actions/types.ts";
 import { label, type Scope } from "../consent.ts";
 import type { ModelCall, PlanTool } from "./answerer.ts";
 
-/** A plan longer than this is cut: the rest is not run. */
-export const MAX_STEPS = 12;
+/**
+ * A plan longer than this is cut: the rest is not run. Nine 40 px steps,
+ * their head and a line of the model's words fit the launcher's 520 px
+ * surface under its field, so every step that runs is on screen.
+ */
+export const MAX_STEPS = 9;
 
 export type StepState =
   | { kind: "ready" }
