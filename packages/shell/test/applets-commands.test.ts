@@ -116,6 +116,15 @@ test("a version 3 hello: welcomed as 3, and its commands are actions marked as t
   expect(actions[3]?.check({})).toEqual({ ok: false, error: "It needs “City”." });
 });
 
+test("an applet in development shows its own commands, even when an older copy without them is installed", () => {
+  const { send, commands } = harness();
+  // The installed copy (no commands yet), as the VM had it.
+  commands.setInstalled([{ manifest: manifest({ commands: [] }), dir: "/home/alexk/.local/share/dashi/applets/dev.example.weather" }]);
+  expect(commands.actions()).toEqual([]);
+  send({ type: "hello", protocol: 3, manifest: MANIFEST, dev: true });
+  expect(commands.actions().map((each) => each.address)).toContain("dashi://applet/dev.example.weather/now");
+});
+
 test("a newer applet gets the shell's version; an older one stays at 2 and can't send version 3's messages", () => {
   const newer = harness();
   newer.send({ type: "hello", protocol: 7, manifest: MANIFEST });

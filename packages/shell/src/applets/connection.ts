@@ -274,6 +274,7 @@ export class AppletConnection implements ExtraActions {
     if (this.version >= 3 && manifest.commands.length > 0 && this.context.commands) {
       this.commands = this.context.commands.attach({
         manifest: installed ?? manifest,
+        dev: this.dev,
         send: (message) => this.send(message),
         grant: (on) => this.context.grants?.set(this.pid, on) ?? Promise.resolve(),
       });

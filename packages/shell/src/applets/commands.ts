@@ -42,6 +42,8 @@ export const ROWS_TIMEOUT_MS = 5_000;
 /** A connection that spoke version 3, as the commands see it. */
 export interface CommandPeer {
   manifest: Manifest;
+  /** An applet in development (`dashi-applet dev`): its own manifest is the one being worked on, over an installed copy's. */
+  dev?: boolean;
   send(message: AppletShellMessage): void;
   /** The layer shell for its process: on while its view is shown. */
   grant(on: boolean): Promise<void>;
@@ -136,8 +138,9 @@ export class AppletCommands implements ActionSource {
   private rebuild(): void {
     const byId = new Map<string, { manifest: Manifest; dir: string | null }>();
     for (const applet of this.installed) byId.set(applet.manifest.id, { manifest: applet.manifest, dir: applet.dir });
-    // One in development that isn't installed: its own manifest, while it is connected.
-    for (const peer of this.peers.values()) if (!byId.has(peer.manifest.id)) byId.set(peer.manifest.id, { manifest: peer.manifest, dir: null });
+    // One in development: its own manifest while it is connected, even over an installed copy of the
+    // same applet (the developer's commands are the ones being tried, not the older install's).
+    for (const peer of this.peers.values()) if (peer.dev || !byId.has(peer.manifest.id)) byId.set(peer.manifest.id, { manifest: peer.manifest, dir: null });
     this.current = [...byId.values()].flatMap(({ manifest, dir }) => manifest.commands.map((command) => this.action(manifest, command, dir)));
     for (const listener of this.listeners) listener();
   }
