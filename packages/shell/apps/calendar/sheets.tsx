@@ -92,7 +92,7 @@ export function DeleteEventSheet({
       <ConfirmSheet
         testID="delete-event"
         title={`Delete “${sheet.title || "New Event"}”?`}
-        message="You can't undo this."
+        message="Edit › Undo brings it back."
         confirmLabel="Delete"
         danger
         onConfirm={onAll}

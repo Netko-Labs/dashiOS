@@ -218,6 +218,16 @@ export class CalendarStore {
     });
   }
 
+  /** Puts `event` in the calendar exactly as given, replacing the one with its uid (Undo and Redo: history.ts). */
+  put(id: string, event: CalEvent): void {
+    this.mutate(id, (calendar) => {
+      const at = calendar.events.findIndex((each) => each.uid === event.uid);
+      if (at >= 0) calendar.events[at] = event;
+      else if (calendar.events.length >= MAX_EVENTS_PER_CALENDAR) throw new CalendarError("That calendar has too many events.");
+      else calendar.events.push(event);
+    });
+  }
+
   /** Deletes one occurrence of a repeating event (named by its start), leaving the others. */
   skip(id: string, uid: string, start: string): void {
     this.mutate(id, (calendar) => {

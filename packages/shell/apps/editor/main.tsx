@@ -5,7 +5,8 @@
  * window of its own, with the changes kept for it if an earlier window
  * closed or crashed before saving them; without a file, all kept changes
  * come back (recovery.ts), else an Untitled document. What isn't saved is
- * kept as it is typed, so no way of closing loses it.
+ * kept as it is typed, and every close asks first (Save, Don't Save,
+ * Cancel), so no way of closing loses it.
  */
 
 import { resolve } from "node:path";
@@ -85,7 +86,8 @@ if (first !== undefined) {
 keeper.flush();
 model.subscribe(() => keeper.changed());
 
-// The window going without asking (its close button, ❖Q, logging out) keeps what isn't saved; Don't Save drops it.
+// A close from outside (its close button, ❖Q, logging out) asks as File › Close does (view.tsx); the
+// process ending without asking (a signal, a crash) keeps what isn't saved, and Don't Save drops it.
 process.on("exit", () => {
   if (discard) keeper.discard();
   else keeper.flush();

@@ -45,6 +45,7 @@ export {
   useTextSize,
 } from "./theme/index.ts";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip } from "./tooltip.tsx";
+export { JOIN_MS as UNDO_JOIN_MS, redoLabel, UNDO_LIMIT, type UndoAction, UndoStack, type UndoState, undoLabel, undoMenuItems, useUndo } from "./undo.ts";
 export {
   AppWindow,
   type AppWindowProps,

@@ -51,6 +51,14 @@ systemd --user
   each surface drawn by its own Metal host.
 - **Apps** (`apps/*`) are separate Bun processes on the app kit (`apps/kit`),
   each with a Metal window, a control socket, and menus served to the shell.
+  A close from outside (the close control, ❖W, ❖Q, the Dock's Quit, logging
+  out: the compositor's `close`, `xdg_toplevel.close`) is a request mirin's
+  host hands the app (`MIRIN_METAL_CLOSE=ask`): the kit closes at once unless
+  the app answers it (`apps/kit/close.ts`), and an app with something to lose
+  holds the window and asks. Log Out, Restart, and Shut Down from the menus
+  ask every window to close first and wait for the answers
+  (`src/closing-apps.ts`); a hung app is still ended by Force Quit, or by
+  going anyway.
 - **Applets** (`docs/applets.md`) installed from the Applet Store run each in
   bubblewrap with only what their manifest asks for, as systemd user units
   outside the shell's processes, so nothing the compositor trusts the shell

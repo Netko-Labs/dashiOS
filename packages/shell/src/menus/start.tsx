@@ -128,7 +128,21 @@ export function startMenus(options: MenusOptions): Menus {
 
   // The sheet names the app the menu was opened over, which no longer has the keyboard.
   let lastAppName = "Desktop";
-  const dialogs = new Dialogs(openOverlay, runPower);
+  // A confirmed restart, shut down, or log out asks the apps to close first (closing-apps.ts).
+  const dialogs = new Dialogs(
+    openOverlay,
+    runPower,
+    compositor
+      ? {
+          windows: async () =>
+            (await compositor.windows())
+              .filter((window) => window.pid !== process.pid)
+              .map((window) => ({ id: window.id, name: appFor(options.apps, window, entryFor).name })),
+          close: async (window) => void (await compositor.request("close", { window })),
+          focus: (window) => void compositor.request("focus", { window }).catch(() => {}),
+        }
+      : undefined,
+  );
   // On a development run the radios' switches write to memory, never to the developer's machine.
   const radios = radiosFor({
     standIn: options.wifi.fake || options.bluetooth.fake,

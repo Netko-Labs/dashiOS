@@ -88,6 +88,29 @@ export async function deleteForever(path: string, places: TrashPlaces): Promise<
   await rm(join(places.info, `${name}.trashinfo`), { force: true });
 }
 
+/**
+ * Where in the home Trash `original` went: the newest item whose info names
+ * it, or null (it went to another disk's Trash, or is gone). Undo of Move to
+ * Trash puts that one back.
+ */
+export async function findTrashed(original: string, places: TrashPlaces): Promise<string | null> {
+  let names: string[];
+  try {
+    names = await readdir(places.info);
+  } catch {
+    return null;
+  }
+  let best: { name: string; at: number } | null = null;
+  for (const entry of names) {
+    if (!entry.endsWith(".trashinfo")) continue;
+    const info = await readFile(join(places.info, entry), "utf8").then(parseTrashInfo, () => null);
+    if (info?.originalPath !== original) continue;
+    const at = info.deletedAt ?? 0;
+    if (!best || at >= best.at) best = { name: entry.slice(0, -".trashinfo".length), at };
+  }
+  return best ? join(places.files, best.name) : null;
+}
+
 /** Puts a trashed item back where it came from (under a free name if that is taken); the new path. */
 export async function putBack(path: string, places: TrashPlaces, home: string): Promise<string> {
   const name = trashedName(path, places);

@@ -20,6 +20,7 @@ import type { RegionStore } from "../region/store.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { PaneContext } from "./context.ts";
+import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
 import { loadLayouts } from "./layouts.ts";
 import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
@@ -63,6 +64,8 @@ export interface SettingsAppOptions {
 
   /** The machine panes' services; asked for when the window opens, since they come from stores made after Settings. */
   services(): PaneServices;
+  /** The menu bar's store, for Settings' Edit menu (Undo a setting: edit-menu.ts); asked for when the window opens. */
+  menus?(): MenuHost;
 }
 
 interface Session {
@@ -134,11 +137,22 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     };
     const stopScreens = screens.start();
     const stopWatching = options.settings.watch();
+    const menus = options.menus?.();
+    // The window's process, by its app id, once the compositor lists it.
+    const stopMenu =
+      menus && compositor
+        ? publishEditMenu(
+            menus,
+            options.settings.undo,
+            async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
+          )
+        : () => {};
     const current: Session = {
       surface: null,
       stop: () => {
         stopScreens();
         stopWatching();
+        stopMenu();
       },
     };
     session = current;

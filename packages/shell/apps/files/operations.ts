@@ -2,8 +2,12 @@
  * The things Files does to files, as the window triggers them: each turns
  * the selection into a job (progress and Cancel in the footer), runs the
  * checked operations from ops.ts, trashops.ts, and archive.ts, and reports
- * the outcome in the footer. Nothing here touches the disk directly.
+ * the outcome in the footer. Nothing here touches the disk directly. Each
+ * write that worked goes on the undo stack (undoable.ts): Edit › Undo and
+ * the notice's Undo take it back.
  */
+
+import { UndoStack } from "@dashi/ui";
 
 import { compress } from "./archive.ts";
 import { type DropKeys, dropChoice } from "./drag.ts";
@@ -18,6 +22,7 @@ import { baseName, isInside, parentOf } from "./paths.ts";
 import { measure } from "./size.ts";
 import type { FilesStore } from "./store.ts";
 import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "./trashops.ts";
+import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv } from "./undoable.ts";
 
 const quote = (name: string): string => `“${name}”`;
 
@@ -26,8 +31,34 @@ const what = (paths: readonly string[]): string => (paths.length === 1 ? quote(b
 
 export class Operations {
   readonly jobs = new Jobs();
+  /** What Edit › Undo takes back: Files' writes, newest last. */
+  readonly undo = new UndoStack();
 
   constructor(private readonly store: FilesStore) {}
+
+  private get undoEnv(): UndoEnv {
+    const { trash, home, run } = this.store.env;
+    return {
+      trash,
+      home,
+      run,
+      refresh: (paths) => {
+        this.store.reload();
+        const here = this.here;
+        this.store.select(paths.filter((path) => here !== null && parentOf(path) === here));
+      },
+    };
+  }
+
+  /** Edit › Undo or Redo, or the notice's Undo: a step that fails says why. */
+  async undoStep(way: "undo" | "redo"): Promise<void> {
+    try {
+      await (way === "undo" ? this.undo.undo() : this.undo.redo());
+      this.store.dismissNotice();
+    } catch (error) {
+      this.store.say(error instanceof Error ? error.message : String(error), true);
+    }
+  }
 
   private get here(): string | null {
     const { location } = this.store.getSnapshot();
@@ -84,6 +115,7 @@ export class Operations {
   /** Copy or move `paths` into `dest` as a job. Also what a drop would call. */
   async transfer(paths: readonly string[], dest: string, mode: "copy" | "move"): Promise<string[]> {
     const created: string[] = [];
+    const moves: Array<{ from: string; to: string }> = [];
     const verb = mode === "copy" ? "Copying" : "Moving";
     await this.jobs
       .run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
@@ -97,6 +129,7 @@ export class Operations {
           try {
             const made = mode === "copy" ? await copyInto(path, dest, ctx) : await moveInto(path, dest, ctx);
             if (made) created.push(made);
+            if (made && mode === "move") moves.push({ from: path, to: made });
           } catch (error) {
             if (!(error instanceof OpError)) throw error;
             failures.push(`${quote(baseName(path))}: ${error.message}`);
@@ -106,7 +139,12 @@ export class Operations {
         if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
         return `${mode === "copy" ? "Copied" : "Moved"} ${what(paths)}.`;
       })
-      .then((job) => this.finished(job.state, job.message, created));
+      .then((job) => {
+        // What was moved or copied before a failure or a Cancel can be taken back too.
+        if (mode === "move" && moves.length > 0) this.undo.push(moveAction(moves, this.undoEnv));
+        if (mode === "copy" && created.length > 0) this.undo.push(copyAction("Copy", created, this.undoEnv));
+        this.finished(job.state, job.message, created, true);
+      });
     return created;
   }
 
@@ -116,7 +154,8 @@ export class Operations {
     const job = await this.jobs.run(`Duplicating ${what(paths)}`, null, async (ctx) => {
       for (const path of paths) created.push(await duplicate(path, ctx));
     });
-    this.finished(job.state, job.message, created);
+    if (created.length > 0) this.undo.push(copyAction("Duplicate", created, this.undoEnv));
+    this.finished(job.state, job.message, created, true);
   }
 
   // --- Making and renaming -----------------------------------------------------------
@@ -127,6 +166,7 @@ export class Operations {
     if (dir === null || !this.writable) return "A folder can’t be made here.";
     try {
       const made = await makeFolder(dir, name);
+      this.undo.push(newFolderAction(made, this.undoEnv));
       this.store.reload();
       this.store.select([made]);
       return null;
@@ -138,6 +178,7 @@ export class Operations {
   async rename(path: string, name: string): Promise<string | null> {
     try {
       const renamed = await renamePath(path, name);
+      if (renamed !== path) this.undo.push(renameAction(path, renamed, this.undoEnv));
       this.store.reload();
       this.store.select([renamed]);
       return null;
@@ -180,15 +221,18 @@ export class Operations {
         return;
       }
     }
+    const trashed: string[] = [];
     const job = await this.jobs.run(`Moving ${what(paths)} to the Trash`, paths.length, async (ctx) => {
       const result = await trashPaths(paths, ctx, this.store.env.run);
+      trashed.push(...result.trashed);
       if (result.failed.length > 0) {
         const first = result.failed[0] as { path: string; reason: string };
         throw new OpError(`${quote(baseName(first.path))} couldn’t be moved to the Trash: ${first.reason}`);
       }
       return `Moved ${what(paths)} to the Trash.`;
     });
-    this.finished(job.state, job.message, []);
+    if (trashed.length > 0) this.undo.push(trashAction(trashed, this.undoEnv));
+    this.finished(job.state, job.message, [], trashed.length > 0);
     this.store.select([]);
     this.store.reload();
   }
@@ -241,7 +285,8 @@ export class Operations {
       created.push(await compress(this.paths(items), archiver, ctx, this.store.env.run));
       return `Made ${quote(baseName(created[0] as string))}.`;
     });
-    this.finished(job.state, job.message, created);
+    if (created.length > 0) this.undo.push(copyAction("Compress", created, this.undoEnv));
+    this.finished(job.state, job.message, created, true);
   }
 
   appsFor(item: FileItem): Promise<OpenWithApp[]> {
@@ -275,10 +320,11 @@ export class Operations {
 
   // --- Outcomes ----------------------------------------------------------------------
 
-  private finished(state: string, message: string | null, created: readonly string[]): void {
+  /** `undoable`: the step just pushed can be taken back from the notice (its Undo). */
+  private finished(state: string, message: string | null, created: readonly string[], undoable = false): void {
     if (state === "cancelled") this.store.say("Cancelled.");
     else if (state === "failed") this.store.say(message ?? "Something went wrong.", true);
-    else if (message) this.store.say(message);
+    else if (message) this.store.say(message, false, undoable && this.undo.state.canUndo);
     this.store.reload();
     const here = this.here;
     const mine = created.filter((path) => here !== null && parentOf(path) === here);

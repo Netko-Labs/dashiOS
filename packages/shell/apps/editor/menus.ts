@@ -9,6 +9,7 @@
  * to copy; Copy All copies the whole document.
  */
 
+import { redoLabel, undoLabel } from "@dashi/ui";
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
 
 export interface MenuContext {
@@ -16,6 +17,9 @@ export interface MenuContext {
   hasFile: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  /** What Undo and Redo would take back ("Typing", "Replace All"): the rows say so, as every app's do. */
+  undoName?: string | null;
+  redoName?: string | null;
   canCopy: boolean;
   hasMatches: boolean;
   monospace: boolean;
@@ -59,8 +63,8 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     {
       id: "edit",
       items: [
-        { id: "undo", label: "Undo", shortcut: "❖Z", enabled: context.canUndo },
-        { id: "redo", label: "Redo", shortcut: "⇧❖Z", enabled: context.canRedo },
+        { id: "undo", label: undoLabel(context.canUndo ? context.undoName : null), shortcut: "❖Z", enabled: context.canUndo },
+        { id: "redo", label: redoLabel(context.canRedo ? context.redoName : null), shortcut: "⇧❖Z", enabled: context.canRedo },
         { type: "separator" },
         { id: "paste", label: "Paste", shortcut: "❖V" },
         { id: "select-all", label: "Select All", shortcut: "❖A" },

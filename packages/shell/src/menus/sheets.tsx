@@ -7,6 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { holdingCopy } from "../closing-apps.ts";
 import { LOGO } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
 import type { PowerKind } from "./model.ts";
@@ -17,17 +18,17 @@ export const SHEET_SIZE = { width: 340, margin: 28 } as const;
 const COPY: Record<PowerKind, { question: string; detail: string; button: string }> = {
   restart: {
     question: "Are you sure you want to restart your computer now?",
-    detail: "Apps will be asked to close, and anything not saved may be lost.",
+    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
     button: "Restart",
   },
   shutdown: {
     question: "Are you sure you want to shut down your computer now?",
-    detail: "Apps will be asked to close, and anything not saved may be lost.",
+    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
     button: "Shut Down",
   },
   logout: {
     question: "Are you sure you want to log out now?",
-    detail: "Your apps will close, and anything not saved may be lost.",
+    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
     button: "Log Out",
   },
 };
@@ -104,6 +105,28 @@ export function ConfirmSheet({ what, onConfirm, onCancel }: { what: PowerKind; o
       <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 6 }}>
         <Button testID="sheet-cancel" label="Cancel" onPress={onCancel} />
         <Button testID="sheet-confirm" label={copy.button} primary onPress={onConfirm} />
+      </View>
+    </Panel>
+  );
+}
+
+/**
+ * While an app holds a log out, restart, or shut down to ask its own question
+ * (closing-apps.ts): who it waits for, Cancel, and the way to go anyway. It
+ * sits at the top and leaves the keyboard to the app; Esc cancels once it is clicked.
+ */
+export function HoldingSheet({ what, names, onCancel, onAnyway }: { what: PowerKind; names: readonly string[]; onCancel: () => void; onAnyway: () => void }) {
+  const colors = useColors();
+  const copy = holdingCopy(names, what);
+  return (
+    <Panel>
+      <KeyCatcher onKey={(key) => key === "Escape" && onCancel()} />
+      <Svg markup={LOGO} size={34} color={colors.text} />
+      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{copy.title}</Text>
+      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{copy.detail}</Text>
+      <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 6 }}>
+        <Button testID="holding-cancel" label="Cancel" onPress={onCancel} />
+        <Button testID="holding-anyway" label={copy.anyway} onPress={onAnyway} />
       </View>
     </Panel>
   );

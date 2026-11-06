@@ -19,8 +19,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
 - [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
 - [ ] Modifiers on onPress (S; PA-10)
-- [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
-- [ ] An undo stack in @dashi/ui (M; PA-2)
+- [x] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
+- [x] An undo stack in @dashi/ui (M; PA-2)
 - [ ] A visibility signal; Activity Monitor stops sampling while hidden (S; PA-15)
 - [ ] A settings registry behind every row (M; today `SPOT_ROWS`)
 - [ ] Privacy & Security pane: review and revoke (M)
@@ -449,7 +449,7 @@ it in the VM.
       and apps) through dashi-extras and pkexec
 - [x] Anaconda profile for Dashi (the installer creates the account)
 - [ ] mirin: a clipboard API (wl-copy shows up as an app for a moment)
-- [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
+- [x] mirin: a way to hold a window open to ask (the Editor's unsaved changes; `MIRIN_METAL_CLOSE=ask`)
 - [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
 - [ ] mirin: text selection in TextInput
 - [x] Menu bar extras: the tray (StatusNotifierItem host + dbusmenu, src/tray/), the applets

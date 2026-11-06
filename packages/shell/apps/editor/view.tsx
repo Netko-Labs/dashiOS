@@ -15,7 +15,7 @@ import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors 
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Clipboard } from "../kit/index.ts";
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
 import { lineOf } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
@@ -96,6 +96,8 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
     if (dirty) setSheet({ kind: "unsaved", name });
     else quit(false);
   };
+  // The close control, ❖Q, the Dock's Quit, logging out: as File › Close.
+  useCloseRequest(requestClose);
 
   const submitOpen = (input: string): string | null => {
     const path = resolveInput(input, base);
@@ -131,6 +133,8 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
     hasFile: state.path !== null,
     canUndo: state.canUndo,
     canRedo: state.canRedo,
+    undoName: state.undoName,
+    redoName: state.redoName,
     canCopy: clipboard.canWrite && state.text !== "",
     hasMatches: find.matches.length > 0,
     monospace: state.prefs.monospace,

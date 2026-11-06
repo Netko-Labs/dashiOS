@@ -559,6 +559,8 @@ const settingsApp = startSettingsApp({
   answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
   services: paneServicesOf,
+  // Its Edit menu (Undo a setting) goes in the menu bar's store, made below.
+  menus: () => appMenus.store,
 });
 
 // The Setup Assistant: at a person's first login, and from Settings > About and the launcher (setup/).
