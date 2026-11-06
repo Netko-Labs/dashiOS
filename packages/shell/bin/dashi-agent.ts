@@ -7,14 +7,21 @@
  *   dashi-agent --name work -- codex
  *   dashi-agent --print claude         (show the commands, run nothing)
  *
- * It re-runs itself inside a new systemd scope (dashi-agent-<name>-<n>.scope),
- * starts the bus filter there, outside bubblewrap where the agent can't reach
- * it, then the agent inside bubblewrap, and cleans up when the agent ends.
+ * It asks the shell for the sandbox's token proxy (src/agents/tokens/), then
+ * re-runs itself inside a new systemd scope (dashi-agent-<name>-<n>.scope),
+ * starts the bus filter and the proxy's relay there, outside bubblewrap where
+ * the agent can't reach them, then the agent inside bubblewrap, and cleans up
+ * when the agent ends.
  */
 
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import { type Exists, proxyArgs, type SandboxEnv, sandboxArgs, unitName } from "../src/agents/sandbox.ts";
+import { type Exists, proxyArgs, type SandboxEnv, sandboxArgs, tokenProxyArgs, unitName } from "../src/agents/sandbox.ts";
+import { relay, requestProxy } from "../src/agents/tokens/client.ts";
+import { type ProxyGrant, tokensSocketPath } from "../src/agents/tokens/server.ts";
+
+/** How the first half hands the token proxy to the half in the scope. */
+const GRANT_VAR = "DASHI_TOKENS_GRANT";
 
 const exists: Exists = (path) => {
   try {
@@ -58,11 +65,52 @@ async function inScope(unit: string, command: string[]): Promise<number> {
     for (let i = 0; i < 50 && !existsSync(bus); i++) await sleep(20);
     if (!existsSync(bus)) bus = null;
   }
-  const agent = Bun.spawn(sandboxArgs(command, { env, exists, bwrap, unit, bus }), { stdio: ["inherit", "inherit", "inherit"] });
+  const tokens = await tokenRelay(env);
+  const extra = ["--unsetenv", GRANT_VAR, ...(tokens?.args ?? [])];
+  const agent = Bun.spawn(sandboxArgs(command, { env, exists, bwrap, unit, bus, extra }), { stdio: ["inherit", "inherit", "inherit"] });
   const code = await agent.exited;
+  tokens?.close();
   filter?.kill();
   rmSync(work, { recursive: true, force: true });
   return code;
+}
+
+function parseGrant(text: string | undefined): ProxyGrant | null {
+  if (!text) return null;
+  try {
+    const { socket, ca, bundle, key } = JSON.parse(text) as Record<string, unknown>;
+    return typeof socket === "string" && typeof ca === "string" && typeof bundle === "string" && typeof key === "string" ? { socket, ca, bundle, key } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Inside the scope: a loopback port relayed to the token proxy, and bubblewrap's arguments for it. */
+async function tokenRelay(env: SandboxEnv): Promise<{ args: string[]; close: () => void } | null> {
+  const grant = parseGrant(process.env[GRANT_VAR]);
+  if (!grant || !existsSync(grant.socket)) return null;
+  try {
+    const { port, close } = await relay(grant.socket);
+    return { args: tokenProxyArgs(env, { ...grant, port }, process.env.NO_PROXY || process.env.no_proxy), close };
+  } catch (error) {
+    console.error(`dashi-agent: tokens won't reach this agent (${error instanceof Error ? error.message : String(error)})`);
+    return null;
+  }
+}
+
+/** Before the scope: the shell's token proxy for it, held while the agent runs; null without one. */
+async function openTokens(unit: string): Promise<{ grant: ProxyGrant; close: () => void } | null> {
+  const path = tokensSocketPath();
+  if (!path || !existsSync(path)) {
+    console.error("dashi-agent: Dashi's shell isn't running here, so tokens in your vault won't reach this agent");
+    return null;
+  }
+  const answer = await requestProxy(path, unit);
+  if ("error" in answer) {
+    console.error(`dashi-agent: tokens won't reach this agent (${answer.error})`);
+    return null;
+  }
+  return answer;
 }
 
 async function main(argv: string[]): Promise<number> {
@@ -92,14 +140,18 @@ async function main(argv: string[]): Promise<number> {
   if (print) {
     const env = environment();
     console.log(`systemd-run --user --scope --unit=${unit}`);
-    console.log(sandboxArgs(argv, { env, exists, bwrap: "bwrap", unit, bus: join(env.runtime, "dashi-agent", unit, "bus") }).join(" \\\n  "));
+    const tokens = tokenProxyArgs(env, { socket: "PROXY_SOCKET", ca: "CA_PEM", bundle: "BUNDLE_PEM", key: "KEY", port: 0 });
+    console.log(sandboxArgs(argv, { env, exists, bwrap: "bwrap", unit, bus: join(env.runtime, "dashi-agent", unit, "bus"), extra: tokens }).join(" \\\n  "));
     return 0;
   }
+  const tokens = await openTokens(unit);
   const scope = Bun.spawn(
     ["systemd-run", "--user", "--scope", "--quiet", "--collect", `--unit=${unit}`, "--", process.execPath, import.meta.path, "--in-scope", unit, "--", ...argv],
-    { stdio: ["inherit", "inherit", "inherit"] },
+    { stdio: ["inherit", "inherit", "inherit"], env: { ...process.env, ...(tokens ? { [GRANT_VAR]: JSON.stringify(tokens.grant) } : {}) } },
   );
-  return scope.exited;
+  const code = await scope.exited;
+  tokens?.close();
+  return code;
 }
 
 process.exit(await main(process.argv.slice(2)));

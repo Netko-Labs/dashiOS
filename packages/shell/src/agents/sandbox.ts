@@ -12,7 +12,9 @@
  * - of $XDG_RUNTIME_DIR, only Dashi's MCP socket and a filtered session bus
  *   (notifications and portals): no compositor socket, no Wayland or X11
  *   display, no systemd, Secret Service, Flatpak or 1Password sockets;
- * - no 1Password CLI configuration or app data.
+ * - no 1Password CLI configuration or app data;
+ * - API tokens only through the shell's token proxy (tokenProxyArgs), with
+ *   a CA trusted inside this sandbox alone.
  *
  * Pure: the paths that exist come in, the arguments go out (tested).
  */
@@ -99,6 +101,57 @@ export interface SandboxOptions {
   bus: string | null;
   /** More arguments for bubblewrap before the command (the token proxy's). */
   extra?: readonly string[];
+}
+
+/** The token proxy as dashi-agent got it from the shell, and the loopback port it relays to it. */
+export interface TokenProxy {
+  socket: string;
+  ca: string;
+  bundle: string;
+  key: string;
+  port: number;
+}
+
+/** Where the token proxy's files appear inside the sandbox (its runtime directory is its own). */
+export function tokenProxyPaths(runtime: string): { socket: string; ca: string; bundle: string } {
+  const dir = join(runtime, "dashi-tokens");
+  return { socket: join(dir, "proxy.sock"), ca: join(dir, "ca.pem"), bundle: join(dir, "bundle.pem") };
+}
+
+/** Variables TLS clients read for their trusted CAs: the system's plus the sandbox's. */
+export const CA_BUNDLE_VARS = ["SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"] as const;
+/** Hosts reached directly, never through the proxy (a local model, say). */
+export const DIRECT = "localhost,127.0.0.1,::1";
+
+/**
+ * bubblewrap's arguments for the token proxy (docs/secrets.md, "Tokens that
+ * stay home"): its socket and CA files bound in, HTTPS_PROXY at the relay
+ * with the sandbox's credentials, and the CA trusted inside the sandbox only.
+ */
+export function tokenProxyArgs(env: SandboxEnv, proxy: TokenProxy, noProxy?: string): string[] {
+  const inside = tokenProxyPaths(env.runtime);
+  const url = `http://dashi:${proxy.key}@127.0.0.1:${proxy.port}`;
+  const direct = [DIRECT, ...(noProxy ? [noProxy] : [])].join(",");
+  return [
+    "--bind",
+    proxy.socket,
+    inside.socket,
+    "--ro-bind",
+    proxy.ca,
+    inside.ca,
+    "--ro-bind",
+    proxy.bundle,
+    inside.bundle,
+    ...["HTTPS_PROXY", "https_proxy"].flatMap((name) => ["--setenv", name, url]),
+    ...["NO_PROXY", "no_proxy"].flatMap((name) => ["--setenv", name, direct]),
+    ...CA_BUNDLE_VARS.flatMap((name) => ["--setenv", name, inside.bundle]),
+    "--setenv",
+    "NODE_EXTRA_CA_CERTS",
+    inside.ca,
+    "--setenv",
+    "DASHI_TOKEN_PROXY",
+    inside.socket,
+  ];
 }
 
 /** bubblewrap's command line for `command`. */

@@ -102,7 +102,12 @@ export interface NewLogin {
 
 /** Dashi's vault, as the shell uses it. */
 export class Vault {
-  constructor(private readonly path = VAULT_SOCKET) {}
+  /** API tokens, swapped in by the token proxy for their hosts only. */
+  readonly tokens: VaultTokens;
+
+  constructor(private readonly path = VAULT_SOCKET) {
+    this.tokens = new VaultTokens(path);
+  }
 
   private call(request: Record<string, unknown>, timeoutMs?: number): Promise<Record<string, unknown>> {
     return vaultCall(request, this.path, timeoutMs);
@@ -204,6 +209,79 @@ export class Vault {
     const result = { number: both.slice(0, cut), cvc: both.slice(cut + 1), expiry: typeof reply.expiry === "string" ? reply.expiry : "" };
     both.fill(0);
     return result;
+  }
+}
+
+/** A token item as anyone may see it: no token (docs/secrets.md, "Tokens that stay home"). */
+export interface TokenSummary {
+  id: number;
+  /** Agents hold `dashi:<name>`. */
+  name: string;
+  hosts: string[];
+  /** "Authorization: Bearer {}": where the token goes. */
+  header: string;
+  lastUsed: number | null;
+}
+
+export interface NewToken {
+  name: string;
+  hosts: string[];
+  header?: string;
+  token: string;
+}
+
+export interface TokenChange {
+  hosts?: string[];
+  header?: string;
+  /** Empty or absent keeps the token there. */
+  token?: string;
+}
+
+function parseToken(value: unknown): TokenSummary | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { id, name, hosts, header, lastUsed } = value as Record<string, unknown>;
+  if (typeof id !== "number" || typeof name !== "string" || typeof header !== "string" || !Array.isArray(hosts)) return null;
+  return { id, name, hosts: hosts.filter((h): h is string => typeof h === "string"), header, lastUsed: typeof lastUsed === "number" ? lastUsed : null };
+}
+
+/** The vault's token items, for Settings and the token proxy. */
+export class VaultTokens {
+  constructor(private readonly path = VAULT_SOCKET) {}
+
+  async list(): Promise<TokenSummary[]> {
+    const reply = await vaultCall({ op: "tokens" }, this.path);
+    return (Array.isArray(reply.tokens) ? reply.tokens : []).map(parseToken).filter((t): t is TokenSummary => t !== null);
+  }
+
+  async save(token: NewToken): Promise<number> {
+    const reply = await vaultCall(
+      { op: "save-token", name: token.name, hosts: token.hosts, ...(token.header ? { header: token.header } : {}), token: encodeText(token.token) },
+      this.path,
+    );
+    return typeof reply.id === "number" ? reply.id : -1;
+  }
+
+  async update(id: number, change: TokenChange): Promise<void> {
+    await vaultCall(
+      {
+        op: "update-token",
+        id,
+        ...(change.hosts ? { hosts: change.hosts } : {}),
+        ...(change.header ? { header: change.header } : {}),
+        ...(change.token ? { token: encodeText(change.token) } : {}),
+      },
+      this.path,
+    );
+  }
+
+  async remove(id: number): Promise<void> {
+    await vaultCall({ op: "delete-token", id }, this.path);
+  }
+
+  /** Token `name` for a request to `host`, for the proxy to swap in and drop; refused for a host it isn't for. */
+  async forHost(name: string, host: string): Promise<{ token: Uint8Array; header: string }> {
+    const reply = await vaultCall({ op: "token", name, host }, this.path);
+    return { token: fromBase64(reply.token), header: typeof reply.header === "string" ? reply.header : "Authorization: Bearer {}" };
   }
 }
 

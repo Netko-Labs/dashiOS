@@ -19,6 +19,7 @@ import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
 import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
+import { serveTokens, tokensSocketPath } from "./agents/tokens/index.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
 import type { PressedChord } from "./app-menus/shortcut.ts";
@@ -375,6 +376,8 @@ const polkit = startPolkit({
 const agentStore = new AgentStore();
 // Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
 const passwords = startPasswords();
+// Agents' API tokens stay home: dashi-agent asks here for its sandbox's token proxy (agents/tokens/).
+const stopTokens = serveTokens({ path: tokensSocketPath(), tokens: passwords.vault.tokens });
 // The vault's questions to the person (a passkey, a payment): fingerprint or password.
 const approvalUi = createApprovalUi();
 watchApprovals(approvalUi);
@@ -1363,6 +1366,7 @@ const quit = () => {
     ["system", () => system.close()],
     ["power", () => power.close()],
     ["agents", () => agents?.close()],
+    ["token proxy", stopTokens],
     ["agent sheets", () => agentUi.close()],
     ["launcher world", () => launcherWorld?.close()],
     [
