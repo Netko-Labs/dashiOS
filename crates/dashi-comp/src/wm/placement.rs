@@ -145,8 +145,11 @@ impl Dashi {
         entry.placing = false;
         entry.space = space;
         let window = entry.window.clone();
+        // New windows come in front with the keyboard, except while locked:
+        // the keyboard is the lock screen's (session/lock.rs).
+        let locked = self.lock.locked;
         if space == current {
-            self.map_frame_at(&window, at, true);
+            self.map_frame_at(&window, at, !locked);
         } else {
             // Waiting on its Space, where the slide there draws it.
             let bar = super::windows::bar_of(self, &window);
@@ -161,10 +164,9 @@ impl Dashi {
             let _ = x11.configure(Rectangle::new(at, size));
         }
         if space == current
-            && let (Some(keyboard), Some(surface)) =
-                (self.seat.get_keyboard(), toplevel_surface(&window))
+            && let Some(surface) = toplevel_surface(&window)
         {
-            keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+            self.set_keyboard_focus(Some(surface), SERIAL_COUNTER.next_serial());
         }
         self.configure_all();
         if let Some(entry) = self.windows.get_mut(id) {

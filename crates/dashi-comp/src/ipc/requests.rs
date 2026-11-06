@@ -86,6 +86,10 @@ pub(crate) fn handle(
             done(state.erase_snippet(window(params)?, text(params, "keyword")?))
         }
         "send-keys" => {
+            // Nothing is typed into a window while locked (session/lock.rs).
+            if state.lock.locked {
+                return Err("the screen is locked".into());
+            }
             let id = window(params)?;
             let chord = Chord::parse(text(params, "chord")?)?;
             state.focus_window(id)?;

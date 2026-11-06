@@ -75,11 +75,13 @@ impl Dashi {
             }
             None => window,
         };
-        self.space.raise_element(&window, true);
-        if let (Some(keyboard), Some(surface)) =
-            (self.seat.get_keyboard(), toplevel_surface(&window))
-        {
-            keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+        // While locked it is raised but neither active nor given the keyboard,
+        // which stays on the lock screen; the unlock gives it the keyboard
+        // as the window in front (session/lock.rs).
+        let locked = self.lock.locked;
+        self.space.raise_element(&window, !locked);
+        if let Some(surface) = toplevel_surface(&window) {
+            self.set_keyboard_focus(Some(surface), SERIAL_COUNTER.next_serial());
         }
         self.configure_all();
         Ok(())
@@ -313,12 +315,11 @@ impl Dashi {
             .is_some_and(|focus| Some(&focus) == surface.as_ref())
     }
 
-    /// The keyboard to the topmost window still on screen, or to nothing.
+    /// The keyboard to the topmost window still on screen, or to nothing;
+    /// while locked, to the lock screen (session/lock.rs).
     pub(crate) fn focus_topmost(&mut self) {
         let topmost = self.space.elements().last().and_then(toplevel_surface);
-        if let Some(keyboard) = self.seat.get_keyboard() {
-            keyboard.set_focus(self, topmost, SERIAL_COUNTER.next_serial());
-        }
+        self.set_keyboard_focus(topmost, SERIAL_COUNTER.next_serial());
         self.configure_all();
     }
 
