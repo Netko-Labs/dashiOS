@@ -42,12 +42,13 @@ fn user(name: &str) -> Option<(u32, PathBuf)> {
 }
 
 /// The login keyring, if the person has one: a regular file of theirs, not
-/// a link (root reads it, so it must not be pointed elsewhere).
+/// a link (root reads it, so it must not be pointed elsewhere). Opened
+/// without blocking, so a FIFO there can't hold up the login.
 fn keyring(home: &Path, uid: u32) -> Option<Vec<u8>> {
     let path = home.join(".local/share/keyrings/login.keyring");
     let mut file = std::fs::OpenOptions::new()
         .read(true)
-        .custom_flags(libc::O_NOFOLLOW)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK | libc::O_NOCTTY)
         .open(path)
         .ok()?;
     let meta = file.metadata().ok()?;
@@ -107,5 +108,42 @@ fn main() {
     if let Err(error) = run() {
         // Never the password; just why the vault stayed shut.
         eprintln!("dashi-secretd-pam: {error}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{ffi::CString, os::unix::ffi::OsStrExt, sync::mpsc, time::Duration};
+
+    fn uid() -> u32 {
+        // SAFETY: getuid has no preconditions and can't fail.
+        unsafe { libc::getuid() }
+    }
+
+    #[test]
+    fn a_regular_keyring_is_read_and_a_fifo_is_passed_over() {
+        let home = tempfile::tempdir().unwrap();
+        let dir = home.path().join(".local/share/keyrings");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("login.keyring");
+        std::fs::write(&path, b"keyring").unwrap();
+        assert_eq!(
+            keyring(home.path(), uid()).as_deref(),
+            Some(&b"keyring"[..])
+        );
+        assert_eq!(keyring(home.path(), uid() + 1), None);
+
+        std::fs::remove_file(&path).unwrap();
+        let name = CString::new(path.as_os_str().as_bytes()).unwrap();
+        // SAFETY: a NUL-terminated path in a directory of our own.
+        assert_eq!(unsafe { libc::mkfifo(name.as_ptr(), 0o600) }, 0);
+        let (done, wait) = mpsc::channel();
+        let at = home.path().to_owned();
+        std::thread::spawn(move || {
+            let _ = done.send(keyring(&at, uid()));
+        });
+        // Blocking here (no writer ever comes) would fail rather than hang.
+        assert_eq!(wait.recv_timeout(Duration::from_secs(5)), Ok(None));
     }
 }
