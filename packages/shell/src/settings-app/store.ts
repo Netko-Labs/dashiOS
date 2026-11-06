@@ -34,6 +34,7 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { isTextSize } from "@dashi/ui";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
@@ -106,6 +107,8 @@ export interface AppearanceSettings {
   auto?: boolean;
   /** The pointer's size in points (pointer.ts); 24 when not set. */
   pointerSize?: number;
+  /** What the shell's type is multiplied by (text-size.ts); 1 when not set. */
+  textSize?: number;
   /** How X11 apps meet a scaled screen (xwayland-scale.ts); sharp when not set. */
   x11Apps?: X11Scaling;
 }
@@ -265,6 +268,7 @@ const SECTIONS = {
       highlightActiveWindow: isBoolean,
       auto: isBoolean,
       pointerSize: isPointerSize,
+      textSize: isTextSize,
       x11Apps: oneOf(...X11_SCALINGS),
     },
   },

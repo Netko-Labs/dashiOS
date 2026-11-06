@@ -11,7 +11,21 @@ import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  appearance: ["dark mode", "light mode", "theme", "accent", "corners", "reduce motion", "highlight", "active window", "focus ring"],
+  appearance: [
+    "dark mode",
+    "light mode",
+    "theme",
+    "accent",
+    "corners",
+    "reduce motion",
+    "highlight",
+    "active window",
+    "focus ring",
+    "text size",
+    "font size",
+    "bigger text",
+    "larger text",
+  ],
   wallpaper: ["background", "desktop picture", "live wallpaper"],
   displays: ["display", "monitor", "screen", "resolution", "scale", "refresh rate", "rotation", "arrangement"],
   "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops", "full screen", "fullscreen", "full-screen apps", "games"],
@@ -33,7 +47,7 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
 
 /** What each pane holds, in a few words after its name on the launcher's row (VS-2: the same line). */
 export const PANE_DETAILS: Readonly<Record<PaneId, string>> = {
-  appearance: "Dark Mode, accent, corners",
+  appearance: "Dark Mode, corners, text size",
   wallpaper: "desktop picture",
   displays: "resolution, scale, arrangement",
   "desktop-dock": "Dock, Desktops, full screen",

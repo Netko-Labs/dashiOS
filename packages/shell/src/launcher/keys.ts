@@ -12,10 +12,15 @@
  * While Set shortcut… records a chord, every ❖ chord is the launcher's
  * (person-keys.ts RECORD_RULES), so a chord Dashi or an app uses can still
  * be recorded, and the recorder says what it did.
+ *
+ * → is the launcher's only while the selected row has windows (it opens
+ * their live pictures, pictures.ts), and ← only while they show: the rest
+ * of the time both move the caret in the field.
  */
 
 import type { Keymap, Rule } from "../keymap.ts";
 import { RECORD_BINDING, RECORD_RULES, type ReportedChord } from "./person-keys.ts";
+import type { ArrowsWanted } from "./pictures.ts";
 import type { Move } from "./selection.ts";
 
 /** Binding name → how it moves the selection. */
@@ -44,7 +49,9 @@ export type LauncherCommand =
   /** ❖ held (the digits show) or let go. */
   | { kind: "digits"; shown: boolean }
   /** A chord pressed while Set shortcut… records. */
-  | { kind: "record"; chord: ReportedChord };
+  | { kind: "record"; chord: ReportedChord }
+  /** ← or →, while they are the launcher's (the windows' live pictures). */
+  | { kind: "arrow"; to: "left" | "right" };
 
 const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-actions": { kind: "actions" },
@@ -55,6 +62,18 @@ const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-alias": { kind: "alias" },
   "launcher-shortcut": { kind: "shortcut" },
   "launcher-quit": { kind: "quit" },
+  "launcher-right": { kind: "arrow", to: "right" },
+  "launcher-left": { kind: "arrow", to: "left" },
+};
+
+/** ← and → while the pictures want them (pictures.ts `arrowsWanted`). */
+export const ARROW_RULES: Readonly<Record<ArrowsWanted, Rule[]>> = {
+  none: [],
+  open: [{ when: "Right", bind: "launcher-right" }],
+  browse: [
+    { when: "Right", bind: "launcher-right" },
+    { when: "Left", bind: "launcher-left" },
+  ],
 };
 
 /** Bound only while the launcher is open, ahead of every other rule. Keysyms as xkb names them (Prior is Page Up). */
@@ -81,9 +100,9 @@ export const LAUNCHER_RULES: Rule[] = [
 ];
 
 /** The keymap while the launcher is open: its keys first, and every ❖ chord while it records one. */
-export const withLauncher = (keymap: Keymap, recording = false): Keymap => ({
+export const withLauncher = (keymap: Keymap, recording = false, arrows: ArrowsWanted = "none"): Keymap => ({
   ...keymap,
-  rules: [...(recording ? RECORD_RULES : []), ...LAUNCHER_RULES, ...keymap.rules],
+  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...LAUNCHER_RULES, ...keymap.rules],
 });
 
 /** Where the open launcher hears those keys. */
@@ -91,8 +110,11 @@ export class LauncherKeys {
   private readonly listeners = new Set<(move: Move) => void>();
   private readonly commandListeners = new Set<(command: LauncherCommand) => void>();
   private recordingNow = false;
+  private arrowsNow: ArrowsWanted = "none";
   /** Told when recording starts or stops, to send the keymap that goes with it (main.tsx). */
   onRecording: ((recording: boolean) => void) | null = null;
+  /** Told when ← and → become the launcher's or the field's again, for the same (main.tsx). */
+  onArrows: ((arrows: ArrowsWanted) => void) | null = null;
 
   subscribe = (listener: (move: Move) => void): (() => void) => {
     this.listeners.add(listener);
@@ -106,6 +128,17 @@ export class LauncherKeys {
 
   get recording(): boolean {
     return this.recordingNow;
+  }
+
+  get arrowsWanted(): ArrowsWanted {
+    return this.arrowsNow;
+  }
+
+  /** What ← and → should do now (the open launcher says, as its selection moves). */
+  arrows(want: ArrowsWanted): void {
+    if (this.arrowsNow === want) return;
+    this.arrowsNow = want;
+    this.onArrows?.(want);
   }
 
   /** Set shortcut… starts or stops listening for a chord. */

@@ -19,14 +19,20 @@ export {
   type AppearanceSource,
   contrastRatio,
   DARK_SURFACE,
+  DEFAULT_TEXT_SIZE,
   darkColors,
+  isTextSize,
   LIGHT_SURFACE,
   lightColors,
   type Palette,
   paletteFor,
   parseHex,
   type Surface,
+  scaled,
   setAppearanceSource,
+  setTextSizeSource,
+  TEXT_SIZES,
+  type TextSizeSource,
   TINT_ORDER,
   TINT_VALUES,
   TINTS,
@@ -35,6 +41,7 @@ export {
   useColors,
   useDark,
   useSurface,
+  useTextSize,
 } from "./theme/index.ts";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip } from "./tooltip.tsx";
 export {

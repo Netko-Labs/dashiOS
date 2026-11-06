@@ -19,7 +19,7 @@
  *     "idle": { "blankAfterSeconds": 300 },
  *     "appearance": { "cornerRadius": "medium", "reduceMotion": false,
  *                     "highlightActiveWindow": false,
- *                     "pointerSize": 24, "x11Apps": "sharp",
+ *                     "pointerSize": 24, "textSize": 1, "x11Apps": "sharp",
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
  *     "spaces": { "count": 3, "names": ["Work", null, "Games"], "switchOnActivate": true,
@@ -45,7 +45,8 @@
  * round every window is (corners.ts). `reduceMotion` turns the compositor's
  * window animations off. `highlightActiveWindow` (default false) rings the
  * window with the keyboard in the accent color (appearance/window-style.ts). `pointerSize` is 24 (the default), 32, 40, or 48
- * points (pointer.ts); `x11Apps` is "sharp" (the default) or "stretched",
+ * points (pointer.ts); `textSize` is 1 (the default), 1.15, 1.3, or 1.5, what the
+ * shell's type is multiplied by (text-size.ts); `x11Apps` is "sharp" (the default) or "stretched",
  * how X11 apps meet a scaled screen (xwayland-scale.ts). `wallpaper.path` is a bundled wallpaper's id or an
  * absolute path to a PNG or JPEG (none is the built-in gradient);
  * `wallpaper.mode` is "fill" (the default), "fit", or "center"
@@ -68,6 +69,7 @@
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
@@ -113,6 +115,8 @@ export interface Settings {
     reduceMotion: boolean;
     highlightActiveWindow: boolean;
     pointerSize: number;
+    /** What the shell's type is multiplied by (text-size.ts). */
+    textSize: number;
     x11Apps: X11Scaling;
     wallpaper: WallpaperChoice;
   };
@@ -143,6 +147,7 @@ export function defaults(): Settings {
       reduceMotion: false,
       highlightActiveWindow: false,
       pointerSize: DEFAULT_POINTER_SIZE,
+      textSize: DEFAULT_TEXT_SIZE,
       x11Apps: DEFAULT_X11_SCALING,
       wallpaper: { mode: DEFAULT_WALLPAPER_MODE },
     },
@@ -309,6 +314,7 @@ export function parseSettings(value: unknown): Loaded {
     "reduceMotion",
     "highlightActiveWindow",
     "pointerSize",
+    "textSize",
     "x11Apps",
     "auto",
     "wallpaper",
@@ -317,6 +323,7 @@ export function parseSettings(value: unknown): Loaded {
   settings.appearance.reduceMotion = appearance.boolean("reduceMotion") ?? false;
   settings.appearance.highlightActiveWindow = appearance.boolean("highlightActiveWindow") ?? false;
   settings.appearance.pointerSize = appearance.numberChoice("pointerSize", POINTER_SIZES) ?? DEFAULT_POINTER_SIZE;
+  settings.appearance.textSize = appearance.numberChoice("textSize", TEXT_SIZES) ?? DEFAULT_TEXT_SIZE;
   settings.appearance.x11Apps = appearance.choice("x11Apps", X11_SCALINGS) ?? DEFAULT_X11_SCALING;
   const wallpaper = new Section("appearance.wallpaper", appearance.get("wallpaper"), problems).only([
     "path",
