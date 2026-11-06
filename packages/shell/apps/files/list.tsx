@@ -36,7 +36,7 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
                 >
                   <Image source={iconFor(item)} resizeMode="contain" style={{ width: 16, height: 16 }} />
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? "#ffffff" : colors.text }}>
+                    <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? colors.onSelection : colors.text }}>
                       {item.name}
                     </Text>
                   </View>

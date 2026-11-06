@@ -1,4 +1,4 @@
-/** The sidebar: one row per pane, in groups, the chosen one on the accent. */
+/** The sidebar: one row per pane, in groups, the chosen one in the selection look (its wash and bar). */
 
 import { SidebarItem, useColors } from "@dashi/ui";
 import { ScrollView, useWindowChrome, View } from "@mirinjs/metal";

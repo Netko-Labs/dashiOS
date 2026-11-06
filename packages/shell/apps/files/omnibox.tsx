@@ -9,7 +9,7 @@
  * back.
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { useFiles, useFilesState } from "./context.ts";
@@ -264,28 +264,32 @@ export function SuggestionList({ suggestions, home }: { suggestions: Suggestions
         shadow: "md",
       }}
     >
-      {items.map((item, index) => (
-        <View
-          key={item}
-          testID={`omnibox:suggestion:${index}`}
-          onPress={() => pick(index)}
-          style={{
-            height: 26,
-            paddingHorizontal: 9,
-            borderRadius: 5,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            backgroundColor: index === highlighted ? colors.selection : "#00000000",
-            hoverBackgroundColor: index === highlighted ? colors.selection : colors.button,
-          }}
-        >
-          <Svg markup={sidebarGlyph("folder")} size={13} color={index === highlighted ? "#ffffff" : colors.textMuted} />
-          <Text numberOfLines={1} style={{ fontSize: 12.5, color: index === highlighted ? "#ffffff" : colors.text }}>
-            {item.replace(/\/$/, "").replace(home, "~")}
-          </Text>
-        </View>
-      ))}
+      {items.map((item, index) => {
+        const look = rowLook(colors, index === highlighted);
+        return (
+          <View
+            key={item}
+            testID={`omnibox:suggestion:${index}`}
+            onPress={() => pick(index)}
+            style={{
+              height: 26,
+              paddingHorizontal: 9,
+              borderRadius: 5,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: look.ground,
+              hoverBackgroundColor: look.hover,
+            }}
+          >
+            {index === highlighted && <SelectionBar rowHeight={26} />}
+            <Svg markup={sidebarGlyph("folder")} size={13} color={look.glyph} />
+            <Text numberOfLines={1} style={{ fontSize: 12.5, color: look.ink }}>
+              {item.replace(/\/$/, "").replace(home, "~")}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }

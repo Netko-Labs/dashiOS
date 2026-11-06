@@ -64,8 +64,8 @@ function Tile({
         gap: 4,
         borderRadius: 8,
         opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1,
-        backgroundColor: lit ? `${colors.selection}33` : "#00000000",
-        hoverBackgroundColor: lit ? `${colors.selection}33` : `${colors.button}`,
+        backgroundColor: lit ? colors.selectionWash : "#00000000",
+        hoverBackgroundColor: lit ? colors.selectionWash : colors.button,
       }}
     >
       <View style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center" }}>
@@ -100,14 +100,14 @@ function Tile({
             maxWidth: TILE_WIDTH - 10,
             paddingHorizontal: 5,
             paddingVertical: 1,
-            borderRadius: 5,
-            backgroundColor: selected ? colors.selection : "#00000000",
           }}
         >
-          <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? "#ffffff" : colors.text, textAlign: "center" }}>{middleEllipsis(item.name, 24)}</Text>
+          <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
+            {middleEllipsis(item.name, 24)}
+          </Text>
         </View>
         {item.where !== undefined && (
-          <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.text : colors.textMuted, textAlign: "center" }}>
+          <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
             {middleEllipsis(item.where, 18)}
           </Text>
         )}

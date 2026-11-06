@@ -10,7 +10,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { glyphs, useColors } from "@dashi/ui";
+import { glyphs, rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { InterfaceSpec } from "../../../src/dbus/index.ts";
@@ -111,7 +111,7 @@ export function saveAlways(mime: string, id: string, home: string = homedir()): 
 function AppRow({ id, chosen, isDefault, onPress }: { id: string; chosen: boolean; isDefault: boolean; onPress: () => void }) {
   const colors = useColors();
   const app = appInfo(id);
-  const ink = chosen ? "#ffffff" : colors.text;
+  const look = rowLook(colors, chosen);
   return (
     <View
       testID={`chooser:app:${id}`}
@@ -124,17 +124,18 @@ function AppRow({ id, chosen, isDefault, onPress }: { id: string; chosen: boolea
         gap: 10,
         paddingHorizontal: 8,
         borderRadius: 7,
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
-      {app.icon ? <Image source={app.icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyphs.INFO} size={18} color={ink} />}
+      {chosen && <SelectionBar rowHeight={34} />}
+      {app.icon ? <Image source={app.icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyphs.INFO} size={18} color={look.glyph} />}
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
           {app.name}
         </Text>
       </View>
-      {isDefault && <Text style={{ fontSize: 12, color: chosen ? "#ffffffcc" : colors.textMuted }}>default</Text>}
+      {isDefault && <Text style={{ fontSize: 12, color: look.quiet }}>default</Text>}
     </View>
   );
 }
@@ -185,7 +186,7 @@ function AppChooserSheet({
         {ids.length === 0 && <Text style={{ fontSize: 13, color: colors.textMuted }}>No app here opens this. Software may have one.</Text>}
         {!all && ids.length > SHORT_LIST && (
           <View testID="chooser:other" onPress={() => setAll(true)} style={{ height: 30, justifyContent: "center", paddingHorizontal: 8 }}>
-            <Text style={{ fontSize: 13, color: colors.selection }}>Other…</Text>
+            <Text style={{ fontSize: 13, color: colors.text }}>Other…</Text>
           </View>
         )}
       </ScrollView>

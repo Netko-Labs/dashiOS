@@ -5,7 +5,7 @@
  * asks in the same panel. Esc closes (or backs out of the question).
  */
 
-import { useColors } from "@dashi/ui";
+import { rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { KeyCatcher, type NavigationKey } from "../overlay.tsx";
@@ -50,7 +50,7 @@ function Button({ label, primary, disabled, testID, onPress }: { label: string; 
 
 function Row({ group, selected, onPress }: { group: AppGroup; selected: boolean; onPress: () => void }) {
   const colors = useColors();
-  const ink = selected ? "#ffffff" : colors.text;
+  const look = rowLook(colors, selected);
   return (
     <View
       testID={`force-quit-row:${group.name}`}
@@ -63,21 +63,22 @@ function Row({ group, selected, onPress }: { group: AppGroup; selected: boolean;
         paddingLeft: 8,
         paddingRight: 10,
         borderRadius: 6,
-        backgroundColor: selected ? colors.selection : "#00000000",
+        backgroundColor: look.ground,
       }}
     >
+      {selected && <SelectionBar rowHeight={ROW_HEIGHT} />}
       <Image source={group.icon} style={{ width: 22, height: 22 }} />
-      <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+      <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
         {group.name}
       </Text>
       {group.detail !== "" ? (
         <View style={{ flexShrink: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: selected ? "#ffffffcc" : colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, color: look.quiet }}>
             {group.detail}
           </Text>
         </View>
       ) : (
-        group.windowCount > 1 && <Text style={{ fontSize: 11, color: selected ? "#ffffffcc" : colors.textMuted }}>{`${group.windowCount} windows`}</Text>
+        group.windowCount > 1 && <Text style={{ fontSize: 11, color: look.quiet }}>{`${group.windowCount} windows`}</Text>
       )}
     </View>
   );
