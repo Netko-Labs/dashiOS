@@ -157,7 +157,8 @@ export class SlowSources<Row> {
       const giveUp = this.timers.set(() => {
         if (!settled) this.misses.set(source.id, (this.misses.get(source.id) ?? 0) + 1);
       }, BUDGET.giveUpMs);
-      source.ask(query).then(
+      // A source that throws instead of rejecting has failed the same way.
+      new Promise<readonly Row[]>((resolve) => resolve(source.ask(query))).then(
         (rows) => {
           settled = true;
           this.timers.clear(giveUp);
