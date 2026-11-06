@@ -5,10 +5,9 @@
  */
 
 import type { IndexApplet } from "@dashi/applet";
-import { Button, EmptyState, Group, glyphs, useColors } from "@dashi/ui";
+import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { DISCOVER, INSTALLED, OFFLINE, UPDATES } from "../software/glyphs.ts";
-import { Loading } from "../software/states.tsx";
 import { CATEGORY_LABELS, matches, type Page } from "./nav.ts";
 import { AppletIcon, RowGroup, useActions, useStoreState } from "./rows.tsx";
 import { useServices } from "./services.ts";
@@ -49,7 +48,7 @@ function Note({ text, testID }: { text: string; testID: string }) {
 export function ListPage({ page }: { page: Extract<Page, { kind: "all" | "category" | "search" }> }) {
   const { store } = useServices();
   const state = useStoreState();
-  if (state.index === null) return state.loading ? <Loading what="Loading the catalog…" /> : <Problem />;
+  if (state.index === null) return state.loading ? <Loading label="Loading the catalog…" /> : <Problem />;
   let entries = [...state.index.applets].sort(byName);
   if (page.kind === "category") entries = entries.filter((entry) => entry.manifest.categories.includes(page.id));
   if (page.kind === "search")

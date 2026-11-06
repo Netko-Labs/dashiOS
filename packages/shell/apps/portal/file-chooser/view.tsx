@@ -9,29 +9,15 @@
  * or Return opens.
  */
 
-import {
-  CHEVRON_DOWN,
-  Choices,
-  type MenuItem,
-  Note,
-  PopupMenu,
-  rowLook,
-  SearchField,
-  SelectionBar,
-  SidebarItem,
-  SidebarSection,
-  TextField,
-  ToolbarButton,
-  useColors,
-} from "@dashi/ui";
+import { Choices, Note, PopUpButton, rowLook, SearchField, SelectionBar, SidebarItem, SidebarSection, TextField, ToolbarButton, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { CheckBox, type FrameButton, PortalFrame } from "../ui/frame.tsx";
 import { BACK, CLOCK, FILE, FOLDER, HOME, UP } from "../ui/glyphs.ts";
 import { accept } from "./accept.ts";
 import { ClickCounter } from "./clicks.ts";
 import { filterExtension, withExtension } from "./filters.ts";
-import { type ChooserModel, folderName, folderTrail, type Row, useChooser } from "./model.ts";
+import { type ChooserModel, folderTrail, type Row, useChooser } from "./model.ts";
 import type { ChooserAnswer } from "./options.ts";
 import type { PlaceLink } from "./sources.ts";
 
@@ -85,37 +71,6 @@ function FileRow({ row, selected, onPress }: { row: Row; selected: boolean; onPr
   );
 }
 
-/** The folder pop-up in the toolbar: the folder showing; pressing it lists the folders it is in. */
-function FolderButton({ name, onPress }: { name: string; onPress: (bounds: { x: number; y: number; height: number } | undefined) => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID="chooser:folder"
-      onPress={(event) => onPress(event.bounds)}
-      style={{
-        height: 28,
-        maxWidth: 200,
-        flexShrink: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        paddingHorizontal: 9,
-        borderRadius: 7,
-        backgroundColor: colors.button,
-        hoverBackgroundColor: colors.separator,
-      }}
-    >
-      <Svg markup={FOLDER} size={14} color={colors.textMuted} />
-      <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
-          {name}
-        </Text>
-      </View>
-      <Svg markup={CHEVRON_DOWN} size={12} color={colors.textMuted} />
-    </View>
-  );
-}
-
 export interface ChooserViewProps {
   model: ChooserModel;
   places: readonly PlaceLink[];
@@ -131,7 +86,6 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
   const rows = model.visible();
   const folder = state.place.kind === "folder" ? state.place.path : null;
   const saving = request.mode === "save";
-  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
   // The rows' clicks; a new place starts over, so a click there is never the second of a double-click.
   const clicks = useRef(new ClickCounter());
   // biome-ignore lint/correctness/useExhaustiveDependencies: the place changing is what resets the clicks
@@ -176,20 +130,6 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
     }
     model.pick(row.path, request.multiple);
   };
-  /** The folder pop-up, under itself: this folder and each one it is in. */
-  const openTrail = (bounds: { x: number; y: number; height: number } | undefined): void => {
-    if (folder === null) return;
-    setMenu({
-      x: bounds?.x ?? 0,
-      y: (bounds?.y ?? 0) + (bounds?.height ?? 0) + 4,
-      items: folderTrail(folder, model.home).map((each, index) => ({
-        label: each.name,
-        checked: index === 0,
-        onPress: () => model.go({ kind: "folder", path: each.path }),
-      })),
-    });
-  };
-
   return (
     <PortalFrame
       title={request.title}
@@ -201,11 +141,19 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
           <ToolbarButton testID="chooser:up" glyph={UP} disabled={!model.canGoUp()} onPress={() => model.up()} />
         </>
       }
-      overlay={menu ? <PopupMenu testID="chooser:trail" x={menu.x} y={menu.y} items={menu.items} onClose={() => setMenu(null)} /> : undefined}
       buttons={buttons}
       toolbar={
         <>
-          {folder !== null && <FolderButton name={folderName(folder, model.home)} onPress={openTrail} />}
+          {folder !== null && (
+            // The folder showing; its menu is the folder and each folder it is in, the one showing ticked.
+            <PopUpButton
+              testID="chooser:folder"
+              glyph={FOLDER}
+              options={folderTrail(folder, model.home).map((each) => ({ value: each.path, label: each.name }))}
+              value={folder}
+              onChange={(path) => model.go({ kind: "folder", path })}
+            />
+          )}
           <SearchField
             testID="chooser:search"
             autoFocus={!saving}
@@ -221,7 +169,8 @@ export function ChooserView({ model, places, saveFolder, exists, answer }: Choos
       footer={
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
           {filterOptions.length > 1 && (
-            <Choices
+            // File types are a list of unknown length: a pop-up button (UI-2).
+            <PopUpButton
               testID="chooser:filter"
               options={filterOptions}
               value={filterIndex}

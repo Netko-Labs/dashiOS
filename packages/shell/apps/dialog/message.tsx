@@ -5,9 +5,8 @@
  * buttons). OK and Yes exit 0, No and Esc 1.
  */
 
-import { glyphs, useColors } from "@dashi/ui";
-import { ScrollView, Text, View } from "@mirinjs/metal";
-import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
+import { type AlertTone, AlertWindow, glyphs } from "@dashi/ui";
+import { type Answer, standardButtons } from "./frame.tsx";
 import { splitMessage } from "./markup.ts";
 import type { MessageKind, MessageSpec } from "./spec.ts";
 
@@ -16,37 +15,21 @@ const QUESTION =
   '<path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4" stroke="#000" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
   '<circle cx="8" cy="11.4" r=".9" fill="#000"/></svg>';
 
-function glyphFor(kind: MessageKind, colors: ReturnType<typeof useColors>): { markup: string; tint: string; wash: string } {
+function glyphFor(kind: MessageKind): { glyph: string; tone: AlertTone } {
   switch (kind) {
     case "info":
-      return { markup: glyphs.INFO, tint: colors.selection, wash: `${colors.selection}24` };
+      return { glyph: glyphs.INFO, tone: "accent" };
     case "question":
-      return { markup: QUESTION, tint: colors.selection, wash: `${colors.selection}24` };
+      return { glyph: QUESTION, tone: "accent" };
     case "warning":
-      return { markup: glyphs.WARNING, tint: colors.textMuted, wash: colors.button };
+      return { glyph: glyphs.WARNING, tone: "warning" };
     case "error":
-      return { markup: glyphs.STOP, tint: colors.critical, wash: `${colors.critical}24` };
+      return { glyph: glyphs.STOP, tone: "danger" };
   }
 }
 
-/** Lines that keep to one line each (`--no-wrap`), or text that wraps. */
-function Lines({ text, bold, noWrap }: { text: string; bold: boolean; noWrap: boolean }) {
-  const colors = useColors();
-  const style = { fontSize: 13, fontWeight: bold ? ("bold" as const) : ("normal" as const), color: colors.text, lineHeight: 17 };
-  if (!noWrap) return <Text style={style}>{text}</Text>;
-  return (
-    <View style={{ flexDirection: "column", flexShrink: 0 }}>
-      {text.split("\n").map((line, index) => (
-        <Text key={index} numberOfLines={1} style={style}>
-          {line === "" ? " " : line}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
+/** The one alert frame (UI-5): the first short line is the question, the rest the message under it. */
 export function MessageDialog({ spec, answer }: { spec: MessageSpec; answer: Answer }) {
-  const colors = useColors();
   const { headline, body } = splitMessage(spec.text);
   const question = spec.kind === "question";
   const buttons = standardButtons({
@@ -60,11 +43,20 @@ export function MessageDialog({ spec, answer }: { spec: MessageSpec; answer: Ans
     defaultCancel: spec.defaultCancel,
   });
   return (
-    <DialogFrame title={spec.title} glyph={glyphFor(spec.kind, colors)} buttons={buttons} onCancel={() => answer(1)}>
-      <ScrollView testID="dialog:text" style={{ flex: 1, flexDirection: "column", gap: 4, paddingTop: 2 }}>
-        {headline !== "" && <Lines text={headline} bold noWrap={spec.noWrap} />}
-        {body !== "" && <Lines text={body} bold={false} noWrap={spec.noWrap} />}
-      </ScrollView>
-    </DialogFrame>
+    <AlertWindow
+      testID="dialog"
+      question={headline}
+      message={body}
+      {...glyphFor(spec.kind)}
+      // Esc is Zenity's Cancel, exit status 1, whatever the buttons are.
+      onCancel={() => answer(1)}
+      buttons={buttons.map((button) => ({
+        label: button.label,
+        testID: button.testID,
+        onPress: button.onPress,
+        disabled: button.disabled,
+        ...(button.primary ? { kind: "primary" as const } : {}),
+      }))}
+    />
   );
 }

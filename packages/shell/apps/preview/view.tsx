@@ -6,7 +6,7 @@
  * (drop.ts); with no file open, the window offers only that and Open….
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, type MenuItem, Notice, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, Loading, type MenuItem, Notice, PopupMenu, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { chooseFile } from "../../src/portal/file-chooser.ts";
@@ -298,7 +298,7 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   ) : snap.phase === "error" ? (
     <EmptyState testID="error" title="This file can’t be shown" message={snap.error ?? undefined} glyph={isPdf ? glyphs.DOCUMENT : glyphs.PICTURE} />
   ) : snap.phase === "loading" ? (
-    <EmptyState testID="loading" title="Opening…" />
+    <Loading testID="loading" label="Opening…" />
   ) : (
     <EmptyState
       testID="empty"

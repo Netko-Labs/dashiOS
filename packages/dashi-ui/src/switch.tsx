@@ -1,10 +1,12 @@
 /**
  * An on/off switch, macOS style: a pill that takes the accent color when on,
  * with its knob at the end. Settings, Control Center's pages, and the
- * launcher's rows (a setting with state) all draw this one.
+ * launcher's rows (a setting with state) all draw this one. Disabled, the
+ * whole switch is dimmed (UI-4).
  */
 
 import { View } from "@mirinjs/metal";
+import { useControlState } from "./control-state.tsx";
 import { useColors } from "./theme/index.ts";
 
 export interface SwitchProps {
@@ -12,14 +14,19 @@ export interface SwitchProps {
   testID: string;
   /** Without it the switch only shows its state (a launcher row, where Space flips it). */
   onChange?: (on: boolean) => void;
+  disabled?: boolean;
+  /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
+  focused?: boolean;
 }
 
-export function Switch({ on, testID, onChange }: SwitchProps) {
+export function Switch({ on, testID, onChange, disabled, focused }: SwitchProps) {
   const colors = useColors();
+  const state = useControlState({ disabled, focused });
   return (
     <View
       testID={testID}
-      {...(onChange ? { onPress: () => onChange(!on) } : {})}
+      data-focused={state.focused}
+      {...(onChange && !disabled ? { onPress: () => onChange(!on) } : {})}
       style={{
         width: 38,
         height: 22,
@@ -29,6 +36,7 @@ export function Switch({ on, testID, onChange }: SwitchProps) {
         alignItems: "center",
         justifyContent: on ? "flex-end" : "flex-start",
         backgroundColor: on ? colors.selection : colors.track,
+        opacity: state.opacity,
       }}
     >
       <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#ffffff", shadow: "sm" }} />

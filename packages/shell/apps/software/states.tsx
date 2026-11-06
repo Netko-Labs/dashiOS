@@ -1,18 +1,9 @@
-/** What a page shows while it loads, when it can't (offline, Flathub's trouble), and when it served saved results. */
+/** What a page shows when it can't load (offline, Flathub's trouble), and when it served saved results; a page that is loading shows @dashi/ui's `Loading`. */
 
 import { Button, EmptyState, glyphs, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { OFFLINE } from "./glyphs.ts";
 import type { Load } from "./hooks.ts";
-
-export function Loading({ what = "Loading…" }: { what?: string }) {
-  const colors = useColors();
-  return (
-    <View testID="loading" style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <Text style={{ fontSize: 13, color: colors.textMuted }}>{what}</Text>
-    </View>
-  );
-}
 
 export function Failed({ state, onRetry }: { state: Extract<Load<unknown>, { status: "failed" }>; onRetry: () => void }) {
   return (

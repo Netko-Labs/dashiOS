@@ -1,14 +1,14 @@
 /**
- * Every dialog's frame, in the way a Mac alert looks: the title in the
- * window's one toolbar row, then the content (beside a glyph for a message),
- * and the buttons at the bottom right, the default one in the accent. There
- * is no footer bar: the buttons sit on the window's ground. Esc is Cancel
+ * Every dialog's frame but a message's (a message is @dashi/ui's
+ * `AlertWindow`, message.tsx): the title in the window's one toolbar row,
+ * then the content, and the buttons at the bottom right, the default one in
+ * the accent. There is no footer bar: the buttons sit on the window's ground. Esc is Cancel
  * and Enter the default button, through the kit's KeySink when nothing in
  * the dialog takes the keyboard (a text field does that itself).
  */
 
 import { AppWindow, Button, type KeyInput, KeySink } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { LAYOUT } from "./size.ts";
 
@@ -26,8 +26,6 @@ export interface DialogButton {
 
 export interface DialogFrameProps {
   title: string;
-  /** A glyph tile beside the content (a message's info, warning, error, question). */
-  glyph?: { markup: string; tint: string; wash: string };
   buttons: readonly DialogButton[];
   /** Esc, through the KeySink; also for keys the dialog's own field reports. */
   onCancel: () => void;
@@ -67,9 +65,9 @@ export function standardButtons({
   return [...extras, ...cancel, ...ok];
 }
 
-export function DialogFrame({ title, glyph, buttons, onCancel, keys = true, onKey, children }: DialogFrameProps) {
+export function DialogFrame({ title, buttons, onCancel, keys = true, onKey, children }: DialogFrameProps) {
   const primary = buttons.find((button) => button.primary && !button.disabled);
-  const { padding, icon, gap } = LAYOUT;
+  const { padding, gap } = LAYOUT;
   return (
     <AppWindow title={title}>
       {keys && (
@@ -83,24 +81,7 @@ export function DialogFrame({ title, glyph, buttons, onCancel, keys = true, onKe
         />
       )}
       <View style={{ flex: 1, flexDirection: "column", gap, padding, paddingTop: padding - 4, minHeight: 0 }}>
-        <View style={{ flex: 1, flexDirection: "row", gap, minHeight: 0 }}>
-          {glyph && (
-            <View
-              style={{
-                width: icon,
-                height: icon,
-                flexShrink: 0,
-                borderRadius: 10,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: glyph.wash,
-              }}
-            >
-              <Svg markup={glyph.markup} size={22} color={glyph.tint} />
-            </View>
-          )}
-          <View style={{ flex: 1, flexDirection: "column", gap: 10, minWidth: 0, minHeight: 0 }}>{children}</View>
-        </View>
+        <View style={{ flex: 1, flexDirection: "column", gap: 10, minWidth: 0, minHeight: 0 }}>{children}</View>
         {buttons.length > 0 && (
           <View style={{ flexDirection: "row", justifyContent: "flex-end", flexWrap: "wrap", gap: 8, flexShrink: 0 }}>
             {buttons.map((button) => (
