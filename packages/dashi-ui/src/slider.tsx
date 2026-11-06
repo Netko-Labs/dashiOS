@@ -39,7 +39,7 @@ export interface SliderProps {
   /** Control Center's look: a tall bar with this glyph in its fill. */
   glyph?: string;
   disabled?: boolean;
-  /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
+  /** Keyboard focus is on it (`data-focused`); it doesn't take the keyboard yet (KB-1). */
   focused?: boolean;
 }
 

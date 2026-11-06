@@ -15,7 +15,7 @@ export interface SwitchProps {
   /** Without it the switch only shows its state (a launcher row, where Space flips it). */
   onChange?: (on: boolean) => void;
   disabled?: boolean;
-  /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
+  /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
   /** Tab reaches a switch that can be flipped (KB-1); `false` leaves it to the pointer. */
   focusable?: boolean;

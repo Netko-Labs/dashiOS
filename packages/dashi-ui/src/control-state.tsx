@@ -6,8 +6,8 @@
  * lets go. Disabled is the whole control at 40%, so a disabled primary
  * button still reads as primary.
  *
- * Focused is a hook for the focus model (KB-2): a control takes `focused`
- * and sets `data-focused` on its view, and draws no ring yet. The gallery
+ * Focused: a control takes `focused` and sets `data-focused` on its view;
+ * the ring itself is Metal's, drawn only after the keyboard (KB-2). The gallery
  * shows a control pressed or focused without touching it (`ShowStates`).
  */
 

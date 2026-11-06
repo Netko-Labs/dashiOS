@@ -26,7 +26,7 @@ export function Segmented<T extends string | number>({
   /** Every segment this wide; by default each fits its label. */
   segmentWidth?: number;
   disabled?: boolean;
-  /** Keyboard focus is in it (the focus model's hook; no ring is drawn yet). */
+  /** Keyboard focus is in it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
 }) {
   const colors = useColors();

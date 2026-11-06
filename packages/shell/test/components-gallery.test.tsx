@@ -26,6 +26,18 @@ afterAll(() => {
 
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
+
 function mount() {
   const listeners: ((event: NativeEvent) => void)[] = [];
   let last = "";
@@ -87,7 +99,7 @@ test("the mode control draws one column; the arrows walk the pages", async () =>
   await gallery.emit({ type: "press", nodeId: gallery.node("components:mode:dark") });
   expect(gallery.root.nodeId("exhibit:light")).toBeUndefined();
   expect(gallery.root.nodeId("exhibit:dark")).toBeDefined();
-  await gallery.emit({ type: "key", nodeId: gallery.node("components:keys"), value: "ArrowDown" });
+  await gallery.emit(windowKey(gallery.node("components:keys"), "down"));
   expect(gallery.root.nodeId("components:page:pickers")).toBeDefined();
   // A pop-up button in an exhibit opens its menu over the window, and closes it on a pick.
   await gallery.emit({ type: "press", nodeId: gallery.node("popup:enabled"), bounds: { x: 300, y: 200, width: 170, height: 28 } });

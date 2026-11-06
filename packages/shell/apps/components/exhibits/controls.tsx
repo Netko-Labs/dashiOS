@@ -16,7 +16,7 @@ export function ButtonsPage() {
     <PageBody>
       <Exhibit
         title="Button"
-        note="Kombu goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each deepens under the pointer (point at one) and more while held; disabled is the whole button at 40%. Focused draws no ring until the focus model lands."
+        note="Kombu goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each deepens under the pointer (point at one) and more while held; disabled is the whole button at 40%. Tab to one for its focus ring; the Focused row only marks the state."
       >
         <States>
           {({ state, disabled }) => (

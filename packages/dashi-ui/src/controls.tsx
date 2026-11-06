@@ -117,7 +117,7 @@ export function Choices<T extends string | number>({
   onChange: (value: T) => void;
   testID: string;
   disabled?: boolean;
-  /** Keyboard focus is in the row (the focus model's hook; no ring is drawn yet). */
+  /** Keyboard focus is in the row (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
 }) {
   const state = useControlState({ disabled, focused });
@@ -196,7 +196,7 @@ export function Button({
   danger?: boolean;
   disabled?: boolean;
   isDefault?: boolean;
-  /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
+  /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
   /** Tab reaches it (KB-1); `false` leaves it to the pointer. A disabled button never takes the keyboard. */
   focusable?: boolean;

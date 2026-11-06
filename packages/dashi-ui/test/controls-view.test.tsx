@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { render, View } from "@mirinjs/metal";
+import { type NativeEvent, render, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type AlertButton, AlertSheet, AlertWindow, alertKeyTarget } from "../src/alert.tsx";
 import { ShowStates } from "../src/control-state.tsx";
@@ -15,6 +15,18 @@ import { AppWindow } from "../src/window.tsx";
 import { fakeHost, settle } from "./host.ts";
 
 const noop = (): void => {};
+
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
 
 test("Esc presses the cancel button and Enter the default one; a grant is never Enter's", () => {
   const cancel: AlertButton = { label: "Cancel", testID: "c", onPress: noop, cancel: true };
@@ -50,8 +62,8 @@ test("an alert sheet answers Esc and Enter through its buttons", async () => {
   );
   await settle();
   const keys = root.nodeId("ask:keys") as string;
-  host.emit({ type: "key", nodeId: keys, value: "Escape" });
-  host.emit({ type: "submit", nodeId: keys, value: "" });
+  host.emit(windowKey(keys, "escape"));
+  host.emit(windowKey(keys, "enter"));
   expect(pressed).toEqual(["ok", "ok"]);
   expect(host.last()).toContain("That didn’t work");
   root.unmount();
@@ -76,8 +88,8 @@ test("an alert window draws the question as its first line, with no title row", 
   await settle();
   expect(root.nodeId("window-toolbar")).toBeUndefined();
   const keys = root.nodeId("w:keys") as string;
-  host.emit({ type: "submit", nodeId: keys, value: "" });
-  host.emit({ type: "key", nodeId: keys, value: "Escape" });
+  host.emit(windowKey(keys, "enter"));
+  host.emit(windowKey(keys, "escape"));
   expect(pressed).toEqual(["deny"]);
   root.unmount();
 });
