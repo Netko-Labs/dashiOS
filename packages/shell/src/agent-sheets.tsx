@@ -5,16 +5,16 @@
  * through `AgentUi`.
  */
 
-import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost } from "@mirinjs/metal";
+import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { PersonConfirmSheet, type PersonQuestion } from "./actions/confirm-sheet.tsx";
 import type { AgentUi, Answer } from "./agents/index.ts";
 import { SHEET_LAYERS } from "./agents/mask.ts";
 import { personAnswered } from "./agents/person.ts";
 import { DENY, type QueuedSheet, SheetQueue } from "./agents/sheet-queue.ts";
-import { METAL_HOST } from "./apps.ts";
 import { ConfirmSheet } from "./confirm-sheet.tsx";
 import { CONSENT, ConsentSheet, STOPPED, StoppedNote } from "./consent.tsx";
+import { spawnShellHost } from "./metal-host.ts";
 import { SIGN_IN, SignInSheet } from "./sign-in-sheet.tsx";
 import { TURN, TurnBanner } from "./turn-banner.tsx";
 
@@ -80,7 +80,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
           else console.error("dashi-shell: a consent sheet's answer did not come from the person; it was ignored");
         });
       };
-      const host = spawnNativeHost(METAL_HOST, {
+      const host = spawnShellHost({
         title: "Agent permission",
         appId: "dev.dashi.shell",
         width: entry.size?.width ?? CONSENT.width,
@@ -178,7 +178,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
       if (signal?.aborted) return Promise.resolve(false);
       signal?.addEventListener("abort", () => endTurn(turn.agent, false), { once: true });
       return new Promise((resolve) => {
-        const host = spawnNativeHost(METAL_HOST, {
+        const host = spawnShellHost({
           title: "Your turn",
           appId: "dev.dashi.shell",
           width: TURN.width,
@@ -204,7 +204,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
         clearTimeout(note.timer);
         closeOverlay(note);
       }
-      const host = spawnNativeHost(METAL_HOST, {
+      const host = spawnShellHost({
         title: "Agents stopped",
         appId: "dev.dashi.shell",
         width: STOPPED.width,

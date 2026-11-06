@@ -6,12 +6,13 @@
  * the list outlives a hidden Dock.
  */
 
-import { type Bounds, type NativeHostOptions, render, spawnNativeHost } from "@mirinjs/metal";
+import { type Bounds, type NativeHostOptions, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { type App, METAL_HOST } from "../apps.ts";
+import type { App } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
+import { spawnShellHost } from "../metal-host.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";
@@ -98,7 +99,7 @@ export function startDock(options: StartDockOptions): DockRuntime {
 
   /** Opens `element` on a new host; `onClosed` runs once, however it ended. */
   const open = (hostOptions: NativeHostOptions, element: ReactElement, onClosed: () => void): DockHandle => {
-    const host = spawnNativeHost(METAL_HOST, { appId: "dev.dashi.shell", ...hostOptions });
+    const host = spawnShellHost({ appId: "dev.dashi.shell", ...hostOptions });
     const root = render(element, host);
     let up = true;
     host.onClose(() => {

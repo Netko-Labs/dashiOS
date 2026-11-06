@@ -13,6 +13,7 @@ import { existsSync } from "node:fs";
 import { type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/apps.ts";
+import { shellHostOptions } from "../../src/metal-host.ts";
 import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/portal-host/protocol.ts";
 import { WarmHost } from "../../src/warm-host.ts";
 import type { ShellLink } from "./shell.ts";
@@ -37,7 +38,7 @@ export function dialogWindows(shell: ShellLink, binary: string = METAL_HOST): Sh
   const host = (window: NativeWindowOptions & { title: string; appId: string; width: number; height: number }): NativeHostTransport => {
     if (!existsSync(binary)) throw new Error(`no Metal host at ${binary}`);
     const { title, appId, width, height } = window;
-    return warm?.take(window) ?? spawnNativeHost(binary, { title, appId, width, height, titleBar: "unified" });
+    return warm?.take(window) ?? spawnNativeHost(binary, shellHostOptions({ title, appId, width, height, titleBar: "unified" }));
   };
   return async (window, build, signal, closed) => {
     if (signal.aborted) return closed;

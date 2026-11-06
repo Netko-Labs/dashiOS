@@ -7,6 +7,7 @@
  */
 
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
+import { shellHostOptions } from "./metal-host.ts";
 
 type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
 
@@ -62,10 +63,7 @@ export class WarmHost {
 
   private warm(): void {
     if (this.spare || this.stopped) return;
-    const host = this.spawn(this.binary, {
-      appId: "dev.dashi.shell",
-      deferred: true,
-    });
+    const host = this.spawn(this.binary, shellHostOptions({ appId: "dev.dashi.shell", deferred: true }));
     this.spare = host;
     // A warm host that dies (a crash, a GPU reset) is replaced, not handed out.
     host.onClose(() => {
