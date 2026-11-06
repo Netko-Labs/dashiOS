@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { AnswerError, type PlanTool } from "../src/agents/ask/answerer.ts";
 import { ANTHROPIC_HOST, claudeAnswerer, echoed, FALLBACK_BETA, type Fetch, readReply } from "../src/agents/ask/claude.ts";
 import { ANTHROPIC_TOKEN, keyPlace, modelKeys, vaultTokenSource } from "../src/agents/ask/keys.ts";
-import { isModelName, LOCAL_URL, localAnswerer, localModels, readLocalReply } from "../src/agents/ask/local.ts";
+import { isModelName, LOCAL_TOOLS, LOCAL_URL, localAnswerer, localModels, readLocalReply, toolsForRequest } from "../src/agents/ask/local.ts";
 import { strictSchema } from "../src/agents/ask/strict.ts";
 
 const TOOLS: PlanTool[] = [
@@ -274,4 +274,32 @@ test("Claude's key: the vault's token item for api.anthropic.com first, else ANT
   const locked = { forHost: async () => Promise.reject(new Error("locked")), list: async () => Promise.reject(new Error("locked")) };
   expect(await modelKeys(vaultTokenSource(locked), {}).anthropic()).toBeNull();
   expect(await keyPlace(modelKeys(vaultTokenSource(locked), {}))).toBe("none");
+});
+
+test("local: only the tools the request names reach a small model, best first, and it isn't asked to think aloud", async () => {
+  const tool = (name: string, description: string): PlanTool => ({
+    name,
+    description,
+    schema: { type: "object", properties: {}, required: [], additionalProperties: false },
+  });
+  const tools = [
+    tool("list_windows", "The open windows."),
+    tool("lock_screen", "Lock the screen, as the person would."),
+    tool("set_setting", "Turn dark_mode or night_shift on or off."),
+    ...Array.from({ length: 40 }, (_, index) => tool(`other_${index}`, "Something else entirely.")),
+  ];
+  const picked = toolsForRequest("turn on dark mode and lock the screen", tools).map((each) => each.name);
+  expect(picked).toEqual(["lock_screen", "set_setting"]);
+  // Nothing matches: the first few, so the model can still say it can't.
+  expect(toolsForRequest("xyzzy", tools)).toHaveLength(LOCAL_TOOLS);
+
+  let body: Record<string, unknown> = {};
+  const send: Fetch = async (url, init) => {
+    if (url.endsWith("/api/tags")) return Response.json({ models: [{ name: "qwen3:1.7b" }] });
+    body = JSON.parse(String(init?.body));
+    return Response.json({ message: { role: "assistant", content: "ok" } });
+  };
+  await localAnswerer({ model: () => null, fetch: send }).turn([], { text: "lock the screen", results: [] }, tools, new AbortController().signal);
+  expect(body.think).toBe(false);
+  expect((body.tools as unknown[]).length).toBeLessThanOrEqual(LOCAL_TOOLS);
 });

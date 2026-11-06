@@ -11,6 +11,64 @@ import type { Fetch } from "./claude.ts";
 export const LOCAL_URL = "http://127.0.0.1:11434";
 const TIMEOUT_MS = 120_000;
 const LIST_TIMEOUT_MS = 2_000;
+/** The most tools a local model is told of: every one (about 70, many thousand tokens) overflows its context and takes minutes on a CPU. */
+export const LOCAL_TOOLS = 12;
+/** Room for the request, the tools and the answer (Ollama's default, 4096, is too small for the tools). */
+const LOCAL_CONTEXT = 8192;
+
+/** Words that say nothing about which tool is meant. */
+const FILLER = new Set([
+  "the",
+  "and",
+  "then",
+  "please",
+  "turn",
+  "set",
+  "make",
+  "can",
+  "you",
+  "for",
+  "with",
+  "into",
+  "that",
+  "this",
+  "all",
+  "now",
+  "my",
+  "on",
+  "off",
+  "to",
+  "a",
+  "an",
+  "of",
+  "in",
+  "it",
+]);
+const wordsOf = (text: string): string[] =>
+  text
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .split(" ")
+    .filter((word) => word.length >= 3 && !FILLER.has(word));
+
+/**
+ * The tools a request names, best first, at most `max`: a word of the request
+ * in a tool's name counts most, one in its description less; tools that share
+ * no word are left out (a request no tool matches gets the first `max`, as
+ * listed, so the model can still say it can't).
+ */
+export function toolsForRequest(text: string, tools: readonly PlanTool[], max = LOCAL_TOOLS): PlanTool[] {
+  const words = wordsOf(text);
+  const scored = tools.map((tool, index) => {
+    const name = new Set(wordsOf(tool.name.replace(/_/g, " ")));
+    const description = new Set(wordsOf(tool.description));
+    const score = words.reduce((sum, word) => sum + (name.has(word) ? 3 : 0) + (description.has(word) ? 1 : 0), 0);
+    return { tool, index, score };
+  });
+  const matched = scored.filter((each) => each.score > 0).sort((a, b) => b.score - a.score || a.index - b.index);
+  return (matched.length > 0 ? matched : scored).slice(0, max).map((each) => each.tool);
+}
 
 type Raw = Record<string, unknown>;
 const isRaw = (value: unknown): value is Raw => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -77,7 +135,13 @@ export function localAnswerer(options: LocalOptions): Answerer {
             model,
             messages,
             stream: false,
-            tools: tools.map((tool) => ({ type: "function", function: { name: tool.name, description: tool.description, parameters: tool.schema } })),
+            // A plan is a few tool calls: no thinking aloud first (qwen3 and the like spend minutes on a CPU).
+            think: false,
+            options: { num_ctx: LOCAL_CONTEXT },
+            tools: toolsForRequest(turn.text, tools).map((tool) => ({
+              type: "function",
+              function: { name: tool.name, description: tool.description, parameters: tool.schema },
+            })),
           }),
           signal: AbortSignal.any([signal, AbortSignal.timeout(TIMEOUT_MS)]),
         });
