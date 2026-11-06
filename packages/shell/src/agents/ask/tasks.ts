@@ -35,6 +35,8 @@ export interface TaskView {
   /** What the model said besides its calls, on one line. */
   said: string;
   failure: { kind: AnswerFailure; text: string } | null;
+  /** A failed ask that has left "Now" (a while after, or once the launcher closed); still Retry-able from its plan, and in the history. */
+  leftNow?: true;
 }
 
 export interface TaskDeps {
@@ -52,7 +54,12 @@ export interface TaskDeps {
   undo(undo: Undo): Promise<Outcome>;
   history: Pick<HistoryLog, "add" | "undone">;
   now?(): number;
+  /** For a failed ask's stay in Now; real timers when left out. */
+  timers?: { set(callback: () => void, ms: number): unknown; clear(handle: unknown): void };
 }
+
+/** How long a failed ask stays in "Now" (unless the launcher closes first). */
+export const FAILED_STAYS_MS = 10_000;
 
 interface Task {
   id: string;
@@ -69,7 +76,15 @@ interface Task {
   /** How many plans this task has had; each is its own entry in the history. */
   serial: number;
   controller: AbortController;
+  /** Failed and out of "Now"; and the timer that takes it out. */
+  leftNow: boolean;
+  leaving: unknown;
 }
+
+const REAL_TIMERS: Required<TaskDeps>["timers"] = {
+  set: (callback, ms) => setTimeout(callback, ms),
+  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+};
 
 /** Tasks kept in memory (the history keeps the rest). */
 const KEEP = 20;
@@ -113,6 +128,7 @@ export class AskTasks {
       steps: task.steps.map((step) => ({ ...step })),
       said: task.said,
       failure: task.failure,
+      ...(task.leftNow ? { leftNow: true as const } : {}),
     }));
     for (const listener of this.listeners) listener();
   }
@@ -138,6 +154,8 @@ export class AskTasks {
       turn: { text, results: [] },
       serial: 0,
       controller: new AbortController(),
+      leftNow: false,
+      leaving: null,
     };
     this.tasks = [task, ...this.tasks].slice(0, KEEP);
     void this.plan(task);
@@ -165,6 +183,7 @@ export class AskTasks {
   }
 
   private async plan(task: Task): Promise<void> {
+    this.stayInNow(task);
     task.phase = "asking";
     task.steps = [];
     task.said = "";
@@ -187,8 +206,36 @@ export class AskTasks {
       task.phase = "failed";
       task.failure =
         error instanceof AnswerError ? { kind: error.failure, text: error.message } : { kind: "failed", text: `${task.answerer.info.name} didn't answer.` };
+      // In the history as the plan it would have been (a Retry that answers replaces the line), and out of Now in a while.
+      this.keep(task, task.serial + 1, task.failure.text);
+      task.leaving = (this.deps.timers ?? REAL_TIMERS).set(() => this.leaveNow(task), FAILED_STAYS_MS);
     }
     this.publish();
+  }
+
+  /** A failed ask goes from "Now": its plan (with Retry) and its history line stay. */
+  private leaveNow(task: Task): void {
+    task.leaving = null;
+    if (task.phase !== "failed" || task.leftNow) return;
+    task.leftNow = true;
+    this.publish();
+  }
+
+  /** Asked again: back in "Now" while it is. */
+  private stayInNow(task: Task): void {
+    if (task.leaving !== null) (this.deps.timers ?? REAL_TIMERS).clear(task.leaving);
+    task.leaving = null;
+    task.leftNow = false;
+  }
+
+  /** The launcher closed: every failed ask leaves "Now" at once. */
+  letFailedGo(): void {
+    const failed = this.tasks.filter((task) => task.phase === "failed" && !task.leftNow);
+    for (const task of failed) {
+      this.stayInNow(task);
+      task.leftNow = true;
+    }
+    if (failed.length > 0) this.publish();
   }
 
   /**
@@ -259,14 +306,15 @@ export class AskTasks {
   }
 
   /** Write this plan's steps to the history (a later line for the same plan replaces the earlier). */
-  private keep(task: Task): void {
+  private keep(task: Task, serial = task.serial, failure?: string): void {
     const steps: HistoryStep[] = task.steps.map((step) => ({ title: step.title, outcome: outcomeOf(step.state), ...(step.undo ? { undo: step.undo } : {}) }));
     this.deps.history.add({
-      task: `${task.id}.${task.serial}`,
+      task: `${task.id}.${serial}`,
       time: Math.floor((this.deps.now?.() ?? Date.now()) / 1000),
       agent: task.answerer.info.name,
       request: task.request,
       steps,
+      ...(failure === undefined ? {} : { failure }),
     });
   }
 
@@ -304,5 +352,6 @@ export class AskTasks {
   }
 }
 
-/** Tasks still in "Now": asking, waiting for Return, running, or waiting for a Retry. */
-export const isActive = (task: TaskView): boolean => task.phase === "asking" || task.phase === "planned" || task.phase === "running" || task.phase === "failed";
+/** Tasks still in "Now": asking, waiting for Return, running, or failed just now (FAILED_STAYS_MS, or until the launcher closes). */
+export const isActive = (task: TaskView): boolean =>
+  task.phase === "asking" || task.phase === "planned" || task.phase === "running" || (task.phase === "failed" && task.leftNow !== true);

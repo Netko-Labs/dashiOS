@@ -59,6 +59,8 @@ export interface LauncherAgents extends Store<LauncherAgentsSnapshot> {
   /** Terminal, to sign a harness in (a "not signed in" failure). */
   signIn(): void;
   history(): readonly HistoryEntry[];
+  /** The launcher closed: a failed ask leaves "Now" (agents/ask/tasks.ts). */
+  closed?(): void;
 }
 
 type AgentUndo = Extract<AgentAct, { kind: "undo" }>["undo"];

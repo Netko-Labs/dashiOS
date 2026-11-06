@@ -698,6 +698,8 @@ export function Launcher(props: LauncherProps) {
   useEffect(() => keys?.subscribeCommands?.((cmd) => commands.current(cmd)), [keys]);
   // Recording ends with the launcher, however it closes.
   useEffect(() => () => keys?.record?.(false), [keys]);
+  // A failed ask leaves Now once the launcher closes (it was seen); its history line stays.
+  useEffect(() => () => props.agents?.closed?.(), [props.agents]);
 
   const onChangeText = (next: string) => {
     if (mode.kind !== "search") {

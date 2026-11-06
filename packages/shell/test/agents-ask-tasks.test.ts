@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import type { ActionDef, Args, Outcome } from "../src/actions/types.ts";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type Turn } from "../src/agents/ask/answerer.ts";
-import type { TaskRecord } from "../src/agents/ask/history.ts";
+import { readHistory, type TaskRecord } from "../src/agents/ask/history.ts";
 import { nowItems, TurnWatch } from "../src/agents/ask/now.ts";
-import { AskTasks, type TaskDeps } from "../src/agents/ask/tasks.ts";
+import { AskTasks, FAILED_STAYS_MS, type TaskDeps } from "../src/agents/ask/tasks.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 
 const settle = () => new Promise((done) => setTimeout(done, 5));
@@ -28,7 +28,7 @@ function fakeAnswerer(replies: Array<ModelCall[] | AnswerError>): Answerer & { t
 
 function harness(
   answerer: Answerer | null,
-  options: { person?: boolean[]; outcomes?: Outcome[]; settings?: Record<string, unknown>; gate?: Promise<void> } = {},
+  options: { person?: boolean[]; outcomes?: Outcome[]; settings?: Record<string, unknown>; gate?: Promise<void>; timers?: TaskDeps["timers"] } = {},
 ) {
   const ran: Array<{ address: string; args: Args; by: { agent: string; task: string } }> = [];
   const kept: TaskRecord[] = [];
@@ -51,6 +51,7 @@ function harness(
     },
     history: { add: (record) => kept.push(record), undone: (entry, step) => undone.push([entry, step]) },
     now: () => 1_000_000,
+    timers: options.timers ?? { set: () => null, clear() {} },
   };
   return { tasks: new AskTasks(deps), ran, kept, undone, undos };
 }
@@ -170,6 +171,72 @@ test("no answer: Retry asks again; a missing key says where it goes", async () =
   await settle();
   expect(tasks.get(id)?.phase).toBe("planned");
   expect(answerer.turns).toHaveLength(2);
+});
+
+test("a failed ask leaves Now a while after (or once the launcher closes), and stays in the history", async () => {
+  const pending: Array<{ run: () => void; ms: number; cleared: boolean }> = [];
+  const timers = {
+    set: (run: () => void, ms: number) => {
+      const timer = { run, ms, cleared: false };
+      pending.push(timer);
+      return timer;
+    },
+    clear: (handle: unknown) => {
+      (handle as { cleared: boolean }).cleared = true;
+    },
+  };
+  const fire = () => {
+    for (const timer of pending.splice(0)) if (!timer.cleared) timer.run();
+  };
+  const answerer = fakeAnswerer([
+    new AnswerError("no-answer", "Claude didn't answer."),
+    new AnswerError("no-answer", "Claude didn't answer."),
+    darkAndDock,
+    new AnswerError("no-answer", "Claude didn't answer."),
+  ]);
+  const { tasks, kept } = harness(answerer, { timers });
+  const now = () => nowItems({ turns: [], tasks: tasks.getSnapshot(), agents: [] }).map((item) => item.kind === "task" && item.status);
+  const id = tasks.ask("dark mode and hide the dock") as string;
+  await settle();
+  expect(now()).toEqual(["dark mode and hide the dock · didn't answer"]);
+  expect(pending.map((timer) => timer.ms)).toEqual([FAILED_STAYS_MS]);
+  // Kept as the plan it would have been, saying why there was none.
+  expect(kept).toEqual([{ task: `${id}.1`, time: 1000, agent: "Claude", request: "dark mode and hide the dock", steps: [], failure: "Claude didn't answer." }]);
+  fire();
+  expect(now()).toEqual([]);
+  // Its plan is still there to Retry; a Retry is back in Now while it asks.
+  expect(tasks.get(id)).toMatchObject({ phase: "failed", leftNow: true });
+  tasks.retry(id);
+  expect(now()).toEqual(["dark mode and hide the dock · planning"]);
+  await settle();
+  expect(now()).toEqual(["dark mode and hide the dock · didn't answer"]);
+  // The launcher closes: it goes at once, and its timer with it.
+  tasks.letFailedGo();
+  expect(now()).toEqual([]);
+  expect(pending.every((timer) => timer.cleared)).toBe(true);
+  tasks.retry(id);
+  await settle();
+  expect(tasks.get(id)?.phase).toBe("planned");
+  expect(tasks.get(id)?.leftNow).toBeUndefined();
+  // A failure after a plan stays in Now again, and a failed line never stands for a plan that ran.
+  tasks.followUp(id, "and mute");
+  await settle();
+  expect(now()).toEqual(["and mute · didn't answer"]);
+});
+
+test("a failed ask's history line says why; the plan a Retry made replaces it", () => {
+  const files = {
+    tasks: [
+      JSON.stringify({ v: 1, task: "ask-1.1", time: 10, agent: "Claude Code", request: "turn on wifi", steps: [], failure: "Claude Code didn't answer." }),
+      JSON.stringify({ v: 1, task: "ask-2.1", time: 20, agent: "Claude Code", request: "dark mode", steps: [], failure: "Not signed in." }),
+      JSON.stringify({ v: 1, task: "ask-2.1", time: 21, agent: "Claude Code", request: "dark mode", steps: [{ title: "Turn Dark Mode on", outcome: "done" }] }),
+    ].join("\n"),
+    activity: "",
+  };
+  expect(readHistory(files).map((entry) => [entry.id, entry.summary])).toEqual([
+    ["ask-2.1", "Turn Dark Mode on"],
+    ["ask-1.1", "Claude Code didn't answer."],
+  ]);
 });
 
 test("nothing to do: the model's words, and the task leaves Now", async () => {

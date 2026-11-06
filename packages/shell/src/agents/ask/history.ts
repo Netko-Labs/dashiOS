@@ -7,8 +7,8 @@
  * - activity.jsonl, one line per call, with no arguments (consent.ts): an
  *   MCP agent's calls are grouped by connection (a session ends at its
  *   "disconnected" or "stopped" line), the person's own ("you") are left out.
- * - tasks.jsonl, written here: one line per launcher Ask once its plan ran,
- *   with the request, each step in Dashi's words and how it went, and for a
+ * - tasks.jsonl, written here: one line per launcher Ask once its plan ran
+ *   (or once it failed, with why: no steps), with the request, each step in Dashi's words and how it went, and for a
  *   settings change the value to put back (Undo); and a line when one was
  *   undone. The request is what the person typed; the arguments are only
  *   ever the steps' own words.
@@ -51,6 +51,8 @@ export interface TaskRecord {
   agent: string;
   request: string;
   steps: HistoryStep[];
+  /** Why there was no plan to run ("Claude Code didn't answer."): an ask that failed is kept too. */
+  failure?: string;
 }
 
 type Raw = Record<string, unknown>;
@@ -84,6 +86,12 @@ function readSteps(value: unknown): HistoryStep[] {
   });
 }
 
+/** Text from the file on one short line. */
+const oneLineOf = (text: string): string => {
+  const line = text.replace(/\s+/g, " ").trim();
+  return line.length > 120 ? `${line.slice(0, 119)}…` : line;
+};
+
 /** "list_windows" as words. */
 const toolWords = (tool: string): string => tool.replace(/^dashi:\/\/[^/]+\//, "").replace(/[_-]+/g, " ");
 
@@ -107,7 +115,9 @@ export function readHistory(files: { tasks: string; activity: string }, limit = 
     }
     if (typeof line.agent !== "string" || typeof line.request !== "string") continue;
     const steps = readSteps(line.steps);
-    entries.set(line.task, { id: line.task, time: line.time, who: line.agent, request: line.request, steps, summary: "" });
+    // A failed ask says why in its summary; the line of the plan that came after (a Retry) replaces it.
+    const failed = typeof line.failure === "string" && steps.length === 0 ? oneLineOf(line.failure) : "";
+    entries.set(line.task, { id: line.task, time: line.time, who: line.agent, request: line.request, steps, summary: failed });
   }
   // The agents' connections: calls between one agent's first call and its end line.
   const open = new Map<string, HistoryEntry>();
@@ -137,7 +147,7 @@ export function readHistory(files: { tasks: string; activity: string }, limit = 
     if (tools) {
       const named = [...new Set(tools.map(toolWords))].slice(0, 3).join(", ");
       entry.summary = `${tools.length === 1 ? "1 call" : `${tools.length} calls`}: ${named}`;
-    } else {
+    } else if (!entry.summary) {
       entry.summary = taskSummary(entry.steps);
     }
   }
