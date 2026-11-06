@@ -12,7 +12,7 @@ import { lstat, realpath, stat } from "node:fs/promises";
 import { type Exec, exec } from "./exec.ts";
 import { type FileItem, readFolder } from "./items.ts";
 import { type MimeIndex, mimeOf } from "./mime.ts";
-import { mayOpen, openWithDefault } from "./open.ts";
+import { mayOpen, openDefault } from "./open.ts";
 import type { OpContext } from "./ops.ts";
 import { baseName, expandHome, isInside, normalizePath, parentOf, tilde } from "./paths.ts";
 import { searchComputer, searchFolder } from "./search.ts";
@@ -142,7 +142,8 @@ export async function searchFor(
 }
 
 /** Opens a file or folder in the default app; an error to tell the agent, or what it was. */
-export async function openForAgent(path: string, deps: Deps): Promise<{ error: string } | { opened: string; kind: string }> {
+/** `confirmed` is false when its app hadn't taken it yet when the wait ran out (it may still open). */
+export async function openForAgent(path: string, deps: Deps): Promise<{ error: string } | { opened: string; kind: string; confirmed: boolean }> {
   const resolved = await resolveForAgent(path, deps.policy);
   if (!resolved.ok) return { error: resolved.error };
   const info = await stat(resolved.path).catch(() => null);
@@ -152,8 +153,9 @@ export async function openForAgent(path: string, deps: Deps): Promise<{ error: s
   // The type comes from the name, as in the Files window, and the check is the one a click there makes: launchers and programs are never run.
   const check = mayOpen({ kind, name, mime: kind === "folder" ? "inode/directory" : mimeOf(deps.index, name) });
   if (!check.ok) return { error: check.reason ?? "That can’t be opened." };
-  const problem = await openWithDefault(resolved.path, deps.run ?? exec);
-  return problem ? { error: `It couldn’t be opened: ${problem}` } : { opened: resolved.path, kind };
+  const outcome = await openDefault(resolved.path, deps.run ?? exec);
+  if (outcome.kind === "failed") return { error: `It couldn’t be opened: ${outcome.problem}` };
+  return { opened: resolved.path, kind, confirmed: outcome.kind === "opened" };
 }
 
 export interface TrashPlan {

@@ -15,7 +15,16 @@ export interface RunOptions {
   /** Bytes fed to standard input. */
   input?: Uint8Array | Bun.BunFile;
   env?: Record<string, string>;
+  /**
+   * Done when it exits, whoever still holds its pipes: for a launcher (`gio
+   * launch`, `gio open`) whose app inherits them and runs on. Its output is
+   * what it wrote by then; the pipes are read on, and dropped, never closed.
+   */
+  untilExit?: boolean;
 }
+
+/** After a launcher exits, how long what it wrote last has to arrive. */
+const DRAIN_MS = 100;
 
 export interface RunResult {
   ok: boolean;
@@ -55,15 +64,22 @@ export function limited(
 /** Whether a program can be found. */
 export const haveTool = (name: string): boolean => Bun.which(name) !== null;
 
-async function readCapped(stream: ReadableStream<Uint8Array>, cap: number, onFull: () => void): Promise<string> {
+/** A stream read to its end, its first `cap` bytes kept; `text()` is what has come so far. */
+function readCapped(stream: ReadableStream<Uint8Array>, cap: number, onFull: () => void): { done: Promise<void>; text: () => string } {
   const chunks: Uint8Array[] = [];
   let total = 0;
-  for await (const chunk of stream) {
-    if (total < cap) chunks.push(chunk.subarray(0, cap - total));
-    total += chunk.length;
-    if (total > cap) onFull();
-  }
-  return new TextDecoder().decode(Buffer.concat(chunks));
+  const done = (async () => {
+    try {
+      for await (const chunk of stream) {
+        if (total < cap) chunks.push(chunk.subarray(0, cap - total));
+        total += chunk.length;
+        if (total > cap) onFull();
+      }
+    } catch {
+      // The pipe broke: what came is the output.
+    }
+  })();
+  return { done, text: () => new TextDecoder().decode(Buffer.concat(chunks)) };
 }
 
 export async function runTool(argv: readonly string[], options: RunOptions): Promise<RunResult> {
@@ -85,12 +101,16 @@ export async function runTool(argv: readonly string[], options: RunOptions): Pro
     child.kill("SIGKILL");
   }, options.timeoutMs);
   try {
-    const [stdout, stderr, code] = await Promise.all([
-      readCapped(child.stdout, cap, () => child.kill("SIGKILL")),
-      readCapped(child.stderr, 64 * 1024, () => {}),
-      child.exited,
-    ]);
-    return { ok: code === 0 && !timedOut, code, stdout, stderr, timedOut };
+    const stdout = readCapped(child.stdout, cap, () => child.kill("SIGKILL"));
+    const stderr = readCapped(child.stderr, 64 * 1024, () => {});
+    const read = Promise.all([stdout.done, stderr.done]);
+    const code = options.untilExit
+      ? await child.exited.then(async (code) => {
+          await Promise.race([read, new Promise((resolve) => setTimeout(resolve, DRAIN_MS))]);
+          return code;
+        })
+      : await read.then(() => child.exited);
+    return { ok: code === 0 && !timedOut, code, stdout: stdout.text(), stderr: stderr.text(), timedOut };
   } finally {
     clearTimeout(timer);
   }

@@ -78,13 +78,13 @@ export async function handlersFor(mime: string, skip: readonly string[] = []): P
 /** Open `path` with a handler. True when the launcher accepted it. */
 export async function openWith(handler: Handler, path: string): Promise<boolean> {
   if (!path.startsWith("/")) return false;
-  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: 10_000 })).ok;
+  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: 10_000, untilExit: true })).ok;
 }
 
 /** Open the folder in the default file manager (`gio open`). */
 export async function showInFiles(dir: string): Promise<boolean> {
   if (!dir.startsWith("/")) return false;
-  return (await runTool(["gio", "open", dir], { timeoutMs: 10_000 })).ok;
+  return (await runTool(["gio", "open", dir], { timeoutMs: 10_000, untilExit: true })).ok;
 }
 
 /** Move a file to the Trash (`gio trash`). The error text when it failed, else null. */
