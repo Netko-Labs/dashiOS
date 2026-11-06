@@ -96,7 +96,7 @@ export class SessionSecrets {
           resume = resolve;
         });
         try {
-          return await this.ui.turn({ agent, who: who(), reason }, signal);
+          return await this.ui.turn({ agent, who: who(), reason, window }, signal);
         } finally {
           this.shared.handedOver.delete(window);
           this.paused = null;
