@@ -5,19 +5,20 @@ verification track. Nothing starts until the owner makes the picks at the
 page's end. Each area is its own branch, reviewed in the VM on video, as in
 0.4.0.
 
-## Picks to make
-- [ ] The order of the waves (recommended: as written)
-- [ ] Where the text model lives (recommended: mirin's TextInput, a document view on top)
-- [ ] How a close asks (recommended: a close request mirin hands to the app)
-- [ ] One file browser (recommended: Files' core as a component)
-- [ ] The Applet Store (recommended: a section of Software)
-- [ ] Text size (recommended: every Dashi window, through @dashi/ui's type scale)
-- [ ] KDE runners (recommended: Wave 3, read-only behind the registry)
-- [ ] D3cold for the graphics card (the owner's call)
+## Picks (made 2026-11-06)
+- [x] The order of the waves: as written
+- [x] Where the text model lives: mirin's TextInput, a document view on top
+- [x] How a close asks: a close request mirin hands to the app
+- [x] One file browser: Files' core as a component
+- [x] The Applet Store: a section of Software
+- [x] Text size: every Dashi window, through @dashi/ui's type scale
+- [x] KDE runners: left out until someone asks
+- [x] D3cold: off until the next reboot (2026-11-06); the drops came with the card busy, so it isn't the cause
 
 ## Wave 1 · Platform foundations
 - [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
 - [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
+- [ ] The graphics card sleeps: dashi-comp opens the NVIDIA card only while a screen or a buffer needs it (M; found 2026-11-06)
 - [ ] Modifiers on onPress (S; PA-10)
 - [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
 - [ ] An undo stack in @dashi/ui (M; PA-2)
@@ -44,8 +45,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Context chips: "+ this window", "+ selection" (M)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)
-- [ ] KDE runners (S)
 - [ ] Tab, Home and End reaching the input method mid-composition (S)
+- [ ] A snippet erases its keyword and pastes in one compositor request, so a paste that can't be sent leaves the keyword as typed (S; PR #2 review, expand.ts)
 - [ ] Orca's first announcement is the field, not the selected row (S)
 - [ ] An applet view's first draw well under 0.7 s (M)
 - [ ] Left from 0.4.0: the green control's press-and-hold menu (M), the bottom edge as a drag zone (S), a title-bar menu with Move to (M), Dashi's apps parent their dialogs (M), late prompts blanked for agents (M), errors in people's words (S)
