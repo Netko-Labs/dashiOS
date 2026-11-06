@@ -736,7 +736,9 @@ export function Launcher(props: LauncherProps) {
             { keys: KEYS.primary, label: "switch" },
           ]
         : text
-          ? [...(pictures.count > 0 ? [{ keys: "→", label: "windows" }] : []), ...hintFor(selectedRow, ctx)]
+          ? pictures.count > 0
+            ? [{ keys: "→", label: "windows" }, ...hintFor(selectedRow, ctx).slice(0, 2)]
+            : hintFor(selectedRow, ctx)
           : []
       : mode.kind === "presented"
         ? [
