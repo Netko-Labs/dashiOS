@@ -200,8 +200,16 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   settings.json `agents.answerer` (`"local" | "claude" | "none"`, unset until
   the person picks) and `agents.localModel`. A local model is Ollama on
   `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
-  only, with the key from the vault's token item `anthropic` for that host
-  (`VaultTokens.forHost("anthropic", "api.anthropic.com")`,
+  only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), through the
+  official SDK (`@anthropic-ai/sdk`, `agents/ask/claude.ts`):
+  `claude-opus-5-5` at `output_config.effort: "low"`, thinking left as the
+  model has it, `tool_choice: auto` with strict tools (`agents/ask/strict.ts`;
+  the system prompt asks for the calls), server-side fallbacks on
+  (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`), a
+  refusal read before anything else and a reply cut off at `max_tokens`
+  never taken as a plan, and the SDK's typed errors for a refused key, a
+  rate limit or an outage. The key comes from the vault's token item
+  `anthropic` for that host (`VaultTokens.forHost("anthropic", "api.anthropic.com")`,
   `agents/ask/keys.ts`; "Tokens that stay home", docs/secrets.md) or else
   the session's `ANTHROPIC_API_KEY`. The key reaches the Anthropic client in
   the shell's own process only, for each request, and is dropped: never
