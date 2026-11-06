@@ -107,7 +107,9 @@ pub async fn sync(server: &ObjectServer, shared: &Arc<Shared>) -> fdo::Result<()
         wanted.push((item_path(collection, id), Wanted::Item(id)));
     }
     let now: HashSet<String> = wanted.iter().map(|(p, _)| p.to_string()).collect();
-    let before = registered.take();
+    // A copy: the registry is changed one path at a time, as the bus is, so a
+    // pass that fails part way (or one running alongside) leaves it true.
+    let before = registered.snapshot();
     for (path, what) in wanted {
         let fresh = !before.contains(path.as_str());
         // An alias may have moved to another collection: re-register aliases every time.
@@ -142,6 +144,7 @@ pub async fn sync(server: &ObjectServer, shared: &Arc<Shared>) -> fdo::Result<()
                     .await?;
             }
         }
+        registered.insert(path.to_string());
     }
     for gone in before.difference(&now) {
         let Ok(path) = ObjectPath::try_from(gone.as_str()) else {
@@ -152,8 +155,8 @@ pub async fn sync(server: &ObjectServer, shared: &Arc<Shared>) -> fdo::Result<()
         } else {
             let _ = server.remove::<Collection, _>(&path).await;
         }
+        registered.remove(gone);
     }
-    registered.put(now);
     Ok(())
 }
 
@@ -164,7 +167,7 @@ enum Wanted {
     Item(u64),
 }
 
-/// What is registered now (a plain mutex, held only to swap the set).
+/// What is registered now (a plain mutex, never held across an await).
 mod registered {
     use std::{collections::HashSet, sync::Mutex};
 
@@ -172,15 +175,17 @@ mod registered {
     pub struct Registered(Mutex<HashSet<String>>);
 
     impl Registered {
-        pub fn take(&self) -> HashSet<String> {
-            self.0
-                .lock()
-                .map(|mut set| std::mem::take(&mut *set))
-                .unwrap_or_default()
+        pub fn snapshot(&self) -> HashSet<String> {
+            self.0.lock().map(|set| set.clone()).unwrap_or_default()
         }
-        pub fn put(&self, set: HashSet<String>) {
-            if let Ok(mut held) = self.0.lock() {
-                *held = set;
+        pub fn insert(&self, path: String) {
+            if let Ok(mut set) = self.0.lock() {
+                set.insert(path);
+            }
+        }
+        pub fn remove(&self, path: &str) {
+            if let Ok(mut set) = self.0.lock() {
+                set.remove(path);
             }
         }
     }
@@ -208,5 +213,18 @@ mod tests {
         assert_eq!(item_id(&item), Some(42));
         assert_eq!(item_id(&collection_path("login")), None);
         assert_eq!(element("my keys!"), "my_keys_");
+    }
+
+    #[test]
+    fn a_look_at_the_registry_leaves_it_whole() {
+        // A sync that fails part way must not leave the registry empty.
+        let registered = Registered::default();
+        registered.insert("/a".into());
+        registered.insert("/b".into());
+        let before = registered.snapshot();
+        assert_eq!(before.len(), 2);
+        assert_eq!(registered.snapshot(), before);
+        registered.remove("/a");
+        assert_eq!(registered.snapshot(), HashSet::from(["/b".to_string()]));
     }
 }
