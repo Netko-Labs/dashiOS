@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppMenu } from "../src/app-menus/protocol.ts";
-import type { MenuOwner } from "../src/app-menus/store.ts";
+import { AppMenuStore, type MenuOwner } from "../src/app-menus/store.ts";
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
 import { settingName } from "../src/settings-app/history.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
@@ -39,7 +39,7 @@ test("the Edit menu is published as the window's process and its rows undo", asy
   let owner: MenuOwner | null = null;
   let withdrawn = 0;
   let looks = 0;
-  const stop = publishEditMenu(
+  const menu = publishEditMenu(
     {
       publish: (who, menus) => {
         owner = who;
@@ -62,6 +62,32 @@ test("the Edit menu is published as the window's process and its rows undo", asy
   (owner as MenuOwner | null)?.send({ type: "select", id: "undo" });
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(store.getSnapshot().data.clock.showDate).toBeUndefined();
-  stop();
+  menu.stop();
   expect(withdrawn).toBe(1);
+});
+
+test("while a field in Settings has the keyboard, ❖Z and ❖A are the field's, not the Edit menu's", async () => {
+  const menus = new AppMenuStore();
+  const menu = publishEditMenu(
+    menus,
+    store.undo,
+    async () => 4343,
+    async () => {},
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  store.patch("clock", { showDate: false });
+  expect(menus.menusFor([4343])?.typing).toBeUndefined();
+
+  menu.setTyping(true);
+  expect(menus.menusFor([4343])?.typing).toBe(true);
+  // The field answers: the shell sends the Ctrl chord to the window instead (shortcuts.ts).
+  expect(menus.shortcut([4343], "❖Z")).toBe(false);
+  expect(menus.shortcut([4343], "❖A")).toBe(false);
+  expect(store.getSnapshot().data.clock.showDate).toBe(false);
+
+  menu.setTyping(false);
+  expect(menus.shortcut([4343], "❖Z")).toBe(true);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(store.getSnapshot().data.clock.showDate).toBeUndefined();
+  menu.stop();
 });

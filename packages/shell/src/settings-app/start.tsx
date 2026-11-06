@@ -8,6 +8,7 @@
  */
 
 import { homedir } from "node:os";
+import { onWindowTyping } from "../../apps/kit/typing.ts";
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
@@ -144,20 +145,20 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     const stopWatching = options.settings.watch();
     const menus = options.menus?.();
     // The window's process, by its app id, once the compositor lists it.
-    const stopMenu =
+    const editMenu =
       menus && compositor
         ? publishEditMenu(
             menus,
             options.settings.undo,
             async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
           )
-        : () => {};
+        : null;
     const current: Session = {
       surface: null,
       stop: () => {
         stopScreens();
         stopWatching();
-        stopMenu();
+        editMenu?.stop();
       },
     };
     session = current;
@@ -171,6 +172,8 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
         if (session === current) session = null;
         current.stop();
       },
+      // A field with the keyboard answers ❖A ❖C ❖X ❖V ❖Z itself, before the Edit menu's rows (KB-6).
+      (host) => onWindowTyping(host, (typing) => editMenu?.setTyping(typing)),
     );
   };
 

@@ -149,7 +149,7 @@ export function HoldingNotice({
       <KeyCatcher onKey={(key) => key === "Escape" && onCancel()} />
       <Notice
         testID="holding"
-        text={`${copy.title}. ${copy.detail}`}
+        text={copy.line}
         action={
           <View style={{ flexDirection: "row", gap: 8 }}>
             <UiButton testID="holding-cancel" label="Cancel" onPress={onCancel} />

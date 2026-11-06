@@ -60,8 +60,11 @@ export const TERMINALS = [
 export const KEYMAP: Keymap = {
   apps: {
     terminal: TERMINALS,
-    // Metal apps don't bind Ctrl+W yet, so the shell closes for them.
-    metal: ["", "dev.dashi.*", "dev.mirin.*"],
+    // Metal apps don't bind Ctrl+W yet, so the shell closes for them. No
+    // empty id: the keyboard on one of the shell's own surfaces (a sheet, the
+    // lock screen's or a popover's field) has no window and no app id, and its
+    // ❖A ❖C ❖X ❖V ❖Z must reach the field as Ctrl chords, not an app's menus.
+    metal: ["dev.dashi.*", "dev.mirin.*"],
   },
   // A ❖ tap opens the launcher; holding ❖ shows the shortcut sheet.
   tapMs: 350,

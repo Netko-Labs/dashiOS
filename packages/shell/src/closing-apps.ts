@@ -78,13 +78,30 @@ export async function closeApps(deps: ClosingDeps, choice: ClosingChoice): Promi
 }
 
 /**
- * The notice's words: who it waits for, and what the button that goes anyway
- * says. An app may hold for unsaved changes or for a running job (Terminal),
- * so the words say only that it may be asking.
+ * The most characters the notice's line holds beside Cancel and the widest
+ * "… anyway" at 12 px in its 560 px card (menus/holding-place.ts), so it is
+ * always one line (VS-3: a notice that wraps reads like a second bar).
  */
-export function holdingCopy(names: readonly string[], what: PowerKind): { title: string; detail: string; anyway: string } {
-  const who = names.length === 1 ? `“${names[0]}”` : names.length === 2 ? `“${names[0]}” and “${names[1]}”` : `${names.length} apps`;
+export const HOLDING_LINE = 50;
+
+/**
+ * The notice's line, naming who it waits for, and what the button that goes
+ * anyway says. An app may hold for unsaved changes or for a running job
+ * (Terminal), so the words say only that it may be asking. One name that
+ * leaves no room for that is named alone (cut if it is too long for the
+ * line); two are named alone, or counted when they don't fit.
+ */
+export function holdingCopy(names: readonly string[], what: PowerKind): { line: string; anyway: string } {
   const anyway = { logout: "Log out anyway", restart: "Restart anyway", shutdown: "Shut down anyway" }[what];
-  const asks = names.length === 1 ? "It may be asking first." : "They may be asking first.";
-  return { title: `Waiting for ${who} to close`, detail: asks, anyway };
+  const fits = (line: string): boolean => line.length <= HOLDING_LINE;
+  const [first = "", second = ""] = names;
+  if (names.length <= 1) {
+    const asking = `Waiting for “${first}”. It may be asking first.`;
+    if (fits(asking)) return { line: asking, anyway };
+    const room = HOLDING_LINE - "Waiting for “” to close.".length;
+    const name = first.length > room ? `${first.slice(0, room - 1).trimEnd()}…` : first;
+    return { line: `Waiting for “${name}” to close.`, anyway };
+  }
+  const both = `Waiting for “${first}” and “${second}” to close.`;
+  return { line: names.length === 2 && fits(both) ? both : `Waiting for ${names.length} apps. They may be asking first.`, anyway };
 }

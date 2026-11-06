@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { type AppWindow, ClosingChoice, closeApps, HOLD_AFTER_MS, holdingCopy } from "../src/closing-apps.ts";
+import { type AppWindow, ClosingChoice, closeApps, HOLD_AFTER_MS, HOLDING_LINE, holdingCopy } from "../src/closing-apps.ts";
 
 /** A clock that moves only when the code sleeps. */
 function clock() {
@@ -106,15 +106,20 @@ test("a window that opens meanwhile doesn't hold the session", async () => {
 });
 
 test("the notice's words name one app, two, or count them, and fit an unsaved document or a running job", () => {
-  expect(holdingCopy(["Text Editor"], "logout")).toEqual({
-    title: "Waiting for “Text Editor” to close",
-    detail: "It may be asking first.",
-    anyway: "Log out anyway",
-  });
-  expect(holdingCopy(["Terminal"], "logout").detail).not.toContain("unsaved");
-  expect(holdingCopy(["Text Editor", "Terminal"], "restart")).toMatchObject({
-    title: "Waiting for “Text Editor” and “Terminal” to close",
-    detail: "They may be asking first.",
-  });
-  expect(holdingCopy(["A", "B", "C"], "shutdown")).toMatchObject({ title: "Waiting for 3 apps to close", anyway: "Shut down anyway" });
+  expect(holdingCopy(["Text Editor"], "logout")).toEqual({ line: "Waiting for “Text Editor”. It may be asking first.", anyway: "Log out anyway" });
+  expect(holdingCopy(["Terminal"], "logout").line).not.toContain("unsaved");
+  expect(holdingCopy(["Files", "Notes"], "restart")).toEqual({ line: "Waiting for “Files” and “Notes” to close.", anyway: "Restart anyway" });
+  expect(holdingCopy(["A", "B", "C"], "shutdown")).toEqual({ line: "Waiting for 3 apps. They may be asking first.", anyway: "Shut down anyway" });
+});
+
+test("the notice is always one line: a long name drops the asking, two that don't fit are counted, one is cut", () => {
+  expect(holdingCopy(["Activity Monitor"], "logout").line).toBe("Waiting for “Activity Monitor” to close.");
+  expect(holdingCopy(["Text Editor", "Terminal"], "restart").line).toBe("Waiting for “Text Editor” and “Terminal” to close.");
+  expect(holdingCopy(["Text Editor", "Activity Monitor"], "logout").line).toBe("Waiting for 2 apps. They may be asking first.");
+  const long = holdingCopy(["A Very Long Application Name That Goes On"], "shutdown").line;
+  expect(long).toStartWith("Waiting for “A Very Long");
+  expect(long).toEndWith("…” to close.");
+  for (const names of [["X"], ["Text Editor"], ["a".repeat(80)], ["b".repeat(40), "c"], ["1", "2", "3"], Array.from({ length: 120 }, String)]) {
+    expect(holdingCopy(names, "shutdown").line.length).toBeLessThanOrEqual(HOLDING_LINE);
+  }
 });
