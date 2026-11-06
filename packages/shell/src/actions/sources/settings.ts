@@ -5,6 +5,8 @@
  * a toggle with its state, or a pick of values. Changing one runs the same
  * `set_setting` call an agent makes, as the person, so the launcher's
  * switch, a key, a link, and an agent are one change with one set of checks.
+ * Other rows search finds by name ("text size") are addresses too
+ * (`SPOT_ROWS`): choosing one opens Settings at it.
  *
  * A settings address with no arguments, from a link, opens the pane at the
  * row and lights it up (`place`); with `?value=…` it sets it.
@@ -110,6 +112,67 @@ export const SETTING_ROWS: readonly SettingRow[] = [
     words: ["battery percentage", "battery", "percent"],
   },
 ];
+
+/**
+ * A row search finds by name that `set_setting` doesn't take ("text size"):
+ * the launcher lists it as a Settings row, and choosing it opens Settings
+ * scrolled to the row and lit, as a link to it does (spot.tsx). A word that
+ * names a row belongs here rather than only among its pane's keywords, so
+ * the search lands on the row, not the top of the pane.
+ */
+export interface SpotRow {
+  pane: string;
+  /** The row's id in its pane (its `<Spot row>`). */
+  row: string;
+  /** As the pane's row says it. */
+  title: string;
+  words: readonly string[];
+}
+
+export const SPOT_ROWS: readonly SpotRow[] = [
+  { pane: "appearance", row: "accent-color", title: "Accent color", words: ["accent", "highlight color"] },
+  { pane: "appearance", row: "highlight-active-window", title: "Highlight the active window", words: ["active window", "focus ring", "highlight"] },
+  { pane: "appearance", row: "pointer-size", title: "Pointer size", words: ["cursor size", "bigger pointer", "larger pointer", "cursor"] },
+  { pane: "appearance", row: "text-size", title: "Text size", words: ["font size", "bigger text", "larger text", "smaller text"] },
+  { pane: "appearance", row: "reduce-motion", title: "Reduce motion", words: ["animations", "motion"] },
+  {
+    pane: "desktop-dock",
+    row: "full-screen-desktop",
+    title: "Give full-screen apps their own desktop",
+    words: ["full screen", "fullscreen", "full-screen apps", "games"],
+  },
+  { pane: "keyboard", row: "key-repeat", title: "Key repeat rate", words: ["key repeat", "repeat delay", "delay until repeat"] },
+  { pane: "keyboard", row: "input-method", title: "Input method", words: ["ime", "fcitx", "chinese", "japanese", "korean", "pinyin"] },
+  { pane: "trackpad", row: "tap-to-click", title: "Tap to click", words: ["tap", "touchpad tap"] },
+  { pane: "trackpad", row: "natural-scrolling", title: "Natural scrolling", words: ["reverse scrolling", "touchpad scrolling"] },
+  { pane: "mouse", row: "natural-scrolling", title: "Natural scrolling", words: ["reverse scrolling", "wheel direction"] },
+  { pane: "date-time", row: "24-hour-time", title: "24-hour time", words: ["24-hour", "24 hour", "clock format"] },
+  { pane: "date-time", row: "time-zone", title: "Time zone", words: ["timezone"] },
+  { pane: "language-region", row: "first-day-of-week", title: "First day of the week", words: ["first day of week", "week starts"] },
+];
+
+/** A row search finds: choosing it opens Settings at the row, lit. */
+export function spotAction(row: SpotRow, open: SettingsDeps["open"]): ActionDef {
+  return {
+    address: formatAddress(["settings", row.pane, row.row]),
+    title: row.title,
+    description: "",
+    keywords: { en: [row.title.toLowerCase(), ...row.words] },
+    kind: "open",
+    properties: {},
+    scope: null,
+    readOnly: true,
+    destructive: false,
+    who: "person",
+    source: "settings",
+    place: { pane: row.pane, row: row.row },
+    check: () =>
+      ready(async () => {
+        open(row.pane, row.row);
+        return ok(`${row.title} is shown in Settings.`);
+      }),
+  };
+}
 
 /** Whether `name` is a setting `set_setting` takes. */
 export const isSettingKey = (name: string): name is SettingKey => SETTING_ROWS.some((row) => row.setting === name);
@@ -217,7 +280,7 @@ export function paneActions(open: SettingsDeps["open"]): ActionDef[] {
   );
 }
 
-/** The panes, then every setting's row. */
+/** The panes, then every setting's row, then the rows search finds by name. */
 export function settingsActions(deps: SettingsDeps): ActionDef[] {
-  return [...paneActions(deps.open), ...SETTING_ROWS.map((row) => settingAction(row, deps))];
+  return [...paneActions(deps.open), ...SETTING_ROWS.map((row) => settingAction(row, deps)), ...SPOT_ROWS.map((row) => spotAction(row, deps.open))];
 }
