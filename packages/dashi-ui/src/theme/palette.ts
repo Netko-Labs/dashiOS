@@ -42,6 +42,13 @@ export interface Palette {
    */
   selectionWash: string;
   /**
+   * Selected text in a field (CO-9): kombu washed deeper than a row's
+   * `selectionWash`, since it has no bar to mark it, so a word or two stands
+   * out at least 1.3:1 from every window ground. The field's own ink stays
+   * on it (well over 4.5:1).
+   */
+  textSelection: string;
+  /**
    * The 3 px bar on a `selectionWash` row: `selection` in light mode, the
    * brand's lighter kombu in Dark Mode, where the deeper `selection` would
    * stand out only 2.6:1 on the launcher's glass.
@@ -118,6 +125,7 @@ export const lightColors: Palette = {
   selectionHover: "#2F6E5A",
   selectionPressed: "#29614F",
   selectionWash: "#3E8A7224",
+  textSelection: "#3E8A7240",
   selectionBar: "#357A64",
   onSelection: "#1d1d1f",
   focusRing: "#357A64",
@@ -170,6 +178,7 @@ export const darkColors: Palette = {
   selectionHover: "#2F6E5A",
   selectionPressed: "#29614F",
   selectionWash: "#3E8A7238",
+  textSelection: "#3E8A7280",
   selectionBar: "#3E8A72",
   onSelection: "#f5f5f7",
   focusRing: "#3E8A72",

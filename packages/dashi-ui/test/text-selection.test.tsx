@@ -11,7 +11,7 @@ function selectionColors(tree: string): unknown[] {
   return root.children.map((child) => child.props.selectionColor);
 }
 
-test("selected text in a field is on the selection wash, in the live palette", async () => {
+test("selected text in a field is on the text selection wash, in the live palette", async () => {
   let dark = false;
   const listeners = new Set<() => void>();
   setAppearanceSource({
@@ -32,11 +32,11 @@ test("selected text in a field is on the selection wash, in the live palette", a
     host.transport,
   );
   await settle();
-  expect(selectionColors(host.last())).toEqual([lightColors.selectionWash, "#ff000033"]);
+  expect(selectionColors(host.last())).toEqual([lightColors.textSelection, "#ff000033"]);
   dark = true;
   for (const listener of listeners) listener();
   await settle();
-  expect(selectionColors(host.last())).toEqual([darkColors.selectionWash, "#ff000033"]);
+  expect(selectionColors(host.last())).toEqual([darkColors.textSelection, "#ff000033"]);
   root.unmount();
   setAppearanceSource({ subscribe: () => () => {}, isDark: () => false });
 });

@@ -79,7 +79,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
             }}
             style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
           >
-            <Text style={textStyle}>{`${text}▏`}</Text>
+            <Text style={textStyle}>{text}</Text>
           </View>
           {revealing && (
             <View
@@ -92,7 +92,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
               }}
               style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
             >
-              <Text style={textStyle}>{`${text.slice(0, revealing.offset)}▏`}</Text>
+              <Text style={textStyle}>{text.slice(0, revealing.offset)}</Text>
             </View>
           )}
           <TextInput
