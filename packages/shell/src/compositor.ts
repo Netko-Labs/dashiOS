@@ -145,6 +145,8 @@ export type CompositorEvent =
   | { event: "window-attention"; window: number }
   /** A screen, or the area the menu bar and Dock leave free, changed. */
   | { event: "outputs-changed" }
+  /** A GPU was opened or let go to sleep (ask `gpus()` again). */
+  | { event: "gpus-changed" }
   /** The session was locked or unlocked (comp/src/lock.rs). */
   | { event: "lock"; locked: boolean }
   /** Something is capturing the screen (screen sharing, a recorder), or stopped (comp/src/handlers/screencopy/). */
@@ -328,6 +330,8 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return value.window === null || isNumber(value.window) ? { event: "bell", window: value.window } : null;
     case "outputs-changed":
       return { event: "outputs-changed" };
+    case "gpus-changed":
+      return { event: "gpus-changed" };
     case "session-changed":
       return { event: "session-changed" };
     case "lock":
@@ -387,6 +391,40 @@ export function parseEvent(value: unknown): CompositorEvent | null {
     default:
       return null;
   }
+}
+
+/** A GPU as dashi-comp holds it (IPC `gpus`): one that does not draw is open only while something needs it. */
+export interface Gpu {
+  /** udev's name: card0. */
+  card: string;
+  /** dashi-comp holds it open (else it is free to sleep). */
+  open: boolean;
+  /** It draws the screens: always open. */
+  draws: boolean;
+  /** Held open by `keepGpu`. */
+  kept: boolean;
+  /** Screens connected to it. */
+  screens: string[];
+  /** Client buffers only it can read, holding it open. */
+  buffers: number;
+}
+
+export function parseGpus(value: unknown): Gpu[] {
+  const list = isRecord(value) && Array.isArray(value.gpus) ? value.gpus : [];
+  return list.flatMap((gpu): Gpu[] => {
+    if (!isRecord(gpu) || typeof gpu.card !== "string") return [];
+    const screens = Array.isArray(gpu.screens) ? gpu.screens.filter((name): name is string => typeof name === "string") : [];
+    return [
+      {
+        card: gpu.card,
+        open: gpu.open === true,
+        draws: gpu.draws === true,
+        kept: gpu.kept === true,
+        screens,
+        buffers: isNumber(gpu.buffers) ? gpu.buffers : 0,
+      },
+    ];
+  });
 }
 
 type Pending = { resolve: (result: unknown) => void; reject: (error: Error) => void };
@@ -454,6 +492,16 @@ export class Compositor {
   /** Change what the desktop shows behind the windows (rejects with the compositor's reason if it refuses the file). */
   async wallpaper(request: WallpaperRequest | { paused: boolean }): Promise<void> {
     await this.request("wallpaper", { ...request });
+  }
+
+  /** The GPUs and what holds each open (none outside a seat of dashi-comp's own). */
+  async gpus(): Promise<Gpu[]> {
+    return parseGpus(await this.request("gpus"));
+  }
+
+  /** Hold a GPU open with nothing on it (warm for a game), or let it sleep again once nothing else needs it. */
+  async keepGpu(card: string, on: boolean): Promise<void> {
+    await this.request("gpu-keep", { card, on });
   }
 
   /** Tell the compositor where each window's Dock tile is (rect null: none). */

@@ -19,7 +19,7 @@ impl DmabufHandler for Dashi {
         dmabuf: Dmabuf,
         notifier: ImportNotifier,
     ) {
-        if self.backend.import_dmabuf(&dmabuf) {
+        if crate::backend::import_dmabuf(self, &dmabuf) {
             let _ = notifier.successful::<Dashi>();
         } else {
             notifier.failed();

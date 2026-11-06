@@ -250,6 +250,10 @@ match windows, so the holders list is the shell's own scan of
 `/dev/dri/card<card>`, `/dev/dri/renderD<render>`, `/dev/nvidia<minor>`). As
 the person, it sees only their own processes, which are the ones it can quit;
 `Lsof` (run as root) can name the rest ("and 2 system processes").
+dashi-comp is never listed: it holds the card only while a screen is
+connected to it, a client's buffer only the card can read is on screen, or
+the shell keeps it (`gpu-keep`, `docs/compositor-ipc.md`), and quitting it
+would end the session.
 
 ### What cardwire decides on its own
 

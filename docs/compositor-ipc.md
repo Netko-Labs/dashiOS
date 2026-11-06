@@ -77,6 +77,8 @@ windows; an X11 window's `pid` is its own
 | `outputs-config` | a full arrangement; *see* `toWire` in `src/display-config/plan.ts`; an entry may set `vrr: "off"\|"on"\|"fullscreen"` (only while a window is full screen there) | `{}`; the shell reverts on its own timer if not kept |
 | `power` | `{on: bool, reset?: bool, output?: name}` | `{}`; screens on/off (DPMS). With `output`, just that screen, held so: lighting every screen (waking from idle) and Displays leave a held-dark screen dark until `{on: true, output}`; an unknown name is an error. The shell holds the built-in screen dark at brightness 0 (`src/system/screen-dark.ts`) |
 | `gamma` | the Night Shift tint; *see* `tintFor` in `src/night-shift.ts` | `{}` |
+| `gpus` | `{}` | `{gpus: [{card, open, draws, kept, screens: string[], buffers}]}`, by card name (`card0`); empty outside a seat of dashi-comp's own (nested, headless). The GPU that `draws` is always `open`; any other is open only while a screen is connected to it (`screens`), client buffers only it can read are alive (`buffers`, a game on the graphics card handing over buffers the drawing GPU cannot read), or the shell keeps it (`kept`), and is let go 10 s after the last of those ends (its renderer, EGL display, GBM device and DRM fd closed), so its driver can suspend it. At start (and when one is added) a GPU is opened only if it draws, is kept, or a connector's sysfs `status` says `connected` (or `unknown`: opening it probes). Asleep, a hotplug uevent on it with a connector saying `connected` opens it again (and one without opens it to look, unless it went to sleep in the last 30 s); so does a client buffer no open GPU can read (not again for 30 s after one no GPU could). `gpus-changed` when one opens or goes to sleep |
+| `gpu-keep` | `{card, on: bool}` | `{}`, or an error for no GPU of that name; `on`: hold that GPU open even with nothing on it (warm for a game: no wait to open it when a screen or a game comes), opening it now if asleep; `off`: it goes to sleep 10 s later if nothing else holds it. Kept by card name until `off` or dashi-comp exits, across the card being removed and added again (a graphics mode switch). Nothing sends it yet: when to keep the card warm is the shell's |
 | `wallpaper` | a `WallpaperRequest` (*see* `src/wallpaper/catalog.ts`; `{video, mode}` plays a video, looped and muted) or `{paused: bool}` | `{}`, or an error if the file is refused; `wallpaper` event when loaded |
 
 ### Shell chrome and input claims
@@ -190,6 +192,7 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
 | `bars-edge` | `inside, output?` |
 | `edge` | `edge: "bottom", inside` |
 | `outputs-changed` | |
+| `gpus-changed` | none: a GPU was opened, went to sleep, appeared or went away (`gpus` says how they are now) |
 | `session-changed` | |
 | `lock` | `locked` |
 | `screen-capture` | `active` |

@@ -153,6 +153,11 @@ export function startLaptop(options: LaptopOptions): Laptop {
     if (event.key === "keep") waitingKeep?.();
   });
   const stopLost = options.lostCard.watch?.onLost((loss) => graphics.setLost(loss)) ?? (() => {});
+  // dashi-comp opened the card or let it sleep: who holds it, and whether it is awake, changed.
+  const stopGpus =
+    compositor?.on((event) => {
+      if (event.event === "gpus-changed") void graphics.refresh();
+    }) ?? (() => {});
   if (options.lostCard.watch?.lost) graphics.setLost(options.lostCard.watch.lost);
 
   // The power source drives Automatic, the columns, the charge, and the graphics policy.
@@ -265,6 +270,7 @@ export function startLaptop(options: LaptopOptions): Laptop {
       clearInterval(windowsTimer);
       stopNoticeActions();
       stopLost();
+      stopGpus();
       stopPower();
       stopSettings();
       stopProfiles();

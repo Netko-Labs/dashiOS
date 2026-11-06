@@ -1,5 +1,6 @@
 //! Taking the seat: the session (libseat), the drawing GPU, libinput, every
-//! GPU there is, and udev to hear about the ones plugged in later.
+//! GPU there is (the ones nothing needs left asleep, sleep.rs), and udev to
+//! hear about the ones plugged in later.
 
 use super::*;
 
@@ -62,6 +63,10 @@ pub(crate) fn init(
         primary_gpu,
         gpus,
         devices: HashMap::new(),
+        asleep: HashMap::new(),
+        kept: HashSet::new(),
+        buffer_wake_failed: None,
+        openings: 0,
         libinput,
         input_devices: Default::default(),
         gamma: None,
@@ -100,6 +105,7 @@ pub(crate) fn init(
                     .loop_handle
                     .insert_idle(move |state| render_device(state, node));
             }
+            sleep::session_active(state);
         }
     })?;
 
@@ -119,7 +125,7 @@ pub(crate) fn init(
     for (id, path) in devices {
         match DrmNode::from_dev_id(id) {
             Ok(node) => {
-                if let Err(error) = device_added(state, node, &path) {
+                if let Err(error) = sleep::gpu_found(state, node, &path) {
                     tracing::warn!(%error, ?path, "skipping a GPU");
                 }
             }
@@ -132,19 +138,19 @@ pub(crate) fn init(
     handle.insert_source(udev, |event, _, state| match event {
         UdevEvent::Added { device_id, path } => {
             if let Ok(node) = DrmNode::from_dev_id(device_id)
-                && let Err(error) = device_added(state, node, &path)
+                && let Err(error) = sleep::gpu_found(state, node, &path)
             {
                 tracing::warn!(%error, ?path, "skipping a GPU");
             }
         }
         UdevEvent::Changed { device_id } => {
             if let Ok(node) = DrmNode::from_dev_id(device_id) {
-                scan_connectors(state, node);
+                sleep::gpu_changed(state, node);
             }
         }
         UdevEvent::Removed { device_id } => {
             if let Ok(node) = DrmNode::from_dev_id(device_id) {
-                device_removed(state, node);
+                sleep::gpu_gone(state, node);
             }
         }
     })?;
