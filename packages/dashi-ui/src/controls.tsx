@@ -164,6 +164,7 @@ function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boole
         justifyContent: "center",
         backgroundColor: look.fill,
         hoverBackgroundColor: onPress ? look.hover : look.fill,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Text style={{ fontSize: 12, fontWeight: look.weight, color: look.ink }}>{label}</Text>
@@ -225,6 +226,7 @@ export function Button({
         borderColor: look.edge,
         hoverBackgroundColor: disabled ? look.fill : look.hover,
         opacity: state.opacity,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Text style={{ fontSize: 13, fontWeight: look.weight, color: look.ink }}>{label}</Text>

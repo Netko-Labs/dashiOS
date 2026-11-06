@@ -42,6 +42,7 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
         justifyContent: on ? "flex-end" : "flex-start",
         backgroundColor: on ? colors.selection : colors.track,
         opacity: state.opacity,
+        focusRingColor: colors.focusRing,
       }}
     >
       <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#ffffff", shadow: "sm" }} />

@@ -25,7 +25,8 @@ export interface SidebarItemProps {
 }
 
 export function SidebarItem({ label, selected, onPress, testID, tile, glyph, badge, compact }: SidebarItemProps) {
-  const look = rowLook(useColors(), selected);
+  const colors = useColors();
+  const look = rowLook(colors, selected);
   const height = compact === true ? 28 : 32;
   return (
     <View
@@ -43,6 +44,7 @@ export function SidebarItem({ label, selected, onPress, testID, tile, glyph, bad
         borderRadius: 7,
         backgroundColor: look.ground,
         hoverBackgroundColor: look.hover,
+        focusRingColor: colors.focusRing,
       }}
     >
       {selected && <SelectionBar rowHeight={height} />}

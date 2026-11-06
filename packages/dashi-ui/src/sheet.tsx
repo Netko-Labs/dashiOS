@@ -33,7 +33,16 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
     <View
       occlude
       testID={`${testID}:scrim`}
-      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", backgroundColor: "#00000026" }}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: "center",
+        backgroundColor: "#00000026",
+        focusRingColor: colors.focusRing,
+      }}
     >
       {(onCancel || onConfirm) && (
         <KeySink
@@ -170,6 +179,7 @@ export function MenuList({
               paddingHorizontal: 8,
               borderRadius: 5,
               backgroundColor: lit ? colors.selection : "#00000000",
+              focusRingColor: colors.focusRing,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
