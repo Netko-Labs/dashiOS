@@ -20,6 +20,9 @@ BuildRequires:  systemd-rpm-macros
 Requires:       systemd
 # The PAM helper is run by pam_exec.
 Requires:       pam
+# The login opens the vault through greetd (xdm_t): its SELinux module (spin/dashi-secretd/usr/share/selinux/packages/).
+Requires(post): policycoreutils
+Requires(postun): policycoreutils
 # The fingerprint reader, when there is one, for passkeys and payments.
 Recommends:     fprintd
 # The agent sandbox (dashi-agent, in the dashi package) and its bus filter.
@@ -60,6 +63,13 @@ pam=%{_sysconfdir}/pam.d/greetd
 if [ -f "$pam" ] && ! grep -q dashi-secretd-pam "$pam"; then
   grep -v "^#" %{_datadir}/dashi/pam/dashi-secretd >> "$pam"
 fi
+# The login's PAM helper runs in greetd's domain (xdm_t), which may not write
+# to the generic var_run_t: the vault's runtime directory gets its own type
+# and xdm_t may reach its socket (dashi-secretd.cil).
+if command -v selinuxenabled >/dev/null && selinuxenabled; then
+  semodule -i %{_datadir}/selinux/packages/dashi-secretd.cil >/dev/null 2>&1 || :
+  [ -d /run/dashi-secretd ] && restorecon -R /run/dashi-secretd >/dev/null 2>&1 || :
+fi
 systemctl enable --now dashi-secretd.socket >/dev/null 2>&1 || :
 
 %preun
@@ -70,6 +80,9 @@ fi
 
 %postun
 %systemd_postun_with_restart dashi-secretd.service
+if [ $1 -eq 0 ] && command -v selinuxenabled >/dev/null && selinuxenabled; then
+  semodule -r dashi-secretd >/dev/null 2>&1 || :
+fi
 
 %files
 %dir %{_libexecdir}/dashi
@@ -90,6 +103,7 @@ fi
 %dir %{_datadir}/dashi
 %dir %{_datadir}/dashi/pam
 %{_datadir}/dashi/pam/dashi-secretd
+%{_datadir}/selinux/packages/dashi-secretd.cil
 
 %changelog
 * Thu Nov 05 2026 PejeDev <hi@peje.dev> - 0.4.0

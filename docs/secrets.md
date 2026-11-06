@@ -59,6 +59,13 @@ person's vault, or makes it the first time. At `close_session` it sends
 may send `unlock`/`lock`, so no program running as you can make your vault
 with a password of its choosing.
 
+Under SELinux the helper runs in greetd's domain (`xdm_t`), which may not
+write to the generic `var_run_t` that `/run/dashi-secretd` would otherwise
+carry (the denial is a silent `dontaudit`). The package installs a small
+module, `dashi-secretd.cil` (`spin/dashi-secretd/usr/share/selinux/packages/`):
+the directory gets its own type, `dashi_secretd_run_t`, and `xdm_t` may search
+it and write to its socket, nothing more.
+
 - **The login keyring, imported once.** On the login that makes the vault
   (and on any later one, until it has been imported), the helper reads
   `~/.local/share/keyrings/login.keyring` (a regular file of the person's,
