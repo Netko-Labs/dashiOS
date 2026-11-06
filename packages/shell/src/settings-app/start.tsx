@@ -55,6 +55,8 @@ export interface SettingsAppOptions {
   answers?: () => AnswerStatus | null;
   /** The clipboard history (Settings › Keyboard); asked for when the window opens, since it starts after Settings. */
   clipboard?: () => Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear"> | null;
+  /** The installed app an app id or program stands for (the clipboard's left-out list names and draws it); the catalog is read after Settings starts. */
+  installedApp?: (id: string) => { name: string; icon: string } | undefined;
   lock(): void;
   /** Opens the Setup Assistant (About has a button for it). */
   openSetup(): void;
@@ -121,6 +123,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       ...(options.passwords ? { passwords: options.passwords } : {}),
       ...answersOf(options),
       ...(clipboard ? { clipboard } : {}),
+      ...(options.installedApp ? { installedApp: options.installedApp } : {}),
       layouts: loadLayouts(),
       chooser: portalChooser(),
       services: options.services(),

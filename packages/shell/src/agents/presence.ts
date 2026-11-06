@@ -44,6 +44,8 @@ export interface Confirm {
   detail: string;
   /** The button that goes ahead: "Force Quit". */
   action: string;
+  /** Losing work or a thing that can't be taken back: the button is red; else it is the primary one (agents/confirm.ts). */
+  danger?: boolean;
 }
 
 /** "<agent> wants to sign in to github.com": which saved login, and for how long (secrets/broker.ts). */

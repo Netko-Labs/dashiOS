@@ -6,7 +6,8 @@
  * Two files in `$XDG_STATE_HOME/dashi/agents/`:
  * - activity.jsonl, one line per call, with no arguments (consent.ts): an
  *   MCP agent's calls are grouped by connection (a session ends at its
- *   "disconnected" or "stopped" line), the person's own ("you") are left out.
+ *   "disconnected" or "stopped" line), the person's own ("you") are left out;
+ *   one agent's connections in quick succession are one row (sessions.ts).
  * - tasks.jsonl, written here: one line per launcher Ask once its plan ran
  *   (or once it failed, with why: no steps), with the request, each step in Dashi's words and how it went, and for a
  *   settings change the value to put back (Undo); and a line when one was
@@ -18,6 +19,7 @@ import { appendFileSync, closeSync, fstatSync, mkdirSync, openSync, readSync } f
 import { join } from "node:path";
 import { stateDir } from "../consent.ts";
 import type { Undo } from "./plan.ts";
+import { callsSummary, groupSessions } from "./sessions.ts";
 
 export type StepOutcome = "done" | "not-allowed" | "failed" | "invalid" | "skipped";
 
@@ -38,10 +40,19 @@ export interface HistoryEntry {
   /** What the person asked, for a launcher task. */
   request?: string;
   steps: HistoryStep[];
-  /** One line: "Dark Mode on, Dock hidden", "12 calls: list windows, screenshot". */
+  /** One line: "Dark Mode on, Dock hidden", "12 calls over 4 min: list windows, screenshot". */
   summary: string;
   /** Still connected (no end line yet). */
   open?: boolean;
+  /** An agent's last call, in seconds. */
+  end?: number;
+  /** An agent's calls, in words ("list windows"), in order. */
+  tools?: string[];
+  /**
+   * An agent's connections close together, as one row (sessions.ts): each
+   * of them, oldest first, for Settings to list when the row is opened.
+   */
+  parts?: HistoryEntry[];
 }
 
 /** One finished launcher task, as tasks.jsonl keeps it. */
@@ -140,18 +151,24 @@ export function readHistory(files: { tasks: string; activity: string }, limit = 
       open.set(line.agent, session);
       entries.set(session.id, session);
     }
-    calls.set(session, [...(calls.get(session) ?? []), line.tool]);
+    session.end = line.time;
+    const tools = calls.get(session);
+    if (tools) tools.push(line.tool);
+    else calls.set(session, [line.tool]);
   }
   for (const entry of entries.values()) {
     const tools = calls.get(entry);
     if (tools) {
-      const named = [...new Set(tools.map(toolWords))].slice(0, 3).join(", ");
-      entry.summary = `${tools.length === 1 ? "1 call" : `${tools.length} calls`}: ${named}`;
+      entry.tools = tools.map(toolWords);
+      entry.summary = callsSummary(entry.tools, entry.time, entry.end ?? entry.time);
     } else if (!entry.summary) {
       entry.summary = taskSummary(entry.steps);
     }
   }
-  return [...entries.values()].sort((a, b) => b.time - a.time).slice(0, limit);
+  // An agent that connects for each call (a remote agent's every command) is one row, not a column of "1 call".
+  return groupSessions([...entries.values()].sort((a, b) => a.time - b.time))
+    .sort((a, b) => b.time - a.time)
+    .slice(0, limit);
 }
 
 /** "just now", "5 min ago", "3 h ago", "yesterday", "4 days ago". */

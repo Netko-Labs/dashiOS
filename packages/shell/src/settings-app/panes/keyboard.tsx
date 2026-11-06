@@ -16,8 +16,8 @@ import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
-import { ClipboardSection, type HistoryControl } from "./clipboard-parts.tsx";
+import { Caption, Choices, Group, Note, Page, Row, Slider, Spot, useSurface } from "../ui.tsx";
+import { ClipboardSection, type HistoryControl, type InstalledApp } from "./clipboard-parts.tsx";
 import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
@@ -141,16 +141,22 @@ const HAS_FCITX = Bun.which("fcitx5") !== null;
 function InputMethodRow({ settings, installed }: { settings: SettingsStore; installed: boolean }) {
   const { inputMethod } = useSettings(settings).data;
   if (!installed)
-    return <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>;
+    return (
+      <Spot pane="keyboard" row="input-method">
+        <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>
+      </Spot>
+    );
   return (
-    <Row stack label="Input method" detail="For Chinese, Japanese, Korean and other scripts, in every app and the launcher.">
-      <Choices
-        testID="keyboard-input-method"
-        value={inputMethod.engine ?? DEFAULT_INPUT_METHOD}
-        options={INPUT_METHOD_OPTIONS}
-        onChange={(engine) => settings.patch("inputMethod", { engine })}
-      />
-    </Row>
+    <Spot pane="keyboard" row="input-method">
+      <Row stack label="Input method" detail="For Chinese, Japanese, Korean and other scripts, in every app and the launcher.">
+        <Choices
+          testID="keyboard-input-method"
+          value={inputMethod.engine ?? DEFAULT_INPUT_METHOD}
+          options={INPUT_METHOD_OPTIONS}
+          onChange={(engine) => settings.patch("inputMethod", { engine })}
+        />
+      </Row>
+    </Spot>
   );
 }
 
@@ -159,11 +165,14 @@ export function KeyboardPane({
   layouts,
   laptop,
   clipboard,
+  installed,
 }: {
   settings: SettingsStore;
   layouts: XkbLayouts;
   laptop?: Laptop | null;
   clipboard?: HistoryControl | null;
+  /** The installed app an id stands for: the clipboard's left-out list draws its name and icon. */
+  installed?: InstalledApp;
 }) {
   const { keyboard } = useSettings(settings).data;
   const rate = keyboard.repeatRate ?? DEFAULTS.repeatRate;
@@ -171,12 +180,14 @@ export function KeyboardPane({
   return (
     <Page title="Keyboard">
       <Group>
-        <Row label="Key repeat rate" detail={describeRate(rate)}>
-          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
-            <RangeLabels low="Off" high="Fast" />
-          </View>
-        </Row>
+        <Spot pane="keyboard" row="key-repeat">
+          <Row label="Key repeat rate" detail={describeRate(rate)}>
+            <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
+              <RangeLabels low="Off" high="Fast" />
+            </View>
+          </Row>
+        </Spot>
         <Row label="Delay until repeat" detail={describeDelay(delay)}>
           <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <Slider testID="keyboard-delay" value={delay} range={REPEAT_DELAY} onCommit={(value) => settings.patch("keyboard", { repeatDelay: value })} />
@@ -196,7 +207,7 @@ export function KeyboardPane({
         <InputMethodRow settings={settings} installed={HAS_FCITX} />
       </Group>
       <KeyboardLightSection laptop={laptop ?? null} />
-      <ClipboardSection settings={settings} history={clipboard ?? null} />
+      <ClipboardSection settings={settings} history={clipboard ?? null} {...(installed ? { installed } : {})} />
     </Page>
   );
 }

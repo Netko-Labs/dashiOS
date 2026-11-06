@@ -14,7 +14,7 @@ import { describeFailure, type RegionStore, useRegion } from "../../region/store
 import { describeZone } from "../../region/timezones.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Page, Row } from "../ui.tsx";
+import { Caption, Group, Page, Row, Spot } from "../ui.tsx";
 
 export function DateTimePane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
   const colors = useColors();
@@ -40,9 +40,11 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
         >
           <Switch testID="datetime-ntp" on={state.ntp} onChange={(on) => state.canNtp && void region.setNtp(on)} />
         </Row>
-        <Row label="24-hour time" detail={clock.hour24 === undefined ? "Follows your region." : undefined}>
-          <Switch testID="datetime-24h" on={usesHour24(prefs)} onChange={(hour24) => settings.patch("clock", { hour24 })} />
-        </Row>
+        <Spot pane="date-time" row="24-hour-time">
+          <Row label="24-hour time" detail={clock.hour24 === undefined ? "Follows your region." : undefined}>
+            <Switch testID="datetime-24h" on={usesHour24(prefs)} onChange={(hour24) => settings.patch("clock", { hour24 })} />
+          </Row>
+        </Spot>
         <Row label="Show date in the menu bar">
           <Switch testID="datetime-show-date" on={clock.showDate ?? true} onChange={(showDate) => settings.patch("clock", { showDate })} />
         </Row>
@@ -51,9 +53,11 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
         <Text style={{ fontSize: 11, color: colors.textMuted }}>{`The menu bar reads: ${formatClock(now, prefs)}`}</Text>
       </View>
       <Group>
-        <Row stack label="Time zone" detail={`${state.timezone.replaceAll("_", " ")}${zone ? ` · ${describeZone(zone)}` : ""}`}>
-          <TimezonePicker zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
-        </Row>
+        <Spot pane="date-time" row="time-zone">
+          <Row stack label="Time zone" detail={`${state.timezone.replaceAll("_", " ")}${zone ? ` · ${describeZone(zone)}` : ""}`}>
+            <TimezonePicker zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
+          </Row>
+        </Spot>
       </Group>
       {state.busy !== null && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
       {state.error !== null && (

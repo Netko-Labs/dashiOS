@@ -50,6 +50,7 @@ export async function forceQuitApp(target: Target, ctx: RunContext): Promise<Too
     summary: `force “${clean(group.name, 60)}” to quit`,
     detail: `${count === 1 ? "Its window closes" : `Its ${count} windows close`} at once, and anything you haven't saved in it is lost.`,
     action: "Force Quit",
+    danger: true,
   });
   if (!yes) return toolError(`The person did not allow ${name} to be force quit. Don't ask again unless they agree.`);
 

@@ -45,6 +45,11 @@ export function AgentMark({ size }: { size: number }) {
   );
 }
 
+/** The look of a sheet's go-ahead button: red only for what loses work or can't be taken back, else the primary one. */
+export function goAheadLook(danger: boolean | undefined): { danger: true } | { primary: true } {
+  return danger === true ? { danger: true } : { primary: true };
+}
+
 /** A sheet's button: `primary` is the green one, `danger` the red one for what can't be undone. */
 export function Button({ label, primary, danger, onPress }: { label: string; primary?: boolean; danger?: boolean; onPress: () => void }) {
   const colors = useColors();

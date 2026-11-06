@@ -130,35 +130,41 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         </Spot>
       </Group>
       <Group>
-        <Row label="Accent color" detail="Selections, switches, and sliders.">
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View
-              testID="appearance-accent"
-              style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
-            />
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
-          </View>
-        </Row>
+        <Spot pane="appearance" row="accent-color">
+          <Row label="Accent color" detail="Selections, switches, and sliders.">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                testID="appearance-accent"
+                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
+              />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
+            </View>
+          </Row>
+        </Spot>
         <Spot pane="appearance" row="window-corners">
           <Row stack label="Window corners" detail="How round windows are, app content included.">
             <CornerChoices settings={settings} />
           </Row>
         </Spot>
-        <Row label="Highlight the active window" detail="A ring in the accent color around the window you're typing in.">
-          <Switch
-            testID="appearance-highlight-window"
-            on={appearance.highlightActiveWindow === true}
-            onChange={(highlightActiveWindow) => settings.patch("appearance", { highlightActiveWindow })}
-          />
-        </Row>
-        <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
-          <Choices
-            testID="appearance-pointer-size"
-            value={appearance.pointerSize ?? DEFAULT_POINTER_SIZE}
-            options={POINTER_OPTIONS}
-            onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
-          />
-        </Row>
+        <Spot pane="appearance" row="highlight-active-window">
+          <Row label="Highlight the active window" detail="A ring in the accent color around the window you're typing in.">
+            <Switch
+              testID="appearance-highlight-window"
+              on={appearance.highlightActiveWindow === true}
+              onChange={(highlightActiveWindow) => settings.patch("appearance", { highlightActiveWindow })}
+            />
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="pointer-size">
+          <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
+            <Choices
+              testID="appearance-pointer-size"
+              value={appearance.pointerSize ?? DEFAULT_POINTER_SIZE}
+              options={POINTER_OPTIONS}
+              onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
+            />
+          </Row>
+        </Spot>
         <Spot pane="appearance" row="text-size">
           <Row stack label="Text size" detail="The launcher grows with it, and so do apps that follow GNOME's text size.">
             <Choices
@@ -169,13 +175,15 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
             />
           </Row>
         </Spot>
-        <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
-          <Switch
-            testID="appearance-reduce-motion"
-            on={appearance.reduceMotion === true}
-            onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })}
-          />
-        </Row>
+        <Spot pane="appearance" row="reduce-motion">
+          <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
+            <Switch
+              testID="appearance-reduce-motion"
+              on={appearance.reduceMotion === true}
+              onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })}
+            />
+          </Row>
+        </Spot>
       </Group>
       <Caption>Light and Dark are the same choice as Control Center's Dark Mode. Auto turns Dark Mode on at 7 PM and off at 7 AM.</Caption>
     </Page>

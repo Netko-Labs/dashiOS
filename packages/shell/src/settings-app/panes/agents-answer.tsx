@@ -6,7 +6,8 @@
  * Undo for settings changes.
  */
 
-import { View } from "@mirinjs/metal";
+import { CHEVRON_DOWN, CHEVRON_UP, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
@@ -16,6 +17,7 @@ import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Note, Row } from "../ui.tsx";
 import { AnswererList, useHarnesses } from "./answerer-list.tsx";
+import { ListRow } from "./parts.tsx";
 
 const KEY_NAMES: Readonly<Record<Provider, { who: string; variable: string; host: string }>> = {
   anthropic: { who: "Claude", variable: "ANTHROPIC_API_KEY", host: "api.anthropic.com" },
@@ -56,8 +58,42 @@ export function modelWords(models: readonly string[] | null | undefined, named: 
 
 /** Most models offered as pills (UI-2); more are a hand-edit of settings.json. */
 const MODEL_PILLS = 6;
+/** An opened row lists this many of its connections, newest first. */
+const PARTS_SHOWN = 20;
 
-function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (index: number) => void }) {
+const now = (): number => Math.floor(Date.now() / 1000);
+
+/** One agent's connections in quick succession (agents/ask/sessions.ts): one row, opened to list each. */
+function SessionsRow({ entry, parts }: { entry: HistoryEntry; parts: readonly HistoryEntry[] }) {
+  const colors = useColors();
+  const [opened, setOpened] = useState(false);
+  const shown = parts.slice(-PARTS_SHOWN).reverse();
+  const earlier = parts.length - shown.length;
+  return (
+    <View testID={`agents-history:${entry.id}`} style={{ flexDirection: "column" }}>
+      <ListRow
+        testID={`agents-history-open:${entry.id}`}
+        name={entry.who}
+        detail={`${entry.summary} · ${ago(entry.time, now())}`}
+        onPress={() => setOpened((open) => !open)}
+      >
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${parts.length} connections`}</Text>
+        <Svg markup={opened ? CHEVRON_UP : CHEVRON_DOWN} size={12} color={colors.textMuted} />
+      </ListRow>
+      {opened && (
+        <View testID={`agents-history-parts:${entry.id}`} style={{ flexDirection: "column", paddingLeft: 24, paddingBottom: 6 }}>
+          {shown.map((part) => (
+            <ListRow key={part.id} testID={`agents-history-part:${part.id}`} name={part.summary} detail={ago(part.time, now())} />
+          ))}
+          {earlier > 0 && <Note>{earlier === 1 ? "And 1 earlier connection." : `And ${earlier} earlier connections.`}</Note>}
+        </View>
+      )}
+    </View>
+  );
+}
+
+export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (index: number) => void }) {
+  if (entry.parts && entry.parts.length > 1) return <SessionsRow entry={entry} parts={entry.parts} />;
   const undos = entry.steps.flatMap((step, index) => (step.undo && !step.undone && step.outcome === "done" ? [{ index, title: step.undo.title }] : []));
   // A Row gives the words the room they need (a lone Text with one line and no width shows only "…").
   return (
@@ -65,7 +101,7 @@ function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (index: nu
       testID={`agents-history:${entry.id}`}
       stack={undos.length > 0}
       label={entry.request ? `${entry.who}: ${entry.request}` : entry.who}
-      detail={`${entry.summary} · ${ago(entry.time, Math.floor(Date.now() / 1000))}`}
+      detail={`${entry.summary} · ${ago(entry.time, now())}`}
     >
       {undos.length > 0 && (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>

@@ -17,12 +17,20 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Trackpad">
       <Group>
-        <Row label="Tap to click" detail="Tap the pad with one finger instead of pressing it.">
-          <Switch testID="trackpad-tap" on={touchpad.tap ?? false} onChange={(tap) => settings.patch("touchpad", { tap })} />
-        </Row>
-        <Row label="Natural scrolling" detail="Content follows your fingers.">
-          <Switch testID="trackpad-natural" on={touchpad.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("touchpad", { naturalScroll })} />
-        </Row>
+        <Spot pane="trackpad" row="tap-to-click">
+          <Row label="Tap to click" detail="Tap the pad with one finger instead of pressing it.">
+            <Switch testID="trackpad-tap" on={touchpad.tap ?? false} onChange={(tap) => settings.patch("touchpad", { tap })} />
+          </Row>
+        </Spot>
+        <Spot pane="trackpad" row="natural-scrolling">
+          <Row label="Natural scrolling" detail="Content follows your fingers.">
+            <Switch
+              testID="trackpad-natural"
+              on={touchpad.naturalScroll ?? false}
+              onChange={(naturalScroll) => settings.patch("touchpad", { naturalScroll })}
+            />
+          </Row>
+        </Spot>
         <Row label="Ignore the pad while typing" detail="Keeps a resting palm from moving the pointer.">
           <Switch
             testID="trackpad-dwt"

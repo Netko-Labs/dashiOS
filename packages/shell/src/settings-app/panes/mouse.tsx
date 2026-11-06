@@ -12,9 +12,11 @@ export function MousePane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Mouse">
       <Group>
-        <Row label="Natural scrolling" detail="Content follows the wheel as if you pushed it.">
-          <Switch testID="mouse-natural" on={mouse.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("mouse", { naturalScroll })} />
-        </Row>
+        <Spot pane="mouse" row="natural-scrolling">
+          <Row label="Natural scrolling" detail="Content follows the wheel as if you pushed it.">
+            <Switch testID="mouse-natural" on={mouse.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("mouse", { naturalScroll })} />
+          </Row>
+        </Spot>
         <SpeedRow testID="mouse-speed" value={mouse.accelSpeed ?? DEFAULTS.accelSpeed} onCommit={(accelSpeed) => settings.patch("mouse", { accelSpeed })} />
         <Spot pane="mouse" row="scrolling-speed">
           <ScrollSpeedRow testID="mouse-scroll-speed" value={mouse.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("mouse", { scrollSpeed })} />

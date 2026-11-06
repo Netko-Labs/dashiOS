@@ -89,7 +89,8 @@ const fromTool = (question: Question): PersonQuestion => ({
   title: personTitle(question.summary),
   detail: question.detail,
   action: question.action,
-  danger: true,
+  // Red only for what the tool says loses work or can't be taken back ("Show Copies" is not).
+  danger: question.danger === true,
 });
 
 export function startActions(options: ActionsOptions): Actions {

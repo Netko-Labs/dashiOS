@@ -15,6 +15,7 @@ import { Canvas } from "./canvas.tsx";
 import { DETAIL_SIZE, detailChoices, fitDetail } from "./detail.ts";
 import type { Size } from "./dimensions.ts";
 import { useDropArea } from "./drop.ts";
+import { foldTools, MEASURES, toolWidths } from "./fold.ts";
 import * as glyphs from "./glyphs.ts";
 import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";
 import { factsFor } from "./info.ts";
@@ -22,7 +23,7 @@ import { FORMATS } from "./kinds.ts";
 import { previewMenus } from "./menus.ts";
 import { type InfoRow, InfoSheet, imageRows, infoRows, MessageSheet, OpenWithSheet } from "./sheets.tsx";
 import { Thumbnails } from "./thumbnails.tsx";
-import { PreviewToolbar } from "./toolbar.tsx";
+import { foldedItems, PreviewToolbar, type ToolbarProps } from "./toolbar.tsx";
 import type { Viewer } from "./viewer.ts";
 import { clampPan, FIT, fitScale, type Pan, panAfterZoom, percent, scaled, scaleOf, turned, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
 
@@ -201,7 +202,31 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
   });
   useAppMenus(menus, run);
 
+  const toolbarProps: ToolbarProps = {
+    canPrevious,
+    canNext,
+    onPrevious: () => step(-1),
+    onNext: () => step(1),
+    position: pdf ? `${pdf.page} / ${pdf.pages}` : null,
+    zoomLabel: picture ? percent(scale / unit) : "",
+    onZoomOut: () => stepZoom(-1),
+    onZoomIn: () => stepZoom(1),
+    onFit: () => zoomTo(FIT),
+    onActual: () => zoomTo({ kind: "scale", scale: unit }),
+    canTurn: snap.canTurn,
+    onTurnLeft: () => void viewer.rotate(-1),
+    onTurnRight: () => void viewer.rotate(1),
+    onInfo: showInfo,
+    onMore: (bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) - 120, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 }),
+    hasFile: snap.path !== null,
+    hasPicture: picture !== null,
+  };
+  // The toolbar's room, measured: what doesn't fit folds into "…", the least important first, never cut at the edge (fold.ts).
+  const [room, setRoom] = useState<number | null>(null);
+  const fold = foldTools(room, toolWidths({ position: toolbarProps.position, zoomLevel: toolbarProps.zoomLabel || null }));
+
   const moreItems: MenuItem[] = [
+    ...foldedItems(fold.folded, toolbarProps, isPdf ? "Page" : "Image"),
     { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.format },
     { label: "Show in Files", onPress: reveal, disabled: !snap.path },
     { label: "Save Turned Copy", onPress: saveCopy, disabled: !canSaveCopy },
@@ -218,8 +243,8 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       pdf: pdf ? { pages: pdf.pages, title: pdf.title ?? null } : null,
     });
   }, [snap.path, snap.natural, snap.turns, snap.folder.index, snap.folder.count, pdf]);
-  const [detailRoom, setDetailRoom] = useState(0);
-  const detail = fitDetail(detailChoicesNow, detailRoom);
+  // The words get what the tools leave; they give way before any tool folds.
+  const detail = fitDetail(detailChoicesNow, room === null ? 0 : room - fold.width - MEASURES.gap);
 
   const facts = snap.path ? factsFor(snap.path, snap.format) : null;
   const extraRows: InfoRow[] = pdf
@@ -262,27 +287,6 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
       <PopupMenu testID="more-menu" x={menu.x} y={menu.y} items={moreItems} onClose={() => setMenu(null)} />
     ) : undefined;
 
-  const toolbar = (
-    <PreviewToolbar
-      canPrevious={canPrevious}
-      canNext={canNext}
-      onPrevious={() => step(-1)}
-      onNext={() => step(1)}
-      position={pdf ? `${pdf.page} / ${pdf.pages}` : null}
-      zoomLabel={picture ? percent(scale / unit) : ""}
-      onZoomOut={() => stepZoom(-1)}
-      onZoomIn={() => stepZoom(1)}
-      onFit={() => zoomTo(FIT)}
-      onActual={() => zoomTo({ kind: "scale", scale: unit })}
-      canTurn={snap.canTurn}
-      onTurnLeft={() => void viewer.rotate(-1)}
-      onTurnRight={() => void viewer.rotate(1)}
-      onInfo={showInfo}
-      onMore={(bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) - 120, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 })}
-      hasFile={snap.path !== null}
-      hasPicture={picture !== null}
-    />
-  );
   const drop = useDropArea((path) => {
     setSheet(null);
     setMenu(null);
@@ -312,24 +316,23 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     <AppWindow
       title={snap.name || "Preview"}
       toolbar={
-        <>
-          {detailChoicesNow.length > 0 && (
-            // The room left in the row (from a zero basis it takes nearly all the free space: `flex: 100` beside the
-            // window's own spacer), measured, and the words that fit it whole: never "320 × 18…".
-            <View
-              testID="detail"
-              onLayout={(bounds) => setDetailRoom(bounds.width)}
-              style={{ flex: 100, minWidth: 0, flexDirection: "row", justifyContent: "flex-end" }}
-            >
-              {detail !== null && (
-                <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
-                  {detail}
-                </Text>
-              )}
+        // The room left in the row (from a zero basis it takes nearly all the free space: `flex: 100` beside the
+        // window's own spacer), measured: the tools that fit it, then the words that fit what they leave, whole:
+        // never "320 × 18…", never a button cut at the edge.
+        <View
+          testID="toolbar-room"
+          onLayout={(bounds) => setRoom(bounds.width)}
+          style={{ flex: 100, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: MEASURES.gap }}
+        >
+          {detail !== null && (
+            <View testID="detail" style={{ flexShrink: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
+                {detail}
+              </Text>
             </View>
           )}
-          {toolbar}
-        </>
+          <PreviewToolbar {...toolbarProps} shown={fold.shown} />
+        </View>
       }
       sidebar={pdf && thumbnails ? <Thumbnails pdf={pdf} pageSize={viewer.firstPageSize} onPage={(page) => void viewer.goToPage(page)} /> : undefined}
       sidebarWidth={190}

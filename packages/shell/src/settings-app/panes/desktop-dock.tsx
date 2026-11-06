@@ -51,12 +51,14 @@ export function DesktopDockPane({ settings }: { settings: SettingsStore }) {
         <Row label="Go to an app's desktop" detail="Opening an app goes to the desktop its window is on, instead of bringing the window to you.">
           <Switch testID="spaces-switch-on-activate" on={switchOnActivate} onChange={(on) => settings.patch("spaces", { switchOnActivate: on })} />
         </Row>
-        <Row
-          label="Give full-screen apps their own desktop"
-          detail="A game or video in full screen gets a desktop next to yours, and comes back when it leaves."
-        >
-          <Switch testID="spaces-fullscreen-desktop" on={fullscreenDesktop} onChange={(on) => settings.patch("spaces", { fullscreenDesktop: on })} />
-        </Row>
+        <Spot pane="desktop-dock" row="full-screen-desktop">
+          <Row
+            label="Give full-screen apps their own desktop"
+            detail="A game or video in full screen gets a desktop next to yours, and comes back when it leaves."
+          >
+            <Switch testID="spaces-fullscreen-desktop" on={fullscreenDesktop} onChange={(on) => settings.patch("spaces", { fullscreenDesktop: on })} />
+          </Row>
+        </Spot>
       </Group>
       <Caption>Move between desktops with ⌃← and ⌃→, jump with ⌃1 to ⌃9, or swipe sideways with three fingers. Overview (⌃↑) shows them all.</Caption>
     </Page>

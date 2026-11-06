@@ -62,7 +62,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | --- | --- | --- |
 | `tools` | `dashi://tool/<name>` (`dashi://tool/force-quit-app`) | the agents' tool, as the person when `who` is `both` |
 | `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first |
-| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every setting `set_setting` knows | opens the pane; a row's toggle or pick runs `set_setting` as the person |
+| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every setting `set_setting` knows, and for the other rows search finds by name (`SPOT_ROWS`: `appearance/text-size`, `date-time/time-zone`…) | opens the pane; a row's toggle or pick runs `set_setting` as the person; a `SPOT_ROWS` row opens Settings scrolled to it and lit |
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
