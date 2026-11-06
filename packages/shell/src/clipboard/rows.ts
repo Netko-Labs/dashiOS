@@ -81,7 +81,15 @@ export function entryRow(entry: ClipEntry, now: number, imagePath: (entry: ClipE
 export function entryMatches(entry: ClipEntry, query: string): boolean {
   const words = fold(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return true;
-  const haystack = fold([entry.kind === "image" ? "image picture" : (entry.text ?? ""), entry.app ?? ""].join(" "));
+  const content =
+    entry.kind === "image"
+      ? "image picture"
+      : entry.kind === "files"
+        ? fileUris(entry.text ?? "")
+            .map(fileName)
+            .join(" ")
+        : (entry.text ?? "");
+  const haystack = fold(`${content} ${entry.app ?? ""}`);
   return words.every((word) => haystack.includes(word));
 }
 
