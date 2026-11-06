@@ -42,7 +42,7 @@ import type { LauncherCommand } from "./launcher/keys.ts";
 import { linkTitle } from "./launcher/link-args.ts";
 import { PANEL, SURFACE, useMeasures } from "./launcher/measures.ts";
 import { chordWhen, collision } from "./launcher/person-keys.ts";
-import type { ArrowsWanted, PictureRect } from "./launcher/pictures.ts";
+import { type ArrowsWanted, type PictureRect, STRIP_HEIGHT, trimForPictures } from "./launcher/pictures.ts";
 import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, fileNameMatches, filesStateFor, placeholderFor, type Row, type Section, selectable } from "./launcher/rows.ts";
@@ -598,12 +598,20 @@ export function Launcher(props: LauncherProps) {
       0,
       section.rows.findIndex((row) => row.id === selected),
     );
-    offset.current = keepInView(at, offset.current, m.allAppsRows, section.rows.length);
-    return section.rows.slice(offset.current, offset.current + m.allAppsRows);
+    // With a row's pictures open, fewer of them, so the pictures fit too.
+    const size = pictures.rowId ? Math.min(m.allAppsRows, Math.max(1, Math.floor((m.room - m.head - STRIP_HEIGHT) / m.row))) : m.allAppsRows;
+    offset.current = keepInView(at, offset.current, size, section.rows.length);
+    return section.rows.slice(offset.current, offset.current + size);
   };
+  // With a row's pictures open, the rows below it give way so the panel still fits (launcher/pictures.ts).
+  const onScreen = trimForPictures(
+    sections.map((section) => ({ ...section, rows: drawn(section) })),
+    m,
+    pictures.rowId,
+  );
   /** The rows on screen, top to bottom: what ❖1–9 pick. */
   function drawnRows(): Row[] {
-    return sections.flatMap((section) => drawn(section));
+    return onScreen.flatMap((section) => section.rows);
   }
   const digitOf = new Map(
     digits && mode.kind === "search"
@@ -635,10 +643,10 @@ export function Launcher(props: LauncherProps) {
   );
   if (mode.kind === "search" && sections.length > 0) {
     list = listBox(
-      sections.map((section) => (
+      onScreen.map((section) => (
         <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
           {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
-          {drawn(section).flatMap((row) => {
+          {section.rows.flatMap((row) => {
             const showing = row.id === pictures.rowId;
             const shownRow = showing && pictures.picked ? { ...row, detail: pictures.picked.title.trim() || pictures.picked.appName } : row;
             return [

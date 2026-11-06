@@ -15,6 +15,7 @@ import {
   rowWindows,
   sameRects,
   stepPictures,
+  trimForPictures,
 } from "../src/launcher/pictures.ts";
 import type { Row } from "../src/launcher/rows.ts";
 import { textSizeCommands } from "../src/text-size.ts";
@@ -162,4 +163,28 @@ test("→ and ← are the launcher's only while pictures can show; the keymap sa
   expect(keys.binding("launcher-right")).toBe(true);
   expect(keys.binding("launcher-left")).toBe(true);
   expect(commands).toEqual(["right", "left"]);
+});
+
+test("with a row's pictures open, the rows after it give way from the bottom; the open row and those above stay", () => {
+  const rows = (ids: string[]) => ids.map((id) => ({ id }));
+  const sections = [
+    { title: "Top hit", rows: rows(["a"]) },
+    { title: "Apps", rows: rows(["b", "c"]) },
+    { title: "Files", rows: rows(["f1", "f2", "f3"]) },
+  ];
+  const m = { room: 310, row: 40, head: 22 };
+  expect(trimForPictures(sections, m, null)).toEqual(sections);
+  // 310 − 82 for the pictures = 228: three heads and four rows (226) fit, a fifth row would not.
+  const trimmed = trimForPictures(sections, m, "b");
+  expect(trimmed.map((section) => section.rows.map((row) => row.id))).toEqual([["a"], ["b", "c"], ["f1"]]);
+  // Slots held for files shrink too, and a head with nothing under it goes.
+  const waiting = [
+    { title: "Apps", rows: rows(["b"]) },
+    { title: "Files", rows: [], reserved: 3 },
+  ];
+  expect(trimForPictures(waiting, { room: 240, row: 40, head: 22 }, "b")).toEqual([
+    { title: "Apps", rows: rows(["b"]) },
+    { title: "Files", rows: [], reserved: 1 },
+  ]);
+  expect(trimForPictures(waiting, { room: 200, row: 40, head: 22 }, "b")).toEqual([{ title: "Apps", rows: rows(["b"]) }]);
 });

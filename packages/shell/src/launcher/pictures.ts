@@ -105,6 +105,47 @@ export function picturesOnScreen(rects: readonly PictureRect[], origin: { x: num
   return rects.map((rect) => ({ ...rect, x: rect.x + origin.x, y: rect.y + origin.y }));
 }
 
+/** A section as the panel draws it: a head if titled, its rows, and slots held for rows still coming. */
+export interface DrawnSection {
+  title?: string;
+  rows: readonly { id: string }[];
+  reserved?: number;
+}
+
+/**
+ * The sections with room for the pictures under `open` (a row's id): the rows
+ * after it, and then their heads, give way from the bottom until the list
+ * fits under the field again (`room` tall at the text size), so nothing is
+ * clipped. The open row and everything above it always stay. Nothing open:
+ * the sections as they are.
+ */
+export function trimForPictures<S extends DrawnSection>(sections: readonly S[], m: { room: number; row: number; head: number }, open: string | null): S[] {
+  if (open === null) return [...sections];
+  const budget = m.room - STRIP_HEIGHT;
+  let used = 0;
+  let passed = false;
+  const kept: S[] = [];
+  for (const section of sections) {
+    const head = section.title === undefined ? 0 : m.head;
+    const rows: S["rows"][number][] = [];
+    for (const row of section.rows) {
+      const mustStay = !passed;
+      if (!mustStay && used + (rows.length === 0 ? head : 0) + m.row > budget) break;
+      if (rows.length === 0) used += head;
+      rows.push(row);
+      used += m.row;
+      if (row.id === open) passed = true;
+    }
+    const room = Math.max(0, Math.floor((budget - used - (rows.length === 0 ? head : 0)) / m.row));
+    const reserved = Math.min(section.reserved ?? 0, room);
+    if (rows.length === 0 && reserved === 0) continue;
+    if (rows.length === 0) used += head;
+    used += reserved * m.row;
+    kept.push({ ...section, rows, ...(section.reserved === undefined ? {} : { reserved }) });
+  }
+  return kept;
+}
+
 /** Where the launcher's surface sits in a usable area (layer-shell: anchored top, centered across, `top` down). */
 export function launcherOrigin(usable: { x: number; y: number; width: number }, width: number, top: number): { x: number; y: number } {
   return { x: usable.x + Math.floor((usable.width - width) / 2), y: usable.y + top };
