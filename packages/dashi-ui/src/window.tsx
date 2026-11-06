@@ -39,6 +39,9 @@ export function useTitleBarInset(): TitleBarInset {
   return { unified: true, top: Math.ceil(controls.y + controls.height), leading: Math.ceil(controls.x + controls.width) };
 }
 
+/** The widest a window's title gets in its toolbar before it is cut. */
+const TITLE_MAX = 320;
+
 export interface AppWindowProps {
   /** The window's name, on one line. */
   title: string;
@@ -113,8 +116,10 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
               {leading}
               {center}
               {center === undefined && inset.unified && (
-                <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ flexShrink: 1, minWidth: 0 }}>
+                // The title keeps its width (up to TITLE_MAX, then an ellipsis): the detail and the
+                // toolbar's own words give way first.
+                <View style={{ flexShrink: 1, flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexShrink: 0, maxWidth: TITLE_MAX }}>
                     <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                       {title}
                     </Text>
