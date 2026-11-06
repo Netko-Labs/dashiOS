@@ -30,6 +30,8 @@ export function SidebarItem({ label, selected, onPress, testID, tile, glyph, bad
   return (
     <View
       testID={testID}
+      focusable
+      accessibilityState={{ selected }}
       onPress={onPress}
       style={{
         height,

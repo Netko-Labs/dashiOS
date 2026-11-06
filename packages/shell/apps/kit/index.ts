@@ -6,3 +6,4 @@ export { type Clipboard, systemClipboard } from "./clipboard.ts";
 export { type CloseAnswer, CloseRequests, closeRequests, useCloseRequest } from "./close.ts";
 export { enabledIds, type MenuItemSpec, type MenuSpec, MenusClient, menusClient, useAppMenus } from "./menus.ts";
 export { type AppOptions, hostBinary, type RunningApp, runApp, type Size } from "./run.tsx";
+export { onWindowVisibility } from "./visibility.ts";

@@ -33,6 +33,13 @@ pub(crate) fn handle(
         "close" => done(state.close_window(window(params)?)),
         "minimize" => done(state.park_window(window(params)?, Shown::Minimized)),
         "hide" => done(state.park_window(window(params)?, Shown::Hidden)),
+        "suspend" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            done(state.suspend_window(window(params)?, on))
+        }
         "place" => {
             let at = Point::from((coord(params, "x")?, coord(params, "y")?));
             let space = match params.get("space") {

@@ -9,6 +9,7 @@
 
 import { type FSWatcher, statSync, watch } from "node:fs";
 import type { SortState } from "@dashi/ui";
+import type { Modifiers } from "@mirinjs/metal";
 import { loadVolumes, space } from "./drives.ts";
 import type { Env } from "./env.ts";
 import { describeError, type FileItem, itemAt, readFolder } from "./items.ts";
@@ -17,6 +18,7 @@ import type { Volume } from "./mounts.ts";
 import { mayOpen, openWithDefault } from "./open.ts";
 import { expandHome, normalizePath, parentOf, tilde } from "./paths.ts";
 import { searchComputer, searchFolder } from "./search.ts";
+import { isPlain, pick } from "./selection.ts";
 import { columnMode, DEFAULT_SORT, fileColumns, findByPrefix, sortItems } from "./sort.ts";
 import { listTrash } from "./trashops.ts";
 import { parseFileUri } from "./uri.ts";
@@ -49,8 +51,6 @@ export interface FilesState {
   searching: boolean;
   truncated: boolean;
   selection: readonly string[];
-  /** Clicks add to the selection instead of replacing it. */
-  multi: boolean;
   clipboard: { paths: readonly string[]; cut: boolean } | null;
   volumes: readonly Volume[];
   free: { free: number; total: number } | null;
@@ -58,6 +58,7 @@ export interface FilesState {
 }
 
 const DOUBLE_CLICK_MS = 450;
+const NO_KEYS: Modifiers = { shift: false, control: false, alt: false, super: false };
 const SEARCH_DELAY_MS = 180;
 
 export class FilesStore {
@@ -73,6 +74,8 @@ export class FilesStore {
   private watcher: FSWatcher | null = null;
   private watchTimer: ReturnType<typeof setTimeout> | null = null;
   private lastClick: { path: string; time: number } | null = null;
+  /** Where a ⇧-click's run starts: the last item clicked without ⇧. */
+  private anchor: string | null = null;
   private typed: { text: string; time: number } = { text: "", time: 0 };
   private noticeId = 0;
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -99,7 +102,6 @@ export class FilesStore {
       searching: false,
       truncated: false,
       selection: [],
-      multi: false,
       clipboard: null,
       volumes: [],
       free: null,
@@ -296,28 +298,29 @@ export class FilesStore {
     this.patch({ selection: this.visible().map((item) => item.path) });
   }
 
-  toggleMulti(): void {
-    this.patch({ multi: !this.state.multi });
-  }
-
   selectedItems(): FileItem[] {
     const chosen = new Set(this.state.selection);
     return this.visible().filter((item) => chosen.has(item.path));
   }
 
-  /** A click on an item: select it (add it, in multi mode), or open it when it is the second click on it. */
-  click(item: FileItem): void {
+  /**
+   * A click on an item, with the keys held (selection.ts): select it, ⇧ a
+   * run to it, ❖ add or take it out; a plain second click on it opens it.
+   */
+  click(item: FileItem, held: Modifiers = NO_KEYS): void {
     const now = this.env.now();
-    const again = this.lastClick?.path === item.path && now - this.lastClick.time <= DOUBLE_CLICK_MS;
-    this.lastClick = { path: item.path, time: now };
-    if (again && !this.state.multi) {
+    const plain = isPlain(held);
+    const again = plain && this.lastClick?.path === item.path && now - this.lastClick.time <= DOUBLE_CLICK_MS;
+    this.lastClick = plain ? { path: item.path, time: now } : null;
+    if (again) {
       this.lastClick = null;
       this.activate(item);
       return;
     }
-    const { selection, multi } = this.state;
-    if (multi) this.select(selection.includes(item.path) ? selection.filter((path) => path !== item.path) : [...selection, item.path]);
-    else this.select([item.path]);
+    const shown = this.visible().map((each) => each.path);
+    const picked = pick(shown, this.state.selection, this.anchor, item.path, held);
+    this.anchor = picked.anchor;
+    this.select(picked.selection);
   }
 
   /** A right-click: a click outside the selection selects what was clicked. */

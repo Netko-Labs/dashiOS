@@ -47,6 +47,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
       <View
         testID={testID}
         occlude
+        // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
+        focusTrap
+        accessibilityRole="dialog"
         style={{
           width,
           marginTop: Math.max(inset.top, 0) + 8,
@@ -122,6 +125,9 @@ export function MenuList({
     <View
       occlude
       testID={testID}
+      // ↑ and ↓ move between its items, Return picks one.
+      focusGroup
+      accessibilityRole="menu"
       style={{
         minWidth,
         flexDirection: "column",
@@ -148,6 +154,8 @@ export function MenuList({
           <View
             key={index}
             testID={`${testID}:${item.label}`}
+            focusable={!item.disabled}
+            accessibilityRole="menuitem"
             onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
             onPress={() => {
               onChoose?.();
@@ -218,7 +226,12 @@ export function PopupMenu({
       style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
     >
       <KeySink testID={`${testID}:keys`} onKey={(key) => key.kind === "escape" && onClose()} />
-      <View style={{ position: "absolute", left: at.x, top: at.y }} onLayout={(bounds) => setWidth((now) => (now === bounds.width ? now : bounds.width))}>
+      <View
+        // Tab moves into the menu and stays there while it is open; Esc closes it.
+        focusTrap
+        style={{ position: "absolute", left: at.x, top: at.y }}
+        onLayout={(bounds) => setWidth((now) => (now === bounds.width ? now : bounds.width))}
+      >
         <MenuList items={items} onChoose={onClose} testID={testID} minWidth={minWidth} />
       </View>
     </View>

@@ -8,6 +8,18 @@ import { ChooserView } from "../apps/portal/file-chooser/view.tsx";
 import { printOnScreen } from "../apps/portal/print/sheet.tsx";
 import type { ShowDialog } from "../apps/portal/windows.ts";
 
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
+
 // The portal's sheets on a stand-in for the Metal host, with input sent back the way the host sends it.
 
 const settle = (ms = 5): Promise<void> => new Promise((done) => setTimeout(done, ms));
@@ -139,7 +151,7 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
   // The line under the question names no Settings pane that doesn't exist.
   expect(sheet.root.lastTree()).not.toContain("Privacy");
   expect(sheet.root.lastTree()).toContain("Dashi remembers your answer");
-  sheet.send({ type: "submit", nodeId: sheet.node("portal:keys"), value: "" });
+  sheet.send(windowKey(sheet.node("portal:keys"), "enter"));
   await settle();
   expect(answer).toBe("pending");
   sheet.send({ type: "press", nodeId: sheet.node("access:grant") });
@@ -152,7 +164,7 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
     second = value;
   });
   await settle();
-  again.mounted().send({ type: "key", nodeId: again.mounted().node("portal:keys"), value: "Escape" });
+  again.mounted().send(windowKey(again.mounted().node("portal:keys"), "escape"));
   await settle();
   expect(second).toEqual({ granted: false, choices: [] });
 });
@@ -200,7 +212,7 @@ test("the print sheet: Copies keeps what is typed, Enter prints from the field, 
 
   // Enter with nothing focused prints too; Esc in a field cancels.
   const second = await run();
-  second.sheet.send({ type: "submit", nodeId: second.sheet.node("portal:keys"), value: "" });
+  second.sheet.send(windowKey(second.sheet.node("portal:keys"), "enter"));
   await settle();
   expect(second.answer()).toMatchObject({ kind: "print", choice: { copies: 1 } });
   const third = await run();

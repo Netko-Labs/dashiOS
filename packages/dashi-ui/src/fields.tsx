@@ -32,8 +32,11 @@ export function Segmented<T extends string | number>({
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   return (
+    // One Tab stop, entered at the chosen segment; the arrows move between segments (KB-1).
     <View
       testID={testID}
+      focusGroup
+      accessibilityRole="tablist"
       data-focused={state.focused}
       style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button, opacity: state.opacity }}
     >
@@ -60,6 +63,9 @@ function Segment({ label, chosen, width, testID, onPress }: { label: string; cho
   return (
     <View
       testID={testID}
+      focusable={onPress !== undefined}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: chosen }}
       onPress={onPress}
       onPointer={state.onPointer}
       style={{

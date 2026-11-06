@@ -49,6 +49,12 @@ export interface Palette {
   selectionBar: string;
   /** Text on `selectionWash`. */
   onSelection: string;
+  /**
+   * The focus ring (KB-2): kombu, 2 px wide and 2 px out from the control,
+   * only after the keyboard moved focus. The brand's lighter kombu in Dark
+   * Mode, so it stands 3:1 on every window ground.
+   */
+  focusRing: string;
   /** The chosen app in the switcher, and an open menu bar item: a soft wash. */
   switcherSelection: string;
   /** Secondary buttons' fill (and a hover wash); their edge is `controlEdge`. */
@@ -114,6 +120,7 @@ export const lightColors: Palette = {
   selectionWash: "#3E8A7224",
   selectionBar: "#357A64",
   onSelection: "#1d1d1f",
+  focusRing: "#357A64",
   switcherSelection: "#1d1d1f24",
   button: "#1d1d1f12",
   controlEdge: "#1d1d1f80",
@@ -165,6 +172,7 @@ export const darkColors: Palette = {
   selectionWash: "#3E8A7238",
   selectionBar: "#3E8A72",
   onSelection: "#f5f5f7",
+  focusRing: "#3E8A72",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
   controlEdge: "#f5f5f766",

@@ -6,7 +6,7 @@
  * rows near the viewport (a scroll column of many children is virtualized).
  */
 
-import { type DragFiles, type DropInfo, ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { type DragFiles, type DropInfo, type Modifiers, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
@@ -28,7 +28,8 @@ export interface TableProps<T, K extends string | number> {
   rows: readonly T[];
   rowKey: (row: T) => K;
   selected: K | null;
-  onSelect: (key: K) => void;
+  /** A click on a row, with the keys held (⇧ and ❖ extend a selection, PA-10). */
+  onSelect: (key: K, held: Modifiers) => void;
   sort: SortState | null;
   onSort: (sort: SortState) => void;
   testID: string;
@@ -124,7 +125,7 @@ export function Table<T, K extends string | number>({
               <View
                 key={key}
                 testID={`${testID}:row:${key}`}
-                onPress={() => onSelect(key)}
+                onPress={(event) => onSelect(key, event.modifiers)}
                 {...(drags ? { dragFiles: drags } : {})}
                 {...(drop
                   ? {

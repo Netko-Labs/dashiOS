@@ -17,15 +17,20 @@ export interface SwitchProps {
   disabled?: boolean;
   /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
   focused?: boolean;
+  /** Tab reaches a switch that can be flipped (KB-1); `false` leaves it to the pointer. */
+  focusable?: boolean;
 }
 
-export function Switch({ on, testID, onChange, disabled, focused }: SwitchProps) {
+export function Switch({ on, testID, onChange, disabled, focused, focusable = true }: SwitchProps) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   return (
     <View
       testID={testID}
       data-focused={state.focused}
+      focusable={focusable && onChange !== undefined && !disabled}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on, disabled: disabled === true }}
       {...(onChange && !disabled ? { onPress: () => onChange(!on) } : {})}
       style={{
         width: 38,

@@ -122,7 +122,14 @@ export function Choices<T extends string | number>({
 }) {
   const state = useControlState({ disabled, focused });
   return (
-    <View testID={testID} data-focused={state.focused} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, opacity: state.opacity }}>
+    // One Tab stop; the arrows move between the pills, Space or Return picks one (KB-1).
+    <View
+      testID={testID}
+      focusGroup
+      accessibilityRole="group"
+      data-focused={state.focused}
+      style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, opacity: state.opacity }}
+    >
       {options.map((option) => (
         <Pill
           key={String(option.value)}
@@ -144,6 +151,9 @@ function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boole
   return (
     <View
       testID={testID}
+      focusable={onPress !== undefined}
+      accessibilityRole="button"
+      accessibilityState={{ selected: chosen }}
       onPress={onPress}
       onPointer={state.onPointer}
       style={{
@@ -177,6 +187,7 @@ export function Button({
   disabled,
   isDefault,
   focused,
+  focusable = true,
 }: {
   label: string;
   onPress: () => void;
@@ -187,6 +198,8 @@ export function Button({
   isDefault?: boolean;
   /** Keyboard focus is on it (the focus model's hook; no ring is drawn yet). */
   focused?: boolean;
+  /** Tab reaches it (KB-1); `false` leaves it to the pointer. A disabled button never takes the keyboard. */
+  focusable?: boolean;
 }) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
@@ -195,6 +208,9 @@ export function Button({
     <View
       testID={testID}
       data-focused={state.focused}
+      focusable={focusable && !disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled === true }}
       onPress={disabled ? undefined : onPress}
       onPointer={state.onPointer}
       style={{
