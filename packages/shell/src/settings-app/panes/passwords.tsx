@@ -1,12 +1,12 @@
 /**
  * Passwords: where logins come from (Dashi's vault, 1Password), where new
- * ones are saved, and the vault's logins, each with whether agents may ask to
- * use it. While this pane shows, agents' pictures blank the Settings window
+ * ones are saved, the vault's logins, each with whether agents may ask to
+ * use it, its API tokens and model keys (tokens.tsx), and payments. While this pane shows, agents' pictures blank the Settings window
  * (agents/secrets/vault-view.ts); a password typed here never leaves the
  * field but for dashi-secretd.
  */
 
-import { Switch, useColors } from "@dashi/ui";
+import { Switch, useColors, useConfirm } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { Passwords } from "../../agents/secrets/passwords.ts";
@@ -15,6 +15,7 @@ import { vaultShown } from "../../agents/secrets/vault-view.ts";
 import { Button, Caption, Choices, Group, Note, Page, Row, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 import { Payments } from "./payments.tsx";
+import { Tokens } from "./tokens.tsx";
 
 interface VaultView {
   status: { exists: boolean; unlocked: boolean; tpm: boolean | null } | null;
@@ -133,6 +134,8 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
   const prefs = useSyncExternalStore(passwords.prefs.subscribe, passwords.prefs.getSnapshot);
   const [vault, refresh] = useVault(passwords);
   const colors = useColors();
+  // Deleting a token asks on a sheet over the pane.
+  const confirm = useConfirm();
   // A change that failed says so under the list, and the list is read again either way.
   const [failure, setFailure] = useState<string | null>(null);
   const change = (work: Promise<unknown>, failed: string): void => {
@@ -155,66 +158,70 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
           ? "Encrypted with your login password and this computer's security chip (TPM)."
           : "Encrypted with your login password.";
   return (
-    <Page title="Passwords">
-      <Group testID="passwords-sources">
-        <Row label="Dashi" detail="Passkeys, app secrets, tokens, logins">
-          <Switch
-            testID="passwords-source-dashi"
-            on={prefs.sources.dashi}
-            onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, dashi: on } })}
-          />
-        </Row>
-        <Row
-          label="1Password"
-          detail={
-            passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
-          }
-        >
-          <Switch
-            testID="passwords-source-1password"
-            on={prefs.sources["1password"]}
-            onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, "1password": on } })}
-          />
-        </Row>
-      </Group>
-      <Group>
-        <Row label="Save new logins to">
-          <Choices
-            testID="passwords-save-to"
-            value={prefs.saveTo}
-            options={[
-              { value: "dashi", label: "Dashi" },
-              { value: "1password", label: "1Password" },
-            ]}
-            onChange={(saveTo) => passwords.prefs.set({ saveTo })}
-          />
-        </Row>
-      </Group>
-      <Caption>
-        Agents sign in and enter codes through Dashi, which types them: an agent never sees a password or a code, and each use is asked about on screen.
-      </Caption>
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Logins in Dashi</Text>
-      <Group testID="passwords-logins">
-        {vault.logins.length === 0 ? (
-          <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
-        ) : (
-          vault.logins.map((login) => (
-            <LoginRow
-              key={login.id}
-              login={login}
-              onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
-              onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
+    <>
+      <Page title="Passwords">
+        <Group testID="passwords-sources">
+          <Row label="Dashi" detail="Passkeys, app secrets, tokens, logins">
+            <Switch
+              testID="passwords-source-dashi"
+              on={prefs.sources.dashi}
+              onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, dashi: on } })}
             />
-          ))
+          </Row>
+          <Row
+            label="1Password"
+            detail={
+              passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
+            }
+          >
+            <Switch
+              testID="passwords-source-1password"
+              on={prefs.sources["1password"]}
+              onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, "1password": on } })}
+            />
+          </Row>
+        </Group>
+        <Group>
+          <Row label="Save new logins to">
+            <Choices
+              testID="passwords-save-to"
+              value={prefs.saveTo}
+              options={[
+                { value: "dashi", label: "Dashi" },
+                { value: "1password", label: "1Password" },
+              ]}
+              onChange={(saveTo) => passwords.prefs.set({ saveTo })}
+            />
+          </Row>
+        </Group>
+        <Caption>
+          Agents sign in and enter codes through Dashi, which types them: an agent never sees a password or a code, and each use is asked about on screen.
+        </Caption>
+        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Logins in Dashi</Text>
+        <Group testID="passwords-logins">
+          {vault.logins.length === 0 ? (
+            <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
+          ) : (
+            vault.logins.map((login) => (
+              <LoginRow
+                key={login.id}
+                login={login}
+                onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
+                onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
+              />
+            ))
+          )}
+        </Group>
+        {failure && <Failure testID="passwords-failure">{failure}</Failure>}
+        {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
+          <AddLogin passwords={passwords} onSaved={refresh} />
         )}
-      </Group>
-      {failure && <Failure testID="passwords-failure">{failure}</Failure>}
-      {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
-        <AddLogin passwords={passwords} onSaved={refresh} />
-      )}
-      {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password (its app asks you to unlock it); its logins aren't listed here.</Caption>}
-      <Caption>{vaultLine}</Caption>
-      {status?.unlocked && <Payments vault={passwords.vault} />}
-    </Page>
+        {prefs.saveTo === "1password" && <Caption>New logins are saved in 1Password (its app asks you to unlock it); its logins aren't listed here.</Caption>}
+        <Caption>{vaultLine}</Caption>
+        {status?.unlocked && <Tokens tokens={passwords.vault.tokens} confirm={confirm} />}
+        {status?.unlocked && <Payments vault={passwords.vault} />}
+      </Page>
+      {confirm.sheet}
+    </>
   );
 }
