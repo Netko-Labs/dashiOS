@@ -52,7 +52,6 @@ interface PinnedSpec {
   inDock?: false;
 }
 
-const metalUi = `${mirin}packages/mirin-metal-ui/`;
 const shellRoot = new URL("../", import.meta.url).pathname;
 
 const PINNED: readonly PinnedSpec[] = [
@@ -65,20 +64,11 @@ const PINNED: readonly PinnedSpec[] = [
     ],
   },
   {
-    // A Metal app: mirin's metal-ui component browser. A developer's tool, so it is in the launcher, not the Dock.
+    // The @dashi/ui gallery (apps/components): a developer's tool, so it is in the launcher, not the Dock.
     name: "Components",
     icon: "components",
     inDock: false,
-    choices: [
-      {
-        id: "dev.dashi.components",
-        // metal-ui's JSX source and production React come from its package
-        // config, so it runs from there.
-        exec: [process.execPath, `${metalUi}demo/browser.tsx`, METAL_HOST],
-        env: { MIRIN_METAL_APP_ID: "dev.dashi.components", MIRIN_METAL_SIZE: "1040x660" },
-        cwd: metalUi,
-      },
-    ],
+    choices: [{ id: "dev.dashi.components", exec: [process.execPath, `${shellRoot}apps/components/main.tsx`], cwd: shellRoot }],
   },
   {
     name: "Terminal",
