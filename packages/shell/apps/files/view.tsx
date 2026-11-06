@@ -95,8 +95,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [focus, setFocus] = useState(0);
-  // A right-click reaches the item under the pointer and then the empty space around it: the item's menu stands.
-  const itemMenuAt = useRef(0);
   const [columns, setColumns] = useState(1);
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
   const [editing, setEditing] = useState<string | null>(null);
@@ -133,10 +131,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
       find: () => setEditing(store.getSnapshot().query),
       confirmEmptyTrash: () => setSheet({ kind: "empty-trash" }),
       confirmDelete: (paths) => setSheet({ kind: "delete", items: paths.flatMap((path) => find(path) ?? []) }),
-      menu: (point, kind) => {
-        if (kind === "item") itemMenuAt.current = Date.now();
-        setMenu({ ...point, kind });
-      },
+      menu: (point, kind) => setMenu({ ...point, kind }),
       refocus,
     }),
     // `find` reads the live store; the closures need no other inputs.
@@ -298,8 +293,8 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         >
           {!sheet && !menu && editing === null && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}
           <Content
+            // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
             onBackgroundMenu={(point) => {
-              if (Date.now() - itemMenuAt.current < 150) return;
               store.select([]);
               setMenu({ ...point, kind: "background" });
             }}

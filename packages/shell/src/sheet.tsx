@@ -115,7 +115,6 @@ export function ShortcutSheet({ appName, published = null, onClose }: { appName:
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }} onPress={onClose}>
       {onClose && <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />}
       <View
-        onPress={onClose}
         style={{
           width: SHEET.width,
           flexDirection: "column",

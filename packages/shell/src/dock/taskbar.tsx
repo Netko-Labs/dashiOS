@@ -92,13 +92,8 @@ export function Taskbar({
   latest.current = { buttons, appName, layout };
 
   const above = TASKBAR.height + 6;
-  // A right-click on a button reaches the bar too (Metal bubbles it): the button's menu wins.
-  const onButton = useRef(false);
+  // A right-click on a button opens the button's menu only: Metal gives it to the innermost view.
   const openMenu = (key: string, x: number) => {
-    onButton.current = true;
-    setTimeout(() => {
-      onButton.current = false;
-    }, 0);
     const button = latest.current.buttons.find((each) => each.key === key);
     if (button) void menus.openDockMenu(x, buildDockMenu(button.entry), latest.current.appName, output, above);
   };
@@ -123,7 +118,7 @@ export function Taskbar({
     <View
       testID="taskbar"
       onContextMenu={(event) => {
-        if (prefs && !onButton.current) void menus.openDockMenu(event.x, buildDockOptionsMenu(prefs.snapshot), appName, output, above);
+        if (prefs) void menus.openDockMenu(event.x, buildDockOptionsMenu(prefs.snapshot), appName, output, above);
       }}
       style={{
         flex: 1,
