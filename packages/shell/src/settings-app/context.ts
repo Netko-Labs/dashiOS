@@ -1,3 +1,4 @@
+import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
@@ -22,6 +23,8 @@ export interface PaneContext {
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
+  /** The launcher's Ask: where Claude's key is, the local models, and the agents' history (Settings › Agents). */
+  answers?: AnswerStatus;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

@@ -1,5 +1,6 @@
 /**
- * Agents: the AI agents you chose "Always Allow" for, what each may do, and
+ * Agents: who answers the launcher's Ask, and what agents did (agents-answer.tsx);
+ * then the AI agents you chose "Always Allow" for, what each may do, and
  * Revoke. Revoking forgets the answers for good and cuts off a connection that
  * is up now; the agent is asked again the next time it needs something.
  */
@@ -12,6 +13,7 @@ import { describeAgentKey } from "../agent-names.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries } from "../hooks.ts";
 import { Button, Caption, Group, Note, Page } from "../ui.tsx";
+import { AnswerSettings } from "./agents-answer.tsx";
 
 function ScopeChip({ scope }: { scope: Scope }) {
   const colors = useColors();
@@ -47,10 +49,12 @@ function AgentRow({ entry, home, onRevoke }: { entry: { key: string; scopes: Sco
   );
 }
 
-export function AgentsPane({ grants, home }: Pick<PaneContext, "grants" | "home">) {
+export function AgentsPane({ grants, home, settings, answers }: Pick<PaneContext, "grants" | "home" | "settings" | "answers">) {
   const entries = useGrantEntries(grants);
   return (
     <Page title="Agents">
+      {answers && <AnswerSettings settings={settings} answers={answers} />}
+      <Caption above>Allowed for good</Caption>
       <Group testID="agents-list">
         {entries.length === 0 ? (
           <Note testID="agents-none">No agent has been allowed for good. When one asks and you choose Always Allow, it is listed here.</Note>
