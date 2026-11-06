@@ -117,14 +117,22 @@ export interface Extensions {
   escape(): boolean;
 }
 
+/** The panel's measures a view is placed by; `field` and `row` at the text size (measures.ts), else text size 1's. */
+export interface ViewMeasures {
+  width: number;
+  padding: number;
+  field?: number;
+  row?: number;
+}
+
 /** Where a view goes in the panel: under the field, inside the list's padding (launcher.tsx's measures). */
-export function viewFrame(rows: number, measures: { width: number; padding: number }): { x: number; y: number; width: number; height: number } {
+export function viewFrame(rows: number, measures: ViewMeasures): { x: number; y: number; width: number; height: number } {
   const border = 1;
   return {
     x: border + measures.padding,
-    y: border + FIELD.height + border + measures.padding,
+    y: border + (measures.field ?? FIELD.height) + border + measures.padding,
     width: measures.width - 2 * (border + measures.padding),
-    height: rows * ROW_HEIGHT,
+    height: rows * (measures.row ?? ROW_HEIGHT),
   };
 }
 
@@ -143,7 +151,7 @@ const argTitle = (action: ActionDef, name: string): string => {
   return typeof description === "string" && description !== "" ? description : name;
 };
 
-export function useExtensions(input: ExtensionsInput, measures: { width: number; padding: number }): Extensions {
+export function useExtensions(input: ExtensionsInput, measures: ViewMeasures): Extensions {
   const { session, query, searching } = input;
   const [scope, setScope] = useState<Scope | null>(null);
   const [result, setResult] = useState<{ query: string; text: string; from: string; icon: RowIcon } | null>(null);
@@ -198,7 +206,7 @@ export function useExtensions(input: ExtensionsInput, measures: { width: number;
     if (scope?.kind !== "view") return;
     const view = scope.shown;
     view.onClose(() => setScope((now) => (now?.kind === "view" && now.shown === view ? null : now)));
-    view.place(viewFrame(viewRows(view.height), measures));
+    view.place(viewFrame(viewRows(view.height, measures.row), measures));
     return () => view.close();
   }, [scope, measures]);
 
@@ -222,7 +230,7 @@ export function useExtensions(input: ExtensionsInput, measures: { width: number;
           }),
         ];
       }
-      if (scope?.kind === "view") return [{ id: "view", rows: [], reserved: viewRows(scope.shown.height) }];
+      if (scope?.kind === "view") return [{ id: "view", rows: [], reserved: viewRows(scope.shown.height, measures.row) }];
       if (scope?.kind === "args") {
         const name = scope.names[0] ?? "";
         return [{ id: "arg", rows: [argRow(argTitle(scope.action, name), query, scope.from, scope.icon, scope.names.length <= 1)] }];

@@ -141,9 +141,9 @@ export function resultRow(text: string, from: string, icon: RowIcon): Row {
   return { id: "result", title: text, kind: from, icon, action: { kind: "copy", text }, strong: true, group: "answer" };
 }
 
-/** The room a view takes in the list: whole rows, so the panel's measures hold. */
-export function viewRows(height: number): number {
-  return Math.max(1, Math.min(10, Math.ceil(height / ROW_HEIGHT)));
+/** The room a view takes in the list: whole rows (at the text size's row height), so the panel's measures hold. */
+export function viewRows(height: number, row: number = ROW_HEIGHT): number {
+  return Math.max(1, Math.min(10, Math.ceil(height / row)));
 }
 
 /** A command that needs words first: the row that says what is asked for, and what Return does with it. */

@@ -112,6 +112,8 @@ export interface ListInput {
   icons: { calculator: string; files: string; software: string; command?: string };
   /** The Region, the clock and the zone answers are worked out in (answers/). */
   answers?: AnswerContext;
+  /** Rows that fit at the person's text size (measures.ts); LOCAL_ROWS and FILE_ROWS when left out. */
+  limits?: { local: number; files: number };
 }
 
 /** Instant rows the panel has room for (the answer included), and file rows below them. */
@@ -228,12 +230,12 @@ function grouped(rows: Row[]): Section[] {
   return sections;
 }
 
-function filesSection(state: FilesState, query: string): Section | null {
+function filesSection(state: FilesState, query: string, most = FILE_ROWS): Section | null {
   switch (state.kind) {
     case "found":
-      return state.files.length > 0 ? { id: "files", title: "Files", rows: state.files.slice(0, FILE_ROWS).map(fileRow) } : null;
+      return state.files.length > 0 ? { id: "files", title: "Files", rows: state.files.slice(0, most).map(fileRow) } : null;
     case "waiting":
-      return state.reserved > 0 ? { id: "files", title: "Files", rows: [], reserved: Math.min(state.reserved, FILE_ROWS) } : null;
+      return state.reserved > 0 ? { id: "files", title: "Files", rows: [], reserved: Math.min(state.reserved, most) } : null;
     case "off":
       return {
         id: "files",
@@ -301,9 +303,10 @@ export function buildSections(input: ListInput): Section[] {
     return [...failed, { id: "try", title: "Try", aside: "Searches this computer only", rows: [...examples(input), allAppsRow] }];
   }
   const answer = answerFor(query, input.answers);
-  const { items, suggestion } = found(input, answer === null ? LOCAL_ROWS : LOCAL_ROWS - 1);
+  const local = input.limits?.local ?? LOCAL_ROWS;
+  const { items, suggestion } = found(input, answer === null ? local : local - 1);
   const instant = [...(answer === null ? [] : [answerRow(query, answer, input.icons, input.copied)]), ...items.map((item) => rowFor(item, input))];
-  const files = filesSection(input.files, query);
+  const files = filesSection(input.files, query, input.limits?.files);
   if (instant.length > 0) return [...failed, ...grouped(instant), ...(files ? [files] : [])];
   // Nothing instant: wait for the files before saying nothing is there (their slots, if any, are held).
   if (input.files.kind === "waiting") return [...failed, ...(files ? [files] : [])];

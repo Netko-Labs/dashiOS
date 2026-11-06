@@ -17,7 +17,7 @@ use smithay::{
     },
 };
 
-use super::{layer_shell, xdg_shell};
+use super::{layer_shell, text, xdg_shell};
 use crate::{
     state::{ClientState, Dashi},
     wm::grabs::resize_grab,
@@ -72,6 +72,7 @@ impl CompositorHandler for Dashi {
             self.place_when_drawn(&root);
         }
         xdg_shell::handle_commit(&mut self.popups, &self.windows, surface);
+        text::handle_commit(self, surface);
         layer_shell::handle_commit(self, surface);
         resize_grab::handle_commit(&mut self.space, surface);
     }

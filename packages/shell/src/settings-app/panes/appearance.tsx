@@ -4,11 +4,12 @@
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
  * file, so a pick shows on the open windows at once), whether the focused
  * window wears the accent ring (`appearance.highlightActiveWindow`,
- * appearance/window-style.ts), and the pointer's size
- * (`appearance.pointerSize`, pointer.ts).
+ * appearance/window-style.ts), the pointer's size
+ * (`appearance.pointerSize`, pointer.ts), and the text size of the shell's
+ * surfaces and GTK apps (`appearance.textSize`, text-size.ts).
  */
 
-import { darkColors, lightColors, type Palette, Switch, useColors } from "@dashi/ui";
+import { DEFAULT_TEXT_SIZE, darkColors, lightColors, type Palette, Switch, TEXT_SIZES, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
@@ -21,6 +22,9 @@ const CORNER_LABELS: Record<CornerName, string> = { none: "None", small: "Small"
 const CORNER_OPTIONS = CORNER_NAMES.map((value) => ({ value, label: CORNER_LABELS[value] }));
 const POINTER_LABELS: Record<(typeof POINTER_SIZES)[number], string> = { 24: "Standard", 32: "Large", 40: "Larger", 48: "Largest" };
 const POINTER_OPTIONS = POINTER_SIZES.map((value) => ({ value: value as number, label: POINTER_LABELS[value] }));
+/** In TEXT_SIZES' order. */
+const TEXT_LABELS = ["Default", "Large", "Larger", "Largest"] as const;
+const TEXT_OPTIONS = TEXT_SIZES.map((value, index) => ({ value: value as number, label: TEXT_LABELS[index] ?? `${value}×` }));
 
 /** A miniature desktop: a menu bar, a window with two lines of text. */
 function MiniDesktop({ palette }: { palette: Palette }) {
@@ -155,6 +159,16 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
             onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
           />
         </Row>
+        <Spot pane="appearance" row="text-size">
+          <Row stack label="Text size" detail="The launcher grows with it, and so do apps that follow GNOME's text size.">
+            <Choices
+              testID="appearance-text-size"
+              value={appearance.textSize ?? DEFAULT_TEXT_SIZE}
+              options={TEXT_OPTIONS}
+              onChange={(textSize) => settings.patch("appearance", { textSize })}
+            />
+          </Row>
+        </Spot>
         <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
           <Switch
             testID="appearance-reduce-motion"

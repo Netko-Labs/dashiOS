@@ -35,11 +35,13 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { isTextSize } from "@dashi/ui";
 import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
+import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
@@ -90,6 +92,11 @@ export interface IdleSettings {
   sleepAfterSeconds?: number;
 }
 
+/** `inputMethod`: the input method the session runs (input-method.ts); none when not set. */
+export interface InputMethodSettings {
+  engine?: InputMethodName;
+}
+
 /** `menuBar`: what the status area shows beyond its defaults. */
 export interface MenuBarSettings {
   /** The battery's percentage beside its glyph; off unless set. */
@@ -109,6 +116,8 @@ export interface AppearanceSettings {
   auto?: boolean;
   /** The pointer's size in points (pointer.ts); 24 when not set. */
   pointerSize?: number;
+  /** What the shell's type is multiplied by (text-size.ts); 1 when not set. */
+  textSize?: number;
   /** How X11 apps meet a scaled screen (xwayland-scale.ts); sharp when not set. */
   x11Apps?: X11Scaling;
 }
@@ -210,6 +219,7 @@ export interface SettingsData {
   keyboard: KeyboardSettings;
   idle: IdleSettings;
   menuBar: MenuBarSettings;
+  inputMethod: InputMethodSettings;
   appearance: AppearanceSettings;
   wallpaper: WallpaperSettings;
   nightShift: NightShiftSettings;
@@ -284,6 +294,7 @@ const SECTIONS = {
   },
   idle: { path: ["idle"], fields: { blankAfterSeconds: numberIn(0, MAX_BLANK_AFTER), sleepAfterSeconds: numberIn(0, MAX_BLANK_AFTER) } },
   menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
+  inputMethod: { path: ["inputMethod"], fields: { engine: oneOf(...INPUT_METHODS) } },
   appearance: {
     path: ["appearance"],
     fields: {
@@ -292,6 +303,7 @@ const SECTIONS = {
       highlightActiveWindow: isBoolean,
       auto: isBoolean,
       pointerSize: isPointerSize,
+      textSize: isTextSize,
       x11Apps: oneOf(...X11_SCALINGS),
     },
   },
@@ -413,6 +425,7 @@ export function readSettings(raw: unknown): SettingsData {
     keyboard: readSection(root, "keyboard") as KeyboardSettings,
     idle: readSection(root, "idle") as IdleSettings,
     menuBar: readSection(root, "menuBar") as MenuBarSettings,
+    inputMethod: readSection(root, "inputMethod") as InputMethodSettings,
     appearance: readSection(root, "appearance") as AppearanceSettings,
     wallpaper: readSection(root, "wallpaper") as WallpaperSettings,
     nightShift: readSection(root, "nightShift") as NightShiftSettings,

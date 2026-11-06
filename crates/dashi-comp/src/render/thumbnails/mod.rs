@@ -1,6 +1,6 @@
 //! Live, scaled pictures the shell places: each Desktop's windows and
 //! wallpaper in Mission Control's row (`space-previews`), and windows in the
-//! app switcher and the share picker (`window-thumbnails`). The shell says
+//! app switcher, the share picker and the launcher (`window-thumbnails`). The shell says
 //! where each picture goes (global logical rects); dashi-comp draws it there,
 //! in front of the shell's own surfaces (its panels are opaque, so the
 //! pictures can't be under them) and behind the pointer, every frame while

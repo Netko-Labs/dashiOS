@@ -76,14 +76,17 @@ import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
+import { InputMethodRunner } from "./input-method.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap, idleKeymap, setPersonRules } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
+import { hostIsAccessible } from "./launcher/access.ts";
 import { AppIndex } from "./launcher/app-index.ts";
 import { BUDGET } from "./launcher/budget.ts";
 import { LaunchFailures } from "./launcher/failures.ts";
 import type { LauncherHost, Presented } from "./launcher/host.ts";
 import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
+import { launcherOrigin, type PictureRect, picturesOnScreen } from "./launcher/pictures.ts";
 import { LauncherPrefs } from "./launcher/prefs.ts";
 import { languagesOf, messageLocales, RankingMemory } from "./launcher/ranking/index.ts";
 import { LAUNCHER_MOTION, ResidentHost } from "./launcher/resident.tsx";
@@ -133,6 +136,7 @@ import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type S
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
 import { startSystem } from "./system/start.ts";
+import { TextSize } from "./text-size.ts";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
 import { ToplevelStore } from "./toplevels.ts";
 import { startTray } from "./tray/index.ts";
@@ -272,6 +276,21 @@ let reduceMotion = false;
 const appearanceDeps = sessionDeps();
 // The pointer's size: the compositor's, GTK's, and X11's (pointer.ts).
 const pointer = compositor ? new PointerSync({ compositor, gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run }) : null;
+// Text size: the shell's surfaces (through @dashi/ui) and GTK's (text-size.ts).
+const textSize = new TextSize(compositor ? { gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run } : null).connect();
+// The input method the person picked, run as the shell's own child (input-method.ts); only in a real
+// session, where the shell may change what apps read: a nested run would replace the host's.
+const inputMethod =
+  compositor && appearanceDeps.gate.on
+    ? new InputMethodRunner({
+        has: appearanceDeps.has,
+        env: process.env,
+        spawn: (command) => {
+          const child = Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "inherit" });
+          return { exited: child.exited, kill: () => child.kill() };
+        },
+      })
+    : null;
 // What X11 apps hear (xwayland-scale.ts): the settings say it, X11 scaling below follows.
 let xwaylandChoice: XwaylandChoice = { scaling: DEFAULT_X11_SCALING, pointerSize: DEFAULT_POINTER_SIZE };
 let xwaylandScaling: XwaylandScaling | null = null;
@@ -279,6 +298,8 @@ const stopSettings = compositor
   ? startSettings(compositor, (settings) => {
       reduceMotion = settings.appearance.reduceMotion;
       void pointer?.apply(settings.appearance.pointerSize);
+      void textSize.apply(settings.appearance.textSize);
+      inputMethod?.apply(settings.inputMethod.engine);
       const choice = { scaling: settings.appearance.x11Apps, pointerSize: settings.appearance.pointerSize };
       if (choice.scaling !== xwaylandChoice.scaling || choice.pointerSize !== xwaylandChoice.pointerSize) {
         xwaylandChoice = choice;
@@ -876,7 +897,7 @@ const launcherKeymap = {
   typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () =>
     void compositor
-      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording))
+      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted))
       .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
@@ -885,6 +906,39 @@ const launcherKeysAgain = () => (handedOff ? launcherKeymap.begin() : launcherKe
 launcherKeys.onRecording = () => {
   if (overlays.has("launcher")) launcherKeysAgain();
 };
+// ← and → are the launcher's while a row's windows can show (launcher/pictures.ts); they wait for the field like every key.
+launcherKeys.onArrows = () => {
+  if (overlays.has("launcher") && handedOff) launcherKeymap.begin();
+};
+/** The screen the open launcher is on, for its windows' pictures. */
+let launcherOutput: string | undefined;
+let launcherPicturesShown = false;
+let launcherPicturesQueue: Promise<void> = Promise.resolve();
+/**
+ * The open launcher's window pictures (launcher/pictures.ts), from its surface's pixels to the
+ * screen's: layer-shell puts it centered across the usable area, LAUNCHER.top down. The first
+ * pictures wait for the list to finish growing to make room for them. In order, one at a time.
+ */
+function launcherPictures(rects: PictureRect[]): void {
+  if (!compositor) return;
+  const wait = rects.length > 0 && !launcherPicturesShown ? (launcherHeightMs() ?? 0) : 0;
+  launcherPicturesShown = rects.length > 0;
+  launcherPicturesQueue = launcherPicturesQueue
+    .then(async () => {
+      if (wait > 0) await Bun.sleep(wait);
+      if (rects.length === 0) return void (await compositor.request("window-thumbnails", { rects: [] }));
+      const outputs = parseOutputs(await compositor.request("outputs"));
+      const screen = outputs.find((each) => each.name === launcherOutput) ?? outputs[0];
+      if (!screen) return;
+      await compositor.request("window-thumbnails", { rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, LAUNCHER.top)) });
+    })
+    .catch((error) => console.error("dashi-shell: the launcher's window pictures:", error));
+}
+/** The Metal host publishes an accessibility tree (launcher/access.ts): the launcher's rows then say what they are. */
+let launcherAccessible = false;
+void hostIsAccessible(METAL_HOST).then((accessible) => {
+  launcherAccessible = accessible;
+});
 // The person's aliases and keys (settings.json `launcher`; launcher/person-keys.ts): a key they set
 // reaches the compositor at once, and an edit of the file by hand too.
 const launcherPrefs = new LauncherPrefs(settingsStore);
@@ -1017,6 +1071,7 @@ function openLauncher(presented: Presented | null = null, scope: string | null =
   };
   const showing = overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
     opened = true;
+    launcherOutput = output;
     // Its keys come with the surface and go with it, however it closes.
     return openLauncherSurface(
       {
@@ -1065,6 +1120,8 @@ function openLauncher(presented: Presented | null = null, scope: string | null =
         {...(askAgents ? { agents: askAgents.launcher } : {})}
         extensions={extensions.session}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
+        onPictures={launcherPictures}
+        accessible={launcherAccessible}
         onClose={close}
       />,
       () => {
@@ -1431,6 +1488,7 @@ const quit = () => {
     ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
+    ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],
