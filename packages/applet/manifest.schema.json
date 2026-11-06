@@ -63,7 +63,41 @@
       }
     },
     "screenshots": { "type": "array", "maxItems": 8, "items": { "type": "string", "pattern": "\\.(png|jpe?g|webp)$" } },
-    "icon": { "type": "string", "pattern": "\\.(svg|png)$" }
+    "icon": { "type": "string", "pattern": "\\.(svg|png)$" },
+    "commands": {
+      "description": "What it adds to the launcher: indexed before it ever runs, carried out over protocol 3 (docs/applets.md, Commands).",
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "mode"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "keywords": { "type": "array", "maxItems": 12, "items": { "type": "string", "minLength": 1, "maxLength": 40 } },
+          "args": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type"],
+              "properties": {
+                "name": { "type": "string", "pattern": "^[a-z_][a-z0-9_]{0,31}$" },
+                "type": { "enum": ["string", "number", "boolean"] },
+                "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+                "required": { "type": "boolean" }
+              }
+            }
+          },
+          "mode": {
+            "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself.",
+            "enum": ["instant", "pick", "view"]
+          }
+        }
+      }
+    }
   },
   "$defs": {
     "patterns": {

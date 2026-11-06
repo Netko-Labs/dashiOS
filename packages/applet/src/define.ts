@@ -17,7 +17,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { type ComponentType, createElement, useSyncExternalStore } from "react";
-import { type AppletSpec, AppletsClient, type PopoverPlacement } from "./client.ts";
+import { type AppletSpec, AppletsClient, type CommandRun, type PopoverPlacement } from "./client.ts";
+import type { CommandResult, CommandRow } from "./commands.ts";
 import { type Manifest, readManifest } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import { type OpenPopover, openPopoverWindow } from "./popover.tsx";
@@ -51,11 +52,35 @@ export interface AppletDefinition<S> {
   /** A click on the item when there is no popover. */
   onActivate?(applet: AppletHandle<S>, x: number, y: number): void;
   popover?: { width: number; height: number; component: ComponentType<PopoverProps<S>> };
+  /** What the manifest's `commands` do, by id (docs/applets.md, "Commands"). */
+  commands?: Record<string, CommandDefinition<S>>;
   /** Runs once at the start (live data, timers); what it returns runs at the end. */
   start?(applet: AppletHandle<S>): undefined | (() => void);
   /** Testing and the CLI: a client of your own, the manifest given. */
   client?: AppletsClient;
   manifest?: Manifest;
+}
+
+/** What a command comes to: a line for the launcher (a string is one), text to copy, something to open, or why not. */
+export type CommandAnswer = string | CommandResult;
+
+type Args = Record<string, string | number | boolean>;
+
+export interface ViewProps<S> {
+  state: S;
+  set(next: Partial<S> | ((state: S) => S)): void;
+  args: Args;
+  /** Closes the view (the launcher goes back to its rows). */
+  close(): void;
+}
+
+/** One command, by its manifest mode: `run` for instant, `items` and `choose` for pick, `view` for view. */
+export interface CommandDefinition<S> {
+  run?(args: Args, applet: AppletHandle<S>): CommandAnswer | Promise<CommandAnswer>;
+  /** The rows for what is typed; asked again on every keystroke, and the launcher waits 80 ms before it says “slow”. */
+  items?(query: string, args: Args, applet: AppletHandle<S>): readonly CommandRow[] | Promise<readonly CommandRow[]>;
+  choose?(item: string, args: Args, applet: AppletHandle<S>): CommandAnswer | Promise<CommandAnswer>;
+  view?: { height: number; component: ComponentType<ViewProps<S>> };
 }
 
 export interface AppletHandle<S> {
@@ -189,6 +214,89 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
     onPopover: placed,
     onDismiss: () => popover?.close(),
   });
+  if (definition.commands) client.onCommands(commandHandlers(definition.commands, handle, manifest, title, listeners));
   const stopStart = definition.start?.(handle);
   return handle;
+}
+
+const answerOf = (answer: CommandAnswer): CommandResult => (typeof answer === "string" ? { text: answer } : answer);
+const errorOf = (error: unknown): CommandResult => ({ error: (error instanceof Error ? error.message : String(error)).slice(0, 200) || "It failed." });
+
+/** The launcher's runs, answered by `commands` (one view open at a time, drawn as a popover is). */
+function commandHandlers<S>(
+  commands: Record<string, CommandDefinition<S>>,
+  handle: AppletHandle<S>,
+  manifest: Manifest | null,
+  title: string,
+  listeners: Set<() => void>,
+): Parameters<AppletsClient["onCommands"]>[0] {
+  const { client } = handle;
+  let view: { seq: number; open: OpenPopover | null; args: Args; spec: NonNullable<CommandDefinition<S>["view"]> } | null = null;
+  const closeView = (): void => {
+    const open = view?.open;
+    view = null;
+    open?.close();
+  };
+  const settle = (seq: number, work: () => CommandAnswer | Promise<CommandAnswer>): void => {
+    Promise.resolve()
+      .then(work)
+      .then(
+        (answer) => client.result(seq, answerOf(answer)),
+        (error) => client.result(seq, errorOf(error)),
+      );
+  };
+  return {
+    onRun: (run: CommandRun) => {
+      const command = Object.hasOwn(commands, run.command) ? commands[run.command] : undefined;
+      if (!command) return client.result(run.seq, { error: `${title} has no command “${run.command}”.` });
+      if (run.item !== undefined) {
+        const item = run.item;
+        return settle(run.seq, () => command.choose?.(item, run.args, handle) ?? { error: "Nothing happens when it is chosen." });
+      }
+      if (run.query !== undefined) {
+        const query = run.query;
+        Promise.resolve()
+          .then(() => command.items?.(query, run.args, handle) ?? [])
+          .then(
+            (rows) => client.items(run.seq, rows),
+            (error) => client.result(run.seq, errorOf(error)),
+          );
+        return;
+      }
+      if (command.view) {
+        closeView();
+        view = { seq: run.seq, open: null, args: run.args, spec: command.view };
+        return client.requestView(run.seq, command.view.height);
+      }
+      settle(run.seq, () => command.run?.(run.args, handle) ?? { error: "It does nothing yet." });
+    },
+    onView: (seq, placement: PopoverPlacement) => {
+      const current = view;
+      if (current?.seq !== seq || current.open) return;
+      const { component } = current.spec;
+      const View = (): ReturnType<typeof createElement> => {
+        const now = useSyncExternalStore(
+          (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+          },
+          () => handle.state,
+        );
+        return createElement(component, { state: now, set: handle.set, args: current.args, close: () => client.dismissView(seq) });
+      };
+      current.open = openPopoverWindow({
+        appId: manifest?.id ?? "applet.view",
+        title,
+        placement,
+        element: createElement(View),
+        onClosed: () => {
+          if (view?.seq === seq) view = null;
+          client.dismissView(seq);
+        },
+      });
+    },
+    onViewDismiss: (seq) => {
+      if (view?.seq === seq) closeView();
+    },
+  };
 }

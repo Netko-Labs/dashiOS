@@ -16,6 +16,7 @@
  */
 
 import { existsSync } from "node:fs";
+import type { CommandResult, CommandRow } from "./commands.ts";
 import { type Manifest, manifestJson } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import { type AppletShellMessage, type Placement, PROTOCOL, parseApplet, parseAppletShellMessage } from "./protocol.ts";
@@ -48,6 +49,26 @@ export interface AppletHandlers {
   onPopover?(placement: PopoverPlacement): void;
   /** The popover must close (a click outside it, the item clicked again, the shell gone). */
   onDismiss?(): void;
+}
+
+/** The shell ran one of the manifest's commands (protocol 3). */
+export interface CommandRun {
+  seq: number;
+  command: string;
+  args: Record<string, string | number | boolean>;
+  /** A pick command asked for its rows for what is typed. */
+  query?: string;
+  /** A pick command's row was chosen. */
+  item?: string;
+}
+
+/** What answers the launcher's commands: each run gets a `result`, `items`, or `requestView` (client methods). */
+export interface CommandHandlers {
+  onRun(run: CommandRun): void;
+  /** Where a view asked for with `requestView` goes. */
+  onView?(seq: number, placement: PopoverPlacement): void;
+  /** The view of run `seq` must close (the launcher moved on or closed). */
+  onViewDismiss?(seq: number): void;
 }
 
 /** A connection as the client uses it (Bun's socket, or a test's). */
@@ -122,6 +143,11 @@ export class AppletsClient {
   private retries = 0;
   private cancelRetry: (() => void) | null = null;
   private closed = false;
+  private commands: CommandHandlers | null = null;
+  /** The protocol the shell answered with; 0 before its welcome. */
+  private shellProtocol = 0;
+  /** Views asked for or open, by run. */
+  private readonly views = new Set<number>();
   private readonly connect: NonNullable<AppletsClientOptions["connect"]>;
   private readonly exists: NonNullable<AppletsClientOptions["exists"]>;
   private readonly later: NonNullable<AppletsClientOptions["later"]>;
@@ -183,6 +209,41 @@ export class AppletsClient {
     return this.popovers.has(id);
   }
 
+  /** Answer the launcher's commands (the manifest's `commands`; protocol 3). */
+  onCommands(handlers: CommandHandlers | null): void {
+    this.commands = handlers;
+  }
+
+  /** Whether the shell speaks protocol 3 (it runs commands). */
+  get runsCommands(): boolean {
+    return this.shellProtocol >= 3;
+  }
+
+  /** What run `seq` came to: a line, text to copy, something to open, or why not. */
+  result(seq: number, result: CommandResult): void {
+    this.answer({ type: "result", seq, ...result });
+  }
+
+  /** A pick command's rows for run `seq` (its query). */
+  items(seq: number, rows: readonly CommandRow[]): void {
+    this.answer({ type: "items", seq, rows });
+  }
+
+  /** Run `seq` draws its answer itself, `height` points tall, where the launcher's rows were; the place comes to `onView`. */
+  requestView(seq: number, height: number): void {
+    this.views.add(seq);
+    this.answer({ type: "view", seq, height: Math.round(height) });
+  }
+
+  /** The applet closed the view of run `seq` itself. */
+  dismissView(seq: number): void {
+    if (this.views.delete(seq)) this.answer({ type: "dismiss", seq });
+  }
+
+  private answer(message: Record<string, unknown>): void {
+    if (this.socket && this.runsCommands) this.write(`${JSON.stringify(message)}\n`);
+  }
+
   close(): void {
     this.closed = true;
     this.cancelRetry?.();
@@ -214,10 +275,15 @@ export class AppletsClient {
         done = true;
         this.connecting = false;
         this.socket = null;
+        this.shellProtocol = 0;
         // The shell that placed them is gone.
         for (const id of [...this.popovers]) {
           this.popovers.delete(id);
           this.handlers.get(id)?.onDismiss?.();
+        }
+        for (const seq of [...this.views]) {
+          this.views.delete(seq);
+          this.commands?.onViewDismiss?.(seq);
         }
         if (this.closed) return;
         const wait = RETRY_MS[Math.min(this.retries++, RETRY_MS.length - 1)] ?? 15000;
@@ -235,6 +301,21 @@ export class AppletsClient {
   private handle(message: AppletShellMessage): void {
     switch (message.type) {
       case "welcome":
+        this.shellProtocol = message.protocol;
+        return;
+      case "run": {
+        const { type: _type, ...run } = message;
+        this.commands?.onRun(run);
+        return;
+      }
+      case "view": {
+        if (!this.views.has(message.seq)) return;
+        const { type: _type, seq, ...placement } = message;
+        this.commands?.onView?.(seq, placement);
+        return;
+      }
+      case "dismiss-view":
+        if (this.views.delete(message.seq)) this.commands?.onViewDismiss?.(message.seq);
         return;
       case "error":
         console.error(`dashi applets: the shell refused: ${message.message}`);
