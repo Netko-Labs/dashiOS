@@ -15,9 +15,8 @@ import { AccountsServiceBackend } from "../../src/accounts/backend.ts";
 import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
 import { DBusConnection, FdService, type InterfaceSpec, type Variant } from "../../src/dbus/index.ts";
 import { PORTAL_BACKEND } from "../../src/portal-host/protocol.ts";
-import { appletsClient } from "../kit/applet.ts";
 import { setProcessName } from "../kit/name.ts";
-import { type AskAccess, accessInterface, askOnScreen as askAccessOnScreen } from "./access.tsx";
+import { accessInterface, askOnScreen as askAccessOnScreen } from "./access.tsx";
 import { accountInterface, askShareOnScreen } from "./account.tsx";
 import { appChooserInterface, chooseOnScreen as chooseAppOnScreen, gioDefault } from "./app-chooser/index.tsx";
 import { appInfo } from "./apps.ts";
@@ -33,8 +32,6 @@ import { printOnScreen } from "./print/sheet.tsx";
 import { Requests } from "./request.ts";
 import { changedSettings, SETTINGS, settingsInterface, settingsTable } from "./settings.ts";
 import { ShellClient } from "./shell.ts";
-import { askFromMenuBar } from "./ui/background.ts";
-import { CAMERA, PERSON } from "./ui/glyphs.ts";
 import { dialogWindows } from "./windows.ts";
 
 export const PORTAL_PATH = "/org/freedesktop/portal/desktop";
@@ -65,23 +62,13 @@ const session = (): Promise<DBusConnection> => {
 const shell = new ShellClient();
 const show = dialogWindows(shell);
 const requests = new Requests(service);
-const applets = appletsClient();
 let object: ReturnType<FdService["export"]> | null = null;
 const emit = (iface: string, signal: string, ...args: unknown[]) => object?.emit(iface, signal, ...args);
 
-// An app with no window waits in the menu bar instead (ui/background.ts).
-const askAccessOnSheet = askAccessOnScreen(show);
-const askAccess: AskAccess = (request, signal) =>
-  request.parent === ""
-    ? askFromMenuBar(
-        applets,
-        { id: `access-${Date.now()}`, label: appInfo(request.appId).name, title: request.title, glyph: CAMERA },
-        () => askAccessOnSheet(request, signal),
-        signal,
-        null,
-      )
-    : askAccessOnSheet(request, signal);
-const askShareOnSheet = askShareOnScreen(show);
+// A question from an app with no window opens at once too, as a window of its own (windows.ts):
+// an item waiting in the menu bar was easy to miss while the app waited on the answer.
+const askAccess = askAccessOnScreen(show);
+const askShare = askShareOnScreen(show);
 
 const chooseFiles = chooseFilesOnScreen(show);
 const inhibit = new InhibitBackend({ bus: service, shell, stateChanged: (path, state) => emit(INHIBIT, "StateChanged", path, state) });
@@ -109,20 +96,7 @@ const interfaces: InterfaceSpec[] = [
   inhibit.spec(),
   accessInterface(requests, askAccess),
   appChooserInterface(requests, chooseAppOnScreen(show), gioDefault),
-  accountInterface(
-    requests,
-    () => accounts.read(),
-    (request, account, signal) =>
-      request.parent === ""
-        ? askFromMenuBar(
-            applets,
-            { id: `account-${Date.now()}`, label: appInfo(request.appId).name, title: `${appInfo(request.appId).name} asks for your name`, glyph: PERSON },
-            () => askShareOnSheet(request, account, signal),
-            signal,
-            false,
-          )
-        : askShareOnSheet(request, account, signal),
-  ),
+  accountInterface(requests, () => accounts.read(), askShare),
   emailInterface(requests),
   notifications.spec(),
   dynamicLauncherInterface(requests, askInstallOnScreen(show), (appId, name) => void shell.addToDock(appId, name).catch(() => {})),

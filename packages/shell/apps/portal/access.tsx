@@ -5,8 +5,8 @@
  * this for the camera, the microphone, location and background running, and
  * remembers the answer itself (its permission store), which Settings ›
  * Privacy & Security lists and takes back one by one; the sheet's button
- * opens it there. An app with no window gets an item in the menu bar that
- * opens the sheet (ui/background.ts).
+ * opens it there. An app with no window (a background app, a `gdbus` call)
+ * gets the same question at once, as a window of its own (windows.ts).
  *
  *   AccessDialog(o handle, s app_id, s parent_window, s title, s subtitle,
  *                s body, a{sv} options) → (u response, a{sv} results)

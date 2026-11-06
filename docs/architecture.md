@@ -142,8 +142,8 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   it (IPC `attach`). The compositor keeps a sheet under its parent's title
   bar, above it, on its Space, without a title bar of its own, and gives it
   the keyboard and the presses the parent would get. With no parent the
-  dialog is an ordinary window; a question from an app with no window
-  waits as a menu bar item (an applet) that opens it.
+  dialog is an ordinary window, opened at once: a question from an app with
+  no window (Access, Account) does not wait in the menu bar.
 - **What is the shell's stays the shell's.** Holds (Inhibit) go to the
   shell's `InhibitStore` (`src/inhibit/`), which idle reads: while an app
   holds, the screens don't blank and the computer doesn't sleep; the
