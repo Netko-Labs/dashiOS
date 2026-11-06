@@ -4,7 +4,10 @@
  * shell does, opens the window with the app's id (the Dock and the menu bar
  * name and draw it from that id, src/first-party.ts), follows Dark Mode, and
  * exits the process when the window goes: with `closeCode` when the person
- * closes it, with the code given to `quit` when the app does.
+ * closes it, with the code given to `quit` when the app does. A close from
+ * outside (the close control, ❖W, ❖Q, the Dock's Quit, logging out) is a
+ * request the app answers (close.ts): at once when it has nothing to lose,
+ * else after it asked.
  */
 
 import { existsSync } from "node:fs";
@@ -15,6 +18,7 @@ import { METAL_HOST } from "../../src/apps.ts";
 import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
 import { appNameEnv } from "../../src/metal-host.ts";
 import { followDarkMode } from "./appearance.ts";
+import { closeRequests } from "./close.ts";
 import { serveControl } from "./control.ts";
 import { setProcessName } from "./name.ts";
 
@@ -79,7 +83,7 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   const titleBar: TitleBarStyle = process.env.MIRIN_METAL_TITLEBAR === "standard" ? "standard" : (options.titleBar ?? "unified");
   // The app's name for screen readers, whatever the window is titled later.
   const env = appNameEnv(options.title);
-  const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar, env });
+  const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar, env, askToClose: true });
   const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   const stopControl = serveControl(host, root);
   let open = true;
@@ -93,6 +97,14 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     process.exit(code);
   };
   host.onClose(() => finish(closeCode));
+  // Asked to close from outside: the app's answer (close.ts), else at once.
+  host.onEvent((event) => {
+    if (event.type !== "close-request") return;
+    closeRequests.request(() => {
+      host.close();
+      finish(closeCode);
+    });
+  });
   // Told to stop (kill, logout): the window goes with the process. The Metal
   // host is a process of its own and would otherwise stay on screen.
   for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {

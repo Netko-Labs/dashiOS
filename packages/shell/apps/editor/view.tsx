@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
 import { lineOf } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
@@ -96,6 +96,8 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     if (dirty) setSheet({ kind: "unsaved", name });
     else quit(false);
   };
+  // The close control, ❖Q, the Dock's Quit, logging out: as File › Close.
+  useCloseRequest(requestClose);
 
   const submitOpen = (input: string): string | null => {
     const path = resolveInput(input, base);
@@ -132,6 +134,8 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     canUndo: state.canUndo,
     canRedo: state.canRedo,
     hasSelection: selected.session === state.session && selected.any,
+    undoName: state.undoName,
+    redoName: state.redoName,
     hasMatches: find.matches.length > 0,
     monospace: state.prefs.monospace,
     caseSensitive: find.caseSensitive,

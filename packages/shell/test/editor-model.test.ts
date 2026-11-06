@@ -278,6 +278,25 @@ describe("menus", () => {
     selected.run("copy");
     expect(ran).toEqual(["cut", "copy"]);
   });
+
+  test("Undo and Redo name the step, as every app's Edit menu does", () => {
+    const rows = (change: Partial<MenuContext>) => editorMenus(context(change)).menus.flatMap((menu) => menu.items);
+    const label = (change: Partial<MenuContext>, id: string) => rows(change).find((row) => "id" in row && row.id === id);
+    expect(label({ canUndo: true, undoName: "Replace All" }, "undo")).toMatchObject({ label: "Undo Replace All" });
+    expect(label({ canRedo: true, redoName: "Typing" }, "redo")).toMatchObject({ label: "Redo Typing" });
+    expect(label({ canUndo: false, undoName: "Typing" }, "undo")).toMatchObject({ label: "Undo" });
+  });
+
+  test("the document's steps are named: typing joins, Replace All is its own", () => {
+    const doc = model();
+    doc.edit("hello");
+    expect(doc.getSnapshot().undoName).toBe("Typing");
+    doc.setQuery("hello");
+    doc.replaceAll("bye");
+    expect(doc.getSnapshot().undoName).toBe("Replace All");
+    doc.undo();
+    expect(doc.getSnapshot()).toMatchObject({ text: "hello", undoName: "Typing", redoName: "Replace All" });
+  });
 });
 
 describe("registration", () => {

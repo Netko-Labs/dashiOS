@@ -5,7 +5,9 @@
  * out, so a keystroke in a large file costs a few bytes). Typing that carries
  * on where the last change ended, or Backspace after Backspace, joins that
  * change while it comes within `JOIN_MS`, so Undo takes back a run of typing
- * rather than one character.
+ * rather than one character. Each step has a name for Edit's rows, as every
+ * app's Undo has (@dashi/ui's `undoLabel`): "Typing", or what made it
+ * ("Replace All", "Revert").
  */
 
 export interface Change {
@@ -18,6 +20,11 @@ export interface Change {
 export const JOIN_MS = 1500;
 /** How many changes Undo can take back. */
 export const HISTORY_LIMIT = 500;
+/** What a step of typing (or deleting) is called. */
+export const TYPING = "Typing";
+
+/** A change kept for Undo, with what Edit calls it. */
+type Step = Change & { name: string };
 
 /** The span that turns `before` into `after`; null when they are the same. */
 export function diff(before: string, after: string): Change | null {
@@ -48,8 +55,8 @@ export function join(last: Change, next: Change): Change | null {
 }
 
 export class History {
-  private past: Change[] = [];
-  private future: Change[] = [];
+  private past: Step[] = [];
+  private future: Step[] = [];
   private lastTime = Number.NEGATIVE_INFINITY;
 
   constructor(private readonly limit: number = HISTORY_LIMIT) {}
@@ -62,15 +69,24 @@ export class History {
     return this.future.length > 0;
   }
 
-  /** The text went from `before` to `after`; `joinable` false keeps it its own step (a paste, a Replace All). */
-  record(before: string, after: string, now: number, joinable = true): void {
+  /** What Undo would take back ("Typing", "Replace All"), null when nothing. */
+  get undoName(): string | null {
+    return this.past.at(-1)?.name ?? null;
+  }
+
+  get redoName(): string | null {
+    return this.future.at(-1)?.name ?? null;
+  }
+
+  /** The text went from `before` to `after`; `joinable` false keeps it its own step (a paste, a Replace All), named `name`. */
+  record(before: string, after: string, now: number, joinable = true, name: string = TYPING): void {
     const change = diff(before, after);
     if (!change) return;
     this.future = [];
     const last = this.past.at(-1);
-    const joined = joinable && last && now - this.lastTime <= JOIN_MS ? join(last, change) : null;
-    if (joined) this.past[this.past.length - 1] = joined;
-    else this.past.push(change);
+    const joined = joinable && last && last.name === TYPING && now - this.lastTime <= JOIN_MS ? join(last, change) : null;
+    if (joined) this.past[this.past.length - 1] = { ...joined, name: TYPING };
+    else this.past.push({ ...change, name: joinable ? TYPING : name });
     if (this.past.length > this.limit) this.past.shift();
     this.lastTime = joinable ? now : Number.NEGATIVE_INFINITY;
   }

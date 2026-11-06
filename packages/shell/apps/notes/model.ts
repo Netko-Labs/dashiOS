@@ -12,7 +12,12 @@
  * version stays the note and the typing is kept beside it as "Title
  * (conflict)", which the editor goes on with, and a line in the window says
  * so. A change on disk is never written over without a word.
+ *
+ * Deleting a note can be taken back: Edit › Undo Delete Note puts it back
+ * from Recently Deleted and opens it (`undo`, @dashi/ui's stack).
  */
+
+import { UndoStack } from "@dashi/ui";
 
 import { continueList, toggleCheck } from "./checklist.ts";
 import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
@@ -66,6 +71,8 @@ export class NotesModel {
     notice: null,
   };
   private readonly listeners = new Set<() => void>();
+  /** Edit › Undo and Redo: deleted notes. */
+  readonly undo = new UndoStack();
   private timer: ReturnType<typeof setTimeout> | null = null;
   /** What the open note holds on disk as far as we know: the editor is clean when its draft matches. */
   private onDisk = "";
@@ -210,7 +217,47 @@ export class NotesModel {
     this.flush();
     const { selected } = this.state;
     if (!selected || this.isDeleted()) return;
-    this.drop(selected, () => this.store.trash(selected));
+    let trashed: string | null = null;
+    this.drop(selected, () => {
+      trashed = this.store.trash(selected);
+    });
+    if (trashed !== null) this.pushDelete(trashed);
+  }
+
+  /** Edit › Undo or Redo; a step that fails says why in the window. */
+  async undoStep(way: "undo" | "redo"): Promise<void> {
+    try {
+      await (way === "undo" ? this.undo.undo() : this.undo.redo());
+    } catch (error) {
+      this.set({ error: (error as Error).message });
+    }
+  }
+
+  /** A note went to Recently Deleted as `name`: Undo restores and opens it, Redo deletes it again. */
+  private pushDelete(name: string): void {
+    let trashed = name;
+    let id: string | null = null;
+    this.undo.push({
+      name: "Delete Note",
+      undo: () => {
+        id = this.store.restore(trashed);
+        this.leave();
+        // Shown where it is: in All Notes when Recently Deleted was open.
+        if (this.state.source.kind === "trash") this.set({ source: { kind: "all" }, query: "" });
+        this.refresh();
+        this.select(id);
+      },
+      do: () => {
+        const live = id;
+        if (live === null) return;
+        this.flush();
+        const after = neighbor(this.rows(), live);
+        trashed = this.store.trash(live);
+        this.refresh();
+        this.set({ selected: null, draft: null });
+        this.select(after === live ? null : after);
+      },
+    });
   }
 
   restoreSelected(): void {

@@ -4,15 +4,19 @@
  * `CalendarStore`. Every change goes to the files at once (there is no draft:
  * an event is saved when the sheet's Save is pressed), and a change made
  * elsewhere (`reload`, from the folder watcher) simply replaces what is held.
+ * A change to an event can be taken back with Edit › Undo (history.ts).
  */
+
+import { UndoStack } from "@dashi/ui";
 
 import { type Day, dayOf } from "./dates.ts";
 import type { EventInput } from "./event.ts";
+import { type EventChange, eventStep } from "./history.ts";
 import { step, type View, viewRange } from "./layout.ts";
 import { busyDays, occurrencesIn } from "./recurrence.ts";
 import { readSidecar, writeSidecar } from "./sidecar.ts";
 import type { CalendarStore } from "./store.ts";
-import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
+import { type CalEvent, type Calendar, CalendarError, type Occurrence } from "./types.ts";
 
 export interface CalendarState {
   calendars: Calendar[];
@@ -34,6 +38,8 @@ export class CalendarModel {
   private state: CalendarState;
   private readonly listeners = new Set<() => void>();
   private cache: { key: string; occurrences: Occurrence[] } | null = null;
+  /** Edit › Undo and Redo: changes to events. */
+  readonly undo = new UndoStack();
 
   constructor(
     readonly store: CalendarStore,
@@ -164,19 +170,56 @@ export class CalendarModel {
 
   /** Adds an event to `calendarId`, or edits `uid` there (moving it to `moveTo` when that differs). True when it was saved. */
   saveEvent(calendarId: string, uid: string | null, input: EventInput, moveTo?: string): boolean {
-    return (
-      this.attempt("Saving the event", () => (uid === null ? this.store.add(calendarId, input) : this.store.update(calendarId, uid, input, moveTo))) !==
-      undefined
+    const before = uid === null ? null : this.held(calendarId, uid);
+    const saved = this.attempt("Saving the event", () =>
+      uid === null ? this.store.add(calendarId, input) : this.store.update(calendarId, uid, input, moveTo),
     );
+    if (saved === undefined) return false;
+    this.remember({ before, after: { calendarId: moveTo ?? calendarId, event: saved } });
+    return true;
   }
 
   deleteEvent(calendarId: string, uid: string): boolean {
-    return this.attempt("Deleting the event", () => this.store.delete(calendarId, uid)) !== undefined || this.state.error === null;
+    const before = this.held(calendarId, uid);
+    const deleted = this.attempt("Deleting the event", () => {
+      this.store.delete(calendarId, uid);
+      return true;
+    });
+    if (deleted) this.remember({ before, after: null });
+    return deleted === true;
   }
 
   /** Deletes one occurrence of a repeating event. */
   skipOccurrence(calendarId: string, uid: string, start: string): void {
-    this.attempt("Deleting the event", () => this.store.skip(calendarId, uid, start));
+    const before = this.held(calendarId, uid);
+    const skipped = this.attempt("Deleting the event", () => {
+      this.store.skip(calendarId, uid, start);
+      return true;
+    });
+    if (!skipped) return;
+    const after = this.held(calendarId, uid);
+    if (before && after) this.remember({ before, after }, "Delete Event");
+  }
+
+  /** Edit › Undo or Redo; a step that fails says why in the window. */
+  async undoStep(way: "undo" | "redo"): Promise<void> {
+    try {
+      await (way === "undo" ? this.undo.undo() : this.undo.redo());
+    } catch (error) {
+      this.set({ error: this.message(error, "That can't be undone: the calendars folder could not be written.") });
+      this.reload();
+    }
+  }
+
+  /** The event as it is on disk now, for its step. */
+  private held(calendarId: string, uid: string): { calendarId: string; event: CalEvent } | null {
+    const event = this.state.calendars.find((calendar) => calendar.id === calendarId)?.events.find((each) => each.uid === uid);
+    return event ? { calendarId, event: structuredClone(event) } : null;
+  }
+
+  private remember(change: EventChange, name?: string): void {
+    if (!change.before && !change.after) return;
+    this.undo.push(eventStep(change, this.store, () => this.reload(), name));
   }
 
   createCalendar(name: string, color?: string): Calendar | undefined {

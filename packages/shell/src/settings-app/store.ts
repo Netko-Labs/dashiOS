@@ -35,7 +35,7 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { isTextSize } from "@dashi/ui";
+import { isTextSize, UndoStack } from "@dashi/ui";
 import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
@@ -60,6 +60,7 @@ import {
   type WallpaperKind,
 } from "../wallpaper/live/choice.ts";
 import { X11_SCALINGS, type X11Scaling } from "../xwayland-scale.ts";
+import { sameValue, settingName } from "./history.ts";
 
 export interface TouchpadSettings {
   tap?: boolean;
@@ -482,6 +483,8 @@ export function writeJsonAtomic(path: string, value: unknown): void {
 export class SettingsStore {
   private snapshot: SettingsSnapshot;
   private readonly listeners = new Set<() => void>();
+  /** Edit › Undo in System Settings: each change that is one value (history.ts). */
+  readonly undo = new UndoStack();
 
   /** `path` is the settings file; tests point it into a temporary directory. */
   constructor(readonly path: string = settingsPath()) {
@@ -512,7 +515,8 @@ export class SettingsStore {
    * Set keys of a section. A key set to `undefined` is removed, which puts
    * that setting back to its default. Throws on a key or value Settings does
    * not know (a bug in the caller); a failure to save is reported through
-   * the snapshot's `error` and the file is left as it was.
+   * the snapshot's `error` and the file is left as it was. A change to one
+   * key that was saved goes on `undo`.
    */
   patch<S extends SectionName>(section: S, change: Change<S>): void {
     const spec = SECTIONS[section];
@@ -523,14 +527,22 @@ export class SettingsStore {
       if (!check) throw new TypeError(`unknown setting ${spec.path.join(".")}.${key}`);
       if (value !== undefined && !check(value)) throw new TypeError(`bad value for ${spec.path.join(".")}.${key}: ${JSON.stringify(value)}`);
     }
+    let before: { key: string; value: unknown } | null = null;
     this.update((root) => {
       const target = ensure(root, spec.path);
+      const [only] = entries;
+      if (entries.length === 1 && only) before = { key: only[0], value: target[only[0]] };
       for (const [key, value] of entries) {
         if (value === undefined) delete target[key];
         else target[key] = value;
       }
       prune(root, spec.path);
     });
+    const was = before as { key: string; value: unknown } | null;
+    const after = entries[0]?.[1];
+    if (!was || this.snapshot.error !== null || sameValue(was.value, after)) return;
+    const put = (value: unknown) => () => this.patch(section, { [was.key]: value } as Change<S>);
+    this.undo.push({ name: settingName(section, was.key), joins: `${section}.${was.key}`, undo: put(was.value), do: put(after) });
   }
 
   /** The variable refresh rate saved for a screen, if the person chose one. */

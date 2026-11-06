@@ -11,6 +11,7 @@
  * which asks before it drops changes; ❖Q stays the shell's.
  */
 
+import { redoLabel, undoLabel } from "@dashi/ui";
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
 
 export interface MenuContext {
@@ -20,6 +21,9 @@ export interface MenuContext {
   canRedo: boolean;
   /** Text is selected in the document: Cut and Copy have something to take. */
   hasSelection: boolean;
+  /** What Undo and Redo would take back ("Typing", "Replace All"): the rows say so, as every app's do. */
+  undoName?: string | null;
+  redoName?: string | null;
   hasMatches: boolean;
   monospace: boolean;
   caseSensitive: boolean;
@@ -63,8 +67,8 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     {
       id: "edit",
       items: [
-        { id: "undo", label: "Undo", shortcut: "❖Z", enabled: context.canUndo },
-        { id: "redo", label: "Redo", shortcut: "⇧❖Z", enabled: context.canRedo },
+        { id: "undo", label: undoLabel(context.canUndo ? context.undoName : null), shortcut: "❖Z", enabled: context.canUndo },
+        { id: "redo", label: redoLabel(context.canRedo ? context.redoName : null), shortcut: "⇧❖Z", enabled: context.canRedo },
         { type: "separator" },
         { id: "cut", label: "Cut", shortcut: "❖X", enabled: context.hasSelection },
         { id: "copy", label: "Copy", shortcut: "❖C", enabled: context.hasSelection },

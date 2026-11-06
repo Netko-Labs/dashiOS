@@ -28,6 +28,8 @@ export interface Notice {
   id: number;
   text: string;
   error: boolean;
+  /** It reports a write Edit › Undo can take back: the notice offers Undo. */
+  undoable?: boolean;
 }
 
 export interface FilesState {
@@ -452,10 +454,10 @@ export class FilesStore {
   // --- Messages ----------------------------------------------------------------------
 
   /** A line in the footer: errors stay until dismissed, other notes fade. */
-  say(text: string, error = false): void {
+  say(text: string, error = false, undoable = false): void {
     if (this.noticeTimer) clearTimeout(this.noticeTimer);
     const id = ++this.noticeId;
-    this.patch({ notice: { id, text, error } });
+    this.patch({ notice: { id, text, error, ...(undoable ? { undoable } : {}) } });
     if (!error) this.noticeTimer = setTimeout(() => this.state.notice?.id === id && this.patch({ notice: null }), 5000);
   }
 

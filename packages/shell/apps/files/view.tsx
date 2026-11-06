@@ -7,7 +7,7 @@
  * Enter opens, Backspace goes back, and typing jumps to a name.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors, useUndo } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -139,8 +139,9 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     [store, ops, refocus],
   );
 
-  // The menu bar's File, Edit, View, and Go are Files' own while it is in front.
-  useAppMenus(menuSpecs(state, store, ops), (id) => chooseMenu(id, store, ops, actions));
+  // The menu bar's File, Edit, View, and Go are Files' own while it is in front; Edit's Undo names the last write.
+  const undo = useUndo(ops.undo);
+  useAppMenus(menuSpecs(state, store, ops, undo), (id) => chooseMenu(id, store, ops, actions));
 
   const items = store.visible();
   // `--info` (the file manager service's ShowItemProperties): Get Info for that item once the folder is listed.

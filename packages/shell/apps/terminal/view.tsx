@@ -9,13 +9,14 @@
  * (libghostty-vt). The wheel scrolls back; dragging selects (two clicks a
  * word, three a line); the menu bar's Edit menu copies and pastes on ❖C/❖V.
  * Closing a tab or the window while a program runs in it asks first
- * (closing.ts).
+ * (closing.ts), however the window is closed: ⇧❖W, the close control, ❖Q,
+ * the Dock's Quit, or logging out (a close request, kit/close.ts).
  */
 
 import { AppWindow, ConfirmSheet, useColors, useDark } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type Clipboard, useAppMenus } from "../kit/index.ts";
+import { type Clipboard, useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
 import { type Engine, startEngine } from "./engine.ts";
 import { FONT_SIZE, LINE_HEIGHT, Line, lookFor } from "./line.tsx";
@@ -93,6 +94,9 @@ export function TerminalWindow({ binary, onExit, newWindow, setTitle: setWindowT
       else setAsking({ kind: "window", programs });
     });
   };
+
+  // The close control, ❖Q, the Dock's Quit, logging out: as Close Window.
+  useCloseRequest(requestCloseWindow);
 
   const dismiss = (): void => {
     setAsking(null);

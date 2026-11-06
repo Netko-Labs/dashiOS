@@ -1,12 +1,13 @@
 /**
  * Calendar's menus in the menu bar (the kit's `useAppMenus`): File (new event,
- * new calendar, import) and View (Day, Week, Month, Today, previous and next).
+ * new calendar, import), Edit (Undo and Redo of a change to an event), and View (Day, Week, Month, Today, previous and next).
  * The shortcuts are real: Metal reports no ❖ chords to the app, but the shell
  * matches one against the focused app's enabled rows and chooses the item
  * (app-menus/shortcut.ts). While a sheet is open the rows are disabled, so a
  * chord does nothing behind it.
  */
 
+import { type UndoState, undoMenuItems } from "@dashi/ui";
 import type { MenuSpec } from "../kit/index.ts";
 import type { View } from "./layout.ts";
 
@@ -14,6 +15,8 @@ export interface MenuContext {
   view: View;
   /** A sheet is open. */
   modal: boolean;
+  /** What Edit › Undo and Redo would take back. */
+  undo: UndoState;
   actions: {
     newEvent(): void;
     newCalendar(): void;
@@ -21,6 +24,8 @@ export interface MenuContext {
     setView(view: View): void;
     today(): void;
     step(direction: -1 | 1): void;
+    undo(): void;
+    redo(): void;
   };
 }
 
@@ -36,6 +41,16 @@ export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (
       { id: "calendar:new", label: "New Calendar…", shortcut: "⇧❖N", enabled: free },
       { type: "separator" },
       { id: "import", label: "Import…", enabled: free },
+    ],
+  };
+  const [undoRow, redoRow] = undoMenuItems(context.undo);
+  const canUndo = undoRow.enabled && free;
+  const canRedo = redoRow.enabled && free;
+  const edit: MenuSpec = {
+    id: "edit",
+    items: [
+      { ...undoRow, enabled: canUndo },
+      { ...redoRow, enabled: canRedo },
     ],
   };
   const views: MenuSpec = {
@@ -74,7 +89,11 @@ export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (
         return actions.step(-1);
       case "next":
         return actions.step(1);
+      case "undo":
+        return canUndo ? actions.undo() : undefined;
+      case "redo":
+        return canRedo ? actions.redo() : undefined;
     }
   };
-  return { menus: [file, views], run };
+  return { menus: [file, edit, views], run };
 }

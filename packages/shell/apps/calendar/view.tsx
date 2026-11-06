@@ -8,7 +8,7 @@
  * menu bar's ❖ shortcuts come through useAppMenus).
  */
 
-import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -198,9 +198,11 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     }
   };
 
+  const undo = useUndo(model.undo);
   const { menus, run } = calendarMenus({
     view,
     modal,
+    undo,
     actions: {
       newEvent: () => newEvent(),
       newCalendar: () => setSheet({ kind: "new-calendar" }),
@@ -208,6 +210,8 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       setView: (next) => model.setView(next),
       today: () => model.goToday(),
       step: (direction) => model.step(direction),
+      undo: () => void model.undoStep("undo"),
+      redo: () => void model.undoStep("redo"),
     },
   });
   useAppMenus(menus, run);

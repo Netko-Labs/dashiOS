@@ -5,6 +5,7 @@
  * (app-menus/shortcut.ts). Enclosing Folder (❖↑) has none: the keymap keeps it.
  */
 
+import { type UndoState, undoMenuItems } from "@dashi/ui";
 import type { MenuSpec } from "../kit/index.ts";
 import type { WindowActions } from "./context.ts";
 import { favorites } from "./location.ts";
@@ -20,7 +21,7 @@ const SORTS = [
   ["kind", "Kind"],
 ] as const;
 
-export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations): MenuSpec[] {
+export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations, undo: UndoState = ops.undo.state): MenuSpec[] {
   const selected = store.selectedItems();
   const one = selected.length === 1;
   const any = selected.length > 0;
@@ -54,6 +55,8 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations)
     {
       id: "edit",
       items: [
+        ...undoMenuItems(undo),
+        SEPARATOR,
         { id: "cut", shortcut: "❖X", label: "Cut", enabled: any && !trash },
         { id: "copy", shortcut: "❖C", label: "Copy", enabled: any },
         { id: "paste", shortcut: "❖V", label: "Paste", enabled: writable },
@@ -120,6 +123,10 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
       return actions.confirmDelete(selected.map((item) => item.path));
     case "empty-trash":
       return actions.confirmEmptyTrash();
+    case "undo":
+      return void ops.undoStep("undo");
+    case "redo":
+      return void ops.undoStep("redo");
     case "cut":
       return ops.cut();
     case "copy":

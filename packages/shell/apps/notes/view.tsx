@@ -7,7 +7,7 @@
  * and down arrows move through the list (Metal reports no Ctrl shortcuts).
  */
 
-import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, Segmented, ToolbarButton } from "@dashi/ui";
+import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, Segmented, ToolbarButton, useUndo } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -113,6 +113,7 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
   };
 
   const openNote = state.notes.find((each) => each.id === row?.id);
+  const undo = useUndo(model.undo);
   const { menus, run } = notesMenus({
     folders: state.folders,
     source: state.source,
@@ -122,6 +123,7 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     pinned: openNote?.pinned ?? false,
     noteFolder: openNote?.folder ?? "",
     anyDeleted: state.deleted.length > 0,
+    undo,
     actions: {
       newNote: () => model.newNote(),
       newFolder: () => setSheet({ kind: "new-folder" }),
@@ -137,6 +139,8 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
       setMode: (mode) => model.setMode(mode),
       show: (source) => model.setSource(source),
       focusSearch: () => setSearching((n) => n + 1),
+      undo: () => void model.undoStep("undo"),
+      redo: () => void model.undoStep("redo"),
     },
   });
   // The menu bar (src/app-menus/): the Ctrl-free way to every action.

@@ -1,6 +1,6 @@
 /**
  * Notes' menus in the menu bar (the kit's `useAppMenus`): File (new note,
- * new folder, delete), Note (pin, move, checklist item), and View (edit or
+ * new folder, delete), Edit (Undo and Redo of a deleted note), Note (pin, move, checklist item), and View (edit or
  * preview, and which folder shows). The shortcuts shown are real: Metal
  * reports no Ctrl combinations to the app, but the shell matches a ❖ chord
  * against the menus and chooses the item (app-menus/shortcut.ts). Item ids are
@@ -8,6 +8,7 @@
  * that, so folders are named by their place in the list.
  */
 
+import { type UndoState, undoMenuItems } from "@dashi/ui";
 import type { MenuSpec } from "../kit/index.ts";
 import type { Source } from "./list.ts";
 import { DEFAULT_FOLDER_NAME } from "./names.ts";
@@ -25,6 +26,8 @@ export interface MenuContext {
   noteFolder: string;
   /** Any deleted notes at all. */
   anyDeleted: boolean;
+  /** What Edit › Undo and Redo would take back (deleted notes). */
+  undo: UndoState;
   actions: {
     newNote(): void;
     newFolder(): void;
@@ -40,6 +43,8 @@ export interface MenuContext {
     setMode(mode: "edit" | "preview"): void;
     show(source: Source): void;
     focusSearch(): void;
+    undo(): void;
+    redo(): void;
   };
 }
 
@@ -65,6 +70,7 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       { id: "folder:delete", label: "Delete Folder…", enabled: openFolder !== null },
     ],
   };
+  const edit: MenuSpec = { id: "edit", items: undoMenuItems(context.undo) };
   const note: MenuSpec = {
     id: "note",
     title: "Note",
@@ -134,7 +140,11 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
         return actions.show({ kind: "trash" });
       case "search":
         return actions.focusSearch();
+      case "undo":
+        return context.undo.canUndo ? actions.undo() : undefined;
+      case "redo":
+        return context.undo.canRedo ? actions.redo() : undefined;
     }
   };
-  return { menus: [file, note, view], run };
+  return { menus: [file, edit, note, view], run };
 }
