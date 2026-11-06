@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashi 0.5.0 plan · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    /* A wave: why it comes where it does, its items, then how it is checked. */
+    .ms { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; padding: 4px 22px 14px; margin: 16px 0 10px; box-shadow: var(--shadow-sm); }
+    .ms h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-muted); margin: 16px 0 4px; font-weight: 650; }
+    .ms .goal { margin: 12px 0 2px; }
+    .ms table { font-size: 13.5px; }
+    .done-when { border-left: 3px solid var(--kombu); padding: 3px 0 3px 14px; margin: 12px 0 4px; }
+    .done-when b { color: var(--accent); }
+    .deps { font-size: 13px; color: var(--ink-muted); margin: 2px 0 0; }
+    .flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; font-size: 13px; }
+    .flow div { border: 1px solid var(--line-strong); border-radius: 10px; padding: 8px 11px; background: var(--bg-raised); }
+    .flow div b { display: block; font-size: 13.5px; }
+    .flow div small { color: var(--ink-muted); }
+    .flow .lane { grid-column: 1 / -1; border: 0; background: none; padding: 6px 0 0; font-size: 12px; font-weight: 650; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .sz { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; background: var(--wash); border: 1px solid var(--line); color: var(--ink-muted); white-space: nowrap; }
+    .where { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; white-space: nowrap; margin: 1px 0; }
+    .where.shell { background: var(--accent-wash); color: var(--accent); }
+    .where.mirin { background: var(--wash); border: 1px solid var(--line); color: var(--ink-muted); }
+    .where.comp { background: #d0596f1f; color: var(--ume); }
+    .where.apps { background: #e5b13f26; color: #8a6510; }
+    .where.agents { background: #6e56cf1f; color: var(--shiso); }
+    :root[data-theme="dark"] .where.apps { color: var(--broth); }
+    .src { font-size: 12px; color: var(--ink-faint); }
+    .verdict { border-left: 3px solid var(--kombu); padding: 4px 0 4px 16px; margin: 14px 0 8px; }
+    .verdict b { color: var(--accent); }
+    @media (max-width: 760px) { .flow { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Release plan · build order</div>
+    <h1>Dashi 0.5.0 plan</h1>
+    <p class="lede">Everything 0.4.0 left undone, in four waves: the platform pieces first, then the apps' big ideas built on them, then the launcher's and agents' leftovers, then the design rules the code doesn't follow yet. Real hardware and live services are checked alongside.</p>
+
+    <div class="callout open"><div>◆</div><p>Nothing here is <span class="pill done">picked</span> yet. Each item has a one-line why, where it lands, a size (S a day or less, M a few days, L a week or more) and where it came from: a roast report (<a href="roast/files.md"><code>docs/roast/</code></a>), a <a href="betterments.html">Launcher</a> row, a <a href="proposals.html">Proposals</a> card, a <a href="design.html">design rule</a>, or <a href="0.4.0.html#known-issues">0.4.0's known issues</a>. The picks to make are at <a href="#picks-to-make">the end</a>.</p></div>
+
+    <h2>How the release is run</h2>
+    <ul>
+      <li><b>The owner picks first.</b> No wave starts until its picks below are made.</li>
+      <li><b>One area at a time.</b> As in 0.4.0, each area is built on its own branch off <code>release/0.5.0</code>, reviewed in the VM on video (chapters and stills beside it), and merged only once the owner has seen it.</li>
+      <li><b>The VM first.</b> Compositor and shell changes run in the VM, never in the laptop's own session. The laptop gets them as packages.</li>
+      <li><b>Docs in the same commit.</b> A rule that becomes true drops its "Not yet in code" tag in <code>design.html</code>, citing the file.</li>
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>At a glance</h2>
+    <div class="flow">
+      <div class="lane">Wave 1 · platform foundations</div>
+      <div><b>Text and focus</b><small>mirin's caret and selection, a focus model, onPress modifiers</small></div>
+      <div><b>Never lose work</b><small>closing asks, ❖Q on a busy Terminal; an undo stack</small></div>
+      <div><b>Kit and Settings</b><small>a visibility signal, a settings registry, Privacy &amp; Security, the gallery</small></div>
+      <div class="lane">Wave 2 · the apps' big ideas</div>
+      <div><b>Files everywhere</b><small>one file browser; Software as a trust card</small></div>
+      <div><b>Documents</b><small>Editor's surface, Notes as a live page, Preview's strip</small></div>
+      <div><b>Tools</b><small>Settings with Undo, Activity Monitor, Calendar, Terminal, Calculator</small></div>
+      <div class="lane">Wave 3 · launcher and agents · Wave 4 · design rules</div>
+      <div><b>Launcher</b><small>tools with arguments, context chips, the close fade, KDE runners, IME keys</small></div>
+      <div><b>Access and speed</b><small>Orca's first word, an applet view's first draw</small></div>
+      <div><b>Rules</b><small>CO-6, UI-6, PA-12, CP-7, text size everywhere</small></div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Wave 1 · Platform foundations</h2>
+    <div class="ms">
+      <p class="goal"><b>Why first:</b> every big idea in Wave 2 stands on these. Editor's document surface and Notes' live page need a caret and a selection; Files needs ⇧-click and ❖-click; every app needs Undo, a focus model and a close that asks. Built once in mirin and <code>@dashi/ui</code>, they land in every app at once; built per app, they'd be built ten times.</p>
+      <table>
+        <tr><th>Item</th><th>Why</th><th>Where</th><th>Size</th><th>Source</th></tr>
+        <tr><td>Text model: caret, selection, Cut and Copy</td><td>Fields know only Select All; you can't click into text or ⇧-select it.</td><td><span class="where mirin">mirin</span></td><td><span class="sz">L</span></td><td class="src">Proposals: text you can't click into · Editor, Notes roasts</td></tr>
+        <tr><td>Focus model: Tab, arrows in groups, a focus ring</td><td><code>KeySink</code> reports only text, Enter, Esc, Up and Down; no button takes focus.</td><td><span class="where mirin">mirin</span> <span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Proposals: the keyboard stops at Up and Down · KB-1, KB-2</td></tr>
+        <tr><td>Modifiers on <code>onPress</code></td><td>Without them there's no ⇧-click or ❖-click, so Files has a Select toggle.</td><td><span class="where mirin">mirin</span></td><td><span class="sz">S</span></td><td class="src">PA-10 · Proposals: pointer features</td></tr>
+        <tr><td>A close that asks: ❖Q and the close control</td><td>❖W asks, but ❖Q or the close control on a busy Terminal ends the job without a word.</td><td><span class="where mirin">mirin</span> <span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">PA-4 · Terminal, Editor roasts</td></tr>
+        <tr><td>An undo stack in <code>@dashi/ui</code></td><td>Editor has its own history; Files, Notes, Calendar and Settings have none.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">Proposals: no Undo · PA-2</td></tr>
+        <tr><td>A visibility signal</td><td>Activity Monitor samples every 2 s while hidden.</td><td><span class="where mirin">mirin</span> <span class="where apps">apps</span></td><td><span class="sz">S</span></td><td class="src">PA-15 · Activity Monitor roast</td></tr>
+        <tr><td>A settings registry</td><td>Only 13 rows are addressable today (<code>SPOT_ROWS</code>); search, links and agents need every row.</td><td><span class="where shell">shell</span></td><td><span class="sz">M</span></td><td class="src">Proposals: Settings card · Settings roast</td></tr>
+        <tr><td>Privacy &amp; Security pane</td><td>Consent can't be reviewed or revoked one at a time, and the Access dialog points at a pane that doesn't exist.</td><td><span class="where shell">shell</span></td><td><span class="sz">M</span></td><td class="src">Proposals: consent you can't see · portal roast</td></tr>
+        <tr><td>Components as the <code>@dashi/ui</code> gallery</td><td>It still shows metal-ui, which no Dashi app uses.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">UI-7 · @dashi/ui roast</td></tr>
+        <tr><td>The missing controls</td><td>Slider is drawn twice, and there's no pop-up button, progress control, one alert frame, or menu separators; Wave 2 needs them.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">UI-1, UI-2, UI-4, UI-5, PA-5, PA-9 · found in the audit</td></tr>
+      </table>
+      <p class="done-when"><b>Done when</b> Text Editor and a Settings field take a click, a drag and ⇧-arrows; Tab walks a sheet; ❖Q on a busy Terminal asks; Files' rename undoes with ❖Z; and Components shows every control in both modes. Each area gets its own VM video.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Wave 2 · The apps' big ideas</h2>
+    <div class="ms">
+      <p class="goal"><b>Why second:</b> each idea is the app's roast answered whole, and each needs Wave 1. One file browser needs selection and Undo; Settings entries need the registry; Notes and Editor need the text model. The smaller fixes left in each roast ride with their app's idea.</p>
+      <table>
+        <tr><th>Item</th><th>Why</th><th>Where</th><th>Size</th><th>Source</th></tr>
+        <tr><td>One file browser everywhere</td><td>Five ways to pick a file. With it: two-way arrows, real selection, Replace / Keep Both / Skip, New Folder's free name, one icon family.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Files, portal roasts · PA-3, IC-2</td></tr>
+        <tr><td>Settings entries with Undo</td><td>A "Recently changed" list that names who changed what, agents in shiso, each with Undo. With it: search in the header strip, Agents as a consent dashboard.</td><td><span class="where shell">shell</span></td><td><span class="sz">M</span></td><td class="src">Settings roast · Proposals: Settings card</td></tr>
+        <tr><td>Software as a trust card, applets folded in</td><td>Who made it, what it reaches, what changed. With it: a permissions block, a daily update check, one queue, the state chip, the store's consent sheet on <code>Sheet</code>.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Software, Applet Store roasts · VS-5</td></tr>
+        <tr><td>Activity Monitor app-first</td><td>Rows say <code>mirin-metal-host</code> and <code>bun</code>. With it: rows by app with icons, an Energy tab the battery menu points to.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">Activity Monitor roast · CP-6</td></tr>
+        <tr><td>Calendar's grid as the editor</td><td>Nothing drags. With it: drag to create and move, the occurrence that was clicked, time zones kept.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Calendar roast · PA-11</td></tr>
+        <tr><td>Notes as a live page</td><td>Markdown formatted as you type, the file still plain. With it: an Edit menu, ❖B and ❖I.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Notes roast · PA-8</td></tr>
+        <tr><td>Editor's document surface</td><td>Continuous versioned autosave, find highlights, a gutter.</td><td><span class="where mirin">mirin</span> <span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Editor roast</td></tr>
+        <tr><td>Terminal shell integration</td><td>Tabs named by folder, ❖↑ ❖↓ between prompts, failed commands marked. With it: tabs in the title bar, a fixed cell grid for emoji and CJK.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">Terminal roast · VS-1, VS-4</td></tr>
+        <tr><td>Preview's page strip</td><td>PDFs as one scrolling surface. With it: progress, rotation that sticks, Copy, Export, Print, recent files.</td><td><span class="where apps">apps</span></td><td><span class="sz">L</span></td><td class="src">Preview roast · PA-6</td></tr>
+        <tr><td>Calculator's expression line</td><td>An editable line with a live result and a tape. With it: a window size that behaves.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src">Calculator roast · LA-3</td></tr>
+      </table>
+      <p class="done-when"><b>Done when</b> each app's video shows its idea working in both modes, and the roast's remaining items for that app are ticked or moved on.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Wave 3 · Launcher and agents</h2>
+    <div class="ms">
+      <p class="goal"><b>Why third:</b> the launcher is done and in daily use; these are its edges. Context chips and tool rows want Wave 1's focus model and the settings registry. None of them blocks an app.</p>
+      <table>
+        <tr><th>Item</th><th>Why</th><th>Where</th><th>Size</th><th>Source</th></tr>
+        <tr><td>Agent tools that take arguments, as rows</td><td>Today such a tool is no row at all (<code>f135796</code>); it needs a chip that asks for its arguments.</td><td><span class="where shell">shell</span> <span class="where agents">agents</span></td><td><span class="sz">M</span></td><td class="src">Launcher: one registry</td></tr>
+        <tr><td>Context chips</td><td>Only the typed request is sent; "+ this window" and "+ selection" with ⇥ make Ask useful on what's on screen.</td><td><span class="where shell">shell</span> <span class="where agents">agents</span></td><td><span class="sz">M</span></td><td class="src">Launcher: agents</td></tr>
+        <tr><td>The close fade</td><td>The launcher fades in over 160 ms and vanishes on close; 120 ms out.</td><td><span class="where comp">compositor</span> <span class="where shell">shell</span></td><td><span class="sz">S</span></td><td class="src">Launcher: the look</td></tr>
+        <tr><td>The flight to the Dock</td><td>A result that opens should show where it went, as minimize does.</td><td><span class="where comp">compositor</span></td><td><span class="sz">M</span></td><td class="src">Launcher: the look</td></tr>
+        <tr><td>KDE runners</td><td>GNOME's search providers answer; KDE's runners (<code>org.kde.krunner1</code>) don't.</td><td><span class="where shell">shell</span></td><td><span class="sz">S</span></td><td class="src">Launcher: one registry, D · platform roast</td></tr>
+        <tr><td>Tab, Home and End mid-composition</td><td>The keymap takes them even while an input method composes.</td><td><span class="where comp">compositor</span> <span class="where shell">shell</span></td><td><span class="sz">S</span></td><td class="src">0.4.0 known issues · <code>77ce7bc</code></td></tr>
+        <tr><td>Orca's first announcement</td><td>Opening the launcher, Orca says the selected row, not the field.</td><td><span class="where mirin">mirin</span> <span class="where shell">shell</span></td><td><span class="sz">S</span></td><td class="src">0.4.0 known issues</td></tr>
+        <tr><td>An applet view's first draw</td><td>About 0.7 s in the VM after ↩; the launcher's budget is far less.</td><td><span class="where shell">shell</span> <span class="where mirin">mirin</span></td><td><span class="sz">M</span></td><td class="src">0.4.0 known issues</td></tr>
+      </table>
+      <h4>Also left from 0.4.0</h4>
+      <table>
+        <tr><th>Item</th><th>Why</th><th>Where</th><th>Size</th><th>Source</th></tr>
+        <tr><td>The green control's press-and-hold menu</td><td>Fill, full screen and the tiles in one place, keys shown.</td><td><span class="where shell">shell</span> <span class="where comp">compositor</span></td><td><span class="sz">M</span></td><td class="src">Proposals: the green control, D</td></tr>
+        <tr><td>The bottom edge as a drag zone</td><td>Top and bottom halves have keys but no drag target.</td><td><span class="where comp">compositor</span></td><td><span class="sz">S</span></td><td class="src">Proposals: drag to tile, C</td></tr>
+        <tr><td>A title-bar menu with Move to</td><td>There's no title-bar right-click menu yet.</td><td><span class="where shell">shell</span> <span class="where comp">compositor</span></td><td><span class="sz">M</span></td><td class="src"><code>tasks/todo.md</code> · 0.4.0 milestone 4</td></tr>
+        <tr><td>Dashi's own apps parent their dialogs</td><td>mirin can't export an xdg-foreign handle, so their dialogs are plain windows.</td><td><span class="where mirin">mirin</span></td><td><span class="sz">M</span></td><td class="src"><code>tasks/todo.md</code> · milestone 5</td></tr>
+        <tr><td>Late prompts blanked for agents</td><td>A prompt over ten minutes after a fill, or a secret outside a filled field, isn't blanked.</td><td><span class="where agents">agents</span></td><td><span class="sz">M</span></td><td class="src"><code>tasks/todo.md</code> · milestone 6</td></tr>
+        <tr><td>Errors in people's words</td><td>Preview still names a package to install.</td><td><span class="where apps">apps</span></td><td><span class="sz">S</span></td><td class="src">PA-6 · Proposals: errors</td></tr>
+      </table>
+      <p class="done-when"><b>Done when</b> a video shows a tool with arguments run from its row, Ask with a chip, the close fade, and Orca saying the field first.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Wave 4 · The open design rules</h2>
+    <div class="ms">
+      <p class="goal"><b>Why last:</b> most of these become true by themselves once Waves 1 and 2 land (the chooser's drives come with one file browser, Enter's default with the alert frame). What's left is a sweep, and doing it last means sweeping once.</p>
+      <table>
+        <tr><th>Item</th><th>Why</th><th>Where</th><th>Size</th><th>Source</th></tr>
+        <tr><td>3:1 control edges</td><td>Field edges are 15% ink and an off switch has none.</td><td><span class="where apps">apps</span></td><td><span class="sz">S</span></td><td class="src"><a href="design.html#co-6">CO-6</a></td></tr>
+        <tr><td>Enter on a bare Sheet</td><td>A bare <code>Sheet</code> still sends Enter to <code>onConfirm</code>, whatever the risk.</td><td><span class="where apps">apps</span></td><td><span class="sz">S</span></td><td class="src"><a href="design.html#ui-6">UI-6</a></td></tr>
+        <tr><td>The chooser's drives and real icons</td><td>No drives, no Files icons; Editor asks for a typed path; <code>dashi-dialog --file-selection</code> exits 255.</td><td><span class="where apps">apps</span></td><td><span class="sz">M</span></td><td class="src"><a href="design.html#pa-12">PA-12</a></td></tr>
+        <tr><td>Pane names from the pane list</td><td>"Settings › Passwords" is typed by hand in the agents' copy.</td><td><span class="where shell">shell</span> <span class="where agents">agents</span></td><td><span class="sz">S</span></td><td class="src"><a href="design.html#cp-7">CP-7</a></td></tr>
+        <tr><td>Text size beyond the launcher</td><td>It reaches the launcher and GTK apps, not Dashi's own windows.</td><td><span class="where apps">apps</span> <span class="where shell">shell</span></td><td><span class="sz">M</span></td><td class="src"><a href="design.html#ty-1">TY-1</a> · Launcher: newcomers and access</td></tr>
+        <tr><td>The rest of the tagged rules</td><td>Still not in code: CO-2, CO-5, CO-8, TY-1's sizes, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5.</td><td><span class="where apps">apps</span> <span class="where shell">shell</span></td><td><span class="sz">M</span></td><td class="src"><a href="design.html">design.html</a> tags</td></tr>
+      </table>
+      <p class="done-when"><b>Done when</b> no rule in <code>design.html</code> carries "Not yet in code" unless the owner chose to keep it.</p>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2>Verification</h2>
+    <p>Runs alongside the waves, whenever the thing to check is at hand.</p>
+    <table>
+      <tr><th>Check</th><th>Why</th><th>Where</th><th>Source</th></tr>
+      <tr><td>Real hardware</td><td>0.4.0 ran only in the VM: each power mode, charge limit 80 across a reboot, the Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes.</td><td>the laptop, asked first</td><td class="src">0.4.0 known issues · <code>tasks/todo.md</code> milestones 2, 3, 8</td></tr>
+      <tr><td>Live Claude and GPT APIs</td><td>Both answerers ran only against fakes.</td><td>VM, with the owner's keys as tokens</td><td class="src">0.4.0 known issues</td></tr>
+      <tr><td>Codex and OpenCode for real</td><td>Their command lines are unverified; the video's OpenCode is a stand-in.</td><td>VM</td><td class="src">0.4.0 known issues</td></tr>
+      <tr><td>Claude Code in the VM</td><td>Verified only on the laptop.</td><td>VM, signed in</td><td class="src">0.4.0 known issues</td></tr>
+      <tr><td>Input methods: a click while composing, password fields</td><td>Untested.</td><td>VM, Fcitx 5</td><td class="src">0.4.0 known issues</td></tr>
+      <tr><td>D3cold off for the graphics card</td><td>May stop the card falling off the bus; needs the owner's decision first.</td><td>the laptop</td><td class="src">0.4.0 open questions</td></tr>
+      <tr><td>Packages published</td><td>COPR, a rebuilt image, a fresh install with <code>vm/vm install</code>.</td><td>VM</td><td class="src"><code>tasks/todo.md</code> · Packages</td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="picks-to-make">Picks to make</h2>
+    <p>Before Wave 1 starts. The recommendation is marked.</p>
+    <ol>
+      <li><b>The order of the waves.</b> <span class="pill done">Recommended</span> as written: platform, apps, launcher, rules. Or launcher first, since it's what people touch most; but its leftovers are small, and the apps wait on Wave 1.</li>
+      <li><b>Where the text model lives.</b> <span class="pill done">Recommended</span> in mirin's <code>TextInput</code>, with a document view on top for Editor and Notes. Or a Dashi-only editor component; but every field would miss out.</li>
+      <li><b>How a close asks.</b> <span class="pill done">Recommended</span> a close request mirin hands to the app, which may hold the window open to ask. Or the shell asks for every app with a running child; simpler, but it can't know about unsaved text.</li>
+      <li><b>One file browser.</b> <span class="pill done">Recommended</span> Files' core as a component, embedded by the portal, <code>dashi-dialog</code> and the apps. Or the portal opens Files itself in a sheet; less code, but a second process per dialog.</li>
+      <li><b>The Applet Store.</b> <span class="pill done">Recommended</span> fold it into Software as a section. Or keep two apps with one trust language.</li>
+      <li><b>Text size.</b> <span class="pill done">Recommended</span> every Dashi window follows it, through <code>@dashi/ui</code>'s type scale. Or the launcher and GTK apps only, as now.</li>
+      <li><b>KDE runners.</b> <span class="pill done">Recommended</span> in Wave 3, read-only behind the registry, as search providers are. Or leave them out until someone asks.</li>
+      <li><b>D3cold for the graphics card.</b> The owner's call: try <code>d3cold_allowed=0</code> on the laptop and measure idle power, or leave it on and live with the drops.</li>
+    </ol>
+  </main>
+</div>
+</body>
+</html>
