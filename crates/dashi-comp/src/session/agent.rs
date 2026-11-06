@@ -32,6 +32,23 @@ const BTN_MIDDLE: u32 = 0x112;
 /// The longest text typed in one request.
 const MAX_TEXT: usize = 4096;
 
+/// A wheel notch, in pixels: what libinput's 120 steps scroll (input/mod.rs).
+const WHEEL_NOTCH_PX: f64 = 15.0;
+
+/// An agent's scroll as a mouse wheel's: the pixels and their 120ths of a
+/// notch, on the axes that move. A wheel's frame needs both: GPUI, among
+/// others, reads only the steps of a wheel and drops its bare pixels.
+fn wheel_frame(time: u32, dx: f64, dy: f64) -> AxisFrame {
+    let mut frame = AxisFrame::new(time).source(AxisSource::Wheel);
+    for (axis, amount) in [(Axis::Horizontal, dx), (Axis::Vertical, dy)] {
+        if amount != 0.0 {
+            let steps = (amount * 120.0 / WHEEL_NOTCH_PX).round() as i32;
+            frame = frame.value(axis, amount).v120(axis, steps);
+        }
+    }
+    frame
+}
+
 /// How long the person must have left the desktop alone before an action
 /// borrows their seat, when the shell does not say.
 const BORROW_AFTER_MS: u64 = 3000;
@@ -224,11 +241,7 @@ impl Dashi {
                     .and_then(Value::as_f64)
                     .unwrap_or(0.0)
                     .clamp(-10_000.0, 10_000.0);
-                let frame = AxisFrame::new(time)
-                    .source(AxisSource::Wheel)
-                    .value(Axis::Horizontal, dx)
-                    .value(Axis::Vertical, dy);
-                pointer.axis(self, frame);
+                pointer.axis(self, wheel_frame(time, dx, dy));
                 pointer.frame(self);
             }
             other => return Err(format!("unknown action {other:?}")),
@@ -356,5 +369,18 @@ mod tests {
         assert_eq!(button_code(None), Ok(BTN_LEFT));
         assert_eq!(button_code(Some("right")), Ok(BTN_RIGHT));
         assert!(button_code(Some("thumb")).is_err());
+    }
+
+    #[test]
+    fn a_scroll_is_a_wheels_pixels_and_steps() {
+        let frame = wheel_frame(7, 0.0, 500.0);
+        assert_eq!(frame.source, Some(AxisSource::Wheel));
+        assert_eq!(frame.time, 7);
+        assert_eq!(frame.axis, (0.0, 500.0));
+        // 500 px at 15 a notch: 33⅓ notches.
+        assert_eq!(frame.v120, Some((0, 4000)));
+        let frame = wheel_frame(0, -15.0, 0.0);
+        assert_eq!(frame.axis, (-15.0, 0.0));
+        assert_eq!(frame.v120, Some((-120, 0)));
     }
 }
