@@ -3,8 +3,9 @@
  * it, or don't. Never in a terminal unless Settings allows it, never into
  * a password field, never once the person typed on past the keyword (the
  * compositor refuses to erase it then). The text goes in by pasting: on the
- * clipboard (never kept in the history), the app's paste chord, ← back to
- * {cursor}, and the copy the clipboard had before put back.
+ * clipboard (never kept in the history) first, then the keyword erased, the
+ * app's paste chord, ← back to {cursor}, and the copy the clipboard had
+ * before put back, whether or not the paste went in.
  */
 
 import type { CompositorWindow } from "../compositor.ts";
@@ -62,25 +63,24 @@ export async function expandSnippet(keyword: string, windowId: number, deps: Exp
     ...(deps.locale ? { locale: deps.locale } : {}),
     clipboard: before?.kind === "text" ? (before.text ?? null) : null,
   });
-  try {
-    await deps.request("snippet-erase", { window: window.id, keyword });
-  } catch {
-    // Typed on past it, or another window has the keyboard now: leave it.
-    return false;
-  }
+  // The snippet goes on the clipboard before the keyword is erased: a write that fails leaves the keyword as typed.
   deps.watch.expect("text", filled.text, "skip");
   const there = deps.watch.nextCopy(500);
   if (!(await deps.io.write("text/plain;charset=utf-8", filled.text))) return false;
   await there;
+  // From here every way out puts the copy before back.
+  let pasted = false;
   try {
+    await deps.request("snippet-erase", { window: window.id, keyword });
     await deps.request("send-keys", { window: window.id, chord: pasteChord(window.appId) });
+    pasted = true;
     for (let step = 0; step < Math.min(filled.back, MAX_BACK); step++) await deps.request("send-keys", { window: window.id, chord: "Left" });
   } catch {
-    return false;
+    // Typed on past it, or another window has the keyboard now: leave it.
   }
   if (before) {
-    await Bun.sleep(RESTORE_MS);
+    if (pasted) await Bun.sleep(RESTORE_MS);
     await copyEntry(before, deps);
   }
-  return true;
+  return pasted;
 }

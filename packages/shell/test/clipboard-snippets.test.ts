@@ -97,7 +97,7 @@ function fakeIo(clipboard: Map<string, Uint8Array>, log: string[]): ClipboardIo 
   };
 }
 
-test("a typed keyword is erased, its text pasted, and the copy before it put back", async () => {
+test("a typed keyword's text is copied, the keyword erased, the text pasted, and the copy before it put back", async () => {
   const dir = tempDir();
   const history = new ClipboardHistory({ dir, sync: true });
   history.add({ kind: "text", mime: "text/plain;charset=utf-8", text: "what I copied", app: "Notes" });
@@ -119,9 +119,9 @@ test("a typed keyword is erased, its text pasted, and the copy before it put bac
   };
   expect(await expandSnippet(";hi", 7, deps)).toBe(true);
   expect(log).toEqual([
-    'snippet-erase {"window":7,"keyword":";hi"}',
     "expect skip Hello what I copied.",
     "write text/plain;charset=utf-8 Hello what I copied.",
+    'snippet-erase {"window":7,"keyword":";hi"}',
     'send-keys {"window":7,"chord":"ctrl+v"}',
     'send-keys {"window":7,"chord":"Left"}',
     "expect bump what I copied",
@@ -137,8 +137,32 @@ test("a typed keyword is erased, its text pasted, and the copy before it put bac
       if (method === "snippet-erase") throw new Error("typed on");
     },
   };
+  log.length = 0;
   expect(await expandSnippet(";hi", 7, refusing)).toBe(false);
-  expect(log).toEqual(["snippet-erase"]);
+  // The copy before is put back at once.
+  expect(log).toEqual([
+    "expect skip Hello what I copied.",
+    "write text/plain;charset=utf-8 Hello what I copied.",
+    "snippet-erase",
+    "expect bump what I copied",
+    "write text/plain;charset=utf-8 what I copied",
+  ]);
+  // The paste can't be sent after the erase: the copy before still comes back.
+  log.length = 0;
+  const noPaste = {
+    ...deps,
+    request: async (method: string) => {
+      log.push(method);
+      if (method === "send-keys") throw new Error("no such window");
+    },
+  };
+  expect(await expandSnippet(";hi", 7, noPaste)).toBe(false);
+  expect(log.slice(-2)).toEqual(["expect bump what I copied", "write text/plain;charset=utf-8 what I copied"]);
+  // A clipboard that can't be written: the keyword stays as typed.
+  log.length = 0;
+  const noClipboard = { ...deps, io: { ...deps.io, write: async () => false } };
+  expect(await expandSnippet(";hi", 7, noClipboard)).toBe(false);
+  expect(log).toEqual(["expect skip Hello what I copied."]);
   // The clipboard's copy is only put back when the history has it: one left out since is not.
   history.skipped("secret", null);
   expect(currentCopy(history.getSnapshot())).toBeNull();
