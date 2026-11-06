@@ -369,6 +369,10 @@ never an agent's cgroup; no answer in a minute is a no.
 `pay {window, site, amount, card?}` (`src/agents/secrets/pay.ts`), behind
 a scope of its own, "Pay for you", which "Always Allow" never keeps
 (`NEVER_KEPT` in `consent.ts`; a kept one in `grants.json` is ignored too).
+The clipboard history's scope, "See your clipboard history"
+(`read_clipboard_history`, docs/actions.md "Scopes"), is never kept either,
+and each call asks the person; copies from password fields, password
+managers and the vault were never kept in the history to begin with.
 
 - **Cards** live in the vault (`save-card`: a Luhn-valid number, MM/YY, a 3
   or 4 digit code, "single use" or not; `cards` lists them by their last

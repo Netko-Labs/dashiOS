@@ -3,12 +3,13 @@
  * the same walk the agents' masks use (agents/atspi/). Clipboard history and
  * snippets ask it before keeping a copy or expanding a keyword.
  *
- * Accessibility is not turned on for this: apps publish their trees only
- * while it is on (for a screen reader, or once an agent connected), and
- * turning it on for every session would cost every app. While it is off the
- * answer is "can't tell", and the other rules (the types' hints, the apps
- * left out) still hold; toolkits refuse to copy out of a password field
- * themselves.
+ * Apps publish their trees only while accessibility is on (for a screen
+ * reader, or once an agent connected), and turning it on costs every app.
+ * So the history does not turn it on: while it is off the answer is "can't
+ * tell", and the other rules (the types' hints, the apps left out) still
+ * hold; toolkits refuse to copy out of a password field themselves. Snippets
+ * do (`turnOn`), once a keyword is typed: a keyword inside a password must
+ * stay as typed.
  */
 
 import { Atspi } from "../agents/atspi/client.ts";
@@ -47,13 +48,16 @@ async function accessibilityOn(): Promise<boolean> {
   }
 }
 
-export function atspiFieldCheck(): FieldCheck {
+/** `turnOn`: join the accessibility bus (turning it on) whatever it was; otherwise only when it is on already. */
+export function atspiFieldCheck(options: { turnOn?: boolean } = {}): FieldCheck {
   let on: { value: boolean; at: number } | null = null;
   let atspi: Atspi | null = null;
   return {
     async passwordFocused(pid) {
-      if (!on || Date.now() - on.at > STATUS_MS) on = { value: await accessibilityOn(), at: Date.now() };
-      if (!on.value) return false;
+      if (!options.turnOn && !atspi) {
+        if (!on || Date.now() - on.at > STATUS_MS) on = { value: await accessibilityOn(), at: Date.now() };
+        if (!on.value) return false;
+      }
       atspi ??= await Atspi.connect();
       if (!atspi) return false;
       try {

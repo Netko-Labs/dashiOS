@@ -42,6 +42,8 @@ export interface ClipboardOptions {
   snippets?: SnippetStore;
   io?: ClipboardIo;
   fields?: FieldCheck;
+  /** The snippets' check, which turns accessibility on (fields.ts). */
+  snippetFields?: FieldCheck;
   locale?: string;
 }
 
@@ -82,6 +84,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
   const snippets = options.snippets ?? new SnippetStore();
   const io = options.io ?? wlClipboard();
   const fields = options.fields ?? atspiFieldCheck();
+  const snippetFields = options.snippetFields ?? atspiFieldCheck({ turnOn: true });
   const section = () => settings.getSnapshot().data.clipboard;
   const enabled = () => section().history !== false;
   const leftOut = () => section().leftOut ?? DEFAULT_LEFT_OUT;
@@ -132,7 +135,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     ...pasting,
     snippets,
     windows: () => compositor?.windows() ?? Promise.resolve([]),
-    fields,
+    fields: snippetFields,
     inTerminals: () => section().snippetsInTerminals === true,
     history: () => history.getSnapshot(),
     ...(options.locale ? { locale: options.locale } : {}),

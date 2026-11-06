@@ -93,6 +93,8 @@ export class ClipboardWatch {
   /** The shell is about to copy this: when it comes back, `bump` keeps the entry as it is (on top), `skip` keeps nothing. */
   expect(kind: EntryKind, content: string | Uint8Array, how: "bump" | "skip"): void {
     this.own.set(copyId(kind, content), how);
+    // One that never came back (history off meanwhile) is forgotten after a while.
+    if (this.own.size > 16) this.own.delete(this.own.keys().next().value as string);
   }
 
   /** Resolves true at the next copy (the compositor's `selection`), false after `ms`. */
