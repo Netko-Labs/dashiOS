@@ -70,6 +70,7 @@ import { serveFileManager } from "./file-manager.ts";
 import { FileSearch, iconNamesFor } from "./file-search.ts";
 import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
+import { windowToFront } from "./front-window.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
@@ -1276,7 +1277,7 @@ const actions = startActions({
   activate: async (entry) => {
     const windows = (await compositor?.windows().catch(() => [])) ?? [];
     const own = windows.filter((window) => installedApp(window.appId)?.id === entry.id);
-    const target = own.find((window) => window.focused) ?? own.find((window) => window.state === "normal") ?? own[0];
+    const target = windowToFront(own);
     if (!target || !compositor) return false;
     await compositor.request("focus", { window: target.id });
     return true;

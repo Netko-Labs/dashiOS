@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { kindOf } from "../../apps/preview/kinds.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
+import { windowToFront } from "../front-window.ts";
 import type { Tile } from "../layout.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
@@ -257,6 +258,15 @@ async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
   const entries = loadEntries();
   const entry = entries.find((candidate) => candidate.id.toLowerCase() === query) ?? entries.find((candidate) => candidate.name.toLowerCase() === query);
   if (!entry) return toolError(`No installed app is called “${wanted}”; list_apps shows what is installed.`);
+  // Already open (minimized, say): its window comes forward, as from the Dock, and no second copy starts.
+  const front = windowToFront((await ctx.compositor.windows()).filter((window) => owns(entry, window.appId)));
+  if (front) {
+    ctx.status(`Bringing ${entry.name} forward`);
+    await ctx.compositor.request("focus", { window: front.id });
+    const shown: CompositorWindow = { ...front, focused: true, state: "normal" };
+    const described = ctx.mayName() ? describe(shown, entries, ctx.arrangement(front.id)) : { id: `w${front.id}`, app: entry.name };
+    return text(`${entry.name} was already open; its window is in front: ${JSON.stringify(described)}`, { window: described });
+  }
   return startAndWait(entry, entries, ctx);
 }
 
