@@ -6,7 +6,6 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { EditorModel } from "../apps/editor/model.ts";
 import { DEFAULT_PREFS } from "../apps/editor/prefs.ts";
 import { EditorWindow } from "../apps/editor/view.tsx";
-import type { Clipboard } from "../apps/kit/index.ts";
 
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
 let dir = "";
@@ -40,7 +39,6 @@ function fakeHost() {
 }
 
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
-const noClipboard: Clipboard = { canWrite: false, writeText: async () => false, readText: async () => null };
 
 test("typing marks the document edited; the Save sheet saves it", async () => {
   const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
@@ -49,7 +47,6 @@ test("typing marks the document edited; the Save sheet saves it", async () => {
   const root = render(
     <EditorWindow
       model={model}
-      clipboard={noClipboard}
       quit={(discard) => quits.push(discard)}
       newWindow={() => {}}
       press={() => {}}
@@ -97,16 +94,7 @@ test("Save As asks once before replacing another file", async () => {
   const existing = join(dir, "taken.txt");
   writeFileSync(existing, "keep me");
   const root = render(
-    <EditorWindow
-      model={model}
-      clipboard={noClipboard}
-      quit={() => {}}
-      newWindow={() => {}}
-      press={() => {}}
-      scroll={() => {}}
-      focusText={() => {}}
-      setTitle={() => {}}
-    />,
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => {}} setTitle={() => {}} />,
     host.transport,
   );
   await settle();
@@ -137,7 +125,6 @@ test("Open takes an untouched window's place, and opens another window otherwise
   const root = render(
     <EditorWindow
       model={model}
-      clipboard={noClipboard}
       quit={() => {}}
       newWindow={(files) => opened.push(files)}
       press={() => {}}
@@ -182,7 +169,6 @@ test("the text keeps its input (and its caret) through Save, closing a sheet, an
   const root = render(
     <EditorWindow
       model={model}
-      clipboard={noClipboard}
       quit={() => {}}
       newWindow={() => {}}
       press={() => {}}

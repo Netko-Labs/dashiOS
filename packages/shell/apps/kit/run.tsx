@@ -8,6 +8,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, type TitleBarStyle } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/apps.ts";
@@ -79,7 +80,7 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   // The app's name for screen readers, whatever the window is titled later.
   const env = appNameEnv(options.title);
   const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar, env });
-  const root = render(element, host);
+  const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   const stopControl = serveControl(host, root);
   let open = true;
   const closeCode = options.closeCode ?? 0;
