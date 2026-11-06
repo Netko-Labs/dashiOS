@@ -46,6 +46,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
       <View
         testID={testID}
         occlude
+        // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
+        focusTrap
+        accessibilityRole="dialog"
         style={{
           width,
           marginTop: Math.max(inset.top, 0) + 8,
@@ -98,6 +101,10 @@ export function PopupMenu({
       <View
         occlude
         testID={testID}
+        // Tab moves into the menu, ↑ and ↓ between its items, Return picks one, Esc closes it.
+        focusTrap
+        focusGroup
+        accessibilityRole="menu"
         style={{
           position: "absolute",
           left: x,
@@ -119,6 +126,8 @@ export function PopupMenu({
             <View
               key={item.label}
               testID={`${testID}:${item.label}`}
+              focusable={!item.disabled}
+              accessibilityRole="menuitem"
               onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
               onPress={() => {
                 onClose();

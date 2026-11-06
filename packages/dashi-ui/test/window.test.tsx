@@ -46,14 +46,17 @@ test("a glyph button shows its name after the pointer rests on it, and hides it 
   host.emit(unified);
   await settle();
   const button = root.nodeId("new") as string;
-  expect(host.last()).not.toContain("New note");
+  // The name is the button's accessible name from the start; the tooltip's words come after a rest.
+  const tip = '["New note"]';
+  expect(host.last()).toContain('"label":"New note"');
+  expect(host.last()).not.toContain(tip);
   host.emit({ type: "hover", nodeId: button, hovered: true, bounds: { x: 300, y: 5, width: 32, height: 28 } });
   await settle(TOOLTIP_DELAY_MS / 2);
-  expect(host.last()).not.toContain("New note");
+  expect(host.last()).not.toContain(tip);
   await settle(TOOLTIP_DELAY_MS);
-  expect(host.last()).toContain("New note");
+  expect(host.last()).toContain(tip);
   host.emit({ type: "hover", nodeId: button, hovered: false });
   await settle();
-  expect(host.last()).not.toContain("New note");
+  expect(host.last()).not.toContain(tip);
   root.unmount();
 });

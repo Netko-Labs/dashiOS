@@ -26,13 +26,22 @@ export function Segmented<T extends string | number>({
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View testID={testID} style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}>
+    // One Tab stop, entered at the chosen segment; the arrows move between segments (KB-1).
+    <View
+      testID={testID}
+      focusGroup
+      accessibilityRole="tablist"
+      style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}
+    >
       {options.map((option) => {
         const chosen = option.value === value;
         return (
           <View
             key={String(option.value)}
             testID={`${testID}:${option.value}`}
+            focusable
+            accessibilityRole="tab"
+            accessibilityState={{ selected: chosen }}
             onPress={() => onChange(option.value)}
             style={{
               ...(segmentWidth !== undefined ? { width: segmentWidth } : { paddingHorizontal: 12 }),

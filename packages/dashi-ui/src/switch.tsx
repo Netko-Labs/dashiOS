@@ -12,13 +12,18 @@ export interface SwitchProps {
   testID: string;
   /** Without it the switch only shows its state (a launcher row, where Space flips it). */
   onChange?: (on: boolean) => void;
+  /** Tab reaches a switch that can be flipped (KB-1); `false` leaves it to the pointer. */
+  focusable?: boolean;
 }
 
-export function Switch({ on, testID, onChange }: SwitchProps) {
+export function Switch({ on, testID, onChange, focusable = true }: SwitchProps) {
   const colors = useColors();
   return (
     <View
       testID={testID}
+      focusable={focusable && onChange !== undefined}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on }}
       {...(onChange ? { onPress: () => onChange(!on) } : {})}
       style={{
         width: 38,

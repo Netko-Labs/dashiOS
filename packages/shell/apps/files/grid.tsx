@@ -47,8 +47,8 @@ function Tile({
       testID={`item:${item.path}`}
       dragFiles={{ paths: dragPaths(item.path, selection), icon: picture ?? iconFor(item) }}
       {...drop.props}
-      onPress={() => {
-        store.click(item);
+      onPress={(event) => {
+        store.click(item, event.modifiers);
         actions.refocus();
       }}
       onContextMenu={(point) => {

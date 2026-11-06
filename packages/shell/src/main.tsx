@@ -133,6 +133,7 @@ import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
+import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
@@ -171,6 +172,8 @@ compositor?.onClosed(() => {
   console.error("dashi-shell: dashi-comp went away; the shell ends with it");
   process.exit(1);
 });
+// Windows off screen (minimized, hidden, on a Desktop not shown) are told no one sees them, so they can stop polling (suspend.ts).
+if (compositor) followSuspension(compositor);
 // Idle, the keymap also says what keys do from a ❖ tap on: they type into the launcher (launcher/type-ahead.ts).
 compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 // The launcher fades in from a little smaller (launcher/resident.tsx); with Reduce Motion the compositor skips it.

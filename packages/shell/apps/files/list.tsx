@@ -57,9 +57,9 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
       rowKey={(item) => item.path}
       selected={null}
       selectedKeys={new Set(state.selection)}
-      onSelect={(path) => {
+      onSelect={(path, held) => {
         const item = byPath.get(path);
-        if (item) store.click(item);
+        if (item) store.click(item, held);
         actions.refocus();
       }}
       onContextMenu={(path, point) => {

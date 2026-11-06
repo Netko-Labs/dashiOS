@@ -115,13 +115,17 @@ export function Choices<T extends string | number>({
 }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+    // One Tab stop; the arrows move between the pills, Space or Return picks one (KB-1).
+    <View testID={testID} focusGroup accessibilityRole="group" style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
       {options.map((option) => {
         const chosen = option.value === value;
         return (
           <View
             key={String(option.value)}
             testID={`${testID}:${option.value}`}
+            focusable
+            accessibilityRole="button"
+            accessibilityState={{ selected: chosen }}
             onPress={() => onChange(option.value)}
             style={{
               height: 26,
@@ -155,6 +159,7 @@ export function Button({
   danger,
   disabled,
   isDefault,
+  focusable = true,
 }: {
   label: string;
   onPress: () => void;
@@ -163,6 +168,8 @@ export function Button({
   danger?: boolean;
   disabled?: boolean;
   isDefault?: boolean;
+  /** Tab reaches it (KB-1); `false` leaves it to the pointer. A disabled button never takes the keyboard. */
+  focusable?: boolean;
 }) {
   const colors = useColors();
   const fill = disabled ? colors.button : danger ? colors.umeFill : primary ? colors.selection : colors.button;
@@ -171,6 +178,9 @@ export function Button({
   return (
     <View
       testID={testID}
+      focusable={focusable && !disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled === true }}
       onPress={disabled ? undefined : onPress}
       style={{
         minWidth: 84,

@@ -152,6 +152,28 @@ impl Dashi {
         Ok(())
     }
 
+    /// Tell the app whether anyone can see its window, as the shell says
+    /// (`suspend`): xdg_toplevel's `suspended` state (clients of xdg-shell 6
+    /// and later; smithay leaves it out for older ones), an X11 app's
+    /// `_NET_WM_STATE_HIDDEN`. An app may stop drawing and polling meanwhile.
+    pub(crate) fn suspend_window(&mut self, id: WindowId, on: bool) -> Result<(), String> {
+        let window = self.window_of(id)?;
+        if let Some(toplevel) = window.toplevel() {
+            toplevel.with_pending_state(|state| {
+                if on {
+                    state.states.set(xdg_toplevel::State::Suspended);
+                } else {
+                    state.states.unset(xdg_toplevel::State::Suspended);
+                }
+            });
+            toplevel.send_pending_configure();
+        } else if let Some(x11) = window.x11_surface() {
+            x11.set_suspended(on)
+                .map_err(|error| format!("suspending an X11 window: {error}"))?;
+        }
+        Ok(())
+    }
+
     /// Tell the shell a window was minimized, hidden, or shown again (`window-state`).
     fn emit_window_state(&mut self, id: WindowId) {
         if let Some(entry) = self.windows.get(id).filter(|entry| entry.announced) {

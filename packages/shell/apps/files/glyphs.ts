@@ -19,7 +19,6 @@ export const LIST = svg(`${stroke("M5.6 4h8M5.6 8h8M5.6 12h8")}${dot(2.8, 4, 1)}
 export const FOLDER_PLUS = svg(
   `${stroke("M1.8 5V3.9a1 1 0 0 1 1-1h3l1.4 1.6h5.6a1 1 0 0 1 1 1v6.6a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1z", 1.3)}${stroke("M8 7v3.6M6.2 8.8h3.6", 1.3)}`,
 );
-export const CHECKED = svg(`<circle cx="8" cy="8" r="6" fill="none" stroke="#000" stroke-width="1.4"/>${stroke("M5.2 8.2l2 2 3.6-4", 1.5)}`);
 export const LINK_BADGE = svg(stroke("M4 12L12 4M6.4 4H12v5.6", 1.8));
 export const EJECT = svg(`${stroke("M8 3L13 9H3z", 1.4)}${stroke("M3.4 12.4h9.2", 1.6)}`);
 export const COMPUTER = svg(
