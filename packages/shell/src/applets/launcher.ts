@@ -15,7 +15,7 @@
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { dashiSatisfies, FOLDERS, type Folder, permissionName } from "@dashi/applet";
+import { consentNames, dashiSatisfies, FOLDERS, type Folder } from "@dashi/applet";
 import type { AppletContext } from "./connection.ts";
 import { type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "./installed.ts";
 import { type SandboxPaths, sandboxPlan, unitName } from "./sandbox.ts";
@@ -39,9 +39,30 @@ async function run(argv: readonly string[]): Promise<boolean> {
   }
 }
 
+/**
+ * What an applet's unit may take (docs/applets.md, "The sandbox"): half of
+ * one core, 768 MB with its Metal host, and a lower priority than the
+ * person's apps, so one that runs away while it answers the launcher can't
+ * starve the shell or the compositor.
+ */
+export const UNIT_LIMITS = ["CPUQuota=50%", "MemoryMax=768M", "Nice=10"] as const;
+
 export const systemdUnits: Units = {
   start: (unit, argv) =>
-    run(["systemd-run", "--user", "--quiet", "--collect", `--unit=${unit}`, "-p", "Restart=on-failure", "-p", "RestartSec=3", "--", ...argv]),
+    run([
+      "systemd-run",
+      "--user",
+      "--quiet",
+      "--collect",
+      `--unit=${unit}`,
+      "-p",
+      "Restart=on-failure",
+      "-p",
+      "RestartSec=3",
+      ...UNIT_LIMITS.flatMap((limit) => ["-p", limit]),
+      "--",
+      ...argv,
+    ]),
   stop: async (unit) => {
     await run(["systemctl", "--user", "stop", unit]);
     await run(["systemctl", "--user", "reset-failed", unit]);
@@ -80,6 +101,8 @@ export interface LauncherOptions {
   home?: string;
   /** The consent sheet; resolves with the person's answer. */
   askConsent?(applet: InstalledApplet, update: boolean): Promise<boolean>;
+  /** The applets that run, after each look: their commands are indexed. */
+  onInstalled?(applets: readonly InstalledApplet[]): void;
   units?: Units;
 }
 
@@ -133,7 +156,7 @@ export class AppletLauncher {
         this.asked.add(`${id}@${version}`);
         const yes = (await this.options.askConsent?.(applet, applet.record.consent.length > 0)) ?? false;
         if (yes) {
-          applet.record = { ...applet.record, consent: applet.manifest.permissions.map(permissionName) };
+          applet.record = { ...applet.record, consent: consentNames(applet.manifest) };
           writeRecord(applet.dir, applet.record);
         }
       }
@@ -146,6 +169,8 @@ export class AppletLauncher {
       if (current) await this.halt(id);
       await this.launch(applet);
     }
+    // Their commands are in the launcher from now on, running or not (applets/commands.ts).
+    this.options.onInstalled?.(installed.filter(shouldRun));
   }
 
   private paths(applet: InstalledApplet): SandboxPaths {

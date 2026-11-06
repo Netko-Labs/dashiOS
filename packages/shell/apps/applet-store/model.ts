@@ -5,7 +5,7 @@
  * and an install that adds permissions waits for the consent sheet.
  */
 
-import { type CatalogIndex, fits, type IndexApplet, type InstalledApplet, type Machine, permissionName, widens } from "@dashi/applet";
+import { type CatalogIndex, consentNames, fits, type IndexApplet, type InstalledApplet, type Machine } from "@dashi/applet";
 import { type Catalog, CatalogError } from "../../src/applet-store/catalog.ts";
 import { type AppletInstaller, type AppletStatus, statusOf } from "../../src/applet-store/installer.ts";
 
@@ -81,7 +81,8 @@ export class AppletStore {
   /** Whether installing (or updating to) `entry` needs the consent sheet: it asks for something not yet allowed. */
   needsConsent(entry: IndexApplet): boolean {
     const mine = this.state.installed.find((each) => each.manifest.id === entry.manifest.id);
-    return entry.manifest.permissions.length > 0 && (!mine || widens(mine.record.consent, entry.manifest.permissions));
+    const asks = consentNames(entry.manifest);
+    return asks.length > 0 && (!mine || asks.some((name) => !mine.record.consent.includes(name)));
   }
 
   /** Whether this machine is one `entry` says it is for (unknown until the machine is read). */
@@ -95,7 +96,7 @@ export class AppletStore {
     this.set({ busy: { ...this.state.busy, [id]: "installing" } });
     try {
       // The consent sheet came first (needsConsent); what it listed is what is allowed.
-      await this.installer.install(entry, entry.manifest.permissions.map(permissionName));
+      await this.installer.install(entry, consentNames(entry.manifest));
     } catch (error) {
       this.set({ failure: `${entry.manifest.name} wasn't installed: ${error instanceof Error ? error.message : String(error)}` });
     } finally {

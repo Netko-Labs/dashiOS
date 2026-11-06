@@ -31,6 +31,7 @@ import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
 import { BUDGET } from "./launcher/budget.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
+import { type ExtensionSession, useExtensions } from "./launcher/extensions.ts";
 import { Field } from "./launcher/field.tsx";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
@@ -62,7 +63,7 @@ import type { WorldSnapshot } from "./launcher/world.ts";
 export type { FileRow } from "./launcher/rows.ts";
 
 /** The surface, and the measures of the panel on it (docs/design.html LA-1, TY-1, RA-1: the launcher's row). */
-export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
+export const LAUNCHER = { width: 620, height: 520, top: 120, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
 
 /**
  * Files are asked as soon as the rows are drawn: one question at a time over one
@@ -118,6 +119,8 @@ export interface LauncherProps {
   languages?: readonly string[];
   /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
   typeAhead?: TypeAheadSource;
+  /** What comes in from outside Dashi: search providers, applets' and scripts' answers (launcher/extensions.ts). */
+  extensions?: ExtensionSession;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
   onClose: () => void;
@@ -213,7 +216,19 @@ export function Launcher(props: LauncherProps) {
   const clock = useClockPrefs();
   const answers = { locale: clock.locale, hour24: usesHour24(clock) };
   const working = timingNow();
-  const sections = buildSections({
+  // From outside Dashi: providers' rows below the rest, and what a command asks to show (launcher/extensions.ts).
+  const ext = useExtensions(
+    {
+      session: props.extensions,
+      query,
+      searching: mode.kind === "search",
+      restart: (next) => restart(next),
+      select: (id) => setHeld(id),
+      run: (action, args) => void host?.run(action, args).then((outcome) => ran(outcome, false)),
+    },
+    LAUNCHER,
+  );
+  const built = buildSections({
     answers,
     query,
     entries,
@@ -228,6 +243,7 @@ export function Launcher(props: LauncherProps) {
     failed,
     icons: ICONS,
   });
+  const sections = ext.sections(built);
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   // Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts).
   const typedAt = useRef<number | null>(null);
@@ -318,6 +334,7 @@ export function Launcher(props: LauncherProps) {
   };
 
   const ran = (outcome: Outcome, stay: boolean) => {
+    if (ext.shown(outcome)) return;
     if (outcome.ok) finish(stay);
     else say(outcome);
   };
@@ -338,6 +355,7 @@ export function Launcher(props: LauncherProps) {
         return;
       case "run":
         learn(row);
+        if (ext.intercept(effect.item)) return;
         if (effect.item.action) runOf(host?.run(effect.item.action));
         return;
       case "run-args":
@@ -457,6 +475,7 @@ export function Launcher(props: LauncherProps) {
   const submit = (stay = false) => {
     switch (mode.kind) {
       case "search":
+        if (ext.submit()) return;
         return doVerb(selectedRow ? verbsFor(selectedRow, ctx)[0] : undefined, selectedRow, stay);
       case "actions":
       case "presented":
@@ -542,6 +561,7 @@ export function Launcher(props: LauncherProps) {
     // A link opened the launcher for its action alone: Esc closes it.
     if (mode.kind === "presented") return onClose();
     if (mode.kind !== "search") return backToSearch();
+    if (ext.escape()) return;
     if (allApps && !query) return setAllApps(false);
     if (query) return restart("");
     onClose();
@@ -648,10 +668,10 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : undefined;
+            : ext.chip;
   const placeholder =
     mode.kind === "search"
-      ? placeholderFor(files !== undefined && !filesOff)
+      ? (ext.placeholder ?? placeholderFor(files !== undefined && !filesOff))
       : mode.kind === "alias"
         ? "An alias, like ff"
         : mode.kind === "shortcut"

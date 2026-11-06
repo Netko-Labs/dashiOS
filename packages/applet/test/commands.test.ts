@@ -90,6 +90,12 @@ test("version 3's messages need a version 3 connection, and are checked", () => 
     result: { open: "https://example.com/forecast" },
   });
   expect(parseAppletMessage(line({ type: "result", seq: 3, open: "file:///etc/passwd" }), noFiles, 3)).toHaveProperty("error");
+  // A result that says why not is an answer, not a refused message.
+  expect(parseAppletMessage(line({ type: "result", seq: 3, error: "No signal" }), noFiles, 3)).toEqual({
+    type: "result",
+    seq: 3,
+    result: { error: "No signal" },
+  });
   expect(parseAppletMessage(line({ type: "result", seq: 3, text: "a", copy: "b" }), noFiles, 3)).toHaveProperty("error");
   expect(parseAppletMessage(line({ type: "result", seq: 0, text: "a" }), noFiles, 3)).toHaveProperty("error");
   expect(parseAppletMessage(line({ type: "items", seq: 4, rows: [{ id: "lisbon", title: "Lisbon, now 19°", detail: "clear" }] }), noFiles, 3)).toEqual({

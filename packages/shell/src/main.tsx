@@ -27,7 +27,8 @@ import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { WindowStyleSync } from "./appearance/window-style.ts";
-import { startApplets } from "./applets/start.tsx";
+import { AppletCommands } from "./applets/commands.ts";
+import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
@@ -56,6 +57,7 @@ import {
   TileStore,
 } from "./dock/index.ts";
 import { type Entry, fileIcon, launchEntry } from "./entries.ts";
+import { openTarget, startExtensions } from "./extensions/start.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
 import { FileSearch, iconNamesFor } from "./file-search.ts";
@@ -590,8 +592,17 @@ const appMenus = startAppMenus({
 const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
 const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
+// Applets' commands in the launcher (applets/commands.ts): answered on their connections, listed in the registry (extensions/).
+const appletCommands = new AppletCommands({
+  copy: (text) => launcherClipboard.writeText(text),
+  open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => actions.openLink(url) }),
+  launcherOrigin: async () => {
+    const screen = await popoverScreen(compositor, (await whereIsPerson()) ?? null, menuBars.primaryName);
+    return screen ? { output: screen.name, x: Math.round((screen.width - LAUNCHER.width) / 2), y: screen.barHeight + LAUNCHER.top } : null;
+  },
+});
 // Applets: everyone's socket, and the installed ones in their sandboxes (applets/start.tsx).
-const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName });
+const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName, commands: appletCommands });
 // Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
 const stopSharePicker = compositor
   ? startSharePicker({
@@ -985,7 +996,7 @@ function openLauncher(presented: Presented | null = null): void {
         surface: {
           layer: "overlay",
           anchor: ["top"],
-          margin: { top: 120 },
+          margin: { top: LAUNCHER.top },
           keyboard: "exclusive",
           namespace: "dashi.launcher",
           ...onScreen(output),
@@ -1019,6 +1030,7 @@ function openLauncher(presented: Presented | null = null): void {
         presented={presented}
         languages={launcherLanguages}
         typeAhead={typeAhead}
+        extensions={extensions.session}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
         onClose={close}
       />,
@@ -1197,6 +1209,16 @@ const radioSource = new RadioSource({
   },
 });
 const stopRadioSource = actions.registry.add(radioSource);
+// What other programs add: applets' commands, your scripts, GNOME's search providers; the registry on D-Bus (extensions/).
+const extensions = startExtensions({
+  registry: actions.registry,
+  appletCommands,
+  openLink: (url) => actions.openLink(url),
+  open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => actions.openLink(url) }),
+  copy: (text) => launcherClipboard.writeText(text),
+  entries: () => appIndex.entries(),
+  bus: portalHost,
+});
 void menus.shared.devices.refresh();
 // What the launcher lists besides the apps (launcher/world.ts): the registry's actions for the person, and the
 // windows, named as the switcher names them; a setting's switch redraws when Control Center flips it.
@@ -1372,6 +1394,7 @@ const quit = () => {
         radioSource.close();
       },
     ],
+    ["extensions", () => extensions.close()],
     ["person keys", stopFollowingPersonKeys],
     ["actions", () => actions.close()],
     ["flags", stopFollowingFlags],

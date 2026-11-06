@@ -261,14 +261,16 @@ const COMMAND_FIELDS = {
 
 /** Version 3's messages about a command run (`seq`). */
 function parseCommandMessage(type: keyof typeof COMMAND_FIELDS, raw: Record<string, unknown>): AppletMessage | Refusal {
-  const fields = record(raw, type, COMMAND_FIELDS[type]);
-  if (isRefusal(fields)) return fields;
+  const checked = record(raw, type, COMMAND_FIELDS[type]);
+  // A result may say `error` itself: only a new object is a refusal (record returns the message when it passes).
+  if (checked !== raw && isRefusal(checked)) return checked;
+  const fields = raw;
   const seq = integer(fields.seq, `${type}: seq`, 1, MAX_SEQ);
   if (isRefusal(seq)) return seq;
   switch (type) {
     case "result": {
       const result = parseResult(fields);
-      return isRefusal(result) ? result : { type: "result", seq, result };
+      return isRefusal(result) ? result : { type: "result", seq, result: result.result };
     }
     case "items": {
       const rows = parseRows(fields.rows);

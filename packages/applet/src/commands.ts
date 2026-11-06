@@ -166,7 +166,7 @@ export type CommandResult = { text: string } | { copy: string } | { open: string
 const OPENABLE = /^(https?:\/\/[^\s"<>]+|dashi:\/\/[^\s"<>]+)$/;
 
 /** A `result`'s answer: exactly one of text, copy, open, error. */
-export function parseResult(fields: Record<string, unknown>): CommandResult | Refusal {
+export function parseResult(fields: Record<string, unknown>): { result: CommandResult } | Refusal {
   const given = (["text", "copy", "open", "error"] as const).filter((key) => fields[key] !== undefined);
   if (given.length !== 1) return refuse("result: give one of text, copy, open, or error");
   const [key] = given as ["text" | "copy" | "open" | "error"];
@@ -174,14 +174,14 @@ export function parseResult(fields: Record<string, unknown>): CommandResult | Re
   if (key === "copy") {
     if (typeof value !== "string" || value === "" || value.length > COMMAND_LIMITS.copy)
       return refuse(`result: copy must be text of ${COMMAND_LIMITS.copy} characters at most`);
-    return { copy: value };
+    return { result: { copy: value } };
   }
   if (key === "open") {
     if (typeof value !== "string" || value.length > COMMAND_LIMITS.open || !OPENABLE.test(value))
       return refuse("result: open must be an https:// or dashi:// address");
-    return { open: value };
+    return { result: { open: value } };
   }
   const line = text(value, `result: ${key}`, COMMAND_LIMITS.text);
   if (isRefusal(line)) return line;
-  return key === "text" ? { text: line } : { error: line };
+  return { result: key === "text" ? { text: line } : { error: line } };
 }

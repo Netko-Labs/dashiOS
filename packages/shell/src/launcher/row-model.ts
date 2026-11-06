@@ -11,6 +11,7 @@ import type { Entry } from "../entries.ts";
 import type { FileHit } from "../file-search.ts";
 import { PANES } from "../settings-app/panes.ts";
 import { COMMAND_GLYPHS } from "./command-glyphs.ts";
+import { outsideIcon } from "./extension-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
 import { prepare } from "./ranking/fold.ts";
 
@@ -182,6 +183,10 @@ export function actionRow(item: LauncherItem, icons: { app(id: string): string |
       group: "settings",
       ...(control ? { control } : {}),
     };
+  }
+  // From outside Dashi (an applet, a script): its row says whose it is, in its own picture or the puzzle piece.
+  if (action.from !== undefined) {
+    return { ...base, kind: action.from, icon: outsideIcon(action.icon, action.source), action: { kind: "run", item }, group: "command" };
   }
   const appId = /^dashi:\/\/app\/([^/]+)\//.exec(action.address)?.[1];
   const icon = action.icon?.startsWith("/") ? action.icon : ((appId && icons.app(appId)) ?? icons.dashi);
