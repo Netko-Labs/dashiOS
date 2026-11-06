@@ -2,7 +2,8 @@
 # vm/dev-session: in the VM, the Dashi session from the shared checkout
 # (/home/dashi/Developer/dashiOS), on the checkout's dashi-comp (see below)
 # and on the checkout's Metal host once it is built
-# (../mirin/crates/mirin-metal/target/release/mirin-metal-host). `vm/vm checkout-session on` makes SDDM log in to it.
+# (../mirin/crates/mirin-metal/target/release/mirin-metal-host) and terminal engine
+# (crates/dashi-term/target/release/dashi-term). `vm/vm checkout-session on` makes SDDM log in to it.
 set -eu
 repo=$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")
 # The checkout's dashi-comp (cargo build), else the installed one. DASHI_COMP picks another.
@@ -18,6 +19,11 @@ fi
 export DASHI_COMP
 if [ -z "${DASHI_METAL_HOST:-}" ] && [ ! -x "$repo/../mirin/crates/mirin-metal/target/release/mirin-metal-host" ]; then
   export DASHI_METAL_HOST=/usr/libexec/dashi/mirin-metal-host
+fi
+# The checkout's terminal engine once it is built (cargo build --release --manifest-path
+# crates/dashi-term/Cargo.toml): Terminal looks for an installed one first, which may be older.
+if [ -z "${DASHI_TERM:-}" ] && [ -x "$repo/crates/dashi-term/target/release/dashi-term" ]; then
+  export DASHI_TERM="$repo/crates/dashi-term/target/release/dashi-term"
 fi
 export DASHI_BUN=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
 exec "$repo/session/dashi-session" "$@"
