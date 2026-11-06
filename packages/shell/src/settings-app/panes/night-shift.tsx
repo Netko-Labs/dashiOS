@@ -5,17 +5,15 @@
  * a schedule the shell flips the switch at its edges.
  */
 
-import { Switch, useColors } from "@dashi/ui";
+import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { useSettings } from "../hooks.ts";
 import { clockLabel, clockText, DEFAULT_SCHEDULE, DEFAULT_WARMTH, describeWarmth, FROM_HOURS, scheduleOf, TO_HOURS, timeChoices, WARMTH } from "../night.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Row, Slider, Spot } from "../ui.tsx";
+import { Caption, Choices, Group, Setting, Slider } from "../ui.tsx";
 
-export function NightShiftSection({ settings, flags }: { settings: SettingsStore; flags: FlagsStore }) {
+export function NightShiftSection({ settings }: { settings: SettingsStore }) {
   const colors = useColors();
-  const { night } = useFlags(flags);
   const { nightShift } = useSettings(settings).data;
   const schedule = scheduleOf(nightShift.from, nightShift.to);
   const kelvin = nightShift.kelvin ?? DEFAULT_WARMTH;
@@ -23,14 +21,9 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
     <>
       <Caption above>Night Shift</Caption>
       <Group testID="night-shift">
-        <Spot pane="displays" row="night-shift">
-          <Row label="Night Shift" detail="Warms the colors of the screens, easier on the eyes in the evening.">
-            <Switch testID="night-switch" on={night} onChange={(on) => flags.set({ night: on })} />
-          </Row>
-        </Spot>
-        <Row
-          stack
-          label="Schedule"
+        <Setting id="displays/night-shift" control="night-switch" />
+        <Setting
+          id="displays/night-shift-schedule"
           detail={schedule ? `On from ${clockLabel(schedule.from)} to ${clockLabel(schedule.to)}, every day.` : "Night Shift only changes when you switch it."}
         >
           <Choices
@@ -42,28 +35,28 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
             ]}
             onChange={(choice) => settings.patch("nightShift", choice === "custom" ? { ...DEFAULT_SCHEDULE } : { from: undefined, to: undefined })}
           />
-        </Row>
+        </Setting>
         {schedule && (
           <>
-            <Row stack label="From">
+            <Setting id="displays/night-shift-from">
               <Choices
                 testID="night-from"
                 value={clockText(schedule.from)}
                 options={timeChoices(FROM_HOURS, schedule.from)}
                 onChange={(from) => settings.patch("nightShift", { from })}
               />
-            </Row>
-            <Row stack label="To">
+            </Setting>
+            <Setting id="displays/night-shift-to">
               <Choices
                 testID="night-to"
                 value={clockText(schedule.to)}
                 options={timeChoices(TO_HOURS, schedule.to)}
                 onChange={(to) => settings.patch("nightShift", { to })}
               />
-            </Row>
+            </Setting>
           </>
         )}
-        <Row label="Warmth" detail={describeWarmth(kelvin)}>
+        <Setting id="displays/night-shift-warmth" detail={describeWarmth(kelvin)}>
           <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <Slider testID="night-warmth" value={kelvin} range={WARMTH} onCommit={(value) => settings.patch("nightShift", { kelvin: value })} />
             <View style={{ flexDirection: "row", justifyContent: "space-between", width: 220 }}>
@@ -71,7 +64,7 @@ export function NightShiftSection({ settings, flags }: { settings: SettingsStore
               <Text style={{ fontSize: 10, color: colors.textMuted }}>Cooler</Text>
             </View>
           </View>
-        </Row>
+        </Setting>
       </Group>
       <Caption>Warmth shows the next time Night Shift turns on. A schedule needs this computer's clock to be right.</Caption>
     </>

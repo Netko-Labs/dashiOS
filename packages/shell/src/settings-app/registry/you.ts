@@ -1,0 +1,173 @@
+/**
+ * The rows of Date & Time, Language & Region, Lock Screen, Users &
+ * Accounts, Notifications, Passwords, Agents, Privacy & Security, and About.
+ */
+
+import { BLANK_AFTER, BLANK_OPTIONS } from "./machine.ts";
+import type { ChoiceOption, RowDef } from "./types.ts";
+import { flag, storedChoice, storedSwitch } from "./values.ts";
+
+const WEEK_OPTIONS: readonly ChoiceOption[] = [
+  { value: "auto", label: "Region default" },
+  { value: "sunday", label: "Sunday" },
+  { value: "monday", label: "Monday" },
+  { value: "saturday", label: "Saturday" },
+];
+
+export const YOU_ROWS = [
+  {
+    id: "date-time/automatic-time",
+    title: "Set time and date automatically",
+    keywords: ["ntp", "time server", "clock sync"],
+    kind: "switch",
+  },
+  { id: "date-time/24-hour-time", title: "24-hour time", keywords: ["24-hour", "24 hour", "clock format"], kind: "switch" },
+  {
+    id: "date-time/show-date",
+    title: "Show date in the menu bar",
+    keywords: ["date", "menu bar clock"],
+    kind: "switch",
+    value: storedSwitch("clock", "showDate", true),
+    agent: "date_in_menu_bar",
+  },
+  { id: "date-time/time-zone", title: "Time zone", keywords: ["timezone"], kind: "value", stack: true },
+
+  { id: "language-region/language", title: "Language and region", keywords: ["language", "locale", "region"], kind: "value", stack: true },
+  {
+    id: "language-region/first-day-of-week",
+    title: "First day of the week",
+    keywords: ["first day of week", "week starts"],
+    kind: "choice",
+    stack: true,
+    options: WEEK_OPTIONS,
+    value: storedChoice("region", "firstWeekday", "auto", WEEK_OPTIONS, { unset: "auto" }),
+  },
+  {
+    id: "language-region/formats",
+    title: "Formats",
+    detail: "How dates, times, and numbers look in your region.",
+    keywords: ["date format", "number format"],
+    kind: "value",
+    stack: true,
+  },
+
+  {
+    id: "lock-screen/turn-display-off",
+    title: "Turn display off after",
+    detail: "The screens go dark when you have been away this long. Moving the pointer or pressing a key wakes them.",
+    keywords: ["screen saver", "display off", "blank"],
+    kind: "choice",
+    stack: true,
+    options: BLANK_OPTIONS,
+    value: BLANK_AFTER,
+  },
+  {
+    id: "lock-screen/lock-now",
+    title: "Lock Screen",
+    name: "Lock the screen",
+    detail: "Covers the screen until you type your password.",
+    keywords: ["lock"],
+    kind: "action",
+  },
+
+  { id: "users/full-name", title: "Full name", keywords: ["name", "real name"], kind: "value" },
+  { id: "users/account-name", title: "Account name", detail: "The name you log in with.", keywords: ["user name", "username", "login"], kind: "value" },
+  { id: "users/picture", title: "Picture", name: "Account picture", detail: "A PNG or JPEG under 1 MB.", keywords: ["avatar", "photo"], kind: "action" },
+  {
+    id: "users/password",
+    title: "Password",
+    name: "Change your login password",
+    detail: "Asked for on a sheet of its own, which agents can't see or type into.",
+    keywords: ["change password", "login password"],
+    kind: "action",
+  },
+  {
+    id: "users/automatic-login",
+    title: "Log in automatically",
+    detail: "Skips the password at the login screen. Needs an administrator's password to change.",
+    keywords: ["automatic login", "autologin"],
+    kind: "switch",
+  },
+
+  {
+    id: "notifications/do-not-disturb",
+    title: "Do Not Disturb",
+    detail: "Banners are held back until you turn it off; they wait in the notification center.",
+    keywords: ["dnd", "focus", "quiet", "banners"],
+    kind: "switch",
+    value: flag("dnd"),
+    agent: "do_not_disturb",
+  },
+
+  {
+    id: "passwords/source-dashi",
+    title: "Dashi",
+    name: "Logins from Dashi's vault",
+    detail: "Passkeys, app secrets, tokens, logins",
+    keywords: ["vault"],
+    kind: "switch",
+  },
+  { id: "passwords/source-1password", title: "1Password", name: "Logins from 1Password", keywords: ["1password", "op"], kind: "switch" },
+  { id: "passwords/save-to", title: "Save new logins to", keywords: ["save logins"], kind: "choice" },
+  { id: "passwords/logins", title: "Logins in Dashi", keywords: ["saved passwords", "logins", "two-factor"], kind: "value" },
+  { id: "passwords/add-login", title: "Add a login", keywords: ["new password", "save password"], kind: "action" },
+  { id: "passwords/tokens", title: "Tokens", keywords: ["api keys", "api token", "model key"], kind: "value" },
+  { id: "passwords/add-token", title: "Add a token", keywords: ["new token", "api key"], kind: "action" },
+  { id: "passwords/cards", title: "Payments", name: "Cards for payments", keywords: ["cards", "credit card", "pay"], kind: "value" },
+  { id: "passwords/add-card", title: "Add a card", keywords: ["new card", "credit card"], kind: "action" },
+  { id: "passwords/payment-limits", title: "Payment limits", keywords: ["spending limit", "limit per month"], kind: "value" },
+
+  {
+    id: "agents/answer-with",
+    title: "Answer requests with",
+    detail: "In the launcher, type what to do, then press Tab to ask.",
+    keywords: ["ask", "claude", "gpt", "local model", "harness"],
+    kind: "choice",
+  },
+  { id: "agents/key", title: "Key", name: "The agent's API key", keywords: ["api key", "anthropic", "openai"], kind: "value" },
+  { id: "agents/model", title: "Model", name: "The agent's model", keywords: ["model"], kind: "choice" },
+  { id: "agents/history", title: "History", name: "What agents did", keywords: ["agent history", "undo", "activity"], kind: "value" },
+  {
+    id: "agents/permissions",
+    title: "What agents may do",
+    detail: "Each agent's permissions, to take back one at a time.",
+    keywords: ["revoke", "always allow", "permissions"],
+    kind: "action",
+  },
+
+  {
+    id: "privacy/agents",
+    title: "Agents",
+    name: "Agents' permissions",
+    keywords: ["mcp", "always allow", "revoke", "agent permissions", "consent"],
+    kind: "value",
+  },
+  {
+    id: "privacy/apps",
+    title: "Apps",
+    name: "Apps' permissions",
+    keywords: ["camera", "microphone", "location", "background", "notifications", "screenshot", "app permissions", "portal"],
+    kind: "value",
+  },
+  {
+    id: "privacy/screen-sharing",
+    title: "Screen sharing",
+    keywords: ["screen recording", "screen capture", "screencast", "share screen"],
+    kind: "value",
+  },
+
+  { id: "about/name", title: "Name", name: "Computer name", keywords: ["hostname", "computer name"], kind: "value" },
+  { id: "about/based-on", title: "Based on", keywords: ["fedora", "distribution"], kind: "value" },
+  { id: "about/kernel", title: "Kernel", keywords: ["linux", "kernel version"], kind: "value" },
+  { id: "about/processor", title: "Processor", keywords: ["cpu"], kind: "value" },
+  { id: "about/memory", title: "Memory", keywords: ["ram"], kind: "value" },
+  { id: "about/graphics", title: "Graphics", name: "Graphics hardware", keywords: ["gpu"], kind: "value" },
+  { id: "about/storage", title: "Storage", keywords: ["disk", "free space"], kind: "value" },
+  {
+    id: "about/setup-assistant",
+    title: "Setup Assistant",
+    detail: "Language, keyboard, Wi-Fi, time zone, appearance, and agents, one page at a time.",
+    keywords: ["setup", "first run"],
+    kind: "action",
+  },
+] as const satisfies readonly RowDef[];

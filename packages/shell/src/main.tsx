@@ -13,7 +13,6 @@ import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
-import { isSettingKey, settingState } from "./actions/sources/settings.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
 import { modelKeys, vaultTokenSource } from "./agents/ask/keys.ts";
@@ -48,7 +47,6 @@ import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
-import { DEFAULT_CORNERS } from "./corners.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
@@ -114,6 +112,7 @@ import { startPolkit } from "./polkit/index.ts";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "./portal-host/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { powerOffReason } from "./power/nested.ts";
+import { startPrivacy } from "./privacy/index.ts";
 import { RecentApps, recentEntries } from "./recents.ts";
 import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
@@ -121,10 +120,10 @@ import { chooseRegion, startRegion } from "./region/index.ts";
 import { ScreenCaptureStore, startScreenCapture } from "./screen-capture.ts";
 import { type AreaCapture, areaCapture, chooseCaptureScreen } from "./screenshot-area.tsx";
 import { takeScreenshot } from "./screenshots.ts";
-import { SCROLL_SPEED_DEFAULT } from "./scroll-speed.ts";
 import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
+import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
 import { startSetupAssistant } from "./setup/start.tsx";
@@ -395,6 +394,16 @@ if (idle) idle.onSleep = () => void power.suspend();
 // programs on our list, and tells us while one is running (screen-capture.ts).
 const screenCapture = new ScreenCaptureStore();
 const capture = compositor ? startScreenCapture(compositor, screenCapture) : null;
+// A program taken off `screenSharing.clients` (Settings › Privacy & Security) loses the protocol at once.
+let captureClients = JSON.stringify(settingsStore.getSnapshot().data.screenSharing.clients ?? []);
+const stopFollowingCaptureClients = settingsStore.subscribe(() => {
+  const next = JSON.stringify(settingsStore.getSnapshot().data.screenSharing.clients ?? []);
+  if (next === captureClients) return;
+  captureClients = next;
+  capture?.refresh();
+});
+// What apps were allowed through the portal, dated as they are given (privacy/; Settings › Privacy & Security).
+const privacy = developmentRun ? null : startPrivacy();
 
 // Privileged actions apps ask for (pkexec, mounting a disk, software installs)
 // need a password sheet: polkit's authentication agent (polkit/). It stays off
@@ -464,6 +473,8 @@ const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
 const calendar = startCalendar({ notifications: notifications.store, toplevels, ...(developmentRun ? { statePath: null } : {}) });
 // Do Not Disturb is Control Center's switch; the store holds banners while it's on.
 const flags = controlFlags();
+// The settings registry's rows read and change through these (settings-app/registry/): the launcher's, links', and agents'.
+const registryStores: RegistryStores = { settings: settingsStore, flags, dock: dockPrefs };
 const followFlags = () => notifications.store.setDoNotDisturb(flags.getSnapshot().dnd);
 followFlags();
 const stopFollowingFlags = flags.subscribe(followFlags);
@@ -511,25 +522,10 @@ const agents = compositor
         rememberScale: (name, scale) => settingsStore.setDisplayScale(name, scale),
         ...(displays ? { displays } : {}),
         ...(spaces ? { spaces: spaces.controller } : {}),
-        corners: {
-          get: () => settingsStore.getSnapshot().data.appearance.cornerRadius ?? DEFAULT_CORNERS,
-          set: (name) => settingsStore.patch("appearance", { cornerRadius: name }),
-        },
-        scrollSpeed: {
-          get: (device) => settingsStore.getSnapshot().data[device === "trackpad" ? "touchpad" : "mouse"].scrollSpeed ?? SCROLL_SPEED_DEFAULT,
-          // 1 is no setting, as the panes' slider middle is.
-          set: (device, factor) =>
-            settingsStore.patch(device === "trackpad" ? "touchpad" : "mouse", { scrollSpeed: factor === SCROLL_SPEED_DEFAULT ? undefined : factor }),
-        },
+        // The registry's rows agents may change go through settings.json, as the panes' do (settings-app/registry/).
+        settings: settingsStore,
         lock: () => lockScreen?.lock(),
         region: regionDesktop(region.store, settingsStore),
-        menuBar: {
-          get: () => {
-            const { menuBar } = settingsStore.getSnapshot().data;
-            return { batteryPercent: menuBar.batteryPercent ?? false, sound: menuBar.sound ?? true };
-          },
-          set: (change) => settingsStore.patch("menuBar", change),
-        },
         machine: machineDesktop(paneServicesOf, settingsStore),
         // Late-bound: the Setup Assistant is made after the agents, and an agent can only call it once connected.
         setup: { open: (page) => setupAssistant?.open(page) },
@@ -559,6 +555,7 @@ const settingsApp = startSettingsApp({
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  ...(privacy ? { privacy: privacy.store } : {}),
   answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
   services: paneServicesOf,
@@ -1289,6 +1286,7 @@ const actions = startActions({
   arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,
   runMenu: (action) => menus.run(action, "Dashi"),
   openSettings: (pane, row) => settingsApp.open(pane, row),
+  settingsStores: registryStores,
   keymap: currentKeymap(),
 });
 // Wi-Fi and Bluetooth as settings with state, from Control Center's own store (actions/sources/radios.ts).
@@ -1384,7 +1382,10 @@ askAgents = startAsk({
   },
   personPressed: () =>
     compositor ? personAnswered((method, params) => compositor.request(method, params), LAUNCHER_MOTION.namespace) : Promise.resolve(false),
-  settingNow: (name) => (agents && isSettingKey(name) ? settingState(agents.desktop, name) : null),
+  settingNow: (name) => {
+    const row = agentRow(name);
+    return row ? valueOf(row, registryStores) : null;
+  },
   focus: async (window) => {
     await compositor?.request("focus", { window });
   },
@@ -1503,6 +1504,8 @@ const quit = () => {
     ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
+    ["screen sharing list", stopFollowingCaptureClients],
+    ["privacy", () => privacy?.stop()],
     ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],

@@ -3,10 +3,12 @@ import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
+import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { AboutInfo } from "./about.ts";
 import type { XkbLayouts } from "./layouts.ts";
+import type { PaneId } from "./panes.ts";
 import type { ScreensStore } from "./screens.ts";
 import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
@@ -21,7 +23,9 @@ export interface PaneContext {
   /** The system time zone, clock sync, and language (timedated and localed). */
   region: RegionStore;
   /** The agents' kept answers; revoking one also cuts it off in a live session. */
-  grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  grants: Pick<Grants, "entries" | "remove" | "revoke" | "onChange">;
+  /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */
+  privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
   /** The launcher's Ask: where Claude's key is, the local models, and the agents' history (Settings › Agents). */
@@ -41,5 +45,7 @@ export interface PaneContext {
   lock(): void;
   /** Opens the Setup Assistant again. */
   openSetup(): void;
+  /** Go to another pane, scrolled to one of its rows (a row of the registry: `row` is its part after the pane). */
+  show(pane: PaneId, row?: string): void;
   home: string;
 }

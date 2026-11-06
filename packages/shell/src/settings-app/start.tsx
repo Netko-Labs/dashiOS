@@ -16,6 +16,7 @@ import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
+import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
@@ -49,7 +50,9 @@ export interface SettingsAppOptions {
   /** The system time zone, clock sync, and language. */
   region: RegionStore;
   flags: FlagsStore;
-  grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  grants: Pick<Grants, "entries" | "remove" | "revoke" | "onChange">;
+  /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
+  privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
   /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
@@ -123,6 +126,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       flags: options.flags,
       screens,
       grants: options.grants,
+      ...(options.privacy ? { privacy: options.privacy } : {}),
       ...(options.passwords ? { passwords: options.passwords } : {}),
       ...answersOf(options),
       ...(clipboard ? { clipboard } : {}),
@@ -133,6 +137,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       about: readAbout,
       lock: options.lock,
       openSetup: options.openSetup,
+      show: (pane, row) => open(pane, row),
       home: homedir(),
     };
     const stopScreens = screens.start();

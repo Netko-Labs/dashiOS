@@ -14,14 +14,7 @@ import { describeFailure, type RegionStore, useRegion } from "../../region/store
 import { firstDayIndex, previewFormats, weekdayNames } from "../../region/week.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
-
-const WEEK_OPTIONS = [
-  { value: "auto", label: "Region default" },
-  { value: "sunday", label: "Sunday" },
-  { value: "monday", label: "Monday" },
-  { value: "saturday", label: "Saturday" },
-] as const;
+import { Caption, Group, Page, Setting } from "../ui.tsx";
 
 export function LanguageRegionPane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
   const colors = useColors();
@@ -36,7 +29,7 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
   return (
     <Page title="Language & Region">
       <Group>
-        <Row stack label="Language and region" detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}>
+        <Setting id="language-region/language" detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}>
           <LocalePickers
             locales={state.locales}
             language={state.language}
@@ -45,20 +38,11 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
             onLanguage={(locale) => void region.setLanguage(locale)}
             onFormats={(formats) => settings.patch("region", { formats })}
           />
-        </Row>
+        </Setting>
       </Group>
       <Group>
-        <Spot pane="language-region" row="first-day-of-week">
-          <Row stack label="First day of the week">
-            <Choices
-              testID="region-first-day"
-              value={chosen.firstWeekday ?? "auto"}
-              options={WEEK_OPTIONS}
-              onChange={(value) => settings.patch("region", { firstWeekday: value === "auto" ? undefined : value })}
-            />
-          </Row>
-        </Spot>
-        <Row stack label="Formats" detail="How dates, times, and numbers look in your region.">
+        <Setting id="language-region/first-day-of-week" control="region-first-day" />
+        <Setting id="language-region/formats">
           <View testID="region-preview" style={{ flexDirection: "column", gap: 3 }}>
             <Text style={{ fontSize: 12, color: colors.text }}>{`${preview.date}, ${preview.time}`}</Text>
             <Text style={{ fontSize: 12, color: colors.text }}>{preview.number}</Text>
@@ -66,7 +50,7 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
               <Text style={{ fontSize: 12, color: colors.textMuted }}>{days.join("  ")}</Text>
             </View>
           </View>
-        </Row>
+        </Setting>
       </Group>
       {state.busy === "language" && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
       {state.error !== null && (

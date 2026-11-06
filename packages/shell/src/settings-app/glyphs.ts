@@ -27,6 +27,14 @@ export const BELL = svg(
 /** Passwords: a key (Lock Screen has the padlock). */
 export const KEY = svg(`<circle cx="5.2" cy="8" r="3" stroke="#000" stroke-width="1.5" fill="none"/>${stroke("M8.2 8h6.2M12.2 8v2.4M14.2 8v1.8", 1.5)}`);
 
+/** Privacy & Security: a hand held up, palm out. */
+export const HAND = svg(
+  stroke(
+    "M5.4 8.6V4.2a.9.9 0 0 1 1.8 0v3.4M7.2 7.6V3a.9.9 0 0 1 1.8 0v4.6M9 7.6V3.6a.9.9 0 0 1 1.8 0v4.8M10.8 8.4V5.4a.9.9 0 0 1 1.8 0v4.2c0 2.6-1.8 4.6-4.4 4.6-1.8 0-2.9-.9-3.8-2.3L2.8 9.2a.9.9 0 0 1 1.4-1.1l1.2 1.4",
+    1.3,
+  ),
+);
+
 /** Agents: a four-point sparkle and a small one. */
 export const SPARKLE = svg(
   `<path d="M7 1.8l1.3 3.9 3.9 1.3-3.9 1.3L7 12.2 5.7 8.3 1.8 7l3.9-1.3z" fill="#000"/><path d="M12.4 9.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="#000"/>`,

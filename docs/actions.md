@@ -62,7 +62,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | --- | --- | --- |
 | `tools` | `dashi://tool/<name>` (`dashi://tool/force-quit-app`) | the agents' tool, as the person when `who` is `both` |
 | `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first |
-| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every setting `set_setting` knows, and for the other rows search finds by name (`SPOT_ROWS`: `appearance/text-size`, `date-time/time-zone`…) | opens the pane; a row's toggle or pick runs `set_setting` as the person; a `SPOT_ROWS` row opens Settings scrolled to it and lit |
+| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every row of every pane, from the settings registry (see below) | opens the pane; a row that is one value is a toggle or a pick: one named for agents runs `set_setting` as the person, the person's own changes through the registry's store; any other row opens Settings scrolled to it and lit |
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
@@ -89,8 +89,36 @@ app keeps from agents (`agents: false`) are offered here, because the
 person is choosing; greyed-out ones are left out. Window titles and menu
 labels come from other apps: shown and found by, never obeyed.
 
-A setting's rows are marked in their pane with `<Spot pane row>`
-(`settings-app/spot.tsx`), so its address can open Settings there.
+### The settings registry
+
+Every row of System Settings is one entry in `settings-app/registry/`
+(`look.ts`, `input.ts`, `machine.ts`, `you.ts`; `rows.ts` puts them
+together): its id `<pane>/<row>` (its address without `dashi://settings/`),
+its title as the pane shows it, a `name` where the title leans on the pane
+("Mode" is "Graphics mode" in the launcher), its detail, the words it is
+found by, its kind (`switch`, `choice`, `value`, `action`), a choice's
+options, and, where it is one value, a binding (`value`): its JSON Schema
+and a getter and setter through the settings store (settings.json),
+Control Center's switches, or the Dock's store. A row agents may change
+has an `agent` name.
+
+Everything reads the one list:
+
+- The panes draw their rows from it: `<Setting id>` (`settings-app/setting.tsx`)
+  takes its title and detail from the entry, is a Spot (a link or the
+  launcher scrolls to it and lights it), and draws the entry's own switch
+  or pills when the pane passes no control. A pane passes a live detail or
+  its own control (a slider, a picker) where it must. `<Spot id>` wraps
+  other content an entry stands for (a list, a form). A pane draws no plain
+  row with a label of its own: data rows (a login, a device) are `Item`s,
+  a form's fields are `FormRow`s. Ids are typed, so a pane can't draw a row
+  that isn't registered; `test/settings-registry.test.ts` checks the other
+  way: every entry is drawn by its pane.
+- The launcher and links: this source, one action per row (the radios and
+  the clipboard history are their own sources' rows, `source` on the entry).
+- Agents: `get_settings` and `set_setting` take every row with an `agent`
+  name, checked by its binding's schema. None of Lock Screen, Users &
+  Accounts, Passwords, Agents, or Privacy & Security is an agent's.
 
 ## Addresses
 

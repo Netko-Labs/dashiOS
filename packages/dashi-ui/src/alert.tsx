@@ -85,6 +85,8 @@ export interface AlertProps {
   buttons: readonly AlertButton[];
   /** What the answer needs under the message: a check box, a card. */
   children?: ReactNode;
+  /** At the start of the button row: a way to where the answer is reviewed later (a portal's Privacy & Security…). */
+  footer?: ReactNode;
 }
 
 /** The tile, the words, and anything the answer needs, side by side. */
@@ -113,10 +115,11 @@ function AlertBody({ question, message, glyph, tone = "neutral", children, scrol
 }
 
 /** The buttons, at the end of the row; a wide set wraps. */
-export function AlertButtons({ buttons }: { buttons: readonly AlertButton[] }) {
+export function AlertButtons({ buttons, footer }: { buttons: readonly AlertButton[]; footer?: ReactNode }) {
   const enter = alertKeyTarget({ kind: "enter" }, buttons);
   return (
-    <View style={{ flexDirection: "row", justifyContent: "flex-end", flexWrap: "wrap", gap: 8, marginTop: 6, flexShrink: 0 }}>
+    <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 6, flexShrink: 0 }}>
+      {footer !== undefined && <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 }}>{footer}</View>}
       {buttons.map((button) => (
         <Button
           key={button.testID}
@@ -138,7 +141,7 @@ export function Alert(props: AlertProps) {
   return (
     <View style={{ flexDirection: "column", gap: 10 }}>
       <AlertBody {...props} />
-      <AlertButtons buttons={props.buttons} />
+      <AlertButtons buttons={props.buttons} footer={props.footer} />
     </View>
   );
 }
@@ -153,7 +156,7 @@ export function AlertSheet({ testID = "alert", width, ...props }: AlertProps & {
       onConfirm={() => pressForKey({ kind: "enter" }, props.buttons)}
     >
       <AlertBody {...props} />
-      <AlertButtons buttons={props.buttons} />
+      <AlertButtons buttons={props.buttons} footer={props.footer} />
     </Sheet>
   );
 }
@@ -191,7 +194,7 @@ export function AlertWindow({ keys = true, testID = "alert", onCancel, ...props 
         <View dragRegion style={{ height: Math.max(inset.top, 0), flexShrink: 0 }} />
         <View dragRegion style={{ flex: 1, flexDirection: "column", gap: 10, padding: 18, paddingTop: inset.top > 0 ? 6 : 18, minHeight: 0 }}>
           <AlertBody {...props} scroll />
-          <AlertButtons buttons={props.buttons} />
+          <AlertButtons buttons={props.buttons} footer={props.footer} />
         </View>
       </TooltipLayer>
     </View>

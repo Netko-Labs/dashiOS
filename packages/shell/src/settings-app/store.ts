@@ -20,7 +20,8 @@
  *     "spaces": { "count": 3, "names": ["Work", null], "switchOnActivate": true },
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
  *     "graphics": { "mode": "automatic" },
- *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false }
+ *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false },
+ *     "screenSharing": { "clients": ["/usr/bin/grim"] }
  *   }
  *
  * Writes are read-modify-write on the file as it is now, so keys this module
@@ -205,6 +206,15 @@ export interface ClipboardSettings {
   snippetsInTerminals?: boolean;
 }
 
+/** `screenSharing`: programs trusted to capture the screen directly, by absolute path (screen-capture.ts; Settings › Privacy & Security). */
+export interface ScreenSharingSettings {
+  clients?: readonly string[];
+}
+
+/** A program `screenSharing.clients` may name: an absolute path, no NUL. */
+export const isProgramPath = (value: unknown): value is string =>
+  typeof value === "string" && value.startsWith("/") && !value.includes("\0") && value.length <= 4096;
+
 /** An app id or a program name, as `leftOut` holds them. */
 const isAppName = (value: unknown): boolean => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
 
@@ -242,6 +252,8 @@ export interface SettingsData {
   agents: AgentsSettings;
   /** Clipboard history and snippets. */
   clipboard: ClipboardSettings;
+  /** Programs that capture the screen without the portal. */
+  screenSharing: ScreenSharingSettings;
 }
 
 /** What the shell does with no `idle` setting (the same default as settings.ts). */
@@ -340,6 +352,7 @@ const SECTIONS = {
     path: ["clipboard"],
     fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },
   },
+  screenSharing: { path: ["screenSharing"], fields: { clients: (value) => Array.isArray(value) && value.length <= 64 && value.every(isProgramPath) } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -442,6 +455,7 @@ export function readSettings(raw: unknown): SettingsData {
     launcher: readSection(root, "launcher") as LauncherSettings,
     agents: readSection(root, "agents") as AgentsSettings,
     clipboard: readSection(root, "clipboard") as ClipboardSettings,
+    screenSharing: readSection(root, "screenSharing") as ScreenSharingSettings,
   };
 }
 

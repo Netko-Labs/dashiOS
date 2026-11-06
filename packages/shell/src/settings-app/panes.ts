@@ -6,7 +6,7 @@
 import { INFO, lightColors, TINTS } from "@dashi/ui";
 import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
 import { graphicsGlyph } from "../laptop/glyphs.ts";
-import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
+import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, HAND, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
 
 export type PaneId =
@@ -23,6 +23,7 @@ export type PaneId =
   | "notifications"
   | "passwords"
   | "agents"
+  | "privacy"
   | "about"
   | "network"
   | "bluetooth"
@@ -69,6 +70,7 @@ export const PANES: readonly PaneInfo[] = [
   { id: "notifications", title: "Notifications", glyph: BELL, tint: TINTS.kabocha, group: 2 },
   { id: "passwords", title: "Passwords", glyph: KEY, tint: TINTS.shiitake, group: 2, private: true },
   { id: "agents", title: "Agents", glyph: SPARKLE, tint: lightColors.agent, group: 2 },
+  { id: "privacy", title: "Privacy & Security", glyph: HAND, tint: TINTS.goma, group: 2 },
   { id: "about", title: "About", glyph: INFO, tint: TINTS.goma, group: 3 },
 ];
 

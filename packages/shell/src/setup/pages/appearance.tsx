@@ -1,7 +1,7 @@
-import { useColors } from "@dashi/ui";
+import { Row, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { AppearancePreviews, CornerChoices } from "../../settings-app/panes/appearance.tsx";
-import { Group, Row } from "../../settings-app/ui.tsx";
+import { Group } from "../../settings-app/ui.tsx";
 import type { SetupContext } from "../context.ts";
 
 /** Light, Dark, and Auto as previews, and the window corners: the same controls as Settings > Appearance. */

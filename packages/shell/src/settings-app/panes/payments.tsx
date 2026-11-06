@@ -10,7 +10,7 @@ import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import { dollars, parseAmount } from "../../agents/secrets/pay.ts";
 import type { CardSummary, Vault } from "../../agents/secrets/vault.ts";
-import { Button, Caption, Group, Note, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, FormRow, Group, Item, Note, Spot, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 
 function Field({
@@ -84,20 +84,28 @@ function Limits({ vault }: { vault: Vault }) {
       </Group>
     ) : null;
   return (
-    <Group testID="payments-limits">
-      <Row label="Limit per payment" detail={`Now ${dollars(spending.perPayment)}`}>
-        <Field testID="payments-per-payment" value={form.perPayment} placeholder="100" onChange={(perPayment) => setForm((f) => ({ ...f, perPayment }))} />
-      </Row>
-      <Row label="Limit per month" detail={`Now ${dollars(spending.perMonth)}; ${dollars(spending.spentThisMonth)} spent in the last 30 days`}>
-        <Field testID="payments-per-month" value={form.perMonth} placeholder="300" onChange={(perMonth) => setForm((f) => ({ ...f, perMonth }))} />
-      </Row>
-      <Row label="Your password" detail={problem ?? "Changing a limit needs it"}>
-        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-          <Field testID="payments-password" value={form.password} placeholder="Password" secure onChange={(password) => setForm((f) => ({ ...f, password }))} />
-          <Button testID="payments-limits-save" label="Save" primary disabled={!form.password} onPress={save} />
-        </View>
-      </Row>
-    </Group>
+    <Spot id="passwords/payment-limits">
+      <Group testID="payments-limits">
+        <FormRow label="Limit per payment" detail={`Now ${dollars(spending.perPayment)}`}>
+          <Field testID="payments-per-payment" value={form.perPayment} placeholder="100" onChange={(perPayment) => setForm((f) => ({ ...f, perPayment }))} />
+        </FormRow>
+        <FormRow label="Limit per month" detail={`Now ${dollars(spending.perMonth)}; ${dollars(spending.spentThisMonth)} spent in the last 30 days`}>
+          <Field testID="payments-per-month" value={form.perMonth} placeholder="300" onChange={(perMonth) => setForm((f) => ({ ...f, perMonth }))} />
+        </FormRow>
+        <FormRow label="Your password" detail={problem ?? "Changing a limit needs it"}>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <Field
+              testID="payments-password"
+              value={form.password}
+              placeholder="Password"
+              secure
+              onChange={(password) => setForm((f) => ({ ...f, password }))}
+            />
+            <Button testID="payments-limits-save" label="Save" primary disabled={!form.password} onPress={save} />
+          </View>
+        </FormRow>
+      </Group>
+    </Spot>
   );
 }
 
@@ -116,39 +124,41 @@ function AddCard({ vault, onSaved }: { vault: Vault; onSaved: () => void }) {
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
   return (
-    <Group testID="payments-add">
-      <Row label="Name">
-        <Field
-          testID="payments-add-label"
-          value={form.label}
-          placeholder="Single-use from my bank"
-          width={220}
-          onChange={(label) => setForm((f) => ({ ...f, label }))}
-        />
-      </Row>
-      <Row label="Card number">
-        <Field
-          testID="payments-add-number"
-          value={form.number}
-          placeholder="Card number"
-          secure
-          width={220}
-          onChange={(number) => setForm((f) => ({ ...f, number }))}
-        />
-      </Row>
-      <Row label="Expiry and code" detail={problem ?? undefined}>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Field testID="payments-add-expiry" value={form.expiry} placeholder="MM/YY" width={80} onChange={(expiry) => setForm((f) => ({ ...f, expiry }))} />
-          <Field testID="payments-add-cvc" value={form.cvc} placeholder="Code" secure width={80} onChange={(cvc) => setForm((f) => ({ ...f, cvc }))} />
-        </View>
-      </Row>
-      <Row label="Single use" detail="A virtual card from your bank's app, refused after one payment">
-        <Switch testID="payments-add-single" on={form.singleUse} onChange={(singleUse) => setForm((f) => ({ ...f, singleUse }))} />
-      </Row>
-      <Row label="">
-        <Button testID="payments-add-save" label="Save Card" primary disabled={!form.number || !form.expiry || !form.cvc} onPress={save} />
-      </Row>
-    </Group>
+    <Spot id="passwords/add-card">
+      <Group testID="payments-add">
+        <FormRow label="Name">
+          <Field
+            testID="payments-add-label"
+            value={form.label}
+            placeholder="Single-use from my bank"
+            width={220}
+            onChange={(label) => setForm((f) => ({ ...f, label }))}
+          />
+        </FormRow>
+        <FormRow label="Card number">
+          <Field
+            testID="payments-add-number"
+            value={form.number}
+            placeholder="Card number"
+            secure
+            width={220}
+            onChange={(number) => setForm((f) => ({ ...f, number }))}
+          />
+        </FormRow>
+        <FormRow label="Expiry and code" detail={problem ?? undefined}>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Field testID="payments-add-expiry" value={form.expiry} placeholder="MM/YY" width={80} onChange={(expiry) => setForm((f) => ({ ...f, expiry }))} />
+            <Field testID="payments-add-cvc" value={form.cvc} placeholder="Code" secure width={80} onChange={(cvc) => setForm((f) => ({ ...f, cvc }))} />
+          </View>
+        </FormRow>
+        <FormRow label="Single use" detail="A virtual card from your bank's app, refused after one payment">
+          <Switch testID="payments-add-single" on={form.singleUse} onChange={(singleUse) => setForm((f) => ({ ...f, singleUse }))} />
+        </FormRow>
+        <FormRow label="">
+          <Button testID="payments-add-save" label="Save Card" primary disabled={!form.number || !form.expiry || !form.cvc} onPress={save} />
+        </FormRow>
+      </Group>
+    </Spot>
   );
 }
 
@@ -159,9 +169,9 @@ function CardRow({ card, onDelete }: { card: CardSummary; onDelete: () => void }
     ? `Delete this card ending ${card.last4}? Agents can't pay with it again, and you can't undo this.`
     : `•••• ${card.last4} · ${card.expiry}${card.singleUse ? (card.used ? " · used" : " · single use") : ""}`;
   return (
-    <Row label={name} detail={detail} testID={`payments-card:${card.id}`}>
+    <Item label={name} detail={detail} testID={`payments-card:${card.id}`}>
       <ConfirmDelete testID={`payments-delete:${card.id}`} onDelete={onDelete} onAsking={setAsking} />
-    </Row>
+    </Item>
   );
 }
 
@@ -192,7 +202,9 @@ export function Payments({ vault }: { vault: Vault }) {
   };
   return (
     <>
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Payments</Text>
+      <Spot id="passwords/cards">
+        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Payments</Text>
+      </Spot>
       <Group testID="payments-cards">
         {cards === null ? (
           <Note testID="payments-loading">{failure ? "Cards can't be shown right now." : "Looking…"}</Note>

@@ -12,7 +12,14 @@ import { type Bounds, ScrollView, Text, useWindowChrome } from "@mirinjs/metal";
 import { type ReactNode, useMemo, useRef } from "react";
 import { PageContext } from "./spot.tsx";
 
-export { Button, Caption, type Choice, Choices, Group, Note, Row, Slider, type Surface, Tile, useSurface } from "@dashi/ui";
+/**
+ * A row whose label is data, not a setting: a login, a card, a device, a
+ * notice with its action. Settings' own rows are `Setting`s, from the
+ * registry; a pane draws no plain row with a fixed label.
+ */
+/** A field of a form (adding a login, a card, a token); the form itself is a registered row, wrapped in its `Spot`. */
+export { Button, Caption, type Choice, Choices, Group, Note, Row as Item, Row as FormRow, Slider, type Surface, Tile, useSurface } from "@dashi/ui";
+export { Setting } from "./setting.tsx";
 export { Spot } from "./spot.tsx";
 
 /**

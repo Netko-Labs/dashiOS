@@ -160,6 +160,17 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   SettingChanged; Print sends jobs to CUPS over IPP (`apps/portal/print/`);
   Notification goes into Dashi's notification server; Email opens the
   default mail app with the draft.
+- **What was answered.** xdg-desktop-portal keeps the answers (Access's
+  camera, microphone, location and background, screenshots, the
+  wallpaper, notifications, screen shares started again without asking) in
+  its permission store (`org.freedesktop.impl.portal.PermissionStore`).
+  The shell reads it from login and hears its `Changed` signal, dating each
+  grant when it first sees it (`src/privacy/`;
+  `$XDG_STATE_HOME/dashi/privacy/seen.json`), and Settings › Privacy &
+  Security lists the grants per app with the agents' kept answers and
+  `screenSharing.clients`, each taken back on its own (`DeletePermission`).
+  The Access sheet's button opens it there, over the links socket
+  (`src/actions/open-link.ts`).
 
 ## Channels
 
@@ -176,6 +187,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
 | `dashi://` link → shell | `$XDG_RUNTIME_DIR/dashi-links.sock`, one JSON line each way, from `dashi-open` (the `x-scheme-handler/dashi` entry) | `docs/actions.md` |
 | share picker ↔ shell | `$XDG_RUNTIME_DIR/dashi-share.sock`, one JSON line each way | `src/share-picker/protocol.ts` |
+| shell → permission store | D-Bus session bus: `org.freedesktop.impl.portal.PermissionStore` (Lookup, List, DeletePermission; `Changed`) | `src/privacy/` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
 | app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |

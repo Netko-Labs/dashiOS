@@ -3,7 +3,7 @@
 import { BLANK_CHOICES, blankChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Page, Setting } from "../ui.tsx";
 
 export function LockScreenPane({ settings, lock }: { settings: SettingsStore; lock: () => void }) {
   const { idle } = useSettings(settings).data;
@@ -11,21 +11,17 @@ export function LockScreenPane({ settings, lock }: { settings: SettingsStore; lo
   return (
     <Page title="Lock Screen">
       <Group>
-        <Row
-          stack
-          label="Turn display off after"
-          detail="The screens go dark when you have been away this long. Moving the pointer or pressing a key wakes them."
-        >
+        <Setting id="lock-screen/turn-display-off">
           <Choices
             testID="lock-blank"
             options={BLANK_CHOICES}
             value={blankChoice(seconds)}
             onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
           />
-        </Row>
-        <Row label="Lock Screen" detail="Covers the screen until you type your password.">
+        </Setting>
+        <Setting id="lock-screen/lock-now">
           <Button testID="lock-now" label="Lock Screen" onPress={lock} />
-        </Row>
+        </Setting>
       </Group>
       <Caption keys="⌃❖Q">Locking is also in the Dashi menu, and on</Caption>
     </Page>

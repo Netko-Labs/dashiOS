@@ -156,8 +156,8 @@ export function startAgents({
   });
   // A revoked answer is gone from the connections that hold it too.
   const offGrants = grants.onChange((change) => {
-    if (!change.removed) return;
-    for (const session of sessions.values()) session.revoke(change.key);
+    if (!change.removed && !change.revoked) return;
+    for (const session of sessions.values()) session.revoke(change.key, change.revoked);
     publish();
   });
   // Locking takes down any sheet that is up; calls fail while it lasts.

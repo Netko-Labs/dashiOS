@@ -2,6 +2,8 @@
  * The agents' tools, now written from actions: `tools/list` is what MCP
  * clients saw before (fixtures/mcp-tools-list.json is 0.3's list, taken from
  * b4f031a before the registry), and every tool is still called the same way.
+ * get_settings and set_setting are 0.5's: the settings registry writes them
+ * (settings-app/registry/), and the ten settings 0.3 took are among theirs.
  */
 
 import { describe, expect, test } from "bun:test";
