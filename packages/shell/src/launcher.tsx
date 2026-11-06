@@ -51,6 +51,7 @@ import { BUDGET } from "./launcher/budget.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
 import { type ExtensionSession, useExtensions } from "./launcher/extensions.ts";
 import { Field } from "./launcher/field.tsx";
+import { fitToRoom } from "./launcher/fit.ts";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
 import type { LauncherCommand } from "./launcher/keys.ts";
@@ -307,7 +308,7 @@ export function Launcher(props: LauncherProps) {
   // A scope has its own rows only, and so does a command from outside. Otherwise agents' rows go around the
   // rest, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
   const inOutside = ext.chip !== undefined;
-  const sections = scope
+  const assembled = scope
     ? scope.sections(query)
     : inOutside
       ? outside
@@ -319,6 +320,8 @@ export function Launcher(props: LauncherProps) {
           ...(props.agents ? { history: props.agents.history } : {}),
           now: Math.floor(Date.now() / 1000),
         });
+  // Whatever added rows (providers, agents), the list fits the panel at the text size (launcher/fit.ts).
+  const sections = fitToRoom(assembled, { height: m.room, row: m.row, head: m.head });
   /** A row's verbs: its scope's, or what verbs.ts gives it. */
   const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
