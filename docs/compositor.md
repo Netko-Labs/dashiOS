@@ -175,8 +175,13 @@ Each milestone ends with the shell running on it in the VM.
   stay Dashi's), text-input and input-method (an input method's candidate
   popup goes under the caret, above it near the screen's bottom, kept on
   its screen, for windows and layer surfaces alike; the shell runs the input
-  method, `packages/shell/src/input-method.ts`), virtual keyboard (the shell's
-  processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
+  method, `packages/shell/src/input-method.ts`; Metal's fields report their
+  caret and take the composition and the commit through mirin's text input,
+  and turn text input off in a password field, so the input method never
+  sees one; a key the keymap binds, the open launcher's Tab, Home, End, Page
+  Up and Page Down among them, is the keymap's even mid-composition, since
+  bindings come before the input method's keyboard grab), virtual keyboard
+  (the shell's processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
   disconnects Chromium for destroying an icon's buffer after the icon),
   xdg-system-bell
   (`bell`), xdg-foreign, ext-image-copy-capture with ext-image-capture-source
