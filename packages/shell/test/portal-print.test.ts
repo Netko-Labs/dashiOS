@@ -138,7 +138,11 @@ test("tokens: PreparePrint's choice is used once, and not after it expires", () 
 
 test("tokens: random, and only the app that was given one can use it", () => {
   const values = [0, 7, 7, 9];
-  const tokens = new PrintTokens(1000, () => 0, () => values.shift() ?? 1);
+  const tokens = new PrintTokens(
+    1000,
+    () => 0,
+    () => values.shift() ?? 1,
+  );
   const choice = choiceFrom(new Map(), "P");
   expect(tokens.keep("org.gnome.TextEditor", choice)).toBe(7);
   expect(tokens.keep("org.gnome.Papers", choice)).toBe(9);
