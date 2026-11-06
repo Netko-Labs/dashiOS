@@ -12,6 +12,7 @@ export {
   pressForKey,
   toneColors,
 } from "./alert.tsx";
+export { ALERT_WINDOW, type AlertContent, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
 export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStates, useControlState } from "./control-state.tsx";

@@ -8,7 +8,7 @@
  *     → (u response, a{sv} results{id s, name s, image s})
  */
 
-import { AlertWindow, Avatar, useColors } from "@dashi/ui";
+import { AlertWindow, Avatar, alertWindowHeight, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Account } from "../../src/accounts/types.ts";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
@@ -71,16 +71,22 @@ export function accountInterface(requests: Requests, read: () => Promise<Account
   };
 }
 
+const shareQuestion = (request: AccountRequest): string => `Share your name and picture with ${appInfo(request.appId).name}?`;
+const shareReason = (request: AccountRequest): string | undefined => (request.reason !== "" ? `“${request.reason}”` : undefined);
+/** The card of what would be shared: the 44 px picture and 10 around it. */
+const SHARE_CARD = 64;
+const SHARE_WIDTH = 420;
+
 function AccountSheet({ request, account, answer }: { request: AccountRequest; account: Account; answer: (shared: boolean) => void }) {
   const colors = useColors();
-  const app = appInfo(request.appId);
   const name = account.realName || account.userName;
+  const reason = shareReason(request);
   return (
     // The one alert frame (UI-5): the question first, then what would be shared, then the app's reason.
     <AlertWindow
       testID="portal"
-      question={`Share your name and picture with ${app.name}?`}
-      message={request.reason !== "" ? `“${request.reason}”` : undefined}
+      question={shareQuestion(request)}
+      {...(reason !== undefined ? { message: reason } : {})}
       glyph={PERSON}
       tone="accent"
       buttons={[
@@ -107,7 +113,13 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
 export function askShareOnScreen(show: ShowDialog): AskShare {
   return (request, account, signal) =>
     show<boolean>(
-      { parent: request.parent, title: "Share Your Name", width: 420, height: 250 },
+      {
+        parent: request.parent,
+        title: "Share Your Name",
+        width: SHARE_WIDTH,
+        // As tall as its question, the reason, the card and the buttons (vertical space is sacred).
+        height: alertWindowHeight({ question: shareQuestion(request), message: shareReason(request) ?? "", extra: SHARE_CARD }, SHARE_WIDTH),
+      },
       (answer) => <AccountSheet request={request} account={account} answer={answer} />,
       signal,
       false,

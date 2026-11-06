@@ -2,9 +2,13 @@
  * How big a dialog's window opens. Metal can't resize a window to its
  * content after it opens, so the size is worked out before, from the text's
  * length and what the dialog holds; `--width` and `--height` win, as in
- * Zenity. The measures here are frame.tsx's, which lays the dialog out.
+ * Zenity. The measures here are frame.tsx's, which lays the dialog out; a
+ * message is @dashi/ui's AlertWindow, which says how tall it is itself
+ * (`alertWindowHeight`).
  */
 
+import { alertWindowHeight } from "@dashi/ui";
+import { splitMessage } from "./markup.ts";
 import type { DialogSpec } from "./spec.ts";
 
 export const LAYOUT = {
@@ -57,9 +61,9 @@ export function dialogSize(spec: DialogSpec, rows = 0): Size {
     case "question": {
       const beside = padding * 2 + icon + gap;
       const width = spec.width ?? (spec.noWrap ? clamp(Math.ceil(longestLine(spec.text) * LAYOUT.char) + beside + 12, 320, MAX_WIDTH) : 420);
-      // A bold headline sets a little wider; a line of slack covers it.
-      const text = lineCount(spec.text, width - beside, spec.noWrap) * line + line;
-      return { width, height: spec.height ?? clamp(frame + Math.max(icon, text), 140, MAX_HEIGHT) };
+      // The one alert frame (message.tsx): as tall as its question, message and buttons, nothing to spare.
+      const { headline, body } = splitMessage(spec.text);
+      return { width, height: spec.height ?? Math.min(alertWindowHeight({ question: headline, message: body }, width), MAX_HEIGHT) };
     }
     case "progress":
       return fixed(440, textHeight(440 - padding * 2) + 10 + 6 + (spec.timeRemaining ? line + 6 : 0));

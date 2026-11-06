@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { askOnScreen } from "../apps/portal/access.tsx";
+import { accessHeight, askOnScreen } from "../apps/portal/access.tsx";
+import { appInfo } from "../apps/portal/apps.ts";
 import { ChooserModel, type Row, type Sources } from "../apps/portal/file-chooser/model.ts";
 import { type ChooserAnswer, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { ChooserView } from "../apps/portal/file-chooser/view.tsx";
@@ -175,6 +176,29 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
   again.mounted().send(windowKey(again.mounted().node("portal:keys"), "escape"));
   await settle();
   expect(second).toEqual({ granted: false, choices: [] });
+});
+
+test("an access sheet opens as tall as its alert, check boxes and all", () => {
+  const request = {
+    appId: "org.example.Camera",
+    parent: "",
+    title: "Use the camera?",
+    subtitle: "",
+    body: "",
+    grantLabel: "Allow",
+    denyLabel: "Don’t Allow",
+    icon: "camera-web-symbolic",
+    choices: [],
+  };
+  const app = appInfo(request.appId);
+  // The controls' strip and 6, the 40 px tile beside the question and its line, 10 and 6, the 28 px buttons, 18.
+  expect(accessHeight(request, app)).toBe(146);
+  const boxes = [
+    { id: "a", label: "Remember", options: [], initial: "true" },
+    { id: "b", label: "Also the microphone", options: [], initial: "false" },
+  ];
+  // Two check boxes, 16 each and 8 apart, 6 under the line: the words outgrow the tile.
+  expect(accessHeight({ ...request, choices: boxes }, app)).toBe(38 + 6 + (17 + 4 + 16 + 4 + 6 + 40) + 10 + 6 + 28 + 18);
 });
 
 test("the print sheet: Copies keeps what is typed, Enter prints from the field, Esc cancels", async () => {
