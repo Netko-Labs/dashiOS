@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ago, HistoryLog, readHistory, taskSummary } from "../src/agents/ask/history.ts";
+import { callsSummary, groupSessions, spanWords } from "../src/agents/ask/sessions.ts";
 
 const lines = (...values: unknown[]) => values.map((value) => JSON.stringify(value)).join("\n");
 
@@ -90,4 +91,46 @@ test("the log on disk: written as tasks finish, read back, listeners told", () =
   expect(heard).toBe(2);
   expect(readFileSync(join(dir, "tasks.jsonl"), "utf8").split("\n").filter(Boolean)).toHaveLength(2);
   expect(log.read().map((entry) => entry.id)).toEqual(["ask-9.1", "session:1"]);
+});
+
+test("an agent connecting once per call is one row: its calls counted, their span, each connection kept", () => {
+  const call = (time: number, tool: string, agent = "Remote agent") => ({ time, agent, claims: null, tool, outcome: "ok" });
+  const end = (time: number) => ({ time, agent: "Remote agent", claims: null, tool: null, outcome: "disconnected" });
+  const activity = lines(
+    call(1000, "screenshot"),
+    end(1001),
+    call(1030, "click"),
+    end(1031),
+    call(1300, "type_text"),
+    end(1301),
+    // More than ten minutes after the last call: a row of its own.
+    call(2000, "screenshot"),
+    end(2001),
+    // Another agent in between breaks the run.
+    call(2100, "list_windows", "claude"),
+    call(2200, "screenshot"),
+  );
+  const entries = readHistory({ tasks: "", activity });
+  expect(entries.map((entry) => [entry.id, entry.who, entry.summary, entry.parts?.length ?? 1, entry.open])).toEqual([
+    ["session:6", "Remote agent", "1 call: screenshot", 1, true],
+    ["session:5", "claude", "1 call: list windows", 1, true],
+    ["session:4", "Remote agent", "1 call: screenshot", 1, false],
+    ["session:1+", "Remote agent", "3 calls over 5 min: screenshot, click, type text", 3, false],
+  ]);
+  expect(entries[3]?.parts?.map((part) => [part.id, part.summary])).toEqual([
+    ["session:1", "1 call: screenshot"],
+    ["session:2", "1 call: click"],
+    ["session:3", "1 call: type text"],
+  ]);
+  expect(entries[3]?.time).toBe(1000);
+  expect(entries[3]?.end).toBe(1300);
+});
+
+test("a span in words, and the calls' line", () => {
+  expect(spanWords(59)).toBeNull();
+  expect(spanWords(4 * 60 + 20)).toBe("4 min");
+  expect(spanWords(3600)).toBe("1 h");
+  expect(spanWords(2 * 3600 + 5 * 60)).toBe("2 h 5 min");
+  expect(callsSummary(["screenshot", "click", "screenshot", "type text", "scroll"], 0, 125)).toBe("5 calls over 2 min: screenshot, click, type text");
+  expect(groupSessions([])).toEqual([]);
 });
