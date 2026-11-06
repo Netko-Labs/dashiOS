@@ -159,3 +159,18 @@ test("without a catalog key the store opens on Installed, says the catalog isn't
   expect(root.lastTree()).toContain("The applet catalog isn't available yet.");
   root.unmount();
 });
+
+test("a machine that can't be read leaves the machine unknown, with no unhandled rejection", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-store-nomachine-"));
+  const catalog = new Catalog({ url: "file:///nowhere/index.json", key: null, cacheDir: join(dir, "cache") });
+  const installer = new AppletInstaller({
+    root: join(dir, "applets"),
+    dataRoot: join(dir, "data"),
+    dashiVersion: "0.4.0",
+    download: (url, size) => catalog.download(url, size),
+  });
+  const store = new AppletStore(catalog, installer, () => Promise.reject(new Error("no dmi")), "0.4.0");
+  await store.refresh();
+  await settle();
+  expect(store.getSnapshot().machine).toBeNull();
+});

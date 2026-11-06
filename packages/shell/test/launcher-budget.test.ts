@@ -141,6 +141,26 @@ describe("slow sources", () => {
     expect(others.isDropped("flaky")).toBe(false);
     expect(others.snapshot().sources[0]?.state.kind).toBe("failed");
   });
+
+  test("a source whose ask throws has failed; the others are still asked", async () => {
+    const timers = fakeTimers();
+    const notes = source("notes");
+    const throwing: SlowSource<string> = {
+      id: "broken",
+      label: "Broken",
+      ask() {
+        throw new Error("not a promise");
+      },
+    };
+    const sources = new SlowSources([throwing, notes], () => {}, timers);
+    sources.start("lis");
+    expect(notes.asked).toEqual(["lis"]);
+    await Bun.sleep(0);
+    expect(states(sources.snapshot())).toEqual([
+      ["broken", "failed"],
+      ["notes", "waiting"],
+    ]);
+  });
 });
 
 describe("instant sources", () => {

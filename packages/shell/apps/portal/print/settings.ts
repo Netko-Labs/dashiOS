@@ -139,28 +139,34 @@ export function pdfPageCount(pdf: Uint8Array): number | null {
   return pages > 0 ? pages : null;
 }
 
-/** PreparePrint's choices, kept for the Print that comes with the token. */
+/**
+ * PreparePrint's choices, kept for the Print that comes with the token. A
+ * token is a random u32 bound to the app that asked: another app that
+ * guesses it gets nothing, and can't print with (or save to) this one's choice.
+ */
 export class PrintTokens {
-  private readonly kept = new Map<number, { choice: PrintChoice; until: number }>();
-  private next = 1;
+  private readonly kept = new Map<number, { appId: string; choice: PrintChoice; until: number }>();
 
   constructor(
     private readonly ttlMs = 10 * 60 * 1000,
     private readonly now: () => number = Date.now,
+    private readonly random: () => number = () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   ) {}
 
-  keep(choice: PrintChoice): number {
+  keep(appId: string, choice: PrintChoice): number {
     for (const [token, entry] of this.kept) if (entry.until < this.now()) this.kept.delete(token);
-    const token = this.next++;
-    this.kept.set(token, { choice, until: this.now() + this.ttlMs });
+    let token = this.random();
+    while (token === 0 || this.kept.has(token)) token = this.random();
+    this.kept.set(token, { appId, choice, until: this.now() + this.ttlMs });
     return token;
   }
 
-  /** The choice for a token, once. */
-  take(token: number | undefined): PrintChoice | null {
+  /** The choice for a token, once, and only for the app it was given to. */
+  take(token: number | undefined, appId: string): PrintChoice | null {
     if (token === undefined) return null;
     const entry = this.kept.get(token);
+    if (!entry || entry.appId !== appId) return null;
     this.kept.delete(token);
-    return entry && entry.until >= this.now() ? entry.choice : null;
+    return entry.until >= this.now() ? entry.choice : null;
   }
 }

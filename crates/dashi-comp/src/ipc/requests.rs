@@ -118,6 +118,7 @@ pub(crate) fn handle(
             done(state.set_capture_mask(params))
         }
         "input-origin" => {
+            shell_only(state, connection, "input-origin")?;
             let target = session::origin::parse_target(params)?;
             Ok(state.origins.describe(&target, std::time::Instant::now()))
         }

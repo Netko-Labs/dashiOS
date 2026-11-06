@@ -31,6 +31,9 @@ describe("dashi:// addresses", () => {
       segments: ["settings", "appearance", "dark-mode"],
       query: { value: "true" },
     });
+    // A key that names an Object member is the first of its kind, not a repeat.
+    expect(parseAddress("dashi://x?constructor=1&toString=2&__proto__=3")?.query).toEqual({ constructor: "1", toString: "2", ["__proto__"]: "3" });
+    expect(parseAddress("dashi://x?constructor=1&constructor=2")).toBeNull();
     // App ids keep their capitals.
     expect(parseAddress("dashi://app/org.gnome.Nautilus")?.address).toBe("dashi://app/org.gnome.Nautilus");
     expect(parseAddress("dashi://app/dev.dashi.notes/menu/file:new")?.segments).toEqual(["app", "dev.dashi.notes", "menu", "file:new"]);

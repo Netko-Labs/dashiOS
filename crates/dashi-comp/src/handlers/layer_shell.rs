@@ -5,7 +5,8 @@
 //!
 //! Who may open one is the shell's decision too: a client under an applet's
 //! process only while the shell grants it (`applet-clients`,
-//! session/applets.rs); other clients as in C1, any (C3: per-client grants).
+//! session/applets.rs); a client whose process is unknown (a security-context
+//! sandbox's) never; other clients as in C1, any (C3: per-client grants).
 
 use smithay::{
     delegate_layer_shell,

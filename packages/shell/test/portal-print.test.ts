@@ -127,13 +127,28 @@ test("tokens: PreparePrint's choice is used once, and not after it expires", () 
   let now = 0;
   const tokens = new PrintTokens(1000, () => now);
   const choice = choiceFrom(new Map(), "P");
-  const token = tokens.keep(choice);
-  expect(tokens.take(token)).toEqual(choice);
-  expect(tokens.take(token)).toBeNull();
-  const late = tokens.keep(choice);
+  const token = tokens.keep("org.gnome.TextEditor", choice);
+  expect(tokens.take(token, "org.gnome.TextEditor")).toEqual(choice);
+  expect(tokens.take(token, "org.gnome.TextEditor")).toBeNull();
+  const late = tokens.keep("org.gnome.TextEditor", choice);
   now = 5000;
-  expect(tokens.take(late)).toBeNull();
-  expect(tokens.take(undefined)).toBeNull();
+  expect(tokens.take(late, "org.gnome.TextEditor")).toBeNull();
+  expect(tokens.take(undefined, "org.gnome.TextEditor")).toBeNull();
+});
+
+test("tokens: random, and only the app that was given one can use it", () => {
+  const values = [0, 7, 7, 9];
+  const tokens = new PrintTokens(
+    1000,
+    () => 0,
+    () => values.shift() ?? 1,
+  );
+  const choice = choiceFrom(new Map(), "P");
+  expect(tokens.keep("org.gnome.TextEditor", choice)).toBe(7);
+  expect(tokens.keep("org.gnome.Papers", choice)).toBe(9);
+  expect(tokens.take(7, "org.gnome.Papers")).toBeNull();
+  expect(tokens.take(7, "org.gnome.TextEditor")).toEqual(choice);
+  expect(new PrintTokens().keep("a", choice)).not.toBe(new PrintTokens().keep("a", choice));
 });
 
 const fakeBus: Exporter = { export: (path) => ({ path, emit: () => {}, propertiesChanged: () => {}, unexport: () => {} }) };
@@ -167,6 +182,33 @@ test("Print with PreparePrint's token prints the descriptor's PDF without asking
   expect(printedCode).toBe(0);
   expect(asked).toBe(1);
   expect(printed).toEqual([["P", "Notes:%PDF-1.7", 2]]);
+});
+
+test("Print rejects a token PreparePrint gave a different app: it asks, and nothing goes to the first app's PDF", async () => {
+  const written: string[] = [];
+  const asked: string[] = [];
+  const deps: PrintDeps = {
+    printers: async () => [],
+    defaultPrinter: async () => null,
+    print: async () => 0,
+    ask: async (request) => {
+      asked.push(request.appId);
+      return request.appId === "org.gnome.TextEditor" ? { kind: "pdf", choice: request.start } : null;
+    },
+    savePath: async () => "/home/alexk/Notes.pdf",
+    writeFile: (path) => void written.push(path),
+  };
+  const backend = new PrintBackend(new Requests(fakeBus), deps);
+  const [, results] = await backend.prepare(["/r/6", "org.gnome.TextEditor", "", "Notes", new Map(), new Map(), new Map()]);
+  const token = (results.get("token") as Variant).value as number;
+  const pipe = pipePair();
+  writeSync(pipe.write, "%PDF-1.7");
+  closeFd(pipe.write);
+  const [code] = await backend.print(["/r/7", "com.example.Other", "", "Other", 0, new Map([["token", variant("u", token)]])], [pipe.read]);
+  closeFd(pipe.read);
+  expect(code).toBe(1);
+  expect(asked).toEqual(["org.gnome.TextEditor", "com.example.Other"]);
+  expect(written).toEqual([]);
 });
 
 test("Print without a token asks; Cancel prints nothing; a PDF save writes the document", async () => {

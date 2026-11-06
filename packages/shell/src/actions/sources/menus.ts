@@ -90,7 +90,7 @@ export class MenuSource implements ActionSource {
     const soon = () => {
       this.pending ??= setTimeout(() => {
         this.pending = null;
-        void this.refresh();
+        void this.refresh().catch((error) => console.error("dashi-shell: actions from menus:", error));
       }, SETTLE_MS);
     };
     this.offs = [deps.store.onPublished(soon), deps.onWindows?.(soon) ?? (() => {})];

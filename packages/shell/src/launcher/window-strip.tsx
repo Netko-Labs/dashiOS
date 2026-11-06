@@ -7,6 +7,7 @@
 
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
+import type { ReactElement } from "react";
 import type { LauncherWindow } from "./items.ts";
 import { STRIP } from "./pictures.ts";
 
@@ -22,7 +23,7 @@ export interface WindowStripProps {
   access?: (window: LauncherWindow, index: number) => Record<string, unknown>;
 }
 
-export function WindowStrip({ windows, picked, indent, onLayout, onPick, access }: WindowStripProps) {
+export function WindowStrip({ windows, picked, indent, onLayout, onPick, access }: WindowStripProps): ReactElement {
   const colors = useColors();
   return (
     <View

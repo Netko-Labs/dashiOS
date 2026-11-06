@@ -212,6 +212,39 @@ test("the controller: unplugging with Steam on the card waits, says so once, and
   controller.close();
 });
 
+test("the controller: quitting a holder signals only the pids that hold the card now", async () => {
+  let running: ProcessFds[] = [
+    { pid: 5900, comm: "steam", links: ["/dev/nvidia0"] },
+    { pid: 7100, comm: "mpv", links: ["/dev/dri/card0"] },
+  ];
+  const signalled: number[] = [];
+  const controller = new GraphicsController({
+    card: CARD,
+    backend: null,
+    choice: () => "hybrid",
+    saveChoice: () => {},
+    processes: () => running,
+    screens: () => [],
+    power: () => "active",
+    cardWatts: () => null,
+    signal: (pid) => void signalled.push(pid),
+  });
+  await controller.refresh();
+  expect(controller.getSnapshot().holders.map((holder) => [holder.name, holder.pids])).toEqual([
+    ["steam", [5900]],
+    ["mpv", [7100]],
+  ]);
+  // Since the last look Steam quit, its pid went to a process that has nothing of the card open, and Steam came back.
+  running = [
+    { pid: 5900, comm: "bash", links: ["/dev/null"] },
+    { pid: 6100, comm: "steam", links: ["/dev/nvidia0"] },
+    { pid: 7100, comm: "mpv", links: ["/dev/dri/card0"] },
+  ];
+  controller.quit("steam");
+  expect(signalled).toEqual([6100]);
+  controller.close();
+});
+
 test("one GPU, or no cardwire: nothing to switch, nothing said", async () => {
   const none = new GraphicsController({ card: null, backend: null, choice: () => "automatic", saveChoice: () => {} });
   await none.start();
