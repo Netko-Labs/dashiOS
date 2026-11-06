@@ -1,15 +1,16 @@
 /**
  * Battery & Power: the battery (level, state, health, cycles), whether the
  * menu bar shows its percentage, its usage (the draw, the last day's charts,
- * insights, the apps using energy: battery-usage.tsx), the power mode (Low Power, Balanced, High
- * Performance, through power-profiles-daemon), when the display turns off and
+ * insights, the apps using energy: battery-usage.tsx), the power mode (Automatic, Low Power,
+ * Balanced, High Performance: power/modes/, with battery health and the processor on a laptop:
+ * battery-laptop.tsx), when the display turns off and
  * the computer sleeps, and what the lid and power button do. Parts that do not
  * apply are left out: a desktop has no battery, and a machine without the
  * daemon has no power modes. The lid is logind's configuration
  * (/etc/systemd/logind.conf), shown as it is.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { batteryGlyph } from "../../glyphs.ts";
@@ -17,12 +18,12 @@ import { describeAction } from "../../power/policy.ts";
 import { describeBattery } from "../../system/battery-details.ts";
 import { useEnergy } from "../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../system/profiles.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { BLANK_CHOICES, blankChoice, SLEEP_CHOICES, sleepChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
+import { BatteryHealthGroup, PowerModeGroup, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
 import { Failure, Value } from "./parts.tsx";
 
@@ -71,17 +72,26 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
               <Value testID="battery-cycles">{String(battery.cycles)}</Value>
             </Row>
           )}
-          <Row label="Show percentage in menu bar">
-            <Switch
-              testID="battery-menubar"
-              on={menuBar.batteryPercent ?? false}
-              onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
-            />
-          </Row>
+          <Spot pane="battery" row="battery-percentage">
+            <Row label="Show percentage in menu bar">
+              <Switch
+                testID="battery-menubar"
+                on={menuBar.batteryPercent ?? false}
+                onChange={(batteryPercent) => settings.patch("menuBar", { batteryPercent })}
+              />
+            </Row>
+          </Spot>
         </Group>
       )}
       {battery && services.battery && <BatteryUsage monitor={services.battery} />}
-      {profiles && (
+      {services.laptop && (
+        <>
+          <PowerModeGroup laptop={services.laptop} />
+          <BatteryHealthGroup laptop={services.laptop} settings={settings} />
+          <ProcessorGroup laptop={services.laptop} settings={settings} />
+        </>
+      )}
+      {!services.laptop && profiles && (
         <>
           <Group testID="power-mode">
             <Row stack label="Power Mode" detail={MODE_DETAIL[profiles.active]}>

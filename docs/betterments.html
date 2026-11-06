@@ -1,0 +1,1201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A launcher that beats Raycast · Dashi Docs</title>
+  <link rel="stylesheet" href="assets/docs.css">
+  <script src="assets/docs.js"></script>
+  <style>
+    /* Option cards, as in proposals.html and 0.4.0.html. */
+    .props { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0 8px; }
+    .prop { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+    .prop.pick { border-color: var(--kombu); box-shadow: 0 0 0 1.5px var(--kombu), var(--shadow-sm); }
+    .prop .mk { height: 236px; position: relative; overflow: hidden; background: var(--wall); color: var(--lx-ink); font-size: 11px; line-height: 1.3; }
+    .prop .mk.plain { background: var(--wash); color: var(--ink); }
+    .prop .cap { padding: 13px 16px 15px; flex: 1; }
+    .prop .cap h4 { margin: 0 0 4px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+    .prop .cap h4 .k { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); font-size: 12px; flex: none; }
+    .prop.pick .cap h4::after { content: "Recommended"; margin-left: auto; font-size: 11px; font-weight: 600; color: #fff; background: var(--kombu); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+    .prop.today .cap h4::after { content: "Today"; margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink-muted); background: var(--wash); border: 1px solid var(--line); padding: 0 8px; border-radius: 99px; }
+    .prop .cap p { margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+    .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 9px 0 0; padding: 0; list-style: none; font-size: 12.5px; }
+    .pc li { margin: 0; color: var(--ink-muted); padding-left: 14px; position: relative; }
+    .pc li::before { position: absolute; left: 0; font-weight: 700; }
+    .pc .y::before { content: "+"; color: var(--kombu); }
+    .pc .n::before { content: "–"; color: var(--ume); }
+    .verdict { border-left: 3px solid var(--kombu); padding: 4px 0 4px 16px; margin: 18px 0 8px; }
+    .verdict b { color: var(--accent); }
+    .spec { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 20px; margin: 14px 0; font-size: 14px; }
+    .spec h5 { font-size: 12px; color: var(--ink-muted); margin: 12px 0 2px; font-weight: 600; }
+    .spec ul { margin: 4px 0 10px; }
+    .spec table { font-size: 13px; margin: 6px 0 12px; }
+    .sz { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; background: var(--wash); border: 1px solid var(--line); color: var(--ink-muted); white-space: nowrap; }
+    /* Where the work lands: neutral tags, except agents, which wear shiso (CO-3). */
+    .where { display: inline-block; font: 600 11px var(--font); padding: 0 7px; border-radius: 99px; white-space: nowrap; background: var(--wash); color: var(--ink); border: 1px solid var(--line-strong); }
+    .where.agents { background: #6e56cf1f; color: var(--shiso); border-color: #6e56cf40; }
+    .sev { display: inline-block; font: 700 11px var(--font); padding: 0 7px; border-radius: 99px; white-space: nowrap; }
+    .sev.p0 { background: #d0596f26; color: #b03a52; }
+    .sev.p1 { background: #e5b13f2e; color: #8a6510; }
+    .sev.p2 { background: var(--wash); color: var(--ink-muted); border: 1px solid var(--line); }
+    .sev.p3 { color: var(--ink-faint); border: 1px solid var(--line); }
+    :root[data-theme="dark"] .sev.p0 { color: #f0a7b6; }
+    :root[data-theme="dark"] .sev.p1 { color: var(--broth); }
+    .by { font-size: 11px; color: var(--ink-muted); white-space: nowrap; }
+    table.findings td:nth-child(1), table.findings td:nth-child(2) { white-space: nowrap; }
+    table.findings td:nth-child(4) { font-size: 12.5px; }
+    table.findings code { font-size: 0.8em; padding: 1px 4px; }
+    .voices { display: grid; gap: 12px; margin: 14px 0 6px; }
+    .voice { background: var(--bg-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 18px 12px; }
+    .voice h4 { margin: 2px 0 6px; font-size: 14.5px; display: flex; align-items: baseline; gap: 10px; }
+    .voice h4 a { margin-left: auto; font-size: 12.5px; font-weight: 500; }
+    .voice h4 small { font-weight: 500; color: var(--ink-muted); font-size: 12px; }
+    .roast { max-width: none; margin: 6px 0; padding: 8px 14px; border-radius: 10px; background: var(--wash); font-style: italic; color: var(--ink); font-size: 14px; }
+    .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    .vs > div { border-radius: var(--radius); padding: 12px 18px 8px; border: 1px solid var(--line); background: var(--bg-raised); font-size: 14px; }
+    .vs h4 { margin: 2px 0 6px; font-size: 13px; }
+    .vs .them { border-top: 3px solid var(--line-strong); }
+    .vs .us { border-top: 3px solid var(--kombu); }
+    .vs ul { margin: 0 0 6px; padding-left: 18px; }
+    .vs li { font-size: 13.5px; }
+    .wave { border-left: 3px solid var(--line-strong); padding: 2px 0 2px 16px; margin: 14px 0; }
+    .wave.w1 { border-color: var(--broth); } .wave.w2 { border-color: var(--kombu); } .wave.w3 { border-color: var(--shiso); }
+    .wave h3 { margin: 4px 0; }
+    .wave table { font-size: 13.5px; margin: 8px 0 4px; }
+    .wave td:last-child { white-space: nowrap; }
+    .picks { counter-reset: q; list-style: none; padding: 0; display: grid; gap: 8px; }
+    .picks li { counter-increment: q; background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px 9px 46px; position: relative; font-size: 14px; max-width: none; }
+    .picks li::before { content: counter(q); position: absolute; left: 12px; top: 9px; width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent); font-weight: 700; font-size: 12px; }
+    .picks li i { color: var(--accent); font-style: normal; font-weight: 600; }
+    table.keys td:first-child { white-space: nowrap; font-weight: 600; }
+
+    /* ── The mockup kit: a wallpaper and the launcher, in the page's theme ── */
+    :root {
+      --wall: radial-gradient(90% 80% at 85% 100%, #e88a55aa 0%, transparent 60%), linear-gradient(135deg, #191433 0%, #3b2a7a 50%, #8a4fb8 100%);
+      --lx-glass: #f5f5f7f2; --lx-edge: #1d1d1f2e; --lx-ink: #1d1d1f; --lx-muted: #1d1d1fb8; --lx-faint: #1d1d1f73; --lx-sep: #1d1d1f1a;
+      --lx-wash: #3e8a7224; --lx-bar: #3e8a72; --lx-chip: #1d1d1f12; --lx-tile: linear-gradient(#77777c, #4c4c51); --lx-off: #1d1d1f33;
+      --lx-agent-wash: #6e56cf1f; --lx-agent-ink: #5a43b8; --lx-ume: #b03a52; --lx-win: #ffffff; --lx-winbar: #eeebe4; --lx-line: #1d1d1f1f;
+    }
+    :root[data-theme="dark"] {
+      --lx-glass: #1e1e1ef2; --lx-edge: #ffffff26; --lx-ink: #f5f5f7; --lx-muted: #f5f5f7b8; --lx-faint: #f5f5f773; --lx-sep: #ffffff1a;
+      --lx-wash: #5fae9538; --lx-bar: #5fae95; --lx-chip: #ffffff17; --lx-tile: linear-gradient(#4a4a4e, #333336); --lx-off: #ffffff33;
+      --lx-agent-wash: #8b76e833; --lx-agent-ink: #cfc6f7; --lx-ume: #f0a7b6; --lx-win: #1e1e20; --lx-winbar: #2c2c2e; --lx-line: #ffffff1f;
+    }
+    .lx { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); width: 86%; background: var(--lx-glass); border: 1px solid var(--lx-edge); border-radius: 10px; box-shadow: 0 16px 32px -10px #000a; color: var(--lx-ink); font-size: 10.5px; overflow: hidden; z-index: 4; }
+    .lx.today { border-radius: 11px; }
+    .lx .f { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 10px; font-size: 13px; }
+    .lx .f + .l { border-top: 1px solid var(--lx-sep); }
+    .lx .f .q::after { content: ""; display: inline-block; width: 1px; height: 13px; background: var(--lx-ink); margin-left: 1px; vertical-align: -2px; }
+    .lx .f .ph { color: var(--lx-faint); }
+    .lx .f .hint { margin-left: auto; font-size: 9px; color: var(--lx-muted); display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+    .lx .f .chip { display: inline-flex; align-items: center; gap: 4px; height: 17px; padding: 0 6px; border-radius: 5px; background: var(--lx-chip); font-size: 9.5px; font-weight: 600; white-space: nowrap; }
+    .lx .l { padding: 3px; }
+    .lx .h { height: 15px; display: flex; align-items: center; padding: 0 7px; font-size: 8.5px; font-weight: 600; color: var(--lx-muted); }
+    .lx .h small { margin-left: auto; font-weight: 500; }
+    .lx .r { height: 23px; display: flex; align-items: center; gap: 7px; padding: 0 7px; border-radius: 6px; white-space: nowrap; position: relative; }
+    .lx .r.tall { height: 30px; }
+    .lx .r .t b { font-weight: 700; }
+    .lx .r .s { color: var(--lx-muted); font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; }
+    .lx .r .end { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--lx-muted); }
+    .lx .r.old { background: #3e8a72; color: #fff; }
+    .lx .r.cur { background: var(--lx-wash); }
+    .lx .r.cur::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; width: 2.5px; border-radius: 2px; background: var(--lx-bar); }
+    .lx .r.ring { box-shadow: inset 0 0 0 1.5px var(--lx-bar); }
+    .lx .r.deep { background: #2f6f5a; color: #fff; }
+    .lx .r.deep .s, .lx .r.deep .end { color: #ffffffd9; }
+    .lx .r.ask .t { color: var(--lx-agent-ink); }
+    .lx .r .d { color: var(--lx-ume); }
+    .lx hr { border: 0; border-top: 1px solid var(--lx-sep); margin: 2px 6px; }
+    .lx .foot { height: 22px; border-top: 1px solid var(--lx-sep); display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 0 10px; font-size: 9px; color: var(--lx-muted); background: var(--lx-chip); }
+    .kc { display: inline-block; font: 600 8.5px var(--font); padding: 0 4px; line-height: 13px; border-radius: 3px; background: var(--lx-chip); color: var(--lx-muted); white-space: nowrap; }
+    .lx .r.old .kc { background: #ffffff2e; color: #fff; }
+    .tag-ag { display: inline-block; font: 600 8.5px var(--font); padding: 0 5px; line-height: 13px; border-radius: 4px; background: var(--lx-agent-wash); color: var(--lx-agent-ink); white-space: nowrap; }
+    /* Glyph tiles (neutral, CO-2) and app tiles. */
+    .g { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; background: var(--lx-tile); }
+    .g::after { content: ""; width: 10px; height: 10px; background: #fff; -webkit-mask: var(--m) center / contain no-repeat; mask: var(--m) center / contain no-repeat; }
+    .g.bare { background: none; }
+    .g.bare::after { background: var(--lx-muted); width: 12px; height: 12px; }
+    .g.ag { background: none; }
+    .g.ag::after { background: var(--lx-agent-ink); width: 12px; height: 12px; }
+    .r.old .g { background: linear-gradient(#8e8e93, #636366); }
+    .ap { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; color: #fff; font: 700 7.5px var(--mono); background: linear-gradient(var(--c, #5fae95), color-mix(in srgb, var(--c, #5fae95), #000 38%)); position: relative; }
+    .ap.run::after { content: ""; position: absolute; bottom: -3px; left: 50%; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--lx-ink); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--shiso); flex: none; }
+    .sw { width: 20px; height: 12px; border-radius: 6px; background: var(--lx-bar); position: relative; flex: none; }
+    .sw::after { content: ""; position: absolute; top: 2px; right: 2px; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 1px 1px #0003; }
+    .sw.off { background: var(--lx-off); } .sw.off::after { right: auto; left: 2px; }
+    .thumbs { display: flex; gap: 6px; padding: 3px 7px 6px 30px; }
+    .thumbs i { width: 62px; height: 38px; border-radius: 4px; background: var(--lx-win); border: 1px solid var(--lx-line); position: relative; overflow: hidden; display: block; }
+    .thumbs i::before { content: ""; display: block; height: 5px; background: var(--lx-winbar); border-bottom: 1px solid var(--lx-line); }
+    .thumbs i::after { content: ""; position: absolute; left: 4px; right: 12px; top: 10px; height: 2px; background: var(--lx-line); box-shadow: 0 5px 0 var(--lx-line), 0 10px 0 var(--lx-line), 0 15px 0 var(--lx-line); }
+    .thumbs i.sel { outline: 1.5px solid var(--lx-bar); outline-offset: 1px; }
+    .thumbs i.dk { background: #1d1d1f; }
+    .note { position: absolute; font-size: 9.5px; color: #fff; background: #0000008c; padding: 2px 7px; border-radius: 99px; z-index: 8; white-space: nowrap; }
+    .ptr { position: absolute; width: 12px; height: 16px; z-index: 9; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Cpath d='M1 1l0 12.5 3.2-3 2.3 5 2-1-2.3-4.8 4.3-.2z' fill='%23111' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E") no-repeat; }
+    .mb { position: absolute; top: 0; left: 0; right: 0; height: 14px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #f5f5f7c7; border-bottom: 1px solid #0000002b; font-size: 8.5px; color: #1d1d1f; z-index: 3; }
+    .mb b { font-weight: 700; }
+    .mb .rt { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .pop { position: absolute; z-index: 6; background: var(--lx-glass); border: 1px solid var(--lx-edge); border-radius: 8px; box-shadow: 0 14px 28px -8px #0008; padding: 4px; font-size: 9.5px; color: var(--lx-ink); }
+    .pop .r { height: 18px; display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 0 6px; border-radius: 4px; white-space: nowrap; }
+    .pop .r.sel { background: #3e8a72; color: #fff; }
+    .bubble { width: fit-content; margin: 4px 8px; padding: 5px 8px; border-radius: 8px; background: var(--lx-chip); max-width: 78%; font-size: 9.5px; }
+    .bubble.me { margin-left: auto; background: var(--lx-wash); }
+    /* A small window, for Settings and text mockups. */
+    .w { position: absolute; background: var(--lx-win); color: var(--lx-ink); border-radius: 7px; overflow: hidden; box-shadow: 0 12px 26px -8px #0009; border: 1px solid var(--lx-line); z-index: 2; font-size: 9.5px; }
+    .w .tb { height: 14px; background: var(--lx-winbar); border-bottom: 1px solid var(--lx-line); display: flex; align-items: center; gap: 3px; padding: 0 6px; font-size: 8px; font-weight: 600; }
+    .w .tb i { width: 5px; height: 5px; border-radius: 50%; background: #d0596f; } .w .tb i + i { width: 6px; height: 2px; border-radius: 1px; background: #e5b13f; } .w .tb i + i + i { width: 5px; height: 5px; border-radius: 1.4px; background: #4a9a7e; }
+    .w .tb span { margin-left: 6px; }
+    .grp { margin: 6px 8px; border: 1px solid var(--lx-line); border-radius: 6px; }
+    .grp .gr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 7px; min-height: 20px; }
+    .grp .gr + .gr { border-top: 1px solid var(--lx-line); }
+    .grp .gr.hl { background: var(--lx-wash); }
+    .btn { display: inline-block; font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 5px; background: var(--lx-chip); white-space: nowrap; }
+    .btn.p { background: #2f6f5a; color: #fff; }
+    .kbd { display: inline-block; font: 600 9.5px var(--font); padding: 1px 5px; border-radius: 4px; background: #ffffffd9; color: #1d1d1f; border: 1px solid #0000002b; }
+    /* Diagrams. */
+    .diagram { padding: 14px; display: grid; gap: 7px; align-content: center; height: 100%; font-size: 11px; color: var(--ink); }
+    .diagram .bx { border: 1px solid var(--line-strong); border-radius: 8px; padding: 5px 9px; background: var(--bg-raised); }
+    .diagram .bx b { display: block; font-size: 11.5px; }
+    .diagram .bx small { color: var(--ink-muted); }
+    .diagram .bx.acc { border-color: var(--kombu); background: var(--accent-wash); }
+    .diagram .bx.ag { border-color: #6e56cf66; background: #6e56cf14; }
+    .diagram .bx.off { opacity: .55; border-style: dashed; }
+    .diagram .ar { text-align: center; color: var(--ink-faint); font-size: 12px; line-height: 1; }
+    .diagram .row { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
+    .tline { padding: 18px 16px; display: grid; gap: 9px; align-content: center; height: 100%; font-size: 11px; color: var(--ink); }
+    .tline .ln { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 8px; }
+    .tline .ln > span { color: var(--ink-muted); font-size: 10.5px; }
+    .tline .bars { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: var(--wash); }
+    .tline .bars i { display: grid; place-items: center; font-style: normal; font-size: 9px; color: #fff; white-space: nowrap; overflow: hidden; }
+    .tline .scale { display: flex; justify-content: space-between; color: var(--ink-faint); font-size: 9.5px; margin-left: 82px; }
+    /* The hero. */
+    .hero-mk { position: relative; height: 340px; border-radius: 16px; overflow: hidden; background: var(--wall); border: 1px solid var(--line); margin: 18px 0 10px; }
+    .hero-mk .lx { width: 45%; top: 36px; font-size: 11px; }
+    .hero-mk .lx .r { height: 25px; }
+    .hero-mk .lx.left { left: 25.5%; }
+    .hero-mk .lx.right { left: 74.5%; }
+    .hero-mk .note { font-size: 10.5px; }
+    @media (max-width: 760px) { .props, .vs { grid-template-columns: 1fr; } .pc { grid-template-columns: 1fr; } .hero-mk { height: 640px; } .hero-mk .lx { width: 90%; } .hero-mk .lx.left, .hero-mk .lx.right { left: 50%; } .hero-mk .lx.right { top: 330px; } }
+    /* Glyphs, drawn for these pages (masks, so they take the tile's ink). */
+    .g.search { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='7' cy='7' r='4.6'/%3E%3Cpath d='M10.5 10.5l3.6 3.6'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.gear { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='2.4'/%3E%3Cpath d='M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2M3.5 3.5l1.5 1.5M11 11l1.5 1.5M3.5 12.5L5 11M11 5l1.5-1.5'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.wifi { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.8 6.2a9 9 0 0 1 12.4 0M4.3 8.9a5.4 5.4 0 0 1 7.4 0'/%3E%3C/g%3E%3Ccircle cx='8' cy='12.2' r='1.4' fill='black'/%3E%3C/svg%3E"); }
+    .g.moon { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.6 10.2A6 6 0 0 1 5.8 2.4a6 6 0 1 0 7.8 7.8z' fill='black'/%3E%3C/svg%3E"); }
+    .g.bat { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='1.6' y='4.6' width='11' height='6.8' rx='1.6'/%3E%3Cpath d='M14.4 7v2'/%3E%3C/g%3E%3Crect x='3.4' y='6.4' width='5.6' height='3.2' rx='.6' fill='black'/%3E%3C/svg%3E"); }
+    .g.calc { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='1.6' width='10' height='12.8' rx='2'/%3E%3Cpath d='M5.6 5h4.8M5.8 8.6h.1M8 8.6h.1M10.2 8.6h.1M5.8 11.4h.1M8 11.4h.1M10.2 11.4h.1'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.info { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.2'/%3E%3Cpath d='M8 7.4v4M8 4.8v.1'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.spark { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.2l1.7 5.1 5.1 1.7-5.1 1.7L8 14.8l-1.7-5.1L1.2 8l5.1-1.7z' fill='black'/%3E%3C/svg%3E"); }
+    .g.clip { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='2.8' width='10' height='11.6' rx='2'/%3E%3Cpath d='M6 2.8h4v2.2H6zM5.8 8.4h4.4M5.8 11h3'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.term { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.6l3.4 3.4L3 11.4M8.4 11.6h4.6'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.img { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='1.8' y='2.8' width='12.4' height='10.4' rx='2'/%3E%3Cpath d='M2.2 11.6l3.6-3.6 3 3 2-2 3.2 3.2'/%3E%3C/g%3E%3Ccircle cx='10.6' cy='6' r='1.3' fill='black'/%3E%3C/svg%3E"); }
+    .g.lock { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='7' width='10' height='7.2' rx='1.8'/%3E%3Cpath d='M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.file { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 1.8h5l3.4 3.4v9H4z'/%3E%3Cpath d='M9 1.8v3.4h3.4'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.clock { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.2'/%3E%3Cpath d='M8 4.6V8l2.4 1.6'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.globe { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.2'/%3E%3Cpath d='M1.8 8h12.4M8 1.8c2.2 2.2 2.2 10.2 0 12.4M8 1.8c-2.2 2.2-2.2 10.2 0 12.4'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.dock { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='1.8' y='2.4' width='12.4' height='11.2' rx='2'/%3E%3Cpath d='M4.6 11h6.8'/%3E%3C/g%3E%3C/svg%3E"); }
+    .g.grid { --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='black'%3E%3Crect x='2' y='2' width='5' height='5' rx='1.2'/%3E%3Crect x='9' y='2' width='5' height='5' rx='1.2'/%3E%3Crect x='2' y='9' width='5' height='5' rx='1.2'/%3E%3Crect x='9' y='9' width='5' height='5' rx='1.2'/%3E%3C/g%3E%3C/svg%3E"); }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="toc"></aside>
+  <main>
+    <div class="eyebrow">Proposals · launcher · open</div>
+    <h1>A launcher that beats Raycast</h1>
+    <p class="lede">Tap ❖ today and you get a box that finds app names. Dashi owns the compositor, every window, every app's menus, every setting, the vault and an agent stack with typed tools, and the launcher uses none of it. This page is the plan to change that: not a copy of Raycast, but the launcher only an OS can build.</p>
+
+    <div class="callout open"><div>◆</div><p>Nothing here is <span class="pill done">picked</span> yet. Cards outlined in green are the recommendation; "Today" marks what Dashi does now. On 2026-11-05 five reviewers each roasted the launcher from one point of view, with the code (<code>release/0.4.0</code> at <code>7e49821</code>) and VM screenshots (light mode, 1646 × 937): a <b>keyboard-first power user</b>, a <b>visual and interaction designer</b>, a <b>platform and extension architect</b>, an <b>AI and agent-native product designer</b>, and a <b>newcomer, accessibility and copy</b> reviewer. Their reports are in <a href="launcher-roast/power-user.md"><code>docs/launcher-roast/</code></a>; every finding cites <code>path:line</code> under <code>packages/shell/src/</code> unless it says otherwise. Picks to make are at <a href="#what-i-need-from-you">the end</a>.</p></div>
+    <div class="callout"><div>✓</div><p>In 0.4.0 all three waves are <span class="pill done">Done</span> (merges <code>2b92235</code>, <code>b47c0ba</code>, <code>1edf28f</code>, <code>23ec63c</code>, <code>fc27ed9</code>, then fixes up to <code>1f59d0b</code>). What was left out is marked <span class="pill wip">Deferred</span>.</p></div>
+
+    <h2 class="notoc">What's here</h2>
+    <table>
+      <tr><th>Topic</th><th>In short</th><th>Recommendation</th></tr>
+      <tr><td><a href="#the-roast">The roast</a></td><td>Five voices, then 22 findings merged, including six real bugs.</td><td><span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#where-raycast-wins">Raycast and Dashi</a></td><td>What Raycast does better today, and what only Dashi can do.</td><td></td></tr>
+      <tr><td><a href="#one-registry">One registry</a></td><td>Every action, setting and menu item as a command at a <code>dashi://</code> address, shared with agents.</td><td>One registry <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#ranking-and-keys">Ranking and keys</a></td><td>Fuzzy, acronym and learned ranking; ❖K actions; aliases and hotkeys; results that switch.</td><td>Learns; ❖K in place <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#answers-in-the-row">Answers in the row</a></td><td>Switches for Wi-Fi and Dark Mode, answers you can copy, live window thumbnails.</td><td>Controls in the row <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#agents">Agents</a></td><td>Local first, Ask only for sentences or ⇥, a plan before acting, a "Now" section.</td><td>Ask row and plan <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#clipboard-and-snippets">Clipboard and snippets</a></td><td>History from the compositor, with secrets blank and password managers left out.</td><td>In the launcher, ⌥❖V <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#the-look">The look</a></td><td>A selection that passes AA, glyph per pane, kind labels, motion, an empty state that teaches.</td><td>Wash and bar <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#newcomers-and-access">Newcomers and access</a></td><td>Taught in Setup Assistant and the menu bar; your language and spelling; a screen reader; text size.</td><td>Teach it on day one <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#speed">Speed</a></td><td>A resident launcher, a cached index, a typing budget.</td><td>Resident, &lt; 50 ms <span class="pill done">Done</span></td></tr>
+      <tr><td><a href="#the-beat-raycast-move">The move</a></td><td>The pitch in one picture.</td><td></td></tr>
+      <tr><td><a href="#order-of-work">Order of work</a></td><td>Bugs first; then registry, ranking and actions; then agents and extensions.</td><td><span class="pill done">Done</span></td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="the-roast">The roast</h2>
+    <p>Each reviewer wrote a roast, a findings table, where Raycast wins, betterments with sizes, one big move and mockup notes. The best lines first; the merged findings after.</p>
+    <div class="voices">
+      <div class="voice">
+        <h4>Keyboard-first power user <small>15 findings</small><a href="launcher-roast/power-user.md">power-user.md</a></h4>
+        <p class="roast">"I typed 'set' for Settings, the thing I open ten times a day, and got the Setup Assistant, which I ran once in my life."</p>
+        <p class="roast">"Today the launcher only opens things. It doesn't do anything to them."</p>
+      </div>
+      <div class="voice">
+        <h4>Visual and interaction design <small>15 findings</small><a href="launcher-roast/visual.md">visual.md</a></h4>
+        <p class="roast">"Settings has twenty hand-drawn pane glyphs, and the launcher stamps the same gray gear on every one of them."</p>
+        <p class="roast">"The loudest thing on screen is the selection. It is loud and still fails contrast."</p>
+      </div>
+      <div class="voice">
+        <h4>Platform and extension architect <small>14 findings</small><a href="launcher-roast/platform.md">platform.md</a></h4>
+        <p class="roast">"Dashi has four registries of things you can do, and none of them knows about the others. An agent can turn on Dark Mode through <code>set_setting</code>. You can't, from the launcher."</p>
+        <p class="roast">"The shell already holds the menus of every running app. The launcher shows none of them."</p>
+      </div>
+      <div class="voice">
+        <h4>AI and agent-native product design <small>15 findings</small><a href="launcher-roast/agents.md">agents.md</a></h4>
+        <p class="roast">"The OS can switch Wi-Fi for Claude. It can't do it when you type 'wifi off'."</p>
+        <p class="roast">"The best thing about the launcher: no model sits between 'ter' and Terminal. Keep that while adding everything above."</p>
+      </div>
+      <div class="voice">
+        <h4>Newcomer, accessibility and copy <small>15 findings</small><a href="launcher-roast/newcomer.md">newcomer.md</a></h4>
+        <p class="roast">"The launcher is a search box nobody tells you about."</p>
+        <p class="roast">"A Windows switcher presses ❖ and gets a text field and no Start menu. Orca hears nothing."</p>
+      </div>
+    </div>
+
+    <h3>Findings, merged</h3>
+    <p>74 findings, deduplicated to 22. "By" names who raised it: <b>PU</b> power user, <b>VI</b> visual, <b>PL</b> platform, <b>AG</b> agents, <b>NC</b> newcomer. Rows 1–6 are bugs, not taste.</p>
+    <table class="findings">
+      <tr><th>#</th><th>Sev</th><th>What's wrong</th><th>Evidence</th><th>By</th></tr>
+      <tr><td>1</td><td><span class="sev p0">P0</span></td><td><b>Enter can open a file you never chose.</b> File rows land ≥120 ms after a keystroke and squeeze the app rows from 7 to as few as 3; <code>selected</code> is an index that resets only when the text changes. Arrow to app 5, the files arrive, Enter opens the second file.</td><td><code>launcher.tsx:17-20</code>, <code>:65-66</code>, <code>:101</code>, <code>:103</code></td><td class="by">PU PL AG</td></tr>
+      <tr><td>2</td><td><span class="sev p1">P1</span></td><td><b>The math answer can't be used.</b> "= 4" isn't counted in the rows, can't be selected or copied, and Enter does nothing when it is the only row. "2+2" also starts a file search.</td><td><code>launcher.tsx:67-68</code>, <code>:114-118</code>; <code>math.png</code></td><td class="by">all five</td></tr>
+      <tr><td>3</td><td><span class="sev p1">P1</span></td><td><b>No results is nothing at all.</b> The list disappears and the panel collapses to the field; no "nothing called…", no way forward.</td><td><code>launcher.tsx:112</code></td><td class="by">VI AG NC</td></tr>
+      <tr><td>4</td><td><span class="sev p1">P1</span></td><td><b>One gear for every Settings pane.</b> Every pane entry gets <code>iconPath("settings")</code>, though Settings' sidebar has a glyph per pane; six of seven rows in <code>set.png</code> look the same, and nothing says "Settings pane".</td><td><code>settings-app/search.ts:33-35</code>; <code>settings-app/panes.ts:47-66</code>; <code>set.png</code></td><td class="by">VI PL NC AG</td></tr>
+      <tr><td>5</td><td><span class="sev p1">P1</span></td><td><b>The selection fill fails contrast.</b> White on kombu <code>#3E8A72</code> is 4.13:1, under CO-6's 4.5; the folder name on a selected row (<code>#ffffffb3</code>) is about 2.9:1. The hex is inline, with no token.</td><td><code>launcher.tsx:135</code>, <code>:140</code>, <code>:162</code>, <code>:168</code>, <code>:171</code>; <code>dashi-ui/src/theme/palette.ts:67,102</code></td><td class="by">VI NC</td></tr>
+      <tr><td>6</td><td><span class="sev p1">P1</span></td><td><b>Every ❖ tap re-reads every <code>.desktop</code> file</b> and probes up to seven icon sizes per root, synchronously, on the shell's loop, before the panel draws; <code>recents.json</code> too. A second open inside 1.5 s can land on a cold Metal host (inferred).</td><td><code>main.tsx:760</code>; <code>entries.ts:141-157</code>, <code>:222-245</code>; <code>warm-host.ts:14</code></td><td class="by">PU PL AG</td></tr>
+      <tr><td>7</td><td><span class="sev p1">P1</span></td><td><b>Ranking is six fixed tiers with alphabetical ties, and it never learns.</b> No fuzzy, acronym or typo matching; "set" puts Setup Assistant above System Settings; "settings" returns seven panes and no System Settings; "ter" finds Battery &amp; Power. Recents are 12 ids, shown only with an empty field.</td><td><code>entries.ts:254-273</code>, <code>:186</code>, <code>:215</code>; <code>settings-app/search.ts:39</code>; <code>recents.ts:16-17</code>; <code>set.png</code>, <code>ter.png</code></td><td class="by">PU VI NC</td></tr>
+      <tr><td>8</td><td><span class="sev p0">P0</span></td><td><b>Four registries that don't know each other</b>: launcher entries, keymap <code>bind</code> names, menu actions and agent tools. Nothing outside the shell can add a row; <code>registerShellEntry</code> can only open something.</td><td><code>launcher.tsx:29-45</code>; <code>apps.ts:167</code>; <code>shortcuts.ts:66-84</code>; <code>menus/model.ts:33-62</code>; <code>agents/tools/registry.ts:48-64</code></td><td class="by">PL</td></tr>
+      <tr><td>9</td><td><span class="sev p0">P0</span></td><td><b>Nouns, no verbs; a sentence goes nowhere.</b> "wif" offers the Network pane, not Wi-Fi; "dark mode" opens Appearance though <code>set_setting dark_mode</code> exists, parsed and checked, for agents. "turn on dark mode" matches nothing and Enter does nothing.</td><td><code>settings-app/search.ts:12,25</code>; <code>agents/tools/settings.ts:23-61</code>; <code>launcher.tsx:69-74</code>; <code>wifi.png</code></td><td class="by">AG PL PU NC</td></tr>
+      <tr><td>10</td><td><span class="sev p1">P1</span></td><td><b>Enter is the only verb, and launching never switches.</b> No action list, no modifiers; <code>launch()</code> always spawns, so "files" ↩ with Files open asks for another instance. Windows are findable only in ❖Tab.</td><td><code>launcher.tsx:104-108</code>; <code>apps.ts:269-292</code>; <code>switcher/model.ts:54</code></td><td class="by">PU PL</td></tr>
+      <tr><td>11</td><td><span class="sev p1">P1</span></td><td><b>Menus, Desktop Actions and applets are left out.</b> <code>AppMenuStore</code> holds every process's menus and agents use them; <code>[Desktop Action]</code> groups are dropped by the parser; an applet manifest has no <code>commands</code>.</td><td><code>app-menus/store.ts:24-31</code>; <code>entries.ts:43</code>; <code>packages/applet/src/manifest.ts:35-56</code></td><td class="by">PL PU</td></tr>
+      <tr><td>12</td><td><span class="sev p1">P1</span></td><td><b>Nothing teaches it, and day one is a bare pill.</b> Setup Assistant never mentions ❖; the Dashi menu has no Search; ❖Space is only on the hold-❖ sheet. With no history the list doesn't render.</td><td><code>setup/pages/done.tsx:26-63</code>; <code>menus/model.ts:98-111</code>; <code>keymap.ts:62-64</code>; <code>launcher.tsx:112</code>; <code>empty.png</code></td><td class="by">NC VI</td></tr>
+      <tr><td>13</td><td><span class="sev p0">P0</span></td><td><b>Screen readers get nothing</b>: no roles, no names, the selection is never announced. Text sizes are fixed (22/20/15/12/11) in a fixed 620 × 440 surface, and there is no text-size setting.</td><td><code>docs/design.html</code> UI-3; <code>launcher.tsx:93-178</code>; <code>main.tsx:763-764</code></td><td class="by">NC</td></tr>
+      <tr><td>14</td><td><span class="sev p1">P1</span></td><td><b>English only, and literal.</b> <code>Name[de]</code> and <code>Keywords[xx]</code> are skipped on purpose; no accent folding ("ecran" misses "Écran"), no typo tolerance ("fierfox"), no match inside multi-word keywords.</td><td><code>entries.ts:33-50</code>, <code>:254-264</code></td><td class="by">NC</td></tr>
+      <tr><td>15</td><td><span class="sev p1">P1</span></td><td><b>Agents are invisible from ❖.</b> Running agents and "Your turn" live only in the pill and a banner; the activity log has no reader; nothing in the GUI starts an agent, and model keys under <code>$HOME</code> are readable to it (inferred).</td><td><code>turn-banner.tsx:1-6</code>; <code>agents/consent.ts:173-181</code>; <code>bin/dashi-agent.ts:5-8</code>; <code>docs/secrets.md:410-427</code></td><td class="by">AG</td></tr>
+      <tr><td>16</td><td><span class="sev p1">P1</span></td><td><b>Consent is per category, not per act.</b> "Always Allow" keeps "Manage windows and apps"; nothing says "these three calls, with these arguments".</td><td><code>agents/consent.ts:14-52</code>; <code>agents/session.ts:324-341</code></td><td class="by">AG</td></tr>
+      <tr><td>17</td><td><span class="sev p2">P2</span></td><td><b>A thin keyboard contract.</b> Esc closes and throws away the query; no wrap, Tab, ⌃N/⌃P, Page or Home keys; hover doesn't move the selection, so the pointer and Enter disagree.</td><td><code>launcher.tsx:104-108</code>, <code>:125-138</code></td><td class="by">PU VI NC</td></tr>
+      <tr><td>18</td><td><span class="sev p2">P2</span></td><td><b>The panel jumps, and sits off Dashi's measures.</b> Height snaps between 115 and 379 px as you type, files pop in under the apps, open and close are instant pops; field 22 px, rows 15 px, radius 16 are off TY-1 and RA-1.</td><td><code>launcher.tsx:14</code>, <code>:85</code>, <code>:109</code>, <code>:116</code>; screenshots</td><td class="by">VI</td></tr>
+      <tr><td>19</td><td><span class="sev p2">P2</span></td><td><b>Failures are silent.</b> An app that fails to start is only logged, after the launcher closed; without LocalSearch file search returns nothing while the placeholder still promises files.</td><td><code>apps.ts:288-290</code>; <code>file-search.ts:6</code>, <code>:80-81</code>; <code>launcher.tsx:98</code></td><td class="by">NC AG</td></tr>
+      <tr><td>20</td><td><span class="sev p2">P2</span></td><td><b>File search spawns a process per query</b> (<code>tinysparql</code>), matches names by substring, orders by modification time, and caps at four.</td><td><code>file-search.ts:27-32</code>; <code>launcher.tsx:18</code></td><td class="by">PU AG</td></tr>
+      <tr><td>21</td><td><span class="sev p2">P2</span></td><td><b>No clipboard history, aliases or per-command keys</b>, though the compositor serves data-control "for clipboard history" and the keymap is plain data. Applet units have no CPU or memory limits, which matters once they answer while you type.</td><td><code>crates/dashi-comp/src/state.rs:145</code>; <code>keymap.ts:5</code>, <code>:122</code>; <code>applets/launcher.ts:42-45</code></td><td class="by">PU PL</td></tr>
+      <tr><td>22</td><td><span class="sev p3">P3</span></td><td><b>None of it is tested.</b> No test covers ranking, math, recents or row stability; the only neighbor is <code>entries-hidden.test.ts</code>.</td><td><code>packages/shell/test/</code></td><td class="by">all five</td></tr>
+    </table>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="where-raycast-wins" data-toc="Raycast and Dashi">Where Raycast wins, where Dashi wins</h2>
+    <p>Honestly: today Raycast wins at nearly everything a launcher does. Dashi doesn't win anything yet; it holds pieces no app on someone else's OS can hold. The Raycast column is from its manual and changelog, as cited in the reports.</p>
+    <div class="vs">
+      <div class="them">
+        <h4>Raycast, today</h4>
+        <ul>
+          <li><b>Ranking that learns:</b> fuzzy matching, frecency per query, Reset Ranking (<a href="https://manual.raycast.com/search-bar">search bar</a>).</li>
+          <li><b>An action list on every item</b>, each with its shortcut, searchable (<a href="https://manual.raycast.com/action-panel">action panel</a>).</li>
+          <li><b>Aliases and a hotkey per command</b>, fallback commands when nothing matches (<a href="https://manual.raycast.com/fallback-commands">fallbacks</a>).</li>
+          <li><b>An extension store</b> with a React API, deep links per command, script commands in any language (<a href="https://manual.raycast.com/deeplinks">deeplinks</a>).</li>
+          <li><b>AI from the root search:</b> ⇥ for a quick answer, chat for follow-ups, MCP servers, a model picker, your own keys, local models (<a href="https://manual.raycast.com/v1/ai">AI</a>, <a href="https://www.raycast.com/changelog/1-98-0">1.98</a>).</li>
+          <li><b>Clipboard history, snippets, quicklinks</b>, a calculator with units, currency and time zones.</li>
+          <li><b>Polish:</b> smooth resizing, match emphasis, the keys shown for every action, an onboarding flow.</li>
+        </ul>
+      </div>
+      <div class="us">
+        <h4>Dashi, because it is the OS</h4>
+        <ul>
+          <li><b>Windows are native.</b> The compositor knows every window, its Desktop and its state; switching and thumbnails need no permission and no add-on.</li>
+          <li><b>Every setting is first-hand.</b> A row can be the Wi-Fi switch, not a link to it, because the shell owns Settings and Control Center.</li>
+          <li><b>Menus are published, not scraped.</b> Apps hand the shell their menus with shortcuts (<code>app-menus/</code>); thousands of commands exist on day one.</li>
+          <li><b>One typed catalog for people and agents.</b> 71 tools with checked arguments (<code>agents/tools/</code>) can be the person's commands too, with the same consent.</li>
+          <li><b>Consent only a person can give.</b> The compositor knows whether a press came from the person (<code>agents/person.ts</code>); secrets are typed, never shown to a model.</li>
+          <li><b>No server in the middle.</b> Raycast routes its users' own keys through its servers (except OpenRouter); Dashi has no server to route through.</li>
+          <li><b>Extensions that can't hurt you.</b> Applets are signed, sandboxed (bubblewrap, a D-Bus proxy) and declare permissions; Raycast's extensions get full Node.js.</li>
+          <li><b>Clipboard and text at the compositor</b>, with AT-SPI and the vault to leave password fields out.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="one-registry" data-toc="One registry">One registry: everything is a command <span class="pill done">Done</span></h2>
+    <p>Today the launcher takes three props (<code>entries</code>, <code>recent</code>, <code>findFiles</code>) and draws them. Every other list of things the OS can do lives somewhere else: the keymap's closed <code>switch</code> of bind names, the menus' <code>MenuAction</code> union, and the agents' <code>TOOLS</code>, where one capability is written up to four times or ends up in only one place.</p>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Launcher</b><small>entries · recent · findFiles</small></div>
+          <div class="row" style="--n:3">
+            <div class="bx off"><b>Keymap</b><small>bind names</small></div>
+            <div class="bx off"><b>Menus</b><small>MenuAction</small></div>
+            <div class="bx off ag"><b>Agent tools</b><small>71, typed</small></div>
+          </div>
+          <div class="ar">no line between any of them</div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>Four lists</h4><p>The launcher opens apps, panes and files. Everything else the OS can do is reachable from a key, a menu or an agent, never from ❖.</p>
+          <ul class="pc"><li class="y">Shipped, simple</li><li class="n">Agents can do more than you</li><li class="n">Nothing third-party can add a row</li><li class="n">Four places to keep in step</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx acc"><b>Launcher providers</b><small>apps · files · settings · windows</small></div>
+          <div class="ar">↑</div>
+          <div class="row" style="--n:2">
+            <div class="bx"><b>Shell sources</b><small>written for the launcher</small></div>
+            <div class="bx off ag"><b>Agent tools</b><small>still their own list</small></div>
+          </div>
+        </div></div>
+        <div class="cap"><h4><span class="k">B</span>Launcher-only providers</h4><p>A provider interface inside the launcher; the shell writes a provider for windows, settings and menus. Agents keep their own catalog.</p>
+          <ul class="pc"><li class="y">Quick to build</li><li class="y">No change for agents</li><li class="n">A fifth list, not one</li><li class="n">People and agents drift apart</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:5;font-size:10px">
+            <div class="bx"><b>Apps</b><small>+ Actions</small></div><div class="bx"><b>Windows</b></div><div class="bx"><b>Settings</b></div><div class="bx"><b>Menus</b></div><div class="bx"><b>Applets</b></div>
+          </div>
+          <div class="ar">↓</div>
+          <div class="bx acc"><b>Actions: one registry</b><small>title · keywords · kind · args · scope · <code>dashi://</code> address</small></div>
+          <div class="ar">↓</div>
+          <div class="row" style="--n:4;font-size:10px">
+            <div class="bx"><b>Launcher</b></div><div class="bx ag"><b>MCP tools</b></div><div class="bx"><b>Keymap</b></div><div class="bx"><b>Menus</b></div>
+          </div>
+        </div></div>
+        <div class="cap"><h4><span class="k">C</span>One registry, read by all</h4><p>The agents' <code>ToolDef</code> grows into an <code>ActionDef</code>: the launcher lists it, <code>tools/list</code> is generated from it, the keymap binds to its addresses, menus refer to it.</p>
+          <ul class="pc"><li class="y">What you can do, agents can, and back</li><li class="y">Thousands of commands, no extensions</li><li class="n">L: a migration, one kind at a time</li><li class="n">Consent rules must hold in both</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Launcher</b></div>
+          <div class="ar">↑ D-Bus</div>
+          <div class="row" style="--n:3">
+            <div class="bx"><b>SearchProvider2</b><small>GNOME apps</small></div>
+            <div class="bx"><b>KRunner</b><small>KDE runners</small></div>
+            <div class="bx off"><b>Arguments</b><small>none</small></div>
+          </div>
+        </div></div>
+        <div class="cap"><h4><span class="k">D</span>Borrow Linux's search providers</h4><p>Make GNOME's <code>SearchProvider2</code> and KDE's runners the extension model, so Fedora's apps add results on day one.</p>
+          <ul class="pc"><li class="y">Results from existing apps</li><li class="y">A standard</li><li class="n">Results only: no arguments, no inline answer</li><li class="n">No consent, no address</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: C, with D's read side as one more source later.</b> <small>Done in 0.4.0: C (<code>78c3970</code>, <code>608b640</code>, <code>63628c2</code>), and D's read side as GNOME search providers (<code>9408a7a</code>).</small> One registry is what makes everything else on this page cheap: once Dark Mode is an action, the launcher's switch, a hotkey, a menu row and an agent's call are the same thing. B saves a month and costs the whole idea. D is worth reading from, behind the registry, but it can't carry arguments or consent, so it can't be the model.</p>
+    <div class="spec">
+      <h5>An action</h5>
+      <ul>
+        <li><b>Fields:</b> <code>address</code>, <code>title</code>, <code>keywords</code> (per language), <code>kind</code> (open, toggle, run, pick), an argument schema (JSON Schema, as MCP already uses), <code>scope</code>, <code>readOnly</code>, <code>destructive</code>, <code>who</code> (person, agents, both), <code>source</code>. <code>parse()</code> stays: the launcher validates arguments live with it, so "vol 300" says "volume must be 0–100" on the row.</li>
+        <li><b>Sources on day one:</b> apps and their <code>[Desktop Action]</code> groups (<code>entries.ts:43</code> starts reading them), open windows, every setting (the settings registry from <a href="proposals.html">the app roast</a>), the published menus of running apps (<code>AppMenuStore.byPid</code>, <code>menusOf</code>), Dashi's own menu rows (Lock Screen, Restart…), tray and applet menu rows.</li>
+        <li><b>Menus as commands:</b> rows read "Notes › File › New Note" with the item's shortcut on the right, so choosing one teaches the key. Choosing sends the menu's own <code>select</code>; items marked <code>agents: false</code> are still offered here, because the launcher is the person.</li>
+        <li><b>Same consent:</b> a person's command runs as the person, logged as "you". A command that asks agents every time (<code>force_quit_app</code>, <code>trash_file</code>) also asks a person, with its own sheet.</li>
+      </ul>
+      <h5>A <code>dashi://</code> address for everything</h5>
+      <ul>
+        <li><code>dashi://settings/appearance/dark-mode</code>, <code>dashi://app/dev.dashi.notes/menu/new-note</code>, <code>dashi://applet/dev.example.weather/refresh?city=Lisbon</code>, <code>dashi://window/w3</code>.</li>
+        <li>Registered as <code>x-scheme-handler/dashi</code> beside the first-party desktop entries, so <code>xdg-open</code>, a note or a help page can point at one exact place. Every row has Copy Address.</li>
+        <li>A settings address opens the pane scrolled to the row and highlights it. A link from outside never runs a destructive action: it opens the action with its arguments filled in.</li>
+      </ul>
+      <h5>Applets contribute commands</h5>
+      <ul>
+        <li><code>applet.json</code> gains <code>commands: [{id, title, keywords, args?, mode}]</code>, with <code>mode</code> <code>instant</code>, <code>pick</code> or <code>view</code>. Static, so they are indexed before the applet ever runs.</li>
+        <li>Protocol v3 adds <code>run</code> (shell to applet, with a <code>seq</code>), <code>result</code> (text, copy or open) and <code>items</code> (rows for <code>pick</code> mode, drawn by the shell, never applet pixels). <code>view</code> reuses the popover's Metal surface in the result area.</li>
+        <li>The consent sheet adds one line ("Adds 3 commands to the launcher"). Commands run in the applet's sandbox. A third-party row can't wear a Dashi glyph or a first-party name and never outranks an exact app or setting match; each row says where it came from ("Weather").</li>
+      </ul>
+      <h5>Per-source time budgets; rows that never move</h5>
+      <table>
+        <tr><th>Source</th><th>Where it runs</th><th>Budget</th><th>Late answers</th></tr>
+        <tr><td>Apps, windows, settings, menus, actions</td><td>In memory, in the shell</td><td>2 ms per keystroke for all of them</td><td>Never late</td></tr>
+        <tr><td>Files</td><td>One LocalSearch D-Bus connection</td><td>80 ms</td><td>Fill their reserved slots</td></tr>
+        <tr><td>Applets, scripts, D-Bus providers</td><td>Their own unit, with <code>CPUQuota=</code>, <code>MemoryMax=</code>, <code>Nice=</code></td><td>80 ms, then "Weather · slow"</td><td>Append below; dropped for the session after three asks with no answer in 2 s (a late answer is no miss)</td></tr>
+        <tr><td>Agents</td><td>Only after ⇥ or a sentence</td><td>None: never on the typing path</td><td>Their own row, last</td></tr>
+      </table>
+      <ul>
+        <li><b>The rule that fixes bug 1:</b> the selection is held by the row's id, not its index; slow sources get reserved slots below the instant ones and fade in there, so nothing above them moves. Enter always acts on what is highlighted when it is pressed.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="ranking-and-keys" data-toc="Ranking and keys">Ranking and keys <span class="pill done">Done</span></h2>
+    <p>Today <code>search()</code> scores six tiers (exact name, exact keyword, name prefix, word start, anywhere, keyword prefix), breaks ties alphabetically and takes no history (<code>entries.ts:254-273</code>). Every pane answers to "settings", so the word floods the list.</p>
+    <h3>How results are ranked</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">set</span></div><div class="l">
+            <div class="r old"><span class="ap" style="--c:#4a9a7e">◡</span><span class="t">Setup Assistant</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">System Settings</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">About</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Agents</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Appearance</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Battery &amp; Power</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Six tiers, A to Z</h4><p>A name prefix beats a word start, so Setup Assistant wins "set"; the panes follow alphabetically. Picking System Settings 500 times changes nothing.</p>
+          <ul class="pc"><li class="y">Predictable</li><li class="y">No state</li><li class="n">"ter" finds Battery</li><li class="n">Never learns</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">set</span><span class="hint">↩ Open</span></div><div class="l">
+            <div class="h">Top hit</div>
+            <div class="r cur"><span class="ap" style="--c:#7a7a80">⚙</span><span class="t"><b>S</b>ystem S<b>et</b>tings</span><span class="end">App <span class="kc">↩</span></span></div>
+            <div class="h">Settings</div>
+            <div class="r"><span class="g clock"></span><span class="t">Date &amp; Time</span><span class="s">Set the clock</span><span class="end">Settings</span></div>
+            <div class="r"><span class="g globe"></span><span class="t">Language &amp; Region</span><span class="end">Settings</span></div>
+            <div class="r"><span class="ap" style="--c:#4a9a7e">◡</span><span class="t"><b>Set</b>up Assistant</span><span class="s">Run first-time setup again</span><span class="end">Setup</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">"ss" and "sys" find it too · learned from your picks</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Fuzzy, acronyms and memory</h4><p>A subsequence scorer with bonuses for word starts and acronyms, plus what you picked for this query before, plus frecency over everything you open (Dock, switcher, files too).</p>
+          <ul class="pc"><li class="y">The obvious word gives the obvious result</li><li class="y">One pick teaches it</li><li class="n">A history file to keep and reset</li><li class="n">Order can shift as it learns</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r cur"><span class="g bat"></span><span class="t">Bat<b>ter</b>y &amp; Power</span><span class="end">opened 30×</span></div>
+            <div class="r"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t"><b>Ter</b>minal</span><span class="end">opened 12×</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">Use beats match</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Most used first</h4><p>Rank every match by how often it was opened, whatever the match quality.</p>
+          <ul class="pc"><li class="y">Simple to explain</li><li class="n">Weak matches outrank exact ones</li><li class="n">A new app never surfaces</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain">
+          <div class="w" style="inset:16px 22px"><div class="tb"><i></i><i></i><i></i><span>Launcher</span></div>
+            <div class="grp"><div class="gr">Prefer what I use <span class="sw"></span></div><div class="gr">Match inside words <span class="sw off"></span></div><div class="gr">Fuzzy matching <span class="btn">Strict ▾</span></div><div class="gr">Show Settings panes <span class="sw"></span></div></div>
+          </div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Let people tune it</h4><p>A Settings pane of ranking switches: frecency, inside-word matches, fuzziness, which kinds show.</p>
+          <ul class="pc"><li class="y">Every taste served</li><li class="n">Settings for something that should just be right</li><li class="n">More to test</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> Match quality decides first, history breaks ties and promotes what you chose for this exact query, and a bare substring inside a word counts only from four letters on. Two keyword fixes ship with it: "settings", "preferences" and "control panel" are an exact intent for System Settings, and a pane matches "settings" only when nothing else does. Setup Assistant answers to "setup", "welcome" and "first run" only. History stays on the machine (a 0600 file, like <code>recents.json</code>), and every row's action list has Reset Ranking. Not C: use without match quality is how "ter" finds Battery. Not D: if B is right, a setting only hides that it is. <small>Done in 0.4.0 (<code>00f2bbd</code>, <code>315ab29</code>, <code>95ad7d1</code>).</small></p>
+
+    <h3>Actions on a result</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r old"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Battery &amp; Power</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">↩ opens · that's every verb there is</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Enter only</h4><p>One fixed verb per row. No reveal, copy, quit, new window, alias or key.</p>
+          <ul class="pc"><li class="y">Nothing to learn</li><li class="n">The launcher can't act on things</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="chip"><span class="ap" style="--c:#2c2c2e;width:11px;height:11px;font-size:5px">&gt;_</span>Terminal ›</span><span class="ph">Search actions</span><span class="hint">Esc back</span></div><div class="l">
+            <div class="r cur"><span class="t">Switch to window</span><span class="end"><span class="kc">↩</span></span></div>
+            <div class="r"><span class="t">New window</span><span class="end"><span class="kc">❖↩</span></span></div>
+            <div class="r"><span class="t">Bring here from Desktop 2</span><span class="end"><span class="kc">⌥↩</span></span></div>
+            <div class="r"><span class="t">Keep in Dock</span></div>
+            <div class="r"><span class="t">Set alias…</span><span class="end"><span class="kc">⇧❖A</span></span></div>
+            <div class="r"><span class="t">Set shortcut…</span><span class="end"><span class="kc">⇧❖K</span></span></div>
+            <hr>
+            <div class="r"><span class="t d">Quit Terminal</span><span class="end"><span class="kc">❖Q</span></span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>❖K turns the list into actions</h4><p>The same panel, the same height: a chip in the field says what you act on, the rows are its actions with their keys, typing filters them, Esc goes back. Common ones need no list: ❖↩, ⌥↩, ❖C.</p>
+          <ul class="pc"><li class="y">No new surface, no footer</li><li class="y">Shows each key, so you learn it</li><li class="n">Hidden until ❖K is known</li><li class="n">Every kind needs its list</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx" style="top:24px"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r cur"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span></div>
+          </div><div class="foot">Open <span class="kc">↩</span> · Actions <span class="kc">❖K</span></div></div>
+          <span class="note" style="left:10px;bottom:10px">A second chrome row (VS-3), and another launcher's layout</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A bar of actions under the list</h4><p>A permanent footer naming the primary action and the key for the rest.</p>
+          <ul class="pc"><li class="y">Discoverable</li><li class="n">Breaks "one chrome row"</li><li class="n">Imitates rather than reinterprets</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r cur"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span></div>
+          </div></div>
+          <div class="pop" style="left:46%;top:46px;width:120px"><div class="r sel">New Window</div><div class="r">Show in Files</div><div class="r">Keep in Dock</div><div class="r">Quit</div></div>
+          <div class="ptr" style="left:44%;top:44px"></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A right-click menu only</h4><p>Secondary actions live in a context menu on the row.</p>
+          <ul class="pc"><li class="y">Familiar from every desktop</li><li class="n">Keyboard users lose them</li><li class="n">No shortcuts shown</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B, and right-click opens the same list.</b> <small>Done in 0.4.0 (<code>63628c2</code>).</small> The action list reuses the field row as its only chrome, so it costs no vertical space. Destructive rows (Quit, Move to Trash, Close Window) are ume and confirm when work could be lost. Not C: a footer is the second bar Dashi refuses everywhere else.</p>
+
+    <h3>Results that switch</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">files</span></div><div class="l">
+            <div class="r old"><span class="ap" style="--c:#5b8fd6">▤</span><span class="t">Files</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">↩ starts a second Files, though one is open</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Launching always spawns</h4><p><code>launch()</code> starts a new process every time; windows are only in ❖Tab, with its own search.</p>
+          <ul class="pc"><li class="y">Simple</li><li class="n">Two search surfaces disagree</li><li class="n">Duplicate windows</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">files</span><span class="hint">↩ Switch · ❖↩ New window</span></div><div class="l">
+            <div class="h">Windows</div>
+            <div class="r cur"><span class="ap run" style="--c:#5b8fd6">▤</span><span class="t">Downloads</span><span class="s">Files</span><span class="end">Desktop 2</span></div>
+            <div class="r"><span class="ap run" style="--c:#5b8fd6">▤</span><span class="t">Report drafts</span><span class="s">Files</span><span class="end">minimized</span></div>
+            <div class="h">Apps</div>
+            <div class="r"><span class="ap run" style="--c:#5b8fd6">▤</span><span class="t"><b>Files</b></span><span class="s">2 windows</span><span class="end">App</span></div>
+            <div class="h">Files</div>
+            <div class="r"><span class="g file"></span><span class="t">files-to-sort.txt</span><span class="s">~/Documents</span><span class="end">Today</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Windows are results; Enter switches</h4><p>Open windows come first when they match, with their Desktop or "minimized". Enter on a running app focuses its last window; ❖↩ opens a new one.</p>
+          <ul class="pc"><li class="y">One search for everything open</li><li class="y">The compositor already lists windows</li><li class="n">Window titles are other apps' data</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:2"><div class="bx"><b>❖ launcher</b><small>apps, files</small></div><div class="bx"><b>❖Tab switcher</b><small>windows, type to find</small></div></div>
+          <div class="ar">two models, two sets of names</div>
+        </div></div>
+        <div class="cap"><h4><span class="k">C</span>Leave windows to ❖Tab</h4><p>Keep the launcher for starting things and the switcher for what's running.</p>
+          <ul class="pc"><li class="y">Each surface stays small</li><li class="n">"Where was that window?" has two answers</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B</b>, reusing the switcher's model (<code>switcher/model.ts</code>) so both surfaces name windows the same way. Titles come from other apps: they are shown, never obeyed, and never ranked above an exact app name. <small>Done in 0.4.0 (<code>63628c2</code>).</small></p>
+
+    <div class="spec">
+      <h5>The keyboard contract</h5>
+      <table class="keys">
+        <tr><th>Keys</th><th>Does</th><th>Today</th></tr>
+        <tr><td>↑ ↓, ⌃P ⌃N</td><td>Move; the selection wraps at both ends.</td><td>↑ ↓, no wrap</td></tr>
+        <tr><td>⇥, ⇧⇥</td><td>Next and previous section; on an action with arguments, into its argument chip; on a sentence, Ask (<a href="#agents">below</a>).</td><td>—</td></tr>
+        <tr><td>Page Up/Down, ❖↑ ❖↓</td><td>A page; the first and last row.</td><td>—</td></tr>
+        <tr><td>↩, ⇧↩</td><td>Do the row's thing; ⇧ keeps the launcher open for the next one.</td><td>Open</td></tr>
+        <tr><td>❖↩, ⌥↩</td><td>The secondary action (New window, Open With), the third (Show in Files, Bring here).</td><td>—</td></tr>
+        <tr><td>❖C</td><td>Copy the answer, the path, the address or the name.</td><td>—</td></tr>
+        <tr><td>❖K, →, right-click</td><td>The action list, in place.</td><td>—</td></tr>
+        <tr><td>❖1 … ❖9</td><td>Pick a visible row; the digits show while ❖ is held.</td><td>—</td></tr>
+        <tr><td>Esc</td><td>Out of the action list or chip, then clears the text, then closes.</td><td>Closes, loses the query</td></tr>
+        <tr><td>Hover</td><td>Moves the selection, until the keyboard is used again.</td><td>No hover</td></tr>
+      </table>
+      <h5>Aliases and per-command keys</h5>
+      <ul>
+        <li>Set from the action list. An alias ("ff") is matched first and shown as a small badge after the title.</li>
+        <li>A key becomes a keymap rule whose <code>bind</code> is an address (<code>⌥❖N → dashi://app/dev.dashi.notes/menu/new-note</code>), pushed to the compositor without restarting the shell. The recorder warns about collisions with reserved and existing chords.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="answers-in-the-row" data-toc="Answers in the row">Answers in the row <span class="pill done">Done</span></h2>
+    <p>Half the "settings" searches are "turn X on". Today "wif" gives a gear called Network, and Enter opens a pane (<code>wifi.png</code>). The shell owns that switch; the row can be it.</p>
+    <h3>Settings with state</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">wif</span></div><div class="l">
+            <div class="r old"><span class="g gear"></span><span class="t">Network</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">↩ opens Settings at Network</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A link to the pane</h4><p>A gear and a pane title; Enter opens Settings and you find the switch there.</p>
+          <ul class="pc"><li class="y">Settings stays the one place</li><li class="n">Three steps for one switch</li><li class="n">No state shown</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">wif</span><span class="hint">Space toggles · ↩ Open</span></div><div class="l">
+            <div class="h">Settings</div>
+            <div class="r cur"><span class="g wifi"></span><span class="t"><b>Wi</b>-<b>F</b>i</span><span class="s">Home-5G</span><span class="end"><span class="sw"></span></span></div>
+            <div class="r"><span class="g wifi"></span><span class="t">Join a network…</span><span class="s">4 nearby</span><span class="end">Wi-Fi</span></div>
+            <div class="r"><span class="g wifi"></span><span class="t">Network</span><span class="end">Settings</span></div>
+            <div class="h">Files</div>
+            <div class="r"><span class="g file"></span><span class="t">wifi-notes.md</span><span class="s">~/Documents</span><span class="end">Edited today</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>The control is in the row</h4><p>A setting with state shows it and its control on the same line: Wi-Fi's network and switch, Dark Mode's switch, "vol 30" as a number, Bluetooth's battery. Space flips it; Enter opens the pane at that row.</p>
+          <ul class="pc"><li class="y">"wif Space" and you're done</li><li class="y">Same stores as Control Center</li><li class="n">One more place controls draw</li><li class="n">Needs the settings registry</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="w" style="inset:22px 20px 14px"><div class="tb"><i></i><i></i><i></i><span>Network</span></div>
+            <div class="grp"><div class="gr hl">Wi-Fi <span class="sw"></span></div><div class="gr">Home-5G <span style="opacity:.6">Connected</span></div><div class="gr">Ask to join new networks <span class="sw off"></span></div></div>
+          </div>
+          <span class="note" style="left:10px;bottom:20px">↩ on "Wi-Fi" opens here, the row highlighted</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Open Settings at the row</h4><p>Rows name the setting, not the pane; Enter opens the pane scrolled to it, highlighted for a moment.</p>
+          <ul class="pc"><li class="y">Settings stays the one control</li><li class="y">Needs only addresses</li><li class="n">Still a window to close</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx" style="width:94%;display:grid;grid-template-columns:1fr 1fr"><div><div class="f"><span class="g bare search"></span><span class="q">wif</span></div><div class="l">
+            <div class="r cur"><span class="g wifi"></span><span class="t">Wi-Fi</span></div><div class="r"><span class="g wifi"></span><span class="t">Network</span></div>
+          </div></div><div style="border-left:1px solid var(--lx-sep);padding:8px 9px;font-size:9.5px"><b>Wi-Fi</b><br><span style="color:var(--lx-muted)">On · Home-5G · 5 GHz<br>IP 192.168.1.20<br>4 networks nearby</span></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A detail pane beside the list</h4><p>The selected row's details in a second column.</p>
+          <ul class="pc"><li class="y">Room for detail</li><li class="n">Twice as wide, every time</li><li class="n">Another launcher's layout</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B, with C as what Enter does.</b> <small>Done in 0.4.0 (<code>63628c2</code>, <code>ab303c6</code>, <code>3e18771</code>).</small> Space acts in the row; Enter goes to the place, at the exact row. The controls are <code>@dashi/ui</code>'s (Switch moves out of <code>wifi/switch.tsx</code>) and read the same stores as Control Center, so the two never disagree. Not D: it doubles the panel's width for detail that fits on one line.</p>
+
+    <h3>Answers and windows</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">2+2</span></div><div class="l">
+            <div class="r" style="font-size:12px;font-weight:700">= 4</div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">Not selectable · ↩ does nothing · can't copy</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A dead answer</h4><p>The sum is worked out and drawn, and that is all (<code>math.png</code>).</p>
+          <ul class="pc"><li class="y">Right answer</li><li class="n">Useless answer</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">20 km in mi</span><span class="hint">↩ Copy</span></div><div class="l">
+            <div class="r cur tall"><span class="g calc"></span><span class="s">20 km =</span><span class="end"><b style="font-size:13px;color:var(--lx-ink)">12.43 mi</b><span class="kc">↩ Copy</span></span></div>
+            <div class="r"><span class="ap" style="--c:#e5b13f">=</span><span class="t">Open in Calculator</span><span class="end"><span class="kc">❖↩</span></span></div>
+            <div class="r"><span class="g calc"></span><span class="t">Paste into Notes</span><span class="end"><span class="kc">⌥↩</span></span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">also 2+2, 15% of 80, 3pm Lisbon in Tokyo, today + 90d, 0x1f</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>An answer you can use</h4><p>The answer is the first row, selected, with a calculator glyph: Enter copies it and says "Copied" in place. Units, currency (cached rates, offline-safe), time zones, dates, hex; numbers in your Region's format, decimal commas accepted.</p>
+          <ul class="pc"><li class="y">The most useful row is usable</li><li class="y">No file search for pure math</li><li class="n">Rates need a refresh source</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span><span class="hint">← ↑ ↓ → · ↩ Switch</span></div><div class="l">
+            <div class="r cur"><span class="ap run" style="--c:#2c2c2e">&gt;_</span><span class="t"><b>Ter</b>minal</span><span class="s">3 windows</span><span class="end">App</span></div>
+            <div class="thumbs"><i class="dk sel"></i><i class="dk"></i><i></i></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span><span class="end">Settings</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>→ opens live thumbnails</h4><p>→ on a running app grows its row in place to show its windows, drawn live by the compositor; ← folds it. A file shows its preview the same way.</p>
+          <ul class="pc"><li class="y">Previews with no second column</li><li class="y">No capture permission dance</li><li class="n">Compositor thumbnails to build</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B and C.</b> <small>Done in 0.4.0: B (<code>916894f</code>, <code>f546d20</code>) and C (<code>159e041</code>).</small> B is small and fixes bug 2 on the way; C follows once windows are results. Copying goes through the data-control the compositor already serves.</p>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="agents" data-toc="Agents">Agents in the launcher <span class="pill done">Done</span></h2>
+    <p>Dashi's agent stack is serious work: a yes counts only when the person pressed it, secrets never reach the model, password fields are blank in captures, agents run in a sandbox. It is reachable only from a terminal (<code>dashi-agent claude</code>), and the launcher doesn't know an agent exists. The rule from the agents review stands over everything here: <b>no model sits between "ter" and Terminal</b>.</p>
+    <h3>Asking</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">turn on dark mode</span></div></div>
+          <span class="note" style="left:10px;bottom:10px">No match; ↩ does nothing</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Names only</h4><p>Search scores the whole query against names and keywords; a sentence matches nothing.</p>
+          <ul class="pc"><li class="y">Instant, private</li><li class="n">Plain words go nowhere</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">dark mode and hide the dock</span><span class="hint">⇥ Ask</span></div><div class="l">
+            <div class="r cur"><span class="g moon"></span><span class="t">Turn Dark Mode on</span><span class="s">Off now</span><span class="end"><span class="sw off"></span></span></div>
+            <div class="r"><span class="g dock"></span><span class="t">Hide the Dock automatically</span><span class="end"><span class="sw off"></span></span></div>
+            <div class="r"><span class="g moon"></span><span class="t">Appearance</span><span class="end">Settings</span></div>
+            <div class="r ask"><span class="g ag spark"></span><span class="t">Ask Claude: dark mode and hide the dock</span><span class="end">⇥ · your key</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Local first; Ask is the last row</h4><p>Verbs from the registry answer on the same frame, no model. An Ask row appears last, never pre-selected, only for a sentence (three or more words, a verb first, or a "?") or after ⇥.</p>
+          <ul class="pc"><li class="y">"ter ↩" never waits</li><li class="y">AI is something you choose</li><li class="n">A heuristic for "sentence"</li><li class="n">Needs an agent set up</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g ag spark"></span><span class="q">make it dark</span></div><div class="l">
+            <div class="bubble me">make it dark</div><div class="bubble">Sure. I can turn on Dark Mode for you. Do you also want Night Shift on after sunset?</div><div class="bubble me">no</div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A chat in the launcher</h4><p>The panel becomes a conversation with the agent.</p>
+          <ul class="pc"><li class="y">Follow-ups are natural</li><li class="n">A second app inside the launcher</li><li class="n">Talks instead of doing</li><li class="n">Another launcher's AI chat</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span><span class="hint">thinking…</span></div><div class="l">
+            <div class="r" style="color:var(--lx-faint)">Waiting for the model…</div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">Every keystroke leaves the machine</span>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>The model ranks everything</h4><p>Every query goes to a model, which decides what you meant.</p>
+          <ul class="pc"><li class="y">Understands anything</li><li class="n">Slow, costly, never offline</li><li class="n">Sends everything you type</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> Most "AI commands" people need are verbs the registry already has, and those run as the person, in kombu, logged as "you". The Ask row is shiso (its glyph and text only, CO-3) and says where the words go: "Claude · Anthropic, your key" or "Local · stays on this computer". Not C or D: talking is not doing, and D puts a network between you and Terminal. <small>Done in 0.4.0 (<code>e7c505d</code>, <code>850a894</code>, <code>df303c5</code>).</small></p>
+
+    <h3>A plan before acting</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="w" style="left:50%;top:40px;transform:translateX(-50%);width:200px"><div class="tb"><i></i><i></i><i></i></div>
+            <div style="padding:8px 10px"><b style="font-size:11px">Claude wants to change settings</b><p style="margin:4px 0 8px;color:var(--lx-muted)">It can turn switches in Control Center on and off.</p><span class="btn">Don't Allow</span> <span class="btn">Allow Once</span> <span class="btn" style="background:var(--shiso);color:#fff">Always Allow</span></div></div>
+          <span class="note" style="left:10px;bottom:10px">A category, not these calls</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Consent by category</h4><p>The first call in a scope asks; "Always Allow" keeps the whole category. Only force quit, trash, installs and sign-ins ask about the act.</p>
+          <ul class="pc"><li class="y">Few interruptions</li><li class="n">You don't see what will happen</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g ag spark"></span><span class="q">dark mode and hide the dock</span><span class="hint">↩ Run 3 · Esc</span></div><div class="l">
+            <div class="h">Claude will</div>
+            <div class="r"><span class="kc">1</span><span class="t">Turn Dark Mode on</span><span class="end"><span class="tag-ag">Change settings · allowed</span></span></div>
+            <div class="r"><span class="kc">2</span><span class="t">Hide the Dock automatically</span><span class="end"><span class="tag-ag">Change settings · allowed</span></span></div>
+            <div class="r"><span class="kc">3</span><span class="t">Add a note "night setup"</span><span class="end"><span class="tag-ag">Add to your notes · will ask</span></span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">One ↩, pressed by you, runs exactly these calls</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Steps, then one Return</h4><p>An Ask comes back as numbered steps in plain words, each with its tool, arguments and scope. Return runs exactly those calls; Esc cancels; ⇥ edits the request. A call outside the plan falls back to today's sheets.</p>
+          <ul class="pc"><li class="y">You see it before it happens</li><li class="y">Approval bound to arguments</li><li class="n">A planning step before acting</li><li class="n">Agents must declare calls</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g ag spark"></span><span class="q">dark mode and hide the dock</span></div><div class="l">
+            <div class="r"><span class="g ag spark"></span><span class="t">Done: Dark Mode on, Dock hidden</span><span class="end"><span class="kc">Undo</span></span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Act, then offer Undo</h4><p>Run at once within the granted scopes and show what changed, with Undo.</p>
+          <ul class="pc"><li class="y">Fastest</li><li class="n">Not everything can be undone</li><li class="n">You find out after</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> Running the plan is "Allow Once" for those calls and those arguments only; the press is checked with input origin, like a sheet's. After Return each number becomes a spinner, then a check in moss, or "Not allowed" in broth with "Allow once" right there. Settings changes keep an Undo (C's good part) in the history. <small>Done in 0.4.0 (<code>3069424</code>, <code>e7c505d</code>).</small></p>
+
+    <h3>What is acting now</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q"></span></div><div class="l">
+            <div class="h">Recent</div>
+            <div class="r old"><span class="g gear"></span><span class="t">Appearance</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">A "Your turn" missed in its banner is lost</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Recent apps only</h4><p>An empty launcher shows what you opened from it (<code>empty.png</code>); agents live in the pill, which says "Idle" 3 s after each call.</p>
+          <ul class="pc"><li class="y">Quiet</li><li class="n">❖ doesn't lead back to a hand-over</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="ph">Search, or say what to do</span><span class="hint">⇥ Ask</span></div><div class="l">
+            <div class="h">Now</div>
+            <div class="r cur tall"><span class="dot"></span><span class="t"><b>Your turn</b></span><span class="s">Claude · enter the code from your bank</span><span class="end"><span class="kc">↩ Go</span></span></div>
+            <div class="r tall"><span class="dot"></span><span class="t">Codex</span><span class="s">Sorting Downloads · 2 of 4</span><span class="end"><span class="kc">Stop</span></span></div>
+            <div class="h">Recent</div>
+            <div class="r"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span></div>
+            <div class="r"><span class="ap" style="--c:#5b8fd6">▤</span><span class="t">Files</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>A "Now" section on top</h4><p>One row per running task with a shiso dot, its live step and Stop; a pending "Your turn" sits first and Enter brings its window forward. Typing on a task row sends a follow-up.</p>
+          <ul class="pc"><li class="y">❖ is the place to check</li><li class="y">The store already exists</li><li class="n">A follow-up channel to build</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> The selection on a task row is still kombu, because selecting is the person's; only the dot is shiso. <small>Done in 0.4.0 (<code>e7c505d</code>).</small></p>
+    <div class="spec">
+      <h5>Who answers, and what leaves the machine</h5>
+      <ul>
+        <li><b>Who:</b> Settings › Agents gets "Answer requests with: Claude Code / Codex / Local model / None". The launcher starts it headless through <code>dashi-agent</code> in the sandbox, wired to <code>dashi-mcp</code>, one task per Ask. "None" hides the Ask row entirely.</li>
+        <li><b>Keys in the vault:</b> build "Tokens that stay home" (<code>docs/secrets.md:410-427</code>): a model key is a vault token item, swapped in by the sandbox's proxy only for that provider's host. Settings says "Key: in your vault. Claude never sees it."</li>
+        <li><b>Nothing leaves unless asked:</b> only the typed request is sent. Context comes only from chips the person adds with ⇥ ("+ this window", "+ selection"). <span class="pill wip">Deferred</span> the chips: today only the typed request is sent. No model is called while typing, ever. The empty state can say "Searches this computer only", and it is true.</li>
+        <li><b>Shiso only for agents:</b> the Ask glyph and text, the plan's scope chips, the Now dots. Never a selection, never a category.</li>
+        <li><b>History you can read:</b> "history" in the launcher and a list in Settings › Agents read <code>activity.jsonl</code>, grouped by task, with Undo for settings changes.</li>
+        <li><b>Failures are rows:</b> no agent set up → "Set up an agent…"; no answer → "Didn't answer · Retry"; a refused scope → "Not allowed · Allow once".</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="clipboard-and-snippets" data-toc="Clipboard and snippets">Clipboard history and snippets <span class="pill done">Done</span></h2>
+    <p>The compositor already serves ext data-control "for clipboard history, wl-copy: the shell's processes only" (<code>crates/dashi-comp/src/state.rs:145</code>), and nothing in the shell uses it. No other launcher sits at the layer that owns the clipboard and knows which field is a password.</p>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk plain"><div class="diagram">
+          <div class="bx"><b>Compositor</b><small>data-control, for clipboard history</small></div>
+          <div class="ar">↓</div>
+          <div class="bx off"><b>Nothing</b><small>one copy at a time, gone when replaced</small></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>One clipboard</h4><p>Copying replaces the last copy.</p>
+          <ul class="pc"><li class="y">Nothing kept, nothing to leak</li><li class="n">Lost copies</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="chip"><span class="g clip" style="width:11px;height:11px"></span>Clipboard ›</span><span class="ph">Search copies</span><span class="hint">↩ Paste into Notes</span></div><div class="l">
+            <div class="h">Pinned</div>
+            <div class="r"><span class="g clip"></span><span class="t">Calle de la Luna 12, 2º B</span><span class="end">Pinned</span></div>
+            <div class="h">Today</div>
+            <div class="r cur"><span class="g term"></span><span class="t" style="font-family:var(--mono);font-size:9.5px">git push origin release/0.4.0</span><span class="s">Terminal</span><span class="end">2 min</span></div>
+            <div class="r"><span class="g img"></span><span class="t">Screenshot 12:41</span><span class="s">1646 × 937</span><span class="end">8 min</span></div>
+            <div class="r" style="color:var(--lx-faint)"><span class="g bare lock"></span><span class="t">2 copies not kept: a password field, Passwords</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>History in the launcher, ⌥❖V</h4><p>The same panel with a "Clipboard" chip: text, images and files with a preview in the row. Enter pastes into the window that had focus; pin and delete are actions.</p>
+          <ul class="pc"><li class="y">One surface, one set of keys</li><li class="y">Secrets never kept</li><li class="n">A history to protect</li><li class="n">Paste-into needs care per app</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Notes</b><span>File</span><span>Edit</span><span class="rt"><span class="g clip" style="width:10px;height:10px"></span><span>12:41</span></span></div>
+          <div class="pop" style="right:10px;top:18px;width:170px"><div class="r sel">git push origin release/0.4.0</div><div class="r">Screenshot 12:41</div><div class="r">Calle de la Luna 12</div></div>
+          <div class="ptr" style="right:62px;top:6px"></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A menu-bar applet</h4><p>Recent copies in a popover from a clipboard glyph in the menu bar.</p>
+          <ul class="pc"><li class="y">Always visible</li><li class="n">Pointer-first</li><li class="n">Another place, another search</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="w" style="inset:20px 24px 16px"><div class="tb"><i></i><i></i><i></i><span>Mail · New message</span></div>
+            <div style="padding:10px 12px;font-size:10.5px;line-height:1.7">Hi Ana,<br>my address is <span style="background:var(--lx-wash);border-radius:3px;padding:0 3px">Calle de la Luna 12, 2º B</span><br><span style="color:var(--lx-muted)">typed: <code>;addr</code> → expanded</span></div>
+          </div>
+          <span class="note" style="left:10px;bottom:6px">Never in password fields or Terminal (by default)</span>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>Snippets that expand anywhere</h4><p>Typed abbreviations expand in any Wayland app, done by the compositor's input path, with placeholders for the date, the clipboard and the caret.</p>
+          <ul class="pc"><li class="y">Works in every app</li><li class="y">Secret snippets filled from the vault</li><li class="n">L: compositor input work</li><li class="n">Must never fire by accident</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B now, D after it.</b> <small>Done in 0.4.0: B and D (<code>d548a30</code>).</small> ⌥❖V sits in the system's reserved <code>super+alt</code> space (<code>keymap.ts:111</code>), so no app loses a key. Not C: it splits one feature over two surfaces. Snippets are managed from the launcher ("snippet" lists and adds them).</p>
+    <div class="spec">
+      <h5>Privacy rules, all on by default</h5>
+      <ul>
+        <li><b>Secrets are blank:</b> a copy from a password field (AT-SPI role <code>password text</code>) or a vault fill never enters the history; neither does a copy flagged with the password-manager hint (<code>x-kde-passwordManagerHint: secret</code>, which KeePassXC sets).</li>
+        <li><b>Password managers are left out by app:</b> Dashi's Passwords and a default list (KeePassXC, Bitwarden, 1Password, Seahorse), editable in Settings.</li>
+        <li><b>Kept on this computer only:</b> a 0600 file, 200 items or 7 days, images up to 10 MB; Clear History in the action list; paused while the screen is shared or recorded.</li>
+        <li><b>Agents can't read it</b> without a new scope ("See your clipboard history"), which asks every time.</li>
+        <li><b>The row says when it skipped something</b> ("2 copies not kept"), so the rules are visible.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="the-look" data-toc="The look">The look <span class="pill done">Done</span></h2>
+    <p>The panel is 620 px of pale glass with a 44 px saturated slab for the selection, the same gray gear on every pane, no kind labels, and no motion: it snaps between 115 and 379 px as you type. The aim is calm, legible and unmistakably Dashi.</p>
+    <h3>The selection</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r old"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Battery &amp; Power</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">White on #3E8A72: 4.13:1</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A full kombu fill</h4><p>White 15 px text on the accent, the loudest thing on screen.</p>
+          <ul class="pc"><li class="y">Unmissable</li><li class="n">Fails CO-6</li><li class="n">Shouts on every keystroke</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r cur"><span class="ap run" style="--c:#2c2c2e">&gt;_</span><span class="t"><b>Ter</b>minal</span><span class="s">2 windows</span><span class="end">App</span></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span><span class="end">Settings</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">Ink on wash: 13.2:1 light, 10.4:1 dark</span>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>A kombu wash and a bar</h4><p>A 14% kombu wash behind ink text and a 3 px kombu bar at the row's left edge; full kombu only for the pressed instant.</p>
+          <ul class="pc"><li class="y">Passes AA by a mile, both modes</li><li class="y">Still kombu: still "selected"</li><li class="n">Quieter at a glance</li><li class="n">New tokens</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r deep"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span><span class="s">2 windows</span><span class="end">App</span></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span><span class="end">Settings</span></div>
+          </div></div>
+          <span class="note" style="left:10px;bottom:10px">White on #2F6F5A: 5.93:1</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A deeper fill</h4><p>Keep the slab, in the mark's own gradient end, as a <code>selectionStrong</code> token.</p>
+          <ul class="pc"><li class="y">Passes AA</li><li class="y">Smallest change</li><li class="n">Still the loudest thing</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">ter</span></div><div class="l">
+            <div class="r ring"><span class="ap" style="--c:#2c2c2e">&gt;_</span><span class="t">Terminal</span><span class="end">App</span></div>
+            <div class="r"><span class="g bat"></span><span class="t">Battery &amp; Power</span><span class="end">Settings</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>An outline</h4><p>A 1.5 px kombu ring around the selected row.</p>
+          <ul class="pc"><li class="y">Calm</li><li class="n">Reads as keyboard focus</li><li class="n">Weak on glass</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B</b>, as <code>selectionWash</code> and <code>onSelection</code> tokens in <code>@dashi/ui</code>'s palette, with the inline hex gone (CO-5). If the full fill is wanted for other lists, C's token is the fallback everywhere a slab stays. <small>Done in 0.4.0 (<code>1c3308e</code>; every list since <code>653d8aa</code>).</small></p>
+
+    <h3>Rows that say what they are</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q">a</span></div><div class="l">
+            <div class="r old"><span class="g gear"></span><span class="t">About</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Agents</span></div>
+            <div class="r"><span class="g gear"></span><span class="t">Appearance</span></div>
+            <div class="r"><span class="ap" style="--c:#8b76e8">A</span><span class="t">Applet Store</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A gear and a name</h4><p>"About" and "Agents" could be anything.</p>
+          <ul class="pc"><li class="y">Minimal</li><li class="n">Apps and panes look alike</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">a</span></div><div class="l">
+            <div class="h">Apps</div>
+            <div class="r cur"><span class="ap" style="--c:#8b76e8">A</span><span class="t"><b>A</b>pplet Store</span><span class="end">App</span></div>
+            <div class="h">Settings</div>
+            <div class="r"><span class="g info"></span><span class="t"><b>A</b>bout</span><span class="s">version and hardware</span><span class="end">Settings</span></div>
+            <div class="r"><span class="g spark"></span><span class="t"><b>A</b>gents</span><span class="s">what agents may do</span><span class="end">Settings</span></div>
+            <div class="r"><span class="g moon"></span><span class="t"><b>A</b>ppearance</span><span class="s">Dark Mode, accent, corners</span><span class="end">Settings</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Glyph, suffix and kind, one line</h4><p>Each pane's own glyph on a neutral tile, a muted suffix on the same line (VS-2), a right-aligned kind, matched letters in SemiBold, and section heads once two kinds show.</p>
+          <ul class="pc"><li class="y">Found by shape, then read</li><li class="y">No extra height</li><li class="n">Suffixes to write and translate</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="q">a</span></div><div class="l">
+            <div class="r cur tall" style="height:32px;flex-wrap:wrap;align-content:center;row-gap:0"><span class="ap" style="--c:#8b76e8">A</span><span style="display:grid"><span class="t">Applet Store</span><span class="s">Find applets for the menu bar</span></span></div>
+            <div class="r tall" style="height:32px"><span class="g info"></span><span style="display:grid"><span class="t">About</span><span class="s">Settings · version and hardware</span></span></div>
+            <div class="r tall" style="height:32px"><span class="g spark"></span><span style="display:grid"><span class="t">Agents</span><span class="s">Settings · what agents may do</span></span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Two-line rows</h4><p>A subtitle under every title.</p>
+          <ul class="pc"><li class="y">Room for a sentence</li><li class="n">Fewer rows fit</li><li class="n">Against VS-2's one line</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> The glyphs are the ones Settings' sidebar already draws (<code>settings-app/panes.ts:47-66</code>), on ink tiles, not tinted (CO-2, CO-4). The Agents pane's glyph stays ink here too: shiso is for an agent acting, not a pane about agents. <small>Done in 0.4.0 (<code>916894f</code>; Dashi's commands <code>055357d</code>, <code>7f4f074</code>).</small></p>
+
+    <h3>The empty state</h3>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="lx today"><div class="f"><span class="g bare search"></span><span class="q"></span></div></div>
+          <span class="note" style="left:10px;bottom:10px">First boot: a bare field; the placeholder doesn't render</span>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>A lone field</h4><p>With no history the list doesn't render; with history, one "Recent" row.</p>
+          <ul class="pc"><li class="y">Quiet</li><li class="n">Says nothing about what it does</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="ph">An app, a setting, a file, or a sum</span></div><div class="l">
+            <div class="h">Try <small>Searches this computer only</small></div>
+            <div class="r cur"><span class="g wifi"></span><span class="t">Wi-Fi</span><span class="s">turn it on or off</span><span class="end"><span class="sw"></span></span></div>
+            <div class="r"><span class="ap" style="--c:#5b8fd6">▤</span><span class="t">Files</span><span class="s">your documents and downloads</span><span class="end">App</span></div>
+            <div class="r"><span class="g calc"></span><span class="t">15% of 80</span><span class="s">= 12</span><span class="end">Answer</span></div>
+            <div class="r"><span class="g moon"></span><span class="t">Dark Mode</span><span class="s">Appearance</span><span class="end"><span class="sw off"></span></span></div>
+            <div class="r"><span class="g grid"></span><span class="t">All apps</span><span class="s">A to Z</span><span class="end">→</span></div>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>An empty state that teaches</h4><p>Four real, working examples of what it does, then All apps for those who expect a Start menu. With history: Now, then Recent, with All apps last.</p>
+          <ul class="pc"><li class="y">Teaches by doing</li><li class="y">Says what it searches</li><li class="n">Examples to choose and localize</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="lx"><div class="f"><span class="g bare search"></span><span class="ph">Search</span></div><div class="l" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+            <span data-sprite="happy" style="width:34px;display:block"></span><span style="font-size:10px">Hi! I'm Kombu. Type anything and I'll find it.</span>
+          </div></div>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>Kombu says hello</h4><p>The mascot greets you in the empty launcher.</p>
+          <ul class="pc"><li class="y">Warm</li><li class="n">200 times a day</li><li class="n">Talks instead of showing</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> The placeholder renders while the field has focus (a Metal fix, or muted Text). Kombu belongs to first launch and empty documents, not to a surface opened hundreds of times a day. <small>Done in 0.4.0 (<code>916894f</code>).</small></p>
+    <div class="spec">
+      <h5>Motion, on Dashi's curves</h5>
+      <ul>
+        <li>Open: a 160 ms fade from 0.96 scale, ease-out cubic, with the field taking keys on the first frame. Close: 120 ms fade. <span class="pill done">Done</span> the open fade and the height (<code>d7421ba</code>); <span class="pill wip">Deferred</span> the close fade.</li>
+        <li>Height changes animate over 120 ms; slow rows fade into their reserved slots and never push rows above them.</li>
+        <li>Opening a result: its icon flies to its Dock tile or window, the same 300 ms flight as minimize (MO-1), so you see where it went. <span class="pill wip">Deferred</span></li>
+        <li>All of it is native opacity and transform in Metal and the compositor, never React on a timer (MO-3), and all of it stops with Reduce Motion (<code>appearance.reduceMotion</code>).</li>
+      </ul>
+      <h5>Measures</h5>
+      <ul>
+        <li>Field row 48 with 17 px text (or one launcher size added to TY-1, not invented here); rows 40 with 28 px icons; panel radius 12 (a sheet's), list padding 5, row radius 7, so the corners nest (RA-1). Eight rows fit where seven did, in less height.</li>
+        <li>The edge is <code>separator</code>, not <code>dockBorder</code>, so it reads on pale wallpapers; the top sits at about 20% of the screen's usable height, at least 96 px under the menu bar; the surface covers the screen so a click anywhere closes it.</li>
+        <li>The field row stays the only chrome: hints live at its right end or on the selected row, chips inside it. No footer, no second header.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="newcomers-and-access" data-toc="Newcomers and access">Newcomers and access <span class="pill done">Done</span></h2>
+    <p>Someone who switched this week has never heard the word "launcher". Today nothing tells them it exists, it speaks only English, it forgives no typo, and a screen reader hears nothing.</p>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk">
+          <div class="w" style="left:30px;right:30px;top:30px"><div class="tb"><i></i><i></i><i></i><span>Hold ❖ for 0.8 s</span></div>
+            <div style="padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:9.5px"><span>Search</span><span class="kc">❖Space</span><span>Switch apps</span><span class="kc">❖Tab</span><span>Screenshot</span><span class="kc">⇧❖3</span><span>Lock</span><span class="kc">⌃❖Q</span><span>Stop agents</span><span class="kc">⌃❖Esc</span></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">A</span>Only on the shortcut sheet</h4><p>❖Space is listed only on the sheet you get by holding ❖; Setup Assistant teaches ⌃❖Esc but never ❖.</p>
+          <ul class="pc"><li class="y">Out of the way</li><li class="n">Found by accident or never</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk">
+          <div class="mb"><b style="opacity:.9">◡</b><b>Desktop</b><span>File</span><span>Edit</span><span class="rt">12:41</span></div>
+          <div class="pop" style="left:6px;top:16px;width:150px"><div class="r">About Dashi</div><div class="r sel">Search… <span>❖Space</span></div><div class="r">System Settings… <span>❖,</span></div><div class="r">Lock Screen <span>⌃❖Q</span></div></div>
+          <div class="w" style="right:14px;top:30px;width:190px"><div class="tb"><i></i><i></i><i></i><span>Setup Assistant</span></div>
+            <div style="padding:8px 10px"><b style="font-size:11px">You're all set</b><div class="grp" style="margin:6px 0"><div class="gr">Tap ❖ to find anything <span class="btn p">Try it</span></div></div></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">B</span>Taught in Setup and the Dashi menu</h4><p>Setup Assistant's last page gets one row, "Tap ❖ to find anything", with Try it. The Dashi menu gets "Search…" with its key, so the pointer finds it too.</p>
+          <ul class="pc"><li class="y">Every newcomer meets it once</li><li class="y">No new chrome</li><li class="n">One more Setup row</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div class="mb"><b>Desktop</b><span>File</span><span class="rt"><span class="g bare search" style="width:10px;height:10px"></span>12:41</span></div>
+          <div class="ptr" style="right:42px;top:7px"></div>
+          <span class="note" style="left:10px;bottom:10px">A magnifier in the menu bar, always</span>
+        </div>
+        <div class="cap"><h4><span class="k">C</span>A search glyph in the menu bar</h4><p>A permanent menu-bar item that opens the launcher.</p>
+          <ul class="pc"><li class="y">Always visible</li><li class="n">Spends a menu-bar slot forever</li><li class="n">A familiar copy of another OS</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk">
+          <div style="position:absolute;inset:0;background:#0007;z-index:5"></div>
+          <div class="w" style="left:50%;top:60px;transform:translateX(-50%);width:200px;z-index:6"><div style="padding:10px 12px"><b style="font-size:11px">Tip 1 of 5</b><p style="margin:4px 0 8px;color:var(--lx-muted)">Press ❖ to open the launcher.</p><span class="btn">Skip</span> <span class="btn p">Next</span></div></div>
+        </div>
+        <div class="cap"><h4><span class="k">D</span>A tour of tips</h4><p>A dimmed overlay with tips on first login.</p>
+          <ul class="pc"><li class="y">Thorough</li><li class="n">Everyone skips it</li><li class="n">Not calm (it asks for attention)</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B</b>, plus the teaching empty state above, which does the rest. Not C: the menu bar is full of things that earn their place every minute. Not D: a tour is the opposite of calm. <small>Done in 0.4.0 (<code>66d2378</code>, <code>916894f</code>).</small></p>
+    <div class="spec">
+      <h5>Your language, your spelling, your words</h5>
+      <ul>
+        <li>Read <code>Name[xx]</code>, <code>GenericName[xx]</code> and <code>Keywords[xx]</code> for the language picked in Setup, falling back to the default and still matching the English name. Ship translations for the panes' and Dashi's own keywords.</li>
+        <li>Fold case and accents (NFD, marks stripped): "ecran" finds "Écran". One typo forgiven from four letters ("fierfox" → "Did you mean Firefox?"). Match inside multi-word keywords ("mode" reaches "dark mode"). Pinyin and romaji later.</li>
+        <li>The words switchers use: "control panel", "brightness", "shut down", "restart", "log out", "lock" (the act, not the pane). Lock Screen, Sleep, Restart…, Shut Down… and Log Out… become commands running the Dashi menu's own actions, confirmations kept.</li>
+        <li>Errors as rows: "Couldn't open Firefox · Try again" when an app exits within 2 s; "File search is off · Set up" instead of silence.</li>
+      </ul>
+      <h5>A screen reader, and text size</h5>
+      <ul>
+        <li>Metal publishes a minimal AT-SPI tree (AccessKit, as the app roast proposed): the field a combobox, the results a listbox, each row an option named "Wi-Fi, on, setting, 1 of 3"; the selection is announced as it moves, and the answer reads "equals 4, Return copies". Fixing it in Metal fixes every Dashi app.</li>
+        <li>A text-size setting (an Accessibility pane) the launcher honors: rows grow, the surface grows up to 600 px tall, nothing is clipped.</li>
+        <li>Contrast: muted text and section heads at 4.5:1 or more on the glass, whatever the wallpaper (B's selection already passes).</li>
+        <li>Input methods: the session starts the configured one and the compositor places its candidate window from the field's caret on overlay surfaces too (<code>crates/dashi-comp/src/handlers/text.rs:49-55</code>); check it in the VM with fcitx5.</li>
+      </ul>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="speed" data-toc="Speed">Speed <span class="pill done">Done</span></h2>
+    <p>A launcher used 200 times a day must open the same, fast, every time. Today each tap runs <code>loadEntries()</code> on the shell's loop (every XDG <code>applications</code> directory, every icon size), asks the compositor for the screen, and takes the one warm Metal host, whose replacement starts 1.5 s later.</p>
+    <div class="props">
+      <div class="prop today">
+        <div class="mk plain"><div class="tline">
+          <div class="ln"><span>❖ tap</span><div class="bars"><i style="width:22%;background:#d0596f">read .desktop</i><i style="width:10%;background:#e5b13f">screen</i><i style="width:20%;background:#8a8a8f">host</i><i style="width:10%;background:var(--kombu)">draw</i></div></div>
+          <div class="ln"><span>tap again &lt; 1.5 s</span><div class="bars"><i style="width:22%;background:#d0596f">read</i><i style="width:10%;background:#e5b13f">screen</i><i style="width:62%;background:#5a5a60">cold host: GPU context, fonts</i></div></div>
+          <div class="ln"><span>keystroke</span><div class="bars"><i style="width:8%;background:var(--kombu)">rank</i><i style="width:30%;background:#8a8a8f">120 ms wait</i><i style="width:24%;background:#d0596f">spawn tinysparql</i></div></div>
+          <div class="scale"><span>0</span><span>not measured: shape only</span><span>slow</span></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">A</span>Built on every open</h4><p>The index is rebuilt per tap, file search is a process per pause.</p>
+          <ul class="pc"><li class="y">Always fresh</li><li class="n">Work before the first frame</li><li class="n">A second tap can be slow</li></ul></div>
+      </div>
+      <div class="prop pick">
+        <div class="mk plain"><div class="tline">
+          <div class="ln"><span>❖ tap</span><div class="bars"><i style="width:11%;background:var(--kombu)">show</i></div></div>
+          <div class="ln"><span>tap again</span><div class="bars"><i style="width:11%;background:var(--kombu)">show</i></div></div>
+          <div class="ln"><span>keystroke</span><div class="bars"><i style="width:4%;background:var(--kombu)"></i><i style="width:34%;background:#8a8a8f">files ≤ 80 ms, in their slots</i></div></div>
+          <div class="ln"><span>app installed</span><div class="bars"><i style="width:26%;background:#5a5a60">inotify → index</i></div></div>
+          <div class="scale"><span>0</span><span>first frame &lt; 50 ms · results &lt; 16 ms</span><span></span></div>
+        </div></div>
+        <div class="cap"><h4><span class="k">B</span>Resident, with a cached index</h4><p>The launcher stays mounted on its own host and is shown and hidden; the index is built once and kept fresh by inotify on the <code>applications</code> directories; icons resolve once; recents live in memory; it opens on the last known screen and moves if that was wrong.</p>
+          <ul class="pc"><li class="y">Same speed every time</li><li class="y">Typing never waits</li><li class="n">A host held in memory</li><li class="n">Invalidation to get right</li></ul></div>
+      </div>
+      <div class="prop">
+        <div class="mk plain"><div class="diagram">
+          <div class="row" style="--n:2"><div class="bx"><b>Shell</b><small>draws the launcher</small></div><div class="bx acc"><b>dashi-indexd</b><small>apps, files, history</small></div></div>
+          <div class="ar">⇄ a socket round trip per keystroke</div>
+        </div></div>
+        <div class="cap"><h4><span class="k">C</span>A separate index service</h4><p>A daemon owns the index and answers queries over a socket.</p>
+          <ul class="pc"><li class="y">Off the shell's loop entirely</li><li class="n">A process and a protocol more</li><li class="n">IPC on every keystroke</li></ul></div>
+      </div>
+    </div>
+    <p class="verdict"><b>Recommendation: B.</b> The in-memory index is small (hundreds of entries, thousands of menu rows); ranking it takes well under 2 ms, so it can stay in the shell, with only the slow sources outside. C is the step if the registry grows past that, measured first. <small>Done in 0.4.0 (<code>d7421ba</code>, <code>f998ea5</code>, <code>18b3ee4</code>).</small></p>
+    <div class="spec">
+      <h5>The typing budget</h5>
+      <table>
+        <tr><th>Moment</th><th>Budget</th><th>How it's held</th></tr>
+        <tr><td>❖ released → first frame with the field ready</td><td>&lt; 50 ms, every open</td><td>Resident host; no disk on the open path; a VM test that taps twice within 1.5 s</td></tr>
+        <tr><td>Keystroke → local results drawn</td><td>&lt; 16 ms (one frame), ranking &lt; 2 ms</td><td>In-memory index; a ranking benchmark in <code>bun run test</code> with 5,000 entries</td></tr>
+        <tr><td>Keystroke → files, applets</td><td>80 ms deadline, into reserved slots</td><td><code>seq</code> per query; one LocalSearch D-Bus connection; late answers append</td></tr>
+        <tr><td>Return → the thing happens</td><td>Never waits on a slow source or a model</td><td>Acts on the highlighted row's id; a test that the "ter ↩" path awaits nothing</td></tr>
+      </table>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="the-beat-raycast-move" data-toc="The move">The beat-Raycast move</h2>
+    <p class="lede" style="margin-bottom:6px"><b style="color:var(--ink)">Everything the OS can do, two keystrokes away, answered in the row, in your words, and shared with your agents under your consent.</b></p>
+    <p>Raycast has to persuade developers to write each command, sees other apps through accessibility, routes your keys through its servers, and can't prove a person pressed Run. Dashi already has the commands (every menu, every setting, every window, every applet row), the consent that knows who pressed, the vault, and the compositor. The launcher only has to become the place they meet. The day you install Dashi: "files ↩" switches to the open window, "wif Space" turns Wi-Fi off, "20 km in mi ↩" copies the answer, ⌥❖V brings back what you copied, and "put Notes and Files side by side and mute" shows a plan you approve with one Return. Typing "ter" still opens Terminal on the next frame.</p>
+    <div class="hero-mk">
+      <div class="mb"><b style="opacity:.9">◡</b><b>Desktop</b><span>File</span><span>Edit</span><span>View</span><span class="rt"><span class="dot" style="width:7px;height:7px"></span><span>21°</span><span>Thu Nov 5 12:41</span></span></div>
+      <div class="lx left"><div class="f"><span class="g bare search"></span><span class="q">dark</span><span class="hint">Space toggles · ❖K</span></div><div class="l">
+        <div class="h">Top hit</div>
+        <div class="r cur"><span class="g moon"></span><span class="t"><b>Dark</b> Mode</span><span class="s">Off now</span><span class="end"><span class="sw off"></span></span></div>
+        <div class="h">Commands</div>
+        <div class="r"><span class="ap" style="--c:#e5b13f">N</span><span class="t">Notes › View › <b>Dark</b> Editor</span><span class="end"><span class="kc">⇧❖D</span></span></div>
+        <div class="r"><span class="g moon"></span><span class="t">Night Shift</span><span class="s">Displays</span><span class="end"><span class="sw"></span></span></div>
+        <div class="h">Windows</div>
+        <div class="r"><span class="ap run" style="--c:#7a7a80">✎</span><span class="t"><b>dark</b>-mode.md</span><span class="s">Text Editor</span><span class="end">Desktop 2</span></div>
+        <div class="h">Files</div>
+        <div class="r"><span class="g img"></span><span class="t"><b>dark</b>-wallpaper.png</span><span class="s">~/Pictures</span><span class="end">Yesterday</span></div>
+      </div></div>
+      <div class="lx right"><div class="f"><span class="g ag spark"></span><span class="q">Notes and Files side by side, mute</span><span class="hint">↩ Run 3</span></div><div class="l">
+        <div class="h">Claude will</div>
+        <div class="r"><span class="kc">1</span><span class="t">Tile Notes left</span><span class="end"><span class="tag-ag">Manage windows · allowed</span></span></div>
+        <div class="r"><span class="kc">2</span><span class="t">Tile Files right</span><span class="end"><span class="tag-ag">Manage windows · allowed</span></span></div>
+        <div class="r"><span class="kc">3</span><span class="t">Mute the sound</span><span class="end"><span class="tag-ag">Change settings · will ask</span></span></div>
+        <hr>
+        <div class="r" style="color:var(--lx-muted)"><span class="g bare lock"></span><span class="t">Local · stays on this computer</span></div>
+      </div></div>
+      <span class="note" style="left:14px;bottom:14px">Left: the OS as commands, no model. Right: a plan, approved by one Return you press.</span>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="order-of-work">Order of work</h2>
+    <p>Where it lands: <span class="where">shell</span> <span class="where">compositor</span> <span class="where">mirin</span> <span class="where agents">agents</span> <span class="where">applets</span>; sizes <span class="sz">S</span> a day or less, <span class="sz">M</span> a week, <span class="sz">L</span> more.</p>
+    <div class="wave w1">
+      <h3>Wave 1: fix the bugs</h3>
+      <p>Every item here is a finding with a test that would have caught it. Together they make today's launcher honest.</p>
+      <table>
+        <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
+        <tr><td>Selection held by id; reserved file slots; Enter acts on what is highlighted <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#1</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>The answer row is selectable, first, and Enter copies; no file search for pure math <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#2</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>"Nothing called …" with Search files, Did you mean, Find in Software <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#3</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Each pane's glyph; a kind label on the same line; section heads <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#4</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td><code>selectionWash</code> and <code>onSelection</code> tokens; no inline hex <span class="pill done">Done</span> <small><code>1c3308e</code></small></td><td>#5</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Index loaded once and kept fresh by inotify; icons resolved once; recents in memory <span class="pill done">Done</span> <small><code>916894f</code>, <code>18b3ee4</code></small></td><td>#6</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Keyword fixes: "settings" finds System Settings; Setup Assistant demoted; no bare in-word matches under four letters <span class="pill done">Done</span> <small><code>95ad7d1</code></small></td><td>#7</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Esc clears then closes; wrap, ⌃N/⌃P, Page keys; hover moves the selection <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#17</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>Errors as rows and notifications; placeholder follows what search can do <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#19</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>"Search…" in the Dashi menu; a row on Setup Assistant's last page <span class="pill done">Done</span> <small><code>66d2378</code></small></td><td>#12</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+        <tr><td>The placeholder renders while focused <span class="pill done">Done</span> <small><code>916894f</code></small></td><td>#12</td><td><span class="where">mirin</span> <span class="sz">S</span></td></tr>
+        <tr><td>Tests for ranking, math, recents and row stability <span class="pill done">Done</span> <small><code>916894f</code>, <code>00f2bbd</code></small></td><td>#22</td><td><span class="where">shell</span> <span class="sz">S</span></td></tr>
+      </table>
+    </div>
+    <div class="wave w2">
+      <h3>Wave 2: the registry, ranking and actions</h3>
+      <table>
+        <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
+        <tr><td>The action registry, from <code>ToolDef</code>; <code>tools/list</code> generated from it; keymap and menus migrated one kind at a time <span class="pill done">Done</span> <small><code>78c3970</code>, <code>608b640</code></small></td><td>#8, #9</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">L</span></td></tr>
+        <tr><td><code>dashi://</code> addresses, the scheme handler, Copy Address, Settings opening at the row <span class="pill done">Done</span> <small><code>608b640</code>, <code>4832200</code></small></td><td>#9</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Fuzzy, acronym and typo matching; per-query memory; frecency from everywhere; Reset Ranking <span class="pill done">Done</span> <small><code>00f2bbd</code>, <code>315ab29</code></small></td><td>#7</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>The ❖K action list; ❖↩, ⌥↩, ❖C, ⇧↩, ❖1–9 <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#10</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Windows as results; Enter switches; ❖↩ new window <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#10</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>Menus, <code>[Desktop Action]</code> groups and Dashi's own commands (Lock, Restart…) as rows <span class="pill done">Done</span> <small><code>608b640</code>, <code>63628c2</code></small></td><td>#11</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Controls in the row for settings with state; units, currency, time zones <span class="pill done">Done</span> <small><code>63628c2</code>, <code>f546d20</code></small></td><td>#9, #2</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Aliases; per-command keys bound to addresses, reloaded live <span class="pill done">Done</span> <small><code>63628c2</code></small></td><td>#21</td><td><span class="where">shell</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>Localized names and keywords, accent folding <span class="pill done">Done</span> <small><code>00f2bbd</code></small></td><td>#14</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Resident launcher on its own host; per-source budgets; one LocalSearch connection <span class="pill done">Done</span> <small><code>d7421ba</code>, <code>f998ea5</code></small></td><td>#6, #20</td><td><span class="where">shell</span> <span class="where">mirin</span> <span class="sz">M</span></td></tr>
+        <tr><td>Motion on Dashi's curves, off with Reduce Motion; Dashi's measures <span class="pill done">Done</span> <small><code>d7421ba</code>, <code>916894f</code>; the close fade <span class="pill wip">Deferred</span></small></td><td>#18</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">M</span></td></tr>
+      </table>
+    </div>
+    <div class="wave w3">
+      <h3>Wave 3: agents and extensions</h3>
+      <table>
+        <tr><th>Work</th><th>Fixes</th><th>Lands in</th></tr>
+        <tr><td>The Ask row and the plan, bound to its calls; an answerer chosen in Settings › Agents <span class="pill done">Done</span> <small><code>e7c505d</code>, <code>850a894</code>, <code>df303c5</code></small></td><td>#9, #16</td><td><span class="where agents">agents</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
+        <tr><td>"Now": running tasks, "Your turn", Stop, follow-ups; readable history <span class="pill done">Done</span> <small><code>e7c505d</code>, <code>e3ae8b8</code></small></td><td>#15</td><td><span class="where">shell</span> <span class="where agents">agents</span> <span class="sz">M</span></td></tr>
+        <tr><td>Model keys in the vault ("Tokens that stay home") <span class="pill done">Done</span> <small><code>e37f581</code>, <code>83c8f30</code></small></td><td>#15</td><td><span class="where agents">agents</span> <span class="sz">L</span></td></tr>
+        <tr><td>Applet commands (manifest <code>commands</code>, protocol v3) and resource limits on applet units <span class="pill done">Done</span> <small><code>dae86d9</code>, <code>9408a7a</code></small></td><td>#11, #21</td><td><span class="where">applets</span> <span class="where">shell</span> <span class="where">mirin</span> <span class="sz">L</span></td></tr>
+        <tr><td>Clipboard history with the privacy rules <span class="pill done">Done</span> <small><code>d548a30</code></small></td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">M</span></td></tr>
+        <tr><td>Snippets expanded at the compositor <span class="pill done">Done</span> <small><code>d548a30</code></small></td><td>#21</td><td><span class="where">compositor</span> <span class="where">shell</span> <span class="sz">L</span></td></tr>
+        <tr><td>Live window thumbnails in the row <span class="pill done">Done</span> <small><code>159e041</code></small></td><td>—</td><td><span class="where">compositor</span> <span class="sz">M</span></td></tr>
+        <tr><td>The AT-SPI tree in Metal; a text-size setting; input methods on overlays <span class="pill done">Done</span> <small><code>159e041</code>, <code>ce156b8</code>, <code>0c2a9e8</code></small></td><td>#13</td><td><span class="where">mirin</span> <span class="where">compositor</span> <span class="sz">L</span></td></tr>
+        <tr><td>Your own script commands; GNOME search providers read; <code>dev.dashi.Shell.Actions1</code> served on D-Bus <span class="pill done">Done</span> <small><code>9408a7a</code></small></td><td>#8</td><td><span class="where">shell</span> <span class="sz">M</span></td></tr>
+      </table>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <h2 id="what-i-need-from-you">What I need from you</h2>
+    <ol class="picks">
+      <li><b>The core:</b> one action registry shared with agents, every action and setting at a <code>dashi://</code> address? <i>Recommended: yes (C).</i></li>
+      <li><b>Ranking:</b> fuzzy matching plus learning from picks, kept on this computer with Reset Ranking? <i>Recommended: yes (B), with no ranking settings.</i></li>
+      <li><b>Actions:</b> ❖K turns the list into the row's actions in place, right-click opens the same list, no footer? <i>Recommended: yes (B).</i></li>
+      <li><b>The selection:</b> a kombu wash and a 3 px bar, or a deeper kombu fill (<code>#2F6F5A</code>)? <i>Recommended: the wash and bar (B).</i></li>
+      <li><b>Space in a row:</b> flips a setting's switch while Enter opens Settings at that row? <i>Recommended: yes (B with C).</i></li>
+      <li><b>Agents:</b> local first, an Ask row only for sentences or ⇥, a plan approved by one Return? And which answerer by default? <i>Recommended: yes; "None" until the person picks one in Setup or Settings, with a local model offered first.</i></li>
+      <li><b>Clipboard history:</b> on by default at ⌥❖V, 200 items or 7 days, secrets and password managers never kept? <i>Recommended: yes; snippets after it.</i></li>
+      <li><b>Measures:</b> add a launcher row to TY-1 and LA-1 (field 48 at 17 px, rows 40, radius 12) in <code>design.html</code>? <i>Recommended: yes, in the same commit as the change.</i></li>
+      <li><b>Applet commands:</b> the manifest's <code>commands</code> and protocol v3 (<code>run</code>, <code>result</code>, <code>items</code>) as sketched? <i>Recommended: yes, after the registry lands.</i></li>
+      <li><b>When:</b> all three waves in 0.4.0, like the rest of this release, reviewed one wave at a time? <i>Recommended: yes, bugs first.</i></li>
+    </ol>
+  </main>
+</div>
+</body>
+</html>

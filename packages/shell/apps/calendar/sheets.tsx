@@ -92,7 +92,7 @@ export function DeleteEventSheet({
       <ConfirmSheet
         testID="delete-event"
         title={`Delete “${sheet.title || "New Event"}”?`}
-        message="It is taken out of its calendar file. This can't be undone."
+        message="You can't undo this."
         confirmLabel="Delete"
         danger
         onConfirm={onAll}
@@ -126,11 +126,7 @@ export function DeleteCalendarSheet({
     <ConfirmSheet
       testID="delete-calendar"
       title={`Delete the calendar “${sheet.name}”?`}
-      message={
-        sheet.events === 0
-          ? "It has no events."
-          : `Its ${sheet.events === 1 ? "event is" : `${sheet.events} events are`} deleted with it. This can't be undone.`
-      }
+      message={sheet.events === 0 ? "It has no events." : `Its ${sheet.events === 1 ? "event is" : `${sheet.events} events are`} deleted with it, for good.`}
       confirmLabel="Delete"
       danger
       onConfirm={onConfirm}

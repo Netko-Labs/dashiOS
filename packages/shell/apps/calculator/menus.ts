@@ -1,6 +1,6 @@
 /**
  * The Calculator's menu in the menu bar (the kit's `useAppMenus`): Edit, with
- * Copy and Paste on the Mac's keys and Clear on Esc. The ❖ chords are real:
+ * Copy (❖C), Paste (❖V), and Clear (Esc). The ❖ chords are real:
  * the shell matches them against the enabled rows (app-menus/shortcut.ts), so
  * ❖C copies even though Metal reports no Ctrl chords to the app. Esc is the
  * key the keypad already takes.

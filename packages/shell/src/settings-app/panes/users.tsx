@@ -8,12 +8,11 @@
  * login needs an administrator: polkit asks, on the shell's own sheet.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Account, initialsOf, nameProblem, useAccount } from "../../accounts/index.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import type { PaneServices } from "../services.ts";
 import { Button, Caption, Group, Note, Page, Row, useSurface } from "../ui.tsx";
 import { Failure, Value } from "./parts.tsx";

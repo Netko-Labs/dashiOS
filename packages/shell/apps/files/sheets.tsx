@@ -1,7 +1,7 @@
 /** Files' sheets: naming (new folder, rename), Get Info, and Open With. Drawn inside the window by the kit's Sheet. */
 
 import { Button, Group, Sheet, TextField, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { Image, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { formatCount, formatDate, formatSize } from "./format.ts";
 import { type ItemInfo, loadInfo } from "./info.ts";
@@ -165,11 +165,14 @@ export function OpenWithSheet({
               key={app.id}
               testID={`openwith:${app.id}`}
               onPress={() => onChoose(app)}
-              style={{ height: 34, justifyContent: "center", paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
+              style={{ height: 34, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
             >
-              <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-                {app.name}
-              </Text>
+              <Image source={app.icon} resizeMode="contain" style={{ width: 22, height: 22 }} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+                  {app.name}
+                </Text>
+              </View>
             </View>
           ))}
         </Group>

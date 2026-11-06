@@ -1,0 +1,26 @@
+{
+  "$schema": "./schema.json",
+  "id": "GA403WR",
+  "match": { "sys_vendor": "ASUSTeK COMPUTER INC.", "board_name": "GA403WR" },
+  "name": "ROG Zephyrus G14 (2025)",
+  "fans": { "cpu": "CPU fan", "gpu": "Graphics fan" },
+  "limits": { "charge-limit": [20, 100] },
+  "undervolt": { "cpu": [-40, 0], "perCore": true, "graphics": false },
+  "hotkeys": { "mode": "KEY_PROG3", "lighting": "KEY_KBDILLUMTOGGLE", "rog": "KEY_PROG1", "micMute": "KEY_MICMUTE" },
+  "lighting": { "slash": { "usb": "0b05:19b6" }, "keyboard": { "levels": 3 } },
+  "quirks": ["d3cold-drops"],
+  "recipes": {
+    "low-power": {
+      "plugged": { "platform-profile": "low-power", "epp": "power", "ppt-spl": 30 },
+      "battery": { "platform-profile": "low-power", "epp": "power", "ppt-spl": 15, "boost": false }
+    },
+    "balanced": {
+      "plugged": { "platform-profile": "balanced", "epp": "balance_performance", "ppt-spl": 55 },
+      "battery": { "platform-profile": "balanced", "epp": "balance_power", "ppt-spl": 30 }
+    },
+    "performance": {
+      "plugged": { "platform-profile": "performance", "epp": "performance", "ppt-spl": 80 },
+      "battery": { "platform-profile": "balanced", "epp": "balance_performance", "ppt-spl": 45 }
+    }
+  }
+}

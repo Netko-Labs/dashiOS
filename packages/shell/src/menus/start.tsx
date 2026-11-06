@@ -16,6 +16,7 @@ import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { controlFlags, DeviceStore, radiosFor } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
+import type { Laptop } from "../laptop/start.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { SharedStores } from "../settings-app/services.ts";
@@ -45,6 +46,11 @@ export interface MenusOptions {
   catalog?: readonly Entry[];
   compositor: Compositor | null;
   arranger: Arranger | null;
+  /** The Desktops, for the Window menu's "Move to" rows (spaces/). */
+  desktops?: {
+    getSnapshot(): { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
+    move(window: number, space: number | "new"): Promise<void>;
+  };
   system: SystemStore;
   /** Control Center's slider set the brightness to `level` (0..1): at 0 the built-in screen goes off. */
   brightnessChanged?: (level: number) => void;
@@ -65,6 +71,8 @@ export interface MenusOptions {
   openForceQuit(): void;
   /** Opens System Settings. */
   openSettings?(): void;
+  /** Opens the launcher (Search… in the Dashi menu). */
+  openSearch?(): void;
   /** Carries out a chosen row of a Dock icon's menu (dock/). */
   runDock(action: DockMenuAction): void;
   /** Carries out a chosen row of a status item's menu (an extra's or the battery's). */
@@ -75,6 +83,8 @@ export interface MenusOptions {
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
   appMenus?: AppMenuStore;
+  /** The laptop's stores, for Control Center's laptop row (laptop/). */
+  laptop?: Laptop;
 }
 
 export interface Menus {
@@ -145,6 +155,13 @@ export function startMenus(options: MenusOptions): Menus {
   const pairing = new PairingPrompt(openOverlay, bluetooth, () => controller.close());
   pairing.start();
 
+  const desktopsNow = (): Pick<MenuContext, "desktops"> => {
+    const desktops = options.desktops?.getSnapshot();
+    return desktops
+      ? { desktops: { labels: desktops.labels, current: desktops.current, ...(desktops.fullscreen ? { fullscreen: desktops.fullscreen } : {}) } }
+      : {};
+  };
+
   const context = async (appName: string): Promise<MenuContext> => {
     const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
     const focused = windows.find((window) => window.focused) ?? null;
@@ -154,6 +171,8 @@ export function startMenus(options: MenusOptions): Menus {
       focused,
       canLaunch: focused !== null && entryFor(focused.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
+      arrangement: focused ? (options.arranger?.arrangement(focused.id) ?? null) : null,
+      ...desktopsNow(),
     };
   };
 
@@ -172,6 +191,7 @@ export function startMenus(options: MenusOptions): Menus {
             wifi,
             sound,
             bluetooth,
+            ...(options.laptop ? { laptop: options.laptop } : {}),
             onJoin: (network) =>
               void chooseNetwork(wifi, network, (secured) => {
                 // The sheet takes the keyboard; the popover would only sit in its way.
@@ -220,7 +240,9 @@ export function startMenus(options: MenusOptions): Menus {
     showShortcuts: () => options.showShortcuts(lastAppName),
     openForceQuit: () => options.openForceQuit(),
     openSettings: () => options.openSettings?.(),
+    openSearch: () => options.openSearch?.(),
     selectAppItem: (pid, id) => void appMenus.select(pid, id),
+    moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
   };
 
   const run = (action: MenuAction): void => {
@@ -238,6 +260,8 @@ export function startMenus(options: MenusOptions): Menus {
       canLaunch: entryFor(window.appId) !== undefined,
       canOpenHelp: helpCommand() !== null,
       app,
+      arrangement: options.arranger?.arrangement(window.id) ?? null,
+      ...desktopsNow(),
     };
     return windowMenus(ctx);
   };

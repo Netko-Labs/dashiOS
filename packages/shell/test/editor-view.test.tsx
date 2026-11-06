@@ -47,7 +47,16 @@ test("typing marks the document edited; the Save sheet saves it", async () => {
   const host = fakeHost();
   const quits: boolean[] = [];
   const root = render(
-    <EditorWindow model={model} clipboard={noClipboard} quit={(discard) => quits.push(discard)} newWindow={() => {}} press={() => {}} scroll={() => {}} />,
+    <EditorWindow
+      model={model}
+      clipboard={noClipboard}
+      quit={(discard) => quits.push(discard)}
+      newWindow={() => {}}
+      press={() => {}}
+      scroll={() => {}}
+      focusText={() => {}}
+      setTitle={() => {}}
+    />,
     host.transport,
   );
   // Dashi's unified title bar: the toolbar shows the document's name.
@@ -88,7 +97,16 @@ test("Save As asks once before replacing another file", async () => {
   const existing = join(dir, "taken.txt");
   writeFileSync(existing, "keep me");
   const root = render(
-    <EditorWindow model={model} clipboard={noClipboard} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} />,
+    <EditorWindow
+      model={model}
+      clipboard={noClipboard}
+      quit={() => {}}
+      newWindow={() => {}}
+      press={() => {}}
+      scroll={() => {}}
+      focusText={() => {}}
+      setTitle={() => {}}
+    />,
     host.transport,
   );
   await settle();
@@ -117,7 +135,16 @@ test("Open takes an untouched window's place, and opens another window otherwise
   writeFileSync(first, "one");
   writeFileSync(second, "two");
   const root = render(
-    <EditorWindow model={model} clipboard={noClipboard} quit={() => {}} newWindow={(files) => opened.push(files)} press={() => {}} scroll={() => {}} />,
+    <EditorWindow
+      model={model}
+      clipboard={noClipboard}
+      quit={() => {}}
+      newWindow={(files) => opened.push(files)}
+      press={() => {}}
+      scroll={() => {}}
+      focusText={() => {}}
+      setTitle={() => {}}
+    />,
     host.transport,
   );
   await settle();
@@ -141,5 +168,64 @@ test("Open takes an untouched window's place, and opens another window otherwise
   await openWith(second);
   expect(model.getSnapshot().path).toBe(first);
   expect(opened).toEqual([[second]]);
+  root.unmount();
+});
+
+test("the text keeps its input (and its caret) through Save, closing a sheet, and Esc in Find; the window is named after its document", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  const path = join(dir, "kept.txt");
+  writeFileSync(path, "first");
+  model.open(path);
+  const host = fakeHost();
+  const titles: string[] = [];
+  let focused = 0;
+  const root = render(
+    <EditorWindow
+      model={model}
+      clipboard={noClipboard}
+      quit={() => {}}
+      newWindow={() => {}}
+      press={() => {}}
+      scroll={() => {}}
+      focusText={() => focused++}
+      setTitle={(title) => titles.push(title)}
+    />,
+    host.transport,
+  );
+  await settle();
+  expect(titles).toEqual(["kept.txt"]);
+  const input = root.nodeId("text");
+  if (!input) throw new Error("no text input");
+
+  host.emit({ type: "change", nodeId: input, value: "first, then more" });
+  await settle();
+  // Save from the toolbar: written, and the same input takes the keyboard back.
+  host.emit({ type: "press", nodeId: root.nodeId("save") as string });
+  await settle();
+  expect(readFileSync(path, "utf8")).toBe("first, then more");
+  expect(root.nodeId("text")).toBe(input);
+  expect(focused).toBe(1);
+
+  // A sheet comes and goes.
+  host.emit({ type: "press", nodeId: root.nodeId("open") as string });
+  await settle();
+  host.emit({ type: "press", nodeId: root.nodeId("open-sheet:cancel") as string });
+  await settle();
+  expect(root.nodeId("text")).toBe(input);
+  expect(focused).toBe(2);
+
+  // Esc in the Find field.
+  host.emit({ type: "key", nodeId: root.nodeId("find") as string, value: "Escape" });
+  await settle();
+  expect(root.nodeId("text")).toBe(input);
+  expect(focused).toBe(3);
+
+  // Saving under another name renames the window; editing doesn't (the edited mark stays in the toolbar).
+  model.edit("changed again");
+  await settle();
+  expect(titles).toEqual(["kept.txt"]);
+  model.saveAs(join(dir, "renamed.txt"));
+  await settle();
+  expect(titles).toEqual(["kept.txt", "renamed.txt"]);
   root.unmount();
 });

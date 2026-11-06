@@ -44,6 +44,33 @@ export interface Confirm {
   detail: string;
   /** The button that goes ahead: "Force Quit". */
   action: string;
+  /** Losing work or a thing that can't be taken back: the button is red; else it is the primary one (agents/confirm.ts). */
+  danger?: boolean;
+}
+
+/** "<agent> wants to sign in to github.com": which saved login, and for how long (secrets/broker.ts). */
+export interface SignInAsk {
+  agent: number;
+  who: Who;
+  /** A phrase after "wants to": "sign in to github.com". */
+  summary: string;
+  logins: ReadonlyArray<{ key: string; account: string; site: string; source: string }>;
+}
+
+/** The person's answer: which login (its key), for this once or the whole task. */
+export interface SignInChoice {
+  allow: "once" | "task" | "deny";
+  login: string | null;
+}
+
+/** "Your turn": the person does something in a window, then presses Done. */
+export interface Turn {
+  agent: number;
+  who: Who;
+  /** What the agent asks the person to do. */
+  reason: string;
+  /** The window handed over, which "Now" in the launcher brings forward. */
+  window?: number;
 }
 
 export type Allow = "once" | "always" | "deny";
@@ -63,9 +90,13 @@ export interface AgentInfo {
 /** What the agents server needs from the shell's UI. */
 export interface AgentUi {
   /** Show the sheet (queued behind others); resolves with the person's answer. */
-  ask(ask: Ask): Promise<Answer>;
+  ask(ask: Ask, signal?: AbortSignal): Promise<Answer>;
   /** Ask about one action, in the same queue; resolves true only if the person goes ahead. */
-  confirm(confirm: Confirm): Promise<boolean>;
+  confirm(confirm: Confirm, signal?: AbortSignal): Promise<boolean>;
+  /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
+  signIn(ask: SignInAsk, signal?: AbortSignal): Promise<SignInChoice>;
+  /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */
+  turn(turn: Turn, signal?: AbortSignal): Promise<boolean>;
   /** Take down this agent's sheets (it left, the screen locked, or nobody answered). */
   dismiss(agent: number): void;
   /** Say who ⌃❖Esc or Stop just cut off. */

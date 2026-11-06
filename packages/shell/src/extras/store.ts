@@ -48,8 +48,8 @@ export class ExtrasStore implements ExtraActions {
     this.changed();
   }
 
-  activate(key: string, x: number, y: number): void {
-    this.owners.get(key)?.activate(key, x, y);
+  activate(key: string, x: number, y: number, output?: string): void {
+    this.owners.get(key)?.activate(key, x, y, output);
   }
 
   secondaryActivate(key: string, x: number, y: number): void {

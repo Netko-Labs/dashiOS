@@ -21,6 +21,8 @@ export const KEY_GLYPHS: Record<string, string> = {
   "→": stroke("M3.5 8H12.5M9 4.5L12.5 8L9 11.5"),
   "↑": stroke("M8 12.5V3.5M4.5 7L8 3.5L11.5 7"),
   "↓": stroke("M8 3.5V12.5M4.5 9L8 12.5L11.5 9"),
+  "↩": stroke("M12.5 3.5V8.5H3.5M7 5L3.5 8.5L7 12"),
+  "⇥": stroke("M2.5 8H11.5M8 4.5L11.5 8L8 11.5M13.5 4V12"),
 };
 
 /** Split "⇧❖Z" or "❖Space" into glyphs and key names. */

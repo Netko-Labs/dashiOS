@@ -55,7 +55,12 @@ export function parseStat(text: string): ProcStat | null {
 export interface ProcStatus {
   /** The real user id. */
   uid: number;
-  /** Resident memory in bytes; absent for kernel threads. */
+  /**
+   * The memory that is the process's own, in bytes: its anonymous pages and
+   * the shared memory it holds (RssAnon + RssShmem), not the libraries and
+   * files it maps, which every process mapping them would count again (VmRSS
+   * does). VmRSS on a kernel that doesn't split it; null for kernel threads.
+   */
   rss: number | null;
 }
 
@@ -79,12 +84,15 @@ export function parseStatus(text: string): ProcStatus | null {
   const fields = keyed(text);
   const uid = Number(fields.get("Uid")?.split(/\s+/)[0]);
   if (!Number.isInteger(uid) || uid < 0) return null;
-  return { uid, rss: kilobytes(fields.get("VmRSS")) };
+  const anon = kilobytes(fields.get("RssAnon"));
+  const shmem = kilobytes(fields.get("RssShmem"));
+  return { uid, rss: anon !== null && shmem !== null ? anon + shmem : kilobytes(fields.get("VmRSS")) };
 }
 
 /** /proc/<pid>/io: bytes the process made the storage layer read and write. */
 export interface ProcIo {
   read: number;
+  /** Written, less what it truncated away before it reached the disk (`cancelled_write_bytes`). */
   written: number;
 }
 
@@ -92,7 +100,9 @@ export function parseIo(text: string): ProcIo | null {
   const fields = keyed(text);
   const read = Number(fields.get("read_bytes"));
   const written = Number(fields.get("write_bytes"));
-  return Number.isFinite(read) && Number.isFinite(written) && fields.has("read_bytes") ? { read, written } : null;
+  const cancelled = Number(fields.get("cancelled_write_bytes") ?? 0);
+  if (!fields.has("read_bytes") || !Number.isFinite(read) || !Number.isFinite(written)) return null;
+  return { read, written: Math.max(0, written - (Number.isFinite(cancelled) ? cancelled : 0)) };
 }
 
 /**
@@ -202,14 +212,23 @@ export interface NetCounters {
   bytesOut: number;
 }
 
-/** /proc/net/dev summed over every interface but loopback. */
+/**
+ * Interfaces whose traffic is already counted on another one: loopback,
+ * container and VM links and bridges (veth, docker, br-, virbr, vnet, tap),
+ * and tunnels (tun, wg), whose packets also cross the real interface under them.
+ */
+export function isVirtualInterface(name: string): boolean {
+  return name === "lo" || /^(veth|docker|br-|virbr|vnet|tap|tun|wg)/.test(name);
+}
+
+/** /proc/net/dev summed over the real interfaces (`isVirtualInterface` ones are left out). */
 export function parseNetDev(text: string): NetCounters {
   const sum: NetCounters = { packetsIn: 0, packetsOut: 0, bytesIn: 0, bytesOut: 0 };
   for (const line of text.split("\n")) {
     const colon = line.indexOf(":");
     if (colon < 0) continue;
     const name = line.slice(0, colon).trim();
-    if (name === "lo" || name.includes("|")) continue;
+    if (isVirtualInterface(name) || name.includes("|")) continue;
     const f = line
       .slice(colon + 1)
       .trim()

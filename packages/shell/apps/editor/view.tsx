@@ -1,8 +1,9 @@
 /**
  * Text Editor's window: the unified toolbar with the document's name (and
- * "Edited" while it has changes), its folder, New, Open, Save, and the Find
- * field; the text; and a footer with the counts, Find's place, and the
- * encoding and line endings. Each window is its own process with one
+ * "Edited" while it has changes), a quiet line with its folder, the counts
+ * or Find's place, and an encoding or line ending that isn't UTF-8 and LF,
+ * then New, Open, Save, and the Find field; the text; and a notice over it
+ * when something needs saying. Each window is its own process with one
  * document, as Preview's are: New opens another window, and Open opens in
  * this one only while it is an untouched Untitled.
  */
@@ -10,9 +11,9 @@
 import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { AppWindow, SearchField, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Clipboard } from "../kit/index.ts";
 import { useAppMenus } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
@@ -37,6 +38,10 @@ export interface EditorWindowProps {
   /** Types a chord into the window (GPUI's spelling, "ctrl-v"): Paste and Select All reach the input this way. */
   press: (keystroke: string) => void;
   scroll: (dy: number, fromTop: boolean) => void;
+  /** Gives the text the keyboard back, the caret where it was (after a sheet, Esc in Find, a Save from the toolbar). */
+  focusText: () => void;
+  /** Names the window after its document: the Window menu, the switcher, and the Dock's list show it. */
+  setTitle: (title: string) => void;
 }
 
 const isFolder = (path: string): boolean => {
@@ -58,12 +63,11 @@ function openProblem(path: string): string | null {
   }
 }
 
-export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll }: EditorWindowProps) {
+export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
   const colors = useColors();
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [sheet, setSheet] = useState<SheetState | null>(null);
-  // Bumped to give the keyboard to the text, or to the Find field.
-  const [textFocus, setTextFocus] = useState(0);
+  // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
   // Save As asks once before it replaces another file: this is the path it asked about.
   const replacing = useRef<string | null>(null);
@@ -73,17 +77,20 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
   const base = state.path !== null ? dirname(state.path) : homedir();
   const stats = useMemo(() => formatStats(textStats(state.text)), [state.text]);
   const { find } = state;
+  useEffect(() => {
+    setTitle(name);
+  }, [name, setTitle]);
 
+  // The text keeps its input (and its caret) through all of these: it is focused, never mounted again.
   const closeSheet = (): void => {
     setSheet(null);
-    setTextFocus((n) => n + 1);
+    focusText();
   };
   const save = (after: "close" | null): void => {
     const result = model.save();
     if (result === "needs-path") return setSheet({ kind: "save-as", after });
-    setSheet(null);
-    if (result === "saved" && after === "close") quit(false);
-    else setTextFocus((n) => n + 1);
+    if (result === "saved" && after === "close") return quit(false);
+    closeSheet();
   };
   const requestClose = (): void => {
     if (dirty) setSheet({ kind: "unsaved", name });
@@ -134,7 +141,7 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
       close: requestClose,
       save: () => save(null),
       saveAs: () => setSheet({ kind: "save-as", after: null }),
-      revert: () => model.revert(),
+      revert: () => setSheet({ kind: "revert", name }),
       undo: () => model.undo(),
       redo: () => model.redo(),
       paste: () => press("ctrl-v"),
@@ -166,7 +173,7 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
         onChangeText={(query) => model.setQuery(query)}
         onSubmit={() => model.findNext(1)}
         onKeyPress={(key) => {
-          if (key === "Escape") setTextFocus((n) => n + 1);
+          if (key === "Escape") focusText();
           else model.findNext(key === "ArrowUp" ? -1 : 1);
         }}
       />
@@ -212,6 +219,20 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
             onCancel={closeSheet}
           />
         );
+      case "revert":
+        return (
+          <ConfirmSheet
+            testID="revert"
+            title={`Revert “${sheet.name}” to the last saved version?`}
+            message="Your changes since then are set aside. Edit › Undo brings them back."
+            confirmLabel="Revert"
+            onConfirm={() => {
+              model.revert();
+              closeSheet();
+            }}
+            onCancel={closeSheet}
+          />
+        );
     }
   })();
 
@@ -223,37 +244,29 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll 
         : find.current < 0
           ? `${find.matches.length.toLocaleString("en-US")} ${find.matches.length === 1 ? "match" : "matches"}`
           : `${find.current + 1} of ${find.matches.length} · line ${lineOf(state.text, find.matches[find.current] ?? 0)}`;
-  const footer = (
-    <View
-      testID="footer"
-      style={{
-        height: 26,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        paddingHorizontal: 16,
-        borderTopWidth: 1,
-        borderColor: colors.separator,
-      }}
-    >
-      <View style={{ flex: 1, minWidth: 0 }} onPress={state.notice ? () => model.dismissNotice() : undefined}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: state.notice?.tone === "error" ? colors.critical : colors.textMuted }}>
-          {state.notice?.text ?? stats}
+  // One chrome row: the folder, the counts (or Find's place), and an unusual encoding are a quiet line in the
+  // toolbar, and a notice floats over the text until dismissed.
+  const encoding =
+    state.encoding === "utf-8" && state.lineEnding === "lf" ? null : `${ENCODING_LABELS[state.encoding]} · ${LINE_ENDING_LABELS[state.lineEnding]}`;
+  const status = [folderLabel(state.path), findStatus ?? stats, encoding].filter((part) => part !== null).join(" · ");
+  const toolbarWithStatus = (
+    <>
+      <View style={{ flexShrink: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          {status}
         </Text>
       </View>
-      {findStatus !== null && <Text style={{ fontSize: 11, color: colors.textMuted }}>{findStatus}</Text>}
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${ENCODING_LABELS[state.encoding]} · ${LINE_ENDING_LABELS[state.lineEnding]}`}</Text>
-    </View>
+      {toolbar}
+    </>
   );
+  const notice = state.notice ? <Notice tone={state.notice.tone} text={state.notice.text} onDismiss={() => model.dismissNotice()} /> : undefined;
 
   return (
-    <AppWindow title={editedTitle(state.path, dirty)} subtitle={folderLabel(state.path) ?? undefined} toolbar={toolbar} overlay={overlay} footer={footer}>
+    <AppWindow title={editedTitle(state.path, dirty)} toolbar={toolbarWithStatus} overlay={overlay} notice={notice}>
       <TextArea
         text={state.text}
         prefs={state.prefs}
         session={state.session}
-        focus={textFocus}
         onChange={(text) => model.edit(text)}
         onEscape={() => find.query !== "" && model.setQuery("")}
         scroll={scroll}

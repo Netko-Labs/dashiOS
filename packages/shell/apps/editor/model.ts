@@ -173,9 +173,22 @@ export class EditorModel {
     return this.writeTo(path);
   }
 
-  /** Goes back to the file as it is on disk. */
-  revert(): void {
-    if (this.state.path !== null) this.open(this.state.path);
+  /**
+   * Goes back to the file as it is on disk, as one Undo step: Undo brings the
+   * changes back. False (and a notice) when the file can't be read.
+   */
+  revert(): boolean {
+    const { path } = this.state;
+    if (path === null) return false;
+    const read = readDocument(path);
+    if (!read.ok) {
+      this.set({ notice: { text: `“${displayName(path)}” couldn't be read. ${read.message}`, tone: "error" } });
+      return false;
+    }
+    const { text, encoding, lineEnding } = read.decoded;
+    this.set({ saved: text, encoding, lineEnding });
+    this.edit(text, false);
+    return true;
   }
 
   dismissNotice(): void {

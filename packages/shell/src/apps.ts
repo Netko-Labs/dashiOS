@@ -1,6 +1,6 @@
 /**
- * Apps the Dock starts with (the first installed choice of each), starting an
- * app, and how a click on an icon maps to an action. What the Dock shows and
+ * Dashi's own app list (the first installed choice of each), which the Dock
+ * starts with, starting an app, and how a click on an icon maps to an action. What the Dock shows and
  * keeps lives in dock/.
  */
 
@@ -9,7 +9,7 @@ import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
 import { firstPartyApps } from "./first-party.ts";
 import { chooseGpu, readCards } from "./gpu.ts";
-import { type GpuEnvs, gpuEnvFor, gpuEnvs } from "./gpu-env.ts";
+import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
 
 export interface App {
   /** The app id its windows report (xdg-toplevel app_id). */
@@ -48,6 +48,8 @@ interface PinnedSpec {
   icon: string;
   /** Alternatives in preference order; the first installed one is pinned. */
   choices: readonly Choice[];
+  /** In the launcher, but not in a new Dock: a developer's tool. */
+  inDock?: false;
 }
 
 const metalUi = `${mirin}packages/mirin-metal-ui/`;
@@ -63,9 +65,10 @@ const PINNED: readonly PinnedSpec[] = [
     ],
   },
   {
-    // A Metal app: mirin's metal-ui component browser.
+    // A Metal app: mirin's metal-ui component browser. A developer's tool, so it is in the launcher, not the Dock.
     name: "Components",
     icon: "components",
+    inDock: false,
     choices: [
       {
         id: "dev.dashi.components",
@@ -105,6 +108,13 @@ const PINNED: readonly PinnedSpec[] = [
     choices: [{ id: "helium", exec: ["helium", "--ozone-platform=wayland"] }],
   },
 ];
+
+const NOT_IN_DOCK: ReadonlySet<string> = new Set(PINNED.filter((spec) => spec.inDock === false).flatMap((spec) => spec.choices.map((choice) => choice.id)));
+
+/** The app ids a Dock starts with, before the person keeps or removes any: Dashi's own list, less the developer tools. */
+export function dockDefaults(apps: readonly Pick<App, "id">[]): string[] {
+  return apps.filter((app) => !NOT_IN_DOCK.has(app.id)).map((app) => app.id);
+}
 
 /** Whether a command's program (and, for scripts, the script) is installed. */
 function isInstalled(exec: readonly string[], which: (program: string) => string | null): boolean {
@@ -160,22 +170,32 @@ export function registerShellApp(id: string, open: () => void): () => void {
   };
 }
 
+/** How the launcher draws and finds a shell entry, beyond its `App` (a Settings pane: its glyph, what it holds). */
+export interface ShellEntryLook {
+  /** A one-color SVG drawn on a neutral tile in place of `icon`. */
+  glyph?: string;
+  /** A few muted words after the name, on the same line ("Dark Mode, accent, corners"). */
+  detail?: string;
+  /** Words it answers to only when nothing else matches ("settings" for a pane). */
+  fallbackKeywords?: readonly string[];
+}
+
 /** Other things the launcher finds that open in the shell (a Settings pane), with the words they answer to. */
-const shellEntries = new Map<string, { app: App; keywords: readonly string[] }>();
+const shellEntries = new Map<string, { app: App; keywords: readonly string[]; look: ShellEntryLook }>();
 
 /** Add a launcher entry that opens in the shell; returns the function that takes it back. */
-export function registerShellEntry(app: App, keywords: readonly string[], open: () => void): () => void {
+export function registerShellEntry(app: App, keywords: readonly string[], open: () => void, look: ShellEntryLook = {}): () => void {
   const unregister = registerShellApp(app.id, open);
-  shellEntries.set(app.id, { app, keywords });
+  shellEntries.set(app.id, { app, keywords, look });
   return () => {
     unregister();
     shellEntries.delete(app.id);
   };
 }
 
-/** The registered shell entries, each with its words. */
-export function shellEntryList(): Array<App & { keywords: string[] }> {
-  return [...shellEntries.values()].map(({ app, keywords }) => ({ ...app, keywords: [...keywords] }));
+/** The registered shell entries, each with its words and its look. */
+export function shellEntryList(): Array<App & ShellEntryLook & { keywords: string[] }> {
+  return [...shellEntries.values()].map(({ app, keywords, look }) => ({ ...app, ...look, keywords: [...keywords] }));
 }
 
 /** One of the shell's own apps or a first-party one, whether or not it can be opened from here (a window's app). */
@@ -188,8 +208,18 @@ export function shellApps(): App[] {
   return SHELL_APPS.filter((app) => shellOpeners.has(app.id)).map((app) => ({ ...app }));
 }
 
-/** "org.kde.konsole" → "Konsole"; falls back to the window title. */
+/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/connection.ts). */
+const appletNames = new Map<string, string>();
+
+/** An applet said who it is: its windows are called by its manifest's name. */
+export function nameApplet(id: string, name: string): void {
+  if (name.trim() !== "") appletNames.set(id, name.trim());
+}
+
+/** "org.kde.konsole" → "Konsole" (an applet by its own name); falls back to the window title. */
 export function displayName(appId: string, title: string): string {
+  const applet = appletNames.get(appId);
+  if (applet) return applet;
   const last = appId.split(".").filter(Boolean).at(-1);
   if (!last) return title || "Untitled";
   return last.charAt(0).toUpperCase() + last.slice(1);
@@ -256,7 +286,15 @@ function machineGpuEnvs(): GpuEnvs {
   return gpuEnvsHere;
 }
 
-export function launch(app: App): number | null {
+/** Who hears that an app quit with an error as it started (the launcher says "Couldn't open …"). */
+export interface LaunchWatch {
+  /** It exited with `code` (not 0) within `withinMs` of starting. */
+  failed(code: number): void;
+  /** How soon counts as "as it started"; 2 s unless said. */
+  withinMs?: number;
+}
+
+export function launch(app: App, watch?: LaunchWatch): number | null {
   const open = app.exec ? undefined : shellOpeners.get(app.id);
   if (open) {
     open();
@@ -266,7 +304,7 @@ export function launch(app: App): number | null {
   if (!app.exec) return null;
   try {
     const child = Bun.spawn([...app.exec], {
-      env: { ...process.env, ...gpuEnvFor(app, machineGpuEnvs(), process.env), ...app.env },
+      env: { ...process.env, ...launchEnvFor(app, machineGpuEnvs(), process.env), ...app.env },
       // Apps start at home, like a fresh terminal, not where the shell runs.
       cwd: app.cwd ?? homedir(),
       stdin: "ignore",
@@ -274,6 +312,12 @@ export function launch(app: App): number | null {
       stderr: "ignore",
       detached: true,
     });
+    if (watch) {
+      const started = Date.now();
+      void child.exited.then((code) => {
+        if (code !== 0 && Date.now() - started < (watch.withinMs ?? 2000)) watch.failed(code);
+      });
+    }
     return child.pid;
   } catch (error) {
     console.error(`dashi-shell: could not launch ${app.name}:`, error);

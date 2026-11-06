@@ -10,7 +10,7 @@
  */
 
 import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange } from "../layout.ts";
 import { sameApp } from "../shortcuts.ts";
 import { type EditCommand, editChord } from "./keystrokes.ts";
 import type { MenuAction, PowerKind } from "./model.ts";
@@ -20,8 +20,7 @@ export interface ActionDeps {
   /** Null without dashi-comp: window rows do nothing. */
   compositor: Pick<Compositor, "request" | "windows"> | null;
   arranger: {
-    tile(window: number, tile: Tile): Promise<void>;
-    zoom(window: number): Promise<void>;
+    arrange(window: number, to: Arrange): Promise<void>;
     toggleFullscreen?(window: number): Promise<void>;
   } | null;
   /** Waits before typing into the window, so the menu's surface has let go of the keyboard; tests pass none. */
@@ -39,8 +38,12 @@ export interface ActionDeps {
   openForceQuit(): void;
   /** Opens System Settings (settings-app/); a run without it does nothing. */
   openSettings?(): void;
+  /** Opens the launcher (the Dashi menu's Search…); a run without it does nothing. */
+  openSearch?(): void;
   /** Tells an app its own row was chosen (app-menus/); a run without it does nothing. */
   selectAppItem?(pid: number, id: string): void;
+  /** Puts a window on a Desktop, or on a new one (spaces/); a run without Desktops does nothing. */
+  moveToSpace?(window: number, space: number | "new"): Promise<void>;
 }
 
 export type AboutTarget = { kind: "dashi" } | { kind: "app"; appId: string; name: string; pid: number | null };
@@ -74,6 +77,8 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return deps.openForceQuit();
     case "settings":
       return deps.openSettings?.();
+    case "search":
+      return deps.openSearch?.();
     case "help":
       return deps.openHelp();
     case "shortcuts":
@@ -91,11 +96,11 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return request("minimize", action.window);
     case "focus":
       return request("focus", action.window);
-    case "zoom":
-      await deps.arranger?.zoom(action.window);
-      return;
     case "tile":
-      await deps.arranger?.tile(action.window, action.tile);
+      await deps.arranger?.arrange(action.window, action.tile);
+      return;
+    case "move-to-space":
+      await deps.moveToSpace?.(action.window, action.space);
       return;
     case "fullscreen":
       await deps.arranger?.toggleFullscreen?.(action.window);

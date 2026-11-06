@@ -59,6 +59,11 @@ fn ease(t: f64) -> f64 {
 
 impl Dashi {
     /// Whether a window is on screen now: shown, and on the current Space.
+    /// Window `id` goes along when the Space changes: held in a move grab, or carried (`space-switch {carry}`).
+    pub(crate) fn goes_along(&self, id: WindowId) -> bool {
+        self.held == Some(id) || self.carried == Some(id)
+    }
+
     pub(crate) fn on_current_space(&self, id: WindowId) -> bool {
         self.windows
             .get(id)
@@ -96,14 +101,29 @@ impl Dashi {
         Ok(self.spaces.answer())
     }
 
-    /// `space-switch {space, progress?}`: hold part of the way (a swipe), or go there.
+    /// `space-switch {space, progress?, carry?}`: hold part of the way (a
+    /// swipe), or go there, carrying window `carry` along if asked.
     pub(crate) fn switch_space(
         &mut self,
         target: usize,
         progress: Option<f64>,
+        carry: Option<WindowId>,
     ) -> Result<Value, String> {
         if target >= self.spaces.count {
             return Err(format!("no Space {target}"));
+        }
+        if let Some(id) = carry {
+            let shown = self
+                .windows
+                .get(id)
+                .is_some_and(|e| e.announced && e.placed && e.shown == Shown::Normal);
+            if !shown || !self.on_current_space(id) {
+                return Err(format!("window {id} is not on the Space that shows"));
+            }
+            if progress.is_some() {
+                return Err("`carry` goes with a whole switch, not `progress`".into());
+            }
+            self.carried = (target != self.spaces.current).then_some(id);
         }
         match progress {
             Some(at) => {
@@ -162,6 +182,8 @@ impl Dashi {
                 if t < 1.0 {
                     return TimeoutAction::ToDuration(frame);
                 }
+                // Where it ends is read back: a Space added meanwhile moves it up one.
+                let toward = slide.to;
                 state.spaces.slide = None;
                 if !back {
                     state.switch_space_now(toward);
@@ -176,15 +198,36 @@ impl Dashi {
         if target == previous {
             return;
         }
-        let ids: Vec<WindowId> = self.windows.ids().collect();
-        for id in &ids {
+        self.carry_held(target);
+        // Off the screen back to front, so each waits with its place in the stack.
+        let leaving: Vec<WindowId> = self
+            .space
+            .elements()
+            .filter_map(|window| self.windows.by_window(window).map(|entry| entry.id))
+            .collect();
+        for id in &leaving {
             self.space_unmap(*id);
         }
         self.spaces.current = target;
-        for id in &ids {
+        // Back on it back to front, each mapped over the ones before.
+        let arriving: Vec<WindowId> = self
+            .windows
+            .waiting_on(target)
+            .iter()
+            .map(|entry| entry.id)
+            .collect();
+        for id in &arriving {
             self.space_map(*id);
         }
-        self.focus_topmost();
+        // A window carried across stays in front, with the keyboard; the
+        // Space's own windows were mapped over it.
+        let carried = self
+            .held
+            .or(self.carried.take())
+            .filter(|id| self.on_current_space(*id) && self.focus_window(*id).is_ok());
+        if carried.is_none() {
+            self.focus_topmost();
+        }
         self.emit_space(previous);
     }
 
@@ -206,6 +249,8 @@ impl Dashi {
         if let Some(entry) = self.windows.get_mut(id) {
             entry.space = space;
         }
+        // Put on a Space, it is in front there.
+        self.windows.rank_front(id);
         self.space_map(id);
         if was_focused && space != self.spaces.current {
             self.focus_topmost();
@@ -231,6 +276,22 @@ impl Dashi {
         }
     }
 
+    /// A window held in a move grab goes to `target` with the switch, and
+    /// stays on screen under the pointer (wm/grabs/move_grab.rs).
+    fn carry_held(&mut self, target: usize) {
+        for id in [self.held, self.carried].into_iter().flatten() {
+            let Some(entry) = self.windows.get_mut(id) else {
+                continue;
+            };
+            if entry.space == target || entry.shown != Shown::Normal {
+                continue;
+            }
+            entry.space = target;
+            self.ipc
+                .emit("window-space", json!({ "window": id, "space": target }));
+        }
+    }
+
     /// Off screen, remembering where (a window on a Space that is not shown).
     fn space_unmap(&mut self, id: WindowId) {
         let Some(entry) = self.windows.get(id) else {
@@ -244,6 +305,7 @@ impl Dashi {
         if let Some(entry) = self.windows.get_mut(id) {
             entry.away_at = at;
         }
+        self.windows.rank_front(id);
         self.space.unmap_elem(&window);
     }
 
@@ -253,6 +315,10 @@ impl Dashi {
             return;
         };
         if entry.space != self.spaces.current || entry.shown != Shown::Normal || !entry.placed {
+            return;
+        }
+        // Carried across: it never left the screen.
+        if self.goes_along(id) && self.space.element_location(&entry.window).is_some() {
             return;
         }
         let (window, at) = (entry.window.clone(), entry.away_at);

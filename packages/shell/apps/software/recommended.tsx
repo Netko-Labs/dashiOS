@@ -1,8 +1,9 @@
 /**
  * "Recommended for Dashi" on Discover: the apps the Setup Assistant offers
  * (src/software/recommended.ts), as cards with the usual Get / Open pill.
- * Each card's icon and line come from the catalog (cached for hours); an app
- * the catalog can't answer for keeps the list's own name and summary.
+ * The list is local, so the cards show at once, offline too. The catalog
+ * (cached for hours) adds each card's icon, publisher and verified mark;
+ * the name and the line stay Dashi's own, which are written to fit a card.
  */
 
 import type { Flathub } from "../../src/software/flathub.ts";
@@ -28,7 +29,7 @@ export function summaryOf(app: RecommendedApp): AppSummary {
   };
 }
 
-/** Every recommended app as a card, in the list's order; one the catalog fails on falls back to `summaryOf`. */
+/** Every recommended app as a card, in the list's order, with Dashi's name and line; one the catalog fails on is `summaryOf` alone. */
 export async function loadRecommended(
   catalog: Pick<Flathub, "details">,
   apps: readonly RecommendedApp[] = RECOMMENDED_APPS,
@@ -37,9 +38,9 @@ export async function loadRecommended(
   const value = apps.map((app, index) => {
     const result = results[index];
     if (result?.status !== "fulfilled") return summaryOf(app);
-    // Only the summary's fields: a card holds no description or screenshots.
-    const { id, name, summary, developer, icon, verified, category, license, installsLastMonth, updatedAt } = result.value.value;
-    return { id, name, summary, developer, icon, verified, category, license, installsLastMonth, updatedAt };
+    // Only the summary's fields (a card holds no description or screenshots), and Dashi's words over Flathub's.
+    const { developer, icon, verified, category, license, installsLastMonth, updatedAt } = result.value.value;
+    return { ...summaryOf(app), developer, icon, verified, category, license, installsLastMonth, updatedAt };
   });
   return { value, stale: results.some((result) => result.status === "fulfilled" && result.value.stale) };
 }
@@ -48,7 +49,7 @@ export async function loadRecommended(
 export function RecommendedCards() {
   const { catalog } = useServices();
   const { state } = useLoad<AppSummary[]>("recommended", () => loadRecommended(catalog));
-  // While loading (or if it somehow fails) the list's own cards show at once: nothing here needs the network.
+  // While loading, offline, or if Flathub fails, the list's own cards show: nothing here needs the network.
   const apps = state.status === "ready" ? state.value : RECOMMENDED_APPS.map(summaryOf);
   return <CardGrid apps={apps} />;
 }

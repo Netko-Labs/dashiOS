@@ -30,13 +30,22 @@ the same change.
   this doc change together.
 - `docs/applets.md` - the applets channel (programs' items in the menu bar,
   beside tray icons); the protocol, its limits, and examples.
+- `docs/actions.md` - the action registry (every command at a `dashi://`
+  address, shared by the launcher, the keymap, links, and agents' MCP tools),
+  the address scheme, and the links socket.
+- `docs/secrets.md` - the vault and secrets for agents: the socket protocol,
+  sign-in, codes, passkeys, payments, the agent sandbox.
+- `docs/hardware.md` - dashi-hardware's contract (the hardware helper's D-Bus
+  interface, the model database, and cardwire's API); the service and its
+  callers change with it.
 - `docs/conventions.md` - shared code-style, structure, safety, and verification
   rules.
 - `RECOVERY.md` - what was recovered from 0.1.0 and what was lost.
 - `docs/*.html` - the illustrated guides (open `docs/index.html`): the distro
-  spec, brand guidelines, the mascot, and design guidelines (tokens, type,
-  spacing, chrome, motion, icons). A change to a color, a measure, or a
-  motion updates them in the same commit.
+  spec and the design guidelines (`docs/design.html`: the brand, voice, the
+  mascot, tokens, type, spacing, chrome, window management, motion, icons,
+  components, and the numbered rules apps follow). A change to a color, a
+  measure, or a motion updates them in the same commit.
 - `tasks/todo.md` - the current plan and its checkpoints.
 
 The shared code-style and structure rules live in:
@@ -60,11 +69,17 @@ the same change.
 ## Repository Layout
 
 - `crates/dashi-comp` - the Wayland compositor.
+- `crates/dashi-hardware` - the privileged hardware helper (`docs/hardware.md`):
+  firmware attributes, power profiles, the charge limit, fans, the SMU; the
+  model database is `data/models/`, a captured laptop `data/fixtures/`.
+- `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
   (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`).
 - `packages/greeter` - `@dashi/greeter`: the login screen, greetd's greeter.
 - `packages/dashi-ui` - `@dashi/ui`: Dashi's own components and palettes.
-- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-dialog`, session target, portal/mime config.
+- `packages/applet` - `@dashi/applet`: the applet SDK (client, popovers, manifest,
+  packages, signatures, the `dashi-applet` CLI; `docs/applets.md`).
+- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-agent` (the agent sandbox), `dashi-dialog`, `dashi-applet`, session target, portal/mime config.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).
 - `docs/` - architecture, compositor, IPC, and convention docs.

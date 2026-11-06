@@ -1,13 +1,14 @@
 /**
- * Notes' window: folders on the left, the list of notes, the note itself, a
- * toolbar with the actions, and a footer with the word count. The keyboard is
+ * Notes' window: folders on the left (with their counts), the list of notes,
+ * the note itself (its date and word count above it), and a toolbar with the
+ * actions; an error or a conflict copy floats as a notice. The keyboard is
  * the open field's while one is focused; otherwise it is the kit's KeySink:
  * N new note, Backspace delete, P pin, E or Enter edit, / search, and the up
  * and down arrows move through the list (Metal reports no Ctrl shortcuts).
  */
 
-import { AppWindow, KeySink, type MenuItem, PopupMenu, SearchField, Segmented, ToolbarButton, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, Segmented, ToolbarButton } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import { Editor } from "./editor.tsx";
@@ -34,7 +35,6 @@ const folderLabel = (folder: string): string => (folder === "" ? DEFAULT_FOLDER_
 const formatEdited = (time: number): string => new Date(time).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
 
 export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (testID: string, dy: number) => void }) {
-  const colors = useColors();
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [sheet, setSheet] = useState<SheetState | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -166,21 +166,23 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     </>
   ) : (
     <>
-      <ToolbarButton testID="new-note" glyph={COMPOSE} onPress={() => model.newNote()} />
-      <ToolbarButton testID="delete" glyph={TRASH} disabled={!row} onPress={() => model.trashSelected()} />
+      <ToolbarButton testID="new-note" glyph={COMPOSE} tooltip="New note" onPress={() => model.newNote()} />
+      <ToolbarButton testID="delete" glyph={TRASH} tooltip="Delete note" disabled={!row} onPress={() => model.trashSelected()} />
       <ToolbarButton
         testID="pin"
         glyph={state.notes.find((n) => n.id === row?.id)?.pinned ? PIN_FILLED : PIN}
+        tooltip={state.notes.find((n) => n.id === row?.id)?.pinned ? "Unpin" : "Pin"}
         disabled={!row}
         onPress={() => model.togglePin()}
       />
       <ToolbarButton
         testID="move"
         glyph={FOLDER_MOVE}
+        tooltip="Move to folder"
         disabled={!row}
         onPress={() => row && setMenu({ x: 330, y: 38, items: moveItems(row.id, row.folder) })}
       />
-      <ToolbarButton testID="checklist" glyph={CHECKLIST} disabled={!row} onPress={addChecklistItem} />
+      <ToolbarButton testID="checklist" glyph={CHECKLIST} tooltip="Add a checklist item" disabled={!row} onPress={addChecklistItem} />
       <View style={{ width: 4 }} />
       <Segmented testID="mode" options={MODES} value={state.mode} onChange={(mode) => model.setMode(mode)} segmentWidth={58} />
       <View style={{ width: 4 }} />
@@ -215,32 +217,20 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
     <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
   ) : undefined;
 
-  const footer = (
-    <View
-      testID="footer"
-      style={{
-        height: 26,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 16,
-        borderTopWidth: 1,
-        borderColor: colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>{state.error ?? noteCount(rows.length)}</Text>
-      {row && <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${words} ${words === 1 ? "word" : "words"}`}</Text>}
-    </View>
-  );
-
+  // One chrome row: the count follows the title on its line (and the sidebar's badges), the words follow the note's date, and an error or a conflict copy floats as a notice.
   return (
     <AppWindow
       title={title}
-      subtitle={noteCount(rows.length)}
+      detail={noteCount(rows.length)}
       toolbar={toolbar}
       overlay={overlay}
-      footer={footer}
+      notice={
+        state.error ? (
+          <Notice testID="error" tone="error" text={state.error} />
+        ) : state.notice ? (
+          <Notice testID="conflict" text={state.notice} onDismiss={() => model.dismissNotice()} />
+        ) : undefined
+      }
       sidebar={
         <Sidebar
           folders={state.folders}
@@ -314,6 +304,7 @@ export function NotesWindow({ model, scroll }: { model: NotesModel; scroll: (tes
           }
           hasNotes={rows.length > 0}
           formatDate={formatEdited}
+          words={words}
         />
       </View>
     </AppWindow>

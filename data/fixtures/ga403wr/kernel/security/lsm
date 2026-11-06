@@ -1,0 +1,1 @@
+capability,lockdown,yama,selinux,bpf,landlock,ima

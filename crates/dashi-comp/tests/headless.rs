@@ -176,6 +176,14 @@ fn mistakes_get_errors_not_a_dropped_connection() {
         ipc.request("capture", json!({ "path": "/tmp/x.png" }))["error"],
         "capture is only for the shell"
     );
+    // So may only it ask whose presses were whose.
+    assert_eq!(
+        ipc.request(
+            "input-origin",
+            json!({ "namespace": "dashi.agent-consent" })
+        )["error"],
+        "input-origin is only for the shell"
+    );
     assert!(
         ipc.request("focus", json!({ "window": "1" }))["error"]
             .as_str()
@@ -694,6 +702,463 @@ fn spaces_keep_their_windows() {
 }
 
 #[test]
+fn a_space_goes_in_where_asked_and_windows_wait_on_theirs() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Game");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+
+    // A Space at an index: the ones from there move up one, their windows with them.
+    ipc.request("space-add", json!({}));
+    ipc.request("space-move", json!({ "window": id, "space": 1 }));
+    ipc.events.clear();
+    assert_eq!(
+        ipc.request("space-add", json!({ "at": 1 }))["result"],
+        json!({ "count": 3, "current": 0, "space": 1 })
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 2 })
+    );
+    assert!(ipc.request("space-add", json!({ "at": 9 }))["error"].is_string());
+
+    // Full screen on a Space that is not shown: full screen there when it shows.
+    assert_eq!(
+        ipc.request("fullscreen", json!({ "window": id, "on": true }))["result"],
+        json!({})
+    );
+    let waiting = window_named(&mut ipc, id);
+    assert_eq!(
+        (waiting["fullscreen"].as_bool(), waiting["frame"].is_null()),
+        (Some(true), true),
+        "still off screen"
+    );
+    ipc.request("space-switch", json!({ "space": 2 }));
+    let shown = window_named(&mut ipc, id);
+    assert_eq!(
+        (shown["frame"]["x"].as_i64(), shown["frame"]["y"].as_i64()),
+        (Some(0), Some(0))
+    );
+
+    // Out of full screen off screen: back at its frame when its Space shows.
+    ipc.request("space-move", json!({ "window": id, "space": 0 }));
+    assert_eq!(
+        ipc.request("fullscreen", json!({ "window": id, "on": false }))["result"],
+        json!({})
+    );
+    assert!(window_named(&mut ipc, id)["frame"].is_null());
+    // A frame for it meanwhile is where it waits too.
+    ipc.request(
+        "frame",
+        json!({ "window": id, "x": 300, "y": 200, "width": 320, "height": 228 }),
+    );
+    assert!(window_named(&mut ipc, id)["frame"].is_null(), "not shown");
+    ipc.request("space-switch", json!({ "space": 0 }));
+    let back = window_named(&mut ipc, id);
+    assert_eq!(
+        (back["frame"]["x"].as_i64(), back["frame"]["y"].as_i64()),
+        (Some(300), Some(200))
+    );
+
+    // Minimized and shown again: the shell is told.
+    ipc.events.clear();
+    ipc.request("minimize", json!({ "window": id }));
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-state"),
+        json!({ "event": "window-state", "window": id, "state": "minimized" })
+    );
+    ipc.request("focus", json!({ "window": id }));
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-state"),
+        json!({ "event": "window-state", "window": id, "state": "normal" })
+    );
+
+    // A dialog says whose it is, and can be placed on another Space, where it waits.
+    client.open_dialog("Settings");
+    let placing = wait_event(&mut ipc, &mut client, "window-placing")["window"].clone();
+    assert_eq!(placing["parent"], id);
+    let dialog = placing["id"].as_u64().unwrap();
+    assert!(
+        ipc.request(
+            "place",
+            json!({ "window": dialog, "x": 10, "y": 10, "space": 7 })
+        )["error"]
+            .is_string()
+    );
+    assert_eq!(
+        ipc.request(
+            "place",
+            json!({ "window": dialog, "x": 10, "y": 10, "space": 1 })
+        )["result"],
+        json!({})
+    );
+    let opened = wait_event(&mut ipc, &mut client, "window-opened")["window"].clone();
+    assert_eq!(
+        (
+            opened["space"].as_u64(),
+            opened["frame"].is_null(),
+            opened["parent"].as_u64()
+        ),
+        (Some(1), true, Some(id))
+    );
+    assert_eq!(
+        window_named(&mut ipc, id)["focused"],
+        true,
+        "the keyboard stays"
+    );
+    ipc.request("space-switch", json!({ "space": 1 }));
+    let there = window_named(&mut ipc, dialog);
+    assert_eq!(
+        (there["frame"]["x"].as_i64(), there["frame"]["y"].as_i64()),
+        (Some(10), Some(10))
+    );
+}
+
+/// A movable window placed at `x, y`, with the shell listening: its id.
+fn movable_window(compositor: &Compositor, ipc: &mut Ipc, x: i64, y: i64) -> (Client, u64) {
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client =
+        Client::open_movable(compositor.dir.path(), &display, "dev.dashi.test", "Held");
+    let id = wait_event(ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": x, "y": y }));
+    wait_event(ipc, &mut client, "window-opened");
+    (client, id)
+}
+
+/// The person's pointer, moved by an agent borrowing the seat (the person is away).
+fn hand(ipc: &mut Ipc, window: u64, x: f64, y: f64, action: &str) -> Value {
+    let params = json!({ "window": window, "label": "Test", "pointer": { "x": x, "y": y }, "action": action, "borrow": { "idleMs": 0 } });
+    ipc.request("agent-input", params)
+}
+
+/// Press in the window until the client has asked to be moved and the compositor holds it.
+fn grab(ipc: &mut Ipc, client: &mut Client, window: u64, x: f64, y: f64) {
+    assert_eq!(hand(ipc, window, x, y, "press")["result"], json!({}));
+    let start = Instant::now();
+    while client.state.moves == 0 {
+        client.dispatch();
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "the client never asked to move"
+        );
+        sleep(Duration::from_millis(10));
+    }
+    // Requests are handled in order with the client's, a little later: let it land.
+    sleep(Duration::from_millis(100));
+    ipc.request("windows", json!({}));
+}
+
+fn window_named(ipc: &mut Ipc, id: u64) -> Value {
+    let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+    windows
+        .as_array()
+        .and_then(|list| list.iter().find(|w| w["id"] == id).cloned())
+        .expect("the window is listed")
+}
+
+#[test]
+fn windows_are_listed_most_recently_used_first() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut open = |title: &str, x: i64| {
+        let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.test", title);
+        let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+            .as_u64()
+            .unwrap();
+        ipc.request("place", json!({ "window": id, "x": x, "y": 50 }));
+        wait_event(&mut ipc, &mut client, "window-opened");
+        (client, id)
+    };
+    let (_a, first) = open("First", 100);
+    let (_b, second) = open("Second", 300);
+    let (_c, third) = open("Third", 500);
+    let order = |ipc: &mut Ipc| -> Vec<u64> {
+        ipc.request("windows", json!({}))["result"]["windows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|w| w["id"].as_u64().unwrap())
+            .collect()
+    };
+    assert_eq!(
+        order(&mut ipc),
+        vec![third, second, first],
+        "the newest has the keyboard"
+    );
+    ipc.request("focus", json!({ "window": first }));
+    assert_eq!(order(&mut ipc), vec![first, third, second]);
+    // Minimized windows come after those that show.
+    ipc.request("minimize", json!({ "window": first }));
+    assert_eq!(order(&mut ipc).last(), Some(&first));
+}
+
+#[test]
+fn a_held_window_goes_along_when_the_space_changes() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (mut client, id) = movable_window(&compositor, &mut ipc, 400, 300);
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut client, "space");
+    // A window already waiting on the Space it will be carried to.
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut other = Client::open(compositor.dir.path(), &display, "dev.dashi.other", "There");
+    let there = wait_event(&mut ipc, &mut other, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": there, "x": 300, "y": 200 }));
+    wait_event(&mut ipc, &mut other, "window-opened");
+    ipc.request("space-move", json!({ "window": there, "space": 1 }));
+    wait_event(&mut ipc, &mut other, "window-space");
+    ipc.request("focus", json!({ "window": id }));
+
+    grab(&mut ipc, &mut client, id, 40.0, 40.0);
+    // Dragged 30 to the right and 20 down.
+    assert_eq!(hand(&mut ipc, id, 70.0, 60.0, "move")["result"], json!({}));
+    let moved = window_named(&mut ipc, id)["frame"].clone();
+    assert_eq!(
+        (moved["x"].as_i64(), moved["y"].as_i64()),
+        (Some(430), Some(320))
+    );
+
+    // The Desktop changes mid-drag (a shortcut, a swipe): the window comes along, still held.
+    assert_eq!(
+        ipc.request("space-switch", json!({ "space": 1 }))["result"]["count"],
+        2
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 1 })
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "space"),
+        json!({ "event": "space", "current": 1, "previous": 0, "count": 2 })
+    );
+    let carried = window_named(&mut ipc, id);
+    assert_eq!(carried["space"], 1);
+    assert_eq!(carried["frame"]["x"], 430, "on screen, where it was held");
+    // In front of the windows that were there, with the keyboard.
+    assert_eq!(carried["focused"], true);
+    assert_eq!(window_named(&mut ipc, there)["focused"], false);
+
+    // Still in hand: it follows the pointer on the new Desktop, and stays there when let go.
+    // (Points are in the window, which moves with the pointer: 50 in is 10 further right.)
+    assert_eq!(hand(&mut ipc, id, 50.0, 40.0, "move")["result"], json!({}));
+    assert_eq!(
+        hand(&mut ipc, id, 40.0, 40.0, "release")["result"],
+        json!({})
+    );
+    let dropped = window_named(&mut ipc, id);
+    assert_eq!(
+        (dropped["frame"]["x"].as_i64(), dropped["space"].as_u64()),
+        (Some(440), Some(1))
+    );
+
+    // Let go, it stays on its Desktop when the person goes back.
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut client, "space");
+    let left = window_named(&mut ipc, id);
+    assert_eq!(
+        (left["space"].as_u64(), left["frame"].is_null()),
+        (Some(1), true)
+    );
+}
+
+#[test]
+fn a_desktop_comes_back_in_the_order_its_windows_had() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    ipc.request("subscribe", json!({}));
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // Two windows, one over the other; the older one is brought to the front.
+    let mut older = Client::open(compositor.dir.path(), &display, "dev.dashi.older", "Older");
+    let first = wait_event(&mut ipc, &mut older, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": first, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut older, "window-opened");
+    let mut newer = Client::open(compositor.dir.path(), &display, "dev.dashi.newer", "Newer");
+    let second = wait_event(&mut ipc, &mut newer, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": second, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut newer, "window-opened");
+    ipc.request("focus", json!({ "window": first }));
+    assert_eq!(window_named(&mut ipc, first)["focused"], true);
+
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut older, "space");
+    ipc.request("space-switch", json!({ "space": 1 }));
+    wait_event(&mut ipc, &mut older, "space");
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut older, "space");
+
+    // Back as it was: the older window still in front, with the keyboard.
+    assert_eq!(window_named(&mut ipc, first)["focused"], true);
+    assert_eq!(window_named(&mut ipc, second)["focused"], false);
+}
+
+#[test]
+fn a_switch_carries_the_window_asked_and_keeps_it_on_screen() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    ipc.request("subscribe", json!({}));
+    ipc.request("chrome", json!({ "reduceMotion": true }));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client = Client::open(compositor.dir.path(), &display, "dev.dashi.game", "Game");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 120, "y": 80 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+    ipc.request("space-add", json!({}));
+    wait_event(&mut ipc, &mut client, "space");
+
+    // Only a window on the Space that shows, and not with `progress`.
+    assert!(ipc.request("space-switch", json!({ "space": 1, "carry": 999 }))["error"].is_string());
+    assert!(
+        ipc.request(
+            "space-switch",
+            json!({ "space": 1, "carry": id, "progress": 0.5 })
+        )["error"]
+            .is_string()
+    );
+
+    assert_eq!(
+        ipc.request("space-switch", json!({ "space": 1, "carry": id }))["result"]["count"],
+        2
+    );
+    assert_eq!(
+        wait_event(&mut ipc, &mut client, "window-space"),
+        json!({ "event": "window-space", "window": id, "space": 1 })
+    );
+    wait_event(&mut ipc, &mut client, "space");
+    let carried = window_named(&mut ipc, id);
+    assert_eq!(carried["space"], 1);
+    assert_eq!(
+        (carried["frame"]["x"].as_i64(), carried["focused"].as_bool()),
+        (Some(120), Some(true)),
+        "on screen where it was, with the keyboard"
+    );
+
+    // Carried once: the next switch leaves it where it is.
+    ipc.request("space-switch", json!({ "space": 0 }));
+    wait_event(&mut ipc, &mut client, "space");
+    let left = window_named(&mut ipc, id);
+    assert_eq!(
+        (left["space"].as_u64(), left["frame"].is_null()),
+        (Some(1), true)
+    );
+}
+
+#[test]
+fn a_window_held_against_an_edge_is_told_after_a_while() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (mut client, id) = movable_window(&compositor, &mut ipc, 0, 300);
+    grab(&mut ipc, &mut client, id, 30.0, 40.0);
+    // To the screen's left edge (the window's left side is there).
+    let began = Instant::now();
+    assert_eq!(hand(&mut ipc, id, 0.0, 40.0, "move")["result"], json!({}));
+    let hold = wait_event(&mut ipc, &mut client, "edge-hold");
+    assert!(
+        began.elapsed() >= Duration::from_millis(380),
+        "held for 400 ms first"
+    );
+    assert_eq!(
+        hold,
+        json!({ "event": "edge-hold", "edge": "left", "output": "HEADLESS-1", "window": id, "count": 1, "preview": false })
+    );
+    // Still there: told again.
+    assert_eq!(wait_event(&mut ipc, &mut client, "edge-hold")["count"], 2);
+
+    // Off the edge, then let go: no more.
+    assert_eq!(hand(&mut ipc, id, 60.0, 40.0, "move")["result"], json!({}));
+    assert_eq!(
+        hand(&mut ipc, id, 60.0, 40.0, "release")["result"],
+        json!({})
+    );
+    ipc.events.retain(|e| e["event"] != "edge-hold");
+    sleep(Duration::from_millis(900));
+    client.dispatch();
+    ipc.request("windows", json!({}));
+    assert!(
+        ipc.events.iter().all(|e| e["event"] != "edge-hold"),
+        "a hold ends when the window leaves the edge"
+    );
+}
+
+#[test]
+fn pictures_are_checked_and_cleared() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (_client, id) = movable_window(&compositor, &mut ipc, 100, 100);
+    let rect = json!({ "window": id, "x": 10, "y": 10, "w": 160, "h": 100 });
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [rect] }))["result"],
+        json!({})
+    );
+    // A window that closed meanwhile is left out, not an error.
+    let gone = json!({ "window": 999, "x": 10, "y": 10, "w": 160, "h": 100 });
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [gone] }))["result"],
+        json!({})
+    );
+    let flat = json!({ "rects": [{ "window": id, "x": 0, "y": 0, "w": 0, "h": 9 }] });
+    assert!(ipc.request("window-thumbnails", flat)["error"].is_string());
+    assert_eq!(
+        ipc.request("window-thumbnails", json!({ "rects": [] }))["result"],
+        json!({})
+    );
+
+    let desktops = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 100, "y": 40, "w": 192, "h": 108 }] });
+    assert_eq!(ipc.request("space-previews", desktops)["result"], json!({}));
+    let nowhere = json!({ "output": "DP-9", "rects": [] });
+    assert!(ipc.request("space-previews", nowhere)["error"].is_string());
+    let beyond = json!({ "output": "HEADLESS-1", "rects": [{ "space": 99, "x": 0, "y": 0, "w": 9, "h": 9 }] });
+    assert!(ipc.request("space-previews", beyond)["error"].is_string());
+    let elsewhere = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 0, "y": 0, "w": 9, "h": 9, "screen": "DP-9" }] });
+    assert!(ipc.request("space-previews", elsewhere)["error"].is_string());
+    let named = json!({ "output": "HEADLESS-1", "rects": [{ "space": 0, "x": 0, "y": 0, "w": 9, "h": 9, "screen": "HEADLESS-1" }] });
+    assert_eq!(ipc.request("space-previews", named)["result"], json!({}));
+    let clear = json!({ "output": "HEADLESS-1", "rects": [] });
+    assert_eq!(ipc.request("space-previews", clear)["result"], json!({}));
+    // Windows name their entry in ext-foreign-toplevel-list (what the share picker answers with).
+    assert!(window_named(&mut ipc, id)["toplevel"].is_string());
+}
+
+#[test]
 fn the_overview_opens_on_a_plan_and_closes() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
@@ -904,6 +1369,7 @@ fn a_plain_client_sees_no_privileged_protocols() {
             // xdg_toplevel_icon_manager_v1 is off for now (handlers/toplevel_meta.rs).
             "xdg_system_bell_v1",
             "zxdg_exporter_v2",
+            "zxdg_importer_v2",
         ] {
             assert!(
                 seen.iter().any(|g| g == modern),
@@ -1054,4 +1520,87 @@ fn nothing_of_a_session_outlives_its_compositor() {
         );
         sleep(Duration::from_millis(20));
     }
+}
+
+#[test]
+fn a_sheet_hangs_where_the_shell_says_on_a_window_that_draws_its_own_bar() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The test client draws its own frame: dashi-comp gives it no title bar.
+    let mut parent = Client::open(compositor.dir.path(), &display, "dev.dashi.test", "Parent");
+    let parent_id = wait_event(&mut ipc, &mut parent, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": parent_id, "x": 100, "y": 100 }));
+    wait_event(&mut ipc, &mut parent, "window-opened");
+    let mut sheet = Client::open(compositor.dir.path(), &display, "dev.dashi.portal", "Open");
+    let sheet_id = wait_event(&mut ipc, &mut sheet, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+
+    // Below the app's own title bar and toolbar, as tall as the shell says.
+    let attach = json!({ "window": sheet_id, "parent": parent_id, "top": 60 });
+    assert_eq!(ipc.request("attach", attach)["result"], json!({}));
+    wait_event(&mut ipc, &mut sheet, "window-opened");
+    let frame = |ipc: &mut Ipc| {
+        let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+        let sheet = windows
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|w| w["id"] == sheet_id)
+            .cloned()
+            .unwrap();
+        (sheet["frame"]["x"].as_i64(), sheet["frame"]["y"].as_i64())
+    };
+    assert_eq!(frame(&mut ipc), (Some(100), Some(160)));
+
+    // Without `top`, at the top of the parent's content: it has no bar of dashi-comp's.
+    let again = json!({ "window": sheet_id, "parent": parent_id });
+    assert_eq!(ipc.request("attach", again)["result"], json!({}));
+    assert_eq!(frame(&mut ipc), (Some(100), Some(100)));
+    let bad = json!({ "window": sheet_id, "parent": parent_id, "top": "60" });
+    assert!(ipc.request("attach", bad)["error"].is_string());
+}
+
+#[test]
+fn portal_parents_and_sheets_are_checked() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+
+    // A handle nobody exported, or one of no kind the portal passes, names no window.
+    for handle in [
+        "wayland:nothing-exported-this",
+        "x11:3e00004",
+        "x11:zz",
+        "other:1",
+        "",
+    ] {
+        assert_eq!(
+            ipc.request("window-for-handle", json!({ "handle": handle }))["result"],
+            json!({ "window": null }),
+            "{handle}"
+        );
+    }
+    assert!(
+        ipc.request("window-for-handle", json!({}))["error"]
+            .as_str()
+            .unwrap()
+            .contains("handle")
+    );
+    assert_eq!(
+        ipc.request("attach", json!({ "window": 1, "parent": 2 }))["error"],
+        "no window 1"
+    );
+    assert!(
+        ipc.request("attach", json!({ "window": 1, "parent": "2" }))["error"]
+            .as_str()
+            .unwrap()
+            .contains("parent")
+    );
 }

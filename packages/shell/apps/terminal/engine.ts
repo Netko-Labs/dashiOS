@@ -18,13 +18,25 @@ export type EngineInput =
   | { t: "scroll"; lines: number }
   | { t: "select"; phase: "down" | "move" | "up"; x: number; y: number; clicks: number }
   | { t: "select-all" }
-  | { t: "copy" };
+  | { t: "copy" }
+  /** The terminal's ink, ground, and 16 ANSI colors (palette.ts). */
+  | { t: "colors"; fg: string; bg: string; palette: readonly string[] }
+  | { t: "running" };
 
 export interface Engine {
   send(input: EngineInput): void;
   /** Hang up the shell (closing the window). */
   stop(): void;
+  /**
+   * What runs in front of the shell (a command, `ssh`, `vim`): its name, ""
+   * when it has none, or null at the prompt, and null too when the engine
+   * doesn't answer in time or is gone.
+   */
+  running(): Promise<string | null>;
 }
+
+/** How long a `running` question waits for its answer (ms). */
+const RUNNING_WAIT = 400;
 
 /** Where dashi-term is: `DASHI_TERM`, the installed one, or this checkout's build. */
 export function engineBinary(env: Record<string, string | undefined> = process.env, exists: (path: string) => boolean = existsSync): string | null {
@@ -40,16 +52,36 @@ export function startEngine(binary: string, size: { cols: number; rows: number }
     stderr: "inherit",
   });
   const lines = new LineBuffer();
+  // Answers to `running` come back in the order the questions went.
+  const asking: ((program: string | null) => void)[] = [];
   void (async () => {
     for await (const chunk of child.stdout) {
       for (const line of lines.push(chunk)) {
         const message = parseEngineLine(line);
-        if (message) onMessage(message);
+        if (message?.t === "running") asking.shift()?.(message.program);
+        else if (message) onMessage(message);
       }
     }
+    for (const answer of asking.splice(0)) answer(null);
   })();
   let open = true;
-  return {
+  const engine: Engine = {
+    running() {
+      if (!open) return Promise.resolve(null);
+      return new Promise((resolve) => {
+        let answered = false;
+        const answer = (program: string | null): void => {
+          if (answered) return;
+          answered = true;
+          clearTimeout(timer);
+          resolve(program);
+        };
+        // Too late: the answer, when it comes, still takes its place in the queue.
+        const timer = setTimeout(() => answer(null), RUNNING_WAIT);
+        asking.push(answer);
+        engine.send({ t: "running" });
+      });
+    },
     send(input) {
       if (!open) return;
       try {
@@ -67,4 +99,5 @@ export function startEngine(binary: string, size: { cols: number; rows: number }
       } catch {}
     },
   };
+  return engine;
 }

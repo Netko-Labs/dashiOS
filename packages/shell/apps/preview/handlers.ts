@@ -8,7 +8,8 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { dataDirs, parseDesktopEntry } from "../../src/entries.ts";
+import { resolvePinned } from "../../src/apps.ts";
+import { dataDirs, entryIcon, parseDesktopEntry } from "../../src/entries.ts";
 import { runTool } from "./tools.ts";
 
 export interface Handler {
@@ -17,6 +18,8 @@ export interface Handler {
   name: string;
   /** The desktop file on disk. */
   file: string;
+  /** Its icon, as the Dock and the launcher draw it (`entryIcon`). */
+  icon: string;
   isDefault: boolean;
 }
 
@@ -55,6 +58,7 @@ export async function handlersFor(mime: string, skip: readonly string[] = []): P
   const ids = parseGioMime(result.stdout);
   const defaultId = /^Default application for [^:\n]*:\s*(\S+)\s*$/m.exec(result.stdout)?.[1];
   const handlers: Handler[] = [];
+  const pinned = resolvePinned();
   for (const id of ids) {
     if (skip.includes(id)) continue;
     const file = findDesktopFile(id);
@@ -66,7 +70,7 @@ export async function handlersFor(mime: string, skip: readonly string[] = []): P
       continue;
     }
     const entry = parseDesktopEntry(id.replace(/\.desktop$/, ""), text);
-    if (entry) handlers.push({ id, name: entry.name, file, isDefault: id === defaultId });
+    if (entry) handlers.push({ id, name: entry.name, file, icon: entryIcon(entry.id, entry.iconName, pinned), isDefault: id === defaultId });
   }
   return handlers;
 }
@@ -74,13 +78,13 @@ export async function handlersFor(mime: string, skip: readonly string[] = []): P
 /** Open `path` with a handler. True when the launcher accepted it. */
 export async function openWith(handler: Handler, path: string): Promise<boolean> {
   if (!path.startsWith("/")) return false;
-  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: 10_000 })).ok;
+  return (await runTool(["gio", "launch", handler.file, path], { timeoutMs: 10_000, untilExit: true })).ok;
 }
 
 /** Open the folder in the default file manager (`gio open`). */
 export async function showInFiles(dir: string): Promise<boolean> {
   if (!dir.startsWith("/")) return false;
-  return (await runTool(["gio", "open", dir], { timeoutMs: 10_000 })).ok;
+  return (await runTool(["gio", "open", dir], { timeoutMs: 10_000, untilExit: true })).ok;
 }
 
 /** Move a file to the Trash (`gio trash`). The error text when it failed, else null. */

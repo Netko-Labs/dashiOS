@@ -1,3 +1,182 @@
+# Dashi 0.5.0 (plan)
+
+The plan is `docs/0.5.0.html`: what 0.4.0 left undone, in four waves and a
+verification track. Nothing starts until the owner makes the picks at the
+page's end. Each area is its own branch, reviewed in the VM on video, as in
+0.4.0.
+
+## Picks to make
+- [ ] The order of the waves (recommended: as written)
+- [ ] Where the text model lives (recommended: mirin's TextInput, a document view on top)
+- [ ] How a close asks (recommended: a close request mirin hands to the app)
+- [ ] One file browser (recommended: Files' core as a component)
+- [ ] The Applet Store (recommended: a section of Software)
+- [ ] Text size (recommended: every Dashi window, through @dashi/ui's type scale)
+- [ ] KDE runners (recommended: Wave 3, read-only behind the registry)
+- [ ] D3cold for the graphics card (the owner's call)
+
+## Wave 1 · Platform foundations
+- [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
+- [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
+- [ ] Modifiers on onPress (S; PA-10)
+- [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
+- [ ] An undo stack in @dashi/ui (M; PA-2)
+- [ ] A visibility signal; Activity Monitor stops sampling while hidden (S; PA-15)
+- [ ] A settings registry behind every row (M; today `SPOT_ROWS`)
+- [ ] Privacy & Security pane: review and revoke (M)
+- [ ] Components as the @dashi/ui gallery (M; UI-7)
+- [ ] The missing controls: pop-up button, progress, one Slider, one alert frame, menu separators (L; UI-1, UI-2, UI-4, UI-5, PA-5, PA-9)
+
+## Wave 2 · The apps' big ideas
+- [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
+- [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
+- [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
+- [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
+- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
+- [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
+- [ ] Editor's document surface with versioned autosave (L)
+- [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
+- [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
+- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+
+## Wave 3 · Launcher and agents
+- [ ] Agent tools that take arguments, as rows (M)
+- [ ] Context chips: "+ this window", "+ selection" (M)
+- [ ] The close fade, 120 ms (S)
+- [ ] A result's flight to the Dock (M)
+- [ ] KDE runners (S)
+- [ ] Tab, Home and End reaching the input method mid-composition (S)
+- [ ] Orca's first announcement is the field, not the selected row (S)
+- [ ] An applet view's first draw well under 0.7 s (M)
+- [ ] Left from 0.4.0: the green control's press-and-hold menu (M), the bottom edge as a drag zone (S), a title-bar menu with Move to (M), Dashi's apps parent their dialogs (M), late prompts blanked for agents (M), errors in people's words (S)
+
+## Wave 4 · The open design rules
+- [ ] CO-6: 3:1 control edges (S)
+- [ ] UI-6: Enter on a bare Sheet follows the risk (S)
+- [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
+- [ ] CP-7: pane names from the pane list (S)
+- [ ] Text size beyond the launcher (M; TY-1)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+
+## Verification (alongside)
+- [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes
+- [ ] Live Claude and GPT APIs, with the owner's keys as tokens
+- [ ] Codex and OpenCode for real (the 0.4.0 video's OpenCode was a stand-in)
+- [ ] Claude Code in the VM (verified only on the laptop)
+- [ ] Input methods: a click while composing, password fields
+- [ ] D3cold off for the graphics card: waits for the owner's decision
+- [ ] Packages: COPR, a rebuilt image, a fresh install with `vm/vm install`
+
+# Dashi 0.4.0 (`release/0.4.0`)
+
+The plan is `docs/plan.html` (built from the recommended options in
+`docs/0.4.0.html`). Built overnight on 2026-11-05 in six streams, merged into
+`release/0.4.0`. `[x]` means built with tests passing; "VM:" says what was
+seen working in the VM, and an item without one hasn't run in a session yet.
+Hardware writes (SMU, charge limit, profiles) were never run on the laptop.
+
+After the spec (2026-11-05, up to `1f59d0b`): window management, depth,
+full-screen Desktops, the launcher's three waves and the app roasts' first
+wave, each reviewed on video in the VM (`~/Developer/dashi-0.4.0-review/`,
+01–13). The release page is `docs/0.4.0.html`; what's left is the 0.5.0 plan
+above.
+
+## Proposals (`docs/proposals.html`, `docs/betterments.html`)
+- [x] Window management: the green control fills (⌥ = full screen), one Fill, ⌃❖ arrows = four halves with chained quarters, ⌃❖↩ / C / R, and the seven tiling bugs found (`feat/0.4-windows`; VM: 01-windows)
+- [x] Depth between windows: shadow + hairline by default, accent ring as an Appearance option (`feat/0.4-depth`: IPC `window-style`, render/depth/; VM: 02-depth)
+- [x] A full-screen window gets its own Desktop; stoplights kept in full screen and small pictures (`feat/0.4-fullscreen-desktops`, `fix/0.4-stoplights`; VM: 03, 04)
+- [x] The roast of every app (`docs/roast/`), wave 1: one chrome row, AA tokens, confirm sheets, tooltips, per-app fixes, one selection look (`feat/0.4-apps-wave1`, `fix/0.4-apps-review`; VM: 07, 08, 09, 11)
+- [x] The launcher, waves 1–3: bugs; one registry, ranking, ❖K, answers, a resident launcher; tokens, Ask and plans, clipboard and snippets, extensions, access (VM: 05, 06, 10, 13)
+- [x] Answerers: Claude Code, Codex, OpenCode, a local model, Claude and GPT (`feat/0.4-answerers`; VM: 12, OpenCode as a stand-in)
+- [x] Input methods in every Metal field (`fix/0.4-ime`, mirin `1cde80e`; VM: 13, Pinyin)
+- [ ] The roast's waves 2 and 3, and the launcher's deferred rows: in the 0.5.0 plan
+- [x] The design guidelines are one page, `docs/design.html` (brand and Kombu folded in; numbered rules, tagged where the code doesn't follow them yet)
+
+## Packages
+- [x] `spin/build-rpms` builds dashi, dashi-comp, dashi-hardware, dashi-secretd, dashi-greeter, dashi-release, dashi-term, dashi-graphics at 0.4.0~beta; a set is in ~/Developer/dashi-0.4.0-rpms (not published to COPR)
+- [x] VM: they install over 0.3 and upgrade over an earlier 0.4.0 snapshot; tuned-ppd, the vault's socket, the portal and the bridge come up
+- [ ] Publish to COPR, rebuild the image, a fresh install with `vm/vm install`
+
+## 1 · Power base and a lost card
+- [x] `dashi-release` requires tuned-ppd (conflicts with power-profiles-daemon)
+- [x] Power modes over tuned-ppd's D-Bus API (`src/system/profiles.ts`, one kept system-bus connection)
+- [x] The lost-card watch (`src/graphics/lost-card.ts`, `journalctl -k -f -o json`; this laptop's real 11-03/11-04 lines in the tests); `gpu-env.ts` stops offloading to a lost card
+- [x] Shutdown can't hang: SIGTERM, 10 s, SIGKILL the exact PIDs, then logind regardless; user units stop in 10 s
+- [x] VM: the 0.4.0 packages install over 0.3 (dashi-release pulls tuned-ppd; tuned-ppd active on dashi-balanced; the power-profiles API answers)
+- [ ] VM: a fake loss through /dev/kmsg (needs a two-GPU VM or a fake card); shutdown with a stuck FUSE reader
+- [ ] D3cold off for the card on the laptop (`d3cold_allowed=0`): waits for a yes
+
+## 2 · dashi-hardware and power in sync
+- [x] `crates/dashi-hardware`: system-bus service `dev.dashi.Hardware1`, polkit per method, every knob in docs/hardware.md, fan curves, the SMU (Curve Optimizer, 20-bit encoding, lockdown check), the boot guard and countdown tokens, `--sysfs-root` fake mode
+- [x] Model database (`data/models/`, GA403WR) and the G14's captured sysfs (`data/fixtures/ga403wr/`)
+- [x] Read-only `dashi-hardware describe` on the laptop: model, fans, hotkeys, every knob with its range
+- [x] Packaging: dashi-hardware.spec, tuned profiles dashi-{powersave,balanced,performance} + ppd.conf
+- [x] Shell: mode store with plugged/battery columns, both ways (one key press, one change), Automatic, battery health (limit, one full charge, full-by schedule), keys (Fn F5, Fn F4, ROG) with the OSD, ApplySavedTuning at login and wake, the boot-guard notice
+- [x] UI: the battery menu as the hub, Control Center's laptop row, Battery & Power / Displays / Keyboard rows
+- [x] VM, the shell on a fake G14 (`DASHI_HARDWARE_BUS=session`, `dashi-hardware --sysfs-root … serve`): Control Center's laptop row (mode, keyboard light); a click on the mode writes the whole recipe (both profiles, SPL 55→80 W, EPP); a click on the light 0→3; a profile changed behind Dashi's back (Fn F5) pulls the recipe along (SPL 30 W, EPP power) and the tile follows
+- [x] Packaging found in the VM: dashi-hardware and tuned-ppd both owned /etc/tuned/ppd.conf (now a scriptlet); the tuned profiles were outside /usr/lib/tuned/profiles (tuned-ppd refused to start)
+- [ ] Laptop (asked first): set each mode, charge limit 80 across a reboot, Curve Optimizer −5 under load then 0, a fan curve and reset; check Fn F5's keysym
+
+## 3 · Graphics switching
+- [x] `dashi-graphics.spec` (cardwire from Terra), finish-install adds `bpf` to `lsm=` and installs it on two-GPU machines
+- [x] `src/graphics/`: cardwire client, Automatic policy, holders, "Using the Graphics Card", the Graphics tile and pane (MUX), the lost-card state
+- [x] cardwire's own battery and external-screen switching turned off by the shell (Config properties), so Automatic is the one decider
+- [ ] Laptop: Integrated on battery with the card in D3cold, Hybrid plugged in, Steam through Xwayland
+
+## 4 · Desktops, moving windows, the switcher
+- [x] dashi-comp: `space-previews`, `window-thumbnails`, a move grab across `space-switch`, `edge-hold`
+- [x] Desktops row opening into pictures, names in place, automatic names; drop on a picture, edge push, carry while switching, Move to in the Window menu
+- [x] The switcher: windows per app (live pictures), type to find, Q/H/M/W. VM: the row, live pictures, badges, typing, each action; H or M then ❖ up leaves it put away; recency order fixed (the compositor listed oldest first)
+- [x] `dashi-share-picker` as xdg-desktop-portal-wlr's chooser
+- [x] VM: Mission Control, the row opening into pictures, rename, drop on a picture, edge push (relative mouse), carry with ⌃2, Move to (agent pictures of the overview were gray: the agents' mask blanked whole frames; fixed)
+- [ ] ⌃→ never arrives through QMP in the VM (QEMU), so switching mid-drag was checked with ⌃2
+- [x] A dragged window in Mission Control draws over the Desktops row, its pictures, and the menu bar (VM: dropped on Desktop 2)
+- [ ] Title-bar right-click menu with Move to (there is no title-bar menu yet)
+
+## 5 · The Dashi portal
+- [x] `dashi-portal` (apps/portal), all ten interfaces; sheets parented through xdg-foreign (IPC `window-for-handle`, `attach`)
+- [x] Inhibit in the shell plus `org.freedesktop.ScreenSaver`; keep-awake in the battery menu
+- [x] `dashi-portals.conf` default=dashi; GTK_USE_PORTAL / GDK_DEBUG; xdg-desktop-portal-gtk dropped from dashi.spec
+- [x] VM, packages installed and xdg-desktop-portal-gtk removed: Settings.ReadAll, ScreenSaver.Inhibit, Helium's Open File as a sheet of its window (the shell refused the portal's second connection; fixed)
+- [x] VM: Firefox's Open File as a sheet of its window, with its filters as pills
+- [ ] VM: a GTK 4 app, a Flatpak, a Qt app; printing to CUPS-PDF; Add to Dock
+- [x] A sheet on a window that draws its own bar hangs below its toolbar (`attach {top}`; VM: Firefox)
+- [x] Sheets have no shadow: they cast `xl` from the compositor (`window-style`; VM: 02-depth)
+- [ ] Dashi's own apps pass no parent window (mirin can't export an xdg-foreign handle), so their dialogs are plain windows
+- [ ] Keep-awake on a machine with no battery has nowhere to show
+
+## 6 · Secrets for agents
+- [x] `crates/dashi-secretd` (own user, Argon2id + TPM share + XChaCha20-Poly1305, pidfd/cgroup callers, agent scopes refused), `dashi-secret-bridge` (Secret Service + portal Secret), the gnome-keyring import, pam_exec unlock (optional lines)
+- [x] `capture-mask` and `input-origin`; agent captures blank secrets; consent counts only the person's press
+- [x] `list_logins`, `sign_in`, `fill_code`, `hand_over`; TOTP; Settings › Passwords; 1Password through `op` (tested with a fake `op`)
+- [x] Passkeys: a virtual FIDO2 key over uhid in dashi-secretd (unit-tested only)
+- [x] `pay` with limits, single-use cards, "Pay for you" never always-allowed
+- [x] `dashi-agent`: the agent sandbox (systemd scope + bubblewrap)
+- [x] The token proxy (`feat/0.4-vault-tokens`: token items in dashi-secretd, the shell's proxy, Settings › Passwords › Tokens; payment-provider tokens dropped). VM: an Anthropic key saved and named in Settings › Agents (10-launcher-wave3); live APIs untested
+- [x] VM, packages installed: the vault made at a password login, `secret-tool` store/lookup, a lookup from a `dashi-agent-*` scope refused; `list_logins` (no secrets) after the scope sheet; `sign_in` on the test site (the person's Allow Once; the page reached /2fa)
+- [x] fill_code's sheet ignored the person's Allow Once: it opened under a still pointer, and dashi-comp moved pointer focus only on motion (it now enters what is under the pointer before a press). A call the agent gives up on (`notifications/cancelled`) takes its sheet down; a waiting sheet no longer holds the agent's other calls
+- [x] Chromium (Helium) without `--force-renderer-accessibility`: the shell wakes its web tree and places fields by their page. Firefox: its first GetExtents answers nothing (asked again)
+- [x] Sheets are solid; the scope sheet fits 1280×720 points (its list scrolls)
+- [x] VM, Firefox and Helium: sign_in, fill_code, a passkey made and used (the person's password on dashi-secretd's sheet), `pay` on the checkout; agents' pictures blank the password, code and card fields, and a filled field's blank goes with its page
+- [x] A blank for a window's field is painted over windows above it: clipped by the opaque windows in front (VM: Helium's field behind Firefox)
+- [x] Firefox's "Securely save this card?" (last four, expiry) and "Save password?" after a fill: the window's popups are blanked a minute after its filled fields were last seen, each for its whole life, and new windows of the app whole (VM: agent pictures blank them, the person's ⇧❖3 shows them)
+- [ ] A prompt that opens over ten minutes after a fill (FILLED_MS) isn't blanked; an app that shows a secret in its main window outside a filled field isn't either
+
+## 7 · The applet SDK
+- [x] `packages/applet` (`@dashi/applet`), manifest and schema, protocol v2 (hello, popover, dismiss, submenus), layer-shell grants per pid (`applet-clients`), the sandbox (bwrap + xdg-dbus-proxy), `dashi-applet` CLI
+- [x] VM: `dashi-applet new weather`, `dev` (DEV badge), its popover under the item, a button in it updating the item, a click outside closing it; `pack`, `install`: running in bubblewrap as its own unit, its popover from inside the sandbox
+- [x] One React and one @mirinjs/metal per applet (pack bundles one; dev drops @dashi/ui's nested copies): with two, AppWindow's sidebar ran under the window controls
+- [ ] Popover placement at each screen edge; a permission it didn't declare refused
+- [ ] The switcher's surface shows a pale haze where the panel doesn't reach (sized for the largest window row)
+
+## 8 · The Applet Store and ASUS Control
+- [x] The Applet Store app, signature checks, the kill switch; the catalog at ~/Developer/dashi-applets and ASUS Control at ~/Developer/asus-control (local repositories, no remotes)
+- [ ] Dashi's index key (`minisign -G`), the GitHub secrets, creating the two repositories on GitHub
+- [x] VM: ASUS Control in dev on the fake G14: the popover (mode, charge limit, lights from the fake tree), a mode picked there followed by the shell, the window's Power pane with the model's recipes; named "ASUS Control" in the menu bar
+- [x] VM: the Applet Store on a test catalog (real packages, throwaway keys, file:// URLs): a catalog that doesn't parse, and one signed by another key, are refused with the reason; the list with Reviewed and Installed; Get → the permissions in plain words → ASUS Control installed and running in its sandbox (the consent sheet squeezed the page; fixed); the popover says when there is nothing to read
+- [ ] VM: ASUS Control's Fans, Lighting, Advanced panes on the fake G14; an update and a pulled version through the store
+- [ ] Laptop: lighting (Slash mode numbers unchecked), sensors, fan curves, a per-core Curve Optimizer search with the boot guard
+
 # Dashi 0.3.0 (`release/0.3.0`)
 
 Found on the first real install of 0.2.0 (a 2880×1800 panel at 1.75, NVIDIA
@@ -284,6 +463,11 @@ it in the VM.
       XEmbed tray icons, Bluetooth device batteries in the battery menu, reordering/hiding extras
 - [x] Terminal: tabs (❖T, ❖W closes a tab, ⇧❖[ ⇧❖], ❖1…❖9; one dashi-term each)
 - [x] Terminal: ⌥/❖ arrows and ⌥⌫ in readline's keys (keymap.ts), as on the Mac
+- [x] Terminal: Dashi's 16-color palette, light and dark, AA on the ground (apps/terminal/palette.ts),
+      programs' own colors honored; ⇧❖W closes the window; closing a busy tab or window asks
+- [ ] Terminal and Text Editor: the close control and ❖Q ask too (needs the mirin item above)
+- [x] Text Editor: ❖W asks like File › Close, unsaved text kept as it is typed, a window title
+      per document, Revert asks (and is one Undo step), the caret stays put on ❖S and after sheets
 - [ ] Terminal: wide-character width check, mouse reporting to programs,
       Kitty graphics, cursor blink, URL detection, preferences
 - [ ] A Dashi-native installer front end over Anaconda

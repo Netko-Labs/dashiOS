@@ -7,6 +7,7 @@
  * compositor goes away.
  */
 
+import { existsSync } from "node:fs";
 import { captureWithTimeout, importSessionEnvironment, runWithTimeout } from "./environment.ts";
 import { startKeyring } from "./keyring.ts";
 import { watchCompositor } from "./parent.ts";
@@ -36,7 +37,7 @@ export async function runSession(specs: readonly ServiceSpec[] = sessionServices
   // apps at itself.
   if (process.env.DASHI_IMPORT_ENVIRONMENT === "1") {
     // First, so its socket is part of what gets published.
-    Object.assign(process.env, await startKeyring({ which: Bun.which, run: captureWithTimeout, log }));
+    Object.assign(process.env, await startKeyring({ which: Bun.which, run: captureWithTimeout, log, exists: existsSync }));
     await importSessionEnvironment({ env: process.env, which: Bun.which, run: runWithTimeout, log });
     // Then the session target, which the portal and other session services need.
     await startSessionTarget({ env: process.env, which: Bun.which, run: runWithTimeout, log });

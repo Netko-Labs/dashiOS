@@ -9,7 +9,9 @@
  * Super, Ctrl, and Alt must match exactly; Shift only when named. The first
  * matching rule wins, and its action is one of:
  *
- *   bind     the key is the shell's: shortcuts.ts runs the named action
+ *   bind     the key is the shell's: shortcuts.ts runs the named action; a
+ *            `dashi://` address is any action of the registry (actions/,
+ *            docs/actions.md), run for the person on the focused window
  *   send     the app gets this chord instead, held like the key; Shift held
  *            with it passes through ("key" means the pressed key)
  *   tap      these chords, pressed and released at once
@@ -35,6 +37,8 @@ export type Keymap = {
   tapMs: number;
   holdMs: number;
   rules: Rule[];
+  /** The rules the compositor switches to by itself the moment ❖ is tapped, until the next keymap (launcher/type-ahead.ts). */
+  afterTap?: Rule[];
 };
 
 /** Terminals keep plain Ctrl chords for the program inside (Ctrl+C interrupts). */
@@ -87,19 +91,28 @@ export const KEYMAP: Keymap = {
     { when: "ctrl+Right", bind: "space-right" },
     ...Array.from({ length: 9 }, (_, index) => ({ when: `ctrl+${index + 1}`, bind: `space-${index + 1}` })),
 
-    // ⌃❖ arrows arrange the focused window.
-    { when: "super+ctrl+Left", bind: "tile-left" },
-    { when: "super+ctrl+Right", bind: "tile-right" },
-    { when: "super+ctrl+Up", bind: "tile-fill" },
-    { when: "super+ctrl+Down", bind: "tile-restore" },
+    // ⌃❖ arrows arrange the focused window: the half on that side, then a
+    // quarter, its own size, or the next screen (tiling.ts). ⌃❖↩ fills,
+    // ⌃❖C centers, ⌃❖R gives back its own size (arrange.ts). Like every
+    // ⌃❖ rule, above the reserved super+ctrl+* below. They bind the
+    // registry's addresses (actions/sources/windows.ts).
+    { when: "super+ctrl+Left", bind: "dashi://window/arrange/left" },
+    { when: "super+ctrl+Right", bind: "dashi://window/arrange/right" },
+    { when: "super+ctrl+Up", bind: "dashi://window/arrange/up" },
+    { when: "super+ctrl+Down", bind: "dashi://window/arrange/down" },
+    { when: "super+ctrl+Return|KP_Enter", bind: "dashi://window/arrange/fill" },
+    { when: "super+ctrl+c", bind: "dashi://window/arrange/center" },
+    { when: "super+ctrl+r", bind: "dashi://window/arrange/restore" },
     // ⌃❖F: full screen (arrange.ts), for any window, as on the Mac.
-    { when: "super+ctrl+f", bind: "fullscreen" },
+    { when: "super+ctrl+f", bind: "dashi://window/full-screen" },
     // ⌃❖Q: lock the screen, as on the Mac.
     { when: "super+ctrl+q", bind: "lock-screen" },
     // ⌥❖Esc: Force Quit Applications (force-quit/). Before the reserved ⌥❖ rule below.
     { when: "super+alt+Escape", bind: "force-quit" },
     // ⌥❖D: turn Dock autohide on or off (dock/prefs.ts), as on the Mac. Before the reserved ⌥❖ rule below.
     { when: "super+alt+d", bind: "toggle-autohide" },
+    // ⌥❖V: the clipboard history, in the launcher (clipboard/). Before the reserved ⌥❖ rule below.
+    { when: "super+alt+v", bind: "dashi://clipboard/history" },
     // Reserved for the lock screen, emoji, and Hide Others.
     { when: "super+ctrl+*", swallow: true },
     { when: "super+alt+*", swallow: true },
@@ -116,6 +129,7 @@ export const KEYMAP: Keymap = {
     { when: "super+space", bind: "launcher" },
     // ❖, opens System Settings (settings-app/).
     { when: "super+comma", bind: "settings" },
+    // ❖W and ⇧❖W (Shift isn't named): the app's own row for the chord first, else the window closes (shortcuts.ts).
     { when: "super+w", app: "metal", bind: "close-window" },
     // ⇧❖3 captures the screen; ⇧❖4 an area dragged out, or with Space the
     // focused window (screenshots.ts, screenshot-area.tsx); ⇧❖5 opens the
@@ -159,3 +173,33 @@ export const KEYMAP: Keymap = {
     { when: "alt+Delete", send: "ctrl+Delete" },
   ],
 };
+
+/**
+ * `keymap` with this machine's own rules first: the laptop's keys (Fn F5,
+ * Fn F4, the ROG key; laptop/hotkeys.ts), whose keysyms come from the model
+ * database. They carry no modifiers, so going first only matters for a key
+ * the list above also names, and then the machine's meaning wins.
+ */
+export function withRules(keymap: Keymap, rules: readonly Rule[]): Keymap {
+  return rules.length === 0 ? keymap : { ...keymap, rules: [...rules, ...keymap.rules] };
+}
+
+/**
+ * Keys bound only while the app switcher is open (switcher/), ahead of every
+ * other rule: ↓ and ` into the chosen app's windows, ↑ back, ← → along the
+ * row, ⌫ and the letters, digits, and Space for typing to find (Q, H, M, and
+ * W act while nothing is typed). Tab, ⇧Tab, and Esc are the rules above.
+ */
+export const SWITCHER_RULES: Rule[] = [
+  { when: "super+Down", bind: "switcher-down" },
+  { when: "super+grave|asciitilde", bind: "switcher-down" },
+  { when: "super+Up", bind: "switcher-up" },
+  { when: "super+Left", bind: "switcher-left" },
+  { when: "super+Right", bind: "switcher-right" },
+  { when: "super+BackSpace", bind: "switcher-erase" },
+  { when: "super+letter", bind: "switcher-key" },
+  { when: "super+0|1|2|3|4|5|6|7|8|9|space", bind: "switcher-key" },
+];
+
+/** The keymap while a switcher session is open: its keys first. */
+export const withSwitcher = (keymap: Keymap): Keymap => ({ ...keymap, rules: [...SWITCHER_RULES, ...keymap.rules] });

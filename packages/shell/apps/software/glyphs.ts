@@ -1,5 +1,7 @@
 /** Software's glyphs, on a 16-unit grid and tinted by the Svg `color` (outlines only: the Svg tints every fill one color). */
 
+import { TINTS } from "@dashi/ui";
+
 const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
 const stroke = (d: string, width = 1.4): string =>
   `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -42,16 +44,20 @@ export const CATEGORY_GLYPHS: Readonly<Record<string, string>> = {
   ),
 };
 
-/** A tile color for each category. */
+/**
+ * A tile color for each category, from Dashi's tints: never a job color, so
+ * no category wears shiso (agents) or ume (destroy). The Applet Store's
+ * categories take these too, through the nearest of Software's.
+ */
 export const CATEGORY_TINTS: Readonly<Record<string, string>> = {
-  AudioVideo: "#d4483b",
-  Development: "#5b6ad0",
-  Education: "#c7892b",
-  Game: "#6E56CF",
-  Graphics: "#d0527f",
-  Network: "#3b8fd0",
-  Office: "#d97a2c",
-  Science: "#2f9d8f",
-  System: "#7a7a82",
-  Utility: "#4f8f4f",
+  AudioVideo: TINTS.kabocha,
+  Development: TINTS.nori,
+  Education: TINTS.miso,
+  Game: TINTS.wakame,
+  Graphics: TINTS.shiitake,
+  Network: TINTS.mizu,
+  Office: TINTS.matcha,
+  Science: TINTS.wakame,
+  System: TINTS.goma,
+  Utility: TINTS.goma,
 };

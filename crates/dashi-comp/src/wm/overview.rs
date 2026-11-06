@@ -1,9 +1,11 @@
 //! The overview (Mission Control): the shell lays the windows out
 //! (packages/shell/src/overview/plan.ts) and the compositor flies them there,
 //! shows them small, and reports what the person does with them: a press on
-//! one or on the background (`overview-pick`), a window dragged somewhere
-//! (`overview-drop`), and keys (`overview-key`). The shell decides what each
-//! means; closing flies the windows back.
+//! one or on the background (`overview-pick`), a window starting to be
+//! dragged (`overview-drag`) and where it was let go (`overview-drop`, over
+//! the shell's Desktops row too), and keys (`overview-key`; not while a
+//! shell surface holds the keyboard: those are its own). The shell decides
+//! what each means; closing flies the windows back.
 
 use std::{
     collections::HashMap,
@@ -39,6 +41,15 @@ struct Press {
     window: Option<WindowId>,
     at: Point<f64, Logical>,
     dragging: bool,
+}
+
+impl Overview {
+    fn dragged(&self) -> Option<WindowId> {
+        self.press
+            .as_ref()
+            .filter(|press| press.dragging && !self.closing)
+            .and_then(|press| press.window)
+    }
 }
 
 fn ease(t: f64) -> f64 {
@@ -222,15 +233,35 @@ impl Dashi {
         }
     }
 
-    /// The pointer moved while the overview is open: past a few pixels, a press on a window drags it.
+    /// The pointer moved while the overview is open: past a few pixels, a
+    /// press on a window drags it, and the shell hears so once (`overview-drag`).
     pub(crate) fn overview_motion(&mut self, at: Point<f64, Logical>) {
-        if let Some(press) = self.overview.as_mut().and_then(|o| o.press.as_mut())
-            && press.window.is_some()
-            && !press.dragging
-        {
-            let moved = ((at.x - press.at.x).powi(2) + (at.y - press.at.y).powi(2)).sqrt();
-            press.dragging = moved > DRAG_START;
+        let Some(press) = self.overview.as_mut().and_then(|o| o.press.as_mut()) else {
+            return;
+        };
+        let Some(window) = press.window.filter(|_| !press.dragging) else {
+            return;
+        };
+        let moved = ((at.x - press.at.x).powi(2) + (at.y - press.at.y).powi(2)).sqrt();
+        press.dragging = moved > DRAG_START;
+        if press.dragging {
+            self.ipc.emit(
+                "overview-drag",
+                json!({ "window": window, "x": at.x, "y": at.y }),
+            );
         }
+    }
+
+    /// A press in the overview is held: its release is the overview's, wherever it is (over the shell's row too).
+    pub(crate) fn overview_pressed(&self) -> bool {
+        self.overview.as_ref().is_some_and(|o| o.press.is_some())
+    }
+
+    /// The window being dragged in the overview, if one is: drawn in front
+    /// of everything but the pointer, over the shell's row and its pictures
+    /// (render/scene.rs), so the person sees what they carry onto a Desktop.
+    pub(crate) fn overview_dragged(&self) -> Option<WindowId> {
+        self.overview.as_ref().and_then(Overview::dragged)
     }
 
     /// The release: a pick (a window or the background), or a drop.
@@ -248,6 +279,22 @@ impl Dashi {
         }
     }
 
+    /// Whether the keyboard is on a layer surface (the shell's, given it by a press there).
+    pub(crate) fn keyboard_on_layer(&self) -> bool {
+        let Some(focus) = self
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus())
+        else {
+            return false;
+        };
+        self.space.outputs().any(|output| {
+            smithay::desktop::layer_map_for_output(output)
+                .layer_for_surface(&focus, smithay::desktop::WindowSurfaceType::TOPLEVEL)
+                .is_some()
+        })
+    }
+
     /// A key while the overview is open, unless the keymap bound it.
     pub(crate) fn overview_key(&mut self, key: &str) {
         self.ipc.emit("overview-key", json!({ "key": key }));
@@ -257,6 +304,36 @@ impl Dashi {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn pressed(window: Option<WindowId>, dragging: bool, closing: bool) -> Overview {
+        Overview {
+            targets: HashMap::new(),
+            from: HashMap::new(),
+            progress: 1.0,
+            closing,
+            press: Some(Press {
+                window,
+                at: (0.0, 0.0).into(),
+                dragging,
+            }),
+        }
+    }
+
+    #[test]
+    fn only_a_window_dragged_in_the_open_overview_goes_in_front() {
+        assert_eq!(pressed(Some(3), true, false).dragged(), Some(3));
+        assert_eq!(
+            pressed(Some(3), false, false).dragged(),
+            None,
+            "pressed, not dragged yet"
+        );
+        assert_eq!(pressed(None, true, false).dragged(), None, "the background");
+        assert_eq!(
+            pressed(Some(3), true, true).dragged(),
+            None,
+            "closing: back in its place"
+        );
+    }
 
     #[test]
     fn rects_are_checked() {

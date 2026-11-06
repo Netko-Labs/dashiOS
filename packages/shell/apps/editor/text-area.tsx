@@ -6,7 +6,10 @@
  * once the layout catches up. Find's jump (`reveal`) measures the text before
  * the match the same way and scrolls there. The input has a caret moved by
  * the arrow keys and Home/End, no pointer placement and no selection beyond
- * Select All: that is Metal's input today.
+ * Select All: that is Metal's input today. The input is mounted once per
+ * document (`session`): mounting it again would put the caret at the end, so
+ * the window hands the keyboard back by focusing it (main.tsx), never by
+ * remounting it.
  */
 
 import { useColors, useSurface } from "@dashi/ui";
@@ -19,10 +22,8 @@ const PADDING = 24;
 export interface TextAreaProps {
   text: string;
   prefs: EditorPrefs;
-  /** Changes when the input must start over (another document). */
+  /** Changes when the input must start over (another document); it takes the keyboard then. */
   session: number;
-  /** Bumped to hand the input the keyboard. */
-  focus: number;
   onChange: (text: string) => void;
   /** Esc in the text (it clears Find). */
   onEscape: () => void;
@@ -32,7 +33,7 @@ export interface TextAreaProps {
   reveal: { offset: number; seq: number } | null;
 }
 
-export function TextArea({ text, prefs, session, focus, onChange, onEscape, scroll, reveal }: TextAreaProps) {
+export function TextArea({ text, prefs, session, onChange, onEscape, scroll, reveal }: TextAreaProps) {
   const colors = useColors();
   const surface = useSurface();
   const font = prefs.monospace ? ("monospace" as const) : ("default" as const);
@@ -56,12 +57,6 @@ export function TextArea({ text, prefs, session, focus, onChange, onEscape, scro
       following.current = false;
     }, 400);
   };
-  // The input asks for the keyboard only in the render that bumped `focus`, not each time it is mounted again.
-  const applied = useRef(focus);
-  const wantsFocus = focus !== applied.current;
-  useEffect(() => {
-    applied.current = focus;
-  });
   // The match to scroll to: its text before it is measured once laid out.
   const [revealing, setRevealing] = useState<{ offset: number; seq: number } | null>(null);
   useEffect(() => {
@@ -98,12 +93,12 @@ export function TextArea({ text, prefs, session, focus, onChange, onEscape, scro
             </View>
           )}
           <TextInput
-            key={`text:${session}:${focus}`}
+            key={`text:${session}`}
             testID="text"
             multiline
             value={text}
             placeholder="Start typing…"
-            autoFocus={wantsFocus || focus === 0}
+            autoFocus
             onChangeText={(next) => {
               if (next.length > text.length && next.startsWith(text)) followEnd();
               onChange(next);

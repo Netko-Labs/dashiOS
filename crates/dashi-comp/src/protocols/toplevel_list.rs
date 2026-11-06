@@ -35,6 +35,13 @@ impl ToplevelList {
         }
     }
 
+    /// The identifier the list gave window `id` (what a portal's picker answers with).
+    pub(crate) fn identifier_of(&self, id: WindowId) -> Option<String> {
+        self.handles
+            .get(&id)
+            .map(|(handle, _, _)| handle.identifier())
+    }
+
     /// The window a client's handle names.
     pub(crate) fn window_of(&self, handle: &ForeignToplevelHandle) -> Option<WindowId> {
         self.handles

@@ -14,4 +14,10 @@ export interface Question {
   detail: string;
   /** The button that goes ahead. */
   action: string;
+  /**
+   * It loses work or can't be taken back (force quitting, the Trash): the
+   * button is red. Otherwise (showing copies, installing) it is the sheet's
+   * primary button: red is never a yes to something harmless.
+   */
+  danger?: boolean;
 }

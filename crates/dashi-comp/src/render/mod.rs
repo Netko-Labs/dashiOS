@@ -4,11 +4,18 @@
 pub(crate) mod canvas;
 pub(crate) mod capture;
 pub(crate) mod cursor;
+pub(crate) mod depth;
+mod drawn;
+// Agents (0.4.0, secrets): what their pictures blank.
+pub(crate) mod mask;
+mod mask_cover;
 pub(crate) mod present;
 pub(crate) mod rounded;
 mod scene;
 pub(crate) mod text;
+pub(crate) mod thumbnails;
 pub(crate) mod titlebar;
+mod windows;
 
 use smithay::backend::renderer::{
     ImportAll, ImportMem,
@@ -27,9 +34,17 @@ smithay::backend::renderer::element::render_elements! {
     Surface=WaylandSurfaceRenderElement<R>,
     /// A window's main surface with rounded bottom corners (under a title bar).
     Rounded=rounded::RoundedElement<R>,
+    /// A window's shadow, edge, or ring (depth/).
+    Depth=depth::DepthElement,
     Memory=MemoryRenderBufferRenderElement<R>,
     /// A window drawn small (the overview, a flight to the Dock).
     Scaled=RescaleRenderElement<WaylandSurfaceRenderElement<R>>,
+    /// A window's main surface drawn small, its corners rounded.
+    ScaledRounded=RescaleRenderElement<rounded::RoundedElement<R>>,
     /// A plain shape (where a dragged window would tile).
     Solid=SolidColorRenderElement,
+    /// A piece of a live picture the shell placed (thumbnails/): a window's surface,
+    ThumbSurface=thumbnails::Thumb<WaylandSurfaceRenderElement<R>>,
+    /// or a title bar or wallpaper in it.
+    ThumbMemory=thumbnails::Thumb<MemoryRenderBufferRenderElement<R>>,
 }

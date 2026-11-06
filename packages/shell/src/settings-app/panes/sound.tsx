@@ -6,7 +6,7 @@
  * this pane is on screen, reads the loudness, and keeps nothing.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { BLUETOOTH } from "../../control-center/glyphs.ts";
@@ -16,12 +16,11 @@ import { type LevelMeter, useLevels } from "../../sound/index.ts";
 import { type SoundStore, useSound } from "../../sound/store.ts";
 import type { Output, OutputKind } from "../../sound/types.ts";
 import type { Volume } from "../../system/volume.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { MICROPHONE } from "../glyphs-machine.ts";
 import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Note, Page, Row, Slider } from "../ui.tsx";
+import { Caption, Group, Note, Page, Row, Slider, Spot } from "../ui.tsx";
 import { CheckSlot, Failure, ListRow } from "./parts.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
@@ -158,9 +157,11 @@ export function SoundPane({ services, settings }: { services: PaneServices; sett
       )}
       <Caption above>Menu Bar</Caption>
       <Group>
-        <Row label="Show Sound in menu bar" detail="The speaker beside the battery and network icons.">
-          <Switch testID="sound-menubar" on={menuBar.sound ?? true} onChange={(sound) => settings.patch("menuBar", { sound })} />
-        </Row>
+        <Spot pane="sound" row="show-in-menu-bar">
+          <Row label="Show Sound in menu bar" detail="The speaker beside the battery and network icons.">
+            <Switch testID="sound-menubar" on={menuBar.sound ?? true} onChange={(sound) => settings.patch("menuBar", { sound })} />
+          </Row>
+        </Spot>
       </Group>
     </Page>
   );

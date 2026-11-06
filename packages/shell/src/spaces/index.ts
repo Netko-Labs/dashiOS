@@ -1,4 +1,5 @@
 export { SpacesController, type SpacesSettings } from "./controller.ts";
+export { FullscreenDesktops } from "./fullscreen.ts";
 export {
   bindingTarget,
   MAX_SPACES,

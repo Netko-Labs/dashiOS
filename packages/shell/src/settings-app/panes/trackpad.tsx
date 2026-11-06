@@ -5,11 +5,11 @@
  * default (libinput's), which is what the switches show until then.
  */
 
-import { Switch } from "../../wifi/switch.tsx";
+import { Switch } from "@dashi/ui";
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot } from "../ui.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";
 
 export function TrackpadPane({ settings }: { settings: SettingsStore }) {
@@ -17,12 +17,20 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Trackpad">
       <Group>
-        <Row label="Tap to click" detail="Tap the pad with one finger instead of pressing it.">
-          <Switch testID="trackpad-tap" on={touchpad.tap ?? false} onChange={(tap) => settings.patch("touchpad", { tap })} />
-        </Row>
-        <Row label="Natural scrolling" detail="Content follows your fingers.">
-          <Switch testID="trackpad-natural" on={touchpad.naturalScroll ?? false} onChange={(naturalScroll) => settings.patch("touchpad", { naturalScroll })} />
-        </Row>
+        <Spot pane="trackpad" row="tap-to-click">
+          <Row label="Tap to click" detail="Tap the pad with one finger instead of pressing it.">
+            <Switch testID="trackpad-tap" on={touchpad.tap ?? false} onChange={(tap) => settings.patch("touchpad", { tap })} />
+          </Row>
+        </Spot>
+        <Spot pane="trackpad" row="natural-scrolling">
+          <Row label="Natural scrolling" detail="Content follows your fingers.">
+            <Switch
+              testID="trackpad-natural"
+              on={touchpad.naturalScroll ?? false}
+              onChange={(naturalScroll) => settings.patch("touchpad", { naturalScroll })}
+            />
+          </Row>
+        </Spot>
         <Row label="Ignore the pad while typing" detail="Keeps a resting palm from moving the pointer.">
           <Switch
             testID="trackpad-dwt"
@@ -35,7 +43,9 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
           value={touchpad.accelSpeed ?? DEFAULTS.accelSpeed}
           onCommit={(accelSpeed) => settings.patch("touchpad", { accelSpeed })}
         />
-        <ScrollSpeedRow testID="trackpad-scroll-speed" value={touchpad.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("touchpad", { scrollSpeed })} />
+        <Spot pane="trackpad" row="scrolling-speed">
+          <ScrollSpeedRow testID="trackpad-scroll-speed" value={touchpad.scrollSpeed} onCommit={(scrollSpeed) => settings.patch("touchpad", { scrollSpeed })} />
+        </Spot>
         <Row stack label="Click" detail="How the pad tells a left click from a right click.">
           <Choices
             testID="trackpad-click"

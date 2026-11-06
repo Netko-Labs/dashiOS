@@ -1,0 +1,19 @@
+[Unit]
+Description=Dashi hardware boot guard (mark a clean shutdown)
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/release/0.4.0/docs/hardware.md
+DefaultDependencies=no
+After=dashi-hardware-boot.service
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Nothing at start-up; the work is at stop, ordered before shutdown: this
+# boot reached a clean shutdown, so the unclean-boot counter resets.
+ExecStop=/usr/libexec/dashi/dashi-hardware clean
+StateDirectory=dashi-hardware
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=multi-user.target

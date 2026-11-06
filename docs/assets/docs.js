@@ -6,9 +6,12 @@
 const PAGES = [
   ["index.html", "Overview"],
   ["distro.html", "Distro"],
-  ["brand.html", "Brand"],
-  ["mascot.html", "Kombu"],
   ["design.html", "Design"],
+  ["0.4.0.html", "0.4.0"],
+  ["0.5.0.html", "0.5.0"],
+  ["plan.html", "Plan"],
+  ["proposals.html", "Proposals"],
+  ["betterments.html", "Launcher"],
 ];
 
 /** The mark: the bowl and its three wisps of steam (packages/shell/icons/setup.svg). */
@@ -24,7 +27,7 @@ function dashiMark({ tile = true, ink = "#f4f4f6" } = {}) {
  * from, with the logo's wisp of steam above it. One flat shape in the accent,
  * two dot eyes and a mouth; one body, six faces.
  */
-// biome-ignore lint/correctness/noUnusedVariables: a global the pages' inline scripts use (mascot.html).
+// biome-ignore lint/correctness/noUnusedVariables: a global the pages' inline scripts use (design.html).
 const EXPRESSIONS = ["happy", "wink", "thinking", "surprised", "sleepy", "cheer"];
 
 function kombuSprite(expression = "happy", { dark = false } = {}) {
@@ -45,7 +48,7 @@ function kombuSprite(expression = "happy", { dark = false } = {}) {
       extra = `<circle cx="96" cy="50" r="2.6" ${faint}/><circle cx="104" cy="40" r="3.4" ${faint}/><circle cx="111" cy="28" r="4.4" ${faint}/>`;
       break;
     case "surprised":
-      face = dot(50, 5) + dot(72, 5) + `<circle cx="61" cy="110" r="3.4" fill="${ink}"/>`;
+      face = `${dot(50, 5)}${dot(72, 5)}<circle cx="61" cy="110" r="3.4" fill="${ink}"/>`;
       break;
     case "sleepy":
       face = line("M45 98q5 3.5 10 0") + line("M67 98q5 3.5 10 0") + line("M58 109h6", 2.6);

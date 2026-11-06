@@ -137,6 +137,9 @@ impl Dashi {
                 .and_then(Value::as_str)
                 .unwrap_or("move");
             self.agent_pointer(&seat, global, under, action, params)?;
+            if matches!(action, "click" | "press") {
+                self.note_agent_press(id);
+            }
         }
 
         if let Some(keys) = params.get("keys") {
@@ -145,8 +148,15 @@ impl Dashi {
                 return Ok(());
             };
             self.agent_keys(&seat, surface, keys)?;
+            self.note_agent_press(id);
         }
         Ok(())
+    }
+
+    /// An agent's press, even on the person's borrowed seat, is marked as the agent's.
+    fn note_agent_press(&mut self, window: u64) {
+        let target = crate::session::origin::Target::Window(window);
+        self.origins.agent(target, std::time::Instant::now());
     }
 
     fn agent_pointer(

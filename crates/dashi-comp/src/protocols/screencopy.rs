@@ -259,13 +259,16 @@ fn serve(
         cursor: data.cursor,
         only: None,
     };
-    let picture = match backend::capture(state, &view) {
+    let mut picture = match backend::capture(state, &view) {
         Ok(picture) => picture,
         Err(error) => {
             tracing::debug!(%error, "a screencopy frame");
             return frame.failed();
         }
     };
+    // A recorder the shell started for an agent gets the agent's blanks.
+    let scale = data.output.current_scale().fractional_scale();
+    state.mask_for_client(frame.client(), data.region, scale, &mut picture);
     if !crate::render::capture::copy_to_shm(&picture, buffer) {
         return frame.failed();
     }

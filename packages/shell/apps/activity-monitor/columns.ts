@@ -1,7 +1,7 @@
 /** The table's columns on each tab, and the sort each tab opens with. */
 
 import type { Column, SortState } from "@dashi/ui";
-import { formatBytes, formatCount, formatCpuTime, formatPercent } from "./format.ts";
+import { formatBytes, formatCount, formatCpuTime, formatPercent, formatRate } from "./format.ts";
 import type { Tab } from "./monitor.ts";
 import type { ProcessRow } from "./sample.ts";
 
@@ -46,6 +46,24 @@ const MEMORY: ProcessColumn = {
   text: (row) => formatBytes(row.memory),
   sortValue: (row) => row.memory,
 };
+const WRITE_RATE: ProcessColumn = {
+  key: "writeRate",
+  title: "Written/s",
+  width: 104,
+  align: "right",
+  descendingFirst: true,
+  text: (row) => optional(row.writeRate, formatRate),
+  sortValue: (row) => row.writeRate ?? -1,
+};
+const READ_RATE: ProcessColumn = {
+  key: "readRate",
+  title: "Read/s",
+  width: 104,
+  align: "right",
+  descendingFirst: true,
+  text: (row) => optional(row.readRate, formatRate),
+  sortValue: (row) => row.readRate ?? -1,
+};
 const WRITTEN: ProcessColumn = {
   key: "written",
   title: "Bytes Written",
@@ -79,13 +97,14 @@ const USER: ProcessColumn = { key: "user", title: "User", width: 112, text: (row
 export const COLUMNS: Record<Tab, readonly ProcessColumn[]> = {
   cpu: [NAME, CPU, CPU_TIME, THREADS, PID, USER],
   memory: [NAME, MEMORY, THREADS, PID, USER],
-  disk: [NAME, WRITTEN, READ, PID, USER],
+  // What is hitting the disk now first; the totals since each process started after.
+  disk: [NAME, WRITE_RATE, READ_RATE, WRITTEN, READ, PID, USER],
   network: [NAME, SOCKETS, PID, USER],
 };
 
 export const DEFAULT_SORT: Record<Tab, SortState> = {
   cpu: { key: "cpu", ascending: false },
   memory: { key: "memory", ascending: false },
-  disk: { key: "written", ascending: false },
+  disk: { key: "writeRate", ascending: false },
   network: { key: "sockets", ascending: false },
 };

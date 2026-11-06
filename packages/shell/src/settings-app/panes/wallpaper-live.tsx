@@ -6,13 +6,12 @@
  */
 
 import { statSync } from "node:fs";
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { FRAME_RATES, isVideoPath } from "../../wallpaper/live/choice.ts";
 import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../wallpaper/live/tiles.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Row, useSurface } from "../ui.tsx";

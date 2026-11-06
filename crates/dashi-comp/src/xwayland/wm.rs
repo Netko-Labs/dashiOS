@@ -276,6 +276,7 @@ impl XwmHandler for Dashi {
     fn new_selection(&mut self, _xwm: XwmId, selection: SelectionTarget, mime_types: Vec<String>) {
         match selection {
             SelectionTarget::Clipboard => {
+                self.report_selection(&mime_types, true);
                 set_data_device_selection(&self.display_handle, &self.seat, mime_types, ())
             }
             SelectionTarget::Primary => {
@@ -312,11 +313,6 @@ impl Dashi {
         let Some(id) = self.x11_announced(surface) else {
             return;
         };
-        let payload = if event == "fullscreen" {
-            json!({ "window": id, "on": on })
-        } else {
-            json!({ "window": id })
-        };
-        self.ipc.emit(event, payload);
+        self.ipc.emit(event, json!({ "window": id, "on": on }));
     }
 }

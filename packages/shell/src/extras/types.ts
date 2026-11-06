@@ -51,12 +51,14 @@ export interface MenuBarExtra {
   menuOnClick: boolean;
   /** Whether a secondary click has a menu to open. */
   hasMenu: boolean;
+  /** An applet run by `dashi-applet dev`: the bar marks it "dev". */
+  dev?: boolean;
 }
 
 /** What the menu bar can ask of an extra; the source that made it carries it out. */
 export interface ExtraActions {
-  /** A primary click at (x, y) in screen pixels. */
-  activate(key: string, x: number, y: number): void;
+  /** A primary click at (x, y) in screen pixels, on the screen named `output` when the bar knows it. */
+  activate(key: string, x: number, y: number, output?: string): void;
   /** A middle click. */
   secondaryActivate(key: string, x: number, y: number): void;
   /** The menu to show now (a tray item is asked to update it first); empty when there is none. */

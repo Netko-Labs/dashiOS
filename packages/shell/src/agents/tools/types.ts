@@ -2,7 +2,7 @@
 
 import type { CornerName } from "../../corners.ts";
 import type { DockStyle } from "../../dock/settings.ts";
-import type { Tile } from "../../layout.ts";
+import type { Arrange } from "../../layout.ts";
 import type { PageId } from "../../setup/flow.ts";
 import type { ProfileId } from "../../system/profiles.ts";
 import type { Chord } from "./keys.ts";
@@ -47,7 +47,7 @@ export type Call =
   | { name: "launch_app"; app: string }
   | { name: "open_in_preview"; path: string }
   | { name: "focus_window" | "minimize_window" | "close_window"; window: number }
-  | { name: "tile_window"; window: number; tile: Tile }
+  | { name: "tile_window"; window: number; tile: Arrange }
   | { name: "force_quit_app"; target: { window: number } | { pid: number } }
   | { name: "lock_screen" }
   | { name: "list_spaces" }
@@ -119,7 +119,12 @@ export type Call =
   | { name: "type_text"; window: number; text: string }
   | { name: "press_keys"; window: number; keys: string; chords: Chord[] }
   | { name: "list_menus"; window: number | null }
-  | { name: "choose_menu_item"; window: number; menu: string; item: string };
+  | { name: "choose_menu_item"; window: number; menu: string; item: string }
+  | { name: "list_logins"; site: string | null }
+  | { name: "sign_in" | "fill_code"; window: number; site: string; account: string | null; submit: boolean }
+  | { name: "hand_over"; window: number; reason: string }
+  | { name: "pay"; window: number; site: string; cents: number; card: string | null }
+  | { name: "read_clipboard_history"; limit: number };
 
 export type ToolName = Call["name"];
 

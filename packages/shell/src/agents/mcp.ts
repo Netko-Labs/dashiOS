@@ -18,7 +18,7 @@ export type Id = string | number;
 
 export type Incoming =
   | { kind: "request"; id: Id; method: string; params: Record<string, unknown> }
-  | { kind: "notification"; method: string }
+  | { kind: "notification"; method: string; params: Record<string, unknown> }
   | { kind: "response" }
   | { kind: "invalid"; id: Id | null; code: number; message: string };
 
@@ -39,14 +39,21 @@ export function parse(line: string): Incoming {
   if (message.jsonrpc !== "2.0") return invalid(id);
   const hasId = "id" in message;
   if (typeof message.method === "string") {
-    if (!hasId) return { kind: "notification", method: message.method };
-    if (id === null) return invalid(null);
     const params =
       typeof message.params === "object" && message.params !== null && !Array.isArray(message.params) ? (message.params as Record<string, unknown>) : {};
+    if (!hasId) return { kind: "notification", method: message.method, params };
+    if (id === null) return invalid(null);
     return { kind: "request", id, method: message.method, params };
   }
   if (hasId && ("result" in message || "error" in message)) return { kind: "response" };
   return invalid(id);
+}
+
+/** The request a `notifications/cancelled` gives up on (the client stopped waiting), if this is one. */
+export function cancelledRequest(incoming: Incoming): Id | null {
+  if (incoming.kind !== "notification" || incoming.method !== "notifications/cancelled") return null;
+  const requestId = incoming.params.requestId;
+  return isId(requestId) ? requestId : null;
 }
 
 export const result = (id: Id | null, value: unknown) => ({ jsonrpc: "2.0", id, result: value });

@@ -63,9 +63,15 @@ impl SeatHandler for Dashi {
             entry.attention = false;
         }
         let client = focused.and_then(|surface| self.display_handle.get_client(surface.id()).ok());
+        if seat == &self.seat {
+            self.keys.snippets.reset();
+        }
         set_data_device_focus(&self.display_handle, seat, client.clone());
         set_primary_focus(&self.display_handle, seat, client);
         if seat == &self.seat {
+            if let Some(surface) = focused {
+                self.windows.used(surface);
+            }
             self.x11_focus(focused);
         }
     }
@@ -83,10 +89,13 @@ impl SelectionHandler for Dashi {
         source: Option<SelectionSource>,
         _seat: Seat<Self>,
     ) {
+        let mime_types = source.map(|source| source.mime_types());
+        if let (SelectionTarget::Clipboard, Some(mime_types)) = (ty, &mime_types) {
+            self.report_selection(mime_types, false);
+        }
         let Some(wm) = self.xwayland.wm.as_mut() else {
             return;
         };
-        let mime_types = source.map(|source| source.mime_types());
         if let Err(error) = wm.new_selection(ty, mime_types) {
             tracing::debug!(?error, "offering a selection to X11 apps");
         }
@@ -107,6 +116,34 @@ impl SelectionHandler for Dashi {
         if let Err(error) = wm.send_selection(ty, mime_type, fd, self.loop_handle.clone()) {
             tracing::debug!(?error, "reading an X11 app's selection");
         }
+    }
+}
+
+/// At most this many of a copy's types are reported, each this long at most.
+const MAX_REPORTED_TYPES: usize = 64;
+const MAX_TYPE_LEN: usize = 256;
+
+impl Dashi {
+    /// `selection`: the clipboard has something new (a Wayland or an X11 app's
+    /// copy); its types, and the window that had the keyboard. The shell reads
+    /// it (data-control) and decides whether to keep it (clipboard history).
+    pub(crate) fn report_selection(&mut self, mime_types: &[String], x11: bool) {
+        let types: Vec<&str> = mime_types
+            .iter()
+            .filter(|mime| mime.len() <= MAX_TYPE_LEN)
+            .take(MAX_REPORTED_TYPES)
+            .map(String::as_str)
+            .collect();
+        let window = self
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus())
+            .and_then(|focus| crate::wm::window_id_for_surface(self, &focus));
+        let mut event = serde_json::json!({ "mimeTypes": types, "window": window });
+        if x11 {
+            event["x11"] = serde_json::json!(true);
+        }
+        self.ipc.emit("selection", event);
     }
 }
 

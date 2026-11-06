@@ -1,7 +1,9 @@
 //! How each window is framed, and the title bar images that go with it. A
 //! window gets dashi-comp's title bar when its decorations are server side
 //! (xdg-decoration), the traffic lights alone when it also asked for the
-//! unified style (dashi-chrome-v1), and nothing when it draws its own.
+//! unified style (dashi-chrome-v1), and nothing when it draws its own. A
+//! unified window keeps its lights in full screen: its app keeps their place
+//! (`controls`) clear in its toolbar, so without them there would be a gap.
 
 use smithay::{
     reexports::{
@@ -53,7 +55,12 @@ impl Dashi {
         let Some(toplevel) = entry.window.toplevel().cloned() else {
             return;
         };
-        let decor = decor_for(&toplevel, entry.unified);
+        // A sheet hangs from its parent's title bar and has none of its own (wm/sheets.rs).
+        let decor = if entry.sheet_of.is_some() {
+            Decor::None
+        } else {
+            decor_for(&toplevel, entry.unified)
+        };
         if decor == entry.decor {
             return;
         }
@@ -93,7 +100,8 @@ impl Dashi {
         let style = self.chrome_style;
         let Dashi { windows, text, .. } = self;
         for entry in windows.entries_mut() {
-            if entry.decor == Decor::None || entry.fullscreen.is_some() {
+            // Full screen, a title bar goes but a unified window's lights stay.
+            if !entry.decor.drawn(entry.fullscreen.is_some()) {
                 entry.title_image = None;
                 continue;
             }

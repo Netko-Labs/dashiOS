@@ -60,12 +60,16 @@ impl Dashi {
             .filter(|at| at.x != 0 || at.y != 0);
         let mut size = window.geometry().size;
         size.h += super::windows::bar_of(self, &window);
+        let parent = super::windows::parent_of(self, &window);
         self.ipc.emit(
             "window-placing",
             {
                 let mut placing = json!({ "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h });
                 if let Some(at) = asked {
                     placing["position"] = json!({ "x": at.x, "y": at.y });
+                }
+                if let Some(parent) = parent {
+                    placing["parent"] = json!(parent);
                 }
                 json!({ "window": placing })
             },
@@ -85,12 +89,18 @@ impl Dashi {
         }
     }
 
-    /// The shell's answer to `window-placing`.
+    /// The shell's answer to `window-placing`: at `at`, on Space `space`
+    /// (the one that shows when none is said). On another Space it waits
+    /// there, off screen, until that Space shows.
     pub(crate) fn place_window(
         &mut self,
         id: WindowId,
         at: Point<i32, Logical>,
+        space: Option<usize>,
     ) -> Result<(), String> {
+        if space.is_some_and(|space| space >= self.spaces.count) {
+            return Err(format!("no Space {}", space.unwrap_or_default()));
+        }
         let entry = self
             .windows
             .get(id)
@@ -100,9 +110,12 @@ impl Dashi {
             let window = entry.window.clone();
             let activate = self.is_focused(&window);
             self.map_frame_at(&window, at, activate);
+            if let Some(space) = space {
+                self.move_to_space(id, space)?;
+            }
             return Ok(());
         }
-        self.finish_placing(id, at);
+        self.finish_placing(id, at, space);
         Ok(())
     }
 
@@ -119,24 +132,37 @@ impl Dashi {
         let step = CASCADE * (self.windows.len().saturating_sub(1) % 8) as i32;
         let x = area.loc.x + ((area.size.w - size.w) / 2).max(0) + step;
         let y = area.loc.y + ((area.size.h - size.h) / 4).max(0) + step;
-        self.finish_placing(id, (x, y).into());
+        self.finish_placing(id, (x, y).into(), None);
     }
 
-    fn finish_placing(&mut self, id: WindowId, at: Point<i32, Logical>) {
+    fn finish_placing(&mut self, id: WindowId, at: Point<i32, Logical>, space: Option<usize>) {
+        let current = self.spaces.current;
+        let space = space.unwrap_or(current);
         let Some(entry) = self.windows.get_mut(id) else {
             return;
         };
         entry.placed = true;
         entry.placing = false;
-        entry.space = self.spaces.current;
+        entry.space = space;
         let window = entry.window.clone();
-        self.map_frame_at(&window, at, true);
+        if space == current {
+            self.map_frame_at(&window, at, true);
+        } else {
+            // Waiting on its Space, where the slide there draws it.
+            let bar = super::windows::bar_of(self, &window);
+            if let Some(entry) = self.windows.get_mut(id) {
+                entry.away_at = Some((at.x, at.y + bar).into());
+            }
+            // New, so in front there.
+            self.windows.rank_front(id);
+        }
         if let Some(x11) = window.x11_surface() {
             let size = window.geometry().size;
             let _ = x11.configure(Rectangle::new(at, size));
         }
-        if let (Some(keyboard), Some(surface)) =
-            (self.seat.get_keyboard(), toplevel_surface(&window))
+        if space == current
+            && let (Some(keyboard), Some(surface)) =
+                (self.seat.get_keyboard(), toplevel_surface(&window))
         {
             keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
         }

@@ -4,7 +4,7 @@
  * list, so a person who has seen one knows the other.
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useSurface } from "../settings-app/ui.tsx";
@@ -48,7 +48,7 @@ export function SearchField({
 }
 
 export function PickRow({ label, detail, chosen, testID, onPress }: { label: string; detail?: string; chosen: boolean; testID: string; onPress: () => void }) {
-  const colors = useColors();
+  const look = rowLook(useColors(), chosen);
   return (
     <View
       testID={testID}
@@ -61,18 +61,19 @@ export function PickRow({ label, detail, chosen, testID, onPress }: { label: str
         gap: 8,
         paddingHorizontal: 8,
         borderRadius: 6,
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
+      {chosen && <SelectionBar rowHeight={28} />}
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: look.ink }}>
           {label}
         </Text>
       </View>
       {detail !== undefined && (
         <View style={{ marginLeft: "auto", flexShrink: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? "#ffffffcc" : colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, color: look.quiet }}>
             {detail}
           </Text>
         </View>

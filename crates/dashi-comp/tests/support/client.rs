@@ -1,18 +1,33 @@
 //! A minimal Wayland client for the tests: one xdg toplevel that draws a
-//! solid shm buffer once it is configured.
+//! solid shm buffer once it is configured; a movable one asks to be moved
+//! (xdg_toplevel.move) when a button is pressed in it, as apps that draw
+//! their own title bars do. It can open dialogs too: more toplevels whose
+//! xdg parent is the first.
 
 use std::{io::Write, os::fd::AsFd, path::Path};
 
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
     globals::{GlobalListContents, registry_queue_init},
-    protocol::{wl_buffer, wl_compositor, wl_registry, wl_shm, wl_shm_pool, wl_surface},
+    protocol::{
+        wl_buffer, wl_compositor, wl_pointer, wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_surface,
+    },
 };
 use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
 pub struct Client {
     queue: EventQueue<State>,
     pub state: State,
+    compositor: wl_compositor::WlCompositor,
+    wm_base: xdg_wm_base::XdgWmBase,
+    toplevel: xdg_toplevel::XdgToplevel,
+}
+
+/// A dialog's surface, drawn once configured.
+struct Dialog {
+    surface: wl_surface::WlSurface,
+    configured: bool,
+    drawn: bool,
 }
 
 #[derive(Default)]
@@ -22,11 +37,32 @@ pub struct State {
     surface: Option<wl_surface::WlSurface>,
     shm: Option<wl_shm::WlShm>,
     drawn: bool,
+    /// Set for a movable window: a press asks to move it.
+    mover: Option<(wl_seat::WlSeat, xdg_toplevel::XdgToplevel)>,
+    /// Moves asked for.
+    pub moves: usize,
+    /// Dialogs opened (`open_dialog`), by their xdg_surface's number (1 on).
+    dialogs: Vec<Dialog>,
 }
 
 impl Client {
     /// Connect to the compositor at `runtime_dir/display` and open a window.
     pub fn open(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
+        Self::open_with(runtime_dir, display, app_id, title, false)
+    }
+
+    /// A window that asks to be moved when a button is pressed in it.
+    pub fn open_movable(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
+        Self::open_with(runtime_dir, display, app_id, title, true)
+    }
+
+    fn open_with(
+        runtime_dir: &Path,
+        display: &str,
+        app_id: &str,
+        title: &str,
+        movable: bool,
+    ) -> Self {
         let stream = std::os::unix::net::UnixStream::connect(runtime_dir.join(display))
             .expect("the Wayland socket");
         let connection = Connection::from_socket(stream).expect("a Wayland connection");
@@ -37,18 +73,48 @@ impl Client {
         let shm: wl_shm::WlShm = globals.bind(&qh, 1..=1, ()).expect("wl_shm");
         let wm_base: xdg_wm_base::XdgWmBase = globals.bind(&qh, 1..=6, ()).expect("xdg_wm_base");
         let surface = compositor.create_surface(&qh, ());
-        let xdg = wm_base.get_xdg_surface(&surface, &qh, ());
+        let xdg = wm_base.get_xdg_surface(&surface, &qh, 0);
         let toplevel = xdg.get_toplevel(&qh, ());
         toplevel.set_app_id(app_id.into());
         toplevel.set_title(title.into());
         surface.commit();
+        let mover = movable.then(|| {
+            let seat: wl_seat::WlSeat = globals.bind(&qh, 1..=7, ()).expect("wl_seat");
+            seat.get_pointer(&qh, ());
+            (seat, toplevel.clone())
+        });
         let mut state = State {
             surface: Some(surface),
             shm: Some(shm),
+            mover,
             ..State::default()
         };
         queue.roundtrip(&mut state).expect("a roundtrip");
-        Self { queue, state }
+        Self {
+            queue,
+            state,
+            compositor,
+            wm_base,
+            toplevel,
+        }
+    }
+
+    /// Open a dialog of the first window: a toplevel whose xdg parent it is.
+    pub fn open_dialog(&mut self, title: &str) {
+        let qh = self.queue.handle();
+        let surface = self.compositor.create_surface(&qh, ());
+        let number = self.state.dialogs.len() + 1;
+        let xdg = self.wm_base.get_xdg_surface(&surface, &qh, number);
+        let toplevel = xdg.get_toplevel(&qh, ());
+        toplevel.set_parent(Some(&self.toplevel));
+        toplevel.set_title(title.into());
+        surface.commit();
+        self.state.dialogs.push(Dialog {
+            surface,
+            configured: false,
+            drawn: false,
+        });
+        self.queue.flush().ok();
     }
 
     /// Handle what the compositor sent (drawing once configured).
@@ -68,30 +134,49 @@ impl Client {
 
 impl State {
     fn draw(&mut self, qh: &QueueHandle<State>) {
+        let Some(shm) = self.shm.clone() else {
+            return;
+        };
+        for dialog in &mut self.dialogs {
+            if dialog.configured && !dialog.drawn {
+                fill(&dialog.surface, &shm, (240, 120), qh);
+                dialog.drawn = true;
+            }
+        }
         if !self.configured || self.drawn {
             return;
         }
-        let (Some(surface), Some(shm)) = (&self.surface, &self.shm) else {
+        let Some(surface) = &self.surface else {
             return;
         };
-        let (width, height) = (320, 200);
-        let mut file = tempfile::tempfile().expect("an shm file");
-        let pixels = vec![0x80u8; (width * height * 4) as usize];
-        file.write_all(&pixels).expect("shm pixels");
-        let pool = shm.create_pool(file.as_fd(), width * height * 4, qh, ());
-        let buffer = pool.create_buffer(
-            0,
-            width,
-            height,
-            width * 4,
-            wl_shm::Format::Argb8888,
-            qh,
-            (),
-        );
-        surface.attach(Some(&buffer), 0, 0);
-        surface.commit();
+        fill(surface, &shm, (320, 200), qh);
         self.drawn = true;
     }
+}
+
+/// Attach a solid buffer `size` big to `surface` and commit it.
+fn fill(
+    surface: &wl_surface::WlSurface,
+    shm: &wl_shm::WlShm,
+    size: (i32, i32),
+    qh: &QueueHandle<State>,
+) {
+    let (width, height) = size;
+    let mut file = tempfile::tempfile().expect("an shm file");
+    let pixels = vec![0x80u8; (width * height * 4) as usize];
+    file.write_all(&pixels).expect("shm pixels");
+    let pool = shm.create_pool(file.as_fd(), width * height * 4, qh, ());
+    let buffer = pool.create_buffer(
+        0,
+        width,
+        height,
+        width * 4,
+        wl_shm::Format::Argb8888,
+        qh,
+        (),
+    );
+    surface.attach(Some(&buffer), 0, 0);
+    surface.commit();
 }
 
 impl Dispatch<wl_registry::WlRegistry, GlobalListContents> for State {
@@ -121,18 +206,26 @@ impl Dispatch<xdg_wm_base::XdgWmBase, ()> for State {
     }
 }
 
-impl Dispatch<xdg_surface::XdgSurface, ()> for State {
+/// An xdg_surface's number: 0 is the first window, 1 on its dialogs.
+impl Dispatch<xdg_surface::XdgSurface, usize> for State {
     fn event(
         state: &mut Self,
         xdg: &xdg_surface::XdgSurface,
         event: xdg_surface::Event,
-        _: &(),
+        number: &usize,
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
         if let xdg_surface::Event::Configure { serial } = event {
             xdg.ack_configure(serial);
-            state.configured = true;
+            match number.checked_sub(1) {
+                None => state.configured = true,
+                Some(at) => {
+                    if let Some(dialog) = state.dialogs.get_mut(at) {
+                        dialog.configured = true;
+                    }
+                }
+            }
         }
     }
 }
@@ -152,7 +245,32 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for State {
     }
 }
 
+impl Dispatch<wl_pointer::WlPointer, ()> for State {
+    fn event(
+        state: &mut Self,
+        _: &wl_pointer::WlPointer,
+        event: wl_pointer::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        let wl_pointer::Event::Button {
+            serial,
+            state: wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),
+            ..
+        } = event
+        else {
+            return;
+        };
+        if let Some((seat, toplevel)) = &state.mover {
+            toplevel._move(seat, serial);
+            state.moves += 1;
+        }
+    }
+}
+
 delegate_noop!(State: ignore wl_compositor::WlCompositor);
+delegate_noop!(State: ignore wl_seat::WlSeat);
 delegate_noop!(State: ignore wl_surface::WlSurface);
 delegate_noop!(State: ignore wl_shm::WlShm);
 delegate_noop!(State: ignore wl_shm_pool::WlShmPool);

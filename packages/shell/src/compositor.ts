@@ -24,12 +24,16 @@ export interface CompositorWindow {
   pid: number | null;
   focused: boolean;
   state: "normal" | "minimized" | "hidden";
-  /** Has a remembered frame to go back to (tiled or zoomed). */
-  zoomed: boolean;
   /** The window fills its screen over the menu bar and Dock (comp/src/fullscreen.rs). Absent from older compositors. */
   fullscreen?: boolean;
   /** The outer frame, title bar included; null unless on screen. */
   frame: Frame | null;
+  /**
+   * The outer size its app was last asked to take, while it has not yet
+   * acked and committed that configure (its `frame` still has the old size).
+   * Absent once it has, and for X11 windows.
+   */
+  configuring?: { width: number; height: number };
   /** The compositor's title bar height (0 when the app draws its own). */
   titleBar: number;
   /**
@@ -43,6 +47,12 @@ export interface CompositorWindow {
   space?: number;
   /** The icon the app gave (xdg-toplevel-icon): a theme name, and/or a PNG the compositor saved. */
   icon?: WindowIcon;
+  /** Its ext-foreign-toplevel-list identifier: what a screen-share picker answers with (share-picker/). Absent until listed. */
+  toplevel?: string;
+  /** The window it is a sheet of (IPC `attach`: a portal dialog, portal-host/); present only for a sheet. */
+  sheetOf?: number;
+  /** The window it is a dialog of (its xdg parent, or the X11 window it is transient for); present only for a dialog. */
+  parent?: number;
 }
 
 /** A window's own icon: an icon theme name, a picture on disk, or both. */
@@ -60,6 +70,8 @@ export interface Placing {
   height: number;
   /** Where an X11 app asked its frame to open, when that is on screen. */
   position?: { x: number; y: number };
+  /** The window it is a dialog of, when it is one (`CompositorWindow.parent`). */
+  parent?: number;
 }
 
 /** Where a window shrinks to when it minimizes, and grows from on restore: its Dock tile (global logical pixels); null forgets it. */
@@ -93,20 +105,37 @@ export function parsePointer(answer: unknown): Point | null {
 
 export type SuperPhase = "tap" | "hold" | "chord" | "up";
 
+export type ScreenEdge = "left" | "right" | "top" | "bottom";
+const SCREEN_EDGES: readonly ScreenEdge[] = ["left", "right", "top", "bottom"];
+const isScreenEdge = (value: unknown): value is ScreenEdge => SCREEN_EDGES.some((edge) => edge === value);
+
 export type CompositorEvent =
   | { event: "window-opened"; window: CompositorWindow }
   | { event: "window-closed"; id: number }
   | { event: "shortcut"; name: string }
   /** A chord the keymap binds, and the window focused when it was pressed. */
-  | { event: "binding"; name: string; window: number | null; chord?: { key: string; shift: boolean; ctrl: boolean; alt: boolean } }
+  | {
+      event: "binding";
+      name: string;
+      window: number | null;
+      chord?: { key: string; shift: boolean; ctrl: boolean; alt: boolean };
+      /** What the key typed ("a", "A", "é"); absent for Return, BackSpace, the arrows. */
+      text?: string;
+    }
   /** ❖ alone: tapped, held, used in a chord, or let go. */
   | { event: "super"; phase: SuperPhase }
   /** A new window waits for the shell to place it (arrange.ts). */
   | { event: "window-placing"; window: Placing }
-  /** The zoom control, a title-bar double click, or the Dock asked to zoom. */
-  | { event: "zoom"; window: number }
+  /** An app (its own title bar's double-click) or a taskbar asked for the window to be maximized (`on`) or not. */
+  | { event: "zoom"; window: number; on?: boolean }
+  /** A press on the square in dashi-comp's title bar, or a double-click on the bar (`double`), with ⌥ or not (arrange.ts decides). */
+  | { event: "window-control"; window: number; control: "zoom"; alt: boolean; double: boolean }
+  /** The person began to move or resize a window (past the drag's slop): its frame then, and where the press was. */
+  | { event: "window-grab"; window: number; kind: "move" | "resize"; frame: Frame; pointer: Point }
+  /** A dragged window was let go over drag-to-tile zone `zone` (its index in the last `layout`), whose `frame` showed. */
+  | { event: "window-drop"; window: number; zone: number; frame: Frame }
   /**
-   * An app, or the green light, asked for a window to enter or leave full
+   * An app, or a taskbar, asked for a window to enter or leave full
    * screen (arrange.ts decides; IPC `fullscreen {window, on}` does it).
    */
   | { event: "fullscreen"; window: number; on: boolean }
@@ -128,12 +157,18 @@ export type CompositorEvent =
   | { event: "overview-pick"; window: number | null }
   /** A key the open overview kept from the focused window: its keysym name, e.g. "Escape". */
   | { event: "overview-key"; key: string }
+  /** A press on a window in the open overview became a drag, at this point (once per drag). */
+  | { event: "overview-drag"; window: number; x: number; y: number }
+  /** A window held in a move grab rested against a screen's edge for 400 ms (count 1), and each 400 ms more (spaces/edge.ts decides). */
+  | { event: "edge-hold"; edge: ScreenEdge; output: string; window: number; count: number; preview: boolean }
   /** A window dragged in the open overview was let go at this point (global logical). */
   | { event: "overview-drop"; window: number; x: number; y: number }
   /** The Space that shows, or how many there are, changed (comp/src/spaces/; spaces/). */
   | { event: "space"; current: number; previous: number; count: number }
   /** A window was put on another Space (or its Space was renumbered). */
   | { event: "window-space"; window: number; space: number }
+  /** A window was minimized, hidden, or shown again (by the shell, the person, or the app itself). */
+  | { event: "window-state"; window: number; state: CompositorWindow["state"] }
   /** A touchpad swipe the shell claimed (IPC `gestures`): its start, each move, and its end (gestures.ts). */
   | { event: "gesture"; kind: "swipe"; phase: "begin"; fingers: number }
   | { event: "gesture"; kind: "swipe"; phase: "update"; dx: number; dy: number }
@@ -151,7 +186,11 @@ export type CompositorEvent =
   /** An app rang the system bell (xdg-system-bell); window is null when it named no surface. */
   | { event: "bell"; window: number | null }
   /** A wallpaper finished loading (`path`, null for the built-in gradient) or could not be (comp/src/wallpaper/). */
-  | { event: "wallpaper"; path: string | null; ok: boolean; error?: string };
+  | { event: "wallpaper"; path: string | null; ok: boolean; error?: string }
+  /** The clipboard has a new copy: its types, and the window that had the keyboard (clipboard/watch.ts reads it). */
+  | { event: "selection"; mimeTypes: string[]; window: number | null; x11?: true }
+  /** A snippet's keyword was just typed into a window (IPC `snippets`; clipboard/snippets.ts decides). */
+  | { event: "snippet"; keyword: string; window: number };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -174,9 +213,9 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, zoomed, frame, titleBar, attention, x11, fullscreen, space, icon } = value;
+  const { id, appId, title, pid, focused, state, frame, configuring, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf, parent } = value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
-  if (typeof focused !== "boolean" || typeof zoomed !== "boolean") return null;
+  if (typeof focused !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
   return {
     id,
@@ -185,18 +224,28 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     pid: isNumber(pid) ? pid : null,
     focused,
     state,
-    zoomed,
     frame: parseFrame(frame),
+    ...withSize(configuring),
     titleBar: isNumber(titleBar) ? titleBar : 0,
     ...(attention === true ? { attention } : {}),
     ...(x11 === true ? { x11 } : {}),
     ...(fullscreen === true ? { fullscreen } : {}),
     ...(isNumber(space) && Number.isInteger(space) && space >= 0 ? { space } : {}),
     ...withIcon(parseWindowIcon(icon)),
+    ...(typeof toplevel === "string" && toplevel.length > 0 && toplevel.length <= 256 ? { toplevel } : {}),
+    ...(isNumber(sheetOf) && Number.isInteger(sheetOf) && sheetOf > 0 ? { sheetOf } : {}),
+    ...(isWindowId(parent) ? { parent } : {}),
   };
 }
 
+const isWindowId = (value: unknown): value is number => isNumber(value) && Number.isInteger(value) && value > 0;
+
 const withIcon = (icon: WindowIcon | null): { icon?: WindowIcon } => (icon ? { icon } : {});
+
+const withSize = (value: unknown): { configuring?: { width: number; height: number } } =>
+  isRecord(value) && isNumber(value.width) && isNumber(value.height) && value.width > 0 && value.height > 0
+    ? { configuring: { width: value.width, height: value.height } }
+    : {};
 
 export function parseEvent(value: unknown): CompositorEvent | null {
   if (!isRecord(value)) return null;
@@ -218,19 +267,38 @@ export function parseEvent(value: unknown): CompositorEvent | null {
             ...(typeof value.key === "string" && value.key.length <= 64
               ? { chord: { key: value.key, shift: value.shift === true, ctrl: value.ctrl === true, alt: value.alt === true } }
               : {}),
+            ...(typeof value.text === "string" && value.text.length > 0 && value.text.length <= 16 ? { text: value.text } : {}),
           }
         : null;
     case "window-placing": {
       const window = value.window;
       if (!isRecord(window)) return null;
-      const { id, appId, title, width, height, position } = window;
+      const { id, appId, title, width, height, position, parent } = window;
       if (!isNumber(id) || !isNumber(width) || !isNumber(height)) return null;
       const placing: Placing = { id, appId: String(appId ?? ""), title: String(title ?? ""), width, height };
       if (isRecord(position) && isNumber(position.x) && isNumber(position.y)) placing.position = { x: position.x, y: position.y };
+      if (isWindowId(parent)) placing.parent = parent;
       return { event: "window-placing", window: placing };
     }
     case "zoom":
-      return isNumber(value.window) ? { event: "zoom", window: value.window } : null;
+      if (!isNumber(value.window)) return null;
+      return typeof value.on === "boolean" ? { event: "zoom", window: value.window, on: value.on } : { event: "zoom", window: value.window };
+    case "window-control":
+      return isNumber(value.window) && value.control === "zoom"
+        ? { event: "window-control", window: value.window, control: "zoom", alt: value.alt === true, double: value.double === true }
+        : null;
+    case "window-grab": {
+      const frame = parseFrame(value.frame);
+      const pointer = isRecord(value.pointer) && isNumber(value.pointer.x) && isNumber(value.pointer.y) ? { x: value.pointer.x, y: value.pointer.y } : null;
+      if (!isNumber(value.window) || (value.kind !== "move" && value.kind !== "resize") || !frame || !pointer) return null;
+      return { event: "window-grab", window: value.window, kind: value.kind, frame, pointer };
+    }
+    case "window-drop": {
+      const frame = parseFrame(value.frame);
+      return isNumber(value.window) && isNumber(value.zone) && Number.isInteger(value.zone) && value.zone >= 0 && frame
+        ? { event: "window-drop", window: value.window, zone: value.zone, frame }
+        : null;
+    }
     case "fullscreen":
       return isNumber(value.window) && typeof value.on === "boolean" ? { event: "fullscreen", window: value.window, on: value.on } : null;
     case "bars-edge":
@@ -274,6 +342,13 @@ export function parseEvent(value: unknown): CompositorEvent | null {
       return value.window === null || isNumber(value.window) ? { event: "overview-pick", window: value.window } : null;
     case "overview-key":
       return typeof value.key === "string" ? { event: "overview-key", key: value.key } : null;
+    case "overview-drag":
+      return isNumber(value.window) && isNumber(value.x) && isNumber(value.y) ? { event: "overview-drag", window: value.window, x: value.x, y: value.y } : null;
+    case "edge-hold": {
+      const { edge, output, window, count, preview } = value;
+      if (!isScreenEdge(edge) || typeof output !== "string" || !isNumber(window) || !isNumber(count)) return null;
+      return { event: "edge-hold", edge, output, window, count, preview: preview === true };
+    }
     case "overview-drop":
       return isNumber(value.window) && isNumber(value.x) && isNumber(value.y) ? { event: "overview-drop", window: value.window, x: value.x, y: value.y } : null;
     case "space":
@@ -282,6 +357,10 @@ export function parseEvent(value: unknown): CompositorEvent | null {
         : null;
     case "window-space":
       return isNumber(value.window) && isNumber(value.space) ? { event: "window-space", window: value.window, space: value.space } : null;
+    case "window-state":
+      return isNumber(value.window) && (value.state === "normal" || value.state === "minimized" || value.state === "hidden")
+        ? { event: "window-state", window: value.window, state: value.state }
+        : null;
     case "idle":
       return isNumber(value.seconds) ? { event: "idle", seconds: value.seconds } : null;
     case "active":
@@ -295,6 +374,14 @@ export function parseEvent(value: unknown): CompositorEvent | null {
             ...(typeof value.error === "string" ? { error: value.error } : {}),
           }
         : null;
+    case "selection": {
+      const { mimeTypes, window, x11 } = value;
+      if (!Array.isArray(mimeTypes) || !(window === null || isNumber(window))) return null;
+      const types = mimeTypes.filter((type): type is string => typeof type === "string").slice(0, 64);
+      return { event: "selection", mimeTypes: types, window, ...(x11 === true ? { x11 } : {}) };
+    }
+    case "snippet":
+      return typeof value.keyword === "string" && isNumber(value.window) ? { event: "snippet", keyword: value.keyword, window: value.window } : null;
     case "super":
       return value.phase === "tap" || value.phase === "hold" || value.phase === "chord" || value.phase === "up" ? { event: "super", phase: value.phase } : null;
     default:

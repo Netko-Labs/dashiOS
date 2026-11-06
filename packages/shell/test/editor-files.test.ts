@@ -6,7 +6,17 @@ import { parseArgs, pathFromArg } from "../apps/editor/args.ts";
 import { MAX_BYTES, readDocument, writeDocument } from "../apps/editor/files.ts";
 import { displayName, editedTitle, folderLabel, resolveInput, suggestedSavePath, tildePath } from "../apps/editor/names.ts";
 import { DEFAULT_PREFS, parsePrefs, prefsPath, readPrefs, stepFontSize, writePrefs } from "../apps/editor/prefs.ts";
-import { keepRecovery, parseRecovery, type Recovery, recoveryDir, recoveryFiles, takeRecovery } from "../apps/editor/recovery.ts";
+import {
+  isOpenWindow,
+  keepRecovery,
+  parseRecovery,
+  type Recovery,
+  RecoveryKeeper,
+  recoveryDir,
+  recoveryFiles,
+  recoveryFor,
+  takeRecovery,
+} from "../apps/editor/recovery.ts";
 import { windowCommand } from "../apps/editor/windows.ts";
 
 let dir = "";
@@ -147,6 +157,78 @@ describe("recovery", () => {
     expect(takeRecovery("../x.json", store)).toBeNull();
     expect(recoveryFiles(store)).toHaveLength(1);
     expect(recoveryFiles(join(dir, "none"))).toEqual([]);
+  });
+
+  test("a window that is still open keeps its file: nobody takes it", () => {
+    const store = join(dir, "recovery");
+    mkdirSync(store, { recursive: true });
+    writeFileSync(join(store, "100-41.json"), JSON.stringify(sample));
+    writeFileSync(join(store, "200-42.json"), JSON.stringify({ ...sample, path: "/home/a/y.txt", time: 2000 }));
+    writeFileSync(join(store, "300-41.json"), JSON.stringify({ ...sample, time: 3000 }));
+    const open = (pid: number): boolean => pid === 42;
+    expect(recoveryFiles(store, open)).toEqual(["100-41.json", "300-41.json"]);
+    // Opening a file finds the newest changes kept for it.
+    expect(recoveryFor("/home/a/x.txt", store, open)).toBe("300-41.json");
+    expect(recoveryFor("/home/a/y.txt", store, open)).toBeNull();
+    expect(recoveryFor("/home/a/y.txt", store, () => false)).toBe("200-42.json");
+    // This process is never another open window.
+    expect(isOpenWindow(process.pid)).toBe(false);
+  });
+});
+
+describe("keeping changes as they are typed", () => {
+  let unsaved: Recovery | null = null;
+  const keeper = (store: string, delay = 20) => new RecoveryKeeper(() => unsaved, { dir: store, delay, now: () => 1234 });
+  const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
+  const sample: Recovery = { path: "/home/a/x.txt", text: "one", encoding: "utf-8", lineEnding: "lf", time: 1000 };
+
+  test("a change is kept once typing stops, in one file of the window's own, and only the person's", async () => {
+    const store = join(dir, "recovery");
+    const kept = keeper(store);
+    expect(kept.name).toBe(`1234-${process.pid}.json`);
+    unsaved = sample;
+    kept.changed();
+    unsaved = { ...sample, text: "one two" };
+    kept.changed();
+    expect(existsSync(join(store, kept.name))).toBe(false);
+    await wait(60);
+    expect(readdirSync(store)).toEqual([kept.name]);
+    expect(parseRecovery(readFileSync(join(store, kept.name), "utf8"))?.text).toBe("one two");
+    expect(statSync(join(store, kept.name)).mode & 0o777).toBe(0o600);
+    expect(statSync(store).mode & 0o777).toBe(0o700);
+  });
+
+  test("saving removes it; Don't Save drops it; nothing is written while nothing is unsaved", async () => {
+    const store = join(dir, "recovery");
+    const kept = keeper(store);
+    unsaved = null;
+    expect(kept.flush()).toBe(true);
+    expect(existsSync(store)).toBe(false);
+    unsaved = sample;
+    kept.flush();
+    expect(existsSync(join(store, kept.name))).toBe(true);
+    unsaved = null;
+    kept.changed();
+    await wait(60);
+    expect(readdirSync(store)).toEqual([]);
+    unsaved = sample;
+    kept.flush();
+    kept.changed();
+    kept.discard();
+    await wait(60);
+    expect(readdirSync(store)).toEqual([]);
+  });
+
+  test("a crash leaves the last kept text for the next window, which takes it", () => {
+    const store = join(dir, "recovery");
+    const kept = keeper(store, 10_000);
+    unsaved = { ...sample, text: "typed before the crash" };
+    kept.flush();
+    // The process is gone (no exit handler ran); the next window looks.
+    const [name] = recoveryFiles(store, () => false);
+    expect(name).toBe(kept.name);
+    expect(takeRecovery(name as string, store)?.text).toBe("typed before the crash");
+    expect(readdirSync(store)).toEqual([]);
   });
 });
 

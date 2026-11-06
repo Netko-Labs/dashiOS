@@ -7,11 +7,17 @@
  * there is one); the toolbar and the sidebar's top strip are where the window
  * is grabbed. With the standard title bar the compositor shows the title, and
  * the toolbar only holds the controls.
+ *
+ * The toolbar is the window's one chrome row (docs/design.html, VS-1): the
+ * title is one line, and there is no footer. A count goes in the sidebar or
+ * the content; something happening (a job's progress, an error) is a
+ * `notice` that floats over the content's foot and takes no room from it.
  */
 
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useColors, useSurface } from "./theme/index.ts";
+import { TooltipLayer, useTooltip } from "./tooltip.tsx";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
 const TOOLBAR_HEIGHT = 38;
@@ -33,10 +39,17 @@ export function useTitleBarInset(): TitleBarInset {
   return { unified: true, top: Math.ceil(controls.y + controls.height), leading: Math.ceil(controls.x + controls.width) };
 }
 
+/** The widest a window's title gets in its toolbar before it is cut. */
+const TITLE_MAX = 320;
+
 export interface AppWindowProps {
+  /** The window's name, on one line. */
   title: string;
-  /** A quieter line under the title ("All Processes"). */
-  subtitle?: string;
+  /**
+   * A short word about it, after the title on the same line, muted ("All Notes — 3 notes").
+   * Never a second line: short of room, both are cut with an ellipsis.
+   */
+  detail?: string;
   /** Controls at the toolbar's start, before the title (back and forward). */
   leading?: ReactNode;
   /** The toolbar's controls, at its end. */
@@ -46,78 +59,95 @@ export interface AppWindowProps {
   /** The sidebar's rows (`SidebarSection`s and `SidebarItem`s). */
   sidebar?: ReactNode;
   sidebarWidth?: number;
-  /** A strip under the content (a status line, summary graphs). */
-  footer?: ReactNode;
+  /**
+   * Something happening, floating over the foot of the content (a `Notice`):
+   * a job's progress, an error with its action. Only while it lasts.
+   */
+  notice?: ReactNode;
   /** Above everything: a sheet or a popup menu. */
   overlay?: ReactNode;
   children: ReactNode;
 }
 
-export function AppWindow({ title, subtitle, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, footer, overlay, children }: AppWindowProps) {
+export function AppWindow({ title, detail, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
   const colors = useColors();
   const surface = useSurface();
   const inset = useTitleBarInset();
   const height = Math.max(inset.top, TOOLBAR_HEIGHT);
   return (
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative" }}>
-      {sidebar !== undefined && (
-        <View
-          testID="window-sidebar"
-          style={{
-            width: sidebarWidth,
-            flexShrink: 0,
-            flexDirection: "column",
-            gap: 2,
-            paddingHorizontal: 10,
-            paddingBottom: 10,
-            backgroundColor: surface.sidebar,
-            borderRightWidth: 1,
-            borderColor: colors.separator,
-          }}
-        >
-          <View dragRegion style={{ height: inset.unified ? height : 10, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
-          {sidebar}
-        </View>
-      )}
-      <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-        {(inset.unified || toolbar !== undefined) && (
+      <TooltipLayer>
+        {sidebar !== undefined && (
           <View
-            testID="window-toolbar"
-            dragRegion
+            testID="window-sidebar"
             style={{
-              height,
+              width: sidebarWidth,
               flexShrink: 0,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              paddingLeft: sidebar === undefined && inset.leading > 0 ? inset.leading + 14 : 18,
-              paddingRight: 12,
-              borderBottomWidth: 1,
+              flexDirection: "column",
+              gap: 2,
+              paddingHorizontal: 10,
+              paddingBottom: 10,
+              backgroundColor: surface.sidebar,
+              borderRightWidth: 1,
               borderColor: colors.separator,
             }}
           >
-            {leading}
-            {center}
-            {center === undefined && inset.unified && (
-              <View style={{ flexDirection: "column", flexShrink: 1, minWidth: 0, gap: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-                  {title}
-                </Text>
-                {subtitle !== undefined && (
-                  <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-                    {subtitle}
-                  </Text>
-                )}
-              </View>
-            )}
-            {center === undefined && <View style={{ flex: 1 }} />}
-            {toolbar}
+            <View dragRegion style={{ height: inset.unified ? height : 10, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
+            {sidebar}
           </View>
         )}
-        <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>{children}</View>
-        {footer}
-      </View>
-      {overlay}
+        <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+          {(inset.unified || toolbar !== undefined) && (
+            <View
+              testID="window-toolbar"
+              dragRegion
+              style={{
+                height,
+                flexShrink: 0,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingLeft: sidebar === undefined && inset.leading > 0 ? inset.leading + 14 : 18,
+                paddingRight: 12,
+                borderBottomWidth: 1,
+                borderColor: colors.separator,
+              }}
+            >
+              {leading}
+              {center}
+              {center === undefined && inset.unified && (
+                // The title keeps its width (up to TITLE_MAX, then an ellipsis): the detail and the
+                // toolbar's own words give way first.
+                <View style={{ flexShrink: 1, flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexShrink: 0, maxWidth: TITLE_MAX }}>
+                    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+                      {title}
+                    </Text>
+                  </View>
+                  {detail ? (
+                    <View testID="window-title-detail" style={{ flexShrink: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+                        {` — ${detail}`}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              )}
+              {center === undefined && <View style={{ flex: 1 }} />}
+              {toolbar}
+            </View>
+          )}
+          <View style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}>
+            {children}
+            {notice !== undefined && notice !== null && notice !== false && (
+              <View testID="window-notice" style={{ position: "absolute", left: 16, right: 16, bottom: 14, alignItems: "center" }}>
+                {notice}
+              </View>
+            )}
+          </View>
+        </View>
+        {overlay}
+      </TooltipLayer>
     </View>
   );
 }
@@ -137,25 +167,41 @@ export function SidebarSection({ title, children }: { title?: string; children: 
   );
 }
 
-/** A glyph button in a toolbar: square, quiet until hovered. */
+/**
+ * A glyph button in a toolbar: square, quiet until hovered. A glyph-only
+ * button names itself with `tooltip`, shown under it when the pointer rests
+ * on it (UI-3); one with a `label` shows its words instead.
+ */
 export function ToolbarButton({
   glyph,
   onPress,
   testID,
   disabled,
   label,
+  tooltip,
 }: {
   glyph: string;
   onPress: () => void;
   testID: string;
   disabled?: boolean;
   label?: string;
+  /** The button's name, in sentence case ("New note"); shown after a rest. */
+  tooltip?: string;
 }) {
   const colors = useColors();
+  const tip = useTooltip(tooltip);
   return (
     <View
       testID={testID}
-      onPress={disabled ? undefined : onPress}
+      onPress={
+        disabled
+          ? undefined
+          : () => {
+              tip.hide();
+              onPress();
+            }
+      }
+      onHoverChange={tip.onHoverChange}
       style={{
         height: 28,
         minWidth: 32,
@@ -170,6 +216,7 @@ export function ToolbarButton({
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />
       {label !== undefined && <Text style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>{label}</Text>}
+      {tip.node}
     </View>
   );
 }

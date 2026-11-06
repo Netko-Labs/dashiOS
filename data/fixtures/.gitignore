@@ -1,0 +1,2 @@
+# Where dashi-hardware --sysfs-root keeps its state and the simulated SMU
+*/.dashi-hardware/

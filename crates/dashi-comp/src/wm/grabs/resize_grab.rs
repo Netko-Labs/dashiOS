@@ -1,6 +1,8 @@
 //! Adapted from smithay's smallvil example (MIT, github.com/Smithay/smithay, v0.7.0).
 //! xdg windows resize through configures and their next commit; X11 windows
-//! take their new geometry at once.
+//! take their new geometry at once. At the first motion the shell hears the
+//! person began to resize (`window-grab`), and the window stops being
+//! maximized: its size is the person's now, not the screen's.
 
 use crate::state::Dashi;
 use smithay::{
@@ -51,6 +53,8 @@ pub struct ResizeSurfaceGrab {
 
     initial_rect: Rectangle<i32, Logical>,
     last_window_size: Size<i32, Logical>,
+    /// The shell has heard of it (the first motion).
+    reported: bool,
 }
 
 impl ResizeSurfaceGrab {
@@ -77,6 +81,7 @@ impl ResizeSurfaceGrab {
             edges,
             initial_rect,
             last_window_size: initial_rect.size,
+            reported: false,
         }
     }
 }
@@ -129,6 +134,17 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
         // While the grab is active, no client has pointer focus
         handle.motion(data, None, event);
 
+        if !self.reported {
+            self.reported = true;
+            data.report_grab(&self.window, "resize", self.start_data.location);
+            if let Some(entry) = data.windows.by_window_mut(&self.window) {
+                entry.maximized = false;
+            }
+            if let Some(x11) = self.window.x11_surface() {
+                let _ = x11.set_maximized(false);
+            }
+        }
+
         let mut delta = event.location - self.start_data.location;
 
         let mut new_window_width = self.initial_rect.size.w;
@@ -174,6 +190,7 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
         if let Some(xdg) = self.window.toplevel() {
             xdg.with_pending_state(|state| {
                 state.states.set(xdg_toplevel::State::Resizing);
+                state.states.unset(xdg_toplevel::State::Maximized);
                 state.size = Some(self.last_window_size);
             });
             xdg.send_pending_configure();

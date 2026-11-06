@@ -3,14 +3,19 @@
 //! Their exclusive zones are what the `usable` area leaves out; when that
 //! changes, the shell hears `outputs-changed`.
 //!
-//! Who may open one is the shell's decision too (C3: per-client grants); in C1
-//! any client may.
+//! Who may open one is the shell's decision too: a client under an applet's
+//! process only while the shell grants it (`applet-clients`,
+//! session/applets.rs); a client whose process is unknown (a security-context
+//! sandbox's) never; other clients as in C1, any (C3: per-client grants).
 
 use smithay::{
     delegate_layer_shell,
     desktop::{LayerSurface, WindowSurfaceType, layer_map_for_output},
     output::Output,
-    reexports::wayland_server::protocol::{wl_output, wl_surface::WlSurface},
+    reexports::wayland_server::{
+        Resource,
+        protocol::{wl_output, wl_surface::WlSurface},
+    },
     utils::SERIAL_COUNTER,
     wayland::{
         compositor::with_states,
@@ -21,7 +26,37 @@ use smithay::{
     },
 };
 
-use crate::state::Dashi;
+use crate::state::{ClientState, Dashi};
+
+/// The pid of the client that owns `surface`, when the compositor knows it.
+fn client_pid(surface: &WlSurface) -> Option<i32> {
+    surface
+        .client()
+        .and_then(|client| client.get_data::<ClientState>().and_then(|data| data.pid))
+}
+
+impl Dashi {
+    /// Closes the layer surfaces of applet clients whose grant went (`applet-clients`).
+    pub(crate) fn close_ungranted_layers(&mut self) {
+        let outputs: Vec<Output> = self.space.outputs().cloned().collect();
+        for output in &outputs {
+            let map = layer_map_for_output(output);
+            let ungranted: Vec<LayerSurface> = map
+                .layers()
+                .filter(|layer| {
+                    !self
+                        .applet_clients
+                        .may_use_layer_shell(client_pid(layer.wl_surface()))
+                })
+                .cloned()
+                .collect();
+            drop(map);
+            for layer in ungranted {
+                layer.layer_surface().send_close();
+            }
+        }
+    }
+}
 
 impl WlrLayerShellHandler for Dashi {
     fn shell_state(&mut self) -> &mut WlrLayerShellState {
@@ -35,6 +70,17 @@ impl WlrLayerShellHandler for Dashi {
         _layer: Layer,
         namespace: String,
     ) {
+        if !self
+            .applet_clients
+            .may_use_layer_shell(client_pid(surface.wl_surface()))
+        {
+            tracing::info!(
+                namespace,
+                "an applet's layer surface without a grant was closed"
+            );
+            surface.send_close();
+            return;
+        }
         let output = wl_output
             .as_ref()
             .and_then(Output::from_resource)
@@ -44,6 +90,8 @@ impl WlrLayerShellHandler for Dashi {
             surface.send_close();
             return;
         };
+        self.layer_motion
+            .made(surface.wl_surface().id(), &namespace);
         let mut map = layer_map_for_output(&output);
         if let Err(error) = map.map_layer(&LayerSurface::new(surface, namespace)) {
             tracing::warn!(?error, "a layer surface could not be mapped");
@@ -51,6 +99,7 @@ impl WlrLayerShellHandler for Dashi {
     }
 
     fn layer_destroyed(&mut self, surface: WlrLayerSurface) {
+        self.layer_motion.gone(&surface.wl_surface().id());
         let mut had_focus = false;
         let outputs: Vec<Output> = self.space.outputs().cloned().collect();
         for output in &outputs {

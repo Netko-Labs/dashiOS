@@ -89,6 +89,12 @@ impl<'a> render::rounded::GlesAccess for UdevRenderer<'a> {
     ) -> &'f mut smithay::backend::renderer::gles::GlesFrame<'frame, 'buffer> {
         frame.as_mut()
     }
+
+    fn gles_error(
+        error: smithay::backend::renderer::gles::GlesError,
+    ) -> <Self as smithay::backend::renderer::RendererSuper>::Error {
+        smithay::backend::renderer::multigpu::Error::Render(error)
+    }
 }
 
 /// What a queued frame carries to its vblank: the clients to tell it was shown.

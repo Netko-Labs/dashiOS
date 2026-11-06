@@ -2,21 +2,28 @@
  * Keyboard: how fast keys repeat, and the layout. The layout list is every
  * layout xkb knows (searchable), with the chosen layout's variants beside it.
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
+ * The input method (settings.json `inputMethod.engine`) is what the session
+ * runs to type other scripts (input-method.ts).
+ * Clipboard history and snippets are here too (clipboard-parts.tsx).
  */
 
-import { SEARCH, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../../input-method.ts";
+import type { Laptop } from "../../laptop/start.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Note, Page, Row, Slider, useSurface } from "../ui.tsx";
+import { Caption, Choices, Group, Note, Page, Row, Slider, Spot, useSurface } from "../ui.tsx";
+import { ClipboardSection, type HistoryControl, type InstalledApp } from "./clipboard-parts.tsx";
+import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
 
 function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress: () => void }) {
-  const colors = useColors();
+  const look = rowLook(useColors(), chosen);
   return (
     <View
       testID={testID}
@@ -28,11 +35,12 @@ function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: bo
         alignItems: "center",
         paddingHorizontal: 8,
         borderRadius: 6,
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
+        backgroundColor: look.ground,
+        hoverBackgroundColor: look.hover,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
+      {chosen && <SelectionBar rowHeight={28} />}
+      <Text numberOfLines={1} style={{ fontSize: 12, color: look.ink }}>
         {label}
       </Text>
     </View>
@@ -122,19 +130,64 @@ function RangeLabels({ low, high }: { low: string; high: string }) {
   );
 }
 
-export function KeyboardPane({ settings, layouts }: { settings: SettingsStore; layouts: XkbLayouts }) {
+const INPUT_METHOD_OPTIONS: { value: InputMethodName; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "fcitx5", label: "Fcitx 5" },
+];
+/** Fcitx 5 is installed (the only input method offered: input-method.ts). */
+const HAS_FCITX = Bun.which("fcitx5") !== null;
+
+/** The input method the session runs, or how to get one. */
+function InputMethodRow({ settings, installed }: { settings: SettingsStore; installed: boolean }) {
+  const { inputMethod } = useSettings(settings).data;
+  if (!installed)
+    return (
+      <Spot pane="keyboard" row="input-method">
+        <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>
+      </Spot>
+    );
+  return (
+    <Spot pane="keyboard" row="input-method">
+      <Row stack label="Input method" detail="For Chinese, Japanese, Korean and other scripts, in every app and the launcher.">
+        <Choices
+          testID="keyboard-input-method"
+          value={inputMethod.engine ?? DEFAULT_INPUT_METHOD}
+          options={INPUT_METHOD_OPTIONS}
+          onChange={(engine) => settings.patch("inputMethod", { engine })}
+        />
+      </Row>
+    </Spot>
+  );
+}
+
+export function KeyboardPane({
+  settings,
+  layouts,
+  laptop,
+  clipboard,
+  installed,
+}: {
+  settings: SettingsStore;
+  layouts: XkbLayouts;
+  laptop?: Laptop | null;
+  clipboard?: HistoryControl | null;
+  /** The installed app an id stands for: the clipboard's left-out list draws its name and icon. */
+  installed?: InstalledApp;
+}) {
   const { keyboard } = useSettings(settings).data;
   const rate = keyboard.repeatRate ?? DEFAULTS.repeatRate;
   const delay = keyboard.repeatDelay ?? DEFAULTS.repeatDelay;
   return (
     <Page title="Keyboard">
       <Group>
-        <Row label="Key repeat rate" detail={describeRate(rate)}>
-          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
-            <RangeLabels low="Off" high="Fast" />
-          </View>
-        </Row>
+        <Spot pane="keyboard" row="key-repeat">
+          <Row label="Key repeat rate" detail={describeRate(rate)}>
+            <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
+              <RangeLabels low="Off" high="Fast" />
+            </View>
+          </Row>
+        </Spot>
         <Row label="Delay until repeat" detail={describeDelay(delay)}>
           <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <Slider testID="keyboard-delay" value={delay} range={REPEAT_DELAY} onCommit={(value) => settings.patch("keyboard", { repeatDelay: value })} />
@@ -150,6 +203,11 @@ export function KeyboardPane({ settings, layouts }: { settings: SettingsStore; l
         )}
       </Group>
       <Caption>A new layout applies in a moment, to every app.</Caption>
+      <Group>
+        <InputMethodRow settings={settings} installed={HAS_FCITX} />
+      </Group>
+      <KeyboardLightSection laptop={laptop ?? null} />
+      <ClipboardSection settings={settings} history={clipboard ?? null} {...(installed ? { installed } : {})} />
     </Page>
   );
 }

@@ -65,9 +65,15 @@ pub(crate) struct Dashi {
         i32,
         smithay::backend::renderer::element::memory::MemoryRenderBuffer,
     )>,
+    /// Applets' processes and their layer-shell grants (`applet-clients`).
+    pub applet_clients: crate::session::applets::AppletClients,
     /// Executables the shell lets copy the screen (`screencopy-clients`).
     pub screencopy_paths: Arc<std::sync::Mutex<Vec<std::path::PathBuf>>>,
     pub capture_activity: crate::protocols::screencopy::Activity,
+    /// What agents' pictures blank, by client (`capture-mask`).
+    pub capture_masks: crate::render::mask::Masks,
+    /// Whose presses were whose: the person's or an agent's (`input-origin`).
+    pub origins: crate::session::origin::Origins,
     pub activation_state: smithay::wayland::xdg_activation::XdgActivationState,
     #[expect(dead_code, reason = "kept alive: it owns the xdg-dialog global")]
     pub dialog_state: smithay::wayland::shell::xdg::dialog::XdgDialogState,
@@ -75,6 +81,8 @@ pub(crate) struct Dashi {
     pub session_lock_state: smithay::wayland::session_lock::SessionLockManagerState,
     pub zones: crate::wm::Zones,
     pub motion: crate::wm::Motion,
+    /// Shell surfaces that come in with motion (`layer-motion`).
+    pub layer_motion: crate::wm::LayerMotion,
     /// Screens turned off in Displays (not in the space).
     pub disabled_outputs: Vec<smithay::output::Output>,
     /// Touchpad and mouse settings (input/settings.rs), for devices plugged in later too.
@@ -87,6 +95,19 @@ pub(crate) struct Dashi {
     pub claims: crate::input::Claims,
     pub overview: Option<crate::wm::Overview>,
     pub spaces: crate::wm::Spaces,
+    /// Live pictures the shell placed (`space-previews`, `window-thumbnails`).
+    pub thumbnails: crate::render::thumbnails::Thumbnails,
+    /// The window held in a move grab, which goes along when the Space changes.
+    pub held: Option<crate::wm::WindowId>,
+    /// A window the shell asked to carry across the next switch
+    /// (`space-switch {carry}`): it stays on screen while the Spaces slide
+    /// under it, as a held one does, and lands on the new Space.
+    pub carried: Option<crate::wm::WindowId>,
+    /// The shell framed the held window (`frame` while it is dragged): the
+    /// grab holds it at its new frame from the next motion (move_grab.rs).
+    pub held_reframed: bool,
+    /// A held window against a screen edge (`edge-hold`).
+    pub edge_hold: crate::wm::EdgeHold,
     pub bars: crate::wm::Bars,
     pub wallpaper: crate::wallpaper::Wallpaper,
     /// The session's client (`-c`): it and the processes under it are the shell.
@@ -95,6 +116,8 @@ pub(crate) struct Dashi {
     pub shell_pid: Arc<std::sync::atomic::AtomicI32>,
     pub foreign: crate::protocols::foreign_toplevel::ForeignToplevels,
     pub chrome_style: ChromeStyle,
+    /// The depth between windows (`window-style`; render/depth/).
+    pub window_style: crate::render::depth::Style,
     pub chrome_objects: Vec<(WlSurface, ChromeObject)>,
     pub cursor_status: CursorImageStatus,
     /// The icon a client gave the drag it started (wl_data_device.start_drag),
@@ -108,6 +131,8 @@ pub(crate) struct Dashi {
     pub resize_cursor: Option<smithay::input::pointer::CursorIcon>,
     /// The last press on a title bar, for double-clicks.
     pub last_bar_press: Option<(u64, std::time::Instant)>,
+    /// Buttons whose press went to a window's sheet instead of the window; their release goes nowhere (wm/sheets.rs).
+    pub swallowed_buttons: Vec<u32>,
     pub cursors: Cursors,
     /// Where the shell's layer surfaces take the pointer (IPC `input-region`).
     pub layer_regions: crate::handlers::layer_regions::LayerRegions,
@@ -130,7 +155,8 @@ pub(crate) struct Dashi {
         smithay::wayland::selection::ext_data_control::DataControlState,
         smithay::wayland::selection::wlr_data_control::DataControlState,
     )>,
-    pub xdg_foreign_state: smithay::wayland::xdg_foreign::XdgForeignState,
+    /// xdg-foreign's exported windows, by handle (protocols/xdg_foreign.rs).
+    pub xdg_foreign: crate::protocols::xdg_foreign::ForeignExports,
     /// ext-foreign-toplevel-list, for capture pickers (protocols/toplevel_list.rs).
     pub toplevel_list: Option<crate::protocols::toplevel_list::ToplevelList>,
     /// Explicit sync, when the drawing GPU supports it (handlers/sync.rs).
@@ -209,7 +235,7 @@ impl Dashi {
         crate::handlers::security::create_global(&dh);
         crate::handlers::toplevel_meta::create_globals(&dh);
         crate::render::present::create_global(&dh);
-        let xdg_foreign_state = smithay::wayland::xdg_foreign::XdgForeignState::new::<Self>(&dh);
+        crate::protocols::xdg_foreign::create_globals(&dh);
         let xwayland_shell_state =
             smithay::wayland::xwayland_shell::XWaylandShellState::new::<Self>(&dh);
         let mut seat_state = SeatState::new();
@@ -248,14 +274,18 @@ impl Dashi {
             keys: Keys::default(),
             agent: crate::session::agent::Agent::new(agent_seat),
             agent_cursor: None,
+            applet_clients: Default::default(),
             screencopy_paths,
             capture_activity: Default::default(),
+            capture_masks: Default::default(),
+            origins: Default::default(),
             activation_state,
             dialog_state,
             lock: Default::default(),
             session_lock_state,
             zones: Default::default(),
             motion: Default::default(),
+            layer_motion: Default::default(),
             disabled_outputs: Vec::new(),
             primary_output: None,
             vrr_modes: Default::default(),
@@ -264,18 +294,25 @@ impl Dashi {
             claims: Default::default(),
             overview: None,
             spaces: Default::default(),
+            thumbnails: Default::default(),
+            held: None,
+            carried: None,
+            held_reframed: false,
+            edge_hold: Default::default(),
             bars: Default::default(),
             wallpaper: Default::default(),
             session_client: None,
             shell_pid,
             foreign: Default::default(),
             chrome_style: ChromeStyle::default(),
+            window_style: Default::default(),
             chrome_objects: Vec::new(),
             layer_regions: Default::default(),
             cursor_status: CursorImageStatus::default_named(),
             dnd_icon: None,
             resize_cursor: None,
             last_bar_press: None,
+            swallowed_buttons: Vec::new(),
             cursors: Cursors::default(),
             text: Text::default(),
             xdg_decoration_state,
@@ -289,7 +326,7 @@ impl Dashi {
             primary_selection_state,
             data_control,
             shortcuts_inhibit_state,
-            xdg_foreign_state,
+            xdg_foreign: Default::default(),
             toplevel_list,
             syncobj_state: None,
             xwayland_shell_state,
@@ -372,6 +409,10 @@ impl Dashi {
         self.space.elements().for_each(|window| {
             window.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         });
+        // Off screen but in a live picture (render/thumbnails/): they draw on, at the screen's pace.
+        for window in self.pictured_off_screen() {
+            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
+        }
         for layer in layer_map_for_output(output).layers() {
             layer.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         }
@@ -422,6 +463,7 @@ impl Dashi {
 
     /// After each turn of the loop: settle the space and send what is queued.
     pub(crate) fn after_dispatch(&mut self) {
+        self.follow_sheets();
         self.space.refresh();
         self.popups.cleanup();
         self.foreign_refresh();

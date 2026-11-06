@@ -32,6 +32,24 @@ export const SCOPES = [
   { id: "calendar", label: "Read your calendar", detail: "List your calendars and the events in them: their titles, times, places, and notes" },
   { id: "calendar_write", label: "Add to your calendar", detail: "Add events to your calendar (it can't change or delete the ones there)" },
   {
+    id: "signin",
+    label: "Sign in for you",
+    detail:
+      "See which sites you have logins for and their account names, and ask you to let Dashi sign it in or enter a one-time code. Each login is asked about on screen; Dashi types the password or code, and the agent never sees it",
+  },
+  {
+    id: "pay",
+    label: "Pay for you",
+    detail:
+      "Ask to pay a site with one of your saved cards, within your limits. Every payment asks for your fingerprint or password, and this permission is never kept: Always Allow doesn't cover it",
+  },
+  {
+    id: "clipboard",
+    label: "See your clipboard history",
+    detail:
+      "Read what you copied in the last 7 days, never the copies Dashi left out (password fields, password managers). You are asked every time, and Always Allow doesn't cover it",
+  },
+  {
     id: "settings",
     label: "Change settings",
     detail:
@@ -67,10 +85,14 @@ export function choices(needs: ReadonlySet<Scope>, granted: ReadonlySet<Scope>):
  * choosing "always"; an earlier "Allow Once" must not turn permanent here.
  */
 export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessionOnly: ReadonlySet<Scope>): Set<Scope> {
-  return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))]);
+  return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))].filter((scope) => !NEVER_KEPT.has(scope)));
 }
 
-function stateDir(): string {
+/** Scopes "Always Allow" never keeps: allowed for the connection at most (paying, the clipboard history, which asks every time too). */
+export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay", "clipboard"]);
+
+/** Where the agents' files are: `$XDG_STATE_HOME/dashi/agents/`. */
+export function stateDir(): string {
   const base = process.env.XDG_STATE_HOME || join(homedir(), ".local/state");
   return join(base, "dashi/agents");
 }
@@ -93,7 +115,8 @@ export class Grants {
       const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
       if (typeof agents === "object" && agents !== null) {
         for (const [key, scopes] of Object.entries(agents)) {
-          if (Array.isArray(scopes)) this.byAgent.set(key, new Set(scopes.filter(isScope)));
+          // A kept "pay" (a file edited by hand) is not honored.
+          if (Array.isArray(scopes)) this.byAgent.set(key, new Set(scopes.filter(isScope).filter((scope) => !NEVER_KEPT.has(scope))));
         }
       }
     } catch {
@@ -152,6 +175,8 @@ export interface Activity {
   claims: string | null;
   tool: string | null;
   outcome: string;
+  /** The launcher's Ask a call was a step of (agents/ask/tasks.ts), so the history groups them. */
+  task?: string;
 }
 
 export function logActivity(entry: Activity): void {

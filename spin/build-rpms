@@ -7,7 +7,7 @@
 # specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
 # COPR enabled for libghostty-vt-devel 1.4).
 #
-#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-greeter dashi-release dashi-live
+#   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-hardware dashi-secretd dashi-greeter dashi-release dashi-live
 #   all: every spec in spin/rpm (mirin-metal-host from ../mirin's HEAD; dashi-bun
 #   downloads Bun's release, with spectool)
 #
@@ -16,7 +16,7 @@ set -euo pipefail
 
 repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
 mirin=$(cd -- "$repo/../mirin" && pwd)
-version=0.3.0
+version=0.4.0
 cd "$repo"
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
@@ -30,7 +30,7 @@ sha=$(git rev-parse --short=7 HEAD)
 stamp() { TZ=UTC git -C "$1" log -1 --format=%cd --date=format-local:%Y%m%d.%H%M%S; }
 snapshot="$version~beta.$(stamp "$repo").$sha"
 packages=("$@")
-[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-greeter dashi-release dashi-live)
+[ ${#packages[@]} -gt 0 ] || packages=(dashi dashi-comp dashi-hardware dashi-secretd dashi-greeter dashi-release dashi-live)
 if [ "${packages[0]}" = all ]; then
   packages=()
   for spec in "$repo"/spin/rpm/*.spec; do packages+=("$(basename "$spec" .spec)"); done
@@ -55,11 +55,23 @@ bun_dir="$repo/node_modules/.bun"
 copy_module "$(ls -d "$bun_dir"/react@*/node_modules/react | head -1)" "$modules/react"
 copy_module "$(ls -d "$bun_dir"/react-reconciler@*/node_modules/react-reconciler | head -1)" "$modules/react-reconciler"
 copy_module "$(ls -d "$bun_dir"/scheduler@*/node_modules/scheduler | head -1)" "$modules/scheduler"
+# The Anthropic SDK (the launcher's Claude answerer) and what it loads at run time; json-schema-to-ts is types only.
+mkdir -p "$modules/@anthropic-ai" "$modules/@opentelemetry" "$modules/@stablelib"
+copy_module "$(ls -d "$bun_dir"/@anthropic-ai+sdk@*/node_modules/@anthropic-ai/sdk | head -1)" "$modules/@anthropic-ai/sdk"
+copy_module "$(ls -d "$bun_dir"/@opentelemetry+api@*/node_modules/@opentelemetry/api | head -1)" "$modules/@opentelemetry/api"
+copy_module "$(ls -d "$bun_dir"/standardwebhooks@*/node_modules/standardwebhooks | head -1)" "$modules/standardwebhooks"
+copy_module "$(ls -d "$bun_dir"/@stablelib+base64@*/node_modules/@stablelib/base64 | head -1)" "$modules/@stablelib/base64"
+copy_module "$(ls -d "$bun_dir"/fast-sha256@*/node_modules/fast-sha256 | head -1)" "$modules/fast-sha256"
+# OpenAI's SDK (the launcher's GPT answerer): the client needs nothing else at run time; ws, zod and undici are
+# optional peers for its realtime and helper subpaths, which Dashi doesn't load.
+copy_module "$(ls -d "$bun_dir"/openai@*/node_modules/openai | head -1)" "$modules/openai"
 mkdir -p "$modules/@mirinjs/metal"
 cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
 [ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"
 mkdir -p "$modules/@dashi/ui"
 cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
+mkdir -p "$modules/@dashi/applet"
+cp -r "$repo/packages/applet/src" "$repo/packages/applet/package.json" "$repo/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
 git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
 tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 

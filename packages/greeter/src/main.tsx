@@ -71,6 +71,8 @@ function surfaceOn(output: string | undefined, keyboard: boolean): NativeHostTra
       namespace: keyboard ? "dashi-greeter" : "dashi-greeter-backdrop",
       ...(output === undefined ? {} : { output }),
     },
+    // What a screen reader calls it (`MIRIN_METAL_APP_NAME`); a host from before ignores it.
+    env: { MIRIN_METAL_APP_NAME: "Dashi" },
   });
 }
 

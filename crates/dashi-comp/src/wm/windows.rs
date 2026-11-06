@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 use smithay::{
     desktop::Window,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
-    utils::{Logical, Point, Rectangle},
+    utils::{Logical, Point, Rectangle, Size},
     wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData},
 };
 
@@ -25,7 +25,7 @@ pub(crate) enum Shown {
 }
 
 impl Shown {
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Shown::Normal => "normal",
             Shown::Minimized => "minimized",
@@ -46,8 +46,12 @@ pub(crate) struct Entry {
     pub shown: Shown,
     /// Where its frame was when it last left the screen (minimized, hidden).
     pub parked_at: Option<Point<i32, Logical>>,
-    /// The frame to go back to (`restore`) after a tile or zoom (`frame` with `remember`).
-    pub restore: Option<Rectangle<i32, Logical>>,
+    /// The client was last told it is maximized (`frame` with `maximized`: the shell's Fill).
+    pub maximized: bool,
+    /// The shell framed it as a tile (`frame` with `tiled`), until another
+    /// frame, Fill, full screen, or the person moves or resizes it: its
+    /// depth is a tile's (render/depth/).
+    pub tiled: bool,
     /// How it is framed: by the client, by dashi-comp's title bar, or unified.
     pub decor: Decor,
     /// The app asked for the unified style (dashi-chrome-v1).
@@ -60,17 +64,35 @@ pub(crate) struct Entry {
     pub space: usize,
     /// Where it was while its Space is not shown.
     pub away_at: Option<Point<i32, Logical>>,
+    /// Its place in its Space's stack while that Space is not shown (higher
+    /// is nearer the front): stamped as it leaves the screen, so the Space
+    /// comes back, slides in, and is pictured in the order it had.
+    pub away_rank: u64,
     /// It asked for focus and was refused; cleared when it gets the keyboard.
     pub attention: bool,
     /// The title bar control under the pointer, if any (the controls light up).
     pub hover: Option<crate::render::titlebar::Part>,
     /// Its icon (xdg-toplevel-icon), as last told.
     pub icon: crate::handlers::toplevel_meta::Icon,
+    /// The window it is a sheet of (IPC `attach`; wm/sheets.rs).
+    pub sheet_of: Option<WindowId>,
+    /// As a sheet: how far below the top of its parent's frame it hangs
+    /// (`attach {top}`: an app's own title bar and toolbar); None is under
+    /// the title bar dashi-comp draws.
+    pub sheet_top: Option<i32>,
+    /// When it last got the person's keyboard (a count, higher is later; 0 never).
+    pub used: u64,
+    /// Its shadow and edge as last drawn (render/depth/).
+    pub depth: crate::render::depth::Cache,
 }
 
 pub(crate) struct Windows {
     entries: Vec<Entry>,
     next_id: WindowId,
+    /// The last `used` stamp given.
+    used: u64,
+    /// The last `away_rank` given.
+    ranked: u64,
 }
 
 impl Default for Windows {
@@ -78,6 +100,8 @@ impl Default for Windows {
         Self {
             entries: Vec::new(),
             next_id: 1,
+            used: 0,
+            ranked: 0,
         }
     }
 }
@@ -94,18 +118,53 @@ impl Windows {
             placing: false,
             shown: Shown::Normal,
             parked_at: None,
-            restore: None,
+            maximized: false,
+            tiled: false,
             decor: Decor::None,
             unified: false,
             title_image: None,
             fullscreen: None,
             space: 0,
             away_at: None,
+            away_rank: 0,
             attention: false,
             icon: Default::default(),
             hover: None,
+            sheet_of: None,
+            sheet_top: None,
+            used: 0,
+            depth: Default::default(),
         });
         id
+    }
+
+    /// The window whose toplevel is `surface` got the person's keyboard: it is the most recently used.
+    pub(crate) fn used(&mut self, surface: &WlSurface) {
+        self.used += 1;
+        let stamp = self.used;
+        if let Some(entry) = self.by_surface_mut(surface) {
+            entry.used = stamp;
+        }
+    }
+
+    /// Window `id` waits in front of the others on its Space (it left the screen last, or was put there).
+    pub(crate) fn rank_front(&mut self, id: WindowId) {
+        self.ranked += 1;
+        let rank = self.ranked;
+        if let Some(entry) = self.get_mut(id) {
+            entry.away_rank = rank;
+        }
+    }
+
+    /// The windows waiting on Space `space` that show (not minimized or hidden), back to front.
+    pub(crate) fn waiting_on(&self, space: usize) -> Vec<&Entry> {
+        let mut waiting: Vec<&Entry> = self
+            .entries
+            .iter()
+            .filter(|entry| entry.space == space && entry.shown == Shown::Normal)
+            .collect();
+        waiting.sort_by_key(|entry| entry.away_rank);
+        waiting
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = WindowId> + use<> {
@@ -148,6 +207,12 @@ impl Windows {
         self.entries.iter().find(|entry| &entry.window == window)
     }
 
+    pub(crate) fn by_window_mut(&mut self, window: &Window) -> Option<&mut Entry> {
+        self.entries
+            .iter_mut()
+            .find(|entry| &entry.window == window)
+    }
+
     pub(crate) fn entries_mut(&mut self) -> impl Iterator<Item = &mut Entry> {
         self.entries.iter_mut()
     }
@@ -157,13 +222,22 @@ impl Windows {
         Some(self.entries.remove(at))
     }
 
-    /// The announced windows as the shell sees them, oldest first.
+    /// The announced windows as the shell sees them, front to back: those
+    /// that show, most recently used first, then the minimized, then the
+    /// hidden (each latest first); never used, newest first.
     pub(crate) fn describe_all(&self, state: &Dashi) -> Vec<Value> {
-        self.entries
-            .iter()
-            .filter(|entry| entry.announced)
-            .map(|entry| describe(entry, state))
-            .collect()
+        let mut listed: Vec<&Entry> = self.entries.iter().filter(|e| e.announced).collect();
+        listed.sort_by_key(|e| (recency_group(e.shown), std::cmp::Reverse((e.used, e.id))));
+        listed.into_iter().map(|e| describe(e, state)).collect()
+    }
+}
+
+/// Where windows in each state come in the list: on screen, minimized, hidden.
+fn recency_group(shown: Shown) -> u8 {
+    match shown {
+        Shown::Normal => 0,
+        Shown::Minimized => 1,
+        Shown::Hidden => 2,
     }
 }
 
@@ -222,6 +296,36 @@ pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
     state.bar_height(window)
 }
 
+/// The outer size an xdg window was last asked to take (`frame`, full
+/// screen, a resize), while its app has not yet acked and committed that
+/// configure: until then its frame still has the old size. None once it has
+/// (whatever size it then chose), and for X11 windows, which take a size at once.
+pub(crate) fn configuring(state: &Dashi, window: &Window) -> Option<Size<i32, Logical>> {
+    let toplevel = window.toplevel()?;
+    let in_flight = with_states(toplevel.wl_surface(), |states| {
+        states
+            .data_map
+            .get::<XdgToplevelSurfaceData>()
+            .and_then(|data| data.lock().ok())
+            .is_some_and(|data| {
+                !data.pending_configures().is_empty()
+                    || data.configure_serial != data.current_serial
+            })
+    });
+    if !in_flight {
+        return None;
+    }
+    let size = toplevel.with_pending_state(|pending| pending.size)?;
+    Some(Size::from((size.w, size.h + bar_of(state, window))))
+}
+
+/// Its frame as it is about to be: where it is, at the size it is being
+/// configured to while its app has not drawn that yet.
+pub(crate) fn frame_to_be(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
+    let frame = frame_of(state, window)?;
+    Some(configuring(state, window).map_or(frame, |size| Rectangle::new(frame.loc, size)))
+}
+
 /// A window in the IPC's `Window` shape.
 pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
     let surface = toplevel_surface(&entry.window);
@@ -248,16 +352,39 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "pid": pid,
         "focused": focused,
         "state": entry.shown.name(),
-        "zoomed": entry.restore.is_some(),
         "frame": frame,
+        "configuring": configuring(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),
         "space": entry.space,
         "attention": entry.attention,
         "x11": entry.window.x11_surface().is_some(),
+        "sheetOf": entry.sheet_of,
+        "parent": parent_of(state, &entry.window),
         "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
             .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
+        "toplevel": state.toplevel_list.as_ref().and_then(|list| list.identifier_of(entry.id)),
     })
+}
+
+/// The window `window` is a dialog of: its xdg parent, or the X11 window it
+/// is transient for; None for a window of its own (or one the shell does not know).
+pub(crate) fn parent_of(state: &Dashi, window: &Window) -> Option<WindowId> {
+    if let Some(x11) = window.x11_surface() {
+        let owner = x11.is_transient_for()?;
+        return state
+            .windows
+            .entries()
+            .find(|entry| {
+                entry
+                    .window
+                    .x11_surface()
+                    .is_some_and(|x| x.window_id() == owner)
+            })
+            .map(|entry| entry.id);
+    }
+    let parent = window.toplevel()?.parent()?;
+    window_id_for_surface(state, &parent)
 }
 
 pub(crate) fn rect_json(rect: Rectangle<i32, Logical>) -> Value {

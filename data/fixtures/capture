@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# data/fixtures/capture: copy what dashi-hardware reads from this machine's
+# /sys into a plain tree of files, for `dashi-hardware --sysfs-root DIR`
+# (tests, the VM). It only reads: run it as yourself, not root (files only
+# root may read are left out, and so are serial numbers).
+#
+#   data/fixtures/capture DIR      e.g. data/fixtures/ga403wr
+#
+# Symlinks in /sys (class/hwmon/hwmonN, class/leds/…) become plain
+# directories; values are copied, never linked.
+set -euo pipefail
+
+out=${1:?usage: data/fixtures/capture DIR}
+src=${DASHI_CAPTURE_SYSFS:-/sys}
+[[ -d $src ]] || { echo "capture: no $src" >&2; exit 1; }
+mkdir -p "$out"
+
+# Copy one file (relative to /sys) when it exists and is readable.
+copy() {
+  local rel=$1
+  [[ -f $src/$rel && -r $src/$rel ]] || return 0
+  local value
+  value=$(cat -- "$src/$rel" 2>/dev/null) || return 0
+  mkdir -p "$out/$(dirname -- "$rel")"
+  printf '%s\n' "$value" > "$out/$rel"
+}
+
+# Copy the files named $2… in directory $1, by glob.
+copy_in() {
+  local dir=$1 pattern path
+  shift
+  for pattern in "$@"; do
+    for path in "$src/$dir"/$pattern; do
+      if [[ -e $path ]]; then copy "${path#"$src"/}"; fi
+    done
+  done
+}
+
+for f in sys_vendor product_name product_family board_name board_vendor chassis_type bios_version; do
+  copy "class/dmi/id/$f"
+done
+
+copy firmware/acpi/platform_profile
+copy firmware/acpi/platform_profile_choices
+for dir in "$src"/class/platform-profile/*/; do
+  if [[ -d $dir ]]; then copy_in "class/platform-profile/$(basename "$dir")" name profile choices; fi
+done
+
+for dir in "$src"/class/firmware-attributes/*/attributes/*; do
+  rel=${dir#"$src"/}
+  if [[ -d $dir ]]; then
+    copy_in "$rel" current_value default_value display_name min_value max_value possible_values scalar_increment type
+  else
+    copy "$rel"
+  fi
+done
+
+for dir in "$src"/class/power_supply/*/; do
+  [[ -d $dir ]] || continue
+  copy_in "class/power_supply/$(basename "$dir")" type scope status online present capacity capacity_level \
+    charge_control_end_threshold charge_control_start_threshold charge_behaviour \
+    manufacturer model_name technology cycle_count energy_full energy_full_design charge_full charge_full_design
+done
+
+for dir in "$src"/class/leds/*::kbd_backlight/; do
+  if [[ -d $dir ]]; then copy_in "class/leds/$(basename "$dir")" brightness max_brightness brightness_hw_changed; fi
+done
+
+copy devices/system/cpu/modalias
+copy devices/system/cpu/present
+copy devices/system/cpu/online
+copy devices/system/cpu/cpufreq/boost
+copy devices/system/cpu/amd_pstate/status
+for dir in "$src"/devices/system/cpu/cpu[0-9]*/; do
+  cpu=devices/system/cpu/$(basename "$dir")
+  copy_in "$cpu/cpufreq" energy_performance_preference energy_performance_available_preferences \
+    scaling_max_freq scaling_min_freq cpuinfo_max_freq cpuinfo_min_freq scaling_driver scaling_governor boost
+  copy_in "$cpu/topology" core_id physical_package_id die_id
+done
+
+for dir in "$src"/class/hwmon/hwmon*/; do
+  [[ -d $dir ]] || continue
+  copy_in "class/hwmon/$(basename "$dir")" name 'fan*_input' 'fan*_label' 'pwm[0-9]' 'pwm*_enable' \
+    'pwm*_auto_point*_temp' 'pwm*_auto_point*_pwm' 'temp*_input' 'temp*_label'
+done
+
+copy kernel/security/lockdown
+copy kernel/security/lsm
+
+for dir in "$src"/bus/usb/devices/*/; do
+  if [[ -f $dir/idVendor ]]; then copy_in "bus/usb/devices/$(basename "$dir")" idVendor idProduct; fi
+done
+for dir in "$src"/bus/pci/devices/*/; do
+  dev=bus/pci/devices/$(basename "$dir")
+  class=$(cat -- "$dir/class" 2>/dev/null || true)
+  # The root complex (the SMU's way in) and the graphics cards.
+  if [[ $(basename "$dir") == 0000:00:00.0 || $class == 0x03* ]]; then
+    copy_in "$dev" vendor device class power_state boot_vga
+  fi
+done
+
+echo "capture: $(find "$out" -type f | wc -l) files in $out"

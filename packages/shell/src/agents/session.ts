@@ -8,7 +8,7 @@
  */
 
 import type { Compositor } from "../compositor.ts";
-import type { Tile } from "../layout.ts";
+import type { Arrange, Tile } from "../layout.ts";
 import { LineBuffer } from "../lines.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";
@@ -16,10 +16,12 @@ import { type ToolResult, toolError } from "./context.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
+import type { AgentMask } from "./mask.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
 import type { AgentInfo, AgentUi, Who } from "./presence.ts";
 import { runCall } from "./run.ts";
+import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall, scopeOf } from "./tools/index.ts";
 
 /** How long a finished action stays in the menu bar before "Idle". */
@@ -31,6 +33,8 @@ export interface SessionContext {
   compositor: Compositor;
   ui: AgentUi;
   desktop: Desktop;
+  /** What agents' pictures blank, shared by every connection. */
+  mask: AgentMask;
   /** The agent seat, shared by every connection. */
   hands: Hands;
   grants: Grants;
@@ -38,7 +42,10 @@ export interface SessionContext {
   lock: { readonly isLocked: boolean };
   /** The menu bar's list changed. */
   publish(): void;
-  tile(window: number, tile: Tile): Promise<void>;
+  tile(window: number, to: Arrange): Promise<void>;
+  arrangement(window: number): Tile | null;
+  /** Login sources, the accessibility bus, and the windows handed to the person. */
+  secrets: SecretsShared;
 }
 
 /** What a Bun socket offers the session. */
@@ -64,6 +71,11 @@ export class Session {
   private readonly lines = new LineBuffer();
   private outbox: Uint8Array[] = [];
   private closed = false;
+  private readonly secrets: SessionSecrets;
+  /** Calls running now, each to be given up on when the agent cancels it (`notifications/cancelled`). */
+  private readonly inFlight = new Map<mcp.Id, AbortController>();
+  /** The scope sheet up now, to take down when no waiting call needs it any more. */
+  private askAbort: AbortController | null = null;
 
   constructor(
     readonly id: number,
@@ -71,8 +83,11 @@ export class Session {
     private readonly connection: Connection,
     private readonly ctx: SessionContext,
     private readonly onGone: (session: Session) => void,
+    /** In Dashi's agent sandbox, or on another machine (sandbox.ts): only then may it sign in. */
+    confined = false,
   ) {
     this.granted = peer.remote ? new Set() : ctx.grants.get(peer.key);
+    this.secrets = new SessionSecrets(ctx.secrets, ctx.ui, confined);
   }
 
   info(): AgentInfo {
@@ -127,6 +142,8 @@ export class Session {
     if (this.closed) return;
     const incoming = mcp.parse(line);
     if (incoming.kind === "invalid") this.send(mcp.error(incoming.id, incoming.code, incoming.message));
+    const cancelled = mcp.cancelledRequest(incoming);
+    if (cancelled !== null) return this.cancel(cancelled);
     if (incoming.kind !== "request") return;
     const { id, method, params } = incoming;
     switch (method) {
@@ -203,10 +220,19 @@ export class Session {
     this.asking = true;
     this.setStatus("Waiting for you");
     const ask = { agent: this.id, who: this.who, scopes: choices(needs, this.granted) };
+    const controller = new AbortController();
+    this.askAbort = controller;
     // The sheet's own clock (sheet-queue.ts) turns an unanswered one into "Don't Allow".
-    const answer = await this.ctx.ui.ask(ask);
+    const answer = await this.ctx.ui.ask(ask, controller.signal);
     this.asking = false;
+    this.askAbort = null;
     if (this.closed) return;
+    if (controller.signal.aborted) {
+      // Every call it was for was given up on: no answer, and no refusal kept.
+      this.setStatus("Connected");
+      if (this.waiting.length > 0) void this.ask();
+      return;
+    }
     if (this.ctx.lock.isLocked) {
       // Whatever came back was not an answer: the lock screen was in the way.
       this.status = "Connected";
@@ -241,22 +267,56 @@ export class Session {
     for (const { id, call } of waiting) this.reply(id, call.name, toolError(LOCKED));
   }
 
+  /**
+   * The agent gave up on request `id` (its client timed out): a call still
+   * waiting for its scope is dropped, one running is aborted, so its sheet
+   * comes down and nothing it would still have typed is typed. No reply is sent.
+   */
+  private cancel(id: mcp.Id): void {
+    const running = this.inFlight.get(id);
+    if (running) {
+      running.abort();
+      return;
+    }
+    const before = this.waiting.length;
+    this.waiting = this.waiting.filter((entry) => entry.id !== id);
+    if (this.waiting.length < before) this.log(null, "cancelled");
+    if (this.waiting.length === 0) this.askAbort?.abort();
+  }
+
   private async run(id: mcp.Id, call: Call): Promise<void> {
+    const controller = new AbortController();
+    this.inFlight.set(id, controller);
+    const { signal } = controller;
     let result: ToolResult;
     try {
-      result = await runCall(call, {
-        compositor: this.ctx.compositor,
-        ui: this.ctx.ui,
-        desktop: this.ctx.desktop,
-        hands: this.ctx.hands,
-        agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
-        status: (text) => this.setStatus(text),
-        tile: this.ctx.tile,
-        mayName: () => this.granted.has("see"),
-        confirm: (question) => this.confirm(question),
-      });
+      // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
+      result = await this.secrets.around(call, () =>
+        runCall(call, {
+          compositor: this.ctx.compositor,
+          ui: this.ctx.ui,
+          desktop: this.ctx.desktop,
+          hands: this.ctx.hands,
+          mask: this.ctx.mask,
+          secrets: this.secrets.run(this.id, () => this.who, signal),
+          agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
+          status: (text) => this.setStatus(text),
+          tile: this.ctx.tile,
+          arrangement: this.ctx.arrangement,
+          mayName: () => this.granted.has("see"),
+          confirm: (question) => this.confirm(question, signal),
+          signal,
+        }),
+      );
     } catch (error) {
       result = toolError(`${call.name} failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.inFlight.delete(id);
+    }
+    if (signal.aborted) {
+      this.log(call.name, "cancelled");
+      this.settle();
+      return;
     }
     // Locked meanwhile: whatever it saw or did stays between it and the lock screen.
     if (this.ctx.lock.isLocked && !locksScreen(call.name)) result = toolError(LOCKED_WHILE_RUNNING);
@@ -269,13 +329,13 @@ export class Session {
    * yes is a no: Don't Allow, two minutes of silence, the agent leaving, or
    * the screen locking.
    */
-  private async confirm(question: Question): Promise<boolean> {
-    if (this.closed || this.ctx.lock.isLocked) return false;
+  private async confirm(question: Question, signal: AbortSignal): Promise<boolean> {
+    if (this.closed || this.ctx.lock.isLocked || signal.aborted) return false;
     this.confirming++;
     this.setStatus("Waiting for you");
     try {
-      const yes = await this.ctx.ui.confirm({ agent: this.id, who: this.who, ...question });
-      return yes && !this.closed && !this.ctx.lock.isLocked;
+      const yes = await this.ctx.ui.confirm({ agent: this.id, who: this.who, ...question }, signal);
+      return yes && !this.closed && !this.ctx.lock.isLocked && !signal.aborted;
     } finally {
       this.confirming--;
       if (!this.asking && this.confirming === 0) this.setStatus("Connected");
@@ -314,7 +374,9 @@ export class Session {
     if (this.closed) return;
     this.closed = true;
     this.log(null, why);
-    if (this.asking || this.confirming > 0) this.ctx.ui.dismiss(this.id);
+    // What it was doing stops (nothing more is typed), and its sheets, and a "Your turn" it left up, come down.
+    for (const running of this.inFlight.values()) running.abort();
+    this.ctx.ui.dismiss(this.id);
     this.connection.terminate();
     this.onGone(this);
   }

@@ -92,6 +92,15 @@ function ExtraItem({
           {extra.label}
         </Text>
       )}
+      {extra.dev && (
+        // `dashi-applet dev`: a developer's applet, not one installed from the store.
+        <View
+          testID={`extra-dev:${extra.key}`}
+          style={{ height: 12, paddingLeft: 3, paddingRight: 3, borderRadius: 3, borderWidth: 1, borderColor: colors.textMuted, justifyContent: "center" }}
+        >
+          <Text style={{ fontSize: 8, fontWeight: "bold", color: colors.textMuted }}>DEV</Text>
+        </View>
+      )}
       {extra.attention && (
         <View
           testID={`extra-attention:${extra.key}`}

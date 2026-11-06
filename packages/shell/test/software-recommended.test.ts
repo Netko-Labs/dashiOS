@@ -20,7 +20,7 @@ const details = (id: string): AppDetails => ({
   categories: [],
 });
 
-test("the shelf uses the catalog's card where it answers, the list's own words where it doesn't", async () => {
+test("the shelf keeps Dashi's name and line, and takes the catalog's icon and verified mark where it answers", async () => {
   const [vlc, mpv] = RECOMMENDED_APPS;
   if (!vlc || !mpv) throw new Error("the list is empty");
   const catalog = {
@@ -32,7 +32,7 @@ test("the shelf uses the catalog's card where it answers, the list's own words w
   const { value, stale } = await loadRecommended(catalog, [vlc, mpv]);
   expect(stale).toBe(true);
   expect(value.map((app) => app.id)).toEqual([vlc.id, mpv.id]);
-  expect(value[0]).toMatchObject({ name: `${vlc.id} from Flathub`, verified: true, icon: `https://dl.flathub.org/media/${vlc.id}.png` });
+  expect(value[0]).toMatchObject({ name: vlc.name, summary: vlc.summary, verified: true, icon: `https://dl.flathub.org/media/${vlc.id}.png` });
   expect(value[0]).not.toHaveProperty("description");
   expect(value[1]).toEqual(summaryOf(mpv));
 });

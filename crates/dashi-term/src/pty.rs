@@ -112,6 +112,16 @@ impl Pty {
         unsafe { libc::ioctl(self.master.as_raw_fd(), libc::TIOCSWINSZ, &size) };
     }
 
+    /// What runs in the foreground instead of the shell (a command, `ssh`,
+    /// `vim`): its name, empty when it has none; None at the shell's prompt.
+    pub(crate) fn foreground(&self) -> Option<String> {
+        // SAFETY: the descriptor is our open PTY master; Linux answers for the far end.
+        let group = unsafe { libc::tcgetpgrp(self.master.as_raw_fd()) };
+        running_program(group, self.child, |pid| {
+            std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()
+        })
+    }
+
     /// Read the shell's output on a thread until the PTY closes.
     pub(crate) fn read_into(&self, tx: Sender<Message>) -> io::Result<()> {
         let fd = self.master.try_clone()?;
@@ -155,6 +165,23 @@ pub(crate) fn write_all(fd: RawFd, mut data: &[u8]) {
     }
 }
 
+/// The foreground process group's program, unless it is the shell's own
+/// group (the shell leads its session, so its group is its pid) or unknown.
+fn running_program(
+    group: libc::pid_t,
+    shell: libc::pid_t,
+    name_of: impl Fn(libc::pid_t) -> Option<String>,
+) -> Option<String> {
+    if group <= 0 || group == shell {
+        return None;
+    }
+    Some(
+        name_of(group)
+            .map(|name| name.trim().to_string())
+            .unwrap_or_default(),
+    )
+}
+
 /// Wait for the shell and give its exit status.
 pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
     let mut status = 0;
@@ -164,5 +191,27 @@ pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
         libc::WEXITSTATUS(status)
     } else {
         128 + libc::WTERMSIG(status)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::running_program;
+
+    #[test]
+    fn the_shell_at_its_prompt_is_not_running_anything() {
+        let named = |_| Some("sleep\n".to_string());
+        assert_eq!(running_program(100, 100, named), None);
+        assert_eq!(running_program(-1, 100, named), None);
+        assert_eq!(running_program(0, 100, named), None);
+    }
+
+    #[test]
+    fn another_group_in_front_is_a_running_program() {
+        assert_eq!(
+            running_program(120, 100, |pid| (pid == 120).then(|| "sleep\n".to_string())),
+            Some("sleep".to_string())
+        );
+        assert_eq!(running_program(120, 100, |_| None), Some(String::new()));
     }
 }

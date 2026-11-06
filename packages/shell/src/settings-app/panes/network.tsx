@@ -9,7 +9,7 @@
  * sheet.
  */
 
-import { useColors } from "@dashi/ui";
+import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { LOCK } from "../../control-center/glyphs.ts";
@@ -19,10 +19,9 @@ import { type EthernetInfo, useNetInfo, type VpnConnection } from "../../network
 import { chooseNetwork } from "../../wifi/flow.ts";
 import { joinMessage } from "../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../wifi/store.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import type { SavedNetwork, WifiNetwork } from "../../wifi/types.ts";
 import type { PaneServices } from "../services.ts";
-import { Caption, Group, Note, Page, Row } from "../ui.tsx";
+import { Caption, Group, Note, Page, Row, Spot } from "../ui.tsx";
 import { CheckSlot, Failure, ListRow, MiniButton, Value } from "./parts.tsx";
 
 function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork; current: boolean; state: WifiState; onJoin: (network: WifiNetwork) => void }) {
@@ -72,9 +71,11 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
     <>
       <Caption above>Wi-Fi</Caption>
       <Group testID="net-wifi-switch">
-        <Row label="Wi-Fi" detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}>
-          <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
-        </Row>
+        <Spot pane="network" row="wi-fi">
+          <Row label="Wi-Fi" detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}>
+            <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
+          </Row>
+        </Spot>
       </Group>
       {on && state.available === false && (
         <Group>

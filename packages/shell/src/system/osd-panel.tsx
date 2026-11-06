@@ -5,9 +5,10 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { render, Svg, spawnNativeHost, Text, View } from "@mirinjs/metal";
-import { METAL_HOST } from "../apps.ts";
+import { render, Svg, Text, View } from "@mirinjs/metal";
 import { batteryGlyph, micGlyph, SUN, speakerGlyph } from "../glyphs.ts";
+import { keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
+import { spawnShellHost } from "../metal-host.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "./osd-state.ts";
 
 const SEGMENT = { width: 8, height: 6, gap: 2 } as const;
@@ -22,6 +23,10 @@ function glyphOf(state: OsdState): string {
       return micGlyph(state.muted);
     case "power":
       return batteryGlyph(state.percent, state.charge);
+    case "mode":
+      return modeGlyph(state.mode);
+    case "keyboard-light":
+      return keyboardLightGlyph(state.level > 0);
   }
 }
 
@@ -29,6 +34,7 @@ function glyphOf(state: OsdState): string {
 function caption(state: OsdState): string | null {
   if (state.kind === "mic") return state.muted ? "Microphone off" : "Microphone on";
   if (state.kind === "power") return `${state.charge === true ? "Charging" : "Plugged In"} · ${state.percent}%`;
+  if (state.kind === "mode") return state.label;
   return null;
 }
 
@@ -89,7 +95,7 @@ export function OsdPanel({ store }: { store: OsdStore }) {
 /** Opens the HUD as a layer-shell overlay. */
 export const openOsdSurface: OpenOsd = (store, onClosed) => {
   const full = OSD.size + OSD.margin * 2;
-  const host = spawnNativeHost(METAL_HOST, {
+  const host = spawnShellHost({
     title: "On-screen display",
     appId: "dev.dashi.shell",
     width: full,

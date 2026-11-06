@@ -386,7 +386,7 @@ impl Dashi {
             cursor: session_data.cursor,
             only,
         };
-        let picture = match backend::capture(self, &view) {
+        let mut picture = match backend::capture(self, &view) {
             Ok(picture) => picture,
             Err(error) => {
                 tracing::debug!(%error, "an image-copy-capture frame");
@@ -394,6 +394,9 @@ impl Dashi {
                 return;
             }
         };
+        // A client the shell masked (a recorder for an agent) gets its blanks.
+        let scale = output.current_scale().fractional_scale();
+        self.mask_for_client(frame.client(), area, scale, &mut picture);
         if !crate::render::capture::copy_to_shm(&picture, buffer) {
             frame.failed(frame_v1::FailureReason::BufferConstraints);
             return;

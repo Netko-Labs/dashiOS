@@ -1,11 +1,15 @@
 //! The title bar dashi-comp draws above a window that lets it (xdg-decoration
 //! server side), and the traffic lights alone over a "unified" window
 //! (dashi-chrome-v1). Geometry is in logical pixels; images are drawn at the
-//! output's scale and cached until something they show changes.
+//! output's scale and cached until something they show changes. A unified
+//! window keeps its lights everywhere it is drawn: in full screen (its app
+//! keeps their place clear in its toolbar), and small or moving (the overview,
+//! a flight to the Dock, a Desktop sliding in, the shell's pictures), where
+//! they shrink with it at the same spot.
 
 use smithay::{
     backend::{allocator::Fourcc, renderer::element::memory::MemoryRenderBuffer},
-    utils::Transform,
+    utils::{Logical, Size, Transform},
 };
 
 use super::{
@@ -56,6 +60,26 @@ impl Decor {
             BAR_HEIGHT
         } else {
             0
+        }
+    }
+
+    /// Whether dashi-comp draws this window's chrome (`fullscreen`: while it
+    /// is full screen). A title bar goes in full screen, so the window is edge
+    /// to edge; a unified window's lights stay, where its app keeps them clear.
+    pub(crate) fn drawn(self, fullscreen: bool) -> bool {
+        match self {
+            Decor::None => false,
+            Decor::Standard => !fullscreen,
+            Decor::Unified => true,
+        }
+    }
+
+    /// The size of the image drawn for a window `width` wide (logical): the
+    /// whole bar, or just the lights and their margins.
+    pub(crate) fn image_size(self, width: i32) -> Size<i32, Logical> {
+        match self {
+            Decor::Unified => Size::from((CONTROLS.2, CONTROLS.3)),
+            _ => Size::from((width.max(1), BAR_HEIGHT)),
         }
     }
 }
@@ -115,6 +139,19 @@ pub(crate) struct Image {
     pub buffer: MemoryRenderBuffer,
 }
 
+impl Image {
+    /// Its size, logical: what it covers of the window at full size, from its top-left.
+    pub(crate) fn size(&self) -> Size<i32, Logical> {
+        self.look.decor.image_size(self.look.width)
+    }
+
+    /// Whether it shows on a window with a bar `bar` high now: a unified
+    /// window's lights always do, a title bar only while there is one.
+    pub(crate) fn shows(&self, bar: f64) -> bool {
+        self.look.decor == Decor::Unified || bar > 0.0
+    }
+}
+
 struct Palette {
     bar: Rgba,
     line: Rgba,
@@ -171,10 +208,8 @@ fn shape(part: Part) -> (f32, f32, f32) {
 pub(crate) fn draw(look: &Look, text: &mut Text) -> MemoryRenderBuffer {
     let s = look.scale.max(1);
     let colors = palette(look.dark, look.active);
-    let (width, height) = match look.decor {
-        Decor::Unified => (CONTROLS.2, CONTROLS.3),
-        _ => (look.width.max(1), BAR_HEIGHT),
-    };
+    let size = look.decor.image_size(look.width);
+    let (width, height) = (size.w, size.h);
     let mut canvas = Canvas::new(width * s, height * s);
     if look.decor == Decor::Standard {
         canvas.fill_top_rounded(colors.bar, (look.radius * s) as f32);
@@ -263,5 +298,37 @@ mod tests {
         assert_eq!(Decor::Standard.bar_height(), BAR_HEIGHT);
         assert_eq!(Decor::Unified.bar_height(), 0);
         assert_eq!(Decor::None.bar_height(), 0);
+    }
+
+    #[test]
+    fn a_unified_window_keeps_its_lights_in_full_screen() {
+        assert!(Decor::Unified.drawn(true), "no gap where the lights were");
+        assert!(Decor::Unified.drawn(false));
+        assert!(!Decor::Standard.drawn(true), "edge to edge, no bar");
+        assert!(Decor::Standard.drawn(false));
+        assert!(!Decor::None.drawn(true));
+        assert!(!Decor::None.drawn(false));
+    }
+
+    #[test]
+    fn the_lights_image_covers_what_the_app_keeps_clear() {
+        assert_eq!(
+            Decor::Unified.image_size(1200),
+            Size::from((CONTROLS.2, CONTROLS.3))
+        );
+        assert_eq!(
+            Decor::Standard.image_size(600),
+            Size::from((600, BAR_HEIGHT))
+        );
+        // Every light sits inside it, so it shrinks with the window whole.
+        for (index, part) in [Part::Close, Part::Minimize, Part::Zoom]
+            .into_iter()
+            .enumerate()
+        {
+            let (w, h, _) = shape(part);
+            let cx = FIRST_LIGHT_X + LIGHT_STEP * index as f32;
+            assert!(cx + w * HOVER_SCALE / 2.0 <= CONTROLS.2 as f32);
+            assert!(h * HOVER_SCALE <= CONTROLS.3 as f32);
+        }
     }
 }

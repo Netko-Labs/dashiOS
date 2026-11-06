@@ -131,6 +131,82 @@
     @keyframes drift { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 
     @media (max-width: 760px) { .type-row, .icon-lab { grid-template-columns: 1fr; } }
+
+    /* Rules: numbered, each with its tags */
+    ol.rules { list-style: none; padding: 0; margin: 14px 0 22px; display: grid; gap: 8px; }
+    ol.rules > li { display: grid; grid-template-columns: 54px 1fr; gap: 0 10px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-raised); font-size: 14.5px; line-height: 1.5; }
+    ol.rules > li > .rid { font: 700 12px var(--mono); color: var(--accent); padding-top: 3px; white-space: nowrap; }
+    ol.rules > li.proposed { border-style: dashed; }
+    ol.rules .tags { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink-muted); }
+    ol.rules .tags .pill { margin-right: 6px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13.5px; color: var(--ink-muted); }
+    .rule-hero { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; padding: 16px 20px; background: var(--bg-raised); margin: 18px 0; }
+    .rule-hero b.big { display: block; font-size: 20px; letter-spacing: -0.01em; margin-bottom: 4px; }
+    .rule-hero p { margin: 0; color: var(--ink-muted); }
+
+    /* Window depth demo */
+    .depth-stage { position: relative; height: 300px; padding: 0; display: block; }
+    .depth-stage .win { position: absolute; width: 300px; box-shadow: none; transition: box-shadow 150ms cubic-bezier(0.33, 1, 0.68, 1); }
+    .depth-stage .win .body { height: 150px; }
+    .depth-stage .back { left: 12%; top: 34px; }
+    .depth-stage .front { left: calc(12% + 150px); top: 92px; }
+    /* The values window-style.ts sends: the hairline inside, the shadows, the ring in place of the hairline. */
+    .depth-stage.shadow .win { box-shadow: inset 0 0 0 1px #0000002b, 0 8px 20px -6px #00000038; }
+    .depth-stage.shadow .front { box-shadow: inset 0 0 0 1px #0000002b, 0 18px 40px -8px #00000061, 0 2px 6px #00000029; }
+    .depth-stage.shadow.ring .front { box-shadow: 0 0 0 1.5px var(--kombu), 0 18px 40px -8px #00000061, 0 2px 6px #00000029; }
+    .depth-stage.dark-wins.shadow .win { box-shadow: inset 0 0 0 1px #ffffff1f, 0 8px 20px -6px #00000054; }
+    .depth-stage.dark-wins.shadow .front { box-shadow: inset 0 0 0 1px #ffffff1f, 0 18px 40px -8px #00000091, 0 2px 6px #0000003d; }
+    .depth-stage.dark-wins.shadow.ring .front { box-shadow: 0 0 0 1.5px var(--kombu), 0 18px 40px -8px #00000091, 0 2px 6px #0000003d; }
+    @media (max-width: 760px) { .depth-stage .front { left: 18%; } }
+
+    /* Brand: the mark */
+    .mark-stage { min-height: 280px; transition: background 200ms; }
+    .mark-stage.light, .play-stage.light { background: #f5f5f7; }
+    .mark-stage.dark, .play-stage.dark { background: #161617; }
+    #mark-holder { transition: width 120ms ease-out; display: grid; place-items: center; position: relative; }
+    #mark-holder svg { width: 100%; height: auto; display: block; }
+    #mark-holder.clear::before { content: ""; position: absolute; inset: -12.5%; border: 1.5px dashed #d0596f; border-radius: 6px; }
+    .lockup { display: flex; align-items: center; gap: 14px; }
+    .lockup .m { width: 56px; }
+    .lockup .w { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; }
+    .compare th:first-child, .compare td:first-child { width: 22%; font-weight: 600; }
+    .voice td:first-child { color: var(--ume); }
+    .voice td:last-child { color: var(--accent); }
+    .dont-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .dont-grid figure { margin: 0; text-align: center; font-size: 12.5px; color: var(--ink-muted); }
+    .dont-grid .box { height: 110px; border-radius: 12px; border: 1px solid var(--line); display: grid; place-items: center; background: var(--bg-raised); position: relative; overflow: hidden; }
+    .dont-grid .box::after { content: "✕"; position: absolute; top: 6px; right: 9px; color: var(--ume); font-weight: 700; }
+    .dont-grid .box > div { width: 56px; }
+
+    /* Kombu */
+    .intro { display: grid; grid-template-columns: 1fr 220px; gap: 32px; align-items: center; }
+    .intro .big { width: 200px; justify-self: center; animation: bob 3.2s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .faces { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+    .face {
+      border: 1px solid var(--line); border-radius: 14px; background: var(--bg-raised); cursor: pointer; padding: 12px 8px 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center;
+      font: 600 12.5px var(--font); color: var(--ink); transition: transform 120ms ease-out, border-color 120ms;
+    }
+    .face:hover { transform: translateY(-2px); }
+    .face[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+    .face > div { width: 64px; margin: 0 auto 6px; }
+    .face small { display: block; font-weight: 400; color: var(--ink-muted); font-size: 11.5px; line-height: 1.35; margin-top: 2px; }
+    .play-stage { min-height: 320px; transition: background 200ms; }
+    #sprite-holder { width: 180px; }
+    .scene { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .mock { border-radius: 14px; border: 1px solid var(--line); background: var(--bg-raised); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .mock .bar { height: 30px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--wash); }
+    .mock .bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); display: block; }
+    .mock .body { padding: 22px 16px; text-align: center; font-size: 13px; }
+    .mock .body > div[data-sprite] { width: 70px; margin: 0 auto 10px; }
+    .mock .body b { display: block; font-size: 14px; margin-bottom: 2px; }
+    .mock .body span { color: var(--ink-muted); }
+    .size-row { display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap; }
+    .size-row figure { margin: 0; text-align: center; font-size: 12px; color: var(--ink-muted); }
+
+    @media (max-width: 860px) { .intro { grid-template-columns: 1fr; } .faces { grid-template-columns: repeat(3, 1fr); } .scene { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .dont-grid { grid-template-columns: repeat(2, 1fr); } ol.rules > li { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -138,20 +214,137 @@
   <aside class="toc"></aside>
   <main>
     <div class="eyebrow">Design guidelines</div>
-    <h1>How Dashi looks and moves</h1>
-    <p class="lede">Every value here is read from the code: <code>@dashi/ui</code>'s theme, the shell's <code>theme.ts</code>, and the compositor's renderer. Change one, and change it here in the same commit.</p>
+    <h1>How Dashi looks, moves, and speaks</h1>
+    <p class="lede">One page for everything people see: the name and the mark, the colors and what each one means, type, spacing, windows, motion, icons, the components apps are built from, the patterns they follow, the voice, and Kombu. Values are read from the code, and each section names its file. Change one, and change it here in the same commit.</p>
+
+    <h2 id="how-to-use">How to use this page</h2>
+    <ul>
+      <li><strong>Rules first.</strong> Each section ends in numbered rules (<code>CO-2</code>, <code>PA-1</code>). Cite them in reviews and commits. The explanation above them is short on purpose.</li>
+      <li><strong>Tags tell you how true a rule is today.</strong> A rule with no tag holds in the code. The others are written down so they stop drifting.</li>
+      <li><strong>The code wins a disagreement until someone fixes one side.</strong> If the page and the code differ, what ships is the code: fix the page, or fix both together.</li>
+      <li><strong>Where the tagged rules came from:</strong> a review of every first-party app in November 2026 (the "roasts"). A tag names the roast and the place in the code; the reports are in <a href="roast/files.md"><code>docs/roast/</code></a>, and their proposals in <a href="proposals.html">proposals.html</a>.</li>
+    </ul>
+    <div class="legend card">
+      <span><span class="pill">no tag</span> holds in the code today</span>
+      <span><span class="pill wip">Not yet in code</span> the rule; the code still breaks it, and the tag says where</span>
+      <span><span class="pill open">Proposed</span> not picked yet; see <a href="proposals.html">proposals.html</a></span>
+      <span><span class="pill open">open</span> an open question, at the end of the page</span>
+    </div>
+
+    <div class="rule-hero" id="the-rule">
+      <b class="big">Vertical space is sacred.</b>
+      <p>One chrome row per window. No second bars, no two-line titles. This is the owner's rule and it outranks every other on the page: when a design needs more room for chrome, the design changes, not the rule. <a href="#vertical-space">The details →</a></p>
+    </div>
 
     <h2>Principles</h2>
     <div class="principles">
       <div class="card"><h3 class="notoc">Calm by default</h3><p>Nothing moves, flashes, or asks for attention unless the person needs it now. Quiet surfaces, one accent, gentle motion.</p></div>
-      <div class="card"><h3 class="notoc">Content first, chrome recedes</h3><p>Glass and hairlines instead of heavy frames. Toolbars merge into windows; the menu bar and Dock let the wallpaper through.</p></div>
+      <div class="card"><h3 class="notoc">Content first, chrome recedes</h3><p>One slim row of chrome, glass and hairlines instead of heavy frames. Toolbars merge into windows; the menu bar and Dock let the wallpaper through.</p></div>
       <div class="card"><h3 class="notoc">Familiar, then delightful</h3><p>Start from what people know from macOS and Windows, so nothing has to be learned. Then add the touches that make it Dashi's: the Shapes, the ingredients, Kombu.</p></div>
       <div class="card"><h3 class="notoc">One color, one job</h3><p>Kombu means "yours, selected"; ume means "close or destroy"; broth means "set aside or careful"; shiso means "an agent is acting". Never reuse a color for a second meaning.</p></div>
       <div class="card"><h3 class="notoc">Everything from the same tokens</h3><p>Shell, apps, the login screen, and GTK apps all draw from one palette and one set of measures. Rust draws chrome from the same values the shell sends; no surface invents its own.</p></div>
-      <div class="card"><h3 class="notoc">Motion explains</h3><p>A window flies to the Dock tile it went to; a Space slides the way it lies. Motion shows where things went, quickly, and stops entirely with Reduce Motion.</p></div>
+      <div class="card"><h3 class="notoc">Motion explains</h3><p>A window flies to the Dock tile it went to; a Desktop slides the way it lies. Motion shows where things went, quickly, and stops entirely with Reduce Motion.</p></div>
+      <div class="card"><h3 class="notoc">Nothing is lost by accident</h3><p>What can't be undone asks first, and what can be undone says how. Closing, quitting, and moving things never loses work silently.</p></div>
+    </div>
+
+    <h2 id="vertical-space">Vertical space</h2>
+    <p>A laptop screen is wide and short. Every row of chrome is a row of someone's work, so a window gets exactly one: the 28 px title bar, or the app's 38 px unified toolbar. Everything that wants to live in a second row finds a home in that one, in the sidebar, or in the content.</p>
+    <ol class="rules">
+      <li id="vs-1"><b class="rid">VS-1</b><div>One chrome row per window: the title bar or the unified toolbar, with nothing stacked under it.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a> roast · its tab bar is a second 28 px row (<code>apps/terminal/tab-bar.tsx</code>)</span></div></li>
+      <li id="vs-2"><b class="rid">VS-2</b><div>Titles are one line. A count or a scope that belongs to the title follows it on the same line, muted, after an em dash ("All Notes — 3 notes", <code>AppWindow</code>'s <code>detail</code>); anything longer goes in the sidebar or the content. <code>AppWindow</code> takes no <code>subtitle</code>, and a toolbar control never wraps to a second line.</div></li>
+      <li id="vs-3"><b class="rid">VS-3</b><div>No footer bar. Something that is happening (progress, an error with its action) is a notice that floats over the foot of the content (<code>AppWindow</code>'s <code>notice</code>, <code>@dashi/ui</code>'s <code>Notice</code>), takes no room from it, and leaves when it's done or dismissed. <code>AppWindow</code> takes no <code>footer</code>.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/activity-monitor.md">Activity Monitor</a> roast · its summary graphs are content under the table now, but still a fixed 132 px that can't be hidden (<code>apps/activity-monitor/summary.tsx</code>)</span></div></li>
+      <li id="vs-4"><b class="rid">VS-4</b><div>Tabs live in the toolbar row, never in a row of their own.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a> roast</span></div></li>
+      <li id="vs-5"><b class="rid">VS-5</b><div>State notices ("Offline · showing saved results") are a chip in the toolbar, not a box above the content.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/software.md">Software</a> roast · <code>apps/software/states.tsx:30-49</code></span></div></li>
+      <li id="vs-6"><b class="rid">VS-6</b><div>Full screen and Fill are different things: making a window bigger never hides the menu bar unless the person asked for full screen.</div></li>
+    </ol>
+
+    <h2 id="brand">Name and mark</h2>
+    <p>Dashi is the stock Japanese cooking starts from: kombu and bonito simmered into something you barely notice and everything depends on. The OS aims for the same: a calm foundation that makes everything on it taste better.</p>
+
+    <h3 id="the-name">The name</h3>
+    <div class="grid two">
+      <div class="card">
+        <div class="eyebrow">Say it</div>
+        <p style="margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em">DAH-shee</p>
+        <p class="muted small" style="margin:4px 0 0">出汁 · Japanese soup stock</p>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Write it</div>
+        <p style="margin:0"><strong>Dashi</strong>: one word, capital D. In system UI and docs it is just "Dashi", never "the Dashi".</p>
+        <p class="muted small" style="margin:6px 0 0">Not DASHI, DashiOS, Dashi OS, or dashi (except in code, package, and command names: <code>dashi-comp</code>, <code>ID=dashi</code>). <code>dashiOS</code> is only the repository's name.</p>
+      </div>
+    </div>
+
+    <h3 id="inspired">Inspired, not imitated</h3>
+    <p>Dashi takes what people already love about macOS and Windows and makes it its own. The test for every borrowed idea: would someone who knows both feel at home, and would nobody mistake it for either?</p>
+    <table class="compare">
+      <tr><th>From</th><th>What Dashi takes</th><th>How it becomes Dashi's</th></tr>
+      <tr><td>macOS</td><td>A global menu bar, a Dock, translucent glass, window controls at the top left, unified toolbars, a command key for shortcuts, sheets, a launcher</td><td>The Shapes controls (circle, bar, square) instead of three dots; ❖ instead of ⌘; kombu instead of blue; ingredients instead of system colors</td></tr>
+      <tr><td>Windows</td><td>Snapping and tiling from the keyboard (⌃❖ + arrows), a taskbar as an alternative to the Dock, a switcher that shows every window, practical defaults</td><td>The taskbar wears Dashi's glass and radius; tiling animates on Dashi's curves</td></tr>
+      <tr><td>Linux</td><td>Freedom to change everything, Flatpak, Fedora's engineering, GTK and Qt apps</td><td>GTK apps get Dashi's controls and colors (appearance/gtk-css.ts), so foreign apps look at home</td></tr>
+    </table>
+    <div class="callout warn"><span>⚠︎</span><p><strong>Never ship another company's assets.</strong> No Apple or Microsoft icons, glyphs (⌘, ⊞), fonts (SF, Segoe), wallpapers, sounds, palettes, or product names in the UI. Reinterpret the idea, then draw it fresh. A code comment that says "as on the Mac" is a cue to check that Dashi reinterpreted, not copied.</p></div>
+
+    <h3 id="mark">The mark</h3>
+    <p>A bowl and three wisps of steam: dashi, freshly made. The app tile sets it in white on a kombu gradient; the glyph alone works wherever a single color is needed.</p>
+    <div class="controls-row">
+      <div class="segmented" id="mark-variant">
+        <button data-value="tile" aria-pressed="true">App tile</button>
+        <button data-value="glyph" aria-pressed="false">Glyph</button>
+      </div>
+      <div class="segmented" id="mark-bg">
+        <button data-value="light" aria-pressed="true">Light</button>
+        <button data-value="dark" aria-pressed="false">Dark</button>
+        <button data-value="dusk" aria-pressed="false">Wallpaper</button>
+      </div>
+      <label>Size <input type="range" id="mark-size" min="16" max="200" value="128"> <span id="mark-size-label">128 px</span></label>
+      <label><input type="checkbox" id="mark-clear"> Clear space</label>
+      <button class="button" id="mark-download">Download SVG</button>
+    </div>
+    <div class="stage mark-stage light" id="mark-stage"><div id="mark-holder" style="width:128px"></div></div>
+    <p class="small muted" id="mark-note"></p>
+    <ul>
+      <li><strong>Tile:</strong> 44 × 44 on a 48 grid, corner radius 10.5, filled top to bottom from <code>#5FAE95</code> to <code>#2F6F5A</code>, with a 1.5 white inner line at 18%: the same recipe as every Dashi app icon (<a href="#icons">Icons</a>).</li>
+      <li><strong>Glyph:</strong> drawn on a 16-unit grid: the bowl a half-ellipse 13 wide, three wisps 3 apart, 1.3 strokes with round caps. Near-white <code>#F4F4F6</code> on the tile.</li>
+      <li><strong>Clear space:</strong> an eighth of the tile on every side (the dashed line). Nothing else enters it.</li>
+      <li><strong>Smallest size:</strong> 16 px for the tile, 12 px for the glyph. Below that the wisps merge.</li>
+      <li><strong>Files:</strong> <code>packages/shell/icons/setup.svg</code> (tile), <code>spin/dashi-logos/</code> (PNG and Plymouth frames).</li>
+    </ul>
+    <div class="card" style="display:flex;gap:40px;align-items:center;flex-wrap:wrap">
+      <div class="lockup"><div class="m" data-mark="tile"></div><div class="w">Dashi</div></div>
+      <p class="small muted" style="margin:0;max-width:340px"><strong>The lockup:</strong> the wordmark is Inter Bold at −0.02em tracking, its cap height about half the tile's. The gap between them is a quarter of the tile. Use the lockup where the name isn't already nearby; inside the OS, the mark alone is enough.</p>
+    </div>
+    <div class="dont-grid" style="margin-top:16px">
+      <figure><div class="box"><div data-mark="tile" style="filter:hue-rotate(160deg)"></div></div><figcaption>Don't recolor the tile</figcaption></figure>
+      <figure><div class="box"><div data-mark="tile" style="transform:scaleX(1.5)"></div></div><figcaption>Don't stretch or squash</figcaption></figure>
+      <figure><div class="box"><div data-mark="tile" style="transform:rotate(-14deg);filter:drop-shadow(4px 6px 3px #0008)"></div></div><figcaption>Don't rotate or add effects</figcaption></figure>
+      <figure><div class="box" style="background:repeating-linear-gradient(45deg,#e5b13f,#e5b13f 8px,#d0596f 8px,#d0596f 16px)"><div data-mark="glyph"></div></div><figcaption>Don't set the glyph on busy ground</figcaption></figure>
     </div>
 
     <h2 id="color">Color</h2>
+    <h3 id="ingredients">Ingredients</h3>
+    <p>Dashi's colors are named after what goes into the pot. Each has one job; select one to copy its hex.</p>
+    <div class="grid two">
+      <button class="ingredient" style="background:linear-gradient(150deg,#5fae95,#2f6f5a)" data-copy="#3E8A72">
+        <div><div class="jp">昆布 · kelp</div><div class="nm">Kombu</div><div class="hx">#3E8A72</div></div>
+        <div class="role">The accent and the person's color: selections, switches that are on, sliders, the one primary action, the zoom control (<code>#4A9A7E</code>), the mark. Under white text the code uses a deeper <code>#357A64</code> (<code>selection</code>), so the text is AA.</div>
+      </button>
+      <button class="ingredient" style="background:linear-gradient(150deg,#e2728a,#b4435d)" data-copy="#D0596F">
+        <div><div class="jp">梅 · pickled plum</div><div class="nm">Ume</div><div class="hx">#D0596F</div></div>
+        <div class="role">Closing and destroying: the close control, destructive buttons, errors.</div>
+      </button>
+      <button class="ingredient" style="background:linear-gradient(150deg,#f0c35e,#c8901c);color:#2a1d00" data-copy="#E5B13F">
+        <div><div class="jp">出汁 · the broth itself</div><div class="nm">Broth</div><div class="hx">#E5B13F</div></div>
+        <div class="role">Setting aside and caution: the minimize control, warnings, the dusk wallpaper's glow.</div>
+      </button>
+      <button class="ingredient" style="background:linear-gradient(150deg,#8b76e8,#5a43b8)" data-copy="#6E56CF">
+        <div><div class="jp">紫蘇 · perilla leaf</div><div class="nm">Shiso</div><div class="hx">#6E56CF</div></div>
+        <div class="role">Agents, and only agents: the pill and the consent sheet. Kombu stays the person's, so it is always clear who is acting.</div>
+      </button>
+    </div>
+    <p class="small muted">Neutrals: ink <code>#1D1D1F</code> and paper <code>#F5F5F7</code>, swapped in Dark Mode. Success uses moss <code>#4F9A3E</code>, a green deliberately not the accent. New colors get an ingredient's name and one job, or they don't get in. The brand values above are for marks and fills; text in a job color uses its ink token (<code>ume</code>, <code>broth</code>, <code>moss</code>), a shade of the same ingredient that is AA in each mode (see Contrast below).</p>
+
+    <h3 id="tokens">Tokens</h3>
     <p>Two sets, light and dark, that fill the same names (<code>packages/dashi-ui/src/theme/palette.ts</code>). Translucent values are glass: they assume a wallpaper or window behind. Select a swatch to copy its value.</p>
     <div class="controls-row">
       <div class="segmented" id="palette-mode">
@@ -162,7 +355,35 @@
     </div>
     <div class="swatches" id="palette"></div>
 
-    <h3>Title bars</h3>
+    <h3 id="contrast">Contrast</h3>
+    <p>Measured from the tokens (WCAG 2, a translucent ink composited on its ground; <code>dashi-ui/src/theme/contrast.ts</code>), and checked by <code>dashi-ui/test/contrast.test.ts</code>: a token that drops below its bar fails the tests. Text needs 4.5:1, a control's edge 3:1.</p>
+    <table>
+      <tr><th>Ink</th><th>Light: window · sidebar · card</th><th>Dark: window · sidebar · card</th></tr>
+      <tr><td><code>text</code></td><td>15.46 · 13.77 · 16.83</td><td>15.29 · 13.32 · 12.79</td></tr>
+      <tr><td><code>textMuted</code> (65% light, 60% dark)</td><td>5.08 · 4.84 · 5.25</td><td>6.30 · 5.79 · 5.64</td></tr>
+      <tr><td><code>ume</code> (errors, destructive words; <code>critical</code> is the same)</td><td>5.33 · 4.75 · 5.80 (<code>#AD3F55</code>)</td><td>5.99 · 5.22 · 5.01 (<code>#E8798F</code>)</td></tr>
+      <tr><td><code>broth</code> (warnings)</td><td>5.23 · 4.66 · 5.69 (<code>#86600A</code>)</td><td>8.47 · 7.39 · 7.09 (<code>#E5B13F</code>)</td></tr>
+      <tr><td><code>moss</code> (success)</td><td>5.34 · 4.76 · 5.81 (<code>#38722C</code>)</td><td>6.59 · 5.74 · 5.51 (<code>#6CB45B</code>)</td></tr>
+      <tr><td><code>controlEdge</code> (a secondary button's edge)</td><td>3.22 · 3.13 · 3.29</td><td>3.57 · 3.42 · 3.36</td></tr>
+      <tr><td>White on <code>selection</code> (kombu) and on <code>umeFill</code></td><td colspan="2">5.10 and 5.13, in both modes</td></tr>
+    </table>
+    <p class="small muted">Before November 2026: muted text 4.32 on the light window and 4.15 on the light sidebar, white on kombu <code>#3E8A72</code> 4.13, white on the dark red <code>#FF5A4F</code> 3.08, and a secondary button 1.15 against the window with no edge.</p>
+
+    <h3 id="tints">Tints</h3>
+    <p>Color that only tells things apart: Settings' sidebar tiles and Setup's headings, calendar colors, store categories, the letter that stands in for a missing icon, Activity Monitor's graph series. One list for all of them (<code>packages/dashi-ui/src/theme/tints.ts</code>), named for more of the kitchen, and none of them a job color, so a tile never says "selected", "destroy", "warning", "done" or "agent". Agents' own tiles are the one exception: they wear shiso because they are about agents. White glyphs and text read on every tint, at least 3.5:1, in both modes. Select one to copy it.</p>
+    <div class="swatches">
+      <button class="swatch" data-copy="#3D7AB0"><div class="chip" style="--c:#3D7AB0"></div><div class="meta"><span class="name">mizu · water</span><span class="hex">#3D7AB0</span><span class="use">Displays, Network, Bluetooth, Language &amp; Region; a chart's first series</span></div></button>
+      <button class="swatch" data-copy="#2B8597"><div class="chip" style="--c:#2B8597"></div><div class="meta"><span class="name">wakame</span><span class="hex">#2B8597</span><span class="use">Wallpaper, Desktop &amp; Dock, games</span></div></button>
+      <button class="swatch" data-copy="#6F8A2A"><div class="chip" style="--c:#6F8A2A"></div><div class="meta"><span class="name">matcha</span><span class="hex">#6F8A2A</span><span class="use">Battery &amp; Power, office apps; yellower than moss</span></div></button>
+      <button class="swatch" data-copy="#C66F22"><div class="chip" style="--c:#C66F22"></div><div class="meta"><span class="name">kabocha · pumpkin</span><span class="hex">#C66F22</span><span class="use">Sound, Notifications, audio and video; a chart's second series</span></div></button>
+      <button class="swatch" data-copy="#A06C35"><div class="chip" style="--c:#A06C35"></div><div class="meta"><span class="name">miso</span><span class="hex">#A06C35</span><span class="use">Date &amp; Time, education</span></div></button>
+      <button class="swatch" data-copy="#4A6478"><div class="chip" style="--c:#4A6478"></div><div class="meta"><span class="name">nori</span><span class="hex">#4A6478</span><span class="use">Appearance, Graphics, developer tools</span></div></button>
+      <button class="swatch" data-copy="#7E5E45"><div class="chip" style="--c:#7E5E45"></div><div class="meta"><span class="name">shiitake</span><span class="hex">#7E5E45</span><span class="use">Passwords, graphics apps</span></div></button>
+      <button class="swatch" data-copy="#706C66"><div class="chip" style="--c:#706C66"></div><div class="meta"><span class="name">goma · sesame</span><span class="hex">#706C66</span><span class="use">Keyboard, Trackpad, Mouse, Lock Screen, Users, About, system tools</span></div></button>
+    </div>
+    <p class="small muted">Calendars take them in this order, mizu first; a color an imported calendar brings stays. There is no red among them: red is for deleting.</p>
+
+    <h3 id="title-bars">Title bars</h3>
     <p>Drawn by the compositor for windows it frames (<code>crates/dashi-comp/src/render/titlebar.rs</code>), and given to GTK apps through <code>appearance/gtk-css.ts</code> so both match.</p>
     <table>
       <tr><th></th><th>Light, active</th><th>Light, inactive</th><th>Dark, active</th><th>Dark, inactive</th></tr>
@@ -172,13 +393,47 @@
       <tr><td>Controls</td><td colspan="2">ume, broth, kombu · gray <code>#CECBC6</code> when inactive</td><td colspan="2">ume, broth, kombu · gray <code>#525256</code> when inactive</td></tr>
     </table>
 
+    <h3 id="terminal-colors">Terminal colors</h3>
+    <p>Terminal's own ground and ink and the 16 ANSI colors programs name (<code>packages/shell/apps/terminal/palette.ts</code>), made from the ingredients: red from ume, yellow from broth, green from moss, cyan from kombu, magenta from shiso. dashi-term resolves programs' colors through them; a program that sets its own (OSC 4, 10, 11) keeps them. Every color programs write text in is at least 4.5:1 on the ground, except the ground's own side (white and bright white in Light Mode, black in Dark Mode). In Light Mode the bright colors are a step darker, not lighter, so they stay readable. The other 240 of the 256 colors are libghostty-vt's.</p>
+    <table>
+      <tr><th></th><th>Light</th><th>Dark</th></tr>
+      <tr><td>Ground</td><td><code>#FBFAF7</code></td><td><code>#1C1C1E</code></td></tr>
+      <tr><td>Ink</td><td><code>#1D1D1F</code></td><td><code>#E8E8EA</code></td></tr>
+      <tr><td>Black · bright</td><td><code>#1D1D1F</code> · <code>#636260</code></td><td><code>#3A3A3D</code> · <code>#8E8E93</code></td></tr>
+      <tr><td>Red · bright</td><td><code>#B23A50</code> · <code>#A8304A</code></td><td><code>#F07A8F</code> · <code>#FF97A8</code></td></tr>
+      <tr><td>Green · bright</td><td><code>#3D7A2E</code> · <code>#336B26</code></td><td><code>#7FC46A</code> · <code>#9CD988</code></td></tr>
+      <tr><td>Yellow · bright</td><td><code>#866000</code> · <code>#755400</code></td><td><code>#E5B13F</code> · <code>#F5CD6A</code></td></tr>
+      <tr><td>Blue · bright</td><td><code>#2C5FAF</code> · <code>#244F96</code></td><td><code>#6FA3EF</code> · <code>#93BBF6</code></td></tr>
+      <tr><td>Magenta · bright</td><td><code>#6A4FC4</code> · <code>#5A40AE</code></td><td><code>#A897F0</code> · <code>#C2B5F8</code></td></tr>
+      <tr><td>Cyan · bright</td><td><code>#22786A</code> · <code>#1B665A</code></td><td><code>#5FBFA6</code> · <code>#86D6C0</code></td></tr>
+      <tr><td>White · bright</td><td><code>#D6D3CC</code> · <code>#F3F1EC</code></td><td><code>#D8D8DC</code> · <code>#F5F5F7</code></td></tr>
+      <tr><td>Selection</td><td colspan="2">kombu, 25% in Light Mode and 40% in Dark Mode</td></tr>
+    </table>
+
+    <h3 id="color-rules">Color rules</h3>
+    <ol class="rules">
+      <li id="co-1"><b class="rid">CO-1</b><div>One color, one job. Kombu: selected, on, the one primary action. Ume: close, destroy, error. Broth: warning, set aside. Moss: success. Shiso: agents. Nothing else gets a job color.</div></li>
+      <li id="co-2"><b class="rid">CO-2</b><div>Kombu never decorates: not for hover, not for icons at rest, not for a category or a whole group of controls. Sidebar glyphs are ink or muted; only the selected row is kombu.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · <code>SidebarItem</code>'s glyphs are muted, and so are Files' sidebar glyphs and the file chooser's file and folder glyphs (ink on a selected row); Open With rows (Preview, Files, the chooser) show each app's own icon and hover in a wash. Calculator's keys follow it: kombu only on = and the operator waiting for a number. Some links are still kombu text (the consent sheet's "Other permissions", the print sheet's "More…")</span></div></li>
+      <li id="co-3"><b class="rid">CO-3</b><div>Shiso appears only where an agent is acting or asking, and on what is about agents (Settings' Agents tile, Setup's Agents page). No category, tile or tint wears it otherwise. In the launcher: the Ask row's glyph and words (<code>agentInk</code>), the plan's scope chips, the field's spark on a plan, and a 6 px dot on each "Now" row's icon. A selected agents' row is still kombu: selecting is the person's (<code>launcher/row-view.tsx</code>, <code>launcher/agents/plan-view.tsx</code>).</div></li>
+      <li id="co-4"><b class="rid">CO-4</b><div>No palette copied from another platform. Decorative tints (Settings tiles, calendar colors, store categories, chart series) come from one Dashi-made list that leaves out the job colors: <a href="#tints">Tints</a>.</div></li>
+      <li id="co-5"><b class="rid">CO-5</b><div>Tokens only. No hex in apps or the shell: grounds come from <code>Surface</code>, inks from <code>Palette</code>. A new need adds a token to <code>palette.ts</code> and to this page in the same commit. Code asks the palette whether it is dark; it never compares palette objects.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a>, <a href="roast/preview.md">Preview</a> roasts · Terminal's palette is its own (<code>apps/terminal/palette.ts</code>), and its tab shades are hex (<code>apps/terminal/view.tsx</code>); Preview's canvas ground is hex (<code>apps/preview/canvas.tsx</code>); identity checks remain in <code>apps/software/parts.tsx</code> and Appearance's previews (<code>settings-app/panes/appearance.tsx</code>)</span></div></li>
+      <li id="co-6"><b class="rid">CO-6</b><div>Contrast: text is at least 4.5:1 against its ground, muted text and white-on-kombu included; control edges (buttons, fields, checkboxes, an off switch) are at least 3:1. Check both modes before merging; the tokens' ratios are in <a href="#contrast">Contrast</a>.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · the tokens and <code>Button</code> pass; text fields, checkboxes, and the off switch (<code>dashi-ui/src/switch.tsx</code>) have no 3:1 edge yet. The selection meets it (CO-9): <code>onSelection</code> ink on <code>selectionWash</code> is at least 11.2:1 light and 10.4:1 dark over the launcher's glass, whatever the wallpaper, and at least 11.8:1 light and 9.9:1 dark on every window ground; its bar is at least 3:1 against the ground beside the row (<code>dashi-ui/test/selection-contrast.test.ts</code>)</span></div></li>
+      <li id="co-7"><b class="rid">CO-7</b><div>Error and destructive text uses one token in both modes: <code>ume</code> (<code>critical</code> and <code>batteryLow</code> are the same value). A destructive button is <code>umeFill</code> under white text.</div></li>
+      <li id="co-8"><b class="rid">CO-8</b><div>Every window follows the shell's Dark Mode from its first frame. No app has its own theme switch. A recessed field is darker than its window in both modes.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/calendar.md">Calendar</a> roasts · Components opens dark on a light desktop; <code>surface.field</code> is lighter than the window in Dark Mode (<code>surface.ts:22</code>)</span></div></li>
+      <li id="co-9"><b class="rid">CO-9</b><div>One selection look. A selected row in a list, a table or a sidebar, in the launcher or an app, sits on <code>selectionWash</code> with a 3 px <code>selectionBar</code> at its left edge (20 tall, or the row's height less 6 above and below), and every word and glyph on it is <code>onSelection</code> ink. No row is solid kombu under white: <code>@dashi/ui</code>'s <code>rowLook</code> and <code>SelectionBar</code> draw it (<code>dashi-ui/src/selection.tsx</code>), and <code>SidebarItem</code> and <code>Table</code> use them, as do Notes' list, Files' sidebar, list, icons and path suggestions, Calendar's calendars, the file and app choosers, Force Quit, and Settings' pickers. An icon view washes the whole tile and draws no bar. A menu's highlighted item is not a selection: it follows the pointer and stays kombu under white (5.1:1).</div></li>
+    </ol>
+
     <h2>Typography</h2>
     <p><strong>Inter</strong> everywhere (<code>INTERFACE_FAMILY</code>, <code>appearance/look.ts</code>), with Noto Sans for scripts Inter lacks and Noto Sans Mono for code. GTK apps get "Inter 11". The compositor's window titles are SemiBold 13. Every specimen below is editable.</p>
     <div id="type-scale"></div>
     <ul class="small">
       <li>Weights: Regular for reading, SemiBold (600) for labels that head something, Bold (700) for titles and the menu bar's app name. No Light, except the boot splash's title.</li>
-      <li>Muted text is the ink at 60% (<code>textMuted</code>), not a separate gray, so it works on any glass.</li>
+      <li>Muted text is the ink at 65% in light mode and 60% in dark (<code>textMuted</code>), not a separate gray, so it works on any glass and stays AA on every window ground.</li>
     </ul>
+    <ol class="rules">
+      <li id="ty-1"><b class="rid">TY-1</b><div>The scale is 11 (details, captions, section headings), 12 (secondary text, sheet messages), 13 (body, labels, toolbar and window titles), 15 (an empty state's title), 17 (the launcher's field, the one size it adds), 20 (a page title), and 88 for the clock. No other sizes, no fractional ones. The launcher: its field 17, a row's name 13, what follows it 12, its kind and the section heads 11 (<code>launcher.tsx</code>, <code>launcher/row-view.tsx</code>). Text size (Settings › Appearance: Default, Large, Larger, Largest, 1, 1.15, 1.3 and 1.5 times) multiplies the launcher's sizes, each rounded to a whole pixel (<code>launcher/measures.ts</code>), and reaches GTK apps as GNOME's text scaling factor (<code>text-size.ts</code>).<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/settings.md">Settings</a> roasts · the shell uses 20 sizes, including 11.5, 12.5 and 13.5; Settings draws its title at 14 Bold (<code>settings-app/view.tsx:104</code>). Text size reaches the launcher and GTK apps only; Dashi's own windows keep their sizes (<code>launcher/measures.ts</code> is its one reader)</span></div></li>
+      <li id="ty-2"><b class="rid">TY-2</b><div>Three weights: 400, 600, 700.</div></li>
+    </ol>
 
     <h2>Layout and spacing</h2>
     <p>Settings and app panes are built from grouped rows (<code>@dashi/ui</code>'s Group and Row). Turn on the measurements to see the numbers.</p>
@@ -209,10 +464,15 @@
       <tr><td>Choice pill</td><td>height 26 · padding 12 · radius 13</td><td><code>controls.tsx</code></td></tr>
       <tr><td>Button</td><td>height 28 · padding 14 · radius 7</td><td><code>controls.tsx</code></td></tr>
       <tr><td>Sidebar</td><td>width 200 · rows 32 (28 compact) · padding 8 · gap 9 · radius 7 · heading 11 SemiBold muted</td><td><code>sidebar.tsx</code>, <code>window.tsx</code></td></tr>
-      <tr><td>Unified toolbar</td><td>height 38 · title 13 Bold · subtitle 11 · left inset clears the controls + 14</td><td><code>window.tsx</code></td></tr>
+      <tr><td>Unified toolbar</td><td>height 38 · title 13 Bold, one line, its <code>detail</code> 13 Regular muted after " — " · left inset clears the controls + 14</td><td><code>window.tsx</code></td></tr>
       <tr><td>Sheet</td><td>padding 20 · radius 12 · gap 10 · icon 40 at radius 10 · title 13 Bold · message 12/16 · shadow xl</td><td><code>sheet.tsx</code></td></tr>
       <tr><td>Menu</td><td>padding 5 · radius 9 · rows 24 at radius 5</td><td><code>sheet.tsx</code></td></tr>
     </table>
+    <ol class="rules">
+      <li id="la-1"><b class="rid">LA-1</b><div>Heights: a control 28 (small 24), a sidebar row 32 (28 compact), a table row 24, a list row 30, a settings row at least 44, the unified toolbar 38, the title bar 28. The launcher: its field row 48, its rows 40 with 28 px icons, section heads 22, in a panel of radius 12 (a sheet's) with 5 of padding and rows of radius 7, so the corners nest (RA-1). In the field row, a chip naming what the rows act on (the action list, an alias, a shortcut, a scope: Clipboard, Snippets, a command from outside Dashi that offers rows or asks for words) is 26 tall with radius 7; a view an applet draws in the list takes whole rows, 40 each and 10 at most, inside the list's 5 of padding (<code>launcher/extensions.ts</code>); a scope's list draws 8 rows at a time under one head (its count, and at the right what it left out: "2 copies not kept: a password field, KeePassXC"), and scrolls with the selection; an alias badge after a row's name is 16 tall with radius 4; a setting's switch at a row's right end is <code>@dashi/ui</code>'s <code>Switch</code>, 38 × 22. A running agent's row ends in a 9 px stop square (radius 2, <code>agentInk</code>) in a 20 px target, as the menu bar's pill does. A plan's steps are launcher rows: a 20 px number (a still open ring while running, a moss check when done), the step in words at 13, and a scope chip 20 tall with radius 10, <code>agentWash</code> with 11 px <code>agentInk</code> text; "Not allowed · Allow once" is broth, at 12. A row has no hover tint of its own: the pointer moves the selection, so there is one mark (<code>launcher/field.tsx</code>, <code>launcher/row-view.tsx</code>, <code>launcher/agents/plan-view.tsx</code>). Its surface is 620 × 600. At a larger text size the field, rows, heads and icons grow by the same factor and fewer rows are listed (at the largest, 3 instant rows and 3 files), so the panel never outgrows the surface and nothing is clipped (<code>launcher/measures.ts</code>). → on a row with windows shows their live pictures under it, lined up with its name: frames of 112 × 70 with radius 6 and a 2 px edge, kombu on the picked one, 8 apart, at most 4 at once; the compositor draws each window inside its frame, 3 px in, once the frames have held still for 50 ms, and hides them the moment they move, so a picture never shows where its frame was (<code>launcher/pictures.ts</code>, <code>launcher/picture-sender.ts</code>, <code>launcher/window-strip.tsx</code>). On a plan the field reads "Reply to Claude Code" when that fits whole beside the chip and the keys, measured as drawn, else "Follow up…"; the chip gives way before the field does (<code>launcher/fit-words.ts</code>).<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/settings.md">Settings</a> roasts · sidebar rows are 30 in Files (and Notes' New Folder row) and 28 in Calendar; Settings' <code>MiniButton</code> (24, <code>settings-app/panes/parts.tsx</code>) sits beside <code>Button</code> (28)</span></div></li>
+      <li id="la-2"><b class="rid">LA-2</b><div>A page of grouped rows caps its content at about 680 wide and centers it, so rows stay readable in a big window.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/settings.md">Settings</a> roast · <code>Page</code> in <code>settings-app/ui.tsx:24</code> stretches</span></div></li>
+      <li id="la-3"><b class="rid">LA-3</b><div>An app whose layout is fixed says so: a minimum size, a maximum size, or not resizable, and then its zoom control does nothing.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/calculator.md">Calculator</a> roast · the app kit takes only <code>size</code> (<code>apps/kit/run.tsx:25-41</code>)</span></div></li>
+    </ol>
 
     <h2>Corners</h2>
     <p>Windows Dashi frames are rounded at the person's choice, <em>Window corners</em> in Settings → Appearance: None 0, Small 8, <strong>Medium 12 (default)</strong>, Large 16 (<code>shell/src/corners.ts</code>). The compositor rounds the bottom under Dashi's title bar and all four corners of a unified window, with a shader. Try the pills above, or:</p>
@@ -220,9 +480,11 @@
       <label>Radius <input type="range" id="radius" min="0" max="20" value="12"> <span id="radius-label">12 px</span></label>
     </div>
     <div class="stage dusk" style="min-height:260px"><div class="win light" id="radius-win" style="--r:12px"><div class="tb"><div class="shapes"><span class="close"></span><span class="min"></span><span class="zoom"></span></div><div class="title">Notes</div></div><div class="body">Window content</div></div></div>
-    <p class="small muted">Nested radii follow the outer one: a group inside a 12 px window is 10, a button 7, a menu row 5. The Dock is 18, app icons 10.5 on a 44 tile.</p>
+    <ol class="rules">
+      <li id="ra-1"><b class="rid">RA-1</b><div>Radii nest: a window 12 (the person's choice), a sheet 12, a group or card 10, a control 7, a menu row or small control 5, a checkbox 4, a pill half its height; the Dock 18, an app icon 10.5 on its 44 tile. Nothing else.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · the shell uses 21 distinct radii; the two search fields differ (7 and 8)</span></div></li>
+    </ol>
 
-    <h2>Materials</h2>
+    <h2 id="materials">Materials and depth</h2>
     <p>Glass is a translucent fill over the wallpaper, with a hairline edge where it meets windows. Menus and Control Center are nearly opaque, because nothing blurs what is behind them yet.</p>
     <div class="controls-row">
       <div class="segmented" id="desk-mode"><button data-value="light" aria-pressed="true">Light</button><button data-value="dark" aria-pressed="false">Dark</button></div>
@@ -244,11 +506,43 @@
       <tr><td>Menus, Control Center</td><td><code>#F6F6F8F7</code></td><td><code>#232325F7</code></td><td>Nearly opaque until blur exists</td></tr>
       <tr><td>On-screen display</td><td><code>#F5F5F7E0</code></td><td><code>#1E1E1EE0</code></td><td>Ink segments, on and off</td></tr>
     </table>
-    <h3>Shadows</h3>
-    <p>Two, from mirin Metal's presets: <code>sm</code> (0 1 3 0 and 0 1 2 −1, both 10%) for controls and cards, <code>xl</code> (0 20 25 −5 and 0 8 10 −6, both 10%) for sheets and menus. Windows don't cast a shadow yet <span class="pill open">open</span>.</p>
+
+    <h3 id="shadows">Shadows</h3>
+    <p>Two, from mirin Metal's presets: <code>sm</code> (0 1 3 0 and 0 1 2 −1, both 10%) for controls and cards, <code>xl</code> (0 20 25 −5 and 0 8 10 −6, both 10%) for sheets and menus. Windows cast their own, drawn by the compositor (below); a sheet attached to a window casts <code>xl</code> from there too.</p>
+
+    <h3 id="window-depth">Window depth</h3>
+    <p>Every window has a 1 px hairline just inside its frame and a soft shadow, deeper on the one with the keyboard, so two windows of the same color separate on any wallpaper and in both modes. Appearance › Highlight the active window (off by default) puts a kombu ring around the focused window in place of its hairline. There is no dimming: the window you read from keeps its colors. The shell decides the look (<code>packages/shell/src/appearance/window-style.ts</code>) and the compositor draws it, with one shader for the shadow and the lines (<code>crates/dashi-comp/src/render/depth/</code>). Compare:</p>
+    <div class="controls-row">
+      <div class="segmented" id="depth-style">
+        <button data-value="none" aria-pressed="false">Without</button>
+        <button data-value="shadow" aria-pressed="true">Shadow and hairline</button>
+        <button data-value="ring" aria-pressed="false">With accent ring</button>
+      </div>
+      <div class="segmented" id="depth-mode"><button data-value="light" aria-pressed="true">Light</button><button data-value="dark" aria-pressed="false">Dark</button></div>
+    </div>
+    <div class="stage dusk depth-stage shadow" id="depth-stage">
+      <div class="win light inactive back"><div class="tb"><div class="shapes"><span class="close"></span><span class="min"></span><span class="zoom"></span></div><div class="title">Files</div></div><div class="body">Behind</div></div>
+      <div class="win light front"><div class="tb"><div class="shapes"><span class="close"></span><span class="min"></span><span class="zoom"></span></div><div class="title">Notes</div></div><div class="body">Focused</div></div>
+    </div>
+    <table>
+      <tr><th>Window</th><th>Shadow (x y blur spread, alpha)</th><th>Dark Mode</th><th>Notes</th></tr>
+      <tr><td>Focused</td><td><code>0 18 40 −8</code> at 38%, <code>0 2 6 0</code> at 16%</td><td>57%, 24%</td><td>Cross-fades with the other over 150 ms, ease-out cubic; instant with Reduce Motion</td></tr>
+      <tr><td>Others</td><td><code>0 8 20 −6</code> at 22%</td><td>33%</td><td>Overview and flights to the Dock draw it at their scale</td></tr>
+      <tr><td>Tiled</td><td><code>0 0 8 0</code> at 20%</td><td>30%</td><td>Short, so it shades the 6 px gap and not the neighbor</td></tr>
+      <tr><td>Filled</td><td>none</td><td>none</td><td>No hairline either (the menu bar's edge is right there); the ring stays</td></tr>
+      <tr><td>Sheet</td><td><code>xl</code>: <code>0 20 25 −5</code>, <code>0 8 10 −6</code>, both 10%</td><td>15%, 15%</td><td>No ring: the ring stays on the window it hangs from</td></tr>
+      <tr><td>Full screen</td><td colspan="3">No shadow, hairline, or ring</td></tr>
+    </table>
+    <p class="small muted">Shadows are black, a Gaussian of sigma blur/2, and stay on the window's own screen; Dark Mode multiplies every alpha by 1.5. The hairline is the menu bar's edge token, <code>menuBarEdge</code>: <code>#0000002B</code> light, <code>#FFFFFF1F</code> dark. The ring is 1.5 px of <code>selection</code> (kombu <code>#357A64</code>), just outside the frame. Apps that draw their own shadow (GTK's client-side frames) get none from Dashi; menus and popups are left as they are. The page draws the same numbers with CSS.</p>
+    <ol class="rules">
+      <li id="de-1"><b class="rid">DE-1</b><div>Two shadows for UI: <code>sm</code> for raised controls and cards, <code>xl</code> for sheets and menus. The page and the code name the same presets.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · the code uses five presets</span></div></li>
+      <li id="de-2"><b class="rid">DE-2</b><div>Every window gets a 1 px hairline just inside its frame and a soft shadow, deeper on the focused window, so overlapping windows separate on any wallpaper and in both modes. Tiles cast a short shadow, a filled window none, a full screen one nothing at all. Sheets cast the sheet shadow (<code>xl</code>). Depth comes from light: windows are never dimmed.</div></li>
+      <li id="de-3"><b class="rid">DE-3</b><div>An optional ring: 1.5 px of kombu just outside the focused window's frame, in place of its hairline, from Appearance › Highlight the active window (off by default). It marks focus, which is kombu's job, so it never appears on unfocused windows or sheets.</div></li>
+      <li id="de-4"><b class="rid">DE-4</b><div>Glass that holds text (menus, Control Center, the launcher) stays nearly opaque until the compositor can blur behind it.</div></li>
+    </ol>
 
     <h2>Window chrome</h2>
-    <p>Dashi's window controls are <strong>the Shapes</strong>: a circle closes, a bar minimizes, a rounded square zooms. Each shape says what it does even without color, and the colors are the ingredients. Hover over them, and switch the window's state.</p>
+    <p>Dashi's window controls are <strong>the Shapes</strong>: a circle closes, a bar minimizes, a rounded square makes the window bigger. Each shape says what it does even without color, and the colors are the ingredients. Hover over them, and switch the window's state.</p>
     <div class="controls-row">
       <div class="segmented" id="chrome-mode"><button data-value="light" aria-pressed="true">Light</button><button data-value="dark" aria-pressed="false">Dark</button></div>
       <div class="segmented" id="chrome-focus"><button data-value="active" aria-pressed="true">Focused</button><button data-value="inactive" aria-pressed="false">Unfocused</button></div>
@@ -265,16 +559,62 @@
       <li>Controls are vertically centered in the bar; a press within 8 px of one counts; under the pointer the group lights and the hovered control grows 1.18×.</li>
       <li>Unfocused windows show gray controls, lit again on hover.</li>
       <li>Standard bar 28 with a centered SemiBold 13 title, clear of 84 px each side. A unified window gives the app a 38 px toolbar strip and keeps a 76 × 38 corner for the controls.</li>
-      <li>An app with no toolbar controls (Terminal) takes the standard bar, not a unified one, and keeps it current with the window title (<code>setTitle</code>): one slim line, "dashi@dashi:~ — 96×26".</li>
+      <li>A unified window keeps its controls in full screen, in the same corner and working the same; its toolbar never shows an empty gap where they were. A standard title bar leaves in full screen, and a window without Dashi's chrome (a game, a video player, an app with its own title bar) stays edge to edge.</li>
+      <li>Wherever a window is drawn small or moving (Overview, minimizing to the Dock, a Desktop sliding in, window and Desktop pictures), its controls or title bar shrink with it, at the same spot (<code>render/windows.rs</code>, <code>render/thumbnails/draw.rs</code>).</li>
+      <li>An app with no toolbar controls (Terminal) takes the standard bar, not a unified one, and keeps it current with the window title (<code>setTitle</code>): one slim line, "Terminal — 96×26" today.</li>
       <li>The zoom control uses a lighter kombu (<code>#4A9A7E</code>) than the accent so an 11 px square reads on the bar.</li>
       <li>Windows resize from any edge: 6 px outside and 3 px inside the frame.</li>
+      <li>What the square does is in <a href="#window-management">Window management</a>.</li>
     </ul>
+
+    <h2 id="window-management">Window management</h2>
+    <p>What makes a window bigger, and where tiles go. The compositor reports presses on the controls and the title bar, and the start of the person's drags and resizes (<code>crates/dashi-comp/src/input/decorations.rs</code>, <code>wm/grabs/</code>); the shell decides what they do and remembers how each window is arranged (<code>packages/shell/src/arrange.ts</code>, tile geometry in <code>layout.ts</code>, the arrows' steps in <code>tiling.ts</code>, keys in <code>keymap.ts</code>, the Window menu in <code>menus/model.ts</code>).</p>
+    <h3 id="window-management-today">Gestures and keys</h3>
+    <table>
+      <tr><th>Gesture</th><th>Does</th></tr>
+      <tr><td>Press the square</td><td><strong>Fill</strong>: the window takes the whole usable area (menu bar and Dock stay), with no gap, and the app is told it is maximized. Again, or on a tiled window: back to its own frame.</td></tr>
+      <tr><td>⌥ and press the square</td><td><strong>Full screen</strong>: the window gets a Desktop of its own and covers its whole screen there, the menu bar and Dock leave, and pushing the pointer against the top edge brings the menu bar back. The square on a full-screen window leaves full screen, back on its Desktop at the frame it had before (tiled or filled again, if it was). See <a href="#fullscreen-desktops">Full screen gets its own Desktop</a>.</td></tr>
+      <tr><td>Double-click the title bar</td><td>What the square does (an app's own title bar too)</td></tr>
+      <tr><td>⌃❖← ⌃❖→ ⌃❖↑ ⌃❖↓</td><td>The half on that side</td></tr>
+      <tr><td>From a half, an arrow</td><td>At right angles: that quarter (⌃❖← then ⌃❖↑ is the top left). The opposite way: back to its own frame. The same way again: the next screen that way, the same half (nothing with one screen). From a quarter, an arrow moves it to the next quarter, or past the edge to the next screen.</td></tr>
+      <tr><td>⌃❖↩</td><td>Fill</td></tr>
+      <tr><td>⌃❖C</td><td>Center: its own size, in the middle of the usable area</td></tr>
+      <tr><td>⌃❖R</td><td>Back to Previous Size: the frame it had before it was tiled or filled</td></tr>
+      <tr><td>⌃❖F</td><td>Full screen on or off</td></tr>
+      <tr><td>Drag against a side</td><td>The half on that side; the side's top or bottom 48 px give the quarters; the menu bar's edge gives Fill. A preview shows after 150 ms.</td></tr>
+      <tr><td>Drag a tiled or filled window</td><td>It gets its own size back under the pointer once it moves 4 pt, and is no longer tiled. Resizing it by hand ends the tile too.</td></tr>
+      <tr><td>Window menu</td><td>Fill, Center, the four halves and four quarters, Back to Previous Size (only when there is one to go back to), each with its keys; the tile the window is in is checked. View (or Window): Enter Full Screen.</td></tr>
+    </table>
+    <p class="small muted"><code>TILES</code> in <code>layout.ts</code> has the four halves, the four quarters, and fill. Tiles keep a 6 px gap between them and around them; Fill keeps none (on a 1646 × 937 screen with the Dock: x 0, y 28, 1646 × 838).</p>
+    <h3 id="fullscreen-desktops">Full screen gets its own Desktop</h3>
+    <p>As on a Mac, a window in full screen moves to a Desktop of its own, so a game or a video sits one swipe away from everything else (<code>packages/shell/src/spaces/fullscreen.ts</code>; Desktop &amp; Dock › "Give full-screen apps their own desktop", settings.json <code>spaces.fullscreenDesktop</code>, on by default; turned off, full screen stays on the Desktop it is on).</p>
+    <table>
+      <tr><th>When</th><th>What happens</th></tr>
+      <tr><td>A window enters full screen (any way: ⌥ and the square, ⌃❖F, View › Enter Full Screen, the app itself, an agent)</td><td>A Desktop goes in right after the one it was on (after the full-screen ones from there already). The window fills the screen where it is; once its app has drawn it at that size (at most 500 ms), it is carried to its Desktop while the Desktops slide under it, out of sight. Its dialogs go there too. What is seen is one motion: the window filling the screen.</td></tr>
+      <tr><td>It is full screen</td><td>A unified window (its controls in its toolbar) keeps them where they are when windowed: the circle closes, the bar minimizes, and the square (with or without ⌥) leaves full screen. Any other window covers the screen edge to edge, with no title bar.</td></tr>
+      <tr><td>It leaves full screen (any way)</td><td>It goes back to its frame or tile where it is; once drawn so, the Desktop it came from (the nearest on its left, if that one was removed) slides in under it, in 250 ms, with the window in front and the keyboard. Then its Desktop goes away.</td></tr>
+      <tr><td>It closes, quits, minimizes, or hides</td><td>As leaving: the screen slides back and its Desktop goes; a minimized one comes back from the Dock at its old frame, out of full screen.</td></tr>
+      <tr><td>A new window opens while it shows</td><td>The app's own dialogs and sheets stay on its Desktop, above it. Any other window opens on the Desktop it came from, and the screen slides there.</td></tr>
+      <tr><td>Overview's Desktops row</td><td>It is named after its app, can't be renamed, and takes no dropped window (the window springs back); its × takes the window out of full screen. ⌃← ⌃→, ⌃1…⌃9 (by its place in the row), and swipes go to it like any Desktop.</td></tr>
+    </table>
+    <p class="small muted">Full-screen Desktops are not counted in settings.json <code>spaces.count</code> and have no entry in <code>spaces.names</code>: the file reads as if they never were. A restart of the shell finds them again: a Desktop whose one window is full screen is that window's.</p>
+    <h3 id="window-management-rules">Rules</h3>
+    <ol class="rules">
+      <li id="wi-1"><b class="rid">WI-1</b><div>The square never hides the menu bar by surprise. Pressing it fills the usable area, menu bar and Dock still there; pressing it again, or on a tiled window, restores the window's own frame. ⌥ and the square enters full screen; double-clicking the title bar does what the square does.</div></li>
+      <li id="wi-2"><b class="rid">WI-2</b><div>⌃❖ and an arrow tiles to that half: ← left, → right, ↑ top, ↓ bottom. Fill (⌃❖↩), Center (⌃❖C), and Back to Previous Size (⌃❖R) keep their own keys, listed in the Window menu.</div></li>
+      <li id="wi-3"><b class="rid">WI-3</b><div>The keys, drag-to-tile, and the Window menu offer the same tiles, and the menu shows each tile's key.</div></li>
+      <li id="wi-4"><b class="rid">WI-4</b><div>Full screen is always there for the person who asks: ⌃❖F, the Window or View menu, and an app's own button or F11.</div></li>
+      <li id="wi-5"><b class="rid">WI-5</b><div>A tiled or filled window keeps the frame it had before, and Back to Previous Size gives it back; the row is disabled when there is nothing to go back to. Moving or resizing the window by hand ends the tile.</div></li>
+      <li id="wi-6"><b class="rid">WI-6</b><div>A full-screen window has a Desktop to itself, next to the one it came from, and goes back there when it leaves full screen. Entering and leaving are each one motion: the window changes size where it is and stays on screen while the Desktops slide under it (<code>space-switch {carry}</code>); no Desktop is ever shown without it, and no picture of it at the wrong size.</div></li>
+      <li id="wi-7"><b class="rid">WI-7</b><div>Nothing but the app's own dialogs and sheets opens over a full-screen window; any other window opens on the Desktop it came from, and the screen goes there to show it.</div></li>
+      <li id="wi-8"><b class="rid">WI-8</b><div>A window's controls never go missing. A unified window keeps them in full screen, and every picture of a window, small or moving, shows its controls or title bar shrunk with it.</div></li>
+    </ol>
 
     <h2>Motion</h2>
     <p>Short, decelerating, and purposeful. The compositor's curve is ease-out cubic, <code>1 − (1 − t)³</code>; the shell's Dock slide is ease-in-out quad. Play one:</p>
     <div class="controls-row">
       <button class="button" data-anim="minimize">Minimize · 300 ms</button>
-      <button class="button" data-anim="space">Switch Space · 250 ms</button>
+      <button class="button" data-anim="space">Switch Desktop · 250 ms</button>
       <button class="button" data-anim="overview">Overview · 220 / 250 ms</button>
       <label><input type="checkbox" id="reduce"> Reduce motion</label>
     </div>
@@ -290,20 +630,22 @@
     <table>
       <tr><th>Motion</th><th>Duration</th><th>Curve</th><th>Source</th></tr>
       <tr><td>Minimize and restore (flight to the Dock tile)</td><td>300 ms</td><td>ease-out cubic</td><td><code>wm/motion.rs</code></td></tr>
-      <tr><td>Space switch (slide)</td><td>250 ms</td><td>ease-out cubic</td><td><code>wm/spaces.rs</code></td></tr>
+      <tr><td>Desktop switch (slide)</td><td>250 ms</td><td>ease-out cubic</td><td><code>wm/spaces.rs</code></td></tr>
       <tr><td>Overview open / close</td><td>220 / 250 ms</td><td>ease-out cubic</td><td><code>wm/overview.rs</code></td></tr>
       <tr><td>Dock and taskbar entrance (login, turned on, a new style or screen, autohide reveal after 120 at the edge)</td><td>panel 420 ms rising and fading in (80% up by ~115); icons 380 ms each, 22 ms apart, starting a third of the way; 640 ms in all</td><td>panel ease-out quint; icons a damped spring, ~2 px past their place</td><td><code>dock/slide.tsx</code></td></tr>
       <tr><td>Dock and taskbar exit (autohide, 600 after leaving)</td><td>180 ms; the icons stay put</td><td>ease-in cubic</td><td><code>dock/slide.tsx</code></td></tr>
       <tr><td>Switcher appears</td><td>after 150 ms held</td><td>—</td><td><code>switcher.tsx</code></td></tr>
+      <tr><td>Launcher opens (fades in from 0.96 of its size, about its top middle; it closes at once)</td><td>160 ms</td><td>ease-out cubic</td><td><code>wm/layer_motion.rs</code> (<code>layer-motion</code>, sent by <code>launcher/resident.tsx</code>)</td></tr>
+      <tr><td>Launcher list height (follows its rows; on a resident host)</td><td>120 ms</td><td>ease-out cubic</td><td>mirin <code>height.rs</code> (<code>heightTransitionMs</code>)</td></tr>
       <tr><td>Scroll bars</td><td>shown 0.9 s after scrolling, fade 0.3 s</td><td>linear</td><td>mirin <code>scrollbar.rs</code></td></tr>
       <tr><td>Night Shift</td><td>1500 ms</td><td>fade</td><td><code>night-shift.ts</code></td></tr>
     </table>
-    <ul>
-      <li>Nothing longer than 300 ms on the way to something the person asked for.</li>
-      <li>No springs, bounces, or overshoot in system UI, with one exception: the Dock's icons settle with a ~2 px spring as it comes in, while the panel is already in place and every icon already takes a press. Kombu's idle bob is the only loop, and only where Kombu appears.</li>
-      <li>Reduce Motion turns the flights, slides, and the Dock's entrance off; things simply appear where they go.</li>
-      <li>Windows open and close without animation today <span class="pill open">open</span>.</li>
-    </ul>
+    <ol class="rules">
+      <li id="mo-1"><b class="rid">MO-1</b><div>Nothing longer than 300 ms on the way to something the person asked for.</div></li>
+      <li id="mo-2"><b class="rid">MO-2</b><div>No springs, bounces, or overshoot in system UI, with one exception: the Dock's icons settle with a ~2 px spring as it comes in, while the panel is already in place and every icon already takes a press. Kombu's idle bob is the only loop, and only where Kombu appears.</div></li>
+      <li id="mo-3"><b class="rid">MO-3</b><div>Every animation checks Reduce Motion: the flights, slides, and the Dock's entrance stop, and things simply appear where they go. Nothing animates by re-rendering React on a timer.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/software.md">Software</a>, <a href="roast/portal-dialogs.md">portal</a> roasts · the indeterminate progress bar steps every 120 ms</span></div></li>
+    </ol>
+    <p class="small muted">Windows open and close without animation today <span class="pill open">open</span>.</p>
 
     <h2 id="icons">Icons</h2>
     <p>App icons share one recipe (<code>packages/shell/icons/</code>): a 44 tile on a 48 grid, radius 10.5, a top-to-bottom gradient lighter on top, an optional white inner line, and a flat near-white glyph with round caps. Build one:</p>
@@ -332,10 +674,10 @@
         <p class="small muted" style="margin:0">Glyphs sit in the middle 30 of the 48, drawn at 1.3–2 stroke on their own 16-unit grid. One idea per icon, no text, no perspective.</p>
       </div>
     </div>
-    <h3>The set</h3>
+    <h3 id="icon-set-heading">The set</h3>
     <div class="icon-row card" id="icon-set"></div>
 
-    <h3>Menu bar extras</h3>
+    <h3 id="menu-bar-extras">Menu bar extras</h3>
     <p>Programs' own items sit left of the status glyphs (<code>src/extras/</code>; tray icons and applets, <code>docs/applets.md</code>), newest leftmost. They draw like the system's own so the bar reads as one:</p>
     <ul>
       <li>16 px pictures in 22 tall pills, 7 of padding each side; a label is 12 Regular, 5 from its picture. A pill whose menu is open takes the selection wash, as the bar's titles do.</li>
@@ -344,10 +686,191 @@
       <li>A click activates or opens the menu; a right-click opens the menu, right-aligned under the item. On a narrow screen the extras give way from the left; the status glyphs and the clock never shrink.</li>
       <li>The battery has its own menu: the charge, the power source, the time to full or empty, the draw in watts, the apps using significant energy (each opens Activity Monitor), and Battery Settings. Plugged in, it shows a bolt while charging and a plug while it holds its charge, and the HUD says “Charging · 54%” for 1.5 s.</li>
     </ul>
+    <ol class="rules">
+      <li id="ic-1"><b class="rid">IC-1</b><div>App icons follow the recipe above: one tile, one glyph, one idea.</div></li>
+      <li id="ic-2"><b class="rid">IC-2</b><div>Files and folders have one icon recipe, shared by Files, the file chooser, and Preview: a page shape with a category glyph, light and dark, typed by content as well as by name.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a>, <a href="roast/portal-dialogs.md">portal</a> roasts · Files mixes two icon families and text logs get a blank square; the chooser draws one glyph for every file</span></div></li>
+    </ol>
 
-    <h2>Keyboard</h2>
+    <h2 id="components">Components</h2>
+    <p>Where a component lives, in order (the full rule is <a href="conventions.md">conventions.md</a>, "UI Components"):</p>
+    <ol>
+      <li><strong><code>@mirinjs/metal-ui</code></strong> for anything shadcn/ui has, used as shadcn documents it.</li>
+      <li><strong><code>@dashi/ui</code></strong> for Dashi's own: grouped rows, the app window and its unified toolbar, sheets, the key sink, shortcut glyphs, the palettes. Components and tokens only: no D-Bus, files, or processes.</li>
+      <li><strong>The app or shell module</strong> for something only one place uses, until a second one needs it.</li>
+    </ol>
+    <p class="small muted">In practice every first-party app is built on <code>@dashi/ui</code> and none imports metal-ui yet <span class="pill open">open</span>.</p>
+    <ol class="rules">
+      <li id="ui-1"><b class="rid">UI-1</b><div>A second user moves it into <code>@dashi/ui</code> before the second copy ships. No app imports from a sibling app's folder or from a shell module that isn't its own.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/calendar.md">Calendar</a>, <a href="roast/software.md">Software</a> roasts · <code>Switch</code> is <code>@dashi/ui</code>'s now (<code>dashi-ui/src/switch.tsx</code>), but <code>Slider</code> is drawn twice (<code>settings-app/ui.tsx</code>, <code>control-center/slider.tsx</code>); <code>VerifiedBadge</code>, <code>ProgressBar</code>, and <code>Loading</code> live in <code>apps/software/</code> and the Applet Store imports them; three checkboxes and three month grids exist</span></div></li>
+      <li id="ui-2"><b class="rid">UI-2</b><div>Picking one of several: a segmented control for 2–4 short options, choice pills for 2–6 in a settings row, and a pop-up button or a list for anything longer or of unknown length (printers, paper sizes, apps, languages).<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/portal-dialogs.md">portal</a> roast · the print sheet shows printers as pills; <code>@dashi/ui</code> has no pop-up button</span></div></li>
+      <li id="ui-3"><b class="rid">UI-3</b><div>A button with only a glyph has a name: shown as its tooltip, and used as its accessible name. Every control has a role and a name for assistive technology.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, every app roast · <code>ToolbarButton</code> shows its <code>tooltip</code> under it after 600 ms (drawn by <code>@dashi/ui</code> in a layer <code>AppWindow</code> mounts, from Metal's hover bounds), but it is optional and only Notes passes one. The launcher gives every part a role and a name (the field a combobox, the results a listbox, each row an option named "Wi-Fi, on, setting, 1 of 3", the selected one selected; <code>launcher/access.ts</code>), passed to a Metal host that publishes them over AT-SPI (mirin's accessibility patch; the host binary names <code>MIRIN_METAL_ACCESSIBLE</code>); an older host has no tree</span></div></li>
+      <li id="ui-4"><b class="rid">UI-4</b><div>Every control that can be pressed shows hover, pressed, focused, and disabled. Disabled is the whole control at about 40% opacity; a disabled primary button still reads as primary. Hover alone is not feedback.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/calculator.md">Calculator</a> roasts · no <code>@dashi/ui</code> control shows a press</span></div></li>
+      <li id="ui-5"><b class="rid">UI-5</b><div>One alert frame for sheets, portal dialogs, and <code>dashi-dialog</code>: the icon tile, the question as the first line (no title row), the message, the buttons, with the same Esc and Enter. A message that only informs has one button.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/portal-dialogs.md">portal</a>, <a href="roast/applet-store.md">Applet Store</a> roasts · <code>PortalFrame</code>, <code>DialogFrame</code>, and <code>ConfirmSheet</code> differ; <code>ConfirmSheet</code> is used for information, with a Cancel that does the same as OK; the applet consent sheet isn't built on <code>Sheet</code></span></div></li>
+      <li id="ui-6"><b class="rid">UI-6</b><div>The default button follows the risk. Enter goes ahead only when going ahead is safe and can be undone. For grants, deletions, and replacements the default is the safe answer, or there is none; the destructive button is ume. Enter that began in another field doesn't press it.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/activity-monitor.md">Activity Monitor</a> roasts · <code>ConfirmSheet</code> (and <code>useConfirm</code>) with <code>danger</code> holds it: the button is ume, Enter and Esc cancel, and Cancel wears the kombu ring. A bare <code>Sheet</code> still maps Enter to <code>onConfirm</code>. Activity Monitor follows it: Return in its search only selects, and its quit sheet has no Return default</span></div></li>
+      <li id="ui-7"><b class="rid">UI-7</b><div>The Components app is the <code>@dashi/ui</code> gallery: every control in every state, light and dark side by side. It is a developer's tool: in the launcher, not in a new Dock.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · unpinned from the default Dock (<code>shell/src/apps.ts</code>, <code>dockDefaults</code>), but it still shows metal-ui's examples</span></div></li>
+    </ol>
+
+    <h2>Keyboard and focus</h2>
     <p>❖ is Dashi's command key (the Super key), in the role ⌘ has on a Mac. Shortcuts are written in Mac order, ⌃ ⌥ ⇧ ❖ then the key, and drawn with <code>@dashi/ui</code>'s Shortcut glyphs, never typed: fonts don't have ❖.</p>
     <table id="shortcuts"></table>
+    <ol class="rules">
+      <li id="kb-1"><b class="rid">KB-1</b><div>Everything works from the keyboard. Tab reaches every control, Space or Return activates it, the arrows move inside a group (pills, segments, a sidebar, a table, a menu), and Esc closes the topmost thing.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a>, <a href="roast/files.md">Files</a> roasts · no control takes focus; <code>KeySink</code> reports only text, Backspace, Return, Esc, ↑, and ↓ (<code>dashi-ui/src/keys.ts:1-18</code>, <code>key-sink.tsx:41</code>), though Metal's <code>onKeyDown</code> reports every key with its modifiers</span></div></li>
+      <li id="kb-2"><b class="rid">KB-2</b><div>Focus shows as a 2 px kombu ring, 2 px out, and only after the keyboard was used.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · only text fields show focus</span></div></li>
+      <li id="kb-3"><b class="rid">KB-3</b><div>❖W belongs to the app when it has a close row of its own (Close Tab, Close Document); otherwise the shell closes the window. A menu row's ⇧ shortcut reaches the app as written: Terminal's ❖W closes the tab and ⇧❖W the window; Text Editor's ❖W is File › Close.</div></li>
+      <li id="kb-4"><b class="rid">KB-4</b><div>Standard commands use standard keys from one shared list: New ❖N, Open ❖O, Save ❖S, Undo ❖Z, Redo ⇧❖Z, Find ❖F, Move to Trash ❖⌫, Close ❖W.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · the apps choose their own</span></div></li>
+      <li id="kb-5"><b class="rid">KB-5</b><div>⌃❖, ⌥❖, and ⌃⌥❖ belong to Dashi; an app never binds them.</div></li>
+    </ol>
+
+    <h2 id="patterns">Patterns</h2>
+    <h3 id="confirm-and-undo">Confirm and undo</h3>
+    <ol class="rules">
+      <li id="pa-1"><b class="rid">PA-1</b><div>Irreversible means confirm or undo, never neither. A confirmation names what will be lost ("Delete "Groceries"? You can't undo this."), and a row's destructive action confirms in place, as Network and Bluetooth do for Forget. Use <code>@dashi/ui</code>'s <code>ConfirmSheet</code> with <code>danger</code>, or <code>useConfirm()</code>: <code>confirm.ask({ title, message, confirmLabel, danger, onConfirm })</code> from the handler and <code>confirm.sheet</code> in the window's overlay.</div></li>
+      <li id="pa-2"><b class="rid">PA-2</b><div>Moving, renaming, and trashing offer ❖Z, and a notice with Undo.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · nothing in Files can be undone</span></div></li>
+      <li id="pa-3"><b class="rid">PA-3</b><div>A name collision always asks: Replace, Keep Both, or Skip.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · copies silently become "name 2"</span></div></li>
+      <li id="pa-4"><b class="rid">PA-4</b><div>Closing never loses work: a document with changes is saved, or kept for next time, or the close asks. A tab with a running program asks before it closes.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/editor.md">Text Editor</a>, <a href="roast/terminal.md">Terminal</a> roasts · ❖W asks in both apps and the Editor keeps unsaved text as it is typed, but the close control and ❖Q close a busy Terminal window without asking: Metal can't hold a window open yet</span></div></li>
+    </ol>
+    <h3 id="empty-loading-error">Empty, loading, and error states</h3>
+    <ol class="rules">
+      <li id="pa-5"><b class="rid">PA-5</b><div>Loading shows only after about 200 ms; until then the old content stays. A wait uses the one progress control.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a>, <a href="roast/preview.md">Preview</a> roasts · <code>@dashi/ui</code> has no progress control; <code>EmptyState</code> doubles as a loading screen (<code>dashi-ui/src/sheet.tsx:154-176</code>)</span></div></li>
+      <li id="pa-6"><b class="rid">PA-6</b><div>An error is not an empty state. It sits with the thing it is about, says what happened and what to do next in a plain sentence, and never shows errno text or the name of a package to install.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/settings.md">Settings</a>, <a href="roast/preview.md">Preview</a>, <a href="roast/software.md">Software</a> roasts · <code>EmptyState</code> draws errors and "nothing here" alike; Preview names poppler-utils and ImageMagick; Settings' <code>Failure</code> is its own copy</span></div></li>
+      <li id="pa-7"><b class="rid">PA-7</b><div>An empty state says what goes here and how to add it, and keeps its promises: if it says "drop here", a drop works. Controls that can't act yet are disabled, not dead.</div></li>
+    </ol>
+    <h3 id="menus">Menus</h3>
+    <ol class="rules">
+      <li id="pa-8"><b class="rid">PA-8</b><div>The menu bar covers what the app does. Every command, every context-menu command included, is in a menu-bar menu with its shortcut.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/notes.md">Notes</a> roast · Notes has no Edit menu (the Applet Store now has File, View and Store, as Software does)</span></div></li>
+      <li id="pa-9"><b class="rid">PA-9</b><div>Menus group their items with separators, stay inside the window (flipped or clamped), and open at the thing that opened them.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a>, <a href="roast/notes.md">Notes</a> roasts · <code>PopupMenu</code> shows keys but has no separators or submenus (<code>dashi-ui/src/sheet.tsx:79-151</code>); some popups sit at fixed offsets</span></div></li>
+    </ol>
+    <h3 id="selection-and-drag">Selection and drag and drop</h3>
+    <ol class="rules">
+      <li id="pa-10"><b class="rid">PA-10</b><div>Lists select the way people expect: click, ⇧-click for a range, ❖-click to add or remove, and dragging out a box where items are laid out in space.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · Metal's <code>onPress</code> carries no modifiers (<code>mirin-metal/src/types.ts:306</code>), so Files has a Select mode instead</span></div></li>
+      <li id="pa-11"><b class="rid">PA-11</b><div>What can be seen can be dragged where it makes sense: files, events (to move, resize, and create), tabs. Esc cancels a drag. One shared drag helper does it the same way everywhere.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/calendar.md">Calendar</a> roast · nothing in Calendar drags, though Metal has <code>onPointer</code></span></div></li>
+    </ol>
+    <h3 id="choosing-files">Choosing files</h3>
+    <ol class="rules">
+      <li id="pa-12"><b class="rid">PA-12</b><div>One file chooser everywhere: the portal's, as a <code>@dashi/ui</code> component that Dashi's apps and <code>dashi-dialog</code> use too. It can go up a folder, shows drives, and draws Files' icons. Nothing asks for a typed path.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/portal-dialogs.md">portal</a>, <a href="roast/editor.md">Text Editor</a> roasts · the chooser has Back, Up and a folder pop-up but no drives or Files' icons; the Editor asks for a typed path; <code>dashi-dialog --file-selection</code> exits 255</span></div></li>
+      <li id="pa-13"><b class="rid">PA-13</b><div>A click on an already selected file doesn't accept the dialog; a double-click or Return does. A double-click is two presses on the same row within 400 ms and 4 px of each other (<code>apps/portal/file-chooser/clicks.ts</code>); anything slower or farther is two clicks.</div></li>
+    </ol>
+    <h3 id="region">Region and numbers</h3>
+    <ol class="rules">
+      <li id="pa-14"><b class="rid">PA-14</b><div>Numbers, sizes, dates, weekdays, and the clock follow Region settings, through one shared formatter.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/calculator.md">Calculator</a>, <a href="roast/preview.md">Preview</a>, <a href="roast/files.md">Files</a> roasts · <code>toLocaleString("en-US")</code> in <code>apps/preview/info.ts:27</code>; dates are formatted twice in Files and the chooser. Calculator follows the region's decimal mark and grouping in its display, keys, copy and paste (<code>apps/calculator/locale.ts</code>), not yet through a shared formatter</span></div></li>
+    </ol>
+    <h3 id="background">When nobody is looking</h3>
+    <ol class="rules">
+      <li id="pa-15"><b class="rid">PA-15</b><div>An app stops polling while its window is hidden or minimized, and never reads files on the UI thread in a loop.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/activity-monitor.md">Activity Monitor</a> roast · the app kit has no visibility signal, so Activity Monitor still looks every 2 s while hidden (on a worker thread, <code>apps/activity-monitor/sampler.ts</code>; <code>Monitor.pause()</code> waits for the signal)</span></div></li>
+    </ol>
+
+    <h2 id="voice">Voice and copy</h2>
+    <p>Dashi speaks like a good host: calm, plain, and brief. It tells you what will happen, not how it works, and it never shouts.</p>
+    <div class="grid two">
+      <div class="card"><div class="eyebrow">Calm</div><p style="margin:0">No exclamation marks in system UI. No urgency it doesn't have. Errors say what happened and what to do next.</p></div>
+      <div class="card"><div class="eyebrow">Plain</div><p style="margin:0">Everyday words over jargon: "Window corners", not "Decoration radius". Name things for what people see.</p></div>
+      <div class="card"><div class="eyebrow">Brief</div><p style="margin:0">One sentence where one will do. Details under a label are full sentences, with a period.</p></div>
+      <div class="card"><div class="eyebrow">Kind</div><p style="margin:0">Never blame the person. Ask before anything that can't be undone, and say exactly what will be lost.</p></div>
+    </div>
+    <table class="voice">
+      <tr><th>Instead of</th><th>Write</th></tr>
+      <tr><td>Error: EACCES writing settings.json!</td><td>Your settings couldn't be saved. Check that your home folder isn't full.</td></tr>
+      <tr><td>Are you sure?</td><td>Delete "Groceries"? You can't undo this.</td></tr>
+      <tr><td>Configure display output scaling</td><td>Make text and windows larger</td></tr>
+      <tr><td>Install Now!</td><td>Install Dashi…</td></tr>
+      <tr><td>The agent has been granted input permissions</td><td>Your agent can use the keyboard and pointer in Notes.</td></tr>
+      <tr><td>claude (CLI) — authenticated: true</td><td>Claude Code · Your Claude subscription. Signed in.</td></tr>
+      <tr><td>codex: command not found</td><td>Codex · Not installed. Install it with npm install -g @openai/codex</td></tr>
+      <tr><td>Error 401: OAuth token expired</td><td>Claude Code isn't signed in. Return opens Terminal to sign in with claude auth login.</td></tr>
+    </table>
+    <p>Who answers the launcher ("Answer requests with", Settings › Agents and Setup's Agents page) is one row each, in this order: the harnesses installed (Claude Code "Your Claude subscription", Codex "Your ChatGPT plan", OpenCode "OpenCode's configured provider", each with "Signed in." or "Not signed in: run … in Terminal." when that can be told), a local model ("A model on this computer. Nothing you ask leaves it."), Claude ("Anthropic's API, with your key."), GPT ("OpenAI's API, with your key."), then None ("The launcher only searches."). A harness that isn't installed comes after the APIs, in muted ink, and says how to install it. The chosen row has the check; until the person picks, none does. On the Ask row, where the words go: "Claude Code · your Claude subscription", "Codex · your ChatGPT plan", "OpenCode · its own provider", "GPT · OpenAI, your key" (<code>agents/ask/choices.ts</code>, <code>agents/ask/answerer.ts</code>, <code>settings-app/panes/answerer-list.tsx</code>).</p>
+    <ol class="rules">
+      <li id="cp-1"><b class="rid">CP-1</b><div>Sentence case for labels, settings, buttons, headings, and empty states ("Accent color", "No notes yet"). Names keep their capitals ("Skip Setup", "Open System Settings").<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/settings.md">Settings</a>, <a href="roast/notes.md">Notes</a>, <a href="roast/activity-monitor.md">Activity Monitor</a> roasts · most buttons are Title Case ("Change Password…", "Turn Off", "Save Login") and <code>EmptyState</code> titles too ("No Notes")</span></div></li>
+      <li id="cp-2"><b class="rid">CP-2</b><div>Title Case for menu-bar commands: "New Calendar…", "Move to Trash…".</div></li>
+      <li id="cp-3"><b class="rid">CP-3</b><div>An ellipsis (…) when a command needs more before it acts: it opens a window, asks a question, or confirms. A real ellipsis character, curly apostrophes and quotes.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/calendar.md">Calendar</a>, <a href="roast/software.md">Software</a> roasts · some buttons that open a sheet have no "…"</span></div></li>
+      <li id="cp-4"><b class="rid">CP-4</b><div>Shortcuts are glyphs in Mac order, ⌃ ⌥ ⇧ ❖ then the key (⇧❖3), drawn with <code>@dashi/ui</code>'s Shortcut, never typed into text.</div></li>
+      <li id="cp-5"><b class="rid">CP-5</b><div>"Dashi", not "we", "the Dashi", or "this Dashi", in system UI. The docs may say "we". No other company's product names in the UI.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/applet-store.md">Applet Store</a>, <a href="roast/settings.md">Settings</a> roasts · "this Dashi" in <code>apps/applet-store/rows.tsx:64</code>; borrowed names are an open question</span></div></li>
+      <li id="cp-6"><b class="rid">CP-6</b><div>Show a name where one exists, never a MIME type, an app id, a process binary, or a path.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/activity-monitor.md">Activity Monitor</a> roast · Dashi's apps show as <code>mirin-metal-host</code> and <code>bun</code></span></div></li>
+      <li id="cp-7"><b class="rid">CP-7</b><div>Copy points only at things that exist: a string that names a Settings pane comes from the pane list, so a rename or a missing pane fails a test.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/portal-dialogs.md">portal</a> roast · "Settings › Passwords" is typed by hand in <code>agents/secrets/</code> (Setup's Skip sheet takes About's title from the pane list; the access dialog no longer names a pane that doesn't exist)</span></div></li>
+      <li id="cp-8"><b class="rid">CP-8</b><div>Disclosure is a chevron and "Show more…" or "Show fewer…", in ink, not link-colored.</div></li>
+    </ol>
+
+    <h2 id="kombu">Kombu</h2>
+    <div class="intro">
+      <div>
+        <p class="lede" style="margin-top:0">A small sprite of kelp, the leaf that dashi is simmered from, with the logo's wisp of steam curling above it. Kombu is curious, patient, and a little shy: it shows up when the OS has a moment to be warm, then gets out of your way.</p>
+      </div>
+      <div class="big" data-sprite="happy"></div>
+    </div>
+    <div class="grid three">
+      <div class="card"><div class="eyebrow">Made of</div><p style="margin:0">A kombu leaf, flat in the accent, with two dot eyes and the mark's single wisp of steam as a cowlick.</p></div>
+      <div class="card"><div class="eyebrow">Personality</div><p style="margin:0">Quietly delighted. Patient with mistakes. Never smug, never loud, never in a hurry.</p></div>
+      <div class="card"><div class="eyebrow">Job</div><p style="margin:0">Keeps people company where the OS is empty or new: first launch, empty states, the docs, release notes.</p></div>
+    </div>
+
+    <h3 id="kombu-faces">Faces</h3>
+    <p>One body, six faces. Each has a job; don't invent new ones without adding them here.</p>
+    <div class="faces" id="faces"></div>
+    <div class="controls-row">
+      <div class="segmented" id="play-bg">
+        <button data-value="light" aria-pressed="true">Light</button>
+        <button data-value="dark" aria-pressed="false">Dark</button>
+        <button data-value="dusk" aria-pressed="false">Wallpaper</button>
+      </div>
+      <label>Size <input type="range" id="play-size" min="24" max="260" value="180"> <span id="play-size-label">180 px</span></label>
+      <label><input type="checkbox" id="play-bob" checked> Idle motion</label>
+      <button class="button" id="play-download">Download SVG</button>
+    </div>
+    <div class="stage play-stage light" id="play-stage"><div id="sprite-holder"></div></div>
+    <p class="small muted" id="play-note"></p>
+
+    <h3 id="kombu-where">Where Kombu appears</h3>
+    <div class="scene">
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="cheer"></div><b>You're all set</b><span>The last page of Setup Assistant.</span></div></div>
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="sleepy"></div><b>No notes yet</b><span>An empty state, in an app's own window.</span></div></div>
+      <div class="mock"><div class="bar"><i></i><i></i><i></i></div><div class="body"><div data-sprite="thinking"></div><b>Looking for updates…</b><span>A wait long enough to need company.</span></div></div>
+    </div>
+    <div class="do-dont">
+      <div class="do"><ul>
+        <li>Setup Assistant's welcome and its last page</li>
+        <li>Empty states in first-party apps (no notes, no files, no results)</li>
+        <li>Long, friendly waits (updates, installing)</li>
+        <li>The docs, release notes, the website, stickers</li>
+        <li>An error page that isn't urgent ("This page couldn't load")</li>
+      </ul></div>
+      <div class="dont"><ul>
+        <li>System chrome: the menu bar, the Dock, window controls, menus</li>
+        <li>The login and lock screens: they belong to the person</li>
+        <li>Alerts about data loss, security, or consent (agents use shiso, never Kombu)</li>
+        <li>As an app icon or in place of the mark</li>
+        <li>Anywhere Reduce Motion is on, animated</li>
+      </ul></div>
+    </div>
+
+    <h3 id="kombu-drawing">Drawing Kombu</h3>
+    <div class="size-row card">
+      <figure><div data-sprite="happy" style="width:24px"></div>24 · smallest; one face only</figure>
+      <figure><div data-sprite="happy" style="width:48px"></div>48 · inline</figure>
+      <figure><div data-sprite="happy" style="width:72px"></div>72 · empty states</figure>
+      <figure><div data-sprite="happy" style="width:120px"></div>120 · Setup, docs</figure>
+    </div>
+    <ul>
+      <li><strong>Smallest:</strong> 24 px tall. Below that the face is unreadable; use the mark instead. Below 32 px, keep to the happy face.</li>
+      <li><strong>Clear space:</strong> a quarter of Kombu's width around it, and never cropped by an edge.</li>
+      <li><strong>Ground:</strong> calm, light or dark. On a wallpaper, set Kombu on a glass card, not on the picture.</li>
+      <li><strong>Dark Mode:</strong> the body lightens a step (<code>#5FAE95</code>) so it doesn't sink into dark glass. The drawing does this for you.</li>
+      <li><strong>Body:</strong> one closed drop-shaped path on a 122 × 150 grid, one flat fill in the accent (<code>#3E8A72</code>). No gradient, highlight, outline, or shadow.</li>
+      <li><strong>Face:</strong> <code>#123A2F</code>. Eyes are dots (or 3-weight arcs when closed or smiling), the mouth one round 3-weight stroke. Nothing else: no blush, no catchlights.</li>
+      <li><strong>The wisp:</strong> the mark's wisp of steam, the body's top color, 3.2 strokes with round caps.</li>
+      <li><strong>Motion:</strong> a slow idle bob (8 px over 3.2 s, ease-in-out) and a quick 120 ms cross-fade between faces. It never bounces, spins, or moves across the screen, and with Reduce Motion it holds still.</li>
+      <li><strong>Source:</strong> <code>kombuSprite()</code> in <code>docs/assets/docs.js</code>; when Kombu lands in the OS, it moves to <code>@dashi/ui</code> and this page draws from there.</li>
+    </ul>
+    <div class="do-dont">
+      <div class="do"><ul>
+        <li>Use the faces as drawn</li>
+        <li>Keep it small next to text, larger on its own</li>
+        <li>Let it react to what the person did (cheer when setup finishes)</li>
+      </ul></div>
+      <div class="dont"><ul>
+        <li>Recolor it, outline it, or give it props and outfits (seasonal art may, in the docs and website only)</li>
+        <li>Make it speak in the first person in system UI</li>
+        <li>Use it to soften bad news that needs the person's full attention</li>
+      </ul></div>
+    </div>
 
     <h2>Wallpapers</h2>
     <p>Drawn from formulas, not photographs (<code>packages/shell/wallpapers/generate.ts</code>): 3840 × 2160 with a 2 × 2 Bayer dither, about 1.5 MB each. Dusk is the default and matches the compositor's built-in gradient, so a fresh session never flashes.</p>
@@ -363,31 +886,53 @@
       <li>New wallpapers are generated too, and keep the dusk family's quiet: soft gradients, no subjects, no text.</li>
     </ul>
 
+    <h2 id="vocabulary">Vocabulary</h2>
+    <p>The words for the parts, as the code and these pages use them. The full table, with the code-only terms, is in <a href="conventions.md">conventions.md</a>, "Vocabulary".</p>
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td>compositor</td><td><code>crates/dashi-comp</code>: draws windows and their chrome, routes input, decides nothing.</td></tr>
+      <tr><td>shell</td><td><code>packages/shell</code>: the menu bar, Dock, sheets, System Settings, and the system services. It decides.</td></tr>
+      <tr><td>apps</td><td><code>packages/shell/apps/*</code>: the first-party apps, one Metal window each, on the app kit.</td></tr>
+      <tr><td>app kit</td><td><code>apps/kit</code>: what an app runs on (window, menus, clipboard). Not components.</td></tr>
+      <tr><td>Dashi UI</td><td><code>@dashi/ui</code>: Dashi's own components and palettes.</td></tr>
+      <tr><td>metal-ui</td><td><code>@mirinjs/metal-ui</code>: shadcn/ui ported to Metal.</td></tr>
+      <tr><td>Metal host</td><td><code>mirin-metal-host</code>: draws a React tree natively.</td></tr>
+      <tr><td>the Shapes</td><td>The window controls: circle (close), bar (minimize), square (bigger).</td></tr>
+      <tr><td>the ingredients</td><td>Kombu, ume, broth, shiso: the colors with jobs.</td></tr>
+      <tr><td>unified toolbar</td><td>An app's 38 px toolbar that shares its row with the window controls; the window's one chrome row.</td></tr>
+      <tr><td>Desktop</td><td>One of the person's workspaces (<code>spaces/</code> in the code); Overview shows them all. A full-screen window's own Desktop is called after its app.</td></tr>
+    </table>
+
     <h2>Open questions</h2>
     <table>
       <tr><th>Question</th><th>Today</th></tr>
+      <tr><td>metal-ui or <code>@dashi/ui</code></td><td>The convention says metal-ui first; no first-party app imports it. Ship a Dashi theme for metal-ui and migrate, or rewrite the convention to match the code.</td></tr>
+      <tr><td>Borrowed names</td><td>"Night Shift", "Spaces", "Control Center", and "Setup Assistant" are macOS's words, and "Mission Control" appears in code comments. Keep, rename, or decide case by case.</td></tr>
+      <tr><td>An edited mark</td><td>Text Editor appends " — Edited" to its title. A window flag drawn on the close control (and in the Window menu and Dock) would keep titles short.</td></tr>
+      <tr><td>⌃ and the arrows in terminals</td><td>⌃← ⌃→ ⌃↑ are taken for Desktops and Overview everywhere, so terminal programs never see them. Leave them, or let terminals have them and say what replaces them.</td></tr>
+      <tr><td>Terminal colors</td><td>Terminal has Dashi's palette (<a href="#terminal-colors">Terminal colors</a>), kept in the app. Move it into <code>palette.ts</code> and give it to foot, kitty, and GTK terminals too.</td></tr>
       <tr><td>Default window radius</td><td>The shell's default is Medium (12) and allows 0–20; the compositor starts at 10 and accepts 0–32 until the shell speaks. Make them agree.</td></tr>
       <tr><td>Blur behind glass</td><td>None; menus compensate by being nearly opaque. Needs a compositor blur pass.</td></tr>
-      <tr><td>Window shadows</td><td>None from the compositor.</td></tr>
       <tr><td>Open and close animation</td><td>Windows appear and vanish.</td></tr>
       <tr><td>Accent choices</td><td>Kombu only. More accents would each need an ingredient and to stay clear of ume, broth, and shiso.</td></tr>
       <tr><td>The Metal host's font</td><td>Inter is used because fontconfig's sans-serif resolves to it; the shell doesn't set <code>MIRIN_METAL_FONT</code>.</td></tr>
-      <tr><td>Kombu's name</td><td>See <a href="mascot.html">the mascot page</a>.</td></tr>
+      <tr><td>Kombu's name</td><td>"Kombu" shares its name with the accent color, which is the point (the sprite <em>is</em> the accent), but a separate given name may read better in copy. Decide before Kombu appears in the shipped UI.</td></tr>
     </table>
   </main>
 </div>
 <script>
 /* ── Palette ── */
 const PALETTE = {
-  light: { text: "#1d1d1f", textMuted: "#1d1d1f99", textDisabled: "#1d1d1f55", menuBar: "#f5f5f7c7", menuBarEdge: "#0000002b", dock: "#f5f5f799", dockBorder: "#ffffff73", hover: "#ffffff59", separator: "#1d1d1f26", dot: "#1d1d1fcc", launcher: "#f5f5f7eb", menu: "#f6f6f8f7", osd: "#f5f5f7e0", osdOn: "#1d1d1fd9", osdOff: "#1d1d1f26", batteryLow: "#d7352b", selection: "#3E8A72", switcherSelection: "#1d1d1f24", button: "#1d1d1f12", checkbox: "#1d1d1f66", critical: "#d4483b", tile: "#ffffffb8", tileHover: "#ffffffe6", track: "#1d1d1f1f", agent: "#6E56CF", agentInk: "#3B2A8A", agentWash: "#6E56CF24", captureWash: "#d4483b24" },
-  dark: { text: "#f5f5f7", textMuted: "#f5f5f799", textDisabled: "#f5f5f755", menuBar: "#1e1e1ecc", menuBarEdge: "#ffffff1f", dock: "#1e1e1e99", dockBorder: "#ffffff26", hover: "#ffffff1a", separator: "#ffffff1a", dot: "#f5f5f7cc", launcher: "#1e1e1eeb", menu: "#232325f7", osd: "#1e1e1ee0", osdOn: "#f5f5f7d9", osdOff: "#f5f5f726", batteryLow: "#ff5a4f", selection: "#3E8A72", switcherSelection: "#ffffff24", button: "#ffffff1f", checkbox: "#f5f5f766", critical: "#ff5a4f", tile: "#ffffff17", tileHover: "#ffffff29", track: "#ffffff2e", agent: "#8B76E8", agentInk: "#cfc6f7", agentWash: "#8B76E83d", captureWash: "#ff5a4f3d" },
+  light: { text: "#1d1d1f", textMuted: "#1d1d1fa6", textDisabled: "#1d1d1f55", menuBar: "#f5f5f7c7", menuBarEdge: "#0000002b", dock: "#f5f5f799", dockBorder: "#ffffff73", hover: "#ffffff59", separator: "#1d1d1f26", dot: "#1d1d1fcc", launcher: "#f5f5f7f5", menu: "#f6f6f8f7", osd: "#f5f5f7e0", osdOn: "#1d1d1fd9", osdOff: "#1d1d1f26", batteryLow: "#AD3F55", selection: "#357A64", selectionWash: "#3E8A7224", selectionBar: "#357A64", onSelection: "#1d1d1f", switcherSelection: "#1d1d1f24", button: "#1d1d1f12", controlEdge: "#1d1d1f80", checkbox: "#1d1d1f66", critical: "#AD3F55", ume: "#AD3F55", umeFill: "#B8475C", umeWash: "#D0596F24", broth: "#86600A", brothWash: "#E5B13F33", moss: "#38722C", criticalInk: "#963549", tile: "#ffffffb8", tileHover: "#ffffffe6", track: "#1d1d1f1f", agent: "#6E56CF", agentInk: "#3B2A8A", agentWash: "#6E56CF24", captureWash: "#D0596F24" },
+  dark: { text: "#f5f5f7", textMuted: "#f5f5f799", textDisabled: "#f5f5f755", menuBar: "#1e1e1ecc", menuBarEdge: "#ffffff1f", dock: "#1e1e1e99", dockBorder: "#ffffff26", hover: "#ffffff1a", separator: "#ffffff1a", dot: "#f5f5f7cc", launcher: "#1e1e1ef5", menu: "#232325f7", osd: "#1e1e1ee0", osdOn: "#f5f5f7d9", osdOff: "#f5f5f726", batteryLow: "#E8798F", selection: "#357A64", selectionWash: "#3E8A7238", selectionBar: "#3E8A72", onSelection: "#f5f5f7", switcherSelection: "#ffffff24", button: "#ffffff1f", controlEdge: "#f5f5f766", checkbox: "#f5f5f766", critical: "#E8798F", ume: "#E8798F", umeFill: "#B8475C", umeWash: "#E8798F3d", broth: "#E5B13F", brothWash: "#E5B13F3d", moss: "#6CB45B", criticalInk: "#F09AAB", tile: "#ffffff17", tileHover: "#ffffff29", track: "#ffffff2e", agent: "#8B76E8", agentInk: "#cfc6f7", agentWash: "#8B76E83d", captureWash: "#E8798F3d" },
 };
 const USE = {
   text: "Primary ink", textMuted: "Details, secondary labels", textDisabled: "What can't be used now", menuBar: "Menu bar glass", menuBarEdge: "Menu bar's bottom hairline",
   dock: "Dock glass", dockBorder: "Dock's edge", hover: "Under the pointer", separator: "Separators", dot: "Running-app dot", launcher: "Launcher, shortcut sheet",
-  menu: "Menus, Control Center", osd: "Volume and brightness", osdOn: "Lit segment", osdOff: "Unlit segment", batteryLow: "Last few percent", selection: "Kombu: the selected row",
-  switcherSelection: "Switcher pick, open menu item", button: "Secondary buttons", checkbox: "Checkbox outline", critical: "Critical notifications", tile: "Control Center tiles",
-  tileHover: "Tile under the pointer", track: "Empty slider track, off switch", agent: "Shiso: agents", agentInk: "Text on shiso", agentWash: "Agent pill fill", captureWash: "Screen being shared",
+  menu: "Menus, Control Center", osd: "Volume and brightness", osdOn: "Lit segment", osdOff: "Unlit segment", batteryLow: "Last few percent (ume)", selection: "Kombu: selected, on, primary (white text AA)", selectionWash: "A selected row: launcher, lists, tables, sidebars (CO-9)", selectionBar: "Its 3 px kombu bar (3:1 on the ground beside it)", onSelection: "Text on the wash",
+  switcherSelection: "Switcher pick, open menu item", button: "Secondary buttons' fill", controlEdge: "Secondary buttons' edge (3:1)", checkbox: "Checkbox outline", critical: "Critical notifications (ume)",
+  ume: "Ume: errors, destructive words", umeFill: "Ume: a destructive button", umeWash: "Behind a destructive glyph", broth: "Broth: warnings", brothWash: "Behind a warning glyph", moss: "Moss: success", criticalInk: "Ume deepened: a destructive launcher row's words, selected or not", tile: "Control Center tiles",
+  tileHover: "Tile under the pointer", track: "Empty slider track, off switch", agent: "Shiso: agents, and only agents", agentInk: "Text on shiso", agentWash: "Agent pill fill", captureWash: "Screen being shared",
 };
 const paletteEl = document.getElementById("palette");
 function drawPalette(mode) {
@@ -554,15 +1099,124 @@ const KEY = {
   "❖": `<svg viewBox="0 0 16 16"><path d="${[diamond(8, 4.2), diamond(11.8, 8), diamond(8, 11.8), diamond(4.2, 8)].join("")}" fill="#000"/></svg>`,
   "⌃": stroke("M4 9.5L8 5.5L12 9.5"), "⌥": stroke("M2.5 5h3.5l4 7h3.5M10 5h3.5"), "⇧": stroke("M8 2.5L13 8H10.5V13.5H5.5V8H3Z"),
   "←": stroke("M12.5 8H3.5M7 4.5L3.5 8L7 11.5"), "→": stroke("M3.5 8H12.5M9 4.5L12.5 8L9 11.5"), "↑": stroke("M8 12.5V3.5M4.5 7L8 3.5L11.5 7"), "↓": stroke("M8 3.5V12.5M4.5 9L8 12.5L11.5 9"),
+  "↩": stroke("M12.5 3.5V8.5H3.5M7 5L3.5 8.5L7 12"),
 };
-const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓]|[^❖⌃⌥⇧←→↑↓]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
+const keys = (s) => `<span class="keys">${[...s.matchAll(/[❖⌃⌥⇧←→↑↓↩]|[^❖⌃⌥⇧←→↑↓↩]+/gu)].map(([p]) => KEY[p] ?? p).join("")}</span>`;
 const SHORTCUTS = [
   ["❖Space", "Launcher"], ["❖Tab, ⇧❖Tab", "Switch apps"], ["❖`", "Next window of the app"], ["❖Q", "Quit the app"], ["❖W", "Close the window (Dashi's apps)"],
   ["❖M", "Minimize"], ["❖H", "Hide the app"], ["❖,", "System Settings"], ["⇧❖3", "Screenshot of the screen"], ["⇧❖4", "Screenshot of an area (Space: a window)"], ["⇧❖5", "Screenshot and recording toolbar (again: stop recording)"],
-  ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Space"], ["⌃❖←, ⌃❖→", "Tile left and right"], ["⌃❖↑", "Fill the screen"], ["⌃❖↓", "Restore"],
+  ["⌃↑", "Overview"], ["⌃←, ⌃→", "Previous and next Desktop"], ["⌃❖←, ⌃❖→", "Left and right half"], ["⌃❖↑, ⌃❖↓", "Top and bottom half"],
+  ["⌃❖←, ⌃❖↑", "From a half, an arrow at right angles: that quarter (here the top left)"], ["⌃❖↩", "Fill"], ["⌃❖C", "Center"], ["⌃❖R", "Back to Previous Size"],
   ["⌃❖F", "Full screen"], ["⌃❖Q", "Lock the screen"], ["⌥❖Esc", "Force Quit"], ["⌥❖D", "Dock autohide on or off"],
+  ["⌥❖V", "Clipboard history, in the launcher"],
 ];
 document.getElementById("shortcuts").innerHTML = `<tr><th style="width:38%">Keys</th><th>Does</th></tr>` + SHORTCUTS.map(([k, d]) => `<tr><td>${k.split(", ").map(keys).join(" ")}</td><td>${d}</td></tr>`).join("") + `<tr><td colspan="2" class="small muted">From <code>packages/shell/src/keymap.ts</code>. ⌃❖, ⌥❖, and ⌃⌥❖ combinations not listed are reserved for Dashi.</td></tr>`;
+
+/* ── Window depth ── */
+{
+  const stage = document.getElementById("depth-stage");
+  const wins = stage.querySelectorAll(".win");
+  segmented(document.getElementById("depth-style"), (v) => {
+    stage.classList.toggle("shadow", v !== "none");
+    stage.classList.toggle("ring", v === "ring");
+  });
+  segmented(document.getElementById("depth-mode"), (v) => {
+    for (const w of wins) { w.classList.toggle("light", v === "light"); w.classList.toggle("dark", v === "dark"); }
+    stage.classList.toggle("dark-wins", v === "dark");
+  });
+}
+
+/* ── The mark ── */
+{
+  const holder = document.getElementById("mark-holder");
+  const stage = document.getElementById("mark-stage");
+  const size = document.getElementById("mark-size");
+  const note = document.getElementById("mark-note");
+  let variant = "tile";
+  let bg = "light";
+
+  function drawMark() {
+    const glyphInk = variant === "glyph" && bg === "light" ? "#2f6f5a" : "#f4f4f6";
+    holder.innerHTML = dashiMark({ tile: variant === "tile", ink: glyphInk });
+    const px = Number(size.value);
+    holder.style.width = `${px}px`;
+    document.getElementById("mark-size-label").textContent = `${px} px`;
+    const min = variant === "tile" ? 16 : 12;
+    note.textContent = px <= min ? `At ${px} px this is the smallest the ${variant === "tile" ? "tile" : "glyph"} may be used.` : "";
+  }
+  function drawStage() {
+    stage.classList.remove("light", "dark", "dusk");
+    stage.classList.add(bg);
+  }
+  segmented(document.getElementById("mark-variant"), (v) => { variant = v; drawMark(); });
+  segmented(document.getElementById("mark-bg"), (v) => { bg = v; drawStage(); drawMark(); });
+  size.addEventListener("input", drawMark);
+  document.getElementById("mark-clear").addEventListener("change", (e) => holder.classList.toggle("clear", e.target.checked));
+  document.getElementById("mark-download").addEventListener("click", () => {
+    const svg = holder.querySelector("svg").outerHTML;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    a.download = variant === "tile" ? "dashi-tile.svg" : "dashi-glyph.svg";
+    a.click();
+  });
+  drawMark();
+}
+
+/* ── Kombu ── */
+{
+  const FACES = {
+    happy: "The default. Greetings, empty states.",
+    wink: "Tips and small surprises.",
+    thinking: "Waiting with you: searching, updating.",
+    surprised: "Something unexpected, not urgent.",
+    sleepy: "Nothing here yet; quiet.",
+    cheer: "Done: setup finished, installed.",
+  };
+  const facesEl = document.getElementById("faces");
+  const holder = document.getElementById("sprite-holder");
+  const stage = document.getElementById("play-stage");
+  const sizeEl = document.getElementById("play-size");
+  let face = "happy";
+  let bg = "light";
+
+  function drawFaces() {
+    const dark = document.documentElement.dataset.theme === "dark";
+    facesEl.innerHTML = EXPRESSIONS.map((e) => `<button class="face" data-face="${e}" aria-pressed="${e === face}"><div>${kombuSprite(e, { dark })}</div>${e}<small>${FACES[e]}</small></button>`).join("");
+  }
+  function drawSprite() {
+    holder.innerHTML = kombuSprite(face, { dark: bg !== "light" });
+    const px = Number(sizeEl.value);
+    holder.style.width = `${px}px`;
+    document.getElementById("play-size-label").textContent = `${px} px`;
+    document.getElementById("play-note").textContent = px < 32 ? "Below 32 px, keep to the happy face: the others lose their detail." : "";
+  }
+  facesEl.addEventListener("click", (e) => {
+    const b = e.target.closest(".face");
+    if (!b) return;
+    face = b.dataset.face;
+    holder.animate([{ opacity: 0.2 }, { opacity: 1 }], { duration: 120, easing: "ease-out" });
+    drawFaces();
+    drawSprite();
+  });
+  segmented(document.getElementById("play-bg"), (v) => {
+    bg = v;
+    stage.classList.remove("light", "dark", "dusk");
+    stage.classList.add(v);
+    drawSprite();
+  });
+  sizeEl.addEventListener("input", drawSprite);
+  const bob = document.getElementById("play-bob");
+  const applyBob = () => { holder.style.animation = bob.checked ? "bob 3.2s ease-in-out infinite" : "none"; };
+  bob.addEventListener("change", applyBob);
+  document.getElementById("play-download").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([holder.innerHTML], { type: "image/svg+xml" }));
+    a.download = `kombu-${face}.svg`;
+    a.click();
+  });
+  document.addEventListener("themechange", drawFaces);
+  document.addEventListener("DOMContentLoaded", () => { drawFaces(); drawSprite(); applyBob(); });
+}
 </script>
 </body>
 </html>

@@ -7,6 +7,7 @@
 import { homedir, userInfo } from "node:os";
 import { type AgentPolicy, listFolder as list, openForAgent, planTrash, searchFor, trashForAgent } from "../../../apps/files/agent.ts";
 import { systemMimeIndex } from "../../../apps/files/mime.ts";
+import { OPEN_TIMEOUT_MS } from "../../../apps/files/open.ts";
 import { quietContext } from "../../../apps/files/ops.ts";
 import { userDirs } from "../../../apps/files/xdg.ts";
 import { clean } from "../../notifications/text.ts";
@@ -38,7 +39,17 @@ export async function searchFiles(call: { query: string; folder: string | null; 
 export async function openFile(call: { path: string }, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Opening a file");
   const result = await openForAgent(call.path, { policy: currentPolicy(), index: systemMimeIndex() });
-  return "error" in result ? toolError(result.error) : text(`Opened the ${result.kind} in its app.`, { path: result.opened, kind: result.kind });
+  if ("error" in result) return toolError(result.error);
+  return result.confirmed
+    ? text(`Opened the ${result.kind} in its app.`, { path: result.opened, kind: result.kind, opened: true })
+    : text(
+        `Asked its app to open the ${result.kind}, but the app hadn't taken it after ${OPEN_TIMEOUT_MS / 1000} s. It may still be starting: take a screenshot before going on.`,
+        {
+          path: result.opened,
+          kind: result.kind,
+          opened: false,
+        },
+      );
 }
 
 export async function trashFile(call: { path: string }, ctx: RunContext): Promise<ToolResult> {
@@ -55,6 +66,7 @@ export async function trashFile(call: { path: string }, ctx: RunContext): Promis
         ? "The folder and everything in it go to the Trash. You can put it back from there."
         : "It goes to the Trash. You can put it back from there.",
     action: "Move to Trash",
+    danger: true,
   });
   if (!yes) return toolError("The person did not allow that file to be moved to the Trash. Don't ask again unless they agree.");
   ctx.status("Moving a file to the Trash");

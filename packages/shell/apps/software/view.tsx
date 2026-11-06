@@ -7,7 +7,7 @@
  * is changed.
  */
 
-import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, ToolbarButton } from "@dashi/ui";
+import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton } from "@dashi/ui";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { CATEGORIES, type CategoryId } from "../../src/software/flathub.ts";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
@@ -31,31 +31,15 @@ export const SOFTWARE_SIZE = { width: 1020, height: 700 } as const;
 
 const SEARCH_DELAY_MS = 300;
 
-function pageLabel(page: Page): string {
-  switch (page.kind) {
-    case "discover":
-      return "Discover";
-    case "installed":
-      return "Installed";
-    case "updates":
-      return "Updates";
-    case "category":
-      return CATEGORIES.find((category) => category.id === page.id)?.label ?? "Category";
-    case "search":
-      return `Results for “${page.query}”`;
-    case "app":
-      return "";
-  }
-}
-
 const inSidebar = (nav: Nav, page: Page): boolean =>
   nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
 
-export function SoftwareWindow() {
+/** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"). */
+export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } = {}) {
   const { store, restart } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [nav, setNav] = useState<Nav>(START);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [ask, setAsk] = useState<Ask | null>(null);
   // Bumped when a sheet closes, so the search field takes the keyboard back.
   const [focus, setFocus] = useState(0);
@@ -174,7 +158,7 @@ export function SoftwareWindow() {
             key={category.id}
             testID={`nav:category:${category.id}`}
             label={category.label}
-            tile={{ glyph: CATEGORY_GLYPHS[category.id] ?? DISCOVER, tint: CATEGORY_TINTS[category.id] ?? "#7a7a82" }}
+            tile={{ glyph: CATEGORY_GLYPHS[category.id] ?? DISCOVER, tint: CATEGORY_TINTS[category.id] ?? TINTS.goma }}
             selected={inSidebar(nav, { kind: "category", id: category.id })}
             onPress={() => go({ kind: "category", id: category.id })}
           />
@@ -222,7 +206,7 @@ export function SoftwareWindow() {
 
   return (
     <ActionsContext.Provider value={actions}>
-      <AppWindow title="Software" subtitle={pageLabel(nav.page) || undefined} sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
+      <AppWindow title="Software" sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
         <PageView nav={nav} query={query} onRestart={() => setAsk({ kind: "restart" })} onUpdateSystem={askSystem} />
       </AppWindow>
     </ActionsContext.Provider>

@@ -10,9 +10,12 @@ import { join } from "node:path";
 import { kindOf } from "../../apps/preview/kinds.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
+import type { Tile } from "../layout.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
 import * as desktop from "./desktop/index.ts";
 import { recordScreen } from "./desktop/record.ts";
+import { handOver, listLogins, payCall, signInCall } from "./desktop/secrets.ts";
+import { AGENT_MASK } from "./mask.ts";
 import { descendsFrom } from "./peer.ts";
 import { named, noWindow, subject } from "./subject.ts";
 import type { Call, Rect } from "./tools/index.ts";
@@ -23,7 +26,7 @@ const LAUNCH_WAIT_MS = 10_000;
 const owns = (entry: Entry, appId: string) =>
   appId !== "" && [entry.id, entry.wmClass].some((id) => id !== undefined && id.toLowerCase() === appId.toLowerCase());
 
-function describe(window: CompositorWindow, entries: readonly Entry[]) {
+function describe(window: CompositorWindow, entries: readonly Entry[], arrangement: Tile | null) {
   return {
     id: `w${window.id}`,
     appId: window.appId,
@@ -32,7 +35,7 @@ function describe(window: CompositorWindow, entries: readonly Entry[]) {
     pid: window.pid,
     focused: window.focused,
     state: window.state,
-    zoomed: window.zoomed,
+    arrangement,
     fullscreen: window.fullscreen ?? false,
     frame: window.frame,
     // Agents count Spaces from 1, as people see them.
@@ -47,7 +50,7 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       ctx.status("Looking at your windows");
       // Hidden entries too: they only name windows (T3 Code's window answers to a NoDisplay one).
       const entries = loadEntries({ withHidden: true });
-      return json({ windows: (await compositor.windows()).map((window) => describe(window, entries)) });
+      return json({ windows: (await compositor.windows()).map((window) => describe(window, entries, ctx.arrangement(window.id))) });
     }
     case "list_apps": {
       ctx.status("Looking at your apps");
@@ -172,6 +175,17 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       return desktop.requestInstall(call, ctx);
     case "request_software_update":
       return desktop.requestUpdate(call, ctx);
+    case "list_logins":
+      return listLogins(call, ctx);
+    case "sign_in":
+    case "fill_code":
+      return signInCall(call, ctx);
+    case "pay":
+      return payCall(call, ctx);
+    case "hand_over":
+      return handOver(call, ctx);
+    case "read_clipboard_history":
+      return desktop.readClipboardHistory(call.limit, ctx);
     case "click":
     case "scroll":
     case "drag":
@@ -208,14 +222,20 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
   } else {
     ctx.status(rect ? "Looking at part of the screen" : "Taking a screenshot");
   }
-  // The consent sheet is never in an agent's picture.
-  await ctx.ui.whenNoSheet();
+  // Never in an agent's picture, blanked (mask.ts): consent sheets (so a screenshot needn't wait for
+  // the person to answer one), password fields, the vault, a window handed to the person.
+  try {
+    await ctx.mask.update();
+  } catch {
+    return toolError("The screenshot was not taken: Dashi couldn't blank what agents must not see.");
+  }
   const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, `${crypto.randomUUID()}.png`);
   try {
     const answer = (await ctx.compositor.request("capture", {
       path,
+      mask: AGENT_MASK,
       ...(id !== null ? { window: id } : {}),
       ...(rect ? { rect } : {}),
     })) as Record<string, unknown>;
@@ -290,6 +310,6 @@ async function startAndWait(entry: Entry, entries: readonly Entry[], ctx: RunCon
     );
   }
   // Without "see", the new window is only an id and the app the agent asked for.
-  const described = ctx.mayName() ? describe(window, entries) : { id: `w${window.id}`, app: entry.name };
+  const described = ctx.mayName() ? describe(window, entries, null) : { id: `w${window.id}`, app: entry.name };
   return text(`${entry.name} is open: ${JSON.stringify(described)}`, { window: described });
 }

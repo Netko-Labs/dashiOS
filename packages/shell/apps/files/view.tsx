@@ -1,7 +1,7 @@
 /**
  * Files' window: the sidebar, a toolbar with back and forward and the view
  * switch around the omnibox (the path and search, omnibox.tsx), the listing
- * in icons or a table, and a footer only while a job runs or a notice stands.
+ * in icons or a table, and a notice over it only while a job runs or a message stands.
  * Sheets and menus are drawn inside it (Metal has no child windows). The
  * keyboard comes through the kit's KeySink: arrows move the selection,
  * Enter opens, Backspace goes back, and typing jumps to a name.
@@ -95,8 +95,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [focus, setFocus] = useState(0);
-  // A right-click reaches the item under the pointer and then the empty space around it: the item's menu stands.
-  const itemMenuAt = useRef(0);
   const [columns, setColumns] = useState(1);
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
   const [editing, setEditing] = useState<string | null>(null);
@@ -133,10 +131,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
       find: () => setEditing(store.getSnapshot().query),
       confirmEmptyTrash: () => setSheet({ kind: "empty-trash" }),
       confirmDelete: (paths) => setSheet({ kind: "delete", items: paths.flatMap((path) => find(path) ?? []) }),
-      menu: (point, kind) => {
-        if (kind === "item") itemMenuAt.current = Date.now();
-        setMenu({ ...point, kind });
-      },
+      menu: (point, kind) => setMenu({ ...point, kind }),
       refocus,
     }),
     // `find` reads the live store; the closures need no other inputs.
@@ -233,7 +228,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         <ConfirmSheet
           testID="empty-trash"
           title="Empty the Trash?"
-          message={`${formatCount(state.items.length)} will be deleted for good. This can’t be undone.`}
+          message={`${formatCount(state.items.length)} will be deleted for good.`}
           confirmLabel="Empty Trash"
           danger
           onCancel={close}
@@ -250,7 +245,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         <ConfirmSheet
           testID="delete-forever"
           title={`Delete ${names} immediately?`}
-          message="It will be deleted for good. This can’t be undone."
+          message="You can’t undo this."
           confirmLabel="Delete"
           danger
           onCancel={close}
@@ -293,13 +288,13 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
           }
           toolbar={<Controls onNewFolder={() => setSheet({ kind: "new-folder" })} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
           sidebar={<Sidebar />}
-          footer={<Footer />}
+          notice={<Footer />}
           overlay={overlay}
         >
           {!sheet && !menu && editing === null && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}
           <Content
+            // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
             onBackgroundMenu={(point) => {
-              if (Date.now() - itemMenuAt.current < 150) return;
               store.select([]);
               setMenu({ ...point, kind: "background" });
             }}

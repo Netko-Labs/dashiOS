@@ -11,6 +11,11 @@ Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
 
 Requires:       fedora-repos(44)
+# Power modes need a power-profiles D-Bus provider; Dashi uses tuned-ppd
+# (tuned with power-profiles-daemon's API on top), and the two providers
+# can't both own the bus name, so power-profiles-daemon is out.
+Requires:       tuned-ppd
+Conflicts:      power-profiles-daemon
 # zsh is Dashi's shell: new accounts get it (%posttrans). A plain Requires,
 # not Requires(post): setup requires system-release (this package), so a
 # scriptlet dependency on zsh or shadow-utils (which need filesystem, which
@@ -95,6 +100,8 @@ fi
 %{_prefix}/lib/rpm/macros.d/macros.dist
 %{_prefix}/lib/systemd/system-preset/*.preset
 %{_prefix}/lib/systemd/user-preset/*.preset
+%{_prefix}/lib/systemd/user.conf.d/50-dashi-stop.conf
+%{_prefix}/lib/systemd/system/user@.service.d/50-dashi-stop.conf
 %{_datadir}/dnf5/libdnf.conf.d/20-fedora-defaults.conf
 %{_sysconfdir}/os-release
 %{_sysconfdir}/dashi-release
@@ -114,6 +121,10 @@ fi
 %{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
+* Thu Nov 05 2026 PejeDev <hi@peje.dev> - 44-0.4.0
+- Dashi 0.4 beta.
+- tuned-ppd for power modes, in place of power-profiles-daemon.
+
 * Mon Nov 02 2026 PejeDev <hi@peje.dev> - 44-0.3.0
 - Dashi 0.3 beta.
 - libheif-ffmpeg in place of libheif-freeworld, which held libheif's updates back.

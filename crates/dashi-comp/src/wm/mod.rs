@@ -3,23 +3,29 @@
 
 mod actions;
 mod decor;
+mod edge_hold;
 mod fullscreen;
+mod layer_motion;
 mod motion;
 mod overview;
 mod zones;
+pub(crate) use layer_motion::LayerMotion;
 pub(crate) use motion::Motion;
 pub(crate) use zones::Zones;
 mod space_list;
 mod spaces;
 pub(crate) use decor::ChromeStyle;
+pub(crate) use edge_hold::EdgeHold;
 pub(crate) use fullscreen::Bars;
 pub(crate) use overview::Overview;
-pub(crate) use spaces::Spaces;
+pub(crate) use spaces::{MAX_SPACES, Spaces};
 pub(crate) mod grabs;
 mod placement;
+mod sheets;
 mod windows;
 
 pub(crate) use actions::valid_frame;
 pub(crate) use windows::{
-    Shown, WindowId, Windows, frame_of, names, rect_json, toplevel_surface, window_id_for_surface,
+    Shown, WindowId, Windows, frame_of, frame_to_be, names, rect_json, toplevel_surface,
+    window_id_for_surface,
 };

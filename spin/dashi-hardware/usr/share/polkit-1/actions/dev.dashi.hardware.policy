@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Dashi</vendor>
+  <vendor_url>https://github.com/Netko-Labs/dashiOS</vendor_url>
+
+  <action id="dev.dashi.hardware.everyday">
+    <description>Change an everyday hardware setting</description>
+    <message>Authentication is required to change the power mode, charge limit or keyboard light.</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+  </action>
+
+  <action id="dev.dashi.hardware.tune">
+    <description>Tune the hardware's power and voltage</description>
+    <message>Authentication is required to change power limits, fan curves or the Curve Optimizer.</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+  </action>
+</policyconfig>

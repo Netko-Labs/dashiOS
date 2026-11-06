@@ -1,16 +1,18 @@
 /**
  * What the keymap's bindings and ❖ itself do (keymap.ts says which chords).
  * The compositor reports them over IPC; these are the shell's actions,
- * carried out through the same IPC. Add a binding name here and a rule in
- * keymap.ts to make a new shortcut; the hardware keys' names (volume,
- * brightness, media) are system/keys.ts's.
+ * carried out through the same IPC. A binding that is a `dashi://` address
+ * is an action of the registry (actions/, docs/actions.md), run for the
+ * person on the focused window: binding a key to anything the registry
+ * holds is one rule in keymap.ts. The other names are the older closed list
+ * below, moving to addresses one kind at a time; the hardware keys' names
+ * (volume, brightness, media) are system/keys.ts's.
  */
 
 import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
-import { TILES, type Tile } from "./layout.ts";
 import { takeScreenshot } from "./screenshots.ts";
-import type { SwitcherController } from "./switcher.tsx";
+import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
 
 export interface ShellActions {
@@ -18,10 +20,8 @@ export interface ShellActions {
   showSheet(): void;
   hideSheet(): void;
   switcher: SwitcherController;
-  /** Snap a window into a tile (arrange.ts). */
-  tile(window: number, tile: Tile): Promise<void>;
-  /** Enter or leave full screen (arrange.ts). */
-  fullscreen?(window: number): Promise<void>;
+  /** A binding that is a `dashi://` address: the registry runs it for the person, on `window` (actions/start.ts). */
+  runAddress?(address: string, window: number | null): Promise<void>;
   /** Volume, brightness, and media keys (system/keys.ts). */
   hardware: Pick<HardwareKeys, "run">;
   /** Lock the screen (lock/). */
@@ -44,7 +44,15 @@ export interface ShellActions {
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
+  /**
+   * The open launcher's keys: ⌃N ⌃P, Page Up and Down, Home and End (launcher/keys.ts), and what is
+   * typed before its field has the keyboard, with its text (launcher/type-ahead.ts); says whether it was one.
+   */
+  launcher?: { binding(name: string, chord?: PressedChord, text?: string): boolean };
 }
+
+/** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
+const ADDRESS = "dashi://";
 
 /** The compositor client's requests the actions use. */
 export type Requests = Pick<Compositor, "request" | "windows">;
@@ -61,9 +69,15 @@ export function sameApp(a: CompositorWindow, b: CompositorWindow): boolean {
 
 /** Run a binding; `window` is the window focused when it was pressed. */
 export async function runBinding(name: string, window: number | null, compositor: Requests, actions: ShellActions, chord?: PressedChord): Promise<void> {
+  // An address: the action registry's, whatever it is (arranging windows is bound so: keymap.ts).
+  if (name.startsWith(ADDRESS)) return actions.runAddress?.(name, window);
   // The hardware keys act on the system, whatever window has focus.
   if (await actions.hardware.run(name)) return;
   if (actions.spaces?.binding(name)) return;
+  // Bound only while the launcher is open (launcher/keys.ts LAUNCHER_RULES).
+  if (actions.launcher?.binding(name, chord)) return;
+  // Bound only while the switcher is open (keymap.ts SWITCHER_RULES).
+  if (name.startsWith("switcher-")) return switcherBinding(name, chord?.key, actions.switcher);
   switch (name) {
     case "app-chord": {
       // A ❖ chord in one of Dashi's own apps: its menu item with that
@@ -105,19 +119,12 @@ export async function runBinding(name: string, window: number | null, compositor
   }
   // The rest act on the focused window, if there is one.
   if (window === null) return;
-  const tile = TILES.find((candidate) => `tile-${candidate}` === name);
-  if (tile) {
-    await actions.tile(window, tile);
-    return;
-  }
   switch (name) {
-    case "fullscreen":
-      await actions.fullscreen?.(window);
-      return;
     case "close-window":
       // ❖W in one of Dashi's own apps: its own ❖W row first (Terminal's
-      // Close Tab), as any other ❖ chord there; the window closes when it has none.
-      if (await actions.appShortcut?.(window, "❖W")) return;
+      // Close Tab, Text Editor's Close), as any other ❖ chord there; ⇧❖W its
+      // ⇧❖W row (Terminal's Close Window). The window closes when it has none.
+      if (await actions.appShortcut?.(window, chord?.shift ? "⇧❖W" : "❖W")) return;
       await compositor.request("close", { window });
       return;
     case "minimize-window":
@@ -153,6 +160,25 @@ export async function runBinding(name: string, window: number | null, compositor
   }
 }
 
+/** A switcher session's key: a step, ⌫, or a key typed (or acted on). */
+function switcherBinding(name: string, key: string | undefined, switcher: SwitcherController): void {
+  switch (name) {
+    case "switcher-down":
+      return switcher.step("down");
+    case "switcher-up":
+      return switcher.step("up");
+    case "switcher-left":
+      return switcher.step("left");
+    case "switcher-right":
+      return switcher.step("right");
+    case "switcher-erase":
+      return switcher.erase();
+    case "switcher-key":
+      if (key) switcher.type(key);
+      return;
+  }
+}
+
 export function startShortcuts(compositor: Compositor, actions: ShellActions): () => void {
   return compositor.on((event) => {
     if (event.event === "super") {
@@ -172,6 +198,8 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
           break;
       }
     } else if (event.event === "binding") {
+      // The launcher's keys are taken here, in the order they came: typing must not be reordered.
+      if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, event.chord, event.text)) return;
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));
     }
   });

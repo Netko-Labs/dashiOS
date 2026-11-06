@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=dev.dashi.Hardware1
+Exec=/usr/libexec/dashi/dashi-hardware serve
+User=root
+SystemdService=dashi-hardware.service

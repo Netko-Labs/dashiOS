@@ -6,7 +6,10 @@
 //! waits on Bun: a `bind` goes to the shell as a `binding` event, a `send` is
 //! replayed to the focused client as another chord while the key is held, a
 //! `tap` replays chords at once, a `swallow` is dropped. Keys no rule matches
-//! go to the client as they are.
+//! go to the client as they are. A `binding` carries the key's text as
+//! typed, when it has one, so the shell can take typing too (the launcher's
+//! keys between a ❖ tap and its field taking the keyboard), and a tap switches
+//! to the keymap's `afterTap` rules at once, before the shell has heard of it.
 
 use std::{collections::HashMap, time::Instant};
 
@@ -34,6 +37,8 @@ pub(crate) struct Keys {
     super_generation: u64,
     /// Presses the compositor took, and what their release does.
     taken: HashMap<Keycode, Taken>,
+    /// The snippets' keywords, and what was just typed (snippets.rs).
+    pub snippets: super::snippets::Snippets,
 }
 
 struct SuperPress {
@@ -51,6 +56,8 @@ enum Taken {
 struct KeyInfo {
     /// Unshifted keysym names first, then the keysym as typed.
     names: Vec<String>,
+    /// What the key types with these modifiers ("a", "A", "é"), if it types anything.
+    text: Option<String>,
     mods: ModifiersState,
     is_modifier: bool,
     function_key: Option<u32>,
@@ -115,14 +122,24 @@ impl Dashi {
                 app_id: &app_id,
             })
             .cloned();
-        if self.overview_open() && !matches!(action, Some(Action::Bind(_))) {
+        // The overview keeps keys from the windows; a shell surface given the keyboard there (its Desktops row) gets them.
+        if action.is_some() {
+            self.keys.snippets.reset();
+        }
+        if self.overview_open()
+            && !self.keyboard_on_layer()
+            && !matches!(action, Some(Action::Bind(_)))
+        {
             self.keys.taken.insert(keycode, Taken::Swallowed);
             let key = info.names.last().cloned().unwrap_or_default();
             self.overview_key(&key);
             return;
         }
         match action {
-            None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
+            None => {
+                keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
+                self.watch_snippets(&info, mods);
+            }
             Some(Action::Swallow) => {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
             }
@@ -130,10 +147,11 @@ impl Dashi {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
                 let window = self.focused_window_id();
                 let key = info.names.first().cloned().unwrap_or_default();
-                self.ipc.emit(
-                    "binding",
-                    json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt }),
-                );
+                let mut event = json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt });
+                if let Some(text) = &info.text {
+                    event["text"] = json!(text);
+                }
+                self.ipc.emit("binding", event);
             }
             Some(Action::Send(chord)) => match self.resolve(&chord, keycode, info.mods.shift) {
                 Some((target, target_mods)) => {
@@ -272,6 +290,8 @@ impl Dashi {
                 let tapped = !press.chorded
                     && press.since.elapsed().as_millis() < u128::from(self.keys.keymap.tap_ms);
                 if tapped {
+                    // The shell's rules for after a tap hold from now, not from when it hears of the tap.
+                    self.keys.keymap.arm_after_tap();
                     self.ipc.emit("super", json!({ "phase": "tap" }));
                 }
                 self.ipc.emit("super", json!({ "phase": "up" }));
@@ -290,6 +310,46 @@ impl Dashi {
             self.ipc.emit("super", json!({ "phase": "chord" }));
         }
         true
+    }
+
+    /// A key that reached a window as it is: what it typed, for the snippets' keywords.
+    fn watch_snippets(&mut self, info: &KeyInfo, mods: Mods) {
+        if !self.keys.snippets.is_watching() {
+            return;
+        }
+        let Some(window) = self.focused_window_id() else {
+            return self.keys.snippets.reset();
+        };
+        let plain = !mods.super_ && !mods.ctrl && !mods.alt;
+        let name = info.names.first().map(String::as_str).unwrap_or_default();
+        match (&info.text, plain) {
+            (Some(text), true) => {
+                if let Some(keyword) = self.keys.snippets.typed(window, text) {
+                    self.ipc
+                        .emit("snippet", json!({ "keyword": keyword, "window": window }));
+                }
+            }
+            (None, true) if name == "BackSpace" => self.keys.snippets.erased(window),
+            _ => self.keys.snippets.reset(),
+        }
+    }
+
+    /// `snippet-erase`: delete `keyword` from `window`, if it is still the last thing typed there.
+    pub(crate) fn erase_snippet(&mut self, window: u64, keyword: &str) -> Result<(), String> {
+        if self.focused_window_id() != Some(window)
+            || !self.keys.snippets.ends_with_in(window, keyword)
+        {
+            return Err("the keyword is no longer the last thing typed there".into());
+        }
+        let backspace = Chord::parse("BackSpace")?;
+        let time = self.start_time.elapsed().as_millis() as u32;
+        for _ in keyword.chars() {
+            if !self.tap(&backspace, None, false, time) {
+                return Err("BackSpace cannot be typed on this keyboard".into());
+            }
+        }
+        self.keys.snippets.reset();
+        Ok(())
     }
 
     fn focused_window_id(&self) -> Option<u64> {
@@ -335,6 +395,7 @@ fn key_info(mods: &ModifiersState, handle: &KeysymHandle<'_>) -> KeyInfo {
         });
     KeyInfo {
         names,
+        text: typed_text(typed),
         mods: *mods,
         is_modifier,
         function_key,
@@ -361,4 +422,41 @@ fn keycode_for(keymap: &xkb::Keymap, state: &xkb::State, name: &str) -> Option<(
             })
             .map(|level| (code, level == 1))
     })
+}
+
+/// The text a keysym types: a printable character, never a control one (Return, Tab, Esc).
+fn typed_text(sym: xkb::Keysym) -> Option<String> {
+    sym.key_char()
+        .filter(|char| !char.is_control())
+        .map(String::from)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::typed_text;
+    use smithay::input::keyboard::{keysyms, xkb::Keysym};
+
+    #[test]
+    fn keys_type_their_characters_and_nothing_for_control_keys() {
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_a)).as_deref(),
+            Some("a")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_A)).as_deref(),
+            Some("A")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_eacute)).as_deref(),
+            Some("é")
+        );
+        assert_eq!(
+            typed_text(Keysym::new(keysyms::KEY_space)).as_deref(),
+            Some(" ")
+        );
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Return)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_BackSpace)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Escape)), None);
+        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Left)), None);
+    }
 }

@@ -5,8 +5,7 @@
  * server and the banners and hands back the store.
  */
 
-import { spawnNativeHost } from "@mirinjs/metal";
-import { METAL_HOST } from "../apps.ts";
+import { spawnShellHost } from "../metal-host.ts";
 import { mayServeNotifications } from "../system/stand-in.ts";
 import { serveNotifications } from "./server.ts";
 import { BannerStack } from "./stack.tsx";
@@ -29,7 +28,7 @@ export interface NotificationsOptions {
 }
 
 export function startNotifications(store = new NotificationStore(), options: NotificationsOptions = {}): Notifications {
-  const stack = new BannerStack(store, (options) => spawnNativeHost(METAL_HOST, options), undefined, options.screen);
+  const stack = new BannerStack(store, (options) => spawnShellHost(options), undefined, options.screen);
   const stopBanners = stack.start();
   let service: { close(): void } | null = null;
   let closed = false;

@@ -29,6 +29,9 @@ export interface Frame {
   cols: number;
   rows: number;
   full: boolean;
+  /** The terminal's ink and ground as they are now (the app's palette, or a program's OSC 10/11); absent until either is set. */
+  ink?: string;
+  ground?: string;
   cursor: Cursor;
   lines: { y: number; spans: Span[] }[];
   /** Scrollback: total rows, the view's first row, how many it shows. */
@@ -40,7 +43,9 @@ export type EngineMessage =
   | { t: "title"; title: string }
   | { t: "bell" }
   | { t: "copied"; text: string }
-  | { t: "exit"; code: number };
+  | { t: "exit"; code: number }
+  /** In reply to `running`: the foreground program's name ("" when it has none), or null at the shell's prompt. */
+  | { t: "running"; program: string | null };
 
 export interface Screen {
   cols: number;
@@ -49,6 +54,9 @@ export interface Screen {
   lines: Span[][];
   cursor: Cursor;
   scroll: [number, number, number];
+  /** The terminal's own ink and ground, when it has said them (Frame). */
+  ink?: string;
+  ground?: string;
 }
 
 export const EMPTY_SCREEN: Screen = {
@@ -60,6 +68,7 @@ export const EMPTY_SCREEN: Screen = {
 };
 
 const CURSOR_STYLES = new Set(["block", "bar", "underline", "hollow"]);
+const HEX = /^#[0-9a-f]{6}$/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -89,6 +98,8 @@ function parseFrame(value: Record<string, unknown>): Frame | null {
     cols,
     rows,
     full: full === true,
+    ...(typeof value.ink === "string" && HEX.test(value.ink) ? { ink: value.ink } : {}),
+    ...(typeof value.ground === "string" && HEX.test(value.ground) ? { ground: value.ground } : {}),
     cursor: {
       x: typeof cursor.x === "number" ? cursor.x : 0,
       y: typeof cursor.y === "number" ? cursor.y : 0,
@@ -122,6 +133,8 @@ export function parseEngineLine(line: string): EngineMessage | null {
       return typeof value.text === "string" ? { t: "copied", text: value.text } : null;
     case "exit":
       return typeof value.code === "number" ? { t: "exit", code: value.code } : null;
+    case "running":
+      return value.program === null || typeof value.program === "string" ? { t: "running", program: value.program } : null;
     default:
       return null;
   }
@@ -134,7 +147,8 @@ export function applyFrame(screen: Screen, frame: Frame): Screen {
   for (const line of frame.lines) {
     if (line.y >= 0 && line.y < frame.rows) lines[line.y] = line.spans;
   }
-  return { cols: frame.cols, rows: frame.rows, lines, cursor: frame.cursor, scroll: frame.scroll };
+  const colors = { ...(frame.ink ? { ink: frame.ink } : {}), ...(frame.ground ? { ground: frame.ground } : {}) };
+  return { cols: frame.cols, rows: frame.rows, lines, cursor: frame.cursor, scroll: frame.scroll, ...colors };
 }
 
 /** The grid a pixel area holds, at least 2 × 1. */

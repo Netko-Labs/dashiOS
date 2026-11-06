@@ -16,8 +16,8 @@ use smithay::{
         AbsolutePositionEvent, Axis, AxisSource, ButtonState, Event, InputBackend, InputEvent,
         KeyboardKeyEvent, PointerAxisEvent, PointerButtonEvent, PointerMotionEvent,
     },
-    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, RelativeMotionEvent},
-    utils::SERIAL_COUNTER,
+    input::pointer::{AxisFrame, ButtonEvent, MotionEvent, PointerHandle, RelativeMotionEvent},
+    utils::{Logical, Point, SERIAL_COUNTER},
 };
 
 use crate::state::Dashi;
@@ -33,6 +33,20 @@ impl Dashi {
             _ => false,
         };
         self.note_input(deliberate);
+        // The person's own presses, against what gets them (session/origin.rs);
+        // a pointer press goes to what the pointer is over.
+        if deliberate {
+            let focus = match &event {
+                InputEvent::Keyboard { .. } => {
+                    self.seat.get_keyboard().and_then(|k| k.current_focus())
+                }
+                _ => self.seat.get_pointer().and_then(|p| {
+                    let at = p.current_location();
+                    self.surface_under(at).map(|(surface, _)| surface)
+                }),
+            };
+            self.note_person_press(focus);
+        }
         match event {
             InputEvent::Keyboard { event, .. } => {
                 self.on_key(event.key_code(), event.state(), Event::time_msec(&event));
@@ -124,9 +138,13 @@ impl Dashi {
                 let pressed = button_state == ButtonState::Pressed;
                 if pressed {
                     self.note_chord();
+                    // A click may move the caret: what was typed is no longer before it.
+                    self.keys.snippets.reset();
                 }
                 let at = pointer.current_location();
-                if self.overview_open() && !self.top_layer_at(at) {
+                // A drag that started on the overview ends there, over the shell's row too.
+                let overview_release = !pressed && self.overview_pressed();
+                if self.overview_open() && (overview_release || !self.top_layer_at(at)) {
                     if pressed {
                         self.overview_press(at);
                     } else {
@@ -139,8 +157,26 @@ impl Dashi {
                 let on_decoration = free && self.decoration_at(at).is_some();
                 // So is a press on the resize border around a window Dashi frames.
                 let on_border = free && !on_decoration && self.resize_edge_at(at).is_some();
+                // A press in a window with a sheet on it brings the sheet forward and
+                // goes no further; so does its release (wm/sheets.rs).
+                if free && !on_decoration && !on_border && self.sheet_takes_press(at).is_some() {
+                    self.focus_at(at, serial);
+                    self.swallowed_buttons.push(button);
+                    return;
+                }
+                if !pressed
+                    && let Some(held) = self.swallowed_buttons.iter().position(|b| *b == button)
+                {
+                    self.swallowed_buttons.remove(held);
+                    return;
+                }
                 if free && !on_decoration && !on_border {
                     self.focus_at(at, serial);
+                    // The press goes to what is under the pointer now, even if that
+                    // appeared under a still pointer (a sheet where the last one was):
+                    // pointer focus moves only on motion, and input-origin already
+                    // counts this press as the new surface's.
+                    self.refresh_pointer_focus(&pointer, at, event.time_msec());
                 }
                 pointer.button(
                     self,
@@ -221,5 +257,34 @@ impl Dashi {
             InputEvent::GestureHoldEnd { event } => self.on_hold_end::<I>(&event),
             _ => {}
         }
+    }
+}
+
+impl Dashi {
+    /// If the surface under the pointer is no longer the one it last entered
+    /// (one appeared or went away under it), enter the new one where the pointer is.
+    fn refresh_pointer_focus(
+        &mut self,
+        pointer: &PointerHandle<Self>,
+        at: Point<f64, Logical>,
+        time: u32,
+    ) {
+        if pointer.is_grabbed() {
+            return;
+        }
+        let under = self.surface_under(at);
+        if pointer.current_focus() == under.as_ref().map(|(surface, _)| surface.clone()) {
+            return;
+        }
+        pointer.motion(
+            self,
+            under,
+            &MotionEvent {
+                location: at,
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+            },
+        );
+        pointer.frame(self);
     }
 }

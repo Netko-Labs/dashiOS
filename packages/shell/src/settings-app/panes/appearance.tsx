@@ -1,25 +1,30 @@
 /**
- * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from, the same
- * switch as Control Center's Dark Mode tile, the accent color, and how round
+ * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from (the
+ * one Dark Mode control here; Control Center's tile is the same switch), the accent color, and how round
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
- * file, so a pick shows on the open windows at once), and the pointer's size
- * (`appearance.pointerSize`, pointer.ts).
+ * file, so a pick shows on the open windows at once), whether the focused
+ * window wears the accent ring (`appearance.highlightActiveWindow`,
+ * appearance/window-style.ts), the pointer's size
+ * (`appearance.pointerSize`, pointer.ts), and the text size of the shell's
+ * surfaces and GTK apps (`appearance.textSize`, text-size.ts).
  */
 
-import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
+import { DEFAULT_TEXT_SIZE, darkColors, lightColors, type Palette, Switch, TEXT_SIZES, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
-import { Switch } from "../../wifi/switch.tsx";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Row, useSurface } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Row, Spot, useSurface } from "../ui.tsx";
 
 const CORNER_LABELS: Record<CornerName, string> = { none: "None", small: "Small", medium: "Medium", large: "Large" };
 const CORNER_OPTIONS = CORNER_NAMES.map((value) => ({ value, label: CORNER_LABELS[value] }));
 const POINTER_LABELS: Record<(typeof POINTER_SIZES)[number], string> = { 24: "Standard", 32: "Large", 40: "Larger", 48: "Largest" };
 const POINTER_OPTIONS = POINTER_SIZES.map((value) => ({ value: value as number, label: POINTER_LABELS[value] }));
+/** In TEXT_SIZES' order. */
+const TEXT_LABELS = ["Default", "Large", "Larger", "Largest"] as const;
+const TEXT_OPTIONS = TEXT_SIZES.map((value, index) => ({ value: value as number, label: TEXT_LABELS[index] ?? `${value}×` }));
 
 /** A miniature desktop: a menu bar, a window with two lines of text. */
 function MiniDesktop({ palette }: { palette: Palette }) {
@@ -115,46 +120,72 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
 export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
   const colors = useColors();
   const surface = useSurface();
-  const { dark } = useFlags(flags);
   const { appearance } = useSettings(settings).data;
   return (
     <Page title="Appearance">
       <Group>
-        <AppearancePreviews flags={flags} settings={settings} />
+        {/* The previews are Dark Mode's only control: a link or the launcher's Dark Mode row lands here. */}
+        <Spot pane="appearance" row="dark-mode">
+          <AppearancePreviews flags={flags} settings={settings} />
+        </Spot>
       </Group>
       <Group>
-        <Row label="Dark Mode" detail="Menus, the Dock, and apps that follow the system switch together.">
-          <Switch testID="appearance-dark-mode" on={dark} onChange={(on) => flags.set({ dark: on })} />
-        </Row>
-        <Row label="Accent color" detail="Selections, switches, and sliders.">
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View
-              testID="appearance-accent"
-              style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
+        <Spot pane="appearance" row="accent-color">
+          <Row label="Accent color" detail="Selections, switches, and sliders.">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                testID="appearance-accent"
+                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
+              />
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
+            </View>
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="window-corners">
+          <Row stack label="Window corners" detail="How round windows are, app content included.">
+            <CornerChoices settings={settings} />
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="highlight-active-window">
+          <Row label="Highlight the active window" detail="A ring in the accent color around the window you're typing in.">
+            <Switch
+              testID="appearance-highlight-window"
+              on={appearance.highlightActiveWindow === true}
+              onChange={(highlightActiveWindow) => settings.patch("appearance", { highlightActiveWindow })}
             />
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
-          </View>
-        </Row>
-        <Row stack label="Window corners" detail="How round windows are, app content included.">
-          <CornerChoices settings={settings} />
-        </Row>
-        <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
-          <Choices
-            testID="appearance-pointer-size"
-            value={appearance.pointerSize ?? DEFAULT_POINTER_SIZE}
-            options={POINTER_OPTIONS}
-            onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
-          />
-        </Row>
-        <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
-          <Switch
-            testID="appearance-reduce-motion"
-            on={appearance.reduceMotion === true}
-            onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })}
-          />
-        </Row>
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="pointer-size">
+          <Row stack label="Pointer size" detail="On every screen and at every scale. Apps that draw their own pointer follow when they next open.">
+            <Choices
+              testID="appearance-pointer-size"
+              value={appearance.pointerSize ?? DEFAULT_POINTER_SIZE}
+              options={POINTER_OPTIONS}
+              onChange={(pointerSize) => settings.patch("appearance", { pointerSize })}
+            />
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="text-size">
+          <Row stack label="Text size" detail="The launcher grows with it, and so do apps that follow GNOME's text size.">
+            <Choices
+              testID="appearance-text-size"
+              value={appearance.textSize ?? DEFAULT_TEXT_SIZE}
+              options={TEXT_OPTIONS}
+              onChange={(textSize) => settings.patch("appearance", { textSize })}
+            />
+          </Row>
+        </Spot>
+        <Spot pane="appearance" row="reduce-motion">
+          <Row label="Reduce motion" detail="Windows open, close, minimize, and move without animation.">
+            <Switch
+              testID="appearance-reduce-motion"
+              on={appearance.reduceMotion === true}
+              onChange={(reduceMotion) => settings.patch("appearance", { reduceMotion })}
+            />
+          </Row>
+        </Spot>
       </Group>
-      <Caption>Dark Mode is the same switch as in Control Center. Auto turns it on at 7 PM and off at 7 AM.</Caption>
+      <Caption>Light and Dark are the same choice as Control Center's Dark Mode. Auto turns Dark Mode on at 7 PM and off at 7 AM.</Caption>
     </Page>
   );
 }

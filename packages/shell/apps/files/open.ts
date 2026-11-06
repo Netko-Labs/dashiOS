@@ -8,7 +8,8 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { dataDirs, desktopFields } from "../../src/entries.ts";
+import { resolvePinned } from "../../src/apps.ts";
+import { dataDirs, desktopFields, entryIcon } from "../../src/entries.ts";
 import { type Exec, exec } from "./exec.ts";
 import { normalizePath } from "./paths.ts";
 import { fileUri } from "./uri.ts";
@@ -39,11 +40,30 @@ export function mayOpen(item: { kind: string; name: string; mime: string }): Ope
   return { ok: true };
 }
 
-export async function openWithDefault(path: string, run: Exec = exec): Promise<string | null> {
+/** How long `gio open` may take to hand a file to its app (a cold app started over D-Bus is the slow case). */
+export const OPEN_TIMEOUT_MS = 10_000;
+
+/** What became of an open: the app has it, it failed (and why), or the app hasn't taken it yet after `OPEN_TIMEOUT_MS`. */
+export type OpenOutcome = { kind: "opened" } | { kind: "failed"; problem: string } | { kind: "waiting" };
+
+/**
+ * Hands a file or folder to its default app. `gio open` exits once the app
+ * has it, while the app runs on holding gio's pipes: so it is waited for
+ * until it exits (`untilExit`), not until the pipes close, which is when the
+ * app quits.
+ */
+export async function openDefault(path: string, run: Exec = exec): Promise<OpenOutcome> {
   const clean = normalizePath(path);
-  if (clean === null) return "That isn’t a valid path.";
-  const outcome = await run(["gio", "open", "--", clean]);
-  return outcome.ok ? null : outcome.stderr.replace(/^gio: /, "").trim() || "No app could open it.";
+  if (clean === null) return { kind: "failed", problem: "That isn’t a valid path." };
+  const outcome = await run(["gio", "open", "--", clean], { untilExit: true, timeoutMs: OPEN_TIMEOUT_MS });
+  if (outcome.timedOut) return { kind: "waiting" };
+  return outcome.ok ? { kind: "opened" } : { kind: "failed", problem: outcome.stderr.replace(/^gio: /, "").trim() || "No app could open it." };
+}
+
+/** `openDefault` for a click: what went wrong, or null (an app still starting isn't wrong). */
+export async function openWithDefault(path: string, run: Exec = exec): Promise<string | null> {
+  const outcome = await openDefault(path, run);
+  return outcome.kind === "failed" ? outcome.problem : null;
 }
 
 export interface OpenWithApp {
@@ -52,6 +72,8 @@ export interface OpenWithApp {
   name: string;
   /** The desktop entry's file. */
   file: string;
+  /** Its icon, as the Dock and the launcher draw it (`entryIcon`). */
+  icon: string;
 }
 
 /** The `.desktop` ids in `gio mime` output ("Registered applications:" and "Recommended applications:" lists), each once, recommended first. */
@@ -86,12 +108,14 @@ export async function appsFor(mime: string, run: Exec = exec, dirs: readonly str
   const outcome = await run(["gio", "mime", mime]);
   if (!outcome.ok) return [];
   const apps: OpenWithApp[] = [];
+  const pinned = resolvePinned();
   for (const id of parseGioMime(outcome.stdout).slice(0, 40)) {
     const found = await findDesktopFile(id, dirs);
     if (!found) continue;
     const fields = desktopFields(found.text);
     if (fields.get("NoDisplay")?.toLowerCase() === "true" || fields.get("Hidden")?.toLowerCase() === "true") continue;
-    apps.push({ id, name: fields.get("Name") ?? id.replace(/\.desktop$/, ""), file: found.file });
+    const bare = id.replace(/\.desktop$/, "");
+    apps.push({ id, name: fields.get("Name") ?? bare, file: found.file, icon: entryIcon(bare, fields.get("Icon") ?? "", pinned) });
   }
   return apps;
 }
@@ -100,6 +124,8 @@ export async function appsFor(mime: string, run: Exec = exec, dirs: readonly str
 export async function openWith(app: Pick<OpenWithApp, "file">, path: string, run: Exec = exec): Promise<string | null> {
   const clean = normalizePath(path);
   if (clean === null || !app.file.startsWith("/") || !app.file.endsWith(".desktop")) return "That isn’t a valid request.";
-  const outcome = await run(["gio", "launch", app.file, fileUri(clean)]);
+  // As `openDefault`: gio is done when it exits; the app it started holds its pipes on.
+  const outcome = await run(["gio", "launch", app.file, fileUri(clean)], { untilExit: true, timeoutMs: OPEN_TIMEOUT_MS });
+  if (outcome.timedOut) return null;
   return outcome.ok ? null : outcome.stderr.replace(/^gio: /, "").trim() || "The app couldn’t open it.";
 }

@@ -119,7 +119,7 @@ export function NotesSheet({
         <ConfirmSheet
           testID="empty-trash"
           title="Delete everything in Recently Deleted?"
-          message={`${sheet.count === 1 ? "1 note" : `${sheet.count} notes`} will be deleted forever. This can't be undone.`}
+          message={`${sheet.count === 1 ? "1 note" : `${sheet.count} notes`} will be deleted forever.`}
           confirmLabel="Delete All"
           danger
           onConfirm={done(actions.emptyTrash)}

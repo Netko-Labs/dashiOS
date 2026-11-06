@@ -9,9 +9,13 @@ import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { RecordTarget } from "../../recorder/command.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
+import { AGENT_MASK } from "../mask.ts";
 import type { Call } from "../tools/index.ts";
 
 type RecordCall = Extract<Call, { name: "record_screen" }>;
+
+/** How often the blanks follow the screen while an agent's recording runs. */
+const MASK_EVERY_MS = 400;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -53,15 +57,23 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     target = { kind: "screen", output: display.name };
     area = display.frame;
   }
-  // The consent sheet is never in an agent's recording.
-  await ctx.ui.whenNoSheet();
+  // Consent sheets are blanked in the recording with the rest of the mask (below), so it needn't wait for one.
   ctx.status("Recording the screen");
   let file: string;
+  // The video gets the agent's blanks too: the recorder's pid is masked before
+  // its first frame, and the mask follows the screen while it records.
+  const beforeCapture = async (pid: number) => {
+    ctx.mask.recording(pid);
+    await ctx.mask.update();
+  };
   try {
-    file = await recorder.start(target);
+    file = await recorder.start(target, { beforeCapture });
   } catch (error) {
+    ctx.mask.recording(null);
     return toolError(error instanceof Error ? error.message : String(error));
   }
+  // A mask that can't follow ends the recording.
+  const following = setInterval(() => void ctx.mask.update().catch(() => recorder.stop()), MASK_EVERY_MS);
   const started = Date.now();
   const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -71,14 +83,15 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     if (recorder.getSnapshot().kind !== "recording") break;
     const path = join(dir, `${crypto.randomUUID()}.png`);
     try {
-      // With the pointer, so a still shows what is being dragged.
-      await ctx.compositor.request("capture", { path, rect: area, cursor: true });
+      await ctx.mask.update();
+      // With the pointer, so a still shows what is being dragged; with the agent's blanks.
+      await ctx.compositor.request("capture", { path, rect: area, cursor: true, mask: AGENT_MASK });
       stills.push(
         { type: "image", data: Buffer.from(await Bun.file(path).arrayBuffer()).toString("base64"), mimeType: "image/png" },
         { type: "text", text: `The still above is at ${(at / 1000).toFixed(1)} s.` },
       );
     } catch {
-      // A still that can't be taken leaves a gap; the video has it.
+      // A still that can't be taken (or blanked) leaves a gap; the video has it.
     } finally {
       rmSync(path, { force: true });
     }
@@ -86,6 +99,9 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
   await sleep(Math.max(0, started + call.seconds * 1000 - Date.now()));
   const early = recorder.getSnapshot().kind !== "recording";
   await recorder.stop();
+  clearInterval(following);
+  ctx.mask.recording(null);
+  await ctx.mask.update().catch(() => {});
   const length = ((Date.now() - started) / 1000).toFixed(1);
   return {
     content: [{ type: "text", text: `${early ? "The person stopped the recording early. " : ""}Recorded about ${length} s to ${file}.` }, ...stills],

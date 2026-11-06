@@ -87,6 +87,13 @@ export XDG_CURRENT_DESKTOP=Dashi
 export XDG_SESSION_DESKTOP=dashi
 export XDG_SESSION_TYPE=wayland
 export DESKTOP_SESSION=dashi
+# logind's class for this session. greetd sets only XDG_SESSION_ID, and user
+# services check the class (LocalSearch, behind file search, runs only for
+# "user"), so ask logind, and this is a person's session whatever it says.
+if [ -z "${XDG_SESSION_CLASS:-}" ]; then
+  XDG_SESSION_CLASS=$(loginctl show-session "${XDG_SESSION_ID:-auto}" -p Class --value 2>/dev/null || true)
+  export XDG_SESSION_CLASS="${XDG_SESSION_CLASS:-user}"
+fi
 
 # Flatpak apps: their desktop entries and icons are in flatpak's exports,
 # which /etc/profile.d/flatpak.sh adds only for a login shell; a display
@@ -114,9 +121,22 @@ export ELECTRON_OZONE_PLATFORM_HINT=auto
 # color-scheme, which the shell sets through gsettings), so Qt and KDE apps go
 # dark without Plasma. A theme the person chose themselves (qt6ct, kde) wins.
 export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-xdgdesktopportal}"
+# GTK apps draw their own file chooser and print dialog unless told to ask
+# the portal (Dashi's, dashi.portal): GTK 3 and Firefox read GTK_USE_PORTAL,
+# GTK 4 GDK_DEBUG=portals. A GDK_DEBUG the person set keeps its own flags.
+export GTK_USE_PORTAL=1
+case ",${GDK_DEBUG:-}," in
+  *,portals,*) ;;
+  ,,) GDK_DEBUG=portals ;;
+  *) GDK_DEBUG="$GDK_DEBUG,portals" ;;
+esac
+export GDK_DEBUG
 
 # A tty login has no locale; apps and the Metal host's text system want UTF-8.
 export LANG="${LANG:-C.UTF-8}"
+# React's production build for the shell and the apps (Bun and React read NODE_ENV):
+# the development build checks and warns on every render, two to three times slower.
+export NODE_ENV="${NODE_ENV:-production}"
 
 [ -n "${XDG_RUNTIME_DIR:-}" ] || {
   XDG_RUNTIME_DIR=/run/user/$(id -u)
@@ -155,7 +175,7 @@ if [ "$print_only" = 1 ]; then
   echo "metal host:  ${DASHI_METAL_HOST:-(the shell's default)}"
   echo "nested:      $nested"
   echo "log:         ${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/dashi/dashi.log (linked from $XDG_RUNTIME_DIR/dashi.log)"
-  env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
+  env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|GTK_USE_PORTAL|GDK_DEBUG|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
   exit 0
 fi
 

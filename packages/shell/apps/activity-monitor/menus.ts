@@ -49,7 +49,7 @@ export function monitorMenus(context: MonitorMenuContext): { menus: MenuSpec[]; 
         { type: "separator" },
         ...TABS.map(({ value, label }, index) => ({ id: `tab:${value}`, label, shortcut: `❖${index + 1}`, checked: tab === value, enabled })),
         { type: "separator" },
-        { id: "quit-process", label: "Quit Process", shortcut: "❖K", enabled: context.hasSelection && enabled },
+        { id: "quit-process", label: "Quit Process…", shortcut: "❖K", enabled: context.hasSelection && enabled },
       ],
     },
   ];

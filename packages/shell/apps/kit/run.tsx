@@ -12,6 +12,7 @@ import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, typ
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/apps.ts";
 import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
+import { appNameEnv } from "../../src/metal-host.ts";
 import { followDarkMode } from "./appearance.ts";
 import { serveControl } from "./control.ts";
 import { setProcessName } from "./name.ts";
@@ -75,7 +76,9 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   const stopFollowing = followDarkMode();
   const size = sizeFrom(process.env.MIRIN_METAL_SIZE, options.size);
   const titleBar: TitleBarStyle = process.env.MIRIN_METAL_TITLEBAR === "standard" ? "standard" : (options.titleBar ?? "unified");
-  const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar });
+  // The app's name for screen readers, whatever the window is titled later.
+  const env = appNameEnv(options.title);
+  const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar, env });
   const root = render(element, host);
   const stopControl = serveControl(host, root);
   let open = true;

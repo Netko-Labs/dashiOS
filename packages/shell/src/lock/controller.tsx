@@ -6,10 +6,10 @@
  * new one takes over, and a restarted shell does the same at startup.
  */
 
-import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost } from "@mirinjs/metal";
-import { METAL_HOST } from "../apps.ts";
+import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import type { Compositor } from "../compositor.ts";
 import { runPower } from "../menus/session.ts";
+import { spawnShellHost } from "../metal-host.ts";
 import { Attempts, type Verdict } from "./attempts.ts";
 import { accountPicture, checkPassword, displayName, lockedUser } from "./auth.ts";
 import { LockScreen } from "./screen.tsx";
@@ -47,7 +47,7 @@ export class LockController {
   lock(): void {
     if (this.host) return;
     this.unlocking = false;
-    const host = spawnNativeHost(METAL_HOST, {
+    const host = spawnShellHost({
       title: "Lock",
       appId: "dev.dashi.lock",
       width: 1280,

@@ -42,9 +42,15 @@ shell's client:
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and
-  `controls.rs` (server-side title bars), `cursor.rs`.
+  `controls.rs` (server-side title bars), `cursor.rs`. A Space can be added
+  at an index (`space_list.rs`), and a window on a Space that is not shown
+  can be placed, framed, and put into or out of full screen there: it waits
+  off screen and shows so when its Space does. That is what the shell needs
+  to give a full-screen window a Desktop of its own and slide to it once
+  (`packages/shell/src/spaces/fullscreen.ts`); `window-state` tells it when a
+  window is minimized or hidden however that happened.
 - **Session:** `lock.rs`, `idle/` (`protocols`, `ipc`), `keys/` (keymap,
-  bindings, ❖ phases), `agent_seat/` (a second seat an agent drives, drawn
+  bindings, ❖ phases, the snippets' keywords watched as the person types), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
 - **IPC (`ipc/`):** `requests`, `windows`, `outbox`, `dev`.
@@ -74,16 +80,22 @@ crates/dashi-comp/src/
                     pointer (constraints, relative, gestures, cursor-shape),
                     inhibit, text (text-input, input-method, virtual keyboard),
                     security (security-context), sync (explicit and implicit),
-                    toplevel_meta (icons, bell), activation (+ dialog, foreign)
+                    toplevel_meta (icons, bell), activation (+ dialog)
   protocols/        protocols smithay lacks: dashi-chrome-v1, wlr-foreign-
                     toplevel, wlr-screencopy (copy_with_damage paced to the
                     refresh, at most 60 fps), ext-image-copy-capture
-                    (image_capture.rs), ext-foreign-toplevel-list
-  render/           scene, title bars, cursor, capture, presentation (present.rs),
-                    rounded corners (rounded.rs)
-  wm/               windows, placement mechanics, frames, fullscreen, spaces, overview, grabs
+                    (image_capture.rs), ext-foreign-toplevel-list,
+                    xdg-foreign (ported from smithay, with handles the IPC can look up:
+                    `window-for-handle`)
+  render/           scene, one window's elements (windows.rs), title bars, cursor,
+                    capture, presentation (present.rs), rounded corners (rounded.rs),
+                    depth between windows (depth/: `window-style`), live pictures the shell places
+                    (thumbnails/: `space-previews`, `window-thumbnails`)
+  wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
+                    grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
+                    sheets (a window attached under another's title bar: IPC `attach`)
   input/            keyboard and pointer routing, decorations, constraints, gestures
-  keys/             keymap, bindings, ❖ phases
+  keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs)
   xwayland/         Xwayland and the X11 window manager
   ipc/              socket, framing, requests
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes
@@ -134,18 +146,42 @@ Each milestone ends with the shell running on it in the VM.
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title
   bar, all four on a unified window; a texture shader on the main surface
   (render/rounded.rs), so such a surface is never scanned out directly.
+- **Depth between windows (done, 0.4.0):** the shell's `window-style` look:
+  a shadow under each window (deeper on the focused one, cross-faded), a
+  hairline just inside its frame, an optional ring outside the focused one's;
+  one closed-form pixel shader per side (render/depth/: a Gaussian-blurred
+  rounded rectangle by erf on its distance field, no blur pass), cut out
+  where the window is, clipped to the window's screen, drawing and damaging
+  only the bands around the frame. Full screen windows and clients that draw
+  their own shadow get none.
 - **Window controls:** 0.1.0's "Shapes": a circle closes, a bar minimizes, a
   rounded square zooms (ume #D0596F, broth #E5B13F, kombu #4A9A7E), gray on an
   unfocused window, lit and the hovered one grown 1.18× under the pointer;
-  the same as the shell gives GTK apps (appearance/gtk-css.ts).
+  the same as the shell gives GTK apps (appearance/gtk-css.ts). A unified
+  window (dashi-chrome-v1) keeps them in full screen, where they are when
+  windowed and working the same (the square, with or without ⌥, leaves full
+  screen: the shell's call), since its app keeps their place (`controls`)
+  clear in its toolbar; the hidden menu bar is not in their way. A title bar
+  goes in full screen, and windows without Dashi's chrome stay edge to edge.
+  Wherever a window is drawn small or moving (the overview, a flight to the
+  Dock, a Desktop sliding in, the shell's window and Desktop pictures), its
+  title bar or lights shrink with it, whole, at the same spot.
 - **Modern protocols (done):** fractional scale (each surface hears the
   scale of the screen it is mostly on) and viewporter, single-pixel buffers,
   alpha modifier, content type, cursor-shape, pointer constraints and
   relative pointer, pointer gestures (pinch and hold go to clients; a swipe
   the shell claims goes to it), idle-inhibit (while its surface is on
   screen), keyboard-shortcuts-inhibit (activated at once; ❖ and the built-ins
-  stay Dashi's), text-input and input-method, virtual keyboard (the shell's
-  processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
+  stay Dashi's), text-input and input-method (an input method's candidate
+  popup goes under the caret, above it near the screen's bottom, kept on
+  its screen, for windows and layer surfaces alike; the shell runs the input
+  method, `packages/shell/src/input-method.ts`; Metal's fields report their
+  caret and take the composition and the commit through mirin's text input,
+  and turn text input off in a password field, so the input method never
+  sees one; a key the keymap binds, the open launcher's Tab, Home, End, Page
+  Up and Page Down among them, is the keymap's even mid-composition, since
+  bindings come before the input method's keyboard grab), virtual keyboard
+  (the shell's processes only), xdg-toplevel-icon (`window-icon`; off for now: smithay 0.7
   disconnects Chromium for destroying an icon's buffer after the icon),
   xdg-system-bell
   (`bell`), xdg-foreign, ext-image-copy-capture with ext-image-capture-source

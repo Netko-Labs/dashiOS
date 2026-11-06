@@ -23,8 +23,11 @@ import { MOON } from "./control-center/glyphs.ts";
 import type { ExtrasStore, MenuBarExtra } from "./extras/index.ts";
 import { ExtraItems } from "./extras/view.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
+import { keepAwake, keepAwakeEntries } from "./inhibit/index.ts";
+import { laptopEntries } from "./laptop/menu.ts";
+import type { Laptop } from "./laptop/start.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
-import { batteryEntries, extraEntries } from "./menus/status-menu.ts";
+import { batteryEntries, extraEntries, type StatusMenuAction } from "./menus/status-menu.ts";
 import { RecordingButton } from "./recorder/indicator.tsx";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
@@ -126,6 +129,7 @@ export function MenuBar({
   appMenus,
   extras,
   batteryMonitor,
+  laptop,
   settings,
   output,
   onStopAgent,
@@ -145,6 +149,8 @@ export function MenuBar({
   extras: ExtrasStore;
   /** The battery's draw and heavy apps, for its menu (battery/). */
   batteryMonitor?: BatteryMonitor;
+  /** The laptop's sections of the battery menu (laptop/). */
+  laptop?: Laptop;
   /** settings.json: what the status area shows (`menuBar`, set in System Settings). */
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
@@ -179,7 +185,23 @@ export function MenuBar({
     if (!battery || !bounds) return;
     // The monitor knows the draw and the heavy apps; without it the menu has the battery alone.
     const use = batteryMonitor?.getSnapshot();
-    const entries = batteryEntries(battery, { watts: use?.watts ?? null, apps: use?.significant ?? [] });
+    // The laptop's sections (the mode, the charge, the graphics card's holders): laptop/menu.ts.
+    void laptop?.graphics.refresh();
+    const sections = laptop
+      ? laptopEntries<StatusMenuAction>(
+          {
+            laptop: laptop.store.getSnapshot(),
+            modes: laptop.modes.getSnapshot(),
+            graphics: laptop.graphics.getSnapshot(),
+            power: settings.getSnapshot().data.power,
+            now: new Date(),
+          },
+          (action) => ({ kind: "laptop", action }),
+        )
+      : [];
+    const entries = batteryEntries(battery, { watts: use?.watts ?? null, apps: use?.significant ?? [] }, sections);
+    // What keeps the computer awake, above Battery Settings (inhibit/menu.ts).
+    entries.splice(-2, 0, ...keepAwakeEntries(keepAwake().awake(), (id) => installed?.(id)?.name ?? id, { kind: "allow-sleep" as const }));
     void menus.toggleStatusMenu("battery", bounds.x + bounds.width, entries, appName, output);
   };
   const openExtraMenu = (extra: MenuBarExtra, right: number) => {
@@ -230,7 +252,7 @@ export function MenuBar({
           <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
         ))}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
-          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y)} />
+          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y, output)} />
           <View
             testID="status-area"
             style={{
