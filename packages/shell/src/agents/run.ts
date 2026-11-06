@@ -184,6 +184,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       return payCall(call, ctx);
     case "hand_over":
       return handOver(call, ctx);
+    case "read_clipboard_history":
+      return desktop.readClipboardHistory(call.limit, ctx);
     case "click":
     case "scroll":
     case "drag":

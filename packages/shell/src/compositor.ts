@@ -186,7 +186,11 @@ export type CompositorEvent =
   /** An app rang the system bell (xdg-system-bell); window is null when it named no surface. */
   | { event: "bell"; window: number | null }
   /** A wallpaper finished loading (`path`, null for the built-in gradient) or could not be (comp/src/wallpaper/). */
-  | { event: "wallpaper"; path: string | null; ok: boolean; error?: string };
+  | { event: "wallpaper"; path: string | null; ok: boolean; error?: string }
+  /** The clipboard has a new copy: its types, and the window that had the keyboard (clipboard/watch.ts reads it). */
+  | { event: "selection"; mimeTypes: string[]; window: number | null; x11?: true }
+  /** A snippet's keyword was just typed into a window (IPC `snippets`; clipboard/snippets.ts decides). */
+  | { event: "snippet"; keyword: string; window: number };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -370,6 +374,14 @@ export function parseEvent(value: unknown): CompositorEvent | null {
             ...(typeof value.error === "string" ? { error: value.error } : {}),
           }
         : null;
+    case "selection": {
+      const { mimeTypes, window, x11 } = value;
+      if (!Array.isArray(mimeTypes) || !(window === null || isNumber(window))) return null;
+      const types = mimeTypes.filter((type): type is string => typeof type === "string").slice(0, 64);
+      return { event: "selection", mimeTypes: types, window, ...(x11 === true ? { x11 } : {}) };
+    }
+    case "snippet":
+      return typeof value.keyword === "string" && isNumber(value.window) ? { event: "snippet", keyword: value.keyword, window: value.window } : null;
     case "super":
       return value.phase === "tap" || value.phase === "hold" || value.phase === "chord" || value.phase === "up" ? { event: "super", phase: value.phase } : null;
     default:

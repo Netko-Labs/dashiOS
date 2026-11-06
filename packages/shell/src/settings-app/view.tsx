@@ -54,7 +54,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "desktop-dock":
       return <DesktopDockPane settings={ctx.settings} />;
     case "keyboard":
-      return <KeyboardPane settings={ctx.settings} layouts={ctx.layouts} laptop={ctx.services.laptop} />;
+      return <KeyboardPane settings={ctx.settings} layouts={ctx.layouts} laptop={ctx.services.laptop} clipboard={ctx.clipboard ?? null} />;
     case "trackpad":
       return <TrackpadPane settings={ctx.settings} />;
     case "mouse":

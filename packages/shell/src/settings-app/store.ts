@@ -19,7 +19,8 @@
  *     "displays": { "eDP-1": { "scale": 1.5 } },
  *     "spaces": { "count": 3, "names": ["Work", null], "switchOnActivate": true },
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
- *     "graphics": { "mode": "automatic" }
+ *     "graphics": { "mode": "automatic" },
+ *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false }
  *   }
  *
  * Writes are read-modify-write on the file as it is now, so keys this module
@@ -173,6 +174,19 @@ export interface LauncherSettings {
   keys?: Readonly<Record<string, string>>;
 }
 
+/** `clipboard`: clipboard history and snippets (clipboard/; Settings › Keyboard). */
+export interface ClipboardSettings {
+  /** Copies kept for ⌥❖V; on unless set to false. */
+  history?: boolean;
+  /** The apps whose copies are never kept (app ids or programs); clipboard/privacy.ts DEFAULT_LEFT_OUT unless set. */
+  leftOut?: readonly string[];
+  /** Snippets expand in terminals too; off unless set. */
+  snippetsInTerminals?: boolean;
+}
+
+/** An app id or a program name, as `leftOut` holds them. */
+const isAppName = (value: unknown): boolean => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
+
 export interface DisplaySettings {
   /** The scale the person chose; it wins over the one picked from the pixel density. */
   scale?: number;
@@ -202,6 +216,8 @@ export interface SettingsData {
   graphics: GraphicsSettings;
   /** The launcher's aliases and keys. */
   launcher: LauncherSettings;
+  /** Clipboard history and snippets. */
+  clipboard: ClipboardSettings;
 }
 
 /** What the shell does with no `idle` setting (the same default as settings.ts). */
@@ -293,6 +309,10 @@ const SECTIONS = {
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
+  clipboard: {
+    path: ["clipboard"],
+    fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },
+  },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -392,6 +412,7 @@ export function readSettings(raw: unknown): SettingsData {
     power: readSection(root, "power") as PowerSection,
     graphics: readSection(root, "graphics") as GraphicsSettings,
     launcher: readSection(root, "launcher") as LauncherSettings,
+    clipboard: readSection(root, "clipboard") as ClipboardSettings,
   };
 }
 

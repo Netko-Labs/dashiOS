@@ -51,6 +51,8 @@ export interface Section {
   rows: Row[];
   /** Blank slots held for rows still coming (files): drawn empty, never selected. */
   reserved?: number;
+  /** Draw this many rows at once, scrolled with the selection (a scope's long list: scope.ts). */
+  window?: number;
 }
 
 /** Where file rows stand for the query being shown. */

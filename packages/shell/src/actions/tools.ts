@@ -57,6 +57,7 @@ export const ASKS_EVERY_TIME: ReadonlySet<ToolName> = new Set<ToolName>([
   "trash_file",
   "request_software_install",
   "request_software_update",
+  "read_clipboard_history",
 ]);
 
 /** A tool's address: `dashi://tool/force-quit-app`. */

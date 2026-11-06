@@ -138,6 +138,8 @@ impl Dashi {
                 let pressed = button_state == ButtonState::Pressed;
                 if pressed {
                     self.note_chord();
+                    // A click may move the caret: what was typed is no longer before it.
+                    self.keys.snippets.reset();
                 }
                 let at = pointer.current_location();
                 // A drag that started on the overview ends there, over the shell's row too.

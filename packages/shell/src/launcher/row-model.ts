@@ -37,7 +37,9 @@ export type RowAction =
   | { kind: "type"; query: string }
   | { kind: "search-files"; query: string }
   | { kind: "find-software"; query: string }
-  | { kind: "all-apps" };
+  | { kind: "all-apps" }
+  /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
+  | { kind: "scope"; verb: string };
 
 /** The section a row goes under once two kinds show. */
 export type RowGroup = "answer" | "window" | "app" | "settings" | "command" | "menu" | "file" | "other";

@@ -19,6 +19,7 @@ import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
 import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
+import { isVaultWindow } from "./agents/secrets/vault-view.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
 import type { PressedChord } from "./app-menus/shortcut.ts";
@@ -35,6 +36,7 @@ import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
+import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
@@ -447,6 +449,8 @@ function paneServicesOf(): PaneServices {
   return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop }));
 }
 
+// Clipboard history and snippets (clipboard/), started below once the registry and the launcher are.
+let clipboard: Clipboard | null = null;
 // Agents reach the same stores and controllers the menus use (agents/desktop/).
 const agents = compositor
   ? startAgents({
@@ -493,6 +497,8 @@ const agents = compositor
         // Late-bound too: ❖ chords an agent presses in Dashi's apps choose their menu items, as the person's do.
         appShortcut: (window, shortcut) => appShortcut(window, shortcut),
         ...(captureTools ? { recorder: captureTools.recorder } : {}),
+        // Late-bound too: the clipboard history starts with the launcher's registry (clipboard/).
+        clipboard: { recent: (limit) => clipboard?.recent(limit) ?? [] },
       },
     })
   : null;
@@ -505,6 +511,7 @@ const settingsApp = startSettingsApp({
   settings: settingsStore,
   region: region.store,
   passwords,
+  clipboard: () => clipboard?.history ?? null,
   openSetup: () => setupAssistant?.open(),
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
@@ -956,8 +963,16 @@ function showLauncher(): void {
   if (!overlays.has("launcher")) openLauncher();
 }
 
-function openLauncher(presented: Presented | null = null): void {
+/** The launcher in one of its scopes (⌥❖V: the clipboard history), over `window`; one already open gives way. */
+function openLauncherIn(scope: string, window: number | null): void {
+  if (overlays.has("launcher")) closeOverlay("launcher");
+  openLauncher(null, scope, window);
+}
+
+function openLauncher(presented: Presented | null = null, scope: string | null = null, window: number | null = null): void {
   markOpen();
+  // Where the clipboard's ↩ pastes: the window under the launcher.
+  clipboard?.opening(window);
   // Keys typed from the tap on wait for the field (launcher/type-ahead.ts).
   typeAhead.begin();
   handedOff = false;
@@ -1017,6 +1032,8 @@ function openLauncher(presented: Presented | null = null): void {
         ranking={rankingMemory}
         {...(launcherHost ? { host: launcherHost } : {})}
         presented={presented}
+        {...(clipboard ? { scopes: clipboard.scopes } : {})}
+        scope={scope}
         languages={launcherLanguages}
         typeAhead={typeAhead}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
@@ -1197,6 +1214,20 @@ const radioSource = new RadioSource({
   },
 });
 const stopRadioSource = actions.registry.add(radioSource);
+// Clipboard history (⌥❖V) and snippets: copies from the compositor's data-control, kept by the privacy
+// rules, in the launcher's scopes; nothing kept while the screen is shared, recorded, or locked (clipboard/).
+clipboard = startClipboard({
+  compositor,
+  settings: settingsStore,
+  paused: () => screenCapture.getSnapshot() || (polkitLock?.isLocked ?? false),
+  isVault: isVaultWindow,
+  appName: (window) => nameApp?.(window) ?? window.appId,
+  openLauncher: (scope, window) => openLauncherIn(scope, window),
+  openSettings: () => settingsApp.open("keyboard", "clipboard-history"),
+  confirm: (question) => agentUi.confirmPerson(question),
+  ...(launcherLanguages[0] ? { locale: launcherLanguages[0] } : {}),
+});
+const stopClipboardSource = actions.registry.add(clipboard.source);
 void menus.shared.devices.refresh();
 // What the launcher lists besides the apps (launcher/world.ts): the registry's actions for the person, and the
 // windows, named as the switcher names them; a setting's switch redraws when Control Center flips it.
@@ -1373,6 +1404,13 @@ const quit = () => {
       },
     ],
     ["person keys", stopFollowingPersonKeys],
+    [
+      "clipboard",
+      () => {
+        stopClipboardSource();
+        clipboard?.close();
+      },
+    ],
     ["actions", () => actions.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],

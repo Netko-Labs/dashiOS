@@ -20,6 +20,8 @@
  * - A sum is the first row: Enter copies it, and it says so in place.
  * - Nothing found offers Did you mean, Search files, and Find in Software.
  * - With nothing typed: Recent, else a few things to try, then All apps.
+ * - A scope (launcher/scope.ts: the clipboard history at ⌥❖V, snippets)
+ *   narrows the panel to its rows behind a chip; Esc leaves it.
  */
 
 import { useColors } from "@dashi/ui";
@@ -40,6 +42,7 @@ import { chordWhen, collision } from "./launcher/person-keys.ts";
 import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
 import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, fileNameMatches, filesStateFor, placeholderFor, type Row, type Section, selectable } from "./launcher/rows.ts";
+import type { LauncherScope, ScopeResult } from "./launcher/scope.ts";
 import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
 import { logTiming, timingNow } from "./launcher/timing.ts";
 import { applyEdits } from "./launcher/type-ahead.ts";
@@ -120,8 +123,16 @@ export interface LauncherProps {
   typeAhead?: TypeAheadSource;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
+  /** Narrowed views of the panel (launcher/scope.ts): choosing one's address enters it. */
+  scopes?: readonly LauncherScope[];
+  /** Open in this scope (its id), for it alone: Esc closes. */
+  scope?: string | null;
   onClose: () => void;
 }
+
+/** The scope the launcher opens in, if it was opened for one. */
+const scopeNamed = (scopes: readonly LauncherScope[] | undefined, id: string | null | undefined) =>
+  id ? (scopes?.find((each) => each.id === id) ?? null) : null;
 
 const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software"), command: iconPath("settings") };
 
@@ -161,9 +172,16 @@ export function Launcher(props: LauncherProps) {
   const [digits, setDigits] = useState(false);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const offset = useRef(0);
+  // A scope narrows the panel to its rows; `alone` when it was opened for it (⌥❖V), so Esc closes.
+  const [scoped, setScoped] = useState<{ scope: LauncherScope; alone: boolean } | null>(() => {
+    const opened = scopeNamed(props.scopes, props.scope);
+    return opened ? { scope: opened, alone: true } : null;
+  });
+  const scope = scoped?.scope ?? null;
+  useSyncExternalStore(scope?.subscribe ?? noStore.subscribe, scope?.getSnapshot ?? noStore.getSnapshot);
 
   const text = query.trim();
-  const filesState = filesStateFor({ query, offered: files !== undefined, off: filesOff, answer: found, lastCount: lastFileCount });
+  const filesState = filesStateFor({ query, offered: files !== undefined && !scope, off: filesOff, answer: found, lastCount: lastFileCount });
   const waiting = filesState.kind === "waiting";
 
   useEffect(() => {
@@ -213,9 +231,10 @@ export function Launcher(props: LauncherProps) {
   const clock = useClockPrefs();
   const answers = { locale: clock.locale, hour24: usesHour24(clock) };
   const working = timingNow();
-  const sections = buildSections({
+  const searched = buildSections({
     answers,
-    query,
+    // In a scope its own rows show: the search's are the empty field's, which cost nothing.
+    query: scope ? "" : query,
     entries,
     recent,
     files: filesState,
@@ -228,6 +247,9 @@ export function Launcher(props: LauncherProps) {
     failed,
     icons: ICONS,
   });
+  const sections = scope ? scope.sections(query) : searched;
+  /** A row's verbs: its scope's, or what verbs.ts gives it. */
+  const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   // Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts).
   const typedAt = useRef<number | null>(null);
@@ -247,7 +269,7 @@ export function Launcher(props: LauncherProps) {
   // The action list, or what the alias and shortcut fields offer.
   const verbs: Verb[] =
     mode.kind === "actions"
-      ? filterVerbs(verbsFor(mode.row, ctx), filter)
+      ? filterVerbs(verbsOf(mode.row), filter)
       : mode.kind === "presented"
         ? filterVerbs(presentedVerbs(mode.presented.action, mode.presented.args, ctx), filter)
         : [];
@@ -301,7 +323,7 @@ export function Launcher(props: LauncherProps) {
   };
 
   const openActions = (row: Row | undefined) => {
-    if (!row || verbsFor(row, ctx).length < 2) return;
+    if (!row || verbsOf(row).length < 2) return;
     setMode({ kind: "actions", row });
     setFilter("");
     setHeldVerb(null);
@@ -322,6 +344,20 @@ export function Launcher(props: LauncherProps) {
     else say(outcome);
   };
 
+  /** Into a scope, in place (its row chosen), or out of it (Esc): the field starts empty. */
+  const enterScope = (next: LauncherScope | null) => {
+    setScoped(next ? { scope: next, alone: false } : null);
+    backToSearch();
+    restart("");
+  };
+  /** What a scope's verb asked for once it ran. */
+  const scopeDone = (result: ScopeResult, stay: boolean) => {
+    if (result.close && !stay) return onClose();
+    if (mode.kind !== "search") backToSearch();
+    if (result.query !== undefined) restart(result.query);
+    if (result.notice) setNotice(result.notice);
+  };
+
   const perform = (effect: Effect, row: Row | undefined, stay = false): void => {
     const runOf = (promise: Promise<Outcome> | undefined) => void promise?.then((outcome) => ran(outcome, stay));
     switch (effect.kind) {
@@ -336,9 +372,15 @@ export function Launcher(props: LauncherProps) {
         learn(row);
         void host?.focus(effect.window).then(() => finish(stay));
         return;
-      case "run":
+      case "run": {
         learn(row);
+        const entering = props.scopes?.find((each) => each.address === effect.item.action?.address);
+        if (entering) return enterScope(entering);
         if (effect.item.action) runOf(host?.run(effect.item.action));
+        return;
+      }
+      case "scope":
+        if (scope) void Promise.resolve(scope.run(effect.verb, row, text)).then((result) => scopeDone(result, stay));
         return;
       case "run-args":
         runOf(host?.run(effect.action, effect.args));
@@ -449,7 +491,7 @@ export function Launcher(props: LauncherProps) {
     const row = target();
     if (row)
       doVerb(
-        verbsFor(row, ctx).find((each) => each.key === key),
+        verbsOf(row).find((each) => each.key === key),
         row,
       );
   };
@@ -457,7 +499,7 @@ export function Launcher(props: LauncherProps) {
   const submit = (stay = false) => {
     switch (mode.kind) {
       case "search":
-        return doVerb(selectedRow ? verbsFor(selectedRow, ctx)[0] : undefined, selectedRow, stay);
+        return doVerb(selectedRow ? verbsOf(selectedRow)[0] : undefined, selectedRow, stay);
       case "actions":
       case "presented":
         return doVerb(
@@ -500,7 +542,7 @@ export function Launcher(props: LauncherProps) {
         return submit(true);
       case "pick": {
         const row = mode.kind === "search" ? drawnRows()[cmd.digit - 1] : undefined;
-        if (row) doVerb(verbsFor(row, ctx)[0], row);
+        if (row) doVerb(verbsOf(row)[0], row);
         return;
       }
       case "digits":
@@ -525,7 +567,7 @@ export function Launcher(props: LauncherProps) {
     }
     // Space on a row with a switch flips it, unless it is the next letter of the row's name.
     if (next === `${query} ` && selectedRow && spaceFlips(selectedRow, query)) {
-      const flip = verbsFor(selectedRow, ctx).find((each) => each.key === KEYS.flip);
+      const flip = verbsOf(selectedRow).find((each) => each.key === KEYS.flip);
       if (flip) {
         // The field already shows the space; take it back, so the next letter follows the words.
         setFieldRevision((revision) => revision + 1);
@@ -542,6 +584,8 @@ export function Launcher(props: LauncherProps) {
     // A link opened the launcher for its action alone: Esc closes it.
     if (mode.kind === "presented") return onClose();
     if (mode.kind !== "search") return backToSearch();
+    // A scope's chip next: back to the whole launcher, or closed when it was opened for the scope.
+    if (scoped) return scoped.alone ? onClose() : enterScope(null);
     if (allApps && !query) return setAllApps(false);
     if (query) return restart("");
     onClose();
@@ -557,13 +601,14 @@ export function Launcher(props: LauncherProps) {
   });
 
   const drawn = (section: Section): Row[] => {
-    if (section.id !== "all") return section.rows;
+    const shown = section.window ?? (section.id === "all" ? ALL_APPS_ROWS : null);
+    if (shown === null) return section.rows;
     const at = Math.max(
       0,
       section.rows.findIndex((row) => row.id === selected),
     );
-    offset.current = keepInView(at, offset.current, ALL_APPS_ROWS, section.rows.length);
-    return section.rows.slice(offset.current, offset.current + ALL_APPS_ROWS);
+    offset.current = keepInView(at, offset.current, shown, section.rows.length);
+    return section.rows.slice(offset.current, offset.current + shown);
   };
   /** The rows on screen, top to bottom: what ❖1–9 pick. */
   function drawnRows(): Row[] {
@@ -602,7 +647,7 @@ export function Launcher(props: LauncherProps) {
               key={row.id}
               row={row}
               selected={row.id === selected}
-              onPress={() => doVerb(verbsFor(row, ctx)[0], row)}
+              onPress={() => doVerb(verbsOf(row)[0], row)}
               onHover={() => setHeld(row.id)}
               onContextMenu={() => {
                 setHeld(row.id);
@@ -648,10 +693,10 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : undefined;
+            : (scope?.chip ?? undefined);
   const placeholder =
     mode.kind === "search"
-      ? placeholderFor(files !== undefined && !filesOff)
+      ? (scope?.placeholder ?? placeholderFor(files !== undefined && !filesOff))
       : mode.kind === "alias"
         ? "An alias, like ff"
         : mode.kind === "shortcut"
@@ -659,9 +704,11 @@ export function Launcher(props: LauncherProps) {
           : "Search actions";
   const hints =
     mode.kind === "search"
-      ? text
-        ? hintFor(selectedRow, ctx)
-        : []
+      ? scope
+        ? scope.hints(selectedRow)
+        : text
+          ? hintFor(selectedRow, ctx)
+          : []
       : mode.kind === "presented"
         ? [
             { keys: "Esc", label: "close" },
