@@ -188,6 +188,28 @@ test("a search provider's results go below Dashi's rows under its name, and run 
   expect(log).toEqual(["run dashi://search/org.gnome.Characters.BackgroundService-org-gnome-Characters-SearchProvider"]);
 });
 
+test("a provider's results for a query nothing of Dashi's matches land below “Nothing called …”, which stays on top", async () => {
+  const provider = {
+    id: "org.gnome.Characters.BackgroundService/org/gnome/Characters/SearchProvider",
+    label: "Characters",
+    ask: async () => {
+      await settle(30);
+      return [{ id: "smile", title: "SMILING FACE", icon: "/c.svg", run: async (): Promise<Outcome> => ({ ok: true, text: "Opened." }) }];
+    },
+  };
+  const session = new ExtensionSession(() => [provider]);
+  const files = { ...app("Files"), id: "dev.dashi.files" };
+  const software = { ...app("Software"), id: "dev.dashi.software" };
+  const candidates = ["search-files", "find-software", `slow:${provider.id}:smile`];
+  const launcher = await mount({ entries: [files, software], extensions: session }, candidates);
+  await launcher.type("smile");
+  expect(launcher.rows()).toEqual({ ids: ["search-files", "find-software"], selected: "search-files" });
+  await settle(60);
+  // The provider answered: its row goes under the rest; the head, the rows and the selection hold still.
+  expect(launcher.rows()).toEqual({ ids: candidates, selected: "search-files" });
+  expect(launcher.tree()).toContain("Nothing called “smile”");
+});
+
 test("rows from outside never outrank an exact match of a name Dashi or an app gave, and can't take a first-party one", () => {
   const spoof = command("settings", "System Settings", async () => ({ ok: true, text: "" }));
   const weather = command("weather", "Weather", async () => ({ ok: true, text: "" }));
