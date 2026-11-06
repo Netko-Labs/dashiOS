@@ -19,7 +19,8 @@
  *     "displays": { "eDP-1": { "scale": 1.5 } },
  *     "spaces": { "count": 3, "names": ["Work", null], "switchOnActivate": true },
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
- *     "graphics": { "mode": "automatic" }
+ *     "graphics": { "mode": "automatic" },
+ *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false }
  *   }
  *
  * Writes are read-modify-write on the file as it is now, so keys this module
@@ -34,9 +35,13 @@
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { isTextSize } from "@dashi/ui";
+import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
+import { isModelName } from "../agents/ask/local.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
+import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
@@ -87,6 +92,11 @@ export interface IdleSettings {
   sleepAfterSeconds?: number;
 }
 
+/** `inputMethod`: the input method the session runs (input-method.ts); none when not set. */
+export interface InputMethodSettings {
+  engine?: InputMethodName;
+}
+
 /** `menuBar`: what the status area shows beyond its defaults. */
 export interface MenuBarSettings {
   /** The battery's percentage beside its glyph; off unless set. */
@@ -106,6 +116,8 @@ export interface AppearanceSettings {
   auto?: boolean;
   /** The pointer's size in points (pointer.ts); 24 when not set. */
   pointerSize?: number;
+  /** What the shell's type is multiplied by (text-size.ts); 1 when not set. */
+  textSize?: number;
   /** How X11 apps meet a scaled screen (xwayland-scale.ts); sharp when not set. */
   x11Apps?: X11Scaling;
 }
@@ -173,6 +185,26 @@ export interface LauncherSettings {
   keys?: Readonly<Record<string, string>>;
 }
 
+/** Who answers the launcher's Ask (agents/ask/answerer.ts); unset until the person picks. */
+export interface AgentsSettings {
+  answerer?: AnswererChoice;
+  /** The local model to ask by name; the first one installed when unset. */
+  localModel?: string;
+}
+
+/** `clipboard`: clipboard history and snippets (clipboard/; Settings › Keyboard). */
+export interface ClipboardSettings {
+  /** Copies kept for ⌥❖V; on unless set to false. */
+  history?: boolean;
+  /** The apps whose copies are never kept (app ids or programs); clipboard/privacy.ts DEFAULT_LEFT_OUT unless set. */
+  leftOut?: readonly string[];
+  /** Snippets expand in terminals too; off unless set. */
+  snippetsInTerminals?: boolean;
+}
+
+/** An app id or a program name, as `leftOut` holds them. */
+const isAppName = (value: unknown): boolean => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
+
 export interface DisplaySettings {
   /** The scale the person chose; it wins over the one picked from the pixel density. */
   scale?: number;
@@ -187,6 +219,7 @@ export interface SettingsData {
   keyboard: KeyboardSettings;
   idle: IdleSettings;
   menuBar: MenuBarSettings;
+  inputMethod: InputMethodSettings;
   appearance: AppearanceSettings;
   wallpaper: WallpaperSettings;
   nightShift: NightShiftSettings;
@@ -202,6 +235,10 @@ export interface SettingsData {
   graphics: GraphicsSettings;
   /** The launcher's aliases and keys. */
   launcher: LauncherSettings;
+  /** Who answers the launcher's Ask. */
+  agents: AgentsSettings;
+  /** Clipboard history and snippets. */
+  clipboard: ClipboardSettings;
 }
 
 /** What the shell does with no `idle` setting (the same default as settings.ts). */
@@ -257,6 +294,7 @@ const SECTIONS = {
   },
   idle: { path: ["idle"], fields: { blankAfterSeconds: numberIn(0, MAX_BLANK_AFTER), sleepAfterSeconds: numberIn(0, MAX_BLANK_AFTER) } },
   menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
+  inputMethod: { path: ["inputMethod"], fields: { engine: oneOf(...INPUT_METHODS) } },
   appearance: {
     path: ["appearance"],
     fields: {
@@ -265,6 +303,7 @@ const SECTIONS = {
       highlightActiveWindow: isBoolean,
       auto: isBoolean,
       pointerSize: isPointerSize,
+      textSize: isTextSize,
       x11Apps: oneOf(...X11_SCALINGS),
     },
   },
@@ -293,6 +332,11 @@ const SECTIONS = {
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
+  agents: { path: ["agents"], fields: { answerer: isAnswererChoice, localModel: isModelName } },
+  clipboard: {
+    path: ["clipboard"],
+    fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },
+  },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -381,6 +425,7 @@ export function readSettings(raw: unknown): SettingsData {
     keyboard: readSection(root, "keyboard") as KeyboardSettings,
     idle: readSection(root, "idle") as IdleSettings,
     menuBar: readSection(root, "menuBar") as MenuBarSettings,
+    inputMethod: readSection(root, "inputMethod") as InputMethodSettings,
     appearance: readSection(root, "appearance") as AppearanceSettings,
     wallpaper: readSection(root, "wallpaper") as WallpaperSettings,
     nightShift: readSection(root, "nightShift") as NightShiftSettings,
@@ -392,6 +437,8 @@ export function readSettings(raw: unknown): SettingsData {
     power: readSection(root, "power") as PowerSection,
     graphics: readSection(root, "graphics") as GraphicsSettings,
     launcher: readSection(root, "launcher") as LauncherSettings,
+    agents: readSection(root, "agents") as AgentsSettings,
+    clipboard: readSection(root, "clipboard") as ClipboardSettings,
   };
 }
 

@@ -12,6 +12,7 @@ pub mod payments;
 pub mod protocol;
 pub mod reply;
 pub mod secret_service;
+pub mod tokens;
 
 use std::{
     collections::HashMap,
@@ -250,6 +251,8 @@ impl Daemon {
                     payments::handle(vault, request, now())?
                 } else if secret_service::owns(&request) {
                     secret_service::handle(vault, request, now())?
+                } else if tokens::owns(&request) {
+                    tokens::handle(vault, request, now())?
                 } else {
                     logins::handle(vault, request, now())?
                 };

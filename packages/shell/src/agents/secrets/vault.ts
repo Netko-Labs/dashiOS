@@ -102,7 +102,12 @@ export interface NewLogin {
 
 /** Dashi's vault, as the shell uses it. */
 export class Vault {
-  constructor(private readonly path = VAULT_SOCKET) {}
+  /** API tokens, swapped in by the token proxy for their hosts only. */
+  readonly tokens: VaultTokens;
+
+  constructor(private readonly path = VAULT_SOCKET) {
+    this.tokens = new VaultTokens(path);
+  }
 
   private call(request: Record<string, unknown>, timeoutMs?: number): Promise<Record<string, unknown>> {
     return vaultCall(request, this.path, timeoutMs);
@@ -204,6 +209,101 @@ export class Vault {
     const result = { number: both.slice(0, cut), cvc: both.slice(cut + 1), expiry: typeof reply.expiry === "string" ? reply.expiry : "" };
     both.fill(0);
     return result;
+  }
+}
+
+/** A token item as anyone may see it: no token (docs/secrets.md, "Tokens that stay home"). */
+export interface TokenSummary {
+  id: number;
+  /** Agents hold `dashi:<name>`. */
+  name: string;
+  hosts: string[];
+  /** Where the token may go, "Authorization: Bearer {}" first by default: the proxy swaps it in whichever the request sent. */
+  headers: string[];
+  lastUsed: number | null;
+}
+
+export interface NewToken {
+  name: string;
+  hosts: string[];
+  /** Unset: "Authorization: Bearer {}". */
+  headers?: string[];
+  token: string;
+}
+
+export interface TokenChange {
+  hosts?: string[];
+  headers?: string[];
+  /** Empty or absent keeps the token there. */
+  token?: string;
+}
+
+const DEFAULT_TOKEN_HEADER = "Authorization: Bearer {}";
+
+/** An item's headers from a reply: `headers`, else the one `header` an older dashi-secretd sends. */
+function headersOf(reply: Record<string, unknown>): string[] {
+  const listed = Array.isArray(reply.headers) ? reply.headers.filter((h): h is string => typeof h === "string") : [];
+  if (listed.length > 0) return listed;
+  return [typeof reply.header === "string" ? reply.header : DEFAULT_TOKEN_HEADER];
+}
+
+/** The headers as dashi-secretd takes them: one as `header` (as it always was), more as `headers`. */
+const headersField = (headers: readonly string[] | undefined): Record<string, unknown> =>
+  !headers || headers.length === 0 ? {} : headers.length === 1 ? { header: headers[0] } : { headers };
+
+function parseToken(value: unknown): TokenSummary | null {
+  if (typeof value !== "object" || value === null) return null;
+  const raw = value as Record<string, unknown>;
+  const { id, name, hosts, lastUsed } = raw;
+  if (typeof id !== "number" || typeof name !== "string" || !Array.isArray(hosts)) return null;
+  if (typeof raw.header !== "string" && !Array.isArray(raw.headers)) return null;
+  return {
+    id,
+    name,
+    hosts: hosts.filter((h): h is string => typeof h === "string"),
+    headers: headersOf(raw),
+    lastUsed: typeof lastUsed === "number" ? lastUsed : null,
+  };
+}
+
+/** The vault's token items, for Settings and the token proxy. */
+export class VaultTokens {
+  constructor(private readonly path = VAULT_SOCKET) {}
+
+  async list(): Promise<TokenSummary[]> {
+    const reply = await vaultCall({ op: "tokens" }, this.path);
+    return (Array.isArray(reply.tokens) ? reply.tokens : []).map(parseToken).filter((t): t is TokenSummary => t !== null);
+  }
+
+  async save(token: NewToken): Promise<number> {
+    const reply = await vaultCall(
+      { op: "save-token", name: token.name, hosts: token.hosts, ...headersField(token.headers), token: encodeText(token.token) },
+      this.path,
+    );
+    return typeof reply.id === "number" ? reply.id : -1;
+  }
+
+  async update(id: number, change: TokenChange): Promise<void> {
+    await vaultCall(
+      {
+        op: "update-token",
+        id,
+        ...(change.hosts ? { hosts: change.hosts } : {}),
+        ...headersField(change.headers),
+        ...(change.token ? { token: encodeText(change.token) } : {}),
+      },
+      this.path,
+    );
+  }
+
+  async remove(id: number): Promise<void> {
+    await vaultCall({ op: "delete-token", id }, this.path);
+  }
+
+  /** Token `name` for a request to `host`, for the proxy (or the shell's own client) to use and drop; refused for a host it isn't for. */
+  async forHost(name: string, host: string): Promise<{ token: Uint8Array; headers: string[] }> {
+    const reply = await vaultCall({ op: "token", name, host }, this.path);
+    return { token: fromBase64(reply.token), headers: headersOf(reply) };
   }
 }
 

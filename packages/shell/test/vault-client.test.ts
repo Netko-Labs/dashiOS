@@ -44,3 +44,24 @@ test.skipIf(!existsSync(binary))("logins go in, come back without secrets, and a
   await vault.remove(id);
   expect(await vault.logins()).toEqual([]);
 });
+
+test.skipIf(!existsSync(binary))("a token item is listed without its token and given only for its hosts", async () => {
+  const tokens = new Vault(socket).tokens;
+  const id = await tokens.save({ name: "github", hosts: ["https://API.GitHub.com/"], token: "ghp_testtoken" });
+  const listed = await tokens.list();
+  expect(listed).toEqual([{ id, name: "github", hosts: ["api.github.com"], headers: ["Authorization: Bearer {}"], lastUsed: null }]);
+  expect(JSON.stringify(listed)).not.toContain("ghp_testtoken");
+  const given = await tokens.forHost("github", "api.github.com");
+  expect(new TextDecoder().decode(given.token)).toBe("ghp_testtoken");
+  // An unlisted host gets nothing.
+  await expect(tokens.forHost("github", "github.com")).rejects.toThrow("isn't for that host");
+  await expect(tokens.forHost("github", "api.github.com.evil.example")).rejects.toThrow();
+  await tokens.update(id, { hosts: ["uploads.github.com"], headers: ["X-Token: {}"] });
+  expect((await tokens.forHost("github", "uploads.github.com")).headers).toEqual(["X-Token: {}"]);
+  // More than one header: listed and given in order.
+  await tokens.update(id, { headers: ["x-api-key: {}", "Authorization: Bearer {}"] });
+  expect((await tokens.list())[0]?.headers).toEqual(["x-api-key: {}", "Authorization: Bearer {}"]);
+  expect((await tokens.forHost("github", "uploads.github.com")).headers).toEqual(["x-api-key: {}", "Authorization: Bearer {}"]);
+  await tokens.remove(id);
+  expect(await tokens.list()).toEqual([]);
+});

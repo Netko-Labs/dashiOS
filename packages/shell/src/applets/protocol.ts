@@ -32,6 +32,7 @@ export {
   parseApplet,
   parseAppletMessage,
   parseAppletShellMessage,
+  wireMessage,
 } from "@dashi/applet";
 
 /**

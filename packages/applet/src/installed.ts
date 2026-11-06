@@ -97,9 +97,17 @@ export function readInstalled(root: string = appletsRoot()): InstalledApplet[] {
   return out;
 }
 
+/** What the consent sheet asks for, by name: its permissions, and its commands in the launcher (one name for all of them). */
+export const COMMANDS_CONSENT = "launcher.commands";
+
+/** The names the person must allow before it runs: each permission's, and `launcher.commands` when it adds any. */
+export function consentNames(manifest: Pick<Manifest, "permissions" | "commands">): string[] {
+  return [...manifest.permissions.map(permissionName), ...(manifest.commands.length > 0 ? [COMMANDS_CONSENT] : [])];
+}
+
 /** Whether the person allowed everything it asks for. */
 export const isAllowed = (applet: Pick<InstalledApplet, "manifest" | "record">): boolean =>
-  applet.manifest.permissions.every((permission) => applet.record.consent.includes(permissionName(permission)));
+  consentNames(applet.manifest).every((name) => applet.record.consent.includes(name));
 
 /** Whether the launcher should run it now. */
 export const shouldRun = (applet: InstalledApplet): boolean => isAllowed(applet) && applet.record.disabled === undefined;

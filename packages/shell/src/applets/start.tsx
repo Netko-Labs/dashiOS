@@ -14,6 +14,7 @@ import { parseScreens } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
+import type { AppletCommands } from "./commands.ts";
 import type { AppletContext } from "./connection.ts";
 import { APPLET_CONSENT, AppletConsentSheet } from "./consent-sheet.tsx";
 import { AppletGrants } from "./grants.ts";
@@ -29,10 +30,12 @@ export interface StartAppletsOptions {
   openOverlay: OpenOverlay;
   /** The primary screen's output name, for a popover asked for without a click. */
   primary(): string | null;
+  /** The applets' commands in the launcher (commands.ts): fed the installed ones, answered on their connections. */
+  commands?: AppletCommands;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
-async function popoverScreen(compositor: Compositor | null, output: string | null, primary: string | null): Promise<PopoverScreen | null> {
+export async function popoverScreen(compositor: Compositor | null, output: string | null, primary: string | null): Promise<PopoverScreen | null> {
   if (!compositor) return { name: null, width: 1280, height: 800, barHeight: MENU_BAR_HEIGHT };
   const screens = parseScreens(await compositor.request("outputs"));
   const screen = screens.find((each) => each.name === output) ?? screens.find((each) => each.name === primary) ?? screens[0];
@@ -42,11 +45,12 @@ async function popoverScreen(compositor: Compositor | null, output: string | nul
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
     grants,
+    ...(commands ? { commands } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     // Under the popover, over everything else below the bar: a click on it closes the popover.
     // The bar stays clickable, so the item again also closes it (connection.ts).
@@ -107,6 +111,7 @@ export function startApplets({ compositor, extras, openOverlay, primary }: Start
         runScript: new URL("../../bin/dashi-applet-run.ts", import.meta.url).pathname,
         dashiVersion: SDK_VERSION,
         askConsent,
+        ...(commands ? { onInstalled: (applets: readonly InstalledApplet[]) => commands.setInstalled(applets) } : {}),
       })
     : null;
   launcher?.start();

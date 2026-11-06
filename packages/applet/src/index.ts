@@ -19,13 +19,42 @@ export {
   AppletsClient,
   type AppletsClientOptions,
   type ClientSocket,
+  type CommandHandlers,
+  type CommandRun,
   type PopoverPlacement,
   type SocketHandlers,
 } from "./client.ts";
-export { type AppletDefinition, type AppletHandle, defineApplet, findManifest, type PopoverProps } from "./define.ts";
+export {
+  type AppletCommand,
+  ARG_TYPES,
+  argSchema,
+  COMMAND_LIMITS,
+  COMMAND_MODES,
+  type CommandArg,
+  type CommandArgType,
+  type CommandMode,
+  type CommandResult,
+  type CommandRow,
+  checkArgs,
+  parseCommands,
+  parseResult,
+  parseRows,
+} from "./commands.ts";
+export {
+  type AppletDefinition,
+  type AppletHandle,
+  type CommandAnswer,
+  type CommandDefinition,
+  defineApplet,
+  findManifest,
+  type PopoverProps,
+  type ViewProps,
+} from "./define.ts";
 export {
   appletDataRoot,
   appletsRoot,
+  COMMANDS_CONSENT,
+  consentNames,
   type InstalledApplet,
   type InstallRecord,
   installFiles,
@@ -80,6 +109,7 @@ export {
   parseAppletMessage,
   parseAppletShellMessage,
   type Stat,
+  wireMessage,
 } from "./protocol.ts";
 export { generateKeys, type KeyPair, parsePublicKey, publicKeyLine, sign, verify } from "./signing/index.ts";
 export { readTar, writeTar } from "./tar.ts";

@@ -44,6 +44,12 @@ export const SCOPES = [
       "Ask to pay a site with one of your saved cards, within your limits. Every payment asks for your fingerprint or password, and this permission is never kept: Always Allow doesn't cover it",
   },
   {
+    id: "clipboard",
+    label: "See your clipboard history",
+    detail:
+      "Read what you copied in the last 7 days, never the copies Dashi left out (password fields, password managers). You are asked every time, and Always Allow doesn't cover it",
+  },
+  {
     id: "settings",
     label: "Change settings",
     detail:
@@ -82,10 +88,11 @@ export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessi
   return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))].filter((scope) => !NEVER_KEPT.has(scope)));
 }
 
-/** Scopes "Always Allow" never keeps: allowed for the connection at most (paying). */
-export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay"]);
+/** Scopes "Always Allow" never keeps: allowed for the connection at most (paying, the clipboard history, which asks every time too). */
+export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay", "clipboard"]);
 
-function stateDir(): string {
+/** Where the agents' files are: `$XDG_STATE_HOME/dashi/agents/`. */
+export function stateDir(): string {
   const base = process.env.XDG_STATE_HOME || join(homedir(), ".local/state");
   return join(base, "dashi/agents");
 }
@@ -168,6 +175,8 @@ export interface Activity {
   claims: string | null;
   tool: string | null;
   outcome: string;
+  /** The launcher's Ask a call was a step of (agents/ask/tasks.ts), so the history groups them. */
+  task?: string;
 }
 
 export function logActivity(entry: Activity): void {

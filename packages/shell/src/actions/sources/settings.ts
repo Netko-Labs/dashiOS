@@ -111,6 +111,9 @@ export const SETTING_ROWS: readonly SettingRow[] = [
   },
 ];
 
+/** Whether `name` is a setting `set_setting` takes. */
+export const isSettingKey = (name: string): name is SettingKey => SETTING_ROWS.some((row) => row.setting === name);
+
 /** What a setting is now, read from the same stores `get_settings` reads (agents/desktop/settings.ts). */
 export function settingState(desktop: Pick<Desktop, "flags" | "dock" | "corners" | "scrollSpeed" | "menuBar">, setting: SettingKey): ActionState {
   const flags = desktop.flags.getSnapshot();

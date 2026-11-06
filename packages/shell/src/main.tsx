@@ -12,13 +12,20 @@ import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
+import { isSettingKey, settingState } from "./actions/sources/settings.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
+import { modelKeys, vaultTokenSource } from "./agents/ask/keys.ts";
+import { TurnWatch } from "./agents/ask/now.ts";
+import { type Ask, startAsk } from "./agents/ask/service.ts";
 import { Grants } from "./agents/consent.ts";
 import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
+import { personAnswered } from "./agents/person.ts";
 import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
+import { isVaultWindow } from "./agents/secrets/vault-view.ts";
+import { serveTokens, tokensSocketPath } from "./agents/tokens/index.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
 import type { PressedChord } from "./app-menus/shortcut.ts";
@@ -27,7 +34,8 @@ import { ChromeStyle } from "./appearance/chrome.ts";
 import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { WindowStyleSync } from "./appearance/window-style.ts";
-import { startApplets } from "./applets/start.tsx";
+import { AppletCommands } from "./applets/commands.ts";
+import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
@@ -35,6 +43,7 @@ import { startAutostart } from "./autostart.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
+import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
@@ -56,6 +65,7 @@ import {
   TileStore,
 } from "./dock/index.ts";
 import { type Entry, fileIcon, launchEntry } from "./entries.ts";
+import { openTarget, startExtensions } from "./extensions/start.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
 import { FileSearch, iconNamesFor } from "./file-search.ts";
@@ -66,14 +76,17 @@ import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
+import { InputMethodRunner } from "./input-method.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap, idleKeymap, setPersonRules } from "./keymap-state.ts";
 import { startLaptop } from "./laptop/start.ts";
+import { hostIsAccessible } from "./launcher/access.ts";
 import { AppIndex } from "./launcher/app-index.ts";
 import { BUDGET } from "./launcher/budget.ts";
 import { LaunchFailures } from "./launcher/failures.ts";
 import type { LauncherHost, Presented } from "./launcher/host.ts";
 import { LauncherKeys, withLauncher } from "./launcher/keys.ts";
+import { launcherOrigin, type PictureRect, picturesOnScreen } from "./launcher/pictures.ts";
 import { LauncherPrefs } from "./launcher/prefs.ts";
 import { languagesOf, messageLocales, RankingMemory } from "./launcher/ranking/index.ts";
 import { LAUNCHER_MOTION, ResidentHost } from "./launcher/resident.tsx";
@@ -123,6 +136,7 @@ import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type S
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
 import { startSystem } from "./system/start.ts";
+import { TextSize } from "./text-size.ts";
 import { MENU_BAR_HEIGHT } from "./theme.ts";
 import { ToplevelStore } from "./toplevels.ts";
 import { startTray } from "./tray/index.ts";
@@ -262,6 +276,21 @@ let reduceMotion = false;
 const appearanceDeps = sessionDeps();
 // The pointer's size: the compositor's, GTK's, and X11's (pointer.ts).
 const pointer = compositor ? new PointerSync({ compositor, gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run }) : null;
+// Text size: the shell's surfaces (through @dashi/ui) and GTK's (text-size.ts).
+const textSize = new TextSize(compositor ? { gate: appearanceDeps.gate, has: appearanceDeps.has, run: appearanceDeps.run } : null).connect();
+// The input method the person picked, run as the shell's own child (input-method.ts); only in a real
+// session, where the shell may change what apps read: a nested run would replace the host's.
+const inputMethod =
+  compositor && appearanceDeps.gate.on
+    ? new InputMethodRunner({
+        has: appearanceDeps.has,
+        env: process.env,
+        spawn: (command) => {
+          const child = Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "inherit" });
+          return { exited: child.exited, kill: () => child.kill() };
+        },
+      })
+    : null;
 // What X11 apps hear (xwayland-scale.ts): the settings say it, X11 scaling below follows.
 let xwaylandChoice: XwaylandChoice = { scaling: DEFAULT_X11_SCALING, pointerSize: DEFAULT_POINTER_SIZE };
 let xwaylandScaling: XwaylandScaling | null = null;
@@ -269,6 +298,8 @@ const stopSettings = compositor
   ? startSettings(compositor, (settings) => {
       reduceMotion = settings.appearance.reduceMotion;
       void pointer?.apply(settings.appearance.pointerSize);
+      void textSize.apply(settings.appearance.textSize);
+      inputMethod?.apply(settings.inputMethod.engine);
       const choice = { scaling: settings.appearance.x11Apps, pointerSize: settings.appearance.pointerSize };
       if (choice.scaling !== xwaylandChoice.scaling || choice.pointerSize !== xwaylandChoice.pointerSize) {
         xwaylandChoice = choice;
@@ -375,11 +406,19 @@ const polkit = startPolkit({
 const agentStore = new AgentStore();
 // Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
 const passwords = startPasswords();
+// Agents' API tokens stay home: dashi-agent asks here for its sandbox's token proxy (agents/tokens/).
+const stopTokens = serveTokens({ path: tokensSocketPath(), tokens: passwords.vault.tokens });
 // The vault's questions to the person (a passkey, a payment): fingerprint or password.
 const approvalUi = createApprovalUi();
 watchApprovals(approvalUi);
 // A sheet's yes counts only if the person pressed it (agents/person.ts).
 const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
+// A "Your turn" is in the launcher's Now too while its banner is up (agents/ask/now.ts).
+const turnWatch = new TurnWatch();
+const showTurn = agentUi.turn;
+agentUi.turn = (turn, signal) => turnWatch.track(turn, showTurn(turn, signal));
+// The launcher's agents (agents/ask/): started once the action registry is, below.
+let askAgents: Ask | null = null;
 
 // Notifications: org.freedesktop.Notifications on the session bus, with banners
 // at the top right. If the bus is missing or the name is taken, it logs and
@@ -447,6 +486,8 @@ function paneServicesOf(): PaneServices {
   return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop }));
 }
 
+// Clipboard history and snippets (clipboard/), started below once the registry and the launcher are.
+let clipboard: Clipboard | null = null;
 // Agents reach the same stores and controllers the menus use (agents/desktop/).
 const agents = compositor
   ? startAgents({
@@ -493,6 +534,8 @@ const agents = compositor
         // Late-bound too: ❖ chords an agent presses in Dashi's apps choose their menu items, as the person's do.
         appShortcut: (window, shortcut) => appShortcut(window, shortcut),
         ...(captureTools ? { recorder: captureTools.recorder } : {}),
+        // Late-bound too: the clipboard history starts with the launcher's registry (clipboard/).
+        clipboard: { recent: (limit) => clipboard?.recent(limit) ?? [] },
       },
     })
   : null;
@@ -505,10 +548,12 @@ const settingsApp = startSettingsApp({
   settings: settingsStore,
   region: region.store,
   passwords,
+  clipboard: () => clipboard?.history ?? null,
   openSetup: () => setupAssistant?.open(),
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
   services: paneServicesOf,
 });
@@ -590,8 +635,17 @@ const appMenus = startAppMenus({
 const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
 const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
+// Applets' commands in the launcher (applets/commands.ts): answered on their connections, listed in the registry (extensions/).
+const appletCommands = new AppletCommands({
+  copy: (text) => launcherClipboard.writeText(text),
+  open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => actions.openLink(url) }),
+  launcherOrigin: async () => {
+    const screen = await popoverScreen(compositor, (await whereIsPerson()) ?? null, menuBars.primaryName);
+    return screen ? { output: screen.name, x: Math.round((screen.width - LAUNCHER.width) / 2), y: screen.barHeight + LAUNCHER.top } : null;
+  },
+});
 // Applets: everyone's socket, and the installed ones in their sandboxes (applets/start.tsx).
-const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName });
+const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName, commands: appletCommands });
 // Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
 const stopSharePicker = compositor
   ? startSharePicker({
@@ -843,7 +897,7 @@ const launcherKeymap = {
   typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () =>
     void compositor
-      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording))
+      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted))
       .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
@@ -852,6 +906,39 @@ const launcherKeysAgain = () => (handedOff ? launcherKeymap.begin() : launcherKe
 launcherKeys.onRecording = () => {
   if (overlays.has("launcher")) launcherKeysAgain();
 };
+// ← and → are the launcher's while a row's windows can show (launcher/pictures.ts); they wait for the field like every key.
+launcherKeys.onArrows = () => {
+  if (overlays.has("launcher") && handedOff) launcherKeymap.begin();
+};
+/** The screen the open launcher is on, for its windows' pictures. */
+let launcherOutput: string | undefined;
+let launcherPicturesShown = false;
+let launcherPicturesQueue: Promise<void> = Promise.resolve();
+/**
+ * The open launcher's window pictures (launcher/pictures.ts), from its surface's pixels to the
+ * screen's: layer-shell puts it centered across the usable area, LAUNCHER.top down. The first
+ * pictures wait for the list to finish growing to make room for them. In order, one at a time.
+ */
+function launcherPictures(rects: PictureRect[]): void {
+  if (!compositor) return;
+  const wait = rects.length > 0 && !launcherPicturesShown ? (launcherHeightMs() ?? 0) : 0;
+  launcherPicturesShown = rects.length > 0;
+  launcherPicturesQueue = launcherPicturesQueue
+    .then(async () => {
+      if (wait > 0) await Bun.sleep(wait);
+      if (rects.length === 0) return void (await compositor.request("window-thumbnails", { rects: [] }));
+      const outputs = parseOutputs(await compositor.request("outputs"));
+      const screen = outputs.find((each) => each.name === launcherOutput) ?? outputs[0];
+      if (!screen) return;
+      await compositor.request("window-thumbnails", { rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, LAUNCHER.top)) });
+    })
+    .catch((error) => console.error("dashi-shell: the launcher's window pictures:", error));
+}
+/** The Metal host publishes an accessibility tree (launcher/access.ts): the launcher's rows then say what they are. */
+let launcherAccessible = false;
+void hostIsAccessible(METAL_HOST).then((accessible) => {
+  launcherAccessible = accessible;
+});
 // The person's aliases and keys (settings.json `launcher`; launcher/person-keys.ts): a key they set
 // reaches the compositor at once, and an edit of the file by hand too.
 const launcherPrefs = new LauncherPrefs(settingsStore);
@@ -956,8 +1043,16 @@ function showLauncher(): void {
   if (!overlays.has("launcher")) openLauncher();
 }
 
-function openLauncher(presented: Presented | null = null): void {
+/** The launcher in one of its scopes (⌥❖V: the clipboard history), over `window`; one already open gives way. */
+function openLauncherIn(scope: string, window: number | null): void {
+  if (overlays.has("launcher")) closeOverlay("launcher");
+  openLauncher(null, scope, window);
+}
+
+function openLauncher(presented: Presented | null = null, scope: string | null = null, window: number | null = null): void {
   markOpen();
+  // Where the clipboard's ↩ pastes: the window under the launcher.
+  clipboard?.opening(window);
   // Keys typed from the tap on wait for the field (launcher/type-ahead.ts).
   typeAhead.begin();
   handedOff = false;
@@ -976,6 +1071,7 @@ function openLauncher(presented: Presented | null = null): void {
   };
   const showing = overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
     opened = true;
+    launcherOutput = output;
     // Its keys come with the surface and go with it, however it closes.
     return openLauncherSurface(
       {
@@ -985,7 +1081,7 @@ function openLauncher(presented: Presented | null = null): void {
         surface: {
           layer: "overlay",
           anchor: ["top"],
-          margin: { top: 120 },
+          margin: { top: LAUNCHER.top },
           keyboard: "exclusive",
           namespace: "dashi.launcher",
           ...onScreen(output),
@@ -1017,9 +1113,15 @@ function openLauncher(presented: Presented | null = null): void {
         ranking={rankingMemory}
         {...(launcherHost ? { host: launcherHost } : {})}
         presented={presented}
+        {...(clipboard ? { scopes: clipboard.scopes } : {})}
+        scope={scope}
         languages={launcherLanguages}
         typeAhead={typeAhead}
+        {...(askAgents ? { agents: askAgents.launcher } : {})}
+        extensions={extensions.session}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
+        onPictures={launcherPictures}
+        accessible={launcherAccessible}
         onClose={close}
       />,
       () => {
@@ -1197,6 +1299,30 @@ const radioSource = new RadioSource({
   },
 });
 const stopRadioSource = actions.registry.add(radioSource);
+// Clipboard history (⌥❖V) and snippets: copies from the compositor's data-control, kept by the privacy
+// rules, in the launcher's scopes; nothing kept while the screen is shared, recorded, or locked (clipboard/).
+clipboard = startClipboard({
+  compositor,
+  settings: settingsStore,
+  paused: () => screenCapture.getSnapshot() || (polkitLock?.isLocked ?? false),
+  isVault: isVaultWindow,
+  appName: (window) => nameApp?.(window) ?? window.appId,
+  openLauncher: (scope, window) => openLauncherIn(scope, window),
+  openSettings: () => settingsApp.open("keyboard", "clipboard-history"),
+  confirm: (question) => agentUi.confirmPerson(question),
+  ...(launcherLanguages[0] ? { locale: launcherLanguages[0] } : {}),
+});
+const stopClipboardSource = actions.registry.add(clipboard.source);
+// What other programs add: applets' commands, your scripts, GNOME's search providers; the registry on D-Bus (extensions/).
+const extensions = startExtensions({
+  registry: actions.registry,
+  appletCommands,
+  openLink: (url) => actions.openLink(url),
+  open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => actions.openLink(url) }),
+  copy: (text) => launcherClipboard.writeText(text),
+  entries: () => appIndex.entries(),
+  bus: portalHost,
+});
 void menus.shared.devices.refresh();
 // What the launcher lists besides the apps (launcher/world.ts): the registry's actions for the person, and the
 // windows, named as the switcher names them; a setting's switch redraws when Control Center flips it.
@@ -1233,6 +1359,28 @@ launcherHost = shellLauncherHost({
   openFile,
   pins,
   keymap: currentKeymap,
+});
+// Agents in the launcher (agents/ask/): Ask, the plan run by the person's own Return, Now, and the history.
+// The answerer is Settings › Agents' choice; Claude's key is the vault's token item, else ANTHROPIC_API_KEY.
+askAgents = startAsk({
+  settings: settingsStore,
+  agents: agentStore,
+  turns: turnWatch,
+  actions: () => actions.registry.list(),
+  runApproved: (action, args, by) => actions.runApproved(action, args, by),
+  runAsPerson: (address, args) => {
+    const action = actions.registry.get(address);
+    return action ? actions.run(action, args) : Promise.resolve({ ok: false, error: `Nothing is at ${address}.` });
+  },
+  personPressed: () =>
+    compositor ? personAnswered((method, params) => compositor.request(method, params), LAUNCHER_MOTION.namespace) : Promise.resolve(false),
+  settingNow: (name) => (agents && isSettingKey(name) ? settingState(agents.desktop, name) : null),
+  focus: async (window) => {
+    await compositor?.request("focus", { window });
+  },
+  stopAgent: (id) => agents?.stop(id),
+  openSettings: () => settingsApp.open("agents"),
+  keys: modelKeys(vaultTokenSource(passwords.vault.tokens)),
 });
 // A dashi:// link that must not run by itself (destructive, an agent's tool) opens in the launcher, filled in, for Return.
 if (compositor) {
@@ -1340,6 +1488,7 @@ const quit = () => {
     ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
+    ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],
@@ -1363,6 +1512,7 @@ const quit = () => {
     ["system", () => system.close()],
     ["power", () => power.close()],
     ["agents", () => agents?.close()],
+    ["token proxy", stopTokens],
     ["agent sheets", () => agentUi.close()],
     ["launcher world", () => launcherWorld?.close()],
     [
@@ -1372,8 +1522,17 @@ const quit = () => {
         radioSource.close();
       },
     ],
+    ["extensions", () => extensions.close()],
     ["person keys", stopFollowingPersonKeys],
+    [
+      "clipboard",
+      () => {
+        stopClipboardSource();
+        clipboard?.close();
+      },
+    ],
     ["actions", () => actions.close()],
+    ["ask", () => askAgents?.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
     ["screen recording", () => captureTools?.close()],

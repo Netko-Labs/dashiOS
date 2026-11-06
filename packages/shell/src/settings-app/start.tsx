@@ -8,9 +8,11 @@
  */
 
 import { homedir } from "node:os";
+import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
+import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
@@ -49,6 +51,10 @@ export interface SettingsAppOptions {
   grants: Pick<Grants, "entries" | "remove" | "onChange">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
+  /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
+  answers?: () => AnswerStatus | null;
+  /** The clipboard history (Settings › Keyboard); asked for when the window opens, since it starts after Settings. */
+  clipboard?: () => Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear"> | null;
   lock(): void;
   /** Opens the Setup Assistant (About has a button for it). */
   openSetup(): void;
@@ -63,6 +69,12 @@ interface Session {
 }
 
 export const SETTINGS_TITLE = "System Settings";
+
+/** The Ask's reads for the panes, when the shell has them by now. */
+function answersOf(options: SettingsAppOptions): { answers?: AnswerStatus } {
+  const answers = options.answers?.();
+  return answers ? { answers } : {};
+}
 
 export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
   const { compositor } = options;
@@ -98,6 +110,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       return;
     }
     const screens = new ScreensStore(compositor, options.settings, options.displays ?? null);
+    const clipboard = options.clipboard?.() ?? null;
     const ctx: PaneContext = {
       settings: options.settings,
       region: options.region,
@@ -105,6 +118,8 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       screens,
       grants: options.grants,
       ...(options.passwords ? { passwords: options.passwords } : {}),
+      ...answersOf(options),
+      ...(clipboard ? { clipboard } : {}),
       layouts: loadLayouts(),
       chooser: portalChooser(),
       services: options.services(),

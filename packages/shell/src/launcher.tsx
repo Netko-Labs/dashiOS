@@ -20,6 +20,11 @@
  * - A sum is the first row: Enter copies it, and it says so in place.
  * - Nothing found offers Did you mean, Search files, and Find in Software.
  * - With nothing typed: Recent, else a few things to try, then All apps.
+ * - → on a row with windows shows them live under it; ← → pick, ↩ switches (launcher/pictures.ts).
+ * - Type and rows grow with the text size (launcher/measures.ts); a screen reader hears the field,
+ *   the rows and the selection (launcher/access.ts).
+ * - A scope (launcher/scope.ts: the clipboard history at ⌥❖V, snippets)
+ *   narrows the panel to its rows behind a chip; Esc leaves it.
  */
 
 import { useColors } from "@dashi/ui";
@@ -29,20 +34,38 @@ import type { Outcome } from "./actions/types.ts";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
+import { fieldAccess, listAccess, pictureAccess, rowAccess } from "./launcher/access.ts";
+import { agentHandlers } from "./launcher/agents/handlers.ts";
+import {
+  ASK_PLACEHOLDER,
+  askHint,
+  firstChoice,
+  type LauncherAgents,
+  type LauncherAgentsSnapshot,
+  SET_UP_ROW,
+  withAgents,
+  withStop,
+} from "./launcher/agents/rows.ts";
+import { agentField, PlanList, stepAct } from "./launcher/agents/task-mode.tsx";
 import { BUDGET } from "./launcher/budget.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editing.ts";
+import { type ExtensionSession, useExtensions } from "./launcher/extensions.ts";
 import { Field } from "./launcher/field.tsx";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
 import type { LauncherCommand } from "./launcher/keys.ts";
 import { linkTitle } from "./launcher/link-args.ts";
+import { PANEL, SURFACE, useMeasures } from "./launcher/measures.ts";
 import { chordWhen, collision } from "./launcher/person-keys.ts";
+import { type ArrowsWanted, type PictureRect, STRIP_HEIGHT, trimForPictures } from "./launcher/pictures.ts";
 import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
-import { ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
+import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, fileNameMatches, filesStateFor, placeholderFor, type Row, type Section, selectable } from "./launcher/rows.ts";
+import type { LauncherScope, ScopeResult } from "./launcher/scope.ts";
 import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
 import { logTiming, timingNow } from "./launcher/timing.ts";
 import { applyEdits } from "./launcher/type-ahead.ts";
+import { usePictures } from "./launcher/use-pictures.ts";
 import { type TypeAheadSource, useTypeAhead } from "./launcher/use-type-ahead.ts";
 import {
   type Effect,
@@ -57,12 +80,13 @@ import {
   verbRow,
   verbsFor,
 } from "./launcher/verbs.ts";
+import { WindowStrip } from "./launcher/window-strip.tsx";
 import type { WorldSnapshot } from "./launcher/world.ts";
 
 export type { FileRow } from "./launcher/rows.ts";
 
-/** The surface, and the measures of the panel on it (docs/design.html LA-1, TY-1, RA-1: the launcher's row). */
-export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, radius: 12, padding: 5 } as const;
+/** The surface, and the measures of the panel on it at text size 1 (docs/design.html LA-1, TY-1, RA-1: the launcher's row; launcher/measures.ts). */
+export const LAUNCHER = { ...SURFACE, top: 120, field: 48, fieldText: 17, radius: PANEL.radius, padding: PANEL.padding } as const;
 
 /**
  * Files are asked as soon as the rows are drawn: one question at a time over one
@@ -70,8 +94,6 @@ export const LAUNCHER = { width: 620, height: 520, field: 48, fieldText: 17, rad
  * so typing never queues them up, and they have 80 ms to fill their slots (launcher/budget.ts).
  */
 export const FILE_DELAY_MS = 0;
-/** Rows of All apps drawn at once; the selection scrolls them. */
-const ALL_APPS_ROWS = 8;
 /** How long a notice ("Copied") stays at the field's right end. */
 const NOTICE_MS = 2_000;
 
@@ -87,6 +109,8 @@ export interface LauncherKeySource {
   subscribeCommands?(listener: (command: LauncherCommand) => void): () => void;
   /** Set shortcut… listens for a chord (every ❖ chord is the launcher's meanwhile). */
   record?(on: boolean): void;
+  /** What ← and → are for now: the field's, or the windows' pictures' (launcher/pictures.ts). */
+  arrows?(want: ArrowsWanted): void;
 }
 
 export interface LauncherProps {
@@ -118,10 +142,26 @@ export interface LauncherProps {
   languages?: readonly string[];
   /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
   typeAhead?: TypeAheadSource;
+  /** What comes in from outside Dashi: search providers, applets' and scripts' answers (launcher/extensions.ts). */
+  extensions?: ExtensionSession;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
+  /** Agents: Ask, the plan, Now, history (launcher/agents/); without it the launcher knows none. */
+  agents?: LauncherAgents;
+  /** Narrowed views of the panel (launcher/scope.ts): choosing one's address enters it. */
+  scopes?: readonly LauncherScope[];
+  /** Open in this scope (its id), for it alone: Esc closes. */
+  scope?: string | null;
+  /** Where the compositor draws windows' live pictures, in the surface's pixels; empty clears them (launcher/pictures.ts). */
+  onPictures?: (rects: PictureRect[]) => void;
+  /** The host publishes an accessibility tree (launcher/access.ts): the rows say what they are. */
+  accessible?: boolean;
   onClose: () => void;
 }
+
+/** The scope the launcher opens in, if it was opened for one. */
+const scopeNamed = (scopes: readonly LauncherScope[] | undefined, id: string | null | undefined) =>
+  id ? (scopes?.find((each) => each.id === id) ?? null) : null;
 
 const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software"), command: iconPath("settings") };
 
@@ -129,6 +169,7 @@ const NO_WORLD: WorldSnapshot = { actions: [], windows: [], serial: 0 };
 const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => undefined, keyOf: () => undefined };
 const noStore = { subscribe: () => () => {}, getSnapshot: () => NO_WORLD };
 const noPrefs = { subscribe: () => () => {}, getSnapshot: () => NO_PREFS };
+const noAgents = { subscribe: () => () => {}, getSnapshot: (): LauncherAgentsSnapshot | null => null };
 
 /** Where the launcher is: searching, a row's action list, giving an alias or a key, or a link's action. */
 type Mode =
@@ -136,13 +177,20 @@ type Mode =
   | { kind: "actions"; row: Row }
   | { kind: "alias"; address: string; title: string }
   | { kind: "shortcut"; address: string; title: string; when: string | null }
-  | { kind: "presented"; presented: Presented };
+  | { kind: "presented"; presented: Presented }
+  /** An Ask's plan: the field takes a follow-up (launcher/agents/task-mode.tsx). */
+  | { kind: "task"; id: string };
 
 export function Launcher(props: LauncherProps) {
   const { entries, recent = [], files, keys, onClose, host, ranking } = props;
   const colors = useColors();
+  // Type and rows at the person's text size, and how many rows fit (launcher/measures.ts).
+  const m = useMeasures();
   const world = useSyncExternalStore(props.world?.subscribe ?? noStore.subscribe, props.world?.getSnapshot ?? noStore.getSnapshot);
   const prefs = useSyncExternalStore(props.prefs?.subscribe ?? noPrefs.subscribe, props.prefs?.getSnapshot ?? noPrefs.getSnapshot);
+  const agents = useSyncExternalStore(props.agents?.subscribe ?? noAgents.subscribe, props.agents?.getSnapshot ?? noAgents.getSnapshot);
+  // The words ⇥ was pressed for: Ask (or "Set up an agent…") is offered for them.
+  const [tabbed, setTabbed] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [held, setHeld] = useState<string | null>(null);
   const [allApps, setAllApps] = useState(false);
@@ -161,9 +209,17 @@ export function Launcher(props: LauncherProps) {
   const [digits, setDigits] = useState(false);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const offset = useRef(0);
+  // A scope narrows the panel to its rows; `alone` when it was opened for it (⌥❖V), so Esc closes.
+  const [scoped, setScoped] = useState<{ scope: LauncherScope; alone: boolean } | null>(() => {
+    const opened = scopeNamed(props.scopes, props.scope);
+    return opened ? { scope: opened, alone: true } : null;
+  });
+  const scope = scoped?.scope ?? null;
+  useSyncExternalStore(scope?.subscribe ?? noStore.subscribe, scope?.getSnapshot ?? noStore.getSnapshot);
+  const verbOffset = useRef(0);
 
   const text = query.trim();
-  const filesState = filesStateFor({ query, offered: files !== undefined, off: filesOff, answer: found, lastCount: lastFileCount });
+  const filesState = filesStateFor({ query, offered: files !== undefined && !scope, off: filesOff, answer: found, lastCount: lastFileCount });
   const waiting = filesState.kind === "waiting";
 
   useEffect(() => {
@@ -213,11 +269,28 @@ export function Launcher(props: LauncherProps) {
   const clock = useClockPrefs();
   const answers = { locale: clock.locale, hour24: usesHour24(clock) };
   const working = timingNow();
-  const sections = buildSections({
+  // From outside Dashi: providers' rows below the rest, and what a command asks to show (launcher/extensions.ts).
+  // A launcher scope (the clipboard, snippets) asks no provider: its rows are its own. An applet's view is
+  // placed at the text size's field and rows (one object while the size is, so it isn't placed again each render).
+  const viewMeasures = useMemo(() => ({ width: LAUNCHER.width, padding: LAUNCHER.padding, field: m.field, row: m.row }), [m.field, m.row]);
+  const ext = useExtensions(
+    {
+      session: props.extensions,
+      query,
+      searching: mode.kind === "search" && !scope,
+      restart: (next) => restart(next),
+      select: (id) => setHeld(id),
+      run: (action, args) => void host?.run(action, args).then((outcome) => ran(outcome, false)),
+    },
+    viewMeasures,
+  );
+  const searched = buildSections({
     answers,
-    query,
+    // In a scope its own rows show: the search's are the empty field's, which cost nothing.
+    query: scope ? "" : query,
     entries,
-    recent,
+    recent: recent.slice(0, m.listRows - 1),
+    limits: { local: m.localRows, files: m.fileRows },
     files: filesState,
     index,
     windows: world.windows,
@@ -228,6 +301,26 @@ export function Launcher(props: LauncherProps) {
     failed,
     icons: ICONS,
   });
+  // From outside Dashi: a command's answer on top and providers' rows below the rest; in a command's own
+  // scope (a pick, a view, its words) only its rows (launcher/extensions.ts).
+  const outside = ext.sections(searched);
+  // A scope has its own rows only, and so does a command from outside. Otherwise agents' rows go around the
+  // rest, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
+  const inOutside = ext.chip !== undefined;
+  const sections = scope
+    ? scope.sections(query)
+    : inOutside
+      ? outside
+      : withAgents(outside, {
+          query,
+          allApps,
+          snapshot: agents,
+          tabbed: tabbed !== null && tabbed === text,
+          ...(props.agents ? { history: props.agents.history } : {}),
+          now: Math.floor(Date.now() / 1000),
+        });
+  /** A row's verbs: its scope's, or what verbs.ts gives it. */
+  const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   // Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts).
   const typedAt = useRef<number | null>(null);
@@ -238,16 +331,25 @@ export function Launcher(props: LauncherProps) {
     typedAt.current = null;
   }, [query]);
   const rows = selectable(sections);
-  const selected = resolveSelection(
-    rows.map((row) => row.id),
-    held,
-  );
+  const rowIds = rows.map((row) => row.id);
+  // With nothing held the first row, but never Ask: it is chosen, not given.
+  const selected = held !== null && rowIds.includes(held) ? held : firstChoice(rowIds);
   const selectedRow = rows.find((row) => row.id === selected);
+  const task = mode.kind === "task" ? agents?.tasks.find((each) => each.id === mode.id) : undefined;
+  // The selected row's windows, live under it after → (launcher/pictures.ts); not in a scope, whose rows are its own.
+  const arrows = useMemo(() => (keys?.arrows ? (want: ArrowsWanted) => keys.arrows?.(want) : undefined), [keys]);
+  const pictures = usePictures({
+    selectedRow,
+    windows: world.windows,
+    searching: mode.kind === "search" && !scope && !inOutside,
+    ...(arrows ? { arrows } : {}),
+    ...(props.onPictures ? { onPictures: props.onPictures } : {}),
+  });
 
   // The action list, or what the alias and shortcut fields offer.
   const verbs: Verb[] =
     mode.kind === "actions"
-      ? filterVerbs(verbsFor(mode.row, ctx), filter)
+      ? filterVerbs(verbsOf(mode.row), filter)
       : mode.kind === "presented"
         ? filterVerbs(presentedVerbs(mode.presented.action, mode.presented.args, ctx), filter)
         : [];
@@ -261,12 +363,23 @@ export function Launcher(props: LauncherProps) {
   const verbRows = verbs.map((each) => verbRow(each, asking === each.id));
   const verbIds = verbRows.map((row) => row.id);
   const selectedVerbId = resolveSelection(verbIds, heldVerb);
-  const listIds = mode.kind === "search" ? rows.map((row) => row.id) : verbIds;
+  // As many of the action list's rows as fit at the text size, the selected one in view.
+  verbOffset.current = keepInView(Math.max(0, verbIds.indexOf(selectedVerbId ?? "")), verbOffset.current, m.listRows, verbRows.length);
+  const shownVerbs = verbRows.slice(verbOffset.current, verbOffset.current + m.listRows);
+  const stepIds = task ? task.steps.map((_, at) => `step:${at}`) : [];
+  const listIds = mode.kind === "search" ? rowIds : mode.kind === "task" ? stepIds : verbIds;
+  // A plan's steps start with none selected: ↓ selects the first, ↑ the last.
+  const heldStep = mode.kind === "task" && heldVerb?.startsWith("step:") && stepIds.includes(heldVerb) ? Number(heldVerb.slice(5)) : null;
 
   const latest = useRef(listIds);
   latest.current = listIds;
   const mover = (how: Move) => {
+    pictures.fold();
     if (mode.kind === "search") setHeld((now) => moveSelection(latest.current, now, how));
+    else if (mode.kind === "task")
+      setHeldVerb((now) =>
+        now === null ? (latest.current[how === "up" || how === "last" ? latest.current.length - 1 : 0] ?? null) : moveSelection(latest.current, now, how),
+      );
     else setHeldVerb((now) => moveSelection(latest.current, now, how));
     setAsking(null);
   };
@@ -293,6 +406,7 @@ export function Launcher(props: LauncherProps) {
   const [fieldRevision, setFieldRevision] = useState(0);
   const restart = (next: string) => {
     typedAt.current = timingNow();
+    pictures.fold();
     setQuery(next);
     setHeld(null);
     setAllApps(false);
@@ -301,7 +415,7 @@ export function Launcher(props: LauncherProps) {
   };
 
   const openActions = (row: Row | undefined) => {
-    if (!row || verbsFor(row, ctx).length < 2) return;
+    if (!row || verbsOf(row).length < 2) return;
     setMode({ kind: "actions", row });
     setFilter("");
     setHeldVerb(null);
@@ -318,8 +432,54 @@ export function Launcher(props: LauncherProps) {
   };
 
   const ran = (outcome: Outcome, stay: boolean) => {
+    if (ext.shown(outcome)) return;
     if (outcome.ok) finish(stay);
     else say(outcome);
+  };
+
+  /** Show a task's plan; the field takes a follow-up. */
+  const openTask = (id: string) => {
+    setMode({ kind: "task", id });
+    setFilter("");
+    setHeldVerb(null);
+    setAsking(null);
+  };
+  // Agents' rows, ⇥, and Return on a plan (launcher/agents/handlers.ts).
+  const agentKeys = agentHandlers({
+    agents: props.agents,
+    snapshot: agents,
+    mode: mode.kind === "search" || mode.kind === "task" ? mode.kind : "other",
+    task,
+    text,
+    draft: filter,
+    selectedRow,
+    openTask,
+    clearDraft: () => setFilter(""),
+    editWords: (words) => {
+      backToSearch();
+      restart(words);
+    },
+    back: backToSearch,
+    close: onClose,
+    say,
+    sayDone,
+    offerSetUp: (words) => {
+      setTabbed(words);
+      setHeld(SET_UP_ROW);
+    },
+  });
+  /** Into a scope, in place (its row chosen), or out of it (Esc): the field starts empty. */
+  const enterScope = (next: LauncherScope | null) => {
+    setScoped(next ? { scope: next, alone: false } : null);
+    backToSearch();
+    restart("");
+  };
+  /** What a scope's verb asked for once it ran. */
+  const scopeDone = (result: ScopeResult, stay: boolean) => {
+    if (result.close && !stay) return onClose();
+    if (mode.kind !== "search") backToSearch();
+    if (result.query !== undefined) restart(result.query);
+    if (result.notice) setNotice(result.notice);
   };
 
   const perform = (effect: Effect, row: Row | undefined, stay = false): void => {
@@ -336,9 +496,16 @@ export function Launcher(props: LauncherProps) {
         learn(row);
         void host?.focus(effect.window).then(() => finish(stay));
         return;
-      case "run":
+      case "run": {
         learn(row);
+        const entering = props.scopes?.find((each) => each.address === effect.item.action?.address);
+        if (entering) return enterScope(entering);
+        if (ext.intercept(effect.item)) return;
         if (effect.item.action) runOf(host?.run(effect.item.action));
+        return;
+      }
+      case "scope":
+        if (scope) void Promise.resolve(scope.run(effect.verb, row, text)).then((result) => scopeDone(result, stay));
         return;
       case "run-args":
         runOf(host?.run(effect.action, effect.args));
@@ -372,6 +539,8 @@ export function Launcher(props: LauncherProps) {
         setAllApps(true);
         setHeld(null);
         return;
+      case "agent":
+        return agentKeys.act(effect.act);
       case "new-window":
         learn(row);
         if (host?.newWindow(effect.entry)) finish(stay);
@@ -449,7 +618,7 @@ export function Launcher(props: LauncherProps) {
     const row = target();
     if (row)
       doVerb(
-        verbsFor(row, ctx).find((each) => each.key === key),
+        verbsOf(row).find((each) => each.key === key),
         row,
       );
   };
@@ -457,7 +626,10 @@ export function Launcher(props: LauncherProps) {
   const submit = (stay = false) => {
     switch (mode.kind) {
       case "search":
-        return doVerb(selectedRow ? verbsFor(selectedRow, ctx)[0] : undefined, selectedRow, stay);
+        // A picked window's picture: switch to that window.
+        if (pictures.picked) return perform({ kind: "focus", window: pictures.picked }, selectedRow, stay);
+        if (ext.submit()) return;
+        return doVerb(selectedRow ? verbsOf(selectedRow)[0] : undefined, selectedRow, stay);
       case "actions":
       case "presented":
         return doVerb(
@@ -477,6 +649,8 @@ export function Launcher(props: LauncherProps) {
         props.prefs?.setKey(mode.address, mode.when);
         sayDone("Shortcut kept");
         return backToSearch();
+      case "task":
+        return agentKeys.submit(heldStep);
     }
   };
 
@@ -500,13 +674,19 @@ export function Launcher(props: LauncherProps) {
         return submit(true);
       case "pick": {
         const row = mode.kind === "search" ? drawnRows()[cmd.digit - 1] : undefined;
-        if (row) doVerb(verbsFor(row, ctx)[0], row);
+        if (row) doVerb(verbsOf(row)[0], row);
         return;
       }
       case "digits":
         return setDigits(cmd.shown);
       case "record":
         if (mode.kind === "shortcut") setMode({ ...mode, when: chordWhen(cmd.chord) });
+        return;
+      case "tab":
+        // In a scope (the clipboard, snippets, a command from outside) ⇥ asks no one: the rows are the scope's own.
+        return scope || inOutside ? undefined : agentKeys.tab();
+      case "arrow":
+        pictures.arrow(cmd.to);
         return;
     }
   };
@@ -525,7 +705,7 @@ export function Launcher(props: LauncherProps) {
     }
     // Space on a row with a switch flips it, unless it is the next letter of the row's name.
     if (next === `${query} ` && selectedRow && spaceFlips(selectedRow, query)) {
-      const flip = verbsFor(selectedRow, ctx).find((each) => each.key === KEYS.flip);
+      const flip = verbsOf(selectedRow).find((each) => each.key === KEYS.flip);
       if (flip) {
         // The field already shows the space; take it back, so the next letter follows the words.
         setFieldRevision((revision) => revision + 1);
@@ -539,9 +719,14 @@ export function Launcher(props: LauncherProps) {
     if (key === "ArrowDown") return move.current("down");
     if (key === "ArrowUp") return move.current("up");
     // Esc steps out: the action list or a chip, then All apps, then the typed words, then the launcher.
-    // A link opened the launcher for its action alone: Esc closes it.
+    // A link opened the launcher for its action alone: Esc closes it. Windows' pictures fold first.
+    if (pictures.fold()) return;
     if (mode.kind === "presented") return onClose();
     if (mode.kind !== "search") return backToSearch();
+    // A command from outside's own scope first, then a launcher scope's chip: back to the whole launcher,
+    // or closed when it was opened for the scope.
+    if (ext.escape()) return;
+    if (scoped) return scoped.alone ? onClose() : enterScope(null);
     if (allApps && !query) return setAllApps(false);
     if (query) return restart("");
     onClose();
@@ -557,17 +742,27 @@ export function Launcher(props: LauncherProps) {
   });
 
   const drawn = (section: Section): Row[] => {
-    if (section.id !== "all") return section.rows;
+    // A scope's list (its `window`, as many as fit at the text size) and All apps are drawn a window at a time.
+    const shown = section.window !== undefined ? Math.min(section.window, m.listRows) : section.id === "all" ? m.allAppsRows : null;
+    if (shown === null) return section.rows;
     const at = Math.max(
       0,
       section.rows.findIndex((row) => row.id === selected),
     );
-    offset.current = keepInView(at, offset.current, ALL_APPS_ROWS, section.rows.length);
-    return section.rows.slice(offset.current, offset.current + ALL_APPS_ROWS);
+    // With a row's pictures open, fewer of them, so the pictures fit too.
+    const size = pictures.rowId ? Math.min(shown, Math.max(1, Math.floor((m.room - m.head - STRIP_HEIGHT) / m.row))) : shown;
+    offset.current = keepInView(at, offset.current, size, section.rows.length);
+    return section.rows.slice(offset.current, offset.current + size);
   };
+  // With a row's pictures open, the rows below it give way so the panel still fits (launcher/pictures.ts).
+  const onScreen = trimForPictures(
+    sections.map((section) => ({ ...section, rows: drawn(section) })),
+    m,
+    pictures.rowId,
+  );
   /** The rows on screen, top to bottom: what ❖1–9 pick. */
   function drawnRows(): Row[] {
-    return sections.flatMap((section) => drawn(section));
+    return onScreen.flatMap((section) => section.rows);
   }
   const digitOf = new Map(
     digits && mode.kind === "search"
@@ -577,10 +772,15 @@ export function Launcher(props: LauncherProps) {
       : [],
   );
 
+  // What a screen reader hears (launcher/access.ts): only on a host that publishes the tree.
+  const access = props.accessible === true;
+  const spoken = (row: Row, list: readonly Row[], isSelected: boolean, expanded?: boolean) =>
+    access ? { access: { ...rowAccess(row, list.indexOf(row) + 1, list.length, isSelected, expanded) } } : {};
   let list: ReactNode = null;
   const listBox = (children: ReactNode) => (
     <View
       testID="launcher:list"
+      {...(access ? listAccess(mode.kind === "search" ? "Results" : "Actions") : {})}
       style={{
         flexDirection: "column",
         borderTopWidth: 1,
@@ -594,23 +794,53 @@ export function Launcher(props: LauncherProps) {
   );
   if (mode.kind === "search" && sections.length > 0) {
     list = listBox(
-      sections.map((section) => (
+      onScreen.map((section) => (
         <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
           {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
-          {drawn(section).map((row) => (
-            <ResultRow
-              key={row.id}
-              row={row}
-              selected={row.id === selected}
-              onPress={() => doVerb(verbsFor(row, ctx)[0], row)}
-              onHover={() => setHeld(row.id)}
-              onContextMenu={() => {
-                setHeld(row.id);
-                openActions(row);
-              }}
-              {...(digitOf.has(row.id) ? { digit: digitOf.get(row.id) as number } : {})}
-            />
-          ))}
+          {section.rows.flatMap((row) => {
+            const showing = row.id === pictures.rowId;
+            const shownRow = showing && pictures.picked ? { ...row, detail: pictures.picked.title.trim() || pictures.picked.appName } : row;
+            return [
+              <ResultRow
+                key={row.id}
+                row={shownRow}
+                selected={row.id === selected}
+                onPress={() => doVerb(verbsOf(row)[0], row)}
+                onHover={() => setHeld(row.id)}
+                onContextMenu={() => {
+                  setHeld(row.id);
+                  openActions(row);
+                }}
+                {...(digitOf.has(row.id) ? { digit: digitOf.get(row.id) as number } : {})}
+                {...spoken(row, rows, row.id === selected, showing ? true : undefined)}
+                {...withStop(row, agentKeys.act)}
+              />,
+              ...(showing
+                ? [
+                    <WindowStrip
+                      key={`${row.id}:pictures`}
+                      windows={pictures.shown}
+                      picked={pictures.pickedIndex}
+                      indent={nameIndent(m)}
+                      onLayout={pictures.layout}
+                      onPick={(index) => pictures.pick(index)}
+                      {...(access
+                        ? {
+                            access: (window, index) => ({
+                              ...pictureAccess(
+                                window.title.trim() || window.appName,
+                                pictures.at - pictures.pickedIndex + index + 1,
+                                pictures.count,
+                                index === pictures.pickedIndex,
+                              ),
+                            }),
+                          }
+                        : {})}
+                    />,
+                  ]
+                : []),
+            ];
+          })}
           {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
         </View>
       )),
@@ -618,13 +848,14 @@ export function Launcher(props: LauncherProps) {
   } else if (mode.kind === "actions" || mode.kind === "presented") {
     list = listBox(
       <View testID="launcher:section:actions" style={{ flexDirection: "column" }}>
-        {verbRows.map((row, at) => (
+        {shownVerbs.map((row) => (
           <ResultRow
             key={row.id}
             row={row}
             selected={row.id === selectedVerbId}
-            onPress={() => doVerb(verbs[at], mode.kind === "actions" ? mode.row : undefined)}
+            onPress={() => doVerb(verbs[verbRows.indexOf(row)], mode.kind === "actions" ? mode.row : undefined)}
             onHover={() => setHeldVerb(row.id)}
+            {...spoken(row, verbRows, row.id === selectedVerbId)}
           />
         ))}
       </View>,
@@ -637,7 +868,21 @@ export function Launcher(props: LauncherProps) {
         ))}
       </View>,
     );
+  } else if (mode.kind === "task" && task) {
+    list = listBox(
+      <PlanList
+        task={task}
+        selected={heldStep}
+        onStep={(at) => {
+          const step = task.steps[at];
+          if (step && stepAct(step)) agentKeys.submit(at);
+        }}
+        onHover={(at) => setHeldVerb(`step:${at}`)}
+      />,
+    );
   }
+  // An Ask's plan: the spark in place of the magnifier, the request as the chip, the field for a follow-up.
+  const taskField = mode.kind === "task" ? agentField(task, filter, colors.agent) : null;
 
   const chip =
     mode.kind === "actions"
@@ -648,26 +893,39 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : undefined;
+            : (taskField?.chip ?? scope?.chip ?? ext.chip);
   const placeholder =
     mode.kind === "search"
-      ? placeholderFor(files !== undefined && !filesOff)
-      : mode.kind === "alias"
-        ? "An alias, like ff"
-        : mode.kind === "shortcut"
-          ? "Press the keys"
-          : "Search actions";
+      ? (scope?.placeholder ?? ext.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
+      : taskField
+        ? taskField.placeholder
+        : mode.kind === "alias"
+          ? "An alias, like ff"
+          : mode.kind === "shortcut"
+            ? "Press the keys"
+            : "Search actions";
   const hints =
     mode.kind === "search"
-      ? text
-        ? hintFor(selectedRow, ctx)
-        : []
-      : mode.kind === "presented"
-        ? [
-            { keys: "Esc", label: "close" },
-            { keys: KEYS.primary, label: "run" },
-          ]
-        : [{ keys: "Esc", label: "back" }];
+      ? scope
+        ? scope.hints(selectedRow)
+        : pictures.picked
+          ? [
+              { keys: "← →", label: "pick" },
+              { keys: KEYS.primary, label: "switch" },
+            ]
+          : text
+            ? pictures.count > 0
+              ? [{ keys: "→", label: "windows" }, ...hintFor(selectedRow, ctx).slice(0, 2)]
+              : [...hintFor(selectedRow, ctx), ...(inOutside ? [] : askHint(text, agents))]
+            : []
+      : taskField
+        ? taskField.hints
+        : mode.kind === "presented"
+          ? [
+              { keys: "Esc", label: "close" },
+              { keys: KEYS.primary, label: "run" },
+            ]
+          : [{ keys: "Esc", label: "back" }];
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center" }}>
@@ -690,9 +948,11 @@ export function Launcher(props: LauncherProps) {
           value={mode.kind === "search" ? query : filter}
           revision={fieldRevision}
           placeholder={placeholder}
+          {...(taskField ? { glyph: taskField.glyph } : {})}
           {...(chip ? { chip } : {})}
           hints={hints}
           notice={notice}
+          {...(access ? { access: { ...fieldAccess(placeholder, list !== null) } } : {})}
           onChangeText={onChangeText}
           onSubmit={() => submit()}
           onKey={onKey}

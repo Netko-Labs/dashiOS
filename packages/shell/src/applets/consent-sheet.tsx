@@ -14,6 +14,12 @@ import { Text, View } from "@mirinjs/metal";
 /** The sheet's surface, with room for its shadow and a long list. */
 export const APPLET_CONSENT = { width: 460, height: 520 } as const;
 
+/** The line for what it adds to the launcher ("Adds 3 commands to the launcher"), or null when it adds none. */
+export function commandsLine(manifest: Pick<Manifest, "commands">): string | null {
+  const count = manifest.commands.length;
+  return count === 0 ? null : `Adds ${count === 1 ? "1 command" : `${count} commands`} to the launcher`;
+}
+
 /** The lines under "It will be able to", each once, in the manifest's order. */
 export function abilityLines(manifest: Manifest): string[] {
   const lines = manifest.permissions.map((permission) => `${describePermission(permission)}${asksForPassword(permission) ? " (asks for your password)" : ""}`);
@@ -33,6 +39,7 @@ export function AppletConsentSheet({ manifest, reviewed, update, onAnswer }: App
   const colors = useColors();
   const lines = abilityLines(manifest);
   const cannot = cannotDo(manifest.permissions);
+  const commands = commandsLine(manifest);
   const byline = [`by ${manifest.author.name}`, reviewed ? "reviewed" : null].filter(Boolean).join(" · ");
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -74,6 +81,11 @@ export function AppletConsentSheet({ manifest, reviewed, update, onAnswer }: App
               </View>
             </View>
           ))}
+          {commands !== null && (
+            <View testID="applet-consent:commands" style={{ marginTop: 4 }}>
+              <Text style={{ fontSize: 13, color: colors.text }}>{commands}</Text>
+            </View>
+          )}
           {cannot !== null && (
             <View style={{ marginTop: 4 }}>
               <Text style={{ fontSize: 12, color: colors.textMuted }}>{cannot}</Text>

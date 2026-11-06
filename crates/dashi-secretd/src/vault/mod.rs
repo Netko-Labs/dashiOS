@@ -7,6 +7,7 @@ pub mod bytes;
 pub mod crypto;
 pub mod item;
 pub mod store;
+pub mod token;
 
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;

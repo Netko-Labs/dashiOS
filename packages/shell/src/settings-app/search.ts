@@ -11,17 +11,32 @@ import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
-  appearance: ["dark mode", "light mode", "theme", "accent", "corners", "reduce motion", "highlight", "active window", "focus ring"],
+  appearance: [
+    "dark mode",
+    "light mode",
+    "theme",
+    "accent",
+    "corners",
+    "reduce motion",
+    "highlight",
+    "active window",
+    "focus ring",
+    "text size",
+    "font size",
+    "bigger text",
+    "larger text",
+  ],
   wallpaper: ["background", "desktop picture", "live wallpaper"],
   displays: ["display", "monitor", "screen", "resolution", "scale", "refresh rate", "rotation", "arrangement"],
   "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops", "full screen", "fullscreen", "full-screen apps", "games"],
-  keyboard: ["layout", "input source", "key repeat", "shortcuts"],
+  keyboard: ["layout", "input source", "key repeat", "shortcuts", "input method", "ime", "fcitx", "chinese", "japanese", "korean", "pinyin"],
   trackpad: ["touchpad", "tap to click", "natural scrolling", "gestures", "scrolling speed"],
   mouse: ["pointer", "tracking speed", "scrolling speed"],
   "date-time": ["clock", "time zone", "timezone", "24-hour", "ntp"],
   "language-region": ["language", "locale", "region", "formats", "first day of week"],
   "lock-screen": ["lock", "screen saver", "display off", "sleep"],
   notifications: ["do not disturb", "banners", "alerts"],
+  passwords: ["vault", "passkeys", "api keys", "tokens", "1password"],
   agents: ["ai", "mcp", "permissions", "privacy"],
   about: ["version", "system information", "hardware"],
   network: ["wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],
@@ -33,11 +48,11 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
 
 /** What each pane holds, in a few words after its name on the launcher's row (VS-2: the same line). */
 export const PANE_DETAILS: Readonly<Record<PaneId, string>> = {
-  appearance: "Dark Mode, accent, corners",
+  appearance: "Dark Mode, corners, text size",
   wallpaper: "desktop picture",
   displays: "resolution, scale, arrangement",
   "desktop-dock": "Dock, Desktops, full screen",
-  keyboard: "layout, key repeat, shortcuts",
+  keyboard: "layout, key repeat, input method",
   trackpad: "tap to click, gestures",
   mouse: "tracking and scrolling speed",
   "date-time": "clock, time zone",

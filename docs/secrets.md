@@ -17,6 +17,7 @@ person can answer, scoped to the task, and logged.
 | `dashi-secret-bridge` | you, `dashi-secret-bridge.service` (user unit) | The Secret Service (`org.freedesktop.secrets`) and the portal's Secret backend on the session bus, backed by dashi-secretd; refuses agents too |
 | `dashi-agent` (`session/dashi-agent`, `src/agents/sandbox.ts`) | you | Runs an agent in the agent sandbox: a `dashi-agent-*.scope` with bubblewrap |
 | the broker (`src/agents/secrets/`) | you, in the shell | Types a password or code into a field it checked, for an agent the person allowed |
+| the token proxy (`src/agents/tokens/`) | you, in the shell | Puts API tokens into an agent's requests, only to the hosts each is for |
 
 ## The vault
 
@@ -36,7 +37,8 @@ person can answer, scoped to the task, and logged.
   read its memory.
 - **What it holds.** Secret Service collections and items (apps' secrets),
   logins (site, account, password, optional TOTP secret, and whether agents
-  may ask for it: Ask or Never), and the portal's per-app secrets.
+  may ask for it: Ask or Never), the portal's per-app secrets, passkeys,
+  cards, and API tokens (each with the hosts it is for).
 
 ## Unlocking at login (PAM)
 
@@ -143,7 +145,9 @@ and bubblewrap inside it (`src/agents/sandbox.ts`):
   not Flatpak): no compositor socket (so no raw `agent-input`), no Wayland or
   X11 display (so no screencopy of its own), no 1Password sockets;
 - `/run/dashi-secretd`, the 1Password CLI's configuration and the app's data
-  hidden.
+  hidden;
+- API tokens only through the token proxy: `HTTPS_PROXY` points at it, and
+  its CA is trusted inside this sandbox alone (see "Tokens that stay home").
 
 Dashi's sign-in tools work only for a confined agent (or one on another
 machine, over SSH, whose only view of this one is what MCP returns). An
@@ -369,6 +373,10 @@ never an agent's cgroup; no answer in a minute is a no.
 `pay {window, site, amount, card?}` (`src/agents/secrets/pay.ts`), behind
 a scope of its own, "Pay for you", which "Always Allow" never keeps
 (`NEVER_KEPT` in `consent.ts`; a kept one in `grants.json` is ignored too).
+The clipboard history's scope, "See your clipboard history"
+(`read_clipboard_history`, docs/actions.md "Scopes"), is never kept either,
+and each call asks the person; copies from password fields, password
+managers and the vault were never kept in the history to begin with.
 
 - **Cards** live in the vault (`save-card`: a Luhn-valid number, MM/YY, a 3
   or 4 digit code, "single use" or not; `cards` lists them by their last
@@ -407,24 +415,141 @@ Payment-provider tokens (Stripe shared payment tokens, Visa Intelligent
 Commerce, Mastercard Agent Pay) were considered and dropped: agents pay
 with cards only.
 
-## Tokens that stay home (designed, not built)
+## Tokens that stay home
 
-For an agent's commands and MCP servers: they hold placeholders
-(`dashi:github`), and a proxy swaps in the real API token only for the hosts
-the token is for. The design, for a later stream:
+For an agent's commands and MCP servers (`gh`, `git`, `curl`, an SDK, a
+model's own CLI): they hold placeholders (`dashi:github`), and the shell's
+token proxy swaps in the real API token only on the way to the hosts the
+token is for. The agent never has the token: not in its environment, its
+files, or its context.
 
-- **Token items** in the vault: `{name, hosts, header}` (`header`: where the
-  token goes, `Authorization: Bearer {}` by default); `token {name, host}`
-  answers only for a listed host.
-- **The proxy** is the shell's (it is the broker, outside every sandbox;
-  dashi-secretd refuses anything in an agent's scope). `dashi-agent` binds
-  its socket into the sandbox and sets `HTTPS_PROXY`; for a listed host the
-  proxy terminates TLS with a leaf certificate from a CA made for that
-  sandbox alone (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, `REQUESTS_CA_BUNDLE`,
-  `GIT_SSL_CAINFO` point at the system's CAs plus it, inside the sandbox
-  only), replaces a placeholder in the header named, and forwards over TLS
-  it verifies itself. Other hosts are tunneled untouched: a placeholder sent
-  there is worthless. Tools that pin certificates break, as the spec says.
+### Token items
+
+In the vault, beside logins and cards (`src/daemon/tokens.rs`):
+
+- **name**: what agents hold it by, `dashi:<name>`: lowercase letters,
+  digits, `-`, `_` and `.`; fixed once saved.
+- **hosts**: 1 to 32 host names (`api.github.com`), or `*.example.com` for
+  every host under example.com (not example.com itself, and never a whole
+  top-level domain). A host matches exactly or under a wildcard; never its
+  parent, a look-alike (`api.github.com.evil.example`) or an address.
+- **headers**: where the token may go, 1 to 4, `Authorization: Bearer {}`
+  by default: each a header name and a value with exactly one `{}`, no
+  name twice. The proxy puts the token in whichever of them a request sent
+  with the placeholder, and never adds one that wasn't sent. One provider's
+  tools differ: Claude Code and older Anthropic SDKs send `x-api-key`,
+  `@anthropic-ai/sdk` 1.x sends `Authorization: Bearer`, so the Anthropic
+  key names both. In the vault file the first is `header` (as an item
+  always had) and, when there are more, all of them are `headers`, so an
+  item saved with one header reads as it did.
+- **the token**: printable ASCII without spaces, so no line break can add a
+  header of its own.
+
+`token {name, host}` answers only when `host` is one of the item's hosts;
+anything else gets an error that holds neither the token nor its hosts.
+The last use is written at most once a minute (the proxy asks per request).
+
+| Op | Fields | Reply |
+| --- | --- | --- |
+| `tokens` | | `tokens: [{id, name, hosts, header, headers, created, modified, lastUsed}]`; never a token. `header` is the first of `headers` |
+| `save-token` | `name, hosts, headers? \| header?, token` | `id`; a name used already is refused. `headers` wins over `header` (one, as before) |
+| `update-token` | `id, hosts?, headers? \| header?, token?` | an empty `token` keeps the one there |
+| `delete-token` | `id` | |
+| `token` | `name, host` | `token, name, header, headers`, only for a listed `host` |
+
+Settings › Passwords lists them under Tokens (name, hosts, the headers'
+names, what agents hold: "api.anthropic.com · in x-api-key or
+Authorization"), adds one (Anthropic key and OpenAI key fill in the host
+and every header their SDKs send the key in; Other: name, hosts, headers
+with commas between, token), changes one (Edit…: hosts, headers, a new
+token), and deletes one
+after a confirm sheet (`settings-app/panes/tokens.tsx`). The token is never
+shown again. Agents' pictures blank the pane like the rest of Passwords.
+
+### The proxy
+
+The shell's (it is the broker, outside every sandbox; dashi-secretd refuses
+anything in an agent's scope), one per sandbox (`src/agents/tokens/`):
+
+1. **Before the scope.** `dashi-agent` sends `{"open": "<scope>"}` on
+   `$XDG_RUNTIME_DIR/dashi-tokens.sock` (the person's, 0600; refused to a
+   process in an agent's cgroup) and holds the connection while the agent
+   runs. The shell makes a CA for that sandbox alone (P-256, its key only in
+   the shell's memory; `x509.ts`), writes its certificate (`ca.pem`) and the
+   system's CAs with it (`bundle.pem`) under
+   `$XDG_RUNTIME_DIR/dashi-tokens/<id>/`, listens there on `proxy.sock`, and
+   answers `{ok, socket, ca, bundle, key}`: `key` is the sandbox's proxy
+   credentials. When the connection closes the proxy stops, the CA's key is
+   dropped, and the directory goes.
+2. **In the scope.** dashi-agent relays a loopback port to `proxy.sock`
+   (most programs take a proxy only as host:port), outside bubblewrap where
+   the agent can't reach it, and starts the agent with (`tokenProxyArgs` in
+   `sandbox.ts`): `proxy.sock`, `ca.pem` and `bundle.pem` bound into the
+   sandbox's own runtime directory (`$XDG_RUNTIME_DIR/dashi-tokens/`);
+   `HTTPS_PROXY`/`https_proxy` = `http://dashi:<key>@127.0.0.1:<port>`;
+   `NO_PROXY` = `localhost,127.0.0.1,::1` (and the person's); `SSL_CERT_FILE`,
+   `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `GIT_SSL_CAINFO` = the bundle;
+   `NODE_EXTRA_CA_CERTS` = the CA. Only inside the sandbox: nothing outside
+   it trusts that CA.
+3. **Each CONNECT** (`proxy.ts`) must carry the sandbox's credentials
+   (`Proxy-Authorization`, else 407), so another program on the machine
+   can't use this sandbox's proxy. Then:
+   - **to port 443 of a host a token lists**: the proxy terminates TLS with
+     a leaf certificate its sandbox's CA signs for that host alone (made on
+     first use, a week at most), reads the request, and for each item listing
+     the host whose placeholder is in one of the headers the item names, asks
+     dashi-secretd for that token for that host. Each of those headers the
+     request sent with the placeholder (only those: none is added) becomes
+     the item's template for it with the token in it, so its shape is the person's, not
+     the agent's; `Basic` credentials that hold the placeholder
+     (`x-access-token:dashi:github`, as git sends them) get the token in the
+     placeholder's place. `dashi:git` is not in `dashi:github`. The request
+     goes on over TLS the proxy verifies, without following redirects (a
+     redirect goes back to the client, which comes through the proxy again),
+     and the answer streams back as it came (no decompression, no idle
+     timeout). A request without a placeholder asks the vault for nothing.
+   - **anywhere else** (another host, another port): the bytes are tunneled
+     untouched, the host's own certificate and all. A placeholder sent there
+     is worthless.
+4. **The activity log** (`activity.jsonl`) notes which token went to which
+   host, once per sandbox (`github sent to api.github.com`); never a token.
+
+Without Dashi's shell (dashi-agent over SSH with no session, say) the agent
+starts without the proxy, and dashi-agent says tokens won't reach it.
+
+### Model keys
+
+A model key is a token item (`src/agents/tokens/model-keys.ts`):
+`anthropic` for `api.anthropic.com` in `x-api-key: {}` or
+`Authorization: Bearer {}` (Claude Code and older SDKs send the first,
+`@anthropic-ai/sdk` 1.x the second; they read `ANTHROPIC_API_KEY`),
+`openai` for `api.openai.com` in `Authorization: Bearer {}` (`OPENAI_API_KEY`;
+OpenAI's tools send the key to that host no other way). Settings says "Key: in your
+vault. Claude never sees it." An agent started through dashi-agent gets
+`token(name)` (also `passwords.token(name)`): the placeholder and the
+environment to start it with (`ANTHROPIC_API_KEY=dashi:anthropic`), never
+the key; null when the vault hasn't it or doesn't answer, so the agent
+falls back to its own configuration.
+
+The launcher's own answerer (docs/actions.md, "Agents in the launcher") is
+not an agent in a sandbox: the shell itself calls the Messages API, so it
+asks `token {name: "anthropic", host: "api.anthropic.com"}` like the proxy
+does (`agents/ask/keys.ts`), hands the key to the Anthropic SDK client for
+that one request, and wipes the bytes. Without the item it uses the
+session's `ANTHROPIC_API_KEY`. Settings › Agents says where the key is from
+the `tokens` list, without asking for it.
+
+### What the proxy can't do
+
+- A tool that pins certificates, or trusts only its own CA list, fails for
+  a listed host, as the spec says; it still works for every other host.
+- A listed host is spoken to in HTTP/1.1, and a WebSocket to it isn't
+  upgraded; other hosts are tunneled as they are (HTTP/2, WebSockets).
+- A listed host that echoes request headers back gives the token to the
+  agent: list API hosts only.
+- The person's own `HTTPS_PROXY` (a company proxy) isn't chained: in the
+  sandbox, the token proxy replaces it.
+- Plain HTTP doesn't go through the proxy, so it never carries a token.
 
 ## The test site
 
@@ -444,7 +569,8 @@ setup key.
   4226's vectors, the gnome-keyring import, Secret Service storage, CTAPHID
   framing, CTAP2 messages (signatures verified, bound to the site, never
   without the person), approvals proven by password, payments within the
-  limits.
+  limits, token items (given only for a listed host; listed without the
+  token; a token that could break a header refused).
 - `dbus-run-session -- sh crates/dashi-secretd/tests/bridge-secret-tool.sh
   <empty dir> target/debug`: the bridge with libsecret's `secret-tool`
   (DH sessions), and an agent's scope refused.
@@ -452,8 +578,11 @@ setup key.
   (`agent-mask.test.ts`), consent from the person only, sign-in and codes
   (`agent-sign-in.test.ts`), sources and their order, 1Password
   (`onepassword.test.ts`), payments (`agent-pay.test.ts`), the test site
-  (`sign-in-site.test.ts`, passkeys included), and the shell's vault client
-  against a development dashi-secretd (`vault-client.test.ts`).
+  (`sign-in-site.test.ts`, passkeys included), the token proxy
+  (`agent-tokens.test.ts`: the certificates, host matching, the swap, and
+  the proxy end to end, an unlisted host getting nothing), Settings' tokens
+  (`settings-tokens-view.test.tsx`), and the shell's vault client against a
+  development dashi-secretd (`vault-client.test.ts`, token items included).
 
 In the VM (with the `dashi-secretd` package installed, greetd's login so
 PAM opens the vault, and the test site served from the checkout:

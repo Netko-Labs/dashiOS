@@ -29,8 +29,38 @@ export type Args = Record<string, unknown>;
 /** What a toggle or a pick is now: shown on its row. */
 export type ActionState = boolean | string | number | null;
 
-/** How it went: a line to show (or copy), or why not. */
-export type Outcome = { ok: true; text: string } | { ok: false; error: string };
+/**
+ * How it went: a line to show (or copy), or why not. A command from outside
+ * Dashi (an applet's, a script's) may ask the launcher to keep going: `show`
+ * (launcher/extensions.ts): its answer as a row, rows to pick from, or a view
+ * it draws itself. Anyone else reads `text`.
+ */
+export type Outcome = { ok: true; text: string; show?: Shown } | { ok: false; error: string };
+
+/** One row a pick command offers (an applet's `items`, drawn by the shell). */
+export interface PickRow {
+  id: string;
+  title: string;
+  detail?: string;
+}
+
+/** What a command asks the launcher to show after it ran. */
+export type Shown =
+  /** Its answer, as the top row: Return copies it. */
+  | { kind: "text"; text: string }
+  /** Rows for what is typed, asked again on each keystroke (against the 80 ms budget); the one chosen runs. */
+  | { kind: "pick"; title: string; ask(query: string): Promise<readonly PickRow[]>; choose(row: PickRow): Promise<Outcome> }
+  /** The command draws its answer itself where the rows were, `height` points tall; `place` says where, `close` takes it away. */
+  | { kind: "view"; title: string; height: number; place(frame: ViewFrame): void; close(): void; onClose(listener: () => void): void };
+
+/** Where a view goes: the launcher's list area, in its screen's own points. */
+export interface ViewFrame {
+  /** From the launcher surface's top-left corner. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /** What carrying an action out can reach. */
 export interface ActionContext {
@@ -64,8 +94,15 @@ export interface ActionDef {
   /** It asks on a sheet every time, the person included (force quitting, moving to the Trash). */
   asksEveryTime?: true;
   who: ActionWho;
-  /** Which source added it ("tools", "apps", "windows", "settings", "dashi", "menus"). */
+  /** Which source added it ("tools", "apps", "windows", "settings", "dashi", "menus", "applets", "scripts"). */
   source: string;
+  /**
+   * Who outside Dashi supplied it, as its row says ("Weather", "Your scripts"):
+   * an applet, a script, a search provider. Such a row never outranks an
+   * exact app or setting match, never wears Dashi's glyphs, and never takes
+   * a first-party name (launcher/items.ts).
+   */
+  from?: string;
   /** The MCP tool it is for agents; only these are in `tools/list`. */
   tool?: ToolName;
   /** Its key, in Dashi's notation ("⇧❖N"), shown on the row so choosing it teaches the key. */

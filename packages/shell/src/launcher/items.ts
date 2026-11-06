@@ -74,6 +74,9 @@ export function actionKind(action: ActionDef): RankKind | null {
     case "settings":
     case "controls":
       return action.place?.row !== undefined ? "setting" : null;
+    // Clipboard History and Snippets are commands; the history's switch is a setting (clipboard/actions.ts).
+    case "clipboard":
+      return action.place?.row !== undefined ? "setting" : "command";
     // Open windows come with their apps' names (LauncherWindow); arranging the focused one is a command.
     case "windows":
       return WINDOW_ADDRESS.test(action.address) ? null : "command";
@@ -132,12 +135,14 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
   const seen = new Set<string>();
   // An agent tool that is also one of Dashi's commands (dashi://tool/lock-screen, dashi://dashi/lock-screen) is one row: Dashi's.
   const commands = new Set((sources.actions ?? []).filter((action) => action.source === "dashi").map((action) => action.address.split("/").pop()));
-  for (const action of sources.actions ?? []) {
+  const firstParty = firstPartyNames(sources);
+  for (const given of sources.actions ?? []) {
+    const action = outsideName(given, firstParty);
     const kind = actionKind(action);
     if (kind === null || seen.has(action.address)) continue;
     if (action.source === "tools" && commands.has(action.address.split("/").pop())) continue;
     // "System Settings" from the Dashi menu is the System Settings app: one row.
-    if (kind === "command" && named.has(fold(action.title))) continue;
+    if (kind === "command" && action.from === undefined && named.has(fold(action.title))) continue;
     seen.add(action.address);
     // A menu row answers to its own words ("New Note"); its app and menu only narrow ("notes new").
     const path = kind === "menu" ? action.title.split(" › ") : [];
@@ -147,13 +152,29 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
       ...(kind === "menu" && path.length > 1
         ? { names: [path[path.length - 1] as string], keywords: [], qualifiers: path.slice(0, -1) }
         : { names: [action.title], keywords: actionWords(action) }),
-      ...(kind === "menu" ? { foreign: true } : {}),
-      ...(action.source === "dashi" || action.source === "settings" || action.source === "controls" ? { own: true } : {}),
+      // A menu label, or a row from outside Dashi (an applet's, a script's): never above an exact app or setting.
+      ...(kind === "menu" || action.from !== undefined ? { foreign: true } : {}),
+      ...(action.source === "dashi" || action.source === "settings" || action.source === "controls" || action.source === "clipboard" ? { own: true } : {}),
       action,
       address: action.address,
     });
   }
   return items;
+}
+
+/** The names Dashi's own rows go by: its apps, its commands, its settings (folded). */
+function firstPartyNames(sources: ItemSources): Set<string> {
+  const own = (sources.actions ?? []).filter((action) => action.from === undefined && ["dashi", "settings", "controls", "tools"].includes(action.source));
+  return new Set([
+    ...sources.entries.filter((entry) => entry.shell || entry.id.startsWith("dev.dashi.")).map((entry) => fold(entry.name)),
+    ...own.map((action) => fold(action.title)),
+  ]);
+}
+
+/** A row from outside Dashi can't take a first-party name: "System Settings" from Weather reads "Weather › System Settings". */
+export function outsideName(action: ActionDef, firstParty: ReadonlySet<string>): ActionDef {
+  if (action.from === undefined || !firstParty.has(fold(action.title))) return action;
+  return { ...action, title: `${action.from} › ${action.title}` };
 }
 
 let cached: { key: readonly unknown[]; index: RankIndex<LauncherItem> } | null = null;

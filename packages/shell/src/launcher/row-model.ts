@@ -10,7 +10,9 @@ import type { ActionState } from "../actions/types.ts";
 import type { Entry } from "../entries.ts";
 import type { FileHit } from "../file-search.ts";
 import { PANES } from "../settings-app/panes.ts";
+import type { AgentAct } from "./agents/acts.ts";
 import { COMMAND_GLYPHS } from "./command-glyphs.ts";
+import { outsideIcon } from "./extension-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
 import { prepare } from "./ranking/fold.ts";
 
@@ -37,7 +39,11 @@ export type RowAction =
   | { kind: "type"; query: string }
   | { kind: "search-files"; query: string }
   | { kind: "find-software"; query: string }
-  | { kind: "all-apps" };
+  | { kind: "all-apps" }
+  /** Agents' rows: Ask, Now, history (agents/rows.ts). */
+  | { kind: "agent"; act: AgentAct }
+  /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
+  | { kind: "scope"; verb: string };
 
 /** The section a row goes under once two kinds show. */
 export type RowGroup = "answer" | "window" | "app" | "settings" | "command" | "menu" | "file" | "other";
@@ -70,6 +76,14 @@ export interface Row {
   danger?: true;
   /** A → at the right end: Enter goes somewhere in the launcher (All apps). */
   more?: true;
+  /**
+   * Shiso, agents' own color, on an agents' row only (CO-3): "ask" draws the
+   * glyph and the title in it, "dot" a dot on the icon. A selected row is
+   * still kombu: selecting is the person's.
+   */
+  agent?: "ask" | "dot";
+  /** A stop square at the right end (a running agent or task). */
+  stop?: true;
 }
 
 const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");
@@ -182,6 +196,10 @@ export function actionRow(item: LauncherItem, icons: { app(id: string): string |
       group: "settings",
       ...(control ? { control } : {}),
     };
+  }
+  // From outside Dashi (an applet, a script): its row says whose it is, in its own picture or the puzzle piece.
+  if (action.from !== undefined) {
+    return { ...base, kind: action.from, icon: outsideIcon(action.icon, action.source), action: { kind: "run", item }, group: "command" };
   }
   const appId = /^dashi:\/\/app\/([^/]+)\//.exec(action.address)?.[1];
   const icon = action.icon?.startsWith("/") ? action.icon : ((appId && icons.app(appId)) ?? icons.dashi);
