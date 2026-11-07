@@ -16,6 +16,7 @@ import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
 import { barHold, useBarHeld } from "./bar-hold.ts";
+import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 import type { BatteryMonitor } from "./battery/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { AgentPill } from "./consent.tsx";
@@ -36,7 +37,7 @@ import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
 import { type SystemStore, useSystem } from "./system/store.ts";
-import { type ToplevelStore, useToplevels } from "./toplevels.ts";
+import { type ToplevelStore, usePortalDialogs, useToplevels } from "./toplevels.ts";
 
 export { formatClock };
 
@@ -174,12 +175,17 @@ export function MenuBar({
   const now = useMinuteClock();
   const clock = useClockPrefs();
   const active = windows.find((window) => window.activated);
+  // A portal dialog with the keyboard is named for the app it is over, or by its title (bar-name.ts).
+  const dialog = usePortalDialogs(toplevels).find((window) => window.activated);
   // An open menu holds the keyboard, which leaves no window active: the name stays as it was.
   // So does a shell sheet that took the keyboard for the app in front (bar-hold.ts).
   const sheetUp = useBarHeld(barHold);
-  const kept = useRef("Desktop");
-  if (!sheetUp) kept.current = frozenName ?? (active ? appFor(apps, active, installed).name : "Desktop");
-  const appName = frozenName ?? kept.current;
+  const kept = useRef<BarName>({ name: DESKTOP });
+  if (!sheetUp && frozenName === null) {
+    const focus = { ...(active ? { app: appFor(apps, active, installed).name } : {}), ...(dialog ? { dialog: dialog.title } : {}) };
+    kept.current = barName(focus, kept.current, Date.now());
+  }
+  const appName = frozenName ?? kept.current.name;
   const openMenu = popover?.kind === "menu" ? popover.id : null;
   // Held while a popover is open, like the name (app-menus/store.ts).
   const titles = barMenus(useAppMenus(appMenus));
