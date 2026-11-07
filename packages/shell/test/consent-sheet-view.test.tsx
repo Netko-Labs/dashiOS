@@ -59,7 +59,7 @@ test("what is needed now comes first with its words; what Always Allow keeps is 
   const transport: NativeTransport = { send() {}, onEvent() {}, onClose() {}, simulate() {}, close() {} };
   const root = render(<ConsentSheet ask={ask} onAnswer={() => {}} />, transport);
   await settle();
-  const tree = root.lastTree();
+  const tree = root.lastTree() ?? "";
   const settings = SCOPES.find((scope) => scope.id === "settings");
   if (!settings) throw new Error("no settings scope");
   // In full and marked, before anything else.
