@@ -104,7 +104,7 @@ describe("runs on the empty launcher", () => {
   runs.event("a", { kind: "call", id: "1", tool: "read_page", input: {} });
   runs.ask("b", { kind: "sign-in", title: "Use your bodytech.com.co login?", detail: "", choices: [], needs: "needs your OK to sign in" });
   runs.start({ id: "c", request: "Rename screenshots", harness: "claude-code", harnessName: "Claude Code" });
-  runs.event("c", { kind: "done", text: "Renamed 23 files" });
+  runs.event("c", { kind: "done", text: "Renamed 23 files\nin Pictures/Screenshots, by the date each was taken" });
 
   test("Agents first: the one waiting on you, then working, then ended", () => {
     const sections = withHandoff([{ id: "recent", title: "Recent", rows: [] }], {
@@ -119,6 +119,7 @@ describe("runs on the empty launcher", () => {
     expect(waiting).toMatchObject({ title: "Book a spinning class", detail: "needs your OK to sign in", attention: true, stop: true });
     expect(working).toMatchObject({ detail: "reading the page", kind: "step 1" });
     expect(ended?.stop).toBeUndefined();
+    // The first line of its last words only.
     expect(ended?.detail).toBe("done · Renamed 23 files");
   });
 

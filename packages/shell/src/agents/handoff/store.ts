@@ -112,9 +112,10 @@ export function statusWords(run: RunView): string {
     case "working":
       return currentStep(run)?.words.toLowerCase() ?? "thinking";
     case "done":
-      return run.summary ? `done · ${cut(run.summary, 60)}` : "done";
+      // Its first line only, short: the row's detail sits beside its words.
+      return run.summary ? `done · ${cut(summaryLines(run.summary).title, 40)}` : "done";
     case "failed":
-      return run.error ? `stopped · ${cut(run.error, 60)}` : "stopped";
+      return run.error ? `stopped · ${cut(run.error.split("\n")[0] ?? "", 40)}` : "stopped";
     case "stopped":
       return "stopped";
   }

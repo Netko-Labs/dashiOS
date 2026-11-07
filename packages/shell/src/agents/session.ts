@@ -66,6 +66,8 @@ export interface TaskPolicy {
   window: number | null;
   /** The harness's name ("Codex"): what sheets and the activity call the run, whatever its process is. */
   name: string;
+  /** The sites the person allowed for this task (not always): every turn's connection shares them. */
+  sites?: Set<string>;
 }
 
 /** The launcher's runs' side of a call: what would put it back, and that it went well. */
@@ -134,6 +136,8 @@ export class Session {
       ctx.sites,
       () => grantKey(this.peer, this.claims),
       (site) => this.askSite(site),
+      // A launcher run's sites hold for the whole task, through its follow-ups' connections.
+      task?.policy.sites,
     );
   }
 

@@ -222,6 +222,7 @@ describe("the hand-off service", () => {
       refused: ["see", "screen", "act", "files", "clipboard"],
       window: 3,
       name: "Claude Code",
+      sites: new Set(),
     });
     expect(handoff.policy("nobody")).toBeNull();
 

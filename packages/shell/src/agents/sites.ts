@@ -100,7 +100,6 @@ export type SiteAnswer = "once" | "always" | "deny";
  * answer for the connection; "always" is kept for the agent.
  */
 export class SiteConsent {
-  private readonly allowed = new Set<string>();
   private readonly refused = new Set<string>();
   private readonly asking = new Map<string, Promise<boolean>>();
 
@@ -109,6 +108,8 @@ export class SiteConsent {
     private readonly key: () => string,
     /** The person's answer; null when there was none (the call was given up on, the screen locked): nothing is remembered. */
     private readonly ask: (site: string) => Promise<SiteAnswer | null>,
+    /** The sites allowed for a while: this connection's, or a launcher run's for all its turns (shared). */
+    private readonly allowed: Set<string> = new Set(),
   ) {}
 
   /** Whether the agent may use `site` without asking. */

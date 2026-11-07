@@ -45,6 +45,8 @@ export interface TaskPolicy {
   window: number | null;
   /** The harness's name ("Codex"), for sheets and the activity. */
   name: string;
+  /** The sites allowed for this task, through all its turns (agents/sites.ts fills it). */
+  sites: Set<string>;
 }
 
 export interface StartTask {
@@ -259,7 +261,7 @@ export function startHandoff(options: HandoffOptions): Handoff {
     async start({ harness, request, context }) {
       const id = options.newId?.() ?? randomId();
       memory.remember(grantsKind(taskGrants(context)));
-      policies.set(id, { granted: TASK_GRANTED, refused: TASK_REFUSED, window: context.window?.id ?? null, name: ANSWERERS[harness].name });
+      policies.set(id, { granted: TASK_GRANTED, refused: TASK_REFUSED, window: context.window?.id ?? null, name: ANSWERERS[harness].name, sites: new Set() });
       runs.start({ id, request, harness, harnessName: ANSWERERS[harness].name });
       const prompt = [request, contextPrompt(context)].filter(Boolean).join("\n\n");
       await startTurn(id, harness, 1, prompt, null);

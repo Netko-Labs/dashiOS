@@ -45,6 +45,27 @@ describe("websites, one by one", () => {
     expect(grants.has("/usr/bin/claude", "bodytech.com.co")).toBe(false);
   });
 
+  test("a launcher run's turns share its sites: allowed once, its follow-up's connection doesn't ask again", async () => {
+    const grants = new SiteGrants(null);
+    const asked: string[] = [];
+    const task = new Set<string>();
+    const turn = () =>
+      new SiteConsent(
+        grants,
+        () => "/usr/bin/codex",
+        async (site) => {
+          asked.push(site);
+          return "once";
+        },
+        task,
+      );
+    expect(await turn().allow("signin.localhost")).toBe(true);
+    expect(await turn().allow("signin.localhost")).toBe(true);
+    expect(asked).toEqual(["signin.localhost"]);
+    // Not kept beyond the task.
+    expect(grants.has("/usr/bin/codex", "signin.localhost")).toBe(false);
+  });
+
   test("another site asks again; a refusal holds for the connection", async () => {
     const { asked, sites } = consent(["once", "deny"]);
     expect(await sites.allow("example.com")).toBe(true);
