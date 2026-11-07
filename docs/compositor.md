@@ -95,7 +95,7 @@ crates/dashi-comp/src/
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
-  input/            keyboard and pointer routing, decorations, constraints, gestures
+  input/            keyboard and pointer routing, decorations, constraints, gestures; a still pointer follows windows moving under it (follow.rs)
   keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs), ❖-click (super_click.rs),
                     keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager

@@ -465,6 +465,8 @@ impl Dashi {
     pub(crate) fn after_dispatch(&mut self) {
         self.follow_sheets();
         self.space.refresh();
+        // A still pointer over a window that moved or went: the surface under it now (input/follow.rs).
+        self.follow_pointers();
         self.popups.cleanup();
         self.foreign_refresh();
         self.toplevel_list_refresh();
