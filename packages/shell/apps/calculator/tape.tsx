@@ -54,9 +54,7 @@ function TapeRow({ entry, locale, onPress, onMenu }: { entry: TapeEntry; locale:
         hoverBackgroundColor: colors.button,
       }}
     >
-      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>
-        {sum}
-      </Text>
+      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>{sum}</Text>
       <Text numberOfLines={1} style={{ fontSize: 15, color: colors.text, textAlign: "right" }}>
         {result}
       </Text>
