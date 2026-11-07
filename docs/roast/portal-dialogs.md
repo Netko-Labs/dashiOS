@@ -63,3 +63,15 @@ One chooser everywhere. Make the file chooser Files-in-a-sheet and a `@dashi/ui`
 - **Disclosure has one pattern and one wording:** a chevron and "Show more …" / "Show fewer …", in ink, not in kombu link text.
 - **Copy points only at panes that exist.** A string that names a Settings pane should come from the pane registry, so a rename or a missing pane fails a test.
 - **Every animation checks Reduce Motion,** and nothing animates by re-rendering React on a timer.
+
+**Where it stands (0.5.0, wave 2: one file browser everywhere)**
+
+The file chooser's findings are answered by making it Files (`apps/files/chooser/`, branch `feat/0.5-files`). The other dialogs' findings are not the file browser's; they moved to `tasks/todo.md` ("Left from the Files and portal roasts") unless earlier work already did them.
+
+- [x] 1 Navigation: Files' sidebar (favorites, every drive), Back, Up, the folder pop-up, and Files' search.
+- [x] 2 Selection: a click selects, a double-click or Return opens, ⇧-click and ❖-click select several where the app allows it.
+- [x] 7 `dashi-dialog --file-selection` draws the chooser (`--save`, `--directory`, `--multiple`, `--filename`, `--file-filter`, `--separator`). `--forms`, `--color-selection`, `--notification` and `--icon` moved on.
+- [x] 11 File types are a pop-up button; a yes-or-no choice is a switch.
+- [x] 13 Replacing on save is a question with Replace in ume and Cancel the default.
+- [x] 14 Hidden files (⇧❖.), New Folder when saving or choosing a folder, Files' icons and thumbnails, icons or a list (with a Size column), Space to peek. Region-aware dates and drops from Files moved on.
+- [ ] 3–6, 8–10, 12, 15–20 (print, access, the other dialogs' keys and frames, copy, checkboxes, the calendar, glyphs, progress, portal coverage): not the file browser's; moved on.

@@ -38,6 +38,8 @@ const isResult = (value: object): value is ToolResult => "content" in value;
 
 /** The keymap's binding that hands ❖ chords to a Dashi app's menus (keymap.ts). */
 const APP_CHORD = "app-chord";
+/** ❖⌫ in a Dashi app: its menu row first, else erasing to the line's start (keymap.ts). */
+const APP_ERASE = "app-erase";
 
 const shortcutOf = (chord: KeyChord): string =>
   chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
@@ -112,7 +114,9 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         // The person's keys pass the keymap in the compositor; an agent's are
         // resolved here, so ⌥← and ❖S mean the same for both (keymap-match.ts).
         const plan = call.chords.map((chord) => ({ chord, resolved: resolveChord(chord, window.appId) }));
-        const kept = plan.find(({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD));
+        const kept = plan.find(
+          ({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD && resolved.name !== APP_ERASE),
+        );
         if (kept)
           return toolError(
             `${shortcutOf(kept.chord)} is the desktop's own shortcut, not the window's; use the window tools (focus_window, close_window, …) instead.`,
@@ -120,6 +124,15 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         say(`Pressing keys in ${where}`);
         for (const { chord, resolved } of plan) {
           if (resolved.kind === "keys") await send({ keys: keySteps(resolved.chords) });
+          else if (resolved.kind === "bind" && resolved.name === APP_ERASE) {
+            if (!(await ctx.desktop.appShortcut?.(window.id, "❖⌫")))
+              await send({
+                keys: keySteps([
+                  { mods: ["shift"], key: "Home" },
+                  { mods: [], key: "BackSpace" },
+                ]),
+              });
+          }
           // A ❖ chord in one of Dashi's apps: its menu item with that shortcut, else the app's Ctrl chord (shortcuts.ts).
           else if (!(await ctx.desktop.appShortcut?.(window.id, shortcutOf(chord)))) await send({ keys: keySteps([asCtrl(chord)]) });
         }

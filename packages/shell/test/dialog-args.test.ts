@@ -144,7 +144,7 @@ describe("specFrom", () => {
     expect(specFrom(parseArgs(["--info", "--error"]), NOW)).toEqual({ error: "Two or more dialog options specified" });
     expect(specFrom(parseArgs(["--list"]), NOW)).toEqual({ error: "No column titles specified for List dialog." });
     expect(specFrom(parseArgs(["--info", "--width=wide"]), NOW)).toEqual({ error: "Cannot parse integer value 'wide' for --width" });
-    expect(specFrom(parseArgs(["--file-selection"]), NOW)).toEqual({ unsupported: "file-selection" });
+    expect(specFrom(parseArgs(["--forms"]), NOW)).toEqual({ unsupported: "forms" });
   });
 });
 

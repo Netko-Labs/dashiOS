@@ -191,6 +191,8 @@ export const KEYMAP: Keymap = {
     { when: "super+Down", send: "ctrl+End" },
     // ❖⌫ deletes to the line start: readline's Ctrl+U in terminals.
     { when: "super+BackSpace", app: "terminal", tap: ["ctrl+u"] },
+    // In Dashi's own apps the app's ❖⌫ row first (Files' Move to Trash), else the same erase (shortcuts.ts).
+    { when: "super+BackSpace", app: "metal", bind: "app-erase" },
     { when: "super+BackSpace", tap: ["shift+Home", "BackSpace"] },
 
     // In Dashi's own apps a ❖ chord is a menu shortcut first (the app's

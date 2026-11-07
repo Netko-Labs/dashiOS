@@ -29,7 +29,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] The missing controls: pop-up button, progress, one Slider, one alert frame, menu separators (L; UI-1, UI-2, UI-4, UI-5, PA-5, PA-9)
 
 ## Wave 2 · The apps' big ideas
-- [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
+- [x] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2; `feat/0.5-files`, VM: not yet)
+- [ ] Left from the Files and portal roasts: a drag-out selection box (needs mirin to report a scroll view's offset), scrolling the selection into view from the keyboard (the same), Peek through Preview's renderers, a slow second click to rename, per-folder view settings and the window size, shortcuts drawn in `PopupMenu`, a copy's counts and time left, async thumbnails and completions, mount watching instead of `lsblk`, other disks' Trash, editable Favorites, New Window, Extract, Open in Terminal, Copy Path, column widths, a collapsible sidebar; region-aware dates and drops from Files in the chooser; `dashi-dialog`'s `--forms`, `--color-selection`, `--notification`, `--icon`; the portal's other dialogs (print, access, frames, copy, checkboxes, calendar, progress); Calendar's and Settings' typed-path fallback with no portal (M)
 - [x] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M; `feat/0.5-settings-undo`, VM: not yet)
   - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
 - [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
@@ -57,7 +58,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)
-- [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
+- [x] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M; with the file browser, `feat/0.5-files`)
 - [ ] CP-7: pane names from the pane list (S)
 - [ ] Text size beyond the launcher (M; TY-1)
 - [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)

@@ -1,8 +1,13 @@
-/** The sidebar: Favorites, Locations (the computer and its drives, with eject), and the Trash. */
+/**
+ * The sidebar: Favorites, Locations (the computer and its drives, with
+ * eject), and the Trash. A chooser shows the same places but the Trash and
+ * the eject buttons (it has no ops); Recents only where it offers them.
+ */
 
 import { rowLook, SelectionBar, SidebarSection, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
+import { mount } from "./drives.ts";
 import { useDropTarget } from "./drop.ts";
 import { EJECT, sidebarGlyph } from "./glyphs.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
@@ -80,7 +85,7 @@ function Row({
 const volumeGlyph = (volume: Volume): GlyphName =>
   volume.ejectable ? "usb" : volume.fstype?.startsWith("nfs") || volume.fstype?.startsWith("cifs") ? "network" : "drive";
 
-export function Sidebar() {
+export function Sidebar({ recents = true }: { recents?: boolean }) {
   const { store, ops } = useFiles();
   const state = useFilesState();
   const { location, volumes } = state;
@@ -93,17 +98,19 @@ export function Sidebar() {
   return (
     <>
       <SidebarSection title="Favorites">
-        {favorites(store.env.dirs, store.env.home).map((place) => (
-          <Row
-            key={place.id}
-            id={place.id}
-            name={place.name}
-            glyph={place.glyph}
-            current={sameLocation(place.location, location)}
-            onPress={() => go(place.location)}
-            dropInto={place.location.kind === "folder" ? place.location.path : null}
-          />
-        ))}
+        {favorites(store.env.dirs, store.env.home)
+          .filter((place) => recents || place.location.kind !== "recents")
+          .map((place) => (
+            <Row
+              key={place.id}
+              id={place.id}
+              name={place.name}
+              glyph={place.glyph}
+              current={sameLocation(place.location, location)}
+              onPress={() => go(place.location)}
+              dropInto={place.location.kind === "folder" ? place.location.path : null}
+            />
+          ))}
       </SidebarSection>
       <SidebarSection title="Locations">
         {volumes.map((volume) => (
@@ -113,19 +120,25 @@ export function Sidebar() {
             name={volume.name}
             glyph={volumeGlyph(volume)}
             current={inVolume(volume)}
-            onPress={() => (volume.mountPoint ? go(folderAt(volume.mountPoint)) : void ops.mountVolume(volume))}
+            onPress={() => {
+              if (volume.mountPoint) go(folderAt(volume.mountPoint));
+              else if (ops) void ops.mountVolume(volume);
+              else void mount(volume, store.env.run).then((result) => ("path" in result ? go(folderAt(result.path)) : store.say(result.error, true)));
+            }}
             dropInto={volume.mountPoint}
-            {...(volume.ejectable ? { action: { glyph: EJECT, id: "eject", onPress: () => void ops.ejectVolume(volume) } } : {})}
+            {...(volume.ejectable && ops ? { action: { glyph: EJECT, id: "eject", onPress: () => void ops.ejectVolume(volume) } } : {})}
           />
         ))}
-        <Row
-          id="trash"
-          name="Trash"
-          glyph="trash"
-          current={location.kind === "trash" || (location.kind === "folder" && isInside(store.env.trash.files, location.path))}
-          onPress={() => go({ kind: "trash" })}
-          dropInto="trash"
-        />
+        {ops && (
+          <Row
+            id="trash"
+            name="Trash"
+            glyph="trash"
+            current={location.kind === "trash" || (location.kind === "folder" && isInside(store.env.trash.files, location.path))}
+            onPress={() => go({ kind: "trash" })}
+            dropInto="trash"
+          />
+        )}
       </SidebarSection>
     </>
   );

@@ -4,37 +4,88 @@
  * checked operations from ops.ts, trashops.ts, and archive.ts, and reports
  * the outcome in the footer. Nothing here touches the disk directly. Each
  * write that worked goes on the undo stack (undoable.ts): Edit › Undo and
- * the notice's Undo take it back.
+ * the notice's Undo take it back. A copy or a move onto a name that is taken
+ * asks first (PA-3): Replace (the one there goes to the Trash), Keep Both
+ * ("name 2"), or Skip, for one item or all of them.
  */
 
+import { lstat } from "node:fs/promises";
+import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
-
 import { compress } from "./archive.ts";
 import { type DropKeys, dropChoice } from "./drag.ts";
 import { eject, mount } from "./drives.ts";
 import { formatCount } from "./format.ts";
 import type { FileItem } from "./items.ts";
 import { Jobs } from "./jobs.ts";
+import { INODE_DIRECTORY, type MimeIndex, mimeOf } from "./mime.ts";
 import type { Volume } from "./mounts.ts";
 import { appsFor, type OpenWithApp, openWith } from "./open.ts";
-import { copyInto, duplicate, makeFolder, moveInto, OpError, renamePath } from "./ops.ts";
+import { copyInto, duplicate, freeName, makeFolder, moveInto, NEW_FOLDER_NAME, OpError, renamePath } from "./ops.ts";
 import { baseName, isInside, parentOf } from "./paths.ts";
 import { measure } from "./size.ts";
 import type { FilesStore } from "./store.ts";
 import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "./trashops.ts";
-import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv } from "./undoable.ts";
+import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv, withReplaced } from "./undoable.ts";
 
 const quote = (name: string): string => `“${name}”`;
 
 /** "3 items" or "“a.txt”". */
 const what = (paths: readonly string[]): string => (paths.length === 1 ? quote(baseName(paths[0] as string)) : formatCount(paths.length));
 
+/** What a name collision is answered with (PA-3). */
+export type Resolution = "replace" | "keep-both" | "skip";
+
+/** One side of a collision, as the sheet shows it. */
+export interface Side {
+  path: string;
+  folder: boolean;
+  mime: string;
+  size: number;
+  mtime: number;
+}
+
+export interface Conflict {
+  mode: "copy" | "move";
+  /** What is coming in. */
+  incoming: Side;
+  /** What is there now, under the same name. */
+  existing: Side;
+  /** The folder it is going into. */
+  dest: string;
+  /** How many items are still to go after this one (for "Apply to all"). */
+  remaining: number;
+}
+
+/** The person's answer: what to do, and whether for the rest of this copy or move too. */
+export interface Answer {
+  resolution: Resolution;
+  all: boolean;
+}
+
+async function sideOf(path: string, index: MimeIndex): Promise<Side | null> {
+  try {
+    const info = await lstat(path);
+    const folder = info.isDirectory();
+    return { path, folder, mime: folder ? INODE_DIRECTORY : mimeOf(index, baseName(path)), size: info.size, mtime: info.mtimeMs };
+  } catch {
+    return null;
+  }
+}
+
 export class Operations {
   readonly jobs = new Jobs();
   /** What Edit › Undo takes back: Files' writes, newest last. */
   readonly undo = new UndoStack();
 
+  /**
+   * Asks about a name collision (the window's conflict sheet). Without it a
+   * collision keeps both, as Files did before it asked (agents, tests).
+   */
+  ask: ((conflict: Conflict) => Promise<Answer>) | null = null;
+
   constructor(private readonly store: FilesStore) {
+    store.renamer = (path, name) => this.rename(path, name);
     // A notice's Undo is for its own step: once Undo would take back another
     // (it was undone, or a rename or a new folder came after), the notice goes.
     this.undo.subscribe(() => {
@@ -122,11 +173,21 @@ export class Operations {
     if (source.cut) this.store.patch({ clipboard: null });
   }
 
-  /** Copy or move `paths` into `dest` as a job. Also what a drop would call. */
+  /** What is already at the name `path` would take in `dest`; null when it is free, or it is the item itself (a copy into its own folder). */
+  private async taken(path: string, dest: string): Promise<Side | null> {
+    const target = join(dest, baseName(path));
+    return target === path ? null : sideOf(target, this.store.env.mime);
+  }
+
+  /** Copy or move `paths` into `dest` as a job. Also what a drop would call. A taken name asks first (PA-3). */
   async transfer(paths: readonly string[], dest: string, mode: "copy" | "move"): Promise<string[]> {
     const created: string[] = [];
     const moves: Array<{ from: string; to: string }> = [];
+    /** What went to the Trash to make room (Replace): Undo puts it back. */
+    const replaced: string[] = [];
     const verb = mode === "copy" ? "Copying" : "Moving";
+    // An answer with "Apply to all" stands for the rest of this copy or move.
+    let standing: Answer | null = null;
     await this.jobs
       .run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
         if (mode === "copy") {
@@ -135,8 +196,27 @@ export class Operations {
           job.total = total;
         }
         const failures: string[] = [];
-        for (const path of paths) {
+        for (const [index, path] of paths.entries()) {
           try {
+            let resolution: Resolution = "keep-both";
+            const existing = await this.taken(path, dest);
+            if (existing && standing?.all) resolution = standing.resolution;
+            else if (existing && this.ask) {
+              const incoming = await sideOf(path, this.store.env.mime);
+              if (incoming) {
+                standing = await this.ask({ mode, incoming, existing, dest, remaining: paths.length - index - 1 });
+                resolution = standing.resolution;
+              }
+            }
+            if (resolution === "skip") continue;
+            if (resolution === "replace") {
+              const target = join(dest, baseName(path));
+              if (isInside(target, path)) throw new OpError(`${quote(baseName(target))} can’t be replaced by something inside it.`);
+              const out = await trashPaths([target], ctx, this.store.env.run);
+              const failed = out.failed[0];
+              if (failed) throw new OpError(`${quote(baseName(target))} couldn’t be moved to the Trash: ${failed.reason}`);
+              replaced.push(target);
+            }
             const made = mode === "copy" ? await copyInto(path, dest, ctx) : await moveInto(path, dest, ctx);
             if (made) created.push(made);
             if (made && mode === "move") moves.push({ from: path, to: made });
@@ -147,14 +227,16 @@ export class Operations {
           if (mode === "move") ctx.advance(1);
         }
         if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
-        return `${mode === "copy" ? "Copied" : "Moved"} ${what(paths)}.`;
+        const went = mode === "copy" ? created : moves.map((move) => move.from);
+        if (went.length === 0) return paths.length === 1 ? `Skipped ${what(paths)}.` : "Skipped them all.";
+        return `${mode === "copy" ? "Copied" : "Moved"} ${what(went)}${replaced.length > 0 ? `, replacing ${formatCount(replaced.length)}` : ""}.`;
       })
       .then((job) => {
-        // What was moved or copied before a failure or a Cancel can be taken back too.
+        // What was moved or copied before a failure or a Cancel can be taken back too, with what it replaced.
         const moved = mode === "move" && moves.length > 0;
         const copied = mode === "copy" && created.length > 0;
-        if (moved) this.undo.push(moveAction(moves, this.undoEnv));
-        if (copied) this.undo.push(copyAction("Copy", created, this.undoEnv));
+        if (moved) this.undo.push(withReplaced(moveAction(moves, this.undoEnv), replaced, this.undoEnv));
+        if (copied) this.undo.push(withReplaced(copyAction("Copy", created, this.undoEnv), replaced, this.undoEnv));
         this.finished(job.state, job.message, created, moved || copied);
       });
     return created;
@@ -172,27 +254,35 @@ export class Operations {
 
   // --- Making and renaming -----------------------------------------------------------
 
-  /** Make a folder here; an error to show in the sheet, or null. */
-  async newFolder(name: string): Promise<string | null> {
+  /**
+   * File › New Folder: "untitled folder" (or the first free "untitled folder
+   * 2", …) at once, selected, its name a field to type over. The folder's
+   * path, or an error to show.
+   */
+  async newFolder(): Promise<{ path: string } | { error: string }> {
     const dir = this.here;
-    if (dir === null || !this.writable) return "A folder can’t be made here.";
+    if (dir === null || !this.writable) return { error: "A folder can’t be made here." };
     try {
-      const made = await makeFolder(dir, name);
+      const made = await makeFolder(dir, freeName(dir, NEW_FOLDER_NAME));
       this.undo.push(newFolderAction(made, this.undoEnv));
       this.store.reload();
-      this.store.select([made]);
-      return null;
+      this.store.startRename(made);
+      return { path: made };
     } catch (error) {
-      return error instanceof Error ? error.message : String(error);
+      const text = error instanceof Error ? error.message : String(error);
+      this.store.say(text, true);
+      return { error: text };
     }
   }
 
+  /** Renames `path` to `name`; an error to show, or null. The renamed item stays selected unless the selection moved on meanwhile. */
   async rename(path: string, name: string): Promise<string | null> {
     try {
       const renamed = await renamePath(path, name);
       if (renamed !== path) this.undo.push(renameAction(path, renamed, this.undoEnv));
       this.store.reload();
-      this.store.select([renamed]);
+      const { selection } = this.store.getSnapshot();
+      if (selection.length === 0 || (selection.length === 1 && selection[0] === path)) this.store.select([renamed]);
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : String(error);

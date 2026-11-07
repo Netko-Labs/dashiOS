@@ -1,15 +1,17 @@
 /**
  * The omnibox: the toolbar's one field for where you are and what you look
- * for. At rest it is the path as crumbs (click one to go there; drop files on
- * one to move them there) and, at its end, the folder's status line. A click
- * on its empty part, ⌘L, or Go to Folder… makes it text: a path (`/`, `~`)
- * goes there, with its subfolders offered under it (↑↓ to pick, Enter to
- * go); anything else searches as you type, the results in the listing, a
- * chip choosing this folder or the whole computer. Escape gives the crumbs
- * back.
+ * for. At rest it is a magnifier, the path as crumbs (click one to go there;
+ * drop files on one to move them there; a deep path folds its first folders
+ * into “…”) and, at its end, the folder's status line, which gives way when
+ * the field is narrow. A click on its empty part (or ❖F) is a search, empty,
+ * ready to type; Go to Folder… (⇧❖G) puts the folder's path in it. Text that
+ * starts like a path (`/`, `~`) goes there, with its subfolders offered
+ * under it (↑↓ to pick, Enter to go); anything else searches as you type,
+ * the results in the listing, in this folder or everywhere (a two-way
+ * switch). Escape gives the crumbs back.
  */
 
-import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, Segmented, SelectionBar, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { useFiles, useFilesState } from "./context.ts";
@@ -20,6 +22,18 @@ import { type Location, pathSegments } from "./location.ts";
 import { completions, displayPath, intentOf } from "./omnibox.ts";
 
 const HEIGHT = 28;
+/** Crumbs shown in full before the first ones fold into “…”. */
+const CRUMBS_SHOWN = 4;
+/** Below this width the status line gives way to the crumbs. */
+const STATUS_FROM = 420;
+
+/** The crumbs to draw: all of a short path; else the first, “…” (for the folders folded), and the last few. */
+export function foldCrumbs<T>(segments: readonly T[], shown: number = CRUMBS_SHOWN): Array<{ segment: T; folded: boolean }> {
+  if (segments.length <= shown) return segments.map((segment) => ({ segment, folded: false }));
+  const tail = segments.slice(segments.length - (shown - 1));
+  const hidden = segments[segments.length - shown] as T;
+  return [{ segment: segments[0] as T, folded: false }, { segment: hidden, folded: true }, ...tail.map((segment) => ({ segment, folded: false }))];
+}
 
 /** Folders offered under the field while a path is typed, for the window's overlay to draw. */
 export interface Suggestions {
@@ -68,7 +82,7 @@ function Field({
     <View
       testID={testID}
       {...(onLayout ? { onLayout } : {})}
-      {...(onPress ? { focusable: true, onPress, accessibilityRole: "button" as const, accessibilityLabel: "Path. Press to type a path or search" } : {})}
+      {...(onPress ? { focusable: true, onPress, accessibilityRole: "button" as const, accessibilityLabel: "Path. Press to search, or type a path" } : {})}
       style={{
         flex: 1,
         minWidth: 160,
@@ -95,31 +109,46 @@ function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
   const visible = store.visible();
   const chosen = new Set(state.selection);
   const picked = visible.filter((item) => chosen.has(item.path));
-  const edit = (): void => onEdit(editText(state.location, store.env.home));
+  const [width, setWidth] = useState(0);
+  // A click on the field is a search, empty and ready to type (a path, typed, goes there).
+  const search = (): void => onEdit("");
+  const folded = foldCrumbs(segments.map((segment, index) => ({ ...segment, index })));
   return (
-    <Field testID="omnibox" onPress={edit}>
+    <Field testID="omnibox" onPress={search} onLayout={(bounds) => setWidth(Math.round(bounds.width))}>
+      <View style={{ width: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Svg markup={SEARCH} size={13} color={colors.textMuted} />
+      </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 0, minWidth: 0, flexShrink: 1, overflow: "hidden" }}>
-        {segments.map((segment, index) => (
-          <Crumb key={`${index}:${segment.name}`} index={index} name={segment.name} location={segment.location} last={index === segments.length - 1} />
+        {folded.map(({ segment, folded: hidden }, at) => (
+          <Crumb
+            key={`${segment.index}:${segment.name}`}
+            index={segment.index}
+            name={hidden ? "…" : segment.name}
+            location={segment.location}
+            first={at === 0}
+            last={segment.index === segments.length - 1}
+          />
         ))}
       </View>
-      <View testID="omnibox:edit" onPress={edit} style={{ flex: 1, height: HEIGHT, minWidth: 24 }} />
-      <View testID="status" style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-          {statusLine(visible.length, picked, state.free?.free ?? null)}
-        </Text>
-      </View>
+      <View testID="omnibox:edit" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 24 }} />
+      {(width === 0 || width >= STATUS_FROM) && (
+        <View testID="status" style={{ flexShrink: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+            {statusLine(visible.length, picked, state.free?.free ?? null)}
+          </Text>
+        </View>
+      )}
     </Field>
   );
 }
 
-function Crumb({ index, name, location, last }: { index: number; name: string; location: Location; last: boolean }) {
+function Crumb({ index, name, location, first, last }: { index: number; name: string; location: Location; first: boolean; last: boolean }) {
   const colors = useColors();
   const { store } = useFiles();
   const drop = useDropTarget(location.kind === "folder" ? location.path : location.kind === "trash" ? "trash" : null);
   return (
     <View style={{ flexDirection: "row", alignItems: "center", flexShrink: last ? 1 : 0, minWidth: 0 }}>
-      {index > 0 && <Svg markup={CHEVRON} size={10} color={colors.textDisabled} />}
+      {!first && <Svg markup={CHEVRON} size={10} color={colors.textDisabled} />}
       <View
         testID={`path:${index}`}
         onPress={() => store.go(location)}
@@ -172,12 +201,8 @@ function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: clears the list once, when the editor goes
   useEffect(() => () => onSuggest(null), []);
 
-  const scopeLabel =
-    state.scope === "computer"
-      ? "Everywhere"
-      : state.location.kind === "folder"
-        ? `In ${state.location.path === store.env.home ? "Home" : (state.location.path.split("/").at(-1) ?? "")}`
-        : "In this list";
+  const here =
+    state.location.kind === "folder" ? (state.location.path === store.env.home ? "Home" : (state.location.path.split("/").at(-1) ?? "")) : "This list";
   return (
     <Field testID="omnibox" onLayout={setBounds}>
       <View style={{ width: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -212,7 +237,7 @@ function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
               setHighlighted((now) => Math.max(-1, Math.min(offered.length - 1, now + step)));
             } else if (key === "ArrowDown") {
               onDone();
-              store.move(1);
+              store.move("down");
               actions.refocus();
             }
           }}
@@ -222,23 +247,15 @@ function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
       {intent === "search" && text.trim() !== "" && (
         <>
           {state.searching && <Text style={{ fontSize: 11, color: colors.textMuted }}>Searching…</Text>}
-          <View
+          <Segmented
             testID="omnibox:scope"
-            onPress={() => store.setScope(state.scope === "computer" ? "folder" : "computer")}
-            style={{
-              height: 20,
-              paddingHorizontal: 8,
-              borderRadius: 10,
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: colors.separator,
-              hoverBackgroundColor: colors.button,
-            }}
-          >
-            <Text numberOfLines={1} style={{ fontSize: 11, color: colors.text }}>
-              {scopeLabel}
-            </Text>
-          </View>
+            options={[
+              { value: "folder", label: here },
+              { value: "computer", label: "Everywhere" },
+            ]}
+            value={state.scope}
+            onChange={(scope) => store.setScope(scope)}
+          />
         </>
       )}
       <View

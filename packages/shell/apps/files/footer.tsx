@@ -1,27 +1,23 @@
 /** The notice over the content's foot, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
-import { Button, Notice, useColors, useUndo } from "@dashi/ui";
+import { Button, Notice, ProgressBar, useColors, useUndo } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useFiles, useFilesState, useJobs } from "./context.ts";
+import { useFiles, useFilesOps, useFilesState, useJobs } from "./context.ts";
 import { formatCount, formatSize } from "./format.ts";
 import { CLOSE } from "./glyphs.ts";
 import type { Job } from "./jobs.ts";
 
 function JobRow({ job }: { job: Job }) {
   const colors = useColors();
-  const { ops } = useFiles();
+  const ops = useFilesOps();
   const ratio = job.total && job.total > 0 ? Math.min(1, job.done / job.total) : null;
   return (
     <View testID={`job:${job.id}`} style={{ height: 30, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14 }}>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>{`${job.label}…`}</Text>
       </View>
-      <View style={{ width: 160, height: 6, borderRadius: 3, backgroundColor: colors.button, overflow: "hidden" }}>
-        <View
-          testID={`job:${job.id}:bar`}
-          style={{ width: ratio === null ? "35%" : `${Math.round(ratio * 100)}%`, height: 6, borderRadius: 3, backgroundColor: colors.selection }}
-        />
-      </View>
+      {/* While the total isn't known yet (measuring, a move, the Trash) the bar sweeps rather than standing still. */}
+      <ProgressBar testID={`job:${job.id}:bar`} value={ratio} width={160} />
       {ratio !== null && job.total !== null && job.total > 1000 && (
         <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>
       )}
@@ -47,7 +43,8 @@ export function statusLine(total: number, selected: readonly { size: number; kin
 }
 
 export function Footer() {
-  const { store, ops } = useFiles();
+  const { store } = useFiles();
+  const ops = useFilesOps();
   const state = useFilesState();
   const undo = useUndo(ops.undo);
   const jobs = useJobs().filter((job) => job.state === "running");

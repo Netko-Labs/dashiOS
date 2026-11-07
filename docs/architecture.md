@@ -93,7 +93,8 @@ systemd --user
   for `zenity` (Steam's scripts call it). It is an app on the kit
   (`dev.dashi.dialog`), one process per dialog, not in the launcher. It draws
   the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
-  `--text-info`, `--scale`, and `--calendar`; `--file-selection`, `--forms`,
+  `--text-info`, `--scale`, `--calendar`, and `--file-selection` (Files'
+  own chooser, `apps/files/chooser/`, as the portal's is); `--forms`,
   `--color-selection`, and `--notification` exit 255 for now.
 - **dashi-hardware** (`crates/dashi-hardware`) is Dashi's one privileged
   helper for what a laptop's kernel exposes: firmware attributes, platform

@@ -1,43 +1,15 @@
 /**
  * Pictures for items: a thumbnail from the freedesktop cache or, for a small
- * picture, the picture itself; else the icon theme's icon for the file's type;
- * else one of the icons bundled in `icons/` (a folder and a page with a badge
- * per category), so a machine without the theme still looks right.
+ * picture, the picture itself; else Dashi's icon for the item's kind
+ * (file-icons.ts, IC-2), in Light or Dark, with a special folder's emblem.
  */
 
-import { join } from "node:path";
 import { dataDirs } from "../../src/entries.ts";
-import { themeIcon } from "../../src/icon-themes.ts";
+import { type Emblem, iconFile, iconKind } from "./file-icons.ts";
 import type { FileItem } from "./items.ts";
-import { categoryOf, INODE_DIRECTORY, iconNames, UNKNOWN_TYPE } from "./mime.ts";
 import { type ThumbnailMaker, thumbnailMaker } from "./thumbnailer.ts";
 import { findThumbnail } from "./thumbs.ts";
-
-const bundled = new URL("./icons/", import.meta.url).pathname;
-const roots = (): string[] => dataDirs().map((dir) => join(dir, "icons"));
-const cache = new Map<string, string>();
-
-/** The icon for a type: the theme's, else the bundled one for its category. */
-export function typeIcon(mime: string): string {
-  const known = cache.get(mime);
-  if (known) return known;
-  let path: string | null = null;
-  // The theme's icon for "unknown" is a question mark: the bundled page says "a file" better.
-  if (process.env.DASHI_FILES_ICONS !== "bundled" && mime !== UNKNOWN_TYPE) {
-    for (const name of iconNames(mime)) {
-      // Not the catch-all "text-x-generic" for a type of its own: the bundled badge says more.
-      if (name === "text-x-generic" && mime !== "text/plain" && categoryOf(mime) !== "text") break;
-      path = themeIcon(name, roots(), ["mimetypes", "places"]);
-      if (path) break;
-    }
-  }
-  const category = categoryOf(mime);
-  path ??= `${bundled}${category}.svg`;
-  cache.set(mime, path);
-  return path;
-}
-
-export const folderIcon = (): string => typeIcon(INODE_DIRECTORY);
+import type { UserDirName } from "./xdg.ts";
 
 /** Picture formats the renderer draws, and the biggest original worth decoding for a tile. */
 const DRAWABLE = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -45,6 +17,25 @@ const ORIGINAL_LIMIT = 1_500_000;
 
 /** The thumbnail maker for `cacheDir` (thumbnailer.ts), on the system's thumbnailers. */
 export const thumbnails = (cacheDir: string): ThumbnailMaker => thumbnailMaker(cacheDir, dataDirs);
+
+/** Which folder wears which emblem: the home folder and the person's own folders, as the sidebar draws them. */
+export type Emblems = ReadonlyMap<string, Emblem>;
+
+const DIR_EMBLEMS: Record<UserDirName, Emblem> = {
+  DESKTOP: "desktop",
+  DOCUMENTS: "documents",
+  DOWNLOAD: "downloads",
+  PICTURES: "pictures",
+  MUSIC: "music",
+  VIDEOS: "videos",
+};
+
+export function folderEmblems(dirs: ReadonlyArray<{ name: UserDirName; path: string }>, home: string): Emblems {
+  return new Map<string, Emblem>([
+    [home, "home"],
+    ...dirs.filter((dir) => dir.path !== home).map((dir): [string, Emblem] => [dir.path, DIR_EMBLEMS[dir.name]]),
+  ]);
+}
 
 /**
  * A picture of the file itself: a cached thumbnail, or a small original.
@@ -60,6 +51,7 @@ export function previewFor(item: FileItem, pixels: number, cacheDir: string): st
   return null;
 }
 
-export function iconFor(item: Pick<FileItem, "kind" | "mime" | "broken">): string {
-  return item.kind === "folder" ? folderIcon() : typeIcon(item.mime);
+/** Dashi's icon for an item, in Dark Mode's colors when `dark`. */
+export function iconFor(item: Pick<FileItem, "kind" | "mime" | "path">, dark = false, emblems?: Emblems): string {
+  return iconFile(iconKind(item, item.kind === "folder" ? emblems?.get(item.path) : undefined), dark);
 }

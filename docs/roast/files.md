@@ -74,3 +74,28 @@ One file browser, used everywhere. Extract Files' core (store, grid and list, si
 - Undo and conflicts are patterns, not app features. Add both to the design guidelines: every destructive or moving action offers ❖Z and a notice with Undo, and a name collision is always a Replace / Keep Both / Skip sheet.
 - The design guide's Icons section covers app icons only. Add a document and folder icon recipe (page shape, category glyph, light and dark, whether extension text is allowed) so Files, the chooser and Preview draw the same files.
 - Menu-bar shortcuts in `docs/design.html` ("Move to Trash… ❖⌫") aren't used by the app the example comes from. Keep a single list of standard shortcuts that the apps read from.
+
+**Where it stands (0.5.0, wave 2: one file browser everywhere)**
+
+Ticked are in `feat/0.5-files`; the rest moved to `tasks/todo.md` ("Left from the Files and portal roasts").
+
+- [x] 1 Keyboard: Files reads Metal's window keys itself (`apps/files/keys.ts`, `browser.tsx`): ← → ↑ ↓ in two directions in the grid, ⇧ extends, Home, End, Page Up and Down, Return opens, ❖↓ opens, ❖↑ goes up, F2 renames, Delete and ❖⌫ move to the Trash (❖⌫ reaches the menus first: `src/keymap.ts` `app-erase`), Space peeks. `@dashi/ui`'s `KeySink` is unchanged for the other apps (moved on).
+- [x] 2 Selection: ⇧-click, ❖-click (wave 1), a click on empty space selects nothing. The rubber band moved on: Metal doesn't report where a scroll view stands, so the box can't be matched to tiles.
+- [x] 3 Undo: every write, and a Replace's victim comes back too (`undoable.ts` `withReplaced`).
+- [x] 4 Conflicts: Replace / Keep Both / Skip with "do the same for the others" (`operations.ts`, `conflict-sheet.tsx`).
+- [x] 5 Peek: Space shows a picture, the start of a text file, or the icon with kind and size; arrows step, Return opens (`peek.tsx`). PDF, audio and video through Preview's renderers moved on.
+- [x] 6 Rename in place (F2, File › Rename, the menu) with the stem selected; Move to Trash is ❖⌫. A second slow click to rename moved on.
+- [x] 7 Search: a magnifier at the field's start, a click is a search, "Here | Everywhere" segments (`omnibox.tsx`).
+- [x] 8 Icons: one Dashi family, Light and Dark, special-folder emblems, extension labels, text typed by content (`file-icons.ts`, `file-icon.tsx`, `sniff.ts`; design.html "Files and folders", IC-2).
+- [x] 9 Persistence: view, sort with direction, Show Hidden kept (`prefs.ts`); View › Reverse Order. Per-folder settings and the window size moved on.
+- [x] 10 New Folder: "untitled folder N" at once, renamed in place, no sheet.
+- [x] 11 Loading: the last folder stays up, "Loading…" after 200 ms (`store.ts` `stale`).
+- [x] 12 A click on empty space deselects.
+- [x] 13 Menus: "Move to Trash" everywhere, Cut before Copy, Paste on the item menu, no "(needs zip)" row, New Folder and Rename without "…". Shortcuts drawn in `PopupMenu` moved on (`@dashi/ui`).
+- [x] 14 Progress: the bar sweeps while the total is unknown (`ProgressBar`). Counts, time left, and copying while measuring moved on.
+- [x] 15 Path field: a deep path folds its first folders into "…", the status line gives way below 420 points.
+- [x] 16 Performance: `visible()` is worked out once per state. Async thumbnails, mount watching instead of `lsblk`, async completions, and diffs on change moved on.
+- [ ] 17 Other disks' Trash: moved on.
+- [ ] 18 Editable Favorites and the `SidebarItem` fork: moved on.
+- [x] 19 The file chooser is Files (`apps/files/chooser/`): the portal, `dashi-dialog --file-selection`, and Text Editor's Open and Save As.
+- [ ] 20 New Window, Extract, Open in Terminal, Copy Path, column widths, a collapsible sidebar: moved on.

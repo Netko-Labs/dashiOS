@@ -13,6 +13,7 @@ import { type RunningApp, runApp } from "../kit/index.ts";
 import { CalendarDialog } from "./calendar.tsx";
 import { prepare } from "./cli.ts";
 import { EntryDialog, PasswordDialog } from "./entry.tsx";
+import { FileSelectionDialog } from "./file-selection-view.tsx";
 import type { Answer } from "./frame.tsx";
 import { ListDialog } from "./list-view.tsx";
 import { MessageDialog } from "./message.tsx";
@@ -55,6 +56,8 @@ function dialogFor(spec: DialogSpec, answer: Answer, size: Size): ReactElement {
       return <ScaleDialog spec={spec} answer={answer} width={size.width} print={print} />;
     case "calendar":
       return <CalendarDialog spec={spec} answer={answer} />;
+    case "file-selection":
+      return <FileSelectionDialog spec={spec} answer={answer} />;
   }
 }
 

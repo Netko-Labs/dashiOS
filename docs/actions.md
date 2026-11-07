@@ -565,4 +565,4 @@ its `case` in `runBinding`, and move its test to the registry.
 | `toggle-autohide` | `dashi://settings/desktop-dock/autohide` (exists: a toggle with no value switches) | `settings` |
 | `space-left`, `space-right`, `space-1`…`space-9`, `overview` | `dashi://space/left`, `dashi://space/3`, `dashi://dashi/overview` | a `spaces` source |
 | `volume-up`, `brightness-up`, `media-*`, `power-key` | `dashi://sound/volume-up` and so on | a `hardware` source |
-| `launcher`, `switch-*`, `switcher-*`, `app-chord` | stay names: they are the launcher and the switcher themselves, and `app-chord` is the app's own menu | |
+| `launcher`, `switch-*`, `switcher-*`, `app-chord`, `app-erase` | stay names: they are the launcher and the switcher themselves, and `app-chord` and `app-erase` (❖⌫) are the app's own menu | |

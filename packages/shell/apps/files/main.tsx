@@ -14,6 +14,7 @@ import { systemEnv } from "./env.ts";
 import { folderAt, type Location } from "./location.ts";
 import { Operations } from "./operations.ts";
 import { expandHome, normalizePath, parentOf } from "./paths.ts";
+import { readPrefs, writePrefs } from "./prefs.ts";
 import { FilesStore } from "./store.ts";
 import { parseFileUri } from "./uri.ts";
 import { FILES_SIZE, FilesWindow } from "./view.tsx";
@@ -53,7 +54,8 @@ if (import.meta.main) {
   const env = systemEnv();
   const args = parseArgs(Bun.argv.slice(2));
   const start = startFrom(args.paths, env.home, kind);
-  const store = new FilesStore(env, start.location);
+  // The view, the sort, and Show Hidden as they were left (prefs.ts).
+  const store = new FilesStore(env, start.location, { prefs: { read: () => readPrefs(), write: (prefs) => writePrefs(prefs) } });
   const ops = new Operations(store);
   store.start();
   if (start.select.length > 0) store.select(start.select);

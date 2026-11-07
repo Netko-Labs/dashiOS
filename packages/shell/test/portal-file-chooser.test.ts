@@ -1,7 +1,12 @@
-import { expect, test } from "bun:test";
-import { accept, type Standing, startFolder, startName } from "../apps/portal/file-chooser/accept.ts";
-import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../apps/portal/file-chooser/filters.ts";
-import { ChooserModel, folderName, folderTrail, parentOf, type Row, recentFolders, type Sources, visibleRows } from "../apps/portal/file-chooser/model.ts";
+import { afterEach, beforeEach, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { accept, type Standing, startFolder, startName } from "../apps/files/chooser/accept.ts";
+import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../apps/files/chooser/filters.ts";
+import { ChooserModel, chooserShows, folderName, folderTrail } from "../apps/files/chooser/model.ts";
+import type { Env } from "../apps/files/env.ts";
+import type { FilesPrefs } from "../apps/files/prefs.ts";
 import { type ChooserRequest, chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { encodeBytePath } from "../apps/portal/vardict.ts";
 import { type Variant, variant } from "../src/dbus/index.ts";
@@ -207,121 +212,118 @@ test("Save: a bad name, a file that would be replaced (once asked, saved), a fol
   expect(accept(many, standing({}), (path) => path === "/h/b.txt")).toEqual({ kind: "done", paths: ["/h/a.txt", "/h/a 2.txt", "/h/b 2.txt"] });
 });
 
-const row = (path: string, extra: Partial<Row> = {}): Row => ({
-  path,
-  name: path.split("/").pop() ?? "",
-  folder: false,
-  mime: "application/pdf",
-  mtime: 0,
-  hidden: false,
-  ...extra,
+// The model on Files' own browser, over real folders in a scratch home.
+
+let root = "";
+let home = "";
+let docs = "";
+
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), "chooser-"));
+  home = join(root, "h");
+  docs = join(home, "Docs");
+  mkdirSync(join(docs, "Taxes"), { recursive: true });
+  for (const name of ["Lease.pdf", "learning.pdf", "x.png", ".secret.pdf"]) writeFileSync(join(docs, name), "%PDF");
 });
 
-test("rows: folders always, files by the filter, hidden ones never; recents newest first, folders by name", () => {
-  const filter = { name: "PDF", patterns: [{ kind: "mime" as const, pattern: "application/pdf" }] };
-  const rows = [
-    row("/h/b.pdf", { mtime: 1 }),
-    row("/h/a.pdf", { mtime: 2 }),
-    row("/h/x.png", { mime: "image/png" }),
-    row("/h/sub", { folder: true, mime: "inode/directory" }),
-    row("/h/.secret.pdf", { hidden: true }),
-  ];
-  expect(visibleRows(rows, { directory: false }, filter, "folder").map((r) => r.name)).toEqual(["sub", "a.pdf", "b.pdf"]);
-  expect(visibleRows(rows, { directory: false }, filter, "recents").map((r) => r.name)).toEqual(["a.pdf", "b.pdf", "sub"]);
-  expect(visibleRows(rows, { directory: true }, filter, "folder").map((r) => r.name)).toEqual(["sub"]);
-  expect(recentFolders([row("/h/Docs/a.pdf", { mtime: 5 }), row("/h/Docs/b.pdf"), row("/h/c.pdf")], "/h").map((r) => [r.path, r.where])).toEqual([
-    ["/h/Docs", "~"],
-  ]);
-});
+afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-function fakeSources(): Sources & { searched: string[] } {
-  const searched: string[] = [];
+const PDF = { name: "PDF", patterns: [{ kind: "glob" as const, pattern: "*.pdf" }] };
+
+function env(recents: string[] = []): Env {
   return {
-    home: "/h",
-    searched,
-    recents: async () => [row("/h/Docs/Lease.pdf", { mtime: 9, where: "~/Docs" })],
-    search: async (query) => {
-      searched.push(query);
-      return [row("/h/Docs/Lease.pdf", { where: "~/Docs" })];
+    home,
+    user: "alexk",
+    mime: {
+      extensions: new Map([
+        ["pdf", "application/pdf"],
+        ["png", "image/png"],
+      ]),
+      literals: new Map(),
     },
-    folder: async (path) => ({ rows: [row(`${path}/Lease.pdf`), row(`${path}/learning.pdf`), row(`${path}/other.pdf`)], error: null }),
-  };
+    run: async () => ({ ok: false, code: 1, stdout: "", stderr: "" }),
+    trash: { files: join(root, "trash/files"), info: join(root, "trash/info") },
+    cache: join(root, "cache"),
+    dirs: [{ name: "DOCUMENTS", path: docs }],
+    now: Date.now,
+    recents: async () => recents.map((path) => ({ path, time: 1 })),
+  } as unknown as Env;
 }
 
-test("the model opens on Recents, searches from two letters, and picks", async () => {
-  const sources = fakeSources();
-  const model = new ChooserModel(request({}), sources, { folder: "/h/Docs", name: "" });
-  await Bun.sleep(1);
-  expect(model.getSnapshot().place).toEqual({ kind: "recents" });
-  expect(model.visible().map((r) => r.name)).toEqual(["Lease.pdf"]);
-  model.search("l");
-  expect(sources.searched).toEqual([]);
-  model.search("lea");
-  await Bun.sleep(1);
-  // LocalSearch's hit and the last folder's own names, each once.
-  expect(model.visible().map((r) => r.path)).toEqual(["/h/Docs/Lease.pdf", "/h/Docs/learning.pdf"].sort((a, b) => a.localeCompare(b)));
-  model.pick("/h/Docs/Lease.pdf");
-  expect(model.picked()).toEqual([{ path: "/h/Docs/Lease.pdf", folder: false }]);
-  model.search("");
-  await Bun.sleep(1);
-  expect(model.getSnapshot().place).toEqual({ kind: "recents" });
+const PREFS: FilesPrefs = { view: "list", sort: { key: "name", ascending: true }, showHidden: false };
+const names = (model: ChooserModel): string[] => model.store.visible().map((item) => item.name);
+
+function chooser(over: Partial<ChooserRequest>, recents: string[] = [], name = ""): ChooserModel {
+  const model = new ChooserModel(request(over), env(recents), { folder: docs, name }, { prefs: PREFS, watch: false });
+  model.start();
+  return model;
+}
+
+test("what shows: folders always, files the filter lets by, no hidden ones; only folders when choosing folders", async () => {
+  const model = chooser({ mode: "save", currentFilter: PDF, filters: [PDF] });
+  await Bun.sleep(30);
+  expect(names(model)).toEqual(["Taxes", "learning.pdf", "Lease.pdf"]);
+  model.setFilter(null);
+  expect(names(model)).toEqual(["Taxes", "learning.pdf", "Lease.pdf", "x.png"]);
+  model.stop();
+  expect(chooserShows({ directory: true }, null, { kind: "file", name: "a.pdf", mime: "application/pdf" })).toBe(false);
+  expect(chooserShows({ directory: true }, null, { kind: "folder", name: "a", mime: "inode/directory" })).toBe(true);
 });
 
-test("a save takes the name of the file picked; the step keys move the pick", async () => {
-  const model = new ChooserModel(request({ mode: "save" }), fakeSources(), { folder: "/h/Docs", name: "Untitled.pdf" });
-  await Bun.sleep(1);
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
-  // By name, as people sort: "learning" before "Lease".
-  model.step(1);
-  expect(model.getSnapshot().selected).toEqual(["/h/Docs/learning.pdf"]);
+test("Open starts on Recents; a double-click or Return on a file accepts", async () => {
+  const lease = join(docs, "Lease.pdf");
+  const model = chooser({}, [lease]);
+  let accepted = 0;
+  model.onAccept = () => accepted++;
+  await Bun.sleep(30);
+  expect(model.store.getSnapshot().location).toEqual({ kind: "recents" });
+  expect(names(model)).toEqual(["Lease.pdf"]);
+  model.store.move("down");
+  expect(model.selected()).toEqual([{ path: lease, folder: false }]);
+  model.store.openSelection();
+  expect(accepted).toBe(1);
+  expect(model.decide(() => false)).toEqual({ kind: "done", paths: [lease] });
+  model.stop();
+});
+
+test("a save takes the name of the file picked, asks before replacing, and makes a new folder that renames in place", async () => {
+  const model = chooser({ mode: "save" }, [], "Untitled.pdf");
+  await Bun.sleep(30);
+  expect(model.folder()).toBe(docs);
+  // By name, as people sort: "learning" before "Lease"; the folder first.
+  model.store.move("down");
+  model.store.move("down");
   expect(model.getSnapshot().name).toBe("learning.pdf");
-  model.step(1);
-  expect(model.getSnapshot().selected).toEqual(["/h/Docs/Lease.pdf"]);
+  model.setName("Lease.pdf");
+  const exists = (path: string): boolean => path === join(docs, "Lease.pdf");
+  expect(model.decide(exists)).toEqual({ kind: "replace", path: join(docs, "Lease.pdf") });
+  expect(model.getSnapshot().replace).toBe(join(docs, "Lease.pdf"));
+  model.confirmReplace();
+  expect(model.decide(exists)).toEqual({ kind: "done", paths: [join(docs, "Lease.pdf")] });
+
+  expect(model.canMakeFolder()).toBe(true);
+  await model.newFolder();
+  await Bun.sleep(30);
+  expect(model.store.getSnapshot().renaming).toBe(join(docs, "untitled folder"));
+  expect(await model.store.commitRename("Receipts")).toBe(true);
+  await Bun.sleep(30);
+  expect(names(model)).toContain("Receipts");
+  model.stop();
 });
 
-test("Up goes to the folder this one is in, up to the root; Back retraces the way, searches left out", async () => {
-  const model = new ChooserModel(request({}), fakeSources(), { folder: "/h/Docs", name: "" });
-  await Bun.sleep(1);
-  expect(model.canGoBack()).toBe(false);
-  expect(model.canGoUp()).toBe(false);
-  model.go({ kind: "folder", path: "/h/Docs/Taxes" });
-  expect(model.canGoUp()).toBe(true);
-  model.up();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
-  model.up();
-  model.up();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/" });
-  expect(model.canGoUp()).toBe(false);
-  model.up();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/" });
-  // A search's results aren't a place to come back to: Back leaves them for where it began.
-  model.search("lease");
-  await Bun.sleep(1);
-  model.go({ kind: "folder", path: "/h/Docs" });
-  const back = (): unknown => {
-    model.back();
-    return model.getSnapshot().place;
-  };
-  expect(back()).toEqual({ kind: "folder", path: "/" });
-  expect(back()).toEqual({ kind: "folder", path: "/h" });
-  expect(back()).toEqual({ kind: "folder", path: "/h/Docs" });
-  expect(back()).toEqual({ kind: "folder", path: "/h/Docs/Taxes" });
-  expect(back()).toEqual({ kind: "recents" });
-  expect(model.canGoBack()).toBe(false);
-  expect(back()).toEqual({ kind: "recents" });
-});
-
-test("clearing a search returns where it began without leaving a Back step behind", async () => {
-  const model = new ChooserModel(request({ mode: "save" }), fakeSources(), { folder: "/h/Docs", name: "a.pdf" });
-  await Bun.sleep(1);
-  model.search("lea");
-  model.search("lease");
-  await Bun.sleep(1);
-  expect(model.canGoBack()).toBe(true);
-  model.search("");
-  await Bun.sleep(1);
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
-  expect(model.canGoBack()).toBe(false);
+test("Up goes to the folder this one is in; Back retraces the way", async () => {
+  const model = chooser({ directory: true });
+  await Bun.sleep(30);
+  expect(model.folder()).toBe(docs);
+  model.store.go({ kind: "folder", path: join(docs, "Taxes") });
+  model.store.goUp();
+  expect(model.folder()).toBe(docs);
+  model.store.goBack();
+  expect(model.folder()).toBe(join(docs, "Taxes"));
+  // Nothing picked: choosing folders takes the one shown.
+  await Bun.sleep(30);
+  expect(model.decide(() => false)).toEqual({ kind: "done", paths: [join(docs, "Taxes")] });
+  model.stop();
 });
 
 test("the folder pop-up lists the folder and each one it is in, named as people know them", () => {
@@ -334,6 +336,4 @@ test("the folder pop-up lists the folder and each one it is in, named as people 
   ]);
   expect(folderTrail("/", "/home/alexk")).toEqual([{ name: "Computer", path: "/" }]);
   expect(folderName("/media/alexk/USB", "/home/alexk")).toBe("USB");
-  expect(parentOf("/")).toBeNull();
-  expect(parentOf("/home/alexk")).toBe("/home");
 });

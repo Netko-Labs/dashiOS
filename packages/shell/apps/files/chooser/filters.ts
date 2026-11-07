@@ -7,7 +7,7 @@
  * so there is a way through to the files.
  */
 
-import type { Filter } from "./options.ts";
+import type { Filter } from "./request.ts";
 
 const cache = new Map<string, RegExp>();
 
