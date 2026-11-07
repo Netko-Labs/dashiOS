@@ -52,6 +52,9 @@ describe("the grants card", () => {
 
   test("what the harness is told of the context chips", () => {
     expect(contextPrompt(helium)).toContain("window w3, showing https://bodytech.com.co/clases");
+    expect(contextPrompt(helium)).toContain("hand_over");
+    // Ask's plan only reads the window: no hand-over offered.
+    expect(contextPrompt(helium, false)).not.toContain("hand_over");
     expect(contextPrompt(NO_CONTEXT)).toBe("");
     expect(contextPrompt({ window: null, selection: "Thursday 7am" })).toContain('"""\nThursday 7am\n"""');
   });

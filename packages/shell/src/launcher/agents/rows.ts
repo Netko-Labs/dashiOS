@@ -41,8 +41,8 @@ export interface LauncherAgentsSnapshot {
 
 /** What the launcher does with agents (agents/ask/service.ts makes it). */
 export interface LauncherAgents extends Store<LauncherAgentsSnapshot> {
-  /** Ask about `request`: the new task's id, or null with no answerer. */
-  ask(request: string): string | null;
+  /** Ask about `request` (with what the context chips left on, in words): the new task's id, or null with no answerer. */
+  ask(request: string, context?: string): string | null;
   followUp(task: string, text: string): boolean;
   /** Return on a plan: runs it if the person's own press did it (input-origin). */
   run(task: string): void;

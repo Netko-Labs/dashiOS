@@ -186,6 +186,6 @@ export function handoffHints(row: Row | undefined): Hint[] | null {
   return null;
 }
 
-/** Whether the launcher shows the context chips: words that read as a request, while a hand-off or Ask is offered. */
-export const showsContext = (query: string, snapshot: HandoffSnapshot | null): boolean =>
-  snapshot !== null && snapshot.harnesses.length > 0 && readsLikeSentence(query.trim());
+/** Whether the launcher shows the context chips: words that read as a request, while a hand-off or Ask (`asks`) is offered. */
+export const showsContext = (query: string, snapshot: HandoffSnapshot | null, asks = false): boolean =>
+  ((snapshot !== null && snapshot.harnesses.length > 0) || asks) && readsLikeSentence(query.trim());

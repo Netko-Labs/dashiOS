@@ -92,6 +92,8 @@ describe("Hand it off in the launcher", () => {
     expect(showsContext("book a class at bodytech", snapshot())).toBe(true);
     expect(showsContext("notes", snapshot())).toBe(false);
     expect(showsContext("book a class at bodytech", { harnesses: [], runs: [] })).toBe(false);
+    // Ask gets the chips too: with an answerer and no harness, they still show.
+    expect(showsContext("book a class at bodytech", { harnesses: [], runs: [] }, true)).toBe(true);
   });
 });
 

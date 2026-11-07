@@ -128,13 +128,18 @@ export class GrantsMemory {
   }
 }
 
-/** What the task's harness is told of its context: the window in front and the selection, when their chips are on. */
-export function contextPrompt(context: TaskContext): string {
+/**
+ * What an agent is told of its context: the window in front and the
+ * selection, when their chips are on. A task may hand that window to the
+ * person (`handOver`); Ask's plan only reads it.
+ */
+export function contextPrompt(context: TaskContext, handOver = true): string {
   const lines: string[] = [];
   const window = context.window;
   if (window) {
     const where = window.url ? `, showing ${window.url}` : window.title ? `, titled “${cut(window.title, 120)}”` : "";
-    lines.push(`The window in front is ${window.app} (window w${window.id}${where}). You may hand it to the person with hand_over.`);
+    const hand = handOver ? " You may hand it to the person with hand_over." : "";
+    lines.push(`The window in front is ${window.app} (window w${window.id}${where}).${hand}`);
   }
   if (context.selection) lines.push(`The person selected this:\n"""\n${cut(context.selection, 4000)}\n"""`);
   return lines.join("\n");

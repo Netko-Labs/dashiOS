@@ -32,7 +32,7 @@ import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Outcome } from "./actions/types.ts";
 import type { HarnessId } from "./agents/ask/answerer.ts";
-import { NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
+import { contextPrompt, NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
 import { cut } from "./agents/handoff/words.ts";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
@@ -354,7 +354,7 @@ export function Launcher(props: LauncherProps) {
         );
   // The context chips show once the words read as a request, and stay for this opening (⌫ in an empty field drops one).
   const contextShown =
-    mode.kind === "search" && !scope && !inOutside && (context.window !== null || context.selection !== null) && (chipsShown || showsContext(text, handoff));
+    mode.kind === "search" && !scope && !inOutside && (context.window !== null || context.selection !== null) && (chipsShown || showsContext(text, handoff, Boolean(agents?.answerer)));
   useEffect(() => {
     if (contextShown && !chipsShown) setChipsShown(true);
   }, [contextShown, chipsShown]);
@@ -517,6 +517,8 @@ export function Launcher(props: LauncherProps) {
       setTabbed(words);
       setHeld(SET_UP_ROW);
     },
+    // Ask gets the context chips too: the ones left on, in words, after the request.
+    context: () => (contextShown ? contextPrompt(chosenContext(context, chipsOn), false) : ""),
   });
   /** Into a scope, in place (its row chosen), or out of it (Esc): the field starts empty. */
   const enterScope = (next: LauncherScope | null) => {

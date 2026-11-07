@@ -32,6 +32,8 @@ export interface AgentHandlerDeps {
   sayDone(text: string): void;
   /** ⇥ with no answerer picked: "Set up an agent…" for these words, selected. */
   offerSetUp(words: string): void;
+  /** What the context chips left on say, for Ask ("" with none). */
+  context?(): string;
 }
 
 export interface AgentHandlers {
@@ -49,7 +51,7 @@ export function agentHandlers(deps: AgentHandlerDeps): AgentHandlers {
     if (!remote) return;
     switch (value.kind) {
       case "ask": {
-        const id = remote.ask(value.query);
+        const id = remote.ask(value.query, deps.context?.());
         if (id) deps.openTask(id);
         return;
       }
