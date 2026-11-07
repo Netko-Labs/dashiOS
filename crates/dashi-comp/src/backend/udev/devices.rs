@@ -128,7 +128,6 @@ pub(super) fn device_added(
             SCANOUT_FORMATS.iter().copied(),
             render_formats,
         );
-        data.openings += 1;
         data.devices.insert(
             node,
             Device {
@@ -137,15 +136,12 @@ pub(super) fn device_added(
                 render_node,
                 screens: HashMap::new(),
                 token,
-                path: path.to_owned(),
                 card: path
                     .file_name()
                     .and_then(|name| name.to_str())
                     .map_or_else(|| node.to_string(), str::to_owned),
                 fd: seat_fd,
                 buffers: Vec::new(),
-                generation: data.openings,
-                release_pending: false,
             },
         );
         Ok(())

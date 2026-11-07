@@ -71,7 +71,9 @@ crates/dashi-comp/src/
     mod.rs          the backend facade the rest of the compositor sees
     udev/           DRM/KMS, GBM, libinput, libseat, hotplug, multi-GPU, gamma,
                     EDID, keyboard lights (keyboards.rs), VRR (vrr.rs), the
-                    graphics card let go while nothing needs it (sleep.rs)
+                    graphics card let go while nothing needs it (sleep.rs; its
+                    state machine lifecycle.rs, probes probe.rs, buffers
+                    imports.rs, a card gone while open gone.rs)
     winit.rs        nested in another compositor's window
     headless.rs     no screens: IPC and protocol tests
   handlers/         one module per Wayland protocol (or family): compositor,
@@ -158,8 +160,7 @@ Each milestone ends with the shell running on it in the VM.
   buffers only it can read, or the shell's `gpu-keep`. 10 s after the last
   of those, dashi-comp drops its renderer and EGL display, its GBM device and
   its DRM fd (handed back to the seat), and with them the driver's
-  `/dev/nvidia*`, so the card can runtime-suspend; before 0.5.0 it held them
-  all session long and the card never slept. Asleep, it is only a path:
+  `/dev/nvidia*`, so the card can runtime-suspend. Asleep, it is only a path:
   udev's hotplug uevent comes without the device open, and the connectors'
   sysfs `status` (the kernel's last probe, read without waking it) says
   whether to open it, which happens on its own when a screen is plugged in.
@@ -167,10 +168,50 @@ Each milestone ends with the shell running on it in the VM.
   a game offloaded to the card (PRIME render offload, Steam's
   `__NV_PRIME_RENDER_OFFLOAD`) renders there and hands buffers the drawing
   GPU reads directly: the compositor needs no card for it. A buffer no open
-  GPU can read wakes the sleeping ones for the import (the event loop waits
-  for that once), and the card stays open while such buffers live.
-  `gpus` reports each GPU, `gpus-changed` says when that changes; the shell
-  no longer counts dashi-comp among the card's holders.
+  GPU can read wakes the sleeping ones for the import (its answer to the
+  client waits for that, the event loop does not), and the card stays open
+  while such buffers live. `gpus` reports each GPU, `gpus-changed` says when
+  that changes; the shell no longer counts dashi-comp among the card's
+  holders. The rules (what holds a card, the grace, probes, retries) are a
+  pure state machine with its tests (`udev/lifecycle.rs`); `udev/sleep.rs`
+  carries them out.
+
+  *What held the card before (0.4.0 to early 0.5.0):* every GPU udev listed
+  was opened at start and kept all session: the seat's fd for
+  `/dev/dri/card0` (libseat's `TakeDevice`, so logind held a copy too), the
+  `DrmDevice` on it with its event source and `DrmOutputManager`, a
+  `GbmDevice` on that fd, an `EGLDisplay` on the GBM device (NVIDIA's EGL
+  opens `/dev/nvidiactl` and `/dev/nvidia0` for it) and, through the
+  `GpuManager`, a `GlesRenderer` with its EGL context on the card's render
+  node. The `DrmScanner` holds no fd of its own. Any one of those keeps the
+  card in D0; all of them go now when it sleeps.
+
+  *A card that falls off the bus* (the G14's: pciehp "Link Down", then
+  nvidia-modeset "Error while waiting for GPU progress" forever, and every
+  call on the card hangs in the driver) must not take the session with it.
+  So every opening is probed first (`udev/probe.rs`): a thread opens the
+  card's node and closes it, and only when that answers does the event loop
+  open it through the seat and set up DRM, GBM and EGL. A probe that does not
+  answer in 3 s marks the card stuck (`gpus`: `answering: false`): nothing
+  wakes it or looks at it until that thread comes back (or udev removes the
+  card); the thread may stay in the kernel for good, the loop never waits.
+  A probe the kernel refuses (cardwire blocks the card's nodes in Integrated
+  mode) leaves the card asleep; with a screen connected it is tried again
+  after 2 s, doubling to a minute, and `gpus-changed` tells the shell, whose
+  Automatic graphics switches to Hybrid for a screen on the card, so the
+  screen lights up then. A card udev removes while open is let go off the
+  event loop (`udev/gone.rs`), since letting it go makes calls on the card
+  (smithay restores its CRTCs and drops DRM master, the renderer makes its
+  EGL context current to delete its objects, logind closes its copy): its
+  screens leave the compositor, its renderer is leaked on purpose (GL lives
+  on the event loop's thread; a stand-in on the drawing GPU takes its place
+  in the GPU manager), the seat is not asked, and its device, scanouts and
+  fd are dropped on a thread of their own, which a dead card stalls instead
+  of the session. A card whose sysfs entry is gone when its grace ends is
+  let go the same way. A thread stuck in the driver may keep dashi-comp
+  from exiting at logout; the session above it is already over then. Left to chance: a card that hangs
+  while open with a screen on it and is never removed, since drawing that
+  screen (the page flip, the copy to the card) is on the event loop.
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
 - **Dark screens pace their clients (done, 0.5.0):** a screen blanked by
   `power {on: false}` (the shell, after `idle.blankAfterSeconds` without the

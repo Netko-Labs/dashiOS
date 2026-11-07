@@ -1,78 +1,14 @@
-//! What holds a GPU that does not draw open (sleep.rs lets it go when
-//! nothing does), what a sleeping one is, and the sysfs and timing rules for
-//! when to open it again; `gpus` describes them all.
+//! What holds a GPU open and what sysfs says of its connectors (read
+//! without waking it); `gpus` describes every GPU, open or asleep. The rules
+//! for when to open and let go are lifecycle.rs's; sleep.rs carries them out.
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    time::{Duration, Instant},
-};
+use std::{fs, path::Path};
 
+use super::lifecycle::Holds;
 use super::*;
 
-/// How long a GPU nothing needs stays open: a cable pulled and pushed back, a monitor's power cycle.
-pub(super) const GRACE: Duration = Duration::from_secs(10);
-/// A change event on a GPU asleep, with sysfs saying nothing is connected,
-/// opens it to look, unless it went to sleep this recently (its own suspend
-/// or resume may raise one, and looking would wake it for nothing).
-const QUIET_AFTER_SLEEP: Duration = Duration::from_secs(30);
-/// After a client buffer no GPU could read, even with the sleeping ones woken: how long before waking them for one again.
-const BUFFER_RETRY: Duration = Duration::from_secs(30);
 /// Where the kernel lists DRM cards and their connectors.
 pub(super) const DRM_SYSFS: &str = "/sys/class/drm";
-
-/// A GPU let go: what it takes to open it again.
-pub(super) struct Asleep {
-    pub(super) path: PathBuf,
-    pub(super) card: String,
-    /// When it went to sleep; None when it was never opened.
-    pub(super) since: Option<Instant>,
-}
-
-/// What holds a GPU that does not draw open.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(super) struct Holds {
-    /// Screens connected to it.
-    screens: usize,
-    /// Client buffers only it could read, still alive.
-    buffers: usize,
-    /// The shell keeps it warm (`gpu-keep`).
-    kept: bool,
-}
-
-/// What to do with a GPU nothing may need, at the end of its grace.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Next {
-    /// A screen or the shell holds it: nothing to wait for.
-    Stay,
-    /// Only client buffers hold it: look again after another grace.
-    Wait,
-    /// Nothing holds it: let it go.
-    Sleep,
-}
-
-impl Holds {
-    pub(super) fn next(self) -> Next {
-        if self.screens > 0 || self.kept {
-            Next::Stay
-        } else if self.buffers > 0 {
-            Next::Wait
-        } else {
-            Next::Sleep
-        }
-    }
-}
-
-/// Whether a change event on a sleeping GPU should open it: sysfs says a
-/// screen is connected, or it has slept long enough that looking is cheap.
-pub(super) fn look_on_change(connected: bool, asleep_for: Option<Duration>) -> bool {
-    connected || asleep_for.is_none_or(|slept| slept >= QUIET_AFTER_SLEEP)
-}
-
-/// Whether to wake sleeping GPUs for a buffer the open ones cannot read.
-pub(super) fn may_wake_for_buffer(since_failed: Option<Duration>) -> bool {
-    since_failed.is_none_or(|since| since >= BUFFER_RETRY)
-}
 
 /// `card0` from `/dev/dri/card0`.
 pub(super) fn card_name(path: &Path) -> Option<String> {
@@ -151,37 +87,44 @@ impl UdevData {
                         "kept": holds.kept,
                         "screens": screens,
                         "buffers": holds.buffers,
+                        "answering": true,
                     }),
                 ))
             })
             .collect();
-        gpus.extend(self.asleep.values().map(|asleep| {
-            (
-                asleep.card.clone(),
-                json!({
-                    "card": asleep.card,
-                    "open": false,
-                    "draws": false,
-                    "kept": self.kept.contains(&asleep.card),
-                    "screens": [],
-                    "buffers": 0,
+        gpus.extend(
+            self.cards
+                .iter()
+                .filter(|(node, _)| !self.devices.contains_key(node))
+                .map(|(_, card)| {
+                    (
+                        card.name.clone(),
+                        json!({
+                            "card": card.name,
+                            "open": false,
+                            "draws": false,
+                            "kept": self.kept.contains(&card.name),
+                            "screens": [],
+                            "buffers": 0,
+                            "answering": card.life.answers(),
+                        }),
+                    )
                 }),
-            )
-        }));
+        );
         gpus.sort_by(|a, b| a.0.cmp(&b.0));
         json!({ "gpus": gpus.into_iter().map(|(_, gpu)| gpu).collect::<Vec<_>>() })
     }
 
     /// The GPU udev calls `card`, open or asleep.
     pub(super) fn node_of(&self, card: &str) -> Option<DrmNode> {
-        self.devices
+        self.cards
             .iter()
-            .find(|(_, device)| device.card == card)
+            .find(|(_, each)| each.name == card)
             .map(|(node, _)| *node)
             .or_else(|| {
-                self.asleep
+                self.devices
                     .iter()
-                    .find(|(_, asleep)| asleep.card == card)
+                    .find(|(_, device)| device.card == card)
                     .map(|(node, _)| *node)
             })
     }
@@ -195,37 +138,6 @@ pub(crate) fn describe_gpus(state: &mut Dashi) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn holds(screens: usize, buffers: usize, kept: bool) -> Holds {
-        Holds {
-            screens,
-            buffers,
-            kept,
-        }
-    }
-
-    #[test]
-    fn a_screen_or_the_shell_holds_a_gpu_and_buffers_hold_it_while_they_live() {
-        assert_eq!(holds(1, 0, false).next(), Next::Stay);
-        assert_eq!(holds(0, 0, true).next(), Next::Stay);
-        assert_eq!(holds(0, 2, false).next(), Next::Wait);
-        assert_eq!(holds(0, 0, false).next(), Next::Sleep);
-    }
-
-    #[test]
-    fn a_change_wakes_a_gpu_with_a_screen_and_looks_only_after_it_slept_a_while() {
-        assert!(look_on_change(true, Some(Duration::from_secs(1))));
-        assert!(!look_on_change(false, Some(Duration::from_secs(1))));
-        assert!(look_on_change(false, Some(QUIET_AFTER_SLEEP)));
-        assert!(look_on_change(false, None));
-    }
-
-    #[test]
-    fn a_failed_wake_for_a_buffer_is_not_tried_again_at_once() {
-        assert!(may_wake_for_buffer(None));
-        assert!(!may_wake_for_buffer(Some(Duration::from_secs(2))));
-        assert!(may_wake_for_buffer(Some(BUFFER_RETRY)));
-    }
 
     #[test]
     fn card_names_come_from_card_nodes_only() {
