@@ -4,7 +4,9 @@
  * went up while the chip's panel was closed. Pure: main.tsx posts them.
  */
 
+import { iconPath } from "../../apps.ts";
 import type { NotifyInput } from "../../notifications/types.ts";
+import { harnessIconName } from "./harness-icons.ts";
 import { type RunQuestion, type RunView, summaryLines } from "./store.ts";
 import { cut } from "./words.ts";
 
@@ -13,7 +15,8 @@ export const FOLLOW_UP = "follow-up";
 
 const base = (run: RunView): Omit<NotifyInput, "summary" | "body" | "actions"> => ({
   appName: run.harnessName,
-  appIcon: "",
+  // Its harness's mark on a shiso tile (shell/icons/).
+  appIcon: iconPath(harnessIconName(run.harness)),
   urgency: "normal",
   expireTimeout: -1,
   imagePath: "",

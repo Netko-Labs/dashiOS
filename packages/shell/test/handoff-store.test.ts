@@ -174,7 +174,13 @@ describe("the menu bar's chip", () => {
     start(runs);
     expect(chipState(runs.getSnapshot())?.words).toBe("Claude Code · Starting");
     runs.event("run1", { kind: "call", id: "a", tool: "sign_in", input: { site: "bodytech.com.co" } });
-    expect(chipState(runs.getSnapshot())).toEqual({ words: "Claude Code · Signing in to bodytech.com.co", attention: false, count: 1, run: "run1" });
+    expect(chipState(runs.getSnapshot())).toEqual({
+      words: "Claude Code · Signing in to bodytech.com.co",
+      attention: false,
+      count: 1,
+      run: "run1",
+      harness: "claude-code",
+    });
   });
 
   test("two: how many, and the newest's words", () => {
@@ -194,7 +200,7 @@ describe("the menu bar's chip", () => {
     time.tick(1);
     start(runs, "b");
     runs.ask("a", question);
-    expect(chipState(runs.getSnapshot())).toEqual({ words: "2 agents · Codex needs you", attention: true, count: 2, run: "a" });
+    expect(chipState(runs.getSnapshot())).toEqual({ words: "2 agents · Codex needs you", attention: true, count: 2, run: "a", harness: "codex" });
   });
 });
 

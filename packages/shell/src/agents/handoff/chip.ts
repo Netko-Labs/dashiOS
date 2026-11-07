@@ -17,6 +17,8 @@ export interface ChipState {
   count: number;
   /** The run the chip speaks for (the panel opens on it). */
   run: string;
+  /** Its harness, whose mark the chip shows. */
+  harness: string;
 }
 
 /** What one run is doing, after its harness's name: "Opening x", or "Starting". */
@@ -30,8 +32,8 @@ export function chipState(runs: readonly RunView[]): ChipState | null {
   const count = working.length;
   if (waiting) {
     const words = `${waiting.harnessName} needs you`;
-    return { words: count > 1 ? `${count} agents · ${words}` : words, attention: true, count, run: waiting.id };
+    return { words: count > 1 ? `${count} agents · ${words}` : words, attention: true, count, run: waiting.id, harness: waiting.harness };
   }
   const words = count > 1 ? `${count} agents · ${newest.harnessName} is ${lowerFirst(doing(newest))}` : `${newest.harnessName} · ${doing(newest)}`;
-  return { words, attention: false, count, run: newest.id };
+  return { words, attention: false, count, run: newest.id, harness: newest.harness };
 }

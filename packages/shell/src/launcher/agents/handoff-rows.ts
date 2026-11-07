@@ -15,10 +15,10 @@
 
 import type { HarnessId } from "../../agents/ask/answerer.ts";
 import type { TaskContext } from "../../agents/handoff/grants.ts";
+import { harnessGlyph } from "../../agents/handoff/harness-icons.ts";
 import type { HandoffHarness } from "../../agents/handoff/service.ts";
 import { isWorking, progressWords, type RunView, statusWords } from "../../agents/handoff/store.ts";
 import { cut } from "../../agents/handoff/words.ts";
-import { SPARKLE } from "../../settings-app/glyphs.ts";
 import type { Store } from "../host.ts";
 import { fold } from "../ranking/fold.ts";
 import type { Row } from "../row-model.ts";
@@ -94,7 +94,7 @@ export function handoffRow(harness: HandoffHarness, index: number, query: string
     detail: signedOut ? "isn't signed in · Return opens Terminal" : index === 0 ? "works in the background · signs in through Dashi" : harness.uses,
     kind: "",
     ...(index > 0 && index < 10 ? { shortcut: `⌥${index}` } : {}),
-    icon: { glyph: SPARKLE },
+    icon: { glyph: harnessGlyph(harness.id) },
     agent: "ask",
     action: {
       kind: "agent",
@@ -115,7 +115,7 @@ export function runRow(run: RunView): Row {
     title: cut(run.request, 44),
     detail: statusWords(run),
     kind: isWorking(run) && !run.question ? progressWords(run) : "",
-    icon: { glyph: SPARKLE },
+    icon: { glyph: harnessGlyph(run.harness) },
     agent: "dot",
     ...(isWorking(run) ? { stop: true as const } : {}),
     ...(run.question ? { attention: true as const } : {}),

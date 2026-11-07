@@ -33,6 +33,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalSt
 import type { Outcome } from "./actions/types.ts";
 import type { HarnessId } from "./agents/ask/answerer.ts";
 import { contextPrompt, NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
+import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
 import { cut } from "./agents/handoff/words.ts";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
@@ -1065,7 +1066,9 @@ export function Launcher(props: LauncherProps) {
   }
   // An Ask's plan: the spark in place of the magnifier, the request as the chip, the field for a follow-up.
   const taskField = mode.kind === "task" ? agentField(task, filter, colors.agent) : null;
-  const sparkGlyph = taskField?.glyph ?? agentField(undefined, "", colors.agent).glyph;
+  // The grants card and words to a run: that harness's mark, in shiso, where the magnifier was.
+  const fieldHarness = mode.kind === "grants" ? mode.harness : mode.kind === "message" ? messaged?.harness : undefined;
+  const sparkGlyph = { markup: harnessGlyph(fieldHarness), color: colors.agent };
   // The agents' keys the launcher takes now (launcher/keys.ts `ExtraKeys`).
   const selectedAct = mode.kind === "search" && selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
   const extraKeys: ExtraKeys = {

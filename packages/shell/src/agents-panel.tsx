@@ -12,18 +12,20 @@ import { useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { chipState } from "./agents/handoff/chip.ts";
+import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
 import { type AgentRuns, CARD_STEPS, isWorking, progressWords, type RunQuestion, type RunView } from "./agents/handoff/store.ts";
 import { cut } from "./agents/handoff/words.ts";
 import { KeyCatcher } from "./overlay.tsx";
-import { SPARKLE } from "./settings-app/glyphs.ts";
 
 export const AGENTS_PANEL = { width: 380, padding: 6, radius: 12 } as const;
+/** The chip's harness mark, where an 8 px dot was. */
+const CHIP_GLYPH = 12;
 
 export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): readonly RunView[] {
   return useSyncExternalStore(runs.subscribe, runs.getSnapshot);
 }
 
-/** The menu bar's chip: shiso while agents work, amber (broth) while one needs you; a click opens the panel. */
+/** The menu bar's chip: its run's harness mark and words, shiso while agents work, amber (broth) while one needs you; a click opens the panel. */
 export function AgentsChip({ runs, open, onPress }: { runs: Pick<AgentRuns, "subscribe" | "getSnapshot">; open: boolean; onPress: (right: number) => void }) {
   const colors = useColors();
   const chip = chipState(useRuns(runs));
@@ -45,7 +47,7 @@ export function AgentsChip({ runs, open, onPress }: { runs: Pick<AgentRuns, "sub
         backgroundColor: chip.attention ? colors.brothWash : open ? colors.agent : colors.agentWash,
       }}
     >
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: chip.attention ? colors.broth : colors.agent }} />
+      <Svg markup={harnessGlyph(chip.harness)} size={CHIP_GLYPH} color={chip.attention ? colors.broth : open ? "#ffffff" : colors.agent} />
       <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: chip.attention ? colors.broth : open ? "#ffffff" : colors.agentInk }}>
         {chip.words}
       </Text>
@@ -140,7 +142,7 @@ function RunCard({ run, now, first, focused, actions }: { run: RunView; now: num
       }}
     >
       <View style={{ width: 28, height: 28, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: colors.agentWash }}>
-        <Svg markup={SPARKLE} size={15} color={colors.agent} />
+        <Svg markup={harnessGlyph(run.harness)} size={15} color={colors.agent} />
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 2 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
