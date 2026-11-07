@@ -8,7 +8,7 @@ import { CalendarModel } from "../apps/calendar/model.ts";
 import { CalendarStore } from "../apps/calendar/store.ts";
 import { CalendarWindow } from "../apps/calendar/view.tsx";
 
-// The + button, on a stand-in for the Metal host.
+// The + button and naming in place, on a stand-in for the Metal host.
 
 let dir = "";
 let model: CalendarModel;
@@ -64,4 +64,18 @@ test("the + button's new event is scrolled into sight, wherever the hours were",
     ["hours", revealOffset(9 * 60)],
   ]);
   expect(revealOffset(9 * 60)).toBe(HOUR_HEIGHT * 8);
+});
+
+test("after naming an event in place, the keys are the grid's again", async () => {
+  await open("month");
+  await emit({ type: "press", nodeId: id("day:2026-11-23") });
+  await emit({ type: "press", nodeId: id("day:2026-11-23") });
+  const whileNaming = id("keys");
+  await emit({ type: "change", nodeId: id("pending-title"), value: "Holiday" });
+  await emit({ type: "submit", nodeId: id("pending-title"), value: "Holiday" });
+  expect(root.nodeId("pending-title")).toBeUndefined();
+  // A new key sink: Metal gives the window the keyboard back when one appears.
+  expect(id("keys")).not.toBe(whileNaming);
+  await emit(key("right"));
+  expect(model.getSnapshot().selected).toBe("2026-11-24");
 });
