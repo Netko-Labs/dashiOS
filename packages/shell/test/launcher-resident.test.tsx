@@ -39,6 +39,7 @@ function fakeHosts() {
       toplevel() {},
       unlock() {},
       setTitle() {},
+      setSize() {},
       open: (window: NativeWindowOptions) => lines.push(`open ${window.title}`),
     };
     return host as NativeHostTransport;

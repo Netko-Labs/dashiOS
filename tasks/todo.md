@@ -42,7 +42,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4; `feat/0.5-terminal`, VM: not yet)
 - [x] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6; `feat/0.5-preview`, VM: not yet)
   - Later, from the roast: find, links and the outline in a PDF; password PDFs (poppler takes the password only on its command line); markup and crop; a slideshow; animated GIFs; writing a rotation into the file (lossless JPEG); tabs or Open in New Window; ⌃-wheel and pinch zoom (mirin: modifiers on `wheel`); the window's real device scale (mirin: the host reports it); File › Open Recent as a submenu (the menus channel has no submenus)
-- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+- [x] Calculator's expression line and tape; a window size that behaves (M; LA-3; `feat/0.5-calculator`, mirin: `mirin-calculator.patch` (minSize, setSize), VM: not yet)
 - [x] Wave 1's nits from the VM reviews (11–14): the bar names an Access dialog; log-out asks one app at a time; no stray kombu cell in Terminal; PopUpButton and Slider take the keyboard; the Dock's Quit asks the app's question; "snip" is Screenshot… and the screenshots stay together; ⇧❖5 leaves an agent's recording running; record_screen's real length (S; `fix/0.5-wave1-nits`, VM: not yet)
 
 ## Wave 3 · Launcher and agents

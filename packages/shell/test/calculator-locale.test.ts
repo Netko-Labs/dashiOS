@@ -2,22 +2,17 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type CalcKey, INITIAL, pressAll } from "../apps/calculator/engine.ts";
-import { copyText, displayText, formatNumber, formatTyped, parsePasted } from "../apps/calculator/format.ts";
-import { calcKeysFor, keyForChar } from "../apps/calculator/keyboard.ts";
-import { CALCULATOR_SIZE, DISPLAY, displayInsets, GAP, KEY, PAD } from "../apps/calculator/layout.ts";
-import { EN_US, groupDigits, numberLocale, numberLocaleTag, readNumberLocale } from "../apps/calculator/locale.ts";
+import { copyNumber, formatResult, parsePasted } from "../apps/calculator/format.ts";
+import { EMPTY_LINE, type Line, paste, typeChar } from "../apps/calculator/line.ts";
+import { EN_US, groupDigits, type NumberLocale, numberLocale, numberLocaleTag, readNumberLocale } from "../apps/calculator/locale.ts";
 
 const DE = numberLocale("de-DE");
 const FR = numberLocale("fr-FR");
 const CH = numberLocale("de-CH");
 const IN = numberLocale("en-IN");
 
-/** Types `text` on the keyboard, one key at a time, in `locale`. */
-const typed = (text: string, locale = EN_US) => {
-  const keys = [...text].flatMap((char) => calcKeysFor({ kind: "text", text: char }, locale));
-  return pressAll(INITIAL, keys);
-};
+/** Types `text` into an empty line, one key at a time, in `locale`. */
+const typed = (text: string, locale: NumberLocale = EN_US): Line => [...text].reduce((line, char) => typeChar(line, char, locale), EMPTY_LINE);
 
 describe("number locale", () => {
   test("separators come from the locale", () => {
@@ -62,50 +57,46 @@ describe("number locale", () => {
   });
 });
 
-describe("display", () => {
-  test("a typed entry keeps what was typed, in the locale's marks", () => {
-    expect(formatTyped("-1234.50")).toBe("-1,234.50");
-    expect(formatTyped("-1234.50", DE)).toBe("-1.234,50");
-    expect(formatTyped("0.", DE)).toBe("0,");
+describe("results", () => {
+  test("written the locale's way, to 15 digits, without a double's noise", () => {
+    expect(formatResult(1234567.891)).toBe("1,234,567.891");
+    expect(formatResult(1234567.891, DE)).toBe("1.234.567,891");
+    expect(formatResult(1 / 3)).toBe("0.333333333333333");
+    expect(formatResult(0.1 + 0.2)).toBe("0.3");
+    expect(formatResult(-5)).toBe("−5");
+    expect(formatResult(0)).toBe("0");
   });
 
-  test("results are rounded to the display and written the locale's way", () => {
-    expect(formatNumber(1234567.891)).toBe("1,234,567.89");
-    expect(formatNumber(1234567.891, DE)).toBe("1.234.567,89");
-    expect(formatNumber(1 / 3, DE)).toBe("0,33333333");
-    expect(formatNumber(1.2345678e15, DE)).toBe("1,234568e15");
-    expect(formatNumber(Number.NaN, DE)).toBe("Error");
+  test("past what 15 digits hold, in scientific notation", () => {
+    expect(formatResult(1.2345678e21)).toBe("1.2345678e21");
+    expect(formatResult(1.5e21, DE)).toBe("1,5e21");
+    expect(formatResult(2.5e-9)).toBe("2.5e-9");
   });
 
-  test("copy writes no grouping, the locale's decimal mark, and pastes back to the same number", () => {
-    const state = pressAll(INITIAL, [{ kind: "number", value: 1234.5 }]);
-    expect(copyText(state)).toBe("1234.5");
-    expect(copyText(state, DE)).toBe("1234,5");
-    for (const locale of [EN_US, DE, FR, CH, IN]) expect(parsePasted(copyText(state, locale), locale)).toBe(1234.5);
+  test("copy is what is shown, ungrouped, with a plain minus, and pastes back to the same number", () => {
+    expect(copyNumber(1234.5)).toBe("1234.5");
+    expect(copyNumber(1234.5, DE)).toBe("1234,5");
+    expect(copyNumber(-2)).toBe("-2");
+    expect(copyNumber(1 / 3)).toBe("0.333333333333333");
+    for (const locale of [EN_US, DE, FR, CH, IN]) expect(parsePasted(copyNumber(1234.5, locale), locale)).toBe(1234.5);
   });
 });
 
 describe("keyboard", () => {
   test("typing 1,000 in English is a thousand, not 1.000", () => {
-    const state = typed("1,000");
-    expect(displayText(state)).toBe("1,000");
-    expect(state.typed).toBe("1000");
+    expect(typed("1,000").text).toBe("1,000");
+    expect(typed("1000").text).toBe("1,000");
   });
 
   test("in German the comma is the point and the period groups", () => {
-    expect(displayText(typed("1,5", DE), DE)).toBe("1,5");
-    expect(typed("1.000", DE).typed).toBe("1000");
+    expect(typed("1,5", DE).text).toBe("1,5");
+    expect(typed("1.000", DE).text).toBe("1.000");
+    expect(typed("12345,5", DE).text).toBe("12.345,5");
   });
 
   test("where neither mark groups (French), both are the point", () => {
-    expect(keyForChar(".", FR)).toEqual({ kind: "decimal" });
-    expect(keyForChar(",", FR)).toEqual({ kind: "decimal" });
-    expect(keyForChar(",", EN_US)).toBeNull();
-    expect(keyForChar(".", DE)).toBeNull();
-  });
-
-  test("the decimal key shows the locale's mark", () => {
-    expect(displayText(pressAll(INITIAL, [{ kind: "digit", digit: "2" }, { kind: "decimal" }, { kind: "digit", digit: "5" }]), DE)).toBe("2,5");
+    expect(typed("2.5", FR).text).toBe("2,5");
+    expect(typed("2,5", FR).text).toBe("2,5");
   });
 });
 
@@ -114,7 +105,7 @@ describe("paste", () => {
     expect(parsePasted("Total: 1,234.50")).toBe(1234.5);
     expect(parsePasted("1.234,50 €", DE)).toBe(1234.5);
     expect(parsePasted("$ 12")).toBe(12);
-    expect(parsePasted("1 234,5", FR)).toBe(1234.5);
+    expect(parsePasted("1\u202f234,5", FR)).toBe(1234.5);
     expect(parsePasted("1'234.5", CH)).toBe(1234.5);
     expect(parsePasted("12,34,567.5", IN)).toBe(1234567.5);
     expect(parsePasted("−42")).toBe(-42);
@@ -132,7 +123,7 @@ describe("paste", () => {
     expect(parsePasted("0,123")).toBeNull();
   });
 
-  test("text that is not one number is nothing", () => {
+  test("text that is not one number is nothing to parsePasted", () => {
     expect(parsePasted("")).toBeNull();
     expect(parsePasted("cat")).toBeNull();
     expect(parsePasted("12 + 3")).toBeNull();
@@ -140,25 +131,14 @@ describe("paste", () => {
     expect(parsePasted("1e999")).toBeNull();
   });
 
-  test("Ctrl+V (text in one change) is read as one number, never typed key by key", () => {
-    const keys = (text: string, locale = EN_US): CalcKey[] => calcKeysFor({ kind: "text", text }, locale);
-    expect(keys("Total: 1,234.50")).toEqual([{ kind: "number", value: 1234.5 }]);
-    // Letters are not keys in a paste: "c" would have cleared, "x" multiplied.
-    expect(keys("calc 3x4")).toEqual([]);
-    expect(keys("12×3=")).toEqual([]);
-    expect(keys("1,5", DE)).toEqual([{ kind: "number", value: 1.5 }]);
-  });
-});
-
-describe("layout", () => {
-  test("the keypad's grid sets the window", () => {
-    expect(CALCULATOR_SIZE.width).toBe(PAD * 2 + KEY * 4 + GAP * 3);
-    expect(CALCULATOR_SIZE.height).toBe(DISPLAY + KEY * 5 + GAP * 4 + PAD);
-  });
-
-  test("the number's digits end on the keypad's edge and stand one gap above the keys", () => {
-    // At the largest size the "0" ink is 4 px inside its box and 1 px above its foot.
-    expect(displayInsets(52)).toEqual({ right: PAD - 4, bottom: GAP - 1 });
-    expect(displayInsets(22)).toEqual({ right: PAD - 2, bottom: GAP });
+  test("a paste is a number or a sum, never keys: letters are refused, not typed", () => {
+    expect(paste(EMPTY_LINE, "Total: 1,234.50", EN_US).line.text).toBe("1,234.5");
+    expect(paste(EMPTY_LINE, "12×3+4", EN_US).line.text).toBe("12 × 3 + 4");
+    expect(paste(EMPTY_LINE, "1.250 * 12", DE).line.text).toBe("1.250 × 12");
+    expect(paste(EMPTY_LINE, "1,5", DE).line.text).toBe("1,5");
+    // "c" would have cleared and "x" multiplied: a paste with letters is refused whole.
+    expect(paste(EMPTY_LINE, "calc 3x4", EN_US)).toEqual({ line: EMPTY_LINE, note: "refused-paste" });
+    expect(paste(EMPTY_LINE, "1,5 + 2", EN_US).note).toBe("refused-paste");
+    expect(paste(EMPTY_LINE, "2026-11-05", EN_US).line.text).toBe("2,026 − 11 − 5");
   });
 });

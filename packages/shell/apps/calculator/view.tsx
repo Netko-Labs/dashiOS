@@ -1,176 +1,233 @@
 /**
- * The Calculator's window: the display on top (it is also where the window
- * is grabbed, under the window controls), then the keys on a grid of rounded
- * squares: digits on the card ground, functions and operators on a quiet
- * wash, and kombu only where it means something: the operator waiting for a
- * number (it is chosen) and =, the one primary key. Numbers are written the
- * way the person's region writes them (locale.ts). A right-click on the
- * display offers Copy and Paste, and so does the menu bar's Edit menu, with
- * Clear.
+ * The Calculator's window: the expression line on top, editable like any
+ * field (KB-6), with what it works out to under it; the keypad below, which
+ * types into the line as the keyboard does; and, when shown, the tape beside
+ * it (View ▸ Show Tape), which widens the window rather than squeezing the
+ * keys. The display is also where the window is grabbed, under the window
+ * controls. Numbers are written the way the person's region writes them
+ * (locale.ts). The tape, whether it shows, and the window's size are
+ * remembered (store.ts).
  */
 
-import { KeySink, type MenuItem, type Palette, PopupMenu, type Surface, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
-import { useReducer, useState } from "react";
-import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
-import { type CalcKey, type CalcState, clearLabel, INITIAL, type Operator, press } from "./engine.ts";
-import { copyText, displayFontSize, displayText } from "./format.ts";
-import { calcKeysFor, pasteKeys } from "./keyboard.ts";
-import { CALCULATOR_SIZE, DISPLAY, DISPLAY_WIDTH, displayInsets, GAP, KEY, PAD } from "./layout.ts";
+import { PopupMenu, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
+import { Text, TextInput, View } from "@mirinjs/metal";
+import { useEffect, useReducer, useRef, useState } from "react";
+import { type Clipboard, type Size, systemClipboard, useAppMenus } from "../kit/index.ts";
+import { copyNumber, fitFontSize } from "./format.ts";
+import { Keypad } from "./keypad.tsx";
+import { DISPLAY, fieldWidth, GAP, keySide, LINE_LARGEST, LINE_SMALLEST, MIN_SIZE, PAD, sizeWithTape, TAPE_WIDTH } from "./layout.ts";
+import { liveResult, selectedText } from "./line.ts";
 import { type NumberLocale, useNumberLocale } from "./locale.ts";
 import { calculatorMenus } from "./menus.ts";
+import { calculate, initialState } from "./state.ts";
+import { FRESH, type Remembered, writeRemembered } from "./store.ts";
+import { type MenuAt, Tape } from "./tape.tsx";
+import { resultWords } from "./words.ts";
 
-export { CALCULATOR_SIZE } from "./layout.ts";
+/** How long a key the keyboard typed stays lit. */
+const LIT_MS = 120;
+/** How long a word under the line ("Copied") stays. */
+const NOTICE_MS = 2000;
+/** Saving waits for the window to stop changing size. */
+const SAVE_MS = 400;
+const CLEAR = "#00000000";
 
-/** A key's corners: the window's radius, so the keys read as tiles of the window rather than buttons floating on it. */
-const KEY_RADIUS = 12;
-
-interface KeyLook {
-  ground: string;
-  hover: string;
-  ink: string;
-  edge?: string;
+export interface CalculatorWindowProps {
+  clipboard?: Clipboard;
+  locale?: NumberLocale;
+  /** What the last launch left: the tape, whether it showed, the window's size. */
+  remembered?: Remembered;
+  /** Asks for a window size: the tape widens the window when it shows. */
+  resizeWindow?: (size: Size) => void;
+  /** Keeps what is remembered; the state file by default. */
+  remember?: (remembered: Remembered) => void;
 }
 
-interface Looks {
-  digit: KeyLook;
-  /** AC, ±, %, and the operators at rest. */
-  quiet: KeyLook;
-  /** = and the operator waiting for a number. */
-  strong: KeyLook;
-}
-
-/** The keys' colors, all from the palette and the surfaces (no hex of their own). */
-function looksFrom(colors: Palette, surface: Surface): Looks {
-  return {
-    digit: { ground: surface.card, hover: surface.field, ink: colors.text, edge: colors.separator },
-    quiet: { ground: colors.button, hover: colors.separator, ink: colors.text },
-    strong: { ground: colors.selection, hover: colors.selection, ink: "#ffffff" },
-  };
-}
-
-interface KeySpec {
-  id: string;
-  label: string;
-  key: CalcKey;
-  kind: "fn" | "digit" | "op";
-  /** Columns it spans (the 0 key spans two). */
-  span?: 2;
-}
-
-const op = (o: Operator, label: string, id: string): KeySpec => ({ id, label, key: { kind: "operator", op: o }, kind: "op" });
-const digit = (d: string, span?: 2): KeySpec => ({ id: d, label: d, key: { kind: "digit", digit: d }, kind: "digit", ...(span ? { span } : {}) });
-
-function rows(state: CalcState, locale: NumberLocale): KeySpec[][] {
-  return [
-    [
-      { id: "clear", label: clearLabel(state), key: { kind: "clear" }, kind: "fn" },
-      { id: "negate", label: "±", key: { kind: "negate" }, kind: "fn" },
-      { id: "percent", label: "%", key: { kind: "percent" }, kind: "fn" },
-      op("÷", "÷", "divide"),
-    ],
-    [digit("7"), digit("8"), digit("9"), op("×", "×", "multiply")],
-    [digit("4"), digit("5"), digit("6"), op("-", "−", "minus")],
-    [digit("1"), digit("2"), digit("3"), op("+", "+", "plus")],
-    [
-      digit("0", 2),
-      { id: "decimal", label: locale.decimal, key: { kind: "decimal" }, kind: "digit" },
-      { id: "equals", label: "=", key: { kind: "equals" }, kind: "op" },
-    ],
-  ];
-}
-
-function Key({ spec, look, onPress }: { spec: KeySpec; look: KeyLook; onPress: () => void }) {
-  const width = spec.span === 2 ? KEY * 2 + GAP : KEY;
-  return (
-    <View
-      testID={`key:${spec.id}`}
-      onPress={onPress}
-      style={{
-        width,
-        height: KEY,
-        borderRadius: KEY_RADIUS,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: look.ground,
-        hoverBackgroundColor: look.hover,
-        ...(look.edge ? { borderWidth: 1, borderColor: look.edge } : {}),
-      }}
-    >
-      <Text style={{ fontSize: spec.kind === "op" ? 26 : spec.kind === "fn" ? 20 : 24, fontWeight: spec.kind === "op" ? "medium" : "normal", color: look.ink }}>
-        {spec.label}
-      </Text>
-    </View>
-  );
-}
-
-export function CalculatorWindow({ clipboard = systemClipboard(), locale: given }: { clipboard?: Clipboard; locale?: NumberLocale }) {
+export function CalculatorWindow({
+  clipboard: givenClipboard,
+  locale: given,
+  remembered = FRESH,
+  resizeWindow,
+  remember = writeRemembered,
+}: CalculatorWindowProps) {
+  // wl-copy and wl-paste are looked up once, not on every render.
+  const [clipboard] = useState(() => givenClipboard ?? systemClipboard());
   const colors = useColors();
   const surface = useSurface();
-  const looks = looksFrom(colors, surface);
   const inset = useTitleBarInset();
   const followed = useNumberLocale();
   const locale = given ?? followed;
-  const [state, dispatch] = useReducer(press, INITIAL);
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const text = displayText(state, locale);
-  const fontSize = displayFontSize(text, DISPLAY_WIDTH);
-  const insets = displayInsets(fontSize);
+  const [state, dispatch] = useReducer(calculate, remembered.tape, initialState);
+  const [showsTape, setShowsTape] = useState(remembered.showsTape);
+  const [size, setSize] = useState<Size>(remembered.size ?? MIN_SIZE);
+  const [room, setRoom] = useState(MIN_SIZE.width - PAD * 2);
+  const [menu, setMenu] = useState<MenuAt | null>(null);
+  // A new field asks for the keyboard (autoFocus): how the line takes it back after a menu.
+  const [fieldKey, setFieldKey] = useState(0);
+  const { line } = state;
 
-  const canCopy = clipboard.canWrite && !state.error;
-  const copy = (): void => void clipboard.writeText(copyText(state, locale));
-  // ❖V, Edit ▸ Paste, and the display's menu; Ctrl+V comes through the sink and reads the same way (keyboard.ts).
-  const paste = (): void => void clipboard.readText().then((pasted) => pasteKeys(pasted ?? "", locale).forEach(dispatch));
-  const items: MenuItem[] = [
-    { label: "Copy", keys: "❖C", disabled: !canCopy, onPress: copy },
-    { label: "Paste", keys: "❖V", onPress: paste },
-  ];
-  // The menu bar's Edit menu (src/app-menus/): ❖C and ❖V are real keys, chosen by the shell.
-  const { menus, run } = calculatorMenus({ canCopy, allClear: clearLabel(state) === "AC", actions: { copy, paste, clear: () => dispatch({ kind: "clear" }) } });
+  useEffect(() => {
+    if (state.lit === null) return;
+    const timer = setTimeout(() => dispatch({ type: "unlit" }), LIT_MS);
+    return () => clearTimeout(timer);
+  }, [state.lit]);
+  useEffect(() => {
+    if (state.notice === null) return;
+    const timer = setTimeout(() => dispatch({ type: "notice", notice: null }), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [state.notice]);
+  const saved = useRef<string | null>(null);
+  useEffect(() => {
+    const next: Remembered = { tape: state.tape, showsTape, size };
+    const key = JSON.stringify(next);
+    if (saved.current === null) {
+      // What was just read needs no writing back.
+      saved.current = JSON.stringify(remembered);
+    }
+    if (key === saved.current) return;
+    const timer = setTimeout(() => {
+      saved.current = key;
+      remember(next);
+    }, SAVE_MS);
+    return () => clearTimeout(timer);
+  }, [state.tape, showsTape, size, remember, remembered]);
+
+  const outcome = liveResult(line, locale);
+  const resultValue = outcome.kind === "value" ? outcome.value : line.carry && line.text === line.carry.text ? line.carry.value : null;
+  const copy = (text: string): void => {
+    void clipboard.writeText(text).then((done) => done && dispatch({ type: "notice", notice: "copied" }));
+  };
+  const copyResult = (): void => {
+    if (resultValue !== null) copy(copyNumber(resultValue, locale));
+  };
+  const paste = (): void => {
+    void clipboard.readText().then((text) => dispatch({ type: "paste", text: text ?? "", locale }));
+  };
+  const toggleTape = (): void => {
+    const next = !showsTape;
+    setShowsTape(next);
+    resizeWindow?.(sizeWithTape(size, next));
+  };
+  const clearTape = (): void => dispatch({ type: "clear-tape" });
+  const { menus, run } = calculatorMenus({
+    hasSelection: line.selection.start !== line.selection.end,
+    canCopy: clipboard.canWrite,
+    hasResult: resultValue !== null,
+    showsTape,
+    hasTape: state.tape.length > 0,
+    actions: {
+      cut: () => {
+        copy(selectedText(line));
+        dispatch({ type: "cut", locale });
+      },
+      copy: () => copy(selectedText(line)),
+      paste,
+      selectAll: () => dispatch({ type: "select-all" }),
+      copyResult,
+      clear: () => dispatch({ type: "clear" }),
+      toggleTape,
+      clearTape,
+    },
+  });
   useAppMenus(menus, run);
 
+  const closeMenu = (): void => {
+    setMenu(null);
+    setFieldKey((key) => key + 1);
+  };
+  const keypadWidth = size.width - (showsTape ? TAPE_WIDTH : 0);
+  const side = keySide(keypadWidth, size.height);
+  const fontSize = fitFontSize(line.text || "0", room, LINE_LARGEST, LINE_SMALLEST);
+  const words = resultWords(state.notice ? { kind: "notice", notice: state.notice } : outcome, locale);
+
   return (
-    // The keypad keeps its size, centered, when the window is zoomed or full screen.
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: surface.window, position: "relative" }}>
-      {/* The menu takes the keys (Esc) while it is open; mounted again after, the sink asks for the keyboard back. */}
-      {menu === null && <KeySink onKey={(input) => calcKeysFor(input, locale).forEach(dispatch)} />}
-      <View style={{ width: CALCULATOR_SIZE.width, height: CALCULATOR_SIZE.height, flexShrink: 0, flexDirection: "column" }}>
+    <View
+      onLayout={(bounds) => {
+        const next = { width: Math.round(bounds.width), height: Math.round(bounds.height) };
+        setSize((old) => (old.width === next.width && old.height === next.height ? old : next));
+      }}
+      style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative" }}
+    >
+      <View style={{ flex: 1, flexDirection: "column" }}>
         <View
           testID="display"
           dragRegion
-          onContextMenu={(point) => setMenu(point)}
+          onLayout={(bounds) => setRoom(Math.max(LINE_SMALLEST, Math.round(bounds.width) - PAD * 2))}
+          onContextMenu={(point) =>
+            setMenu({
+              x: point.x,
+              y: point.y,
+              items: [
+                { label: "Copy Result", keys: "⇧❖C", disabled: resultValue === null || !clipboard.canWrite, onPress: copyResult },
+                { label: "Paste", keys: "❖V", onPress: paste },
+              ],
+            })
+          }
           style={{
             height: DISPLAY,
             flexShrink: 0,
             flexDirection: "column",
             justifyContent: "flex-end",
             alignItems: "flex-end",
+            gap: 2,
             paddingLeft: PAD,
-            paddingRight: insets.right,
+            paddingRight: PAD,
             paddingTop: inset.top,
-            paddingBottom: insets.bottom,
+            paddingBottom: GAP,
           }}
         >
-          {/* A line as tall as the font: displayInsets() places the digits' foot from the box's bottom, which a taller
-              default line would push down under the keypad. */}
-          <Text numberOfLines={1} style={{ fontSize, lineHeight: fontSize, color: colors.text, textAlign: "right" }}>
-            {text}
-          </Text>
+          <TextInput
+            key={fieldKey}
+            testID="line"
+            value={line.text}
+            selection={line.selection}
+            placeholder="0"
+            autoFocus
+            accessibilityLabel="Sum"
+            onChangeText={(text) => dispatch({ type: "field", text, locale })}
+            onSelectionChange={(selection) => dispatch({ type: "select", selection })}
+            onSubmitEditing={() => dispatch({ type: "equals", locale })}
+            onKeyPress={(key) => dispatch(key === "Escape" ? { type: "clear" } : { type: "recall", step: key === "ArrowUp" ? 1 : -1, locale })}
+            style={{
+              width: fieldWidth(line.text, fontSize, room),
+              height: Math.round(fontSize * 1.25),
+              fontSize,
+              padding: 0,
+              color: colors.text,
+              placeholderColor: colors.text,
+              backgroundColor: CLEAR,
+              borderColor: CLEAR,
+              focusBorderColor: CLEAR,
+            }}
+          />
+          <View
+            testID="result"
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={words.text}
+            style={{ height: 22, flexDirection: "row", justifyContent: "flex-end" }}
+          >
+            <Text numberOfLines={1} style={{ fontSize: 17, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}>
+              {words.text}
+            </Text>
+          </View>
         </View>
-        <View style={{ flexDirection: "column", gap: GAP, paddingHorizontal: PAD, paddingBottom: PAD }}>
-          {rows(state, locale).map((row, index) => (
-            <View key={index} style={{ flexDirection: "row", gap: GAP }}>
-              {row.map((spec) => {
-                const chosen = spec.key.kind === "operator" && state.awaiting === spec.key.op;
-                const look = chosen || spec.id === "equals" ? looks.strong : spec.kind === "digit" ? looks.digit : looks.quiet;
-                return <Key key={spec.id} spec={spec} look={look} onPress={() => dispatch(spec.key)} />;
-              })}
-            </View>
-          ))}
-        </View>
+        <Keypad locale={locale} side={side} lit={state.lit} onKey={(id) => dispatch({ type: "key", id, locale })} />
       </View>
-      {menu !== null && <PopupMenu x={menu.x} y={menu.y} items={items} onClose={() => setMenu(null)} testID="display-menu" />}
+      {showsTape && (
+        <Tape
+          tape={state.tape}
+          locale={locale}
+          headHeight={inset.top}
+          canCopy={clipboard.canWrite}
+          onUse={(entry) => dispatch({ type: "use", value: entry.value, locale })}
+          onEdit={(index) => dispatch({ type: "recall-entry", index, locale })}
+          onCopy={copy}
+          onCopyResult={(entry) => copy(copyNumber(entry.value, locale))}
+          onClear={clearTape}
+          onMenu={setMenu}
+        />
+      )}
+      {menu !== null && <PopupMenu x={menu.x} y={menu.y} items={menu.items} onClose={closeMenu} testID="calculator-menu" />}
     </View>
   );
 }
