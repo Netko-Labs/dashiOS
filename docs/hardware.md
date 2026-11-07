@@ -2,8 +2,8 @@
 
 `dashi-hardware` is Dashi's one privileged helper for what a laptop's kernel
 exposes: firmware attributes, platform profiles, the charge limit, fan curves,
-the keyboard light, cpufreq boost and EPP, the graphics card's firmware
-limits, and AMD's SMU mailbox (the Curve Optimizer). It is a Rust system
+the keyboard light, the lid's Slash bar (USB), cpufreq boost and EPP, the
+graphics card's firmware limits, and AMD's SMU mailbox (the Curve Optimizer). It is a Rust system
 service (`crates/dashi-hardware`), D-Bus activated on the **system** bus, with
 a polkit action per kind of change. The shell, Settings and applets (ASUS
 Control) call it; nothing else in Dashi writes these files.
@@ -24,7 +24,7 @@ This file is the contract. The service and its callers change with it.
 | Interface | `dev.dashi.Hardware1` |
 | Binary | `/usr/libexec/dashi/dashi-hardware` (`serve` for the service, other subcommands for the CLI) |
 | Unit | `dashi-hardware.service` (system), `Type=dbus`, D-Bus activated |
-| State | `/var/lib/dashi-hardware/` (saved tuning, the boot guard) |
+| State | `/var/lib/dashi-hardware/` (saved tuning, the boot guard, the Slash bar's settings) |
 | Model database | `/usr/share/dashi/models/*.json` (source: `data/models/`) |
 
 ## Knobs
@@ -47,7 +47,7 @@ reported as zero.
 | `gpu-mux` | `u` (0 dGPU only, 1 hybrid) | firmware attribute `gpu_mux_mode`; applies at the next boot | tune |
 
 Fan curves and the Curve Optimizer have their own methods (below), under the
-`tune` action. `everyday` is `allow_active=yes`; `tune` is
+`tune` action; the Slash bar has its own, under `everyday`. `everyday` is `allow_active=yes`; `tune` is
 `auth_admin_keep`.
 
 A `SetMany` whose `tune` knobs all match one of the model's own recipe
@@ -69,9 +69,11 @@ battery never asks for the password. Any other value of a `tune` knob does.
 | `CurveOptimizer` | | `s` JSON | `{"available": bool, "reason": s, "range": [min, max], "perCore": bool, "cores": u, "allCore": i, "perCoreValues": [i]}`; `reason` when unavailable: `unsupported-cpu`, `lockdown`, `rejected`, `not-in-database`. |
 | `SetCurveOptimizer` | `i allCore`, `ai perCore` (empty for all-core only), `u confirmWithin` (s) | `s token` | `tune`. Applied now; reverted to 0 unless `ConfirmTuning(token)` arrives within `confirmWithin` (0 means no countdown, only for re-applying saved values). |
 | `ConfirmTuning` | `s token` | | Keeps the values; saves them for the boot guard. |
-| `ApplySavedTuning` | | `s` JSON | Called by the shell at login and after waking. Applies saved tuning (power limits, the Curve Optimizer, GPU limits) only after a clean boot; returns `{"applied": bool, "reason": s}`. |
+| `ApplySavedTuning` | | `s` JSON | Called by the shell at login and after waking. Sends the Slash bar's saved settings again (always), and applies saved tuning (power limits, the Curve Optimizer, GPU limits) only after a clean boot; returns `{"applied": bool, "reason": s, "slash": bool}` (`slash`: whether saved Slash settings were sent). |
 | `ClearSavedTuning` | | | `tune`. |
 | `BootGuard` | | `s` JSON | `{"cleanBoot": bool, "failedBoots": u, "reset": bool}`; `reset` when two failed boots in a row cleared the saved tuning. |
+| `Slash` | | `s` JSON | The lid's Slash bar ("The Slash bar", below). |
+| `SetSlash` | `a{sv}` | `s` JSON | Any of the bar's keys; validated and clamped, sent, saved; returns `Slash()`'s JSON. `everyday`. `NotSupported` when the machine has no bar or its device isn't there; `InvalidArgs` for an unknown key, a wrong type or an unknown animation. |
 
 ## Signals
 
@@ -107,7 +109,8 @@ Each knob carries `value` plus its range (`min`/`max`, and `unit` when it has
 one) or `choices`; `gpu-mux` adds `pendingReboot` (it applies at the next
 boot). `lighting.keyboard` is the number of brightness steps (`levels`, from
 the model, else the kernel's `max_brightness`) and whether it's RGB;
-`slash`, `aura` and `anime` say whether each USB light is present.
+`slash` is true when the model names a Slash bar and its device is found;
+`aura` and `anime` say whether the model names those USB lights.
 
 ## The model database
 
@@ -150,6 +153,59 @@ the model database gives a range, and a write of 0 is accepted. The SMU
 forgets the offset at reboot and sometimes on resume, so the shell calls
 `ApplySavedTuning` at login and after waking.
 
+## The Slash bar
+
+The lid's light bar on recent ROG laptops (the G14 2024 and 2025, G16, the
+2025 Strix G16) is a USB HID device with no kernel driver of its own; asusd
+used to drive it. dashi-hardware drives it itself, over hidraw, with asusd's
+protocol: the packets are ported from asusctl's `rog-slash` crate
+(`rog-slash/src/usb.rs`, `data.rs`; OpenGamingCollective/asusctl 6.5.0,
+commit `ecd393d`, the same bytes as gitlab.com/asus-linux/asusctl 6.3.8), in
+`crates/dashi-hardware/src/slash/`.
+
+- **Found** by the model database's `lighting.slash.usb` (`0b05:19b6` on the
+  2025 G14): the hidraw node whose `device/uevent` has
+  `HID_ID=0003:<vendor>:<product>` (USB); with several, the one whose report
+  descriptor declares the bar's report id. Looked up on every call, since the
+  node can change when the device comes back.
+- **Written** with `write()` on `/dev/hidrawN`, one packet at a time at the
+  length asusd uses (32 bytes zero-padded for init, on/off, the animation and
+  "save"; 6, 7, 12 or 13 bytes for the rest). Report id `0x5d`, or `0x5e` for
+  the 2024 bar (`0b05:193b`). Nothing is read from it.
+- **Remembered**: the bar can't be read back and forgets at boot, so what the
+  helper last set is kept in its state file (`slash` in `state.json`) and sent
+  again, with asusd's start-up sequence (two init packets, on/off, options,
+  the animation, the boot, sleep, shutdown, battery and low-battery flags),
+  when the service starts and at every `ApplySavedTuning` (the shell calls it
+  at login and after waking). A bar the helper never set is left alone. The
+  first `SetSlash` sends every setting (the bar's state is unknown until then);
+  later ones send only what changed.
+
+`Slash()` returns:
+
+```json
+{
+  "available": true, "reason": "", "device": "hidraw5", "saved": true,
+  "enabled": true, "mode": "bounce", "brightness": 255, "interval": 0,
+  "showOnBoot": true, "showOnShutdown": true, "showOnSleep": true,
+  "showOnBattery": true, "showBatteryWarning": true, "showOnLidClosed": true,
+  "modes": ["static", "bounce", "slash", "loading", "bit-stream", "transmission", "flow", "flux",
+            "phantom", "spectrum", "hazard", "interfacing", "ramp", "game-over", "start", "buzzer"],
+  "limits": {"brightness": [0, 255], "interval": [0, 5]}
+}
+```
+
+or `{"available": false, "reason": "not-in-database" | "no-device"}`. Before
+the first `SetSlash` the values are asusd's defaults (`saved: false`).
+`SetSlash` takes the same keys (`enabled` `b`, `mode` `s`, `brightness` and
+`interval` any integer type, clamped to `limits`, the six `show…` flags
+`b`). As in asusd, a `brightness` without `enabled` turns the bar on above 0
+and off at 0, and turning it on at brightness 0 turns it on at `0x88`.
+`interval` is the pause between plays (0 shortest). The `show…` flags say
+when the bar plays: at boot and shutdown, while asleep, on battery, with the
+lid closed, and the low-battery warning; whether each holds on a given model
+is the firmware's.
+
 ## The boot guard
 
 `dashi-hardware-boot.service` runs early at boot and counts: a boot that
@@ -161,10 +217,12 @@ saved only once confirmed.
 
 ## The CLI
 
-`dashi-hardware describe | get KNOB | set KNOB VALUE | co [--per-core a,b,…] VALUE | fan-curve FAN [POINTS] | boot-guard`,
-for testing on real hardware as root. `--sysfs-root DIR` reads and writes a
+`dashi-hardware describe | get KNOB | set KNOB VALUE | co [--per-core a,b,…] VALUE | fan-curve FAN [POINTS] | slash [set KEY=VALUE… | restore] | boot-guard`,
+for testing on real hardware as root (`slash set mode=flow brightness=200
+showOnSleep=off`; `slash restore` sends the saved settings again). `--sysfs-root DIR` reads and writes a
 fake tree instead of `/sys` (tests, the VM: `data/fixtures/ga403wr/` holds the
-G14's, captured read-only); with it the SMU is simulated.
+G14's, captured read-only); with it the SMU is simulated, and the Slash bar's
+packets are written, one hex line each, to `DIR/.dashi-hardware/slash-hidrawN.log`.
 
 ## cardwire
 
@@ -273,19 +331,20 @@ and sets `Mode` itself.
 
 ## asusd
 
-ASUS's USB lid lighting has no kernel driver: the Slash bar, AniMe Matrix and
-Aura RGB are asusd's (asusctl, Open Gaming Collective,
-<https://github.com/OpenGamingCollective/asusctl>). Everything else the G14
-has is a kernel interface dashi-hardware already drives. So on an ASUS
-machine asusd is installed **for lighting only**, configured to leave the
+ASUS's USB lights other than the Slash bar have no kernel driver either:
+AniMe Matrix and Aura RGB are asusd's (asusctl, Open Gaming Collective,
+<https://github.com/OpenGamingCollective/asusctl>). The Slash bar is
+dashi-hardware's now ("The Slash bar", above), and everything else the G14
+has is a kernel interface dashi-hardware drives, so **the G14 needs no
+asusd**, and ASUS Control doesn't use it. On a model with AniMe or Aura RGB,
+asusd may be installed for those lights only, configured to leave the
 platform profile, EPP and the charge limit to Dashi's recipe (one writer per
-knob). Read from asusctl 6.5.0 (Terra's Fedora build) and upstream's source
-on 2026-11-05.
+knob); it would also drive a Slash bar at its start-up, so the two shouldn't
+both run on a machine with one. Read from asusctl 6.5.0 (Terra's Fedora
+build) and upstream's source on 2026-11-05.
 
 Packaging: Terra (enabled by dashi-release) carries `asusctl`, so Dashi's
-COPR need not. It is installed with ASUS Control (milestone 8), on ASUS
-machines, not before (nothing earlier needs USB lighting). The kernel covers
-the rest from first boot.
+COPR need not. Dashi doesn't install it.
 
 | | |
 | --- | --- |
@@ -313,15 +372,6 @@ In `/etc/asusd/asusd.ron`:
 asusd must not own fan curves either: Dashi writes `asus_custom_fan_curve`
 through the kernel (above). Leave asusd's `fan_curves.ron` at its defaults and
 don't drive its fan interface.
-
-### Slash (the lid bar)
-
-Interface `xyz.ljones.Slash` at `/xyz/ljones` on `xyz.ljones.Asusd`.
-Properties (read-write unless noted): `Enabled` `b`, `Brightness` `y`,
-`Interval` `y`, `Mode` `y` (the animation), and the when-to-show flags
-`ShowOnBoot`, `ShowOnShutdown`, `ShowOnSleep`, `ShowOnBattery`,
-`ShowOnLidClosed`, `ShowBatteryWarning` (all `b`). This is what ASUS
-Control's lighting preview drives.
 
 ### Keyboard and Aura lighting
 

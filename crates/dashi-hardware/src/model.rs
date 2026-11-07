@@ -69,9 +69,8 @@ pub(crate) struct KeyboardLight {
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct UsbLight {
-    /// The lid light's USB id (`0b05:19b6`). Carried for asusd and the shell;
-    /// the helper only reports that the light exists.
-    #[allow(dead_code)]
+    /// The light's USB id (`0b05:19b6`): the Slash bar is found by it
+    /// (`slash/`); for AniMe and Aura the helper only reports that it exists.
     pub(crate) usb: String,
 }
 

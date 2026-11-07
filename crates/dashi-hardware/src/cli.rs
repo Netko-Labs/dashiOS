@@ -7,6 +7,7 @@ use std::process::ExitCode;
 
 use crate::machine::Machine;
 use crate::model::INSTALLED_MODELS;
+use crate::slash::{Change, Input};
 use crate::sysfs::Sysfs;
 
 pub(crate) struct Args {
@@ -49,7 +50,7 @@ pub(crate) fn parse(mut raw: impl Iterator<Item = String>) -> Result<Args, Strin
 fn usage() -> String {
     "dashi-hardware [--sysfs-root DIR] [--models DIR] \
      <describe | get KNOB | set KNOB VALUE | co [--per-core a,b,…] VALUE | \
-     fan-curve FAN [POINTS] | boot-guard | serve | boot | clean>"
+     fan-curve FAN [POINTS] | slash [set KEY=VALUE… | restore] | boot-guard | serve | boot | clean>"
         .to_owned()
 }
 
@@ -116,6 +117,11 @@ pub(crate) fn run(args: &Args) -> ExitCode {
                 ExitCode::from(2)
             }
         },
+        ["slash"] => print_json(&machine.slash_json()),
+        ["slash", "set", pairs @ ..] if !pairs.is_empty() => slash_set(&machine, pairs),
+        ["slash", "restore"] => {
+            print_json(&serde_json::json!({"restored": machine.restore_slash()}))
+        }
         ["boot-guard"] => print_json(&machine.boot_guard()),
         ["curve-optimizer"] => {
             print_json(&machine.curve_optimizer_json(&machine.state().saved_tuning()))
@@ -167,6 +173,25 @@ fn co(machine: &Machine, rest: &[&str]) -> ExitCode {
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
+        Err(e) => fail(e),
+    }
+}
+
+/// `slash set enabled=on mode=flow brightness=200 …`
+fn slash_set(machine: &Machine, pairs: &[&str]) -> ExitCode {
+    let mut change = Change::default();
+    for pair in pairs {
+        let parsed = pair
+            .split_once('=')
+            .ok_or_else(|| format!("{pair}: want KEY=VALUE"))
+            .and_then(|(key, value)| change.put(key, Input::from_text(value)));
+        if let Err(e) = parsed {
+            eprintln!("dashi-hardware: {e}");
+            return ExitCode::from(2);
+        }
+    }
+    match machine.set_slash(&change) {
+        Ok(json) => print_json(&json),
         Err(e) => fail(e),
     }
 }

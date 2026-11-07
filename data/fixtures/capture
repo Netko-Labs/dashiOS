@@ -66,6 +66,11 @@ for dir in "$src"/class/leds/*::kbd_backlight/; do
   if [[ -d $dir ]]; then copy_in "class/leds/$(basename "$dir")" brightness max_brightness brightness_hw_changed; fi
 done
 
+# The ASUS USB lights (the Slash bar is found by its HID_ID).
+for dir in "$src"/class/hidraw/hidraw*/; do
+  if grep -q '^HID_ID=0003:00000B05:' "$dir/device/uevent" 2>/dev/null; then copy_in "class/hidraw/$(basename "$dir")" device/uevent; fi
+done
+
 copy devices/system/cpu/modalias
 copy devices/system/cpu/present
 copy devices/system/cpu/online

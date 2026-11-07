@@ -49,6 +49,12 @@ impl Sysfs {
         read_trimmed(&self.path(rel))
     }
 
+    /// A file's bytes as they are (a HID report descriptor); `None` when it
+    /// is missing or unreadable.
+    pub(crate) fn read_bytes(&self, rel: &str) -> Option<Vec<u8>> {
+        fs::read(self.path(rel)).ok()
+    }
+
     pub(crate) fn read_u64(&self, rel: &str) -> Option<u64> {
         self.read(rel)?.parse().ok()
     }

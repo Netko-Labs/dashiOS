@@ -39,6 +39,9 @@ pub(crate) fn run(args: &Args) -> ExitCode {
     let sysfs = args.sysfs();
     let fake = sysfs.is_fake();
     let machine = Machine::open(sysfs, &args.models_dir());
+    // The Slash bar forgot at boot: send what was set last (the shell's
+    // ApplySavedTuning at login and after waking sends it again too).
+    machine.restore_slash();
     let shared = Arc::new(Shared {
         machine: Mutex::new(machine),
         pending: Mutex::new(HashMap::new()),

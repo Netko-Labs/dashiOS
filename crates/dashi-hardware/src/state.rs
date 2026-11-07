@@ -1,7 +1,7 @@
-//! Saved tuning and the boot guard (`/var/lib/dashi-hardware/`,
-//! docs/hardware.md). Tuning that can freeze the machine is applied only
-//! after a clean boot and kept only once confirmed; two failed boots in a
-//! row clear it.
+//! Saved tuning, the boot guard and the Slash bar's settings
+//! (`/var/lib/dashi-hardware/`, docs/hardware.md). Tuning that can freeze
+//! the machine is applied only after a clean boot and kept only once
+//! confirmed; two failed boots in a row clear it.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+use crate::slash::Settings as SlashSettings;
 use crate::sysfs::Sysfs;
 
 /// The real state directory.
@@ -50,6 +51,9 @@ struct StateFile {
     /// Consecutive boots that have not reached clean shutdown.
     unclean_boots: u32,
     last_boot: BootGuard,
+    /// What the helper last set the Slash bar to (it can't be read back and
+    /// forgets at boot). Not tuning: the boot guard leaves it alone.
+    slash: Option<SlashSettings>,
 }
 
 /// The helper's state on disk.
@@ -107,6 +111,16 @@ impl State {
     pub(crate) fn clear_tuning(&self) -> std::io::Result<()> {
         let mut state = self.read();
         state.tuning = SavedTuning::default();
+        self.write(&state)
+    }
+
+    pub(crate) fn saved_slash(&self) -> Option<SlashSettings> {
+        self.read().slash.map(SlashSettings::sanitized)
+    }
+
+    pub(crate) fn save_slash(&self, settings: &SlashSettings) -> std::io::Result<()> {
+        let mut state = self.read();
+        state.slash = Some(settings.clone());
         self.write(&state)
     }
 
