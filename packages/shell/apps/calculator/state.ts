@@ -19,6 +19,7 @@ import {
   negate,
   paste,
   recall,
+  relocalized,
   select,
   type TapeEntry,
   typeChar,
@@ -73,6 +74,8 @@ export type CalcAction =
   | { type: "recall-entry"; index: number; locale: NumberLocale }
   | { type: "clear-tape" }
   | { type: "notice"; notice: Notice | null }
+  /** The region changed: the line is written in the new locale's marks. */
+  | { type: "relocale"; from: NumberLocale; to: NumberLocale }
   | { type: "unlit" };
 
 /** The line edited: the tape position and the word under it are the person's no longer. */
@@ -167,6 +170,8 @@ function step(state: CalcState, action: CalcAction): CalcState {
       return { ...state, tape: [], recalled: null };
     case "notice":
       return { ...state, notice: action.notice };
+    case "relocale":
+      return { ...state, line: relocalized(state.line, action.from, action.to) };
     case "unlit":
       return state.lit === null ? state : { ...state, lit: null };
   }

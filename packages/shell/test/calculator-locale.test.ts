@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyNumber, formatResult, parsePasted } from "../apps/calculator/format.ts";
-import { EMPTY_LINE, type Line, paste, typeChar } from "../apps/calculator/line.ts";
+import { EMPTY_LINE, equals, type Line, paste, relocalized, typeChar } from "../apps/calculator/line.ts";
 import { EN_US, groupDigits, type NumberLocale, numberLocale, numberLocaleTag, readNumberLocale } from "../apps/calculator/locale.ts";
 
 const DE = numberLocale("de-DE");
@@ -140,5 +140,24 @@ describe("paste", () => {
     expect(paste(EMPTY_LINE, "calc 3x4", EN_US)).toEqual({ line: EMPTY_LINE, note: "refused-paste" });
     expect(paste(EMPTY_LINE, "1,5 + 2", EN_US).note).toBe("refused-paste");
     expect(paste(EMPTY_LINE, "2026-11-05", EN_US).line.text).toBe("2,026 − 11 − 5");
+  });
+});
+
+describe("the region changing under the line", () => {
+  test("the line is written in the new marks, the caret after the same digit", () => {
+    const german = typed("1250,5*12", DE);
+    expect(german.text).toBe("1.250,5 × 12");
+    const english = relocalized(german, DE, EN_US);
+    expect(english.text).toBe("1,250.5 × 12");
+    expect(english.selection).toEqual({ start: 12, end: 12 });
+    expect(relocalized({ ...german, selection: { start: 1, end: 1 } }, DE, EN_US).selection).toEqual({ start: 1, end: 1 });
+  });
+
+  test("a result standing in the line is written anew, still selected", () => {
+    const worked = equals(typed("1000,5+1", DE), DE).line;
+    expect(worked.text).toBe("1.001,5");
+    const english = relocalized(worked, DE, EN_US);
+    expect(english).toMatchObject({ text: "1,001.5", selection: { start: 0, end: 7 } });
+    expect(english.carry).toMatchObject({ text: "1,001.5", value: 1001.5 });
   });
 });

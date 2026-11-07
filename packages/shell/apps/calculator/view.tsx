@@ -79,6 +79,13 @@ export function CalculatorWindow({
     const timer = setTimeout(() => dispatch({ type: "notice", notice: null }), NOTICE_MS);
     return () => clearTimeout(timer);
   }, [state.notice]);
+  // The region changed: the line is rewritten in its marks, or "1.250" would read as 1.25.
+  const shownIn = useRef(locale);
+  useEffect(() => {
+    if (shownIn.current === locale) return;
+    dispatch({ type: "relocale", from: shownIn.current, to: locale });
+    shownIn.current = locale;
+  }, [locale]);
   const saved = useRef<string | null>(null);
   useEffect(() => {
     const next: Remembered = { tape: state.tape, showsTape, size };

@@ -266,3 +266,25 @@ export function select(line: Line, selection: TextSelection): Line {
   const next = { start: clamp(Math.min(selection.start, selection.end)), end: clamp(Math.max(selection.start, selection.end)) };
   return next.start === line.selection.start && next.end === line.selection.end ? line : { ...line, selection: next };
 }
+
+/**
+ * The line in another locale's marks, when the region changes under it:
+ * "1.250 × 12" in German is "1,250 × 12" in English, the caret after the same
+ * digit, a result standing in it written anew.
+ */
+export function relocalized(line: Line, from: NumberLocale, to: NumberLocale): Line {
+  if (line.text === "") return line;
+  const text = render(tokenize(line.text, from), to);
+  const spot = (at: number): number => {
+    let meaningful = 0;
+    for (let index = 0; index < Math.min(at, line.text.length); index += 1) if (!isQuiet(line.text[index] as string, from)) meaningful += 1;
+    let moved = 0;
+    for (let seen = 0; moved < text.length && seen < meaningful; moved += 1) if (!isQuiet(text[moved] as string, to)) seen += 1;
+    return moved;
+  };
+  const wholeCarry = line.carry !== null && line.text === line.carry.text;
+  const carry = line.carry && { ...line.carry, text: wholeCarry ? text : formatResult(line.carry.value, to) };
+  const all = line.selection.start === 0 && line.selection.end === line.text.length;
+  const selection = all ? { start: 0, end: text.length } : { start: spot(line.selection.start), end: spot(line.selection.end) };
+  return { text, selection, carry: carry && (wholeCarry || text.startsWith(carry.text) ? carry : null) };
+}
