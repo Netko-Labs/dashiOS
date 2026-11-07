@@ -49,3 +49,31 @@ export function fractionAt(x: number, bar: { x: number; width: number }, knob: n
 export function knobLeft(fraction: number, width: number, knob: number): number {
   return Math.min(Math.max(fraction, 0), 1) * Math.max(width - knob, 0);
 }
+
+/** At most this many values for the arrows on a slider whose step is fine or free (about 5% a press). */
+const KEY_NOTCHES = 21;
+
+/**
+ * The values the arrow keys step through: every step when there are few,
+ * else a whole number of steps about 5% of the bar apart; a free slider
+ * (step 0) goes in 5%. Always from the minimum to the maximum.
+ */
+export function keyValues(range: SliderRange): number[] {
+  const { min, max, step } = range;
+  if (max <= min) return [min];
+  const span = max - min;
+  const stride = step > 0 ? step * Math.max(1, Math.ceil(span / step / (KEY_NOTCHES - 1))) : span / (KEY_NOTCHES - 1);
+  const count = Math.floor(span / stride + 1e-9);
+  const values = Array.from({ length: count + 1 }, (_, index) => valueAt((index * stride) / span, range));
+  if (values.at(-1) !== max) values.push(max);
+  return values;
+}
+
+/** Where in `values` the one nearest `value` is: the arrows step on from there. */
+export function nearestIndex(values: readonly number[], value: number): number {
+  let best = 0;
+  for (const [index, candidate] of values.entries()) {
+    if (Math.abs(candidate - value) < Math.abs((values[best] ?? candidate) - value)) best = index;
+  }
+  return best;
+}

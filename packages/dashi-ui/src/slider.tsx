@@ -9,12 +9,17 @@
  * every move (a level that follows the drag: volume, brightness);
  * `onCommit` hears the value once, when the button lifts or the pointer
  * rests, so a drag is one write to a settings file.
+ *
+ * Tab reaches it (the ring goes round the bar), and the arrows step it:
+ * every step when there are few, else about 5% a press (`keyValues`). Each
+ * press is both a move and a commit.
  */
 
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { useControlState } from "./control-state.tsx";
-import { fractionAt, fractionOf, knobLeft, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
+import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
+import { StepKeys } from "./step-keys.tsx";
 import { lightColors, useColors } from "./theme/index.ts";
 
 /** A setting's slider: the knob, and the track it runs on. */
@@ -24,6 +29,8 @@ const TRACK = 4;
 const BAR = 28;
 /** A drag that stops moving for this long is committed, in case the release never arrives. */
 const SETTLE_MS = 300;
+/** A press on the bar's key stop this soon after the pointer let go is the click that ended a drag, not a key. */
+const CLICK_AFTER_POINTER_MS = 300;
 
 export interface SliderProps {
   value: number;
@@ -39,7 +46,7 @@ export interface SliderProps {
   /** Control Center's look: a tall bar with this glyph in its fill. */
   glyph?: string;
   disabled?: boolean;
-  /** Keyboard focus is on it (`data-focused`); it doesn't take the keyboard yet (KB-1). */
+  /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
 }
 
@@ -47,6 +54,9 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   const [dragging, setDragging] = useState<number | null>(null);
+  // The value an arrow set, shown until the owner's value changes (a level read back from a device comes later).
+  const [keyed, setKeyed] = useState<{ value: number; over: number } | null>(null);
+  const pointerAt = useRef(0);
   // Pointer events carry the bar's bounds; the last layout stands in for one that does not.
   const laid = useRef<Bounds | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -58,7 +68,9 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
     setDragging(null);
     onCommit?.(next);
   };
-  const fraction = fractionOf(dragging ?? value, range);
+  const shown = dragging ?? (keyed !== null && keyed.over === value ? keyed.value : value);
+  const fraction = fractionOf(shown, range);
+  const notches = keyValues(range);
   const left = knobLeft(fraction, width, knob);
   const height = glyph === undefined ? KNOB + 4 : BAR;
   return (
@@ -74,6 +86,8 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
           : (event) => {
               const bar = event.bounds ?? laid.current;
               if (!bar) return;
+              pointerAt.current = performance.now();
+              setKeyed(null);
               const next = valueAt(fractionAt(event.x, bar, knob), range);
               setDragging(next);
               onChange?.(next);
@@ -119,6 +133,22 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
             <Svg markup={glyph} size={14} color={lightColors.text} />
           </View>
         </View>
+      )}
+      {!disabled && (
+        <StepKeys
+          testID={testID}
+          labels={notches.map(String)}
+          index={nearestIndex(notches, shown)}
+          onStep={(at) => {
+            const next = notches[at];
+            if (next === undefined || performance.now() - pointerAt.current < CLICK_AFTER_POINTER_MS) return;
+            setKeyed({ value: next, over: value });
+            onChange?.(next);
+            onCommit?.(next);
+          }}
+          radius={height / 2}
+          ringColor={colors.focusRing}
+        />
       )}
     </View>
   );

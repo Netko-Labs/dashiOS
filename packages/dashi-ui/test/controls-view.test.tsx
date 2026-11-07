@@ -122,6 +122,61 @@ test("a pop-up button opens its options over itself, the chosen one ticked, and 
   root.unmount();
 });
 
+test("a pop-up button takes the keyboard: the arrows step its options, Space opens the menu, ↓ and Return pick", async () => {
+  const host = fakeHost();
+  const seen: string[] = [];
+  function Picker() {
+    const [paper, setPaper] = useState("a4");
+    seen.push(paper);
+    return (
+      <AppWindow title="Print">
+        <PopUpButton
+          testID="paper"
+          value={paper}
+          onChange={setPaper}
+          options={[{ value: "a4", label: "A4" }, { value: "letter", label: "US Letter" }, MENU_SEPARATOR, { value: "a5", label: "A5" }]}
+        />
+      </AppWindow>
+    );
+  }
+  const root = render(<Picker />, host.transport);
+  await settle();
+  // One Tab stop, entered at the chosen option, its stop covering the button so the ring goes round it.
+  const tree = host.last();
+  expect(tree).toContain('"focusGroup":true');
+  expect(tree).toContain('"selectsOnFocus":true');
+  // →: Metal moves focus to the next stop and presses it.
+  host.emit({ type: "press", nodeId: root.nodeId("paper:key:1") as string });
+  await settle();
+  expect(seen.at(-1)).toBe("letter");
+  // Space on the chosen one opens the menu, its row lit; ↓ lights A5 and Return picks it.
+  host.emit({ type: "press", nodeId: root.nodeId("paper:key:1") as string, bounds: { x: 200, y: 100, width: 120, height: 28 } });
+  await settle();
+  const keys = root.nodeId("paper:menu:keys") as string;
+  expect(keys).toBeDefined();
+  host.emit(windowKey(keys, "down"));
+  await settle();
+  host.emit(windowKey(keys, "enter"));
+  await settle();
+  expect(root.nodeId("paper:menu")).toBeUndefined();
+  expect(seen.at(-1)).toBe("a5");
+  root.unmount();
+});
+
+test("a disabled pop-up button or slider isn't a Tab stop", async () => {
+  const host = fakeHost();
+  const root = render(
+    <View>
+      <PopUpButton testID="p" value="a" onChange={noop} options={[{ value: "a", label: "A" }]} disabled />
+      <Slider testID="s" value={0.5} disabled />
+    </View>,
+    host.transport,
+  );
+  await settle();
+  expect(host.last()).not.toContain('"focusable":true');
+  root.unmount();
+});
+
 test("a popup menu draws its separators and keys its rows by place, not label", async () => {
   const host = fakeHost();
   const root = render(
@@ -209,5 +264,42 @@ test("a slider follows the drag and commits once, when the button lifts", async 
   await settle();
   expect(moves).toEqual([0, 50, 100]);
   expect(commits).toEqual([100]);
+  root.unmount();
+});
+
+test("the arrows step a slider, each press a move and a commit; the click that ends a drag is no step", async () => {
+  const host = fakeHost();
+  const commits: number[] = [];
+  function Level() {
+    const [level, setLevel] = useState(50);
+    return (
+      <Slider
+        testID="s"
+        value={level}
+        range={{ min: 0, max: 100, step: 25 }}
+        onCommit={(v) => {
+          commits.push(v);
+          setLevel(v);
+        }}
+      />
+    );
+  }
+  const root = render(<Level />, host.transport);
+  await settle();
+  // The stops are 0, 25, 50, 75, 100; → from 50 presses the next.
+  host.emit({ type: "press", nodeId: root.nodeId("s:key:3") as string });
+  await settle();
+  expect(commits).toEqual([75]);
+  // Space on the shown value's stop does nothing.
+  host.emit({ type: "press", nodeId: root.nodeId("s:key:3") as string });
+  await settle();
+  expect(commits).toEqual([75]);
+  // A drag, then the click it ends with lands on a stop: not a step.
+  const bar = root.nodeId("s") as string;
+  host.emit({ type: "pointer", nodeId: bar, phase: "down", x: 11, y: 10, bounds: { x: 0, y: 0, width: 220, height: 22 } });
+  host.emit({ type: "pointer", nodeId: bar, phase: "up", x: 11, y: 10, bounds: { x: 0, y: 0, width: 220, height: 22 } });
+  host.emit({ type: "press", nodeId: root.nodeId("s:key:4") as string });
+  await settle();
+  expect(commits).toEqual([75, 0]);
   root.unmount();
 });
