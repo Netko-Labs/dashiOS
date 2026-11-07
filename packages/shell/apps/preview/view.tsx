@@ -7,7 +7,7 @@
  * open, the window offers only that, Open… and the recent files.
  */
 
-import { AppWindow, Loading, type MenuItem, PopupMenu, Spinner, useColors, useShownAfter, useSurface } from "@dashi/ui";
+import { AppWindow, LOADING_DELAY_MS, Loading, type MenuItem, PopupMenu, Spinner, useColors, useShownAfter, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
@@ -31,8 +31,8 @@ import type { Viewer } from "./viewer.ts";
 import { FIT, percent, turned } from "./zoom.ts";
 
 export const PREVIEW_SIZE = { width: 1000, height: 700 } as const;
-/** Work goes unshown this long; past it, a spinner in the toolbar says Preview is on it. */
-const BUSY_DELAY_MS = 300;
+/** Work goes unshown this long (PA-5); past it, a spinner in the toolbar says Preview is on it. */
+const BUSY_DELAY_MS = LOADING_DELAY_MS;
 
 export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer; clipboard?: Clipboard; cacheDir?: string }) {
   const colors = useColors();

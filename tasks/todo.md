@@ -37,7 +37,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
 - [ ] Editor's document surface with versioned autosave (L)
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
-- [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
+- [x] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6; `feat/0.5-preview`, VM: not yet)
+  - Later, from the roast: find, links and the outline in a PDF; password PDFs (poppler takes the password only on its command line); markup and crop; a slideshow; animated GIFs; writing a rotation into the file (lossless JPEG); tabs or Open in New Window; ⌃-wheel and pinch zoom (mirin: modifiers on `wheel`); the window's real device scale (mirin: the host reports it); File › Open Recent as a submenu (the menus channel has no submenus)
 - [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
 
 ## Wave 3 · Launcher and agents

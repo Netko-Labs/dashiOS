@@ -163,6 +163,15 @@ export function useDocument(viewer: Viewer, pdf: PdfState | null, turns: number,
 
   const texts = pdf?.texts ?? new Map<number, PageText>();
   const range = selection ? rangeOf(selection, texts) : null;
+  // A selection over pages on screen whose words aren't read yet (Select All, a long drag): read them, so it is drawn there too.
+  const from = selection ? Math.min(selection.anchor.page, selection.focus.page) : 0;
+  const to = selection ? Math.max(selection.anchor.page, selection.focus.page) : -1;
+  const unread = visiblePages(layout.boxes, held.y, area.height).filter((each) => each >= from && each <= to && !texts.has(each));
+  const unreadKey = unread.join(",");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the key is the list
+  useEffect(() => {
+    for (const each of unread) viewer.wantText(each);
+  }, [unreadKey, viewer]);
 
   return {
     zoom,
@@ -173,7 +182,7 @@ export function useDocument(viewer: Viewer, pdf: PdfState | null, turns: number,
     page,
     selection,
     range,
-    setArea,
+    setArea: (next) => setArea((now) => (now.width === next.width && now.height === next.height ? now : next)),
     scrollBy: (dx, dy) => scrollTo(live.current.scroll.x + dx, live.current.scroll.y + dy),
     scrollToTop: (y) => scrollTo(live.current.scroll.x, y),
     goToPage: (target) => scrollTo(live.current.scroll.x, scrollToPage(live.current.layout.boxes, target)),
