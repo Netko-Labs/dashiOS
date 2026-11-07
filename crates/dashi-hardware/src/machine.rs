@@ -91,6 +91,24 @@ impl Machine {
         Knob::from_name(knob).map(Knob::action)
     }
 
+    /// The polkit action a `SetMany` of `values` needs: the strongest any
+    /// knob needs, except that `tune` knobs set to one of the model's own
+    /// recipe columns are a mode switch, an everyday change
+    /// (docs/hardware.md, "Knobs").
+    pub(crate) fn action_for_many(&self, values: &[(Knob, KnobValue)]) -> knobs::Action {
+        let tuned: Vec<(&str, Value)> = values
+            .iter()
+            .filter(|(knob, _)| knob.action() == knobs::Action::Tune)
+            .map(|(knob, value)| (knob.name(), value.json()))
+            .collect();
+        let shipped = self.model.as_ref().is_some_and(|m| m.recipe_gives(&tuned));
+        if tuned.is_empty() || shipped {
+            knobs::Action::Everyday
+        } else {
+            knobs::Action::Tune
+        }
+    }
+
     /// Every file the service polls for `Changed` signals, with the knob
     /// each belongs to (`""` for the keyboard's hardware-change marker).
     pub(crate) fn watched_files(&self) -> Vec<(String, &'static str)> {

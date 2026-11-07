@@ -50,6 +50,11 @@ Fan curves and the Curve Optimizer have their own methods (below), under the
 `tune` action. `everyday` is `allow_active=yes`; `tune` is
 `auth_admin_keep`.
 
+A `SetMany` whose `tune` knobs all match one of the model's own recipe
+columns (`recipes`, below) is a mode switch and needs only `everyday`: those
+values ship in the root-owned model database, so switching modes on power or
+battery never asks for the password. Any other value of a `tune` knob does.
+
 ## Methods
 
 | Method | In | Out | Notes |
@@ -57,7 +62,7 @@ Fan curves and the Curve Optimizer have their own methods (below), under the
 | `Describe` | | `s` JSON | The machine (below). Cheap; callers may cache it until `Changed` with knob `""`. |
 | `Get` | `s knob` | `v` | |
 | `Set` | `s knob`, `v value` | `v applied` | Clamped; returns what was written. |
-| `SetMany` | `a{sv}` | `a{sv}` | One recipe in one call; each knob is written once, in a fixed order (profile first). |
+| `SetMany` | `a{sv}` | `a{sv}` | One recipe in one call; each knob is written once, in a fixed order (profile first). `everyday` when its `tune` knobs match a model recipe column. |
 | `GetFanCurve` | `s fan` | `a(yy)` | Points (°C, PWM 0–255), 8 per fan on ASUS. |
 | `SetFanCurve` | `s fan`, `a(yy)` | | Validated: temperatures rising, PWM not falling. `tune`. |
 | `ResetFanCurves` | | | Back to the firmware's curves. `tune`. |
