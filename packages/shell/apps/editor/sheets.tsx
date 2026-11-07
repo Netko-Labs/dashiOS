@@ -1,8 +1,7 @@
 /**
- * Text Editor's sheets: a location for Open and Save As (a path, `~` for the
- * home folder; Metal has no file chooser and the portal's would be another
- * app's window), the question before closing a document with changes, and
- * Find and Replace. Drawn inside the window by the kit's Sheet.
+ * Text Editor's sheets: the question before closing a document with
+ * changes, and Find and Replace. Drawn inside the window by the kit's Sheet.
+ * Open and Save As are Files' chooser (apps/files/chooser/).
  */
 
 import { Button, Sheet, TextField, useColors } from "@dashi/ui";
@@ -15,52 +14,6 @@ export type SheetState =
   | { kind: "unsaved"; name: string }
   | { kind: "replace" }
   | { kind: "revert"; name: string };
-
-export function PathSheet({
-  testID,
-  title,
-  message,
-  initial,
-  action,
-  onSubmit,
-  onCancel,
-}: {
-  testID: string;
-  title: string;
-  message: string;
-  initial: string;
-  action: string;
-  /** The problem to show, or null when it went ahead. */
-  onSubmit: (input: string) => string | null;
-  onCancel: () => void;
-}) {
-  const colors = useColors();
-  const [input, setInput] = useState(initial);
-  const [problem, setProblem] = useState<string | null>(null);
-  const submit = (): void => setProblem(onSubmit(input));
-  return (
-    <Sheet testID={testID} width={440} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>
-      <TextField
-        testID={`${testID}:path`}
-        value={input}
-        onChangeText={(text) => {
-          setInput(text);
-          setProblem(null);
-        }}
-        autoFocus
-        onSubmit={submit}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-      />
-      {problem !== null && <Text style={{ fontSize: 12, color: colors.critical, lineHeight: 16 }}>{problem}</Text>}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID={`${testID}:cancel`} onPress={onCancel} />
-        <Button label={action} testID={`${testID}:ok`} primary disabled={input.trim() === ""} onPress={submit} />
-      </View>
-    </Sheet>
-  );
-}
 
 /** Save, Don't Save, or Cancel: Enter saves, Esc cancels. */
 export function UnsavedSheet({ name, onSave, onDiscard, onCancel }: { name: string; onSave: () => void; onDiscard: () => void; onCancel: () => void }) {

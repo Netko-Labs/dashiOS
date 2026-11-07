@@ -6,6 +6,7 @@
  */
 
 import type { ParsedArgs } from "./args.ts";
+import { type FileSelectionOptions, parseFileFilter } from "./file-selection.ts";
 import { compressEscapes, displayText } from "./markup.ts";
 import type { DialogKind } from "./options.ts";
 
@@ -100,10 +101,15 @@ export interface CalendarSpec extends Common {
   dateFormat: string | null;
 }
 
-export type DialogSpec = MessageSpec | ProgressSpec | EntrySpec | PasswordSpec | ListSpec | TextInfoSpec | ScaleSpec | CalendarSpec;
+/** `--file-selection`: Files' chooser (file-selection.ts). */
+export interface FileSelectionSpec extends Common, FileSelectionOptions {
+  kind: "file-selection";
+}
+
+export type DialogSpec = MessageSpec | ProgressSpec | EntrySpec | PasswordSpec | ListSpec | TextInfoSpec | ScaleSpec | CalendarSpec | FileSelectionSpec;
 
 /** Types Zenity has that Dashi's dialog doesn't draw yet: they exit 255 with a message. */
-export const UNSUPPORTED: ReadonlySet<DialogKind> = new Set(["file-selection", "forms", "color-selection", "notification"]);
+export const UNSUPPORTED: ReadonlySet<DialogKind> = new Set(["forms", "color-selection", "notification"]);
 
 const TITLES: Record<DialogKind, string> = {
   info: "Information",
@@ -181,7 +187,7 @@ function common(args: ParsedArgs, kind: DialogKind): Common {
   };
 }
 
-function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "file-selection" | "forms" | "color-selection" | "notification">, now: Date): DialogSpec {
+function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "forms" | "color-selection" | "notification">, now: Date): DialogSpec {
   const base = common(args, kind);
   const flag = (name: Parameters<ParsedArgs["flags"]["has"]>[0]): boolean => args.flags.has(name);
   switch (kind) {
@@ -244,6 +250,17 @@ function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "file-selection" 
       if (value < min || value > max) throw new SpecError("Value out of range.");
       return { ...base, kind, min, max, value, step: step > 0 ? step : 1, printPartial: flag("print-partial"), hideValue: flag("hide-value") };
     }
+    case "file-selection":
+      return {
+        ...base,
+        kind,
+        filename: args.values.get("filename") ?? null,
+        multiple: flag("multiple"),
+        directory: flag("directory"),
+        save: flag("save"),
+        separator: compressEscapes(args.values.get("separator") ?? "|"),
+        filters: (args.repeats.get("file-filter") ?? []).flatMap((raw) => parseFileFilter(raw) ?? []),
+      };
     case "calendar": {
       const year = integer(args, "year", now.getFullYear());
       const month = integer(args, "month", now.getMonth() + 1);

@@ -1,20 +1,18 @@
 /**
  * org.freedesktop.impl.portal.FileChooser: OpenFile, SaveFile, SaveFiles.
- * The calls are read (options.ts), the sheet asks (view.tsx), and the
- * answer goes back as file URIs; xdg-desktop-portal hands a sandboxed app
- * the files through the document portal.
+ * The calls are read (options.ts), the sheet asks (Files' chooser,
+ * apps/files/chooser/: Files' sidebar, icons and keys), and the answer goes
+ * back as file URIs; xdg-desktop-portal hands a sandboxed app the files
+ * through the document portal.
  */
 
 import { existsSync } from "node:fs";
-import { homedir } from "node:os";
 import type { InterfaceSpec } from "../../../src/dbus/index.ts";
+import { ChooserView, openChooser } from "../../files/chooser/index.ts";
+import type { Env } from "../../files/env.ts";
 import type { Requests } from "../request.ts";
 import type { ShowDialog } from "../windows.ts";
-import { startFolder, startName } from "./accept.ts";
-import { ChooserModel } from "./model.ts";
 import { type ChooserAnswer, type ChooserMode, type ChooserRequest, chooserReply, parseChooser } from "./options.ts";
-import { documentsFolder, machineSources, placeLinks } from "./sources.ts";
-import { ChooserView } from "./view.tsx";
 
 export const FILE_CHOOSER = "org.freedesktop.impl.portal.FileChooser";
 
@@ -35,15 +33,18 @@ export function fileChooserInterface(requests: Requests, choose: ChooseFiles): I
 }
 
 /** The real sheet, on screen. */
-export function chooseOnScreen(show: ShowDialog, home: string = homedir()): ChooseFiles {
-  return (request, signal) => {
-    const saveFolder = startFolder(request, documentsFolder(home), home);
-    const model = new ChooserModel(request, machineSources(home), { folder: saveFolder, name: startName(request) });
-    return show<ChooserAnswer | null>(
-      { parent: request.parent, title: request.title, width: 760, height: 500 },
-      (answer) => <ChooserView model={model} places={placeLinks(home)} saveFolder={saveFolder} exists={existsSync} answer={answer} />,
-      signal,
-      null,
-    );
+export function chooseOnScreen(show: ShowDialog, env?: Env): ChooseFiles {
+  return async (request, signal) => {
+    const model = openChooser(request, env);
+    try {
+      return await show<ChooserAnswer | null>(
+        { parent: request.parent, title: request.title, width: 820, height: 520 },
+        (answer) => <ChooserView model={model} title={request.title} exists={existsSync} answer={answer} />,
+        signal,
+        null,
+      );
+    } finally {
+      model.stop();
+    }
   };
 }

@@ -81,7 +81,7 @@ test("the notice's Undo is for its own step: a newer step takes the notice down"
   await ops.trash([item(join(folder, "a.txt"))]);
   expect(store.getSnapshot().notice?.undoStep).toBeDefined();
   // New Folder says nothing in the footer; before, the Trash notice's Undo then took back the folder.
-  expect(await ops.newFolder("untitled folder")).toBeNull();
+  expect(await ops.newFolder()).toEqual({ path: join(folder, "untitled folder") });
   expect(ops.undo.state.undoName).toBe("New Folder");
   expect(store.getSnapshot().notice).toBeNull();
   store.stop();

@@ -2,7 +2,7 @@
 
 import { ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
-import { useFiles, useFilesState } from "./context.ts";
+import { useFiles, useFilesOps, useFilesState } from "./context.ts";
 import { BACK, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
 
 export function Leading() {
@@ -16,7 +16,7 @@ export function Leading() {
   );
 }
 
-function ViewSwitch() {
+export function ViewSwitch() {
   const colors = useColors();
   const surface = useSurface();
   const { store } = useFiles();
@@ -56,7 +56,8 @@ function ViewSwitch() {
 
 export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onMenu: (point: { x: number; y: number }) => void }) {
   const colors = useColors();
-  const { ops, actions } = useFiles();
+  const { actions } = useFiles();
+  const ops = useFilesOps();
   const state = useFilesState();
   return (
     <>

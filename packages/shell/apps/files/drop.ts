@@ -11,11 +11,11 @@ export interface DropTarget {
   over: boolean;
 }
 
-/** `dest`: the folder files dropped here go into, the Trash, or null for nowhere. */
+/** `dest`: the folder files dropped here go into, the Trash, or null for nowhere. A chooser (no ops) takes none. */
 export function useDropTarget(dest: string | "trash" | null): DropTarget {
   const { ops, actions } = useFiles();
   const [over, setOver] = useState(false);
-  if (dest === null) return { props: {}, over: false };
+  if (dest === null || ops === null) return { props: {}, over: false };
   return {
     over,
     props: {

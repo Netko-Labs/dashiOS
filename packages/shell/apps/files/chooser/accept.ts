@@ -6,7 +6,7 @@
 
 import { join } from "node:path";
 import { freeName, nameProblem } from "./filters.ts";
-import type { ChooserRequest } from "./options.ts";
+import type { ChooserRequest } from "./request.ts";
 
 export interface Picked {
   path: string;

@@ -1,7 +1,8 @@
 /**
  * A folder's contents as Files shows them: one `FileItem` per entry, read
  * with `lstat` (a symlink is a link, and also what it points at, for display)
- * and typed by name alone. Nothing here follows a link out of the way it is
+ * and typed by name, or by its first bytes when the name says nothing
+ * (sniff.ts: a log called `install.err` is text). Nothing here follows a link out of the way it is
  * asked to: a listing reads one directory, never recurses.
  */
 
@@ -10,6 +11,7 @@ import { lstat, readdir, readFile, readlink, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { categoryOf, INODE_DIRECTORY, kindOf, type MimeIndex, mimeOf, UNKNOWN_TYPE } from "./mime.ts";
 import { checkName, splitName } from "./paths.ts";
+import { SNIFF_LIMIT, sniffType } from "./sniff.ts";
 
 export type ItemKind = "file" | "folder" | "other";
 
@@ -90,6 +92,20 @@ async function linkTargetName(path: string): Promise<string | undefined> {
   }
 }
 
+/** Files whose names say nothing, typed by their first bytes instead (at most `SNIFF_LIMIT` of them). */
+async function sniffUnknown(items: FileItem[]): Promise<FileItem[]> {
+  const unknown = items.filter((item) => item.kind === "file" && item.mime === UNKNOWN_TYPE && item.size > 0).slice(0, SNIFF_LIMIT);
+  if (unknown.length === 0) return items;
+  const found = new Map<string, string>();
+  await Promise.all(
+    unknown.map(async (item) => {
+      const type = await sniffType(item.path);
+      if (type) found.set(item.path, type);
+    }),
+  );
+  return found.size === 0 ? items : items.map((item) => ({ ...item, mime: found.get(item.path) ?? item.mime }));
+}
+
 /** One item from a path, or null when it is gone. */
 export async function itemAt(path: string, index: MimeIndex): Promise<FileItem | null> {
   const slash = path.lastIndexOf("/");
@@ -98,7 +114,8 @@ export async function itemAt(path: string, index: MimeIndex): Promise<FileItem |
   try {
     const lst = await lstat(path);
     const target = lst.isSymbolicLink() ? await stat(path).catch(() => null) : lst;
-    return toItem(dir, name, lst, target, index, new Set(), lst.isSymbolicLink() && target ? await linkTargetName(path) : undefined);
+    const item = toItem(dir, name, lst, target, index, new Set(), lst.isSymbolicLink() && target ? await linkTargetName(path) : undefined);
+    return item ? ((await sniffUnknown([item]))[0] ?? item) : null;
   } catch {
     return null;
   }
@@ -182,5 +199,5 @@ export async function readFolder(dir: string, index: MimeIndex, signal?: AbortSi
       if (item) items.push(item);
     });
   }
-  return { items, error: null };
+  return { items: signal?.aborted ? items : await sniffUnknown(items), error: null };
 }

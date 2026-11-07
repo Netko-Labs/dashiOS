@@ -8,20 +8,21 @@
  * this one only while it is an untouched Untitled.
  */
 
-import { existsSync, statSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { AppChooser, chooserRequest } from "../files/chooser/index.ts";
 import { useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
 import { lineOf } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
 import { editorMenus } from "./menus.ts";
 import { type EditorModel, isDirty } from "./model.ts";
-import { displayName, editedTitle, folderLabel, resolveInput, suggestedSavePath, tildePath } from "./names.ts";
-import { PathSheet, ReplaceSheet, type SheetState, UnsavedSheet } from "./sheets.tsx";
+import { displayName, editedTitle, folderLabel, resolveInput, suggestedSavePath } from "./names.ts";
+import { ReplaceSheet, type SheetState, UnsavedSheet } from "./sheets.tsx";
 import { formatStats, textStats } from "./stats.ts";
 import { TextArea } from "./text-area.tsx";
 
@@ -42,24 +43,8 @@ export interface EditorWindowProps {
   setTitle: (title: string) => void;
 }
 
-const isFolder = (path: string): boolean => {
-  try {
-    return statSync(path).isDirectory();
-  } catch {
-    return false;
-  }
-};
-
-/** Why a typed path can't be opened, or null when it can. */
-function openProblem(path: string): string | null {
-  try {
-    const stat = statSync(path);
-    if (stat.isDirectory()) return "That is a folder. Type the path of a file in it.";
-    return stat.isFile() ? null : "That isn't a regular file.";
-  } catch {
-    return "There is no file there.";
-  }
-}
+/** The home folder as the session gives it ($HOME), as Files' chooser takes it. */
+const homeFolder = (): string => process.env.HOME || homedir();
 
 export function EditorWindow({ model, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
   const colors = useColors();
@@ -69,12 +54,10 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
   const [selected, setSelected] = useState({ session: state.session, any: false });
   // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
-  // Save As asks once before it replaces another file: this is the path it asked about.
-  const replacing = useRef<string | null>(null);
 
   const dirty = isDirty(state);
   const name = displayName(state.path);
-  const base = state.path !== null ? dirname(state.path) : homedir();
+  const base = state.path !== null ? dirname(state.path) : homeFolder();
   const stats = useMemo(() => formatStats(textStats(state.text)), [state.text]);
   const { find } = state;
   useEffect(() => {
@@ -99,34 +82,33 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
   // The close control, ❖Q, the Dock's Quit, logging out: as File › Close.
   useCloseRequest(requestClose);
 
-  const submitOpen = (input: string): string | null => {
-    const path = resolveInput(input, base);
-    if (path === null) return "Type the path of a file.";
-    const problem = openProblem(path);
-    if (problem) return problem;
+  // Open and Save As are Files' own chooser over the window (apps/files/chooser/), never a typed path (PA-12).
+  const chooseOpen = (path: string): void => {
+    // A failed open says why in the notice.
     if (path !== state.path) {
-      if (model.isPristine) {
-        if (!model.open(path)) return model.getSnapshot().notice?.text ?? "It couldn't be opened.";
-      } else newWindow([path]);
+      if (model.isPristine) model.open(path);
+      else newWindow([path]);
     }
     closeSheet();
-    return null;
   };
-
-  const submitSaveAs = (input: string, after: "close" | null): string | null => {
-    let path = resolveInput(input, base);
-    if (path === null) return "Type where to save it.";
-    if (isFolder(path)) path = join(path, state.path === null ? `${name}.txt` : name);
-    if (path !== state.path && existsSync(path) && replacing.current !== path) {
-      replacing.current = path;
-      return `“${displayName(path)}” already exists in ${tildePath(dirname(path))}. Choose Save again to replace it.`;
-    }
-    replacing.current = null;
-    if (!model.saveAs(path)) return model.getSnapshot().notice?.text ?? "It couldn't be saved.";
-    if (after === "close") quit(false);
-    else closeSheet();
-    return null;
+  const chooseSaveAs = (path: string, after: "close" | null): void => {
+    // The chooser already asked before replacing a file.
+    if (model.saveAs(path) && after === "close") return quit(false);
+    closeSheet();
   };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one request per sheet shown
+  const chooser = useMemo(() => {
+    if (sheet?.kind === "open") return chooserRequest("open", { appId: "dev.dashi.editor", title: "Open", currentFolder: base });
+    if (sheet?.kind !== "save-as") return null;
+    const home = homeFolder();
+    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents"))), base, home);
+    return chooserRequest("save", {
+      appId: "dev.dashi.editor",
+      title: sheet.after === "close" ? `Save “${name}”` : "Save As",
+      currentFolder: suggested ? dirname(suggested) : base,
+      currentName: suggested ? basename(suggested) : `${name}.txt`,
+    });
+  }, [sheet]);
 
   const { menus, run } = editorMenus({
     dirty,
@@ -189,29 +171,11 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     if (!sheet) return undefined;
     switch (sheet.kind) {
       case "open":
-        return (
-          <PathSheet
-            testID="open-sheet"
-            title="Open"
-            message="Type the path of the file to open. ~ is your home folder."
-            initial={base === "/" ? "/" : `${tildePath(base)}/`}
-            action="Open"
-            onSubmit={submitOpen}
-            onCancel={closeSheet}
-          />
-        );
-      case "save-as":
-        return (
-          <PathSheet
-            testID="save-sheet"
-            title={sheet.after === "close" ? `Save “${name}”` : "Save As"}
-            message="Type where to save it. ~ is your home folder."
-            initial={suggestedSavePath(state.path, homedir(), existsSync(join(homedir(), "Documents")))}
-            action="Save"
-            onSubmit={(input) => submitSaveAs(input, sheet.after)}
-            onCancel={closeSheet}
-          />
-        );
+        return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? chooseOpen(paths[0]) : closeSheet())} />;
+      case "save-as": {
+        const after = sheet.after;
+        return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? chooseSaveAs(paths[0], after) : closeSheet())} />;
+      }
       case "unsaved":
         return <UnsavedSheet name={sheet.name} onSave={() => save("close")} onDiscard={() => quit(true)} onCancel={closeSheet} />;
       case "replace":

@@ -6,9 +6,10 @@
  * (and the same with ⇧, since a rule that does not name Shift ignores it), every
  * ⌃❖ and ⌥❖ chord but the two with a binding, ⇧❖3, ⇧❖4, ❖Space, and the
  * switchers. A menu row showing one of them would draw a shortcut that never
- * works, so the apps' tests refuse it. ❖W and ⇧❖W are the exception: the
- * shell offers them to the app's own row first (Close Tab, Close Window) and
- * closes the window only when it has none (shortcuts.ts).
+ * works, so the apps' tests refuse it. ❖W, ⇧❖W and ❖⌫ are the exception: the
+ * shell offers them to the app's own row first (Close Tab, Close Window,
+ * Move to Trash) and closes the window, or erases to the line's start, only
+ * when it has none (shortcuts.ts).
  */
 
 import { KEYMAP, type Keymap, type Rule } from "../keymap.ts";
@@ -17,7 +18,7 @@ import type { PressedChord } from "./shortcut.ts";
 /** The rule that gives ❖ chords to the app's menus. */
 const APP_CHORD = "app-chord";
 /** Bindings that offer their chord to the app's menus before acting themselves. */
-const APP_FIRST: ReadonlySet<string> = new Set(["close-window"]);
+const APP_FIRST: ReadonlySet<string> = new Set(["close-window", "app-erase"]);
 
 interface Parsed {
   super: boolean;

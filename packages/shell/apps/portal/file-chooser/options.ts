@@ -8,54 +8,12 @@
  * current_name. Results: uris, choices `a(ss)`, current_filter.
  */
 
+import type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter } from "../../files/chooser/request.ts";
 import { fileUri } from "../../files/uri.ts";
 import { Response, type ResponseCode } from "../request.ts";
 import { bool, bytePath, cleanString, results, str, type Vardict, vardict } from "../vardict.ts";
 
-export type PatternKind = "glob" | "mime";
-
-export interface Filter {
-  name: string;
-  patterns: Array<{ kind: PatternKind; pattern: string }>;
-}
-
-export interface Choice {
-  id: string;
-  label: string;
-  /** Empty: a check box, whose value is "true" or "false". */
-  options: Array<{ id: string; label: string }>;
-  initial: string;
-}
-
-export type ChooserMode = "open" | "save" | "save-files";
-
-export interface ChooserRequest {
-  mode: ChooserMode;
-  appId: string;
-  parent: string;
-  title: string;
-  acceptLabel: string | null;
-  multiple: boolean;
-  /** Choose folders, not files. */
-  directory: boolean;
-  filters: Filter[];
-  /** The filter to start with: one of `filters`, or one the app gave alone. */
-  currentFilter: Filter | null;
-  choices: Choice[];
-  currentFolder: string | null;
-  /** SaveFile: the name to suggest. */
-  currentName: string | null;
-  /** SaveFile: the file being saved again (its folder and name). */
-  currentFile: string | null;
-  /** SaveFiles: the names of the files that will be written into the folder chosen. */
-  files: string[];
-}
-
-export interface ChooserAnswer {
-  paths: string[];
-  choices: Array<[string, string]>;
-  filter: Filter | null;
-}
+export type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter, PatternKind } from "../../files/chooser/request.ts";
 
 const MAX_FILTERS = 64;
 const MAX_PATTERNS = 64;

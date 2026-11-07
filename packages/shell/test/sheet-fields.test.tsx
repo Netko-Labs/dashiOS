@@ -8,14 +8,14 @@
  * mirin's host picks the first field asking in the trap if ever there are two.
  */
 
-import { expect, test } from "bun:test";
+import { afterAll, expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { blankDraft } from "../apps/calendar/draft.ts";
 import { EventSheet } from "../apps/calendar/event-sheet.tsx";
 import { CalendarSheet, ImportPathSheet } from "../apps/calendar/sheets.tsx";
-import { PathSheet, ReplaceSheet } from "../apps/editor/sheets.tsx";
-import { NameSheet } from "../apps/files/sheets.tsx";
+import { ReplaceSheet } from "../apps/editor/sheets.tsx";
+import { ChooserSheet, chooserRequest, openChooser } from "../apps/files/chooser/index.ts";
 import { NotesSheet } from "../apps/notes/sheets.tsx";
 
 interface Node {
@@ -44,25 +44,11 @@ function inputs(node: Node, trapped = false): Array<{ id: string; autofocus: boo
 }
 
 const noop = (): void => {};
+// Text Editor's Save As is Files' chooser over the window: its name field asks for the keyboard.
+const saving = openChooser(chooserRequest("save", { currentName: "a.txt" }), undefined, { watch: false });
+afterAll(() => saving.stop());
 const SHEETS: Array<[string, ReactElement, string]> = [
-  [
-    "Files › Rename…",
-    <NameSheet key="rename" title="Rename “a.txt”" initial="a.txt" action="Rename" onSubmit={async () => null} onCancel={noop} />,
-    "name-field",
-  ],
-  [
-    "Files › New Folder…",
-    <NameSheet
-      key="folder"
-      title="New Folder"
-      message="Name of the new folder:"
-      initial="untitled folder"
-      action="Create"
-      onSubmit={async () => null}
-      onCancel={noop}
-    />,
-    "name-field",
-  ],
+  ["Text Editor › Save As (Files' chooser)", <ChooserSheet key="save" model={saving} title="Save As" exists={() => false} answer={noop} />, "chooser:name"],
   [
     "Notes › New Folder",
     <NotesSheet
@@ -92,11 +78,6 @@ const SHEETS: Array<[string, ReactElement, string]> = [
       onCancel={noop}
     />,
     "event-title",
-  ],
-  [
-    "Text Editor › Open",
-    <PathSheet key="open" testID="open" title="Open" message="Path:" initial="~/" action="Open" onSubmit={() => null} onCancel={noop} />,
-    "open:path",
   ],
   ["Text Editor › Find and Replace", <ReplaceSheet key="replace" query="" matches={0} onQuery={noop} onReplaceAll={() => 0} onCancel={noop} />, "replace:find"],
 ];
