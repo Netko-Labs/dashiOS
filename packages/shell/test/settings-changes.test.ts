@@ -126,6 +126,13 @@ test("the entries are kept in their file, and a file that isn't one is read as n
 
 test("words for what a pane keeps itself, and none for what only programs change", () => {
   expect(describeChanges([{ key: "power.chargeLimit", from: undefined, to: 80 }])).toMatchObject({ name: "Charge limit", from: "100%", to: "80%" });
+  // A locale reads as its language, not as glibc writes it ("was En_US.UTF 8").
+  expect(describeChanges([{ key: "region.formats", from: "en_US.UTF-8", to: undefined }])).toMatchObject({
+    name: "Formats",
+    from: "English (United States)",
+    to: "the language's",
+  });
+  expect(describeChanges([{ key: "region.formats", from: undefined, to: "de_DE.UTF-8" }])?.to).toBe("German (Germany)");
   expect(describeChanges([{ key: "spaces.count", from: 1, to: 2 }])).toBeNull();
   expect(describeChanges([{ key: "launcher.aliases", from: undefined, to: {} }])).toBeNull();
 });

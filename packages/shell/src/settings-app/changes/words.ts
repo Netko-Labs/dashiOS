@@ -8,6 +8,7 @@
  * names a change in Title Case, as menus do ("Undo Text Size").
  */
 
+import { toBcp47 } from "../../region/locale.ts";
 import { describeValue, findRow, type RowDef, rowName, SETTINGS_ROWS } from "../registry/index.ts";
 import type { Change, ChangeWords } from "./log.ts";
 
@@ -60,10 +61,22 @@ interface Named {
 const capital = (word: string): string => (word ? word[0]?.toUpperCase() + word.slice(1) : word);
 const plain = (value: unknown): string => (typeof value === "boolean" ? (value ? "on" : "off") : capital(String(value).replace(/-/g, " ")));
 
+/** A locale as people say it: `en_US.UTF-8` is "English (United States)"; one Intl doesn't know stays as it is. */
+export function localeWords(value: unknown): string {
+  const name = String(value);
+  const tag = toBcp47(name);
+  if (!tag) return name;
+  try {
+    return new Intl.DisplayNames(["en"], { type: "language", languageDisplay: "standard" }).of(tag) ?? name;
+  } catch {
+    return name;
+  }
+}
+
 const OWN: Readonly<Record<string, Named>> = {
   "appearance.auto": { name: "Automatic appearance", row: "appearance/dark-mode", unset: "off" },
   "clock.hour24": { name: "24-hour time", row: "date-time/24-hour-time", unset: "the region's" },
-  "region.formats": { name: "Formats", row: "language-region/formats", unset: "the language's" },
+  "region.formats": { name: "Formats", row: "language-region/formats", unset: "the language's", say: localeWords },
   "keyboard.layout": { name: "Keyboard layout", row: "keyboard/layout", unset: "English (US)", say: (value) => String(value) },
   "power.mode": { name: "Power mode", row: "battery/power-mode", unset: "Automatic" },
   "power.chargeLimit": { name: "Charge limit", row: "battery/charge-limit", unset: "100%", say: (value) => `${String(value)}%` },
