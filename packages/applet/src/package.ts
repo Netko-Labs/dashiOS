@@ -9,10 +9,13 @@
  *
  * Packing is reproducible: the same source with the same Bun makes the same
  * bytes, which is how the catalog's CI checks that a package is its source.
+ * The bundle names each module by its path from the folder the build runs
+ * in, so the build runs in the applet's own folder: wherever pack is started
+ * from, the author's machine or CI's, the names are the same.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { isInsidePath, type Manifest, readManifest } from "./manifest.ts";
 import { singletons } from "./singletons.ts";
 import { readTar, writeTar } from "./tar.ts";
@@ -50,15 +53,22 @@ export async function pack(dir: string): Promise<Packed> {
   const manifest = readManifest(manifestText);
   if ("error" in manifest) throw new Error(`applet.json: ${manifest.error}`);
   // React and friends in their production builds, whatever the shell running pack has set.
-  const built = await Bun.build({
-    entrypoints: [join(dir, manifest.entry)],
-    target: "bun",
-    format: "esm",
-    minify: false,
-    sourcemap: "none",
-    define: { "process.env.NODE_ENV": JSON.stringify("production") },
-    plugins: [singletons(dir)],
-  });
+  const from = process.cwd();
+  process.chdir(resolve(dir));
+  let built: Awaited<ReturnType<typeof Bun.build>>;
+  try {
+    built = await Bun.build({
+      entrypoints: [resolve(dir, manifest.entry)],
+      target: "bun",
+      format: "esm",
+      minify: false,
+      sourcemap: "none",
+      define: { "process.env.NODE_ENV": JSON.stringify("production") },
+      plugins: [singletons(resolve(dir))],
+    });
+  } finally {
+    process.chdir(from);
+  }
   if (!built.success) throw new Error(`the build failed:\n${built.logs.map((log) => String(log)).join("\n")}`);
   const output = built.outputs.find((each) => each.kind === "entry-point");
   if (!output) throw new Error("the build made no entry point");
