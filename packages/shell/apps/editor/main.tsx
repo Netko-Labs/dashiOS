@@ -3,10 +3,14 @@
  * Plain text in one window per document (model.ts is the document,
  * view.tsx the window). The first file opens here and each other one in a
  * window of its own, with the changes kept for it if an earlier window
- * closed or crashed before saving them; without a file, all kept changes
- * come back (recovery.ts), else an Untitled document. What isn't saved is
- * kept as it is typed, and every close asks first (Save, Don't Save,
- * Cancel), so no way of closing loses it.
+ * couldn't write them; without a file, every draft comes back (recovery.ts),
+ * else an Untitled document.
+ *
+ * Nothing is ever lost and nothing asks: a moment after typing stops (and as
+ * the window goes, however it goes) a document with a file is written to it,
+ * keeping earlier versions (versions.ts), and an Untitled one is kept as a
+ * draft. Every few seconds the window looks at its file, for changes made
+ * elsewhere, and at the View settings, which another window may have changed.
  */
 
 import { resolve } from "node:path";
@@ -14,16 +18,22 @@ import { METAL_HOST } from "../../src/apps.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { EditorModel } from "./model.ts";
-import { RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./recovery.ts";
+import { moveOldRecovery, RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./recovery.ts";
+import { VersionStore } from "./versions.ts";
 import { EDITOR_SIZE, EditorWindow } from "./view.tsx";
 import { type Launch, openWindow, windowCommand } from "./windows.ts";
 
 const args = parseArgs(Bun.argv.slice(2));
 const launch: Launch = { bun: process.execPath, main: import.meta.path, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST };
 const cwd = process.cwd();
-const model = new EditorModel();
+const model = new EditorModel({ versions: new VersionStore() });
 const files = args.files.map((file) => resolve(cwd, file));
-const keeper = new RecoveryKeeper(() => model.recovery());
+// Written to its file first; what that leaves unsaved (a draft, a file that can't be written) is kept.
+const keeper = new RecoveryKeeper(() => {
+  model.autosave();
+  return model.recovery();
+});
+moveOldRecovery();
 
 // The window drives itself through the app once it exists: Cut, Copy, Paste and Select All, scrolling, and focus.
 const handle = {
@@ -35,6 +45,8 @@ const handle = {
 /** Stable across renders, so the window retitles only when its name changes. */
 const setTitle = (title: string): void => handle.setTitle(title);
 let discard = false;
+/** How often the window looks at its file and the View settings. */
+const DISK_CHECK_MS = 2000;
 
 const app = runApp(
   // Its Edit rows already act on whichever field has the keyboard, and its Undo is the document's.
@@ -82,12 +94,21 @@ if (first !== undefined) {
   if (recovery) model.recover(recovery);
   if (args.recover === null) for (const name of others) openWindow(windowCommand(launch, [], name), cwd);
 }
-// What was taken is this window's to keep now; then every change is kept a moment after typing stops.
+// What was taken is this window's to keep now; then every change is saved (or kept) a moment after typing stops.
 keeper.flush();
-model.subscribe(() => keeper.changed());
+let seen = model.getSnapshot();
+model.subscribe(() => {
+  const now = model.getSnapshot();
+  if (now.text !== seen.text || now.saved !== seen.saved || now.path !== seen.path) keeper.changed();
+  seen = now;
+});
+setInterval(() => {
+  model.checkDisk();
+  model.reloadPrefs();
+}, DISK_CHECK_MS);
 
-// A close from outside (its close button, ❖Q, logging out) asks as File › Close does (view.tsx); the
-// process ending without asking (a signal, a crash) keeps what isn't saved, and Don't Save drops it.
+// However the window goes (File › Close, its close button, ❖Q, logging out, a signal), what isn't written is
+// written or kept; Delete Draft drops it.
 process.on("exit", () => {
   if (discard) keeper.discard();
   else keeper.flush();

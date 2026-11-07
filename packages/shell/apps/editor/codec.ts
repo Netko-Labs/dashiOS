@@ -1,14 +1,17 @@
 /**
  * Bytes on disk ↔ the text being edited. A file is read as UTF-8 (with or
  * without a byte-order mark), UTF-16 when it starts with one's mark, and
- * otherwise as ISO-8859-1, which any byte sequence is. Line endings are
+ * otherwise as Windows-1252, which any byte sequence is and which keeps the
+ * curly quotes and dashes of files from Windows (ISO-8859-1 would make them
+ * invisible control characters). Line endings are
  * edited as `\n` and written back the way the file had them (the most common
  * kind wins in a mixed file). A file with NUL bytes and no UTF-16 mark is not
  * text. Saving keeps the encoding; a character it cannot hold makes the
  * encoder say so (null) and the caller saves UTF-8 instead.
  */
 
-export type Encoding = "utf-8" | "utf-8-bom" | "utf-16le" | "utf-16be" | "latin-1";
+/** `latin-1` is only ever read back from a draft kept by an earlier Text Editor. */
+export type Encoding = "utf-8" | "utf-8-bom" | "utf-16le" | "utf-16be" | "windows-1252" | "latin-1";
 export type LineEnding = "lf" | "crlf" | "cr";
 
 export interface Decoded {
@@ -23,7 +26,8 @@ export const ENCODING_LABELS: Readonly<Record<Encoding, string>> = {
   "utf-8-bom": "UTF-8 with BOM",
   "utf-16le": "UTF-16 LE",
   "utf-16be": "UTF-16 BE",
-  "latin-1": "ISO-8859-1",
+  "windows-1252": "Western (Windows)",
+  "latin-1": "Western (ISO-8859-1)",
 };
 
 export const LINE_ENDING_LABELS: Readonly<Record<LineEnding, string>> = { lf: "LF", crlf: "CRLF", cr: "CR" };
@@ -62,10 +66,28 @@ function decodeUtf16(bytes: Uint8Array, littleEndian: boolean): string {
   return out;
 }
 
-function decodeLatin1(bytes: Uint8Array): string {
+/** Windows-1252's bytes 0x80 to 0x9F; the five it leaves out stand for themselves, as in browsers. */
+const CP1252_HIGH = [
+  0x20ac, 0x81, 0x201a, 0x192, 0x201e, 0x2026, 0x2020, 0x2021, 0x2c6, 0x2030, 0x160, 0x2039, 0x152, 0x8d, 0x17d, 0x8f, 0x90, 0x2018, 0x2019, 0x201c, 0x201d,
+  0x2022, 0x2013, 0x2014, 0x2dc, 0x2122, 0x161, 0x203a, 0x153, 0x9d, 0x17e, 0x178,
+] as const;
+const CP1252_BYTES: ReadonlyMap<number, number> = new Map(CP1252_HIGH.map((code, index) => [code, 0x80 + index]));
+
+function decodeWindows1252(bytes: Uint8Array): string {
+  const codes = new Uint16Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = bytes[i] as number;
+    codes[i] = byte >= 0x80 && byte < 0xa0 ? (CP1252_HIGH[byte - 0x80] as number) : byte;
+  }
   let out = "";
-  for (let i = 0; i < bytes.length; i += 8192) out += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  for (let i = 0; i < codes.length; i += 8192) out += String.fromCharCode(...codes.subarray(i, i + 8192));
   return out;
+}
+
+/** One character's byte in Windows-1252, or null when it has none. */
+function windows1252Byte(code: number): number | null {
+  if (code < 0x80 || (code >= 0xa0 && code <= 0xff)) return code;
+  return CP1252_BYTES.get(code) ?? null;
 }
 
 function decodeRaw(bytes: Uint8Array): { raw: string; encoding: Encoding } | null {
@@ -77,7 +99,7 @@ function decodeRaw(bytes: Uint8Array): { raw: string; encoding: Encoding } | nul
     const raw = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bom ? bytes.subarray(3) : bytes);
     return { raw, encoding: bom ? "utf-8-bom" : "utf-8" };
   } catch {
-    return { raw: decodeLatin1(bytes), encoding: "latin-1" };
+    return { raw: decodeWindows1252(bytes), encoding: "windows-1252" };
   }
 }
 
@@ -115,6 +137,15 @@ export function encodeText(text: string, encoding: Encoding, lineEnding: LineEnd
       return encodeUtf16(raw, true);
     case "utf-16be":
       return encodeUtf16(raw, false);
+    case "windows-1252": {
+      const out = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        const byte = windows1252Byte(raw.charCodeAt(i));
+        if (byte === null) return null;
+        out[i] = byte;
+      }
+      return out;
+    }
     case "latin-1": {
       const out = new Uint8Array(raw.length);
       for (let i = 0; i < raw.length; i++) {

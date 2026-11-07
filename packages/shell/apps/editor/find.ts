@@ -51,6 +51,24 @@ export function lineOf(text: string, offset: number): number {
   return line;
 }
 
+/** Where 1-based line `line` starts in `text`, clamped to its first and last lines. */
+export function lineStart(text: string, line: number): number {
+  let offset = 0;
+  for (let at = 1; at < line; at++) {
+    const next = text.indexOf("\n", offset);
+    if (next < 0) break;
+    offset = next + 1;
+  }
+  return offset;
+}
+
+/** How many lines `text` has: one more than its line breaks. */
+export function lineCount(text: string): number {
+  let lines = 1;
+  for (let i = text.indexOf("\n"); i >= 0; i = text.indexOf("\n", i + 1)) lines++;
+  return lines;
+}
+
 /** `text` with every match of `query` replaced (taken literally, `$` and all), and how many there were. */
 export function replaceAll(text: string, query: string, replacement: string, options: FindOptions = { caseSensitive: false }): { text: string; count: number } {
   if (query === "") return { text, count: 0 };

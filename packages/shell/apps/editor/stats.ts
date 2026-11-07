@@ -1,4 +1,4 @@
-/** The footer's counts: lines, words, and characters (code points, so an emoji is one). */
+/** The counts after the title: lines, words, and characters (code points, so an emoji is one). */
 
 export interface TextStats {
   lines: number;
@@ -7,7 +7,8 @@ export interface TextStats {
 }
 
 export function textStats(text: string): TextStats {
-  if (text === "") return { lines: 0, words: 0, characters: 0 };
+  // An empty document still has the line the caret is on.
+  if (text === "") return { lines: 1, words: 0, characters: 0 };
   let lines = 1;
   for (let i = text.indexOf("\n"); i >= 0; i = text.indexOf("\n", i + 1)) lines++;
   // A file that ends with a newline does not have an empty last line.

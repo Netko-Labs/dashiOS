@@ -1,6 +1,6 @@
 /**
  * What a document is called and where it goes: its name in the toolbar
- * ("notes.txt — Edited"), the folder under it with the home folder as `~`, and
+ * ("notes.txt"), its folder after it with the home folder as `~`, and
  * the path a typed location in Open or Save As stands for.
  */
 
@@ -14,12 +14,6 @@ export function displayName(path: string | null): string {
   return path === null ? UNTITLED : basename(path) || path;
 }
 
-/** The toolbar's title: the name, and "Edited" while there are changes not saved. */
-export function editedTitle(path: string | null, dirty: boolean): string {
-  const name = displayName(path);
-  return dirty ? `${name} — Edited` : name;
-}
-
 /** `path` with the home folder written `~`. */
 export function tildePath(path: string, home: string = homedir()): string {
   if (home === "" || home === "/") return path;
@@ -27,7 +21,7 @@ export function tildePath(path: string, home: string = homedir()): string {
   return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
 }
 
-/** The folder a document is in, as the toolbar's subtitle shows it; null before it has a file. */
+/** The folder a document is in, as the muted words after the title show it; null before it has a file. */
 export function folderLabel(path: string | null, home: string = homedir()): string | null {
   return path === null ? null : tildePath(dirname(path), home);
 }
