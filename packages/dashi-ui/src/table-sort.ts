@@ -39,17 +39,23 @@ export function sortRows<T>(rows: readonly T[], columns: ReadonlyArray<SortableC
 
 /**
  * `rows` in the order `held` drew them, so a re-sort moves nothing under the
- * pointer: rows that are gone drop out, the rest keep their places, and new
- * ones follow in their own order.
+ * pointer: rows that are gone drop out and the rest keep their places. A new
+ * row goes where `rows` puts it, after the row it follows there (an expanded
+ * app's processes under the app), or first when it leads.
  */
 export function holdOrder<T, K>(held: readonly K[], rows: readonly T[], rowKey: (row: T) => K): T[] {
   const byKey = new Map(rows.map((row) => [rowKey(row), row] as const));
-  const kept = held.flatMap((key) => {
-    const row = byKey.get(key);
-    return row === undefined ? [] : [row];
-  });
-  const placed = new Set(held);
-  return [...kept, ...rows.filter((row) => !placed.has(rowKey(row)))];
+  const kept = held.filter((key) => byKey.has(key));
+  const isKept = new Set(kept);
+  // Each new row, under the last kept row before it in `rows` (null: before them all).
+  const following = new Map<K | null, T[]>();
+  let anchor: K | null = null;
+  for (const row of rows) {
+    const key = rowKey(row);
+    if (isKept.has(key)) anchor = key;
+    else following.set(anchor, [...(following.get(anchor) ?? []), row]);
+  }
+  return [...(following.get(null) ?? []), ...kept.flatMap((key) => [byKey.get(key) as T, ...(following.get(key) ?? [])])];
 }
 
 /** A click on `column`'s header: sort by it, or flip it when it is already the sort. */
