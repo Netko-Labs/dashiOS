@@ -354,7 +354,11 @@ export function Launcher(props: LauncherProps) {
         );
   // The context chips show once the words read as a request, and stay for this opening (⌫ in an empty field drops one).
   const contextShown =
-    mode.kind === "search" && !scope && !inOutside && (context.window !== null || context.selection !== null) && (chipsShown || showsContext(text, handoff, Boolean(agents?.answerer)));
+    mode.kind === "search" &&
+    !scope &&
+    !inOutside &&
+    (context.window !== null || context.selection !== null) &&
+    (chipsShown || showsContext(text, handoff, Boolean(agents?.answerer)));
   useEffect(() => {
     if (contextShown && !chipsShown) setChipsShown(true);
   }, [contextShown, chipsShown]);
