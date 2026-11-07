@@ -85,11 +85,21 @@ interface FileAccess {
   broad: boolean;
 }
 
-/** One `filesystems` entry in words; null for one that names nothing a person keeps (its own folders, runtime sockets). */
-function fileAccess(entry: string): FileAccess | null {
+/**
+ * One `filesystems` entry in words; null for one that names nothing a person
+ * keeps (its own folders, runtime sockets). `appId`: the app's own, so its
+ * own folder in ~/.var/app is left out and another app's is named in words.
+ */
+function fileAccess(entry: string, appId?: string): FileAccess | null {
   if (entry.startsWith("!")) return null;
   const [where = "", mode] = entry.split(":");
   const write = mode !== "ro";
+  // Where Flatpak apps keep their settings and data: a path no one reads (CP-6).
+  const appData = /^~\/\.var\/app\/([^/]+)/.exec(where);
+  if (appData) {
+    if (appData[1] === appId) return null;
+    return { line: write ? "Read and change another app's settings and data" : "Read another app's settings and data", broad: false };
+  }
   if (where === "host" || where === "host-os" || where === "host-etc" || where === "/") {
     if (where === "host") return { line: write ? "Read and change all your files" : "Read all your files", broad: write };
     return { line: "Read the system's own files", broad: false };
@@ -117,8 +127,8 @@ export interface Reach {
   broad: string[];
 }
 
-/** The permissions in plain lines, and whether any is broad. */
-export function describeReach(permissions: FlatpakPermissions): Reach {
+/** The permissions in plain lines, and whether any is broad; `appId` is the app's own (its own folders aren't named). */
+export function describeReach(permissions: FlatpakPermissions, appId?: string): Reach {
   const lines: string[] = [];
   const broad: string[] = [];
   const add = (line: string, isBroad = false): void => {
@@ -126,7 +136,7 @@ export function describeReach(permissions: FlatpakPermissions): Reach {
     if (isBroad && !broad.includes(line)) broad.push(line);
   };
   for (const entry of permissions.filesystems) {
-    const access = fileAccess(entry);
+    const access = fileAccess(entry, appId);
     if (access) add(access.line, access.broad);
   }
   if (permissions.devices.includes("all")) add("Use every device: cameras, microphones, USB and game controllers", true);
@@ -159,8 +169,8 @@ export function describeReach(permissions: FlatpakPermissions): Reach {
 }
 
 /** The line under the list: what it can't do, when there is something reassuring to say. */
-export function cannotReach(permissions: FlatpakPermissions): string | null {
-  const files = permissions.filesystems.some((entry) => fileAccess(entry) !== null);
+export function cannotReach(permissions: FlatpakPermissions, appId?: string): string | null {
+  const files = permissions.filesystems.some((entry) => fileAccess(entry, appId) !== null);
   const network = permissions.shared.includes("network");
   if (files && network) return null;
   if (!files && !network) return "It can't read your files or use the network, except files you open with it.";

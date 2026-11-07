@@ -22,15 +22,13 @@ import { AppIcon, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 import { Failed } from "./states.tsx";
 import { TrustCard } from "./trust.tsx";
-import { appTrust, askReasons, isProprietary, releaseHeading } from "./trust-words.ts";
+import { appTrust, askReasons, licenseWords, releaseHeading } from "./trust-words.ts";
 
 interface FactRow {
   label: string;
   value: string;
   /** Opens this address in the browser. */
   link?: string;
-  /** A muted chip after the value ("Proprietary"). */
-  chip?: string;
 }
 
 function Fact({ fact }: { fact: FactRow }) {
@@ -51,14 +49,6 @@ function Fact({ fact }: { fact: FactRow }) {
             {fact.value}
           </Text>
         </View>
-        {fact.chip !== undefined && (
-          <View
-            testID="chip:proprietary"
-            style={{ paddingHorizontal: 6, height: 18, justifyContent: "center", borderRadius: 9, backgroundColor: colors.button }}
-          >
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>{fact.chip}</Text>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -70,9 +60,7 @@ export function facts(app: AppDetails): FactRow[] {
   const rows: Array<FactRow | null> = [
     app.version === null ? null : { label: "Version", value: app.version },
     app.released === null ? null : { label: "Updated", value: releaseHeading(null, new Date(app.released * 1000)) },
-    app.license === null
-      ? null
-      : { label: "License", value: app.license.replace(/^LicenseRef-/, ""), ...(isProprietary(app.license) ? { chip: "Proprietary" } : {}) },
+    app.license === null ? null : { label: "License", ...licenseWords(app.license) },
     app.downloadSize === null ? null : { label: "Download size", value: formatBytes(app.downloadSize) },
     app.installedSize === null ? null : { label: "Size on disk", value: formatBytes(app.installedSize) },
     app.homepage === null ? null : { label: "Website", value: shortUrl(app.homepage), link: app.homepage },

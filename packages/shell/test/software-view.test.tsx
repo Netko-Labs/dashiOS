@@ -185,7 +185,9 @@ test("an app's page leads with the trust card, and an app that reaches far asks 
   expect(page).toContain("Faster opening.");
   expect(page).toContain("Version 2.0");
   expect(page).toContain("120K installs last month");
-  expect(view.nodeId("chip:proprietary")).toBeDefined();
+  // The License row says Proprietary, not Flathub's raw reference.
+  expect(page).toContain('"Proprietary"');
+  expect(page).not.toContain("LicenseRef");
   expect(page).toContain("Get…");
 
   // The website opens in the browser.

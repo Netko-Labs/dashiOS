@@ -23,6 +23,25 @@ export interface TrustFacts {
 /** A licence that isn't open source (Flathub writes `LicenseRef-proprietary…`). */
 export const isProprietary = (license: string | null): boolean => license !== null && /proprietary/i.test(license);
 
+/**
+ * The License row's words: an SPDX expression as it is, and Flathub's
+ * `LicenseRef-proprietary=https://…` as "Proprietary", linking to its terms.
+ */
+export function licenseWords(license: string): { value: string; link?: string } {
+  const ref = /^LicenseRef-([^=\s]*)(?:=(\S+))?$/i.exec(license.trim());
+  if (!ref) return { value: license };
+  const name = ref[1] ?? "";
+  const value = /^proprietary$/i.test(name) || name === "" ? "Proprietary" : name.replace(/[-_.]+/g, " ");
+  let link: string | undefined;
+  try {
+    const url = new URL(ref[2] ?? "");
+    if (url.protocol === "https:" || url.protocol === "http:") link = url.href;
+  } catch {
+    link = undefined;
+  }
+  return link ? { value, link } : { value };
+}
+
 /** "120K installs last month". */
 export function installsWords(count: number, locale = "en-US"): string {
   const number = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(count);
@@ -39,7 +58,7 @@ export function releaseHeading(version: string | null, date: Date | null, locale
 }
 
 export function appTrust(app: AppDetails, locale = "en-US"): TrustFacts {
-  const reach = app.permissions === null ? null : describeReach(app.permissions);
+  const reach = app.permissions === null ? null : describeReach(app.permissions, app.id);
   const newest = app.releases[0];
   return {
     maker: {
@@ -51,7 +70,7 @@ export function appTrust(app: AppDetails, locale = "en-US"): TrustFacts {
     reach:
       app.permissions === null || reach === null
         ? { lines: [], cannot: null, known: false }
-        : { lines: reach.lines, cannot: cannotReach(app.permissions), known: true },
+        : { lines: reach.lines, cannot: cannotReach(app.permissions, app.id), known: true },
     changed: newest
       ? { heading: releaseHeading(newest.version, newest.released === null ? null : new Date(newest.released * 1000), locale), notes: newest.notes }
       : null,
@@ -64,7 +83,7 @@ export function appTrust(app: AppDetails, locale = "en-US"): TrustFacts {
  * an app no longer maintained. Empty: one click gets it.
  */
 export function askReasons(app: AppDetails): string[] {
-  const broad = app.permissions === null ? [] : describeReach(app.permissions).broad;
+  const broad = app.permissions === null ? [] : describeReach(app.permissions, app.id).broad;
   return [
     ...broad,
     ...(isProprietary(app.license) ? ["Its code isn’t open, so no one outside its maker can check it"] : []),

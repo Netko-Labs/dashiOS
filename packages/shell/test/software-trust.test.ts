@@ -3,7 +3,7 @@ import { REACH } from "@dashi/applet";
 import { appletChip } from "../apps/software/applets/words.ts";
 import { appChip, chipLabel, type Operation, queueLine } from "../apps/software/model.ts";
 import { failureOf } from "../apps/software/store.ts";
-import { appTrust, askReasons, installsWords, isProprietary } from "../apps/software/trust-words.ts";
+import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from "../apps/software/trust-words.ts";
 import { splitAsks, trustLine } from "../src/applets/consent-sheet.tsx";
 import { PORTAL_TABLES } from "../src/privacy/portal-grants.ts";
 import { plainFailure } from "../src/software/failure-words.ts";
@@ -50,6 +50,13 @@ test("what a Flatpak reaches, in the lines applets and Settings use; broad acces
   // Wayland is there, so X11 is only the fallback: not worth a line.
   expect(reach.lines.some((line) => line.includes("X11"))).toBe(false);
   expect(describeReach({ ...none, filesystems: ["home:ro"] }).broad).toEqual([]);
+  // Where Flatpak apps keep their data: its own folder is no reach of note, another app's is said in words, never as a path.
+  const mpv = { ...none, filesystems: ["~/.var/app/io.mpv.Mpv/config/mpv/scripts", "~/.var/app/org.videolan.VLC/data:ro"] };
+  expect(describeReach(mpv, "io.mpv.Mpv").lines).toEqual(["Read another app's settings and data"]);
+  expect(describeReach(mpv).lines.some((line) => line.includes(".var"))).toBe(false);
+  expect(cannotReach({ ...none, filesystems: ["~/.var/app/io.mpv.Mpv/config"] }, "io.mpv.Mpv")).toBe(
+    "It can't read your files or use the network, except files you open with it.",
+  );
   expect(cannotReach(none)).toBe("It can't read your files or use the network, except files you open with it.");
   expect(cannotReach({ ...none, shared: ["network"] })).toBe("It can't read your files, except the ones you open with it.");
 });
@@ -170,4 +177,14 @@ test("the applet consent sheet: what is new up front, what was allowed apart, an
   });
   expect(trustLine(manifest, true, true)).toBe("By Netko Labs · Reviewed by Dashi · Signed by its author");
   expect(trustLine(manifest, undefined, false)).toBe("By Netko Labs · Added by hand, not signed");
+});
+
+test("the License row: Flathub's proprietary reference reads Proprietary and links to its terms", () => {
+  expect(licenseWords("LicenseRef-proprietary=https://www.spotify.com/us/legal/end-user-agreement/")).toEqual({
+    value: "Proprietary",
+    link: "https://www.spotify.com/us/legal/end-user-agreement/",
+  });
+  expect(licenseWords("LicenseRef-proprietary")).toEqual({ value: "Proprietary" });
+  expect(licenseWords("LicenseRef-proprietary=javascript:alert(1)")).toEqual({ value: "Proprietary" });
+  expect(licenseWords("GPL-2.0-or-later")).toEqual({ value: "GPL-2.0-or-later" });
 });
