@@ -37,6 +37,7 @@ import { BACK, FOLDER_PLUS, sidebarGlyph } from "../glyphs.ts";
 import type { BrowserKey } from "../keys.ts";
 import { intentOf } from "../omnibox.ts";
 import { Peek } from "../peek.tsx";
+import { recordRecents } from "../recent-file.ts";
 import { Sidebar } from "../sidebar.tsx";
 import { ViewSwitch } from "../toolbar.tsx";
 import { filterExtension, withExtension } from "./filters.ts";
@@ -73,7 +74,10 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
 
   const go = (): void => {
     const outcome = model.decide(exists);
-    if (outcome.kind === "done") answer(model.answer(outcome.paths));
+    if (outcome.kind !== "done") return;
+    // Files picked or saved are used: Recents lists them next time (a folder chosen isn't a file used).
+    if (!(request.mode === "open" && request.directory)) void recordRecents(outcome.paths, request.appId || request.title);
+    answer(model.answer(outcome.paths));
   };
   // A double-click or Return on a file is Open.
   useEffect(() => {
