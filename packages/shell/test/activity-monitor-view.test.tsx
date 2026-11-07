@@ -86,6 +86,7 @@ async function mount() {
     node,
     has: (testID: string): boolean => Boolean(root.nodeId(testID)),
     press: (testID: string) => emit({ type: "press", nodeId: node(testID) }),
+    emitRaw: emit,
     emitContextMenu: (testID: string) => emit({ type: "contextmenu", nodeId: node(testID), x: 100, y: 100 } as NativeEvent),
     key: (testID: string, key: string) =>
       emit({ type: "windowkey", nodeId: node(testID), key, ctrl: false, alt: false, shift: false, meta: false, repeat: false }),
@@ -112,6 +113,17 @@ test("the list has the keyboard: a click on a row takes it back from the field, 
   await view.key("list-keys", "left");
   expect(view.has("processes:row:pid:11")).toBe(false);
   expect(view.has("processes:row:app:dev.dashi.terminal")).toBe(true);
+  view.root.unmount();
+});
+
+test("Return in the search selects what it found and hands the keyboard to the list", async () => {
+  const view = await mount();
+  const before = view.node("list-keys");
+  await view.emitRaw({ type: "change", nodeId: view.node("search"), value: "term" });
+  await view.emitRaw({ type: "submit", nodeId: view.node("search"), value: "term" });
+  expect(view.node("list-keys")).not.toBe(before);
+  await view.key("list-keys", "right");
+  expect(view.has("processes:row:pid:11")).toBe(true);
   view.root.unmount();
 });
 

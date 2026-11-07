@@ -14,7 +14,8 @@
  * field or presses ❖F, and takes it back when they click a row: there the
  * arrows move the selection, ← and → close and open an app, Return or a
  * double click inspects, and a right click offers the same commands. The
- * field's ↑ and ↓ move the selection too. The battery menu
+ * field's ↑ and ↓ move the selection too, and its Return selects and hands
+ * the keyboard to the list. The battery menu
  * opens it at Energy with an app selected (args.ts, `onOpen`).
  */
 
@@ -238,7 +239,11 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
         onKeyPress={(key) => {
           if (key === "ArrowUp" || key === "ArrowDown") move(key === "ArrowUp" ? "up" : "down");
         }}
-        onSubmit={() => setSelected(submitSelection(keys, selectedLine?.key ?? null))}
+        // Return selects, and the list takes the keyboard: ← and → then open and close what was found.
+        onSubmit={() => {
+          setSelected(submitSelection(keys, selectedLine?.key ?? null));
+          toList();
+        }}
       />
     </>
   );
