@@ -18,9 +18,9 @@ const argv = process.argv.slice(2);
 const overrides = argv.flatMap((arg, at) => (arg === "-c" ? [argv[at + 1] ?? ""] : []));
 const value = (key: string) => overrides.find((each) => each.startsWith(`mcp_servers.dashi.${key}=`))?.slice(`mcp_servers.dashi.${key}=`.length) ?? "";
 const resumed = argv.includes("resume") ? (argv[argv.indexOf("resume") + 1] ?? null) : null;
-const prompt = await new Response(Bun.stdin.stream()).text();
-const words = prompt.split("\n\n").at(-1)?.trim() ?? "";
-const slow = prompt.includes("@slow");
+const asked = await new Response(Bun.stdin.stream()).text();
+const words = asked.split("\n\n").at(-1)?.trim() ?? "";
+const slow = asked.includes("@slow");
 const site = "http://signin.localhost:8443/";
 
 const out = (event: unknown) => process.stdout.write(`${JSON.stringify(event)}\n`);
@@ -107,3 +107,5 @@ if (resumed) {
 out({ type: "turn.completed", usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0 } });
 server.kill();
 process.exit(0);
+
+export {};
