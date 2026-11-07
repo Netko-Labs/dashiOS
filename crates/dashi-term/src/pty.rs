@@ -5,6 +5,7 @@ use std::ffi::{CString, OsString};
 use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::ffi::OsStringExt;
+use std::path::Component;
 use std::sync::mpsc::Sender;
 
 use crate::Message;
@@ -58,6 +59,19 @@ fn environment(extra: &[(String, String)]) -> Vec<CString> {
         .collect()
 }
 
+/// `PWD` for a shell started in `cwd`: the folder as given, links and all, so
+/// a tab opened in `~/Developer` (a link) stays there rather than in where it
+/// points. Shells keep an inherited `PWD` when it is absolute, has no `.` or
+/// `..`, and names their working directory; else they take `getcwd()`'s.
+fn logical_pwd(cwd: &str) -> Option<String> {
+    let path = std::path::Path::new(cwd);
+    let plain = path.is_absolute()
+        && path
+            .components()
+            .all(|part| matches!(part, Component::RootDir | Component::Normal(_)));
+    (plain && std::fs::metadata(path).is_ok_and(|meta| meta.is_dir())).then(|| cwd.to_string())
+}
+
 impl Pty {
     /// Start the shell (a login shell, `-zsh`) on a new PTY of this size,
     /// with the shell integration in `integration` (a folder) when given.
@@ -74,13 +88,16 @@ impl Pty {
             .rsplit(|b| *b == b'/')
             .next()
             .unwrap_or(b"sh");
-        let launch = integration
+        let mut launch = integration
             .map(|dir| {
                 integration::launch(&String::from_utf8_lossy(name), dir, |key| {
                     std::env::var(key).ok()
                 })
             })
             .unwrap_or_default();
+        if let Some(pwd) = cwd.and_then(logical_pwd) {
+            launch.env.push(("PWD".into(), pwd));
+        }
         let mut login = b"-".to_vec();
         login.extend_from_slice(name);
         let argv0 = CString::new(login).map_err(io::Error::other)?;
@@ -224,7 +241,36 @@ pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use super::running_program;
+    use super::{environment, logical_pwd, running_program};
+
+    #[test]
+    fn a_shell_started_through_a_link_keeps_the_links_path() {
+        let root = std::env::temp_dir().join(format!("dashi-term-pwd-{}", std::process::id()));
+        let real = root.join("developer");
+        let link = root.join("Developer");
+        std::fs::create_dir_all(&real).unwrap();
+        let _ = std::fs::remove_file(&link);
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        let link = link.to_str().unwrap().to_string();
+        assert_eq!(logical_pwd(&link), Some(link.clone()));
+        // The shell's environment carries it, in place of the terminal's own PWD.
+        let env = environment(&[("PWD".into(), link.clone())]);
+        let pwds: Vec<_> = env
+            .iter()
+            .filter_map(|entry| entry.to_str().ok()?.strip_prefix("PWD="))
+            .collect();
+        assert_eq!(pwds, [link.as_str()]);
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn a_pwd_shells_would_not_trust_is_left_out() {
+        assert_eq!(logical_pwd("Developer"), None);
+        assert_eq!(logical_pwd("/tmp/../tmp"), None);
+        assert_eq!(logical_pwd("/tmp/./x"), None);
+        assert_eq!(logical_pwd("/no/such/folder/here"), None);
+        assert_eq!(logical_pwd("/"), Some("/".into()));
+    }
 
     #[test]
     fn the_shell_at_its_prompt_is_not_running_anything() {
