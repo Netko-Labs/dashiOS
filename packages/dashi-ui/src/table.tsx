@@ -7,7 +7,7 @@
  */
 
 import { type DragFiles, type DropInfo, type Modifiers, type PointerInfo, ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
 import { holdOrder, nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
@@ -50,19 +50,24 @@ export interface TableProps<T, K extends string | number> {
   header?: boolean;
   /**
    * For a list that re-sorts as it goes (Activity Monitor's processes): the
-   * rows keep their places while the pointer moves over them and while one is
-   * held, so a click lands on the row that was aimed at.
+   * rows keep their places while the pointer is over them (and `STEADY_MS`
+   * after it leaves), while one is held, and for `STEADY_SELECTED_MS` after
+   * the selection changes, so a click lands on the row that was aimed at and
+   * a row just chosen doesn't jump away. A click on a column's title sorts at once.
    */
   steady?: boolean;
 }
 
 const PAD = 10;
-/** How long rows stay put after the pointer last crossed one. */
+/** How long rows stay put after the pointer last crossed one, or left the list. */
 export const STEADY_MS = 1000;
+/** How long rows stay put after the selection changed. */
+export const STEADY_SELECTED_MS = 3000;
 
-/** `rows`, or while the pointer is aiming at them, the order they were drawn in (`holdOrder`). */
-function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled: boolean) {
-  const [holding, setHolding] = useState(false);
+/** `rows`, or while the pointer is over them or a row was just chosen, the order they were drawn in (`holdOrder`). */
+function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled: boolean, selected: K | null) {
+  const [over, setOver] = useState(false);
+  const [timed, setTimed] = useState(false);
   const drawn = useRef<K[]>([]);
   const pressing = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,26 +77,46 @@ function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled:
     },
     [],
   );
-  const hold = (): void => {
-    if (!enabled) return;
-    if (timer.current) clearTimeout(timer.current);
-    setHolding(true);
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      // A press outlasting the wait lets go on release.
-      if (!pressing.current) setHolding(false);
-    }, STEADY_MS);
-  };
+  const hold = useCallback(
+    (ms: number = STEADY_MS): void => {
+      if (!enabled) return;
+      if (timer.current) clearTimeout(timer.current);
+      setTimed(true);
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        // A press outlasting the wait lets go on release.
+        if (!pressing.current) setTimed(false);
+      }, ms);
+    },
+    [enabled],
+  );
+  useEffect(() => {
+    if (selected !== null) hold(STEADY_SELECTED_MS);
+  }, [selected, hold]);
+  const holding = enabled && (over || timed);
   const shown = holding ? holdOrder(drawn.current, rows, rowKey) : [...rows];
   drawn.current = shown.map(rowKey);
   return {
     shown,
     /** The pointer crossed onto a row. */
-    aim: hold,
+    aim: () => hold(),
+    /** The pointer came over the list (`true`) or left it. */
+    pointerOver: (inside: boolean): void => {
+      if (!enabled) return;
+      setOver(inside);
+      if (!inside) hold();
+    },
     /** The button went down on a row, or came up. */
     press: (down: boolean): void => {
       pressing.current = down;
       hold();
+    },
+    /** A new sort was asked for: show it now. */
+    release: (): void => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = null;
+      setTimed(false);
+      drawn.current = [];
     },
   };
 }
@@ -128,7 +153,7 @@ export function Table<T, K extends string | number>({
   const colors = useColors();
   const surface = useSurface();
   const [dropOver, setDropOver] = useState<K | null>(null);
-  const { shown, aim, press } = useSteadyRows(rows, rowKey, steady);
+  const { shown, aim, pointerOver, press, release } = useSteadyRows(rows, rowKey, steady, selected);
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", minHeight: 0, backgroundColor: surface.card }}>
       {header && (
@@ -139,7 +164,10 @@ export function Table<T, K extends string | number>({
               <View
                 key={column.key}
                 testID={`${testID}:sort:${column.key}`}
-                onPress={() => onSort(nextSort(sort, column))}
+                onPress={() => {
+                  release();
+                  onSort(nextSort(sort, column));
+                }}
                 style={{
                   ...cellBox(column.width, column.align),
                   gap: 3,
@@ -160,7 +188,11 @@ export function Table<T, K extends string | number>({
       {rows.length === 0 && empty !== undefined ? (
         <View style={{ flex: 1 }}>{empty}</View>
       ) : (
-        <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column", paddingHorizontal: PAD / 2 }}>
+        <ScrollView
+          testID={`${testID}:rows`}
+          {...(steady ? { onHoverChange: pointerOver } : {})}
+          style={{ flex: 1, flexDirection: "column", paddingHorizontal: PAD / 2 }}
+        >
           {shown.map((row, index) => {
             const key = rowKey(row);
             const chosen = selectedKeys ? selectedKeys.has(key) : key === selected;

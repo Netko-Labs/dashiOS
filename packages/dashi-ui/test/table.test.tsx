@@ -96,3 +96,75 @@ test("a table that isn't steady follows its rows at once", async () => {
   expect(host.last().indexOf(id(2))).toBeLessThan(host.last().indexOf(id(1)));
   root.unmount();
 });
+
+test("a steady table holds still while the pointer is over the list and just after a row is chosen; a sort shows at once", async () => {
+  const host = fakeHost();
+  let setRows: (rows: Proc[]) => void = () => {};
+  let choose: (pid: number | null) => void = () => {};
+  let sorted = 0;
+  function Live() {
+    const [rows, set] = useState<Proc[]>([
+      { pid: 10, cpu: 9 },
+      { pid: 20, cpu: 5 },
+      { pid: 30, cpu: 1 },
+    ]);
+    const [selected, setSelected] = useState<number | null>(null);
+    setRows = set;
+    choose = setSelected;
+    return (
+      <Table
+        testID="t"
+        columns={COLUMNS}
+        rows={rows}
+        rowKey={(row) => row.pid}
+        selected={selected}
+        onSelect={() => {}}
+        sort={null}
+        onSort={() => sorted++}
+        steady
+      />
+    );
+  }
+  const root = render(<Live />, host.transport);
+  await settle();
+  const node = (testID: string): string => root.nodeId(testID) ?? "";
+  const order = (): number[] => {
+    const tree = host.last();
+    return [10, 20, 30]
+      .map((pid) => ({ pid, at: tree.indexOf(`"id":"${node(`t:row:${pid}`)}"`) }))
+      .sort((a, b) => a.at - b.at)
+      .map(({ pid }) => pid);
+  };
+
+  // Over the list, longer than a crossing's wait: still put.
+  host.emit({ type: "hover", nodeId: node("t:rows"), hovered: true });
+  setRows([
+    { pid: 30, cpu: 9 },
+    { pid: 10, cpu: 5 },
+    { pid: 20, cpu: 1 },
+  ]);
+  await settle(STEADY_MS + 50);
+  expect(order()).toEqual([10, 20, 30]);
+  // Off the list: the sort shows once the wait is over.
+  host.emit({ type: "hover", nodeId: node("t:rows"), hovered: false });
+  await settle(STEADY_MS + 50);
+  expect(order()).toEqual([30, 10, 20]);
+
+  // A row chosen (by the keyboard, say): the next sample doesn't move it.
+  choose(10);
+  await settle();
+  setRows([
+    { pid: 20, cpu: 9 },
+    { pid: 30, cpu: 5 },
+    { pid: 10, cpu: 1 },
+  ]);
+  await settle(STEADY_MS + 50);
+  expect(order()).toEqual([30, 10, 20]);
+
+  // A click on a column's title sorts now.
+  host.emit({ type: "press", nodeId: node("t:sort:cpu") });
+  await settle();
+  expect(sorted).toBe(1);
+  expect(order()).toEqual([20, 30, 10]);
+  root.unmount();
+});

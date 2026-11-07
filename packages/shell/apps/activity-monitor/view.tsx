@@ -9,8 +9,8 @@
  * anything: Return in the search selects, and the quit sheet has no Return
  * default. A quit app still running after a few seconds is offered a force
  * quit. The selection is a line's key (an app or a pid), not a place in the
- * list, and the rows hold still while the pointer aims at one (the Table's
- * `steady`). The list has the keyboard until the person clicks the search
+ * list, and the rows hold still while the pointer is over them and just
+ * after a line is chosen (the Table's `steady`). The list has the keyboard until the person clicks the search
  * field or presses ❖F, and takes it back when they click a row: there the
  * arrows move the selection, ← and → close and open an app, Return or a
  * double click inspects, and a right click offers the same commands. The
@@ -298,7 +298,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
           columns={columns}
           rows={lines}
           rowKey={(line) => line.key}
-          // The list re-sorts every two seconds: rows hold still while the pointer aims, so a click selects the line aimed at.
+          // The list re-sorts every two seconds: rows hold still while the pointer is over them and just after a choice, so a click selects the line aimed at.
           steady
           selected={selectedLine?.key ?? null}
           onSelect={press}
