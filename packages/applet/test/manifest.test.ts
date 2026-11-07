@@ -63,7 +63,7 @@ test("permissions in plain words, and what an applet can't do", () => {
   const permissions = names.map(parsePermission).filter((each): each is Exclude<typeof each, { error: string }> => !("error" in each));
   expect(consentLines(permissions)).toEqual([
     "Change the power mode, battery charge limit and processor boost",
-    "Change the keyboard light",
+    "Change the keyboard and lid lights",
     "Show notifications",
   ]);
   expect(cannotDo(permissions)).toBe("It can't read your files or use the network.");

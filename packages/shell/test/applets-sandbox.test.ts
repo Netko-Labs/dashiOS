@@ -99,11 +99,17 @@ test("hardware: the system bus through the proxy, dashi-hardware's methods for t
   expect(sensors).toContain(call("Describe"));
   expect(sensors).toContain(call("Get"));
   expect(sensors).not.toContain(call("Set"));
+  expect(sensors).toContain(call("Slash"));
+  expect(sensors).not.toContain(call("SetSlash"));
+  const lighting = busRules(manifest(["hardware.lighting"]).permissions).system;
+  expect(lighting).toContain(call("SetSlash"));
+  expect(lighting).not.toContain(call("SetMany"));
   expect(sensors).toContain(`--broadcast=${HARDWARE_BUS_NAME}=${HARDWARE_BUS_NAME}.Changed@/dev/dashi/Hardware1`);
   const power = busRules(manifest(["hardware.power"]).permissions).system;
   expect(power).toContain(call("SetMany"));
   expect(power).not.toContain(call("SetFanCurve"));
   expect(power).not.toContain(call("SetCurveOptimizer"));
+  expect(power).not.toContain(call("SetSlash"));
   const fans = busRules(manifest(["hardware.fans"]).permissions).system;
   expect(fans).toContain(call("SetFanCurve"));
   expect(fans).not.toContain(call("Set"));
