@@ -73,7 +73,7 @@ pub(crate) struct Vt {
     event: ffi::GhosttyKeyEvent,
     hooks: Box<Hooks>,
     /// Where a drag selection started.
-    pub(crate) anchor: Option<ffi::GhosttyGridRef>,
+    pub(crate) anchor: Option<crate::selection::Anchor>,
     /// Wheel lines not yet scrolled (touchpads give fractions).
     scroll_rest: f64,
     /// The cursor as last sent: a move alone dirties no row, but needs a frame.
