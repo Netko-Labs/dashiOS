@@ -99,11 +99,13 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
 
   const actions: PanelActions = {
     answer(run, question, choice) {
-      // Answered, the panel goes as a sheet does, before the answer does: what Dashi types next (a login, a
-      // code) goes to the person's seat, so the keyboard must be back on their window, not on this popover.
+      // Answered, the panel goes as a sheet does: what Dashi types next (a login, a code) goes to the person's
+      // seat, so the keyboard must be back on their window, not on this popover. The answer is recorded
+      // first, so the panel closing doesn't put the sheet up again (questions.ts); the agent hears it only
+      // after this returns, with the panel gone. "Other login…" asks again, so the panel stays.
       const answer = () => {
-        deps.menus()?.close();
         service.runs.answer(run, question, choice);
+        if (choice !== "other") deps.menus()?.close();
       };
       // A no (and "Other login…") always counts; a yes only from the person's own press, as on a sheet.
       if (choice === "deny" || choice === "no" || choice === "other") return answer();
@@ -154,12 +156,12 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
         taskOf: (agent) => deps.agents.getSnapshot().find((each) => each.id === agent)?.task ?? null,
         runs: service.runs,
         panelOpen,
-        onPanelClosed(listener) {
+        onPanel(listener) {
           let was = panelOpen();
           return (
             deps.menus()?.subscribe(() => {
               const now = panelOpen();
-              if (was && !now) listener();
+              if (was !== now) listener(now);
               was = now;
             }) ?? (() => {})
           );

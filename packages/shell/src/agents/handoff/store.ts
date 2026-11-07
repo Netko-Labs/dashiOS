@@ -302,6 +302,11 @@ export class AgentRuns {
     return true;
   }
 
+  /** Whether `question` still waits on the person (not answered, not taken back). */
+  isWaiting(id: string, question: string): boolean {
+    return this.find(id)?.waiting.some((each) => each.question.id === question) ?? false;
+  }
+
   /** A settings change it made, with how to put it back. */
   changed(id: string, undo: Undo): void {
     const run = this.find(id);

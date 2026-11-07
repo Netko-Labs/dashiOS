@@ -4,16 +4,18 @@
  * launcher"): which login (Allow for this task, Once, Other login…, Don't),
  * a website, a hand-over (do it, then Done), another permission, or one
  * action. The question goes on the run's card (store.ts) and the chip turns
- * amber. While the panel is closed the existing sheet shows as well, and a
- * notification says so; whichever the person answers first counts, and the
- * other comes down. Payments keep dashi-secretd's own fingerprint or
- * password sheet: that is the proof.
+ * amber. It shows in one place at a time (route.ts): on the card while the
+ * panel is open; while it is closed, in the existing sheet (or the
+ * hand-over banner), with a notification. The first answer, in either
+ * place, settles it and the other comes down. Payments keep dashi-secretd's
+ * own fingerprint or password sheet and nothing else: that is the proof.
  *
  * Any other agent's questions go to the sheets as before.
  */
 
 import type { AgentUi, Allow, Answer, SignInAsk, SignInChoice } from "../presence.ts";
 import { DENY } from "../sheet-queue.ts";
+import { QuestionRoute, type RouteStep } from "./route.ts";
 import type { AgentRuns, RunQuestion, RunView } from "./store.ts";
 
 export interface QuestionDeps {
@@ -22,8 +24,8 @@ export interface QuestionDeps {
   runs: AgentRuns;
   /** Whether the panel is on screen now. */
   panelOpen(): boolean;
-  /** Told when the panel closes. */
-  onPanelClosed(listener: () => void): () => void;
+  /** Told each time the panel opens (true) or closes (false). */
+  onPanel(listener: (open: boolean) => void): () => void;
   /** A question went up while the panel was closed: the notification. */
   attention(run: RunView, question: RunQuestion): void;
 }
@@ -74,11 +76,11 @@ export const turnQuestion = (reason: string): Asked => ({
  */
 export function routedUi(ui: AgentUi, deps: QuestionDeps): AgentUi {
   /**
-   * Ask `asked` on run `task`'s card, and the sheet while the panel is
-   * closed (or once it closes); the first answer counts. `fromPanel` maps a
-   * panel choice to the answer (null: ask again, in `again`).
+   * Ask `asked` on run `task`'s card, and in the sheet whenever the panel is
+   * closed (route.ts); the first answer counts. `fromPanel` maps a panel
+   * choice to the answer ("again": ask again, in `again`).
    */
-  async function both<T>(
+  function both<T>(
     task: string,
     asked: Asked,
     sheet: (signal: AbortSignal) => Promise<T>,
@@ -87,48 +89,67 @@ export function routedUi(ui: AgentUi, deps: QuestionDeps): AgentUi {
     signal: AbortSignal | undefined,
     again?: () => Asked,
   ): Promise<T> {
-    const controller = new AbortController();
-    const onAbort = () => controller.abort();
-    signal?.addEventListener("abort", onAbort, { once: true });
-    let shown: Promise<T> | null = null;
+    const route = new QuestionRoute();
     let current = deps.runs.ask(task, asked);
-    let resolveSheet: (value: T) => void = () => {};
-    const fromSheet = new Promise<T>((resolve) => {
-      resolveSheet = resolve;
+    let shown: AbortController | null = null;
+    let finish: (value: T) => void = () => {};
+    const result = new Promise<T>((resolve) => {
+      finish = resolve;
     });
-    const showSheet = () => {
-      if (shown || controller.signal.aborted) return;
-      shown = sheet(controller.signal);
-      void shown.then((value) => {
-        if (!controller.signal.aborted) resolveSheet(value);
-      });
-      const run = deps.runs.get(task);
-      if (run) deps.attention(run, current.question);
-    };
-    const offClosed = deps.onPanelClosed(showSheet);
-    if (!deps.panelOpen()) showSheet();
-    try {
-      for (;;) {
-        const won = await Promise.race([current.answer.then((choice) => ({ panel: choice })), fromSheet.then((value) => ({ sheet: value }))]);
-        if ("sheet" in won) {
-          deps.runs.answer(task, current.question.id, null);
-          return won.sheet;
-        }
-        if (won.panel === null) {
-          // Taken back: the run ended, or the agent gave up on the call.
-          if (controller.signal.aborted || !deps.runs.get(task) || deps.runs.get(task)?.ended !== null) return refused;
-          return shown ? await fromSheet : refused;
-        }
-        const value = fromPanel(won.panel);
-        if (value !== "again") return value;
-        current = deps.runs.ask(task, again?.() ?? asked);
+
+    const apply = (step: RouteStep) => {
+      if (step.sheet === "hide" && shown) {
+        // Taken down, its answer (a "Don't Allow" from the queue) doesn't count.
+        shown.abort();
+        shown = null;
       }
-    } finally {
-      offClosed();
+      if (step.sheet === "show") {
+        const controller = new AbortController();
+        shown = controller;
+        void sheet(controller.signal).then(
+          (value) => {
+            if (controller.signal.aborted) return;
+            settle("sheet", value);
+          },
+          () => {},
+        );
+      }
+      if (step.notify) {
+        const run = deps.runs.get(task);
+        if (run) deps.attention(run, current.question);
+      }
+    };
+    const settle = (by: "panel" | "sheet" | "gone", value: T) => {
+      const { counts, step } = route.settle(by);
+      if (!counts) return;
+      apply(step);
+      offPanel();
       signal?.removeEventListener("abort", onAbort);
+      // The card goes whichever place answered (a no-op when the panel did).
       deps.runs.answer(task, current.question.id, null);
-      controller.abort();
-    }
+      finish(value);
+    };
+    const listen = (question: { question: RunQuestion; answer: Promise<string | null> }) => {
+      void question.answer.then((choice) => {
+        if (question !== current) return;
+        if (choice === null) return settle("gone", refused);
+        const value = fromPanel(choice);
+        if (value !== "again") return settle("panel", value);
+        current = deps.runs.ask(task, again?.() ?? asked);
+        listen(current);
+      });
+    };
+    const onAbort = () => settle("gone", refused);
+    const offPanel = deps.onPanel((open) => {
+      if (open) return apply(route.panelOpened());
+      // Closed by an answer pressed in it: that answer is on its way, so no sheet.
+      if (deps.runs.isWaiting(task, current.question.id)) apply(route.panelClosed());
+    });
+    signal?.addEventListener("abort", onAbort, { once: true });
+    listen(current);
+    if (signal?.aborted) onAbort();
+    else apply(route.start(deps.panelOpen()));
+    return result;
   }
 
   return {
@@ -217,17 +238,15 @@ export function routedUi(ui: AgentUi, deps: QuestionDeps): AgentUi {
     turn(turn, signal) {
       const task = deps.taskOf(turn.agent);
       if (!task) return ui.turn(turn, signal);
-      // The banner always shows (the window comes forward with it): Done there or in the panel.
-      const controller = new AbortController();
-      const onAbort = () => controller.abort();
-      signal?.addEventListener("abort", onAbort, { once: true });
-      const banner = ui.turn(turn, controller.signal);
-      const { question, answer } = deps.runs.ask(task, turnQuestion(turn.reason));
-      return Promise.race([banner, answer.then((choice) => choice === "done")]).finally(() => {
-        signal?.removeEventListener("abort", onAbort);
-        deps.runs.answer(task, question.id, null);
-        controller.abort();
-      });
+      // The banner is the hand-over's sheet: up while the panel is closed; Done there or on the card.
+      return both<boolean>(
+        task,
+        turnQuestion(turn.reason),
+        (inner) => ui.turn(turn, inner),
+        (choice) => choice === "done",
+        false,
+        signal,
+      );
     },
   };
 }
