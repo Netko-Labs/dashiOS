@@ -63,16 +63,6 @@ export function ForHere() {
   );
 }
 
-/** "From <catalog>", beside the name of an applet from a catalog the person added (never with Dashi's review mark). */
-export function FromCatalog({ name }: { name: string }) {
-  const colors = useColors();
-  return (
-    <View testID="from-catalog" style={{ flexDirection: "row", alignItems: "center" }}>
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{`From ${name}`}</Text>
-    </View>
-  );
-}
-
 export function AppletRow({ entry }: { entry: StoreApplet }) {
   const colors = useColors();
   const actions = useActions();
@@ -100,11 +90,11 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
               {manifest.name}
             </Text>
             {entry.reviewed && <ReviewedSeal size={12} />}
-            {!entry.from.builtIn && <FromCatalog name={entry.from.name} />}
             {here && <ForHere />}
           </View>
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-            {`${manifest.summary} · ${manifest.author.name}`}
+            {/* An added catalog's applet says whose list it is on first, where a long summary can't cut it off (never Dashi's review mark). */}
+            {`${entry.from.builtIn ? "" : `From ${entry.from.name} · `}${manifest.summary} · ${manifest.author.name}`}
           </Text>
         </View>
       </View>
