@@ -49,10 +49,14 @@ export function cmdlineOf(pid: number): string[] | null {
   }
 }
 
+/** No source can be asked: none is turned on, or 1Password is but its command-line tool isn't there. */
+const NO_SOURCE =
+  "No password source can be used: turn one on in Settings › Passwords. 1Password also needs its command-line tool (op) installed, with CLI integration on in the 1Password app.";
+
 export async function listLogins(call: Extract<Call, { name: "list_logins" }>, ctx: RunContext): Promise<ToolResult> {
   ctx.status(call.site ? `Looking for logins for ${call.site}` : "Looking at saved logins");
   const sources = ctx.secrets.sources();
-  if (sources.length === 0) return toolError("No password source is turned on (Settings › Passwords).");
+  if (sources.length === 0) return toolError(NO_SOURCE);
   const { logins, failed } = await findLogins(sources, call.site ?? "");
   const note = failed.length > 0 ? `${failed.map((id) => SOURCE_LABELS[id]).join(" and ")} couldn't be asked.` : null;
   return json({ logins: logins.map(describeForAgent), ...(note ? { note } : {}) });
@@ -99,7 +103,7 @@ export async function signInCall(call: Extract<Call, { name: "sign_in" | "fill_c
   if (!window) return noWindow(call.window);
   if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
   const broker = brokerFor(window, ctx);
-  if (broker.sources.length === 0) return toolError("No password source is turned on (Settings › Passwords).");
+  if (broker.sources.length === 0) return toolError(NO_SOURCE);
   return call.name === "sign_in" ? signIn(broker, call.site, call.account, call.submit) : fillCode(broker, call.site, call.account, call.submit);
 }
 
