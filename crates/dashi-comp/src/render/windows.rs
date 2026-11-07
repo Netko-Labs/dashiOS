@@ -144,8 +144,9 @@ pub(crate) fn framed_window<R>(
             elements,
         );
     }
-    // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window.
-    let rounding = rounding(state, renderer, window, decor == Decor::Unified, scale.x);
+    // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window
+    // (and on a maximized one that draws its own).
+    let rounding = rounding(state, renderer, window, scale.x);
     elements.extend(tree.into_iter().map(|element| match &rounding {
         Some(rounding) if element.id() == &rounding.root => {
             DashiElement::Rounded(rounding.element(element))
@@ -199,7 +200,7 @@ pub(crate) fn overview_window<R>(
         .windows
         .by_window(window)
         .is_some_and(|entry| entry.decor == Decor::Unified);
-    let rounding = rounding(state, renderer, window, unified, scale.x * s);
+    let rounding = rounding(state, renderer, window, scale.x * s);
     // Its title bar or lights, the whole image shrunk with it at the same spot.
     let title = state
         .windows
@@ -253,24 +254,23 @@ impl Rounding {
     }
 }
 
-/// The rounding for a window Dashi frames (none for others, full screen, or with square corners chosen);
+/// The rounding for a window Dashi frames, and for one that draws its own frame while it is
+/// maximized (the shell's Fill: its own corners and shadow go then, and a maximized window is
+/// rounded as Dashi's are); none full screen, or with square corners chosen. Under Dashi's
+/// title bar only the bottom corners (the bar rounds the top), otherwise all four.
 /// `pixels`: physical pixels per logical one where it is drawn (its scale, times how small).
-fn rounding<R>(
-    state: &Dashi,
-    renderer: &mut R,
-    window: &Window,
-    top: bool,
-    pixels: f64,
-) -> Option<Rounding>
+fn rounding<R>(state: &Dashi, renderer: &mut R, window: &Window, pixels: f64) -> Option<Rounding>
 where
     R: Renderer + GlesAccess,
 {
     let entry = state.windows.by_window(window)?;
     let framed = matches!(entry.decor, Decor::Standard | Decor::Unified);
     // Full screen, it is square to the screen's edges.
-    if !framed || entry.fullscreen.is_some() || state.chrome_style.radius <= 0 {
+    if !(framed || entry.maximized) || entry.fullscreen.is_some() || state.chrome_style.radius <= 0
+    {
         return None;
     }
+    let top = entry.decor != Decor::Standard;
     let program = super::rounded::program(renderer.gles())?;
     let root = window
         .wl_surface()

@@ -1,6 +1,7 @@
 //! Windows Dashi frames get rounded corners at the Appearance radius: under
 //! Dashi's title bar the bottom ones (the bar rounds the top), on a unified
-//! window all four. The window's main surface is drawn through a texture
+//! window all four. So does a window that draws its own frame while it is
+//! maximized (the shell's Fill), all four: it drops its own corners then. The window's main surface is drawn through a texture
 //! shader that fades the pixels outside each corner's arc (antialiased).
 //! The GLES frame is reached through `GlesAccess`, for the nested renderer
 //! and the multi-GPU one alike. A rounded surface is never scanned out
