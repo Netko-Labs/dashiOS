@@ -180,11 +180,14 @@ export function askHint(query: string, snapshot: LauncherAgentsSnapshot | null):
 /** The placeholder when someone answers: the field takes words to do, not only names. */
 export const ASK_PLACEHOLDER = "Search, or say what to do";
 
-/** The stop square's press for a row that has one (a Now row), as ResultRow props. */
+/** The stop square's press for a row that has one (a Now row, a run), as ResultRow props. */
 export function withStop(row: Row, run: (act: AgentAct) => void): { onStop?: () => void } {
   const action = row.action;
-  if (!row.stop || action.kind !== "agent" || action.act.kind !== "now") return {};
-  const item = action.act.item;
+  if (!row.stop || action.kind !== "agent") return {};
+  const act = action.act;
+  if (act.kind === "run") return { onStop: () => run({ kind: "stop-run", run: act.run }) };
+  if (act.kind !== "now") return {};
+  const item = act.item;
   return { onStop: () => run({ kind: "stop", item }) };
 }
 
@@ -214,6 +217,16 @@ export function agentVerbs(value: AgentAct): Verb[] {
       );
       return [verb("show", "Show in Settings", value, { key: "↩" }), ...undos];
     }
+    case "hand-off":
+      return [verb("start", "Start", value, { key: "↩" }), verb("watch", "Start and watch", { ...value, watch: true }, { key: "⌥↩" })];
+    case "run":
+      return [
+        verb("open", "Open", value, { key: "↩" }),
+        verb("tell", "Tell it something", { kind: "tell", run: value.run }, { key: "⇥" }),
+        verb("stop", "Stop", { kind: "stop-run", run: value.run }, { key: "❖⌫", danger: true }),
+      ];
+    case "sign-in-harness":
+      return [verb("sign-in", "Sign in in Terminal", value, { key: "↩" })];
     default:
       return [verb("do", value.kind === "ask" ? "Ask" : "Set up an agent…", value, { key: "↩" })];
   }

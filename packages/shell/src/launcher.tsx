@@ -31,11 +31,17 @@ import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Outcome } from "./actions/types.ts";
+import type { HarnessId } from "./agents/ask/answerer.ts";
+import { NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
+import { cut } from "./agents/handoff/words.ts";
 import { iconPath } from "./apps.ts";
 import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
 import { fieldAccess, listAccess, pictureAccess, rowAccess } from "./launcher/access.ts";
+import type { AgentAct } from "./launcher/agents/acts.ts";
 import { agentHandlers } from "./launcher/agents/handlers.ts";
+import { type HandoffSnapshot, handoffHints, harnessByDigit, type LauncherHandoff, runRow, showsContext, withHandoff } from "./launcher/agents/handoff-rows.ts";
+import { type ChipsOn, ContextChips, chipsHeight, chosenContext, GrantsCard } from "./launcher/agents/handoff-views.tsx";
 import {
   ASK_PLACEHOLDER,
   askHint,
@@ -52,9 +58,9 @@ import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "./launcher/editin
 import { type ExtensionSession, useExtensions } from "./launcher/extensions.ts";
 import { Field } from "./launcher/field.tsx";
 import { fitToRoom } from "./launcher/fit.ts";
-import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./launcher/host.ts";
+import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented, Store } from "./launcher/host.ts";
 import { launcherIndex } from "./launcher/items.ts";
-import type { LauncherCommand } from "./launcher/keys.ts";
+import { type ExtraKeys, type LauncherCommand, NO_EXTRA_KEYS } from "./launcher/keys.ts";
 import { linkTitle } from "./launcher/link-args.ts";
 import { PANEL, SURFACE, useMeasures } from "./launcher/measures.ts";
 import { chordWhen, collision } from "./launcher/person-keys.ts";
@@ -112,6 +118,8 @@ export interface LauncherKeySource {
   record?(on: boolean): void;
   /** What ← and → are for now: the field's, or the windows' pictures' (launcher/pictures.ts). */
   arrows?(want: ArrowsWanted): void;
+  /** The agents' keys wanted now: ⌥1–9, ❖⌫, ⌫ on a chip, ❖, (launcher/keys.ts `ExtraKeys`). */
+  extras?(want: ExtraKeys): void;
 }
 
 export interface LauncherProps {
@@ -149,6 +157,12 @@ export interface LauncherProps {
   heightTransitionMs?: number;
   /** Agents: Ask, the plan, Now, history (launcher/agents/); without it the launcher knows none. */
   agents?: LauncherAgents;
+  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/agents/handoff-rows.ts). */
+  handoff?: LauncherHandoff;
+  /** The window in front when the launcher opened, and what was selected: the context chips (filled in as it opens). */
+  context?: Store<TaskContext>;
+  /** Open talking to this run (a done notification's Follow up). */
+  talkTo?: string | null;
   /** Narrowed views of the panel (launcher/scope.ts): choosing one's address enters it. */
   scopes?: readonly LauncherScope[];
   /** Open in this scope (its id), for it alone: Esc closes. */
@@ -171,6 +185,8 @@ const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => und
 const noStore = { subscribe: () => () => {}, getSnapshot: () => NO_WORLD };
 const noPrefs = { subscribe: () => () => {}, getSnapshot: () => NO_PREFS };
 const noAgents = { subscribe: () => () => {}, getSnapshot: (): LauncherAgentsSnapshot | null => null };
+const noHandoff = { subscribe: () => () => {}, getSnapshot: (): HandoffSnapshot | null => null };
+const noContext = { subscribe: () => () => {}, getSnapshot: (): TaskContext => NO_CONTEXT };
 
 /** Where the launcher is: searching, a row's action list, giving an alias or a key, or a link's action. */
 type Mode =
@@ -180,7 +196,11 @@ type Mode =
   | { kind: "shortcut"; address: string; title: string; when: string | null }
   | { kind: "presented"; presented: Presented }
   /** An Ask's plan: the field takes a follow-up (launcher/agents/task-mode.tsx). */
-  | { kind: "task"; id: string };
+  | { kind: "task"; id: string }
+  /** The grants card before a task starts: Return starts it (launcher/agents/handoff-views.tsx). */
+  | { kind: "grants"; harness: HarnessId; watch: boolean }
+  /** Words to a run (⇥ on its row, Follow up): Return sends them. */
+  | { kind: "message"; run: string };
 
 export function Launcher(props: LauncherProps) {
   const { entries, recent = [], files, keys, onClose, host, ranking } = props;
@@ -202,7 +222,15 @@ export function Launcher(props: LauncherProps) {
   const [lastFileCount, setLastFileCount] = useState(FILE_ROWS);
   const [copied, setCopied] = useState<{ query: string; ok: boolean } | null>(null);
   const [failed, setFailed] = useState<Entry | null>(null);
-  const [mode, setMode] = useState<Mode>(() => (props.presented ? { kind: "presented", presented: props.presented } : { kind: "search" }));
+  const handoff = useSyncExternalStore(props.handoff?.subscribe ?? noHandoff.subscribe, props.handoff?.getSnapshot ?? noHandoff.getSnapshot);
+  const context = useSyncExternalStore(props.context?.subscribe ?? noContext.subscribe, props.context?.getSnapshot ?? noContext.getSnapshot);
+  // The context chips: the window in front is on until dropped; the selection only when chosen. Once shown they stay.
+  const [chipsOn, setChipsOn] = useState<ChipsOn>({ window: true, selection: false });
+  const [chipsShown, setChipsShown] = useState(false);
+  const [grantsRow, setGrantsRow] = useState<0 | 1>(0);
+  const [mode, setMode] = useState<Mode>(() =>
+    props.presented ? { kind: "presented", presented: props.presented } : props.talkTo ? { kind: "message", run: props.talkTo } : { kind: "search" },
+  );
   // The action list's own field and selection, and the destructive verb asking to be pressed again.
   const [filter, setFilter] = useState("");
   const [heldVerb, setHeldVerb] = useState<string | null>(null);
@@ -308,20 +336,30 @@ export function Launcher(props: LauncherProps) {
   // A scope has its own rows only, and so does a command from outside. Otherwise agents' rows go around the
   // rest, never between them: Now on top of an empty field, Ask last (launcher/agents/rows.ts).
   const inOutside = ext.chip !== undefined;
+  const isTabbed = tabbed !== null && tabbed === text;
   const assembled = scope
     ? scope.sections(query)
     : inOutside
       ? outside
-      : withAgents(outside, {
-          query,
-          allApps,
-          snapshot: agents,
-          tabbed: tabbed !== null && tabbed === text,
-          ...(props.agents ? { history: props.agents.history } : {}),
-          now: Math.floor(Date.now() / 1000),
-        });
-  // Whatever added rows (providers, agents), the list fits the panel at the text size (launcher/fit.ts).
-  const sections = fitToRoom(assembled, { height: m.room, row: m.row, head: m.head });
+      : withHandoff(
+          withAgents(outside, {
+            query,
+            allApps,
+            snapshot: agents,
+            tabbed: isTabbed,
+            ...(props.agents ? { history: props.agents.history } : {}),
+            now: Math.floor(Date.now() / 1000),
+          }),
+          { query, allApps, snapshot: handoff, tabbed: isTabbed },
+        );
+  // The context chips show once the words read as a request, and stay for this opening (⌫ in an empty field drops one).
+  const contextShown =
+    mode.kind === "search" && !scope && !inOutside && (context.window !== null || context.selection !== null) && (chipsShown || showsContext(text, handoff));
+  useEffect(() => {
+    if (contextShown && !chipsShown) setChipsShown(true);
+  }, [contextShown, chipsShown]);
+  // Whatever added rows (providers, agents), the list fits the panel at the text size (launcher/fit.ts), under the chips.
+  const sections = fitToRoom(assembled, { height: m.room - (contextShown ? chipsHeight(m.textSize) : 0), row: m.row, head: m.head });
   /** A row's verbs: its scope's, or what verbs.ts gives it. */
   const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
@@ -378,6 +416,10 @@ export function Launcher(props: LauncherProps) {
   latest.current = listIds;
   const mover = (how: Move) => {
     pictures.fold();
+    if (mode.kind === "grants") {
+      setGrantsRow((now) => (how === "up" || how === "first" || how === "page-up" ? 0 : how === "down" || how === "last" || how === "page-down" ? 1 : now));
+      return;
+    }
     if (mode.kind === "search") setHeld((now) => moveSelection(latest.current, now, how));
     else if (mode.kind === "task")
       setHeldVerb((now) =>
@@ -490,6 +532,53 @@ export function Launcher(props: LauncherProps) {
     if (result.notice) setNotice(result.notice);
   };
 
+  /** The words and the chips left on: what a hand-off starts with. */
+  const handOff = (harness: HarnessId, request: string, watch: boolean) => {
+    const remote = props.handoff;
+    if (!remote || !request.trim()) return;
+    const chosen = chosenContext(context, chipsOn);
+    if (remote.needsCard(chosen)) {
+      setMode({ kind: "grants", harness, watch });
+      setFilter(request.trim());
+      setGrantsRow(0);
+      return;
+    }
+    remote.start({ harness, request: request.trim(), context: chosen }, watch);
+    onClose();
+  };
+  const talkTo = (run: string) => {
+    setMode({ kind: "message", run });
+    setFilter("");
+    setHeldVerb(null);
+  };
+  /** Agents from the launcher's own acts; false for the rest (launcher/agents/handlers.ts has them). */
+  const handoffAct = (act: AgentAct): boolean => {
+    const remote = props.handoff;
+    if (!remote) return false;
+    switch (act.kind) {
+      case "hand-off":
+        handOff(act.harness, act.query, act.watch === true);
+        return true;
+      case "sign-in-harness":
+        remote.signIn(act.harness);
+        onClose();
+        return true;
+      case "run":
+        remote.open(act.run);
+        onClose();
+        return true;
+      case "stop-run":
+        remote.stop(act.run);
+        sayDone("Stopped");
+        return true;
+      case "tell":
+        talkTo(act.run);
+        return true;
+      default:
+        return false;
+    }
+  };
+
   const perform = (effect: Effect, row: Row | undefined, stay = false): void => {
     const runOf = (promise: Promise<Outcome> | undefined) => void promise?.then((outcome) => ran(outcome, stay));
     switch (effect.kind) {
@@ -548,6 +637,7 @@ export function Launcher(props: LauncherProps) {
         setHeld(null);
         return;
       case "agent":
+        if (handoffAct(effect.act)) return;
         return agentKeys.act(effect.act);
       case "new-window":
         learn(row);
@@ -659,6 +749,27 @@ export function Launcher(props: LauncherProps) {
         return backToSearch();
       case "task":
         return agentKeys.submit(heldStep);
+      case "grants": {
+        if (grantsRow === 1) {
+          props.handoff?.settings();
+          return onClose();
+        }
+        const request = filter.trim();
+        if (!request || !props.handoff) return;
+        props.handoff.start({ harness: mode.harness, request, context: chosenContext(context, chipsOn) }, mode.watch);
+        return onClose();
+      }
+      case "message": {
+        const words = filter.trim();
+        if (!words) return;
+        const run = handoff?.runs.find((each) => each.id === mode.run);
+        if (props.handoff?.tell(mode.run, words)) {
+          setFilter("");
+          sayDone(`Sent to ${run?.harnessName ?? "the agent"}`);
+          setTimeout(onClose, 600);
+        } else sayDone("That agent is gone", false);
+        return;
+      }
     }
   };
 
@@ -690,9 +801,34 @@ export function Launcher(props: LauncherProps) {
       case "record":
         if (mode.kind === "shortcut") setMode({ ...mode, when: chordWhen(cmd.chord) });
         return;
-      case "tab":
+      case "tab": {
         // In a scope (the clipboard, snippets, a command from outside) ⇥ asks no one: the rows are the scope's own.
-        return scope || inOutside ? undefined : agentKeys.tab();
+        if (scope || inOutside || mode.kind === "grants" || mode.kind === "message") return;
+        // On a run's row, ⇥ turns the field into words to it.
+        const act = selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
+        if (mode.kind === "search" && !text && act?.kind === "run") return talkTo(act.run);
+        return agentKeys.tab();
+      }
+      case "option-pick": {
+        const harness = mode.kind === "search" ? harnessByDigit(handoff, cmd.digit) : null;
+        if (harness) handOff(harness, text, false);
+        return;
+      }
+      case "stop": {
+        const act = selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
+        if (mode.kind === "search" && act?.kind === "run") handoffAct({ kind: "stop-run", run: act.run });
+        return;
+      }
+      case "backspace":
+        if (chipsOn.selection) setChipsOn({ ...chipsOn, selection: false });
+        else if (chipsOn.window) setChipsOn({ ...chipsOn, window: false });
+        return;
+      case "settings":
+        if (mode.kind === "grants") {
+          props.handoff?.settings();
+          onClose();
+        }
+        return;
       case "arrow":
         pictures.arrow(cmd.to);
         return;
@@ -893,8 +1029,49 @@ export function Launcher(props: LauncherProps) {
       />,
     );
   }
+  if (mode.kind === "grants") {
+    const harness = handoff?.harnesses.find((each) => each.id === mode.harness);
+    list = listBox(
+      <GrantsCard
+        harness={harness?.name ?? "The agent"}
+        context={chosenContext(context, chipsOn)}
+        selected={grantsRow}
+        onStart={() => {
+          setGrantsRow(0);
+          submit();
+        }}
+        onChange={() => {
+          props.handoff?.settings();
+          onClose();
+        }}
+        onHover={setGrantsRow}
+      />,
+    );
+  }
+  const messaged = mode.kind === "message" ? handoff?.runs.find((each) => each.id === mode.run) : undefined;
+  if (messaged) {
+    const row = runRow(messaged);
+    list = listBox(
+      <View testID="launcher:section:message" style={{ flexDirection: "column" }}>
+        <ResultRow row={row} selected={false} onPress={() => props.handoff?.open(messaged.id)} onHover={() => {}} />
+      </View>,
+    );
+  }
   // An Ask's plan: the spark in place of the magnifier, the request as the chip, the field for a follow-up.
   const taskField = mode.kind === "task" ? agentField(task, filter, colors.agent) : null;
+  const sparkGlyph = taskField?.glyph ?? agentField(undefined, "", colors.agent).glyph;
+  // The agents' keys the launcher takes now (launcher/keys.ts `ExtraKeys`).
+  const selectedAct = mode.kind === "search" && selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
+  const extraKeys: ExtraKeys = {
+    option: mode.kind === "search" && sections.some((section) => section.id === "handoff") && (handoff?.harnesses.length ?? 0) > 1,
+    stop: selectedAct?.kind === "run" && selectedRow?.stop === true,
+    backspace: contextShown && !query && (chipsOn.window || chipsOn.selection),
+    settings: mode.kind === "grants",
+  };
+  const extrasKey = JSON.stringify(extraKeys);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the key stands for the object, which is new each render
+  useEffect(() => keys?.extras?.(extraKeys), [keys, extrasKey]);
+  useEffect(() => () => keys?.extras?.(NO_EXTRA_KEYS), [keys]);
 
   const chip =
     mode.kind === "actions"
@@ -905,17 +1082,23 @@ export function Launcher(props: LauncherProps) {
           ? { title: `Alias for ${mode.title}` }
           : mode.kind === "shortcut"
             ? { title: `Shortcut for ${mode.title}` }
-            : (taskField?.chip ?? scope?.chip ?? ext.chip);
+            : messaged
+              ? { title: cut(messaged.request, 32) }
+              : (taskField?.chip ?? scope?.chip ?? ext.chip);
   const placeholder: string | readonly string[] =
     mode.kind === "search"
       ? (scope?.placeholder ?? ext.placeholder ?? (agents?.answerer ? ASK_PLACEHOLDER : placeholderFor(files !== undefined && !filesOff)))
       : taskField
         ? taskField.placeholder
-        : mode.kind === "alias"
-          ? "An alias, like ff"
-          : mode.kind === "shortcut"
-            ? "Press the keys"
-            : "Search actions";
+        : mode.kind === "message"
+          ? `Tell ${messaged?.harnessName ?? "it"} something`
+          : mode.kind === "grants"
+            ? "What should it do?"
+            : mode.kind === "alias"
+              ? "An alias, like ff"
+              : mode.kind === "shortcut"
+                ? "Press the keys"
+                : "Search actions";
   const hints =
     mode.kind === "search"
       ? scope
@@ -925,19 +1108,30 @@ export function Launcher(props: LauncherProps) {
               { keys: "← →", label: "pick" },
               { keys: KEYS.primary, label: "switch" },
             ]
-          : text
-            ? pictures.count > 0
-              ? [{ keys: "→", label: "windows" }, ...hintFor(selectedRow, ctx).slice(0, 2)]
-              : [...hintFor(selectedRow, ctx), ...(inOutside ? [] : askHint(text, agents))]
-            : []
+          : (handoffHints(selectedRow) ??
+            (text
+              ? pictures.count > 0
+                ? [{ keys: "→", label: "windows" }, ...hintFor(selectedRow, ctx).slice(0, 2)]
+                : [...hintFor(selectedRow, ctx), ...(inOutside ? [] : askHint(text, agents))]
+              : []))
       : taskField
         ? taskField.hints
-        : mode.kind === "presented"
+        : mode.kind === "grants"
           ? [
-              { keys: "Esc", label: "close" },
-              { keys: KEYS.primary, label: "run" },
+              { keys: KEYS.primary, label: `Start ${handoff?.harnesses.find((each) => each.id === mode.harness)?.name ?? ""}`.trim() },
+              { keys: "Esc", label: "Back" },
             ]
-          : [{ keys: "Esc", label: "back" }];
+          : mode.kind === "message"
+            ? [
+                { keys: KEYS.primary, label: "Send" },
+                { keys: "Esc", label: "Back" },
+              ]
+            : mode.kind === "presented"
+              ? [
+                  { keys: "Esc", label: "close" },
+                  { keys: KEYS.primary, label: "run" },
+                ]
+              : [{ keys: "Esc", label: "back" }];
 
   return (
     // The focus ring is kombu in every control inside (KB-2).
@@ -961,7 +1155,7 @@ export function Launcher(props: LauncherProps) {
           value={mode.kind === "search" ? query : filter}
           revision={fieldRevision}
           placeholder={placeholder}
-          {...(taskField ? { glyph: taskField.glyph } : {})}
+          {...(taskField ? { glyph: taskField.glyph } : mode.kind === "grants" || mode.kind === "message" ? { glyph: sparkGlyph } : {})}
           {...(chip ? { chip } : {})}
           hints={hints}
           notice={notice}
@@ -970,6 +1164,7 @@ export function Launcher(props: LauncherProps) {
           onSubmit={() => submit()}
           onKey={onKey}
         />
+        {contextShown && <ContextChips context={context} on={chipsOn} onToggle={(which) => setChipsOn({ ...chipsOn, [which]: !chipsOn[which] })} />}
         {list}
       </View>
     </View>

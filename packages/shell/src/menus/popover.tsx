@@ -5,6 +5,7 @@
  */
 
 import { type NativeHostOptions, View } from "@mirinjs/metal";
+import type { ReactElement } from "react";
 import { useEffect } from "react";
 import { type AppMenuStore, useAppMenus } from "../app-menus/store.ts";
 import { ControlCenterPanel, type ControlCenterProps } from "../control-center/index.ts";
@@ -67,6 +68,7 @@ export function PopoverRoot({
   onDockChoose,
   onStatusChoose,
   onStatusClosed,
+  agentsPanel,
 }: {
   controller: MenuController;
   /** The menus apps published; the open app menu follows its updates. */
@@ -83,6 +85,8 @@ export function PopoverRoot({
   onStatusChoose: (action: StatusMenuAction) => void;
   /** A status item's menu closed, chosen from or not (a tray icon's dbusmenu wants to know). */
   onStatusClosed?: (key: string) => void;
+  /** The agents' panel under their chip (agents-panel.tsx), drawn by its owner. */
+  agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
 }) {
   const { popover, context, appName, output } = useMenus(controller);
   const app = useAppMenus(appMenus);
@@ -136,6 +140,7 @@ export function PopoverRoot({
       {popover?.kind === "control-center" && (
         <ControlCenterPanel {...controlCenter} page={popover.page} onPage={(page) => controller.setControlPage(page)} onClose={close} />
       )}
+      {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close })}
       {popover?.kind === "notification-center" && <NotificationCenterPanel store={notifications} dockInset={dockInset(output)} onClose={close} />}
     </View>
   );

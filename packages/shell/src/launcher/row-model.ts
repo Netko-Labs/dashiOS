@@ -84,6 +84,8 @@ export interface Row {
   agent?: "ask" | "dot";
   /** A stop square at the right end (a running agent or task). */
   stop?: true;
+  /** It waits on the person (an agent's question): its detail is broth, the warning's ink. */
+  attention?: true;
 }
 
 const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");

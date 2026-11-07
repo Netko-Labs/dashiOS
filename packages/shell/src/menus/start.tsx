@@ -4,6 +4,7 @@
  * compositor, the arranger, the lock screen, and the system.
  */
 
+import type { ReactElement } from "react";
 import pkg from "../../package.json" with { type: "json" };
 import { ownerPids } from "../app-menus/focus.ts";
 import { AppMenuStore } from "../app-menus/store.ts";
@@ -82,6 +83,8 @@ export interface MenusOptions {
   runStatus(action: StatusMenuAction): void;
   /** A status item's menu closed. */
   statusClosed?(key: string): void;
+  /** The agents' panel under their chip (agents-panel.tsx). */
+  agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
   /** How much of that screen's bottom the Dock takes now (dock/presenter.ts `bottomInset`); the notification center stops above it. */
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
@@ -245,6 +248,7 @@ export function startMenus(options: MenusOptions): Menus {
           onDockChoose={options.runDock}
           onStatusChoose={(action) => (action.kind === "activity-monitor" ? void showEnergy(action.app) : options.runStatus(action))}
           onStatusClosed={(key) => options.statusClosed?.(key)}
+          {...(options.agentsPanel ? { agentsPanel: options.agentsPanel } : {})}
         />,
         onClosed,
       ),
