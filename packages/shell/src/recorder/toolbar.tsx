@@ -127,7 +127,13 @@ export interface ToolbarDeps {
   output(): Promise<string | undefined>;
   /** Carry out a choice, after the toolbar's host has exited. */
   act(choice: ToolbarChoice, output: string | undefined): Promise<void>;
+  /** Where a toolbar that didn't show is told (the journal). */
+  report?(message: string): void;
+  now?(): number;
 }
+
+/** A toolbar slower than this to draw its first frame is reported: the person may think ⇧❖5 did nothing. */
+export const SLOW_DRAW_MS = 1000;
 
 export interface CaptureToolbar {
   (): void;
@@ -138,9 +144,15 @@ export interface CaptureToolbar {
 export function captureToolbar(deps: ToolbarDeps): CaptureToolbar {
   let last: ToolbarChoice = { mode: "screen", microphone: false };
   let overlay: OverlayHandle | null = null;
+  /** The open toolbar was closed on purpose (a choice, Esc, or `close`), not by its host going. */
+  let dismissed = false;
   let busy = false;
+  const report = deps.report ?? ((message: string) => console.error(`dashi-shell: ${message}`));
+  const now = deps.now ?? (() => performance.now());
   const show = (): void => {
-    if (busy) return;
+    // One toolbar at a time: a press while one opens (or acts) waits for nothing. Said, so a ⇧❖5
+    // that seems to do nothing can be told from one that never came (15-nits, step 7).
+    if (busy) return report("⇧❖5: the capture toolbar is still opening or at work; this press does nothing");
     busy = true;
     void (async () => {
       const output = await deps.output();
@@ -149,6 +161,8 @@ export function captureToolbar(deps: ToolbarDeps): CaptureToolbar {
       const done = new Promise<void>((resolve) => {
         closed = resolve;
       });
+      const asked = now();
+      let drew: number | null = null;
       const handle = deps.open(
         {
           title: "Screenshot",
@@ -167,14 +181,25 @@ export function captureToolbar(deps: ToolbarDeps): CaptureToolbar {
           initial={last}
           onDone={(chosen) => {
             choice = chosen;
+            dismissed = true;
             handle.close();
           }}
         />,
         () => closed(),
+        (host) =>
+          host.onEvent((event) => {
+            const kind: string = event.type;
+            if (kind !== "frame" || drew !== null) return;
+            drew = now() - asked;
+            if (drew > SLOW_DRAW_MS) report(`the capture toolbar took ${Math.round(drew)} ms to show`);
+          }),
       );
       overlay = handle;
       await done;
       overlay = null;
+      // Gone without ever drawing, and not closed from it: its host failed to show it.
+      if (drew === null && choice === null && !dismissed) report("the capture toolbar's window went before it was ever drawn");
+      dismissed = false;
       await handle.exited;
       if (choice === null) return;
       last = choice;
@@ -187,6 +212,7 @@ export function captureToolbar(deps: ToolbarDeps): CaptureToolbar {
   };
   return Object.assign(show, {
     close() {
+      if (overlay) dismissed = true;
       overlay?.close();
     },
   });
