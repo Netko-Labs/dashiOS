@@ -1160,7 +1160,7 @@ function openLauncher(presented: Presented | null = null, scope: string | null =
     void readContext({
       window: async () => {
         const front = (await compositor.windows()).find((each) => each.focused && each.state === "normal");
-        return front ? { id: front.id, app: appFor(apps, front, installedApp).name, title: front.title } : null;
+        return front ? { id: front.id, app: appFor(apps, front, installedApp).name, appId: front.appId, title: front.title } : null;
       },
       page: () => agents?.frontPage() ?? Promise.resolve(null),
       selection: primarySelection,

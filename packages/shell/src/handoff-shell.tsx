@@ -193,18 +193,21 @@ export class ContextSource implements Store<TaskContext> {
 /** The most of a selection the chips take. */
 const SELECTION_BYTES = 8 * 1024;
 
+/** Whether a window is Helium's (or another Chromium's), which Dashi names "Browser": by its app id, else its name. */
+const isBrowser = (window: { app: string; appId?: string }): boolean => /helium|chrom/i.test(window.appId ?? "") || /helium|chrom/i.test(window.app);
+
 /**
  * What the chips offer as the launcher opens: the focused window (its app's
  * name, title, and in Helium the page's address through Dashi's extension),
  * and the primary selection's text when there is some.
  */
 export async function readContext(deps: {
-  window(): Promise<{ id: number; app: string; title: string } | null>;
+  window(): Promise<{ id: number; app: string; appId?: string; title: string } | null>;
   page(): Promise<{ url: string; title: string } | null>;
   selection(): Promise<string | null>;
 }): Promise<TaskContext> {
   const [window, selection] = await Promise.all([deps.window().catch(() => null), deps.selection().catch(() => null)]);
-  const browser = window && /helium|chrom/i.test(window.app) ? await deps.page().catch(() => null) : null;
+  const browser = window && isBrowser(window) ? await deps.page().catch(() => null) : null;
   const url = browser?.url && /^https?:/.test(browser.url) ? browser.url : null;
   const text = selection?.trim() ? selection.slice(0, SELECTION_BYTES) : null;
   return {
