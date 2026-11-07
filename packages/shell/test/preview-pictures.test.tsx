@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { type CommandHooks, copy } from "../apps/preview/commands.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
-import { Viewer } from "../apps/preview/viewer.ts";
+import { pngSize, Viewer } from "../apps/preview/viewer.ts";
 
 // Pictures in Preview: the folder's filmstrip, a rotation that sticks, the recent files, and Copy.
 
@@ -82,6 +82,28 @@ test.skipIf(!hasMagick)("a rotation sticks: the file opens rotated next time", a
   await again.open(path);
   expect(again.getSnapshot().turns).toBe(1);
   expect(again.getSnapshot().phase).toBe("ready");
+});
+
+test.skipIf(!hasMagick)("a turned picture's filmstrip thumbnail turns with it", async () => {
+  const folder = join(dir, "turned");
+  mkdirSync(folder);
+  for (const name of ["wide1.png", "wide2.png"]) {
+    expect(Bun.spawnSync(["magick", "-size", "40x20", "xc:#336699", join(folder, name)]).exitCode).toBe(0);
+  }
+  const { root, viewer, emit, node } = mount(join(dir, "turned-state", "memory.json"));
+  await viewer.open(join(folder, "wide1.png"));
+  await until(() => viewer.getSnapshot().folder.count === 2);
+  await settle();
+  emit({ type: "resize", nodeId: node("strip"), bounds: { x: 0, y: 38, width: 200, height: 500 } });
+  await until(() => viewer.getSnapshot().folderThumbs.size === 2);
+  const before = viewer.getSnapshot().folderThumbs.get("wide1.png") ?? "";
+  expect(await pngSize(before)).toEqual({ width: 40, height: 20 });
+  await viewer.rotate(1);
+  await until(() => (viewer.getSnapshot().folderThumbs.get("wide1.png") ?? before) !== before);
+  expect(await pngSize(viewer.getSnapshot().folderThumbs.get("wide1.png") ?? "")).toEqual({ width: 20, height: 40 });
+  // The other picture keeps its own.
+  expect(await pngSize(viewer.getSnapshot().folderThumbs.get("wide2.png") ?? "")).toEqual({ width: 40, height: 20 });
+  root.unmount();
 });
 
 test("the empty window lists the recent files, and opens one", async () => {

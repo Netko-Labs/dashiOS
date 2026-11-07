@@ -50,6 +50,8 @@ describe("export", () => {
     expect(exportImageArgs("png", 0, "pdf", 92, "/out.pdf")?.at(-1)).toBe("pdf:/out.pdf");
     expect(exportImageArgs("svg", 0, "png", 92, "/out.png")).toBeNull();
     expect(thumbnailArgs("png", "/t.png")?.slice(-3)).toEqual(["-thumbnail", "300x300>", "png:/t.png"]);
+    // A turned picture's thumbnail is turned as it is shown.
+    expect(thumbnailArgs("png", "/t.png", 1)?.slice(-6)).toEqual(["-auto-orient", "-rotate", "90", "-thumbnail", "300x300>", "png:/t.png"]);
     expect(turnPngArgs("/c/p.png", 3, "/c/t.png").slice(-6)).toEqual(["png:/c/p.png", "-rotate", "270", "-define", "png:compression-level=1", "png:/c/t.png"]);
     expect(qpdfRotateArgs("/a.pdf", 2, "/b.pdf")).toEqual(["qpdf", "/a.pdf", "--rotate=+180:1-z", "/b.pdf"]);
   });

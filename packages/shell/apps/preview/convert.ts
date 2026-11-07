@@ -76,11 +76,11 @@ export function magickArgs(request: ConvertRequest): string[] | null {
   return [...LIMITS, ...uprightInput(coder, request.turns), "-resize", `${request.maxPixels}@>`, "-define", "png:compression-level=1", `png:${request.output}`];
 }
 
-/** A small upright copy of a picture for the page strip: the file on standard input, a PNG at `output`. */
-export function thumbnailArgs(format: Format, output: string): string[] | null {
+/** A small upright copy of a picture for the page strip, turned as it is shown: the file on standard input, a PNG at `output`. */
+export function thumbnailArgs(format: Format, output: string, turns = 0): string[] | null {
   const coder = FORMATS[format].coder;
   if (!coder) return null;
-  return [...LIMITS, ...uprightInput(coder, 0), "-thumbnail", `${THUMB_SIDE}x${THUMB_SIDE}>`, `png:${output}`];
+  return [...LIMITS, ...uprightInput(coder, turns), "-thumbnail", `${THUMB_SIDE}x${THUMB_SIDE}>`, `png:${output}`];
 }
 
 /** One of Preview's own PNGs (a rendered page) turned `turns` quarter turns, as a PNG at `output`. */

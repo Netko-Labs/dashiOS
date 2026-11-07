@@ -2,8 +2,9 @@
  * The folder of an open picture, for stepping through it and for the page
  * strip's filmstrip: its pictures listed once, off the UI thread, and listed
  * again when the folder changes (a watch on it); and each picture's small
- * copy, made when its row comes into the strip (ImageMagick, cached), or the
- * picture itself when it is small enough to draw as it is.
+ * copy, made when its row comes into the strip (ImageMagick, cached) and
+ * turned as Preview shows the picture (its kept rotation), or the picture
+ * itself when it is small enough to draw as it is.
  */
 
 import { existsSync, type FSWatcher, watch } from "node:fs";
@@ -36,6 +37,8 @@ export interface FolderOptions {
   magick: boolean;
   onChange: () => void;
   run?: (argv: readonly string[], options: RunOptions) => Promise<RunResult>;
+  /** The quarter turns Preview keeps for a picture (memory.ts); none when not given. */
+  turnsFor?: (path: string, file: { size: number; mtimeMs: number }) => number;
   /** Watches a folder; returns the way to stop. */
   watchDir?: (dir: string, onChange: () => void) => () => void;
 }
@@ -56,6 +59,8 @@ export class Folder {
   files: string[] = [];
   private readonly thumbs = new Map<string, string>();
   private readonly failed = new Set<string>();
+  /** Thumbnails shown until their remade copy (turned since) replaces them. */
+  private readonly stale = new Set<string>();
   private queue: string[] = [];
   private workers = 0;
   private stopWatching: () => void = () => {};
@@ -78,6 +83,7 @@ export class Folder {
       this.stopWatching();
       this.thumbs.clear();
       this.failed.clear();
+      this.stale.clear();
       this.queue = [];
       this.dir = dir;
       this.files = [];
@@ -105,9 +111,13 @@ export class Folder {
     this.listing++;
   }
 
+  private needs(name: string): boolean {
+    return (!this.thumbs.has(name) || this.stale.has(name)) && !this.failed.has(name);
+  }
+
   /** The strip's rows that need a thumbnail, the most wanted first. */
   want(names: readonly string[]): void {
-    this.queue = names.filter((name) => !this.thumbs.has(name) && !this.failed.has(name));
+    this.queue = names.filter((name) => this.needs(name));
     while (this.workers < WORKERS && this.queue.length > 0) {
       this.workers++;
       void this.work(this.dir).finally(() => {
@@ -120,13 +130,22 @@ export class Folder {
     while (dir === this.dir) {
       const name = this.queue.shift();
       if (name === undefined) return;
-      if (this.thumbs.has(name) || this.failed.has(name)) continue;
+      if (!this.needs(name)) continue;
       const made = await this.thumbnail(join(dir, name));
       if (dir !== this.dir) return;
+      this.stale.delete(name);
       if (made) this.thumbs.set(name, made);
-      else this.failed.add(name);
+      else if (!this.thumbs.has(name)) this.failed.add(name);
       this.options.onChange();
     }
+  }
+
+  /** A picture was turned: its thumbnail is made again (the old one shows meanwhile). */
+  turned(name: string): void {
+    if (!this.files.includes(name)) return;
+    this.failed.delete(name);
+    if (this.thumbs.has(name)) this.stale.add(name);
+    this.want([name, ...this.queue]);
   }
 
   private async thumbnail(path: string): Promise<string | null> {
@@ -140,10 +159,11 @@ export class Folder {
     }
     const native = FORMATS[format].native && format !== "gif";
     if (!this.options.magick || !thumbnailArgs(format, "")) return native && info.size <= DRAWN_AS_IS_BYTES ? path : null;
-    const out = cacheFile(this.options.root, cacheKey({ path, mtimeMs: info.mtimeMs, size: info.size }, "strip"), "png");
+    const turns = this.options.turnsFor?.(path, info) ?? 0;
+    const out = cacheFile(this.options.root, cacheKey({ path, mtimeMs: info.mtimeMs, size: info.size }, `strip:${turns}`), "png");
     if (existsSync(out)) return out;
     const partial = partialName(out);
-    const args = thumbnailArgs(format, partial);
+    const args = thumbnailArgs(format, partial, turns);
     if (!args) return null;
     const result = await this.run(args, { timeoutMs: THUMB_TIMEOUT_MS, memoryMiB: CONVERT_MEMORY_MIB, input: Bun.file(path) });
     if (!result.ok || !existsSync(partial)) return native && info.size <= DRAWN_AS_IS_BYTES ? path : null;

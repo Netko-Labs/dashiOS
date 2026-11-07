@@ -65,7 +65,12 @@ export class Viewer {
       // Without a cache nothing needing a conversion or a render works; the open says so.
     }
     const tools = { magick: haveTool("magick"), poppler: haveTool("pdftoppm") && haveTool("pdfinfo"), qpdf: haveTool("qpdf") };
-    this.folder = new Folder({ root: this.root, magick: tools.magick, onChange: () => this.folderChanged() });
+    this.folder = new Folder({
+      root: this.root,
+      magick: tools.magick,
+      onChange: () => this.folderChanged(),
+      turnsFor: (path, file) => this.memory.turnsFor(path, file),
+    });
     this.snapshot = { ...CLOSED, recents: this.memory.recents(), tools, rev: 0 };
   }
 
@@ -162,6 +167,7 @@ export class Viewer {
       this.pdfChanged();
       return;
     }
+    this.folder.turned(basename(path));
     await this.prepareImage(path, stamp, format, turns, this.generation);
   }
 
