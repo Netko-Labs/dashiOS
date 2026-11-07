@@ -99,10 +99,16 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
 
   const actions: PanelActions = {
     answer(run, question, choice) {
+      // Answered, the panel goes as a sheet does, before the answer does: what Dashi types next (a login, a
+      // code) goes to the person's seat, so the keyboard must be back on their window, not on this popover.
+      const answer = () => {
+        deps.menus()?.close();
+        service.runs.answer(run, question, choice);
+      };
       // A no (and "Other login…") always counts; a yes only from the person's own press, as on a sheet.
-      if (choice === "deny" || choice === "no" || choice === "other") return void service.runs.answer(run, question, choice);
+      if (choice === "deny" || choice === "no" || choice === "other") return answer();
       void deps.personPressed(PANEL_LAYER).then((person) => {
-        if (person) service.runs.answer(run, question, choice);
+        if (person) answer();
         else console.error("dashi-shell: an answer in the agents' panel did not come from the person; it was ignored");
       });
     },
