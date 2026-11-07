@@ -71,7 +71,7 @@ export function tidy(raw: string, caret: number, locale: NumberLocale): { text: 
 }
 
 /** `raw` tidied into a line with the caret at `caret`; the carry stays only while the text is still the result. */
-function settle(line: Line, raw: string, caret: number, locale: NumberLocale): Line {
+export function settle(line: Line, raw: string, caret: number, locale: NumberLocale): Line {
   const tidied = tidy(raw, caret, locale);
   const carry = line.carry && tidied.text.startsWith(line.carry.text) ? line.carry : null;
   return { text: tidied.text, selection: caretAt(tidied.caret), carry };
@@ -146,41 +146,6 @@ export function paste(line: Line, text: string, locale: NumberLocale): Edited {
 /** A number put in the line at the caret, as a paste of it is: a result clicked on the tape. */
 export function insertNumber(line: Line, value: number, locale: NumberLocale): Line {
   return place({ ...line, carry: isCarryShown(line) ? null : line.carry }, formatResult(value, locale), locale);
-}
-
-export type FieldEdit = { kind: "line"; edited: Edited } | { kind: "equals" } | { kind: "negate" };
-
-/**
- * The field's text after the person edited it there (typing, ⌫, a paste,
- * Cut): what changed, against the line as it was, done the line's way.
- * Typing "=" works it out and "n" negates; they never land in the text.
- */
-export function fromField(line: Line, raw: string, locale: NumberLocale): FieldEdit {
-  const old = line.text;
-  let prefix = 0;
-  while (prefix < old.length && prefix < raw.length && old[prefix] === raw[prefix]) prefix += 1;
-  let suffix = 0;
-  while (suffix < old.length - prefix && suffix < raw.length - prefix && old[old.length - 1 - suffix] === raw[raw.length - 1 - suffix]) suffix += 1;
-  const removed = old.slice(prefix, old.length - suffix);
-  const inserted = raw.slice(prefix, raw.length - suffix);
-  const replacing: Line = { ...line, selection: { start: prefix, end: old.length - suffix } };
-  if (inserted === "") {
-    // A deletion of only spaces or grouping marks would come straight back: take the digit or operator before them too.
-    let start = prefix;
-    if (removed !== "" && [...removed].every((char) => isQuiet(char, locale))) {
-      while (start > 0 && isQuiet(old[start - 1] as string, locale)) start -= 1;
-      start = Math.max(0, start - 1);
-    }
-    const end = old.length - suffix;
-    return {
-      kind: "line",
-      edited: { line: settle({ ...line, carry: start === 0 && end === old.length ? null : line.carry }, old.slice(0, start) + old.slice(end), start, locale) },
-    };
-  }
-  if ([...inserted].length > 1) return { kind: "line", edited: paste(replacing, inserted, locale) };
-  if (inserted === "=") return { kind: "equals" };
-  if (inserted === "n" || inserted === "N") return { kind: "negate" };
-  return { kind: "line", edited: { line: typeChar(replacing, inserted, locale) } };
 }
 
 /** The span of the number at or before the caret (the last one in the line when the caret is in none), or null. */

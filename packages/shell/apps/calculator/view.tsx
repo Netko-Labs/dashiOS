@@ -180,6 +180,7 @@ export function CalculatorWindow({
             key={fieldKey}
             testID="line"
             value={line.text}
+            valueRevision={state.revision}
             selection={line.selection}
             placeholder="0"
             autoFocus

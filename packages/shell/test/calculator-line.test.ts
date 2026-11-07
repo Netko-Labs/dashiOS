@@ -3,9 +3,10 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { evaluate, hasOperation, repeatOf, tokenize } from "../apps/calculator/expression.ts";
+import { fromField } from "../apps/calculator/field.ts";
 import { keyForChar } from "../apps/calculator/keys.ts";
 import { fieldWidth, keySide, MIN_SIZE, openingSize, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/layout.ts";
-import { EMPTY_LINE, equals, fromField, type Line, liveResult, negate, recall, tidy, typeChar } from "../apps/calculator/line.ts";
+import { EMPTY_LINE, equals, type Line, liveResult, negate, recall, tidy, typeChar } from "../apps/calculator/line.ts";
 import { EN_US, numberLocale } from "../apps/calculator/locale.ts";
 import { calculatorMenus } from "../apps/calculator/menus.ts";
 import { type CalcAction, type CalcState, calculate, initialState } from "../apps/calculator/state.ts";

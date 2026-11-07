@@ -6,13 +6,13 @@
  */
 
 import type { TextSelection } from "@mirinjs/metal";
+import { fieldCaret, fromField } from "./field.ts";
 import { charForKey, type KeyId, keyForChar } from "./keys.ts";
 import {
   cutSelection,
   type Edited,
   EMPTY_LINE,
   equals,
-  fromField,
   insertNumber,
   type Line,
   type Note,
@@ -37,10 +37,20 @@ export interface CalcState {
   notice: Notice | null;
   /** The key to light on the keypad: the keyboard just typed it. */
   lit: KeyId | null;
+  /**
+   * The field's own text as it last reported it, while the line writes it
+   * differently ("1250" for "1,250"): until the field takes the line's, it
+   * may type on its own (field.ts).
+   */
+  held: string | null;
+  /** The caret the field is about to report in its own text (`held`): not the line's, so not taken. */
+  late: TextSelection | null;
+  /** Bumped when the field must take the line's text back though the line didn't change (an edit refused). */
+  revision: number;
 }
 
 export function initialState(tape: readonly TapeEntry[] = []): CalcState {
-  return { line: EMPTY_LINE, tape: [...tape], recalled: null, notice: null, lit: null };
+  return { line: EMPTY_LINE, tape: [...tape], recalled: null, notice: null, lit: null, held: null, late: null, revision: 0 };
 }
 
 export type CalcAction =
@@ -84,18 +94,43 @@ function typedChar(before: string, after: string): string | null {
   return after[at] ?? null;
 }
 
+/**
+ * The field reported `raw` and the line took it as `next`: when the line
+ * writes it differently the field takes the line's text back (a new revision
+ * when the line itself didn't change, an edit refused), and until then its
+ * own text and the caret it reports in it are not the line's.
+ */
+function fieldTook(state: CalcState, next: CalcState, raw: string): CalcState {
+  if (next.line.text === raw) return { ...next, held: null, late: null };
+  const caret = fieldCaret(state.line, raw, state.held);
+  const late = caret.start === next.line.selection.start && caret.end === next.line.selection.end ? null : caret;
+  const revision = next.line.text === state.line.text ? state.revision + 1 : state.revision;
+  return { ...next, held: raw, late, revision };
+}
+
 export function calculate(state: CalcState, action: CalcAction): CalcState {
+  const next = step(state, action);
+  // The line changed another way: the field takes it, whatever it held.
+  if (action.type === "field" || action.type === "select" || next.line === state.line || (next.held === null && next.late === null)) return next;
+  return { ...next, held: null, late: null };
+}
+
+function step(state: CalcState, action: CalcAction): CalcState {
   switch (action.type) {
     case "field": {
-      const edit = fromField(state.line, action.text, action.locale);
-      const char = typedChar(state.line.text, action.text);
+      const edit = fromField(state.line, action.text, action.locale, state.held);
+      const char = typedChar(state.line.text, action.text) ?? (state.held === null ? null : typedChar(state.held, action.text));
       const lit = char === null ? null : keyForChar(char, action.locale);
-      if (edit.kind === "equals") return workedOut(state, action.locale);
-      if (edit.kind === "negate") return edited(state, { line: negate(state.line, action.locale) }, "negate");
-      return edited(state, edit.edited, lit);
+      if (edit.kind === "equals") return fieldTook(state, workedOut(state, action.locale), action.text);
+      if (edit.kind === "negate") return fieldTook(state, edited(state, { line: negate(state.line, action.locale) }, "negate"), action.text);
+      return fieldTook(state, edited(state, edit.edited, lit), action.text);
     }
-    case "select":
-      return { ...state, line: select(state.line, action.selection) };
+    case "select": {
+      // The caret the field reported in its own text, before it took the line's: the line has its own.
+      const late = state.late;
+      if (late && late.start === action.selection.start && late.end === action.selection.end) return { ...state, late: null };
+      return { ...state, late: null, line: select(state.line, action.selection) };
+    }
     case "key": {
       if (action.id === "equals") return { ...workedOut(state, action.locale), lit: null };
       if (action.id === "clear") return edited(state, { line: EMPTY_LINE });
