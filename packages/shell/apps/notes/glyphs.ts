@@ -38,7 +38,7 @@ export const CHECKLIST = svg(
   `${stroke("M2.2 3.4h3.4v3.4H2.2zM2.2 9.4h3.4v3.4H2.2z", 1.2)}${stroke("M2.8 5l.8.8 1.3-1.5", 1.1)}${stroke("M8 5h5.6M8 11h5.6", 1.4)}`,
 );
 
-/** Eye, Pencil: the Edit and Preview toggle. */
+/** An arrow turning back: Restore. */
 export const RESTORE = svg(`${stroke("M3 8a5 5 0 1 0 1.6-3.7")}${stroke("M3 2.6v2.8h2.8", 1.4)}`);
 
 export const TICK = svg(stroke("M3.4 8.4l3 3 6.2-6.8", 1.9));
