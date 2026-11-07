@@ -11,7 +11,16 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-const ICS = ["BEGIN:VCALENDAR", "BEGIN:VEVENT", "UID:yoga-1", "SUMMARY:Yoga", "DTSTART:20261109T180000", "DTEND:20261109T190000", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+const ICS = [
+  "BEGIN:VCALENDAR",
+  "BEGIN:VEVENT",
+  "UID:yoga-1",
+  "SUMMARY:Yoga",
+  "DTSTART:20261109T180000",
+  "DTEND:20261109T190000",
+  "END:VEVENT",
+  "END:VCALENDAR",
+].join("\r\n");
 const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 test("the Imported notice goes after a while; an error stays", async () => {
