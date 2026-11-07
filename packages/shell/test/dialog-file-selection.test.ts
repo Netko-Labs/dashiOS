@@ -18,6 +18,17 @@ test("--file-selection draws Files' chooser instead of exiting 255", () => {
   expect(result.spec.filters.map((filter) => filter.name)).toEqual(["*.pdf", "All"]);
 });
 
+test("--save and --directory are titled for what they choose; --title still wins", () => {
+  const title = (...args: string[]): string | undefined => {
+    const result = specFrom(parseArgs(["--file-selection", ...args]));
+    return "spec" in result ? result.spec.title : undefined;
+  };
+  expect(title()).toBe("Select a file");
+  expect(title("--save")).toBe("Save a file");
+  expect(title("--directory")).toBe("Choose a folder");
+  expect(title("--save", "--title=Export the report")).toBe("Export the report");
+});
+
 test("file filters: a name and patterns, or patterns alone", () => {
   expect(parseFileFilter("Pictures | *.png *.jpg")).toEqual({
     name: "Pictures",

@@ -253,6 +253,8 @@ function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "forms" | "color-
     case "file-selection":
       return {
         ...base,
+        // A save or a folder isn't "Select a file": the title says what is chosen, unless the caller named one.
+        title: args.values.get("title") ?? (flag("directory") ? "Choose a folder" : flag("save") ? "Save a file" : base.title),
         kind,
         filename: args.values.get("filename") ?? null,
         multiple: flag("multiple"),
