@@ -10,6 +10,7 @@
 mod devices;
 mod edid;
 mod feedback;
+mod flip;
 mod frame;
 mod holds;
 mod screens;
@@ -174,8 +175,8 @@ struct Screen {
     output: Output,
     scanout: Scanout,
     global: GlobalId,
-    /// A frame is queued and its vblank has not come yet.
-    queued: bool,
+    /// A frame queued and its vblank, watched (flip.rs).
+    flip: flip::Flip,
     /// A render is already scheduled.
     scheduled: bool,
     /// The screen is lit (`power`, and on in Displays).
@@ -273,7 +274,7 @@ impl UdevData {
                 &DrmOutputRenderElements::default(),
             )
             .map_err(|error| format!("the mode did not take: {error:?}"))?;
-        screen.queued = false;
+        screen.flip.clear();
         Ok(())
     }
 
@@ -282,7 +283,7 @@ impl UdevData {
             return;
         };
         screen.powered = enabled && !screen.held;
-        screen.queued = false;
+        screen.flip.clear();
         if !screen.powered
             && let Err(error) = screen
                 .scanout
@@ -323,7 +324,7 @@ impl UdevData {
                 }
                 if on {
                     screen.powered = true;
-                    screen.queued = false;
+                    screen.flip.clear();
                     lit.push((*node, *crtc));
                 } else if screen.powered {
                     screen.powered = false;

@@ -21,6 +21,14 @@ type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text"
 const CLICK_GAP_MS = 60;
 const DRAG_STEPS = 8;
 const DRAG_STEP_MS = 30;
+/**
+ * A long scroll is played as a wheel spun fast: flicks of at most 120 pixels
+ * (8 notches), a frame apart, never one event of hundreds of notches, which
+ * no wheel sends (a 2400 pixel one came right before the display froze,
+ * review 20). The tool keeps a scroll within 10 000 pixels (tools/input.ts).
+ */
+const WHEEL_FLICK_PX = 120;
+const WHEEL_FLICK_MS = 16;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -32,6 +40,13 @@ function content(window: CompositorWindow): { width: number; height: number } | 
     return toolError(`w${window.id} is ${window.state === "normal" ? "not on screen" : window.state}; focus_window brings it back.`);
   }
   return { width: window.frame.width, height: window.frame.height - window.titleBar };
+}
+
+/** A scroll of (dx, dy) as the wheel flicks that play it, in order; none for (0, 0). */
+export function wheelFlicks(dx: number, dy: number): Array<{ dx: number; dy: number }> {
+  const count = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / WHEEL_FLICK_PX);
+  // Even shares, so the last flick isn't a stub.
+  return Array.from({ length: count }, () => ({ dx: dx / count, dy: dy / count }));
 }
 
 const isResult = (value: object): value is ToolResult => "content" in value;
@@ -104,7 +119,10 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const problem = inside(window, size, [call]);
         if (problem) return problem;
         say(`Scrolling ${where}`);
-        await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: { dx: call.dx, dy: call.dy } });
+        for (const [n, flick] of wheelFlicks(call.dx, call.dy).entries()) {
+          if (n > 0) await sleep(WHEEL_FLICK_MS);
+          await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: flick });
+        }
         return text(`Scrolled w${window.id} by (${call.dx}, ${call.dy}) at ${at(call.x, call.y)}.`);
       }
       case "drag": {

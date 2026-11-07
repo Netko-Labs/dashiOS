@@ -128,7 +128,7 @@ fn connector_connected(
                 output: output.clone(),
                 scanout,
                 global,
-                queued: false,
+                flip: flip::Flip::default(),
                 scheduled: false,
                 powered: true,
                 held: false,

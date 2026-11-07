@@ -172,6 +172,15 @@ Each milestone ends with the shell running on it in the VM.
   `gpus` reports each GPU, `gpus-changed` says when that changes; the shell
   no longer counts dashi-comp among the card's holders.
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
+- **Lost vblanks (done, 0.5.0):** a screen draws its next frame only after the
+  last one's page-flip event, so one that never comes used to stop the screen,
+  and every client's frame callbacks with it, until the session restarted
+  (review 20, on virtio-gpu after an agent's long scroll). A second without it,
+  the frame is given up on (`udev/flip.rs`): one warning per stall naming the
+  screen, the scanout lets the frame go, and the screen draws again; a vblank
+  that turns up later is ignored, or recognized by its timestamp as the old
+  frame's. The nested (winit) backend has no such wait: each redraw asks for
+  the next.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title
