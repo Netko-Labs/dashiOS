@@ -81,10 +81,10 @@ export function DocumentSurface({ pdf, doc, turns, ground }: { pdf: PdfState; do
               top: box.top - scroll.y,
               width: box.width,
               height: box.height,
-              // Paper before the page is drawn: the card ground, quiet in both modes.
+              // Paper before the page is drawn: the card ground with a hairline, quiet in both modes. The drawn
+              // page fills the box whole, so the hairline goes with the paper (a border would inset the picture).
               backgroundColor: surface.card,
-              borderWidth: 1,
-              borderColor: colors.separator,
+              ...(render ? {} : { borderWidth: 1, borderColor: colors.separator }),
             }}
           >
             {render && <Image source={render.source} resizeMode="contain" style={{ width: box.width, height: box.height }} />}
