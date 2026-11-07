@@ -294,3 +294,36 @@ test("Find washes every match and selects the one it is on; the caret is held; l
   expect(text()?.selection).toEqual({ start: 4, end: 4 });
   root.unmount();
 });
+
+test("one Esc leaves Find: the query stays, the text takes the keyboard on the current match", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  model.edit("one two\none three\none");
+  const host = fakeHost();
+  let focused = 0;
+  const root = render(
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => focused++} setTitle={() => {}} />,
+    host.transport,
+  );
+  await settle();
+  const text = (): InputProps | null => inputProps(host.trees.at(-1), root.nodeId("text"));
+  const field = root.nodeId("find") as string;
+  host.emit({ type: "change", nodeId: field, value: "one" });
+  await settle();
+  // Typed, never stepped: Esc selects the first match.
+  host.emit({ type: "key", nodeId: field, value: "Escape" });
+  await settle();
+  expect(focused).toBe(1);
+  expect(model.getSnapshot().find.query).toBe("one");
+  expect(text()?.selection).toEqual({ start: 0, end: 3 });
+  // Stepped to the second: Esc keeps it, and ❖G goes on from there.
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  host.emit({ type: "key", nodeId: field, value: "Escape" });
+  await settle();
+  expect(focused).toBe(2);
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  expect(text()?.highlights).toHaveLength(3);
+  expect(model.getSnapshot().find.query).toBe("one");
+  root.unmount();
+});

@@ -128,7 +128,12 @@ export function TextField({ value, onChangeText, testID, placeholder, width, aut
   );
 }
 
-/** A rounded field with a magnifier; a clear button shows once something is typed. */
+/**
+ * A rounded field with a magnifier; a clear button shows once something is typed.
+ * A search (the default, a list's filter) empties itself on the first Esc, as on the Mac.
+ * A find (`variant="find"`, Find in a document) keeps its query on Esc and passes the key
+ * on at once: the app hands the keyboard back to the document, the current match selected.
+ */
 export function SearchField({
   value,
   onChangeText,
@@ -136,6 +141,7 @@ export function SearchField({
   placeholder = "Search",
   width = 200,
   autoFocus,
+  variant = "search",
   onKeyPress,
   onSubmit,
 }: {
@@ -145,6 +151,8 @@ export function SearchField({
   placeholder?: string;
   width?: number;
   autoFocus?: boolean;
+  /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
+  variant?: "search" | "find";
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
   onSubmit?: (text: string) => void;
 }) {
@@ -173,8 +181,8 @@ export function SearchField({
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
         onKeyPress={(key) => {
-          // Esc empties the field first, as on the Mac.
-          if (key === "Escape" && value !== "") onChangeText("");
+          // A search's Esc empties the field first, as on the Mac; a find's leaves it.
+          if (key === "Escape" && value !== "" && variant === "search") onChangeText("");
           else onKeyPress?.(key);
         }}
         style={{ flex: 1, height: 24, padding: 2, fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}

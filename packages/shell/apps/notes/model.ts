@@ -29,7 +29,7 @@ import { UndoStack, type UndoState } from "@dashi/ui";
 
 import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
 import { plainError } from "./errors.ts";
-import { findMatches, nextMatch } from "./find.ts";
+import { currentMatch, findMatches, nextMatch } from "./find.ts";
 import { continueList, type Selection, toggleCheck } from "./format.ts";
 import { caretAfter, FORMAT_NAMES, type FormatCommand, formatted } from "./formats.ts";
 import { neighbor, type Row, type Source, step, visibleRows } from "./list.ts";
@@ -216,6 +216,14 @@ export class NotesModel {
   }
 
   /** Edit › Find Next and Find Previous: selects the next place in the body that holds the search's words; false when none does. */
+  /** Leaving Find: the match the selection is on stays selected, else the next one is; false when the note has none. */
+  findCurrent(): boolean {
+    const { draft, query, selection } = this.state;
+    const match = draft ? currentMatch(findMatches(draft.body, query), selection) : null;
+    if (match) this.set({ selection: match });
+    return match !== null;
+  }
+
   findNext(step: 1 | -1): boolean {
     const { draft, query, selection } = this.state;
     const match = draft ? nextMatch(findMatches(draft.body, query), selection, step) : null;

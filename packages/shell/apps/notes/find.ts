@@ -41,3 +41,10 @@ export function nextMatch(matches: readonly Selection[], selection: Selection, s
   if (step === 1) return matches.find((match) => match.start >= end && !(match.start === start && match.end === end)) ?? matches[0] ?? null;
   return [...matches].reverse().find((match) => match.end <= start) ?? matches.at(-1) ?? null;
 }
+
+/** The match the selection is on, else the next one after the caret (wrapping); null when there is none. */
+export function currentMatch(matches: readonly Selection[], selection: Selection): Selection | null {
+  const start = Math.min(selection.start, selection.end);
+  const end = Math.max(selection.start, selection.end);
+  return matches.find((match) => match.start === start && match.end === end) ?? nextMatch(matches, { start, end: start }, 1);
+}

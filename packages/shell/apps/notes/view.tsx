@@ -6,7 +6,8 @@
  * is the open field's while one is focused; otherwise it is the kit's
  * KeySink: N new note, Backspace delete (Edit › Undo brings it back), P pin,
  * Enter writes in the note, / or F search, and the up and down arrows move
- * through the list. Esc in a field gives the keyboard back to the list.
+ * through the list. Esc in a field gives the keyboard back to the list; Esc
+ * in the search hands it to the note, on the match, when the note has one.
  */
 
 import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, ToolbarButton, useUndo } from "@dashi/ui";
@@ -172,7 +173,14 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
       onChangeText={(q) => model.setQuery(q)}
       width={170}
       autoFocus={searching > 0}
-      onKeyPress={(key) => (key === "Escape" ? takeKeys() : model.moveSelection(key === "ArrowUp" ? -1 : 1))}
+      // Find in the note: one Esc keeps the words and hands the keyboard to the note, on the match;
+      // with none there, to the list.
+      variant="find"
+      onKeyPress={(key) => {
+        if (key !== "Escape") model.moveSelection(key === "ArrowUp" ? -1 : 1);
+        else if (model.findCurrent()) setBodyFocus((n) => n + 1);
+        else takeKeys();
+      }}
     />
   );
   const toolbar = inTrash ? (

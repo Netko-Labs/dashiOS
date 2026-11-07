@@ -234,9 +234,12 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
         autoFocus={findFocus > 0}
         onChangeText={(query) => model.setQuery(query)}
         onSubmit={() => jump(1)}
+        // One Esc leaves Find: the query stays (❖G goes on), the text takes the keyboard on the current match.
+        variant="find"
         onKeyPress={(key) => {
-          if (key === "Escape") focusText();
-          else jump(key === "ArrowUp" ? -1 : 1);
+          if (key !== "Escape") return jump(key === "ArrowUp" ? -1 : 1);
+          if (find.current < 0) jump(1);
+          focusText();
         }}
       />
     </>
