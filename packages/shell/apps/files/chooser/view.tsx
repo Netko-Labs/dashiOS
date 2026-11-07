@@ -13,7 +13,21 @@
  */
 
 import { existsSync } from "node:fs";
-import { AlertSheet, AppWindow, Button, glyphs, Note, PopUpButton, SearchField, Switch, TextField, ToolbarButton, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
+import {
+  AlertSheet,
+  AppWindow,
+  Button,
+  glyphs,
+  Note,
+  PopUpButton,
+  SearchField,
+  Switch,
+  TextField,
+  ToolbarButton,
+  useColors,
+  useSurface,
+  useTitleBarInset,
+} from "@dashi/ui";
 import { Text, View, type WindowKeyInfo } from "@mirinjs/metal";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { BrowserKeys, Listing } from "../browser.tsx";
@@ -21,6 +35,7 @@ import { Files, quietActions } from "../context.ts";
 import type { Env } from "../env.ts";
 import { BACK, FOLDER_PLUS, sidebarGlyph } from "../glyphs.ts";
 import type { BrowserKey } from "../keys.ts";
+import { intentOf } from "../omnibox.ts";
 import { Peek } from "../peek.tsx";
 import { Sidebar } from "../sidebar.tsx";
 import { ViewSwitch } from "../toolbar.tsx";
@@ -49,6 +64,8 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
   const { store, request } = model;
   const [focus, setFocus] = useState(0);
   const [peek, setPeek] = useState(false);
+  // A path typed in the search (`~/…`, `/…`), as Files' path field takes one: Return goes there.
+  const [typedPath, setTypedPath] = useState<string | null>(null);
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
   const actions = useMemo(() => quietActions(refocus), [refocus]);
   const saving = request.mode === "save";
@@ -95,6 +112,24 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
     store.move(key === "ArrowUp" ? "up" : "down");
     refocus();
   };
+  const searchKeys = (key: "Escape" | "ArrowUp" | "ArrowDown"): void => {
+    if (key === "Escape" && typedPath !== null) return setTypedPath(null);
+    fieldKeys(key);
+  };
+  const search = (text: string): void => {
+    const isPath = intentOf(text) === "path";
+    setTypedPath(isPath ? text : null);
+    // A path isn't a name to look for: the folder stays listed while it is typed.
+    store.setQuery(isPath ? "" : text);
+  };
+  const submitSearch = (text: string): void => {
+    if (intentOf(text) !== "path") return go();
+    const problem = store.goToPath(text);
+    model.say(problem);
+    if (problem !== null) return;
+    setTypedPath(null);
+    refocus();
+  };
   const acceptLabel = request.acceptLabel ?? (request.mode === "open" ? (request.directory ? "Choose" : "Open") : "Save");
   const filterOptions = request.filters.map((filter, index) => ({ value: index, label: filter.name }));
   const filterIndex = state.filter ? Math.max(0, request.filters.indexOf(state.filter)) : 0;
@@ -133,10 +168,10 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
         autoFocus={!saving}
         placeholder="Search"
         width={200}
-        value={files.query}
-        onChangeText={(text) => store.setQuery(text)}
-        onKeyPress={fieldKeys}
-        onSubmit={go}
+        value={typedPath ?? files.query}
+        onChangeText={search}
+        onKeyPress={searchKeys}
+        onSubmit={submitSearch}
       />
     </>
   );

@@ -261,3 +261,49 @@ test("the print sheet: Copies keeps what is typed, Enter prints from the field, 
   await settle();
   expect(third.answer()).toBeNull();
 });
+
+test("the chooser's search takes a typed path: Return goes there; one that leads nowhere says so until a good one", async () => {
+  const root = mkdtempSync(join(tmpdir(), "chooser-path-"));
+  const home = join(root, "h");
+  const docs = join(home, "Docs");
+  mkdirSync(join(docs, "Taxes"), { recursive: true });
+  const env = {
+    home,
+    user: "alexk",
+    mime: { extensions: new Map(), literals: new Map() },
+    run: async () => ({ ok: false, code: 1, stdout: "", stderr: "" }),
+    trash: { files: join(root, "trash/files"), info: join(root, "trash/info") },
+    cache: join(root, "cache"),
+    dirs: [{ name: "DOCUMENTS", path: docs }],
+    now: Date.now,
+    recents: async () => [],
+  } as unknown as Env;
+  const model = new ChooserModel(
+    parseChooser("open", ["org.example.App", "", "Open", new Map()]),
+    env,
+    { folder: docs, name: "" },
+    { prefs: { view: "icons", sort: { key: "name", ascending: true }, showHidden: false }, watch: false },
+  );
+  model.start();
+  const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open" exists={() => false} answer={() => {}} />);
+  await settle(60);
+  expect(model.folder()).toBe(home);
+  const field = node("chooser:search");
+  // A path is not a name to look for: no search runs while it is typed.
+  send({ type: "change", nodeId: field, value: "~/Docs/Tax" });
+  expect(model.store.getSnapshot().query).toBe("");
+  send({ type: "submit", nodeId: field, value: "~/Docs/Nope" });
+  await settle();
+  expect(model.getSnapshot().problem).toContain("Nope");
+  expect(model.folder()).toBe(home);
+  send({ type: "submit", nodeId: field, value: "~/Docs/Taxes" });
+  await settle(60);
+  expect(model.folder()).toBe(join(docs, "Taxes"));
+  expect(model.getSnapshot().problem).toBeNull();
+  // Words still search.
+  send({ type: "change", nodeId: field, value: "lease" });
+  expect(model.store.getSnapshot().query).toBe("lease");
+  mounted.unmount();
+  model.stop();
+  rmSync(root, { recursive: true, force: true });
+});

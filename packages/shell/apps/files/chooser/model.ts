@@ -183,6 +183,11 @@ export class ChooserModel {
     if (this.state.replace) this.set({ replacing: this.state.replace, replace: null });
   }
 
+  /** A problem to show under the name row (a typed path that leads nowhere), or null to take it down. */
+  say(problem: string | null): void {
+    if (problem !== this.state.problem) this.set({ problem });
+  }
+
   dismiss(): void {
     this.set({ replace: null, problem: null });
   }
