@@ -1,34 +1,46 @@
 /**
- * Menu bar applets, in Software: the catalog (checked against Dashi's key),
- * what is installed, this machine, and getting, updating, turning off, and
- * removing them. Installs and removals run on Software's one queue (the
- * toolbar's activity says so); a failure is Software's failure sheet. Every
- * change starts from a click, and one that adds permissions waits for the
- * consent sheet. Without a key for the catalog (src/applet-store/keys.ts)
- * nothing from it is shown: Installed still lists what was added by hand.
+ * Menu bar applets, in Software: every catalog (Dashi's, checked against
+ * Dashi's key, and the ones the person added, each against its own),
+ * merged into one list, what is installed, this machine, and getting,
+ * updating, turning off, and removing them. Installs and removals run on
+ * Software's one queue (the toolbar's activity says so); a failure is
+ * Software's failure sheet. Every change starts from a click, and one that
+ * adds permissions waits for the consent sheet. Without a key for Dashi's
+ * catalog (src/applet-store/keys.ts) and no catalog added, nothing is
+ * listed: Installed still lists what was added by hand.
  */
 
-import { type CatalogIndex, consentNames, fits, type IndexApplet, type InstalledApplet, type Machine, writeRecord } from "@dashi/applet";
-import { type Catalog, CatalogError } from "../../../src/applet-store/catalog.ts";
+import { consentNames, fits, type InstalledApplet, type Machine, writeRecord } from "@dashi/applet";
+import type { CatalogSet } from "../../../src/applet-store/catalog-set.ts";
+import type { CatalogDraft, CatalogSource } from "../../../src/applet-store/catalogs.ts";
 import { type AppletInstaller, type AppletStatus, statusOf } from "../../../src/applet-store/installer.ts";
+import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, type StoreApplet } from "../../../src/applet-store/merge.ts";
 import type { Outcome } from "../../../src/software/manager.ts";
 import type { Job } from "../queue.ts";
 import { type Failure, failureOf } from "../store.ts";
 
+export type AppletProblem = "offline" | "unsigned" | "invalid" | "no-key" | "other";
+
 export interface AppletState {
-  index: CatalogIndex | null;
-  /** The catalog came from the last good copy. */
+  /** Every catalog's applets, merged (merge.ts); null while none has loaded. */
+  index: { applets: StoreApplet[] } | null;
+  /** Each catalog as it loaded, Dashi's first (the Catalogs sheet). */
+  catalogs: CatalogLoad[];
+  /** A catalog came from its last good copy. */
   stale: boolean;
   loading: boolean;
-  /** Why there is no catalog: offline, not signed, or no key in this build. */
-  problem: { kind: "offline" | "unsigned" | "no-key" | "other"; message: string } | null;
+  /** Why nothing is listed: offline, not signed, or no catalog to read. */
+  problem: { kind: AppletProblem; message: string } | null;
   installed: InstalledApplet[];
   machine: Machine | null;
   /** Applets the kill switch just turned off, to say so once. */
   justPulled: string[];
 }
 
-const EMPTY: AppletState = { index: null, stale: false, loading: true, problem: null, installed: [], machine: null, justPulled: [] };
+const EMPTY: AppletState = { index: null, catalogs: [], stale: false, loading: true, problem: null, installed: [], machine: null, justPulled: [] };
+
+/** Where an installed applet came from: by hand, a catalog in the list, or one since removed. */
+export type AppletOrigin = { kind: "local" } | { kind: "catalog"; source: CatalogSource } | { kind: "removed" };
 
 /** Software's queue and failure sheet, as the applets use them. */
 export interface AppletJobs {
@@ -39,11 +51,11 @@ export interface AppletJobs {
 export class AppletStore {
   private state = EMPTY;
   private readonly listeners = new Set<() => void>();
-  private memo: { index: CatalogIndex | null; installed: InstalledApplet[]; updates: IndexApplet[] } | null = null;
+  private memo: { index: AppletState["index"]; installed: InstalledApplet[]; updates: StoreApplet[] } | null = null;
 
   constructor(
-    private readonly catalog: Pick<Catalog, "hasKey" | "load">,
-    private readonly installer: Pick<AppletInstaller, "installed" | "install" | "remove" | "disablePulled">,
+    private readonly catalogs: Pick<CatalogSet, "dashiUrl" | "sources" | "loadAll" | "add" | "remove">,
+    private readonly installer: Pick<AppletInstaller, "installed" | "install" | "remove" | "disablePulled" | "catalogOf">,
     private readonly machine: () => Promise<Machine>,
     readonly dashiVersion: string,
     private readonly jobs: AppletJobs,
@@ -56,9 +68,9 @@ export class AppletStore {
 
   getSnapshot = (): AppletState => this.state;
 
-  /** Whether the catalog can be shown at all: false while this build has no key for it. */
-  get catalogReady(): boolean {
-    return this.catalog.hasKey;
+  /** Every catalog in the list, Dashi's first. */
+  sources(): CatalogSource[] {
+    return this.catalogs.sources();
   }
 
   private set(change: Partial<AppletState>): void {
@@ -71,30 +83,64 @@ export class AppletStore {
     this.set({ installed: this.installer.installed() });
   }
 
-  /** Loads the catalog (and applies its kill switch), what is installed, and this machine. */
+  /** Loads every catalog (and applies each one's kill switch to what came from it), what is installed, and this machine. */
   async refresh(): Promise<void> {
     this.set({ loading: true, installed: this.installer.installed() });
     // A machine that can't be read stays unknown (null): fitsHere says so.
     void this.machine()
       .then((machine) => this.set({ machine }))
       .catch(() => undefined);
-    if (!this.catalog.hasKey) return this.set({ loading: false, problem: { kind: "no-key", message: "" } });
-    try {
-      const { index, stale } = await this.catalog.load();
-      const justPulled = this.installer.disablePulled(index);
-      this.set({ index, stale, loading: false, problem: null, installed: this.installer.installed(), justPulled });
-    } catch (error) {
-      const kind = error instanceof CatalogError ? error.kind : "other";
-      this.set({ loading: false, problem: { kind, message: error instanceof Error ? error.message : String(error) } });
+    const loads = await this.catalogs.loadAll();
+    const justPulled = loads.flatMap((load) => (load.index ? this.installer.disablePulled(load.index, load.source.url) : []));
+    const installed = this.installer.installed();
+    const loaded = loads.filter((load) => load.index !== null);
+    if (loaded.length === 0) {
+      // Nothing to list: the first catalog that could have been read says why (Dashi's first); none at all is "no key".
+      const kind = loads.find((load) => load.problem !== null && load.problem !== "no-key")?.problem ?? "no-key";
+      return this.set({ index: null, catalogs: loads, stale: false, loading: false, problem: { kind, message: "" }, installed, justPulled });
     }
+    this.set({
+      index: { applets: mergeCatalogs(loads, installed, this.catalogs.dashiUrl) },
+      catalogs: loads,
+      stale: loaded.some((load) => load.stale),
+      loading: false,
+      problem: null,
+      installed,
+      justPulled,
+    });
   }
 
-  entry(id: string): IndexApplet | undefined {
+  /** Adds a catalog once its index checks with the key given (then lists it); why not, in people's words, or null. */
+  async addCatalog(draft: CatalogDraft): Promise<string | null> {
+    const failed = await this.catalogs.add(draft);
+    if (failed === null) await this.refresh();
+    return failed;
+  }
+
+  /** Removes an added catalog; its applets stay installed, and get no updates. Why not, in words, or null. */
+  removeCatalog(url: string): string | null {
+    const failed = this.catalogs.remove(url);
+    if (failed === null) void this.refresh();
+    return failed;
+  }
+
+  /** Where an installed applet came from. */
+  originOf(applet: Pick<InstalledApplet, "record">): AppletOrigin {
+    const url = this.installer.catalogOf(applet);
+    if (url === null) return { kind: "local" };
+    const source = this.sources().find((each) => each.url === url);
+    return source ? { kind: "catalog", source } : { kind: "removed" };
+  }
+
+  /** What the store shows for `id`: an installed one from its own catalog (undefined when that is gone or dropped it), else the list's. */
+  entry(id: string): StoreApplet | undefined {
+    const mine = this.state.installed.find((each) => each.manifest.id === id);
+    if (mine && this.installer.catalogOf(mine) !== null) return entryFromItsCatalog(this.state.catalogs, mine, this.catalogs.dashiUrl);
     return this.state.index?.applets.find((each) => each.manifest.id === id);
   }
 
-  status(entry: IndexApplet): AppletStatus {
-    return statusOf(entry, this.state.installed, this.dashiVersion);
+  status(entry: StoreApplet): AppletStatus {
+    return statusOf(entry, this.state.installed, this.dashiVersion, this.catalogs.dashiUrl);
   }
 
   /** What the person already allowed `id`, by name (an update's sheet lists only what is new). */
@@ -103,18 +149,18 @@ export class AppletStore {
   }
 
   /** Whether getting (or updating to) `entry` needs the consent sheet: it asks for something not yet allowed. */
-  needsConsent(entry: IndexApplet): boolean {
+  needsConsent(entry: StoreApplet): boolean {
     const had = new Set(this.granted(entry.manifest.id));
     return consentNames(entry.manifest).some((name) => !had.has(name));
   }
 
   /** Whether this machine is one `entry` says it is for (unknown until the machine is read). */
-  fitsHere(entry: IndexApplet): boolean | null {
+  fitsHere(entry: StoreApplet): boolean | null {
     return this.state.machine === null ? null : fits(entry.manifest.when, this.state.machine);
   }
 
   /** Queues getting (or updating to) the newest good version; what the sheet listed is what is allowed. */
-  install(entry: IndexApplet): void {
+  install(entry: StoreApplet): void {
     const { id, name } = entry.manifest;
     const update = this.state.installed.some((each) => each.manifest.id === id);
     this.jobs.enqueue({
@@ -166,7 +212,7 @@ export class AppletStore {
   }
 
   /** Every applet with an update (pulled ones with a good version too); worked out once per catalog and folder. */
-  updates(): IndexApplet[] {
+  updates(): StoreApplet[] {
     const { index, installed } = this.state;
     if (this.memo?.index === index && this.memo.installed === installed) return this.memo.updates;
     const updates = (index?.applets ?? []).filter((entry) => {

@@ -1,9 +1,10 @@
 /** Small pieces the pages share: what a click asks the window for, and an app's or applet's icon. */
 
-import type { IndexApplet, InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet } from "@dashi/applet";
 import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
+import type { StoreApplet } from "../../src/applet-store/merge.ts";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import type { Installation } from "../../src/software/ids.ts";
 import { useImage } from "./hooks.ts";
@@ -23,7 +24,7 @@ export interface Actions {
   /** Stops a change, or takes a waiting one back. */
   cancel(key: string): void;
   /** Gets or updates an applet: the consent sheet first when it asks for anything new. */
-  getApplet(entry: IndexApplet): void;
+  getApplet(entry: StoreApplet): void;
   removeApplet(applet: InstalledApplet): void;
   openUrl(url: string): void;
   /** Shows a screenshot's file at the window's full size. */

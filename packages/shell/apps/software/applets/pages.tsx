@@ -5,9 +5,10 @@
  * sidebar shows this place only while there is a catalog to show.
  */
 
-import type { IndexApplet, InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
+import type { StoreApplet } from "../../../src/applet-store/merge.ts";
 import { APPLETS, OFFLINE } from "../glyphs.ts";
 import { useReportStale } from "../hooks.ts";
 import { AppIcon, useActions } from "../parts.tsx";
@@ -15,7 +16,7 @@ import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
 import { CATEGORY_LABELS } from "./words.ts";
 
-const byName = (a: IndexApplet, b: IndexApplet): number => a.manifest.name.localeCompare(b.manifest.name);
+const byName = (a: StoreApplet, b: StoreApplet): number => a.manifest.name.localeCompare(b.manifest.name);
 
 /** Why there is no catalog, said where the applets would be: offline, or the catalog didn't check. */
 export function AppletsProblem() {
@@ -28,18 +29,18 @@ export function AppletsProblem() {
         testID="applets-coming"
         glyph={APPLETS}
         title="Applets are coming soon"
-        message="Applets you add by hand work today, and show up in Installed."
+        message="Dashi’s catalog isn’t open yet. Applets you add by hand work today, and Catalogs… adds one you were given."
       />
     );
   return (
     <EmptyState
       testID="applets-problem"
       glyph={problem.kind === "offline" ? OFFLINE : glyphs.WARNING}
-      title={problem.kind === "offline" ? "You’re offline" : "The applet catalog didn’t check out"}
+      title={problem.kind === "offline" ? "You’re offline" : "The applet catalogs didn’t check out"}
       message={
         problem.kind === "offline"
           ? "Applets need the internet to be found. The ones you have keep working."
-          : "Dashi couldn’t confirm the catalog is the real one, so nothing from it is shown. Try again in a minute."
+          : "Dashi couldn’t confirm the catalogs are the real ones, so nothing from them is shown. Try again in a minute."
       }
       action={<Button label="Try again" testID="retry" onPress={() => void applets.refresh()} />}
     />
@@ -73,16 +74,24 @@ export function AppletsPage() {
 }
 
 /** One installed applet on Installed: its icon, version and maker (or why it is off), its page, Remove…. */
-function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry: IndexApplet | undefined }) {
+function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry: StoreApplet | undefined }) {
   const colors = useColors();
   const actions = useActions();
+  const { applets } = useServices();
+  const origin = applets.originOf(applet);
+  const from =
+    origin.kind === "local"
+      ? "added by hand"
+      : origin.kind === "removed"
+        ? "catalog removed"
+        : origin.source.builtIn
+          ? applet.manifest.author.name
+          : `${applet.manifest.author.name} · From ${origin.source.name}`;
   const pulled = applet.record.disabled?.reason === "pulled";
   const off = applet.record.disabled?.reason === "off";
   const detail = pulled
     ? `Turned off: ${applet.record.disabled?.detail ?? "pulled from the catalog"}`
-    : [applet.manifest.version, applet.record.source === "local" ? "added by hand" : applet.manifest.author.name, off ? "turned off" : null]
-        .filter((part): part is string => part !== null)
-        .join(" · ");
+    : [applet.manifest.version, from, off ? "turned off" : null].filter((part): part is string => part !== null).join(" · ");
   return (
     <View
       testID={`installed:${applet.manifest.id}`}
@@ -112,6 +121,7 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
 
 /** The applets on Installed (filtered by `needle`); nothing when there are none. */
 export function InstalledApplets({ needle }: { needle: string }) {
+  const { applets } = useServices();
   const state = useAppletState();
   const shown = state.installed
     .filter((applet) => needle === "" || `${applet.manifest.name} ${applet.manifest.id}`.toLowerCase().includes(needle))
@@ -120,7 +130,7 @@ export function InstalledApplets({ needle }: { needle: string }) {
   return (
     <Group testID="installed-applets">
       {shown.map((applet) => (
-        <InstalledAppletRow key={applet.manifest.id} applet={applet} entry={state.index?.applets.find((each) => each.manifest.id === applet.manifest.id)} />
+        <InstalledAppletRow key={applet.manifest.id} applet={applet} entry={applets.entry(applet.manifest.id)} />
       ))}
     </Group>
   );

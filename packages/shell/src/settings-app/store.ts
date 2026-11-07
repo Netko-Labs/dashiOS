@@ -21,7 +21,8 @@
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
  *     "graphics": { "mode": "automatic" },
  *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false },
- *     "screenSharing": { "clients": ["/usr/bin/grim"] }
+ *     "screenSharing": { "clients": ["/usr/bin/grim"] },
+ *     "applets": { "catalogs": [{ "name": "Team", "url": "https://example.com/index.json", "key": "RWQ…" }] }
  *   }
  *
  * Writes are read-modify-write on the file as it is now, so keys this module
@@ -39,6 +40,7 @@ import { basename, dirname, join } from "node:path";
 import { isTextSize, UndoStack } from "@dashi/ui";
 import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
+import { type CatalogSetting, isCatalogList } from "../applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
@@ -208,6 +210,11 @@ export interface ClipboardSettings {
   snippetsInTerminals?: boolean;
 }
 
+/** `applets`: the applet catalogs the person added beside Dashi's (applet-store/catalogs.ts; Software › Menu bar applets › Catalogs…). */
+export interface AppletsSettings {
+  catalogs?: readonly CatalogSetting[];
+}
+
 /** `screenSharing`: programs trusted to capture the screen directly, by absolute path (screen-capture.ts; Settings › Privacy & Security). */
 export interface ScreenSharingSettings {
   clients?: readonly string[];
@@ -256,6 +263,8 @@ export interface SettingsData {
   clipboard: ClipboardSettings;
   /** Programs that capture the screen without the portal. */
   screenSharing: ScreenSharingSettings;
+  /** The applet catalogs added in Software. */
+  applets: AppletsSettings;
 }
 
 export { DEFAULT_BLANK_AFTER } from "./controls.ts";
@@ -355,6 +364,7 @@ const SECTIONS = {
     fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },
   },
   screenSharing: { path: ["screenSharing"], fields: { clients: (value) => Array.isArray(value) && value.length <= 64 && value.every(isProgramPath) } },
+  applets: { path: ["applets"], fields: { catalogs: isCatalogList } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 type Sections = Omit<SettingsData, "displays">;
@@ -458,6 +468,7 @@ export function readSettings(raw: unknown): SettingsData {
     agents: readSection(root, "agents") as AgentsSettings,
     clipboard: readSection(root, "clipboard") as ClipboardSettings,
     screenSharing: readSection(root, "screenSharing") as ScreenSharingSettings,
+    applets: readSection(root, "applets") as AppletsSettings,
   };
 }
 

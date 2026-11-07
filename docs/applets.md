@@ -438,9 +438,11 @@ which is how the catalog checks a package is its source.
 
 ## The catalog
 
-Applets install from one repository, Netko-Labs/dashi-applets: one folder per
-applet, the review is the pull request, the packages are release assets, and
-CI builds the index. No server.
+Dashi's applets install from one repository, Netko-Labs/dashi-applets: one
+folder per applet, the review is the pull request, the packages are release
+assets, and CI builds the index. No server. Other catalogs (a team's, a
+fork, your own) are the same index format signed with their own key, added
+in Software ([Catalogs](#catalogs)).
 
 ```
 applets/<id>/applet.json            the manifest
@@ -487,11 +489,12 @@ Dashi's key, and publishes both on the `index` branch.
 
 `index.json.minisig` beside it is Dashi's signature. The checks before
 anything runs (`packages/applet/src/catalog.ts`): the index is signed by
-Dashi's key; the package has the size and sha256 the index lists; it is
+its catalog's key (Dashi's for Dashi's); the package has the size and sha256 the index lists; it is
 signed by the author key the index lists; an update's author key is the one
-the installed version was verified with; a pulled version is never
+the installed version was verified with, and it comes from the catalog the
+installed version came from; a pulled version is never
 installed, and where it is installed it is turned off (by the store, and by
-the shell's look at the index a few minutes after login and daily,
+the shell's look at each catalog's index a few minutes after login and daily,
 `src/applet-store/kill-switch.ts`) and the store offers the newest good one.
 
 ### Keys
@@ -506,15 +509,71 @@ checks them; signing with real keys is the `minisign` tool's).
   `DASHI_INDEX_KEY_PASSWORD`, used only by the job that signs the index on
   `main`. Rotating it is a Dashi update that ships the new public key beside
   the old until every index is signed with the new one. Until it is made,
-  Software has no key, so its Menu bar applets place isn't shown and Installed
-  lists the applets added by hand (`DASHI_APPLETS_KEY` and
-  `DASHI_APPLETS_INDEX` point it at a test catalog).
+  Software has no key for Dashi's catalog: its Menu bar applets place says
+  applets are coming, lists what added catalogs have, and Installed lists
+  the applets added by hand (`DASHI_APPLETS_KEY` and `DASHI_APPLETS_INDEX`
+  point Dashi's at a test catalog).
+- **Another catalog's key**: its maintainers' own minisign key; the person
+  pastes its public half (the `.pub` file or its line) when they add the
+  catalog.
 - **An author's key**: made with `minisign -G -p author.pub`, the public half
   committed in the applet's repository, the secret half the author's alone.
   Every update must be signed with it: a lost key means a new applet id.
 - **Throwaway keys** (`dashi-applet keygen`, `generateKeys()`) are
   unencrypted and for tests and trying things only. No secret key is ever
   committed: the tests make theirs when they run.
+
+### Catalogs
+
+Software reads more than one catalog: Dashi's, built in, always first, and
+never removed or edited (`DASHI_APPLETS_INDEX` and `DASHI_APPLETS_KEY` still
+stand in for it); and the ones the person added. Menu bar applets' toolbar
+has **Catalogs…**: a sheet listing them (Dashi's marked built in, the others
+with Remove…) and **Add Catalog…**: a name, the index's address, and its
+public key.
+
+A catalog is `{name, url, key}`: `url` is its `index.json` (https, no port or
+user; file:// for tests and checks), `key` its minisign public key's line.
+The added ones are kept in `~/.config/dashi/settings.json`, written through
+the settings store (`src/settings-app/store.ts`, section `applets`):
+
+```json
+{ "applets": { "catalogs": [{ "name": "Team Applets", "url": "https://applets.example.com/index.json", "key": "RWQ…" }] } }
+```
+
+and read as untrusted, entry by entry (`src/applet-store/catalogs.ts`,
+`parseCatalogs`): a bad entry, a second one with the same address, Dashi's
+own address, and any past the 16th are left out (the shell logs why).
+
+- **Adding** fetches the index and its `.minisig` and checks them with the
+  key given before anything is saved. One that doesn't check isn't added,
+  and the sheet says why in people's words ("That catalog isn’t signed with
+  this key…", "Dashi couldn’t reach that address…", "There’s no applet
+  catalog at that address."). An address already in the list is refused.
+- **Hosts**: a catalog's index, packages, icons and screenshots come from
+  Dashi's hosts (`CATALOG_HOSTS`) or its index's own host, https only
+  (`hostsFor`, `allowedFor`). A version, icon, or screenshot elsewhere is left
+  out of the list (an applet with no version left, entirely); a local
+  package only from a catalog that is itself a local file.
+- **Listing** merges every catalog's applets (`src/applet-store/merge.ts`).
+  Each remembers its catalog; one from an added catalog says "From <name>" on
+  its row and page and is never shown as reviewed: Dashi's review mark is
+  Dashi's catalog's alone. The same id in two catalogs: Dashi's wins in the
+  list (then the one added first), except that an installed applet is listed
+  from the catalog it came from.
+- **Installing** records the catalog (its index address) in `install.json`
+  as `catalog`, beside the author key it was verified with; a record from
+  before has none and means Dashi's. Updates come only from that catalog, and
+  only signed with that key; the same id in another catalog is "installed",
+  never an update. Removing a catalog doesn't uninstall its applets: they
+  read "catalog removed" and get no updates.
+- **The kill switch** looks at the index of each catalog something was
+  installed from and turns off only that catalog's pulled versions of the
+  applets that came from it.
+
+Every other check stands for every catalog: the index signed by its
+catalog's key, the package's size and sha256, the author's signature, the
+author key pinned across updates, pulled versions refused.
 
 ## Design
 

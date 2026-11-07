@@ -4,10 +4,10 @@
  * Updates draw apps.
  */
 
-import type { IndexApplet } from "@dashi/applet";
 import { Group, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
+import type { StoreApplet } from "../../../src/applet-store/merge.ts";
 import { StateChip } from "../chip.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";
@@ -35,7 +35,7 @@ export function useAppletOperation(id: string): Operation | undefined {
 }
 
 /** The chip for `entry`, with what pressing it does. */
-export function AppletChip({ entry, testID, wide }: { entry: IndexApplet; testID: string; wide?: boolean }) {
+export function AppletChip({ entry, testID, wide }: { entry: StoreApplet; testID: string; wide?: boolean }) {
   const { applets } = useServices();
   const actions = useActions();
   useAppletState();
@@ -63,7 +63,17 @@ export function ForHere() {
   );
 }
 
-export function AppletRow({ entry }: { entry: IndexApplet }) {
+/** "From <catalog>", beside the name of an applet from a catalog the person added (never with Dashi's review mark). */
+export function FromCatalog({ name }: { name: string }) {
+  const colors = useColors();
+  return (
+    <View testID="from-catalog" style={{ flexShrink: 1, minWidth: 0 }}>
+      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>{`From ${name}`}</Text>
+    </View>
+  );
+}
+
+export function AppletRow({ entry }: { entry: StoreApplet }) {
   const colors = useColors();
   const actions = useActions();
   const { applets } = useServices();
@@ -90,6 +100,7 @@ export function AppletRow({ entry }: { entry: IndexApplet }) {
               {manifest.name}
             </Text>
             {entry.reviewed && <ReviewedSeal size={12} />}
+            {!entry.from.builtIn && <FromCatalog name={entry.from.name} />}
             {here && <ForHere />}
           </View>
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
@@ -103,7 +114,7 @@ export function AppletRow({ entry }: { entry: IndexApplet }) {
 }
 
 /** A titled group of rows; nothing when there are none. */
-export function AppletGroup({ title, detail, entries, testID }: { title?: string; detail?: string; entries: readonly IndexApplet[]; testID: string }) {
+export function AppletGroup({ title, detail, entries, testID }: { title?: string; detail?: string; entries: readonly StoreApplet[]; testID: string }) {
   if (entries.length === 0) return null;
   return (
     <View style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>

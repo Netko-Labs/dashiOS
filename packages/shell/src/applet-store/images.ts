@@ -1,7 +1,8 @@
 /**
- * The catalog's icons and screenshots as files (Metal draws images from
- * paths): fetched once per URL from the catalog's hosts only, at most 4 MB,
- * kept in the store's cache under a hash of the URL.
+ * The catalogs' icons and screenshots as files (Metal draws images from
+ * paths): fetched once per URL from the catalogs' hosts only (each
+ * catalog's own are checked when its applets are listed, merge.ts), at most
+ * 4 MB, kept in the store's cache under a hash of the URL.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
@@ -18,6 +19,8 @@ export class StoreImages {
   constructor(
     private readonly dir: string,
     private readonly fetch?: FetchLike,
+    /** The hosts images may come from now: every catalog's (catalog.ts `hostsFor`). */
+    private readonly hosts: () => readonly string[] = () => CATALOG_HOSTS,
   ) {}
 
   private pathFor(url: string): string | null {
@@ -38,7 +41,7 @@ export class StoreImages {
     if (!path) return Promise.resolve(null);
     const running = this.pending.get(url);
     if (running) return running;
-    const job = getBytes(url, { hosts: CATALOG_HOSTS, maxBytes: MAX_IMAGE, ...(this.fetch ? { fetch: this.fetch } : {}) })
+    const job = getBytes(url, { hosts: this.hosts(), maxBytes: MAX_IMAGE, ...(this.fetch ? { fetch: this.fetch } : {}) })
       .then((bytes) => {
         mkdirSync(this.dir, { recursive: true });
         writeFileSync(path, bytes);

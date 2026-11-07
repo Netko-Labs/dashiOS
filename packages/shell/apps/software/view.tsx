@@ -2,7 +2,8 @@
  * Software's window: one store for apps and menu bar applets. A sidebar
  * (Discover, Installed, Updates, Menu bar applets, the categories), one
  * toolbar row (Back, the queue's activity and the "saved results" chip,
- * Check for Updates on Updates, the search field), and the page for where
+ * Check for Updates on Updates, Catalogs… on Menu bar applets, the search
+ * field), and the page for where
  * you are. Searching on Installed filters what is installed; anywhere else
  * it searches Flathub and the applets at once. Every install, removal and
  * update starts from a click here, on one queue; a question is asked first
@@ -10,15 +11,17 @@
  * or an applet asks for something new.
  */
 
-import type { IndexApplet, InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet } from "@dashi/applet";
 import { AppWindow, SearchField, ToolbarButton } from "@dashi/ui";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import type { StoreApplet } from "../../src/applet-store/merge.ts";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import { useAppMenus } from "../kit/index.ts";
+import { CatalogsSheet } from "./applets/catalogs-sheet.tsx";
 import { useAppletState } from "./applets/rows.tsx";
 import { PictureView } from "./gallery.tsx";
-import { BACK, REFRESH } from "./glyphs.ts";
+import { APPLETS, BACK, REFRESH } from "./glyphs.ts";
 import { StaleContext } from "./hooks.ts";
 import { softwareMenus } from "./menus.ts";
 import { queueLine } from "./model.ts";
@@ -36,7 +39,7 @@ export const SOFTWARE_SIZE = { width: 1020, height: 700 } as const;
 
 const SEARCH_DELAY_MS = 300;
 
-type WindowAsk = Ask | { kind: "consent"; entry: IndexApplet; update: boolean };
+type WindowAsk = Ask | { kind: "consent"; entry: StoreApplet; update: boolean };
 
 /** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"); `initialPage`: on a sidebar place (the update notice's Show). */
 export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
@@ -47,6 +50,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const [query, setQuery] = useState(initialQuery);
   const [asks, setAsks] = useState<WindowAsk[]>([]);
   const [picture, setPicture] = useState<string | null>(null);
+  const [catalogs, setCatalogs] = useState(false);
   const [stale, setStale] = useState(0);
   const reportStale = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
   // Bumped when a sheet closes, so the search field takes the keyboard back.
@@ -144,13 +148,14 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
     place,
     canGoBack: canGoBack(nav),
     thing: thing?.can ?? null,
-    appletsReady: applets.catalogReady,
+    // The place is always there: it is where a catalog is added (Catalogs…), even before Dashi's opens.
+    appletsReady: true,
     appUpdates: appUpdates.length,
     systemUpdates,
     checking: state.checking,
     updatingApps: state.operations.some((operation) => operation.kind === "update" && operation.id === undefined),
     updatingSystem: state.operations.some((operation) => operation.kind === "system-update"),
-    blocked: asks.length > 0 || state.failure !== null,
+    blocked: asks.length > 0 || state.failure !== null || catalogs,
     actions: {
       search: () => setFocus((n) => n + 1),
       back: goBack,
@@ -197,6 +202,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
           }}
         />
       )}
+      {nav.page.kind === "applets" && <ToolbarButton testID="catalogs" glyph={APPLETS} label="Catalogs…" onPress={() => setCatalogs(true)} />}
       <SearchField
         key={focus}
         testID="search"
@@ -217,6 +223,13 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   };
   const overlay = picture ? (
     <PictureView file={picture} onClose={() => setPicture(null)} />
+  ) : catalogs ? (
+    <CatalogsSheet
+      onClose={() => {
+        setCatalogs(false);
+        setFocus((n) => n + 1);
+      }}
+    />
   ) : ask?.kind === "consent" ? (
     <AppletConsentSheet
       manifest={ask.entry.manifest}
@@ -236,13 +249,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   return (
     <ActionsContext.Provider value={actions}>
       <StaleContext.Provider value={reportStale}>
-        <AppWindow
-          title="Software"
-          leading={leading}
-          sidebar={<SoftwareSidebar nav={nav} updates={updateCount} appletsReady={applets.catalogReady && appletState.problem?.kind !== "no-key"} go={go} />}
-          toolbar={toolbar}
-          overlay={overlay}
-        >
+        <AppWindow title="Software" leading={leading} sidebar={<SoftwareSidebar nav={nav} updates={updateCount} go={go} />} toolbar={toolbar} overlay={overlay}>
           <PageView
             nav={nav}
             query={query}

@@ -63,6 +63,8 @@
  * laptop's (power/modes/settings.ts), read through settings-app/store.ts.
  * `launcher` (`aliases`, `keys`: each names a `dashi://` address) is the
  * person's launcher aliases and keys (launcher/person-keys.ts), read the same way.
+ * `applets.catalogs` is the applet catalogs the person added in Software,
+ * `[{name, url, key}]` (applet-store/catalogs.ts reads it, entry by entry).
  * `agents` (`answerer`: "claude-code", "codex", "opencode", "local", "claude", "gpt", or
  * "none", unset until the person picks; `localModel`; `gptModel`) is who answers the launcher's Ask (agents/ask/answerer.ts), read the same way.
  * Keys left out keep the compositor's own (DASHI_XKB_LAYOUT and the like),
@@ -73,6 +75,7 @@ import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
+import { parseCatalogs } from "./applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
 import { DEFAULT_INPUT_METHOD, INPUT_METHODS, type InputMethodName } from "./input-method.ts";
@@ -272,6 +275,7 @@ export function parseSettings(value: unknown): Loaded {
     "region",
     "spaces",
     "launcher",
+    "applets",
   ];
   for (const key of Object.keys(value)) if (!sections.includes(key)) problems.push(`unknown section ${key}`);
 
@@ -374,6 +378,9 @@ export function parseSettings(value: unknown): Loaded {
     fps: wallpaper.numberChoice("fps", FRAME_RATES),
     pauseOnBattery: wallpaper.boolean("pauseOnBattery"),
   }) as WallpaperChoice;
+  // Software and the kill switch read the catalogs themselves (applet-store/); here only what is wrong with them is said.
+  const applets = new Section("applets", value.applets, problems).only(["catalogs"]);
+  problems.push(...parseCatalogs(applets.get("catalogs")).problems);
   return { settings, problems };
 }
 

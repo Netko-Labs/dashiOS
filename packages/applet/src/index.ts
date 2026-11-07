@@ -59,6 +59,7 @@ export {
   type InstallRecord,
   installFiles,
   isAllowed,
+  isCatalogAddress,
   parseRecord,
   readInstalled,
   removeInstalled,
