@@ -76,6 +76,7 @@ export class MenusClient {
   private unsent = new Uint8Array();
   private handler: (id: string) => void = () => {};
   private quitHandler: () => void = () => {};
+  private openHandler: (args: string[]) => void = () => {};
   /** The menus last published (null: none), sent again when `typing` changes. */
   private menus: readonly MenuSpec[] | null = null;
   /** A text field has the keyboard (protocol.ts `typing`). */
@@ -135,6 +136,11 @@ export class MenusClient {
     this.quitHandler = handler;
   }
 
+  /** Who hears the arguments of a second start while this app runs (protocol.ts `open`; the latest one set). */
+  onOpen(handler: (args: string[]) => void): void {
+    this.openHandler = handler;
+  }
+
   private send(menus: readonly MenuSpec[]): void {
     this.line = `${JSON.stringify({ type: "menus", menus, ...(this.typing ? { typing: true } : {}) })}\n`;
     if (this.socket) this.write(this.line);
@@ -170,6 +176,7 @@ export class MenusClient {
             const message = parseShellMessage(line);
             if (message?.type === "select") this.handler(message.id);
             else if (message?.type === "quit") this.quitHandler();
+            else if (message?.type === "open") this.openHandler(message.args);
             else if (message?.type === "error") console.error(`dashi menus: the shell refused the menus: ${message.message}`);
           }
         },

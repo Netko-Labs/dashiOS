@@ -1,17 +1,26 @@
 /**
  * One look at the system: every process and the machine's counters, read
  * from /proc with proc.ts's parsers. A process can end between listing and
- * reading; it is then simply not in this look.
+ * reading; it is then simply not in this look. Only /proc is read, and
+ * nothing is ever written.
+ *
+ * What doesn't change while a process runs one program (its name, command
+ * line, and app) is read once and kept in the reader's `memory`, by pid,
+ * start time, and the kernel's name for it (pids are reused, and a program
+ * that execs another or renames itself is looked at again).
  */
 
-import { readdirSync, readFileSync, readlinkSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { FIRST_PARTY } from "../../src/first-party.ts";
+import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "../../src/process-apps/index.ts";
+import type { GpuCounters } from "./energy-proc.ts";
 import {
   type Counters,
   isKernelThread,
   type MemInfo,
   type NetCounters,
   type ProcIo,
+  type ProcStat,
   parseDiskStats,
   parseIo,
   parseMemInfo,
@@ -23,6 +32,7 @@ import {
   processName,
   type SystemStat,
 } from "./proc.ts";
+import { countSockets, GPU_FDS_EVERY, gpuDescriptors, readGpu, readWakeups, SOCKETS_EVERY } from "./read-fds.ts";
 
 export interface ProcessSample {
   pid: number;
@@ -41,6 +51,14 @@ export interface ProcessSample {
   io: ProcIo | null;
   /** Open sockets; own processes only, and only when asked. */
   sockets: number | null;
+  /** Its command line, the arguments joined by spaces ("" for a kernel thread). */
+  command: string;
+  /** The app it is by itself (process-apps/); null for a helper, or when the reader has no catalog. */
+  app: AppIdentity | null;
+  /** Voluntary context switches over all its threads; own processes, and only when asked (the Energy tab). */
+  wakeups: number | null;
+  /** Its GPU counters; own processes with a GPU open whose driver counts, and only when asked. */
+  gpu: GpuCounters | null;
 }
 
 export interface Snapshot {
@@ -53,6 +71,26 @@ export interface Snapshot {
   net: NetCounters;
 }
 
+/** What a reader keeps between looks. */
+export interface ReaderMemory {
+  /** By `pid:starttime:comm`. */
+  known: Map<string, Known>;
+  /** Looks taken so far. */
+  looks: number;
+}
+
+interface Known {
+  name: string;
+  command: string;
+  app: AppIdentity | null;
+  sockets?: { count: number | null; look: number };
+  gpuFds?: { fds: number[]; look: number };
+}
+
+export function readerMemory(): ReaderMemory {
+  return { known: new Map(), looks: 0 };
+}
+
 export interface ReadOptions {
   /** Read each own process's io (the Disk tab). */
   io: boolean;
@@ -60,13 +98,17 @@ export interface ReadOptions {
   sockets: boolean;
   /** Read kernel threads too (true when absent); without them a look skips their status files. */
   kernel?: boolean;
+  /** Read each own process's wakeups and GPU use (the Energy tab). */
+  energy?: boolean;
   ownUid: number;
   pageSize: number;
-  /** Names worked out from command lines, by pid and start time (pids are reused). */
-  names: Map<string, string>;
+  memory: ReaderMemory;
+  /** The installed apps, to tell which app each process is; without it no process has one. */
+  apps?: AppCatalog;
 }
 
 const PROC = "/proc";
+const COMMAND_LIMIT = 1024;
 
 function read(path: string): string | null {
   try {
@@ -82,22 +124,28 @@ export function firstPartyName(comm: string, names: readonly string[] = FIRST_PA
   return names.find((name) => name.startsWith(comm)) ?? null;
 }
 
-function countSockets(pid: number): number | null {
-  let fds: string[];
-  try {
-    fds = readdirSync(`${PROC}/${pid}/fd`);
-  } catch {
-    return null;
-  }
-  let sockets = 0;
-  for (const fd of fds) {
-    try {
-      if (readlinkSync(`${PROC}/${pid}/fd/${fd}`).startsWith("socket:")) sockets++;
-    } catch {
-      // Closed while counting.
-    }
-  }
-  return sockets;
+/** What is read once per program: the name (the kernel's, or completed from the command line), the command line, the app. */
+function knownFor(pid: number, stat: ProcStat, options: ReadOptions): Known {
+  const key = `${pid}:${stat.starttime}:${stat.comm}`;
+  const kept = options.memory.known.get(key);
+  if (kept) return kept;
+  const argv = isKernelThread(stat) ? [] : parseCmdline(read(`${PROC}/${pid}/cmdline`));
+  const cmdline = argv.join("\0");
+  const name = stat.comm.length >= 15 ? (firstPartyName(stat.comm) ?? processName(stat.comm, cmdline)) : stat.comm;
+  const app = options.apps && argv.length > 0 ? identify({ comm: stat.comm, argv, cgroup: read(`${PROC}/${pid}/cgroup`) ?? "" }, options.apps) : null;
+  const known: Known = { name, command: argv.join(" ").slice(0, COMMAND_LIMIT), app };
+  options.memory.known.set(key, known);
+  return known;
+}
+
+function socketsOf(pid: number, known: Known, look: number): number | null {
+  if (!known.sockets || look - known.sockets.look >= SOCKETS_EVERY) known.sockets = { count: countSockets(pid), look };
+  return known.sockets.count;
+}
+
+function gpuOf(pid: number, known: Known, look: number): GpuCounters | null {
+  if (!known.gpuFds || look - known.gpuFds.look >= GPU_FDS_EVERY) known.gpuFds = { fds: gpuDescriptors(pid), look };
+  return known.gpuFds.fds.length > 0 ? readGpu(pid, known.gpuFds.fds) : null;
 }
 
 function readProcess(pid: number, options: ReadOptions): ProcessSample | null {
@@ -105,19 +153,13 @@ function readProcess(pid: number, options: ReadOptions): ProcessSample | null {
   if (!stat || (options.kernel === false && isKernelThread(stat))) return null;
   const status = parseStatus(read(`${PROC}/${pid}/status`) ?? "");
   if (!status) return null;
-  // Short names are the kernel's own and can change (an app renames itself once it starts);
-  // only names worked out from a cut-short one and the command line are kept.
-  let name = stat.comm;
-  if (stat.comm.length >= 15) {
-    const key = `${pid}:${stat.starttime}:${stat.comm}`;
-    name = options.names.get(key) ?? firstPartyName(stat.comm) ?? processName(stat.comm, read(`${PROC}/${pid}/cmdline`));
-    options.names.set(key, name);
-  }
-  const own = status.uid === options.ownUid;
+  const known = knownFor(pid, stat, options);
+  const own = status.uid === options.ownUid && !isKernelThread(stat);
+  const look = options.memory.looks;
   return {
     pid,
     ppid: stat.ppid,
-    name,
+    name: known.name,
     uid: status.uid,
     state: stat.state,
     cpuTicks: stat.utime + stat.stime,
@@ -126,7 +168,11 @@ function readProcess(pid: number, options: ReadOptions): ProcessSample | null {
     memory: status.rss ?? stat.rssPages * options.pageSize,
     kernel: isKernelThread(stat),
     io: own && options.io ? parseIo(read(`${PROC}/${pid}/io`) ?? "") : null,
-    sockets: own && options.sockets ? countSockets(pid) : null,
+    sockets: own && options.sockets ? socketsOf(pid, known, look) : null,
+    command: known.command,
+    app: known.app,
+    wakeups: own && options.energy ? readWakeups(pid) : null,
+    gpu: own && options.energy ? gpuOf(pid, known, look) : null,
   };
 }
 
@@ -138,14 +184,15 @@ export function readSnapshot(options: ReadOptions): Snapshot {
   } catch {
     // No /proc: an empty look.
   }
+  options.memory.looks++;
   for (const entry of entries) {
     if (!/^\d+$/.test(entry)) continue;
     const sample = readProcess(Number(entry), options);
     if (sample) processes.set(sample.pid, sample);
   }
-  // Names of processes that are gone are forgotten.
-  const live = new Set([...processes.values()].map((p) => `${p.pid}:${p.starttime}:`));
-  for (const key of options.names.keys()) if (!live.has(`${key.split(":", 2).join(":")}:`)) options.names.delete(key);
+  // What was known about processes that are gone is forgotten.
+  const live = new Set([...processes.values()].map((p) => `${p.pid}:${p.starttime}`));
+  for (const key of options.memory.known.keys()) if (!live.has(key.split(":", 2).join(":"))) options.memory.known.delete(key);
   return {
     at: performance.now(),
     processes,

@@ -1,102 +1,149 @@
-/** The table's columns on each tab, and the sort each tab opens with. */
+/**
+ * The table's columns on each tab, and the sort each tab opens with. A line
+ * is an app or a process (lines.ts); an app's numbers are its processes'
+ * added up. The name column's cell (the icon and the disclosure) is drawn by
+ * the view; here it is only words.
+ */
 
 import type { Column, SortState } from "@dashi/ui";
-import { formatBytes, formatCount, formatCpuTime, formatPercent, formatRate } from "./format.ts";
+import { formatBytes, formatCount, formatCpuTime, formatPercent, formatRate, formatState } from "./format.ts";
+import type { Line } from "./lines.ts";
 import type { Tab } from "./monitor.ts";
-import type { ProcessRow } from "./sample.ts";
 
-type ProcessColumn = Column<ProcessRow>;
+type LineColumn = Column<Line>;
 
 const optional = (value: number | null, format: (n: number) => string): string => (value === null ? "—" : format(value));
 
-const NAME: ProcessColumn = { key: "name", title: "Process Name", text: (row) => row.name };
-const CPU: ProcessColumn = {
+export const NAME: LineColumn = { key: "name", title: "Name", text: (line) => line.name };
+const CPU: LineColumn = {
   key: "cpu",
   title: "% CPU",
   width: 72,
   align: "right",
   descendingFirst: true,
-  text: (row) => formatPercent(row.cpu),
-  sortValue: (row) => row.cpu,
+  text: (line) => formatPercent(line.cpu),
+  sortValue: (line) => line.cpu,
 };
-const CPU_TIME: ProcessColumn = {
+const CPU_TIME: LineColumn = {
   key: "cpuTime",
-  title: "CPU Time",
+  title: "CPU time",
   width: 92,
   align: "right",
   descendingFirst: true,
-  text: (row) => formatCpuTime(row.cpuTime),
-  sortValue: (row) => row.cpuTime,
+  text: (line) => formatCpuTime(line.cpuTime),
+  sortValue: (line) => line.cpuTime,
 };
-const THREADS: ProcessColumn = {
+const THREADS: LineColumn = {
   key: "threads",
   title: "Threads",
   width: 72,
   align: "right",
   descendingFirst: true,
-  text: (row) => formatCount(row.threads),
-  sortValue: (row) => row.threads,
+  text: (line) => formatCount(line.threads),
+  sortValue: (line) => line.threads,
 };
-const MEMORY: ProcessColumn = {
+const STATE: LineColumn = {
+  key: "state",
+  title: "State",
+  width: 84,
+  text: (line) => (line.process && line.kind === "process" ? formatState(line.process.state) : ""),
+};
+const MEMORY: LineColumn = {
   key: "memory",
   title: "Memory",
   width: 96,
   align: "right",
   descendingFirst: true,
-  text: (row) => formatBytes(row.memory),
-  sortValue: (row) => row.memory,
+  text: (line) => formatBytes(line.memory),
+  sortValue: (line) => line.memory,
 };
-const WRITE_RATE: ProcessColumn = {
+const WRITE_RATE: LineColumn = {
   key: "writeRate",
   title: "Written/s",
   width: 104,
   align: "right",
   descendingFirst: true,
-  text: (row) => optional(row.writeRate, formatRate),
-  sortValue: (row) => row.writeRate ?? -1,
+  text: (line) => optional(line.writeRate, formatRate),
+  sortValue: (line) => line.writeRate ?? -1,
 };
-const READ_RATE: ProcessColumn = {
+const READ_RATE: LineColumn = {
   key: "readRate",
   title: "Read/s",
   width: 104,
   align: "right",
   descendingFirst: true,
-  text: (row) => optional(row.readRate, formatRate),
-  sortValue: (row) => row.readRate ?? -1,
+  text: (line) => optional(line.readRate, formatRate),
+  sortValue: (line) => line.readRate ?? -1,
 };
-const WRITTEN: ProcessColumn = {
+const WRITTEN: LineColumn = {
   key: "written",
-  title: "Bytes Written",
-  width: 112,
-  align: "right",
-  descendingFirst: true,
-  text: (row) => optional(row.written, formatBytes),
-  sortValue: (row) => row.written ?? -1,
-};
-const READ: ProcessColumn = {
-  key: "read",
-  title: "Bytes Read",
+  title: "Written",
   width: 104,
   align: "right",
   descendingFirst: true,
-  text: (row) => optional(row.read, formatBytes),
-  sortValue: (row) => row.read ?? -1,
+  text: (line) => optional(line.written, formatBytes),
+  sortValue: (line) => line.written ?? -1,
 };
-const SOCKETS: ProcessColumn = {
+const READ: LineColumn = {
+  key: "read",
+  title: "Read",
+  width: 104,
+  align: "right",
+  descendingFirst: true,
+  text: (line) => optional(line.read, formatBytes),
+  sortValue: (line) => line.read ?? -1,
+};
+const SOCKETS: LineColumn = {
   key: "sockets",
   title: "Sockets",
   width: 80,
   align: "right",
   descendingFirst: true,
-  text: (row) => optional(row.sockets, formatCount),
-  sortValue: (row) => row.sockets ?? -1,
+  text: (line) => optional(line.sockets, formatCount),
+  sortValue: (line) => line.sockets ?? -1,
 };
-const PID: ProcessColumn = { key: "pid", title: "PID", width: 72, align: "right", text: (row) => String(row.pid), sortValue: (row) => row.pid };
-const USER: ProcessColumn = { key: "user", title: "User", width: 112, text: (row) => row.user };
+const IMPACT: LineColumn = {
+  key: "impact",
+  title: "Energy impact",
+  width: 112,
+  align: "right",
+  descendingFirst: true,
+  text: (line) => formatPercent(line.impact),
+  sortValue: (line) => line.impact,
+};
+const GPU: LineColumn = {
+  key: "gpu",
+  title: "% GPU",
+  width: 72,
+  align: "right",
+  descendingFirst: true,
+  text: (line) => optional(line.gpu, formatPercent),
+  sortValue: (line) => line.gpu ?? -1,
+};
+const WAKEUPS: LineColumn = {
+  key: "wakeups",
+  title: "Wakeups/s",
+  width: 96,
+  align: "right",
+  descendingFirst: true,
+  text: (line) => optional(line.wakeups, formatCount),
+  sortValue: (line) => line.wakeups ?? -1,
+};
+const PID: LineColumn = {
+  key: "pid",
+  title: "PID",
+  width: 72,
+  align: "right",
+  text: (line) => (line.pid === null ? "" : String(line.pid)),
+  sortValue: (line) => line.pid ?? -1,
+};
+const USER: LineColumn = { key: "user", title: "User", width: 112, text: (line) => line.user };
 
-export const COLUMNS: Record<Tab, readonly ProcessColumn[]> = {
-  cpu: [NAME, CPU, CPU_TIME, THREADS, PID, USER],
+export const COLUMNS: Record<Tab, readonly LineColumn[]> = {
+  cpu: [NAME, CPU, CPU_TIME, THREADS, STATE, PID, USER],
   memory: [NAME, MEMORY, THREADS, PID, USER],
+  // Energy impact is % CPU, % GPU and wakeups together (energy-proc.ts); its parts follow.
+  energy: [NAME, IMPACT, CPU, GPU, WAKEUPS, USER],
   // What is hitting the disk now first; the totals since each process started after.
   disk: [NAME, WRITE_RATE, READ_RATE, WRITTEN, READ, PID, USER],
   network: [NAME, SOCKETS, PID, USER],
@@ -105,6 +152,7 @@ export const COLUMNS: Record<Tab, readonly ProcessColumn[]> = {
 export const DEFAULT_SORT: Record<Tab, SortState> = {
   cpu: { key: "cpu", ascending: false },
   memory: { key: "memory", ascending: false },
+  energy: { key: "impact", ascending: false },
   disk: { key: "writeRate", ascending: false },
   network: { key: "sockets", ascending: false },
 };

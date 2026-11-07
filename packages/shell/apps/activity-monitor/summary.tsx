@@ -1,18 +1,21 @@
 /**
- * The strip under the table: figures for the open tab on either side of a
- * graph of the last two minutes (CPU load, memory in use, disk and network
- * traffic). Processes and threads are counted as the View menu shows them:
- * kernel threads only when they are shown.
+ * The strip under the table (View › Show Summary hides it): figures for the
+ * open tab on either side of a graph of the last minutes (CPU load, memory
+ * used, energy impact, disk and network activity), each graph's scale at its
+ * top. Each figure's value follows its label. Processes and threads are
+ * counted as the View menu shows them: kernel threads only when they are
+ * shown. On Energy it says in words which app is using the most.
  */
 
 import { TINTS, useColors, useSurface } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { formatBytes, formatCount, formatPercent, formatRate } from "./format.ts";
 import { niceMax, sparkline, stacked } from "./graph.ts";
+import type { Line } from "./lines.ts";
 import type { MonitorState, Tab } from "./monitor.ts";
 
 export const SUMMARY_HEIGHT = 132;
-const GRAPH = { width: 260, height: 78 } as const;
+const GRAPH = { width: 260, height: 74 } as const;
 
 /**
  * Two colors for two series, from Dashi's tints (CO-4): never a job color, so
@@ -32,12 +35,18 @@ function Figures({ figures, testID }: { figures: readonly Figure[]; testID: stri
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", justifyContent: "center", alignItems: "stretch", gap: 5, minWidth: 0 }}>
       {figures.map((figure) => (
-        <View key={figure.label} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {figure.color !== undefined && <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: figure.color }} />}
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>{`${figure.label}:`}</Text>
+        <View key={figure.label} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {figure.color !== undefined && <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: figure.color }} />}
+          <View style={{ flexShrink: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+              {figure.label}
+            </Text>
           </View>
-          <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{figure.value}</Text>
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
+              {figure.value}
+            </Text>
+          </View>
         </View>
       ))}
     </View>
@@ -49,12 +58,23 @@ interface Series {
   color: string;
 }
 
-function Graph({ title, series, max }: { title: string; series: readonly Series[]; max: number }) {
+interface GraphSpec {
+  title: string;
+  series: Series[];
+  max: number;
+  /** What the top line stands for ("100%", "2 MB/s"). */
+  scale: string;
+}
+
+function Graph({ title, series, max, scale }: GraphSpec) {
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View style={{ width: GRAPH.width + 2, flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
+    <View style={{ width: GRAPH.width + 2, flexShrink: 0, flexDirection: "column", gap: 4 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>{scale}</Text>
+      </View>
       <View
         style={{
           width: GRAPH.width + 2,
@@ -83,98 +103,127 @@ function Graph({ title, series, max }: { title: string; series: readonly Series[
   );
 }
 
-export function Summary({ tab, state, totals }: { tab: Tab; state: MonitorState; totals: { processes: number; threads: number } }) {
-  const colors = useColors();
-  const surface = useSurface();
-  let left: Figure[];
-  let right: Figure[];
-  let graph: { title: string; series: Series[]; max: number };
+/** A rate graph's top, as its scale says it. */
+function rateGraph(title: string, first: readonly number[], second: readonly number[], floor: number): GraphSpec {
+  const max = niceMax([...first, ...second], floor);
+  return {
+    title,
+    max,
+    scale: formatRate(max),
+    series: [
+      { values: first, color: SERIES.second },
+      { values: second, color: SERIES.first },
+    ],
+  };
+}
+
+function content(
+  tab: Tab,
+  state: MonitorState,
+  totals: { processes: number; threads: number },
+  top: Line | null,
+): { left: Figure[]; right: Figure[]; graph: GraphSpec } {
   switch (tab) {
     case "cpu":
-      left = [
-        { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: SERIES.second },
-        { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: SERIES.first },
-        { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
-      ];
-      right = [
-        { label: "Threads", value: formatCount(totals.threads) },
-        { label: "Processes", value: formatCount(totals.processes) },
-        { label: "CPUs", value: formatCount(state.cpus) },
-      ];
-      graph = {
-        title: "CPU LOAD",
-        max: 100,
-        series: [
-          { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: SERIES.first },
-          { values: state.cpuHistory.system, color: SERIES.second },
+      return {
+        left: [
+          { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: SERIES.second },
+          { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: SERIES.first },
+          { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
         ],
+        right: [
+          { label: "Threads", value: formatCount(totals.threads) },
+          { label: "Processes", value: formatCount(totals.processes) },
+          { label: "Cores", value: formatCount(state.cpus) },
+        ],
+        graph: {
+          // Of all the cores together; a process's % CPU is of one core.
+          title: "CPU load",
+          max: 100,
+          scale: "100%",
+          series: [
+            { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: SERIES.first },
+            { values: state.cpuHistory.system, color: SERIES.second },
+          ],
+        },
       };
-      break;
     case "memory": {
       const memory = state.memory;
-      const used = memory ? memory.total - memory.available : 0;
-      left = [
-        { label: "Physical Memory", value: memory ? formatBytes(memory.total) : "—" },
-        { label: "Memory Used", value: memory ? formatBytes(used) : "—", color: SERIES.first },
-        { label: "Cached Files", value: memory ? formatBytes(memory.cached) : "—" },
-      ];
-      right = [
-        { label: "Available", value: memory ? formatBytes(memory.available) : "—" },
-        { label: "Swap Used", value: memory ? formatBytes(memory.swapTotal - memory.swapFree) : "—" },
-        { label: "Swap Size", value: memory ? formatBytes(memory.swapTotal) : "—" },
-      ];
-      graph = { title: "MEMORY USED", max: 100, series: [{ values: state.memoryHistory, color: SERIES.first }] };
-      break;
+      const known = (format: (m: NonNullable<typeof memory>) => string): string => (memory ? format(memory) : "—");
+      return {
+        left: [
+          { label: "Memory", value: known((m) => formatBytes(m.total)) },
+          { label: "Used", value: known((m) => formatBytes(m.total - m.available)), color: SERIES.first },
+          { label: "Cached files", value: known((m) => formatBytes(m.cached)) },
+        ],
+        right: [
+          { label: "Available", value: known((m) => formatBytes(m.available)) },
+          { label: "Swap used", value: known((m) => formatBytes(m.swapTotal - m.swapFree)) },
+          { label: "Swap size", value: known((m) => formatBytes(m.swapTotal)) },
+        ],
+        graph: { title: "Memory used", max: 100, scale: "100%", series: [{ values: state.memoryHistory, color: SERIES.first }] },
+      };
+    }
+    case "energy": {
+      const { impact, wakeups, gpu, history } = state.energy;
+      const max = niceMax(history, 10);
+      return {
+        left: [
+          { label: "Energy impact", value: formatPercent(impact), color: SERIES.first },
+          { label: "Wakeups/s", value: wakeups === null ? "—" : formatCount(wakeups) },
+          { label: "% GPU", value: gpu === null ? "—" : formatPercent(gpu) },
+        ],
+        right: [
+          { label: "Most energy", value: top && top.impact >= 1 ? top.name : "Nothing much" },
+          { label: "Processes", value: formatCount(totals.processes) },
+          { label: "Threads", value: formatCount(totals.threads) },
+        ],
+        graph: { title: "Energy impact", max, scale: formatCount(max), series: [{ values: history, color: SERIES.first }] },
+      };
     }
     case "disk": {
-      const { totals, perSecond, history } = state.disk;
-      left = [
-        { label: "Reads in", value: formatCount(totals.readOps) },
-        { label: "Writes out", value: formatCount(totals.writeOps) },
-        { label: "Reads in/sec", value: formatCount(perSecond.readOps) },
-        { label: "Writes out/sec", value: formatCount(perSecond.writeOps) },
-      ];
-      right = [
-        { label: "Data read", value: formatBytes(totals.readBytes) },
-        { label: "Data written", value: formatBytes(totals.writeBytes) },
-        { label: "Data read/sec", value: formatRate(perSecond.readBytes), color: SERIES.second },
-        { label: "Data written/sec", value: formatRate(perSecond.writeBytes), color: SERIES.first },
-      ];
-      graph = {
-        title: "DATA",
-        max: niceMax([...history.read, ...history.write], 64 * 1024),
-        series: [
-          { values: history.read, color: SERIES.second },
-          { values: history.write, color: SERIES.first },
+      const { totals: disk, perSecond, history } = state.disk;
+      return {
+        left: [
+          { label: "Reads", value: formatCount(disk.readOps) },
+          { label: "Writes", value: formatCount(disk.writeOps) },
+          { label: "Reads/s", value: formatCount(perSecond.readOps) },
+          { label: "Writes/s", value: formatCount(perSecond.writeOps) },
         ],
+        right: [
+          { label: "Data read", value: formatBytes(disk.readBytes) },
+          { label: "Data written", value: formatBytes(disk.writeBytes) },
+          { label: "Read/s", value: formatRate(perSecond.readBytes), color: SERIES.second },
+          { label: "Written/s", value: formatRate(perSecond.writeBytes), color: SERIES.first },
+        ],
+        graph: rateGraph("Disk activity", history.read, history.write, 64 * 1024),
       };
-      break;
     }
     case "network": {
-      const { totals, perSecond, history } = state.net;
-      left = [
-        { label: "Packets in", value: formatCount(totals.packetsIn) },
-        { label: "Packets out", value: formatCount(totals.packetsOut) },
-        { label: "Packets in/sec", value: formatCount(perSecond.packetsIn) },
-        { label: "Packets out/sec", value: formatCount(perSecond.packetsOut) },
-      ];
-      right = [
-        { label: "Data received", value: formatBytes(totals.bytesIn) },
-        { label: "Data sent", value: formatBytes(totals.bytesOut) },
-        { label: "Data received/sec", value: formatRate(perSecond.bytesIn), color: SERIES.second },
-        { label: "Data sent/sec", value: formatRate(perSecond.bytesOut), color: SERIES.first },
-      ];
-      graph = {
-        title: "DATA",
-        max: niceMax([...history.in, ...history.out], 16 * 1024),
-        series: [
-          { values: history.in, color: SERIES.second },
-          { values: history.out, color: SERIES.first },
+      const { totals: net, perSecond, history } = state.net;
+      return {
+        left: [
+          { label: "Packets in", value: formatCount(net.packetsIn) },
+          { label: "Packets out", value: formatCount(net.packetsOut) },
+          { label: "Packets in/s", value: formatCount(perSecond.packetsIn) },
+          { label: "Packets out/s", value: formatCount(perSecond.packetsOut) },
         ],
+        right: [
+          { label: "Received", value: formatBytes(net.bytesIn) },
+          { label: "Sent", value: formatBytes(net.bytesOut) },
+          { label: "Received/s", value: formatRate(perSecond.bytesIn), color: SERIES.second },
+          { label: "Sent/s", value: formatRate(perSecond.bytesOut), color: SERIES.first },
+        ],
+        graph: rateGraph("Network activity", history.in, history.out, 16 * 1024),
       };
-      break;
     }
   }
+}
+
+export function Summary({ tab, state, totals, top }: { tab: Tab; state: MonitorState; totals: { processes: number; threads: number }; top: Line | null }) {
+  const colors = useColors();
+  const surface = useSurface();
+  const { left, right, graph } = content(tab, state, totals, top);
   return (
     <View
       testID="summary"
@@ -191,7 +240,7 @@ export function Summary({ tab, state, totals }: { tab: Tab; state: MonitorState;
       }}
     >
       <Figures figures={left} testID="summary-left" />
-      <Graph title={graph.title} series={graph.series} max={graph.max} />
+      <Graph {...graph} />
       <Figures figures={right} testID="summary-right" />
     </View>
   );

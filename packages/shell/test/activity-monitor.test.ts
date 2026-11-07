@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { submitSelection } from "../apps/activity-monitor/lines.ts";
 import { Monitor } from "../apps/activity-monitor/monitor.ts";
 import { isVirtualInterface, parseIo, parseNetDev, parseStatus } from "../apps/activity-monitor/proc.ts";
 import type { ProcessSample, Snapshot } from "../apps/activity-monitor/read.ts";
-import { cpuSplit, type ProcessRow, processRows, scopeTotals, submitSelection } from "../apps/activity-monitor/sample.ts";
+import { cpuSplit, filterRows, type ProcessRow, processRows, scopeTotals } from "../apps/activity-monitor/sample.ts";
 import { Sampler } from "../apps/activity-monitor/sampling.ts";
 
 const CONTEXT = { users: new Map([[1000, "alexk"]]), ownUid: 1000, clockTicks: 100 };
@@ -20,6 +21,10 @@ const proc = (pid: number, fields: Partial<ProcessSample> = {}): ProcessSample =
   kernel: false,
   io: null,
   sockets: null,
+  command: "",
+  app: null,
+  wakeups: null,
+  gpu: null,
   ...fields,
 });
 
@@ -34,7 +39,15 @@ const look = (seconds: number, processes: ProcessSample[]): Snapshot => ({
 
 const row = (pid: number, fields: Partial<ProcessRow> = {}): ProcessRow => ({
   pid,
+  ppid: 1,
+  starttime: 100,
   name: `p${pid}`,
+  command: "",
+  state: "S",
+  app: null,
+  wakeups: null,
+  gpu: null,
+  impact: 0,
   user: "alexk",
   uid: 1000,
   cpu: 0,
@@ -139,16 +152,33 @@ describe("network", () => {
 
 describe("search", () => {
   test("Return selects: the selection while it is shown, else the first match, never a quit", () => {
-    expect(submitSelection([4, 5, 6], 5)).toBe(5);
-    expect(submitSelection([4, 5, 6], 9)).toBe(4);
-    expect(submitSelection([4, 5, 6], null)).toBe(4);
-    expect(submitSelection([], 5)).toBeNull();
+    expect(submitSelection(["pid:4", "pid:5", "pid:6"], "pid:5")).toBe("pid:5");
+    expect(submitSelection(["pid:4", "pid:5", "pid:6"], "pid:9")).toBe("pid:4");
+    expect(submitSelection(["pid:4", "pid:5", "pid:6"], null)).toBe("pid:4");
+    expect(submitSelection([], "pid:5")).toBeNull();
+  });
+
+  test("a search matches the name, the app, the command line, or the pid; a user name only when nothing else does", () => {
+    const files = { key: "dev.dashi.files", name: "Files", icon: "" };
+    const rows = [
+      row(10, { name: "dashi-comp", user: "dashi" }),
+      row(11, { name: "bun", app: files, user: "dashi", command: "bun /usr/share/dashi/shell/apps/files/main.tsx" }),
+      row(12, { name: "zsh", user: "dashi" }),
+    ];
+    const scope = { mine: false, kernel: false };
+    expect(filterRows(rows, "comp", scope).map((each) => each.pid)).toEqual([10]);
+    expect(filterRows(rows, "files", scope).map((each) => each.pid)).toEqual([11]);
+    expect(filterRows(rows, "12", scope).map((each) => each.pid)).toEqual([12]);
+    // "dashi" is in two names and a command line: the user's other processes stay out.
+    expect(filterRows(rows, "dashi", scope).map((each) => each.pid)).toEqual([10, 11]);
+    expect(filterRows(rows, "da", scope)).toHaveLength(2);
+    expect(filterRows([row(12, { name: "zsh", user: "alexk" })], "ale", scope)).toHaveLength(1);
   });
 });
 
 describe("monitor", () => {
   test("looks are asynchronous, one at a time, and what to read follows the window", async () => {
-    const asked: Array<{ io: boolean; sockets: boolean; kernel?: boolean }> = [];
+    const asked: Array<{ io: boolean; sockets: boolean; kernel?: boolean; energy?: boolean }> = [];
     let release: (() => void) | null = null;
     let at = 0;
     const monitor = new Monitor(CONTEXT, (options) => {
@@ -177,7 +207,7 @@ describe("monitor", () => {
     await Bun.sleep(0);
     (release as unknown as () => void)();
     await Bun.sleep(0);
-    expect(asked.at(-1)).toEqual({ io: true, sockets: false, kernel: true });
+    expect(asked.at(-1)).toEqual({ io: true, sockets: false, kernel: true, energy: false });
   });
 
   test("pause stops the timer; resume looks again at once", async () => {

@@ -32,7 +32,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
 - [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
 - [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
-- [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
+- [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
 - [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
 - [ ] Editor's document surface with versioned autosave (L)

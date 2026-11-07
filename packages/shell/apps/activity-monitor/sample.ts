@@ -1,11 +1,14 @@
 /**
  * From looks at the system (read.ts) to what Activity Monitor shows: each
  * process's share of the CPU, smoothed over the last few looks, its disk
- * traffic per second, the machine's CPU split, rates of disk and network
- * traffic, and the short history the graphs draw. Pure: the looks come in,
- * rows and numbers go out.
+ * traffic per second, its wakeups and GPU use and the energy impact they
+ * add up to, the app it belongs to, the machine's CPU split, rates of disk
+ * and network traffic, and the short history the graphs draw. Pure: the
+ * looks come in, rows and numbers go out.
  */
 
+import { type AppIdentity, ownerOf } from "../../src/process-apps/index.ts";
+import { energyImpact, gpuPercent } from "./energy-proc.ts";
 import type { Counters, CpuTimes, NetCounters } from "./proc.ts";
 import type { ProcessSample, Snapshot } from "./read.ts";
 
@@ -14,7 +17,16 @@ export const SMOOTHING = 3;
 
 export interface ProcessRow {
   pid: number;
+  ppid: number;
+  /** With the pid, which process this is: a pid is reused once its process ends. */
+  starttime: number;
   name: string;
+  /** Its command line ("" for a kernel thread). */
+  command: string;
+  /** The kernel's state letter: R running, S sleeping, D waiting on a disk, T stopped, Z a zombie. */
+  state: string;
+  /** The app it belongs to (process-apps/owners.ts); null for a process no app started. */
+  app: AppIdentity | null;
   user: string;
   uid: number;
   /**
@@ -34,6 +46,12 @@ export interface ProcessRow {
   readRate: number | null;
   writeRate: number | null;
   sockets: number | null;
+  /** Times a second its threads were woken, averaged as % CPU is; null when not ours to read, or not read. */
+  wakeups: number | null;
+  /** Percent of the GPU it kept busy (its busiest engine), averaged as % CPU is; null when unknown. */
+  gpu: number | null;
+  /** % CPU + % GPU + wakeups (energy-proc.ts `energyImpact`). */
+  impact: number;
   kernel: boolean;
   /** The user's own: it may be quit. */
   own: boolean;
@@ -51,8 +69,8 @@ function sameProcess(a: ProcessSample | undefined, b: ProcessSample): a is Proce
 }
 
 /** A counter's change per second between two looks; null when either side lacks it. */
-function perSecond(before: number | undefined, after: number | undefined, seconds: number): number | null {
-  if (before === undefined || after === undefined || seconds <= 0) return null;
+function perSecond(before: number | null | undefined, after: number | null | undefined, seconds: number): number | null {
+  if (before === undefined || before === null || after === undefined || after === null || seconds <= 0) return null;
   return Math.max(0, after - before) / seconds;
 }
 
@@ -61,12 +79,14 @@ function perSecond(before: number | undefined, after: number | undefined, second
  * (`earlier`, oldest first; at most the last `SMOOTHING` are used). % CPU is
  * the CPU time used since the oldest of them that saw the same process,
  * over the time between: an average, so one clock tick in one interval no
- * longer reads as a jump. Disk rates are over the last interval only.
+ * longer reads as a jump. Wakeups and the GPU are averaged the same way, from
+ * the oldest look that read them. Disk rates are over the last interval only.
  */
 export function processRows(earlier: readonly Snapshot[], next: Snapshot, context: RowContext): ProcessRow[] {
   const window = earlier.slice(-SMOOTHING);
   const prev = window.at(-1);
   const ioSeconds = prev ? (next.at - prev.at) / 1000 : 0;
+  const owner = ownerOf(next.processes, (sample) => sample.app);
   return [...next.processes.values()].map((sample) => {
     const since = window.find((look) => sameProcess(look.processes.get(sample.pid), sample));
     const before = since?.processes.get(sample.pid);
@@ -75,9 +95,22 @@ export function processRows(earlier: readonly Snapshot[], next: Snapshot, contex
     const cpu = seconds > 0 ? (ticks / context.clockTicks / seconds) * 100 : 0;
     const last = prev?.processes.get(sample.pid);
     const lastIo = last && sameProcess(last, sample) ? last.io : null;
+    const counted = window.find((look) => {
+      const then = look.processes.get(sample.pid);
+      return sameProcess(then, sample) && (then.wakeups !== null || then.gpu !== null);
+    });
+    const then = counted?.processes.get(sample.pid);
+    const span = counted ? (next.at - counted.at) / 1000 : 0;
+    const wakeups = perSecond(then?.wakeups, sample.wakeups, span);
+    const gpu = gpuPercent(then?.gpu ?? null, sample.gpu, span);
     return {
       pid: sample.pid,
+      ppid: sample.ppid,
+      starttime: sample.starttime,
       name: sample.name,
+      command: sample.command,
+      state: sample.state,
+      app: sample.kernel ? null : owner(sample.pid),
       user: context.users.get(sample.uid) ?? String(sample.uid),
       uid: sample.uid,
       cpu,
@@ -89,6 +122,9 @@ export function processRows(earlier: readonly Snapshot[], next: Snapshot, contex
       readRate: perSecond(lastIo?.read, sample.io?.read, ioSeconds),
       writeRate: perSecond(lastIo?.written, sample.io?.written, ioSeconds),
       sockets: sample.sockets,
+      wakeups,
+      gpu,
+      impact: energyImpact(cpu, gpu, wakeups),
       kernel: sample.kernel,
       own: sample.uid === context.ownUid,
     };
@@ -140,15 +176,30 @@ export interface Scope {
 }
 
 /** Whether a row is in the scope (which processes the View menu shows), apart from any search. */
-const inScope = (row: ProcessRow, scope: Scope): boolean => (scope.kernel || !row.kernel) && (!scope.mine || row.own);
+export const inScope = (row: ProcessRow, scope: Scope): boolean => (scope.kernel || !row.kernel) && (!scope.mine || row.own);
+
+/** Whether a process answers a search by itself: its name, its app's name, or its command line contains it (any case), or it is the pid. */
+export function matchesProcess(row: ProcessRow, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q === "") return true;
+  return (
+    row.name.toLowerCase().includes(q) || row.app?.name.toLowerCase().includes(q) === true || row.command.toLowerCase().includes(q) || String(row.pid) === q
+  );
+}
 
 /**
- * Rows a search keeps: the name contains it (any case), or it is the pid.
- * Kernel threads only when asked for; only one's own processes when `mine`.
+ * Rows a search keeps, in scope (kernel threads only when asked for; only
+ * one's own processes when `mine`): the ones that match by name, app,
+ * command line, or pid. Only when none does is the search taken as a user
+ * name (from its start), so "dashi" finds dashi-comp, not everything the
+ * user dashi runs.
  */
 export function filterRows(rows: readonly ProcessRow[], query: string, scope: Scope): ProcessRow[] {
+  const inside = rows.filter((row) => inScope(row, scope));
   const q = query.trim().toLowerCase();
-  return rows.filter((row) => inScope(row, scope) && (q === "" || row.name.toLowerCase().includes(q) || String(row.pid) === q || row.user.toLowerCase() === q));
+  if (q === "") return inside;
+  const matched = inside.filter((row) => matchesProcess(row, q));
+  return matched.length > 0 ? matched : inside.filter((row) => row.user.toLowerCase().startsWith(q));
 }
 
 /** The summary's counts for what the View menu shows: hidden kernel threads count neither as processes nor as threads. */
@@ -161,13 +212,4 @@ export function scopeTotals(rows: readonly ProcessRow[], scope: Scope): { proces
     threads += row.threads;
   }
   return { processes, threads };
-}
-
-/**
- * The row Return in the search field picks: the selection while the search
- * still shows it, else the first match. Return only selects; quitting is
- * always the Quit… button or ❖K, then the sheet.
- */
-export function submitSelection(shown: readonly number[], selected: number | null): number | null {
-  return selected !== null && shown.includes(selected) ? selected : (shown[0] ?? null);
 }

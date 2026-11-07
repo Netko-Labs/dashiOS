@@ -647,7 +647,7 @@ const appMenus = startAppMenus({
 // ($XDG_RUNTIME_DIR/dashi-applets.sock, applets/) and the tray over D-Bus (tray/).
 const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
-const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
+const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp, entries: () => catalog });
 // Applets' commands in the launcher (applets/commands.ts): answered on their connections, listed in the registry (extensions/).
 const appletCommands = new AppletCommands({
   copy: (text) => launcherClipboard.writeText(text),

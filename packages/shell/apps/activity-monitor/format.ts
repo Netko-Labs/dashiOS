@@ -42,3 +42,19 @@ export function formatPercent(value: number): string {
 export function formatCount(value: number): string {
   return Math.round(value).toLocaleString("en-US");
 }
+
+const STATES: Readonly<Record<string, string>> = {
+  R: "Running",
+  S: "Sleeping",
+  D: "Waiting",
+  I: "Idle",
+  T: "Stopped",
+  t: "Stopped",
+  Z: "Zombie",
+  X: "Ended",
+};
+
+/** The kernel's state letter in words ("D" is "Waiting": on a disk or a device, and it can't be interrupted). */
+export function formatState(state: string): string {
+  return STATES[state] ?? state;
+}

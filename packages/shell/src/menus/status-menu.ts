@@ -15,8 +15,8 @@ import type { MenuEntry } from "./model.ts";
 export type StatusMenuAction =
   | { kind: "extra"; key: string; id: string }
   | { kind: "battery-settings" }
-  /** An app using significant energy was chosen: Activity Monitor shows what it is doing. */
-  | { kind: "activity-monitor" }
+  /** "Using significant energy" or one of its apps was chosen: Activity Monitor's Energy tab, with that app selected. */
+  | { kind: "activity-monitor"; app?: { key: string; name: string } }
   /** A laptop row: the power mode, the charge, the graphics card's holders (laptop/menu.ts). */
   | { kind: "laptop"; action: LaptopAction }
   /** "Allow Sleep" under what keeps the computer awake (inhibit/menu.ts). */
@@ -25,8 +25,8 @@ export type StatusMenuAction =
 /** What the battery's menu shows beyond the battery: the battery monitor's draw and heavy apps (battery/). */
 export interface BatteryUse {
   watts: number | null;
-  /** The apps using significant energy, heaviest first. */
-  apps: readonly { name: string }[];
+  /** The apps using significant energy, heaviest first; `key` is the one Activity Monitor names the app by (process-apps/). */
+  apps: readonly { key: string; name: string }[];
 }
 
 /** An extra's rows as menu entries: a submenu's heading shown, never chosen, and its rows indented under it. */
@@ -58,10 +58,11 @@ export function batteryStatus(battery: Battery): string {
 }
 
 /**
- * The battery's menu, as a Mac's: the charge, the power source, the time,
- * the draw, the apps using significant energy (each opens Activity
- * Monitor), other modules' sections (the laptop's: laptop/menu.ts; each
- * starts with its own separator), then Settings.
+ * The battery's menu: the charge, the power source, the time, the draw, the
+ * apps using significant energy (the heading opens Activity Monitor's Energy
+ * tab, and each app opens it with that app selected), other modules'
+ * sections (the laptop's: laptop/menu.ts; each starts with its own
+ * separator), then Settings.
  */
 export function batteryEntries(
   battery: Battery,
@@ -78,8 +79,14 @@ export function batteryEntries(
       ? []
       : [
           { kind: "separator" },
-          info("Using Significant Energy"),
-          ...use.apps.slice(0, 5).map((app): MenuEntry<StatusMenuAction> => ({ kind: "item", label: app.name, action: { kind: "activity-monitor" } })),
+          { kind: "item", label: "Using Significant Energy…", action: { kind: "activity-monitor" } },
+          ...use.apps.slice(0, 5).map(
+            (app): MenuEntry<StatusMenuAction> => ({
+              kind: "item",
+              label: app.name,
+              action: { kind: "activity-monitor", app: { key: app.key, name: app.name } },
+            }),
+          ),
         ];
   return [
     info(`Battery  ${battery.percent}%`),
