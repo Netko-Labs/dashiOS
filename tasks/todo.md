@@ -35,7 +35,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
   - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
 - [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
-- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
+- [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
 - [ ] Editor's document surface with versioned autosave (L)
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
@@ -484,6 +484,9 @@ it in the VM.
       Switch) to `@mirinjs/metal-ui`, styled with Dashi's theme
 - [ ] Theme tokens: Dashi's palettes as a metal-ui theme, so metal-ui
       components and `@dashi/ui` paint from the same colors
+- [ ] Calendar, after 0.5.0's grid: a VTIMEZONE written for a zone a file had none for;
+      Subscribe to a URL; a second alert and travel time; a custom calendar color
+      (docs/roast/calendar.md, "Where this went")
 
 ### Screen recording and dogfooding the agent integration
 

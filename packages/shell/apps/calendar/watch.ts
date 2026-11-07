@@ -12,19 +12,29 @@ import { existsSync, type FSWatcher, watch } from "node:fs";
 export const QUIET_MS = 150;
 export const RETRY_MS = 5_000;
 
-/** Calls `onChange` (after a quiet moment) when anything in `root` changes; returns the function that stops watching. */
-export function watchCalendars(root: string, onChange: () => void, quietMs = QUIET_MS, retryMs = RETRY_MS): () => void {
+/**
+ * Calls `onChange` (after a quiet moment) when anything in `root` changes,
+ * with the names of the files that did (null when that is not known: the
+ * folder appeared, or the system did not say); returns the function that
+ * stops watching.
+ */
+export function watchCalendars(root: string, onChange: (names: ReadonlySet<string> | null) => void, quietMs = QUIET_MS, retryMs = RETRY_MS): () => void {
   let watcher: FSWatcher | null = null;
   let quiet: ReturnType<typeof setTimeout> | null = null;
   let retry: ReturnType<typeof setTimeout> | null = null;
   let stopped = false;
+  let names: Set<string> | null = new Set();
 
-  const schedule = (): void => {
+  const schedule = (_event?: string, name?: string | Buffer | null): void => {
     if (stopped) return;
+    if (typeof name === "string" && name !== "") names?.add(name);
+    else names = null;
     if (quiet) clearTimeout(quiet);
     quiet = setTimeout(() => {
       quiet = null;
-      if (!stopped) onChange();
+      const changed = names;
+      names = new Set();
+      if (!stopped) onChange(changed);
     }, quietMs);
   };
 
@@ -32,7 +42,7 @@ export function watchCalendars(root: string, onChange: () => void, quietMs = QUI
     if (stopped || watcher) return;
     if (existsSync(root)) {
       try {
-        watcher = watch(root, schedule);
+        watcher = watch(root, (event, name) => schedule(event, name));
         // A folder that is deleted or moved ends its watcher; look for it again.
         watcher.on("error", () => {
           watcher?.close();

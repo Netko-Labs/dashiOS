@@ -1,9 +1,10 @@
 /** How Calendar writes days and times: the region's formats and 12 or 24 hour time from Language & Region and Date & Time (clock.ts). */
 
 import { type ClockPrefs, formatTime, usesHour24 } from "../../src/clock.ts";
+import { weekdayNames } from "../../src/region/week.ts";
 import { addDays, type Day, dayPart, instantOf, type Local, minuteOfDay, parseDay } from "./dates.ts";
 import type { View } from "./layout.ts";
-import type { CalEvent } from "./types.ts";
+import type { CalEvent, NthDay, Repeat } from "./types.ts";
 
 function format(locale: string, options: Intl.DateTimeFormatOptions, day: Day): string {
   const time = parseDay(day);
@@ -61,11 +62,11 @@ export function hourLabel(hour: number, prefs: ClockPrefs): string {
   return `${hour % 12} ${hour < 12 ? "AM" : "PM"}`;
 }
 
-/** "9:00 AM – 10:30 AM", "all day", or "Nov 5, 9:00 AM – Nov 6, 8:00 AM" for an event happening from `start` to `end`. */
+/** "9:00 AM – 10:30 AM", "All day", or "Nov 5, 9:00 AM – Nov 6, 8:00 AM" for an event happening from `start` to `end`. */
 export function timeSpan(event: Pick<CalEvent, "allDay">, start: Local, end: Local, prefs: ClockPrefs): string {
   if (event.allDay) {
     const last = addDays(dayPart(end), -1);
-    return last > dayPart(start) ? `${shortDay(dayPart(start), prefs)} – ${shortDay(last, prefs)}` : "all day";
+    return last > dayPart(start) ? `${shortDay(dayPart(start), prefs)} – ${shortDay(last, prefs)}` : "All day";
   }
   if (dayPart(end) !== dayPart(start))
     return `${shortDay(dayPart(start), prefs)}, ${clock(start, prefs)} – ${shortDay(dayPart(end), prefs)}, ${clock(end, prefs)}`;
@@ -103,6 +104,34 @@ export function alertLabel(minutes: number | null, allDay: boolean): string {
   if (minutes % 1440 === 0) return `${minutes / 1440} days before`;
   if (minutes % 60 === 0) return `${minutes / 60} hours before`;
   return `${minutes} minutes before`;
+}
+
+const ORDINALS: Readonly<Record<number, string>> = { 1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth", [-1]: "last", [-2]: "second to last" };
+const UNIT: Readonly<Record<Repeat["freq"], string>> = { daily: "day", weekly: "week", monthly: "month", yearly: "year" };
+
+/** "the first Monday" of a month. */
+export const nthName = (nth: NthDay, prefs: ClockPrefs): string => `the ${ORDINALS[nth.n] ?? `${nth.n}th`} ${weekdayLong(nth.day, prefs)}`;
+
+/** A weekday's long name (0 Sunday … 6 Saturday). */
+export function weekdayLong(day: number, prefs: ClockPrefs): string {
+  // 2023-01-01 was a Sunday.
+  return format(prefs.locale, { weekday: "long" }, `2023-01-${String(day + 1).padStart(2, "0")}`);
+}
+
+/** "Every week on Mon, Thu", "Every 2 months on the first Monday", "Custom repeat"; null when it does not repeat. */
+export function repeatSummary(event: Pick<CalEvent, "repeat" | "rawRule">, prefs: ClockPrefs): string | null {
+  const repeat = event.repeat;
+  if (!repeat) return event.rawRule !== null ? "Custom repeat" : null;
+  const every = repeat.interval === 1 ? `Every ${UNIT[repeat.freq]}` : `Every ${repeat.interval} ${UNIT[repeat.freq]}s`;
+  const names = weekdayNames(prefs.locale, 0);
+  const on = [
+    ...(repeat.byNth ?? []).map((nth) => nthName(nth, prefs)),
+    ...(repeat.freq === "weekly" ? (repeat.byDay ?? []).map((day) => names[day] ?? "") : []),
+  ];
+  const ends = repeat.count !== undefined ? `, ${repeat.count} times` : repeat.until !== undefined ? `, until ${monthDay(repeat.until, prefs)}` : "";
+  const simple = !repeat.byMonthDay && !repeat.byMonth && !repeat.bySetPos && (repeat.freq === "weekly" || !repeat.byDay);
+  if (!simple) return `${every}, custom${ends}`;
+  return `${every}${on.length > 0 ? ` on ${on.join(", ")}` : ""}${ends}`;
 }
 
 /** What an event is called in a list: an event with no title (a file from elsewhere) is not a blank line. */

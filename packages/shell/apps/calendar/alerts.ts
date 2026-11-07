@@ -29,12 +29,16 @@ export function alertsBetween(calendars: readonly Pick<Calendar, "id" | "name" |
   const out: Alert[] = [];
   for (const calendar of calendars) {
     for (const event of calendar.events) {
-      if (event.alert === null) continue;
+      // A changed occurrence may have an alert of its own.
+      const alerts = [event.alert, ...event.overrides.map((override) => override.alert)].filter((alert): alert is number => alert !== null);
+      if (alerts.length === 0) continue;
       // The wall clock and the instants differ by at most a clock change; look two hours wider and decide by instant.
-      const lo = addMinutes(localOf(from), event.alert - 120);
-      const hi = addMinutes(localOf(to), event.alert + 121);
+      const lo = addMinutes(localOf(from), Math.min(...alerts) - 120);
+      const hi = addMinutes(localOf(to), Math.max(...alerts) + 121);
       for (const occurrence of occurrencesOf(event, calendar.id, lo, hi)) {
-        const fireAt = new Date(instantOf(occurrence.start).getTime() - event.alert * 60_000);
+        const alert = occurrence.event.alert;
+        if (alert === null) continue;
+        const fireAt = new Date(instantOf(occurrence.start).getTime() - alert * 60_000);
         if (fireAt.getTime() <= from.getTime() || fireAt.getTime() > to.getTime()) continue;
         out.push({
           key: `${calendar.id}|${event.uid}|${occurrence.start}`,
@@ -42,11 +46,11 @@ export function alertsBetween(calendars: readonly Pick<Calendar, "id" | "name" |
           calendarId: calendar.id,
           calendar: calendar.name,
           uid: event.uid,
-          title: event.title,
-          allDay: event.allDay,
+          title: occurrence.event.title,
+          allDay: occurrence.event.allDay,
           start: occurrence.start,
           end: occurrence.end,
-          location: event.location,
+          location: occurrence.event.location,
         });
       }
     }

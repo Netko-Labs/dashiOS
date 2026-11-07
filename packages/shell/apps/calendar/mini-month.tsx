@@ -22,9 +22,11 @@ export interface MiniMonthProps {
   shown: ReadonlySet<Day>;
   busy: (from: Day, to: Day) => ReadonlySet<Day>;
   onPick: (day: Day) => void;
+  /** Where its test ids start ("mini"; the event sheet's date picker has its own). */
+  idPrefix?: string;
 }
 
-export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick }: MiniMonthProps) {
+export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick, idPrefix = "mini" }: MiniMonthProps) {
   const colors = useColors();
   const [page, setPage] = useState<Day>(firstOfMonth(monthOf(anchor).year, monthOf(anchor).month));
   // The main view moved to another month: follow it.
@@ -51,12 +53,12 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick 
   );
 
   return (
-    <View testID="mini-month" style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 12 }}>
+    <View testID={`${idPrefix}-month`} style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: idPrefix === "mini" ? 12 : 0 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 24, paddingLeft: 6 }}>
         <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{monthTitle(page, prefs)}</Text>
         <View style={{ flexDirection: "row", gap: 0 }}>
-          {arrow(CHEVRON_LEFT, -1, "mini-previous")}
-          {arrow(CHEVRON_RIGHT, 1, "mini-next")}
+          {arrow(CHEVRON_LEFT, -1, `${idPrefix}-previous`)}
+          {arrow(CHEVRON_RIGHT, 1, `${idPrefix}-next`)}
         </View>
       </View>
       <View style={{ flexDirection: "row" }}>
@@ -75,7 +77,7 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick 
             return (
               <View
                 key={day}
-                testID={`mini:${day}`}
+                testID={`${idPrefix}:${day}`}
                 onPress={() => onPick(day)}
                 style={{
                   flex: 1,

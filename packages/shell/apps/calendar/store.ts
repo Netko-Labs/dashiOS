@@ -54,6 +54,15 @@ export function idFor(name: string): string {
   return base === "" ? "Calendar" : base;
 }
 
+export interface ImportResult {
+  calendar: Calendar;
+  imported: number;
+  /** Events the calendar had already (the same UID), left out. */
+  duplicates: number;
+  /** Events that could not be read, kept in the file as written. */
+  skipped: number;
+}
+
 export interface Scan {
   calendars: Calendar[];
   /** One sentence per file that could not be read, or per event that was kept but not shown. */
@@ -146,6 +155,7 @@ export class CalendarStore {
       color: color !== undefined && isColor(color) ? color.toLowerCase() : paletteColor(taken.size),
       events: [],
       headerExtra: [],
+      timezones: [],
       preserved: [],
       problems: [],
     };
@@ -228,17 +238,6 @@ export class CalendarStore {
     });
   }
 
-  /** Deletes one occurrence of a repeating event (named by its start), leaving the others. */
-  skip(id: string, uid: string, start: string): void {
-    this.mutate(id, (calendar) => {
-      const event = calendar.events.find((each) => each.uid === uid);
-      if (!event) throw new CalendarError("That event is not in the calendar any more.");
-      if (!event.repeat) throw new CalendarError("That event does not repeat.");
-      if (!event.exdates.includes(start)) event.exdates.push(start);
-      event.exdates.sort();
-    });
-  }
-
   delete(id: string, uid: string): void {
     this.mutate(id, (calendar) => {
       const before = calendar.events.length;
@@ -250,17 +249,54 @@ export class CalendarStore {
   // ---- Import ---------------------------------------------------------------------
 
   /**
-   * Adds an .ics file's events as a calendar of their own, named after the
-   * file's X-WR-CALNAME, else `fallbackName`. The text is parsed strictly: a
-   * file that is not iCalendar is refused, and events that cannot be read are
-   * kept in the new file as written, not dropped.
+   * Adds an .ics file's events: into the calendar `into`, leaving out the
+   * events it has already (by UID, so importing the same file again adds
+   * nothing), or as a calendar of their own, named after the file's
+   * X-WR-CALNAME, else `fallbackName`. The text is parsed strictly: a file
+   * that is not iCalendar is refused, and events that cannot be read are kept
+   * in the file as written, not dropped.
    */
-  importText(text: string, fallbackName: string): { calendar: Calendar; imported: number; skipped: number } {
+  importText(text: string, fallbackName: string, into?: string): ImportResult {
     const file: IcsFile = parseIcs(text);
+    if (into !== undefined) {
+      return this.mutate(into, (calendar) => {
+        const known = new Set(calendar.events.map((event) => event.uid));
+        const fresh = file.events.filter((event) => !known.has(event.uid));
+        if (calendar.events.length + fresh.length > MAX_EVENTS_PER_CALENDAR) throw new CalendarError("That calendar has too many events.");
+        calendar.events.push(...fresh);
+        const zones = new Set(calendar.timezones.filter((line) => line.startsWith("TZID")));
+        // Each VTIMEZONE the file brings that the calendar has no zone of that name for.
+        let block: string[] = [];
+        for (const line of file.timezones) {
+          block.push(line);
+          if (line.toUpperCase() !== "END:VTIMEZONE") continue;
+          const id = block.find((each) => each.startsWith("TZID"));
+          if (id === undefined || !zones.has(id)) calendar.timezones.push(...block);
+          if (id !== undefined) zones.add(id);
+          block = [];
+        }
+        calendar.preserved.push(...file.preserved);
+        return { calendar, imported: fresh.length, duplicates: file.events.length - fresh.length, skipped: file.problems.length };
+      });
+    }
     const created = this.create(file.name ?? (cleanName(fallbackName) || "Imported"), file.color ?? undefined);
-    const calendar: Calendar = { ...created, events: file.events, headerExtra: file.headerExtra, preserved: file.preserved, problems: file.problems };
+    const calendar: Calendar = {
+      ...created,
+      events: file.events,
+      headerExtra: file.headerExtra,
+      timezones: file.timezones,
+      preserved: file.preserved,
+      problems: file.problems,
+    };
     this.write(calendar);
-    return { calendar, imported: file.events.length, skipped: file.problems.length };
+    return { calendar, imported: file.events.length, duplicates: 0, skipped: file.problems.length };
+  }
+
+  /** A calendar's file as it is on disk, for File › Export…. */
+  text(id: string): string {
+    const path = this.pathOf(id);
+    if (!isRegularFile(path)) throw new CalendarError(`There is no calendar called “${id}”.`);
+    return readFileSync(path, "utf8");
   }
 
   exists(): boolean {
