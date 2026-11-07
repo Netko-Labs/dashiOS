@@ -64,6 +64,7 @@ export function useGrid(options: GridOptions): Grid {
   const [slot, setSlot] = useState<number | null>(null);
   const [pickedKey, setPickedKey] = useState<string | null>(null);
   const [popover, setPopover] = useState<Grid["popover"]>(null);
+  const [reveal, setReveal] = useState<GridState["reveal"]>(null);
   const lastClick = useRef<{ day: Day; minutes: number | null; at: number } | null>(null);
   const pendingRef = useRef<Pending | null>(null);
   pendingRef.current = pending;
@@ -158,7 +159,10 @@ export function useGrid(options: GridOptions): Grid {
 
   const newEvent = (): void => {
     const day = state.selected;
-    startPending(day, state.view === "month" ? null : newEventMinutes(day, slot, state.today, options.now()));
+    const minutes = state.view === "month" ? null : newEventMinutes(day, slot, state.today, options.now());
+    startPending(day, minutes);
+    // Made where the hours may be scrolled away from: they scroll to it.
+    if (minutes !== null) setReveal((last) => ({ minutes, count: (last?.count ?? 0) + 1 }));
   };
 
   const handlers: GridHandlers = {
@@ -211,7 +215,7 @@ export function useGrid(options: GridOptions): Grid {
   };
 
   return {
-    state: { drag: gesture.drag, pending, selected: state.selected, selectedSlot: slot, selectedEvent: picked ? pickedKey : null },
+    state: { drag: gesture.drag, pending, selected: state.selected, selectedSlot: slot, selectedEvent: picked ? pickedKey : null, reveal },
     handlers,
     popover: popover && picked ? { occurrence: picked, bounds: popover.bounds } : null,
     closePopover: () => {

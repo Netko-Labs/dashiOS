@@ -16,7 +16,7 @@ import type { Day } from "./dates.ts";
 import { DayColumn } from "./day-column.tsx";
 import { dayNumber, hourLabel, weekdayShort } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
-import { firstHour, GRID_HEIGHT, HOUR_HEIGHT } from "./layout.ts";
+import { firstHour, GRID_HEIGHT, HOUR_HEIGHT, revealOffset } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
 
 const GUTTER = 58;
@@ -51,6 +51,14 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
     }, 80);
     return () => clearTimeout(timer);
   }, [scroll, days.length]);
+
+  // A new event from the + button starts where the hours may be scrolled away from: they scroll to it.
+  const reveal = state.reveal;
+  useEffect(() => {
+    if (reveal === null) return;
+    scroll("hours", -100_000);
+    scroll("hours", revealOffset(reveal.minutes));
+  }, [scroll, reveal]);
 
   return (
     <View testID="time-grid" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>

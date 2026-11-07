@@ -131,6 +131,9 @@ export function firstHour(showsToday: boolean, nowHour: number): number {
 
 export const yAtMinutes = (minutes: number): number => (minutes / 60) * HOUR_HEIGHT;
 
+/** Where the hours scroll to show a new event starting at `minutes`: an hour of the day above it in sight. */
+export const revealOffset = (minutes: number): number => Math.max(0, yAtMinutes(minutes) - HOUR_HEIGHT);
+
 // ---- The month grid -----------------------------------------------------------------
 
 export const MONTH_CHIP_HEIGHT = 17;

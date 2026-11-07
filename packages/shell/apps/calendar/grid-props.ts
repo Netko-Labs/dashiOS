@@ -18,6 +18,11 @@ export interface GridState {
   selectedSlot: number | null;
   /** The event picked (`occurrenceKey`), or null. */
   selectedEvent: string | null;
+  /**
+   * The time a new event from the + button (or ❖N, Return) starts at, for the
+   * hours to scroll to it; `count` tells one ask from the next.
+   */
+  reveal: { minutes: number; count: number } | null;
 }
 
 export interface GridHandlers {
