@@ -17,7 +17,7 @@ import { launcherIndex } from "../src/launcher/items.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
 import type { RankSignals } from "../src/launcher/ranking/item.ts";
 import { buildSections, type FileRow, filesStateFor, found, type ListInput, placeholderFor, selectable } from "../src/launcher/rows.ts";
-import { keepInView, moveSelection, resolveSelection } from "../src/launcher/selection.ts";
+import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/selection.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { parseRecents, RecentApps, recentEntries, remember } from "../src/recents.ts";
 
@@ -434,5 +434,21 @@ describe("failures", () => {
     answer = [file("tea.md")];
     expect(search.isAvailable()).toBe(true);
     expect((await search.find("tea"))?.map((hit) => hit.name)).toEqual(["tea.md"]);
+  });
+});
+
+describe("the wheel over the list", () => {
+  test("a line toward the end is a row down, toward the start a row up; a touchpad's small steps add up", () => {
+    expect(wheelSteps(0, -1)).toEqual({ steps: 1, rest: 0 });
+    expect(wheelSteps(0, 3)).toEqual({ steps: -3, rest: 0 });
+    let rest = 0;
+    let moved = 0;
+    for (const dy of [-0.4, -0.4, -0.4]) {
+      const next = wheelSteps(rest, dy);
+      moved += next.steps;
+      rest = next.rest;
+    }
+    expect(moved).toBe(1);
+    expect(rest).toBeCloseTo(-0.2);
   });
 });
