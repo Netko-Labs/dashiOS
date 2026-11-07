@@ -141,24 +141,7 @@ function Page({
 }
 
 export function Editor(props: EditorProps) {
-  const {
-    draft,
-    row,
-    selection,
-    query,
-    session,
-    focusTitle,
-    onEdit,
-    onLeave,
-    follow,
-    onRestore,
-    onNew,
-    bodyFocus,
-    empty,
-    hasNotes,
-    formatDate,
-    words,
-  } = props;
+  const { draft, row, selection, query, session, focusTitle, onEdit, onLeave, follow, onRestore, onNew, bodyFocus, empty, hasNotes, formatDate, words } = props;
   const colors = useColors();
   const surface = useSurface();
   const [height, setHeight] = useState(480);
