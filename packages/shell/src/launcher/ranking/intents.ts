@@ -4,10 +4,12 @@
  * Settings; the Setup Assistant, run once in a lifetime, answers to "setup",
  * "welcome" and "first run" and otherwise sits under everything it ties
  * with; a Settings pane answers the bare word "settings" only when nothing
- * else does. Phrases are folded like any query, so "Préférences" is
- * "preferences".
+ * else does; "snip" is Screenshot…, as Windows' Snipping Tool taught it,
+ * before Snippets, whose name merely starts so. Phrases are folded like any
+ * query, so "Préférences" is "preferences".
  */
 
+import { formatAddress } from "../../actions/address.ts";
 import { SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
 import type { RankKind } from "./item.ts";
 
@@ -78,6 +80,11 @@ export const INTENTS: Intents = {
         "bem vindo",
         "welkom",
       ],
+    },
+    {
+      // Screenshot…, the toolbar (actions/sources/commands.ts).
+      id: formatAddress(["dashi", "capture"]),
+      phrases: ["snip", "snipping tool", "print screen"],
     },
   ],
   demoted: [SETUP_APP_ID],
