@@ -505,10 +505,10 @@ checks them; signing with real keys is the `minisign` tool's).
   passphrase, is the catalog's GitHub Actions secrets `DASHI_INDEX_KEY` and
   `DASHI_INDEX_KEY_PASSWORD`, used only by the job that signs the index on
   `main`. Rotating it is a Dashi update that ships the new public key beside
-  the old until every index is signed with the new one. Until it is made,
-  Software has no key, so its Menu bar applets place isn't shown and Installed
-  lists the applets added by hand (`DASHI_APPLETS_KEY` and
-  `DASHI_APPLETS_INDEX` point it at a test catalog).
+  the old until every index is signed with the new one. It was made on
+  2026-11-07: key id 0316A9AD4F0EF2CF, in `keys.ts` and the catalog's
+  `keys/dashi-index.pub`. `DASHI_APPLETS_KEY` and `DASHI_APPLETS_INDEX`
+  point the store at a test catalog.
 - **An author's key**: made with `minisign -G -p author.pub`, the public half
   committed in the applet's repository, the secret half the author's alone.
   Every update must be signed with it: a lost key means a new applet id.
