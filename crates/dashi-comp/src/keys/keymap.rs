@@ -737,6 +737,59 @@ mod tests {
         assert!(!map.arm_after_tap());
     }
 
+    /// The keymaps the shell sends around one launcher round (launcher/type-ahead.ts, main.tsx):
+    /// idle (❖Space arms the typing), typing while it opens, the open launcher's, idle again.
+    fn shell_keymap(kind: &str) -> Keymap {
+        let typing = json!([
+            { "when": "Home", "bind": "launcher-first" },
+            { "when": "super+space", "bind": "launcher" },
+            { "when": "*", "bind": "launcher-type" }
+        ]);
+        let params = match kind {
+            "idle" => json!({
+                "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }],
+                "afterTap": typing
+            }),
+            "typing" => json!({ "rules": typing }),
+            _ => json!({
+                "rules": [
+                    { "when": "Home", "bind": "launcher-first" },
+                    { "when": "super+space", "bind": "launcher" }
+                ]
+            }),
+        };
+        Keymap::parse(params.as_object().unwrap()).unwrap()
+    }
+
+    #[test]
+    fn every_idle_keymap_arms_the_next_launcher_key_again() {
+        // Review 17: ❖Space, x, Esc, then ❖Space and "snip" at once, ten times over. Each round
+        // the shell sends typing, then the open launcher's keys, then idle once it closes; the
+        // ❖Space of every round must hand the letters behind it to the shell, never the window.
+        let typed = Some(Action::Bind("launcher-type".into()));
+        let mut map = shell_keymap("idle");
+        for round in 0..10 {
+            assert_eq!(
+                press(&mut map, &["space"], SUPER),
+                Some(Action::Bind("launcher".into())),
+                "round {round}"
+            );
+            for letter in ["s", "n", "i", "p"] {
+                assert_eq!(
+                    press(&mut map, &[letter], Mods::default()),
+                    typed,
+                    "round {round}: {letter} before the shell answered"
+                );
+            }
+            map = shell_keymap("typing");
+            assert_eq!(press(&mut map, &["x"], Mods::default()), typed);
+            // The field has the keyboard: Esc and letters are its own.
+            map = shell_keymap("open");
+            assert_eq!(press(&mut map, &["Escape"], Mods::default()), None);
+            map = shell_keymap("idle");
+        }
+    }
+
     #[test]
     fn only_a_bind_arms_after_tap() {
         let refused = |rule: Value| {
