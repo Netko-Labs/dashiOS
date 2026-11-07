@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Env } from "../apps/files/env.ts";
 import type { Exec } from "../apps/files/exec.ts";
+import { sideLines } from "../apps/files/conflict-sheet.tsx";
 import { folderAt } from "../apps/files/location.ts";
 import { type Conflict, Operations, type Resolution } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
@@ -176,4 +177,13 @@ test("while a new folder lists, the last one's items stay up (stale), then the n
   expect(store.stale).toBe(false);
   expect(store.visible().map((item) => item.name)).toEqual(["there.txt"]);
   store.stop();
+});
+
+test("a side's date has a line of its own, so it is never cut", () => {
+  const today = new Date();
+  today.setHours(0, 13, 0, 0);
+  const lines = sideLines("There now", { folder: false, size: 6, mtime: today.getTime() });
+  expect(lines.caption).toBe("There now · 6 bytes");
+  expect(lines.date).toMatch(/^Today at 12:13/);
+  expect(sideLines("Copying", { folder: true, size: 0, mtime: today.getTime() }).caption).toBe("Copying · Folder");
 });

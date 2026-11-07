@@ -28,16 +28,26 @@ export function conflictMessage(conflict: Conflict): string {
   return `Replace it with the one you’re ${verb}? The ${kind} there now goes to the Trash.`;
 }
 
+/**
+ * A side's two lines: what it is and how big over when it was changed. On one line the date was
+ * cut ("Today at 12:13 /"); alone on its line even "Nov 3, 2025 at 11:45 PM" fits.
+ */
+export function sideLines(title: string, side: Pick<Side, "folder" | "size" | "mtime">): { caption: string; date: string } {
+  return { caption: `${title} · ${side.folder ? "Folder" : formatSize(side.size)}`, date: formatDate(side.mtime) };
+}
+
 function SideCard({ title, side, testID }: { title: string; side: Side; testID: string }) {
   const colors = useColors();
-  const detail = side.folder ? `Folder · ${formatDate(side.mtime)}` : `${formatSize(side.size)} · ${formatDate(side.mtime)}`;
+  const { caption, date } = sideLines(title, side);
   return (
     <View testID={testID} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
       <FileIcon item={{ kind: side.folder ? "folder" : "file", mime: side.mime, path: side.path, name: baseName(side.path) }} size={32} />
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{title}</Text>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          {caption}
+        </Text>
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
-          {detail}
+          {date}
         </Text>
       </View>
     </View>
@@ -51,7 +61,7 @@ export function ConflictSheet({ conflict, folderName, onAnswer }: { conflict: Co
   return (
     <AlertSheet
       testID="conflict"
-      width={460}
+      width={500}
       glyph={FOLDER_PLUS}
       tone="warning"
       question={conflictQuestion(conflict, folderName)}
