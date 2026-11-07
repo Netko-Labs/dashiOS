@@ -8,6 +8,7 @@ use std::os::unix::ffi::OsStringExt;
 use std::sync::mpsc::Sender;
 
 use crate::Message;
+use crate::integration;
 
 pub(crate) struct Pty {
     master: OwnedFd,
@@ -32,14 +33,21 @@ fn shell() -> CString {
     CString::from(c"/bin/zsh")
 }
 
-/// The child's environment: ours, with the terminal's identity.
-fn environment() -> Vec<CString> {
+/// The child's environment: ours, with the terminal's identity, and what the
+/// shell integration sets (it wins over an inherited value of the same name).
+fn environment(extra: &[(String, String)]) -> Vec<CString> {
     let mut vars: Vec<(OsString, OsString)> = std::env::vars_os()
-        .filter(|(key, _)| !matches!(key.to_str(), Some("TERM" | "COLORTERM" | "TERM_PROGRAM")))
+        .filter(|(key, _)| {
+            !matches!(key.to_str(), Some("TERM" | "COLORTERM" | "TERM_PROGRAM"))
+                && !extra
+                    .iter()
+                    .any(|(name, _)| key.as_os_str() == name.as_str())
+        })
         .collect();
     vars.push(("TERM".into(), "xterm-256color".into()));
     vars.push(("COLORTERM".into(), "truecolor".into()));
     vars.push(("TERM_PROGRAM".into(), "dashi-term".into()));
+    vars.extend(extra.iter().map(|(key, value)| (key.into(), value.into())));
     vars.into_iter()
         .filter_map(|(key, value)| {
             let mut entry = key.into_vec();
@@ -51,20 +59,40 @@ fn environment() -> Vec<CString> {
 }
 
 impl Pty {
-    /// Start the shell (a login shell, `-zsh`) on a new PTY of this size.
+    /// Start the shell (a login shell, `-zsh`) on a new PTY of this size,
+    /// with the shell integration in `integration` (a folder) when given.
     /// Called before any thread starts: the child only calls async-signal-safe functions.
-    pub(crate) fn spawn(cols: u16, rows: u16, cwd: Option<&str>) -> io::Result<Pty> {
+    pub(crate) fn spawn(
+        cols: u16,
+        rows: u16,
+        cwd: Option<&str>,
+        integration: Option<&str>,
+    ) -> io::Result<Pty> {
         let shell = shell();
         let name = shell
             .to_bytes()
             .rsplit(|b| *b == b'/')
             .next()
             .unwrap_or(b"sh");
+        let launch = integration
+            .map(|dir| {
+                integration::launch(&String::from_utf8_lossy(name), dir, |key| {
+                    std::env::var(key).ok()
+                })
+            })
+            .unwrap_or_default();
         let mut login = b"-".to_vec();
         login.extend_from_slice(name);
         let argv0 = CString::new(login).map_err(io::Error::other)?;
-        let argv = [argv0.as_ptr(), std::ptr::null()];
-        let env = environment();
+        let args: Vec<CString> = launch
+            .args
+            .iter()
+            .filter_map(|arg| CString::new(arg.as_str()).ok())
+            .collect();
+        let mut argv: Vec<*const libc::c_char> = vec![argv0.as_ptr()];
+        argv.extend(args.iter().map(|arg| arg.as_ptr()));
+        argv.push(std::ptr::null());
+        let env = environment(&launch.env);
         let mut envp: Vec<*const libc::c_char> = env.iter().map(|e| e.as_ptr()).collect();
         envp.push(std::ptr::null());
         let cwd = cwd.and_then(|dir| CString::new(dir).ok());

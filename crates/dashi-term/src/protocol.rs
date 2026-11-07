@@ -59,6 +59,17 @@ pub(crate) enum Input {
     },
     /// Reply with what runs in the foreground instead of the shell (`running`).
     Running,
+    /// Bring the prompt `prompts` before (negative) or after (positive) the
+    /// view's top into view; needs the shell's prompt marks (OSC 133).
+    Jump {
+        prompts: i32,
+    },
+    /// Select the output of the command whose prompt is on viewport row `y`.
+    SelectOutput {
+        y: u16,
+    },
+    /// Clear the screen and the scrollback, and have the shell draw its prompt again.
+    Clear,
 }
 
 fn one() -> u8 {
@@ -96,6 +107,23 @@ pub(crate) enum Output {
     Running {
         program: Option<String>,
     },
+    /// The shell's folder changed (OSC 7): the path, decoded, and the host
+    /// the shell named (empty when it named none). The host may be another
+    /// machine's (a shell over `ssh` with its own integration).
+    Cwd {
+        path: String,
+        host: String,
+    },
+    /// The shell drew a new prompt (OSC 133 A): nothing runs in front of it.
+    Prompt,
+    /// A command started (OSC 133 C), with its command line when the shell sent it.
+    Command {
+        command: String,
+    },
+    /// The command ended (OSC 133 D), with its exit status when the shell sent it.
+    Done {
+        code: Option<i32>,
+    },
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -115,6 +143,21 @@ pub(crate) struct Frame {
     pub lines: Vec<Line>,
     /// Scrollback: total rows, the view's first row, and how many it shows.
     pub scroll: [u64; 3],
+    /// Something is selected (in view or not): Copy has something to copy.
+    #[serde(skip_serializing_if = "is_false")]
+    pub selected: bool,
+    /// The commands whose prompts are in view (the shell's OSC 133 marks),
+    /// in every frame: the app draws them in the margin.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub marks: Vec<Mark>,
+}
+
+/// A command's prompt row in view, and whether the command failed.
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub(crate) struct Mark {
+    pub y: u16,
+    #[serde(skip_serializing_if = "is_false")]
+    pub failed: bool,
 }
 
 #[derive(Debug, Serialize, Default, Clone, PartialEq)]
@@ -132,10 +175,14 @@ pub(crate) struct Line {
     pub spans: Vec<Span>,
 }
 
-/// A run of cells drawn alike. Colors are `#rrggbb`; absent means the terminal's default.
+/// A run of cells drawn alike, from column `x`, `w` cells wide: the app puts
+/// it on the grid there, whatever its glyphs' own widths. Colors are
+/// `#rrggbb`; absent means the terminal's default.
 #[derive(Debug, Serialize, Default, Clone, PartialEq)]
 pub(crate) struct Span {
     pub s: String,
+    pub x: u16,
+    pub w: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -264,7 +311,50 @@ mod tests {
         };
         assert_eq!(
             serde_json::to_string(&span).expect("json"),
-            r#"{"s":"hi","b":true}"#
+            r#"{"s":"hi","x":0,"w":0,"b":true}"#
+        );
+    }
+
+    #[test]
+    fn integration_inputs_and_outputs() {
+        assert_eq!(
+            serde_json::from_str::<Input>(r#"{"t":"jump","prompts":-1}"#).expect("jump"),
+            Input::Jump { prompts: -1 }
+        );
+        assert_eq!(
+            serde_json::from_str::<Input>(r#"{"t":"select-output","y":3}"#).expect("output"),
+            Input::SelectOutput { y: 3 }
+        );
+        assert_eq!(
+            serde_json::from_str::<Input>(r#"{"t":"clear"}"#).expect("clear"),
+            Input::Clear
+        );
+        assert_eq!(
+            serde_json::to_string(&Output::Cwd {
+                path: "/home/alexk".into(),
+                host: String::new()
+            })
+            .expect("json"),
+            r#"{"t":"cwd","path":"/home/alexk","host":""}"#
+        );
+        assert_eq!(
+            serde_json::to_string(&Output::Done { code: Some(1) }).expect("json"),
+            r#"{"t":"done","code":1}"#
+        );
+        let frame = Frame {
+            marks: vec![
+                Mark { y: 2, failed: true },
+                Mark {
+                    y: 5,
+                    failed: false,
+                },
+            ],
+            ..Frame::default()
+        };
+        let json = serde_json::to_string(&frame).expect("json");
+        assert!(
+            json.contains(r#""marks":[{"y":2,"failed":true},{"y":5}]"#),
+            "{json}"
         );
     }
 }

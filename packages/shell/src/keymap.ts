@@ -95,6 +95,8 @@ export const KEYMAP: Keymap = {
     // must reach the field as Ctrl chords, not an app's menus. The lock
     // screen's field has its own rules (LOCKED_RULES).
     metal: ["dev.dashi.*", "dev.mirin.*"],
+    // Dashi's own Terminal, whose menus take ❖↑ and ❖↓ (between prompts).
+    dashiTerminal: ["dev.dashi.terminal"],
   },
   locked: LOCKED_RULES,
   // A ❖ tap opens the launcher; holding ❖ shows the shortcut sheet.
@@ -183,6 +185,9 @@ export const KEYMAP: Keymap = {
     { when: "alt+Right", app: "terminal", send: "alt+f" },
     { when: "alt+BackSpace", app: "terminal", send: "ctrl+w" },
     { when: "alt+Delete", app: "terminal", send: "alt+d" },
+
+    // In Dashi's Terminal ❖↑ and ❖↓ jump between prompts: its View menu's rows.
+    { when: "super+Up|Down", app: "dashiTerminal", bind: "app-chord" },
 
     // Moving in text, Mac style; ⇧ with them selects.
     { when: "super+Left", send: "Home" },
