@@ -78,6 +78,8 @@ export interface StoreOptions {
   noticeFadeMs?: number;
   /** What may show (a chooser's filter); everything by default. Hidden files follow Show Hidden either way. */
   shows?: (item: FileItem) => boolean;
+  /** What an empty listing says when the folder has items `shows` keeps out ("No folders here"); by default it is empty. */
+  keptOutTitle?: string;
   /** Opening files means this here (a chooser's Open); by default each opens in its app. */
   openFiles?: (items: FileItem[]) => void;
   /** The view, sort and Show Hidden to start with, and where a change to them goes (prefs.ts); none: the defaults, kept nowhere. */
@@ -192,6 +194,14 @@ export class FilesStore {
     const sorted = sortItems(kept, fileColumns(columnMode(this.state)), this.effectiveSort());
     this.shown = { state: this.state, items: sorted };
     return sorted;
+  }
+
+  /** What the empty listing says when `shows` keeps every item here out (not hidden ones); null when the folder is empty. */
+  keptOut(): string | null {
+    const { shows, keptOutTitle } = this.options;
+    if (!shows || !keptOutTitle) return null;
+    const { found, items, showHidden } = this.state;
+    return (found ?? items).some((item) => (showHidden || !item.hidden) && !shows(item)) ? keptOutTitle : null;
   }
 
   /** What `shows` lets through changed (a chooser's filter): look again, and drop what no longer shows from the selection. */

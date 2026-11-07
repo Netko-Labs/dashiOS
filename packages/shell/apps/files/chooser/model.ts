@@ -96,6 +96,7 @@ export class ChooserModel {
     this.store = new FilesStore(env, location, {
       watch: options.watch ?? true,
       shows: (item) => chooserShows(this.request, this.state.filter, item),
+      keptOutTitle: request.directory ? "No folders here" : "No files of this kind here",
       openFiles: () => this.onAccept?.(),
       // Files' view, sort and Show Hidden; the chooser changes them for itself only.
       prefs: { read: () => prefs, write: () => {} },

@@ -42,6 +42,9 @@ function Empty({ store }: { store: FilesStore }) {
     );
   if (state.location.kind === "trash") return <EmptyState testID="empty" title="The Trash is empty" />;
   if (state.location.kind === "recents") return <EmptyState testID="empty" title="No recent files" message="Files you open will show up here." />;
+  // A chooser that shows only some things (folders, a kind of file): this folder has none of them, but it isn't empty.
+  const keptOut = store.keptOut();
+  if (keptOut) return <EmptyState testID="empty" title={keptOut} />;
   return (
     <EmptyState
       testID="empty"
