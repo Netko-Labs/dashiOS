@@ -4,7 +4,7 @@
  * the following ones, or all of them. The file sheets are in file-sheets.tsx.
  */
 
-import { AlertSheet, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
+import { AlertSheet, alertButtonsWidth, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Scope } from "./edits.ts";
@@ -95,6 +95,18 @@ export function CalendarSheet({
   );
 }
 
+const CANCEL = "Cancel";
+const THIS = "This event";
+const FOLLOWING = "This and following";
+const ALL = "All events";
+/** The sheet's card: 20 either side of what it holds. */
+const SHEET_PAD = 20;
+
+/** The repeat question's width: 460, or wider so its buttons stay on one row. */
+export function scopeSheetWidth(labels: readonly string[]): number {
+  return Math.max(460, alertButtonsWidth(labels) + SHEET_PAD * 2);
+}
+
 /**
  * Which times of a repeat a change or a delete is for. "This event" is the
  * default (Return); Esc cancels. Deleting all of them is the ume button.
@@ -114,10 +126,11 @@ export function ScopeSheet({
 }) {
   const name = title || "New Event";
   const deleting = action === "delete";
+  const labels = [CANCEL, ...(allowThis ? [THIS] : []), FOLLOWING, ALL];
   return (
     <AlertSheet
       testID="scope"
-      width={460}
+      width={scopeSheetWidth(labels)}
       question={deleting ? `Delete “${name}”?` : `Change “${name}”?`}
       message={
         deleting
@@ -129,10 +142,10 @@ export function ScopeSheet({
       glyph={WARNING}
       tone={deleting ? "danger" : "accent"}
       buttons={[
-        { label: "Cancel", testID: "scope:cancel", onPress: onCancel, cancel: true },
-        ...(allowThis ? [{ label: "This event", testID: "scope:this", onPress: () => onChoose("this"), isDefault: true }] : []),
-        { label: "This and following", testID: "scope:following", onPress: () => onChoose("following"), isDefault: !allowThis },
-        { label: "All events", testID: "scope:all", onPress: () => onChoose("all"), ...(deleting ? { kind: "danger" as const } : {}) },
+        { label: CANCEL, testID: "scope:cancel", onPress: onCancel, cancel: true },
+        ...(allowThis ? [{ label: THIS, testID: "scope:this", onPress: () => onChoose("this"), isDefault: true }] : []),
+        { label: FOLLOWING, testID: "scope:following", onPress: () => onChoose("following"), isDefault: !allowThis },
+        { label: ALL, testID: "scope:all", onPress: () => onChoose("all"), ...(deleting ? { kind: "danger" as const } : {}) },
       ]}
     />
   );

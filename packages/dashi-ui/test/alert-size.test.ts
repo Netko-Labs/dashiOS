@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ALERT_WINDOW, alertWindowHeight, alertWordsWidth, wrappedLines } from "../src/alert-size.ts";
+import { ALERT_WINDOW, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "../src/alert-size.ts";
 
 describe("lines a text wraps to", () => {
   test("a word at a time, a paragraph at least one line", () => {
@@ -33,5 +33,15 @@ describe("an alert window's height", () => {
     const tall = alertWindowHeight({ question: "Delete it?", message: long }, 420);
     expect(tall).toBe(frame + 17 + 4 + wrappedLines(long, 330, ALERT_WINDOW.message.char) * 16);
     expect(alertWindowHeight({ question: "Share?", message: "“To sign you in”", extra: 64 }, 420)).toBe(frame + 17 + 4 + 16 + 4 + 6 + 64);
+  });
+});
+
+describe("a row of buttons", () => {
+  test("each is at least 84 wide, else its label and 14 either side; 8 between", () => {
+    expect(alertButtonsWidth(["OK"])).toBe(84);
+    expect(alertButtonsWidth(["Cancel", "OK"])).toBe(84 + 8 + 84);
+    // Calendar's repeat question: four buttons, wider than a 460 sheet holds.
+    const four = alertButtonsWidth(["Cancel", "This event", "This and following", "All events"]);
+    expect(four).toBeGreaterThan(460 - 40);
   });
 });
