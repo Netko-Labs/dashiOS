@@ -42,6 +42,8 @@ describe("which app a process is", () => {
     // A Bun program of Dashi's that isn't an app (the dialog) works for whoever started it.
     expect(identify(facts(["/usr/bin/bun", "/usr/share/dashi/shell/apps/dialog/main.tsx"], "bun"), catalog)).toBeNull();
     expect(identify(facts([], "dashi-comp"), catalog)?.key).toBe("dev.dashi.shell");
+    // Drawn with Dashi's bowl, not the blank generic tile.
+    expect(identify(facts([], "dashi-comp"), catalog)?.icon).toEndWith("/icons/setup.svg");
     expect(identify(facts(["bun", "/home/alexk/dashiOS/packages/shell/src/main.tsx"], "bun"), catalog)?.name).toBe("Dashi");
     const scope = "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-org.mozilla.firefox-4242.scope\n";
     expect(flatpakId(scope)).toBe("org.mozilla.firefox");

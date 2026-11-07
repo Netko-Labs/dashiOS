@@ -41,7 +41,8 @@ export function catalogFrom(
     byProgram,
     byId,
     firstParty: new Map(firstParty.map((spec) => [spec.dir, { key: spec.id, name: spec.name, icon: iconPath(spec.icon) }])),
-    dashi: { key: DASHI_KEY, name: "Dashi", icon: iconPath("generic") },
+    // Dashi's own mark, the bowl, as Setup and a nested Dashi have it (apps.ts).
+    dashi: { key: DASHI_KEY, name: "Dashi", icon: iconPath("setup") },
     genericIcon: iconPath("generic"),
   };
 }

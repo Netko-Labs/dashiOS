@@ -32,7 +32,8 @@ export function NameCell({ line, selected, onToggle }: { line: Line; selected: b
           <Svg markup={line.expanded ? CHEVRON_DOWN : CHEVRON_RIGHT} size={11} color={ink} />
         </View>
       ) : (
-        line.depth === 0 && <View style={{ width: 14, flexShrink: 0 }} />
+        // Where the chevron would be, on every line: an app's processes sit one step in from its name, not level with the lines around.
+        <View style={{ width: 14, flexShrink: 0 }} />
       )}
       <View style={{ width: ICON, height: ICON, flexShrink: 0 }}>{line.icon && <Image source={line.icon} style={{ width: ICON, height: ICON }} />}</View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
