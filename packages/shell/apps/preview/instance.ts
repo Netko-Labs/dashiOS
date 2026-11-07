@@ -121,12 +121,15 @@ export function listenWhileEmpty(take: (path: string) => boolean, dir: string = 
             const file = parseHandoff(line);
             socket.write(`${JSON.stringify({ ok: file !== null && take(file) })}\n`);
           }
+          // One offer per connection: answered, it's done.
+          if (lines.length > 0) socket.end();
         },
       },
     });
     chmodSync(path, 0o600);
     stop = () => {
-      server.stop(true);
+      // Not `stop(true)`: a reply still on its way finishes first.
+      server.stop();
       try {
         unlinkSync(path);
       } catch {

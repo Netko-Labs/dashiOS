@@ -28,17 +28,28 @@ runApp(
 
 if (first) void viewer.open(first);
 
-// While nothing is open, the next file opened anywhere comes here.
+// While nothing is open, the next file opened anywhere comes here. The
+// answer goes out first and the file opens on the next tick: opening stops
+// the listener, which would otherwise close the connection before the
+// "taken" reply, and the other start would open a window of its own too.
+// One file is claimed at once, so two quick offers can't both land here.
+let claimed = false;
 const take = (path: string): boolean => {
-  if (viewer.getSnapshot().phase !== "empty") return false;
-  void viewer.open(path);
-  menusClient().front();
+  if (claimed || viewer.getSnapshot().phase !== "empty") return false;
+  claimed = true;
+  setTimeout(() => {
+    void viewer.open(path);
+    menusClient().front();
+  }, 0);
   return true;
 };
 let stopListening: (() => void) | null = null;
 const follow = (): void => {
   const empty = viewer.getSnapshot().phase === "empty";
-  if (empty && !stopListening) stopListening = listenWhileEmpty(take);
+  if (empty && !stopListening) {
+    claimed = false;
+    stopListening = listenWhileEmpty(take);
+  }
   else if (!empty && stopListening) {
     stopListening();
     stopListening = null;

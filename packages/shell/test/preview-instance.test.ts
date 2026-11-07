@@ -21,6 +21,17 @@ test("an empty window takes the next file opened, and a start finds none once it
   expect(await handToEmpty("/home/alexk/b.png", handoff)).toBe(false);
 });
 
+test("the reply still arrives when taking the file stops the listener at once (review 22, B5)", async () => {
+  const handoff = join(dir, "stops");
+  let stop = (): void => {};
+  // As Preview's window did: taking the file leaves the empty state, which stops listening there and then.
+  stop = listenWhileEmpty(() => {
+    stop();
+    return true;
+  }, handoff);
+  expect(await handToEmpty("/home/alexk/Pictures/trip/img3.jpg", handoff)).toBe(true);
+});
+
 test("a window that has a file of its own by then says no, and the start opens its own window", async () => {
   const handoff = join(dir, "busy");
   const stop = listenWhileEmpty(() => false, handoff);
