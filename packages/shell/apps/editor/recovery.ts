@@ -1,17 +1,17 @@
 /**
- * Changes that aren't saved, kept where a crash can't take them. Each window
- * keeps its document's unsaved text in one file (`RecoveryKeeper`), written
- * a moment after typing stops and again as the window goes, and removed once
- * the text is saved or the person chooses Don't Save. Metal can't hold a
- * window open to ask (its close ends the process), so a window closed by its
- * close button, ❖Q, logging out, or a crash leaves its file behind, in
- * `$XDG_STATE_HOME/dashi/editor/recovery/` (only the person's: 0700 and
- * 0600). The next Text Editor opened without a file brings them back as
- * edited documents, and opening that file brings its own back. A file is
- * taken (read and removed) once, and never from a window still open.
+ * Drafts: what a window has that isn't in a file, kept where a crash can't
+ * take it. That is an Untitled document's text, or changes a document's
+ * file couldn't take (it can't be written, or another app changed it
+ * meanwhile). Each window keeps it in one file (`RecoveryKeeper`), written a
+ * moment after typing stops and again as the window goes, and removed once
+ * nothing is unsaved or the person deletes the draft. Drafts are in
+ * `$XDG_STATE_HOME/dashi/editor/drafts/` (only the person's: 0700 and 0600).
+ * The next Text Editor opened without a file brings them back, one window
+ * each, and opening a file brings back its own. A file is taken (read and
+ * removed) once, and never from a window still open.
  */
 
-import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Encoding, LineEnding } from "./codec.ts";
@@ -26,12 +26,24 @@ export interface Recovery {
   time: number;
 }
 
-const ENCODINGS: ReadonlySet<string> = new Set(["utf-8", "utf-8-bom", "utf-16le", "utf-16be", "latin-1"]);
+const ENCODINGS: ReadonlySet<string> = new Set(["utf-8", "utf-8-bom", "utf-16le", "utf-16be", "windows-1252", "latin-1"]);
 const LINE_ENDINGS: ReadonlySet<string> = new Set(["lf", "crlf", "cr"]);
 
+const editorState = (env: Record<string, string | undefined>): string =>
+  join(env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state"), "dashi", "editor");
+
 export function recoveryDir(env: Record<string, string | undefined> = process.env): string {
-  const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
-  return join(state, "dashi", "editor", "recovery");
+  return join(editorState(env), "drafts");
+}
+
+/** Text Editor 0.4 kept them in `recovery/`: the folder becomes the drafts folder, once, before any is read. */
+export function moveOldRecovery(env: Record<string, string | undefined> = process.env): void {
+  const old = join(editorState(env), "recovery");
+  try {
+    if (existsSync(old) && !existsSync(recoveryDir(env))) renameSync(old, recoveryDir(env));
+  } catch {
+    // Another window moved it first.
+  }
 }
 
 /** A recovery file's contents, or null when they are not one. */

@@ -86,6 +86,13 @@ export interface Palette {
   broth: string;
   /** Broth washed: behind a warning's glyph. */
   brothWash: string;
+  /**
+   * Find's matches in a document's text (Text Editor): broth washed behind
+   * the words, and deeper on the match Find is on (`findCurrent`), under the
+   * text's own ink (at least 4.5:1 on both) and apart from kombu's selection.
+   */
+  findWash: string;
+  findCurrent: string;
   /** Moss, for success ("Installed", "Saved"): text, AA on every window ground. Not kombu: done is not selected. */
   moss: string;
   /** Words that destroy (Quit, Move to Trash) in the launcher: ume that reads at 4.5:1 on the glass and on `selectionWash`. */
@@ -142,6 +149,8 @@ export const lightColors: Palette = {
   umeWash: "#D0596F24",
   broth: "#86600A",
   brothWash: "#E5B13F33",
+  findWash: "#E5B13F40",
+  findCurrent: "#E5B13F99",
   moss: "#38722C",
   criticalInk: "#963549",
   tile: "#ffffffb8",
@@ -195,6 +204,8 @@ export const darkColors: Palette = {
   umeWash: "#E8798F3d",
   broth: "#E5B13F",
   brothWash: "#E5B13F3d",
+  findWash: "#E5B13F33",
+  findCurrent: "#E5B13F73",
   moss: "#6CB45B",
   criticalInk: "#F09AAB",
   tile: "#ffffff17",

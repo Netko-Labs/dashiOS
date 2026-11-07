@@ -64,3 +64,28 @@ Replace the single `TextInput` with a real document surface, a mirin editor view
 - **The `reservedBy` test contradicts the shell.** `reserved.ts` refuses ❖W in app menus, but `shortcuts.ts:119-122` hands ❖W to the app's row first, which is how Terminal's Close Tab works. That's why the Editor's Close has no ❖W and closes without asking. Make the rule say "❖W is the app's if it has a row, else the window's", and test it that way.
 - **There's no shared file chooser in `@dashi/ui`.** Every app that opens or saves (Editor, Preview, Notes export) will reinvent the typed-path sheet. One file sheet component should exist.
 - **The error color isn't ume.** `palette.ts:71` sets `critical: "#d4483b"`, while brand.html says ume (#D0596F) is "Closing and destroying: … errors". The Editor's footer errors use `critical`. Decide which one errors use, and make the tokens match.
+
+**Where it stands (0.5.0)**
+
+Wave 1 gave the Editor mirin's text model and a close that asks; wave 2 (`feat/0.5-editor`) gave it the big idea's promise, "you never lose a word, and you never get asked", on mirin's `TextInput` (the pick in `docs/0.5.0.html`) rather than a new document view.
+
+- [x] 1. Editing basics: a click, a drag, ⇧-arrows, Cut and Copy (wave 1, mirin's text model; Copy All is gone).
+- [x] 2. The caret stays put through Save, sheets and Esc (wave 1), and now through Undo and Replace All too: the window holds the caret and selection (`text-area.tsx`, controlled `selection`).
+- [x] 3. One close path, and it never asks: a file saves on its own a moment after typing stops and as the window goes, however it goes; an Untitled document is kept as a draft (`main.tsx`, `model.ts` `autosave`).
+- [x] 4. Drafts are written as they are typed (wave 1) into `$XDG_STATE_HOME/dashi/editor/drafts/` and come back, one window each, on the next plain launch; changes a file couldn't take come back with it, and wait for the next edit before they are written (`recovery.ts`, `model.ts` `recover`).
+- [x] 5. Revert is safe: File › Revert To… lists the file's earlier versions (as opened, each ❖S, and one every ten minutes of autosaving, thinned by age) and reverting is one Undo step (`versions.ts`, `sheets.tsx` `VersionsSheet`).
+- [x] 6. The window is named after its document (wave 1).
+- [x] 7. One chrome row: the folder (or "Draft"), the counts or Find's place, and an unusual encoding are muted words after the title on its line (`AppWindow`'s `detail`); no footer.
+- [ ] 8. Open and Save As still take a typed path → the shared file chooser, wave 2's "One file browser everywhere" (PA-12). Files dropped on the window open now (`view.tsx` `onDrop`).
+- [x] 9. Find washes every match in the text and the one it is on deeper (mirin's `highlights`, the `findWash` and `findCurrent` tokens), and selects it, so the caret is there when the text has the keyboard again.
+- [ ] 10. Large files: the counts wait for typing to pause, and highlights and line numbers are painted only where the text shows. Still O(n) per keystroke: the history's diff, `isDirty`'s compare, the hidden mirror that measures the text, and the 4 MB cap → left for after 0.5 (`tasks/todo.md`, "Left from the Editor roast").
+- [ ] 11. The view doesn't follow the caret in the middle of a long document → left: it wants mirin to scroll a focused field's caret into view.
+- [x] 12. Changes made elsewhere: the file is looked at every two seconds; a change comes in quietly when nothing is unsaved (Undo brings back what was here), and is a question when there is ("Keep Mine" or "Use the One on Disk"); nothing is ever written over another app's change (`model.ts` `checkDisk`, `ConflictSheet`).
+- [ ] 13. Encodings: bytes that aren't UTF-8 are read as Windows-1252 now, so curly quotes and dashes survive (`codec.ts`). Reopen with Encoding, choosing an encoding and line endings in Save As, and keeping mixed endings → left.
+- [ ] 14. Replace one at a time, Whole Word, and a find row in the toolbar → left.
+- [ ] 15. Line numbers (View › Line Numbers, on by default; mirin's `lineNumbers`) and Go to Line (❖L) are in. Wrap toggle, tabs, auto-indent, invisibles, Open Recent, Print and syntax coloring → left.
+- [x] 16. No " — Edited": a document that saves itself has nothing to mark. The system-wide edited flag stays an open question in `design.html`.
+- [x] 17. Save is a page with a check, the toolbar's glyphs have tooltips, and Save is off on an untouched Untitled.
+- [ ] 18. Windows, not tabs → left.
+- [x] 19. Replacing a file in Save As asks with a sheet ("Replace “notes.txt”?"); an empty document has 1 line. The `~` messages go with the file chooser (8).
+- [ ] 20. View settings now reach every open window. A Settings pane → left, for the settings registry.

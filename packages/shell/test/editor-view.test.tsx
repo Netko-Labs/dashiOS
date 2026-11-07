@@ -40,7 +40,7 @@ function fakeHost() {
 
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
-test("typing marks the document edited; the Save sheet saves it", async () => {
+test("an Untitled document is a draft, counted once typing pauses; the Save sheet saves it", async () => {
   const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
   const host = fakeHost();
   const quits: boolean[] = [];
@@ -66,8 +66,9 @@ test("typing marks the document edited; the Save sheet saves it", async () => {
   host.emit({ type: "change", nodeId: text, value: "hello there" });
   await settle();
   expect(model.getSnapshot().text).toBe("hello there");
-  expect(host.trees.at(-1)).toContain("Untitled — Edited");
-  expect(host.trees.at(-1)).toContain("2 words");
+  expect(host.trees.at(-1)).toContain("Draft · 1 line · 0 words");
+  await new Promise((done) => setTimeout(done, 350));
+  expect(host.trees.at(-1)).toContain("Draft · 1 line · 2 words");
 
   // Save on an Untitled document asks where.
   const save = root.nodeId("save");
@@ -83,12 +84,12 @@ test("typing marks the document edited; the Save sheet saves it", async () => {
   await settle();
   expect(readFileSync(path, "utf8")).toBe("hello there");
   expect(host.trees.at(-1)).toContain("hello.txt");
-  expect(host.trees.at(-1)).not.toContain("— Edited");
+  expect(host.trees.at(-1)).not.toContain("Draft");
   expect(root.nodeId("save-sheet:path")).toBeUndefined();
   root.unmount();
 });
 
-test("Save As asks once before replacing another file", async () => {
+test("Save As asks before replacing another file", async () => {
   const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
   const host = fakeHost();
   const existing = join(dir, "taken.txt");
@@ -99,6 +100,7 @@ test("Save As asks once before replacing another file", async () => {
   );
   await settle();
   model.edit("new text");
+  await settle();
   host.emit({ type: "press", nodeId: root.nodeId("save") as string });
   await settle();
   const field = root.nodeId("save-sheet:path") as string;
@@ -107,8 +109,16 @@ test("Save As asks once before replacing another file", async () => {
   host.emit({ type: "submit", nodeId: field, value: existing });
   await settle();
   expect(readFileSync(existing, "utf8")).toBe("keep me");
-  expect(host.trees.at(-1)).toContain("already exists");
-  host.emit({ type: "submit", nodeId: field, value: existing });
+  expect(host.trees.at(-1)).toContain("Replace “taken.txt”?");
+  // Cancel goes back to where it was going to save.
+  host.emit({ type: "press", nodeId: root.nodeId("replace-file:cancel") as string });
+  await settle();
+  const again = root.nodeId("save-sheet:path") as string;
+  host.emit({ type: "change", nodeId: again, value: existing });
+  await settle();
+  host.emit({ type: "submit", nodeId: again, value: existing });
+  await settle();
+  host.emit({ type: "press", nodeId: root.nodeId("replace-file:ok") as string });
   await settle();
   expect(readFileSync(existing, "utf8")).toBe("new text");
   root.unmount();
@@ -206,12 +216,74 @@ test("the text keeps its input (and its caret) through Save, closing a sheet, an
   expect(root.nodeId("text")).toBe(input);
   expect(focused).toBe(3);
 
-  // Saving under another name renames the window; editing doesn't (the edited mark stays in the toolbar).
+  // Saving under another name renames the window; editing doesn't.
   model.edit("changed again");
   await settle();
   expect(titles).toEqual(["kept.txt"]);
   model.saveAs(join(dir, "renamed.txt"));
   await settle();
   expect(titles).toEqual(["kept.txt", "renamed.txt"]);
+  root.unmount();
+});
+
+type InputProps = {
+  id: string;
+  highlights?: { start: number; end: number; color: string }[];
+  selection?: { start: number; end: number };
+  lineNumbers?: unknown;
+};
+type Node = { type: string; props: InputProps; children?: unknown[] };
+
+/** The props of input `id` in the latest tree. */
+function inputProps(tree: string | undefined, id: string | undefined): InputProps | null {
+  const find = (node: Node): InputProps | null => {
+    if (node.type === "input" && node.props.id === id) return node.props;
+    for (const child of node.children ?? []) {
+      const found = typeof child === "object" && child !== null ? find(child as Node) : null;
+      if (found) return found;
+    }
+    return null;
+  };
+  return find(JSON.parse(tree ?? "{}") as Node);
+}
+
+test("Find washes every match and selects the one it is on; the caret is held; line numbers are on", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  model.edit("one two\none three\none");
+  const host = fakeHost();
+  const root = render(
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => {}} setTitle={() => {}} />,
+    host.transport,
+  );
+  host.emit({ type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 28 } });
+  await settle();
+  const text = (): InputProps | null => inputProps(host.trees.at(-1), root.nodeId("text"));
+  expect(text()?.lineNumbers).toMatchObject({ color: "#1d1d1fa6" });
+  expect(text()?.highlights).toBeUndefined();
+
+  const field = root.nodeId("find") as string;
+  host.emit({ type: "change", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.highlights).toEqual([
+    { start: 0, end: 3, color: "#E5B13F40" },
+    { start: 8, end: 11, color: "#E5B13F40" },
+    { start: 18, end: 21, color: "#E5B13F40" },
+  ]);
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.highlights?.[1]).toEqual({ start: 8, end: 11, color: "#E5B13F99" });
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  expect(host.trees.at(-1)).toContain("2 of 3 · line 2");
+
+  // Where the input says the caret went is where it stays, through Undo's new text.
+  host.emit({ type: "selection", nodeId: root.nodeId("text") as string, start: 4, end: 4 });
+  await settle();
+  expect(text()?.selection).toEqual({ start: 4, end: 4 });
+  model.edit("one two\none three\none!");
+  model.undo();
+  await settle();
+  expect(text()?.selection).toEqual({ start: 4, end: 4 });
   root.unmount();
 });

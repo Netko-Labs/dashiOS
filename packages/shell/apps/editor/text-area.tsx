@@ -3,40 +3,60 @@
  * way Notes' body is. Metal lays a multiline input out at its minimum height
  * and lets the text spill, so a hidden copy of the text measures it and the
  * input is given that height; typing at the end scrolls the view to its end
- * once the layout catches up. Find's jump (`reveal`) measures the text before
- * the match the same way and scrolls there. The input has Metal's caret and
- * selection: a click places the caret; a drag, a double or triple click, and
- * ⇧ with the arrows select; and the window hears whether anything is
- * selected (`onSelectionChange`, for Cut and Copy). The input is mounted once per
- * document (`session`): mounting it again would put the caret at the end, so
- * the window hands the keyboard back by focusing it (main.tsx), never by
- * remounting it.
+ * once the layout catches up. Find's jump and Go to Line (`reveal`) measure
+ * the text before the place the same way and scroll there.
+ *
+ * The input has Metal's caret and selection (KB-6), held here as well
+ * (`selection`, controlled): the window moves it to Find's match or a line,
+ * and it stays where it was when Undo or Replace All change the text. Find's
+ * matches are washed behind the text (`highlights`, the current one deeper),
+ * and each line's number sits in a gutter at its left (`lineNumbers`); both
+ * are drawn by the host beside the laid-out text, never in it. The input is
+ * mounted once per document (`session`): mounting it again would put the
+ * caret at the end, so the window hands the keyboard back by focusing it
+ * (main.tsx), never by remounting it.
  */
 
 import { useColors, useSurface } from "@dashi/ui";
-import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
+import { ScrollView, Text, type TextHighlight, TextInput, type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { EditorPrefs } from "./prefs.ts";
 
 const PADDING = 24;
+/** Left of the text with line numbers on: the gutter is room enough. */
+const GUTTER_PADDING = 8;
+
+/**
+ * The gutter's width for a text of `lines` lines at `fontSize`: room for its
+ * longest number (two digits at least) and the gap before the text.
+ */
+export function gutterWidth(lines: number, fontSize: number): number {
+  const digits = Math.max(2, String(Math.max(1, lines)).length);
+  return Math.ceil(digits * fontSize * 0.62) + 14;
+}
 
 export interface TextAreaProps {
   text: string;
   prefs: EditorPrefs;
+  /** How many lines the text has (for the gutter's width). */
+  lines: number;
   /** Changes when the input must start over (another document); it takes the keyboard then. */
   session: number;
+  /** The caret and selection: as the input last reported it, or where the window moved it. */
+  selection: TextSelection;
+  onSelectionChange: (selection: TextSelection) => void;
+  /** Washed behind the text (Find's matches). */
+  highlights: readonly TextHighlight[];
   onChange: (text: string) => void;
   /** Esc in the text (it clears Find). */
   onEscape: () => void;
-  /** Whether text is selected, each time that changes. */
-  onSelectionChange: (selected: boolean) => void;
   /** Scrolls the view: by `dy`, or to its top first when `fromTop`. */
   scroll: (dy: number, fromTop: boolean) => void;
-  /** Where Find wants the view; `seq` changes with each jump. */
+  /** Where the window wants the view; `seq` changes with each jump. */
   reveal: { offset: number; seq: number } | null;
 }
 
-export function TextArea({ text, prefs, session, onChange, onEscape, onSelectionChange, scroll, reveal }: TextAreaProps) {
+export function TextArea({ text, prefs, lines, session, selection, onSelectionChange, highlights, onChange, onEscape, scroll, reveal }: TextAreaProps) {
   const colors = useColors();
   const surface = useSurface();
   const font = prefs.monospace ? ("monospace" as const) : ("default" as const);
@@ -60,16 +80,18 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
       following.current = false;
     }, 400);
   };
-  // The match to scroll to: its text before it is measured once laid out.
+  // The place to scroll to: the text before it is measured once laid out.
   const [revealing, setRevealing] = useState<{ offset: number; seq: number } | null>(null);
   useEffect(() => {
     if (reveal) setRevealing(reveal);
   }, [reveal]);
 
   const textStyle = { fontSize: prefs.fontSize, fontFamily: font };
+  const gutter = prefs.lineNumbers ? gutterWidth(lines, prefs.fontSize) : 0;
+  const left = prefs.lineNumbers ? GUTTER_PADDING : PADDING;
   return (
     <ScrollView testID="editor" onLayout={(bounds) => setHeight(bounds.height)} style={{ flex: 1, backgroundColor: surface.card }}>
-      <View style={{ padding: PADDING, paddingTop: 16, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+      <View style={{ padding: PADDING, paddingLeft: left, paddingTop: 16, flexDirection: "column", flexShrink: 0, minHeight: height }}>
         <View style={{ position: "relative", flexDirection: "column", flexShrink: 0, width: "100%" }}>
           <View
             testID="text-measure"
@@ -77,7 +99,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
               setMeasured(bounds.height);
               if (following.current) followEnd();
             }}
-            style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
+            style={{ position: "absolute", left: gutter, top: 0, right: 0, opacity: 0 }}
           >
             <Text style={textStyle}>{text}</Text>
           </View>
@@ -86,11 +108,11 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
               key={`reveal:${revealing.seq}`}
               testID="reveal-measure"
               onLayout={(bounds) => {
-                // Up to the match's line, with a third of the view above it.
+                // Up to the place's line, with a third of the view above it.
                 scroll(Math.max(0, bounds.height - height / 3), true);
                 setRevealing(null);
               }}
-              style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
+              style={{ position: "absolute", left: gutter, top: 0, right: 0, opacity: 0 }}
             >
               <Text style={textStyle}>{text.slice(0, revealing.offset)}</Text>
             </View>
@@ -102,12 +124,15 @@ export function TextArea({ text, prefs, session, onChange, onEscape, onSelection
             value={text}
             placeholder="Start typing…"
             autoFocus
+            selection={selection}
+            highlights={highlights}
+            lineNumbers={prefs.lineNumbers ? { width: gutter, color: colors.textMuted } : undefined}
             onChangeText={(next) => {
               if (next.length > text.length && next.startsWith(text)) followEnd();
               onChange(next);
             }}
             onKeyPress={(key) => key === "Escape" && onEscape()}
-            onSelectionChange={(selection) => onSelectionChange(selection.start !== selection.end)}
+            onSelectionChange={onSelectionChange}
             style={{
               width: "100%",
               height: Math.max(200, height - 40, Math.ceil(measured) + 4),

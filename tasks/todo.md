@@ -35,7 +35,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
 - [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
-- [ ] Editor's document surface with versioned autosave (L)
+- [x] Editor's document surface with versioned autosave (L; `feat/0.5-editor`, mirin patch `mirin-editor.patch`: `TextInput` `highlights` and `lineNumbers`; VM: not yet)
+  - Left from the Editor roast (docs/roast/editor.md): per-keystroke O(n) passes and the 4 MB cap, the view following the caret, Reopen with Encoding, Replace one at a time and a find row, wrap/tabs/auto-indent/Print/syntax, tabs, a Settings pane
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
 - [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
 - [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)

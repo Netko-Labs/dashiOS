@@ -1,22 +1,27 @@
 /**
  * Text Editor's menus in the menu bar (the kit's `useAppMenus`): File (new
- * window, open, save, close), Edit (Undo on the app's own history; Cut,
- * Copy, Paste, and Select All typed into the field with the keyboard, as its
- * own keys would be; Find), and View (the font). The ❖ shortcuts are real:
- * the shell matches a pressed chord against the enabled rows
+ * window, open, close, save, earlier versions, deleting a draft), Edit (Undo
+ * on the app's own history; Cut, Copy, Paste, and Select All typed into the
+ * field with the keyboard, as its own keys would be; Find, Replace, Go to
+ * Line), and View (line numbers, the font). The ❖ shortcuts are real: the
+ * shell matches a pressed chord against the enabled rows
  * (app-menus/shortcut.ts), and a chord no enabled row shows reaches the
  * field as its Ctrl chord, so ❖C still copies in the Find field while the
  * text has nothing selected. Cut and Copy are enabled while text is
- * selected. The shell offers ❖W to the app's own row first, so ❖W is Close,
- * which asks before it drops changes; ❖Q stays the shell's.
+ * selected. The shell offers ❖W to the app's own row first, so ❖W is Close;
+ * ❖Q stays the shell's. Neither asks: the document saves on its own.
  */
 
 import { redoLabel, undoLabel } from "@dashi/ui";
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
 
 export interface MenuContext {
-  dirty: boolean;
+  /** The document has a file (Untitled has none: it is a draft). */
   hasFile: boolean;
+  /** An Untitled document nobody has typed in. */
+  pristine: boolean;
+  /** The file has earlier versions to go back to. */
+  hasVersions: boolean;
   canUndo: boolean;
   canRedo: boolean;
   /** Text is selected in the document: Cut and Copy have something to take. */
@@ -26,6 +31,7 @@ export interface MenuContext {
   redoName?: string | null;
   hasMatches: boolean;
   monospace: boolean;
+  lineNumbers: boolean;
   caseSensitive: boolean;
   actions: {
     newWindow(): void;
@@ -33,7 +39,8 @@ export interface MenuContext {
     close(): void;
     save(): void;
     saveAs(): void;
-    revert(): void;
+    revertTo(): void;
+    deleteDraft(): void;
     undo(): void;
     redo(): void;
     cut(): void;
@@ -43,7 +50,9 @@ export interface MenuContext {
     find(): void;
     findNext(step: 1 | -1): void;
     replace(): void;
+    goToLine(): void;
     toggleCase(): void;
+    toggleLineNumbers(): void;
     toggleMonospace(): void;
     fontSize(step: 1 | -1 | 0): void;
   };
@@ -59,9 +68,10 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "open", label: "Open…", shortcut: "❖O" },
         { type: "separator" },
         { id: "close", label: "Close", shortcut: "❖W" },
-        { id: "save", label: "Save", shortcut: "❖S", enabled: context.dirty || !context.hasFile },
+        { id: "save", label: context.hasFile ? "Save" : "Save…", shortcut: "❖S", enabled: context.hasFile || !context.pristine },
         { id: "save-as", label: "Save As…", shortcut: "⇧❖S" },
-        { id: "revert", label: "Revert to Saved…", enabled: context.dirty && context.hasFile },
+        { id: "revert", label: "Revert To…", enabled: context.hasFile && context.hasVersions },
+        { id: "delete-draft", label: "Delete Draft…", enabled: !context.hasFile && !context.pristine },
       ],
     },
     {
@@ -80,11 +90,14 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "find-previous", label: "Find Previous", shortcut: "⇧❖G", enabled: context.hasMatches },
         { id: "replace", label: "Find and Replace…" },
         { id: "match-case", label: "Match Case", checked: context.caseSensitive },
+        { type: "separator" },
+        { id: "go-to-line", label: "Go to Line…", shortcut: "❖L" },
       ],
     },
     {
       id: "view",
       items: [
+        { id: "line-numbers", label: "Line Numbers", checked: context.lineNumbers },
         { id: "monospace", label: "Monospaced Font", shortcut: "⇧❖T", checked: context.monospace },
         { type: "separator" },
         { id: "bigger", label: "Bigger", shortcut: "❖=" },
@@ -100,7 +113,8 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     close: actions.close,
     save: actions.save,
     "save-as": actions.saveAs,
-    revert: actions.revert,
+    revert: actions.revertTo,
+    "delete-draft": actions.deleteDraft,
     undo: actions.undo,
     redo: actions.redo,
     cut: actions.cut,
@@ -111,7 +125,9 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     "find-next": () => actions.findNext(1),
     "find-previous": () => actions.findNext(-1),
     replace: actions.replace,
+    "go-to-line": actions.goToLine,
     "match-case": actions.toggleCase,
+    "line-numbers": actions.toggleLineNumbers,
     monospace: actions.toggleMonospace,
     bigger: () => actions.fontSize(1),
     smaller: () => actions.fontSize(-1),
