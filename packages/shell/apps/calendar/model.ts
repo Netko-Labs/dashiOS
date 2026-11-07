@@ -47,6 +47,9 @@ export interface OccurrenceRef {
   recurrenceId: Local | null;
 }
 
+/** How long a notice that only informs stays (Files' `NOTICE_FADE_MS`). */
+export const NOTICE_FADE_MS = 5000;
+
 export class CalendarModel {
   private state: CalendarState;
   private readonly listeners = new Set<() => void>();
@@ -55,10 +58,14 @@ export class CalendarModel {
   /** Edit › Undo and Redo: changes to events. */
   readonly undo = new UndoStack();
 
+  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(
     readonly store: CalendarStore,
     private readonly clock: () => Date = () => new Date(),
     start?: { view?: View; day?: Day },
+    /** How long a notice that only informs stays (errors stay until dismissed). */
+    private readonly noticeFadeMs = NOTICE_FADE_MS,
   ) {
     const today = dayOf(clock());
     const day = start?.day ?? today;
@@ -74,12 +81,24 @@ export class CalendarModel {
   getSnapshot = (): CalendarState => this.state;
 
   private set(change: Partial<CalendarState>): void {
+    if (change.notice !== undefined && change.notice !== this.state.notice) this.fadeNotice(change.notice);
     this.state = { ...this.state, ...change };
     if (change.calendars !== undefined || change.hidden !== undefined || change.view !== undefined || change.anchor !== undefined) {
       this.cache = null;
       if (change.calendars !== undefined || change.hidden !== undefined) this.busyCache = null;
     }
     for (const listener of [...this.listeners]) listener();
+  }
+
+  /** A notice that only informs ("Imported 6 events…") goes after a while, as Files' do; a newer one starts its own time. */
+  private fadeNotice(notice: string | null): void {
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = null;
+    if (notice === null) return;
+    this.noticeTimer = setTimeout(() => {
+      this.noticeTimer = null;
+      if (this.state.notice === notice) this.set({ notice: null });
+    }, this.noticeFadeMs);
   }
 
   /** Reads the folder again. */
