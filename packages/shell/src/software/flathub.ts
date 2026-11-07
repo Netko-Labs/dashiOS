@@ -8,7 +8,7 @@
 
 import type { JsonCache } from "./cache.ts";
 import { type FetchLike, getBytes, NetworkError } from "./fetch.ts";
-import { parseCategories, parseDetails, parsePage, parseSizes } from "./flathub-parse.ts";
+import { parseCategories, parseDetails, parsePage, parseSizes, parseStats } from "./flathub-parse.ts";
 import type { AppDetails, Page } from "./flathub-types.ts";
 import { appIdOrNull } from "./ids.ts";
 import { API_HOSTS } from "./parse-values.ts";
@@ -92,18 +92,28 @@ export class Flathub {
     return this.load(`${API}/collection/category`, parseCategories, 24 * 60 * MINUTE);
   }
 
-  /** An app's page: AppStream data and, when the summary answers, its sizes. */
+  /**
+   * An app's page: AppStream data and, when they answer, the summary (its
+   * sizes and what its sandbox reaches) and how many installed it last month.
+   */
   async details(id: string): Promise<Answer<AppDetails>> {
     const valid = appIdOrNull(id);
     if (valid === null) throw new CatalogError("failed", "not an application id");
-    const main = await this.load(`${API}/appstream/${valid}`, parseDetails, this.detailsTtl);
-    try {
-      const sizes = await this.load(`${API}/summary/${valid}`, parseSizes, this.detailsTtl);
-      return { value: { ...main.value, ...sizes.value }, stale: main.stale || sizes.stale };
-    } catch {
-      // The sizes are a nicety; the page stands without them.
-      return main;
+    const [main, sizes, stats] = await Promise.allSettled([
+      this.load(`${API}/appstream/${valid}`, parseDetails, this.detailsTtl),
+      this.load(`${API}/summary/${valid}`, parseSizes, this.detailsTtl),
+      this.load(`${API}/stats/${valid}`, parseStats, this.detailsTtl),
+    ]);
+    if (main.status === "rejected") throw main.reason;
+    // The summary and the count are niceties; the page stands without them.
+    let value = main.value.value;
+    let stale = main.value.stale;
+    if (sizes.status === "fulfilled") {
+      value = { ...value, ...sizes.value.value };
+      stale ||= sizes.value.stale;
     }
+    if (stats.status === "fulfilled" && stats.value.value !== null) value = { ...value, installsLastMonth: stats.value.value };
+    return { value, stale };
   }
 
   private async load<T>(url: string, parse: (value: unknown) => T, ttl: number, init?: RequestInit, key: string = url): Promise<Answer<T>> {

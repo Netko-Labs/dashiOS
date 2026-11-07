@@ -124,10 +124,11 @@ export class Software {
     return this.flatpak((progress) => cmd.install(id, progress), onProgress, signal);
   }
 
-  remove(id: string, installation: Installation, signal?: AbortSignal): Promise<Outcome> {
+  /** Removes an app; `deleteData` deletes its settings and data too. */
+  remove(id: string, installation: Installation, signal?: AbortSignal, deleteData = false): Promise<Outcome> {
     this.need("flatpak");
     return this.flatpak(
-      () => cmd.uninstall(id, installation),
+      () => cmd.uninstall(id, installation, deleteData),
       () => {},
       signal,
       false,

@@ -61,3 +61,28 @@
 - "Stale" notes are drawn as a filled box above the content (`states.tsx:30-49`), which is effectively a second bar. The design system should define a toolbar chip for "Offline · showing saved results".
 - Category tile colors (`glyphs.ts:46-57`) should be a shared palette. Today the same glyph gets different colors in different apps, and one of them is shiso.
 - Sentence case and the ellipsis rule are applied unevenly to buttons that open sheets. A lint for `ConfirmSheet` callers (where the trigger's label should end in "…") would catch it.
+
+**Where it went (0.5.0, wave 2: "Software as a trust card, applets folded in")**
+
+The big idea is in: an app's page leads with the trust card (who made it and whether Flathub verified them, what it can reach in the plain lines applets and Settings use, what changed, how many installed it last month), and an app that reaches far (all your files, every device, a way out of its sandbox, closed source, no longer maintained) is Get… and asks with the card first (`apps/software/trust.tsx`, `trust-words.ts`, `src/software/flatpak-permissions.ts`). The Applet Store is a section of Software (Applet Store roast).
+
+- [x] 1. Permissions on every page, and a sheet before a broad install. The download size is a fact on the page; a free-space check before installing is not done (moved to wave 4's "errors in people's words": a failure for space is now said plainly).
+- [x] 2. The shell looks once a day (on a charger, online) and posts one quiet notification for what is new; Show opens Updates (`src/software/update-check.ts`). The Dock tile's badge is not done: moved to the Dock (wave 4).
+- [x] 3. Recommended shows at once and offline (0.4.1). Skeleton cards for Flathub's sections are not done: one quiet line stands in their place.
+- [x] 4. One-line title (0.4.1).
+- [x] 5. What's new, the install count, Website and Source open the browser, a Proprietary chip. Ratings and reviews: Flathub has none to show; not planned.
+- [x] 6. Every busy chip has a × (cards, Installed, Updates, the system update), and the toolbar's activity chip names the queue.
+- [x] 7. "Show all 43", security as a broth chip, both Update all buttons the same weight, "…" where a sheet follows.
+- [x] 8. Copy: "No results", "Flathub isn't responding. Try again in a minute.", failures in plain words with the tool's text behind Details (`src/software/failure-words.ts`).
+- [x] 9. Tokens: `verified` for Flathub's seal, `accentInk` for the pill's verb, no palette identity check; no shiso anywhere.
+- [x] 10. "See all" on every section, and New on Flathub. A featured row with screenshots: moved to wave 4.
+- [x] 11. The grid is 2, 3 or 4 columns by its width. Measuring text with Metal's real metrics is mirin's (moved).
+- [x] 12. Each card follows its own app (`useSelected`); installed icons are found locally, off the render path, before the catalog is asked.
+- [x] 13. Go menu with Back ❖[ and the places; the grid is one Tab stop with arrows, Return opens. ❖F still remounts the field: a focus handle on `SearchField` is @dashi/ui's (moved).
+- [x] 14. Remove… can also delete the app's settings and data (`flatpak uninstall --delete-data`).
+- [x] 15. Gallery: arrows through the strip, the large one at full size on a click, hover on thumbnails, a spinner while loading.
+- [x] 16. The developer line is muted ink; the chip is its own press target.
+- [ ] 17. The indeterminate bar is @dashi/ui's `ProgressBar` now (MO-3 there).
+- [x] 18. No sync file checks while rendering.
+
+Cross-app notes: the subtitle stack is gone (0.4.1); `EmptyState`'s error tone and `SearchField`'s focus handle are @dashi/ui's (moved); nothing imports from `apps/software/` any more; the stale note is a toolbar chip (VS-5); the ellipsis lint is wave 4's.

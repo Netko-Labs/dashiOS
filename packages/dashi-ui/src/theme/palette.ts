@@ -88,6 +88,14 @@ export interface Palette {
   brothWash: string;
   /** Moss, for success ("Installed", "Saved"): text, AA on every window ground. Not kombu: done is not selected. */
   moss: string;
+  /**
+   * Kombu as words: the verb on a store's pill (Get, Update) and a link,
+   * AA on every window ground and on `button`. The brand's lighter kombu in
+   * Dark Mode, where `selection` as text is too quiet.
+   */
+  accentInk: string;
+  /** Flathub's seal behind a verified publisher's check (white on it). Flathub's mark, not Dashi's: only for "verified by Flathub". */
+  verified: string;
   /** Words that destroy (Quit, Move to Trash) in the launcher: ume that reads at 4.5:1 on the glass and on `selectionWash`. */
   criticalInk: string;
   /** Tiles and cards on Control Center's panel. */
@@ -143,6 +151,8 @@ export const lightColors: Palette = {
   broth: "#86600A",
   brothWash: "#E5B13F33",
   moss: "#38722C",
+  accentInk: "#2F6E5A",
+  verified: "#3B8FD0",
   criticalInk: "#963549",
   tile: "#ffffffb8",
   tileHover: "#ffffffe6",
@@ -196,6 +206,8 @@ export const darkColors: Palette = {
   broth: "#E5B13F",
   brothWash: "#E5B13F3d",
   moss: "#6CB45B",
+  accentInk: "#7FD1B2",
+  verified: "#3B8FD0",
   criticalInk: "#F09AAB",
   tile: "#ffffff17",
   tileHover: "#ffffff29",
