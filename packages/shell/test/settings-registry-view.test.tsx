@@ -77,12 +77,13 @@ test("Appearance, Mouse, and Desktop & Dock draw all their rows; a choice from t
   expect(at.settings.getSnapshot().data.appearance.reduceMotion).toBe(true);
 });
 
-test("Privacy & Security lists each permission per agent and app, and takes back only the one revoked", async () => {
+test("Privacy & Security lists each app's permissions, takes back only the one revoked, and sends agents to Agents", async () => {
   const at = stores();
   at.settings.patch("screenSharing", { clients: ["/usr/bin/grim", "/usr/bin/wf-recorder"] });
   const grants = new Grants(null);
   grants.set("ssh:alexk-laptop", new Set(["see", "signin"]), 1_760_000_000);
   const revoked: unknown[] = [];
+  const shown: string[] = [];
   const snapshot: AppGrants = {
     state: "ready",
     grants: [
@@ -112,18 +113,20 @@ test("Privacy & Security lists each permission per agent and app, and takes back
         home="/home/alexk"
         settings={at.settings}
         privacy={privacy}
+        show={(pane, row) => shown.push(`${pane}/${row}`)}
         installedApp={(id) => (id === "org.mozilla.firefox" ? { name: "Firefox", icon: "/firefox.svg" } : undefined)}
       />
     </PaneStoresContext.Provider>,
   );
   for (const spot of ["spot:agents", "spot:apps", "spot:screen-sharing"]) expect(view.has(spot)).toBe(true);
-  expect(view.has("privacy-agent-scope:ssh:alexk-laptop:signin")).toBe(true);
+  expect(view.has("privacy-agents")).toBe(true);
   expect(view.has("privacy-app-grant:org.mozilla.firefox:devices/camera")).toBe(true);
   expect(view.has("privacy-share-grant:com.obsproject.Studio:screencast/token-1")).toBe(true);
 
-  await view.press("privacy-agent-revoke:ssh:alexk-laptop:signin");
-  expect(grants.entries().map((entry: GrantEntry) => entry.scopes)).toEqual([["see"]]);
-  expect(view.has("privacy-agent-scope:ssh:alexk-laptop:signin")).toBe(false);
+  // Each agent's permissions are in Agents, with what it did: one place to take them back.
+  await view.press("privacy-agents-open");
+  expect(shown).toEqual(["agents/permissions"]);
+  expect(grants.entries().map((entry: GrantEntry) => entry.scopes)).toEqual([["see", "signin"]]);
 
   await view.press("privacy-app-revoke:org.mozilla.firefox:devices/camera");
   expect(revoked).toEqual([snapshot.grants[0]]);
@@ -136,8 +139,8 @@ test("with nothing given, each section says so", async () => {
   const at = stores();
   const view = await mount(
     <PaneStoresContext.Provider value={at}>
-      <PrivacyPane grants={new Grants(null)} home="/home/alexk" settings={at.settings} />
+      <PrivacyPane grants={new Grants(null)} home="/home/alexk" settings={at.settings} show={() => {}} />
     </PaneStoresContext.Provider>,
   );
-  for (const none of ["privacy-agents-none", "privacy-apps-none", "privacy-screen-none"]) expect(view.has(none)).toBe(true);
+  for (const none of ["privacy-agents", "privacy-apps-none", "privacy-screen-none"]) expect(view.has(none)).toBe(true);
 });

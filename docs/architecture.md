@@ -68,6 +68,11 @@ systemd --user
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
   screen consents before an agent sees or does anything. The tools it lists
   are the agents' part of the shell's action registry (`docs/actions.md`).
+  Each call runs as that agent (`src/acting.ts`), so a setting it changes
+  is listed under its name in Settings' Recently changed, with Undo
+  (`src/settings-app/changes/`, kept in
+  `$XDG_STATE_HOME/dashi/settings-changes.json`); Settings › Agents lists
+  each agent, what it may do, what it did lately, and takes it back.
 - **dashi-open** (`session/dashi-open`, `bin/dashi-open.ts`) hands a
   `dashi://` link to the session (`$XDG_RUNTIME_DIR/dashi-links.sock`); the
   shell's `x-scheme-handler/dashi` entry runs it for `xdg-open`. A link never

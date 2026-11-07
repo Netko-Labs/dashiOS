@@ -29,6 +29,9 @@ export function describeDelay(ms: number): string {
   return `${ms} ms`;
 }
 
+/** What the shell does with no `idle` setting (the same default as settings.ts). */
+export const DEFAULT_BLANK_AFTER = 300;
+
 /** "Never", then minutes: what the Mac offers. */
 export const BLANK_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
   { value: 0, label: "Never" },

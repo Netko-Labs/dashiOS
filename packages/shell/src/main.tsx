@@ -567,6 +567,8 @@ const settingsApp = startSettingsApp({
   services: paneServicesOf,
   // Its Edit menu (Undo a setting) goes in the menu bar's store, made below.
   menus: () => appMenus.store,
+  // Who is connected now, for Settings › Agents.
+  agents: agentStore,
 });
 
 // The Setup Assistant: at a person's first login, and from Settings > About and the launcher (setup/).
@@ -1554,6 +1556,7 @@ const quit = () => {
     ["privacy", () => privacy?.stop()],
     ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
+    ["recent settings changes", () => void settingsStore.changes.flush()],
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],
     ["idle", () => idle?.stop()],

@@ -1,9 +1,8 @@
 /**
- * The rows of Date & Time, Language & Region, Lock Screen, Users &
+ * The rows of Recently changed, Date & Time, Language & Region, Lock Screen, Users &
  * Accounts, Notifications, Passwords, Agents, Privacy & Security, and About.
  */
 
-import { BLANK_AFTER, BLANK_OPTIONS } from "./machine.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { flag, storedChoice, storedSwitch } from "./values.ts";
 
@@ -15,6 +14,14 @@ const WEEK_OPTIONS: readonly ChoiceOption[] = [
 ];
 
 export const YOU_ROWS = [
+  {
+    id: "recent/changes",
+    title: "Recently changed",
+    name: "Settings changed lately",
+    detail: "What changed, who changed it, and Undo.",
+    keywords: ["undo", "history", "who changed", "changes"],
+    kind: "value",
+  },
   {
     id: "date-time/automatic-time",
     title: "Set time and date automatically",
@@ -54,17 +61,14 @@ export const YOU_ROWS = [
   {
     id: "lock-screen/turn-display-off",
     title: "Turn display off after",
-    detail: "The screens go dark when you have been away this long. Moving the pointer or pressing a key wakes them.",
-    keywords: ["screen saver", "display off", "blank"],
-    kind: "choice",
-    stack: true,
-    options: BLANK_OPTIONS,
-    value: BLANK_AFTER,
+    name: "When the screens go dark",
+    detail: "Set in Battery & Power, beside sleep.",
+    keywords: ["screen saver"],
+    kind: "action",
   },
   {
     id: "lock-screen/lock-now",
-    title: "Lock Screen",
-    name: "Lock the screen",
+    title: "Lock the screen",
     detail: "Covers the screen until you type your password.",
     keywords: ["lock"],
     kind: "action",
@@ -130,9 +134,10 @@ export const YOU_ROWS = [
   {
     id: "agents/permissions",
     title: "What agents may do",
-    detail: "Each agent's permissions, to take back one at a time.",
-    keywords: ["revoke", "always allow", "permissions"],
-    kind: "action",
+    name: "Agents and their permissions",
+    detail: "Each agent, what it may do, and what it did lately. Revoke one permission or all.",
+    keywords: ["revoke", "always allow", "permissions", "consent", "connected"],
+    kind: "value",
   },
 
   {

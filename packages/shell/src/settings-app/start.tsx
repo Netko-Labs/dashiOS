@@ -11,11 +11,12 @@ import { homedir } from "node:os";
 import { onWindowTyping } from "../../apps/kit/typing.ts";
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
+import type { AgentStore } from "../agents/presence.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
-import type { FlagsStore } from "../control-center/flags.ts";
+import type { Flags, FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
@@ -23,6 +24,7 @@ import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { PaneContext } from "./context.ts";
 import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
+import { FindFocus } from "./find.ts";
 import { loadLayouts } from "./layouts.ts";
 import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
@@ -51,7 +53,7 @@ export interface SettingsAppOptions {
   /** The system time zone, clock sync, and language. */
   region: RegionStore;
   flags: FlagsStore;
-  grants: Pick<Grants, "entries" | "remove" | "revoke" | "onChange">;
+  grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
   /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
@@ -70,6 +72,8 @@ export interface SettingsAppOptions {
   services(): PaneServices;
   /** The menu bar's store, for Settings' Edit menu (Undo a setting: edit-menu.ts); asked for when the window opens. */
   menus?(): MenuHost;
+  /** The agents connected now (the menu bar's list), so Settings › Agents can say which. */
+  agents?: Pick<AgentStore, "subscribe" | "getSnapshot">;
 }
 
 interface Session {
@@ -85,10 +89,22 @@ function answersOf(options: SettingsAppOptions): { answers?: AnswerStatus } {
   return answers ? { answers } : {};
 }
 
+/** Control Center's switches, by name, as Undo in Recently changed writes them back. */
+const FLAG_NAMES: readonly (keyof Flags)[] = ["dark", "dnd", "night"];
+const isFlag = (field: string): field is keyof Flags => FLAG_NAMES.some((name) => name === field);
+
 export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
   const { compositor } = options;
   const nav = new Nav();
   const focus = new RowFocus();
+  const find = new FindFocus();
+  // A switch an agent or a pane turned through the registry is undone through the same store (changes/).
+  options.settings.changes.attach("flags", {
+    read: (field) => (isFlag(field) ? options.flags.getSnapshot()[field] : undefined),
+    write: (field, value) => {
+      if (isFlag(field)) options.flags.set({ [field]: value === true });
+    },
+  });
   let session: Session | null = null;
   // The page scrolls to a row through the window's host (spot.tsx).
   const spots: SpotHost = { focus, scroll: (testID, dy) => session?.surface?.scroll?.(testID, dy) };
@@ -136,6 +152,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       chooser: portalChooser(),
       services: options.services(),
       about: readAbout,
+      ...(options.agents ? { agents: options.agents } : {}),
       lock: options.lock,
       openSetup: options.openSetup,
       show: (pane, row) => open(pane, row),
@@ -151,6 +168,8 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
             menus,
             options.settings.undo,
             async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
+            undefined,
+            () => find.request(),
           )
         : null;
     const current: Session = {
@@ -166,7 +185,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     // unified title bar, see view.tsx) where the compositor can draw them so, else in a title bar.
     current.surface = openOverlay(
       { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, width: SETTINGS_WINDOW.width, height: SETTINGS_WINDOW.height, titleBar: "unified" },
-      <SettingsWindow ctx={ctx} nav={nav} spots={spots} />,
+      <SettingsWindow ctx={ctx} nav={nav} spots={spots} find={find} />,
       () => {
         // The window went (its close button, or its host died): forget the session.
         if (session === current) session = null;

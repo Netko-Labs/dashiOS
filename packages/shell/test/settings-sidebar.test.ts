@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { PANES, paneGroups } from "../src/settings-app/panes.ts";
+import { paneGroups } from "../src/settings-app/panes.ts";
 import { SIDEBAR_LIST, sidebarHeight } from "../src/settings-app/sidebar.tsx";
 import { SETTINGS_WINDOW } from "../src/settings-app/view.tsx";
 
@@ -13,7 +13,7 @@ test("the sidebar's height: the strip, the rows, their gaps, the padding", () =>
 });
 
 test("every pane fits the window at its default size, Graphics' too, so About is never cut off", () => {
-  const groups = paneGroups(PANES).map((group) => group.length);
+  const groups = paneGroups().map((group) => group.length);
   expect(groups.reduce((sum, count) => sum + count, 0)).toBe(21);
   expect(sidebarHeight(groups)).toBeLessThanOrEqual(SETTINGS_WINDOW.height);
 });
