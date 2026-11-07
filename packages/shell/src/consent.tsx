@@ -128,17 +128,47 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
       return next;
     });
   const answer = (allow: Allow) => onAnswer(allow, [...checked]);
-  // What this call needs (and anything already ticked) shows in full; the
-  // rest waits behind one row and opens as a grid of one line each, every
-  // one of them in view, with what the pointed-at one allows underneath.
+  // What this call needs shows in full, first, so it is never out of sight. What is already
+  // allowed (ticked: Always Allow keeps it) is one line each, always in view; the rest waits
+  // behind one row and opens as a grid of the same lines. Pointing at a line says what it allows.
   const [more, setMore] = useState(false);
   const [pointed, setPointed] = useState<string | null>(null);
-  const first = ask.scopes.filter((scope) => scope.needed || scope.checked);
+  const needed = ask.scopes.filter((scope) => scope.needed);
+  const allowed = ask.scopes.filter((scope) => !scope.needed && scope.checked);
   const others = ask.scopes.filter((scope) => !(scope.needed || scope.checked));
-  const about = others.find((scope) => scope.id === pointed);
+  const lined = more ? [...allowed, ...others] : allowed;
+  const about = lined.find((scope) => scope.id === pointed);
   const { who } = ask;
   const title = who.remote ? "An agent on another machine wants to use Dashi" : `${who.name} wants to use Dashi`;
   const origin = [who.detail, who.claims ? `says it is “${who.claims}”` : null].filter(Boolean).join(" · ");
+  const grid = (scopes: Ask["scopes"], testID: string) => (
+    <View testID={testID} style={{ display: "grid", gridTemplateColumns: ["1fr", "1fr"], columnGap: 12, flexShrink: 0 }}>
+      {scopes.map((scope) => (
+        <View
+          key={scope.id}
+          testID={`consent-scope:${scope.id}`}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            height: CELL,
+            minWidth: 0,
+            borderRadius: 6,
+            hoverBackgroundColor: colors.button,
+          }}
+          onHoverChange={(hovered) => setPointed((now) => (hovered ? scope.id : now === scope.id ? null : now))}
+          onPress={() => toggle(scope.id)}
+        >
+          <CheckBox on={checked.has(scope.id)} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+              {scope.label}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: 12, paddingBottom: BELOW }}>
@@ -167,7 +197,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
         {/* Scrolls only when even this can't fit (a long need on a small sheet); it gives way before anything else. */}
         <ScrollView style={{ alignSelf: "stretch", marginTop: 12, flexShrink: 1, minHeight: 0 }}>
           <View style={{ flexDirection: "column", flexShrink: 0 }}>
-            {first.map((scope, index) => (
+            {needed.map((scope, index) => (
               <View
                 key={scope.id}
                 testID={`consent-scope:${scope.id}`}
@@ -188,40 +218,21 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
                 <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                     <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{scope.label}</Text>
-                    {scope.needed && <Text style={{ fontSize: 11, color: colors.agentInk }}>needed now</Text>}
+                    <Text style={{ fontSize: 11, color: colors.agentInk }}>needed now</Text>
                   </View>
                   <Text style={{ fontSize: 12, color: colors.textMuted }}>{scope.detail}</Text>
                 </View>
               </View>
             ))}
-            {more && others.length > 0 && (
-              <View style={{ flexDirection: "column", flexShrink: 0, borderTopWidth: first.length > 0 ? 1 : 0, borderColor: colors.separator, paddingTop: 6 }}>
-                <View testID="consent-others" style={{ display: "grid", gridTemplateColumns: ["1fr", "1fr"], columnGap: 12, flexShrink: 0 }}>
-                  {others.map((scope) => (
-                    <View
-                      key={scope.id}
-                      testID={`consent-scope:${scope.id}`}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                        height: CELL,
-                        minWidth: 0,
-                        borderRadius: 6,
-                        hoverBackgroundColor: colors.button,
-                      }}
-                      onHoverChange={(hovered) => setPointed((now) => (hovered ? scope.id : now === scope.id ? null : now))}
-                      onPress={() => toggle(scope.id)}
-                    >
-                      <CheckBox on={checked.has(scope.id)} />
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-                          {scope.label}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
+            {lined.length > 0 && (
+              <View style={{ flexDirection: "column", flexShrink: 0, borderTopWidth: needed.length > 0 ? 1 : 0, borderColor: colors.separator, paddingTop: 6 }}>
+                {allowed.length > 0 && (
+                  <View style={{ height: 18, justifyContent: "center" }}>
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>Already allowed</Text>
+                  </View>
+                )}
+                {allowed.length > 0 && grid(allowed, "consent-allowed")}
+                {more && others.length > 0 && grid(others, "consent-others")}
                 <View testID="consent-about" style={{ height: ABOUT_LINES * 16, marginTop: 4, overflow: "hidden" }}>
                   <Text style={{ fontSize: 12, lineHeight: 16, color: colors.textMuted }}>
                     {about ? cut(about.detail, ABOUT_CHARS) : "Point at one to see what it allows."}
