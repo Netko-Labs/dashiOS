@@ -203,7 +203,7 @@ export function DisplaysPane({ screens, settings, laptop }: { screens: ScreensSt
       ))}
       {state.error !== null && (
         <View testID="displays-error" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>{`Could not change the display: ${state.error}`}</Text>
+          <Text style={{ fontSize: 11, color: colors.critical }}>The displays didn't answer, so nothing changed. Try again in a moment.</Text>
         </View>
       )}
       <Caption>

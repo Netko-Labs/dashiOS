@@ -7,6 +7,7 @@
  * from outside (links.ts) all come through `run`.
  */
 
+import { actingAs } from "../acting.ts";
 import type { Question } from "../agents/confirm.ts";
 import { logActivity } from "../agents/consent.ts";
 import type { Agents } from "../agents/server.ts";
@@ -213,7 +214,8 @@ export function startActions(options: ActionsOptions): Actions {
       if (!checked.ok) return failed(checked.error);
       let outcome: Outcome;
       try {
-        outcome = await checked.run(context(null));
+        // The person approved it, but the answerer chose it: what it changes is listed as the answerer's (acting.ts).
+        outcome = await actingAs({ agent: by.agent }, () => checked.run(context(null)));
       } catch (error) {
         outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
       }

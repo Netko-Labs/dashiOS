@@ -19,7 +19,8 @@ export type SettingValue = boolean | string | number;
 
 /** Where the values live: settings.json, Control Center's switches, and the Dock's settings as the shell runs them. */
 export interface RegistryStores {
-  settings: Pick<SettingsStore, "getSnapshot" | "patch">;
+  /** Its change log (`changes`) hears the switches kept outside the file (Control Center's), so they are listed and undone too. */
+  settings: Pick<SettingsStore, "getSnapshot" | "patch"> & Partial<Pick<SettingsStore, "changes">>;
   flags: Pick<FlagsStore, "getSnapshot" | "set">;
   /** Applies a change at once and writes it to settings.json (dock/prefs.ts); without it the file is written and the shell follows. */
   dock?: Pick<DockPrefs, "snapshot" | "set">;
@@ -35,6 +36,14 @@ export type ValueSchema =
 /** A row that is one value: how it reads and changes, through the stores the pane uses. */
 export interface Binding {
   schema: ValueSchema;
+  /**
+   * Where the value is kept, as Settings' change log names it
+   * (settings-app/changes/): `<section>.<key>` of settings.json,
+   * `flags.<key>` for Control Center's switches.
+   */
+  key: string;
+  /** What no setting means (the value shown while the file holds none). */
+  fallback?: SettingValue;
   /** Null where there is nothing to read (no Dock). */
   get(stores: RegistryStores): SettingValue | null;
   /** `value` has been checked against `schema` (registry/values.ts `accepts`). */

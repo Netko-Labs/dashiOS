@@ -1,23 +1,20 @@
 /**
- * Agents: who answers the launcher's Ask, and what agents did (agents-answer.tsx).
- * What each agent may do for good, one permission at a time, is in
- * Privacy & Security (privacy.tsx), with the apps' permissions.
+ * Agents: first what each agent may do, what it did lately, and taking it
+ * back (the consent dashboard, agents-consent.tsx); then who answers the
+ * launcher's Ask and what agents did (agents-answer.tsx). Privacy &
+ * Security points here for agents, beside the apps' permissions.
  */
 
 import type { PaneContext } from "../context.ts";
-import { paneTitle } from "../panes.ts";
-import { Button, Group, Page, Setting } from "../ui.tsx";
+import { Page } from "../ui.tsx";
 import { AnswerSettings } from "./agents-answer.tsx";
+import { ConsentDashboard } from "./agents-consent.tsx";
 
-export function AgentsPane({ settings, answers, show }: Pick<PaneContext, "settings" | "answers" | "show">) {
+export function AgentsPane({ ctx }: { ctx: Pick<PaneContext, "grants" | "settings" | "flags" | "agents" | "answers" | "home" | "show"> }) {
   return (
     <Page title="Agents">
-      {answers && <AnswerSettings settings={settings} answers={answers} />}
-      <Group>
-        <Setting id="agents/permissions">
-          <Button testID="agents-permissions" label={`${paneTitle("privacy")}…`} onPress={() => show("privacy", "agents")} />
-        </Setting>
-      </Group>
+      <ConsentDashboard ctx={ctx} />
+      {ctx.answers && <AnswerSettings settings={ctx.settings} answers={ctx.answers} />}
     </Page>
   );
 }

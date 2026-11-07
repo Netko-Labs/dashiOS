@@ -30,7 +30,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 
 ## Wave 2 · The apps' big ideas
 - [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
-- [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
+- [x] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M; `feat/0.5-settings-undo`, VM: not yet)
+  - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
 - [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
 - [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
@@ -58,7 +59,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
 - [ ] CP-7: pane names from the pane list (S)
 - [ ] Text size beyond the launcher (M; TY-1)
-- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
 
 ## Verification (alongside)
 - [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes

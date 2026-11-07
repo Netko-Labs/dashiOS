@@ -1,6 +1,6 @@
 /**
  * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from (the
- * one Dark Mode control here; Control Center's tile is the same switch), the accent color, and how round
+ * one Dark Mode control here; Control Center's tile is the same switch), and how round
  * windows are (settings.json `appearance.cornerRadius`; the shell follows the
  * file, so a pick shows on the open windows at once), whether the focused
  * window wears the accent ring (`appearance.highlightActiveWindow`,
@@ -16,7 +16,7 @@ import { DEFAULT_CORNERS, isCornerName } from "../../corners.ts";
 import { useSettings } from "../hooks.ts";
 import { CORNER_OPTIONS } from "../registry/look.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Setting, Spot, useSurface } from "../ui.tsx";
+import { Caption, Choices, Group, Page, Setting, Spot } from "../ui.tsx";
 
 /** A miniature desktop: a menu bar, a window with two lines of text. */
 function MiniDesktop({ palette }: { palette: Palette }) {
@@ -84,6 +84,9 @@ function Preview({
   );
 }
 
+/** Which of Light, Dark, and Auto is chosen, as its preview says it. */
+const modeWord = (auto: boolean, dark: boolean): string => (auto ? "Auto" : dark ? "Dark" : "Light");
+
 /**
  * Light, Dark, and Auto as previews to pick from. Light and Dark are Control Center's Dark Mode
  * switch; Auto (settings.json `appearance.auto`) lets the shell flip it by the time of day.
@@ -92,16 +95,29 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
   const { dark } = useFlags(flags);
   const { appearance } = useSettings(settings).data;
   const auto = appearance.auto === true;
-  const pick = (next: boolean) => {
-    settings.patch("appearance", { auto: undefined });
-    flags.set({ dark: next });
-  };
+  const now = modeWord(auto, dark);
+  // One choice, one entry in Recently changed: Auto off and Dark Mode on are "Appearance: Dark".
+  const choose = (to: string, change: () => void) =>
+    settings.changes.group({ name: "Appearance", menu: "Appearance", from: now, to, row: "appearance/dark-mode" }, change);
+  const pick = (next: boolean) =>
+    choose(modeWord(false, next), () => {
+      settings.patch("appearance", { auto: undefined });
+      const from = flags.getSnapshot().dark;
+      flags.set({ dark: next });
+      settings.changes.record([{ key: "flags.dark", from, to: next }]);
+    });
   return (
     // One Tab stop, entered at the chosen preview (KB-1).
     <View testID="appearance-mode" focusGroup accessibilityRole="group" style={{ flexDirection: "row", gap: 20, padding: 16, paddingBottom: 12 }}>
       <Preview testID="appearance-light" palette={lightColors} label="Light" selected={!auto && !dark} onPress={() => pick(false)} />
       <Preview testID="appearance-dark" palette={darkColors} label="Dark" selected={!auto && dark} onPress={() => pick(true)} />
-      <Preview testID="appearance-auto" palette="auto" label="Auto" selected={auto} onPress={() => settings.patch("appearance", { auto: true })} />
+      <Preview
+        testID="appearance-auto"
+        palette="auto"
+        label="Auto"
+        selected={auto}
+        onPress={() => choose("Auto", () => settings.patch("appearance", { auto: true }))}
+      />
     </View>
   );
 }
@@ -120,8 +136,6 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
 }
 
 export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
-  const colors = useColors();
-  const surface = useSurface();
   return (
     <Page title="Appearance">
       <Group>
@@ -131,15 +145,6 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         </Spot>
       </Group>
       <Group>
-        <Setting id="appearance/accent-color">
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View
-              testID="appearance-accent"
-              style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: colors.selection, borderWidth: 2, borderColor: surface.card, shadow: "sm" }}
-            />
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Kombu</Text>
-          </View>
-        </Setting>
         <Setting id="appearance/window-corners" control="appearance-corners" />
         <Setting id="appearance/highlight-active-window" control="appearance-highlight-window" />
         <Setting id="appearance/pointer-size" control="appearance-pointer-size" />

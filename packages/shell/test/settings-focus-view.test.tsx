@@ -6,7 +6,7 @@ import { Appearance, darkColors, lightColors } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { FlagsStore } from "../src/control-center/flags.ts";
 import type { PaneContext } from "../src/settings-app/context.ts";
-import { Nav, PANES } from "../src/settings-app/panes.ts";
+import { Nav, PANES, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
 
@@ -83,7 +83,7 @@ test("the sidebar is one focus group that selects as the arrows move, holding ev
   const group = find(view.tree(), view.id("settings-sidebar-panes"));
   expect(group?.props).toMatchObject({ focusGroup: true, selectsOnFocus: true });
   const rows = stops(group as Node).map((stop) => stop.id);
-  const listed = PANES.filter((pane) => !pane.optional).map((pane) => view.id(`sidebar:${pane.id}`));
+  const listed = SIDEBAR_PANES.filter((pane) => !pane.optional).map((pane) => view.id(`sidebar:${pane.id}`));
   expect(rows).toEqual(listed);
   // No other group sits between a row and the sidebar's: ↓ crosses from one run of panes to the next.
   const nested = (node: Node, inside: boolean): boolean =>

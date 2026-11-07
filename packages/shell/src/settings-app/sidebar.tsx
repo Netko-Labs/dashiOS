@@ -1,8 +1,14 @@
-/** The sidebar: one row per pane, in groups, the chosen one in the selection look (its wash and bar). */
+/**
+ * The sidebar: one row per pane, in groups, the chosen one in the selection
+ * look (its wash and bar). While the header strip's search holds text, it
+ * lists what was found instead (find.ts): rows by their names on their
+ * panes' tiles, the one ↑ and ↓ are on in the selection look.
+ */
 
-import { SidebarItem, useColors } from "@dashi/ui";
+import { Note, SidebarItem, useColors } from "@dashi/ui";
 import { ScrollView, useWindowChrome, View } from "@mirinjs/metal";
-import { PANES, type PaneId, paneGroups } from "./panes.ts";
+import type { Found } from "./find.ts";
+import { type PaneId, paneGroups, SIDEBAR_PANES } from "./panes.ts";
 import { useSurface } from "./ui.tsx";
 
 export const SIDEBAR_WIDTH = 200;
@@ -25,7 +31,52 @@ export function sidebarHeight(groups: readonly number[]): number {
   return strip + paddingTop + rows + Math.max(groups.length - 1, 0) * groupGap + paddingBottom;
 }
 
-export function Sidebar({ current, onSelect, shown }: { current: PaneId; onSelect: (pane: PaneId) => void; shown?: ReadonlySet<PaneId> }) {
+/** What the header strip's search found, for the sidebar to list. */
+export interface SidebarResults {
+  query: string;
+  found: readonly Found[];
+  /** The result ↑ and ↓ are on. */
+  chosen: number;
+  onChoose(index: number): void;
+}
+
+/** What was found, or that nothing was. */
+function Results({ results }: { results: SidebarResults }) {
+  if (results.found.length === 0) {
+    return (
+      <View testID="settings-search-none" style={{ flexShrink: 0 }}>
+        <Note>{`Nothing in Settings matches “${results.query.trim()}”.`}</Note>
+      </View>
+    );
+  }
+  return (
+    <View testID="settings-search-results" style={{ flexDirection: "column", gap: SIDEBAR_LIST.rowGap, flexShrink: 0 }}>
+      {results.found.map((found, index) => (
+        <SidebarItem
+          key={found.id}
+          compact
+          testID={`found:${found.id}`}
+          label={found.label}
+          tile={{ glyph: found.glyph, tint: found.tint }}
+          selected={index === results.chosen}
+          onPress={() => results.onChoose(index)}
+        />
+      ))}
+    </View>
+  );
+}
+
+export function Sidebar({
+  current,
+  onSelect,
+  shown,
+  results,
+}: {
+  current: PaneId;
+  onSelect: (pane: PaneId) => void;
+  shown?: ReadonlySet<PaneId>;
+  results?: SidebarResults;
+}) {
   const colors = useColors();
   const surface = useSurface();
   // The unified title bar: the sidebar runs to the top of the window, and the compositor's window controls sit over
@@ -56,24 +107,27 @@ export function Sidebar({ current, onSelect, shown }: { current: PaneId; onSelec
           paddingBottom: SIDEBAR_LIST.paddingBottom,
         }}
       >
+        {results && <Results results={results} />}
         {/* One Tab stop for every pane, entered at the chosen one; ↑ and ↓ choose the pane above or below, across the groups (KB-1). */}
-        <View testID="settings-sidebar-panes" focusGroup selectsOnFocus style={{ flexDirection: "column", gap: SIDEBAR_LIST.groupGap, flexShrink: 0 }}>
-          {paneGroups(PANES.filter((pane) => !pane.optional || shown?.has(pane.id))).map((group, index) => (
-            <View key={index} style={{ flexDirection: "column", gap: SIDEBAR_LIST.rowGap }}>
-              {group.map((pane) => (
-                <SidebarItem
-                  key={pane.id}
-                  compact
-                  testID={`sidebar:${pane.id}`}
-                  label={pane.title}
-                  tile={{ glyph: pane.glyph, tint: pane.tint }}
-                  selected={pane.id === current}
-                  onPress={() => onSelect(pane.id)}
-                />
-              ))}
-            </View>
-          ))}
-        </View>
+        {!results && (
+          <View testID="settings-sidebar-panes" focusGroup selectsOnFocus style={{ flexDirection: "column", gap: SIDEBAR_LIST.groupGap, flexShrink: 0 }}>
+            {paneGroups(SIDEBAR_PANES.filter((pane) => !pane.optional || shown?.has(pane.id))).map((group, index) => (
+              <View key={index} style={{ flexDirection: "column", gap: SIDEBAR_LIST.rowGap }}>
+                {group.map((pane) => (
+                  <SidebarItem
+                    key={pane.id}
+                    compact
+                    testID={`sidebar:${pane.id}`}
+                    label={pane.title}
+                    tile={{ glyph: pane.glyph, tint: pane.tint }}
+                    selected={pane.id === current}
+                    onPress={() => onSelect(pane.id)}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );

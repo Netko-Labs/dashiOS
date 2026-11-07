@@ -55,6 +55,9 @@ export const PICTURE = svg(
 /** Date & Time: a clock face. */
 export const CLOCK = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M8 4.4V8l2.4 1.6", 1.4)}`);
 
+/** Recently changed: a clock whose rim turns back, an arrowhead where it starts. */
+export const HISTORY = svg(`${stroke("M2.6 6.2A5.8 5.8 0 1 1 2.2 8.6", 1.4)}${stroke("M1.8 3.4l.8 2.8 2.8-.8", 1.4)}${stroke("M8 5v3l2 1.4", 1.4)}`);
+
 /** Language & Region: a globe. */
 export const GLOBE = svg(
   `<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M1.9 8h12.2", 1.2)}${stroke("M8 1.8c-2 1.8-2.9 3.9-2.9 6.2S6 12.4 8 14.2c2-1.8 2.9-3.9 2.9-6.2S10 3.6 8 1.8z", 1.2)}`,

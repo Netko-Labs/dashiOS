@@ -1,7 +1,6 @@
 /** The rows of Network, Bluetooth, Sound, Battery & Power, and Graphics. */
 
-import { BLANK_CHOICES, SLEEP_CHOICES } from "../controls.ts";
-import { DEFAULT_BLANK_AFTER } from "../store.ts";
+import { BLANK_CHOICES, DEFAULT_BLANK_AFTER, SLEEP_CHOICES } from "../controls.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedSwitch } from "./values.ts";
 
@@ -14,11 +13,11 @@ export const BLANK_AFTER = storedChoice("idle", "blankAfterSeconds", DEFAULT_BLA
 export const MACHINE_ROWS = [
   { id: "network/wi-fi", title: "Wi-Fi", keywords: ["wifi", "wireless", "wlan", "internet", "network"], kind: "switch", source: "controls" },
   { id: "network/status", title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
-  { id: "network/ip-address", title: "IP Address", keywords: ["ip", "address"], kind: "value" },
-  { id: "network/subnet-mask", title: "Subnet Mask", keywords: ["netmask"], kind: "value" },
+  { id: "network/ip-address", title: "IP address", keywords: ["ip", "address"], kind: "value" },
+  { id: "network/subnet-mask", title: "Subnet mask", keywords: ["netmask"], kind: "value" },
   { id: "network/router", title: "Router", keywords: ["gateway"], kind: "value" },
-  { id: "network/dns-servers", title: "DNS Servers", keywords: ["dns", "name server"], kind: "value" },
-  { id: "network/mac-address", title: "MAC Address", keywords: ["mac", "hardware address"], kind: "value" },
+  { id: "network/dns-servers", title: "DNS servers", keywords: ["dns", "name server"], kind: "value" },
+  { id: "network/mac-address", title: "MAC address", keywords: ["mac", "hardware address"], kind: "value" },
 
   { id: "bluetooth/bluetooth", title: "Bluetooth", keywords: ["bt", "wireless", "headphones", "pairing"], kind: "switch", source: "controls" },
   {
@@ -71,7 +70,7 @@ export const MACHINE_ROWS = [
   },
   { id: "battery/power-draw", title: "Power draw", keywords: ["watts", "energy use"], kind: "value" },
   { id: "battery/since-unplugged", title: "Since unplugged", keywords: ["battery usage"], kind: "value" },
-  { id: "battery/power-mode", title: "Power Mode", keywords: ["low power mode", "performance", "balanced", "power saver"], kind: "choice", stack: true },
+  { id: "battery/power-mode", title: "Power mode", keywords: ["low power mode", "performance", "balanced", "power saver"], kind: "choice", stack: true },
   {
     id: "battery/charge-limit",
     title: "Charge limit",

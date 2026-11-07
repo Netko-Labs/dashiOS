@@ -67,6 +67,8 @@ export function stored<S extends SectionName>(
 ): Binding {
   return {
     schema,
+    key: `${section}.${key}`,
+    fallback,
     get: (stores) => {
       const value: unknown = (stores.settings.getSnapshot().data[section] as Record<string, unknown>)[key];
       return isSettingValue(value) ? value : fallback;
@@ -100,12 +102,22 @@ export const storedNumber = <S extends SectionName>(
   file: FileOptions = {},
 ): Binding => stored(section, key, fallback, { type: "number", minimum: range.min, maximum: range.max }, file);
 
-/** One of Control Center's switches (Dark Mode, Do Not Disturb, Night Shift). */
+/**
+ * One of Control Center's switches (Dark Mode, Do Not Disturb, Night Shift).
+ * They live outside settings.json, so a change made through the registry is
+ * told to the change log here (Settings › Recently changed, ❖Z).
+ */
 export function flag(key: keyof Flags): Binding {
   return {
     schema: { type: "boolean" },
+    key: `flags.${key}`,
+    fallback: false,
     get: (stores) => stores.flags.getSnapshot()[key],
-    set: (stores, value) => stores.flags.set({ [key]: value === true }),
+    set: (stores, value) => {
+      const from = stores.flags.getSnapshot()[key];
+      stores.flags.set({ [key]: value === true });
+      stores.settings.changes?.record([{ key: `flags.${key}`, from, to: value === true }]);
+    },
   };
 }
 
@@ -113,6 +125,8 @@ export function flag(key: keyof Flags): Binding {
 export function dockSetting(key: keyof DockSettings, schema: ValueSchema): Binding {
   return {
     schema,
+    key: `dock.${key}`,
+    fallback: DOCK_DEFAULTS[key],
     get: (stores) => (stores.dock ? stores.dock.snapshot[key] : (stores.settings.getSnapshot().data.dock[key] ?? DOCK_DEFAULTS[key])),
     set: (stores, value) => {
       const change = { [key]: value } as Partial<DockSettings>;

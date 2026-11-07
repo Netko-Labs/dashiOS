@@ -44,13 +44,6 @@ export const LOOK_ROWS = [
     agent: "dark_mode",
   },
   {
-    id: "appearance/accent-color",
-    title: "Accent color",
-    detail: "Selections, switches, and sliders.",
-    keywords: ["accent", "highlight color"],
-    kind: "value",
-  },
-  {
     id: "appearance/window-corners",
     title: "Window corners",
     detail: "How round windows are, app content included.",
@@ -228,7 +221,7 @@ export const LOOK_ROWS = [
   {
     id: "desktop-dock/show-dock",
     title: "Show the Dock",
-    detail: "Turned off, there is no Dock at all.",
+    detail: "With it off, there is no Dock, and windows reach the bottom edge.",
     keywords: ["dock", "taskbar"],
     kind: "switch",
     value: dockSetting("visible", { type: "boolean" }),

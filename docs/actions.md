@@ -120,6 +120,15 @@ Everything reads the one list:
 - Agents: `get_settings` and `set_setting` take every row with an `agent`
   name, checked by its binding's schema. None of Lock Screen, Users &
   Accounts, Passwords, Agents, or Privacy & Security is an agent's.
+- Settings' search, in its header strip (`settings-app/find.ts`), finds
+  panes and rows by the same words.
+- The change log (`settings-app/changes/`): a binding names where its value
+  is kept (`key`: `<section>.<key>` of settings.json, `flags.<key>`), and
+  every change to it, from a pane, the launcher, a link or an agent, is an
+  entry with its words from the row (name, from, to), who made it (the
+  person, or the agent `src/acting.ts` says is acting: an MCP agent's call,
+  or a launcher Ask's approved step, named for its answerer), and when.
+  Recently changed lists them with Undo; ❖Z in Settings undoes the newest.
 
 ## Addresses
 
