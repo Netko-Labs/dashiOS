@@ -113,15 +113,8 @@ export class DockController {
         if (app) this.open(app);
         return;
       }
-      case "quit": {
-        // Each app hears it quits before its window is asked (one window per Dashi app process).
-        const listed = deps.appQuitting ? await (deps.compositor?.windows() ?? Promise.resolve([])).catch(() => []) : [];
-        for (const window of action.windows) {
-          deps.appQuitting?.(listed.find((each) => each.id === window)?.pid ?? null);
-          deps.toplevels.act(window, "close");
-        }
-        return;
-      }
+      case "quit":
+        return this.quit(action.key, action.windows);
       case "dock-prefs":
         return deps.prefs?.set(action.change);
       case "dock-settings":
@@ -133,6 +126,31 @@ export class DockController {
         if (target) await deps.compositor?.request("hide", { window: target.id });
         return;
       }
+    }
+  }
+
+  /**
+   * Quit: every window of the app is asked to close, as ❖Q does. The
+   * compositor's own list is the one to go by: its windows carry their pids,
+   * so each app hears it quits first (one window per Dashi app process). The
+   * Dock's toplevel ids are another numbering (mirin's foreign-toplevel
+   * handles), so they serve only when the compositor has none of the app's
+   * windows to name (no dashi-comp, or windows without an app id).
+   */
+  private async quit(key: string, toplevels: readonly number[]): Promise<void> {
+    const { deps } = this;
+    const listed = await (deps.compositor?.windows() ?? Promise.resolve([])).catch(() => []);
+    const windows = key.startsWith("window:") ? [] : listed.filter((window) => appKey(deps.catalog, window) === key);
+    if (windows.length === 0) {
+      for (const window of toplevels) {
+        deps.appQuitting?.(null);
+        deps.toplevels.act(window, "close");
+      }
+      return;
+    }
+    for (const window of windows) {
+      deps.appQuitting?.(window.pid);
+      await deps.compositor?.request("close", { window: window.id }).catch(() => {});
     }
   }
 
