@@ -88,6 +88,17 @@ test("the store tells the app it quits on its menus channel", () => {
   expect(store.quitting([99])).toBe(false);
 });
 
+test("a cancelled log out tells the app its quit is off, and the channel carries it", () => {
+  const store = new AppMenuStore();
+  const terminal = owner(70);
+  store.publish(terminal, EDIT);
+  expect(store.quitting([70])).toBe(true);
+  expect(store.stay([71, 70])).toBe(true);
+  expect(terminal.sent).toEqual([{ type: "quit" }, { type: "stay" }]);
+  expect(store.stay([99])).toBe(false);
+  expect(parseShellMessage('{"type":"stay"}')).toEqual({ type: "stay" });
+});
+
 test("the channel carries typing and quit, and refuses a typing that isn't true or false", () => {
   const menus = { type: "menus", menus: [{ id: "edit", items: [{ id: "select-all", label: "Select All", shortcut: "❖A" }] }] };
   expect(parseClientMessage(JSON.stringify({ ...menus, typing: true }))).toMatchObject({ type: "menus", typing: true });
@@ -112,7 +123,9 @@ test("the kit sends its menus again when a field takes or lets go of the keyboar
     },
   });
   let quits = 0;
+  let stays = 0;
   client.onQuit(() => quits++);
+  client.onStay(() => stays++);
   client.setTyping(true);
   // Nothing published yet: nothing sent.
   expect(lines).toEqual([]);
@@ -121,8 +134,9 @@ test("the kit sends its menus again when a field takes or lets go of the keyboar
   client.setTyping(true);
   client.setTyping(false);
   expect(lines.map((line) => JSON.parse(line).typing ?? false)).toEqual([true, false]);
-  (handlers as MenuSocketHandlers | null)?.data(new TextEncoder().encode('{"type":"quit"}\n'));
+  (handlers as MenuSocketHandlers | null)?.data(new TextEncoder().encode('{"type":"quit"}\n{"type":"stay"}\n'));
   expect(quits).toBe(1);
+  expect(stays).toBe(1);
 });
 
 test("the host's typing reaches the app once per change, and other events are not typing", () => {

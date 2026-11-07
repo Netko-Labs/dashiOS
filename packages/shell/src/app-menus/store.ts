@@ -123,6 +123,14 @@ export class AppMenuStore {
     return true;
   }
 
+  /** Tells these processes' app its quit is called off (a log out was cancelled): what it asked goes (kit/close.ts); false when it has no menus channel. */
+  stay(pids: readonly number[]): boolean {
+    const pid = pids.find((each) => this.byPid.has(each));
+    if (pid === undefined) return false;
+    this.byPid.get(pid)?.owner.send({ type: "stay" });
+    return true;
+  }
+
   private update(): void {
     // The held menus follow their app's updates, and go if it does.
     const next = this.held ? this.active && (this.byPid.get(this.active.pid)?.published ?? null) : this.menusFor(this.focus);

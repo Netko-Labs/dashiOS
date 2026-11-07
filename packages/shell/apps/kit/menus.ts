@@ -76,6 +76,7 @@ export class MenusClient {
   private unsent = new Uint8Array();
   private handler: (id: string) => void = () => {};
   private quitHandler: () => void = () => {};
+  private stayHandler: () => void = () => {};
   private openHandler: (args: string[]) => void = () => {};
   /** The menus last published (null: none), sent again when `typing` changes. */
   private menus: readonly MenuSpec[] | null = null;
@@ -136,6 +137,11 @@ export class MenusClient {
     this.quitHandler = handler;
   }
 
+  /** Who hears that the quit it was told of is called off (a log out cancelled; the latest one set). */
+  onStay(handler: () => void): void {
+    this.stayHandler = handler;
+  }
+
   /** Who hears the arguments of a second start while this app runs (protocol.ts `open`; the latest one set). */
   onOpen(handler: (args: string[]) => void): void {
     this.openHandler = handler;
@@ -176,6 +182,7 @@ export class MenusClient {
             const message = parseShellMessage(line);
             if (message?.type === "select") this.handler(message.id);
             else if (message?.type === "quit") this.quitHandler();
+            else if (message?.type === "stay") this.stayHandler();
             else if (message?.type === "open") this.openHandler(message.args);
             else if (message?.type === "error") console.error(`dashi menus: the shell refused the menus: ${message.message}`);
           }

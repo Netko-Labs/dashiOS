@@ -49,3 +49,22 @@ test("a close request just after the shell said the app quits is a quit; any oth
   requests.request(() => {});
   expect(reasons).toEqual(["close", "quit", "close", "close"]);
 });
+
+test("a quit called off (a cancelled log out) takes down the question it put up, and the next request is a close", () => {
+  let now = 1000;
+  const requests = new CloseRequests(() => now);
+  const heard: string[] = [];
+  requests.answer((reason) => heard.push(reason));
+  requests.onWithdrawn(() => heard.push("window's question gone"));
+  const stopSheet = requests.onWithdrawn(() => heard.push("sheet's question gone"));
+  requests.quitting();
+  requests.withdraw();
+  stopSheet();
+  requests.withdraw();
+  // Said, then called off before the request came: a later close is a close.
+  requests.quitting();
+  requests.withdraw();
+  now += 10;
+  requests.request(() => {});
+  expect(heard).toEqual(["sheet's question gone", "window's question gone", "window's question gone", "close"]);
+});

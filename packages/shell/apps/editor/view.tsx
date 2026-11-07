@@ -20,7 +20,7 @@ import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors 
 import { type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppChooser, chooserRequest } from "../files/chooser/index.ts";
-import { useAppMenus, useCloseRequest } from "../kit/index.ts";
+import { useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
 import { lineCount, lineOf, lineStart } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
 import { editorMenus } from "./menus.ts";
@@ -121,6 +121,13 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     } else quit(false);
   };
   useCloseRequest(requestClose);
+  // The log out that asked was cancelled: the window no longer closes after the conflict is settled.
+  // The conflict itself is still a question (which text wins), so its sheet stays, as one that doesn't close.
+  useCloseWithdrawn(() => {
+    if (!closing.current) return;
+    closing.current = false;
+    setSheet((shown) => (shown?.kind === "conflict" && shown.after === "close" ? { kind: "conflict", after: null } : shown));
+  });
   const afterConflict = (): void => {
     if (closing.current && !model.getSnapshot().conflict) quit(false);
     else closeSheet();

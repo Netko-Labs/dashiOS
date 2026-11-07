@@ -147,6 +147,12 @@ export function startMenus(options: MenusOptions): Menus {
             appMenus.quitting(ownerPids(pid));
             await compositor.request("close", { window });
           },
+          // The log out was cancelled: the app's "Quit Terminal?" or its sheet goes with it.
+          withdraw: (window) =>
+            void compositor
+              .windows()
+              .then((windows) => appMenus.stay(ownerPids(windows.find((each) => each.id === window)?.pid ?? null)))
+              .catch(() => {}),
           focus: (window) => void compositor.request("focus", { window }).catch(() => {}),
           place: async (window) => {
             const frame = (await compositor.windows()).find((each) => each.id === window)?.frame ?? null;

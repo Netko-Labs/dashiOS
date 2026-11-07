@@ -126,6 +126,8 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   if (options.textChordsToFields !== false) onWindowTyping(host, (typing) => menusClient().setTyping(typing));
   // ❖Q, Quit, logging out: the shell says so first, and the close request after is a quit.
   menusClient().onQuit(() => closeRequests.quitting());
+  // That quit called off (a log out cancelled): the question it put up goes (close.ts).
+  menusClient().onStay(() => closeRequests.withdraw());
   // Asked to close from outside: the app's answer (close.ts), else at once.
   host.onEvent((event) => {
     if (event.type !== "close-request") return;

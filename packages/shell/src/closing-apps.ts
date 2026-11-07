@@ -7,7 +7,8 @@
  * a busy Terminal) keeps the session waiting for its answer, and only then
  * is the next asked. After a moment a notice names who holds it, at the
  * foot of the screen, clear of the app's own sheet (menus/holding-place.ts),
- * with Cancel (the session stays) and “Log out anyway” (it goes, as before:
+ * with Cancel (the session stays, and the app asking is told so: its
+ * question goes, kit/close.ts) and “Log out anyway” (it goes, as before:
  * apps still open are told to stop, and a hung one is ended). When the last
  * window goes, the session ends without another word.
  *
@@ -39,6 +40,8 @@ export interface ClosingDeps {
   holding(names: readonly string[], first: number): void;
   /** The wait is over (closed, cancelled, or gone anyway): take the sheet down. */
   done(): void;
+  /** Cancelled: the window asked last is no longer closing, so the question its app put up goes. */
+  withdraw?(window: number): void;
   sleep?(ms: number): Promise<void>;
   now?(): number;
 }
@@ -65,6 +68,7 @@ export async function closeApps(deps: ClosingDeps, choice: ClosingChoice): Promi
     for (;;) {
       const left = (await deps.windows().catch(() => [])).filter((window) => ids.has(window.id));
       if (left.length === 0) return "closed";
+      if (choice.answer === "cancel" && asking !== null && left.some((window) => window.id === asking)) deps.withdraw?.(asking);
       if (choice.answer) return choice.answer;
       if (asking === null || !left.some((window) => window.id === asking)) {
         // The last one went (or none was asked yet): ask the next.

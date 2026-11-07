@@ -17,7 +17,7 @@ import { hostname } from "node:os";
 import { AppWindow, ConfirmSheet, EmptyState, MENU_SEPARATOR, PopupMenu, ToolbarButton, useDark } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { type Clipboard, type CloseReason, useAppMenus, useCloseRequest } from "../kit/index.ts";
+import { type Clipboard, type CloseReason, useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
 import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
 import { GRID_TOP, Grid, MARGIN } from "./grid.tsx";
 import { type Cell, FONT_SIZE, lineHeightFor, stepFontSize } from "./line.tsx";
@@ -116,6 +116,12 @@ function Terminal({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboa
   };
   // The close control, ❖Q, the Dock's Quit, logging out: as Close Window, asking "Quit Terminal?" when it quits.
   useCloseRequest(requestCloseWindow);
+  // The log out that asked was cancelled: "Quit Terminal?" goes with it (a tab's own question stays).
+  useCloseWithdrawn(() => {
+    if (asking?.kind !== "window") return;
+    setAsking(null);
+    refocus();
+  });
 
   const refocus = (): void => setGridFocus((n) => n + 1);
 

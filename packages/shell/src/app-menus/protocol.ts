@@ -5,6 +5,7 @@
  *   app → shell  {"type":"menus","menus":[{"id":"file","items":[{"id":"new","label":"New Note","shortcut":"❖N"}]}],"typing":true}
  *   shell → app  {"type":"select","id":"new"}
  *                {"type":"quit"}                    (the app is quitting: its window's close request comes next)
+ *                {"type":"stay"}                    (that quit is called off, a log out cancelled: take down what it asked)
  *                {"type":"error","message":"…"}     (the menus sent were refused; the last good ones stay)
  *                {"type":"open","args":["--tab","energy"]}  (opened again while it runs: what the new start would have been told)
  *
@@ -95,7 +96,12 @@ export interface MenuSpec {
 }
 
 export type ClientMessage = { type: "menus"; menus: AppMenu[]; typing?: boolean };
-export type ShellMessage = { type: "select"; id: string } | { type: "quit" } | { type: "error"; message: string } | { type: "open"; args: string[] };
+export type ShellMessage =
+  | { type: "select"; id: string }
+  | { type: "quit" }
+  | { type: "stay" }
+  | { type: "error"; message: string }
+  | { type: "open"; args: string[] };
 
 /** Whether `value` is arguments an `open` may carry. */
 export function isOpenArgs(value: unknown): value is string[] {
@@ -285,6 +291,7 @@ export function parseShellMessage(line: string): ShellMessage | null {
   const fields = value as Record<string, unknown>;
   if (fields.type === "select" && typeof fields.id === "string") return { type: "select", id: fields.id };
   if (fields.type === "quit") return { type: "quit" };
+  if (fields.type === "stay") return { type: "stay" };
   if (fields.type === "error" && typeof fields.message === "string") return { type: "error", message: fields.message };
   if (fields.type === "open" && isOpenArgs(fields.args)) return { type: "open", args: [...fields.args] };
   return null;

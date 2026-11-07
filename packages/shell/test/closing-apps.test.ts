@@ -157,3 +157,34 @@ test("the notice is always one line: a long name drops the asking, two that don'
     expect(holdingCopy(names, "shutdown").line.length).toBeLessThanOrEqual(HOLDING_LINE);
   }
 });
+
+test("Cancel tells the app that was asking: its question goes; Log out anyway tells nobody", async () => {
+  for (const answer of ["cancel", "anyway"] as const) {
+    const time = clock();
+    const apps = desktop([
+      { id: 3, name: "Terminal" },
+      { id: 7, name: "Text Editor" },
+    ]);
+    const choice = new ClosingChoice();
+    const withdrawn: number[] = [];
+    const outcome = await closeApps(
+      {
+        ...time,
+        windows: async () => {
+          // Terminal asks "Quit Terminal?"; the person answers the notice instead.
+          if (time.now() >= HOLD_AFTER_MS + 200) choice.answer ??= answer;
+          return apps.windows();
+        },
+        close: apps.close,
+        holding: () => {},
+        done: () => {},
+        withdraw: (window) => void withdrawn.push(window),
+      },
+      choice,
+    );
+    expect(outcome).toBe(answer);
+    // Only Terminal was asked (one at a time), so only its question goes.
+    expect(apps.asked).toEqual([3]);
+    expect(withdrawn).toEqual(answer === "cancel" ? [3] : []);
+  }
+});
