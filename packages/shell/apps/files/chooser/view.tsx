@@ -143,8 +143,15 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
   const sidebar = <Sidebar recents={request.mode === "open" && !request.directory} />;
   const nameRow = saving && (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
-      <Text style={{ fontSize: 13, color: colors.text }}>Save as</Text>
-      <TextField testID="chooser:name" value={state.name} autoFocus onChangeText={(text) => model.setName(text)} onSubmit={go} onKeyPress={fieldKeys} />
+      <View style={{ flexShrink: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+          Save as
+        </Text>
+      </View>
+      {/* The field takes the row's room, never less than a name's worth (it collapsed to a sliver in a row of fixed parts). */}
+      <View testID="chooser:name-box" style={{ flex: 1, minWidth: 160, flexDirection: "row" }}>
+        <TextField testID="chooser:name" value={state.name} autoFocus onChangeText={(text) => model.setName(text)} onSubmit={go} onKeyPress={fieldKeys} />
+      </View>
       <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>{`in ${folderName(folder ?? model.store.env.home, model.home)}`}</Text>
     </View>
   );
