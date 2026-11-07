@@ -95,3 +95,18 @@ test("an Undo that couldn't run leaves the notice up", async () => {
   expect(store.getSnapshot().notice?.text).toBe("Moved “a.txt” to the Trash.");
   store.stop();
 });
+
+test("a typed path's error stays until a path works, and goes then; another error is left alone", () => {
+  const { store, folder } = files();
+  const problem = store.goToPath("~~/UndoTest");
+  expect(problem).not.toBeNull();
+  store.sayPathProblem(problem as string);
+  expect(store.getSnapshot().notice?.error).toBe(true);
+  expect(store.goToPath("~/UndoTest")).toBeNull();
+  expect(store.getSnapshot().location).toEqual(folderAt(folder));
+  expect(store.getSnapshot().notice).toBeNull();
+  // An error of something else (a copy that failed) isn't the path field's to take down.
+  store.say("“a.txt” couldn’t be copied.", true);
+  expect(store.goToPath("~")).toBeNull();
+  expect(store.getSnapshot().notice?.text).toBe("“a.txt” couldn’t be copied.");
+});

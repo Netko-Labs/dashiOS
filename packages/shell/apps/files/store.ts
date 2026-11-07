@@ -109,6 +109,8 @@ export class FilesStore {
   readonly emblems: Emblems;
   private typed: { text: string; time: number } = { text: "", time: 0 };
   private noticeId = 0;
+  /** The notice a typed path that led nowhere put up (`sayPathProblem`). */
+  private pathProblem: number | null = null;
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private volumeTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -513,7 +515,11 @@ export class FilesStore {
     for (const item of items.slice(0, 8)) this.activate(item);
   }
 
-  /** Go to a typed path (`~/x`, an absolute path, a file:// URI); an error to show, or null. A path to a file shows its folder with the file selected. */
+  /**
+   * Go to a typed path (`~/x`, an absolute path, a file:// URI); an error to show, or null. A path
+   * to a file shows its folder with the file selected. A path that works takes down the error a
+   * path before it put up (`sayPathProblem`).
+   */
   goToPath(text: string): string | null {
     const typed = text.trim();
     if (typed === "") return "Type a folder’s path.";
@@ -528,7 +534,15 @@ export class FilesStore {
     }
     if (info.isDirectory()) this.go(folderAt(path));
     else this.go(folderAt(parentOf(path)), { select: path });
+    if (this.pathProblem !== null && this.state.notice?.id === this.pathProblem) this.dismissNotice();
+    this.pathProblem = null;
     return null;
+  }
+
+  /** Show what was wrong with a typed path (an error, until a path works or it is dismissed). */
+  sayPathProblem(text: string): void {
+    this.say(text, true);
+    this.pathProblem = this.noticeId;
   }
 
   /** Show an item's folder with the item selected (from search results and Recents). */

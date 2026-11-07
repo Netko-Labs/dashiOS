@@ -46,6 +46,8 @@ export interface Suggestions {
 export interface OmniboxProps {
   /** The text being edited, or null at rest. */
   editing: string | null;
+  /** Counts the edits started: each starts a fresh field, never one still holding the last one's text. */
+  session?: number;
   onEdit(text: string): void;
   onDone(): void;
   onSuggest(suggestions: Suggestions | null): void;
@@ -62,7 +64,7 @@ export function Omnibox(props: OmniboxProps) {
   const state = useFilesState();
   if (props.editing === null && state.query === "") return <Crumbs onEdit={props.onEdit} />;
   // A new edit starts from its own text; a search left standing shows its query.
-  return <Editor key={props.editing ?? "query"} {...props} />;
+  return <Editor key={`${props.session ?? 0}:${props.editing ?? "query"}`} {...props} />;
 }
 
 function Field({
@@ -184,7 +186,7 @@ function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
   const go = (target: string): void => {
     const problem = store.goToPath(target);
     if (problem !== null) {
-      store.say(problem, true);
+      store.sayPathProblem(problem);
       return;
     }
     onDone();
@@ -229,6 +231,8 @@ function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
           }}
           onKeyPress={(key) => {
             if (key === "Escape") {
+              // Whatever was half typed goes with it: the next edit starts from its own text.
+              setText("");
               if (state.query !== "") store.setQuery("");
               onDone();
               actions.refocus();

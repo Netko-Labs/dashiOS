@@ -51,7 +51,12 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [focus, setFocus] = useState(0);
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditingText] = useState<string | null>(null);
+  const [editSession, setEditSession] = useState(0);
+  const setEditing = useCallback((text: string | null) => {
+    if (text !== null) setEditSession((n) => n + 1);
+    setEditingText(text);
+  }, []);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
 
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
@@ -228,6 +233,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
           center={
             <Omnibox
               editing={editing}
+              session={editSession}
               onEdit={setEditing}
               onDone={() => {
                 setEditing(null);
