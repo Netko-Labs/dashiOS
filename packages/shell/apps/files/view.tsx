@@ -1,31 +1,34 @@
 /**
  * Files' window: the sidebar, a toolbar with back and forward and the view
  * switch around the omnibox (the path and search, omnibox.tsx), the listing
- * in icons or a table, and a notice over it only while a job runs or a message stands.
- * Sheets and menus are drawn inside it (Metal has no child windows). The
- * keyboard comes through the kit's KeySink: arrows move the selection,
- * Enter opens, Backspace goes back, and typing jumps to a name.
+ * (browser.tsx, which every chooser shares), and a notice over it only while
+ * a job runs or a message stands. Sheets and menus are drawn inside it
+ * (Metal has no child windows). The keys (keys.ts): the arrows move in two
+ * directions, ⇧ extends, Return opens, F2 renames in place, Delete moves to
+ * the Trash, Space peeks, ⌫ goes back, and typing jumps to a name.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, Loading, type MenuEntry, PopupMenu, useColors, useUndo } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, type MenuEntry, PopupMenu, useUndo } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
+import { BrowserKeys, Listing } from "./browser.tsx";
 import { looksLikeUriList, parseUriList } from "./clipboard.ts";
-import { Files, useFilesState, type WindowActions } from "./context.ts";
-import { useDropTarget } from "./drop.ts";
+import { ConflictSheet } from "./conflict-sheet.tsx";
+import { Files, type WindowActions } from "./context.ts";
 import { Footer } from "./footer.tsx";
 import { formatCount } from "./format.ts";
-import { Grid } from "./grid.tsx";
 import type { FileItem } from "./items.ts";
-import { ListView } from "./list.tsx";
-import { folderAt, locationTitle } from "./location.ts";
+import type { BrowserKey } from "./keys.ts";
+import { locationTitle } from "./location.ts";
 import { actionMenu, backgroundMenu, itemMenu } from "./menus.ts";
 import { editText, Omnibox, SuggestionList, type Suggestions } from "./omnibox.tsx";
 import type { OpenWithApp } from "./open.ts";
-import type { Operations } from "./operations.ts";
-import { InfoSheet, NameSheet, OpenWithSheet } from "./sheets.tsx";
+import type { Answer, Conflict, Operations } from "./operations.ts";
+import { baseName } from "./paths.ts";
+import { Peek } from "./peek.tsx";
+import { InfoSheet, OpenWithSheet } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { FilesStore } from "./store.ts";
 import { Controls, Leading } from "./toolbar.tsx";
@@ -33,72 +36,27 @@ import { Controls, Leading } from "./toolbar.tsx";
 export const FILES_SIZE = { width: 1000, height: 660 } as const;
 
 type Sheet =
-  | { kind: "new-folder" }
-  | { kind: "rename"; item: FileItem }
   | { kind: "info"; item: FileItem }
   | { kind: "open-with"; item: FileItem; apps: OpenWithApp[] | null }
   | { kind: "empty-trash" }
-  | { kind: "delete"; items: FileItem[] };
+  | { kind: "delete"; items: FileItem[] }
+  | { kind: "conflict"; conflict: Conflict; answer: (answer: Answer) => void }
+  | { kind: "peek" };
 
 type MenuState = { x: number; y: number; kind: "item" | "background" | "actions" };
-
-function Empty({ store }: { store: FilesStore }) {
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  // A folder that takes a moment shows the spinner after 200 ms (PA-5).
-  if (state.loading) return <Loading testID="empty" />;
-  if (state.error) {
-    return (
-      <EmptyState
-        testID="empty"
-        title="This folder can’t be shown"
-        message={state.error}
-        glyph={glyphs.WARNING}
-        action={<Button label="Go to Home" testID="empty:home" onPress={() => store.go(folderAt(store.env.home))} />}
-      />
-    );
-  }
-  if (state.found !== null)
-    return state.searching ? (
-      <EmptyState testID="empty" title="Searching…" />
-    ) : (
-      <EmptyState testID="empty" title="No Results" message={`Nothing named “${state.query.trim()}”.`} glyph={glyphs.SEARCH} />
-    );
-  if (state.location.kind === "trash") return <EmptyState testID="empty" title="The Trash is empty" />;
-  if (state.location.kind === "recents") return <EmptyState testID="empty" title="No recent files" message="Files you open will show up here." />;
-  return (
-    <EmptyState
-      testID="empty"
-      title="This folder is empty"
-      message={state.showHidden || !state.items.some((item) => item.hidden) ? undefined : "Hidden files are not shown."}
-    />
-  );
-}
-
-/** The listing's area: a right-click there is the folder's menu, and files dropped there go into the folder shown (not into Recents or search results). */
-function Content({ onBackgroundMenu, children }: { onBackgroundMenu: (point: { x: number; y: number }) => void; children: React.ReactNode }) {
-  const colors = useColors();
-  const state = useFilesState();
-  const drop = useDropTarget(state.location.kind === "folder" && state.found === null ? state.location.path : null);
-  return (
-    <View
-      testID="content"
-      {...drop.props}
-      style={{ flex: 1, minHeight: 0, ...(drop.over ? { borderWidth: 2, borderColor: colors.selection, borderRadius: 4 } : {}) }}
-      onContextMenu={onBackgroundMenu}
-    >
-      {children}
-    </View>
-  );
-}
 
 export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Operations; info?: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [focus, setFocus] = useState(0);
-  const [columns, setColumns] = useState(1);
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditingText] = useState<string | null>(null);
+  const [editSession, setEditSession] = useState(0);
+  const setEditing = useCallback((text: string | null) => {
+    if (text !== null) setEditSession((n) => n + 1);
+    setEditingText(text);
+  }, []);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
 
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
@@ -108,14 +66,30 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     refocus();
   }, [refocus]);
 
+  // A copy or a move onto a taken name asks here (PA-3), one collision at a time.
+  useEffect(() => {
+    ops.ask = (conflict) =>
+      new Promise<Answer>((resolve) =>
+        setSheet({
+          kind: "conflict",
+          conflict,
+          answer: (answer) => {
+            close();
+            resolve(answer);
+          },
+        }),
+      );
+    return () => {
+      ops.ask = null;
+    };
+  }, [ops, close]);
+
   const find = (path: string): FileItem | undefined => store.visible().find((item) => item.path === path);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `find` reads the store's latest list when called; the store is what changes
   const actions = useMemo<WindowActions>(
     () => ({
-      rename: (path) => {
-        const item = find(path);
-        if (item) setSheet({ kind: "rename", item });
-      },
+      // Renaming happens on the name itself (rename-field.tsx).
+      rename: (path) => store.startRename(path),
       info: (path) => {
         const item = find(path);
         if (item) setSheet({ kind: "info", item });
@@ -126,7 +100,8 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         setSheet({ kind: "open-with", item, apps: null });
         void ops.appsFor(item).then((apps) => setSheet((now) => (now?.kind === "open-with" && now.item.path === item.path ? { ...now, apps } : now)));
       },
-      newFolder: () => setSheet({ kind: "new-folder" }),
+      // "untitled folder" at once, its name a field (no sheet).
+      newFolder: () => void ops.newFolder(),
       goToFolder: () => setEditing(editText(store.getSnapshot().location, store.env.home)),
       find: () => setEditing(store.getSnapshot().query),
       confirmEmptyTrash: () => setSheet({ kind: "empty-trash" }),
@@ -134,8 +109,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
       menu: (point, kind) => setMenu({ ...point, kind }),
       refocus,
     }),
-    // `find` reads the live store; the closures need no other inputs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [store, ops, refocus],
   );
 
@@ -143,7 +116,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const undo = useUndo(ops.undo);
   useAppMenus(menuSpecs(state, store, ops, undo), (id) => chooseMenu(id, store, ops, actions));
 
-  const items = store.visible();
   // `--info` (the file manager service's ShowItemProperties): Get Info for that item once the folder is listed.
   const infoShown = useRef(info === undefined);
   // biome-ignore lint/correctness/useExhaustiveDependencies: waits for the listing; the sheet opens once
@@ -156,7 +128,8 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const menuItems = (kind: MenuState["kind"]): MenuEntry[] =>
     kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps);
 
-  const onKey = (key: KeyInput): void => {
+  const onKey = (key: BrowserKey): void => {
+    const selected = store.selectedItems();
     switch (key.kind) {
       case "text": {
         if (key.text.length > 1 && looksLikeUriList(key.text) && ops.writable && state.location.kind === "folder") {
@@ -166,51 +139,35 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
         }
         return;
       }
-      case "enter":
+      case "open":
         return store.openSelection();
-      case "up":
-        return store.move(state.view === "icons" ? -columns : -1);
-      case "down":
-        return store.move(state.view === "icons" ? columns : 1);
-      case "backspace":
+      case "enclosing":
+        return store.goUp();
+      case "back":
         return store.goBack();
-      case "escape":
+      case "rename":
+        if (selected.length === 1 && state.location.kind !== "trash") store.startRename((selected[0] as FileItem).path);
+        return;
+      case "trash":
+        if (selected.length === 0) return;
+        if (state.location.kind === "trash") return actions.confirmDelete(selected.map((item) => item.path));
+        return void ops.trash(selected);
+      case "peek":
+        if (selected.length > 0) setSheet({ kind: "peek" });
+        return;
+      case "clear":
         return store.select([]);
+      case "move":
+        return;
     }
   };
 
   const overlay = (() => {
-    if (sheet?.kind === "new-folder") {
-      return (
-        <NameSheet
-          title="New Folder"
-          message="Name of the new folder:"
-          initial="untitled folder"
-          action="Create"
-          onCancel={close}
-          onSubmit={async (name) => {
-            const problem = await ops.newFolder(name);
-            if (problem === null) close();
-            return problem;
-          }}
-        />
-      );
+    if (sheet?.kind === "conflict") {
+      const dest = sheet.conflict.dest;
+      return <ConflictSheet conflict={sheet.conflict} folderName={dest === store.env.home ? "Home" : baseName(dest)} onAnswer={sheet.answer} />;
     }
-    if (sheet?.kind === "rename") {
-      return (
-        <NameSheet
-          title={`Rename “${sheet.item.name}”`}
-          initial={sheet.item.name}
-          action="Rename"
-          onCancel={close}
-          onSubmit={async (name) => {
-            const problem = await ops.rename(sheet.item.path, name);
-            if (problem === null) close();
-            return problem;
-          }}
-        />
-      );
-    }
+    if (sheet?.kind === "peek") return <Peek onClose={close} />;
     if (sheet?.kind === "info") return <InfoSheet item={sheet.item} home={store.env.home} onClose={close} />;
     if (sheet?.kind === "open-with")
       return (
@@ -266,7 +223,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   })();
 
   const title = state.found !== null ? "Search Results" : locationTitle(state.location, store.env.home);
-  const empty = <Empty store={store} />;
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
@@ -277,6 +233,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
           center={
             <Omnibox
               editing={editing}
+              session={editSession}
               onEdit={setEditing}
               onDone={() => {
                 setEditing(null);
@@ -285,21 +242,19 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
               onSuggest={setSuggestions}
             />
           }
-          toolbar={<Controls onNewFolder={() => setSheet({ kind: "new-folder" })} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
+          toolbar={<Controls onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
           sidebar={<Sidebar />}
           notice={<Footer />}
           overlay={overlay}
         >
-          {!sheet && !menu && editing === null && <KeySink testID="keys" focusKey={focus} onKey={onKey} />}
-          <Content
+          {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
+          <Listing
             // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
             onBackgroundMenu={(point) => {
               store.select([]);
               setMenu({ ...point, kind: "background" });
             }}
-          >
-            {state.view === "icons" ? <Grid items={items} onColumns={setColumns} empty={empty} /> : <ListView items={items} empty={empty} />}
-          </Content>
+          />
         </AppWindow>
       </View>
     </Files.Provider>

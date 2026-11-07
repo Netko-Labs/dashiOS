@@ -8,7 +8,7 @@ import { Omnibox } from "../apps/files/omnibox.tsx";
 
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
-test("the omnibox at rest is a Tab stop, and pressing it starts editing the folder's path", async () => {
+test("the omnibox at rest is a Tab stop, and pressing it starts a search", async () => {
   const state = { location: { kind: "folder", path: "/home/alexk/Documents" }, selection: [], query: "", free: null };
   const store = {
     env: { home: "/home/alexk", trash: { files: "/home/alexk/.local/share/Trash/files" } },
@@ -39,6 +39,6 @@ test("the omnibox at rest is a Tab stop, and pressing it starts editing the fold
   // Space or Return on the focused box is a press with no modifiers.
   const nodeId = root.nodeId("omnibox") ?? "";
   for (const listener of listeners) listener({ type: "press", nodeId });
-  expect(edits).toEqual(["~/Documents/"]);
+  expect(edits).toEqual([""]);
   root.unmount();
 });

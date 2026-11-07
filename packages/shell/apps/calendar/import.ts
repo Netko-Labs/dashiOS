@@ -7,9 +7,10 @@
  */
 
 import { readFileSync, statSync } from "node:fs";
-import { basename, extname, isAbsolute } from "node:path";
+import { basename, dirname, extname, isAbsolute } from "node:path";
 import type { DBusConnection } from "../../src/dbus/index.ts";
 import { chooseFile } from "../../src/portal/file-chooser.ts";
+import { isRealDirectory, writeNew } from "../notes/files.ts";
 import { MAX_ICS_BYTES } from "./ics.ts";
 import { CalendarError } from "./types.ts";
 
@@ -27,10 +28,30 @@ export function portalIcsChooser(connect?: () => Promise<DBusConnection>): IcsCh
   return { choose: () => chooseFile({ title: "Import Calendar", filter: { name: "Calendars", types: ["text/calendar"] }, accept: isIcsPath }, connect) };
 }
 
-/** What a typed path or a chosen one comes to: an iCalendar file's text and a name to call the calendar by if the file names none. */
-export function readIcsFile(path: string): { text: string; name: string } {
+/** A typed path: `~/` is the home folder; it must then be absolute. */
+function fullPath(path: string): string {
   const trimmed = path.trim().replace(/^~(?=\/)/, process.env.HOME ?? "~");
   if (!isAbsolute(trimmed)) throw new CalendarError("Give the full path of the file, starting with /.");
+  return trimmed;
+}
+
+/** File › Export…: a calendar's text written as a new .ics file; a file that is there already is left alone. */
+export function writeIcsFile(path: string, text: string): string {
+  const target = fullPath(path);
+  if (!isIcsPath(target)) throw new CalendarError("The file's name must end in .ics.");
+  if (!isRealDirectory(dirname(target))) throw new CalendarError("That folder isn't there.");
+  try {
+    writeNew(target, text);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new CalendarError("A file of that name is there already.");
+    throw new CalendarError("The file couldn't be written there.");
+  }
+  return target;
+}
+
+/** What a typed path or a chosen one comes to: an iCalendar file's text and a name to call the calendar by if the file names none. */
+export function readIcsFile(path: string): { text: string; name: string } {
+  const trimmed = fullPath(path);
   if (!isIcsPath(trimmed)) throw new CalendarError("That is not an .ics file.");
   let size: number;
   try {

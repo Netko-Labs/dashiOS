@@ -10,13 +10,16 @@
 mod devices;
 mod edid;
 mod feedback;
+mod flip;
 mod frame;
 mod holds;
+mod pace;
 mod screens;
 mod sleep;
 mod start;
 
 pub(crate) use holds::describe_gpus;
+pub(crate) use pace::agent_acted;
 pub(crate) use sleep::{import_dmabuf, keep_gpu};
 pub(crate) use start::init;
 
@@ -27,6 +30,7 @@ use frame::{frame_finished, render_device, render_screen};
 use screens::{apply_gamma, connector_disconnected, scan_connectors};
 mod input_devices;
 mod vrr;
+mod watchdog;
 
 pub(crate) use vrr::VrrReport;
 
@@ -174,10 +178,10 @@ struct Screen {
     output: Output,
     scanout: Scanout,
     global: GlobalId,
-    /// A frame is queued and its vblank has not come yet.
-    queued: bool,
-    /// A render is already scheduled.
-    scheduled: bool,
+    /// A frame queued and its vblank, watched (flip.rs).
+    flip: flip::Flip,
+    /// The timer set to draw it next, when it fires, and which it is (pace.rs).
+    scheduled: Option<(RegistrationToken, Instant, u64)>,
     /// The screen is lit (`power`, and on in Displays).
     powered: bool,
     /// Held dark by `power {on: false, output}` (brightness at 0 on a panel
@@ -273,7 +277,7 @@ impl UdevData {
                 &DrmOutputRenderElements::default(),
             )
             .map_err(|error| format!("the mode did not take: {error:?}"))?;
-        screen.queued = false;
+        screen.flip.clear();
         Ok(())
     }
 
@@ -282,7 +286,7 @@ impl UdevData {
             return;
         };
         screen.powered = enabled && !screen.held;
-        screen.queued = false;
+        screen.flip.clear();
         if !screen.powered
             && let Err(error) = screen
                 .scanout
@@ -292,7 +296,8 @@ impl UdevData {
         }
     }
 
-    /// `power`: screens dark or lit. Lighting them draws them again. With
+    /// `power`: screens dark or lit; the ones changed are returned, to draw
+    /// again (a dark one paces its clients, pace.rs). With
     /// `only`, just the screen of that name, which stays as it is left: a
     /// held-dark screen stays dark when the rest are lit. None by that name
     /// is an error.
@@ -323,10 +328,12 @@ impl UdevData {
                 }
                 if on {
                     screen.powered = true;
-                    screen.queued = false;
+                    screen.flip.clear();
                     lit.push((*node, *crtc));
                 } else if screen.powered {
                     screen.powered = false;
+                    screen.flip.clear();
+                    lit.push((*node, *crtc));
                     if let Err(error) = screen
                         .scanout
                         .with_compositor(|compositor| compositor.clear())
@@ -368,7 +375,8 @@ impl UdevData {
     }
 }
 
-/// `power {on, reset?, output?}`: the screens (or that one) dark, or lit and drawn again.
+/// `power {on, reset?, output?}`: the screens (or that one) dark, or lit and drawn again;
+/// dark, their clients still hear of frames (pace.rs).
 pub(crate) fn power(
     state: &mut Dashi,
     on: bool,

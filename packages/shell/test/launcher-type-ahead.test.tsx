@@ -32,12 +32,17 @@ describe("typing ahead: the keys", () => {
 
   test("the idle keymap types into the launcher from a tap; the keys of the session still come first", () => {
     const idle = withTypeAheadOnTap(KEYMAP);
-    expect(idle.rules).toEqual(KEYMAP.rules);
+    // The rules are Dashi's, the launcher's key arming the typing as a tap does.
+    expect(idle.rules.map(({ armsAfterTap: _, ...rule }) => rule)).toEqual(KEYMAP.rules);
+    expect(idle.rules.filter((rule) => rule.armsAfterTap).map((rule) => rule.bind)).toEqual(["launcher"]);
+    expect(idle.rules.find((rule) => rule.when === "super+space")).toEqual({ when: "super+space", bind: "launcher", armsAfterTap: true });
     const after = idle.afterTap ?? [];
     expect(after.slice(0, LAUNCHER_RULES.length)).toEqual(LAUNCHER_RULES);
     expect(after.slice(LAUNCHER_RULES.length, -1)).toEqual(KEYMAP.rules);
     expect(after.at(-1)).toEqual({ when: "*", bind: TYPE_BINDING });
     expect(withTyping(KEYMAP).afterTap).toBeUndefined();
+    // Only the idle keymap arms: open, its rules have no afterTap to switch to, so ❖Space just closes it.
+    expect(after.some((rule) => rule.armsAfterTap)).toBe(false);
     expect(withTyping(KEYMAP).rules).toEqual(after);
     expect(idleKeymap().afterTap).toBeDefined();
   });

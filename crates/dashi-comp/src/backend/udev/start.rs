@@ -95,7 +95,7 @@ pub(crate) fn init(
                     device
                         .screens
                         .values_mut()
-                        .for_each(|screen| screen.queued = false);
+                        .for_each(|screen| screen.flip.clear());
                 }
                 data.devices.keys().copied().collect::<Vec<_>>()
             })

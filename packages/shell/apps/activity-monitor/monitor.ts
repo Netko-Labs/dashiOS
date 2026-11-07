@@ -1,30 +1,36 @@
 /**
- * Activity Monitor's live state: a look at /proc every two seconds, turned
- * into rows and the summaries under the table, with a minute of history for
- * the graphs. A store with the usual subscribe/getSnapshot pair. What the
- * window needs decides what is read (io for Disk, sockets for Network,
- * kernel threads only when they are shown).
+ * Activity Monitor's live state: a look at /proc every two seconds (or as
+ * often as View › Update Frequency says, or not at all while it is paused),
+ * turned into rows and the summaries under the table, with a minute of
+ * history for the graphs. A store with the usual subscribe/getSnapshot pair.
+ * What the window needs decides what is read (io for Disk, sockets for
+ * Network, wakeups and the GPU for Energy, kernel threads only when they are
+ * shown).
  *
  * The look itself is asynchronous: in the app it runs on a worker thread
  * (sampler.ts), so reading /proc never holds up the window. One look is in
  * flight at a time; a refresh asked for meanwhile runs when it lands.
  *
- * `pause()` stops the timer and `resume()` starts it again with a fresh look.
- * Nothing calls them yet: the app kit has no signal for a hidden or
- * minimized window (docs/design.html PA-15), so the monitor samples while
- * the window is open.
+ * `pause()` stops the timer while no one can see the window (main.tsx, the
+ * kit's visibility signal, PA-15) and `resume()` starts it again with a
+ * fresh look.
  */
 
 import type { Counters, MemInfo, NetCounters } from "./proc.ts";
-import type { ReadOptions, Snapshot } from "./read.ts";
+import type { Snapshot } from "./read.ts";
 import { type CpuSplit, cpuSplit, type ProcessRow, processRows, pushHistory, type RowContext, rates, SMOOTHING } from "./sample.ts";
+import type { LookWants } from "./sampler.ts";
 
 export const INTERVAL_MS = 2000;
+/** View › Update Frequency's choices; null is Paused. */
+export const INTERVALS = [1000, 2000, 5000, null] as const;
+/** Milliseconds between looks; null is paused. */
+export type Interval = number | null;
 
-export type Tab = "cpu" | "memory" | "disk" | "network";
+export type Tab = "cpu" | "memory" | "energy" | "disk" | "network";
 
 /** What one look reads, beyond what the reader knows by itself. */
-export type LookOptions = Pick<ReadOptions, "io" | "sockets" | "kernel">;
+export type LookOptions = LookWants;
 
 export interface MonitorState {
   rows: ProcessRow[];
@@ -34,6 +40,8 @@ export interface MonitorState {
   memory: MemInfo | null;
   /** Percent of memory in use. */
   memoryHistory: number[];
+  /** The person's processes' energy impact added up, and its history. */
+  energy: { impact: number; wakeups: number | null; gpu: number | null; history: number[] };
   disk: { totals: Counters; perSecond: Counters; history: { read: number[]; write: number[] } };
   net: { totals: NetCounters; perSecond: NetCounters; history: { in: number[]; out: number[] } };
 }
@@ -48,9 +56,24 @@ export const EMPTY: MonitorState = {
   cpuHistory: { user: [], system: [] },
   memory: null,
   memoryHistory: [],
+  energy: { impact: 0, wakeups: null, gpu: null, history: [] },
   disk: { totals: ZERO_DISK, perSecond: ZERO_DISK, history: { read: [], write: [] } },
   net: { totals: ZERO_NET, perSecond: ZERO_NET, history: { in: [], out: [] } },
 };
+
+/** The person's own processes' energy, added up (what is known of it). */
+export function energyTotals(rows: readonly ProcessRow[]): { impact: number; wakeups: number | null; gpu: number | null } {
+  let impact = 0;
+  let wakeups: number | null = null;
+  let gpu: number | null = null;
+  for (const row of rows) {
+    if (!row.own || row.kernel) continue;
+    impact += row.impact;
+    if (row.wakeups !== null) wakeups = (wakeups ?? 0) + row.wakeups;
+    if (row.gpu !== null) gpu = (gpu ?? 0) + row.gpu;
+  }
+  return { impact, wakeups, gpu };
+}
 
 /** The next state from the last one, the looks before (oldest first, empty on the first), and the newest. */
 export function advance(state: MonitorState, earlier: readonly Snapshot[], next: Snapshot, context: RowContext): MonitorState {
@@ -63,6 +86,7 @@ export function advance(state: MonitorState, earlier: readonly Snapshot[], next:
   const memory = next.memory;
   const used = memory && memory.total > 0 ? ((memory.total - memory.available) / memory.total) * 100 : 0;
   const first = prev === null;
+  const energy = energyTotals(rows);
   return {
     rows,
     cpu,
@@ -70,6 +94,7 @@ export function advance(state: MonitorState, earlier: readonly Snapshot[], next:
     cpuHistory: first ? state.cpuHistory : { user: pushHistory(state.cpuHistory.user, cpu.user), system: pushHistory(state.cpuHistory.system, cpu.system) },
     memory,
     memoryHistory: pushHistory(state.memoryHistory, used),
+    energy: { ...energy, history: first ? state.energy.history : pushHistory(state.energy.history, energy.impact) },
     disk: {
       totals: next.disk,
       perSecond: disk,
@@ -94,12 +119,14 @@ export class Monitor {
   private kernel = false;
   private inFlight = false;
   private again = false;
+  /** Out of sight (main.tsx): no looks, whatever the interval. */
+  private hidden = false;
   private readonly listeners = new Set<() => void>();
 
   constructor(
     private readonly context: RowContext,
     private readonly look: (options: LookOptions) => Promise<Snapshot>,
-    private readonly interval: number = INTERVAL_MS,
+    private interval: Interval = INTERVAL_MS,
   ) {}
 
   subscribe = (listener: () => void): (() => void) => {
@@ -117,23 +144,35 @@ export class Monitor {
 
   /** No more looks until `resume`. */
   pause(): void {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
+    this.hidden = true;
+    this.stopTimer();
   }
 
   /** Looks now and on the timer again (after a pause the last looks are stale, so they are dropped). */
   resume(): void {
+    this.hidden = false;
     if (this.timer) return;
     this.looks = [];
     this.refresh();
-    this.timer = setInterval(() => this.refresh(), this.interval);
+    this.startTimer();
+  }
+
+  /** How often to look (View › Update Frequency); null stops until another is chosen. A look is taken at once. */
+  setInterval(interval: Interval): void {
+    if (interval === this.interval) return;
+    this.interval = interval;
+    this.stopTimer();
+    if (this.hidden || interval === null) return;
+    this.looks = [];
+    this.refresh();
+    this.startTimer();
   }
 
   /** The open tab; switching reads at once so its columns fill without waiting. */
   setTab(tab: Tab): void {
     if (tab === this.tab) return;
     this.tab = tab;
-    if (tab === "disk" || tab === "network") this.refresh();
+    if (tab === "disk" || tab === "network" || tab === "energy") this.refresh();
   }
 
   /** Whether kernel threads are shown (and so read). */
@@ -150,7 +189,8 @@ export class Monitor {
       return Promise.resolve();
     }
     this.inFlight = true;
-    return this.look({ io: this.tab === "disk", sockets: this.tab === "network", kernel: this.kernel })
+    const options: LookOptions = { io: this.tab === "disk", sockets: this.tab === "network", kernel: this.kernel, energy: this.tab === "energy" };
+    return this.look(options)
       .then((next) => {
         this.state = advance(this.state, this.looks, next, this.context);
         this.looks = [...this.looks, next].slice(-SMOOTHING);
@@ -166,5 +206,15 @@ export class Monitor {
           void this.refresh();
         }
       });
+  }
+
+  private startTimer(): void {
+    if (this.interval === null || this.timer) return;
+    this.timer = setInterval(() => this.refresh(), this.interval);
+  }
+
+  private stopTimer(): void {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
   }
 }

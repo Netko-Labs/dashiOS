@@ -1,18 +1,23 @@
 /**
- * Where the window is, and how it got there. A page is one of Discover,
- * a category, search results, an app's page, Installed, or Updates; going
- * into an app (or a search) pushes onto a history that Back pops.
+ * Where the window is, and how it got there. A page is one of Discover, a
+ * category, one of Flathub's collections in full ("See all"), search results
+ * (apps and applets), an app's page, Installed, Updates, the menu bar
+ * applets, or an applet's page; going into a page (or a search) pushes onto
+ * a history that Back pops.
  */
 
-import type { CategoryId } from "../../src/software/flathub.ts";
+import type { CategoryId, Collection } from "../../src/software/flathub.ts";
 
 export type Page =
   | { kind: "discover" }
   | { kind: "category"; id: CategoryId }
+  | { kind: "collection"; id: Collection }
   | { kind: "search"; query: string }
   | { kind: "app"; id: string }
   | { kind: "installed" }
-  | { kind: "updates" };
+  | { kind: "updates" }
+  | { kind: "applets" }
+  | { kind: "applet"; id: string };
 
 export interface Nav {
   page: Page;
@@ -25,17 +30,7 @@ export const START: Nav = { page: { kind: "discover" }, back: [] };
 const MAX_HISTORY = 30;
 
 export function samePage(a: Page, b: Page): boolean {
-  if (a.kind !== b.kind) return false;
-  switch (a.kind) {
-    case "category":
-      return a.id === (b as typeof a).id;
-    case "search":
-      return a.query === (b as typeof a).query;
-    case "app":
-      return a.id === (b as typeof a).id;
-    default:
-      return true;
-  }
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /** Go to a top-level place from the sidebar: history starts over. */
@@ -63,3 +58,16 @@ export function back(nav: Nav): Nav {
 }
 
 export const canGoBack = (nav: Nav): boolean => nav.back.length > 0;
+
+/** The sidebar places a deep link (`DASHI_SOFTWARE_PAGE`) may open on. */
+export function startPage(name: string | undefined): Nav {
+  if (name === "updates" || name === "installed" || name === "applets") return goTo({ kind: name });
+  return START;
+}
+
+/** Whether an applet matches what was typed: its name, summary, author, or id. */
+export function matches(query: string, fields: { name: string; summary: string; author: string; id: string }): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const haystack = `${fields.name} ${fields.summary} ${fields.author} ${fields.id}`.toLowerCase();
+  return words.every((word) => haystack.includes(word));
+}

@@ -120,3 +120,32 @@ Code: `setup/` (`start.tsx`, `flow.ts`, `frame.tsx`, `view.tsx`, `pages/*`), app
 - **Brand lint.** Add a check for Apple product names in UI strings ("Mission Control", "Night Shift"; decide on "Control Center", "Spaces", "Setup Assistant") and for typed ⌃/❖ in text outside `keys`/`Shortcut`. Also lint Title Case on buttons: the brand asks for sentence case, but most of the code uses Title Case ("Change Password…", "Turn Off", "Save Login"). Either the rule or the code has to change.
 - **Error boundaries.** `openOverlay` (`shell/src/overlay.tsx:39`) has none, and nothing else in the repo does. One at the overlay level would protect every in-shell window (Settings, Setup, Force Quit) from taking the shell's surface down.
 - **Page width.** `Page` (`settings-app/ui.tsx:182`) and the app kit should cap the content width (about 680) and center it, so grouped rows stay readable in maximized windows.
+
+## Where it went (0.5.0)
+
+Ticked: done, with where. Unticked: not done here, and where it went; "later" means `tasks/todo.md`, Wave 2, "Settings: left for later".
+
+**The big idea** — [x] every setting an addressable entry (the registry, 0.5.0 wave 1, `326a9b6`), and every change to one an entry of the change log (`settings-app/changes/`): what, from what to what, who (you, or the agent by name, in shiso: `src/acting.ts`), when. Recently changed (the header strip's clock button, `dashi://settings/recent`) lists them with Undo; ❖Z undoes the newest; they outlive a restart (`$XDG_STATE_HOME/dashi/settings-changes.json`). Branch `feat/0.5-settings-undo`.
+
+Findings:
+
+- [x] 1 Destructive actions: Delete… asks in place, failures show (`c52d897`).
+- [x] 2 Search: in the header strip, rows and panes from the registry, ↑ ↓ Return Esc, ❖F (`settings-app/find.ts`, `header.tsx`); the launcher finds every row (`326a9b6`).
+- [x] 3 Sidebar icons: Dashi's tints, shiso only on Agents, a key for Passwords (`c52d897`).
+- [x] 4 Sidebar grouping: six groups (look; connections and power; input; you, time and language; privacy and security; About), the window 704 tall so all 21 still show (`panes.ts`).
+- [x] 5 Appearance: one Dark Mode control (`c52d897`); "Accent color" with one value is gone. [ ] The previews over your own wallpaper, and Auto's times as a row shared with Night Shift: later.
+- [x] 6 Agents consent: Settings › Agents lists each agent (kept answers, and any connected now, "Connected now" in shiso), what it may do riskiest first with a line each on what that means, what it changed lately (with Undo) and its last connection; Revoke one, Revoke all, then "Revoked" with Undo for 5 s (`panes/agents-consent.tsx`). Privacy & Security counts them and points there. [ ] A master "Let agents connect" switch, and agents you denied: later.
+- [ ] 7 Passwords structure (split Passwords and Payments, reveal, copy, edit, search, the add sheet): later. Without a vault the pane now says why instead of showing a blank page.
+- [x] 8 Error states: the bottom error bar is gone; a failed save is a line at the top of the page in plain words (`ui.tsx` `Page`); Displays no longer shows raw error text. [ ] One `Failure` in `@dashi/ui` for Battery, Date & Time and Language & Region: later (PA-6).
+- [x] 9 Keyboard & menus: the focus model reaches Settings' controls (wave 1, `7c6f59a`); Edit › Find ❖F. [ ] A View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc: later.
+- [x] 10 Brand and copy: "Mission Control" is Overview, the Spaces row is Dashi's own (wave 1); Desktop & Dock's caption draws its shortcut instead of typing it. [ ] "Night Shift" renamed: later (CP-5, an open question).
+- [x] 11 Setup skipping (`c52d897`).
+- [x] 12 Header strip: title 13 Bold, a hairline, search and Recently changed in it, no second row (`header.tsx`). [ ] Back and Forward in it: later.
+- [x] 13 Duplicated settings: "Turn display off after" lives in Battery & Power; Lock Screen says what it is and goes there. [ ] One "Menu bar" group in Desktop & Dock: later.
+- [ ] 14 Consistency (slider values, section headings, `Value` and `MiniButton` copies): one Slider came in wave 1 (`4a8b7aa`); the rest later.
+- [x] 15 Copy: sentence case for Power mode, IP address, Subnet mask, DNS servers, MAC address; Lock Screen's button is "Lock". [ ] The rest of the Title Case and jargon pass: later (CP-1).
+- [ ] 16 Missing basics (per-app Notifications, password delay, a shortcut list, manual time, renaming the computer): later.
+- [ ] 17 Battery & Power (the live slider value, why Charge Now is off, the lid summary, Advanced…): later.
+- [ ] 18 Robustness: the change log writes off the moment of the change; settings.json itself still writes synchronously, and there is no error boundary: later.
+- [x] 19 Large windows: `Page` caps its content at 680 and centers it (LA-2, `ui.tsx`).
+- [ ] 20 Setup polish (stable dots, Install as the primary on a live session, a shorter Agents page): later.

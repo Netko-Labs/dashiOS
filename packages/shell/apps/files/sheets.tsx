@@ -1,65 +1,13 @@
-/** Files' sheets: naming (new folder, rename), Get Info, and Open With. Drawn inside the window by the kit's Sheet. */
+/** Files' sheets: Get Info and Open With (naming happens in place, rename-field.tsx). Drawn inside the window by the kit's Sheet. */
 
-import { Button, Group, Sheet, TextField, useColors } from "@dashi/ui";
+import { Button, Group, Sheet, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { formatCount, formatDate, formatSize } from "./format.ts";
 import { type ItemInfo, loadInfo } from "./info.ts";
 import type { FileItem } from "./items.ts";
 import type { OpenWithApp } from "./open.ts";
-import { checkName } from "./paths.ts";
 import { measure } from "./size.ts";
-
-export function NameSheet({
-  title,
-  message,
-  initial,
-  action,
-  onSubmit,
-  onCancel,
-}: {
-  title: string;
-  message?: string;
-  initial: string;
-  action: string;
-  onSubmit: (name: string) => Promise<string | null>;
-  onCancel: () => void;
-}) {
-  const colors = useColors();
-  const [name, setName] = useState(initial);
-  const [problem, setProblem] = useState<string | null>(null);
-  const submit = async (value: string): Promise<void> => {
-    const bad = checkName(value);
-    if (bad) return setProblem(bad);
-    setProblem(await onSubmit(value));
-  };
-  return (
-    <Sheet testID="name-sheet" width={380} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      {message !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>}
-      <TextField
-        testID="name-field"
-        value={name}
-        autoFocus
-        onChangeText={(text) => {
-          setName(text);
-          setProblem(null);
-        }}
-        onSubmit={(text) => void submit(text)}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-      />
-      {problem !== null && (
-        <View testID="name-problem">
-          <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
-        </View>
-      )}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="name-sheet:cancel" onPress={onCancel} />
-        <Button label={action} testID="name-sheet:ok" primary onPress={() => void submit(name)} />
-      </View>
-    </Sheet>
-  );
-}
 
 /** "4.2 MB (4,201,337 bytes)": the rounded size and the exact one. */
 const exactSize = (bytes: number): string => (bytes >= 1000 ? `${formatSize(bytes)} (${bytes.toLocaleString("en-US")} bytes)` : formatSize(bytes));

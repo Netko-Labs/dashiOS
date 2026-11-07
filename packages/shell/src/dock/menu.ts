@@ -18,8 +18,12 @@ export type DockMenuAction =
   | { kind: "open"; appId: string }
   /** Hide the app's windows; `key` is the entry's (layout.ts `appKey`). */
   | { kind: "hide"; key: string }
-  /** Ask each of these windows (toplevel ids) to close. */
-  | { kind: "quit"; windows: readonly number[] }
+  /**
+   * Quit the app: every window whose `key` (layout.ts `appKey`) is the
+   * entry's is asked to close. `windows` are its toplevel ids, used only
+   * when the compositor cannot name them (controller.ts).
+   */
+  | { kind: "quit"; key: string; windows: readonly number[] }
   /** Change the Dock's own settings (settings.ts). */
   | { kind: "dock-prefs"; change: Partial<DockSettings> }
   /** Open System Settings on the Desktop & Dock pane. */
@@ -55,7 +59,7 @@ export function buildDockMenu(entry: DockEntry): MenuEntry<DockMenuAction>[] {
       ? [
           // Only windows on screen can be hidden, and a window without an app id cannot be found again.
           item("Hide", windows.some((window) => !window.minimized) && app.id ? { kind: "hide", key: entry.key } : null),
-          item("Quit", { kind: "quit", windows: windows.map((window) => window.id) }),
+          item("Quit", { kind: "quit", key: entry.key, windows: windows.map((window) => window.id) }),
         ]
       : [item("Open", startable ? { kind: "open", appId: app.id } : null)]),
   ];

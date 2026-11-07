@@ -192,6 +192,20 @@ export class Grants {
     return true;
   }
 
+  /**
+   * Put back what was taken (Undo after Revoke in Settings › Agents): the
+   * scopes `entry` held, with their dates, beside any given since. A
+   * connection that is up now asks again; the next one has them.
+   */
+  restore(entry: GrantEntry): void {
+    const scopes = new Map(this.byAgent.get(entry.key));
+    for (const scope of entry.scopes) if (!NEVER_KEPT.has(scope)) scopes.set(scope, entry.since[scope] ?? null);
+    if (scopes.size === 0) return;
+    this.byAgent.set(entry.key, scopes);
+    this.save();
+    this.notify({ key: entry.key, removed: false });
+  }
+
   onChange(listener: (change: GrantChange) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

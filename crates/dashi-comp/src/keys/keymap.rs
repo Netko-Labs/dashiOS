@@ -9,6 +9,9 @@
 //! the moment ❖ is tapped, until the shell's next keymap: the shell's launcher
 //! takes the keys typed after the tap from that instant, not from whenever the
 //! shell hears of it. Which rules, and whether there are any, is the shell's.
+//! A `bind` rule with `armsAfterTap: true` switches to them too, the moment
+//! its key is pressed (❖Space opens the launcher as a tap does): keys queued
+//! behind it, while the compositor was busy, are matched by them at once.
 //!
 //! `locked` is the list matched while the screen is locked, for the lock
 //! screen's field (❖A as Ctrl+A, say); none of the other rules apply then. A
@@ -105,6 +108,8 @@ struct Rule {
     when: When,
     app: Option<String>,
     action: Action,
+    /// A `bind` that switches to the `afterTap` rules as a ❖ tap does (`armsAfterTap`).
+    arms_after_tap: bool,
 }
 
 /// A key as pressed: its keysym names (unshifted first, then as typed).
@@ -229,11 +234,17 @@ impl Keymap {
     }
 
     /// The first rule that matches, if any.
+    #[cfg(test)]
     pub(crate) fn action_for(&self, pressed: &Pressed<'_>) -> Option<&Action> {
+        self.matched(pressed).map(|(action, _)| action)
+    }
+
+    /// The first rule that matches: its action, and whether it arms the `afterTap` rules.
+    pub(crate) fn matched(&self, pressed: &Pressed<'_>) -> Option<(&Action, bool)> {
         self.rules
             .iter()
             .find(|rule| self.matches(rule, pressed))
-            .map(|rule| &rule.action)
+            .map(|rule| (&rule.action, rule.arms_after_tap))
     }
 
     /// While locked: the first `locked` rule that matches, if any (never a `bind`).
@@ -317,7 +328,18 @@ fn parse_rule(rule: &Value, apps: &HashMap<String, Vec<String>>) -> Result<Rule,
     } else {
         return Err("a rule needs bind, send, tap, or swallow".into());
     };
-    Ok(Rule { when, app, action })
+    let arms_after_tap = match rule.get("armsAfterTap") {
+        None | Some(Value::Bool(false)) => false,
+        Some(Value::Bool(true)) if matches!(action, Action::Bind(_)) => true,
+        Some(Value::Bool(true)) => return Err("only a bind rule arms afterTap".into()),
+        Some(_) => return Err("armsAfterTap must be true or false".into()),
+    };
+    Ok(Rule {
+        when,
+        app,
+        action,
+        arms_after_tap,
+    })
 }
 
 fn parse_when(text: &str) -> Result<When, String> {
@@ -662,5 +684,136 @@ mod tests {
         assert!(!map.arm_after_tap());
         let mut none = Keymap::parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
         assert!(!none.arm_after_tap());
+    }
+
+    /// What handler.rs does with a key: its action, and the `afterTap` rules armed when the rule says so.
+    fn press(map: &mut Keymap, names: &[&str], mods: Mods) -> Option<Action> {
+        let names: Vec<String> = names.iter().map(|n| n.to_string()).collect();
+        let pressed = Pressed {
+            names: &names,
+            mods,
+            app_id: "foot",
+        };
+        let (action, arms) = map.matched(&pressed).map(|(a, arms)| (a.clone(), arms))?;
+        if arms {
+            map.arm_after_tap();
+        }
+        Some(action)
+    }
+
+    #[test]
+    fn a_binding_that_arms_after_tap_hands_the_next_keys_to_the_shell_at_once() {
+        let mut map = Keymap::parse(
+            json!({
+                "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }],
+                "afterTap": [
+                    { "when": "super+space", "bind": "launcher" },
+                    { "when": "*", "bind": "launcher-type" }
+                ]
+            })
+            .as_object()
+            .unwrap(),
+        )
+        .unwrap();
+        let plain = Mods::default();
+        // Before ❖Space a letter is the window's.
+        assert_eq!(press(&mut map, &["s"], plain), None);
+        // ❖Space, then the letters queued behind it (the compositor was busy): all typed ahead.
+        assert_eq!(
+            press(&mut map, &["space"], SUPER),
+            Some(Action::Bind("launcher".into()))
+        );
+        for letter in ["s", "c", "r"] {
+            assert_eq!(
+                press(&mut map, &[letter], plain),
+                Some(Action::Bind("launcher-type".into()))
+            );
+        }
+        // ❖Space again (closing it) arms nothing more: the shell's next keymap decides.
+        assert_eq!(
+            press(&mut map, &["space"], SUPER),
+            Some(Action::Bind("launcher".into()))
+        );
+        assert!(!map.arm_after_tap());
+    }
+
+    /// The keymaps the shell sends around one launcher round (launcher/type-ahead.ts, main.tsx):
+    /// idle (❖Space arms the typing), typing while it opens, the open launcher's, idle again.
+    fn shell_keymap(kind: &str) -> Keymap {
+        let typing = json!([
+            { "when": "Home", "bind": "launcher-first" },
+            { "when": "super+space", "bind": "launcher" },
+            { "when": "*", "bind": "launcher-type" }
+        ]);
+        let params = match kind {
+            "idle" => json!({
+                "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }],
+                "afterTap": typing
+            }),
+            "typing" => json!({ "rules": typing }),
+            _ => json!({
+                "rules": [
+                    { "when": "Home", "bind": "launcher-first" },
+                    { "when": "super+space", "bind": "launcher" }
+                ]
+            }),
+        };
+        Keymap::parse(params.as_object().unwrap()).unwrap()
+    }
+
+    #[test]
+    fn every_idle_keymap_arms_the_next_launcher_key_again() {
+        // Review 17: ❖Space, x, Esc, then ❖Space and "snip" at once, ten times over. Each round
+        // the shell sends typing, then the open launcher's keys, then idle once it closes; the
+        // ❖Space of every round must hand the letters behind it to the shell, never the window.
+        let typed = Some(Action::Bind("launcher-type".into()));
+        let mut map = shell_keymap("idle");
+        for round in 0..10 {
+            assert_eq!(
+                press(&mut map, &["space"], SUPER),
+                Some(Action::Bind("launcher".into())),
+                "round {round}"
+            );
+            for letter in ["s", "n", "i", "p"] {
+                assert_eq!(
+                    press(&mut map, &[letter], Mods::default()),
+                    typed,
+                    "round {round}: {letter} before the shell answered"
+                );
+            }
+            map = shell_keymap("typing");
+            assert_eq!(press(&mut map, &["x"], Mods::default()), typed);
+            // The field has the keyboard: Esc and letters are its own.
+            map = shell_keymap("open");
+            assert_eq!(press(&mut map, &["Escape"], Mods::default()), None);
+            map = shell_keymap("idle");
+        }
+    }
+
+    #[test]
+    fn only_a_bind_arms_after_tap() {
+        let refused = |rule: Value| {
+            Keymap::parse(json!({ "rules": [rule] }).as_object().unwrap()).unwrap_err()
+        };
+        assert!(
+            refused(json!({ "when": "super+space", "send": "ctrl+space", "armsAfterTap": true }))
+                .contains("only a bind")
+        );
+        assert!(
+            refused(json!({ "when": "super+space", "bind": "launcher", "armsAfterTap": 1 }))
+                .contains("true or false")
+        );
+        // Without afterTap rules there is nothing to arm: the binding is all it does.
+        let mut map = Keymap::parse(
+            json!({ "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }] })
+                .as_object()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            press(&mut map, &["space"], SUPER),
+            Some(Action::Bind("launcher".into()))
+        );
+        assert_eq!(press(&mut map, &["s"], Mods::default()), None);
     }
 }

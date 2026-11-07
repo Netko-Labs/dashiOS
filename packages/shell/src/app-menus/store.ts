@@ -12,7 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { type AppMenu, enabledItem, type PublishedMenus, type ShellMessage } from "./protocol.ts";
+import { type AppMenu, enabledItem, isOpenArgs, type PublishedMenus, type ShellMessage } from "./protocol.ts";
 import { isTextShortcut, itemForShortcut } from "./shortcut.ts";
 
 /** One app's end of the channel. */
@@ -28,6 +28,8 @@ export class AppMenuStore {
   private held = false;
   private active: PublishedMenus | null = null;
   private readonly listeners = new Set<() => void>();
+  /** Told when an app asks for its window to be brought forward (protocol.ts `front`). */
+  private readonly frontListeners = new Set<(pid: number) => void>();
   /** Told of every publish and withdrawal, whoever is focused (the action registry's menus: actions/sources/menus.ts). */
   private readonly publishedListeners = new Set<() => void>();
 
@@ -38,6 +40,17 @@ export class AppMenuStore {
 
   /** The focused app's menus, null when it published none. */
   getSnapshot = (): PublishedMenus | null => this.active;
+
+  /** `owner` asks for its window to be brought forward (protocol.ts `front`). */
+  front(owner: MenuOwner): void {
+    for (const listener of this.frontListeners) listener(owner.pid);
+  }
+
+  /** Hear the apps that ask to be brought forward, by process; returns the way to stop. */
+  onFront(listener: (pid: number) => void): () => void {
+    this.frontListeners.add(listener);
+    return () => this.frontListeners.delete(listener);
+  }
 
   /** `owner`'s menus now (an empty list takes them down); a newer connection of the same process replaces an older one. */
   publish(owner: MenuOwner, menus: readonly AppMenu[], typing = false): void {
@@ -107,11 +120,27 @@ export class AppMenuStore {
     return Boolean(published && item && this.select(published.pid, item));
   }
 
+  /** Hands these processes' app the arguments a second start would have had (protocol.ts `open`); false when it has no menus channel or they don't fit. */
+  open(pids: readonly number[], args: readonly string[]): boolean {
+    const pid = pids.find((each) => this.byPid.has(each));
+    if (pid === undefined || !isOpenArgs(args)) return false;
+    this.byPid.get(pid)?.owner.send({ type: "open", args: [...args] });
+    return true;
+  }
+
   /** Tells these processes' app that it is quitting, just before its windows are asked to close (kit/close.ts); false when it has no menus channel. */
   quitting(pids: readonly number[]): boolean {
     const pid = pids.find((each) => this.byPid.has(each));
     if (pid === undefined) return false;
     this.byPid.get(pid)?.owner.send({ type: "quit" });
+    return true;
+  }
+
+  /** Tells these processes' app its quit is called off (a log out was cancelled): what it asked goes (kit/close.ts); false when it has no menus channel. */
+  stay(pids: readonly number[]): boolean {
+    const pid = pids.find((each) => this.byPid.has(each));
+    if (pid === undefined) return false;
+    this.byPid.get(pid)?.owner.send({ type: "stay" });
     return true;
   }
 

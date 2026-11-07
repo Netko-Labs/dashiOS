@@ -81,7 +81,7 @@ export function Sidebar({
         }}
       >
         <Svg markup={FOLDER_PLUS} size={16} color={colors.textMuted} />
-        <Text style={{ fontSize: 13, color: colors.textMuted }}>New Folder</Text>
+        <Text style={{ fontSize: 13, color: colors.textMuted }}>New folder</Text>
       </View>
     </>
   );

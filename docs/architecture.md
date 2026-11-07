@@ -59,7 +59,7 @@ systemd --user
   ask every window to close first and wait for the answers
   (`src/closing-apps.ts`); a hung app is still ended by Force Quit, or by
   going anyway.
-- **Applets** (`docs/applets.md`) installed from the Applet Store run each in
+- **Applets** (`docs/applets.md`) installed from Software (its Menu bar applets, the Applet Store folded in) run each in
   bubblewrap with only what their manifest asks for, as systemd user units
   outside the shell's processes, so nothing the compositor trusts the shell
   with reaches them; the shell's launcher (`src/applets/launcher.ts`) starts
@@ -68,6 +68,11 @@ systemd --user
   session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
   screen consents before an agent sees or does anything. The tools it lists
   are the agents' part of the shell's action registry (`docs/actions.md`).
+  Each call runs as that agent (`src/acting.ts`), so a setting it changes
+  is listed under its name in Settings' Recently changed, with Undo
+  (`src/settings-app/changes/`, kept in
+  `$XDG_STATE_HOME/dashi/settings-changes.json`); Settings › Agents lists
+  each agent, what it may do, what it did lately, and takes it back.
 - **dashi-open** (`session/dashi-open`, `bin/dashi-open.ts`) hands a
   `dashi://` link to the session (`$XDG_RUNTIME_DIR/dashi-links.sock`); the
   shell's `x-scheme-handler/dashi` entry runs it for `xdg-open`. A link never
@@ -88,7 +93,8 @@ systemd --user
   for `zenity` (Steam's scripts call it). It is an app on the kit
   (`dev.dashi.dialog`), one process per dialog, not in the launcher. It draws
   the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
-  `--text-info`, `--scale`, and `--calendar`; `--file-selection`, `--forms`,
+  `--text-info`, `--scale`, `--calendar`, and `--file-selection` (Files'
+  own chooser, `apps/files/chooser/`, as the portal's is); `--forms`,
   `--color-selection`, and `--notification` exit 255 for now.
 - **dashi-hardware** (`crates/dashi-hardware`) is Dashi's one privileged
   helper for what a laptop's kernel exposes: firmware attributes, platform
@@ -127,8 +133,13 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   and DynamicLauncher. Its bus connection is an `FdService` (`src/dbus/fd-service.ts`:
   a worker thread blocks in `poll` and reads the socket with SCM_RIGHTS),
   because Print's document arrives as a file descriptor, which Bun's own
-  sockets drop. A checkout's session links the files into the user's data
-  folder instead (`src/session/portal-files.ts`).
+  sockets drop. The unit is `PartOf=graphical-session.target`, so the
+  backend ends with the session, and each session stops any backend still
+  running as it starts (`STALE_UNITS`): after an update and a new login, the
+  next dialog runs the new code. A checkout's session links the files into
+  the user's data folder instead and writes its own unit,
+  `dashi-portal-checkout.service`, in `~/.config/systemd/user`
+  (`src/session/portal-files.ts`); an installed session removes them.
 - **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
   first-party apps are, one host per dialog, taken from a warm host
   (`src/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.

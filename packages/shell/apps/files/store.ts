@@ -4,7 +4,9 @@
  * selection, search, and the volumes in the sidebar. It is a plain store
  * (`subscribe`/`getSnapshot`) the React views read with
  * `useSyncExternalStore`. Operations that write (copy, trash, rename…) are
- * in operations.ts and report through here.
+ * in operations.ts and report through here. It is the file browser's core:
+ * Files' window and every chooser (chooser/) run on it, a chooser with a
+ * filter on what shows and its own idea of opening a file.
  */
 
 import { type FSWatcher, statSync, watch } from "node:fs";
@@ -12,13 +14,15 @@ import type { SortState } from "@dashi/ui";
 import type { Modifiers } from "@mirinjs/metal";
 import { loadVolumes, space } from "./drives.ts";
 import type { Env } from "./env.ts";
+import { type Emblems, folderEmblems } from "./icons.ts";
 import { describeError, type FileItem, itemAt, readFolder } from "./items.ts";
 import { folderAt, type Location, sameLocation } from "./location.ts";
 import type { Volume } from "./mounts.ts";
 import { mayOpen, openWithDefault } from "./open.ts";
 import { expandHome, normalizePath, parentOf, tilde } from "./paths.ts";
+import { DEFAULT_PREFS, type FilesPrefs } from "./prefs.ts";
 import { searchComputer, searchFolder } from "./search.ts";
-import { isPlain, pick } from "./selection.ts";
+import { isPlain, type Layout, navigate, pick, type Step } from "./selection.ts";
 import { columnMode, DEFAULT_SORT, fileColumns, findByPrefix, sortItems } from "./sort.ts";
 import { listTrash } from "./trashops.ts";
 import { parseFileUri } from "./uri.ts";
@@ -55,6 +59,10 @@ export interface FilesState {
   searching: boolean;
   truncated: boolean;
   selection: readonly string[];
+  /** The item being renamed in place (F2, a new folder), or null. */
+  renaming: string | null;
+  /** Where `items` were listed: while a new place loads, the last one's items stay up (`stale`). */
+  listed: Location;
   clipboard: { paths: readonly string[]; cut: boolean } | null;
   volumes: readonly Volume[];
   free: { free: number; total: number } | null;
@@ -64,6 +72,19 @@ export interface FilesState {
 const DOUBLE_CLICK_MS = 450;
 const NO_KEYS: Modifiers = { shift: false, control: false, alt: false, super: false };
 const SEARCH_DELAY_MS = 180;
+
+export interface StoreOptions {
+  watch?: boolean;
+  noticeFadeMs?: number;
+  /** What may show (a chooser's filter); everything by default. Hidden files follow Show Hidden either way. */
+  shows?: (item: FileItem) => boolean;
+  /** What an empty listing says when the folder has items `shows` keeps out ("No folders here"); by default it is empty. */
+  keptOutTitle?: string;
+  /** Opening files means this here (a chooser's Open); by default each opens in its app. */
+  openFiles?: (items: FileItem[]) => void;
+  /** The view, sort and Show Hidden to start with, and where a change to them goes (prefs.ts); none: the defaults, kept nowhere. */
+  prefs?: { read(): FilesPrefs; write(prefs: FilesPrefs): void };
+}
 /** How long a notice that only informs stays. */
 export const NOTICE_FADE_MS = 5000;
 
@@ -82,16 +103,26 @@ export class FilesStore {
   private lastClick: { path: string; time: number } | null = null;
   /** Where a ⇧-click's run starts: the last item clicked without ⇧. */
   private anchor: string | null = null;
+  /** Where the keyboard is: the moving end of a ⇧-arrow run. */
+  private focus: string | null = null;
+  private layout: Layout = { columns: 1, page: 10 };
+  private shown: { state: FilesState; items: FileItem[] } | null = null;
+  /** Special folders' emblems on their icons. */
+  readonly emblems: Emblems;
   private typed: { text: string; time: number } = { text: "", time: 0 };
   private noticeId = 0;
+  /** The notice a typed path that led nowhere put up (`sayPathProblem`). */
+  private pathProblem: number | null = null;
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private volumeTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     readonly env: Env,
     start: Location,
-    private readonly options: { watch?: boolean; noticeFadeMs?: number } = {},
+    private readonly options: StoreOptions = {},
   ) {
+    const prefs = options.prefs?.read() ?? DEFAULT_PREFS;
+    this.emblems = folderEmblems(env.dirs ?? [], env.home);
     this.state = {
       location: start,
       canBack: false,
@@ -99,15 +130,18 @@ export class FilesStore {
       items: [],
       loading: true,
       error: null,
-      showHidden: false,
-      view: "icons",
-      sort: DEFAULT_SORT,
+      showHidden: prefs.showHidden,
+      view: prefs.view,
+      // The default sort object itself, so Recents and the Trash keep their own order until one is picked.
+      sort: prefs.sort.key === DEFAULT_SORT.key && prefs.sort.ascending === DEFAULT_SORT.ascending ? DEFAULT_SORT : prefs.sort,
       query: "",
       scope: "folder",
       found: null,
       searching: false,
       truncated: false,
       selection: [],
+      renaming: null,
+      listed: start,
       clipboard: null,
       volumes: [],
       free: null,
@@ -146,12 +180,42 @@ export class FilesStore {
 
   // --- Looking at things -------------------------------------------------------------
 
-  /** Items for the current location as the list shows them: search results when searching, else the folder; hidden ones only with the toggle; sorted. */
+  /**
+   * Items for the current location as the list shows them: search results
+   * when searching, else the folder; hidden ones only with the toggle; what
+   * a chooser's filter lets through; sorted. Worked out once per state.
+   */
   visible(): FileItem[] {
+    if (this.shown?.state === this.state) return this.shown.items;
     const { found, items, showHidden } = this.state;
     const source = found ?? items;
-    const shown = showHidden ? source : source.filter((item) => !item.hidden);
-    return sortItems(shown, fileColumns(columnMode(this.state)), this.effectiveSort());
+    const { shows } = this.options;
+    const kept = source.filter((item) => (showHidden || !item.hidden) && (!shows || shows(item)));
+    const sorted = sortItems(kept, fileColumns(columnMode(this.state)), this.effectiveSort());
+    this.shown = { state: this.state, items: sorted };
+    return sorted;
+  }
+
+  /** What the empty listing says when `shows` keeps every item here out (not hidden ones); null when the folder is empty. */
+  keptOut(): string | null {
+    const { shows, keptOutTitle } = this.options;
+    if (!shows || !keptOutTitle) return null;
+    const { found, items, showHidden } = this.state;
+    return (found ?? items).some((item) => (showHidden || !item.hidden) && !shows(item)) ? keptOutTitle : null;
+  }
+
+  /** What `shows` lets through changed (a chooser's filter): look again, and drop what no longer shows from the selection. */
+  refilter(): void {
+    this.shown = null;
+    this.patch({});
+    const shown = new Set(this.visible().map((item) => item.path));
+    if (this.state.selection.some((path) => !shown.has(path))) this.select(this.state.selection.filter((path) => shown.has(path)));
+  }
+
+  /** The listing shown is the last place's, kept up while this one loads. */
+  get stale(): boolean {
+    const { loading, listed, location } = this.state;
+    return loading && !sameLocation(listed, location);
   }
 
   /** The sort in force: null in Recents and the Trash until the person picks one (their order is by time). */
@@ -173,12 +237,15 @@ export class FilesStore {
       this.forward = [];
     }
     this.clearSearch();
+    this.anchor = options.select ?? null;
+    this.focus = options.select ?? null;
+    // The last place's items stay up until this one's land (`stale`): a quick folder doesn't flicker.
     this.patch({
       location,
       canBack: this.back.length > 0,
       canForward: this.forward.length > 0,
       selection: options.select ? [options.select] : [],
-      items: [],
+      renaming: null,
       error: null,
       loading: true,
     });
@@ -239,9 +306,11 @@ export class FilesStore {
     const keep = new Set(items.map((item) => item.path));
     this.patch({
       items,
+      listed: location,
       loading: false,
       error,
       selection: select && keep.has(select) ? [select] : this.state.selection.filter((path) => keep.has(path)),
+      renaming: this.state.renaming !== null && keep.has(this.state.renaming) ? this.state.renaming : null,
     });
     this.watchLocation(location);
     if (location.kind === "folder") void space(location.path).then((free) => token === this.loadToken && this.patch({ free }));
@@ -283,21 +352,37 @@ export class FilesStore {
 
   setView(view: ViewMode): void {
     this.patch({ view });
+    this.keepPrefs();
   }
 
   setSort(sort: SortState): void {
     this.patch({ sort });
+    this.keepPrefs();
+  }
+
+  /** View › Reverse Order: the same sort the other way. */
+  reverseSort(): void {
+    const { key, ascending } = this.effectiveSort() ?? DEFAULT_SORT;
+    this.setSort({ key, ascending: !ascending });
   }
 
   toggleHidden(): void {
     this.patch({ showHidden: !this.state.showHidden });
+    this.keepPrefs();
     if (this.state.query !== "") this.scheduleSearch(0);
+  }
+
+  private keepPrefs(): void {
+    const { view, sort, showHidden } = this.state;
+    this.options.prefs?.write({ view, sort, showHidden });
   }
 
   // --- Selection ---------------------------------------------------------------------
 
   select(paths: readonly string[]): void {
     this.patch({ selection: paths });
+    this.focus = paths.at(-1) ?? null;
+    if (paths.length <= 1) this.anchor = paths[0] ?? null;
   }
 
   selectAll(): void {
@@ -314,6 +399,8 @@ export class FilesStore {
    * run to it, ❖ add or take it out; a plain second click on it opens it.
    */
   click(item: FileItem, held: Modifiers = NO_KEYS): void {
+    if (this.state.renaming !== null && this.state.renaming !== item.path) void this.commitRename();
+    if (this.state.renaming === item.path) return;
     const now = this.env.now();
     const plain = isPlain(held);
     const again = plain && this.lastClick?.path === item.path && now - this.lastClick.time <= DOUBLE_CLICK_MS;
@@ -325,8 +412,16 @@ export class FilesStore {
     }
     const shown = this.visible().map((each) => each.path);
     const picked = pick(shown, this.state.selection, this.anchor, item.path, held);
+    this.patch({ selection: picked.selection });
     this.anchor = picked.anchor;
-    this.select(picked.selection);
+    this.focus = item.path;
+  }
+
+  /** A click on the listing's empty space: nothing is selected. */
+  clickEmpty(): void {
+    if (this.state.renaming !== null) void this.commitRename();
+    this.lastClick = null;
+    if (this.state.selection.length > 0) this.select([]);
   }
 
   /** A right-click: a click outside the selection selects what was clicked. */
@@ -334,15 +429,20 @@ export class FilesStore {
     if (!this.state.selection.includes(item.path)) this.select([item.path]);
   }
 
-  /** The arrow keys: the next or previous item, `step` places away (a row of icons is `columns`). */
-  move(step: number): void {
-    const list = this.visible();
-    if (list.length === 0) return;
-    const last = this.state.selection.at(-1);
-    const at = last === undefined ? -1 : list.findIndex((item) => item.path === last);
-    const next = at < 0 ? (step > 0 ? 0 : list.length - 1) : Math.max(0, Math.min(list.length - 1, at + step));
-    const target = list[next];
-    if (target) this.select([target.path]);
+  /** How the view lays the items out, for the arrows: icons in rows of `columns`; `page` rows to a screen. */
+  setLayout(layout: Layout): void {
+    this.layout = layout;
+  }
+
+  /** A move key (selection.ts `navigate`): the arrows, Home, End, the page keys; with `extend` (⇧) the run from the anchor. */
+  move(step: Step, extend = false): void {
+    const columns = this.state.view === "icons" ? this.layout.columns : 1;
+    const shown = this.visible().map((item) => item.path);
+    const moved = navigate(shown, this.state.selection, this.anchor, this.focus, step, { ...this.layout, columns }, extend);
+    if (!moved) return;
+    this.patch({ selection: moved.selection });
+    this.anchor = moved.anchor;
+    this.focus = moved.focus;
   }
 
   /** Characters typed with the window focused select the next item that starts with them. */
@@ -353,12 +453,60 @@ export class FilesStore {
     if (found) this.select([found.path]);
   }
 
+  // --- Renaming in place -------------------------------------------------------------
+
+  /**
+   * What renames for this browser (Files' operations, a chooser's own): an
+   * error to show, or null once it is done. Without one nothing is renamed
+   * in place.
+   */
+  renamer: ((path: string, name: string) => Promise<string | null>) | null = null;
+  /** The name as typed so far in the field, kept for a click elsewhere, which commits it. */
+  private draft: string | null = null;
+
+  /** F2, Rename…, or a new folder: the item's name becomes a field. */
+  startRename(path: string): void {
+    if (!this.renamer) return;
+    this.draft = null;
+    this.select([path]);
+    this.patch({ renaming: path });
+  }
+
+  /** The field's text changed. */
+  draftRename(text: string): void {
+    this.draft = text;
+  }
+
+  /** Esc: the name stays as it was. */
+  endRename(): void {
+    this.draft = null;
+    if (this.state.renaming !== null) this.patch({ renaming: null });
+  }
+
+  /** Return, or a click elsewhere: rename to `name` (else the draft); a problem keeps the field, said in the footer. True when it is done. */
+  async commitRename(name: string | null = this.draft): Promise<boolean> {
+    const path = this.state.renaming;
+    if (path === null) return true;
+    const wanted = name ?? path.slice(path.lastIndexOf("/") + 1);
+    const problem = this.renamer ? await this.renamer(path, wanted) : null;
+    if (problem !== null) {
+      this.say(problem, true);
+      return false;
+    }
+    if (this.state.renaming === path) this.endRename();
+    return true;
+  }
+
   // --- Opening -----------------------------------------------------------------------
 
   /** Open a folder here, or a file in its default app. */
   activate(item: FileItem): void {
     if (item.kind === "folder") {
       this.go(folderAt(item.path));
+      return;
+    }
+    if (this.options.openFiles) {
+      this.options.openFiles([item]);
       return;
     }
     const check = mayOpen(item);
@@ -370,10 +518,18 @@ export class FilesStore {
   }
 
   openSelection(): void {
-    for (const item of this.selectedItems().slice(0, 8)) this.activate(item);
+    const items = this.selectedItems();
+    const files = items.filter((item) => item.kind !== "folder");
+    // A chooser takes its files at once (that is its answer); a folder is gone into.
+    if (this.options.openFiles && files.length > 0) return this.options.openFiles(files);
+    for (const item of items.slice(0, 8)) this.activate(item);
   }
 
-  /** Go to a typed path (`~/x`, an absolute path, a file:// URI); an error to show, or null. A path to a file shows its folder with the file selected. */
+  /**
+   * Go to a typed path (`~/x`, an absolute path, a file:// URI); an error to show, or null. A path
+   * to a file shows its folder with the file selected. A path that works takes down the error a
+   * path before it put up (`sayPathProblem`).
+   */
   goToPath(text: string): string | null {
     const typed = text.trim();
     if (typed === "") return "Type a folder’s path.";
@@ -388,7 +544,15 @@ export class FilesStore {
     }
     if (info.isDirectory()) this.go(folderAt(path));
     else this.go(folderAt(parentOf(path)), { select: path });
+    if (this.pathProblem !== null && this.state.notice?.id === this.pathProblem) this.dismissNotice();
+    this.pathProblem = null;
     return null;
+  }
+
+  /** Show what was wrong with a typed path (an error, until a path works or it is dismissed). */
+  sayPathProblem(text: string): void {
+    this.say(text, true);
+    this.pathProblem = this.noticeId;
   }
 
   /** Show an item's folder with the item selected (from search results and Recents). */

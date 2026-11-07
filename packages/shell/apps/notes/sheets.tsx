@@ -3,6 +3,7 @@
 import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { untitled } from "./names.ts";
 
 export type SheetState =
   | { kind: "new-folder" }
@@ -20,7 +21,7 @@ function NameSheet({
   onCancel,
 }: {
   title: string;
-  message: string;
+  message?: string;
   initial: string;
   confirmLabel: string;
   onSubmit: (name: string) => void;
@@ -34,7 +35,7 @@ function NameSheet({
   return (
     <Sheet testID="name-sheet" width={340}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{message}</Text>
+      {message !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted }}>{message}</Text>}
       <TextField testID="name-field" value={name} onChangeText={setName} autoFocus onSubmit={submit} onKeyPress={(key) => key === "Escape" && onCancel()} />
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
         <Button label="Cancel" testID="name-sheet:cancel" onPress={onCancel} />
@@ -65,20 +66,11 @@ export function NotesSheet({
   };
   switch (sheet.kind) {
     case "new-folder":
-      return (
-        <NameSheet
-          title="New Folder"
-          message="Name this folder."
-          initial=""
-          confirmLabel="Create"
-          onCancel={onClose}
-          onSubmit={(name) => done(() => actions.createFolder(name))()}
-        />
-      );
+      return <NameSheet title="New folder" initial="" confirmLabel="Create" onCancel={onClose} onSubmit={(name) => done(() => actions.createFolder(name))()} />;
     case "rename-folder":
       return (
         <NameSheet
-          title="Rename Folder"
+          title="Rename folder"
           message={`Enter a new name for “${sheet.name}”.`}
           initial={sheet.name}
           confirmLabel="Rename"
@@ -106,7 +98,7 @@ export function NotesSheet({
       return (
         <ConfirmSheet
           testID="purge"
-          title={`Delete “${sheet.title || "New Note"}” forever?`}
+          title={`Delete “${untitled(sheet.title)}” forever?`}
           message="This note can't be restored afterwards."
           confirmLabel="Delete Forever"
           danger

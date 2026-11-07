@@ -35,6 +35,8 @@ export type Rule = {
   send?: string;
   tap?: string[];
   swallow?: true;
+  /** A `bind` that switches the compositor to `afterTap` the moment it is pressed, as a ❖ tap does (launcher/type-ahead.ts). */
+  armsAfterTap?: true;
 };
 
 export type Keymap = {
@@ -95,6 +97,8 @@ export const KEYMAP: Keymap = {
     // must reach the field as Ctrl chords, not an app's menus. The lock
     // screen's field has its own rules (LOCKED_RULES).
     metal: ["dev.dashi.*", "dev.mirin.*"],
+    // Dashi's own Terminal, whose menus take ❖↑ and ❖↓ (between prompts).
+    dashiTerminal: ["dev.dashi.terminal"],
   },
   locked: LOCKED_RULES,
   // A ❖ tap opens the launcher; holding ❖ shows the shortcut sheet.
@@ -184,6 +188,9 @@ export const KEYMAP: Keymap = {
     { when: "alt+BackSpace", app: "terminal", send: "ctrl+w" },
     { when: "alt+Delete", app: "terminal", send: "alt+d" },
 
+    // In Dashi's Terminal ❖↑ and ❖↓ jump between prompts: its View menu's rows.
+    { when: "super+Up|Down", app: "dashiTerminal", bind: "app-chord" },
+
     // Moving in text, Mac style; ⇧ with them selects.
     { when: "super+Left", send: "Home" },
     { when: "super+Right", send: "End" },
@@ -191,6 +198,8 @@ export const KEYMAP: Keymap = {
     { when: "super+Down", send: "ctrl+End" },
     // ❖⌫ deletes to the line start: readline's Ctrl+U in terminals.
     { when: "super+BackSpace", app: "terminal", tap: ["ctrl+u"] },
+    // In Dashi's own apps the app's ❖⌫ row first (Files' Move to Trash), else the same erase (shortcuts.ts).
+    { when: "super+BackSpace", app: "metal", bind: "app-erase" },
     { when: "super+BackSpace", tap: ["shift+Home", "BackSpace"] },
 
     // In Dashi's own apps a ❖ chord is a menu shortcut first (the app's

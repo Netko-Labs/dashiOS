@@ -10,7 +10,8 @@ import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { CHECK } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
-import { MENU, type MenuRowKind, menuHeight, placeMenu, type Size } from "./menu-place.ts";
+import type { KeyInput } from "./keys.ts";
+import { litAfter, MENU, type MenuRowKind, menuHeight, placeMenu, type Size } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
@@ -25,9 +26,41 @@ export interface SheetProps {
   onConfirm?: () => void;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+/**
+ * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
+ * shadow): `Sheet` hangs one from a window; a surface of its own (the
+ * shell's applet consent) shows one with no window to hang from.
+ */
+export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
   const colors = useColors();
   const surface = useSurface();
+  return (
+    <View
+      testID={testID}
+      occlude
+      // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
+      focusTrap
+      accessibilityRole="dialog"
+      style={{
+        width,
+        marginTop,
+        flexDirection: "column",
+        gap: 10,
+        padding: 20,
+        borderRadius: 12,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        shadow: "xl",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+  const colors = useColors();
   const inset = useTitleBarInset();
   return (
     <View
@@ -53,27 +86,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <View
-        testID={testID}
-        occlude
-        // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
-        focusTrap
-        accessibilityRole="dialog"
-        style={{
-          width,
-          marginTop: Math.max(inset.top, 0) + 8,
-          flexDirection: "column",
-          gap: 10,
-          padding: 20,
-          borderRadius: 12,
-          backgroundColor: surface.card,
-          borderWidth: 1,
-          borderColor: colors.separator,
-          shadow: "xl",
-        }}
-      >
+      <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8}>
         {children}
-      </View>
+      </SheetCard>
     </View>
   );
 }
@@ -119,17 +134,29 @@ export function MenuList({
   onChoose,
   testID = "menu",
   minWidth = MENU.minWidth,
+  lit,
+  onLit,
 }: {
   items: readonly MenuEntry[];
   /** A row was pressed (before its own `onPress`): a popup closes. */
   onChoose?: () => void;
   testID?: string;
   minWidth?: number;
+  /** The row drawn in kombu, by its place among the drawn rows, when the owner moves it with keys too (`PopupMenu`). */
+  lit?: number | null;
+  onLit?: (row: number | null) => void;
 }) {
   const colors = useColors();
   const rows = tidyEntries(items);
   const ticks = rows.some((row) => !isSeparator(row) && row.checked !== undefined);
-  const [hovered, setHovered] = useState<number | null>(null);
+  const [ownLit, setOwnLit] = useState<number | null>(null);
+  const hovered = lit === undefined ? ownLit : lit;
+  const setHovered = (next: (now: number | null) => number | null): void => {
+    const row = next(hovered);
+    if (row === hovered) return;
+    if (lit === undefined) setOwnLit(row);
+    onLit?.(row);
+  };
   return (
     <View
       occlude
@@ -223,7 +250,24 @@ export function PopupMenu({
 }) {
   const [room, setRoom] = useState<Size>({ width: 0, height: 0 });
   const [width, setWidth] = useState<number | null>(null);
-  const kinds = tidyEntries(items).map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
+  const rows = tidyEntries(items);
+  // ↑ and ↓ light a row and Return picks it, before Tab moves into the menu; it opens on the ticked row (a pop-up button's choice).
+  const [lit, setLit] = useState<number | null>(() => {
+    const ticked = rows.findIndex((row) => !isSeparator(row) && row.checked === true);
+    return ticked < 0 ? null : ticked;
+  });
+  const usable = rows.map((row) => !isSeparator(row) && row.disabled !== true);
+  const onKey = (key: KeyInput): void => {
+    if (key.kind === "escape") onClose();
+    else if (key.kind === "up" || key.kind === "down") setLit((now) => litAfter(usable, now, key.kind === "up" ? -1 : 1));
+    else if (key.kind === "enter" && lit !== null) {
+      const row = rows[lit];
+      if (row === undefined || isSeparator(row) || row.disabled) return;
+      onClose();
+      row.onPress();
+    }
+  };
+  const kinds = rows.map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
   const at = placeMenu({ x, y }, { width: width ?? minWidth, height: menuHeight(kinds) }, room, flip);
   return (
     <View
@@ -235,14 +279,14 @@ export function PopupMenu({
       }
       style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}
     >
-      <KeySink testID={`${testID}:keys`} onKey={(key) => key.kind === "escape" && onClose()} />
+      <KeySink testID={`${testID}:keys`} onKey={onKey} />
       <View
         // Tab moves into the menu and stays there while it is open; Esc closes it.
         focusTrap
         style={{ position: "absolute", left: at.x, top: at.y }}
         onLayout={(bounds) => setWidth((now) => (now === bounds.width ? now : bounds.width))}
       >
-        <MenuList items={items} onChoose={onClose} testID={testID} minWidth={minWidth} />
+        <MenuList items={items} onChoose={onClose} testID={testID} minWidth={minWidth} lit={lit} onLit={setLit} />
       </View>
     </View>
   );

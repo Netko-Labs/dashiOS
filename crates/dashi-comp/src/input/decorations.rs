@@ -85,12 +85,7 @@ impl Dashi {
         let control =
             |double: bool| json!({ "window": id, "control": "zoom", "alt": alt, "double": double });
         let result = match part {
-            Part::Close => self.close_window(id),
-            Part::Minimize => self.park_window(id, Shown::Minimized),
-            Part::Zoom => {
-                self.ipc.emit("window-control", control(false));
-                Ok(())
-            }
+            Part::Close | Part::Minimize | Part::Zoom => self.press_light(id, part),
             Part::Bar => {
                 let double = self
                     .last_bar_press
@@ -110,6 +105,40 @@ impl Dashi {
             tracing::debug!(%error, "a press on a window's decoration");
         }
         true
+    }
+
+    /// A light pressed (the person's press, or an agent's click): close, minimize, or the
+    /// square, reported to the shell. Never activation first, active window or not.
+    pub(crate) fn press_light(&mut self, id: u64, part: Part) -> Result<(), String> {
+        match part {
+            Part::Close => self.close_window(id),
+            Part::Minimize => self.park_window(id, Shown::Minimized),
+            Part::Zoom => {
+                let alt = self
+                    .seat
+                    .get_keyboard()
+                    .is_some_and(|keyboard| keyboard.modifier_state().alt);
+                let control =
+                    json!({ "window": id, "control": "zoom", "alt": alt, "double": false });
+                self.ipc.emit("window-control", control);
+                Ok(())
+            }
+            Part::Bar => Ok(()),
+        }
+    }
+
+    /// The light of window `id` (`window`) at `pos`, whatever is above it there: where an agent,
+    /// which acts on one window, clicks it.
+    pub(crate) fn light_of(
+        &self,
+        id: u64,
+        window: &Window,
+        pos: Point<f64, Logical>,
+    ) -> Option<Part> {
+        let decor = self.windows.get(id)?.decor;
+        let frame = frame_of(self, window)?;
+        let at = pos - frame.loc.to_f64();
+        part_at(at.x, at.y, frame.size.w, decor).filter(|part| *part != Part::Bar)
     }
 
     /// A press away from any decoration: the keyboard goes to what was pressed.

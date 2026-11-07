@@ -86,8 +86,23 @@ export interface Palette {
   broth: string;
   /** Broth washed: behind a warning's glyph. */
   brothWash: string;
+  /**
+   * Find's matches in a document's text (Text Editor): broth washed behind
+   * the words, and deeper on the match Find is on (`findCurrent`), under the
+   * text's own ink (at least 4.5:1 on both) and apart from kombu's selection.
+   */
+  findWash: string;
+  findCurrent: string;
   /** Moss, for success ("Installed", "Saved"): text, AA on every window ground. Not kombu: done is not selected. */
   moss: string;
+  /**
+   * Kombu as words: the verb on a store's pill (Get, Update) and a link,
+   * AA on every window ground and on `button`. The brand's lighter kombu in
+   * Dark Mode, where `selection` as text is too quiet.
+   */
+  accentInk: string;
+  /** Flathub's seal behind a verified publisher's check (white on it). Flathub's mark, not Dashi's: only for "verified by Flathub". */
+  verified: string;
   /** Words that destroy (Quit, Move to Trash) in the launcher: ume that reads at 4.5:1 on the glass and on `selectionWash`. */
   criticalInk: string;
   /** Tiles and cards on Control Center's panel. */
@@ -142,7 +157,11 @@ export const lightColors: Palette = {
   umeWash: "#D0596F24",
   broth: "#86600A",
   brothWash: "#E5B13F33",
+  findWash: "#E5B13F40",
+  findCurrent: "#E5B13F99",
   moss: "#38722C",
+  accentInk: "#2F6E5A",
+  verified: "#3B8FD0",
   criticalInk: "#963549",
   tile: "#ffffffb8",
   tileHover: "#ffffffe6",
@@ -195,7 +214,11 @@ export const darkColors: Palette = {
   umeWash: "#E8798F3d",
   broth: "#E5B13F",
   brothWash: "#E5B13F3d",
+  findWash: "#E5B13F33",
+  findCurrent: "#E5B13F73",
   moss: "#6CB45B",
+  accentInk: "#7FD1B2",
+  verified: "#3B8FD0",
   criticalInk: "#F09AAB",
   tile: "#ffffff17",
   tileHover: "#ffffff29",

@@ -1,40 +1,64 @@
-/** A category's apps or search results: cards in a grid, a page at a time ("Show More"). */
+/**
+ * A category's apps, a collection in full, or search results: cards in a
+ * grid, a page at a time ("Show more"). A search is one search: the menu bar
+ * applets that match come first (the catalog is local), then Flathub's apps.
+ */
 
 import { Button, EmptyState, glyphs, Loading } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import type { Answer, CategoryId, Flathub } from "../../src/software/flathub.ts";
+import type { Answer, CategoryId, Collection, Flathub } from "../../src/software/flathub.ts";
 import type { AppSummary, Page } from "../../src/software/flathub-types.ts";
+import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { CardGrid } from "./cards.tsx";
-import { SectionHeader } from "./discover.tsx";
+import { SectionHeader } from "./heading.tsx";
 import { useLoad } from "./hooks.ts";
+import { matches } from "./nav.ts";
 import { useServices } from "./services.ts";
-import { Failed, StaleNote } from "./states.tsx";
+import { Failed } from "./states.tsx";
 
 const PER_PAGE = 24;
 
-export type Source = { kind: "category"; id: CategoryId; label: string } | { kind: "search"; query: string };
+export type Source =
+  | { kind: "category"; id: CategoryId; label: string }
+  | { kind: "collection"; id: Collection; label: string }
+  | { kind: "search"; query: string };
 
 const fetchPage = (catalog: Flathub, source: Source, page: number): Promise<Answer<Page>> =>
-  source.kind === "category" ? catalog.category(source.id, page, PER_PAGE) : catalog.search(source.query, page, PER_PAGE);
+  source.kind === "category"
+    ? catalog.category(source.id, page, PER_PAGE)
+    : source.kind === "collection"
+      ? catalog.collection(source.id, page, PER_PAGE)
+      : catalog.search(source.query, page, PER_PAGE);
+
+/** The applets a search finds, by name, summary, author or id. */
+function useAppletMatches(source: Source) {
+  const state = useAppletState();
+  if (source.kind !== "search" || state.index === null) return [];
+  return state.index.applets.filter((entry) =>
+    matches(source.query, { name: entry.manifest.name, summary: entry.manifest.summary, author: entry.manifest.author.name, id: entry.manifest.id }),
+  );
+}
 
 export function Listing({ source }: { source: Source }) {
   const { catalog } = useServices();
-  const key = source.kind === "category" ? `category:${source.id}` : `search:${source.query}`;
+  const key = source.kind === "search" ? `search:${source.query}` : `${source.kind}:${source.id}`;
   const first = useLoad<Page>(key, () => fetchPage(catalog, source, 1));
+  const applets = useAppletMatches(source);
   const [more, setMore] = useState<{ key: string; apps: AppSummary[]; page: number; loading: boolean }>({ key, apps: [], page: 1, loading: false });
   const current = useRef(key);
   current.current = key;
   useEffect(() => setMore({ key, apps: [], page: 1, loading: false }), [key]);
 
   if (first.state.status === "loading") return <Loading label={source.kind === "search" ? "Searching…" : "Loading…"} />;
-  if (first.state.status === "failed") return <Failed state={first.state} onRetry={first.reload} />;
-  const page = first.state.value;
+  // Flathub failing still shows the applets that match.
+  if (first.state.status === "failed" && applets.length === 0) return <Failed state={first.state} onRetry={first.reload} />;
+  const page = first.state.status === "ready" ? first.state.value : { apps: [], page: 1, totalPages: 1, total: 0 };
   const extra = more.key === key ? more : { key, apps: [], page: 1, loading: false };
   const seen = new Set(page.apps.map((app) => app.id));
   const apps = [...page.apps, ...extra.apps.filter((app) => !seen.has(app.id))];
   const hasMore = extra.page < page.totalPages;
-  const title = source.kind === "category" ? source.label : `Results for “${source.query}”`;
+  const title = source.kind === "search" ? `Apps for “${source.query}”` : source.label;
 
   const showMore = (): void => {
     if (extra.loading) return;
@@ -45,28 +69,30 @@ export function Listing({ source }: { source: Source }) {
       .catch(() => current.current === key && setMore({ ...extra, loading: false }));
   };
 
-  if (apps.length === 0) {
+  if (apps.length === 0 && applets.length === 0) {
     return (
       <EmptyState
         testID="no-results"
         glyph={glyphs.SEARCH}
-        title="No Results"
+        title="No results"
         message={
           source.kind === "search"
-            ? `Nothing in Flathub matches “${source.query}”. Check the spelling or try fewer words.`
-            : "There are no apps in this category yet."
+            ? `Nothing in Flathub or the applets matches “${source.query}”. Check the spelling or try fewer words.`
+            : "There are no apps here yet."
         }
       />
     );
   }
   return (
     <ScrollView testID="listing" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
-      {first.state.stale && <StaleNote />}
-      <SectionHeader title={title} detail={page.total > 0 ? `${page.total.toLocaleString("en-US")} ${page.total === 1 ? "app" : "apps"}` : undefined} />
-      <CardGrid apps={apps} />
+      <AppletGroup title="Menu bar applets" entries={applets} testID="applet-results" />
+      {apps.length > 0 && (
+        <SectionHeader title={title} detail={page.total > 0 ? `${page.total.toLocaleString("en-US")} ${page.total === 1 ? "app" : "apps"}` : undefined} />
+      )}
+      {apps.length > 0 && <CardGrid apps={apps} />}
       {hasMore && (
         <View style={{ flexShrink: 0, alignItems: "center", padding: 8 }}>
-          <Button label={extra.loading ? "Loading…" : "Show More"} testID="show-more" onPress={showMore} disabled={extra.loading} />
+          <Button label={extra.loading ? "Loading…" : "Show more"} testID="show-more" onPress={showMore} disabled={extra.loading} />
         </View>
       )}
     </ScrollView>

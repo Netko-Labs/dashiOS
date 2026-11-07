@@ -41,6 +41,8 @@ pub struct State {
     mover: Option<(wl_seat::WlSeat, xdg_toplevel::XdgToplevel)>,
     /// Moves asked for.
     pub moves: usize,
+    /// The pointer is over the window (entered and not left; a movable window's).
+    pub pointer_in: bool,
     /// Dialogs opened (`open_dialog`), by their xdg_surface's number (1 on).
     dialogs: Vec<Dialog>,
 }
@@ -254,6 +256,11 @@ impl Dispatch<wl_pointer::WlPointer, ()> for State {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
+        match event {
+            wl_pointer::Event::Enter { .. } => state.pointer_in = true,
+            wl_pointer::Event::Leave { .. } => state.pointer_in = false,
+            _ => {}
+        }
         let wl_pointer::Event::Button {
             serial,
             state: wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),

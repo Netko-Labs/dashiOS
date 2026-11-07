@@ -76,6 +76,40 @@ test("an app that holds its window to ask is named after a moment, and its answe
   expect(done).toBe(1);
 });
 
+test("two apps that ask are asked one at a time: the next only once the first has gone", async () => {
+  const time = clock();
+  const apps = desktop([
+    { id: 7, name: "Text Editor" },
+    { id: 3, name: "Terminal" },
+  ]);
+  const shown: Array<[string[], number]> = [];
+  let answeredAt = 0;
+  const outcome = await closeApps(
+    {
+      ...time,
+      windows: async () => {
+        // The person answers the Editor's question after a while, then Terminal's.
+        if (time.now() >= HOLD_AFTER_MS + 500 && apps.open.has(7)) {
+          apps.open.delete(7);
+          answeredAt = time.now();
+        }
+        if (answeredAt > 0 && time.now() >= answeredAt + 400) apps.open.delete(3);
+        return apps.windows();
+      },
+      close: apps.close,
+      holding: (names, first) => void shown.push([[...names], first]),
+      done: () => {},
+    },
+    new ClosingChoice(),
+  );
+  expect(outcome).toBe("closed");
+  // Terminal was asked only after the Editor had gone.
+  expect(apps.asked).toEqual([7, 3]);
+  // The notice brings forward the one asking, and names it first.
+  expect(shown[0]).toEqual([["Text Editor", "Terminal"], 7]);
+  expect(shown.at(-1)).toEqual([["Terminal"], 3]);
+});
+
 test("Cancel on the sheet keeps the session; going anyway ends the wait too", async () => {
   for (const answer of ["cancel", "anyway"] as const) {
     const time = clock();
@@ -121,5 +155,36 @@ test("the notice is always one line: a long name drops the asking, two that don'
   expect(long).toEndWith("…” to close.");
   for (const names of [["X"], ["Text Editor"], ["a".repeat(80)], ["b".repeat(40), "c"], ["1", "2", "3"], Array.from({ length: 120 }, String)]) {
     expect(holdingCopy(names, "shutdown").line.length).toBeLessThanOrEqual(HOLDING_LINE);
+  }
+});
+
+test("Cancel tells the app that was asking: its question goes; Log out anyway tells nobody", async () => {
+  for (const answer of ["cancel", "anyway"] as const) {
+    const time = clock();
+    const apps = desktop([
+      { id: 3, name: "Terminal" },
+      { id: 7, name: "Text Editor" },
+    ]);
+    const choice = new ClosingChoice();
+    const withdrawn: number[] = [];
+    const outcome = await closeApps(
+      {
+        ...time,
+        windows: async () => {
+          // Terminal asks "Quit Terminal?"; the person answers the notice instead.
+          if (time.now() >= HOLD_AFTER_MS + 200) choice.answer ??= answer;
+          return apps.windows();
+        },
+        close: apps.close,
+        holding: () => {},
+        done: () => {},
+        withdraw: (window) => void withdrawn.push(window),
+      },
+      choice,
+    );
+    expect(outcome).toBe(answer);
+    // Only Terminal was asked (one at a time), so only its question goes.
+    expect(apps.asked).toEqual([3]);
+    expect(withdrawn).toEqual(answer === "cancel" ? [3] : []);
   }
 });

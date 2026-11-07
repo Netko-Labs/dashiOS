@@ -38,7 +38,7 @@ import { WindowStyleSync } from "./appearance/window-style.ts";
 import { AppletCommands } from "./applets/commands.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
-import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
+import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, registerShellApp, resolvePinned, SCREENSHOT_APP_ID } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { barHold, holdingBar } from "./bar-hold.ts";
@@ -134,6 +134,9 @@ import { startSharePicker } from "./share-picker/index.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
+import { Software } from "./software/manager.ts";
+import { standIn } from "./software/stand-in.ts";
+import { checkPath, openSoftwareUpdates, UpdateCheck } from "./software/update-check.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
@@ -477,6 +480,22 @@ const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
 // Calendar's alerts fire from here, window open or not; the notification center's month marks the days with
 // events and opens the app on one (calendar/). A development run keeps what has fired in memory, not in the state folder.
 const calendar = startCalendar({ notifications: notifications.store, toplevels, ...(developmentRun ? { statePath: null } : {}) });
+// The daily look for app and system updates, told in one quiet notification; it installs nothing (software/update-check.ts).
+const stopUpdateCheck = new UpdateCheck({
+  software: new Software(standIn() ?? {}),
+  notifications: notifications.store,
+  open: () =>
+    openSoftwareUpdates({
+      windows: () => toplevels.getSnapshot(),
+      activate: (id) => toplevels.act(id, "activate"),
+      openWith: (appId, env) => openWith(appId, env),
+    }),
+  canLook: () => {
+    const { battery, network } = system.store.getSnapshot();
+    return network?.kind !== "offline" && battery?.state !== "discharging";
+  },
+  statePath: developmentRun ? null : checkPath(),
+}).start();
 // Do Not Disturb is Control Center's switch; the store holds banners while it's on.
 const flags = controlFlags();
 // The settings registry's rows read and change through these (settings-app/registry/): the launcher's, links', and agents'.
@@ -567,6 +586,8 @@ const settingsApp = startSettingsApp({
   services: paneServicesOf,
   // Its Edit menu (Undo a setting) goes in the menu bar's store, made below.
   menus: () => appMenus.store,
+  // Who is connected now, for Settings › Agents.
+  agents: agentStore,
 });
 
 // The Setup Assistant: at a person's first login, and from Settings > About and the launcher (setup/).
@@ -612,6 +633,8 @@ const dock = new DockController({
   openDockSettings: () => settingsApp.open("desktop-dock"),
   onPress: () => void overview?.leave(),
   opened: (appId) => rankingMemory.opened(appId),
+  // Quit in an icon's menu asks as ❖Q does: "Quit Terminal?" (kit/close.ts).
+  appQuitting,
 });
 // What keeps the computer awake (inhibit/): the portal's Inhibit, through dashi-portal, and
 // org.freedesktop.ScreenSaver; idle neither blanks nor sleeps while an app holds it, and an app
@@ -647,7 +670,7 @@ const appMenus = startAppMenus({
 // ($XDG_RUNTIME_DIR/dashi-applets.sock, applets/) and the tray over D-Bus (tray/).
 const extras = new ExtrasStore();
 // The battery over time, its draw, the apps using energy, and what to make of it (battery/): the battery's menu and Settings show it.
-const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp });
+const batteryMonitor = startBatteryMonitor({ compositor, apps, installed: installedApp, entries: () => catalog });
 // Applets' commands in the launcher (applets/commands.ts): answered on their connections, listed in the registry (extensions/).
 const appletCommands = new AppletCommands({
   copy: (text) => launcherClipboard.writeText(text),
@@ -1307,6 +1330,8 @@ async function runCapture(what: CaptureKind, window: number | null): Promise<voi
       return captureTools?.toolbar(front);
   }
 }
+// Screenshot as an app (All apps, the Dock): ⇧❖5's toolbar, over the window in front.
+const stopScreenshotApp = compositor ? registerShellApp(SCREENSHOT_APP_ID, () => void runCapture("toolbar", null)) : null;
 // The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
 // keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
 const actions = startActions({
@@ -1538,6 +1563,7 @@ const quit = () => {
     ["autostart", () => autostart?.close()],
     ["lock watch", stopClosingOnLock],
     ["polkit", () => polkit.close()],
+    ["screenshot app", () => stopScreenshotApp?.()],
     ["polkit lock watch", () => polkitLock?.close()],
     ["shortcuts", stopShortcuts],
     ["screenshot selection", () => captureArea?.close()],
@@ -1552,6 +1578,7 @@ const quit = () => {
     ["privacy", () => privacy?.stop()],
     ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
+    ["recent settings changes", () => void settingsStore.changes.flush()],
     ["wallpaper events", () => stopWallpaperEvents?.()],
     ["live wallpaper", () => liveWallpaper?.stop()],
     ["idle", () => idle?.stop()],
@@ -1601,6 +1628,7 @@ const quit = () => {
     ["screen sharing", () => capture?.stop()],
     ["battery alerts", stopBatteryAlerts],
     ["calendar", () => calendar.close()],
+    ["update check", stopUpdateCheck],
     ["appearance", stopAppearance],
     ["chrome", stopChrome],
     ["notifications", () => notifications.close()],

@@ -158,3 +158,18 @@ describe("rowLook and the bar", () => {
     expect(selectionBarHeight(8)).toBe(0);
   });
 });
+
+// Find's matches in a document (Text Editor): the text's own ink stays AA on
+// both washes, and the match Find is on stands apart from the others.
+describe.each(Object.entries(MODES))("find's matches in %s mode", (mode, colors) => {
+  const card = rgba((SURFACES[mode] as Surface).card);
+  test("ink reads at 4.5:1 or more on every match and on the current one", () => {
+    for (const wash of [colors.findWash, colors.findCurrent]) {
+      const ground = over(wash, card);
+      expect(contrast(rgba(colors.text), ground)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  test("the current match is deeper than the others", () => {
+    expect(contrast(over(colors.findCurrent, card), over(colors.findWash, card))).toBeGreaterThan(1.2);
+  });
+});

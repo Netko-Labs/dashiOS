@@ -21,6 +21,14 @@ type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text"
 const CLICK_GAP_MS = 60;
 const DRAG_STEPS = 8;
 const DRAG_STEP_MS = 30;
+/**
+ * A long scroll is played as a wheel spun fast: flicks of at most 120 pixels
+ * (8 notches), a frame apart, never one event of hundreds of notches, which
+ * no wheel sends (a 2400 pixel one came right before the display froze,
+ * review 20). The tool keeps a scroll within 10 000 pixels (tools/input.ts).
+ */
+const WHEEL_FLICK_PX = 120;
+const WHEEL_FLICK_MS = 16;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -34,14 +42,36 @@ function content(window: CompositorWindow): { width: number; height: number } | 
   return { width: window.frame.width, height: window.frame.height - window.titleBar };
 }
 
+/** A scroll of (dx, dy) as the wheel flicks that play it, in order; none for (0, 0). */
+export function wheelFlicks(dx: number, dy: number): Array<{ dx: number; dy: number }> {
+  const count = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / WHEEL_FLICK_PX);
+  // Even shares, so the last flick isn't a stub.
+  return Array.from({ length: count }, () => ({ dx: dx / count, dy: dy / count }));
+}
+
 const isResult = (value: object): value is ToolResult => "content" in value;
 
 /** The keymap's binding that hands ❖ chords to a Dashi app's menus (keymap.ts). */
 const APP_CHORD = "app-chord";
+/** ❖⌫ in a Dashi app: its menu row first, else erasing to the line's start (keymap.ts). */
+const APP_ERASE = "app-erase";
 
 const shortcutOf = (chord: KeyChord): string =>
   chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
   [...chord.mods, chord.key].join("+");
+
+/**
+ * Why press_keys refused a chord the desktop keeps, and what does it instead:
+ * ❖Q is the shell's Quit (keymap.ts `quit-app`), which an agent reaches
+ * through the app's menu.
+ */
+export function desktopChordRefusal(shortcut: string, binding: string | null): string {
+  const instead =
+    binding === "quit-app"
+      ? "to quit the app, choose_menu_item its app menu's Quit (list_menus names it), or close_window"
+      : "use the window tools (focus_window, close_window, …) instead";
+  return `${shortcut} is the desktop's own shortcut, not the window's; ${instead}.`;
+}
 
 /** ❖ played as the app's own Ctrl, Shift kept. */
 const asCtrl = (chord: KeyChord): KeyChord => ({ mods: ["ctrl", ...chord.mods.filter((mod) => mod === "shift")], key: chord.key });
@@ -89,7 +119,10 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const problem = inside(window, size, [call]);
         if (problem) return problem;
         say(`Scrolling ${where}`);
-        await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: { dx: call.dx, dy: call.dy } });
+        for (const [n, flick] of wheelFlicks(call.dx, call.dy).entries()) {
+          if (n > 0) await sleep(WHEEL_FLICK_MS);
+          await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: flick });
+        }
         return text(`Scrolled w${window.id} by (${call.dx}, ${call.dy}) at ${at(call.x, call.y)}.`);
       }
       case "drag": {
@@ -112,14 +145,22 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         // The person's keys pass the keymap in the compositor; an agent's are
         // resolved here, so ⌥← and ❖S mean the same for both (keymap-match.ts).
         const plan = call.chords.map((chord) => ({ chord, resolved: resolveChord(chord, window.appId) }));
-        const kept = plan.find(({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD));
-        if (kept)
-          return toolError(
-            `${shortcutOf(kept.chord)} is the desktop's own shortcut, not the window's; use the window tools (focus_window, close_window, …) instead.`,
-          );
+        const kept = plan.find(
+          ({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD && resolved.name !== APP_ERASE),
+        );
+        if (kept) return toolError(desktopChordRefusal(shortcutOf(kept.chord), kept.resolved.kind === "bind" ? kept.resolved.name : null));
         say(`Pressing keys in ${where}`);
         for (const { chord, resolved } of plan) {
           if (resolved.kind === "keys") await send({ keys: keySteps(resolved.chords) });
+          else if (resolved.kind === "bind" && resolved.name === APP_ERASE) {
+            if (!(await ctx.desktop.appShortcut?.(window.id, "❖⌫")))
+              await send({
+                keys: keySteps([
+                  { mods: ["shift"], key: "Home" },
+                  { mods: [], key: "BackSpace" },
+                ]),
+              });
+          }
           // A ❖ chord in one of Dashi's apps: its menu item with that shortcut, else the app's Ctrl chord (shortcuts.ts).
           else if (!(await ctx.desktop.appShortcut?.(window.id, shortcutOf(chord)))) await send({ keys: keySteps([asCtrl(chord)]) });
         }

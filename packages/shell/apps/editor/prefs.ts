@@ -1,7 +1,9 @@
 /**
  * Text Editor's View settings, kept across windows in
- * `$XDG_CONFIG_HOME/dashi/editor.json`: the monospaced font, and the text
- * size. Read when a window opens; written when either changes.
+ * `$XDG_CONFIG_HOME/dashi/editor.json`: the monospaced font, the text size,
+ * and line numbers. Read when a window opens and again when another window
+ * changes them (main.tsx), so every open window follows; written when one
+ * changes.
  */
 
 import { mkdirSync, readFileSync } from "node:fs";
@@ -12,10 +14,15 @@ import { writeTextAtomic } from "../../src/region/files.ts";
 export interface EditorPrefs {
   monospace: boolean;
   fontSize: number;
+  /** The line-number gutter at the text's left. */
+  lineNumbers: boolean;
 }
 
 export const FONT_SIZES = [10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32] as const;
-export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: 13 };
+export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: 13, lineNumbers: true };
+
+export const samePrefs = (a: EditorPrefs, b: EditorPrefs): boolean =>
+  a.monospace === b.monospace && a.fontSize === b.fontSize && a.lineNumbers === b.lineNumbers;
 
 export function prefsPath(env: Record<string, string | undefined> = process.env): string {
   const config = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), ".config");
@@ -36,6 +43,7 @@ export function parsePrefs(text: string): EditorPrefs {
   return {
     monospace: typeof record.monospace === "boolean" ? record.monospace : DEFAULT_PREFS.monospace,
     fontSize: typeof size === "number" && (FONT_SIZES as readonly number[]).includes(size) ? size : DEFAULT_PREFS.fontSize,
+    lineNumbers: typeof record.lineNumbers === "boolean" ? record.lineNumbers : DEFAULT_PREFS.lineNumbers,
   };
 }
 

@@ -23,6 +23,8 @@ export interface DialogApps {
   focus(window: number): void;
   /** Where the notice naming the app goes for this window: clear of its sheet (holding-place.ts); at the foot without it. */
   place?(window: number): Promise<HoldingPlace>;
+  /** The person cancelled: this window's app no longer quits, and takes down what it asked. */
+  withdraw?(window: number): void;
 }
 
 const WIDTH = SHEET_SIZE.width + 2 * SHEET_SIZE.margin;
@@ -67,6 +69,10 @@ export class Dialogs {
         holding: (names, first) => {
           apps.focus(first);
           void this.showHolding(what, names, first, choice);
+        },
+        // Not when another confirmed action took over: that one is asking now.
+        withdraw: (window) => {
+          if (this.ending === choice) apps.withdraw?.(window);
         },
         done: () => {
           // A notice still finding its place doesn't open after the wait.

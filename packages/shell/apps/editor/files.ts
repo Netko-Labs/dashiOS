@@ -15,7 +15,25 @@ import { type Decoded, decodeText } from "./codec.ts";
 /** Larger files are refused: the input lays out its whole text on every change. */
 export const MAX_BYTES = 4 * 1024 * 1024;
 
-export type ReadResult = { ok: true; decoded: Decoded } | { ok: false; message: string };
+export type ReadResult = { ok: true; decoded: Decoded; stamp: Stamp } | { ok: false; message: string };
+
+/** What says a file changed: when it was last written, and its size. */
+export interface Stamp {
+  mtimeMs: number;
+  size: number;
+}
+
+/** The file's stamp now, or null when it isn't there (or can't be read). */
+export function stampOf(path: string): Stamp | null {
+  try {
+    const stat = statSync(path);
+    return { mtimeMs: stat.mtimeMs, size: stat.size };
+  } catch {
+    return null;
+  }
+}
+
+export const sameStamp = (a: Stamp | null, b: Stamp | null): boolean => a === b || (a !== null && b !== null && a.mtimeMs === b.mtimeMs && a.size === b.size);
 
 const reason = (error: unknown): string => {
   const code = (error as { code?: unknown } | null)?.code;
@@ -32,7 +50,7 @@ export function readDocument(path: string): ReadResult {
     if (!stat.isFile()) return { ok: false, message: "It isn't a regular file." };
     if (stat.size > MAX_BYTES) return { ok: false, message: `It is larger than ${MAX_BYTES / 1024 / 1024} MB, too large to edit here.` };
     const decoded = decodeText(new Uint8Array(readFileSync(path)));
-    return decoded ? { ok: true, decoded } : { ok: false, message: "It doesn't look like a text file." };
+    return decoded ? { ok: true, decoded, stamp: { mtimeMs: stat.mtimeMs, size: stat.size } } : { ok: false, message: "It doesn't look like a text file." };
   } catch (error) {
     return { ok: false, message: reason(error) };
   }

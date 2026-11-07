@@ -81,7 +81,7 @@ test("the notice's Undo is for its own step: a newer step takes the notice down"
   await ops.trash([item(join(folder, "a.txt"))]);
   expect(store.getSnapshot().notice?.undoStep).toBeDefined();
   // New Folder says nothing in the footer; before, the Trash notice's Undo then took back the folder.
-  expect(await ops.newFolder("untitled folder")).toBeNull();
+  expect(await ops.newFolder()).toEqual({ path: join(folder, "untitled folder") });
   expect(ops.undo.state.undoName).toBe("New Folder");
   expect(store.getSnapshot().notice).toBeNull();
   store.stop();
@@ -94,4 +94,19 @@ test("an Undo that couldn't run leaves the notice up", async () => {
   await ops.undoStep("undo");
   expect(store.getSnapshot().notice?.text).toBe("Moved “a.txt” to the Trash.");
   store.stop();
+});
+
+test("a typed path's error stays until a path works, and goes then; another error is left alone", () => {
+  const { store, folder } = files();
+  const problem = store.goToPath("~~/UndoTest");
+  expect(problem).not.toBeNull();
+  store.sayPathProblem(problem as string);
+  expect(store.getSnapshot().notice?.error).toBe(true);
+  expect(store.goToPath("~/UndoTest")).toBeNull();
+  expect(store.getSnapshot().location).toEqual(folderAt(folder));
+  expect(store.getSnapshot().notice).toBeNull();
+  // An error of something else (a copy that failed) isn't the path field's to take down.
+  store.say("“a.txt” couldn’t be copied.", true);
+  expect(store.goToPath("~")).toBeNull();
+  expect(store.getSnapshot().notice?.text).toBe("“a.txt” couldn’t be copied.");
 });

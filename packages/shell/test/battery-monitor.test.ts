@@ -96,6 +96,10 @@ const proc = (pid: number, ppid: number, name: string, cpuTicks: number, uid = 1
   kernel: false,
   io: null,
   sockets: null,
+  command: name,
+  app: null,
+  wakeups: null,
+  gpu: null,
 });
 
 test("processor time goes to the app whose window it or an ancestor owns, else to its own name", () => {
@@ -216,18 +220,19 @@ test("the monitor samples the battery, measures the apps, and publishes insights
   expect(state.insights.map((insight) => insight.id)).toContain("apps");
 });
 
-test("the battery's menu adds the draw and the apps using significant energy", () => {
-  const entries = batteryEntries({ percent: 40, state: "discharging", minutesLeft: 120 }, { watts: 9.4, apps: [{ name: "Helium" }] });
+test("the battery's menu adds the draw and the apps using significant energy, each a way to Activity Monitor's Energy tab", () => {
+  const entries = batteryEntries({ percent: 40, state: "discharging", minutesLeft: 120 }, { watts: 9.4, apps: [{ key: "helium", name: "Helium" }] });
   expect(entries.map((entry) => (entry.kind === "item" ? entry.label : "—"))).toEqual([
     "Battery  40%",
     "Power Source: Battery",
     "2:00 remaining",
     "Power Draw: 9.4 W",
     "—",
-    "Using Significant Energy",
+    "Using Significant Energy…",
     "Helium",
     "—",
     "Battery Settings…",
   ]);
-  expect(entries[6]).toMatchObject({ action: { kind: "activity-monitor" } });
+  expect(entries[5]).toMatchObject({ action: { kind: "activity-monitor" } });
+  expect(entries[6]).toMatchObject({ action: { kind: "activity-monitor", app: { key: "helium", name: "Helium" } } });
 });

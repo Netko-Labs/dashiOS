@@ -1,15 +1,15 @@
 /**
- * The picture area: the picture centred at the chosen scale, dragged to pan
- * when it is larger than the area. Metal has no way to set a scroll offset,
- * no wheel event on a plain view, and no transforms, so the pan and the
- * position are ours: the picture sits in an absolutely placed box inside a
- * clipped one, and a press-and-drag on the area (`onPointer`) moves it.
+ * The picture area: the picture centred at the chosen scale; when it is
+ * larger than the area, the wheel and the touchpad move it, and so does a
+ * press-and-drag. Metal has no way to set a scroll offset and no transforms,
+ * so the pan and the position are ours: the picture sits in an absolutely
+ * placed box inside a clipped one.
  */
 
-import { useDark } from "@dashi/ui";
 import { Image, View } from "@mirinjs/metal";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import type { Size } from "./dimensions.ts";
+import { LINE_PX } from "./document.ts";
 import { clampPan, type Pan, placement, scaled } from "./zoom.ts";
 
 export interface CanvasProps {
@@ -19,47 +19,20 @@ export interface CanvasProps {
   onPan: (pan: Pan) => void;
   onArea: (area: Size) => void;
   area: Size;
+  /** The ground behind the picture (`surface.canvas`). */
+  ground: string;
 }
 
-/** The ground behind the picture: a quiet neutral either side of Dark Mode. */
-export function useCanvasColor(): string {
-  return useDark() ? "#161618" : "#e4e4e8";
-}
-
-/**
- * While a PDF page is drawn again at a new resolution the old render stays
- * under the new one for a moment, so the page does not blink out.
- */
-function useUnderlay(source: string, width: number, height: number): string | null {
-  const last = useRef({ source, width, height });
-  const [under, setUnder] = useState<string | null>(null);
-  useEffect(() => {
-    const before = last.current;
-    last.current = { source, width, height };
-    if (before.source === source) return;
-    // The same page (same size in points, give or take a pixel of rounding) at another resolution.
-    if (Math.abs(before.width - width) < 1.5 && Math.abs(before.height - height) < 1.5) {
-      setUnder(before.source);
-      const timer = setTimeout(() => setUnder(null), 450);
-      return () => clearTimeout(timer);
-    }
-    setUnder(null);
-    return undefined;
-  }, [source, width, height]);
-  return under;
-}
-
-export function Canvas({ picture, scale, pan, onPan, onArea, area }: CanvasProps) {
-  const ground = useCanvasColor();
+export function Canvas({ picture, scale, pan, onPan, onArea, area, ground }: CanvasProps) {
   const shown = scaled(picture, scale);
   const { left, top } = placement(shown, area, pan);
   const drag = useRef<{ x: number; y: number; pan: Pan } | null>(null);
-  const under = useUnderlay(picture.source, picture.width, picture.height);
-  const box = { position: "absolute", left, top, width: shown.width, height: shown.height } as const;
   return (
     <View
       testID="canvas"
       onLayout={(bounds) => onArea({ width: bounds.width, height: bounds.height })}
+      // Positive dy is toward the top: the picture comes down.
+      onWheel={(wheel) => onPan(clampPan({ x: pan.x + wheel.dx * LINE_PX, y: pan.y + wheel.dy * LINE_PX }, shown, area))}
       onPointer={(event) => {
         if (event.phase === "down") {
           drag.current = { x: event.x, y: event.y, pan };
@@ -72,12 +45,7 @@ export function Canvas({ picture, scale, pan, onPan, onArea, area }: CanvasProps
       }}
       style={{ flex: 1, position: "relative", overflow: "hidden", backgroundColor: ground }}
     >
-      {under !== null && (
-        <View style={box}>
-          <Image source={under} resizeMode="contain" style={{ width: shown.width, height: shown.height }} />
-        </View>
-      )}
-      <View style={box}>
+      <View style={{ position: "absolute", left, top, width: shown.width, height: shown.height }}>
         <Image source={picture.source} resizeMode="contain" style={{ width: shown.width, height: shown.height }} />
       </View>
     </View>

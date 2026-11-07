@@ -5,7 +5,6 @@ import { join } from "node:path";
 import type { AppMenu } from "../src/app-menus/protocol.ts";
 import { AppMenuStore, type MenuOwner } from "../src/app-menus/store.ts";
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
-import { settingName } from "../src/settings-app/history.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 
 let root = "";
@@ -25,13 +24,17 @@ test("a change that is one value can be undone back to the default, and redone",
   expect(store.getSnapshot().data.clock.hour24).toBe(true);
 });
 
-test("a change of several values, or none, is not on the stack", () => {
+test("a change of several values is one step; a change nobody makes by hand is none", async () => {
   store.patch("clock", { hour24: true, showDate: false });
-  expect(store.undo.state.canUndo).toBe(false);
+  expect(store.undo.state.undoName).toBe("24-Hour Time");
+  await store.undo.undo();
+  expect(store.getSnapshot().data.clock).toEqual({});
+  store.patch("spaces", { count: 3 });
+  expect(store.undo.state.canRedo).toBe(true);
+  expect(store.changes.getSnapshot()).toHaveLength(1);
   store.patch("menuBar", { batteryPercent: true });
   store.patch("menuBar", { batteryPercent: true });
   expect(store.undo.state.undoName).toBe("Battery Percentage");
-  expect(settingName("wallpaper", "photo")).toBe("Setting Change");
 });
 
 test("the Edit menu is published as the window's process and its rows undo", async () => {
@@ -59,6 +62,8 @@ test("the Edit menu is published as the window's process and its rows undo", asy
 
   store.patch("clock", { showDate: false });
   expect(published.at(-1)?.menus[0]?.items[0]).toMatchObject({ label: "Undo Show Date", enabled: true });
+  // No search to go to: no Find.
+  expect(published.at(-1)?.menus[0]?.items.some((item) => item.kind === "item" && item.id === "find")).toBe(false);
   (owner as MenuOwner | null)?.send({ type: "select", id: "undo" });
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(store.getSnapshot().data.clock.showDate).toBeUndefined();

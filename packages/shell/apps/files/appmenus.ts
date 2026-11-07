@@ -2,7 +2,9 @@
  * Files' menus in Dashi's menu bar (the kit's useAppMenus): File, Edit, View,
  * and Go. What can be chosen follows the selection and where the window is.
  * The ❖ shortcuts are real: the shell matches a chord against the enabled rows
- * (app-menus/shortcut.ts). Enclosing Folder (❖↑) has none: the keymap keeps it.
+ * (app-menus/shortcut.ts). Enclosing Folder (❖↑) has none: the keymap turns it
+ * into Ctrl+Home, which the window's keys take (keys.ts). ❖⌫ reaches Move to
+ * Trash because the keymap offers it to the app's rows first (`app-erase`).
  */
 
 import { type UndoState, undoMenuItems } from "@dashi/ui";
@@ -32,7 +34,7 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
     {
       id: "file",
       items: [
-        { id: "new-folder", shortcut: "⇧❖N", label: "New Folder…", enabled: writable },
+        { id: "new-folder", shortcut: "⇧❖N", label: "New Folder", enabled: writable },
         { id: "open", shortcut: "❖O", label: "Open", enabled: any && selected.every((item) => mayOpen(item).ok) },
         { id: "open-with", label: "Open With…", enabled: one && selected[0]?.kind === "file" },
         { id: "info", shortcut: "❖I", label: "Get Info", enabled: one },
@@ -44,11 +46,11 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
               { id: "empty-trash", label: "Empty Trash…", enabled: state.items.length > 0 },
             ]
           : [
-              { id: "rename", label: "Rename…", enabled: one && writable },
+              { id: "rename", label: "Rename", enabled: one && (writable || state.found !== null || state.location.kind === "recents") },
               { id: "duplicate", shortcut: "❖D", label: "Duplicate", enabled: any && writable },
-              { id: "compress", label: "Compress", enabled: any && ops.canCompress },
+              ...(ops.canCompress ? [{ id: "compress", label: "Compress", enabled: any }] : []),
               SEPARATOR,
-              { id: "trash", label: "Move to Trash", enabled: any },
+              { id: "trash", shortcut: "❖⌫", label: "Move to Trash", enabled: any },
             ]),
       ],
     },
@@ -75,6 +77,7 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
         { id: "hidden", shortcut: "⇧❖.", label: "Show Hidden Files", checked: state.showHidden },
         SEPARATOR,
         ...SORTS.map(([key, title]) => ({ id: `sort-${key}`, label: `Sort by ${title}`, checked: state.sort.key === key })),
+        { id: "sort-reverse", label: "Reverse Order", checked: !(store.effectiveSort() ?? state.sort).ascending },
         SEPARATOR,
         { id: "refresh", shortcut: "❖R", label: "Refresh" },
       ],
@@ -95,6 +98,8 @@ export function menuSpecs(state: FilesState, store: FilesStore, ops: Operations,
     },
   ];
 }
+
+const state = (store: FilesStore): FilesState => store.getSnapshot();
 
 /** What a chosen menu item does. Unknown ids are ignored: the shell hands back only ids that were published, but an id is still untrusted text. */
 export function chooseMenu(id: string, store: FilesStore, ops: Operations, actions: WindowActions): void {
@@ -143,6 +148,8 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
       return store.toggleHidden();
     case "refresh":
       return store.reload();
+    case "sort-reverse":
+      return store.reverseSort();
     case "back":
       return store.goBack();
     case "forward":
@@ -160,7 +167,9 @@ export function chooseMenu(id: string, store: FilesStore, ops: Operations, actio
   }
   if (id.startsWith("sort-")) {
     const key = id.slice("sort-".length);
-    if (SORTS.some(([name]) => name === key)) store.setSort({ key, ascending: key === "name" || key === "kind" });
+    // A new column starts the way it reads best; the same one keeps its direction (Reverse Order turns it).
+    if (SORTS.some(([name]) => name === key))
+      store.setSort({ key, ascending: key === state(store).sort.key ? state(store).sort.ascending : key === "name" || key === "kind" });
     return;
   }
   if (id.startsWith("go:")) {

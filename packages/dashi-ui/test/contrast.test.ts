@@ -32,7 +32,7 @@ for (const [mode, colors, surface] of modes) {
     const grounds = { window: surface.window, sidebar: surface.sidebar, card: surface.card };
     for (const [ground, value] of Object.entries(grounds)) {
       test(`text, muted text, and the job inks are AA on the ${ground}`, () => {
-        const inks = ["text", "textMuted", "ume", "critical", "broth", "moss"] as const;
+        const inks = ["text", "textMuted", "ume", "critical", "broth", "moss", "accentInk"] as const;
         // The failures by name, so a miss says which token.
         expect(inks.filter((ink) => contrastRatio(colors[ink], value) < 4.5)).toEqual([]);
       });

@@ -1,8 +1,8 @@
 /**
- * Privacy & Security: every permission you gave, per agent or app, with
- * what it is and since when, each taken back on its own. Agents' "Always
- * Allow" answers (agents/consent.ts: revoking one cuts it off a live
- * connection too); the apps' answers xdg-desktop-portal keeps (the Access
+ * Privacy & Security: every permission you gave, per app, with what it is
+ * and since when, each taken back on its own; agents' "Always Allow"
+ * answers are counted here and listed in Settings › Agents
+ * (agents-consent.tsx), with what each agent did; the apps' answers xdg-desktop-portal keeps (the Access
  * dialog's camera, microphone, location and background, and screenshots,
  * the wallpaper, notifications: privacy/); and screen sharing: the programs
  * settings.json lets capture the screen directly, and the apps the portal
@@ -11,12 +11,12 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
-import type { Scope } from "../../agents/consent.ts";
 import { useClockPrefs } from "../../clock.ts";
 import { byApp } from "../../privacy/portal-grants.ts";
 import type { AppGrant, AppGrants } from "../../privacy/store.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries, useSettings } from "../hooks.ts";
+import { paneTitle } from "../panes.ts";
 import { agentPermissions, appTitle, grantDetail, lastUsedWords, programTitle, sinceWords } from "../privacy-words.ts";
 import { Button, Caption, Group, Item, Note, Page, Spot } from "../ui.tsx";
 
@@ -30,40 +30,28 @@ function Revoke({ testID, onPress, label = "Revoke" }: { testID: string; onPress
   return <Button testID={testID} label={label} onPress={onPress} />;
 }
 
-/** The agents and what each may do for good. */
-function AgentsSection({ grants, home, onDone }: Pick<PaneContext, "grants" | "home"> & { onDone: (words: string) => void }) {
+/** How many agents may do what without asking: "claude may do 3 things without asking". */
+export function agentsSummary(agents: ReadonlyArray<{ title: string; scopes: readonly unknown[] }>): string {
+  const kept = agents.filter((agent) => agent.scopes.length > 0);
+  const [only] = kept;
+  if (!only) return "Every agent asks before it does anything";
+  if (kept.length === 1)
+    return only.scopes.length === 1 ? `${only.title} may do 1 thing without asking` : `${only.title} may do ${only.scopes.length} things without asking`;
+  return `${kept.length} agents may do things without asking`;
+}
+
+/** Agents: how many may act without asking, and the way to Settings › Agents, where each is listed and revoked. */
+function AgentsSection({ grants, home, show }: Pick<PaneContext, "grants" | "home" | "show">) {
   const entries = useGrantEntries(grants);
-  const prefs = useClockPrefs();
-  const now = new Date();
-  const agents = agentPermissions(entries, home);
   return (
-    <>
-      <Spot id="privacy/agents" cards>
-        <Caption above>Agents</Caption>
-        {agents.length === 0 ? (
-          <Group testID="privacy-agents-none">
-            <Note>No agent has been allowed for good. When one asks and you choose Always Allow, it is listed here.</Note>
-          </Group>
-        ) : (
-          agents.map((agent) => (
-            <Group key={agent.key} testID={`privacy-agent:${agent.key}`}>
-              <Item label={agent.title} detail={agent.detail} />
-              {agent.scopes.map(({ scope, label, since }) => (
-                <Item key={scope} testID={`privacy-agent-scope:${agent.key}:${scope}`} label={label} {...detailProps(sinceWords(since, now, prefs.locale))}>
-                  <Revoke
-                    testID={`privacy-agent-revoke:${agent.key}:${scope}`}
-                    onPress={() => {
-                      if (grants.revoke(agent.key, scope as Scope))
-                        onDone(`${agent.title} can no longer ${label.toLowerCase()}. It asks again when it needs to.`);
-                    }}
-                  />
-                </Item>
-              ))}
-            </Group>
-          ))
-        )}
-      </Spot>
-    </>
+    <Spot id="privacy/agents" cards>
+      <Caption above>Agents</Caption>
+      <Group testID="privacy-agents">
+        <Item label={agentsSummary(agentPermissions(entries, home))} detail="What each may do, what it did lately, and Revoke.">
+          <Button testID="privacy-agents-open" label={`${paneTitle("agents")}…`} onPress={() => show("agents", "permissions")} />
+        </Item>
+      </Group>
+    </Spot>
   );
 }
 
@@ -102,11 +90,18 @@ function AppGroup({
   );
 }
 
-export function PrivacyPane({ grants, home, privacy, settings, installedApp }: Pick<PaneContext, "grants" | "home" | "privacy" | "settings" | "installedApp">) {
+export function PrivacyPane({
+  grants,
+  home,
+  privacy,
+  settings,
+  installedApp,
+  show,
+}: Pick<PaneContext, "grants" | "home" | "privacy" | "settings" | "installedApp" | "show">) {
   const source = privacy ?? NO_PRIVACY;
   const apps = useSyncExternalStore(source.subscribe, source.getSnapshot) ?? LOADING;
   const { screenSharing } = useSettings(settings).data;
-  const [done, setDone] = useState<{ section: "agents" | "apps" | "screen"; words: string } | null>(null);
+  const [done, setDone] = useState<{ section: "apps" | "screen"; words: string } | null>(null);
   const installed: Installed = installedApp;
   const nameOf = (app: string) => appTitle(app, installed);
   const ready = apps.state === "ready" ? apps.grants : [];
@@ -132,8 +127,7 @@ export function PrivacyPane({ grants, home, privacy, settings, installedApp }: P
 
   return (
     <Page title="Privacy & Security">
-      <AgentsSection grants={grants} home={home} onDone={(words) => setDone({ section: "agents", words })} />
-      <Caption>{done?.section === "agents" ? done.words : "Revoke takes a permission back at once, from a connected agent too."}</Caption>
+      <AgentsSection grants={grants} home={home} show={show} />
 
       <Spot id="privacy/apps" cards>
         <Caption above>Apps</Caption>

@@ -23,6 +23,8 @@ export const CARD = {
   bodyLine: 16,
   /** What a few lines of the body hold; a longer one is cut with an ellipsis. */
   bodyChars: 120,
+  /** What the title's one line holds, in bold; a longer one is cut with an ellipsis (the host's own cut can clip instead). */
+  summaryChars: 40,
   icon: 18,
 } as const;
 
@@ -84,7 +86,7 @@ export function Card({
           {urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-              {summary || appName}
+              {ellipsize(summary || appName, CARD.summaryChars)}
             </Text>
           </View>
         </View>

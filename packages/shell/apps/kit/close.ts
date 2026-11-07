@@ -10,6 +10,11 @@
  * one confirm sheet, after which it closes or not. An app that set no answer
  * has nothing to lose and closes at once. A hung app never answers; the
  * shell's Force Quit still ends it.
+ *
+ * A quit can be called off: the person cancels the log out that asked
+ * (the menus channel's `stay`). The question it put up goes with it:
+ *
+ *   useCloseWithdrawn(() => setSheet(null));
  */
 
 import { useEffect, useRef } from "react";
@@ -34,6 +39,7 @@ export const QUIT_HOLDS_MS = 2000;
 
 export class CloseRequests {
   private answers: CloseAnswer[] = [];
+  private withdrawals: (() => void)[] = [];
   /** Until when a close request is a quit. */
   private quitUntil = Number.NEGATIVE_INFINITY;
 
@@ -50,6 +56,20 @@ export class CloseRequests {
     return () => {
       this.answers = this.answers.filter((each) => each !== answer);
     };
+  }
+
+  /** Hears that the quit asked of the window is called off (the newest set hears it). Returns the way to take it back. */
+  onWithdrawn(handler: () => void): () => void {
+    this.withdrawals.push(handler);
+    return () => {
+      this.withdrawals = this.withdrawals.filter((each) => each !== handler);
+    };
+  }
+
+  /** The shell called the quit off (a log out was cancelled): a question it put up goes. */
+  withdraw(): void {
+    this.quitUntil = Number.NEGATIVE_INFINITY;
+    this.withdrawals.at(-1)?.();
   }
 
   /** Whether some answer is set (the app may ask). */
@@ -78,4 +98,11 @@ export function useCloseRequest(answer: CloseAnswer, requests: CloseRequests = c
   const latest = useRef(answer);
   latest.current = answer;
   useEffect(() => requests.answer((reason) => latest.current(reason)), [requests]);
+}
+
+/** While mounted, `handler` takes down the question a close asked when the shell calls the quit off (a cancelled log out). */
+export function useCloseWithdrawn(handler: () => void, requests: CloseRequests = closeRequests): void {
+  const latest = useRef(handler);
+  latest.current = handler;
+  useEffect(() => requests.onWithdrawn(() => latest.current()), [requests]);
 }

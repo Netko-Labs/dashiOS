@@ -11,6 +11,8 @@ export interface Clipboard {
   canWrite: boolean;
   writeText(text: string): Promise<boolean>;
   readText(): Promise<string | null>;
+  /** Put a file's contents on the clipboard as `mime` (a picture as image/png); false when it can't. */
+  writeFile?(path: string, mime: string): Promise<boolean>;
 }
 
 export function systemClipboard(which: (program: string) => string | null = (program) => Bun.which(program)): Clipboard {
@@ -24,6 +26,15 @@ export function systemClipboard(which: (program: string) => string | null = (pro
         const child = Bun.spawn([copy], { stdin: "pipe", stdout: "ignore", stderr: "ignore" });
         child.stdin.write(text);
         await child.stdin.end();
+        return (await child.exited) === 0;
+      } catch {
+        return false;
+      }
+    },
+    async writeFile(path, mime) {
+      if (!copy || !/^[a-z]+\/[a-z0-9.+-]+$/i.test(mime)) return false;
+      try {
+        const child = Bun.spawn([copy, "--type", mime], { stdin: Bun.file(path), stdout: "ignore", stderr: "ignore" });
         return (await child.exited) === 0;
       } catch {
         return false;

@@ -80,6 +80,9 @@ export function dialogSize(spec: DialogSpec, rows = 0): Size {
       return { width: spec.width ?? 560, height: spec.height ?? 440 };
     case "scale":
       return fixed(420, textHeight(420 - padding * 2) + 10 + 24);
+    case "file-selection":
+      // Files' chooser: room for its sidebar and a few rows of icons.
+      return { width: spec.width ?? 820, height: spec.height ?? 520 };
     case "calendar":
       return fixed(320, textHeight(320 - padding * 2) + 10 + 28 + 20 + 6 * 28);
   }

@@ -6,10 +6,11 @@
 import { INFO, lightColors, TINTS } from "@dashi/ui";
 import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
 import { graphicsGlyph } from "../laptop/glyphs.ts";
-import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, HAND, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
+import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, HAND, HISTORY, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
 
 export type PaneId =
+  | "recent"
   | "appearance"
   | "wallpaper"
   | "displays"
@@ -44,34 +45,39 @@ export interface PaneInfo {
   optional?: true;
   /** Agents' pictures blank the window while it shows (agents/secrets/vault-view.ts): Settings never reopens on it. */
   private?: true;
+  /** Opened from the header strip (its button), not listed in the sidebar: Recently changed. */
+  strip?: true;
 }
 
 /**
- * Tiles take Dashi's tints (docs/design.html, "Tints"), never a job color:
- * Agents alone wears shiso, because it is about agents, and no tile is ume.
+ * In six groups: how it looks; connections and power; input; you, your time
+ * and language; privacy and security; About. Tiles take Dashi's tints
+ * (docs/design.html, "Tints"), never a job color: Agents alone wears shiso,
+ * because it is about agents, and no tile is ume.
  */
 export const PANES: readonly PaneInfo[] = [
+  { id: "recent", title: "Recently changed", glyph: HISTORY, tint: TINTS.goma, group: -1, strip: true },
   { id: "appearance", title: "Appearance", glyph: CONTRAST, tint: TINTS.nori, group: 0 },
   { id: "wallpaper", title: "Wallpaper", glyph: PICTURE, tint: TINTS.wakame, group: 0 },
   { id: "displays", title: "Displays", glyph: DISPLAY, tint: TINTS.mizu, group: 0 },
   { id: "desktop-dock", title: "Desktop & Dock", glyph: DOCK_GLYPH, tint: TINTS.wakame, group: 0 },
-  { id: "network", title: "Network", glyph: NETWORK, tint: TINTS.mizu, group: 10 },
-  { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, tint: TINTS.mizu, group: 10 },
-  { id: "sound", title: "Sound", glyph: SPEAKER, tint: TINTS.kabocha, group: 10 },
-  { id: "battery", title: "Battery & Power", glyph: BATTERY, tint: TINTS.matcha, group: 10 },
-  { id: "graphics", title: "Graphics", glyph: graphicsGlyph(), tint: TINTS.nori, group: 10, optional: true },
-  { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, tint: TINTS.goma, group: 1 },
-  { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, tint: TINTS.goma, group: 1 },
-  { id: "mouse", title: "Mouse", glyph: MOUSE, tint: TINTS.goma, group: 1 },
-  { id: "date-time", title: "Date & Time", glyph: CLOCK, tint: TINTS.miso, group: 2 },
-  { id: "language-region", title: "Language & Region", glyph: GLOBE, tint: TINTS.mizu, group: 2 },
-  { id: "lock-screen", title: "Lock Screen", glyph: LOCK, tint: TINTS.goma, group: 2 },
-  { id: "users", title: "Users & Accounts", glyph: PERSON, tint: TINTS.goma, group: 2 },
-  { id: "notifications", title: "Notifications", glyph: BELL, tint: TINTS.kabocha, group: 2 },
-  { id: "passwords", title: "Passwords", glyph: KEY, tint: TINTS.shiitake, group: 2, private: true },
-  { id: "agents", title: "Agents", glyph: SPARKLE, tint: lightColors.agent, group: 2 },
-  { id: "privacy", title: "Privacy & Security", glyph: HAND, tint: TINTS.goma, group: 2 },
-  { id: "about", title: "About", glyph: INFO, tint: TINTS.goma, group: 3 },
+  { id: "network", title: "Network", glyph: NETWORK, tint: TINTS.mizu, group: 1 },
+  { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, tint: TINTS.mizu, group: 1 },
+  { id: "sound", title: "Sound", glyph: SPEAKER, tint: TINTS.kabocha, group: 1 },
+  { id: "battery", title: "Battery & Power", glyph: BATTERY, tint: TINTS.matcha, group: 1 },
+  { id: "graphics", title: "Graphics", glyph: graphicsGlyph(), tint: TINTS.nori, group: 1, optional: true },
+  { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, tint: TINTS.goma, group: 2 },
+  { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, tint: TINTS.goma, group: 2 },
+  { id: "mouse", title: "Mouse", glyph: MOUSE, tint: TINTS.goma, group: 2 },
+  { id: "users", title: "Users & Accounts", glyph: PERSON, tint: TINTS.goma, group: 3 },
+  { id: "date-time", title: "Date & Time", glyph: CLOCK, tint: TINTS.miso, group: 3 },
+  { id: "language-region", title: "Language & Region", glyph: GLOBE, tint: TINTS.mizu, group: 3 },
+  { id: "lock-screen", title: "Lock Screen", glyph: LOCK, tint: TINTS.goma, group: 4 },
+  { id: "notifications", title: "Notifications", glyph: BELL, tint: TINTS.kabocha, group: 4 },
+  { id: "passwords", title: "Passwords", glyph: KEY, tint: TINTS.shiitake, group: 4, private: true },
+  { id: "agents", title: "Agents", glyph: SPARKLE, tint: lightColors.agent, group: 4 },
+  { id: "privacy", title: "Privacy & Security", glyph: HAND, tint: TINTS.goma, group: 4 },
+  { id: "about", title: "About", glyph: INFO, tint: TINTS.goma, group: 5 },
 ];
 
 export const FIRST_PANE: PaneId = "appearance";
@@ -90,8 +96,11 @@ export function paneTitle(id: PaneId): string {
   return PANES.find((pane) => pane.id === id)?.title ?? "";
 }
 
+/** The panes the sidebar lists (Recently changed is the header strip's). */
+export const SIDEBAR_PANES: readonly PaneInfo[] = PANES.filter((pane) => !pane.strip);
+
 /** The sidebar as groups of panes. */
-export function paneGroups(panes: readonly PaneInfo[] = PANES): PaneInfo[][] {
+export function paneGroups(panes: readonly PaneInfo[] = SIDEBAR_PANES): PaneInfo[][] {
   const groups: PaneInfo[][] = [];
   for (const pane of panes) {
     const last = groups.at(-1);

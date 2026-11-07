@@ -7,6 +7,7 @@
  * was answered.
  */
 
+import { type Actor, actingAs } from "../acting.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { LineBuffer } from "../lines.ts";
@@ -91,7 +92,13 @@ export class Session {
   }
 
   info(): AgentInfo {
-    return { id: this.id, name: this.peer.name, status: this.status, scopes: [...this.granted] };
+    return { id: this.id, name: this.peer.name, key: grantKey(this.peer, this.claims), status: this.status, scopes: [...this.granted] };
+  }
+
+  /** Who this agent is in what it changes: the name it shows with (a remote one's claimed name), and its grants' key. */
+  private actor(): Actor {
+    const name = this.peer.remote ? (this.claims ?? "") : this.peer.name;
+    return { agent: name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent", key: grantKey(this.peer, this.claims) };
   }
 
   /**
@@ -299,22 +306,25 @@ export class Session {
     let result: ToolResult;
     try {
       // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
+      // What it changes is this agent's (Settings › Recently changed: acting.ts).
       result = await this.secrets.around(call, () =>
-        runCall(call, {
-          compositor: this.ctx.compositor,
-          ui: this.ctx.ui,
-          desktop: this.ctx.desktop,
-          hands: this.ctx.hands,
-          mask: this.ctx.mask,
-          secrets: this.secrets.run(this.id, () => this.who, signal),
-          agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
-          status: (text) => this.setStatus(text),
-          tile: this.ctx.tile,
-          arrangement: this.ctx.arrangement,
-          mayName: () => this.granted.has("see"),
-          confirm: (question) => this.confirm(question, signal),
-          signal,
-        }),
+        actingAs(this.actor(), () =>
+          runCall(call, {
+            compositor: this.ctx.compositor,
+            ui: this.ctx.ui,
+            desktop: this.ctx.desktop,
+            hands: this.ctx.hands,
+            mask: this.ctx.mask,
+            secrets: this.secrets.run(this.id, () => this.who, signal),
+            agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
+            status: (text) => this.setStatus(text),
+            tile: this.ctx.tile,
+            arrangement: this.ctx.arrangement,
+            mayName: () => this.granted.has("see"),
+            confirm: (question) => this.confirm(question, signal),
+            signal,
+          }),
+        ),
       );
     } catch (error) {
       result = toolError(`${call.name} failed: ${error instanceof Error ? error.message : String(error)}`);

@@ -87,11 +87,13 @@ export {
   describePermission,
   FOLDERS,
   type Folder,
+  folderLine,
   HARDWARE,
   type HardwareScope,
   type Permission,
   parsePermission,
   permissionName,
+  REACH,
   widens,
 } from "./permissions.ts";
 export { metalHost, type OpenPopover, openPopoverWindow, popoverSurface } from "./popover.tsx";

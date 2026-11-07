@@ -1,9 +1,10 @@
-/** The note list: a column of rows, pinned first, with a date and the first line under each title. */
+/** The note list: a column of rows, pinned first, with a date and the first line under each title; a quiet line when it is empty. */
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { FOLDER, PIN_FILLED } from "./glyphs.ts";
 import type { Row } from "./list.ts";
+import { untitled } from "./names.ts";
 import { KEEP_DAYS } from "./store.ts";
 import { daysLeft, listDate, preview } from "./text.ts";
 
@@ -19,6 +20,8 @@ export interface NoteListProps {
   /** Folder names for the default folder. */
   folderLabel: (folder: string) => string;
   now: number;
+  /** What an empty list says ("No notes yet"). */
+  emptyText: string;
 }
 
 function Caption({ children }: { children: string }) {
@@ -70,7 +73,7 @@ function NoteRow({
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: ink }}>
-            {row.title === "" ? "New Note" : row.title}
+            {untitled(row.title)}
           </Text>
         </View>
         {row.pinned && <Svg markup={PIN_FILLED} size={11} color={quiet} />}
@@ -99,7 +102,7 @@ function NoteRow({
   );
 }
 
-export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now }: NoteListProps) {
+export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now, emptyText }: NoteListProps) {
   const colors = useColors();
   const surface = useSurface();
   const pinned = rows.filter((row) => row.pinned);
@@ -129,9 +132,15 @@ export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderL
         borderColor: colors.separator,
       }}
     >
+      {rows.length === 0 && (
+        <View testID="list-empty" style={{ paddingHorizontal: 18, paddingVertical: 12, flexShrink: 0 }}>
+          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{emptyText}</Text>
+        </View>
+      )}
       {pinned.length > 0 && <Caption>Pinned</Caption>}
       {pinned.map(render)}
-      {pinned.length > 0 && rest.length > 0 && <Caption>Notes</Caption>}
+      {/* "Others", not "Notes": a folder may be called Notes. */}
+      {pinned.length > 0 && rest.length > 0 && <Caption>Others</Caption>}
       {rest.map(render)}
     </ScrollView>
   );

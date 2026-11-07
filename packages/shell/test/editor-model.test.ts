@@ -58,10 +58,10 @@ describe("the document", () => {
     writeFileSync(path, new Uint8Array([0x63, 0xe9]));
     const editor = model();
     editor.open(path);
-    expect(editor.getSnapshot().encoding).toBe("latin-1");
-    editor.edit("cé€");
+    expect(editor.getSnapshot().encoding).toBe("windows-1252");
+    editor.edit("cé✓");
     expect(editor.save()).toBe("saved");
-    expect(readFileSync(path, "utf8")).toBe("cé€");
+    expect(readFileSync(path, "utf8")).toBe("cé✓");
     expect(editor.getSnapshot().encoding).toBe("utf-8");
     expect(editor.getSnapshot().notice?.tone).toBe("info");
   });
@@ -181,9 +181,9 @@ describe("view settings", () => {
     editor.stepFontSize(1);
     editor.stepFontSize(0);
     expect(savedPrefs).toEqual([
-      { monospace: true, fontSize: 13 },
-      { monospace: true, fontSize: 14 },
-      { monospace: true, fontSize: 13 },
+      { monospace: true, fontSize: 13, lineNumbers: true },
+      { monospace: true, fontSize: 14, lineNumbers: true },
+      { monospace: true, fontSize: 13, lineNumbers: true },
     ]);
     editor.setMonospace(true);
     expect(savedPrefs).toHaveLength(3);
@@ -196,13 +196,15 @@ describe("menus", () => {
     ran.push(name);
   };
   const context = (change: Partial<MenuContext> = {}): MenuContext => ({
-    dirty: false,
     hasFile: true,
+    pristine: false,
+    hasVersions: true,
     canUndo: false,
     canRedo: false,
     hasSelection: false,
     hasMatches: false,
     monospace: false,
+    lineNumbers: true,
     caseSensitive: false,
     actions: {
       newWindow: record("new"),
@@ -210,7 +212,8 @@ describe("menus", () => {
       close: record("close"),
       save: record("save"),
       saveAs: record("save-as"),
-      revert: record("revert"),
+      revertTo: record("revert"),
+      deleteDraft: record("delete-draft"),
       undo: record("undo"),
       redo: record("redo"),
       cut: record("cut"),
@@ -220,7 +223,9 @@ describe("menus", () => {
       find: record("find"),
       findNext: (step) => ran.push(`find:${step}`),
       replace: record("replace"),
+      goToLine: record("go-to-line"),
       toggleCase: record("case"),
+      toggleLineNumbers: record("line-numbers"),
       toggleMonospace: record("monospace"),
       fontSize: (step) => ran.push(`size:${step}`),
     },
@@ -239,23 +244,31 @@ describe("menus", () => {
     }
   });
 
-  test("❖W is Close, the path that asks, and Revert says it will ask", () => {
-    const { menus } = editorMenus(context());
-    const rows = menus.flatMap((menu) => menu.items);
-    expect(rows.find((row) => "id" in row && row.id === "close")).toMatchObject({ label: "Close", shortcut: "❖W" });
-    expect(rows.find((row) => "id" in row && row.id === "revert")).toMatchObject({ label: "Revert to Saved…" });
+  test("❖W is Close; Revert To lists versions; a draft can be deleted, a file can't", () => {
+    const row = (change: Partial<MenuContext>, id: string) =>
+      editorMenus(context(change))
+        .menus.flatMap((menu) => menu.items)
+        .find((each) => "id" in each && each.id === id);
+    expect(row({}, "close")).toMatchObject({ label: "Close", shortcut: "❖W" });
+    expect(row({}, "revert")).toMatchObject({ label: "Revert To…", enabled: true });
+    expect(row({ hasVersions: false }, "revert")).toMatchObject({ enabled: false });
+    expect(row({}, "delete-draft")).toMatchObject({ enabled: false });
+    expect(row({ hasFile: false }, "delete-draft")).toMatchObject({ enabled: true });
+    expect(row({ hasFile: false, pristine: true }, "delete-draft")).toMatchObject({ enabled: false });
+    expect(row({}, "go-to-line")).toMatchObject({ label: "Go to Line…", shortcut: "❖L" });
+    expect(row({ lineNumbers: true }, "line-numbers")).toMatchObject({ checked: true });
   });
 
   test("only enabled rows run", () => {
     ran.length = 0;
-    const clean = editorMenus(context());
-    clean.run("save");
-    clean.run("undo");
-    clean.run("find-next");
-    clean.run("bigger");
-    clean.run("nonsense");
+    const untouched = editorMenus(context({ hasFile: false, pristine: true }));
+    untouched.run("save");
+    untouched.run("undo");
+    untouched.run("find-next");
+    untouched.run("bigger");
+    untouched.run("nonsense");
     expect(ran).toEqual(["size:1"]);
-    const edited = editorMenus(context({ dirty: true, canUndo: true, hasMatches: true }));
+    const edited = editorMenus(context({ canUndo: true, hasMatches: true }));
     edited.run("save");
     edited.run("undo");
     edited.run("find-previous");

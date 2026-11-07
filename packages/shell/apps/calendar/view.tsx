@@ -1,37 +1,45 @@
 /**
- * Calendar's window: the mini month and the calendars on the left, the title,
- * previous / Today / next, Day / Week / Month and + in the toolbar, and the
- * view itself. Events are made and edited in a sheet (Metal has no child
- * windows). The keyboard is the open field's while one is focused; otherwise
- * the kit's KeySink: N new event, T today, 1 2 3 the views, [ and ] or the up
- * and down arrows previous and next (Metal reports no Ctrl shortcuts, and the
- * menu bar's ❖ shortcuts come through useAppMenus).
+ * Calendar's window: the mini month and the calendars on the left; the
+ * title, previous / Today / next, Day / Week / Month, Find and + in the
+ * toolbar; and the view, which is the editor (use-grid.ts): draw on empty
+ * time to make an event and name it in place, drag one to move it, drag its
+ * foot to stretch it, press it for its popover. The full sheet is a click
+ * further (Edit…). Keys no field takes come to the grid (window-keys.ts);
+ * the ❖ chords come through the menus (menus.ts). An .ics file dropped on the
+ * window is imported.
  */
 
-import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AppWindow, Button, type MenuItem, Notice, PopupMenu, SEARCH, SearchField, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
+import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
-import type { Day } from "./dates.ts";
-import { blankDraft, type Draft, draftOf, inputOf } from "./draft.ts";
+import { dayPart } from "./dates.ts";
+import { type Draft, draftOf, inputOf, repeatChanged } from "./draft.ts";
 import { EventSheet } from "./event-sheet.tsx";
 import { viewTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT, PLUS } from "./glyphs.ts";
-import type { IcsChooser } from "./import.ts";
-import { readIcsFile } from "./import.ts";
+import { asksScope, refOf, zonedTimes } from "./grid-edits.ts";
+import { parseIcs } from "./ics.ts";
+import { type IcsChooser, isIcsPath, readIcsFile, writeIcsFile } from "./import.ts";
 import { type View as ViewName, viewDays, weekDays } from "./layout.ts";
 import { calendarMenus } from "./menus.ts";
-import type { CalendarModel } from "./model.ts";
+import type { CalendarModel, OccurrenceRef } from "./model.ts";
 import { MonthView } from "./month-view.tsx";
+import { EventPopover } from "./popover.tsx";
 import { useRegionPrefs } from "./prefs.ts";
-import { CalendarSheet, DeleteCalendarSheet, DeleteEventSheet, ImportPathSheet, type SheetState } from "./sheets.tsx";
+import { searchEvents } from "./search.ts";
+import { SearchResults } from "./search-results.tsx";
+import { SheetLayer } from "./sheet-layer.tsx";
+import type { SheetState } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
-import { paletteColor } from "./store.ts";
 import { choosableCalendars, newEventTarget } from "./target.ts";
 import { TimeGrid } from "./time-grid.tsx";
 import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
+import { useGrid } from "./use-grid.ts";
 
 export const CALENDAR_SIZE = { width: 1120, height: 740 } as const;
+/** Where Find's answers start, under the unified toolbar. */
+const RESULTS_TOP = 42;
 
 const VIEW_OPTIONS = [
   { value: "day", label: "Day" },
@@ -40,17 +48,8 @@ const VIEW_OPTIONS = [
 ] as const;
 
 type Menu = { x: number; y: number; items: MenuItem[] };
-/** The event sheet's draft, and which event it edits (null for a new one). */
-type Editing = {
-  draft: Draft;
-  target: {
-    calendarId: string;
-    uid: string;
-    repeating: boolean;
-    custom: boolean /** The time that was clicked, for deleting just that one. */;
-    occurrenceStart: string;
-  } | null;
-};
+/** The full sheet: its draft as opened, and the time of the event it edits (null for a new one). */
+type Editing = { draft: Draft; occurrence: Occurrence | null };
 
 export function TodayButton({ onPress }: { onPress: () => void }) {
   const colors = useColors();
@@ -85,7 +84,11 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const [editing, setEditing] = useState<Editing | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [keys, setKeys] = useState(0);
-  const [hiddenProblem, setHiddenProblem] = useState<string | null>(null);
+  const [hiddenProblems, setHiddenProblems] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState<{ text: string; step: number | null } | null>(null);
+  const [search, setSearch] = useState<{ query: string; active: number } | null>(null);
+  const [area, setArea] = useState<Bounds>({ x: 0, y: 0, width: CALENDAR_SIZE.width, height: CALENDAR_SIZE.height });
+  const [dropping, setDropping] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const tick = setInterval(() => {
@@ -103,7 +106,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   // New events go to the calendar chosen in the sidebar (or used last), never to a hidden one (target.ts).
   const [chosen, setChosen] = useState<string | null>(null);
   const destination = newEventTarget(calendars, hidden, chosen);
-  const modal = sheet !== null || editing !== null;
+  const undo = useUndo(model.undo);
 
   const takeKeys = (): void => setKeys((n) => n + 1);
   const closeOverlay = (): void => {
@@ -113,58 +116,63 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     takeKeys();
   };
 
+  const openSheet = (occurrence: Occurrence): void => {
+    model.dismissMessages();
+    grid.closePopover();
+    setEditing({ draft: draftOf(occurrence.event, occurrence.calendarId, zonedTimes(occurrence)), occurrence });
+  };
+
+  const grid = useGrid({
+    model,
+    state,
+    occurrences,
+    prefs,
+    firstDay,
+    destination,
+    now: () => new Date(),
+    openSheet,
+    ask: (question) => {
+      setEditing(null);
+      setSheet(question);
+    },
+    deleted: (title) => setDeleted({ text: `Deleted “${title || "New Event"}”.`, step: model.undo.state.undoStep }),
+    takeKeys,
+  });
+  const modal = sheet !== null || editing !== null;
+
   // ---- Events ----------------------------------------------------------------------
 
-  const newEvent = (day: Day = anchor, minutes: number | null = 9 * 60): void => {
-    if (destination === null) return;
-    model.dismissMessages();
-    setMenu(null);
-    // Every calendar is hidden: show the one it goes to first (and say so), or it would vanish on Save.
-    if (destination.reveal && !model.reveal(destination.calendarId)) return;
-    setEditing({ draft: blankDraft(destination.calendarId, day, minutes), target: null });
-  };
-  const openEvent = (occurrence: Occurrence): void => {
-    const event = occurrence.event;
-    model.dismissMessages();
-    setEditing({
-      draft: draftOf(event, occurrence.calendarId),
-      target: {
-        calendarId: occurrence.calendarId,
-        uid: event.uid,
-        repeating: event.repeat !== null || event.rawRule !== null,
-        custom: event.rawRule !== null,
-        occurrenceStart: occurrence.start,
-      },
-    });
-  };
-  const saveEvent = (draft: Draft): void => {
-    const target = editing?.target ?? null;
+  const saveSheet = (draft: Draft): void => {
+    const occurrence = editing?.occurrence ?? null;
     // The sheet offers only calendars that show; one hidden meanwhile is shown again rather than swallow the event.
     if (!model.reveal(draft.calendarId)) return closeOverlay();
-    const saved = model.saveEvent(target?.calendarId ?? draft.calendarId, target?.uid ?? null, inputOf(draft), target !== null ? draft.calendarId : undefined);
-    if (!saved) return closeOverlay();
-    setChosen(draft.calendarId);
-    // Show where it went, unless it is on screen already.
-    if (!days.includes(draft.startDay)) model.goTo(draft.startDay);
+    const input = inputOf(draft);
+    if (occurrence === null) {
+      if (model.addEvent(draft.calendarId, input)) setChosen(draft.calendarId);
+      if (!days.includes(draft.startDay)) model.goTo(draft.startDay);
+      return closeOverlay();
+    }
+    const ref = refOf(occurrence);
+    const moveTo = draft.calendarId !== occurrence.calendarId ? draft.calendarId : undefined;
+    if (asksScope(occurrence) && editing) {
+      setEditing(null);
+      setSheet({ kind: "scope", action: "change", ref, title: draft.title, input, moveTo, allowThis: !repeatChanged(editing.draft, draft) });
+      return;
+    }
+    model.changeOccurrence(ref, input, "all", { moveTo });
     closeOverlay();
   };
-  const askDelete = (): void => {
-    const target = editing?.target;
-    if (!target) return;
-    const event = model.calendar(target.calendarId)?.events.find((each) => each.uid === target.uid);
-    if (!event) return closeOverlay();
-    setEditing(null);
-    setSheet({
-      kind: "delete-event",
-      calendarId: target.calendarId,
-      uid: target.uid,
-      title: event.title,
-      start: target.occurrenceStart,
-      repeating: target.repeating,
-    });
+
+  const answerScope = (question: Extract<SheetState, { kind: "scope" }>, scope: "this" | "following" | "all"): void => {
+    const ref: OccurrenceRef = question.ref;
+    if (question.action === "delete") {
+      if (model.deleteOccurrence(ref, scope)) setDeleted({ text: `Deleted “${question.title || "New Event"}”.`, step: model.undo.state.undoStep });
+      grid.pick(null);
+    } else if (question.input) model.changeOccurrence(ref, question.input, scope, { moveTo: question.moveTo, name: question.name });
+    closeOverlay();
   };
 
-  // ---- Calendars -----------------------------------------------------------------------
+  // ---- Calendars and files -----------------------------------------------------------
 
   const calendarMenu = (calendar: Calendar, x: number, y: number): void =>
     setMenu({
@@ -172,6 +180,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       y,
       items: [
         { label: "Edit Calendar…", onPress: () => setSheet({ kind: "edit-calendar", id: calendar.id, name: calendar.name, color: calendar.color }) },
+        { label: "Export…", onPress: () => setSheet({ kind: "export", calendarId: calendar.id }) },
         {
           label: "Delete Calendar…",
           onPress: () => setSheet({ kind: "delete-calendar", id: calendar.id, name: calendar.name, events: calendar.events.length }),
@@ -179,6 +188,18 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       ],
     });
 
+  const importPath = (path: string): void => {
+    try {
+      const file = readIcsFile(path);
+      const name = parseIcs(file.text).name ?? file.name;
+      setSheet({ kind: "import-target", text: file.text, name, fileName: path.split("/").at(-1) ?? path });
+    } catch (error) {
+      if (!(error instanceof CalendarError)) throw error;
+      // A file that is not a calendar is said so; a typed path's sheet stays for another try.
+      if (sheet?.kind === "import-path") setSheet({ kind: "import-path", reason: error.message });
+      model.fail(error.message);
+    }
+  };
   const importFile = (): void => {
     model.dismissMessages();
     chooser
@@ -188,34 +209,56 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       })
       .catch(() => setSheet({ kind: "import-path", reason: "There is no file chooser here. Type the path of the .ics file instead." }));
   };
-  const importPath = (path: string): void => {
+  const exportCalendar = (calendarId: string, path: string): void => {
     try {
-      const file = readIcsFile(path);
-      model.importText(file.text, file.name);
+      const written = writeIcsFile(path, model.store.text(calendarId));
+      model.say(`Exported “${model.calendar(calendarId)?.name ?? calendarId}” to ${written}.`);
       closeOverlay();
     } catch (error) {
-      if (error instanceof CalendarError) {
-        // A file that is not a calendar is said so in the sheet, which stays for another try.
-        setSheet({ kind: "import-path", reason: error.message });
-        model.fail(error.message);
-      } else throw error;
+      if (!(error instanceof CalendarError)) throw error;
+      model.fail(error.message);
     }
   };
 
-  const undo = useUndo(model.undo);
+  // ---- Find ------------------------------------------------------------------------------
+
+  const results = useMemo(() => (search ? searchEvents(calendars, hidden, search.query, today) : []), [search?.query, calendars, hidden, today, search]);
+  const pickResult = (occurrence: Occurrence | undefined): void => {
+    if (!occurrence) return;
+    setSearch(null);
+    model.goTo(dayPart(occurrence.start));
+    grid.pick(occurrence);
+    takeKeys();
+  };
+
+  // ---- Menus -----------------------------------------------------------------------------
+
   const { menus, run } = calendarMenus({
     view,
     modal,
+    picked: grid.picked !== null,
     undo,
     actions: {
-      newEvent: () => newEvent(),
+      newEvent: grid.newEvent,
       newCalendar: () => setSheet({ kind: "new-calendar" }),
       importFile,
+      exportFile: () => {
+        const first = destination?.calendarId ?? calendars[0]?.id;
+        if (first) setSheet({ kind: "export", calendarId: first });
+      },
       setView: (next) => model.setView(next),
       today: () => model.goToday(),
       step: (direction) => model.step(direction),
       undo: () => void model.undoStep("undo"),
       redo: () => void model.undoStep("redo"),
+      deleteEvent: () => grid.picked && grid.deleteOccurrence(grid.picked),
+      editEvent: () => grid.picked && openSheet(grid.picked),
+      duplicate: () => {
+        if (!grid.picked) return;
+        const copy = model.duplicate(grid.picked);
+        if (copy) model.say(`Duplicated “${copy.title}”.`);
+      },
+      find: () => setSearch((now) => now ?? { query: "", active: 0 }),
     },
   });
   useAppMenus(menus, run);
@@ -227,91 +270,100 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const title = viewTitle(view, anchor, view === "week" ? weekDays(anchor, firstDay) : days, prefs);
   const toolbar = (
     <>
-      <ToolbarButton testID="previous" glyph={CHEVRON_LEFT} onPress={() => model.step(-1)} />
+      <ToolbarButton testID="previous" glyph={CHEVRON_LEFT} tooltip={`Previous ${view}`} onPress={() => model.step(-1)} />
       <TodayButton onPress={() => model.goToday()} />
-      <ToolbarButton testID="next" glyph={CHEVRON_RIGHT} onPress={() => model.step(1)} />
+      <ToolbarButton testID="next" glyph={CHEVRON_RIGHT} tooltip={`Next ${view}`} onPress={() => model.step(1)} />
       <View style={{ width: 6 }} />
       <Segmented testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} segmentWidth={58} />
       <View style={{ width: 4 }} />
-      <ToolbarButton testID="new-event" glyph={PLUS} disabled={calendars.length === 0} onPress={() => newEvent()} />
+      {search ? (
+        <SearchField
+          testID="find"
+          value={search.query}
+          placeholder="Find events"
+          autoFocus
+          width={200}
+          onChangeText={(query) => setSearch({ query, active: 0 })}
+          onSubmit={() => pickResult(results[search.active])}
+          onKeyPress={(key) => {
+            if (key === "Escape") {
+              setSearch(null);
+              takeKeys();
+            } else setSearch({ ...search, active: Math.max(0, Math.min(results.length - 1, search.active + (key === "ArrowDown" ? 1 : -1))) });
+          }}
+        />
+      ) : (
+        <ToolbarButton testID="find-button" glyph={SEARCH} tooltip="Find events" onPress={() => setSearch({ query: "", active: 0 })} />
+      )}
+      <ToolbarButton testID="new-event" glyph={PLUS} tooltip="New event" disabled={calendars.length === 0} onPress={grid.newEvent} />
     </>
   );
 
-  // A message floats over the calendar as a notice until dismissed; an unreadable event's, too (it only hides here).
-  const problem = state.problems[0] ?? null;
-  const message = state.error ?? state.notice ?? (problem !== hiddenProblem ? problem : null);
-  const notice =
-    message === null ? undefined : (
-      <Notice
-        testID="message"
-        tone={state.error ? "error" : "info"}
-        text={message}
-        onDismiss={() => (state.error !== null || state.notice !== null ? model.dismissMessages() : setHiddenProblem(problem))}
-      />
-    );
+  // A notice floats over the calendar until dismissed: what went wrong, a delete with Undo, an import, or the events that couldn't be shown.
+  const problemsKey = state.problems.join("\n");
+  const undoable = deleted !== null && deleted.step !== null && undo.undoStep === deleted.step;
+  const notice = state.error ? (
+    <Notice testID="message" tone="error" text={state.error} onDismiss={() => model.dismissMessages()} />
+  ) : undoable && deleted ? (
+    <Notice
+      testID="message"
+      text={deleted.text}
+      action={<Button label="Undo" testID="message:undo" onPress={() => void model.undoStep("undo")} />}
+      onDismiss={() => setDeleted(null)}
+    />
+  ) : state.notice ? (
+    <Notice testID="message" text={state.notice} onDismiss={() => model.dismissMessages()} />
+  ) : state.problems.length > 0 && problemsKey !== hiddenProblems ? (
+    <Notice
+      testID="message"
+      text={state.problems.length === 1 ? "1 event couldn't be shown." : `${state.problems.length} events couldn't be shown.`}
+      action={<Button label="Show" testID="message:show" onPress={() => setSheet({ kind: "problems" })} />}
+      onDismiss={() => setHiddenProblems(problemsKey)}
+    />
+  ) : undefined;
 
-  const editingCalendar = sheet?.kind === "edit-calendar" ? sheet : null;
   const overlay = editing ? (
     <EventSheet
       draft={editing.draft}
       calendars={choosableCalendars(calendars, hidden, editing.draft.calendarId)}
       prefs={prefs}
-      editing={editing.target === null ? null : { repeating: editing.target.repeating, custom: editing.target.custom }}
-      onSave={saveEvent}
-      onDelete={askDelete}
-      onCancel={closeOverlay}
-    />
-  ) : sheet?.kind === "new-calendar" ? (
-    <CalendarSheet
-      title="New Calendar"
-      initialName=""
-      initialColor={paletteColor(calendars.length)}
-      confirmLabel="Create"
-      onCancel={closeOverlay}
-      onSubmit={(name, color) => {
-        model.createCalendar(name, color);
-        closeOverlay();
+      firstDay={firstDay}
+      editing={editing.occurrence === null ? null : { repeating: asksScope(editing.occurrence), custom: editing.draft.repeat === "custom" }}
+      onSave={saveSheet}
+      onDelete={() => {
+        const occurrence = editing.occurrence;
+        setEditing(null);
+        if (occurrence) grid.deleteOccurrence(occurrence);
+        takeKeys();
       }}
-    />
-  ) : editingCalendar ? (
-    <CalendarSheet
-      title="Edit Calendar"
-      initialName={editingCalendar.name}
-      initialColor={editingCalendar.color}
-      confirmLabel="Save"
       onCancel={closeOverlay}
-      onSubmit={(name, color) => {
-        if (name.trim() !== editingCalendar.name) model.renameCalendar(editingCalendar.id, name);
-        if (color !== editingCalendar.color) model.recolorCalendar(editingCalendar.id, color);
-        closeOverlay();
-      }}
     />
-  ) : sheet?.kind === "delete-calendar" ? (
-    <DeleteCalendarSheet
+  ) : sheet ? (
+    <SheetLayer
       sheet={sheet}
-      onCancel={closeOverlay}
-      onConfirm={() => {
-        model.removeCalendar(sheet.id);
-        closeOverlay();
-      }}
+      model={model}
+      calendars={calendars}
+      problems={state.problems}
+      onClose={closeOverlay}
+      onScope={answerScope}
+      onImportPath={importPath}
+      onExport={exportCalendar}
     />
-  ) : sheet?.kind === "delete-event" ? (
-    <DeleteEventSheet
-      sheet={sheet}
-      onCancel={closeOverlay}
-      onThis={() => {
-        model.skipOccurrence(sheet.calendarId, sheet.uid, sheet.start);
-        closeOverlay();
-      }}
-      onAll={() => {
-        model.deleteEvent(sheet.calendarId, sheet.uid);
-        closeOverlay();
-      }}
-    />
-  ) : sheet?.kind === "import-path" ? (
-    <ImportPathSheet reason={sheet.reason} onCancel={closeOverlay} onSubmit={importPath} />
   ) : menu ? (
     <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
+  ) : search ? (
+    <SearchResults results={results} query={search.query} active={search.active} prefs={prefs} colorOf={colorOf} top={RESULTS_TOP} onPick={pickResult} />
+  ) : grid.popover ? (
+    <EventPopover
+      occurrence={grid.popover.occurrence}
+      calendar={model.calendar(grid.popover.occurrence.calendarId)}
+      anchor={grid.popover.bounds ?? { x: area.x + area.width / 2 - 135, y: area.y + 40, width: 0, height: 0 }}
+      area={area}
+      prefs={prefs}
+      onEdit={() => grid.popover && openSheet(grid.popover.occurrence)}
+      onDelete={() => grid.popover && grid.deleteOccurrence(grid.popover.occurrence)}
+      onClose={grid.closePopover}
+    />
   ) : undefined;
 
   return (
@@ -348,61 +400,51 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
         />
       }
     >
-      {!modal && menu === null && (
-        <KeySink
-          focusKey={keys}
-          onKey={(key) => {
-            if (key.kind === "up") return model.step(-1);
-            if (key.kind === "down") return model.step(1);
-            if (key.kind !== "text") return;
-            switch (key.text.toLowerCase()) {
-              case "n":
-                return newEvent();
-              case "t":
-                return model.goToday();
-              case "1":
-              case "d":
-                return model.setView("day");
-              case "2":
-              case "w":
-                return model.setView("week");
-              case "3":
-              case "m":
-                return model.setView("month");
-              case "[":
-                return model.step(-1);
-              case "]":
-                return model.step(1);
-            }
-          }}
-        />
-      )}
-      {view === "month" ? (
-        <MonthView
-          anchor={anchor}
-          today={today}
-          firstDay={firstDay}
-          prefs={prefs}
-          occurrences={occurrences}
-          colorOf={colorOf}
-          onNew={(day) => newEvent(day, 9 * 60)}
-          onOpen={openEvent}
-          onDay={(day) => model.goTo(day, "day")}
-        />
-      ) : (
-        <TimeGrid
-          days={days}
-          today={today}
-          now={now}
-          prefs={prefs}
-          occurrences={occurrences}
-          colorOf={colorOf}
-          onNew={(day, minutes) => newEvent(day, minutes)}
-          onOpen={openEvent}
-          onDay={(day) => model.goTo(day, "day")}
-          scroll={scroll}
-        />
-      )}
+      <View
+        testID="calendar-content"
+        style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}
+        onLayout={setArea}
+        onDrop={(drop) => {
+          if (drop.phase === "enter" || drop.phase === "over") setDropping(drop.paths.some(isIcsPath));
+          else setDropping(false);
+          const file = drop.phase === "drop" ? drop.paths.find(isIcsPath) : undefined;
+          if (file) importPath(file);
+        }}
+      >
+        {!modal && grid.popover === null && search === null && menu === null && (
+          <View key={String(keys)} testID="keys" onWindowKeyDown={grid.onKey} style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }} />
+        )}
+        {view === "month" ? (
+          <MonthView
+            anchor={anchor}
+            today={today}
+            firstDay={firstDay}
+            prefs={prefs}
+            occurrences={occurrences}
+            colorOf={colorOf}
+            state={grid.state}
+            handlers={grid.handlers}
+          />
+        ) : (
+          <TimeGrid
+            days={days}
+            today={today}
+            now={now}
+            prefs={prefs}
+            occurrences={occurrences}
+            colorOf={colorOf}
+            state={grid.state}
+            handlers={grid.handlers}
+            scroll={scroll}
+          />
+        )}
+        {dropping && (
+          <View
+            testID="drop-target"
+            style={{ position: "absolute", left: 4, top: 4, right: 4, bottom: 4, borderRadius: 8, borderWidth: 2, borderColor: colors.selection }}
+          />
+        )}
+      </View>
     </AppWindow>
   );
 }

@@ -7,6 +7,7 @@
 
 import { rowLook, SelectionBar, SidebarSection, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
+import { useState } from "react";
 import { CHECK, ELLIPSIS, IMPORT, PLUS } from "./glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
 import type { Calendar } from "./types.ts";
@@ -39,6 +40,8 @@ function CalendarRow({
   onMenu: (x: number, y: number) => void;
 }) {
   const colors = useColors();
+  // The "⋯" shows while the pointer is on the row (or it is the one picked), not on every row at rest.
+  const [hovered, setHovered] = useState(false);
   return (
     // The whole row picks the calendar; the check and the menu inside it take their own presses
     // (Metal gives a press to the innermost view that handles it).
@@ -46,6 +49,7 @@ function CalendarRow({
       testID={`calendar-row:${calendar.id}`}
       onPress={onChoose}
       onContextMenu={(event) => onMenu(event.x, event.y)}
+      onHoverChange={setHovered}
       style={{
         height: 28,
         flexShrink: 0,
@@ -88,7 +92,7 @@ function CalendarRow({
         onPress={(event) => onMenu(event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0))}
         style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.separator }}
       >
-        <Svg markup={ELLIPSIS} size={14} color={rowLook(colors, chosen).glyph} />
+        {(hovered || chosen) && <Svg markup={ELLIPSIS} size={14} color={rowLook(colors, chosen).glyph} />}
       </View>
     </View>
   );
@@ -133,7 +137,7 @@ export function Sidebar({ calendars, hidden, target, onToggle, onChoose, onMenu,
       </SidebarSection>
       <View style={{ flex: 1 }} />
       {action("import", IMPORT, "Import…", onImport)}
-      {action("new-calendar", PLUS, "New Calendar", onNewCalendar)}
+      {action("new-calendar", PLUS, "New calendar…", onNewCalendar)}
     </>
   );
 }

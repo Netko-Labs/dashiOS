@@ -1,5 +1,7 @@
 /** What Software knows of an app in the catalog. Every field has been through parse.ts. */
 
+import type { FlatpakPermissions } from "./flatpak-permissions.ts";
+
 export interface AppSummary {
   /** The Flatpak application id (ids.ts). */
   id: string;
@@ -34,6 +36,15 @@ export interface Screenshot {
   height: number;
 }
 
+/** One release from AppStream, for "What's new". */
+export interface Release {
+  version: string | null;
+  /** Unix seconds. */
+  released: number | null;
+  /** Its notes as plain-text paragraphs (html.ts); empty when it has none. */
+  notes: string[];
+}
+
 export interface AppDetails extends AppSummary {
   /** Plain-text paragraphs (html.ts). */
   description: string[];
@@ -48,9 +59,15 @@ export interface AppDetails extends AppSummary {
   downloadSize: number | null;
   installedSize: number | null;
   categories: string[];
+  /** The newest stable releases, newest first (at most 3). */
+  releases: Release[];
+  /** What it can reach, from the summary; null when Flathub didn't say. */
+  permissions: FlatpakPermissions | null;
 }
 
+/** What the summary adds to a page: the sizes and the sandbox's permissions. */
 export interface Sizes {
   downloadSize: number | null;
   installedSize: number | null;
+  permissions: FlatpakPermissions | null;
 }

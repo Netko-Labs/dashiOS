@@ -1,12 +1,14 @@
 /** Calendar's glyphs, on the kit's 16-unit grid and tinted by the Svg `color`. */
 
 export { CHECK } from "@dashi/ui";
-export { CHEVRON_LEFT, CHEVRON_RIGHT } from "../../src/control-center/glyphs.ts";
 
 const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
 const stroke = (d: string, width = 1.4): string =>
   `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
+/** Previous and next (Calendar's own: an app draws no glyph from a shell module, design.html UI-1). */
+export const CHEVRON_LEFT = svg(stroke("M10 3.4L5.4 8L10 12.6", 1.6));
+export const CHEVRON_RIGHT = svg(stroke("M6 3.4L10.6 8L6 12.6", 1.6));
 /** New Event. */
 export const PLUS = svg(stroke("M8 3v10M3 8h10", 1.7));
 /** A tray with an arrow into it: Import. */

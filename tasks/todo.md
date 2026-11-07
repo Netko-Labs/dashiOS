@@ -29,16 +29,23 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] The missing controls: pop-up button, progress, one Slider, one alert frame, menu separators (L; UI-1, UI-2, UI-4, UI-5, PA-5, PA-9)
 
 ## Wave 2 · The apps' big ideas
-- [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
-- [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
-- [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
-- [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
-- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
-- [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
-- [ ] Editor's document surface with versioned autosave (L)
-- [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
-- [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
-- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+- [x] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2; `feat/0.5-files`, VM: not yet)
+- [ ] Left from the Files and portal roasts: a drag-out selection box (needs mirin to report a scroll view's offset), scrolling the selection into view from the keyboard (the same), Peek through Preview's renderers, a slow second click to rename, per-folder view settings and the window size, shortcuts drawn in `PopupMenu`, a copy's counts and time left, async thumbnails and completions, mount watching instead of `lsblk`, other disks' Trash, editable Favorites, New Window, Extract, Open in Terminal, Copy Path, column widths, a collapsible sidebar; region-aware dates and drops from Files in the chooser; `dashi-dialog`'s `--forms`, `--color-selection`, `--notification`, `--icon`; the portal's other dialogs (print, access, frames, copy, checkboxes, calendar, progress); Calendar's and Settings' typed-path fallback with no portal (M)
+- [x] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M; `feat/0.5-settings-undo`, VM: not yet)
+  - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
+- [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
+- [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
+- [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
+- [x] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8; `feat/0.5-notes`, needs mirin's styled-runs patch, VM: not yet)
+- [x] Editor's document surface with versioned autosave (L; `feat/0.5-editor`, mirin patch `mirin-editor.patch`: `TextInput` `highlights` and `lineNumbers`; VM: not yet)
+  - Left from the Editor roast (docs/roast/editor.md): per-keystroke O(n) passes and the 4 MB cap, the view following the caret, Reopen with Encoding, Replace one at a time and a find row, wrap/tabs/auto-indent/Print/syntax, tabs, a Settings pane
+- [x] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4; `feat/0.5-terminal`, VM: not yet)
+- [x] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6; `feat/0.5-preview`, VM: not yet)
+  - Later, from the roast: find, links and the outline in a PDF; password PDFs (poppler takes the password only on its command line); markup and crop; a slideshow; animated GIFs; writing a rotation into the file (lossless JPEG); tabs or Open in New Window; ⌃-wheel and pinch zoom (mirin: modifiers on `wheel`); the window's real device scale (mirin: the host reports it); File › Open Recent as a submenu (the menus channel has no submenus)
+- [x] Calculator's expression line and tape; a window size that behaves (M; LA-3; `feat/0.5-calculator`, mirin: `mirin-calculator.patch` (minSize, setSize), VM: not yet)
+- [x] Wave 1's nits from the VM reviews (11–14): the bar names an Access dialog; log-out asks one app at a time; no stray kombu cell in Terminal; PopUpButton and Slider take the keyboard; the Dock's Quit asks the app's question; "snip" is Screenshot… and the screenshots stay together; ⇧❖5 leaves an agent's recording running; record_screen's real length (S; `fix/0.5-wave1-nits`, VM: not yet)
+
+- [ ] Emoji in Metal (review 20, A1): every emoji draws blank (Terminal's grid) or as a placeholder (plain Metal text). Fedora's only colour emoji font in a default install, `google-noto-color-emoji-fonts`, is `Noto-COLRv1.ttf` (COLRv1), and the host's rasterizer (swash, via GPUI and cosmic-text 0.14.2) draws COLRv0 and bitmaps (CBDT, sbix) but not COLRv1. Fedora does ship a bitmap one: `twitter-twemoji-fonts` (`Twemoji.ttf`, Twemoji 14.0.2, CBDT; family "Twemoji"), now a Recommends of `dashi`. It doesn't help on its own: the host never asks fontconfig for a fallback; cosmic-text's own list names "Noto Color Emoji" and takes it whenever it is installed (and `default-fonts-core-emoji` installs it), so a fontconfig order would only change GTK and Qt apps, which draw COLRv1 already. In mirin, either: (a) real COLRv1 drawing (skrifa's COLR painter into the glyph atlas), or (b) meanwhile, the host's font fallbacks name "Twemoji" before cosmic-text's list when it is installed (M; mirin)
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
@@ -55,10 +62,10 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)
-- [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
+- [x] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M; with the file browser, `feat/0.5-files`)
 - [ ] CP-7: pane names from the pane list (S)
 - [ ] Text size beyond the launcher (M; TY-1)
-- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
 
 ## Verification (alongside)
 - [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes
@@ -470,8 +477,13 @@ it in the VM.
 - [ ] Terminal and Text Editor: the close control and ❖Q ask too (needs the mirin item above)
 - [x] Text Editor: ❖W asks like File › Close, unsaved text kept as it is typed, a window title
       per document, Revert asks (and is one Undo step), the caret stays put on ❖S and after sheets
-- [ ] Terminal: wide-character width check, mouse reporting to programs,
-      Kitty graphics, cursor blink, URL detection, preferences
+- [ ] Terminal: mouse reporting to programs (the wheel is ↑ ↓ in full-screen programs already),
+      Find in the scrollback, Kitty graphics, cursor blink, URL detection, a preferences pane, split panes
+      (docs/roast/terminal.md, "Where it stands")
+- [ ] Terminal: a notice when a long command ends in a window behind; the Dock's attention dot
+      for the bell; a hollow cursor in a window without focus (mirin reports no window focus yet);
+      middle-click paste, ⇧-click, a tab's middle-click close (PointerInfo has no button);
+      tabs dragged to reorder or out to a window, renamed; PTY writes off the main loop
 - [ ] A Dashi-native installer front end over Anaconda
 
 ## Later
@@ -481,6 +493,9 @@ it in the VM.
       Switch) to `@mirinjs/metal-ui`, styled with Dashi's theme
 - [ ] Theme tokens: Dashi's palettes as a metal-ui theme, so metal-ui
       components and `@dashi/ui` paint from the same colors
+- [ ] Calendar, after 0.5.0's grid: a VTIMEZONE written for a zone a file had none for;
+      Subscribe to a URL; a second alert and travel time; a custom calendar color
+      (docs/roast/calendar.md, "Where this went")
 
 ### Screen recording and dogfooding the agent integration
 

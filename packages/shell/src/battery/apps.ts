@@ -1,8 +1,9 @@
 /**
  * Which apps use the energy: each process's processor time between two looks
- * at /proc, credited to the app whose window it or one of its ancestors owns
- * (a browser's helper processes count as the browser), else to the process's
- * own name. Processor time is what Linux tells per process, and on a laptop
+ * at /proc, credited to the app it or one of its ancestors is (the same
+ * apps, by the same keys, as Activity Monitor's: process-apps/) or whose
+ * window it owns (a browser's helper processes count as the browser), else
+ * to the process's own name. Processor time is what Linux tells per process, and on a laptop
  * it is most of what an app costs the battery: the "energy impact" here is
  * the share of one core it kept busy, averaged over the last minutes.
  *
@@ -11,6 +12,7 @@
  */
 
 import type { ProcessSample } from "../../apps/activity-monitor/read.ts";
+import { type AppIdentity, ownerOf as ownerOfProcess } from "../process-apps/index.ts";
 
 export interface AppUse {
   /** The app's id when a window owns it, else `process:<name>`. */
@@ -30,28 +32,20 @@ export interface WindowOwner {
 /** Above this share of a core over the window, an app is "using significant energy" (as a Mac lists them). */
 export const SIGNIFICANT_CORES = 0.15;
 
-/** How the processes of one look belong to apps: walking up from each to the first that owns a window. */
+/**
+ * How the processes of one look belong to apps, as Activity Monitor groups
+ * them (process-apps/owners.ts): walking up from each to the first that is an
+ * app by itself (the reader's `app`) or owns a window; else the process's own
+ * name.
+ */
 export function ownerOf(processes: ReadonlyMap<number, ProcessSample>, windows: readonly WindowOwner[]): (pid: number) => { key: string; name: string } {
-  const byPid = new Map(windows.map((window) => [window.pid, window]));
-  const cache = new Map<number, { key: string; name: string }>();
+  const byPid = new Map(windows.map((window): [number, AppIdentity] => [window.pid, { key: window.key, name: window.name, icon: "" }]));
+  const walk = ownerOfProcess(processes, (sample) => sample.app ?? byPid.get(sample.pid) ?? null);
   return (pid) => {
-    const known = cache.get(pid);
-    if (known) return known;
-    let at: ProcessSample | undefined = processes.get(pid);
-    const self = at;
-    for (let depth = 0; at && depth < 32; depth++) {
-      const window = byPid.get(at.pid);
-      if (window) {
-        const owner = { key: window.key, name: window.name };
-        cache.set(pid, owner);
-        return owner;
-      }
-      at = processes.get(at.ppid);
-    }
-    const name = self?.name ?? String(pid);
-    const owner = { key: `process:${name}`, name };
-    cache.set(pid, owner);
-    return owner;
+    const found = walk(pid);
+    if (found) return { key: found.key, name: found.name };
+    const name = processes.get(pid)?.name ?? String(pid);
+    return { key: `process:${name}`, name };
   };
 }
 

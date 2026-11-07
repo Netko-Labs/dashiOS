@@ -6,15 +6,19 @@
  * looks.
  */
 
+import { plainFailure } from "../../src/software/failure-words.ts";
 import type { FlatpakUpdate, InstalledApp } from "../../src/software/flatpak-parse.ts";
 import type { Installation } from "../../src/software/ids.ts";
 import { MissingTool, type Outcome, type Software, type SystemUpdates } from "../../src/software/manager.ts";
 import type { Operation } from "./model.ts";
-import { OperationQueue } from "./queue.ts";
+import { type Job, OperationQueue } from "./queue.ts";
 
 export interface Failure {
   title: string;
+  /** What happened and what to do, in Dashi's words (failure-words.ts). */
   message: string;
+  /** The tool's own words, behind "Details"; null when there are none. */
+  details: string | null;
 }
 
 export interface SoftwareState {
@@ -38,6 +42,18 @@ export interface SoftwareState {
 }
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong.");
+
+/** The failure sheet's words for a change that failed with the tool's `text`: “VLC” wasn’t installed, and why, plainly. */
+export function failureOf(operation: Pick<Operation, "kind" | "name" | "id">, text: string): Failure {
+  const verb = { install: "installed", remove: "removed", update: "updated", "system-update": "updated" }[operation.kind];
+  const title =
+    operation.kind === "system-update"
+      ? "The system wasn’t updated"
+      : operation.kind === "update" && operation.id === undefined
+        ? "Your apps weren’t updated"
+        : `“${operation.name}” wasn’t ${verb}`;
+  return { title, ...plainFailure(text) };
+}
 
 export class SoftwareStore {
   private state: SoftwareState;
@@ -126,6 +142,16 @@ export class SoftwareStore {
 
   dismissFailure = (): void => this.set({ failure: null });
 
+  /** Says a change failed (an applet's, which runs outside flatpak). */
+  fail(failure: Failure): void {
+    this.set({ failure });
+  }
+
+  /** Adds any change to the one queue (an applet's install, say); false when that very change waits or runs already. */
+  enqueue(job: Job): boolean {
+    return this.queue.enqueue(job);
+  }
+
   install(id: string, name: string): void {
     this.queue.enqueue({
       operation: { key: `install:${id}`, kind: "install", id, name },
@@ -133,17 +159,18 @@ export class SoftwareStore {
     });
   }
 
-  remove(app: InstalledApp): void {
+  /** Removes an app; `deleteData` also deletes its settings and data (the sheet said so first). */
+  remove(app: InstalledApp, deleteData = false): void {
     this.queue.enqueue({
       operation: { key: `remove:${app.id}`, kind: "remove", id: app.id, name: app.name },
-      start: () => this.software.remove(app.id, app.installation),
+      start: (_report, signal) => this.software.remove(app.id, app.installation, signal, deleteData),
     });
   }
 
   /** One app's update, or (without `app`) every app update in an installation. */
   updateApp(installation: Installation, app?: { id: string; name: string }): void {
     this.queue.enqueue({
-      operation: { key: `update:${installation}:${app?.id ?? "*"}`, kind: "update", ...(app ? { id: app.id } : {}), name: app?.name ?? "Apps" },
+      operation: { key: `update:${installation}:${app?.id ?? "*"}`, kind: "update", ...(app ? { id: app.id } : {}), name: app?.name ?? "apps" },
       start: (report, signal) => this.software.updateFlatpak(installation, app?.id, report, signal),
     });
   }
@@ -164,15 +191,9 @@ export class SoftwareStore {
   }
 
   private async finished(operation: Omit<Operation, "status" | "progress">, outcome: Outcome): Promise<void> {
-    if (!outcome.ok && !outcome.cancelled) {
-      const verb = { install: "installed", remove: "removed", update: "updated", "system-update": "updated" }[operation.kind];
-      this.set({
-        failure: {
-          title: operation.kind === "system-update" ? "The system could not be updated" : `“${operation.name}” could not be ${verb}`,
-          message: outcome.message,
-        },
-      });
-    }
+    if (!outcome.ok && !outcome.cancelled) this.set({ failure: failureOf(operation, outcome.message) });
+    // An applet's change reads its own folder again (its job's `done`); flatpak's lists didn't change.
+    if (operation.subject === "applet") return;
     await this.refreshInstalled();
     if (operation.kind === "update" || operation.kind === "system-update") {
       await this.checkUpdates();

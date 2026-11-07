@@ -1,11 +1,28 @@
 //! Selection: a press, drag, double or triple click on the grid picks
-//! text (through libghostty-vt's selection API), and copy formats it.
+//! text (through libghostty-vt's selection API), and copy formats it. A
+//! plain click selects nothing: a drag that never leaves the cell it began
+//! in used to leave that one cell selected, a stray block in the selection's
+//! color (kombu, in Dark Mode) wherever the grid was clicked.
 
 use std::ffi::c_void;
 
 use crate::ffi_generated as ffi;
 use crate::protocol::Phase;
 use crate::vt::{Vt, sized, sized_free};
+
+/// Where a drag selection started: the grid's place, and the viewport cell
+/// the press was on.
+#[derive(Clone, Copy)]
+pub(crate) struct Anchor {
+    at: ffi::GhosttyGridRef,
+    cell: (u16, u16),
+}
+
+/// Whether the pointer, pressed on cell `from`, is now on another cell, so
+/// there is something to select.
+fn drags(from: (u16, u16), to: (u16, u16)) -> bool {
+    from != to
+}
 
 impl Vt {
     fn grid_ref(&self, x: u16, y: u16) -> Option<ffi::GhosttyGridRef> {
@@ -33,7 +50,7 @@ impl Vt {
     }
 
     /// The pointer on the grid: a press starts a selection (two clicks pick a
-    /// word, three a line), a drag extends it.
+    /// word, three a line), a drag to another cell extends it.
     pub(crate) fn select(&mut self, phase: Phase, x: u16, y: u16, clicks: u8) {
         let Some(at) = self.grid_ref(x, y) else {
             return;
@@ -63,14 +80,18 @@ impl Vt {
                 self.anchor = None;
             }
             (Phase::Down, _) => {
-                self.anchor = Some(at);
+                self.anchor = Some(Anchor { at, cell: (x, y) });
                 self.set_selection(None);
             }
             (Phase::Move, _) | (Phase::Up, _) => {
-                if let Some(start) = self.anchor {
-                    selection.start = start;
-                    selection.end = at;
-                    self.set_selection(Some(&selection));
+                if let Some(anchor) = self.anchor {
+                    if drags(anchor.cell, (x, y)) {
+                        selection.start = anchor.at;
+                        selection.end = at;
+                        self.set_selection(Some(&selection));
+                    } else {
+                        self.set_selection(None);
+                    }
                 }
                 if phase == Phase::Up {
                     self.anchor = None;
@@ -114,5 +135,17 @@ impl Vt {
             ffi::ghostty_free(std::ptr::null(), ptr, len);
             text
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::drags;
+
+    #[test]
+    fn a_click_selects_nothing_and_a_drag_to_another_cell_does() {
+        assert!(!drags((61, 19), (61, 19)));
+        assert!(drags((61, 19), (62, 19)));
+        assert!(drags((61, 19), (61, 18)));
     }
 }

@@ -1,11 +1,15 @@
 import { expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
+import { ChooserModel } from "../apps/files/chooser/model.ts";
+import { ChooserView } from "../apps/files/chooser/view.tsx";
+import type { Env } from "../apps/files/env.ts";
 import { accessHeight, askOnScreen } from "../apps/portal/access.tsx";
 import { appInfo } from "../apps/portal/apps.ts";
-import { ChooserModel, type Row, type Sources } from "../apps/portal/file-chooser/model.ts";
 import { type ChooserAnswer, parseChooser } from "../apps/portal/file-chooser/options.ts";
-import { ChooserView } from "../apps/portal/file-chooser/view.tsx";
 import { printOnScreen } from "../apps/portal/print/sheet.tsx";
 import type { ShowDialog } from "../apps/portal/windows.ts";
 
@@ -62,71 +66,76 @@ function showHere(): { show: ShowDialog; mounted: () => Mounted } {
   };
 }
 
-const row = (path: string, folder = false): Row => ({
-  path,
-  name: path.split("/").pop() ?? path,
-  folder,
-  mime: folder ? "inode/directory" : "application/pdf",
-  mtime: 1,
-  hidden: false,
-});
-
-const sources: Sources = {
-  home: "/h",
-  recents: async () => [],
-  search: async () => [],
-  folder: async (path) => ({ rows: path === "/h/Docs" ? [row("/h/Docs/Lease.pdf"), row("/h/Docs/Taxes", true)] : [], error: null }),
-};
-
-test("the chooser: a slow second click only selects; a real double-click opens; Up and Back move between folders", async () => {
+test("the chooser is Files: a slow second click only selects, a double-click opens, Up and Back move, the folder pop-up goes up", async () => {
+  const root = mkdtempSync(join(tmpdir(), "chooser-view-"));
+  const home = join(root, "h");
+  const docs = join(home, "Docs");
+  mkdirSync(join(docs, "Taxes"), { recursive: true });
+  writeFileSync(join(docs, "Lease.pdf"), "%PDF");
+  const env = {
+    home,
+    user: "alexk",
+    mime: { extensions: new Map([["pdf", "application/pdf"]]), literals: new Map() },
+    run: async () => ({ ok: false, code: 1, stdout: "", stderr: "" }),
+    trash: { files: join(root, "trash/files"), info: join(root, "trash/info") },
+    cache: join(root, "cache"),
+    dirs: [{ name: "DOCUMENTS", path: docs }],
+    now: Date.now,
+    recents: async () => [],
+  } as unknown as Env;
   const request = parseChooser("open", ["org.example.App", "", "Open Lease", new Map()]);
-  const model = new ChooserModel(request, sources, { folder: "/h/Docs", name: "" });
-  model.go({ kind: "folder", path: "/h/Docs" });
-  const answers: Array<ChooserAnswer | null> = [];
-  const { root, node, send } = mount(
-    <ChooserView model={model} places={[]} saveFolder="/h/Docs" exists={() => false} answer={(value) => answers.push(value)} />,
+  const model = new ChooserModel(
+    request,
+    env,
+    { folder: docs, name: "" },
+    { prefs: { view: "icons", sort: { key: "name", ascending: true }, showHidden: false }, watch: false },
   );
-  await settle();
-  const down = (testID: string, x: number, y: number) => send({ type: "pointer", nodeId: node(testID), phase: "down", x, y });
+  model.start();
+  model.store.go({ kind: "folder", path: docs });
+  const answers: Array<ChooserAnswer | null> = [];
+  const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open Lease" exists={() => false} answer={(value) => answers.push(value)} />);
+  await settle(60);
+  const lease = join(docs, "Lease.pdf");
+  const taxes = join(docs, "Taxes");
+  const press = (testID: string) => send({ type: "press", nodeId: node(testID) });
 
-  down("chooser:row:Lease.pdf", 200, 80);
-  expect(model.getSnapshot().selected).toEqual(["/h/Docs/Lease.pdf"]);
-  // Pressed again a second later (Date.now moves on): still only a click, nothing opens.
-  await settle(450);
-  down("chooser:row:Lease.pdf", 200, 80);
+  press(`item:${lease}`);
+  expect(model.store.getSnapshot().selection).toEqual([lease]);
+  // Pressed again a while later: still only a click, nothing opens.
+  await settle(500);
+  press(`item:${lease}`);
   expect(answers).toEqual([]);
-  // Two presses far apart are two clicks, not a double-click.
-  await settle(450);
-  down("chooser:row:Lease.pdf", 200, 80);
-  down("chooser:row:Lease.pdf", 260, 80);
-  expect(answers).toEqual([]);
-  // A real double-click opens it.
-  await settle(450);
-  down("chooser:row:Lease.pdf", 200, 80);
-  down("chooser:row:Lease.pdf", 201, 81);
-  expect(answers.map((answer) => answer?.paths)).toEqual([["/h/Docs/Lease.pdf"]]);
+  // A double-click opens it.
+  await settle(500);
+  press(`item:${lease}`);
+  press(`item:${lease}`);
+  expect(answers.map((answer) => answer?.paths)).toEqual([[lease]]);
 
   // A folder's double-click goes in; Up comes back out, and Back retraces.
-  await settle(450);
-  down("chooser:row:Taxes", 200, 110);
-  down("chooser:row:Taxes", 200, 110);
-  await settle();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs/Taxes" });
-  expect(root.lastTree()).toContain("Taxes");
-  send({ type: "press", nodeId: node("chooser:up") });
-  await settle();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs" });
-  send({ type: "press", nodeId: node("chooser:back") });
-  await settle();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h/Docs/Taxes" });
+  await settle(500);
+  press(`item:${taxes}`);
+  press(`item:${taxes}`);
+  await settle(60);
+  expect(model.folder()).toBe(taxes);
+  press("chooser:up");
+  await settle(60);
+  expect(model.folder()).toBe(docs);
+  press("chooser:back");
+  await settle(60);
+  expect(model.folder()).toBe(taxes);
 
   // The folder pop-up lists the folders it is in; choosing one goes there.
   send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
   await settle();
   send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
-  await settle();
-  expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h" });
-  root.unmount();
+  await settle(60);
+  expect(model.folder()).toBe(home);
+  // Esc, with nothing typed, cancels.
+  send({ type: "windowkey", nodeId: node("keys"), key: "escape", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
+  expect(answers.at(-1)).toBeNull();
+  mounted.unmount();
+  model.stop();
+  rmSync(root, { recursive: true, force: true });
 });
 
 test("an access sheet: Enter never grants; Esc says no; only a click on Allow allows", async () => {
@@ -251,4 +260,50 @@ test("the print sheet: Copies keeps what is typed, Enter prints from the field, 
   third.sheet.send({ type: "key", nodeId: third.sheet.node("print:copies"), value: "Escape" });
   await settle();
   expect(third.answer()).toBeNull();
+});
+
+test("the chooser's search takes a typed path: Return goes there; one that leads nowhere says so until a good one", async () => {
+  const root = mkdtempSync(join(tmpdir(), "chooser-path-"));
+  const home = join(root, "h");
+  const docs = join(home, "Docs");
+  mkdirSync(join(docs, "Taxes"), { recursive: true });
+  const env = {
+    home,
+    user: "alexk",
+    mime: { extensions: new Map(), literals: new Map() },
+    run: async () => ({ ok: false, code: 1, stdout: "", stderr: "" }),
+    trash: { files: join(root, "trash/files"), info: join(root, "trash/info") },
+    cache: join(root, "cache"),
+    dirs: [{ name: "DOCUMENTS", path: docs }],
+    now: Date.now,
+    recents: async () => [],
+  } as unknown as Env;
+  const model = new ChooserModel(
+    parseChooser("open", ["org.example.App", "", "Open", new Map()]),
+    env,
+    { folder: docs, name: "" },
+    { prefs: { view: "icons", sort: { key: "name", ascending: true }, showHidden: false }, watch: false },
+  );
+  model.start();
+  const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open" exists={() => false} answer={() => {}} />);
+  await settle(60);
+  expect(model.folder()).toBe(home);
+  const field = node("chooser:search");
+  // A path is not a name to look for: no search runs while it is typed.
+  send({ type: "change", nodeId: field, value: "~/Docs/Tax" });
+  expect(model.store.getSnapshot().query).toBe("");
+  send({ type: "submit", nodeId: field, value: "~/Docs/Nope" });
+  await settle();
+  expect(model.getSnapshot().problem).toContain("Nope");
+  expect(model.folder()).toBe(home);
+  send({ type: "submit", nodeId: field, value: "~/Docs/Taxes" });
+  await settle(60);
+  expect(model.folder()).toBe(join(docs, "Taxes"));
+  expect(model.getSnapshot().problem).toBeNull();
+  // Words still search.
+  send({ type: "change", nodeId: field, value: "lease" });
+  expect(model.store.getSnapshot().query).toBe("lease");
+  mounted.unmount();
+  model.stop();
+  rmSync(root, { recursive: true, force: true });
 });

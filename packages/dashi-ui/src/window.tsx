@@ -14,7 +14,7 @@
  * `notice` that floats over the content's foot and takes no room from it.
  */
 
-import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
+import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useColors, useSurface } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
@@ -185,7 +185,8 @@ export function ToolbarButton({
   tooltip,
 }: {
   glyph: string;
-  onPress: () => void;
+  /** With the press: the button's bounds, for a menu that opens under it (PA-9). */
+  onPress: (event: PressInfo) => void;
   testID: string;
   disabled?: boolean;
   label?: string;
@@ -203,9 +204,9 @@ export function ToolbarButton({
       onPress={
         disabled
           ? undefined
-          : () => {
+          : (event) => {
               tip.hide();
-              onPress();
+              onPress(event);
             }
       }
       onHoverChange={tip.onHoverChange}

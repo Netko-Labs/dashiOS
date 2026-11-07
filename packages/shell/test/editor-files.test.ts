@@ -4,11 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs, pathFromArg } from "../apps/editor/args.ts";
 import { MAX_BYTES, readDocument, writeDocument } from "../apps/editor/files.ts";
-import { displayName, editedTitle, folderLabel, resolveInput, suggestedSavePath, tildePath } from "../apps/editor/names.ts";
+import { displayName, folderLabel, resolveInput, suggestedSavePath, tildePath } from "../apps/editor/names.ts";
 import { DEFAULT_PREFS, parsePrefs, prefsPath, readPrefs, stepFontSize, writePrefs } from "../apps/editor/prefs.ts";
 import {
   isOpenWindow,
   keepRecovery,
+  moveOldRecovery,
   parseRecovery,
   type Recovery,
   RecoveryKeeper,
@@ -48,11 +49,9 @@ describe("args", () => {
 });
 
 describe("names", () => {
-  test("the title and the folder under it", () => {
+  test("the title and the folder after it", () => {
     expect(displayName(null)).toBe("Untitled");
     expect(displayName("/home/a/notes.txt")).toBe("notes.txt");
-    expect(editedTitle("/home/a/notes.txt", true)).toBe("notes.txt — Edited");
-    expect(editedTitle(null, false)).toBe("Untitled");
     expect(folderLabel("/home/a/Documents/x.txt", "/home/a")).toBe("~/Documents");
     expect(folderLabel("/etc/hosts", "/home/a")).toBe("/etc");
     expect(folderLabel(null, "/home/a")).toBeNull();
@@ -72,6 +71,10 @@ describe("names", () => {
     expect(suggestedSavePath(null, "/home/a")).toBe("~/Documents/Untitled.txt");
     expect(suggestedSavePath(null, "/home/a", false)).toBe("~/Untitled.txt");
     expect(suggestedSavePath("/home/a/n.md", "/home/a")).toBe("~/n.md");
+    // An Untitled.txt there already: the next free name.
+    const taken = new Set(["/home/a/Documents/Untitled.txt", "/home/a/Documents/Untitled 2.txt"]);
+    expect(suggestedSavePath(null, "/home/a", true, (path) => taken.has(path))).toBe("~/Documents/Untitled 3.txt");
+    expect(suggestedSavePath(null, "/home/a", false, (path) => taken.has(path))).toBe("~/Untitled.txt");
   });
 });
 
@@ -79,7 +82,11 @@ describe("files", () => {
   test("reads text, refuses folders, binaries, and large files", () => {
     const text = join(dir, "a.txt");
     writeFileSync(text, "one\r\ntwo\r\n");
-    expect(readDocument(text)).toEqual({ ok: true, decoded: { text: "one\ntwo\n", encoding: "utf-8", lineEnding: "crlf" } });
+    expect(readDocument(text)).toEqual({
+      ok: true,
+      decoded: { text: "one\ntwo\n", encoding: "utf-8", lineEnding: "crlf" },
+      stamp: { mtimeMs: statSync(text).mtimeMs, size: 10 },
+    });
     expect(readDocument(dir)).toEqual({ ok: false, message: "It is a folder." });
     expect(readDocument(join(dir, "none"))).toEqual({ ok: false, message: "There is no such file." });
     const binary = join(dir, "b.bin");
@@ -129,9 +136,18 @@ describe("files", () => {
 describe("recovery", () => {
   const sample: Recovery = { path: "/home/a/x.txt", text: "unsaved", encoding: "utf-8", lineEnding: "crlf", time: 1000 };
 
-  test("it lives under the state folder", () => {
-    expect(recoveryDir({ XDG_STATE_HOME: "/s" })).toBe("/s/dashi/editor/recovery");
-    expect(recoveryDir({ HOME: "/home/a" })).toBe("/home/a/.local/state/dashi/editor/recovery");
+  test("drafts live under the state folder; 0.4's recovery folder becomes it", () => {
+    expect(recoveryDir({ XDG_STATE_HOME: "/s" })).toBe("/s/dashi/editor/drafts");
+    expect(recoveryDir({ HOME: "/home/a" })).toBe("/home/a/.local/state/dashi/editor/drafts");
+    const env = { XDG_STATE_HOME: join(dir, "state") };
+    const old = join(dir, "state", "dashi", "editor", "recovery");
+    mkdirSync(old, { recursive: true });
+    writeFileSync(join(old, "1-2.json"), JSON.stringify(sample));
+    moveOldRecovery(env);
+    expect(readdirSync(recoveryDir(env))).toEqual(["1-2.json"]);
+    expect(existsSync(old)).toBe(false);
+    moveOldRecovery(env);
+    expect(readdirSync(recoveryDir(env))).toEqual(["1-2.json"]);
   });
 
   test("parsing refuses what isn't one", () => {
@@ -234,7 +250,8 @@ describe("keeping changes as they are typed", () => {
 
 describe("prefs", () => {
   test("parsing keeps what is valid", () => {
-    expect(parsePrefs('{"monospace":true,"fontSize":16}')).toEqual({ monospace: true, fontSize: 16 });
+    expect(parsePrefs('{"monospace":true,"fontSize":16}')).toEqual({ monospace: true, fontSize: 16, lineNumbers: true });
+    expect(parsePrefs('{"lineNumbers":false}')).toEqual({ ...DEFAULT_PREFS, lineNumbers: false });
     expect(parsePrefs('{"monospace":"yes","fontSize":15}')).toEqual(DEFAULT_PREFS);
     expect(parsePrefs("[]")).toEqual(DEFAULT_PREFS);
     expect(prefsPath({ XDG_CONFIG_HOME: "/c" })).toBe("/c/dashi/editor.json");
@@ -251,8 +268,8 @@ describe("prefs", () => {
 
   test("written and read back", () => {
     const path = join(dir, "config", "editor.json");
-    writePrefs({ monospace: true, fontSize: 18 }, path);
-    expect(readPrefs(path)).toEqual({ monospace: true, fontSize: 18 });
+    writePrefs({ monospace: true, fontSize: 18, lineNumbers: false }, path);
+    expect(readPrefs(path)).toEqual({ monospace: true, fontSize: 18, lineNumbers: false });
     expect(readPrefs(join(dir, "none.json"))).toEqual(DEFAULT_PREFS);
   });
 });

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
@@ -10,15 +10,23 @@ import { EditorWindow } from "../apps/editor/view.tsx";
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
 let dir = "";
 let runtime: string | undefined;
+let home: string | undefined;
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), "dashi-editor-view-"));
+  // Save As starts in Documents, as a new document's does.
+  mkdirSync(join(dir, "Documents"));
   // No menus socket here: the kit's menus client stays quiet.
   runtime = process.env.XDG_RUNTIME_DIR;
   process.env.XDG_RUNTIME_DIR = dir;
+  // Open and Save As are Files' chooser, which starts at home: home is the scratch folder.
+  home = process.env.HOME;
+  process.env.HOME = dir;
 });
 afterAll(() => {
   if (runtime === undefined) delete process.env.XDG_RUNTIME_DIR;
   else process.env.XDG_RUNTIME_DIR = runtime;
+  if (home === undefined) delete process.env.HOME;
+  else process.env.HOME = home;
   rmSync(dir, { recursive: true, force: true });
 });
 
@@ -38,9 +46,10 @@ function fakeHost() {
   return { transport, trees, emit };
 }
 
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
+const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
+const press = (nodeId: string): NativeEvent => ({ type: "press", nodeId });
 
-test("typing marks the document edited; the Save sheet saves it", async () => {
+test("an Untitled document is a draft, counted once typing pauses; the Save sheet saves it", async () => {
   const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
   const host = fakeHost();
   const quits: boolean[] = [];
@@ -66,32 +75,34 @@ test("typing marks the document edited; the Save sheet saves it", async () => {
   host.emit({ type: "change", nodeId: text, value: "hello there" });
   await settle();
   expect(model.getSnapshot().text).toBe("hello there");
-  expect(host.trees.at(-1)).toContain("Untitled — Edited");
-  expect(host.trees.at(-1)).toContain("2 words");
+  expect(host.trees.at(-1)).toContain("Draft · 1 line · 0 words");
+  await new Promise((done) => setTimeout(done, 350));
+  expect(host.trees.at(-1)).toContain("Draft · 1 line · 2 words");
 
-  // Save on an Untitled document asks where.
+  // Save on an Untitled document asks where: Files' chooser, in the home folder, the name ready.
   const save = root.nodeId("save");
   if (!save) throw new Error("no save button");
   host.emit({ type: "press", nodeId: save });
+  await settle(80);
+  const field = root.nodeId("chooser:name");
+  if (!field) throw new Error("no Save As chooser");
+  expect(host.trees.at(-1)).toContain("Untitled.txt");
+  const path = join(dir, "Documents", "hello.txt");
+  host.emit({ type: "change", nodeId: field, value: "hello.txt" });
   await settle();
-  const field = root.nodeId("save-sheet:path");
-  if (!field) throw new Error("no Save As sheet");
-  const path = join(dir, "hello.txt");
-  host.emit({ type: "change", nodeId: field, value: path });
-  await settle();
-  host.emit({ type: "submit", nodeId: field, value: path });
+  host.emit({ type: "submit", nodeId: field, value: "hello.txt" });
   await settle();
   expect(readFileSync(path, "utf8")).toBe("hello there");
   expect(host.trees.at(-1)).toContain("hello.txt");
-  expect(host.trees.at(-1)).not.toContain("— Edited");
-  expect(root.nodeId("save-sheet:path")).toBeUndefined();
+  expect(host.trees.at(-1)).not.toContain("Draft");
+  expect(root.nodeId("chooser:name")).toBeUndefined();
   root.unmount();
 });
 
-test("Save As asks once before replacing another file", async () => {
+test("Save As asks before replacing another file, with Replace in ume", async () => {
   const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
   const host = fakeHost();
-  const existing = join(dir, "taken.txt");
+  const existing = join(dir, "Documents", "taken.txt");
   writeFileSync(existing, "keep me");
   const root = render(
     <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => {}} setTitle={() => {}} />,
@@ -99,16 +110,18 @@ test("Save As asks once before replacing another file", async () => {
   );
   await settle();
   model.edit("new text");
+  await settle();
   host.emit({ type: "press", nodeId: root.nodeId("save") as string });
   await settle();
-  const field = root.nodeId("save-sheet:path") as string;
-  host.emit({ type: "change", nodeId: field, value: existing });
+  await settle(50);
+  const field = root.nodeId("chooser:name") as string;
+  host.emit({ type: "change", nodeId: field, value: "taken.txt" });
   await settle();
-  host.emit({ type: "submit", nodeId: field, value: existing });
+  host.emit({ type: "submit", nodeId: field, value: "taken.txt" });
   await settle();
   expect(readFileSync(existing, "utf8")).toBe("keep me");
   expect(host.trees.at(-1)).toContain("already exists");
-  host.emit({ type: "submit", nodeId: field, value: existing });
+  host.emit(press(root.nodeId("chooser:replace:ok") as string));
   await settle();
   expect(readFileSync(existing, "utf8")).toBe("new text");
   root.unmount();
@@ -135,19 +148,22 @@ test("Open takes an untouched window's place, and opens another window otherwise
     host.transport,
   );
   await settle();
+  // Open is Files' chooser: Home in its sidebar, the file's icon, then Open.
   const openWith = async (path: string): Promise<void> => {
     host.emit({ type: "press", nodeId: root.nodeId("open") as string });
+    await settle(60);
+    host.emit(press(root.nodeId("place:home") as string));
+    await settle(60);
+    host.emit(press(root.nodeId(`item:${path}`) as string));
     await settle();
-    const field = root.nodeId("open-sheet:path") as string;
-    host.emit({ type: "change", nodeId: field, value: path });
-    await settle();
-    host.emit({ type: "submit", nodeId: field, value: path });
+    host.emit(press(root.nodeId("chooser:accept") as string));
     await settle();
   };
-  await openWith(join(dir, "missing.txt"));
-  expect(host.trees.at(-1)).toContain("There is no file there.");
-  host.emit({ type: "press", nodeId: root.nodeId("open-sheet:cancel") as string });
+  host.emit({ type: "press", nodeId: root.nodeId("open") as string });
+  await settle(60);
+  host.emit(press(root.nodeId("chooser:cancel") as string));
   await settle();
+  expect(root.nodeId("chooser:cancel")).toBeUndefined();
 
   await openWith(first);
   expect(model.getSnapshot()).toMatchObject({ path: first, text: "one" });
@@ -195,7 +211,8 @@ test("the text keeps its input (and its caret) through Save, closing a sheet, an
   // A sheet comes and goes.
   host.emit({ type: "press", nodeId: root.nodeId("open") as string });
   await settle();
-  host.emit({ type: "press", nodeId: root.nodeId("open-sheet:cancel") as string });
+  await settle(60);
+  host.emit(press(root.nodeId("chooser:cancel") as string));
   await settle();
   expect(root.nodeId("text")).toBe(input);
   expect(focused).toBe(2);
@@ -206,12 +223,107 @@ test("the text keeps its input (and its caret) through Save, closing a sheet, an
   expect(root.nodeId("text")).toBe(input);
   expect(focused).toBe(3);
 
-  // Saving under another name renames the window; editing doesn't (the edited mark stays in the toolbar).
+  // Saving under another name renames the window; editing doesn't.
   model.edit("changed again");
   await settle();
   expect(titles).toEqual(["kept.txt"]);
   model.saveAs(join(dir, "renamed.txt"));
   await settle();
   expect(titles).toEqual(["kept.txt", "renamed.txt"]);
+  root.unmount();
+});
+
+type InputProps = {
+  id: string;
+  highlights?: { start: number; end: number; color: string }[];
+  selection?: { start: number; end: number };
+  lineNumbers?: unknown;
+};
+type Node = { type: string; props: InputProps; children?: unknown[] };
+
+/** The props of input `id` in the latest tree. */
+function inputProps(tree: string | undefined, id: string | undefined): InputProps | null {
+  const find = (node: Node): InputProps | null => {
+    if (node.type === "input" && node.props.id === id) return node.props;
+    for (const child of node.children ?? []) {
+      const found = typeof child === "object" && child !== null ? find(child as Node) : null;
+      if (found) return found;
+    }
+    return null;
+  };
+  return find(JSON.parse(tree ?? "{}") as Node);
+}
+
+test("Find washes every match and selects the one it is on; the caret is held; line numbers are on", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  model.edit("one two\none three\none");
+  const host = fakeHost();
+  const root = render(
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => {}} setTitle={() => {}} />,
+    host.transport,
+  );
+  host.emit({ type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 28 } });
+  await settle();
+  const text = (): InputProps | null => inputProps(host.trees.at(-1), root.nodeId("text"));
+  expect(text()?.lineNumbers).toMatchObject({ color: "#1d1d1fa6" });
+  expect(text()?.highlights).toBeUndefined();
+
+  const field = root.nodeId("find") as string;
+  host.emit({ type: "change", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.highlights).toEqual([
+    { start: 0, end: 3, color: "#E5B13F40" },
+    { start: 8, end: 11, color: "#E5B13F40" },
+    { start: 18, end: 21, color: "#E5B13F40" },
+  ]);
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.highlights?.[1]).toEqual({ start: 8, end: 11, color: "#E5B13F99" });
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  expect(host.trees.at(-1)).toContain("2 of 3 · line 2");
+
+  // Where the input says the caret went is where it stays, through Undo's new text.
+  host.emit({ type: "selection", nodeId: root.nodeId("text") as string, start: 4, end: 4 });
+  await settle();
+  expect(text()?.selection).toEqual({ start: 4, end: 4 });
+  model.edit("one two\none three\none!");
+  model.undo();
+  await settle();
+  expect(text()?.selection).toEqual({ start: 4, end: 4 });
+  root.unmount();
+});
+
+test("one Esc leaves Find: the query stays, the text takes the keyboard on the current match", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  model.edit("one two\none three\none");
+  const host = fakeHost();
+  let focused = 0;
+  const root = render(
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => focused++} setTitle={() => {}} />,
+    host.transport,
+  );
+  await settle();
+  const text = (): InputProps | null => inputProps(host.trees.at(-1), root.nodeId("text"));
+  const field = root.nodeId("find") as string;
+  host.emit({ type: "change", nodeId: field, value: "one" });
+  await settle();
+  // Typed, never stepped: Esc selects the first match.
+  host.emit({ type: "key", nodeId: field, value: "Escape" });
+  await settle();
+  expect(focused).toBe(1);
+  expect(model.getSnapshot().find.query).toBe("one");
+  expect(text()?.selection).toEqual({ start: 0, end: 3 });
+  // Stepped to the second: Esc keeps it, and ❖G goes on from there.
+  host.emit({ type: "submit", nodeId: field, value: "one" });
+  await settle();
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  host.emit({ type: "key", nodeId: field, value: "Escape" });
+  await settle();
+  expect(focused).toBe(2);
+  expect(text()?.selection).toEqual({ start: 8, end: 11 });
+  expect(text()?.highlights).toHaveLength(3);
+  expect(model.getSnapshot().find.query).toBe("one");
   root.unmount();
 });

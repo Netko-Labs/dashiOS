@@ -134,6 +134,8 @@ export function resolvePinned(which: (program: string) => string | null = (progr
 export const SETTINGS_APP_ID = "dev.dashi.settings";
 /** The app id the Setup Assistant's window reports. */
 export const SETUP_APP_ID = "dev.dashi.setup";
+/** Screenshot, an app the shell opens: ⇧❖5's toolbar, listed with the apps so it can be found and kept in the Dock. */
+export const SCREENSHOT_APP_ID = "dev.dashi.screenshot";
 /** The app id of a nested Dashi's window: dashi-comp inside another desktop (comp/src/winit.rs). */
 export const NESTED_APP_ID = "dev.dashi.nested";
 
@@ -146,6 +148,7 @@ export const NESTED_APP_ID = "dev.dashi.nested";
 const SHELL_APPS: readonly App[] = [
   { id: SETTINGS_APP_ID, name: "System Settings", icon: iconPath("settings") },
   { id: SETUP_APP_ID, name: "Setup Assistant", icon: iconPath("setup") },
+  { id: SCREENSHOT_APP_ID, name: "Screenshot", icon: iconPath("screenshot") },
   // Never registered, so never in the launcher; named and drawn with the bowl in the Dock and menu bar.
   { id: NESTED_APP_ID, name: "Dashi (nested)", icon: iconPath("setup") },
 ];

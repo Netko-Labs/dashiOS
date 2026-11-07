@@ -2,7 +2,8 @@
  * Copy, move, duplicate, rename, and create: the operations that write.
  * Rules they keep:
  *  - Names are checked (`checkName`) and collisions become "name 2"; nothing
- *    is ever overwritten. Files are created exclusively and moves use
+ *    is ever overwritten here (Replace moves the one there to the Trash first,
+ *    operations.ts). Files are created exclusively and moves use
  *    `renameat2(RENAME_NOREPLACE)`, so a name taken in the meantime is a retry
  *    with the next name, never a replacement.
  *  - A symbolic link is copied as a link. A copy never reads through one, so a
@@ -208,6 +209,9 @@ export async function makeFolder(dir: string, name: string): Promise<string> {
   }
   return path;
 }
+
+/** "untitled folder", the name a new folder starts with (then "untitled folder 2", …). */
+export const NEW_FOLDER_NAME = "untitled folder";
 
 /** The first free "untitled folder", "untitled folder 2", … in `dir`. */
 export function freeName(dir: string, wanted: string): string {

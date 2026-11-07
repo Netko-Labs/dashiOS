@@ -34,11 +34,22 @@ Requires:       xdg-desktop-portal
 Requires:       xdg-desktop-portal-wlr
 # The print sheet sends jobs to CUPS (apps/portal/print/).
 Recommends:     cups
+# Preview: PDFs' pages, thumbnails and words (poppler), pictures Metal can't
+# draw as they are, rotation, export and print (ImageMagick); HEIC and AVIF
+# pictures; a rotated PDF exported or printed whole (qpdf).
+Requires:       poppler-utils
+Requires:       ImageMagick
+Recommends:     ImageMagick-heic
+Recommends:     qpdf
 Requires:       adwaita-cursor-theme
 Requires:       rsms-inter-fonts
 Requires:       google-noto-sans-fonts
 Requires:       google-noto-sans-mono-fonts
 Requires:       google-noto-sans-symbols-2-fonts
+# Emoji the Metal host can draw: Twemoji is a bitmap font (CBDT); Noto Color
+# Emoji, Fedora's default, is COLRv1, which the host doesn't draw yet. The
+# host picks it once mirin names it in its fallbacks (tasks/todo.md, "Emoji in Metal").
+Recommends:     twitter-twemoji-fonts
 # X11 apps (dashi-comp starts Xwayland) and video wallpapers (GStreamer).
 Requires:       xorg-x11-server-Xwayland
 # X11 apps' dpi and cursor size (X resources), set when Xwayland draws at the screens' scale.

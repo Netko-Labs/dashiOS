@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { buttonLook } from "../src/button-look.ts";
 import { isHeld } from "../src/control-state.tsx";
-import { MENU, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
+import { litAfter, MENU, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
 import { popUpOrigin } from "../src/popup-button.tsx";
 import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, sweepOffset } from "../src/progress-math.ts";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/sheet.tsx";
-import { fractionAt, fractionOf, knobLeft, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
+import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 
@@ -32,6 +32,40 @@ describe("the slider's arithmetic", () => {
     expect(fractionAt(50, { x: 0, width: 10 }, 18)).toBe(0);
     expect(knobLeft(0.5, 218, 18)).toBe(100);
     expect(knobLeft(2, 218, 18)).toBe(200);
+  });
+  test("the arrows step every step when there are few, else about 5%, end to end", () => {
+    expect(keyValues({ min: 0, max: 100, step: 25 })).toEqual([0, 25, 50, 75, 100]);
+    const fine = keyValues({ min: 0, max: 100, step: 1 });
+    expect(fine).toHaveLength(21);
+    expect(fine.slice(0, 3)).toEqual([0, 5, 10]);
+    expect(fine.at(-1)).toBe(100);
+    const free = keyValues(UNIT_RANGE);
+    expect(free).toHaveLength(21);
+    expect(free[1]).toBeCloseTo(0.05);
+    // A span the stride doesn't divide still ends at the maximum.
+    expect(keyValues({ min: 1700, max: 6500, step: 100 })).toEqual([...Array.from({ length: 16 }, (_, i) => 1700 + 300 * i), 6500]);
+    expect(keyValues({ min: 3, max: 3, step: 1 })).toEqual([3]);
+  });
+  test("the arrows step on from the notch nearest the value", () => {
+    const values = [0, 25, 50, 75, 100];
+    expect(nearestIndex(values, 0)).toBe(0);
+    expect(nearestIndex(values, 60)).toBe(2);
+    expect(nearestIndex(values, 64)).toBe(3);
+    expect(nearestIndex(values, 400)).toBe(4);
+  });
+});
+
+describe("a menu's keys", () => {
+  // Items, a separator, a disabled item, an item.
+  const usable = [true, true, false, false, true];
+  test("↓ and ↑ light the next row that can be picked, stopping at the ends", () => {
+    expect(litAfter(usable, null, 1)).toBe(0);
+    expect(litAfter(usable, null, -1)).toBe(4);
+    expect(litAfter(usable, 1, 1)).toBe(4);
+    expect(litAfter(usable, 4, -1)).toBe(1);
+    expect(litAfter(usable, 4, 1)).toBe(4);
+    expect(litAfter(usable, 0, -1)).toBe(0);
+    expect(litAfter([false, false], null, 1)).toBeNull();
   });
 });
 

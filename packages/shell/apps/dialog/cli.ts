@@ -26,6 +26,8 @@ Dialogs:
   --scale         a number (--value, --min-value, --max-value, --step,
                   --print-partial, --hide-value)
   --calendar      a day (--day, --month, --year, --date-format)
+  --file-selection  Files' chooser (--save, --directory, --multiple, --filename,
+                  --file-filter, --separator)
 
 Every dialog: --title, --width, --height, --timeout, --ok-label, --cancel-label,
 --extra-button. Exit status: 0 OK or Yes, 1 Cancel, No, or closed, 5 timed out,

@@ -70,6 +70,50 @@ export interface AgentPermissions {
   scopes: Array<{ scope: Scope; label: string; since: number | null }>;
 }
 
+/** What each permission lets an agent do, in one line, for Settings › Agents (the consent sheet has the long form: consent.ts). */
+export const CONSEQUENCES: Readonly<Record<Scope, string>> = {
+  signin: "Has Dashi sign in to sites with your saved logins, asking you which each time.",
+  pay: "Asks to pay with your saved cards, within your limits.",
+  act: "Opens apps, and clicks and types in windows with its own pointer.",
+  screen: "Takes pictures of the screen or a window.",
+  settings: "Changes settings and joins networks you have used before.",
+  files: "Lists your folders and opens files in their apps.",
+  clipboard: "Reads what you copied lately.",
+  notes_write: "Creates notes and adds to them.",
+  calendar_write: "Adds events to your calendar.",
+  see: "Sees window titles and which apps you have.",
+  notes: "Reads your notes.",
+  calendar: "Reads your calendar.",
+  notifications: "Reads and dismisses your notifications.",
+};
+
+/** One agent in Settings › Agents: what it may do for good, and whether it is connected now. */
+export interface AgentCard extends AgentPermissions {
+  connected: boolean;
+}
+
+/**
+ * Every agent with something to show: each one allowed something for good,
+ * each one connected now (an agent allowed only once is still listed while
+ * it is), and each one in `active` (it changed settings lately, so its card
+ * lists them with Undo). Connected ones first, then by name.
+ */
+export function agentCards(
+  entries: readonly GrantEntry[],
+  connected: ReadonlyArray<{ key?: string; name: string }>,
+  home: string,
+  active: readonly string[] = [],
+): AgentCard[] {
+  const live = new Set(connected.flatMap((agent) => (agent.key ? [agent.key] : [])));
+  const kept = agentPermissions(entries, home);
+  const known = new Set(kept.map((agent) => agent.key));
+  const others = new Set([...live, ...active].filter((key) => !known.has(key)));
+  const onlyNow = [...others].map((key) => ({ key, ...describeAgentKey(key, home), scopes: [] }));
+  return [...kept, ...onlyNow]
+    .map((agent) => ({ ...agent, connected: live.has(agent.key) }))
+    .sort((a, b) => Number(b.connected) - Number(a.connected) || a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+}
+
 /** Each agent with what it was allowed for good, by name; its permissions riskiest first. */
 export function agentPermissions(entries: readonly GrantEntry[], home: string): AgentPermissions[] {
   return entries

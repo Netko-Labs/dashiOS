@@ -4,7 +4,7 @@
  * (server.ts) and checks its hello against. An applet runs when the person
  * allowed what it asks for (asked once, on the consent sheet), it isn't
  * disabled (pulled from the catalog, or turned off), and it is for this
- * Dashi. The folder is watched: what the Applet Store installs, updates,
+ * Dashi. The folder is watched: what Software installs, updates,
  * disables, or removes is started, restarted, or stopped here.
  *
  * Each runs as a systemd user unit (`dashi-applet-<id>.service`), so it is

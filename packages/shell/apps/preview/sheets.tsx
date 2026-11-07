@@ -1,51 +1,67 @@
-/** Preview's sheets: file info, the Open With list, and a plain message. */
+/** Preview's sheets: file info, the Open With list, Export, and a plain message. */
 
-import { AlertSheet, Button, INFO, Sheet, useColors } from "@dashi/ui";
+import { AlertSheet, Button, Group, INFO, PopUpButton, Row, Sheet, Slider, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
+import { useState } from "react";
+import { EXPORT_FORMATS, type ExportFormat } from "./convert.ts";
 import type { Handler } from "./handlers.ts";
-import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
+import { type FileFacts, formatBytes, formatCount, formatDate, formatDimensions, megapixels } from "./info.ts";
 
 export type InfoRow = readonly [label: string, value: string];
 
 /** The facts about the open file, as rows. */
-export function infoRows(facts: FileFacts, extra: readonly InfoRow[]): InfoRow[] {
+export function infoRows(facts: FileFacts, extra: readonly InfoRow[], locale?: string): InfoRow[] {
   return [
-    ["Name", facts.name],
     ["Kind", facts.type],
     ...extra,
-    ["Size", `${formatBytes(facts.size)}${facts.size >= 1000 ? ` (${facts.size.toLocaleString("en-US")} bytes)` : ""}`],
-    ["Modified", formatDate(facts.modifiedMs)],
+    ["Size", `${formatBytes(facts.size, locale)}${facts.size >= 1000 ? ` (${formatCount(facts.size, locale)} bytes)` : ""}`],
+    ["Modified", formatDate(facts.modifiedMs, locale)],
     ["Where", facts.folder],
   ];
 }
 
-/** The rows an image adds: its size in pixels and megapixels. */
-export function imageRows(width: number, height: number, turns: number): InfoRow[] {
-  const mp = megapixels(width, height);
+const TURNED: Readonly<Record<number, string>> = { 1: "90° clockwise", 2: "180°", 3: "90° counterclockwise" };
+
+/** The rows an image adds: its size in pixels and megapixels, how it is rotated, and how it is shown. */
+export function imageRows(width: number, height: number, turns: number, note: string | null, locale?: string): InfoRow[] {
+  const mp = megapixels(width, height, locale);
+  const quarter = ((turns % 4) + 4) % 4;
   return [
-    ["Dimensions", `${formatDimensions(width, height)} pixels${mp ? ` (${mp})` : ""}`],
-    ...(turns % 4 !== 0 ? ([["Viewing", `Turned ${turns % 4 === 1 ? "90° clockwise" : turns % 4 === 2 ? "180°" : "90° counterclockwise"}`]] as InfoRow[]) : []),
+    ["Dimensions", `${formatDimensions(width, height, locale)} pixels${mp ? ` (${mp})` : ""}`],
+    ...(quarter !== 0 ? ([["Rotated", TURNED[quarter] as string]] as InfoRow[]) : []),
+    ...(note ? ([["Shown", note]] as InfoRow[]) : []),
   ];
 }
 
-export function InfoSheet({ rows, onClose }: { rows: readonly InfoRow[]; onClose: () => void }) {
+/** The rows a PDF adds. */
+export function pdfRows(pages: number, title: string | null, page: { width: number; height: number } | null, turns: number, locale?: string): InfoRow[] {
+  const quarter = ((turns % 4) + 4) % 4;
+  return [
+    ["Pages", formatCount(pages, locale)],
+    ...(title ? ([["Title", title]] as InfoRow[]) : []),
+    ...(page ? ([["Page size", `${formatDimensions(Math.round(page.width), Math.round(page.height), locale)} pt`]] as InfoRow[]) : []),
+    ...(quarter !== 0 ? ([["Rotated", TURNED[quarter] as string]] as InfoRow[]) : []),
+  ];
+}
+
+/** Info: the file's name as the heading, its facts as a card of rows. */
+export function InfoSheet({ name, rows, onClose }: { name: string; rows: readonly InfoRow[]; onClose: () => void }) {
   const colors = useColors();
   return (
-    <Sheet testID="info-sheet" width={440} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Info</Text>
-      <View style={{ flexDirection: "column", gap: 8, marginTop: 2 }}>
+    <Sheet testID="info-sheet" width={460} onCancel={onClose} onConfirm={onClose}>
+      <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+        {name}
+      </Text>
+      <Group testID="info-sheet:rows">
         {rows.map(([label, value]) => (
-          <View key={label} style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-            <View style={{ width: 84, flexShrink: 0 }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
+          <Row key={label} label={label}>
+            <View style={{ flexShrink: 1, maxWidth: 280 }}>
+              <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>{value}</Text>
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontSize: 12, color: colors.text }}>{value}</Text>
-            </View>
-          </View>
+          </Row>
         ))}
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8 }}>
+      </Group>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 4 }}>
         <Button label="Done" testID="info-sheet:done" primary onPress={onClose} />
       </View>
     </Sheet>
@@ -70,13 +86,17 @@ export function OpenWithSheet({
       {loading ? (
         <Text style={{ fontSize: 12, color: colors.textMuted }}>Looking for apps…</Text>
       ) : handlers.length === 0 ? (
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>No other app is installed for this kind of file.</Text>
+        <Text style={{ fontSize: 12, color: colors.textMuted }}>No other app opens this kind of file.</Text>
       ) : (
-        <View style={{ flexDirection: "column", gap: 2, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
+        // One Tab stop; ↑ and ↓ move between the apps, Return opens with the one that has the keyboard (KB-1).
+        <View focusGroup style={{ flexDirection: "column", gap: 2, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
           {handlers.map((handler) => (
             <View
               key={handler.id}
               testID={`open-with:${handler.id}`}
+              focusable
+              accessibilityRole="button"
+              accessibilityLabel={handler.name}
               onPress={() => onPick(handler)}
               style={{
                 height: 30,
@@ -103,6 +123,60 @@ export function OpenWithSheet({
       )}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>
         <Button label="Cancel" testID="open-with:cancel" onPress={onClose} />
+      </View>
+    </Sheet>
+  );
+}
+
+export interface ExportChoice {
+  format: ExportFormat;
+  /** 1 to 100, for JPEG. */
+  quality: number;
+}
+
+/**
+ * Export: which format, and for JPEG how good, then Export… asks where (the
+ * desktop's save dialog). A PDF exports whole as a PDF, or the page in view
+ * as a picture.
+ */
+export function ExportSheet({
+  formats,
+  pageNote,
+  onExport,
+  onClose,
+}: {
+  formats: readonly ExportFormat[];
+  /** Said under the format when a picture of one page is what a PDF exports ("Page 3"). */
+  pageNote: string | null;
+  onExport: (choice: ExportChoice) => void;
+  onClose: () => void;
+}) {
+  const colors = useColors();
+  const [format, setFormat] = useState<ExportFormat>(formats[0] ?? "png");
+  const [quality, setQuality] = useState(0.9);
+  const asPage = pageNote !== null && format !== "pdf";
+  return (
+    <Sheet testID="export" width={400} onCancel={onClose} onConfirm={() => onExport({ format, quality: Math.round(quality * 100) })}>
+      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Export</Text>
+      <Group>
+        <Row label="Format" detail={asPage ? pageNote : undefined}>
+          <PopUpButton
+            testID="export:format"
+            width={120}
+            options={formats.map((each) => ({ value: each, label: EXPORT_FORMATS[each].label }))}
+            value={format}
+            onChange={setFormat}
+          />
+        </Row>
+        {format === "jpeg" && (
+          <Row label="Quality" detail={`${Math.round(quality * 100)}%`}>
+            <Slider testID="export:quality" width={160} value={quality} onChange={setQuality} range={{ min: 0.4, max: 1, step: 0.05 }} />
+          </Row>
+        )}
+      </Group>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+        <Button label="Cancel" testID="export:cancel" onPress={onClose} />
+        <Button label="Export…" testID="export:go" primary onPress={() => onExport({ format, quality: Math.round(quality * 100) })} />
       </View>
     </Sheet>
   );

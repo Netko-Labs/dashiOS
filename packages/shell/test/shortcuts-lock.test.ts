@@ -25,6 +25,9 @@ function setup() {
     switcher: { commit: () => done.push("switcher commit"), step: () => {}, cancel: () => {} },
     hardware: { run: async () => false },
     appShortcut: async () => false,
+    launcher: {
+      binding: (name: string, _chord: unknown, text?: string) => name === "launcher-type" && done.push(`typed ${text}`) > 0,
+    },
     isLocked: () => locked,
   } as unknown as ShellActions;
   startShortcuts(compositor, actions);
@@ -68,4 +71,12 @@ test("unlocked, the same events act as before", async () => {
   emit({ event: "binding", name: "app-chord", window: 7, chord: { key: "a", shift: false, ctrl: false, alt: false } });
   await settle();
   expect(done).toEqual(["launcher", 'send-keys {"window":7,"chord":"ctrl+a"}']);
+});
+
+test("❖Space opens the launcher before the next event: keys typed after it in the same breath find it opening", () => {
+  const { emit, done } = setup();
+  // No await between them: the compositor played ❖Space and the letters queued behind it at once.
+  emit({ event: "binding", name: "launcher", window: 4 });
+  emit({ event: "binding", name: "launcher-type", window: 4, key: "s", text: "s" });
+  expect(done).toEqual(["launcher", "typed s"]);
 });

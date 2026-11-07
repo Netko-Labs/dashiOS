@@ -28,6 +28,8 @@ export const BANNER = {
   actionRow: 26,
   /** What two lines of the body hold; a longer one is cut with an ellipsis. */
   bodyChars: 88,
+  /** What the title's one line holds beside "now", in bold; a longer one is cut with an ellipsis (the host's own cut can clip instead). */
+  summaryChars: 34,
 } as const;
 
 /** The buttons: every action but `default`, which is the click. */
@@ -51,10 +53,11 @@ export function bannerSurface(notification: Pick<Notification, "body" | "actions
   return { width: BANNER.width + BANNER.shadow * 2, height: bannerHeight(notification) + BANNER.shadow * 2 };
 }
 
-function ActionButton({ label, onPress }: { label: string; onPress: () => void }) {
+function ActionButton({ label, testID, onPress }: { label: string; testID: string; onPress: () => void }) {
   const colors = useColors();
   return (
     <View
+      testID={testID}
       style={{
         height: BANNER.actionRow,
         paddingLeft: 10,
@@ -106,9 +109,9 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
           <View style={{ flex: 1, flexDirection: "column", gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: BANNER.summaryLine }}>
               {notification.urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-                  {notification.summary || notification.appName}
+                  {ellipsize(notification.summary || notification.appName, BANNER.summaryChars)}
                 </Text>
               </View>
               <Text style={{ fontSize: 11, color: colors.textMuted }}>now</Text>
@@ -123,7 +126,12 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
         {buttons.length > 0 && (
           <View style={{ flexDirection: "row", gap: 6, paddingLeft: BANNER.icon + BANNER.gap }}>
             {buttons.map((action) => (
-              <ActionButton key={action.key} label={action.label || action.key} onPress={() => store.invoke(id, action.key)} />
+              <ActionButton
+                key={action.key}
+                testID={`banner-action:${action.key}`}
+                label={action.label || action.key}
+                onPress={() => store.invoke(id, action.key)}
+              />
             ))}
           </View>
         )}

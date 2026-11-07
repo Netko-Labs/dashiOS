@@ -1,11 +1,14 @@
 /**
  * Before Dashi logs out, restarts, or shuts down from its menus, every app's
- * window is asked to close, as its close control would (design.html PA-4).
- * An app with nothing to lose closes at once; one that holds its window to
- * ask (Text Editor's unsaved changes, a busy Terminal) keeps the session
- * waiting for its answer. After a moment a notice names who holds it, at the
+ * window is asked to close, as its close control would (design.html PA-4),
+ * one at a time: the next is asked only once the last one has gone, so two
+ * apps' questions are never up together. An app with nothing to lose closes
+ * at once; one that holds its window to ask (Text Editor's unsaved changes,
+ * a busy Terminal) keeps the session waiting for its answer, and only then
+ * is the next asked. After a moment a notice names who holds it, at the
  * foot of the screen, clear of the app's own sheet (menus/holding-place.ts),
- * with Cancel (the session stays) and “Log out anyway” (it goes, as before:
+ * with Cancel (the session stays, and the app asking is told so: its
+ * question goes, kit/close.ts) and “Log out anyway” (it goes, as before:
  * apps still open are told to stop, and a hung one is ended). When the last
  * window goes, the session ends without another word.
  *
@@ -23,7 +26,8 @@ export interface AppWindow {
 
 /** How long the apps get before the sheet names who is holding things up. */
 export const HOLD_AFTER_MS = 1000;
-const POLL_MS = 150;
+/** How often the wait looks for the asked window to be gone: often, since the windows are asked in turn. */
+const POLL_MS = 50;
 
 export type ClosingAnswer = "cancel" | "anyway";
 
@@ -36,6 +40,8 @@ export interface ClosingDeps {
   holding(names: readonly string[], first: number): void;
   /** The wait is over (closed, cancelled, or gone anyway): take the sheet down. */
   done(): void;
+  /** Cancelled: the window asked last is no longer closing, so the question its app put up goes. */
+  withdraw?(window: number): void;
   sleep?(ms: number): Promise<void>;
   now?(): number;
 }
@@ -46,28 +52,36 @@ export class ClosingChoice {
 }
 
 /**
- * Asks every app window to close and waits for them. Resolves `closed` when
- * they all went, else the person's answer on the sheet.
+ * Asks the app windows to close, one at a time, each once the one before
+ * has gone, and waits for them. Resolves `closed` when they all went, else
+ * the person's answer on the notice.
  */
 export async function closeApps(deps: ClosingDeps, choice: ClosingChoice): Promise<"closed" | ClosingAnswer> {
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const now = deps.now ?? Date.now;
-  const asked = await deps.windows().catch(() => []);
-  const ids = new Set(asked.map((window) => window.id));
-  for (const window of asked) await deps.close(window.id).catch(() => {});
+  const ids = new Set((await deps.windows().catch(() => [])).map((window) => window.id));
   const started = now();
   let shown = "";
+  /** The window asked last, which has not gone yet. */
+  let asking: number | null = null;
   try {
     for (;;) {
       const left = (await deps.windows().catch(() => [])).filter((window) => ids.has(window.id));
       if (left.length === 0) return "closed";
+      if (choice.answer === "cancel" && asking !== null && left.some((window) => window.id === asking)) deps.withdraw?.(asking);
       if (choice.answer) return choice.answer;
-      const names = [...new Set(left.map((window) => window.name))];
-      const key = names.join("\n");
+      if (asking === null || !left.some((window) => window.id === asking)) {
+        // The last one went (or none was asked yet): ask the next.
+        asking = (left[0] as AppWindow).id;
+        await deps.close(asking).catch(() => {});
+      }
+      // The one asked first: it is the one that may be asking.
+      const held = [...left.filter((window) => window.id === asking), ...left.filter((window) => window.id !== asking)];
+      const names = [...new Set(held.map((window) => window.name))];
+      const key = `${asking}\n${names.join("\n")}`;
       if (now() - started >= HOLD_AFTER_MS && key !== shown) {
         // Shown once, then again only when who holds it changes.
-        const first = left[0] as AppWindow;
-        deps.holding(names, first.id);
+        deps.holding(names, asking);
         shown = key;
       }
       await sleep(POLL_MS);

@@ -76,6 +76,8 @@ export class MenusClient {
   private unsent = new Uint8Array();
   private handler: (id: string) => void = () => {};
   private quitHandler: () => void = () => {};
+  private stayHandler: () => void = () => {};
+  private openHandler: (args: string[]) => void = () => {};
   /** The menus last published (null: none), sent again when `typing` changes. */
   private menus: readonly MenuSpec[] | null = null;
   /** A text field has the keyboard (protocol.ts `typing`). */
@@ -125,6 +127,11 @@ export class MenusClient {
     if (this.menus) this.send(this.menus);
   }
 
+  /** Asks the shell to bring this app's window forward (protocol.ts `front`); nothing outside Dashi. */
+  front(): void {
+    if (this.socket) this.write(`${JSON.stringify({ type: "front" })}\n`);
+  }
+
   /** Who hears a chosen item (the latest one set). */
   onSelect(handler: (id: string) => void): void {
     this.handler = handler;
@@ -133,6 +140,16 @@ export class MenusClient {
   /** Who hears that the app is quitting, just before its window is asked to close (the latest one set). */
   onQuit(handler: () => void): void {
     this.quitHandler = handler;
+  }
+
+  /** Who hears that the quit it was told of is called off (a log out cancelled; the latest one set). */
+  onStay(handler: () => void): void {
+    this.stayHandler = handler;
+  }
+
+  /** Who hears the arguments of a second start while this app runs (protocol.ts `open`; the latest one set). */
+  onOpen(handler: (args: string[]) => void): void {
+    this.openHandler = handler;
   }
 
   private send(menus: readonly MenuSpec[]): void {
@@ -170,6 +187,8 @@ export class MenusClient {
             const message = parseShellMessage(line);
             if (message?.type === "select") this.handler(message.id);
             else if (message?.type === "quit") this.quitHandler();
+            else if (message?.type === "stay") this.stayHandler();
+            else if (message?.type === "open") this.openHandler(message.args);
             else if (message?.type === "error") console.error(`dashi menus: the shell refused the menus: ${message.message}`);
           }
         },

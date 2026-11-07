@@ -944,6 +944,39 @@ fn windows_are_listed_most_recently_used_first() {
     assert_eq!(order(&mut ipc).last(), Some(&first));
 }
 
+/// Dispatch `client` until `done` holds of its state, for up to five seconds.
+fn wait_client(client: &mut Client, what: &str, done: impl Fn(&support::client::State) -> bool) {
+    let start = Instant::now();
+    while !done(&client.state) {
+        client.dispatch();
+        assert!(start.elapsed() < Duration::from_secs(5), "{what}");
+        sleep(Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn a_window_moved_from_under_a_still_pointer_hears_it_leave() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    let (mut client, id) = movable_window(&compositor, &mut ipc, 200, 200);
+    assert_eq!(hand(&mut ipc, id, 20.0, 20.0, "move")["result"], json!({}));
+    wait_client(&mut client, "the pointer never entered", |state| {
+        state.pointer_in
+    });
+    // Tiled away (the shell places it elsewhere); the pointer doesn't move.
+    ipc.request("place", json!({ "window": id, "x": 700, "y": 500 }));
+    wait_client(
+        &mut client,
+        "the window never heard the pointer leave",
+        |state| !state.pointer_in,
+    );
+    // And back under it: entered again, with no motion.
+    ipc.request("place", json!({ "window": id, "x": 200, "y": 200 }));
+    wait_client(&mut client, "the pointer never entered again", |state| {
+        state.pointer_in
+    });
+}
+
 #[test]
 fn a_held_window_goes_along_when_the_space_changes() {
     let compositor = Compositor::start(&[]);

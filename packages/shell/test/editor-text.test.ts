@@ -13,8 +13,14 @@ describe("codec", () => {
     expect(decodeText(bytes(0xef, 0xbb, 0xbf, 0x61))).toEqual({ text: "a", encoding: "utf-8-bom", lineEnding: "lf" });
   });
 
-  test("bytes that aren't UTF-8 are ISO-8859-1", () => {
-    expect(decodeText(bytes(0x63, 0x61, 0x66, 0xe9))).toEqual({ text: "café", encoding: "latin-1", lineEnding: "lf" });
+  test("bytes that aren't UTF-8 are Windows-1252: its quotes and dashes survive", () => {
+    expect(decodeText(bytes(0x63, 0x61, 0x66, 0xe9))).toEqual({ text: "café", encoding: "windows-1252", lineEnding: "lf" });
+    // Curly quotes, a dash and the euro sign from a Windows file, and a byte Windows-1252 leaves out.
+    const windows = bytes(0x91, 0x69, 0x74, 0x92, 0x73, 0x20, 0x97, 0x20, 0x80, 0x81);
+    const decoded = decodeText(windows);
+    expect(decoded?.text).toBe("\u2018it\u2019s \u2014 \u20ac\u0081");
+    expect(encodeText(decoded?.text ?? "", "windows-1252", "lf")).toEqual(windows);
+    expect(encodeText("\u0100", "windows-1252", "lf")).toBeNull();
   });
 
   test("UTF-16 by its mark", () => {
@@ -149,7 +155,8 @@ describe("history", () => {
 
 describe("stats", () => {
   test("lines, words, characters", () => {
-    expect(textStats("")).toEqual({ lines: 0, words: 0, characters: 0 });
+    // An empty document has the line its caret is on.
+    expect(textStats("")).toEqual({ lines: 1, words: 0, characters: 0 });
     expect(textStats("one two\nthree\n")).toEqual({ lines: 2, words: 3, characters: 14 });
     expect(textStats("a\n\nb")).toEqual({ lines: 3, words: 2, characters: 4 });
     expect(textStats("👋").characters).toBe(1);

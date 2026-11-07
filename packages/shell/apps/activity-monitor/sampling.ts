@@ -5,7 +5,7 @@
  */
 
 import type { Snapshot } from "./read.ts";
-import type { LookReply, LookRequest } from "./sampler.ts";
+import type { LookReply, LookRequest, LookWants } from "./sampler.ts";
 
 export class Sampler {
   private readonly worker = new Worker(new URL("./sampler.ts", import.meta.url));
@@ -30,7 +30,7 @@ export class Sampler {
     this.worker.unref();
   }
 
-  look = (options: LookRequest["options"]): Promise<Snapshot> =>
+  look = (options: LookWants): Promise<Snapshot> =>
     new Promise((resolve, reject) => {
       const id = ++this.next;
       this.waiting.set(id, { resolve, reject });

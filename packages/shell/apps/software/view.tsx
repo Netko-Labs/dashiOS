@@ -1,52 +1,61 @@
 /**
- * Software's window: a sidebar (Discover, Installed, Updates, and the
- * categories), a toolbar with the search field, and the page for where you
- * are. Searching on Installed filters what is installed; anywhere else it
- * searches Flathub. Every install, removal, and update starts from a click
- * here; a question is asked first where something is taken away or the system
- * is changed.
+ * Software's window: one store for apps and menu bar applets. A sidebar
+ * (Discover, Installed, Updates, Menu bar applets, the categories), one
+ * toolbar row (Back, the queue's activity and the "saved results" chip,
+ * Check for Updates on Updates, the search field), and the page for where
+ * you are. Searching on Installed filters what is installed; anywhere else
+ * it searches Flathub and the applets at once. Every install, removal and
+ * update starts from a click here, on one queue; a question is asked first
+ * where something is taken away, the system is changed, an app reaches far,
+ * or an applet asks for something new.
  */
 
-import { AppWindow, EmptyState, glyphs, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton } from "@dashi/ui";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { CATEGORIES, type CategoryId } from "../../src/software/flathub.ts";
+import type { IndexApplet, InstalledApplet } from "@dashi/applet";
+import { AppWindow, SearchField, ToolbarButton } from "@dashi/ui";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
-import type { Installation } from "../../src/software/ids.ts";
 import { useAppMenus } from "../kit/index.ts";
-import { AppPage } from "./app-page.tsx";
-import { Discover } from "./discover.tsx";
-import { BACK, CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER, INSTALLED, REFRESH, UPDATES } from "./glyphs.ts";
-import { useAppName } from "./hooks.ts";
-import { Installed } from "./installed.tsx";
-import { Listing } from "./listing.tsx";
+import { useAppletState } from "./applets/rows.tsx";
+import { PictureView } from "./gallery.tsx";
+import { BACK, REFRESH } from "./glyphs.ts";
+import { StaleContext } from "./hooks.ts";
 import { softwareMenus } from "./menus.ts";
-import { appState } from "./model.ts";
-import { back, canGoBack, goTo, type Nav, type Page, push, START, search } from "./nav.ts";
+import { queueLine } from "./model.ts";
+import { back, canGoBack, goTo, type Nav, type Page, push, search, startPage } from "./nav.ts";
+import { useOpenThing } from "./open-thing.ts";
+import { PageView } from "./page-view.tsx";
 import { type Actions, ActionsContext } from "./parts.tsx";
 import { useServices } from "./services.ts";
-import { type Ask, FailureSheet, Question } from "./sheets.tsx";
-import { Updates } from "./updates.tsx";
+import { type Answer, type Ask, FailureSheet, Question } from "./sheets.tsx";
+import { SoftwareSidebar } from "./sidebar.tsx";
+import { StaleChip, ToolbarChip } from "./states.tsx";
+import { appTrust, askReasons } from "./trust-words.ts";
 
 export const SOFTWARE_SIZE = { width: 1020, height: 700 } as const;
 
 const SEARCH_DELAY_MS = 300;
 
-const inSidebar = (nav: Nav, page: Page): boolean =>
-  nav.page.kind === page.kind && (page.kind !== "category" || (nav.page.kind === "category" && nav.page.id === page.id));
+type WindowAsk = Ask | { kind: "consent"; entry: IndexApplet; update: boolean };
 
-/** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"). */
-export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } = {}) {
-  const { store, restart } = useServices();
+/** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"); `initialPage`: on a sidebar place (the update notice's Show). */
+export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
+  const { store, applets, catalog, appletImages, restart, openUrl } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [nav, setNav] = useState<Nav>(START);
+  const appletState = useAppletState();
+  const [nav, setNav] = useState<Nav>(() => startPage(initialPage));
   const [query, setQuery] = useState(initialQuery);
-  const [ask, setAsk] = useState<Ask | null>(null);
+  const [asks, setAsks] = useState<WindowAsk[]>([]);
+  const [picture, setPicture] = useState<string | null>(null);
+  const [stale, setStale] = useState(0);
+  const reportStale = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
   // Bumped when a sheet closes, so the search field takes the keyboard back.
   const [focus, setFocus] = useState(0);
 
   useEffect(() => {
     void store.refreshInstalled().then(() => store.checkUpdates());
-  }, [store]);
+    void applets.refresh();
+  }, [store, applets]);
 
   const filtering = nav.page.kind === "installed";
   useEffect(() => {
@@ -64,119 +73,128 @@ export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } 
     setNav(next);
     setQuery(next.page.kind === "search" ? next.page.query : "");
   };
-  const closeAsk = (): void => {
-    setAsk(null);
-    setFocus((n) => n + 1);
-  };
+  const enqueue = (ask: WindowAsk): void => setAsks((now) => [...now, ask]);
 
   const actions: Actions = useMemo(
     () => ({
       openApp: (id) => setNav((now) => push(now, { kind: "app", id })),
-      install: (id, name) => store.install(id, name),
+      openApplet: (id) => setNav((now) => push(now, { kind: "applet", id })),
+      install: (id, name) => {
+        // The trust card as a sheet first when the app reaches far; one click otherwise (and when Flathub can't say).
+        void catalog
+          .details(id)
+          .then((answer) => answer.value)
+          .catch(() => null)
+          .then((details) => {
+            const reasons = details ? askReasons(details) : [];
+            if (details && reasons.length > 0) setAsks((now) => [...now, { kind: "get", id, name, facts: appTrust(details), reasons }]);
+            else store.install(id, name);
+          });
+      },
       launch: (id) => store.open(id),
       update: (app: InstalledApp, name: string) => store.updateApp(app.installation, { id: app.id, name }),
-      updateAll: (installation: Installation) => store.updateApp(installation),
-      remove: (app) => setAsk({ kind: "remove", app }),
+      updateAll: (installation) => store.updateApp(installation),
+      remove: (app) => setAsks((now) => [...now, { kind: "remove", app }]),
       cancel: (key) => store.cancel(key),
+      getApplet: (entry) => {
+        if (applets.needsConsent(entry)) setAsks((now) => [...now, { kind: "consent", entry, update: applets.status(entry).kind !== "get" }]);
+        else applets.install(entry);
+      },
+      removeApplet: (applet: InstalledApplet) => setAsks((now) => [...now, { kind: "remove-applet", id: applet.manifest.id, name: applet.manifest.name }]),
+      openUrl,
+      showPicture: setPicture,
     }),
-    [store],
+    [store, applets, catalog, openUrl],
   );
 
-  const answer = (yes: boolean): void => {
-    const current = ask;
-    closeAsk();
-    if (!yes || !current) return;
-    if (current.kind === "remove") store.remove(current.app);
-    else if (current.kind === "system") store.updateSystem();
-    else restart();
+  const answer = (reply: Answer): void => {
+    const [current, ...rest] = asks;
+    setAsks(rest);
+    setFocus((n) => n + 1);
+    if (!reply.yes || !current) return;
+    switch (current.kind) {
+      case "remove":
+        return store.remove(current.app, reply.deleteData === true);
+      case "remove-applet": {
+        const applet = appletState.installed.find((each) => each.manifest.id === current.id);
+        if (applet) applets.remove(applet, reply.deleteData === true);
+        return;
+      }
+      case "get":
+        return store.install(current.id, current.name);
+      case "consent":
+        return applets.install(current.entry);
+      case "system":
+        return store.updateSystem();
+      case "restart":
+        return restart();
+    }
   };
 
   const appUpdates = state.appUpdates ?? [];
   const systemUpdates = state.system?.updates.length ?? 0;
-  const updateCount = appUpdates.length + systemUpdates;
-  const askSystem = (): void => setAsk({ kind: "system", count: systemUpdates, restart: (state.system?.restartCauses.length ?? 0) > 0 });
+  const updateCount = appUpdates.length + systemUpdates + applets.updates().length;
+  const askSystem = (): void => enqueue({ kind: "system", count: systemUpdates, restart: (state.system?.restartCauses.length ?? 0) > 0 });
 
-  // The menu bar's menus (src/app-menus/), with the keys they show.
-  const openId = nav.page.kind === "app" ? nav.page.id : null;
-  const openName = useAppName(openId);
+  // The menu bar's menus (src/app-menus/), with the keys they show, acting on the open page's app or applet.
+  const thing = useOpenThing(nav.page, actions);
+  const place =
+    nav.page.kind === "discover" || nav.page.kind === "installed" || nav.page.kind === "updates" || nav.page.kind === "applets" ? nav.page.kind : null;
   const { menus, run } = softwareMenus({
-    page: nav.page.kind,
-    app: openId === null ? null : { id: openId, name: openName ?? openId, state: appState(openId, state.installed ?? [], appUpdates, state.operations) },
+    place,
+    canGoBack: canGoBack(nav),
+    thing: thing?.can ?? null,
+    appletsReady: applets.catalogReady,
     appUpdates: appUpdates.length,
     systemUpdates,
     checking: state.checking,
     updatingApps: state.operations.some((operation) => operation.kind === "update" && operation.id === undefined),
     updatingSystem: state.operations.some((operation) => operation.kind === "system-update"),
-    blocked: ask !== null || state.failure !== null,
+    blocked: asks.length > 0 || state.failure !== null,
     actions: {
       search: () => setFocus((n) => n + 1),
-      show: (kind) => go({ kind }),
+      back: goBack,
+      show: (where) => go({ kind: where }),
       checkForUpdates: () => {
         go({ kind: "updates" });
         void store.checkUpdates(true);
+        void applets.refresh();
       },
       updateAllApps: () => {
         for (const installation of new Set(appUpdates.map((update) => update.installation))) actions.updateAll(installation);
       },
       updateSystem: askSystem,
-      open: actions.launch,
-      install: actions.install,
-      update: actions.update,
-      remove: actions.remove,
+      open: () => thing?.open(),
+      get: () => thing?.get(),
+      update: () => thing?.update(),
+      remove: () => thing?.remove(),
     },
   });
   useAppMenus(menus, run);
-  const sidebar = (
-    <>
-      <SidebarSection>
-        <SidebarItem
-          testID="nav:discover"
-          label="Discover"
-          glyph={DISCOVER}
-          selected={inSidebar(nav, { kind: "discover" })}
-          onPress={() => go({ kind: "discover" })}
-        />
-        <SidebarItem
-          testID="nav:installed"
-          label="Installed"
-          glyph={INSTALLED}
-          selected={inSidebar(nav, { kind: "installed" })}
-          onPress={() => go({ kind: "installed" })}
-        />
-        <SidebarItem
-          testID="nav:updates"
-          label="Updates"
-          glyph={UPDATES}
-          badge={updateCount > 0 ? String(updateCount) : undefined}
-          selected={inSidebar(nav, { kind: "updates" })}
-          onPress={() => go({ kind: "updates" })}
-        />
-      </SidebarSection>
-      <SidebarSection title="Categories">
-        {CATEGORIES.map((category) => (
-          <SidebarItem
-            key={category.id}
-            testID={`nav:category:${category.id}`}
-            label={category.label}
-            tile={{ glyph: CATEGORY_GLYPHS[category.id] ?? DISCOVER, tint: CATEGORY_TINTS[category.id] ?? TINTS.goma }}
-            selected={inSidebar(nav, { kind: "category", id: category.id })}
-            onPress={() => go({ kind: "category", id: category.id })}
-          />
-        ))}
-      </SidebarSection>
-    </>
-  );
 
+  const activity = queueLine(state.operations);
+  const running = state.operations.find((operation) => operation.status === "running");
+  const leading = canGoBack(nav) ? <ToolbarButton testID="back" glyph={BACK} tooltip="Back" onPress={goBack} /> : undefined;
   const toolbar = (
     <>
-      {canGoBack(nav) && <ToolbarButton testID="back" glyph={BACK} onPress={goBack} />}
+      {stale > 0 && <StaleChip />}
+      {activity !== null && (
+        <ToolbarChip
+          testID="activity"
+          text={activity}
+          onPress={() => (running?.id === undefined ? go({ kind: "updates" }) : actions[running.subject === "applet" ? "openApplet" : "openApp"](running.id))}
+        />
+      )}
       {nav.page.kind === "updates" && (
         <ToolbarButton
           testID="check-updates"
           glyph={REFRESH}
           label={state.checking ? "Checking…" : "Check for Updates"}
           disabled={state.checking}
-          onPress={() => void store.checkUpdates(true)}
+          onPress={() => {
+            void store.checkUpdates(true);
+            void applets.refresh();
+          }}
         />
       )}
       <SearchField
@@ -184,7 +202,7 @@ export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } 
         testID="search"
         value={query}
         onChangeText={setQuery}
-        placeholder={filtering ? "Search Installed" : "Search Apps"}
+        placeholder={filtering ? "Search installed" : "Search apps and applets"}
         width={210}
         autoFocus
         onSubmit={(text) => !filtering && setNav((now) => search(now, text))}
@@ -192,56 +210,48 @@ export function SoftwareWindow({ initialQuery = "" }: { initialQuery?: string } 
     </>
   );
 
-  const overlay = ask ? (
+  const ask = asks[0];
+  const closeFailure = (): void => {
+    store.dismissFailure();
+    setFocus((n) => n + 1);
+  };
+  const overlay = picture ? (
+    <PictureView file={picture} onClose={() => setPicture(null)} />
+  ) : ask?.kind === "consent" ? (
+    <AppletConsentSheet
+      manifest={ask.entry.manifest}
+      kind={ask.update ? "update" : "get"}
+      reviewed={ask.entry.reviewed}
+      signed
+      granted={applets.granted(ask.entry.manifest.id)}
+      icon={appletImages.cached(ask.entry.icon ?? null)}
+      onAnswer={(yes) => answer({ yes })}
+    />
+  ) : ask ? (
     <Question ask={ask} onAnswer={answer} />
   ) : state.failure ? (
-    <FailureSheet
-      failure={state.failure}
-      onClose={() => {
-        store.dismissFailure();
-        setFocus((n) => n + 1);
-      }}
-    />
+    <FailureSheet failure={state.failure} onClose={closeFailure} />
   ) : undefined;
 
   return (
     <ActionsContext.Provider value={actions}>
-      <AppWindow title="Software" sidebar={sidebar} toolbar={toolbar} overlay={overlay}>
-        <PageView nav={nav} query={query} onRestart={() => setAsk({ kind: "restart" })} onUpdateSystem={askSystem} />
-      </AppWindow>
+      <StaleContext.Provider value={reportStale}>
+        <AppWindow
+          title="Software"
+          leading={leading}
+          sidebar={<SoftwareSidebar nav={nav} updates={updateCount} appletsReady={applets.catalogReady && appletState.problem?.kind !== "no-key"} go={go} />}
+          toolbar={toolbar}
+          overlay={overlay}
+        >
+          <PageView
+            nav={nav}
+            query={query}
+            onRestart={() => enqueue({ kind: "restart" })}
+            onUpdateSystem={askSystem}
+            onSeeAll={(where) => setNav((now) => push(now, where === "applets" ? { kind: "applets" } : { kind: "collection", id: where }))}
+          />
+        </AppWindow>
+      </StaleContext.Provider>
     </ActionsContext.Provider>
   );
-}
-
-function PageView({ nav, query, onRestart, onUpdateSystem }: { nav: Nav; query: string; onRestart: () => void; onUpdateSystem: () => void }) {
-  const { store } = useServices();
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const { page } = nav;
-  const browsing = page.kind === "discover" || page.kind === "category" || page.kind === "search" || page.kind === "app";
-  if (browsing && !state.hasFlatpak) {
-    return (
-      <EmptyState
-        testID="no-flatpak"
-        glyph={glyphs.WARNING}
-        title="Flatpak isn't installed"
-        message="Software installs apps with Flatpak. Install the flatpak package, then open Software again."
-      />
-    );
-  }
-  switch (page.kind) {
-    case "discover":
-      return <Discover />;
-    case "category": {
-      const label = CATEGORIES.find((category) => category.id === page.id)?.label ?? "Category";
-      return <Listing source={{ kind: "category", id: page.id as CategoryId, label }} />;
-    }
-    case "search":
-      return <Listing source={{ kind: "search", query: page.query }} />;
-    case "app":
-      return <AppPage id={page.id} />;
-    case "installed":
-      return <Installed query={query} />;
-    case "updates":
-      return <Updates onRestart={onRestart} onUpdateSystem={onUpdateSystem} />;
-  }
 }

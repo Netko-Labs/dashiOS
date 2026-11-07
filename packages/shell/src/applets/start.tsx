@@ -5,6 +5,7 @@
  * popover, and the consent sheet. main.tsx starts this once.
  */
 
+import { join } from "node:path";
 import { SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
 import { watchKillSwitch } from "../applet-store/kill-switch.ts";
@@ -16,7 +17,7 @@ import type { OpenOverlay } from "../overlay.tsx";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";
 import type { AppletContext } from "./connection.ts";
-import { APPLET_CONSENT, AppletConsentSheet } from "./consent-sheet.tsx";
+import { APPLET_CONSENT, AppletConsentCard } from "./consent-sheet.tsx";
 import { AppletGrants } from "./grants.ts";
 import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
 import { AppletLauncher } from "./launcher.ts";
@@ -94,7 +95,14 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
           // Never the keyboard by itself: a stray Enter typed elsewhere must not answer it.
           surface: { layer: "overlay", keyboard: "on-demand", namespace: "dashi.applet-consent" },
         },
-        <AppletConsentSheet manifest={applet.manifest} update={update} onAnswer={answer} />,
+        <AppletConsentCard
+          manifest={applet.manifest}
+          kind={update ? "update" : "allow"}
+          granted={applet.record.consent}
+          signed={applet.record.source === "catalog"}
+          icon={applet.manifest.icon ? join(applet.dir, applet.manifest.icon) : null}
+          onAnswer={answer}
+        />,
         () => answer(false),
       );
     });
@@ -115,7 +123,7 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
       })
     : null;
   launcher?.start();
-  // Pulled versions are turned off even when the Applet Store isn't opened.
+  // Pulled versions are turned off even when Software isn't opened.
   const stopKillSwitch = watchKillSwitch();
   return () => {
     stopKillSwitch();

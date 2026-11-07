@@ -55,3 +55,28 @@
 - **Kombu is being used as decoration.** The design gives kombu one job ("yours, selected"). The guidelines should state that accent fills are for selection and the one primary action, not for a category of controls.
 - **Numbers need a shared, locale-aware formatter.** Calculator (`format.ts:13`) and Preview (`info.ts:27`, `toLocaleString("en-US")`) both hard-code en-US grouping. `@dashi/ui` should own it.
 - **Controls need a pressed state.** Metal views here have `hoverBackgroundColor` but no pressed color, so no `@dashi/ui` control shows a press. The design page should specify one.
+
+## Status (0.5.0, wave 2: the expression line)
+
+The big idea is in: the display is an editable expression line (mirin's
+text field, KB-6) with what it works out to under it, and a tape beside the
+keypad (View ▸ Show Tape, ❖T) that widens the window, remembered between
+launches with the window's size (`apps/calculator/line.ts`, `tape.tsx`,
+`store.ts`).
+
+- [x] 1 Locale: the line, the keys, copy and paste follow the region (since `54e902f`; the line groups as it is typed).
+- [x] 2 Paste: one reader for every paste (❖V in the line, Edit ▸ Paste, the display's menu): a number, or a sum of numbers, operators and brackets; anything with letters is refused whole and the line says so. Nothing is typed key by key.
+- [x] 3 Basics: a tape (click a row to use its result, right-click to copy it or edit the sum, ↑ ↓ to walk it, Clear) and a View menu. Memory keys and Scientific/Programmer modes are not in 0.5.0's plan (`docs/0.5.0.html`); they stay here for a later one.
+- [x] 4 Window size (LA-3): a minimum of 274 × 440 (the kit's `minSize`, mirin's `MIRIN_METAL_MIN_SIZE`); past it the keys grow with the window, so zoom gives a bigger keypad. The size is remembered.
+- [x] 5 Display: the line ends at the keypad's edge and sits a gap above it. Its width follows an estimate of the text's (a field can't right-align its text), so its right edge can be a few px off.
+- [x] 6 Feedback: keys deepen while held and light for 120 ms when typed on the keyboard; Copy Result says "Copied".
+- [x] 7 Type scale: C, ± and % are one size.
+- [x] 8 Color meaning: kombu only on =; the waiting operator is in the line.
+- [x] 9 Tokens: every color from the palette and surfaces (since `54e902f`).
+- [x] 10 Contrast: digit keys carry an edge (since `54e902f`; CO-6's 3:1 edges are Wave 4).
+- [x] 11 Identity: no comment says Mac; a sum you can read and edit and a tape are not the Mac's calculator.
+- [x] 12 Precision: 15 digits, what a double holds; a result stays exact when the next sum goes on from it (1 ÷ 3 × 3 is 1).
+- [x] 13 Keyboard: n for ±, ⌫ ⌦ and the arrows as in any field, ↑ ↓ for the tape, Esc to clear (the map is `keys.ts`'s header and the menus' rows; a Help page for it is the shortcut sheet's, not this app's).
+- [x] 14 Copy: what is copied is what is shown, ungrouped (Copy Result, ⇧❖C); text selected in the line copies as it is.
+- [x] 15 Errors: "Can't divide by 0" and "Too large to work out", in ume, under the line.
+- [x] 16 Chrome: kept unified by decision: the display's band is the one chrome row (vertical space), and the tape's head shares it; the menu bar names the app.

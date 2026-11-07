@@ -1,5 +1,5 @@
 /**
- * The Applet Store's catalog: index.json and Dashi's signature on it, from
+ * The applets' catalog (Software's Menu bar applets): index.json and Dashi's signature on it, from
  * the catalog repository's `index` branch on raw.githubusercontent.com (no
  * API, no token), checked before anything in it is believed
  * (@dashi/applet's catalog.ts). The last index that checked is kept, so the

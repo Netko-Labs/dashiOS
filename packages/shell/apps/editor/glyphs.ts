@@ -14,5 +14,7 @@ export const OPEN = svg(
   `${stroke("M1.8 12.4V3.8a1 1 0 0 1 1-1h3.4L7.6 4.4h4.6a1 1 0 0 1 1 1V6.6", 1.3)}${stroke("M1.8 12.4l1.9-5a1 1 0 0 1 .9-.7h9.5a.6.6 0 0 1 .6.8l-1.8 4.9a1 1 0 0 1-.9.6H1.8z", 1.3)}`,
 );
 
-/** An arrow down into a tray: Save. */
-export const SAVE = svg(`${stroke("M8 2v8M4.8 7l3.2 3.2L11.2 7")}${stroke("M2.4 10.4v2a1.2 1.2 0 0 0 1.2 1.2h8.8a1.2 1.2 0 0 0 1.2-1.2v-2")}`);
+/** A page with a folded corner and a check: Save (a tray with an arrow into it is Download's). */
+export const SAVE = svg(
+  `${stroke("M9 1.8H4.2a1.2 1.2 0 0 0-1.2 1.2v10a1.2 1.2 0 0 0 1.2 1.2h7.6a1.2 1.2 0 0 0 1.2-1.2V5.8z", 1.3)}${stroke("M9 1.8v4h4", 1.2)}${stroke("M5.7 10.1l1.6 1.6 3-3.3", 1.4)}`,
+);

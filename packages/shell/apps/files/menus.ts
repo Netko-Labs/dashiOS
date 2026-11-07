@@ -2,7 +2,6 @@
 
 import { MENU_SEPARATOR, type MenuEntry } from "@dashi/ui";
 import type { WindowActions } from "./context.ts";
-import { formatCount } from "./format.ts";
 import type { FileItem } from "./items.ts";
 import { mayOpen } from "./open.ts";
 import type { Operations } from "./operations.ts";
@@ -13,8 +12,6 @@ interface Deps {
   ops: Operations;
   actions: WindowActions;
 }
-
-const noun = (items: readonly FileItem[]): string => (items.length === 1 ? "Item" : formatCount(items.length));
 
 /** The menu for a right-click on `items` (the selection). */
 export function itemMenu({ store, ops, actions }: Deps, items: readonly FileItem[]): MenuEntry[] {
@@ -39,14 +36,16 @@ export function itemMenu({ store, ops, actions }: Deps, items: readonly FileItem
     ...(fromList ? [{ label: "Show in Folder", onPress: () => only && store.reveal(only), disabled: only === null }] : []),
     MENU_SEPARATOR,
     { label: "Get Info", onPress: () => only && actions.info(only.path), disabled: only === null },
-    { label: "Rename…", onPress: () => only && actions.rename(only.path), disabled: only === null || (!writable && !fromList) },
+    { label: "Rename", onPress: () => only && actions.rename(only.path), disabled: only === null || (!writable && !fromList) },
     { label: "Duplicate", onPress: () => void ops.duplicateSelection(), disabled: !writable && !fromList },
-    { label: ops.canCompress ? "Compress" : "Compress (needs zip)", onPress: () => void ops.compress(items), disabled: !ops.canCompress },
+    // Without zip or bsdtar there is no Compress, rather than a row that names a package.
+    ...(ops.canCompress ? [{ label: "Compress", onPress: () => void ops.compress(items) }] : []),
     MENU_SEPARATOR,
-    { label: "Copy", onPress: () => ops.copy(items) },
     { label: "Cut", onPress: () => ops.cut(items) },
+    { label: "Copy", onPress: () => ops.copy(items) },
+    { label: "Paste", onPress: () => void ops.paste(), disabled: !writable },
     MENU_SEPARATOR,
-    { label: `Move ${noun(items)} to Trash`, onPress: () => void ops.trash(items) },
+    { label: "Move to Trash", onPress: () => void ops.trash(items) },
   ];
 }
 
@@ -62,7 +61,7 @@ export function backgroundMenu({ store, ops, actions }: Deps): MenuEntry[] {
   }
   const writable = ops.writable;
   return [
-    { label: "New Folder…", onPress: () => actions.newFolder(), disabled: !writable },
+    { label: "New Folder", onPress: () => actions.newFolder(), disabled: !writable },
     MENU_SEPARATOR,
     { label: "Paste", onPress: () => void ops.paste(), disabled: !writable },
     { label: "Select All", onPress: () => store.selectAll() },
@@ -86,7 +85,7 @@ export function actionMenu({ store, ops, actions }: Deps): MenuEntry[] {
     ["kind", "Kind"],
   ] as const;
   return [
-    { label: "New Folder…", onPress: () => actions.newFolder(), disabled: !writable },
+    { label: "New Folder", onPress: () => actions.newFolder(), disabled: !writable },
     { label: "Go to Folder…", onPress: () => actions.goToFolder() },
     MENU_SEPARATOR,
     { label: "Paste", onPress: () => void ops.paste(), disabled: !writable },
@@ -97,8 +96,9 @@ export function actionMenu({ store, ops, actions }: Deps): MenuEntry[] {
     ...sorts.map(([key, title]) => ({
       label: `Sort by ${title}`,
       checked: state.sort.key === key,
-      onPress: () => store.setSort({ key, ascending: key === "name" || key === "kind" }),
+      onPress: () => store.setSort({ key, ascending: key === state.sort.key ? state.sort.ascending : key === "name" || key === "kind" }),
     })),
+    { label: "Reverse Order", checked: !(store.effectiveSort() ?? state.sort).ascending, onPress: () => store.reverseSort() },
     ...(state.location.kind === "trash"
       ? [MENU_SEPARATOR, { label: "Empty Trash…", onPress: () => actions.confirmEmptyTrash(), disabled: state.items.length === 0 }]
       : []),

@@ -83,6 +83,8 @@ export interface Answer {
 export interface AgentInfo {
   id: number;
   name: string;
+  /** Its key in the kept answers (consent.ts), so Settings › Agents can say it is connected now. */
+  key?: string;
   status: string;
   scopes: string[];
 }

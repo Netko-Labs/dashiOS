@@ -11,6 +11,7 @@ import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
+  recent: ["undo", "history", "changes", "changed", "who changed"],
   appearance: [
     "dark mode",
     "light mode",
@@ -49,6 +50,7 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
 
 /** What each pane holds, in a few words after its name on the launcher's row (VS-2: the same line). */
 export const PANE_DETAILS: Readonly<Record<PaneId, string>> = {
+  recent: "what changed and who changed it",
   appearance: "Dark Mode, corners, text size",
   wallpaper: "desktop picture",
   displays: "resolution, scale, arrangement",

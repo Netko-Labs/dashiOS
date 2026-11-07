@@ -29,6 +29,7 @@ import { PasswordPrompt } from "../wifi/prompt.tsx";
 import type { WifiSetup } from "../wifi/select.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import { type AboutTarget, type ActionDeps, runMenuAction } from "./actions.ts";
+import { ACTIVITY_MONITOR, type EnergyApp, energyArgs, openActivityMonitor } from "./activity-monitor.ts";
 import { MenuController } from "./controller.ts";
 import { Dialogs } from "./dialogs.tsx";
 import { holdingPlace } from "./holding-place.ts";
@@ -146,6 +147,12 @@ export function startMenus(options: MenusOptions): Menus {
             appMenus.quitting(ownerPids(pid));
             await compositor.request("close", { window });
           },
+          // The log out was cancelled: the app's "Quit Terminal?" or its sheet goes with it.
+          withdraw: (window) =>
+            void compositor
+              .windows()
+              .then((windows) => appMenus.stay(ownerPids(windows.find((each) => each.id === window)?.pid ?? null)))
+              .catch(() => {}),
           focus: (window) => void compositor.request("focus", { window }).catch(() => {}),
           place: async (window) => {
             const frame = (await compositor.windows()).find((each) => each.id === window)?.frame ?? null;
@@ -236,7 +243,7 @@ export function startMenus(options: MenusOptions): Menus {
             run(action);
           }}
           onDockChoose={options.runDock}
-          onStatusChoose={(action) => (action.kind === "activity-monitor" ? void deps.launchApp("dev.dashi.activity-monitor") : options.runStatus(action))}
+          onStatusChoose={(action) => (action.kind === "activity-monitor" ? void showEnergy(action.app) : options.runStatus(action))}
           onStatusClosed={(key) => options.statusClosed?.(key)}
         />,
         onClosed,
@@ -271,6 +278,30 @@ export function startMenus(options: MenusOptions): Menus {
     appQuitting: (pid) => void appMenus.quitting(ownerPids(pid)),
     moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
   };
+
+  // The battery menu's apps: Activity Monitor's Energy tab, with the app chosen selected.
+  const showEnergy = (app?: EnergyApp): Promise<boolean> =>
+    openActivityMonitor(energyArgs(app), {
+      windows: () => compositor?.windows() ?? Promise.resolve([]),
+      focus: (window) => compositor?.request("focus", { window }) ?? Promise.resolve(),
+      handOver: (pid, args) => appMenus.open(ownerPids(pid), args),
+      launch: (args) => {
+        const entry = entryFor(ACTIVITY_MONITOR);
+        return entry?.exec ? launchEntry({ ...entry, exec: [...entry.exec, ...args] }) !== null : false;
+      },
+    });
+
+  // An app's window that took a second start's file (Preview's empty one) comes forward, as a new window would have.
+  appMenus.onFront((pid) => {
+    if (!compositor) return;
+    void compositor
+      .windows()
+      .then((windows) => {
+        const window = windows.find((each) => ownerPids(each.pid).includes(pid));
+        return window ? compositor.request("focus", { window: window.id }) : undefined;
+      })
+      .catch(() => {});
+  });
 
   const run = (action: MenuAction): void => {
     runMenuAction(action, deps).catch((error) => console.error(`dashi-shell: menu action “${action.kind}” failed:`, error));

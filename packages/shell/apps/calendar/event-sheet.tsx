@@ -1,24 +1,28 @@
 /**
- * The sheet that makes and edits an event: title, calendar, all day, start and
- * end, place, repeat, alert, notes. Days and times are typed (2026-11-05,
- * 2:30 pm) or stepped with the arrows; Metal has no date picker. Changing the
- * start takes the end along, as the Mac's does.
+ * The full sheet for an event (the popover's Edit…, or Return on a picked
+ * event): title, calendar, all day, start and end on the event's own clock,
+ * its time zone, place, repeat, alert, notes. It opens on the time that was
+ * clicked; saving a change to one time of a repeat asks which times it is for
+ * (sheets.tsx). Changing the start takes the end along. Most events never
+ * need it: they are drawn, named, moved, and stretched on the grid.
  */
 
 import { Button, Choices, Sheet, Switch, TextField, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
-import { addDays, type Day } from "./dates.ts";
-import { type Draft, type EndsChoice, moveStart, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
-import { ALL_DAY_ALERTS, alertLabel, clock, TIMED_ALERTS, weekdayShort } from "./format.ts";
-import { parseDayText, parseTimeText } from "./timetext.ts";
+import { weekdayNames } from "../../src/region/week.ts";
+import { type Draft, type EndsChoice, type MonthlyBy, moveStart, nthOf, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
+import { DayField, FormRow, Stepper, TimeField, ZoneField } from "./form-fields.tsx";
+import { ALL_DAY_ALERTS, alertLabel, nthName, TIMED_ALERTS } from "./format.ts";
 import type { Calendar } from "./types.ts";
 
 export interface EventSheetProps {
   draft: Draft;
   calendars: readonly Calendar[];
   prefs: ClockPrefs;
+  /** 0 Sunday … 6 Saturday: the region's first day, for the weekdays and the date picker. */
+  firstDay?: number;
   /** The event exists already: the sheet says Save and offers Delete. */
   editing: { repeating: boolean; custom: boolean } | null;
   onSave: (draft: Draft) => void;
@@ -39,119 +43,8 @@ const ENDS: ReadonlyArray<{ value: EndsChoice; label: string }> = [
   { value: "until", label: "On date" },
 ];
 const UNITS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } as const;
-const LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
-function FormRow({ label, children, top }: { label: string; children: ReactNode; top?: boolean }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", alignItems: top ? "flex-start" : "center", gap: 12, minHeight: 28 }}>
-      <View style={{ width: 62, flexShrink: 0, alignItems: "flex-end", paddingTop: top ? 6 : 0 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
-      </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>{children}</View>
-    </View>
-  );
-}
-
-function Arrow({ glyph, onPress, testID }: { glyph: "‹" | "›"; onPress: () => void; testID: string }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        width: 22,
-        height: 26,
-        borderRadius: 6,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.button,
-        hoverBackgroundColor: colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 14, color: colors.text }}>{glyph}</Text>
-    </View>
-  );
-}
-
-/** A day field: typed, or stepped a day at a time; the weekday is written after it. */
-function DayField({ id, value, onChange, prefs }: { id: string; value: Day; onChange: (day: Day) => void; prefs: ClockPrefs }) {
-  const colors = useColors();
-  const [typed, setTyped] = useState<string | null>(null);
-  return (
-    <>
-      <TextField
-        testID={`${id}-day`}
-        width={100}
-        value={typed ?? value}
-        onChangeText={(text) => {
-          setTyped(text);
-          const day = parseDayText(text);
-          if (day !== null) onChange(day);
-        }}
-      />
-      <Arrow
-        glyph="‹"
-        testID={`${id}-day-previous`}
-        onPress={() => {
-          setTyped(null);
-          onChange(addDays(value, -1));
-        }}
-      />
-      <Arrow
-        glyph="›"
-        testID={`${id}-day-next`}
-        onPress={() => {
-          setTyped(null);
-          onChange(addDays(value, 1));
-        }}
-      />
-      <View style={{ width: 30 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{weekdayShort(value, prefs)}</Text>
-      </View>
-    </>
-  );
-}
-
-function TimeField({ id, minutes, onChange, prefs }: { id: string; minutes: number; onChange: (minutes: number) => void; prefs: ClockPrefs }) {
-  const [typed, setTyped] = useState<string | null>(null);
-  const label = clock(`2000-01-01T${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`, prefs);
-  const step = (by: number): void => {
-    setTyped(null);
-    onChange(Math.max(0, Math.min(1439, minutes + by)));
-  };
-  return (
-    <>
-      <TextField
-        testID={`${id}-time`}
-        width={86}
-        value={typed ?? label}
-        onChangeText={(text) => {
-          setTyped(text);
-          const parsed = parseTimeText(text);
-          if (parsed !== null) onChange(parsed);
-        }}
-      />
-      <Arrow glyph="‹" testID={`${id}-time-previous`} onPress={() => step(-15)} />
-      <Arrow glyph="›" testID={`${id}-time-next`} onPress={() => step(15)} />
-    </>
-  );
-}
-
-function Stepper({ id, value, min, max, onChange }: { id: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
-  const colors = useColors();
-  return (
-    <>
-      <Arrow glyph="‹" testID={`${id}-less`} onPress={() => onChange(Math.max(min, value - 1))} />
-      <View style={{ minWidth: 28, alignItems: "center" }}>
-        <Text style={{ fontSize: 13, color: colors.text }}>{String(value)}</Text>
-      </View>
-      <Arrow glyph="›" testID={`${id}-more`} onPress={() => onChange(Math.min(max, value + 1))} />
-    </>
-  );
-}
-
-export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, onDelete, onCancel }: EventSheetProps) {
+export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, editing, onSave, onDelete, onCancel }: EventSheetProps) {
   const colors = useColors();
   const surface = useSurface();
   const [draft, setDraft] = useState(initial);
@@ -164,11 +57,19 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
   const alertChoices = alerts.map(([value, label]) => ({ value: value === null ? "none" : String(value), label }));
   if (draft.alert !== null && !alerts.some(([value]) => value === draft.alert))
     alertChoices.push({ value: String(draft.alert), label: alertLabel(draft.alert, draft.allDay) });
-  const repeatChoices = editing?.custom ? [...REPEATS, { value: "custom" as RepeatChoice, label: "Custom (kept)" }] : REPEATS;
+  const repeatChoices = initial.repeat === "custom" ? [...REPEATS, { value: "custom" as RepeatChoice, label: "Custom" }] : REPEATS;
   const repeats = draft.repeat !== "none" && draft.repeat !== "custom";
+  // The weekday buttons start on the region's first day and say its letters.
+  const names = weekdayNames(prefs.locale, 0);
+  const order = Array.from({ length: 7 }, (_, offset) => (firstDay + offset) % 7);
+  const monthly: ReadonlyArray<{ value: MonthlyBy; label: string }> = [
+    { value: "date", label: `On day ${Number(draft.startDay.slice(8, 10))}` },
+    { value: "weekday", label: `On ${nthName(nthOf(draft.startDay), prefs)}` },
+  ];
+  const fields = { prefs, firstDay };
 
   return (
-    <Sheet testID="event-sheet" width={500} onCancel={onCancel}>
+    <Sheet testID="event-sheet" width={520} onCancel={onCancel}>
       <ScrollView testID="event-form" style={{ maxHeight: 540 }}>
         <View style={{ flexDirection: "column", gap: 10, paddingBottom: 2 }}>
           <FormRow label="Title">
@@ -183,13 +84,15 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
             />
           </FormRow>
           <FormRow label="Calendar">
-            <View testID="event-calendar" style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            <View testID="event-calendar" focusGroup style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {calendars.map((calendar) => {
                 const chosen = calendar.id === draft.calendarId;
                 return (
                   <View
                     key={calendar.id}
                     testID={`event-calendar:${calendar.id}`}
+                    focusable
+                    accessibilityRole="option"
                     onPress={() => change({ calendarId: calendar.id })}
                     style={{
                       height: 26,
@@ -199,6 +102,7 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
                       alignItems: "center",
                       gap: 6,
                       backgroundColor: chosen ? colors.selection : colors.button,
+                      focusRingColor: colors.focusRing,
                     }}
                   >
                     <View
@@ -214,15 +118,20 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
             <Switch on={draft.allDay} testID="event-all-day" onChange={(allDay) => setDraft(setAllDay(draft, allDay))} />
           </FormRow>
           <FormRow label="Starts">
-            <DayField id="start" value={draft.startDay} prefs={prefs} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
+            <DayField id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
             {!draft.allDay && (
               <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
             )}
           </FormRow>
           <FormRow label="Ends">
-            <DayField id="end" value={draft.endDay} prefs={prefs} onChange={(endDay) => change({ endDay })} />
+            <DayField id="end" value={draft.endDay} {...fields} onChange={(endDay) => change({ endDay })} />
             {!draft.allDay && <TimeField id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => change({ endMinutes })} />}
           </FormRow>
+          {!draft.allDay && (
+            <FormRow label="Time zone">
+              <ZoneField zone={draft.zone} onChange={(zone) => change({ zone })} />
+            </FormRow>
+          )}
           <FormRow label="Location">
             <TextField
               testID="event-location"
@@ -245,12 +154,15 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
               {draft.repeat === "weekly" && (
                 <FormRow label="On">
                   <View testID="event-weekdays" style={{ flexDirection: "row", gap: 4 }}>
-                    {LETTERS.map((letter, index) => {
+                    {order.map((index) => {
                       const on = draft.weekdays.includes(index);
                       return (
                         <View
                           key={index}
                           testID={`event-weekday:${index}`}
+                          focusable
+                          accessibilityRole="checkbox"
+                          accessibilityLabel={names[index]}
                           onPress={() => change({ weekdays: on ? draft.weekdays.filter((each) => each !== index) : [...draft.weekdays, index] })}
                           style={{
                             width: 26,
@@ -259,13 +171,21 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
                             alignItems: "center",
                             justifyContent: "center",
                             backgroundColor: on ? colors.selection : colors.button,
+                            focusRingColor: colors.focusRing,
                           }}
                         >
-                          <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? "#ffffff" : colors.text }}>{letter}</Text>
+                          <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? "#ffffff" : colors.text }}>
+                            {(names[index] ?? "").slice(0, 1).toUpperCase()}
+                          </Text>
                         </View>
                       );
                     })}
                   </View>
+                </FormRow>
+              )}
+              {draft.repeat === "monthly" && (
+                <FormRow label="On">
+                  <Choices testID="event-monthly" options={monthly} value={draft.monthlyBy} onChange={(monthlyBy) => change({ monthlyBy })} />
                 </FormRow>
               )}
               <FormRow label="Ends">
@@ -276,7 +196,7 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
                     <Text style={{ fontSize: 12, color: colors.textMuted }}>times</Text>
                   </>
                 )}
-                {draft.ends === "until" && <DayField id="until" value={draft.until} prefs={prefs} onChange={(until) => change({ until })} />}
+                {draft.ends === "until" && <DayField id="until" value={draft.until} {...fields} onChange={(until) => change({ until })} />}
               </FormRow>
             </>
           )}
@@ -312,12 +232,9 @@ export function EventSheet({ draft: initial, calendars, prefs, editing, onSave, 
           </FormRow>
         </View>
       </ScrollView>
-      {editing?.repeating === true && (
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>This event repeats: changes apply to every time it happens.</Text>
-      )}
       {problem !== null && (
         <View testID="event-problem">
-          <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
+          <Text style={{ fontSize: 12, color: colors.ume }}>{problem}</Text>
         </View>
       )}
       <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>

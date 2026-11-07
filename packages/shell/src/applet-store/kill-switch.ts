@@ -4,7 +4,7 @@
  * Dashi's key, as the store does) and turns off every installed version it
  * lists as pulled. The launcher sees the change in the applets folder and
  * stops it. Nothing is installed or updated here; that is the person's, in
- * the Applet Store.
+ * Software.
  */
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";

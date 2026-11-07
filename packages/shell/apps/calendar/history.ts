@@ -22,7 +22,7 @@ export function changeName({ before, after }: EventChange): string {
   if (!after) return "Delete Event";
   const same = (key: keyof CalEvent) => JSON.stringify(before.event[key]) === JSON.stringify(after.event[key]);
   const moved = before.calendarId !== after.calendarId || !same("start") || !same("end");
-  const kept = (["title", "allDay", "location", "notes", "repeat", "rawRule", "exdates", "alert"] as const).every(same);
+  const kept = (["title", "allDay", "location", "notes", "repeat", "rawRule", "exdates", "overrides", "alert"] as const).every(same);
   return moved && kept ? "Move Event" : "Edit Event";
 }
 

@@ -16,6 +16,8 @@
 export interface TerminalPalette {
   ground: string;
   ink: string;
+  /** The cursor: kombu, deep enough in Light Mode and light enough in Dark Mode that the ground's color on it (the letter under a block cursor) is AA. */
+  cursor: string;
   /** Black, red, green, yellow, blue, magenta, cyan, white, then the bright eight. */
   ansi: readonly string[];
 }
@@ -42,6 +44,7 @@ export const ANSI_NAMES = [
 export const LIGHT_TERMINAL: TerminalPalette = {
   ground: "#fbfaf7",
   ink: "#1d1d1f",
+  cursor: "#357a64",
   ansi: [
     "#1d1d1f",
     "#b23a50",
@@ -65,6 +68,7 @@ export const LIGHT_TERMINAL: TerminalPalette = {
 export const DARK_TERMINAL: TerminalPalette = {
   ground: "#1c1c1e",
   ink: "#e8e8ea",
+  cursor: "#5fae95",
   ansi: [
     "#3a3a3d",
     "#f07a8f",

@@ -1,18 +1,39 @@
-/** Calendar's smaller sheets: a calendar's name and color, the questions that can't be taken back, and the path of a file to import. */
+/**
+ * Calendar's smaller sheets: a calendar's name and color, deleting one, and
+ * the question a change to one time of a repeat asks: this event, this and
+ * the following ones, or all of them. The file sheets are in file-sheets.tsx.
+ */
 
-import { AlertSheet, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
+import { AlertSheet, alertButtonsWidth, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { Scope } from "./edits.ts";
+import type { EventInput } from "./event.ts";
 import { isColor } from "./ics.ts";
+import type { OccurrenceRef } from "./model.ts";
 import { PALETTE } from "./store.ts";
 
 export type SheetState =
-  | { kind: "event" }
   | { kind: "new-calendar" }
   | { kind: "edit-calendar"; id: string; name: string; color: string }
   | { kind: "delete-calendar"; id: string; name: string; events: number }
-  | { kind: "delete-event"; calendarId: string; uid: string; title: string; start: string; repeating: boolean }
-  | { kind: "import-path"; reason: string };
+  /** A change to one time of a repeat: which of its times it is for. */
+  | {
+      kind: "scope";
+      action: "change" | "delete";
+      ref: OccurrenceRef;
+      title: string;
+      /** change: what it becomes, the calendar it moves to, and the step's name. */
+      input?: EventInput;
+      moveTo?: string;
+      name?: string;
+      /** "This event" is offered (not when the repeat itself changed). */
+      allowThis: boolean;
+    }
+  | { kind: "import-path"; reason: string }
+  | { kind: "import-target"; text: string; name: string; fileName: string }
+  | { kind: "export"; calendarId: string }
+  | { kind: "problems" };
 
 export function CalendarSheet({
   title,
@@ -74,44 +95,57 @@ export function CalendarSheet({
   );
 }
 
-/** Delete an event; a repeating one asks whether it is this time or all of them. */
-export function DeleteEventSheet({
-  sheet,
-  onThis,
-  onAll,
+const CANCEL = "Cancel";
+const THIS = "This event";
+const FOLLOWING = "This and following";
+const ALL = "All events";
+/** The sheet's card: 20 either side of what it holds. */
+const SHEET_PAD = 20;
+
+/** The repeat question's width: 460, or wider so its buttons stay on one row. */
+export function scopeSheetWidth(labels: readonly string[]): number {
+  return Math.max(460, alertButtonsWidth(labels) + SHEET_PAD * 2);
+}
+
+/**
+ * Which times of a repeat a change or a delete is for. "This event" is the
+ * default (Return); Esc cancels. Deleting all of them is the ume button.
+ */
+export function ScopeSheet({
+  action,
+  title,
+  allowThis,
+  onChoose,
   onCancel,
 }: {
-  sheet: Extract<SheetState, { kind: "delete-event" }>;
-  onThis: () => void;
-  onAll: () => void;
+  action: "change" | "delete";
+  title: string;
+  allowThis: boolean;
+  onChoose: (scope: Scope) => void;
   onCancel: () => void;
 }) {
-  if (!sheet.repeating) {
-    return (
-      <ConfirmSheet
-        testID="delete-event"
-        title={`Delete “${sheet.title || "New Event"}”?`}
-        message="Edit › Undo brings it back."
-        confirmLabel="Delete"
-        danger
-        onConfirm={onAll}
-        onCancel={onCancel}
-      />
-    );
-  }
+  const name = title || "New Event";
+  const deleting = action === "delete";
+  const labels = [CANCEL, ...(allowThis ? [THIS] : []), FOLLOWING, ALL];
   return (
     <AlertSheet
-      testID="delete-event"
-      width={420}
-      question={`Delete “${sheet.title || "New Event"}”?`}
-      message="This event repeats. Delete only this time, or every time it happens?"
+      testID="scope"
+      width={scopeSheetWidth(labels)}
+      question={deleting ? `Delete “${name}”?` : `Change “${name}”?`}
+      message={
+        deleting
+          ? "It repeats. Delete only this event, this one and the ones after it, or every time it happens? Edit › Undo brings them back."
+          : allowThis
+            ? "It repeats. Change only this event, this one and the ones after it, or every time it happens?"
+            : "Its repeat changed, so the change is for this event and the ones after it, or for every time it happens."
+      }
       glyph={WARNING}
-      tone="danger"
+      tone={deleting ? "danger" : "accent"}
       buttons={[
-        // Deleting is a click: Enter cancels, as Esc does.
-        { label: "Cancel", testID: "delete-event:cancel", onPress: onCancel, cancel: true, isDefault: true },
-        { label: "Delete This Time", testID: "delete-event:this", onPress: onThis },
-        { label: "Delete All", testID: "delete-event:ok", onPress: onAll, kind: "danger" },
+        { label: CANCEL, testID: "scope:cancel", onPress: onCancel, cancel: true },
+        ...(allowThis ? [{ label: THIS, testID: "scope:this", onPress: () => onChoose("this"), isDefault: true }] : []),
+        { label: FOLLOWING, testID: "scope:following", onPress: () => onChoose("following"), isDefault: !allowThis },
+        { label: ALL, testID: "scope:all", onPress: () => onChoose("all"), ...(deleting ? { kind: "danger" as const } : {}) },
       ]}
     />
   );
@@ -136,33 +170,5 @@ export function DeleteCalendarSheet({
       onConfirm={onConfirm}
       onCancel={onCancel}
     />
-  );
-}
-
-/** Where there is no file chooser (a development run), the path of the file is typed. */
-export function ImportPathSheet({ reason, onSubmit, onCancel }: { reason: string; onSubmit: (path: string) => void; onCancel: () => void }) {
-  const colors = useColors();
-  const [path, setPath] = useState("");
-  const submit = (): void => {
-    if (path.trim() !== "") onSubmit(path);
-  };
-  return (
-    <Sheet testID="import-sheet" width={420}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Import Calendar</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{reason}</Text>
-      <TextField
-        testID="import-path"
-        value={path}
-        placeholder="/home/you/Downloads/holidays.ics"
-        autoFocus
-        onChangeText={setPath}
-        onSubmit={submit}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-      />
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="import-sheet:cancel" onPress={onCancel} />
-        <Button label="Import" testID="import-sheet:ok" primary disabled={path.trim() === ""} onPress={submit} />
-      </View>
-    </Sheet>
   );
 }

@@ -8,8 +8,8 @@
  */
 
 import { Group as Card, useColors } from "@dashi/ui";
-import { type Bounds, ScrollView, Text, useWindowChrome } from "@mirinjs/metal";
-import { type ReactNode, useContext, useMemo, useRef } from "react";
+import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
+import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
 /**
@@ -33,14 +33,20 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
   );
 }
 
+/** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */
+export const SaveError = createContext(false);
+
+/** A page's content is at most this wide, centered in a wider window (LA-2). */
+export const PAGE_MAX_WIDTH = 680;
+
 /**
- * A pane: its title, then its content scrolling under it when it is taller than the window. With
- * the unified title bar the title lives in the window's toolbar (view.tsx), so the page starts
- * with its content.
+ * A pane: its content scrolling under the header strip when it is taller than the window (its
+ * title is in the strip: view.tsx), at most `PAGE_MAX_WIDTH` wide. When the last change couldn't
+ * be saved, the page says so first, in plain words (PA-6), instead of a bar of its own.
  */
 export function Page({ title, children }: { title: string; children: ReactNode }) {
   const colors = useColors();
-  const unified = useWindowChrome().titleBar === "unified";
+  const unsaved = useContext(SaveError);
   const testID = `pane:${title}`;
   // Where the page is, so a row asked for by its address can be scrolled to (spot.tsx).
   const bounds = useRef<Bounds | null>(null);
@@ -52,10 +58,18 @@ export function Page({ title, children }: { title: string; children: ReactNode }
         onLayout={(laid) => {
           bounds.current = laid;
         }}
-        style={{ flex: 1, flexDirection: "column", gap: PAGE_GAP, padding: 24, paddingTop: unified ? 8 : 20 }}
+        style={{ flex: 1, flexDirection: "column", padding: 24, paddingTop: 8 }}
       >
-        {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
-        {children}
+        <View style={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, alignSelf: "center", flexDirection: "column", gap: PAGE_GAP }}>
+          {unsaved && (
+            <View testID="settings-error" style={{ paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 12, color: colors.critical }}>
+                Your last change couldn't be saved. Check that your home folder has free space, then try again.
+              </Text>
+            </View>
+          )}
+          {children}
+        </View>
       </ScrollView>
     </PageContext.Provider>
   );

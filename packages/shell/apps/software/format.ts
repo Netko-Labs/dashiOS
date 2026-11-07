@@ -1,6 +1,6 @@
 /** Words for times, and the file an installed app's icon is in. */
 
-import { existsSync } from "node:fs";
+import { access } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
@@ -26,16 +26,24 @@ export function exportRoots(env: Readonly<Record<string, string | undefined>> = 
   return { user: join(data, "flatpak/exports/share/icons/hicolor"), system: "/var/lib/flatpak/exports/share/icons/hicolor" };
 }
 
-/** The PNG icon an installed app exported, the largest reasonable one; null when it has none (the id is already checked, so it can't climb out of the folder). */
-export function localIcon(
+/**
+ * The PNG icon an installed app exported, the largest reasonable one; null
+ * when it has none (the id is already checked, so it can't climb out of the
+ * folder). Looked for off the render path, so a row never blocks a frame.
+ */
+export async function findLocalIcon(
   app: Pick<InstalledApp, "id" | "installation">,
   roots = exportRoots(),
-  exists: (path: string) => boolean = existsSync,
-): string | null {
+  exists: (path: string) => Promise<boolean> = (path) =>
+    access(path).then(
+      () => true,
+      () => false,
+    ),
+): Promise<string | null> {
   const root = roots[app.installation];
   for (const size of SIZES) {
     const path = join(root, size, "apps", `${app.id}.png`);
-    if (exists(path)) return path;
+    if (await exists(path)) return path;
   }
   return null;
 }

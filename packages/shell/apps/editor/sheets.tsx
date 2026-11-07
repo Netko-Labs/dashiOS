@@ -1,79 +1,161 @@
 /**
- * Text Editor's sheets: a location for Open and Save As (a path, `~` for the
- * home folder; Metal has no file chooser and the portal's would be another
- * app's window), the question before closing a document with changes, and
- * Find and Replace. Drawn inside the window by the kit's Sheet.
+ * Text Editor's sheets: Revert To… (the file's earlier versions,
+ * versions.ts), the question when the file changed on disk meanwhile, Go to
+ * Line, and Find and Replace. Drawn inside the window by the kit's Sheet; the
+ * questions in the one alert frame (UI-5). Open and Save As are Files'
+ * chooser (apps/files/chooser/).
  */
 
-import { Button, Sheet, TextField, useColors } from "@dashi/ui";
+import { AlertSheet, Button, RESTART, rowLook, SelectionBar, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { Conflict } from "./model.ts";
+import { type Version, versionKindLabel, versionWhen } from "./versions.ts";
 
 export type SheetState =
   | { kind: "open" }
-  | { kind: "save-as"; after: "close" | null }
-  | { kind: "unsaved"; name: string }
-  | { kind: "replace" }
-  | { kind: "revert"; name: string };
+  | { kind: "save-as" }
+  | { kind: "versions" }
+  | { kind: "conflict"; after: "close" | null }
+  | { kind: "delete-draft" }
+  | { kind: "go-to-line" }
+  | { kind: "replace" };
 
-export function PathSheet({
-  testID,
-  title,
-  message,
-  initial,
-  action,
-  onSubmit,
+/**
+ * Revert To…: the file's earlier versions, newest first, one picked; under
+ * the list, how the picked one differs from the text now. Reverting is one
+ * Undo step, so it doesn't warn.
+ */
+export function VersionsSheet({
+  name,
+  versions,
+  now,
+  describe,
+  onRevert,
   onCancel,
 }: {
-  testID: string;
-  title: string;
-  message: string;
-  initial: string;
-  action: string;
-  /** The problem to show, or null when it went ahead. */
-  onSubmit: (input: string) => string | null;
+  name: string;
+  versions: readonly Version[];
+  now: number;
+  /** How a version differs from the text now ("Differs from line 12"). */
+  describe: (version: Version) => string;
+  onRevert: (version: Version) => void;
   onCancel: () => void;
 }) {
   const colors = useColors();
-  const [input, setInput] = useState(initial);
-  const [problem, setProblem] = useState<string | null>(null);
-  const submit = (): void => setProblem(onSubmit(input));
+  const [picked, setPicked] = useState(0);
+  const version = versions[picked];
   return (
-    <Sheet testID={testID} width={440} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>
-      <TextField
-        testID={`${testID}:path`}
-        value={input}
-        onChangeText={(text) => {
-          setInput(text);
-          setProblem(null);
-        }}
-        autoFocus
-        onSubmit={submit}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-      />
-      {problem !== null && <Text style={{ fontSize: 12, color: colors.critical, lineHeight: 16 }}>{problem}</Text>}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID={`${testID}:cancel`} onPress={onCancel} />
-        <Button label={action} testID={`${testID}:ok`} primary disabled={input.trim() === ""} onPress={submit} />
+    <AlertSheet
+      testID="versions"
+      width={420}
+      question={`Revert “${name}” to an earlier version?`}
+      message="Edit › Undo brings back the text you have now."
+      glyph={RESTART}
+      tone="accent"
+      buttons={[
+        { label: "Cancel", testID: "versions:cancel", cancel: true, onPress: onCancel },
+        { label: "Revert", testID: "versions:revert", kind: "primary", disabled: !version, onPress: () => version && onRevert(version) },
+      ]}
+    >
+      <View focusGroup selectsOnFocus testID="versions:list" style={{ flexDirection: "column", gap: 1, maxHeight: 220, overflow: "scroll" }}>
+        {versions.map((each, index) => {
+          const look = rowLook(colors, index === picked);
+          const kind = versionKindLabel(each.kind);
+          return (
+            <View
+              key={`${each.time}-${each.kind}`}
+              testID={`versions:${index}`}
+              focusable
+              accessibilityRole="option"
+              accessibilityState={{ selected: index === picked }}
+              onPress={() => setPicked(index)}
+              style={{
+                position: "relative",
+                flexDirection: "row",
+                alignItems: "center",
+                height: 28,
+                paddingHorizontal: 10,
+                borderRadius: 6,
+                backgroundColor: look.ground,
+                hoverBackgroundColor: look.hover,
+              }}
+            >
+              {index === picked && <SelectionBar rowHeight={28} />}
+              <Text style={{ fontSize: 13, color: look.ink }}>{versionWhen(each.time, now)}</Text>
+              <View style={{ flex: 1 }} />
+              {kind !== null && <Text style={{ fontSize: 12, color: look.quiet }}>{kind}</Text>}
+            </View>
+          );
+        })}
       </View>
-    </Sheet>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>
+        {version ? describe(version) : "No earlier versions yet: one is kept the first time the file is saved over."}
+      </Text>
+    </AlertSheet>
   );
 }
 
-/** Save, Don't Save, or Cancel: Enter saves, Esc cancels. */
-export function UnsavedSheet({ name, onSave, onDiscard, onCancel }: { name: string; onSave: () => void; onDiscard: () => void; onCancel: () => void }) {
-  const colors = useColors();
+/** The file changed on disk (or went away) while there were changes here: which text wins. */
+export function ConflictSheet({
+  name,
+  conflict,
+  closing,
+  onKeepMine,
+  onUseDisk,
+  onSaveAs,
+  onCancel,
+}: {
+  name: string;
+  conflict: Conflict;
+  /** Asked as the window closes: Cancel keeps it open. */
+  closing: boolean;
+  onKeepMine: () => void;
+  onUseDisk: () => void;
+  onSaveAs: () => void;
+  onCancel: () => void;
+}) {
+  const changed = conflict === "changed";
   return (
-    <Sheet testID="unsaved" width={400} onCancel={onCancel} onConfirm={onSave}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Do you want to save the changes you made to “${name}”?`}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>Your changes will be lost if you don't save them.</Text>
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
-        <Button label="Don't Save" testID="unsaved:discard" onPress={onDiscard} />
-        <View style={{ flex: 1 }} />
-        <Button label="Cancel" testID="unsaved:cancel" onPress={onCancel} />
-        <Button label="Save" testID="unsaved:save" primary onPress={onSave} />
+    <AlertSheet
+      testID="conflict"
+      width={440}
+      question={changed ? `“${name}” was changed by another app.` : `“${name}” isn't where it was any more.`}
+      message={
+        changed
+          ? "Keep your version, or use the one on disk? Edit › Undo brings yours back after using the one on disk."
+          : "It was moved, renamed or deleted. Save it there again, or somewhere else?"
+      }
+      glyph={WARNING}
+      tone="warning"
+      buttons={[
+        ...(closing ? [{ label: "Cancel", testID: "conflict:cancel", cancel: true, onPress: onCancel }] : []),
+        changed
+          ? { label: "Use the One on Disk", testID: "conflict:disk", onPress: onUseDisk }
+          : { label: "Save As…", testID: "conflict:save-as", onPress: onSaveAs },
+        { label: changed ? "Keep Mine" : "Save It There", testID: "conflict:mine", kind: "primary", onPress: onKeepMine },
+      ]}
+    />
+  );
+}
+
+/** Go to Line: a line number, the text's last line at most. */
+export function GoToLineSheet({ lines, onGo, onCancel }: { lines: number; onGo: (line: number) => void; onCancel: () => void }) {
+  const colors = useColors();
+  const [input, setInput] = useState("");
+  const line = /^\s*\d+\s*$/.test(input) ? Number(input) : null;
+  const valid = line !== null && line >= 1;
+  const go = (): void => {
+    if (line !== null && valid) onGo(Math.min(line, lines));
+  };
+  return (
+    <Sheet testID="go-to-line" width={300} onCancel={onCancel}>
+      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Go to Line</Text>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>{`A line from 1 to ${lines.toLocaleString("en-US")}.`}</Text>
+      <TextField testID="go-to-line:line" value={input} onChangeText={setInput} autoFocus onSubmit={go} onKeyPress={(key) => key === "Escape" && onCancel()} />
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+        <Button label="Cancel" testID="go-to-line:cancel" onPress={onCancel} />
+        <Button label="Go" testID="go-to-line:ok" primary disabled={!valid} onPress={go} />
       </View>
     </Sheet>
   );

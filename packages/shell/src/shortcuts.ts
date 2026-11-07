@@ -56,6 +56,9 @@ export interface ShellActions {
   isLocked?(): boolean;
 }
 
+/** The binding that opens and closes the launcher (keymap.ts). */
+const LAUNCHER = "launcher";
+
 /** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
 const ADDRESS = "dashi://";
 
@@ -94,7 +97,17 @@ export async function runBinding(name: string, window: number | null, compositor
       await compositor.request("send-keys", { window, chord: `ctrl+${chord.shift ? "shift+" : ""}${chord.key}` });
       return;
     }
-    case "launcher":
+    case "app-erase": {
+      // ❖⌫ in one of Dashi's own apps: its row that shows ❖⌫ (Files' Move to
+      // Trash) unless a field is typing; else what ❖⌫ does in text anywhere,
+      // erasing to the line's start (keymap.ts).
+      if (window === null) return;
+      if (await actions.appShortcut?.(window, "❖⌫")) return;
+      await compositor.request("send-keys", { window, chord: "shift+Home" });
+      await compositor.request("send-keys", { window, chord: "BackSpace" });
+      return;
+    }
+    case LAUNCHER:
       return actions.toggleLauncher();
     case "switch-next":
       return actions.switcher.step("next");
@@ -203,6 +216,9 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
       if (actions.isLocked?.()) return;
       // The launcher's keys are taken here, in the order they came: typing must not be reordered.
       if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, event.chord, event.text)) return;
+      // ❖Space opens it here too, before the next event: the keys typed after it (armsAfterTap,
+      // launcher/type-ahead.ts) can come in the same breath, and must find it opening.
+      if (event.name === LAUNCHER) return actions.toggleLauncher();
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));
     }
   });

@@ -27,7 +27,23 @@ export const ALERT_WINDOW = {
   bodyGap: 10,
   buttonsTop: 6,
   button: 28,
+  /** A push button (controls.tsx `Button`): at least 84 wide, 14 either side of its 13 px label, 8 between buttons. */
+  buttonMin: 84,
+  buttonPad: 14,
+  buttonChar: 7.4,
+  buttonGap: 8,
 } as const;
+
+/**
+ * How wide a row of buttons with these labels is (alert.tsx `AlertButtons`),
+ * leaning wide: a sheet at least this wide plus its padding keeps them on one
+ * row ("All events" never alone under the others).
+ */
+export function alertButtonsWidth(labels: readonly string[]): number {
+  const { buttonMin, buttonPad, buttonChar, buttonGap } = ALERT_WINDOW;
+  const widths = labels.map((label) => Math.max(buttonMin, Math.ceil([...label].length * buttonChar + buttonPad * 2)));
+  return widths.reduce((sum, width) => sum + width, 0) + Math.max(labels.length - 1, 0) * buttonGap;
+}
 
 /** Lines `text` takes wrapped at `width` points, a word at a time, `char` points a character; a paragraph is at least one line. */
 export function wrappedLines(text: string, width: number, char: number): number {

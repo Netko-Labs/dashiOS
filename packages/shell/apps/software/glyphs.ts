@@ -19,6 +19,18 @@ export const VERIFIED_CHECK = svg(stroke("M4.8 8.3l2.2 2.2 4.2-4.6", 1.9));
 export const RESTART = svg(`${stroke("M13 8a5 5 0 1 1-1.6-3.7", 1.5)}${stroke("M12.2 1.8v2.8H9.4", 1.5)}`);
 export const OFFLINE = svg(`${stroke("M2 6.2a8.4 8.4 0 0 1 12 0M4.3 8.6a5.2 5.2 0 0 1 7.4 0M6.6 11a2 2 0 0 1 2.8 0", 1.4)}${stroke("M3 13.4l10-10.8", 1.5)}`);
 export const REFRESH = svg(`${stroke("M13.4 8A5.4 5.4 0 1 1 11.8 4.2", 1.5)}${stroke("M13.6 2.2v3.4H10.2", 1.5)}`);
+/** Dashi's reviewed seal: the bowl, with a check in it (drawn in ink). */
+export const REVIEWED = svg(
+  `${stroke("M1.8 6.6h12.4a6.2 6.2 0 0 1-12.4 0z", 1.4)}${stroke("M5.7 8.9l1.6 1.6 3-3.2", 1.5)}${stroke("M6.2 1.8c-.6.8.6 1.6 0 2.6M9.8 1.8c-.6.8.6 1.6 0 2.6", 1.1)}`,
+);
+/** Menu bar applets: the bar, with an item lit in it. */
+export const APPLETS = svg(
+  `${stroke("M2 3.2h12a.8.8 0 0 1 .8.8v2.4a.8.8 0 0 1-.8.8H2a.8.8 0 0 1-.8-.8V4a.8.8 0 0 1 .8-.8z", 1.3)}<circle cx="11.6" cy="5.2" r="1" fill="#000"/>${stroke("M9.6 9.4h4.2v3.8H9.6z", 1.3)}`,
+);
+/** Works on this computer: a check. */
+export const CHECK_MARK = svg(stroke("M3.4 8.4l3 3 6.2-6.6", 1.8));
+/** What a page or card can't reach: a lock. */
+export const SHIELD = svg(stroke("M8 1.8l5.2 2v4c0 3.1-2.2 5.4-5.2 6.4-3-1-5.2-3.3-5.2-6.4v-4z", 1.4));
 
 /** Category glyphs: white on the colored tile. */
 export const CATEGORY_GLYPHS: Readonly<Record<string, string>> = {
@@ -46,8 +58,8 @@ export const CATEGORY_GLYPHS: Readonly<Record<string, string>> = {
 
 /**
  * A tile color for each category, from Dashi's tints: never a job color, so
- * no category wears shiso (agents) or ume (destroy). The Applet Store's
- * categories take these too, through the nearest of Software's.
+ * no category wears shiso (agents) or ume (destroy). The applets' categories
+ * take these too, through the nearest of Flathub's (applets/words.ts).
  */
 export const CATEGORY_TINTS: Readonly<Record<string, string>> = {
   AudioVideo: TINTS.kabocha,
