@@ -6,6 +6,12 @@
  *   shell → app  {"type":"select","id":"new"}
  *                {"type":"quit"}                    (the app is quitting: its window's close request comes next)
  *                {"type":"error","message":"…"}     (the menus sent were refused; the last good ones stay)
+ *                {"type":"open","args":["--tab","energy"]}  (opened again while it runs: what the new start would have been told)
+ *
+ * `open` hands a running app the arguments a second start would have had
+ * (the battery menu opening Activity Monitor at an app's energy): at most
+ * `LIMITS.openArgs` strings, each at most `LIMITS.openArg` characters. An app
+ * reads them as it reads its own command line, and ignores what it doesn't know.
  *
  * `typing` (optional) says a text field in the app's window has the
  * keyboard: then the text chords (❖A, ❖C, ❖X, ❖V, ❖Z, ⇧❖Z) go to the field,
@@ -50,6 +56,9 @@ export const LIMITS = {
   label: 80,
   title: 40,
   shortcut: 16,
+  /** Arguments in one `open`, and characters in one argument. */
+  openArgs: 16,
+  openArg: 512,
 } as const;
 
 export type AppMenuItem = {
@@ -86,7 +95,16 @@ export interface MenuSpec {
 }
 
 export type ClientMessage = { type: "menus"; menus: AppMenu[]; typing?: boolean };
-export type ShellMessage = { type: "select"; id: string } | { type: "quit" } | { type: "error"; message: string };
+export type ShellMessage = { type: "select"; id: string } | { type: "quit" } | { type: "error"; message: string } | { type: "open"; args: string[] };
+
+/** Whether `value` is arguments an `open` may carry. */
+export function isOpenArgs(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= LIMITS.openArgs &&
+    value.every((arg) => typeof arg === "string" && arg.length <= LIMITS.openArg && !arg.includes("\0"))
+  );
+}
 
 /** The menus an app published, and which process it is. */
 export interface PublishedMenus {
@@ -268,6 +286,7 @@ export function parseShellMessage(line: string): ShellMessage | null {
   if (fields.type === "select" && typeof fields.id === "string") return { type: "select", id: fields.id };
   if (fields.type === "quit") return { type: "quit" };
   if (fields.type === "error" && typeof fields.message === "string") return { type: "error", message: fields.message };
+  if (fields.type === "open" && isOpenArgs(fields.args)) return { type: "open", args: [...fields.args] };
   return null;
 }
 

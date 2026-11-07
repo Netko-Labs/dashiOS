@@ -12,7 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { type AppMenu, enabledItem, type PublishedMenus, type ShellMessage } from "./protocol.ts";
+import { type AppMenu, enabledItem, isOpenArgs, type PublishedMenus, type ShellMessage } from "./protocol.ts";
 import { isTextShortcut, itemForShortcut } from "./shortcut.ts";
 
 /** One app's end of the channel. */
@@ -105,6 +105,14 @@ export class AppMenuStore {
     if (published?.typing && isTextShortcut(shortcut)) return false;
     const item = published && itemForShortcut(published.menus, shortcut);
     return Boolean(published && item && this.select(published.pid, item));
+  }
+
+  /** Hands these processes' app the arguments a second start would have had (protocol.ts `open`); false when it has no menus channel or they don't fit. */
+  open(pids: readonly number[], args: readonly string[]): boolean {
+    const pid = pids.find((each) => this.byPid.has(each));
+    if (pid === undefined || !isOpenArgs(args)) return false;
+    this.byPid.get(pid)?.owner.send({ type: "open", args: [...args] });
+    return true;
   }
 
   /** Tells these processes' app that it is quitting, just before its windows are asked to close (kit/close.ts); false when it has no menus channel. */
