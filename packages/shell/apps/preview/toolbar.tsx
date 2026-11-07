@@ -91,6 +91,15 @@ function Tool({ tool, props }: { tool: ToolId; props: ToolbarProps }) {
   }
 }
 
+/**
+ * The tools worth showing: all of them for a file that is shown; for one
+ * that can't be (PA-6), only the arrows to the folder's other pictures, when
+ * it has some. Zooming, turning and Info would have nothing to act on.
+ */
+export function toolsFor(tools: readonly ToolId[], { failed, canMove }: { failed: boolean; canMove: boolean }): ToolId[] {
+  return failed ? tools.filter((tool) => tool === "move" && canMove) : [...tools];
+}
+
 /** The tools that didn't fit, as the first rows of "…", in drawing order, with their keys from the menu bar (menus.ts). */
 export function foldedItems(folded: readonly ToolId[], props: ToolbarProps): MenuItem[] {
   const noPicture = !props.hasPicture;

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { enabledIds } from "../apps/kit/index.ts";
 import { droppedFile } from "../apps/preview/drop.ts";
+import { otherMime } from "../apps/preview/kinds.ts";
 import { previewMenus } from "../apps/preview/menus.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
@@ -93,4 +94,32 @@ test("the empty window has no dead toolbar controls, an Open… button, and open
   expect(root.nodeId("zoom-in")).toBeDefined();
   expect(root.nodeId("more")).toBeDefined();
   root.unmount();
+});
+
+test("a file that isn't what its name says: Open With… for what it is, and no tools with nothing to act on", async () => {
+  const { root, viewer } = mount();
+  const path = join(dir, "notes.jpg");
+  writeFileSync(path, "Shopping: rice, kombu, katsuobushi.\n");
+  await viewer.open(path);
+  await settle();
+  expect(viewer.getSnapshot().phase).toBe("error");
+  expect(viewer.getSnapshot().mime).toBe("text/plain");
+  expect(root.nodeId("error:open-with")).toBeDefined();
+  for (const id of ["previous", "next", "zoom-out", "zoom-in", "fit", "actual", "rotate-left", "rotate-right", "info"]) {
+    expect(root.nodeId(id)).toBeUndefined();
+  }
+  // "…" stays: Open With, Show in Files and Move to Trash still mean something.
+  expect(root.nodeId("more")).toBeDefined();
+  root.unmount();
+});
+
+test("what a file Preview can't show is, for Open With", () => {
+  expect(otherMime(new TextEncoder().encode("plain words\n"), "/a/notes.jpg")).toBe("text/plain");
+  // A UTF-8 character cut by the end of the head is still text.
+  expect(otherMime(new TextEncoder().encode("ruled ☐").subarray(0, 8), "/a/x.png")).toBe("text/plain");
+  // Binary under a picture's name: the name lies, so nothing is known.
+  expect(otherMime(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0]), "/a/photo.png")).toBeNull();
+  // Binary under a name Preview doesn't claim: the name's type.
+  expect(otherMime(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0]), "/a/report.zip")).toBe("application/zip");
+  expect(otherMime(new Uint8Array([0, 1, 2]), "/a/blob")).toBeNull();
 });

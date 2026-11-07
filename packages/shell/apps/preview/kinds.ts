@@ -67,6 +67,30 @@ export function kindOf(name: string): Kind | null {
 
 const ascii = (bytes: Uint8Array, at: number, text: string): boolean => [...text].every((char, i) => bytes[at + i] === char.charCodeAt(0));
 
+/**
+ * What a file Preview can't show is, for Open With: plain text when its
+ * first bytes read as text (no NULs, UTF-8), else the type its name says
+ * when that isn't one of Preview's own (a name that lies about being a
+ * picture says nothing). Null when neither tells.
+ */
+export function otherMime(head: Uint8Array, name: string): string | null {
+  if (head.length > 0 && !head.includes(0)) {
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    // The head may end inside a character: up to three bytes short of it.
+    for (let cut = 0; cut <= Math.min(3, head.length - 1); cut++) {
+      try {
+        decoder.decode(head.subarray(0, head.length - cut));
+        return "text/plain";
+      } catch {
+        // Try a byte shorter.
+      }
+    }
+  }
+  if (formatFromName(name)) return null;
+  const type = Bun.file(name).type.split(";")[0]?.trim() ?? "";
+  return type !== "" && type !== "application/octet-stream" ? type : null;
+}
+
 /** The format the first bytes of a file say it is, or null. SVG is recognised by its `<svg` element near the start. */
 export function sniff(head: Uint8Array): Format | null {
   if (head.length >= 8 && head[0] === 0x89 && ascii(head, 1, "PNG\r\n") && head[6] === 0x1a && head[7] === 0x0a) return "png";

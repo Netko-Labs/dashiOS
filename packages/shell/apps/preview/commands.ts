@@ -47,7 +47,7 @@ export function openFile(hooks: CommandHooks): void {
 }
 
 export async function appsFor(snap: Snapshot): Promise<Handler[]> {
-  return snap.format ? handlersFor(FORMATS[snap.format].mime, [SELF_ID]) : [];
+  return snap.mime ? handlersFor(snap.mime, [SELF_ID]) : [];
 }
 
 export function launchWith(hooks: CommandHooks, handler: Handler, path: string): void {

@@ -34,6 +34,8 @@ export interface Snapshot {
   name: string;
   kind: Kind | null;
   format: Format | null;
+  /** What the file is, for Open With: its format's type, or what Preview could tell of a file it can't show (kinds.ts `otherMime`). */
+  mime: string | null;
   /** An image's picture (a PDF's pages are in `pdf`). */
   picture: Picture | null;
   /** Pixels of the file as stored, after the EXIF turn (what the info sheet says). */
@@ -67,6 +69,7 @@ export const CLOSED = {
   name: "",
   kind: null,
   format: null,
+  mime: null,
   picture: null,
   natural: null,
   turns: 0,

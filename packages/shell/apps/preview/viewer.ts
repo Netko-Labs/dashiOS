@@ -19,7 +19,7 @@ import { CONVERT_MEMORY_MIB, CONVERT_TIMEOUT_MS, convertible, MAX_NATIVE_PIXELS,
 import { HEADER_BYTES, jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
 import { Folder } from "./folder.ts";
 import { factsFrom } from "./info.ts";
-import { FORMATS, type Format, formatFromName, sniff } from "./kinds.ts";
+import { FORMATS, type Format, formatFromName, otherMime, sniff } from "./kinds.ts";
 import { MemoryStore } from "./memory.ts";
 import { MESSAGES } from "./messages.ts";
 import { parsePdfInfo, pdfinfoArgs, plainTextArgs, wantsPassword } from "./pdf.ts";
@@ -117,11 +117,14 @@ export class Viewer {
     }
     if (generation !== this.generation) return;
     const format = sniff(head);
-    if (!format) return this.fail(generation, formatFromName(path) ? MESSAGES.mislabelled : MESSAGES.unknownKind);
+    if (!format) {
+      this.set({ mime: otherMime(head, path) });
+      return this.fail(generation, formatFromName(path) ? MESSAGES.mislabelled : MESSAGES.unknownKind);
+    }
     const kind = FORMATS[format].kind;
     if (recent) this.memory.opened(path);
     const turns = this.memory.turnsFor(path, stamp);
-    this.set({ kind, format, stamp, turns, facts: factsFrom(path, stamp, format), recents: this.memory.recents() });
+    this.set({ kind, format, mime: FORMATS[format].mime, stamp, turns, facts: factsFrom(path, stamp, format), recents: this.memory.recents() });
     if (kind === "pdf") {
       this.folder.hide();
       this.set({ folder: EMPTY_FOLDER, folderThumbs: new Map() });

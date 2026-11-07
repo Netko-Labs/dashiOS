@@ -26,7 +26,7 @@ import { usePictureView } from "./picture-view.ts";
 import { EmptyView, ErrorView } from "./states.tsx";
 import { Strip, type StripItem } from "./strip.tsx";
 import { DocumentSurface } from "./surface.tsx";
-import { foldedItems, PreviewToolbar, type ToolbarProps } from "./toolbar.tsx";
+import { foldedItems, PreviewToolbar, type ToolbarProps, toolsFor } from "./toolbar.tsx";
 import type { Viewer } from "./viewer.ts";
 import { FIT, percent, turned } from "./zoom.ts";
 
@@ -81,7 +81,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
     if (hasPicture) setSheet({ kind: "info" });
   };
   const openWithSheet = (): void => {
-    if (!snap.path || !snap.format) return;
+    if (!snap.path || !snap.mime) return;
     setSheet({ kind: "open-with", handlers: null });
     void commands.appsFor(snap).then((handlers) => setSheet((now) => (now?.kind === "open-with" ? { kind: "open-with", handlers } : now)));
   };
@@ -169,11 +169,13 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
   // The toolbar's room, measured: what doesn't fit folds into "…", the least important first, never cut at the edge (fold.ts).
   const [room, setRoom] = useState<number | null>(null);
   const fold = foldTools(room, toolWidths({ position: toolbarProps.position, zoomLevel: zoomLabel || null }));
+  // A file that can't be shown keeps only what still means something: the way to its neighbours, and "…".
+  const toolsNow = { failed: snap.phase === "error", canMove: canPrevious || canNext };
   const busy = useShownAfter(snap.busy || working > 0 || pdf?.working === true, BUSY_DELAY_MS);
 
   const moreItems: MenuItem[] = [
-    ...foldedItems(fold.folded, toolbarProps),
-    { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.format },
+    ...foldedItems(toolsFor(fold.folded, toolsNow), toolbarProps),
+    { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.mime },
     { label: "Show in Files", onPress: () => actions.showInFiles(), disabled: !snap.path },
     { label: "Export…", keys: "⇧❖E", onPress: () => actions.exportFile(), disabled: formats.length === 0 || !hasPicture },
     { label: "Print…", keys: "❖P", onPress: actions.print, disabled: !canPrint || !hasPicture },
@@ -260,7 +262,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
         ground={surface.canvas}
       />
     ) : snap.phase === "error" ? (
-      <ErrorView name={snap.name} message={snap.error ?? ""} onOpenWith={snap.format ? openWithSheet : null} onOpen={actions.open} />
+      <ErrorView name={snap.name} message={snap.error ?? ""} onOpenWith={snap.mime ? openWithSheet : null} onOpen={actions.open} />
     ) : snap.phase === "loading" ? (
       <Loading testID="loading" label={`Opening “${snap.name}”…`} />
     ) : (
@@ -287,7 +289,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
               </Text>
             </View>
           )}
-          <PreviewToolbar {...toolbarProps} shown={fold.shown} />
+          <PreviewToolbar {...toolbarProps} shown={toolsFor(fold.shown, toolsNow)} />
         </View>
       }
       sidebar={strip && sidebar ? strip : undefined}
