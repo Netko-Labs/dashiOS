@@ -45,6 +45,19 @@ const shortcutOf = (chord: KeyChord): string =>
   chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
   [...chord.mods, chord.key].join("+");
 
+/**
+ * Why press_keys refused a chord the desktop keeps, and what does it instead:
+ * ❖Q is the shell's Quit (keymap.ts `quit-app`), which an agent reaches
+ * through the app's menu.
+ */
+export function desktopChordRefusal(shortcut: string, binding: string | null): string {
+  const instead =
+    binding === "quit-app"
+      ? "to quit the app, choose_menu_item its app menu's Quit (list_menus names it), or close_window"
+      : "use the window tools (focus_window, close_window, …) instead";
+  return `${shortcut} is the desktop's own shortcut, not the window's; ${instead}.`;
+}
+
 /** ❖ played as the app's own Ctrl, Shift kept. */
 const asCtrl = (chord: KeyChord): KeyChord => ({ mods: ["ctrl", ...chord.mods.filter((mod) => mod === "shift")], key: chord.key });
 
@@ -117,10 +130,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const kept = plan.find(
           ({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD && resolved.name !== APP_ERASE),
         );
-        if (kept)
-          return toolError(
-            `${shortcutOf(kept.chord)} is the desktop's own shortcut, not the window's; use the window tools (focus_window, close_window, …) instead.`,
-          );
+        if (kept) return toolError(desktopChordRefusal(shortcutOf(kept.chord), kept.resolved.kind === "bind" ? kept.resolved.name : null));
         say(`Pressing keys in ${where}`);
         for (const { chord, resolved } of plan) {
           if (resolved.kind === "keys") await send({ keys: keySteps(resolved.chords) });
