@@ -696,6 +696,14 @@ streams from `test/fixtures/handoff/`, no network).
   Dashi's words ("Opening signin.localhost", "Signed in to signin.localhost"),
   how it went, what it said, how it ended. "Steps: N" said before its first
   call is the "about M" of "step 3 of about 6".
+- **Each harness's mark.** Its row, the grants card's field, a run's row
+  and card, and the chip show the harness's own glyph (`harness-icons.ts`):
+  a starburst for Claude Code, a knot of three links for Codex, a block in
+  brackets for OpenCode, Dashi's drawings in one color (shiso), never the
+  companies' artwork; any other harness gets the agents' sparkle. The done
+  notification's icon is the same mark on a shiso tile
+  (`shell/icons/claude-code.svg`, `codex.svg`, `opencode.svg`, and
+  `agents.svg` for the rest).
 - **The menu bar chip.** One chip while any run works: the newest's words
   ("Codex · Opened signin.localhost"), "2 agents · Codex is signing in" with
   more, shiso; broth (amber), "Codex needs you", while one waits on the
@@ -710,12 +718,17 @@ streams from `test/fixtures/handoff/`, no network).
   action. A yes counts only from the person's own press on the panel
   (`input-origin`, as on a sheet); an answer closes the panel, so what Dashi
   types next (a login, a code) reaches the person's window, not the panel.
-  While the panel is closed the existing sheet shows as well, the chip
-  turns amber and a notification says so ("Codex needs you · Use
-  signin.localhost? · For “…”"); whichever is answered first counts and the
-  other comes down. A payment keeps dashi-secretd's fingerprint or password
-  sheet. A site allowed (not always) holds for the whole run, through its
-  follow-ups.
+  A question shows in one place at a time (`route.ts`): on the card while
+  the panel is open, no sheet; while it is closed, the existing sheet (the
+  hand-over's banner for a hand-over), the chip amber and, the first time,
+  a notification ("Codex needs you · Use signin.localhost? · For “…”").
+  Opening the panel takes the sheet down; closing it unanswered puts the
+  sheet back up. The first answer, on the card or the sheet, settles it and
+  the other comes down; a later press counts for nothing. The same holds
+  for a website, a login, a hand-over, another permission and an action. A
+  payment has only dashi-secretd's fingerprint or password sheet (that is
+  the proof; the card's step reads "Paying …"). A site allowed (not
+  always) holds for the whole run, through its follow-ups.
 - **The empty launcher** lists up to three runs first, under **Agents**
   (waiting on the person, then working, then ended in the last hour): ↩
   opens its card in the panel, ⇥ turns the field into words to it ("Tell
