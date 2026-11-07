@@ -35,6 +35,12 @@ export interface AppOptions {
   title: string;
   size: Size;
   /**
+   * The smallest the person can make the window (LA-3): an app whose layout
+   * stops working below a size. The compositor stops a resize there; the
+   * zoom control still zooms, so the layout should grow with the window.
+   */
+  minSize?: Size;
+  /**
    * `unified` (the default) runs the content to the top edge with the
    * compositor's window controls over it, where the compositor can (Dashi's);
    * elsewhere, and with `standard`, the window has an ordinary title bar.
@@ -92,7 +98,17 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
   const titleBar: TitleBarStyle = process.env.MIRIN_METAL_TITLEBAR === "standard" ? "standard" : (options.titleBar ?? "unified");
   // The app's name for screen readers, whatever the window is titled later.
   const env = appNameEnv(options.title);
-  const host = spawnNativeHost(binary, { title: options.title, appId: options.id, width: size.width, height: size.height, titleBar, env, askToClose: true });
+  const least = options.minSize ? { minWidth: options.minSize.width, minHeight: options.minSize.height } : {};
+  const host = spawnNativeHost(binary, {
+    title: options.title,
+    appId: options.id,
+    width: size.width,
+    height: size.height,
+    ...least,
+    titleBar,
+    env,
+    askToClose: true,
+  });
   const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   const stopControl = serveControl(host, root);
   let open = true;

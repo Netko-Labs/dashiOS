@@ -1,84 +1,47 @@
 /**
- * What the Calculator's display shows: a number typed (as typed, grouped),
- * or a result rounded to the nine digits the display holds, grouped the
- * locale's way, in scientific notation when it is too large or too small for
- * those digits. And the other way: text pasted into the Calculator, read as
- * one number the locale's way (`parsePasted`).
- *
- * The engine keeps numbers with "." as the decimal point; only what is shown,
- * copied, and pasted uses the locale's marks (locale.ts).
+ * Numbers in and out of the Calculator. A result is written as the line
+ * writes numbers (grouped, the locale's decimal mark, "−" for minus,
+ * scientific notation past what 15 digits hold), so it reads back as the same
+ * number when the next sum starts from it. Copied, it loses the grouping
+ * (`copyNumber`). Pasted text is read as one number the locale's way
+ * (`parsePasted`), and refused when it can't be read without guessing.
  */
 
-import type { CalcState } from "./engine.ts";
-import { MAX_DIGITS } from "./engine.ts";
-import { EN_US, groupDigits, type NumberLocale } from "./locale.ts";
+import { MAX_DIGITS, render, type Token } from "./expression.ts";
+import { EN_US, groupDigits, type NumberLocale, numberMarks } from "./locale.ts";
 
-/** "1234.5" (engine spelling) → the locale's: "1,234.5", "1.234,5". The integer digits are grouped; the rest is kept. */
-function localize(plain: string, locale: NumberLocale): string {
-  const negative = plain.startsWith("-");
-  const body = negative ? plain.slice(1) : plain;
-  const dot = body.indexOf(".");
-  const whole = dot < 0 ? body : body.slice(0, dot);
-  const fraction = dot < 0 ? "" : `${locale.decimal}${body.slice(dot + 1)}`;
-  return `${negative ? "-" : ""}${groupDigits(whole || "0", locale)}${fraction}`;
-}
+/** At or past these, a result is written in scientific notation. */
+const LARGE = 1e15;
+const SMALL = 1e-6;
 
-/** A typed entry, kept as typed (trailing zeros, a trailing point) and grouped: "-1,234.50", "-1.234,50". */
-export function formatTyped(typed: string, locale: NumberLocale = EN_US): string {
-  return localize(typed, locale);
-}
-
-/** Scientific notation with up to `digits` significant digits, trailing zeros dropped: "1.234568e15". */
-function scientific(value: number, digits: number, locale: NumberLocale): string {
-  const [mantissa = "0", exponent = "0"] = value.toExponential(digits - 1).split("e");
-  const trimmed = mantissa.includes(".") ? mantissa.replace(/0+$/, "").replace(/\.$/, "") : mantissa;
-  return `${trimmed.replace(".", locale.decimal)}e${exponent.replace(/^\+/, "")}`;
-}
-
-/** A result, in at most `maxDigits` digits: "1,234,567.89", "0.33333333", "1.234568e15" (in the locale's marks). */
-export function formatNumber(value: number, locale: NumberLocale = EN_US, maxDigits: number = MAX_DIGITS): string {
-  if (!Number.isFinite(value)) return "Error";
-  if (value === 0) return "0";
+/** A number as tokens: a sign, then its digits ("−1234.5" → −, 1234.5; 1.2e21 → 1.2e21). */
+export function numberTokens(value: number): Token[] {
   const abs = Math.abs(value);
-  const whole = Math.floor(abs);
-  const wholeDigits = whole === 0 ? 1 : String(whole).length;
-  if (abs >= 10 ** maxDigits) return scientific(value, maxDigits - 2, locale);
-  const decimals = Math.max(0, maxDigits - wholeDigits);
-  let fixed = abs.toFixed(decimals);
-  // Rounding up can add a digit (999999999.6); a tiny number can round to nothing.
-  if (Number(fixed) >= 10 ** maxDigits) return scientific(value, maxDigits - 2, locale);
-  if (Number(fixed) === 0) return scientific(value, maxDigits - 3, locale);
-  if (fixed.includes(".")) fixed = fixed.replace(/0+$/, "").replace(/\.$/, "");
-  return localize(`${value < 0 ? "-" : ""}${fixed}`, locale);
+  let plain: string;
+  if (abs !== 0 && (abs >= LARGE || abs < SMALL)) {
+    // Ten significant digits, trailing zeros dropped: 1.234567891e21.
+    const [mantissa = "0", exponent = "0"] = abs.toExponential(9).split("e");
+    plain = `${mantissa.replace(/\.?0+$/, "")}e${exponent.replace(/^\+/, "")}`;
+  } else {
+    plain = String(Number(abs.toPrecision(MAX_DIGITS)));
+  }
+  const match = /^(\d+)(?:\.(\d+))?(e-?\d+)?$/.exec(plain);
+  const number: Token = { kind: "number", whole: match?.[1] ?? "0", fraction: match?.[2] ?? null, exponent: match?.[3] ?? "" };
+  return value < 0 ? [{ kind: "op", op: "−" }, number] : [number];
 }
 
-/** The display's text for a state. */
-export function displayText(state: CalcState, locale: NumberLocale = EN_US): string {
-  if (state.error) return "Error";
-  return state.typed !== null ? formatTyped(state.typed, locale) : formatNumber(state.value, locale);
+/** A result as the line and the tape show it: "1,234.5", "−0.33333333333333", "1.2e21" (in the locale's marks). */
+export function formatResult(value: number, locale: NumberLocale = EN_US): string {
+  return render(numberTokens(value), locale);
 }
 
 /**
- * The display's number as text for the clipboard: no grouping, the locale's
- * decimal mark ("1234.5", "1234,5", "1.2e+21"), so pasting it back, here or
- * in a spreadsheet set to the same region, reads the same number.
+ * A result for the clipboard: what is shown, without the grouping and with a
+ * plain minus ("1234.5", "1234,5", "-2"), so a spreadsheet set to the same
+ * region, or the Calculator, reads it back as the same number.
  */
-export function copyText(state: CalcState, locale: NumberLocale = EN_US): string {
-  if (state.error) return "";
-  const plain = state.typed !== null ? (state.typed === "-" ? "0" : state.typed.replace(/\.$/, "")) : String(Number(state.value.toPrecision(15)));
-  return plain.replace(".", locale.decimal);
-}
-
-/** Spaces and apostrophes group digits in some locales and are never a decimal mark in any. */
-const NEUTRAL_GROUPS = [" ", " ", " ", " ", "'", "’"];
-
-/** The marks a number may use in `locale`: its decimal marks, and the marks that group digits. */
-export function numberMarks(locale: NumberLocale): { decimals: ReadonlySet<string>; groups: ReadonlySet<string> } {
-  const groups = new Set([locale.group, ...NEUTRAL_GROUPS]);
-  groups.delete(locale.decimal);
-  // "." and "," both mean the decimal point unless one of them is the locale's grouping.
-  const decimals = new Set([locale.decimal, ...[".", ","].filter((mark) => !groups.has(mark))]);
-  return { decimals, groups };
+export function copyNumber(value: number, locale: NumberLocale = EN_US): string {
+  return render(numberTokens(value), locale, false).replace("−", "-");
 }
 
 /** Whether the locale groups by two after the first three (en-IN's 12,34,567). */
@@ -101,10 +64,10 @@ function ungroup(whole: string, groups: ReadonlySet<string>, locale: NumberLocal
 }
 
 /** One run of text that looks like a number: a sign, digits with marks between them, an exponent. */
-const NUMBER_RUN = /[-+]?(?:\d|[.,٫]\d)(?:[\d.,٫'’    ]*\d)?(?:[eE][-+]?\d+)?/g;
+const NUMBER_RUN = /[-+]?(?:\d|[.,٫]\d)(?:[\d.,٫'’\u00a0\u202f\u2009 ]*\d)?(?:[eE][-+]?\d+)?/g;
 
 /** A number run (from `NUMBER_RUN`) read the locale's way, or null. */
-function readRun(run: string, locale: NumberLocale): number | null {
+export function readNumber(run: string, locale: NumberLocale = EN_US): number | null {
   const { decimals, groups } = numberMarks(locale);
   const exponentAt = run.search(/[eE]/);
   const mantissa = exponentAt < 0 ? run : run.slice(0, exponentAt);
@@ -135,19 +98,23 @@ export function parsePasted(text: string, locale: NumberLocale = EN_US): number 
   const normalized = text.replace(/[−–]/g, "-").trim();
   const runs = normalized.match(NUMBER_RUN) ?? [];
   if (runs.length !== 1) return null;
-  return readRun(runs[0] as string, locale);
+  return readNumber(runs[0] as string, locale);
 }
 
-/** Characters that take less room than a digit: the marks and narrow spaces. */
-const NARROW = new Set([",", ".", "٫", "'", "’", " ", " ", " ", " "]);
+/** Characters that take less room than a digit: the marks, brackets and narrow spaces. */
+const NARROW = new Set([",", ".", "٫", "'", "’", " ", "\u00a0", "\u202f", "\u2009", "(", ")"]);
+
+/** About how many ems `text` takes in Inter: a digit or an operator a little over half an em, the marks a third. */
+export function textEms(text: string): number {
+  return [...text].reduce((sum, char) => sum + (NARROW.has(char) ? 0.3 : 0.62), 0);
+}
 
 /**
- * The display's font size for `text` in a display `width` px wide: large, then
- * smaller as digits are added, so a full display still fits.
+ * The font size for `text` in a box `width` px wide: `largest`, then smaller
+ * as the text grows, so it fits, down to `smallest` (the line then scrolls).
  */
-export function displayFontSize(text: string, width: number, largest = 52, smallest = 22): number {
-  // Inter's digits average a little over half an em; separators and narrow spaces about a third.
-  const ems = [...text].reduce((sum, char) => sum + (NARROW.has(char) ? 0.3 : 0.6), 0);
+export function fitFontSize(text: string, width: number, largest: number, smallest: number): number {
+  const ems = textEms(text);
   if (ems === 0) return largest;
   return Math.max(smallest, Math.min(largest, Math.floor(width / ems)));
 }

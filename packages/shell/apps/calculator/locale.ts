@@ -62,6 +62,18 @@ export function groupDigits(digits: string, locale: NumberLocale): string {
   return integerFormat(locale.tag).format(BigInt(digits));
 }
 
+/** Spaces and apostrophes group digits in some locales and are never a decimal mark in any. */
+const NEUTRAL_GROUPS = ["\u00a0", "\u202f", "\u2009", "'", "’"];
+
+/** The marks a number may use in `locale`: its decimal marks, and the marks that group digits. */
+export function numberMarks(locale: NumberLocale): { decimals: ReadonlySet<string>; groups: ReadonlySet<string> } {
+  const groups = new Set([locale.group, ...NEUTRAL_GROUPS]);
+  groups.delete(locale.decimal);
+  // "." and "," both mean the decimal point unless one of them is the locale's grouping.
+  const decimals = new Set([locale.decimal, ...[".", ","].filter((mark) => !groups.has(mark))]);
+  return { decimals, groups };
+}
+
 /** The locale named by the person's settings or the environment, as a BCP 47 tag; en-US when none is. */
 export function numberLocaleTag(formats: string | undefined, env: Readonly<Record<string, string | undefined>> = process.env): string {
   const named = formats ?? localeFromEnv(env, "LC_NUMERIC");

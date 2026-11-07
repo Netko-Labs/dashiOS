@@ -38,7 +38,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Editor's document surface with versioned autosave (L)
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
 - [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
-- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+- [x] Calculator's expression line and tape; a window size that behaves (M; LA-3; `feat/0.5-calculator`, mirin: `mirin-calculator.patch` (minSize, setSize), VM: not yet)
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
