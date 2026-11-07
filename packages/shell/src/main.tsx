@@ -612,6 +612,8 @@ const dock = new DockController({
   openDockSettings: () => settingsApp.open("desktop-dock"),
   onPress: () => void overview?.leave(),
   opened: (appId) => rankingMemory.opened(appId),
+  // Quit in an icon's menu asks as ❖Q does: "Quit Terminal?" (kit/close.ts).
+  appQuitting,
 });
 // What keeps the computer awake (inhibit/): the portal's Inhibit, through dashi-portal, and
 // org.freedesktop.ScreenSaver; idle neither blanks nor sleeps while an app holds it, and an app

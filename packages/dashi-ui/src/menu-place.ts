@@ -44,3 +44,16 @@ function axis(start: number, length: number, room: number, flip: boolean): numbe
   if (flip && start - length >= MENU.margin) return start - length;
   return Math.max(MENU.margin, last - length);
 }
+
+/**
+ * The row ↑ (`step` -1) or ↓ (1) lights next among the rows that can be
+ * picked (`usable`): the next one that way, stopping at the ends; from no
+ * row, ↓ lights the first and ↑ the last, as on the Mac.
+ */
+export function litAfter(usable: readonly boolean[], lit: number | null, step: -1 | 1): number | null {
+  const picks = usable.flatMap((ok, row) => (ok ? [row] : []));
+  if (picks.length === 0) return null;
+  if (lit === null) return (step > 0 ? picks[0] : picks.at(-1)) ?? null;
+  const ahead = step > 0 ? picks.find((row) => row > lit) : picks.findLast((row) => row < lit);
+  return ahead ?? lit;
+}

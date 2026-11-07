@@ -224,12 +224,18 @@ const GROUPS: ReadonlyArray<[RowGroup, string]> = [
   ["menu", "Menus"],
 ];
 
-/** The instant rows, grouped: one untitled run for one kind, else Top hit, then each kind under its head. */
+/**
+ * The instant rows, grouped: one untitled run for one kind, else Top hit,
+ * then each kind under its head, the top hit's own kind first, so what came
+ * with it stays by it ("screenshot": Screenshot…, then the other two
+ * screenshots, then the Settings row that also answers to the word).
+ */
 function grouped(rows: Row[]): Section[] {
   if (new Set(rows.map((row) => row.group ?? "other")).size < 2) return rows.length > 0 ? [{ id: "results", rows }] : [];
   const [top, ...rest] = rows as [Row, ...Row[]];
   const sections: Section[] = [{ id: "top", title: "Top hit", rows: [top] }];
-  for (const [group, title] of GROUPS) {
+  const order = [...GROUPS.filter(([group]) => group === top.group), ...GROUPS.filter(([group]) => group !== top.group)];
+  for (const [group, title] of order) {
     const ofKind = rest.filter((row) => row.group === group);
     // The ids stay what wave 1 named them ("App", "Settings").
     if (ofKind.length > 0) sections.push({ id: group === "app" ? "App" : group === "settings" ? "Settings" : group, title, rows: ofKind });

@@ -35,6 +35,12 @@ export interface DockControllerDeps {
   onPress?(): void;
   /** An app was opened or brought forward from the Dock: the launcher's ranking counts it (launcher/ranking/). */
   opened?(appId: string): void;
+  /**
+   * Quit is about to ask a window of process `pid` to close: its app hears it
+   * quits first (app-menus, kit/close.ts), so a question it asks is the app's
+   * ("Quit Terminal?"), not the close control's ("Close this window?").
+   */
+  appQuitting?(pid: number | null): void;
   graceMs?: number;
 }
 
@@ -107,9 +113,15 @@ export class DockController {
         if (app) this.open(app);
         return;
       }
-      case "quit":
-        for (const window of action.windows) deps.toplevels.act(window, "close");
+      case "quit": {
+        // Each app hears it quits before its window is asked (one window per Dashi app process).
+        const listed = deps.appQuitting ? await (deps.compositor?.windows() ?? Promise.resolve([])).catch(() => []) : [];
+        for (const window of action.windows) {
+          deps.appQuitting?.(listed.find((each) => each.id === window)?.pid ?? null);
+          deps.toplevels.act(window, "close");
+        }
         return;
+      }
       case "dock-prefs":
         return deps.prefs?.set(action.change);
       case "dock-settings":
