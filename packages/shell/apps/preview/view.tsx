@@ -1,204 +1,147 @@
 /**
- * Preview's window: the toolbar, the picture area, the PDF's page strip, and
- * the sheets. The state that is slow (files, tools) is the Viewer's; what
- * lives here is how the picture is looked at: the zoom, the pan, which sheet
- * is up, and the keys. A file dropped anywhere on the window opens in it
- * (drop.ts); with no file open, the window offers only that and Open….
+ * Preview's window: the toolbar, the page strip in the sidebar, the picture
+ * or the PDF's scrolling pages, and the sheets. The state that is slow
+ * (files, tools) is the Viewer's; what lives here is how it is looked at
+ * (picture-view.ts, document.ts), which sheet is up, and the keys (keys.ts).
+ * A file dropped anywhere on the window opens in it (drop.ts); with no file
+ * open, the window offers only that, Open… and the recent files.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, type KeyInput, KeySink, Loading, type MenuItem, Notice, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, LOADING_DELAY_MS, Loading, type MenuItem, PopupMenu, Spinner, useColors, useShownAfter, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { chooseFile } from "../../src/portal/file-chooser.ts";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { type Clipboard, systemClipboard, useAppMenus } from "../kit/index.ts";
+import { cacheRoot } from "./cache.ts";
 import { Canvas } from "./canvas.tsx";
+import * as commands from "./commands.ts";
 import { DETAIL_SIZE, detailChoices, fitDetail } from "./detail.ts";
-import type { Size } from "./dimensions.ts";
+import { LINE_PX, PDF_UNIT, useDocument } from "./document.ts";
 import { useDropArea } from "./drop.ts";
 import { foldTools, MEASURES, toolWidths } from "./fold.ts";
-import * as glyphs from "./glyphs.ts";
-import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";
-import { factsFor } from "./info.ts";
-import { FORMATS } from "./kinds.ts";
+import { type KeyAction, keyAction } from "./keys.ts";
 import { previewMenus } from "./menus.ts";
-import { type InfoRow, InfoSheet, imageRows, infoRows, MessageSheet, OpenWithSheet } from "./sheets.tsx";
-import { Thumbnails } from "./thumbnails.tsx";
+import { exportFormats } from "./output.ts";
+import { PreviewSheet, type SheetState } from "./overlay.tsx";
+import { usePictureView } from "./picture-view.ts";
+import { EmptyView, ErrorView } from "./states.tsx";
+import { Strip, type StripItem } from "./strip.tsx";
+import { DocumentSurface } from "./surface.tsx";
 import { foldedItems, PreviewToolbar, type ToolbarProps } from "./toolbar.tsx";
 import type { Viewer } from "./viewer.ts";
-import { clampPan, FIT, fitScale, type Pan, panAfterZoom, percent, scaled, scaleOf, turned, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
+import { FIT, percent, turned } from "./zoom.ts";
 
 export const PREVIEW_SIZE = { width: 1000, height: 700 } as const;
-const SELF_ID = "dev.dashi.preview.desktop";
-/** What File > Open… lists: every kind Preview names (the viewer checks the bytes). */
-const OPENABLE = [...new Set(Object.values(FORMATS).map((format) => format.mime))];
-/** A PDF's "100%" is the screen's 96 dpi: a point is 4/3 of a logical pixel. */
-const PDF_UNIT = 96 / 72;
+/** Work goes unshown this long (PA-5); past it, a spinner in the toolbar says Preview is on it. */
+const BUSY_DELAY_MS = LOADING_DELAY_MS;
 
-type SheetState =
-  | { kind: "info" }
-  | { kind: "open-with"; handlers: Handler[] | null }
-  | { kind: "trash" }
-  | { kind: "message"; title: string; message: string }
-  | null;
-
-export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard?: Clipboard }) {
+export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer; clipboard?: Clipboard; cacheDir?: string }) {
   const colors = useColors();
+  const surface = useSurface();
   const [board] = useState<Clipboard>(() => clipboard ?? systemClipboard());
   const snap = useSyncExternalStore(viewer.subscribe, viewer.getSnapshot);
-  const [mode, setMode] = useState<ZoomMode>(FIT);
-  const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
-  const [area, setArea] = useState<Size>({ width: 0, height: 0 });
   const [sheet, setSheet] = useState<SheetState>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [thumbnails, setThumbnails] = useState(true);
-  const [dismissedNote, setDismissedNote] = useState<string | null>(null);
+  const [sidebar, setSidebar] = useState(true);
+  const [working, setWorking] = useState(0);
 
   const { picture, pdf } = snap;
   const isPdf = snap.kind === "pdf";
-  const unit = isPdf ? PDF_UNIT : 1;
-  const fitted = picture ? fitScale(picture, area, isPdf) : 1;
-  const scale = scaleOf(mode, fitted);
+  const pictureView = usePictureView(picture, snap.path, snap.turns);
+  const doc = useDocument(viewer, pdf, snap.turns, snap.path);
+  const hasPicture = picture !== null || (pdf !== null && snap.phase === "ready");
 
-  // A different file starts fitted and centred; a different page keeps the zoom.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a different file resets the zoom and the pan
-  useEffect(() => {
-    setMode(FIT);
-    setPan({ x: 0, y: 0 });
-  }, [snap.path]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a different page or turn re-centres
-  useEffect(() => {
-    setPan({ x: 0, y: 0 });
-  }, [pdf?.page, snap.turns]);
-
-  // A PDF page is drawn again when the zoom would make it soft, once the zoom settles.
-  useEffect(() => {
-    if (!isPdf || area.width === 0) return undefined;
-    const timer = setTimeout(() => void viewer.wantScale(scale), 220);
-    return () => clearTimeout(timer);
-  }, [isPdf, scale, area.width, viewer]);
-
-  // Keys can arrive several at once (a run of "+"): each must see the zoom the one before it made.
-  const live = useRef({ scale, pan, fitted, area, picture });
-  live.current = { scale, pan, fitted, area, picture };
-  const zoomTo = (next: ZoomMode): void => {
-    const was = live.current;
-    const to = scaleOf(next, was.fitted);
-    const settled = was.picture ? clampPan(panAfterZoom(was.pan, was.scale, to), scaled(was.picture, to), was.area) : { x: 0, y: 0 };
-    live.current = { ...was, scale: to, pan: settled };
-    setMode(next);
-    setPan(settled);
-  };
-  const stepZoom = (direction: 1 | -1): void => {
-    const now = live.current.scale / unit;
-    zoomTo({ kind: "scale", scale: (direction > 0 ? zoomIn(now) : zoomOut(now)) * unit });
+  const say = (title: string, message: string): void => setSheet({ kind: "message", title, message });
+  const hooks: commands.CommandHooks = {
+    viewer,
+    board,
+    root: cacheDir ?? cacheRoot(),
+    say,
+    working: (on) => setWorking((now) => Math.max(0, now + (on ? 1 : -1))),
   };
 
+  // Moving: a PDF's pages, or the folder's pictures.
   const step = (delta: 1 | -1): void => {
-    if (pdf) void viewer.goToPage(pdf.page + delta);
+    if (pdf) doc.goToPage(doc.page + delta);
     else void viewer.step(delta);
   };
-  const canPrevious = pdf ? pdf.page > 1 : snap.folder.previous !== null;
-  const canNext = pdf ? pdf.page < pdf.pages : snap.folder.next !== null;
+  const canPrevious = pdf ? doc.page > 1 : snap.folder.previous !== null;
+  const canNext = pdf ? doc.page < pdf.pages : snap.folder.next !== null;
 
-  const message = (title: string, text: string): void => setSheet({ kind: "message", title, message: text });
-  const showInfo = (): void => {
-    if (picture) setSheet({ kind: "info" });
+  // Zooming, the same words for both.
+  const zoom = {
+    in: () => (pdf ? doc.stepZoom(1) : pictureView.stepZoom(1)),
+    out: () => (pdf ? doc.stepZoom(-1) : pictureView.stepZoom(-1)),
+    fit: () => (pdf ? doc.zoomTo({ kind: "fit" }) : pictureView.zoomTo(FIT)),
+    actual: () => (pdf ? doc.zoomTo({ kind: "scale", scale: PDF_UNIT }) : pictureView.zoomTo({ kind: "scale", scale: 1 })),
+    width: () => doc.zoomTo({ kind: "width" }),
   };
-  // File > Open…: the desktop's file chooser; the chosen file takes this window's place.
-  const openFile = (): void => {
-    void chooseFile({ title: "Open", filter: { name: "Images and PDFs", types: OPENABLE }, accept: () => true })
-      .then((path) => {
-        if (path) void viewer.open(path);
-      })
-      .catch(() => message("The file chooser isn’t available", "Open the file with Preview from Files, or with gio open."));
+  const zoomLabel = pdf ? percent(doc.scale / PDF_UNIT) : picture ? percent(pictureView.scale) : "";
+
+  const showInfo = (): void => {
+    if (hasPicture) setSheet({ kind: "info" });
   };
   const openWithSheet = (): void => {
     if (!snap.path || !snap.format) return;
     setSheet({ kind: "open-with", handlers: null });
-    void handlersFor(FORMATS[snap.format].mime, [SELF_ID]).then((handlers) =>
-      setSheet((now) => (now?.kind === "open-with" ? { kind: "open-with", handlers } : now)),
-    );
+    void commands.appsFor(snap).then((handlers) => setSheet((now) => (now?.kind === "open-with" ? { kind: "open-with", handlers } : now)));
   };
-  const reveal = (): void => {
-    if (!snap.path) return;
-    void showInFiles(snap.folder.dir).then(
-      (ok) => ok || message("Files could not be opened", "No file manager answered. Install one, or open the folder yourself."),
-    );
-  };
-  const saveCopy = (): void => {
-    void viewer
-      .saveTurnedCopy()
-      .then((result) => ("saved" in result ? message("Copy saved", `“${result.saved}” is next to the original.`) : message("Not saved", result.error)));
-  };
-  const copyPath = (): void => {
-    if (!snap.path) return;
-    void board.writeText(snap.path).then((ok) => ok || message("Not copied", "The clipboard could not be written. Is wl-clipboard installed?"));
-  };
-  const trash = (): void => {
-    const { path } = snap;
-    if (!path) return;
-    const next = snap.folder.next ?? snap.folder.previous;
-    setSheet(null);
-    void moveToTrash(path).then((error) => {
-      if (error !== null) return message("Could not move to the Trash", error);
-      if (next && !pdf) void viewer.open(`${snap.folder.dir}/${next}`);
-      else viewer.clear();
-      return undefined;
-    });
+  const formats = exportFormats(snap.kind, snap.format, commands.toolsOf(snap));
+  const canPrint = commands.sourceOf(snap) !== null && (isPdf || snap.tools.magick) && formats.length > 0;
+  const actions = {
+    open: () => commands.openFile(hooks),
+    openRecent: (path: string) => void viewer.open(path),
+    clearRecents: () => viewer.forgetRecents(),
+    openWith: openWithSheet,
+    showInFiles: () => snap.path && commands.reveal(hooks, snap.folder.dir || snap.facts?.folder || ""),
+    exportFile: () => formats.length > 0 && setSheet({ kind: "export", formats }),
+    print: () => void commands.print(hooks, snap, (printer, file) => setSheet({ kind: "print-cups", printer, pdf: file })),
+    info: showInfo,
+    trash: () => snap.path && setSheet({ kind: "trash" }),
+    copy: () => void commands.copy(hooks, snap, doc.range ? doc.copyText : null, doc.page),
+    selectAll: () => doc.selectAll(),
+    copyPath: () => commands.copyPath(hooks, snap.path),
+    actualSize: zoom.actual,
+    zoomIn: zoom.in,
+    zoomOut: zoom.out,
+    zoomToFit: zoom.fit,
+    zoomToWidth: zoom.width,
+    toggleSidebar: () => setSidebar((now) => !now),
+    rotate: (direction: 1 | -1) => void viewer.rotate(direction),
+    step,
   };
 
-  const onKey = (key: KeyInput): void => {
-    if (key.kind === "up") step(-1);
-    else if (key.kind === "down") step(1);
-    else if (key.kind === "backspace" && snap.path) setSheet({ kind: "trash" });
-    else if (key.kind === "text") {
-      for (const char of key.text) {
-        if (char === "+" || char === "=") stepZoom(1);
-        else if (char === "-" || char === "_") stepZoom(-1);
-        else if (char === "0") zoomTo(FIT);
-        else if (char === "1") zoomTo({ kind: "scale", scale: unit });
-        else if (char === "r" || char === "R") void viewer.rotate(1);
-        else if (char === "l" || char === "L") void viewer.rotate(-1);
-        else if (char === "i" || char === "I") showInfo();
-        else if (char === "o" || char === "O") openWithSheet();
-        else if (char === "f" || char === "F") reveal();
-        else if (char === "." || char === ">") step(1);
-        else if (char === "," || char === "<") step(-1);
-      }
+  const onKey = (action: KeyAction): void => {
+    switch (action.kind) {
+      case "scroll":
+        return doc.scrollBy(0, action.direction * (action.by === "line" ? 2 * LINE_PX : Math.max(40, doc.area.height - 40)));
+      case "end":
+        return doc.scrollToTop(action.direction < 0 ? 0 : Number.MAX_SAFE_INTEGER);
+      case "step":
+        return step(action.direction);
+      case "trash":
+        actions.trash();
+        return;
+      case "unselect":
+        return doc.select(null);
     }
   };
 
   // The menu bar's menus (src/app-menus/), with the keys they show.
-  const canSaveCopy = snap.canSave && (snap.turns !== 0 || snap.exifTurn);
   const { menus, run } = previewMenus({
     hasFile: snap.path !== null,
-    hasPicture: picture !== null,
+    hasPicture,
     isPdf,
     canTurn: snap.canTurn,
-    canSaveCopy,
     canPrevious,
     canNext,
     canCopy: board.canWrite,
-    thumbnails,
+    hasSelection: doc.range !== null,
+    canExport: formats.length > 0,
+    canPrint,
+    sidebar,
+    recents: snap.recents.map((recent) => recent.path),
     blocked: sheet !== null || menu !== null,
-    actions: {
-      open: openFile,
-      openWith: openWithSheet,
-      showInFiles: reveal,
-      info: showInfo,
-      saveCopy,
-      trash: () => {
-        if (snap.path) setSheet({ kind: "trash" });
-      },
-      copyPath,
-      actualSize: () => zoomTo({ kind: "scale", scale: unit }),
-      zoomIn: () => stepZoom(1),
-      zoomOut: () => stepZoom(-1),
-      zoomToFit: () => zoomTo(FIT),
-      toggleThumbnails: () => setThumbnails((now) => !now),
-      rotate: (direction) => void viewer.rotate(direction),
-      step,
-    },
+    actions,
   });
   useAppMenus(menus, run);
 
@@ -207,82 +150,92 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     canNext,
     onPrevious: () => step(-1),
     onNext: () => step(1),
-    position: pdf ? `${pdf.page} / ${pdf.pages}` : null,
-    zoomLabel: picture ? percent(scale / unit) : "",
-    onZoomOut: () => stepZoom(-1),
-    onZoomIn: () => stepZoom(1),
-    onFit: () => zoomTo(FIT),
-    onActual: () => zoomTo({ kind: "scale", scale: unit }),
+    position: pdf ? `${doc.page} / ${pdf.pages}` : null,
+    zoomLabel,
+    onZoomOut: zoom.out,
+    onZoomIn: zoom.in,
+    onFit: zoom.fit,
+    onActual: zoom.actual,
     canTurn: snap.canTurn,
-    onTurnLeft: () => void viewer.rotate(-1),
-    onTurnRight: () => void viewer.rotate(1),
+    onTurnLeft: () => actions.rotate(-1),
+    onTurnRight: () => actions.rotate(1),
     onInfo: showInfo,
-    onMore: (bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) - 120, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 }),
+    // Hung from "…"'s right edge (the menu keeps itself in the window).
+    onMore: (bounds) => setMenu({ x: Math.max((bounds?.x ?? 0) + (bounds?.width ?? 32) - 220, 8), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 }),
     hasFile: snap.path !== null,
-    hasPicture: picture !== null,
+    hasPicture,
+    unit: isPdf ? "Page" : "Image",
   };
   // The toolbar's room, measured: what doesn't fit folds into "…", the least important first, never cut at the edge (fold.ts).
   const [room, setRoom] = useState<number | null>(null);
-  const fold = foldTools(room, toolWidths({ position: toolbarProps.position, zoomLevel: toolbarProps.zoomLabel || null }));
+  const fold = foldTools(room, toolWidths({ position: toolbarProps.position, zoomLevel: zoomLabel || null }));
+  const busy = useShownAfter(snap.busy || working > 0 || pdf?.working === true, BUSY_DELAY_MS);
 
   const moreItems: MenuItem[] = [
-    ...foldedItems(fold.folded, toolbarProps, isPdf ? "Page" : "Image"),
+    ...foldedItems(fold.folded, toolbarProps),
     { label: "Open With…", onPress: openWithSheet, disabled: !snap.path || !snap.format },
-    { label: "Show in Files", onPress: reveal, disabled: !snap.path },
-    { label: "Save Turned Copy", onPress: saveCopy, disabled: !canSaveCopy },
-    { label: "Move to Trash…", onPress: () => setSheet({ kind: "trash" }), disabled: !snap.path },
+    { label: "Show in Files", onPress: () => actions.showInFiles(), disabled: !snap.path },
+    { label: "Export…", keys: "⇧❖E", onPress: () => actions.exportFile(), disabled: formats.length === 0 || !hasPicture },
+    { label: "Print…", keys: "❖P", onPress: actions.print, disabled: !canPrint || !hasPicture },
+    { label: "Move to Trash…", keys: "⌫", onPress: () => setSheet({ kind: "trash" }), disabled: !snap.path },
   ];
 
   // The picture's size and place in its folder: a quiet line in the toolbar row, not a second line under the title.
   // A narrow window drops the folder place before it would cut the size (detail.ts).
+  const pdfPages = pdf?.pages ?? null;
+  const pdfTitle = pdf?.title ?? null;
   const detailChoicesNow = useMemo(() => {
     if (!snap.path) return [];
     return detailChoices({
       size: snap.natural ? turned(snap.natural, snap.turns) : null,
       folder: { index: snap.folder.index, count: snap.folder.count },
-      pdf: pdf ? { pages: pdf.pages, title: pdf.title ?? null } : null,
+      pdf: pdfPages !== null ? { pages: pdfPages, title: pdfTitle } : null,
     });
-  }, [snap.path, snap.natural, snap.turns, snap.folder.index, snap.folder.count, pdf]);
-  // The words get what the tools leave; they give way before any tool folds.
-  const detail = fitDetail(detailChoicesNow, room === null ? 0 : room - fold.width - MEASURES.gap);
+  }, [snap.path, snap.natural, snap.turns, snap.folder.index, snap.folder.count, pdfPages, pdfTitle]);
+  // The words get what the tools (and the spinner) leave; they give way before any tool folds.
+  const detail = fitDetail(detailChoicesNow, room === null ? 0 : room - fold.width - MEASURES.gap - (busy ? 16 + MEASURES.gap : 0));
 
-  const facts = snap.path ? factsFor(snap.path, snap.format) : null;
-  const extraRows: InfoRow[] = pdf
-    ? [
-        ["Pages", String(pdf.pages)],
-        ...(pdf.title ? ([["Title", pdf.title]] as InfoRow[]) : []),
-        ...(picture ? ([["Page size", `${Math.round(picture.width)} × ${Math.round(picture.height)} pt`]] as InfoRow[]) : []),
-      ]
-    : snap.natural
-      ? imageRows(snap.natural.width, snap.natural.height, snap.turns)
-      : [];
+  // The page strip: a PDF's pages, or the pictures in the open one's folder.
+  const pdfItems = useMemo<StripItem[]>(
+    () =>
+      pdf
+        ? pdf.sizes.map((size, index) => ({
+            key: String(index + 1),
+            label: String(index + 1),
+            source: pdf.thumbs.get(index + 1) ?? null,
+            shape: size.height / size.width,
+          }))
+        : [],
+    [pdf],
+  );
+  const folderItems = useMemo<StripItem[]>(
+    () => snap.folder.files.map((name) => ({ key: name, label: name, source: snap.folderThumbs.get(name) ?? null, shape: 0.75 })),
+    [snap.folder.files, snap.folderThumbs],
+  );
+  const strip = pdf ? (
+    <Strip
+      testID="strip"
+      items={pdfItems}
+      current={doc.page - 1}
+      onPick={(index) => doc.goToPage(index + 1)}
+      onVisible={(rows) => doc.setStripPages(rows.map((row) => row + 1))}
+    />
+  ) : snap.kind === "image" && snap.folder.count > 1 ? (
+    <Strip
+      testID="strip"
+      items={folderItems}
+      current={snap.folder.index}
+      onPick={(index) => {
+        const name = snap.folder.files[index];
+        if (name) void viewer.openSibling(name);
+      }}
+      onVisible={(rows) => viewer.wantFolderThumbs(rows.map((row) => snap.folder.files[row]).filter((name): name is string => name !== undefined))}
+    />
+  ) : null;
+
   const overlay =
-    sheet?.kind === "info" && facts ? (
-      <InfoSheet rows={infoRows(facts, extraRows)} onClose={() => setSheet(null)} />
-    ) : sheet?.kind === "open-with" ? (
-      <OpenWithSheet
-        handlers={sheet.handlers ?? []}
-        loading={sheet.handlers === null}
-        onClose={() => setSheet(null)}
-        onPick={(handler) => {
-          setSheet(null);
-          if (snap.path)
-            void openWith(handler, snap.path).then((ok) => ok || message(`${handler.name} did not open it`, "The app could not be started with this file."));
-        }}
-      />
-    ) : sheet?.kind === "trash" ? (
-      <ConfirmSheet
-        testID="trash"
-        title={`Move “${snap.name}” to the Trash?`}
-        message="You can put it back from the Trash."
-        confirmLabel="Move to Trash"
-        glyph={glyphs.TRASH}
-        danger
-        onCancel={() => setSheet(null)}
-        onConfirm={trash}
-      />
-    ) : sheet?.kind === "message" ? (
-      <MessageSheet title={sheet.title} message={sheet.message} onClose={() => setSheet(null)} />
+    sheet !== null ? (
+      <PreviewSheet sheet={sheet} snap={snap} page={doc.page} hooks={hooks} onClose={() => setSheet(null)} />
     ) : menu ? (
       <PopupMenu testID="more-menu" x={menu.x} y={menu.y} items={moreItems} onClose={() => setMenu(null)} />
     ) : undefined;
@@ -293,24 +246,26 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
     void viewer.open(path);
   });
 
-  const content = picture ? (
-    <Canvas picture={picture} scale={scale} pan={pan} onPan={setPan} onArea={setArea} area={area} />
-  ) : snap.phase === "error" ? (
-    <EmptyState testID="error" title="This file can’t be shown" message={snap.error ?? undefined} glyph={isPdf ? glyphs.DOCUMENT : glyphs.PICTURE} />
-  ) : snap.phase === "loading" ? (
-    <Loading testID="loading" label="Opening…" />
-  ) : (
-    <EmptyState
-      testID="empty"
-      title="No file open"
-      message="Drop an image or a PDF here, or choose one."
-      glyph={glyphs.PICTURE}
-      action={<Button testID="open" label="Open…" primary onPress={openFile} />}
-    />
-  );
-
-  // A note about how the picture is shown floats over it until dismissed, instead of a bar under it.
-  const notice = snap.note && snap.note !== dismissedNote ? <Notice testID="note" text={snap.note} onDismiss={() => setDismissedNote(snap.note)} /> : undefined;
+  const content =
+    pdf && snap.phase === "ready" ? (
+      <DocumentSurface pdf={pdf} doc={doc} turns={snap.turns} ground={surface.canvas} />
+    ) : picture ? (
+      <Canvas
+        picture={picture}
+        scale={pictureView.scale}
+        pan={pictureView.pan}
+        onPan={pictureView.setPan}
+        onArea={pictureView.setArea}
+        area={pictureView.area}
+        ground={surface.canvas}
+      />
+    ) : snap.phase === "error" ? (
+      <ErrorView name={snap.name} message={snap.error ?? ""} onOpenWith={snap.format ? openWithSheet : null} onOpen={actions.open} />
+    ) : snap.phase === "loading" ? (
+      <Loading testID="loading" label={`Opening “${snap.name}”…`} />
+    ) : (
+      <EmptyView recents={snap.recents} onOpen={actions.open} onRecent={actions.openRecent} />
+    );
 
   return (
     <AppWindow
@@ -324,6 +279,7 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
           onLayout={(bounds) => setRoom(bounds.width)}
           style={{ flex: 100, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: MEASURES.gap }}
         >
+          {busy && <Spinner testID="busy" size={16} />}
           {detail !== null && (
             <View testID="detail" style={{ flexShrink: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
@@ -334,13 +290,24 @@ export function PreviewWindow({ viewer, clipboard }: { viewer: Viewer; clipboard
           <PreviewToolbar {...toolbarProps} shown={fold.shown} />
         </View>
       }
-      sidebar={pdf && thumbnails ? <Thumbnails pdf={pdf} pageSize={viewer.firstPageSize} onPage={(page) => void viewer.goToPage(page)} /> : undefined}
-      sidebarWidth={190}
-      notice={notice}
+      sidebar={strip && sidebar ? strip : undefined}
       overlay={overlay}
     >
-      {sheet === null && menu === null && <KeySink testID="keys" onKey={onKey} />}
-      <View testID="drop-area" onDrop={drop.onDrop} style={{ flex: 1, flexDirection: "column", minHeight: 0, minWidth: 0, position: "relative" }}>
+      {sheet === null && menu === null && (
+        <View
+          testID="keys"
+          onWindowKeyDown={(key) => {
+            const action = keyAction(key, isPdf);
+            if (action) onKey(action);
+          }}
+          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+        />
+      )}
+      <View
+        testID="drop-area"
+        onDrop={drop.onDrop}
+        style={{ flex: 1, flexDirection: "column", minHeight: 0, minWidth: 0, position: "relative", backgroundColor: surface.canvas }}
+      >
         {content}
         {drop.over && (
           <View

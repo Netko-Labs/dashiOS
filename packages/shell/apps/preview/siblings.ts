@@ -1,14 +1,11 @@
 /**
  * The images beside the one that is open: the folder's files in the order a
  * person reads them (img2 before img10), and the neighbours of the open one.
+ * The folder is listed by folder.ts, off the UI thread.
  */
 
-import { readdirSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { join } from "node:path";
 import { type Kind, kindOf } from "./kinds.ts";
-
-/** A folder this large is listed up to here; the rest is not reachable with the arrow keys. */
-const MAX_ENTRIES = 20_000;
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -35,19 +32,6 @@ export function neighbours(ordered: readonly string[], current: string): Neighbo
   const index = ordered.indexOf(current);
   if (index < 0) return { index: -1, count: ordered.length, previous: null, next: null };
   return { index, count: ordered.length, previous: ordered[index - 1] ?? null, next: ordered[index + 1] ?? null };
-}
-
-/** Read the folder of `path` and say who its neighbours are. Failures (a vanished or unreadable folder) mean no neighbours. */
-export function siblingsOf(path: string, kind: Kind): Neighbours & { dir: string; files: string[] } {
-  const dir = dirname(path);
-  let names: string[] = [];
-  try {
-    names = readdirSync(dir).slice(0, MAX_ENTRIES);
-  } catch {
-    // No listing: just this file.
-  }
-  const files = orderSiblings(names, kind);
-  return { dir, files, ...neighbours(files, basename(path)) };
 }
 
 /** The full path of a sibling name. */

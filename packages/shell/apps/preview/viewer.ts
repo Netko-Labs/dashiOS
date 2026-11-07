@@ -1,131 +1,72 @@
 /**
  * The viewer's state and everything slow it does: reading a file's header,
- * preparing a picture Metal can draw (converting or turning it with
- * ImageMagick when it must), asking poppler for a PDF's pages and
- * thumbnails, and moving through the folder. The window (view.tsx) only
- * subscribes to `getSnapshot()` and calls these methods.
+ * preparing a picture Metal can draw (converting or rotating it with
+ * ImageMagick when it must), reading a PDF's pages (pdf-doc.ts makes them as
+ * they come near the screen), and the open picture's folder (folder.ts). The
+ * window (view.tsx) only subscribes to `getSnapshot()` and calls these
+ * methods.
  *
  * Every open is a new generation: work that finishes for an older one is
- * dropped, so a quick run of arrow presses never paints a stale picture.
+ * dropped, so a quick run of arrow presses never paints a stale picture. A
+ * rotation is remembered for the file (memory.ts), so it is there the next
+ * time the file is open.
  */
 
-import { closeSync, existsSync, linkSync, openSync, readSync, statSync, unlinkSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { stat } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
 import { cacheFile, cacheKey, cacheRoot, ensureCache, partialName, publish, type Stamp } from "./cache.ts";
-import {
-  CONVERT_MEMORY_MIB,
-  CONVERT_TIMEOUT_MS,
-  canSaveCopy,
-  convertible,
-  copyName,
-  MAX_NATIVE_PIXELS,
-  magickArgs,
-  REDUCED_PIXELS,
-  saveCopyArgs,
-} from "./convert.ts";
+import { CONVERT_MEMORY_MIB, CONVERT_TIMEOUT_MS, convertible, MAX_NATIVE_PIXELS, magickArgs, REDUCED_PIXELS } from "./convert.ts";
 import { HEADER_BYTES, jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
-import { FORMATS, type Format, formatFromName, type Kind, sniff } from "./kinds.ts";
-import { chooseDpi, MAX_PAGES, parsePdfInfo, pdfinfoArgs, pdftoppmArgs, thumbnailArgs, wantsPassword } from "./pdf.ts";
-import { type Neighbours, siblingPath, siblingsOf } from "./siblings.ts";
+import { Folder } from "./folder.ts";
+import { factsFrom } from "./info.ts";
+import { FORMATS, type Format, formatFromName, sniff } from "./kinds.ts";
+import { MemoryStore } from "./memory.ts";
+import { MESSAGES } from "./messages.ts";
+import { parsePdfInfo, pdfinfoArgs, plainTextArgs, wantsPassword } from "./pdf.ts";
+import { PdfPages } from "./pdf-doc.ts";
+import { neighbours, siblingPath } from "./siblings.ts";
+import { CLOSED, EMPTY_FOLDER, type Snapshot } from "./snapshot.ts";
+import type { PageText } from "./text.ts";
 import { haveTool, runTool } from "./tools.ts";
-import { mod4 } from "./zoom.ts";
+import { mod4, turned } from "./zoom.ts";
 
 /** Files over this are not opened at all. */
 const MAX_FILE_BYTES = 1024 * 1024 * 1024;
-const THUMB_LIMIT = 600;
-const THUMB_WORKERS = 2;
-const RENDER_TIMEOUT_MS = 45_000;
-const INFO_TIMEOUT_MS = 15_000;
+const INFO_TIMEOUT_MS = 30_000;
 
-export interface Picture {
-  /** The file Metal draws. */
-  source: string;
-  /** Its size: pixels for an image, points for a PDF page (the picture is drawn at points × scale). */
-  width: number;
-  height: number;
+export interface ViewerOptions {
+  cacheDir?: string;
+  deviceScale?: number;
+  /** Where recent files and rotations are kept; null keeps them for this window only. */
+  memoryFile?: string | null;
 }
-
-export interface PdfState {
-  pages: number;
-  page: number;
-  title: string | null;
-  thumbs: ReadonlyMap<number, string>;
-}
-
-export interface Snapshot {
-  phase: "empty" | "loading" | "ready" | "error";
-  error: string | null;
-  path: string | null;
-  name: string;
-  kind: Kind | null;
-  format: Format | null;
-  picture: Picture | null;
-  /** Pixels of the file as stored, after the EXIF turn (what the info sheet says). */
-  natural: Size | null;
-  turns: number;
-  /** The view can be turned (ImageMagick is there and the format allows it). */
-  canTurn: boolean;
-  canSave: boolean;
-  /** The file carries an EXIF turn, so a copy saved from it comes out upright. */
-  exifTurn: boolean;
-  folder: Neighbours & { dir: string };
-  pdf: PdfState | null;
-  busy: boolean;
-  /** A line about what was done to show it ("Reduced to fit"). */
-  note: string | null;
-  tools: { magick: boolean; poppler: boolean };
-  stamp: Stamp | null;
-  rev: number;
-}
-
-const EMPTY_FOLDER: Snapshot["folder"] = { dir: "", index: -1, count: 0, previous: null, next: null };
 
 export class Viewer {
   private snapshot: Snapshot;
   private readonly listeners = new Set<() => void>();
   private generation = 0;
   private readonly root: string;
-  private head: Uint8Array = new Uint8Array();
   private orientation = 1;
   private storedSize: Size | null = null;
-  private inflight = new Map<string, Promise<string | null>>();
-  private wantedDpi = 144;
-  private lastShownDpi = 0;
-  private pagePoints: { width: number; height: number } | null = null;
-  private thumbQueue: number[] = [];
-  private thumbWorkers = 0;
-  private readonly thumbs = new Map<number, string>();
+  private readonly inflight = new Map<string, Promise<string | null>>();
   private readonly deviceScale: number;
+  private readonly memory: MemoryStore;
+  private pages: PdfPages | null = null;
+  private pdfBase: { pages: number; title: string | null; sizes: Size[] } | null = null;
+  private readonly folder: Folder;
 
-  constructor(options: { cacheDir?: string; deviceScale?: number } = {}) {
+  constructor(options: ViewerOptions = {}) {
     this.root = options.cacheDir ?? cacheRoot();
     this.deviceScale = options.deviceScale ?? 2;
+    this.memory = options.memoryFile === undefined ? new MemoryStore() : new MemoryStore(options.memoryFile);
     try {
       ensureCache(this.root);
     } catch {
       // Without a cache nothing needing a conversion or a render works; the open says so.
     }
-    this.snapshot = {
-      phase: "empty",
-      error: null,
-      path: null,
-      name: "",
-      kind: null,
-      format: null,
-      picture: null,
-      natural: null,
-      turns: 0,
-      canTurn: false,
-      canSave: false,
-      exifTurn: false,
-      folder: EMPTY_FOLDER,
-      pdf: null,
-      busy: false,
-      note: null,
-      tools: { magick: haveTool("magick"), poppler: haveTool("pdftoppm") && haveTool("pdfinfo") },
-      stamp: null,
-      rev: 0,
-    };
+    const tools = { magick: haveTool("magick"), poppler: haveTool("pdftoppm") && haveTool("pdfinfo"), qpdf: haveTool("qpdf") };
+    this.folder = new Folder({ root: this.root, magick: tools.magick, onChange: () => this.folderChanged() });
+    this.snapshot = { ...CLOSED, recents: this.memory.recents(), tools, rev: 0 };
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -140,78 +81,124 @@ export class Viewer {
     for (const listener of this.listeners) listener();
   }
 
-  /** Open a file. A path that is not absolute is made so against the working folder. */
-  async open(input: string): Promise<void> {
+  private fail(generation: number, message: string): void {
+    if (generation === this.generation) this.set({ phase: "error", error: message, busy: false, picture: null, pdf: null });
+  }
+
+  /** Open a file. A path that is not absolute is made so against the working folder. Stepping through a folder (`recent: false`) leaves the recent files as they are. */
+  async open(input: string, { recent = true }: { recent?: boolean } = {}): Promise<void> {
     const path = resolve(input);
     const generation = ++this.generation;
-    this.thumbQueue = [];
-    this.thumbs.clear();
-    this.pagePoints = null;
-    this.set({
-      phase: "loading",
-      error: null,
-      path,
-      name: basename(path),
-      picture: null,
-      pdf: null,
-      turns: 0,
-      busy: true,
-      note: null,
-      natural: null,
-      canTurn: false,
-      canSave: false,
-      exifTurn: false,
-      kind: null,
-      format: null,
-    });
-    const fail = (message: string): void => {
-      if (generation === this.generation) this.set({ phase: "error", error: message, busy: false, picture: null, pdf: null });
-    };
+    this.closePdf();
+    // Stepping through a folder keeps its strip, and knows the new neighbours at once (a quick ← ← steps twice).
+    const sameFolder = this.folder.dir !== "" && this.folder.dir === dirname(path);
+    const folder = sameFolder ? { dir: this.folder.dir, files: this.folder.files, ...neighbours(this.folder.files, basename(path)) } : EMPTY_FOLDER;
+    this.set({ ...CLOSED, phase: "loading", path, name: basename(path), busy: true, folder, folderThumbs: sameFolder ? this.folder.thumbnails : new Map() });
     let stamp: Stamp;
     try {
-      const stat = statSync(path);
-      if (!stat.isFile()) return fail("This is not a file.");
-      if (stat.size > MAX_FILE_BYTES) return fail("This file is too large to open here.");
-      stamp = { path, mtimeMs: stat.mtimeMs, size: stat.size };
+      const info = await stat(path);
+      if (generation !== this.generation) return;
+      if (!info.isFile()) return this.fail(generation, MESSAGES.notAFile);
+      if (info.size > MAX_FILE_BYTES) return this.fail(generation, MESSAGES.tooLarge);
+      stamp = { path, mtimeMs: info.mtimeMs, size: info.size };
     } catch {
-      return fail("The file could not be found, or you do not have access to it.");
+      return this.fail(generation, MESSAGES.notFound);
     }
     let head: Uint8Array;
     try {
       head = new Uint8Array(await Bun.file(path).slice(0, HEADER_BYTES).arrayBuffer());
     } catch {
-      return fail("The file could not be read.");
+      return this.fail(generation, MESSAGES.unreadable);
     }
     if (generation !== this.generation) return;
     const format = sniff(head);
-    if (!format) {
-      const named = formatFromName(path);
-      return fail(named ? "The file does not look like the kind of file its name says." : "Preview does not open this kind of file.");
-    }
+    if (!format) return this.fail(generation, formatFromName(path) ? MESSAGES.mislabelled : MESSAGES.unknownKind);
     const kind = FORMATS[format].kind;
-    this.head = head;
-    this.set({ kind, format, stamp });
-    this.refreshFolder(path, kind);
-    if (kind === "pdf") await this.openPdf(path, generation);
-    else await this.openImage(path, stamp, format, generation);
+    if (recent) this.memory.opened(path);
+    const turns = this.memory.turnsFor(path, stamp);
+    this.set({ kind, format, stamp, turns, facts: factsFrom(path, stamp, format), recents: this.memory.recents() });
+    if (kind === "pdf") {
+      this.folder.hide();
+      this.set({ folder: EMPTY_FOLDER, folderThumbs: new Map() });
+      await this.openPdf(path, stamp, turns, generation);
+    } else {
+      void this.showFolder(path);
+      await this.openImage(path, stamp, format, head, turns, generation);
+    }
   }
 
-  private refreshFolder(path: string, kind: Kind): void {
-    // A PDF steps through pages, not through the folder; an image through the folder's images.
-    const listing = kind === "image" ? siblingsOf(path, "image") : { dir: dirname(path), files: [], index: -1, count: 0, previous: null, next: null };
-    this.set({ folder: { dir: listing.dir, index: listing.index, count: listing.count, previous: listing.previous, next: listing.next } });
+  /** Close what is open (the file went to the Trash). */
+  clear(): void {
+    this.generation++;
+    this.closePdf();
+    this.folder.hide();
+    this.set({ ...CLOSED, recents: this.memory.recents() });
+  }
+
+  /** Step through the folder's images; false at an end. */
+  async step(delta: 1 | -1): Promise<boolean> {
+    const { folder } = this.snapshot;
+    const name = delta > 0 ? folder.next : folder.previous;
+    if (!name) return false;
+    await this.open(siblingPath(folder.dir, name), { recent: false });
+    return true;
+  }
+
+  /** Open the folder's picture called `name`. */
+  async openSibling(name: string): Promise<void> {
+    const { folder } = this.snapshot;
+    if (folder.files.includes(name)) await this.open(siblingPath(folder.dir, name), { recent: false });
+  }
+
+  /** Rotate a quarter turn (1 clockwise, -1 counterclockwise); the file keeps it. */
+  async rotate(direction: 1 | -1): Promise<void> {
+    const { path, stamp, format, canTurn, kind } = this.snapshot;
+    if (!path || !stamp || !format || !canTurn) return;
+    const turns = mod4(this.snapshot.turns + direction);
+    this.memory.rotated(path, turns, stamp);
+    if (kind === "pdf" && this.pages && this.pdfBase) {
+      this.pages.setTurns(turns);
+      this.set({ turns });
+      this.pdfChanged();
+      return;
+    }
+    await this.prepareImage(path, stamp, format, turns, this.generation);
+  }
+
+  forgetRecents(): void {
+    this.memory.clearRecents();
+    this.set({ recents: [] });
+  }
+
+  // --- The folder -------------------------------------------------------------
+
+  private async showFolder(path: string): Promise<void> {
+    await this.folder.show(dirname(path));
+    this.folderChanged();
+  }
+
+  private folderChanged(): void {
+    const { path, kind } = this.snapshot;
+    if (!path || kind === "pdf") return;
+    const files = this.folder.files;
+    this.set({ folder: { dir: this.folder.dir, files, ...neighbours(files, basename(path)) }, folderThumbs: this.folder.thumbnails });
+  }
+
+  /** The strip's rows that need a small copy, the most wanted first. */
+  wantFolderThumbs(names: readonly string[]): void {
+    this.folder.want(names);
   }
 
   // --- Images ---------------------------------------------------------------
 
-  private async openImage(path: string, stamp: Stamp, format: Format, generation: number): Promise<void> {
-    this.orientation = format === "jpeg" ? jpegOrientation(this.head) : 1;
-    const stored = readSize(format, this.head);
+  private async openImage(path: string, stamp: Stamp, format: Format, head: Uint8Array, turns: number, generation: number): Promise<void> {
+    this.orientation = format === "jpeg" ? jpegOrientation(head) : 1;
+    const stored = readSize(format, head);
     this.storedSize = stored;
     const natural = stored ? (swapsSides(this.orientation) ? { width: stored.height, height: stored.width } : stored) : null;
     const canTurn = this.snapshot.tools.magick && convertible(format);
-    this.set({ natural, canTurn, canSave: canTurn && canSaveCopy(format), exifTurn: this.orientation !== 1 });
-    await this.prepareImage(path, stamp, format, 0, generation);
+    this.set({ natural, canTurn });
+    await this.prepareImage(path, stamp, format, canTurn ? turns : 0, generation);
   }
 
   private async prepareImage(path: string, stamp: Stamp, format: Format, turns: number, generation: number): Promise<void> {
@@ -221,15 +208,11 @@ export class Viewer {
     const needsWork = !FORMATS[format].native || this.orientation !== 1 || turns !== 0 || pixels > MAX_NATIVE_PIXELS || format === "gif";
     const { magick } = this.snapshot.tools;
     if (!needsWork || !convertible(format) || !magick) {
-      if (!FORMATS[format].native)
-        return this.fail(
-          generation,
-          `${FORMATS[format].label.replace(" image", "")} files need ImageMagick with ${format.toUpperCase()} support, which is not installed.`,
-        );
-      if (pixels > MAX_NATIVE_PIXELS) return this.fail(generation, "This picture is too large to show without ImageMagick (install it to see a reduced copy).");
+      if (!FORMATS[format].native) return this.fail(generation, MESSAGES.cantOpenKind(FORMATS[format].label));
+      if (pixels > MAX_NATIVE_PIXELS) return this.fail(generation, MESSAGES.tooLargeToShow);
       const size = natural ?? this.storedSize;
-      if (!size) return this.fail(generation, "The picture's size could not be read.");
-      const note = this.orientation !== 1 && format !== "svg" ? "The picture's own rotation is not applied (ImageMagick is not installed)." : null;
+      if (!size) return this.fail(generation, MESSAGES.noSize);
+      const note = this.orientation !== 1 && format !== "svg" ? MESSAGES.notUpright : null;
       if (generation === this.generation) this.set({ phase: "ready", busy: false, picture: { source: path, ...size }, turns, note });
       return;
     }
@@ -237,33 +220,30 @@ export class Viewer {
     const key = cacheKey(stamp, `img:${format}:${mod4(turns)}:${REDUCED_PIXELS}`);
     const out = cacheFile(this.root, key, "png");
     const made = await this.once(key, async () => {
-      if (existsSync(out)) return out;
+      if (await Bun.file(out).exists()) return out;
       const partial = partialName(out);
       const args = magickArgs({ format, turns, maxPixels: REDUCED_PIXELS, output: partial });
       if (!args) return null;
       const result = await runTool(args, { timeoutMs: CONVERT_TIMEOUT_MS, memoryMiB: CONVERT_MEMORY_MIB, input: Bun.file(path) });
-      if (!result.ok || !existsSync(partial)) return null;
+      if (!result.ok || !(await Bun.file(partial).exists())) return null;
       publish(partial, out);
       return out;
     });
     if (generation !== this.generation) return;
-    if (!made) return this.fail(generation, "The picture could not be converted (it may be damaged).");
-    const size = pngSize(made);
-    if (!size) return this.fail(generation, "The converted picture could not be read.");
-    const reduced =
-      natural && (size.width < (mod4(turns) % 2 ? natural.height : natural.width) || size.height < (mod4(turns) % 2 ? natural.width : natural.height));
+    if (!made) return this.fail(generation, MESSAGES.damaged);
+    const size = await pngSize(made);
+    if (generation !== this.generation) return;
+    if (!size) return this.fail(generation, MESSAGES.damaged);
+    const upright = natural ? turned(natural, turns) : null;
+    const reduced = upright !== null && (size.width < upright.width || size.height < upright.height);
     this.set({
       phase: "ready",
       busy: false,
       picture: { source: made, ...size },
       turns,
-      natural: natural ?? (mod4(turns) % 2 ? { width: size.height, height: size.width } : size),
-      note: reduced ? "Shown reduced to keep memory in check." : null,
+      natural: natural ?? turned(size, turns),
+      note: reduced ? MESSAGES.shownSmaller : null,
     });
-  }
-
-  private fail(generation: number, message: string): void {
-    if (generation === this.generation) this.set({ phase: "error", error: message, busy: false, picture: null });
   }
 
   /** Run one job per key at a time; callers asking for the same thing share it. */
@@ -275,225 +255,82 @@ export class Viewer {
     return started;
   }
 
-  /** Turn the view a quarter turn (1 clockwise, -1 counterclockwise). */
-  async rotate(direction: 1 | -1): Promise<void> {
-    const { path, stamp, format, canTurn, kind } = this.snapshot;
-    if (!path || !stamp || !format || !canTurn || kind !== "image") return;
-    await this.prepareImage(path, stamp, format, mod4(this.snapshot.turns + direction), this.generation);
-  }
-
-  /** Write the turned picture beside the original as a new file; its name, or an error message. */
-  async saveTurnedCopy(): Promise<{ saved: string } | { error: string }> {
-    const { path, format, turns, canSave, stamp } = this.snapshot;
-    if (!path || !format || !stamp || !canSave) return { error: "A turned copy cannot be saved for this file." };
-    if (mod4(turns) === 0 && !this.snapshot.exifTurn) return { error: "Turn the picture first." };
-    const dir = dirname(path);
-    const name = copyName(basename(path), (candidate) => existsSync(join(dir, candidate)));
-    const key = cacheKey(stamp, `save:${format}:${mod4(turns)}:${Date.now()}`);
-    const partial = partialName(cacheFile(this.root, key, "bin"));
-    const args = saveCopyArgs(format, turns, partial);
-    if (!args) return { error: "A turned copy cannot be saved for this file." };
-    const result = await runTool(args, { timeoutMs: CONVERT_TIMEOUT_MS, memoryMiB: CONVERT_MEMORY_MIB, input: Bun.file(path) });
-    if (!result.ok || !existsSync(partial)) return { error: "The copy could not be made." };
-    try {
-      // A hard link fails when the name appeared meanwhile: a copy never replaces a file.
-      linkSync(partial, join(dir, name));
-    } catch {
-      return { error: "The copy could not be written next to the original (is the folder writable?)." };
-    } finally {
-      try {
-        unlinkSync(partial);
-      } catch {
-        // Already gone.
-      }
-    }
-    return { saved: name };
-  }
-
-  /** Close what is open (the file went to the Trash). */
-  clear(): void {
-    this.generation++;
-    this.thumbQueue = [];
-    this.thumbs.clear();
-    this.set({
-      phase: "empty",
-      error: null,
-      path: null,
-      name: "",
-      kind: null,
-      format: null,
-      picture: null,
-      natural: null,
-      turns: 0,
-      canTurn: false,
-      canSave: false,
-      exifTurn: false,
-      folder: EMPTY_FOLDER,
-      pdf: null,
-      busy: false,
-      note: null,
-      stamp: null,
-    });
-  }
-
-  /** Step through the folder's images; false at an end. */
-  async step(delta: 1 | -1): Promise<boolean> {
-    const { folder } = this.snapshot;
-    const name = delta > 0 ? folder.next : folder.previous;
-    if (!name) return false;
-    await this.open(siblingPath(folder.dir, name));
-    return true;
-  }
-
   // --- PDFs -----------------------------------------------------------------
 
-  private async openPdf(path: string, generation: number): Promise<void> {
-    if (!this.snapshot.tools.poppler) return this.fail(generation, "PDF files need poppler-utils (pdftoppm and pdfinfo), which is not installed.");
-    const info = await runTool(pdfinfoArgs(path), { timeoutMs: INFO_TIMEOUT_MS, memoryMiB: 1024, maxOutput: 256 * 1024 });
+  private closePdf(): void {
+    this.pages?.close();
+    this.pages = null;
+    this.pdfBase = null;
+  }
+
+  private async openPdf(path: string, stamp: Stamp, turns: number, generation: number): Promise<void> {
+    if (!this.snapshot.tools.poppler) return this.fail(generation, MESSAGES.cantOpenPdf);
+    const info = await runTool(pdfinfoArgs(path), { timeoutMs: INFO_TIMEOUT_MS, memoryMiB: 1024, maxOutput: 2 * 1024 * 1024 });
     if (generation !== this.generation) return;
     const parsed = info.ok ? parsePdfInfo(info.stdout) : null;
-    if (!parsed)
-      return this.fail(
-        generation,
-        wantsPassword(info.stderr) ? "This PDF is locked with a password, which Preview cannot enter yet." : "This PDF could not be read (it may be damaged).",
-      );
-    if (parsed.encrypted && !parsed.pageSize) return this.fail(generation, "This PDF is locked with a password, which Preview cannot enter yet.");
-    this.pagePoints = parsed.pageSize;
-    this.set({ pdf: { pages: parsed.pages, page: 1, title: parsed.title, thumbs: new Map() } });
-    this.set({ canTurn: false, canSave: false });
-    await this.showPage(1, generation);
-    this.queueThumbs(1);
-  }
-
-  /** Go to page `n` (1-based, held inside the document). */
-  async goToPage(n: number): Promise<void> {
-    const pdf = this.snapshot.pdf;
-    if (!pdf) return;
-    const page = Math.min(pdf.pages, Math.max(1, Math.trunc(n)));
-    if (page === pdf.page && this.snapshot.picture) return;
-    this.set({ pdf: { ...pdf, page } });
-    this.queueThumbs(page);
-    await this.showPage(page, this.generation);
-  }
-
-  /** The zoom changed: render the page again if the picture would be soft. `scale` is logical pixels per point. */
-  async wantScale(scale: number): Promise<void> {
-    const pdf = this.snapshot.pdf;
-    const points = this.pagePoints;
-    if (!pdf || !points) return;
-    const dpi = chooseDpi(scale, this.deviceScale, points);
-    if (dpi === this.wantedDpi) return;
-    this.wantedDpi = dpi;
-    if (this.currentDpi() === this.lastShownDpi) return;
-    await this.showPage(pdf.page, this.generation);
-  }
-
-  /** The first guess at the zoom before any page is drawn: the page 1 size from pdfinfo. */
-  get firstPageSize(): { width: number; height: number } | null {
-    return this.pagePoints;
-  }
-
-  private async showPage(page: number, generation: number): Promise<void> {
-    const { path, stamp } = this.snapshot;
-    if (!path || !stamp) return;
-    this.set({ busy: true });
-    const dpi = this.currentDpi();
-    const out = await this.renderPage(path, stamp, page, dpi);
-    if (generation !== this.generation || this.snapshot.pdf?.page !== page || this.currentDpi() !== dpi) return;
-    if (!out) return this.fail(generation, "This page could not be drawn (the PDF may be damaged).");
-    const size = pngSize(out);
-    if (!size) return this.fail(generation, "This page could not be read after drawing.");
-    const points = { width: (size.width * 72) / dpi, height: (size.height * 72) / dpi };
-    this.pagePoints = points;
-    this.lastShownDpi = dpi;
-    this.set({ phase: "ready", busy: false, picture: { source: out, ...points }, error: null });
-    // The next page is likely wanted; have it by the time it is.
-    const pages = this.snapshot.pdf?.pages ?? 0;
-    if (page < pages) void this.renderPage(path, stamp, page + 1, dpi);
-  }
-
-  /** The wanted resolution held under the pixel cap for the page size known so far. */
-  private currentDpi(): number {
-    return chooseDpi(this.wantedDpi / (72 * this.deviceScale), this.deviceScale, this.pagePoints ?? { width: 612, height: 792 });
-  }
-
-  private renderPage(path: string, stamp: Stamp, page: number, effective: number): Promise<string | null> {
-    const key = cacheKey(stamp, `pdf:${page}:${effective}`);
-    const out = cacheFile(this.root, key, "png");
-    return this.once(key, async () => {
-      if (existsSync(out)) return out;
-      const partialBase = partialName(join(this.root, key));
-      const result = await runTool(pdftoppmArgs(path, page, effective, partialBase), { timeoutMs: RENDER_TIMEOUT_MS, memoryMiB: 2048 });
-      const produced = `${partialBase}.png`;
-      if (!result.ok || !existsSync(produced)) return null;
-      publish(produced, out);
-      return out;
+    if (!parsed) return this.fail(generation, wantsPassword(info.stderr) ? MESSAGES.locked : MESSAGES.damagedPdf);
+    if (parsed.encrypted && !parsed.pageSize) return this.fail(generation, MESSAGES.locked);
+    const canTurn = this.snapshot.tools.magick;
+    const shownTurns = canTurn ? turns : 0;
+    this.pdfBase = { pages: parsed.pages, title: parsed.title, sizes: parsed.pageSizes };
+    this.pages = new PdfPages({
+      path,
+      stamp,
+      root: this.root,
+      sizes: parsed.pageSizes,
+      deviceScale: this.deviceScale,
+      turns: shownTurns,
+      onChange: () => {
+        if (generation === this.generation) this.pdfChanged();
+      },
     });
+    this.set({ phase: "ready", busy: false, canTurn, turns: shownTurns });
+    this.pdfChanged();
   }
 
-  // --- Thumbnails -----------------------------------------------------------
-
-  private queueThumbs(near: number): void {
-    const pdf = this.snapshot.pdf;
-    if (!pdf) return;
-    const total = Math.min(pdf.pages, THUMB_LIMIT);
-    this.thumbQueue = Array.from({ length: total }, (_, i) => i + 1)
-      .filter((page) => !this.thumbs.has(page))
-      .sort((a, b) => Math.abs(a - near) - Math.abs(b - near));
-    while (this.thumbWorkers < THUMB_WORKERS && this.thumbQueue.length > 0) {
-      this.thumbWorkers++;
-      void this.thumbLoop(this.generation).finally(() => {
-        this.thumbWorkers--;
-      });
-    }
+  private pdfChanged(): void {
+    const base = this.pdfBase;
+    if (!base || !this.pages) return;
+    const turns = this.snapshot.turns;
+    this.set({ pdf: { ...base, sizes: base.sizes.map((size) => turned(size, turns)), ...this.pages.state } });
   }
 
-  private async thumbLoop(generation: number): Promise<void> {
-    while (generation === this.generation) {
-      const page = this.thumbQueue.shift();
-      const { path, stamp } = this.snapshot;
-      if (page === undefined || !path || !stamp) return;
-      if (this.thumbs.has(page)) continue;
-      const key = cacheKey(stamp, `thumb:${page}`);
-      const out = cacheFile(this.root, key, "png");
-      const made = await this.once(key, async () => {
-        if (existsSync(out)) return out;
-        const partialBase = partialName(join(this.root, key));
-        const result = await runTool(thumbnailArgs(path, page, partialBase), { timeoutMs: RENDER_TIMEOUT_MS, memoryMiB: 1024 });
-        const produced = `${partialBase}.png`;
-        if (!result.ok || !existsSync(produced)) return null;
-        publish(produced, out);
-        return out;
-      });
-      if (generation !== this.generation) return;
-      const pdf = this.snapshot.pdf;
-      if (made && pdf) {
-        this.thumbs.set(page, made);
-        this.set({ pdf: { ...pdf, thumbs: new Map(this.thumbs) } });
-      }
-    }
+  /** What the document surface needs now: pages near the screen at `scale` (logical pixels per point), the strip's thumbnails. */
+  wantPages(pages: readonly number[], scale: number, thumbs: readonly number[]): void {
+    this.pages?.want(pages, scale, thumbs);
+  }
+
+  /** A page's words, for a drag that selects text on it. */
+  wantText(page: number): void {
+    this.pages?.wantText(page);
+  }
+
+  /** The words of `pages`, read now where they aren't yet. */
+  async textOf(pages: readonly number[]): Promise<ReadonlyMap<number, PageText>> {
+    return this.pages ? this.pages.textOf(pages) : new Map();
+  }
+
+  /** Pages `from` to `to` as plain text (a copy across many pages); empty when they can't be read. */
+  async plainText(from: number, to: number): Promise<string> {
+    const { path, kind } = this.snapshot;
+    if (!path || kind !== "pdf" || to < from) return "";
+    const result = await runTool(plainTextArgs(path, from, to), { timeoutMs: INFO_TIMEOUT_MS * 4, memoryMiB: 1024, maxOutput: 64 * 1024 * 1024 });
+    // pdftotext ends each page with a form feed.
+    return result.ok ? result.stdout.replaceAll("\f", "\n\n") : "";
+  }
+
+  /** The resolution a page is rendered at for `scale`, so the window can ask for the same one (Copy, Export). */
+  dpiFor(page: number, scale: number): number {
+    return this.pages?.dpiFor(page, scale) ?? 144;
   }
 }
 
 /** A PNG's pixel size from its header, or null. */
-export function pngSize(path: string): Size | null {
+export async function pngSize(path: string): Promise<Size | null> {
   try {
-    const bytes = new Uint8Array(readFileSyncPrefix(path, 32));
+    const bytes = new Uint8Array(await Bun.file(path).slice(0, 32).arrayBuffer());
     return readSize("png", bytes);
   } catch {
     return null;
   }
 }
-
-function readFileSyncPrefix(path: string, length: number): Buffer {
-  const fd = openSync(path, "r");
-  try {
-    const buffer = Buffer.alloc(length);
-    const read = readSync(fd, buffer, 0, length, 0);
-    return buffer.subarray(0, read);
-  } finally {
-    closeSync(fd);
-  }
-}
-
-export { MAX_PAGES };

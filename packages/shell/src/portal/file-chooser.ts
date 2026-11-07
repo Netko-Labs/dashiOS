@@ -1,18 +1,19 @@
 /**
  * The desktop's own file chooser, through xdg-desktop-portal
- * (`org.freedesktop.portal.FileChooser.OpenFile` on the session bus), so
+ * (`org.freedesktop.portal.FileChooser.OpenFile`, and `SaveFile` for a file
+ * to write, on the session bus), so
  * Dashi draws no file browser of its own and the dialog is the one the
  * person's apps use. The chosen file comes back as a `file://` URI. Where
  * there is no session bus or no portal (a development run), `chooseFile`
  * rejects and the caller offers something else.
  *
- * Used by System Settings' "Add Photo…" (wallpaper/chooser.ts) and by
- * Preview's File > Open….
+ * Used by System Settings' "Add Photo…" (wallpaper/chooser.ts), Calendar's
+ * import, and Preview's File > Open… and Export….
  */
 
 import { randomBytes } from "node:crypto";
 import { isAbsolute } from "node:path";
-import { DBusConnection, variant } from "../dbus/index.ts";
+import { DBusConnection, type Variant, variant } from "../dbus/index.ts";
 
 const PORTAL = "org.freedesktop.portal.Desktop";
 const PORTAL_PATH = "/org/freedesktop/portal/desktop";
@@ -58,9 +59,50 @@ export function pickedPath(code: unknown, results: unknown, accept: (path: strin
 }
 
 /** Asks the portal for one file; null when the person cancelled, rejects when there is no portal. */
-export async function chooseFile(
+export function chooseFile(
   dialog: FileDialog,
   connect: () => Promise<DBusConnection> = () => DBusConnection.connect({ bus: "session" }),
+): Promise<string | null> {
+  return ask(
+    "OpenFile",
+    dialog.title,
+    [["filters", variant("a(sa(us))", [[dialog.filter.name, dialog.filter.types.map((type) => [1, type])]])]],
+    dialog.accept,
+    connect,
+  );
+}
+
+/** What a save dialog suggests: its title, the name it starts with, and the kind of file written. */
+export interface SaveDialog {
+  title: string;
+  name: string;
+  filter: { name: string; types: readonly string[] };
+}
+
+/**
+ * Asks the portal where to save a file: the path, or null when the person
+ * cancelled. The dialog has already asked about replacing a file that is
+ * there. Rejects when there is no portal.
+ */
+export function chooseSaveFile(
+  dialog: SaveDialog,
+  connect: () => Promise<DBusConnection> = () => DBusConnection.connect({ bus: "session" }),
+): Promise<string | null> {
+  const filter = [dialog.filter.name, dialog.filter.types.map((type) => [1, type])];
+  const options: Array<[string, Variant]> = [
+    ["current_name", variant("s", dialog.name)],
+    ["filters", variant("a(sa(us))", [filter])],
+    ["current_filter", variant("(sa(us))", filter)],
+  ];
+  return ask("SaveFile", dialog.title, options, () => true, connect);
+}
+
+async function ask(
+  member: "OpenFile" | "SaveFile",
+  title: string,
+  options: Array<[string, Variant]>,
+  accept: (path: string) => boolean,
+  connect: () => Promise<DBusConnection>,
 ): Promise<string | null> {
   const connection = await connect();
   try {
@@ -76,24 +118,16 @@ export async function chooseFile(
       connection
         .subscribe({ type: "signal", sender: PORTAL, interface: REQUEST, member: "Response", path: handle }, (message) => {
           clearTimeout(timer);
-          resolve(pickedPath(message.body[0], message.body[1], dialog.accept));
+          resolve(pickedPath(message.body[0], message.body[1], accept));
         })
         .then(() =>
           connection.call({
             destination: PORTAL,
             path: PORTAL_PATH,
             interface: CHOOSER,
-            member: "OpenFile",
+            member,
             signature: "ssa{sv}",
-            body: [
-              "",
-              dialog.title,
-              new Map([
-                ["handle_token", variant("s", token)],
-                ["modal", variant("b", true)],
-                ["filters", variant("a(sa(us))", [[dialog.filter.name, dialog.filter.types.map((type) => [1, type])]])],
-              ]),
-            ],
+            body: ["", title, new Map<string, Variant>([["handle_token", variant("s", token)], ["modal", variant("b", true)], ...options])],
           }),
         )
         .catch(stop);

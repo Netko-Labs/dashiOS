@@ -12,8 +12,10 @@ export const ZOOM_OUT = svg(stroke("M3.5 8h9", 1.7));
 export const ZOOM_IN = svg(stroke("M3.5 8h9M8 3.5v9", 1.7));
 /** Four corners: fit to the window. */
 export const FIT = svg(stroke("M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10", 1.5));
-/** A square with a dot: one picture pixel to one screen pixel. */
-export const ACTUAL = svg(`${stroke("M3 3h10v10H3z", 1.4)}<circle cx="8" cy="8" r="1.4" fill="#000"/>`);
+/** "1:1": one picture pixel to one screen pixel (not a frame, so it never reads as Zoom to Fit). */
+export const ACTUAL = svg(
+  `${stroke("M3 5.6 4.9 4.2v7.6M10.6 5.6l1.9-1.4v7.6", 1.4)}<circle cx="7.9" cy="6.6" r="0.95" fill="#000"/><circle cx="7.9" cy="10" r="0.95" fill="#000"/>`,
+);
 const turn = stroke("M3.2 8.2A4.9 4.9 0 1 0 5 4.4") + stroke("M3 2.2v3.4h3.4", 1.5);
 export const ROTATE_LEFT = svg(turn);
 export const ROTATE_RIGHT = svg(`<g transform="translate(16 0) scale(-1 1)">${turn}</g>`);
