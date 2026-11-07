@@ -1,8 +1,9 @@
 /**
  * The Calculator's menus in the menu bar (the kit's `useAppMenus`). Edit acts
  * on the expression line as on any field (KB-6: Cut and Copy while text is
- * selected; while the line has the keyboard ❖X ❖C ❖V ❖A are the field's own),
- * plus Copy Result (⇧❖C, what the line works out to, ungrouped) and Clear
+ * selected), and its ❖X ❖C ❖V ❖A are these rows, not the field's own
+ * (main.tsx), so a paste is always read the line's way and a refused one
+ * never lands; plus Copy Result (⇧❖C, what the line works out to, ungrouped) and Clear
  * (Esc). View shows or hides the tape (❖T), which widens the window by its
  * own width, and clears it. The ❖ chords are real: the shell matches them
  * against the enabled rows (app-menus/shortcut.ts).

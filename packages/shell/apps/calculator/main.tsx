@@ -14,7 +14,14 @@ const remembered = readRemembered();
 // The window exists once runApp returns; until then a resize has nothing to ask.
 let resize = (_size: Size): void => {};
 const app = runApp(
-  { id: "dev.dashi.calculator", title: "Calculator", size: openingSize(remembered.size, remembered.showsTape), minSize: MIN_SIZE },
+  {
+    id: "dev.dashi.calculator",
+    title: "Calculator",
+    size: openingSize(remembered.size, remembered.showsTape),
+    minSize: MIN_SIZE,
+    // ❖V is the app's Paste (one reader for every paste), and ❖A ❖C ❖X its rows: the line always has the keyboard.
+    textChordsToFields: false,
+  },
   <CalculatorWindow remembered={remembered} resizeWindow={(size) => resize(size)} />,
 );
 resize = (size) => app.host.setSize(size.width, size.height);

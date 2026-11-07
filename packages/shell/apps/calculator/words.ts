@@ -16,7 +16,7 @@ export interface ResultWords {
 
 const NOTICES: Readonly<Record<Notice, string>> = {
   copied: "Copied",
-  "refused-paste": "Nothing pasted: that isn't a number or a sum",
+  "refused-paste": "Not a number or a sum",
 };
 
 export function resultWords(shown: Outcome | { kind: "notice"; notice: Notice }, locale: NumberLocale = EN_US): ResultWords {

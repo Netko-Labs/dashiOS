@@ -3,10 +3,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { TAPE_WIDTH } from "../apps/calculator/layout.ts";
+import { fitFontSize, textEms } from "../apps/calculator/format.ts";
+import { MIN_SIZE, PAD, TAPE_WIDTH } from "../apps/calculator/layout.ts";
 import { EN_US } from "../apps/calculator/locale.ts";
 import type { Remembered } from "../apps/calculator/store.ts";
 import { CalculatorWindow } from "../apps/calculator/view.tsx";
+import { resultWords } from "../apps/calculator/words.ts";
 import type { Clipboard, Size } from "../apps/kit/index.ts";
 
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
@@ -26,7 +28,7 @@ afterAll(() => {
 
 const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
-async function mount(remembered: Remembered) {
+async function mount(remembered: Remembered, pasted = "Total: 1,234.50") {
   const trees: string[] = [];
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = {
@@ -43,7 +45,7 @@ async function mount(remembered: Remembered) {
       copied.push(text);
       return true;
     },
-    readText: async () => "Total: 1,234.50",
+    readText: async () => pasted,
   };
   const kept: Remembered[] = [];
   const sizes: Size[] = [];
@@ -99,13 +101,29 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
   calc.root.unmount();
 });
 
-test("Ctrl+V in the line reads one number; Esc clears it", async () => {
+test("a paste in the line reads one number; a refused one never lands; Esc clears it", async () => {
   const calc = await mount({ tape: [], showsTape: false, size: null });
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "Total: 1,234.50" });
   expect(calc.tree()).toContain('"value":"1,234.5"');
+  // Text the field put in itself and the line refuses: the field takes the line back (a new revision).
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "1,234.5calc" });
-  expect(calc.tree()).toContain("Nothing pasted");
+  expect(calc.tree()).toContain("Not a number or a sum");
+  expect(calc.tree()).toContain('"value":"1,234.5"');
+  expect(calc.tree()).toContain('"revision":1');
   await calc.emit({ type: "key", nodeId: calc.node("line"), value: "Escape" });
   expect(calc.tree()).toContain('"value":""');
+  calc.root.unmount();
+});
+
+test("Paste from the menu is read the line's way; refused, the line stays and the note fits", async () => {
+  const calc = await mount({ tape: [], showsTape: false, size: null }, "calc 3x4");
+  await calc.press("key:1");
+  await calc.emit({ type: "contextmenu", nodeId: calc.node("display"), x: 100, y: 40 });
+  await calc.press("calculator-menu:Paste");
+  expect(calc.tree()).toContain('"value":"1"');
+  expect(calc.tree()).toContain("Not a number or a sum");
+  // The note is as large as fits the display on its one row.
+  const words = resultWords({ kind: "notice", notice: "refused-paste" }).text;
+  expect(fitFontSize(words, MIN_SIZE.width - PAD * 2, 17, 11) * textEms(words)).toBeLessThanOrEqual(MIN_SIZE.width - PAD * 2);
   calc.root.unmount();
 });

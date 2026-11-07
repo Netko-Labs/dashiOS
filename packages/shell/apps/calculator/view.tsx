@@ -31,6 +31,9 @@ const NOTICE_MS = 2000;
 /** Saving waits for the window to stop changing size. */
 const SAVE_MS = 400;
 const CLEAR = "#00000000";
+/** The words under the line: 17 px, down to 11 when they need the room. */
+const WORDS_LARGEST = 17;
+const WORDS_SMALLEST = 11;
 
 export interface CalculatorWindowProps {
   clipboard?: Clipboard;
@@ -139,6 +142,8 @@ export function CalculatorWindow({
   const side = keySide(keypadWidth, size.height);
   const fontSize = fitFontSize(line.text || "0", room, LINE_LARGEST, LINE_SMALLEST);
   const words = resultWords(state.notice ? { kind: "notice", notice: state.notice } : outcome, locale);
+  // The words under the line fit the display on their one row: smaller when they are long, never cut.
+  const wordsSize = fitFontSize(words.text, room, WORDS_LARGEST, WORDS_SMALLEST);
 
   return (
     <View
@@ -207,7 +212,10 @@ export function CalculatorWindow({
             accessibilityLabel={words.text}
             style={{ height: 22, flexDirection: "row", justifyContent: "flex-end" }}
           >
-            <Text numberOfLines={1} style={{ fontSize: 17, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: wordsSize, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}
+            >
               {words.text}
             </Text>
           </View>
