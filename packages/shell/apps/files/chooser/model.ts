@@ -4,8 +4,9 @@
  * filter (what may show), the save name, the app's choices, and the two
  * questions an answer can raise (a file that would be replaced, a name that
  * can't be). It opens on Recents for Open (the files lately used that the
- * app takes), in the save folder for Save, and in the start folder when
- * choosing folders. A save takes the name of a file picked; New Folder makes
+ * app takes), unless the asker named a folder (it opens there) or Recents
+ * has nothing for it (it opens Home instead of an empty list); in the save
+ * folder for Save, and in the start folder when choosing folders. A save takes the name of a file picked; New Folder makes
  * "untitled folder" there and renames it in place, as in Files.
  */
 
@@ -68,6 +69,8 @@ export class ChooserModel {
   /** The folder last shown: where a save from Recents or a search goes. */
   private lastFolder: string;
   private picked: string | null = null;
+  /** Opened on Recents, not listed yet: an empty list gives way to Home. */
+  private recentsUnseen: boolean;
   /** What Open (a double-click, Return) asks the window to do; the view sets it. */
   onAccept: (() => void) | null = null;
 
@@ -78,7 +81,9 @@ export class ChooserModel {
     options: ChooserOptions = {},
   ) {
     const prefs = options.prefs ?? readPrefs();
-    const location: Location = request.mode === "open" && !request.directory ? { kind: "recents" } : folderAt(start.folder);
+    const recentsFirst = request.mode === "open" && !request.directory && request.currentFolder === null && request.currentFile === null;
+    const location: Location = recentsFirst ? { kind: "recents" } : folderAt(start.folder);
+    this.recentsUnseen = recentsFirst;
     this.lastFolder = start.folder;
     this.state = {
       filter: request.currentFilter,
@@ -140,7 +145,12 @@ export class ChooserModel {
 
   /** Keeps up with the browser: the last folder shown, and a save takes the name of a file picked. */
   private follow(): void {
-    const { location, selection } = this.store.getSnapshot();
+    const { location, selection, loading, listed } = this.store.getSnapshot();
+    if (this.recentsUnseen && !loading && listed.kind === "recents") {
+      this.recentsUnseen = false;
+      // Nothing lately used that this chooser takes: Home, not an empty list (no Back to it either).
+      if (location.kind === "recents" && this.store.visible().length === 0) return this.store.go(folderAt(this.home), { record: false });
+    }
     if (location.kind === "folder") this.lastFolder = location.path;
     const one = selection.length === 1 ? selection[0] : undefined;
     if (one === this.picked) return;

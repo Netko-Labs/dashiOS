@@ -286,6 +286,24 @@ test("Open starts on Recents; a double-click or Return on a file accepts", async
   model.stop();
 });
 
+test("Open with nothing in Recents for it opens Home; a folder the asker names opens there", async () => {
+  const empty = chooser({});
+  await Bun.sleep(30);
+  expect(empty.store.getSnapshot().location).toEqual({ kind: "folder", path: home });
+  expect(empty.store.getSnapshot().canBack).toBe(false);
+  empty.stop();
+  // A recent file the filter keeps out is as good as none.
+  const filtered = chooser({ currentFilter: PDF, filters: [PDF] }, [join(docs, "x.png")]);
+  await Bun.sleep(30);
+  expect(filtered.folder()).toBe(home);
+  filtered.stop();
+  // (start.ts opens the chooser in the folder named: here, Documents.)
+  const named = chooser({ currentFolder: docs }, [join(docs, "Lease.pdf")]);
+  await Bun.sleep(30);
+  expect(named.folder()).toBe(docs);
+  named.stop();
+});
+
 test("a save takes the name of the file picked, asks before replacing, and makes a new folder that renames in place", async () => {
   const model = chooser({ mode: "save" }, [], "Untitled.pdf");
   await Bun.sleep(30);
