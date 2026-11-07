@@ -13,6 +13,7 @@ import { Atspi } from "./atspi/client.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
 import { type ToolResult, toolError } from "./context.ts";
+import { frontPage } from "./desktop/browser.ts";
 import { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LockWatch } from "./lock.ts";
@@ -20,12 +21,12 @@ import { AgentMask } from "./mask.ts";
 import { identify, peerPid } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
 import { runCall } from "./run.ts";
-import { isConfined } from "./sandbox.ts";
+import { isConfined, taskOfCgroup } from "./sandbox.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import type { LoginSource } from "./secrets/sources.ts";
 import { Vault } from "./secrets/vault.ts";
 import { isVaultWindow } from "./secrets/vault-view.ts";
-import { Session } from "./session.ts";
+import { Session, type SessionTask, type TaskHooks, type TaskPolicy } from "./session.ts";
 import { SiteGrants } from "./sites.ts";
 import type { Call } from "./tools/index.ts";
 
@@ -45,6 +46,8 @@ export interface Agents {
    * the person's own sheet. Nothing runs while the screen is locked.
    */
   runAsPerson(call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult>;
+  /** The page in front in Helium, through Dashi's extension (the launcher's context chip); null without one. */
+  frontPage(): Promise<{ url: string; title: string } | null>;
   close(): void;
 }
 
@@ -67,6 +70,8 @@ export interface AgentsOptions {
   sources?: () => readonly LoginSource[];
   /** Dashi's vault, for cards and payments. */
   vault?: Pick<Vault, "cards" | "pay">;
+  /** Runs started from the launcher (agents/handoff/): a connection from one's sandbox gets its policy. */
+  tasks?: TaskHooks & { policy(task: string): TaskPolicy | null };
 }
 
 /** A file's text, or null. */
@@ -87,6 +92,7 @@ export function startAgents({
   desktop,
   sources = () => [],
   vault = new Vault(),
+  tasks,
 }: AgentsOptions): Agents {
   const sessions = new Map<number, Session>();
   const publish = () => store.set([...sessions.values()].map((session) => session.info()));
@@ -123,7 +129,7 @@ export function startAgents({
     isVault: isVaultWindow,
   });
   secrets.touched = (window) => mask.prompts.touched(window);
-  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets, browser, sites };
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets, browser, sites, ...(tasks ? { tasks } : {}) };
   let nextId = 0;
   // The person's calls: never confined (no sign-in for them), named "You" where a sheet would name an agent.
   const personSecrets = new SessionSecrets(secrets, ui, false);
@@ -181,6 +187,7 @@ export function startAgents({
       grants,
       desktop,
       runAsPerson,
+      frontPage: () => frontPage(browser.current()),
       stop() {},
       stopAll() {},
       close() {
@@ -206,6 +213,10 @@ export function startAgents({
         }
         const peer = identify(pid);
         const confined = isConfined(readText, pid, peer.remote);
+        // A run the launcher started: its scope is named for it, and only the shell knows its policy.
+        const taskId = confined && !peer.remote ? taskOfCgroup(readText(`/proc/${pid}/cgroup`) ?? "") : null;
+        const policy = taskId ? (tasks?.policy(taskId) ?? null) : null;
+        const task: SessionTask | null = taskId && policy ? { id: taskId, policy } : null;
         const session = new Session(
           ++nextId,
           peer,
@@ -216,6 +227,7 @@ export function startAgents({
             publish();
           },
           confined,
+          task,
         );
         socket.data = { session };
         sessions.set(session.id, session);
@@ -241,6 +253,7 @@ export function startAgents({
     grants,
     desktop,
     runAsPerson,
+    frontPage: () => frontPage(browser.current()),
     stop(id) {
       const session = sessions.get(id);
       if (session) stopSessions([session]);

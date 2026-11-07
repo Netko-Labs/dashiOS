@@ -94,6 +94,8 @@ export interface AgentInfo {
   key?: string;
   status: string;
   scopes: string[];
+  /** A run started from the launcher (agents/handoff/): its card and the chip speak for it, not a pill of its own. */
+  task?: string;
 }
 
 /** What the agents server needs from the shell's UI. */

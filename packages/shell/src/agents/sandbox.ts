@@ -42,6 +42,19 @@ export function unitName(name: string, n: number): string {
   return `dashi-agent-${safe}-${n}.scope`;
 }
 
+/** The prefix of a task's sandbox name (agents/handoff/): `dashi-agent-task-<id>-<n>.scope`. */
+export const TASK_PREFIX = "task-";
+
+/** The task a cgroup file (from /proc/<pid>/cgroup) is in, by its scope's name; null when it isn't one's. */
+export function taskOfCgroup(cgroupFile: string): string | null {
+  const line = cgroupFile.split("\n").find((entry) => entry.startsWith("0::"));
+  for (const part of line?.slice(3).split("/") ?? []) {
+    const found = /^dashi-agent-task-([a-z0-9]{4,24})-\d+\.scope$/.exec(part);
+    if (found?.[1]) return found[1];
+  }
+  return null;
+}
+
 /** Whether a cgroup path (from /proc/<pid>/cgroup) is in an agent's sandbox. */
 export function inAgentScope(cgroupFile: string): boolean {
   const line = cgroupFile.split("\n").find((entry) => entry.startsWith("0::"));
@@ -135,11 +148,18 @@ export interface SandboxOptions {
  * proxy. It starts in `cwd`, an empty folder of its own.
  */
 export interface PlanProfile {
-  /** This turn's plan-mode socket (agents/ask/harness/plan-server.ts), outside. */
+  /** This turn's plan-mode socket (agents/ask/harness/plan-server.ts), outside; or Dashi's MCP socket, for a task. */
   socket: string;
   readOnly: string[];
   state: string[];
   cwd: string;
+  /**
+   * A task from the launcher (agents/handoff/): the socket is Dashi's MCP
+   * socket, bound where the bridge looks for it (`$XDG_RUNTIME_DIR/dashi-mcp.sock`
+   * inside), not the plan socket's place. Everything else is the same least
+   * access: an empty home folder, no bus, no token proxy.
+   */
+  task?: boolean;
 }
 
 /** Where the plan socket is inside the sandbox. */
@@ -152,10 +172,11 @@ export function parsePlanProfile(text: string | undefined): PlanProfile | null {
   if (!text) return null;
   try {
     const value = JSON.parse(text) as Record<string, unknown>;
-    const { socket, readOnly, state, cwd } = value;
+    const { socket, readOnly, state, cwd, task } = value;
     if (typeof socket !== "string" || !socket.startsWith("/") || typeof cwd !== "string" || !cwd.startsWith("/")) return null;
     if (!isPathList(readOnly) || !isPathList(state)) return null;
-    return { socket, readOnly, state, cwd };
+    if (task !== undefined && typeof task !== "boolean") return null;
+    return { socket, readOnly, state, cwd, ...(task ? { task: true } : {}) };
   } catch {
     return null;
   }
@@ -166,7 +187,8 @@ function planArgs(env: SandboxEnv, exists: Exists, plan: PlanProfile): string[] 
   const args: string[] = [];
   for (const path of plan.readOnly) if (exists(path)) args.push("--ro-bind", path, path);
   for (const path of plan.state) if (exists(path)) args.push("--bind", path, path);
-  args.push("--bind", plan.socket, planSocketInside(env.runtime), "--dir", plan.cwd, "--chdir", plan.cwd);
+  const inside = plan.task ? join(env.runtime, "dashi-mcp.sock") : planSocketInside(env.runtime);
+  args.push("--bind", plan.socket, inside, "--dir", plan.cwd, "--chdir", plan.cwd);
   return args;
 }
 

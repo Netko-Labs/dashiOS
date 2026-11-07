@@ -44,6 +44,18 @@ async function linkFor(ctx: RunContext, start: boolean): Promise<BrowserLink | T
   return (await ctx.browser.whenConnected(START_MS)) ?? toolError(`${entry.name} started, but Dashi's extension didn't connect. ${NO_EXTENSION}`);
 }
 
+/** The page in front in the browser with Dashi's extension (the launcher's context chip); null without one. */
+export async function frontPage(link: BrowserLink | null): Promise<{ url: string; title: string } | null> {
+  if (!link) return null;
+  try {
+    const { tabs, focusedWindow } = await listTabs(link);
+    const front = tabs.find((tab) => tab.active && tab.windowId === focusedWindow) ?? tabs.find((tab) => tab.active);
+    return front?.url ? { url: front.url, title: front.title ?? "" } : null;
+  } catch {
+    return null;
+  }
+}
+
 async function listTabs(link: BrowserLink): Promise<{ tabs: TabInfo[]; focusedWindow: number | null }> {
   const result = await link.ask("tabs", {});
   const tabs = (Array.isArray(result.tabs) ? result.tabs : []).map(parseTab).filter((tab): tab is TabInfo => tab !== null);

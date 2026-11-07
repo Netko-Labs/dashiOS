@@ -6,13 +6,14 @@
  * Undo for settings changes.
  */
 
-import { CHEVRON_DOWN, CHEVRON_UP, useColors } from "@dashi/ui";
+import { CHEVRON_DOWN, CHEVRON_UP, Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
 import type { KeyPlace, Provider } from "../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../agents/ask/service.ts";
+import { harnessOrder } from "../../agents/handoff/order.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Choices, Group, Item, Note, Setting, Spot } from "../ui.tsx";
@@ -146,6 +147,13 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
   };
   const pills = models && models.length > 1 ? models.slice(0, MODEL_PILLS) : [];
   const harnessName = isHarnessId(choice) ? ANSWERERS[choice].name : null;
+  // "Hand off to": the harnesses installed, the one named first (else the answerer, else the first).
+  const installed = harnessOrder(
+    (harnesses ?? []).filter((each) => each.installed).map((each) => each.id),
+    data.agents.handOff,
+    choice,
+  );
+  const handOff = installed[0] ?? "claude-code";
 
   return (
     <>
@@ -181,6 +189,29 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
               )}
             </Setting>
           )}
+        </Group>
+      )}
+      {installed.length > 0 && (
+        <Group testID="agents-hand-off">
+          <Setting id="agents/hand-off-to" testID="agents-hand-off-to" stack={installed.length > 1}>
+            {installed.length > 1 ? (
+              <Choices
+                testID="agents-hand-off-choice"
+                options={installed.map((id) => ({ value: id, label: ANSWERERS[id].name }))}
+                value={handOff}
+                onChange={(id) => settings.patch("agents", { handOff: id })}
+              />
+            ) : (
+              <Note>{ANSWERERS[handOff].name}</Note>
+            )}
+          </Setting>
+          <Setting id="agents/skip-grants">
+            <Switch
+              testID="agents-skip-grants"
+              on={data.agents.skipGrants === true}
+              onChange={(on) => settings.patch("agents", { skipGrants: on || undefined })}
+            />
+          </Setting>
         </Group>
       )}
       {harnessName !== null && (
