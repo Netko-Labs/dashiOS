@@ -39,6 +39,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
 - [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
 - [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+- [x] Wave 1's nits from the VM reviews (11–14): the bar names an Access dialog; log-out asks one app at a time; no stray kombu cell in Terminal; PopUpButton and Slider take the keyboard; the Dock's Quit asks the app's question; "snip" is Screenshot… and the screenshots stay together; ⇧❖5 leaves an agent's recording running; record_screen's real length (S; `fix/0.5-wave1-nits`, VM: not yet)
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
