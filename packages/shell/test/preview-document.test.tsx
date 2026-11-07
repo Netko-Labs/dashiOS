@@ -3,6 +3,8 @@ import { copyFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
+import { useSyncExternalStore } from "react";
+import { type DocumentView, useDocument } from "../apps/preview/document.ts";
 import { fitWidthScale, layoutPages, MARGIN } from "../apps/preview/layout.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
@@ -153,5 +155,28 @@ test.skipIf(!hasTools || !existsSync(TESTPAGE))("a drag across a page's text sel
   emit({ type: "pointer", nodeId: document, phase: "up", ...from, bounds: area });
   await settle();
   expect(root.nodeId("selection:1:0")).toBeUndefined();
+  root.unmount();
+});
+
+test.skipIf(!hasTools || !existsSync(TESTPAGE))("❖C straight after ❖A copies the text, before the window has drawn the selection", async () => {
+  const pdf = join(dir, "testpage-all.pdf");
+  copyFileSync(TESTPAGE, pdf);
+  const viewer = new Viewer({ cacheDir: join(dir, "cache"), deviceScale: 1, memoryFile: null });
+  await viewer.open(pdf);
+  const seen: { doc: DocumentView | null } = { doc: null };
+  function Probe() {
+    const snap = useSyncExternalStore(viewer.subscribe, viewer.getSnapshot);
+    seen.doc = useDocument(viewer, snap.pdf, snap.turns, snap.path);
+    return null;
+  }
+  const transport: NativeTransport = { send() {}, onEvent() {}, onClose() {}, simulate() {}, close() {} };
+  const root = render(<Probe />, transport);
+  await until(() => seen.doc?.layout.boxes.length === 1);
+  // The menus run the actions of the window as last drawn: Select All, then Copy, with no draw between them.
+  const doc = seen.doc as DocumentView;
+  expect(doc.hasSelection()).toBe(false);
+  doc.selectAll();
+  expect(doc.hasSelection()).toBe(true);
+  expect(await doc.copyText()).toContain("Printer Test Page");
   root.unmount();
 });

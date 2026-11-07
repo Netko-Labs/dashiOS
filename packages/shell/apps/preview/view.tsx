@@ -97,7 +97,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
     print: () => void commands.print(hooks, snap, (printer, file) => setSheet({ kind: "print-cups", printer, pdf: file })),
     info: showInfo,
     trash: () => snap.path && setSheet({ kind: "trash" }),
-    copy: () => void commands.copy(hooks, snap, doc.range ? doc.copyText : null, doc.page),
+    copy: () => void commands.copy(hooks, snap, doc.hasSelection() ? doc.copyText : null, doc.page),
     selectAll: () => doc.selectAll(),
     copyPath: () => commands.copyPath(hooks, snap.path),
     actualSize: zoom.actual,

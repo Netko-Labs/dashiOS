@@ -100,6 +100,8 @@ export interface DocumentView {
   setStripPages(pages: readonly number[]): void;
   /** The point under the surface's local position, on the page there, or null between pages. */
   pointAt(x: number, y: number): PagePoint | null;
+  /** Whether text is selected, as of the latest select (before the window draws it: ❖A then ❖C at once). */
+  hasSelection(): boolean;
   /** The selected text, reading pages not read yet. */
   copyText(): Promise<string>;
   selectAll(): void;
@@ -110,7 +112,13 @@ export function useDocument(viewer: Viewer, pdf: PdfState | null, turns: number,
   const [zoom, setZoom] = useState<DocZoom>({ kind: "width" });
   const [scroll, setScroll] = useState<Scroll>({ x: 0, y: 0 });
   const [area, setArea] = useState<Size>({ width: 0, height: 0 });
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [selection, setSelectionState] = useState<Selection | null>(null);
+  // What is selected as of the latest select, for a Copy that comes before the window draws it.
+  const selected = useRef<Selection | null>(null);
+  const setSelection = (next: Selection | null): void => {
+    selected.current = next;
+    setSelectionState(next);
+  };
   const [stripPages, setStripPages] = useState<readonly number[]>([]);
 
   const scale = scaleFor(zoom, sizes, area);
@@ -214,7 +222,9 @@ export function useDocument(viewer: Viewer, pdf: PdfState | null, turns: number,
       const point = unturnPoint(px, py, plain, turns);
       return { page: box.page, x: point.x, y: point.y };
     },
+    hasSelection: () => selected.current !== null,
     copyText: async () => {
+      const selection = selected.current;
       if (!selection || !pdf) return "";
       const from = Math.min(selection.anchor.page, selection.focus.page);
       const to = Math.max(selection.anchor.page, selection.focus.page);
