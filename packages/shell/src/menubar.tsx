@@ -14,12 +14,12 @@ import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
+import { BarPills } from "./bar-pills.tsx";
 import { type App, appFor } from "./apps.ts";
 import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 import type { BatteryMonitor } from "./battery/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
-import { AgentPill } from "./consent.tsx";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
 import { MOON } from "./control-center/glyphs.ts";
 import type { ExtrasStore, MenuBarExtra } from "./extras/index.ts";
@@ -30,10 +30,8 @@ import { laptopEntries } from "./laptop/menu.ts";
 import type { Laptop } from "./laptop/start.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { batteryEntries, extraEntries, type StatusMenuAction } from "./menus/status-menu.ts";
-import { RecordingButton } from "./recorder/indicator.tsx";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
-import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
 import { type SystemStore, useSystem } from "./system/store.ts";
@@ -257,11 +255,7 @@ export function MenuBar({
         {titles.map(({ id, title }) => menu(id, <Text style={label}>{title}</Text>))}
       </View>
       <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16, flexShrink: 1, minWidth: 0 }}>
-        {recorder ? <RecordingButton recorder={recorder} /> : null}
-        <CapturePill store={capture} {...(recorder ? { recorder } : {})} />
-        {connected.map((agent) => (
-          <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
-        ))}
+        <BarPills capture={capture} {...(recorder ? { recorder } : {})} agents={connected} onStopAgent={onStopAgent} />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
           <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y, output)} />
           <View
