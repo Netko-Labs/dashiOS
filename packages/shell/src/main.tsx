@@ -136,7 +136,7 @@ import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { Software } from "./software/manager.ts";
 import { standIn } from "./software/stand-in.ts";
-import { checkPath, UpdateCheck } from "./software/update-check.ts";
+import { checkPath, openSoftwareUpdates, UpdateCheck } from "./software/update-check.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
@@ -484,11 +484,12 @@ const calendar = startCalendar({ notifications: notifications.store, toplevels, 
 const stopUpdateCheck = new UpdateCheck({
   software: new Software(standIn() ?? {}),
   notifications: notifications.store,
-  open: () => {
-    const window = toplevels.getSnapshot().find((each) => each.appId === "dev.dashi.software");
-    if (window) toplevels.act(window.id, "activate");
-    else openWith("dev.dashi.software", { DASHI_SOFTWARE_PAGE: "updates" });
-  },
+  open: () =>
+    openSoftwareUpdates({
+      windows: () => toplevels.getSnapshot(),
+      activate: (id) => toplevels.act(id, "activate"),
+      openWith: (appId, env) => openWith(appId, env),
+    }),
   canLook: () => {
     const { battery, network } = system.store.getSnapshot();
     return network?.kind !== "offline" && battery?.state !== "discharging";

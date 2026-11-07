@@ -131,7 +131,7 @@ function testCatalog() {
   return { url: `file://${join(dir, "index.json")}`, key: dashi.publicKey, dir };
 }
 
-function harness(options: { key?: boolean } = {}) {
+function harness(options: { key?: boolean; initialPage?: string } = {}) {
   const tree = testCatalog();
   const root = mkdtempSync(join(tmpdir(), "dashi-software-root-"));
   const log: string[] = [];
@@ -158,7 +158,7 @@ function harness(options: { key?: boolean } = {}) {
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
   const view: NativeRoot = render(
     <ServicesContext.Provider value={services}>
-      <SoftwareWindow />
+      <SoftwareWindow {...(options.initialPage ? { initialPage: options.initialPage } : {})} />
     </ServicesContext.Provider>,
     transport,
   );
@@ -249,4 +249,11 @@ test("without a catalog key the applets' place isn't in the sidebar", async () =
   expect(view.nodeId("nav:applets")).toBeUndefined();
   expect(view.nodeId("section:applets")).toBeUndefined();
   view.unmount();
+});
+
+test("the update notice's Show opens Software on Updates", async () => {
+  const { view } = harness({ initialPage: "updates" });
+  await settle(200);
+  expect(view.nodeId("updates")).toBeDefined();
+  expect(view.nodeId("discover")).toBeUndefined();
 });

@@ -6,14 +6,19 @@ import { enabledIds } from "../apps/kit/index.ts";
 import { type SoftwareMenuContext, softwareMenus } from "../apps/software/menus.ts";
 import type { NotifyInput } from "../src/notifications/types.ts";
 import type { FlatpakUpdate } from "../src/software/flatpak-parse.ts";
-import { DAY_MS, dueIn, FIRST_LOOK_MS, parseCheckState, RETRY_MS, UpdateCheck, updatesSummary } from "../src/software/update-check.ts";
+import { DAY_MS, dueIn, FIRST_LOOK_MS, parseCheckState, RETRY_MS, UpdateCheck, updatesNotice, updatesWords } from "../src/software/update-check.ts";
 
-test("the daily look's words: one line for what waits", () => {
-  expect(updatesSummary(0, 0)).toBeNull();
-  expect(updatesSummary(1, 0)).toBe("An app update is ready");
-  expect(updatesSummary(3, 0)).toBe("3 app updates are ready");
-  expect(updatesSummary(0, 40)).toBe("A system update is ready");
-  expect(updatesSummary(12, 40)).toBe("12 app updates and a system update are ready");
+test("the daily look's words: a short title, the counts in the body, and a Show button", () => {
+  expect(updatesWords(0, 0)).toBeNull();
+  expect(updatesNotice(0, 0)).toBeNull();
+  expect(updatesWords(1, 0)).toBe("An app update");
+  expect(updatesWords(3, 0)).toBe("3 app updates");
+  expect(updatesWords(0, 40)).toBe("A system update");
+  expect(updatesWords(12, 40)).toBe("12 app updates and a system update");
+  expect(updatesNotice(1, 0)).toMatchObject({ summary: "An update is ready", body: "An app update waits in Software. Nothing installs on its own." });
+  const notice = updatesNotice(2, 4);
+  expect(notice).toMatchObject({ summary: "Updates are ready", body: "2 app updates and a system update wait in Software. Nothing installs on its own." });
+  expect(notice?.actions.map((action) => action.key)).toEqual(["default", "show"]);
 });
 
 test("when the next look is due; a clock set back counts as due; a bad state file is no state", () => {
@@ -30,6 +35,7 @@ const update = (id: string, version = "2"): FlatpakUpdate =>
 
 function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePath?: string | null } = {}) {
   const posted: NotifyInput[] = [];
+  const senders: string[] = [];
   const timers: Array<{ run: () => void; ms: number }> = [];
   const listeners: Array<(event: { type: string; id: number; key?: string }) => void> = [];
   const opened: string[] = [];
@@ -42,7 +48,10 @@ function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePat
       systemUpdates: async () => ({ updates: [{ name: "kernel" }] as never, restartCauses: [] }),
     },
     notifications: {
-      notify: (input: NotifyInput) => posted.push(input),
+      notify: (input: NotifyInput, _replaces: number, sender: string) => {
+        senders.push(sender);
+        return posted.push(input);
+      },
       onEvent: (listener: never) => {
         listeners.push(listener);
         return () => {};
@@ -57,7 +66,7 @@ function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePat
     },
     ...(options.canLook ? { canLook: options.canLook } : {}),
   });
-  return { check, posted, timers, listeners, opened, advance: (ms: number) => (now += ms) };
+  return { check, posted, senders, timers, listeners, opened, advance: (ms: number) => (now += ms) };
 }
 
 test("the daily look tells once what it found, opens Software on Show, and looks again a day later", async () => {
@@ -67,7 +76,7 @@ test("the daily look tells once what it found, opens Software on Show, and looks
   check.start();
   expect(timers[0]?.ms).toBe(FIRST_LOOK_MS);
   await check.look();
-  expect(posted.map((each) => each.summary)).toEqual(["An app update and a system update are ready"]);
+  expect(posted.map((each) => each.summary)).toEqual(["Updates are ready"]);
   expect(posted[0]?.urgency).toBe("low");
   expect(timers.at(-1)?.ms).toBe(DAY_MS);
   expect(JSON.parse(readFileSync(path, "utf8")).checkedAt).toBe(1_000_000);

@@ -5,7 +5,7 @@
  * PackageKit's lists (that can ask for a password) and without installing
  * anything, then posts one quiet notification for what it found: "3 app
  * updates and a system update are ready". The same set is told once, not
- * every day. A click opens Software on Updates. When it last looked, and
+ * every day. A click, or its Show button, opens Software on Updates. When it last looked, and
  * what it told, are kept in `software-check.json` in the state folder, so a
  * restarted shell doesn't look again before the day is up.
  */
@@ -14,7 +14,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { iconPath } from "../apps.ts";
-import type { NotificationStore } from "../notifications/store.ts";
+import { type NotificationStore, SHELL_SENDER } from "../notifications/store.ts";
 import type { NotifyInput } from "../notifications/types.ts";
 import type { FlatpakUpdate } from "./flatpak-parse.ts";
 import type { Software } from "./manager.ts";
@@ -61,35 +61,69 @@ export function updatesKey(apps: readonly Pick<FlatpakUpdate, "id" | "version">[
   return JSON.stringify({ apps: apps.map((app) => `${app.id}@${app.version ?? ""}`).sort(), system });
 }
 
-/** "3 app updates and a system update are ready"; null when there is nothing. */
-export function updatesSummary(apps: number, system: number): string | null {
+/** "3 app updates and a system update"; null when there is nothing. */
+export function updatesWords(apps: number, system: number): string | null {
   const appWords = apps === 0 ? null : apps === 1 ? "An app update" : `${apps} app updates`;
-  const systemWords = system === 0 ? null : "a system update";
-  if (appWords && systemWords) return `${appWords} and ${systemWords} are ready`;
-  if (appWords) return `${appWords} ${apps === 1 ? "is" : "are"} ready`;
-  if (systemWords) return "A system update is ready";
-  return null;
+  if (system === 0) return appWords;
+  return appWords ? `${appWords} and a system update` : "A system update";
 }
 
-export const SHOW = "default";
+export const SOFTWARE_ID = "dev.dashi.software";
 
+/** A click on the notice. */
+export const CLICK = "default";
+/** Its Show button: a key of its own, since a banner draws no button for the click. */
+export const SHOW = "show";
+
+/**
+ * The notice: a title short enough for a banner's one line ("Updates are
+ * ready"), the counts in the body, and a Show button. Posted as the shell's
+ * own, so a click in the notification center runs it too.
+ */
 export function updatesNotice(apps: number, system: number): NotifyInput | null {
-  const summary = updatesSummary(apps, system);
-  if (summary === null) return null;
+  const words = updatesWords(apps, system);
+  if (words === null) return null;
+  const one = apps + (system > 0 ? 1 : 0) === 1;
   return {
     appName: "Software",
     appIcon: iconPath("software"),
-    summary,
-    body: "They wait in Software until you choose them. Nothing installs on its own.",
-    actions: [{ key: SHOW, label: "Show" }],
+    summary: one ? "An update is ready" : "Updates are ready",
+    body: `${words} ${one ? "waits" : "wait"} in Software. Nothing installs on its own.`,
+    actions: [
+      { key: CLICK, label: "Show" },
+      { key: SHOW, label: "Show" },
+    ],
     urgency: "low",
     expireTimeout: -1,
     imagePath: "",
-    desktopEntry: "dev.dashi.software",
+    desktopEntry: SOFTWARE_ID,
     category: "system",
     transient: false,
     resident: false,
   };
+}
+
+export interface SoftwareOpener {
+  /** The windows on the desktop, by app id. */
+  windows(): readonly { id: number; appId: string }[];
+  /** Brings a window forward. */
+  activate(id: number): void;
+  /** Starts a first-party app with words for it (main.tsx `openWith`); false when it isn't there or didn't start. */
+  openWith(appId: string, env: Record<string, string>): boolean;
+  log?: (line: string) => void;
+}
+
+/** Show: Software's window forward when it is open, else Software started on Updates. What it did is logged. */
+export function openSoftwareUpdates(opener: SoftwareOpener): void {
+  const log = opener.log ?? ((line: string) => console.error(line));
+  const window = opener.windows().find((each) => each.appId === SOFTWARE_ID);
+  if (window) {
+    log(`dashi-shell: the update notice brings Software forward (window ${window.id})`);
+    opener.activate(window.id);
+    return;
+  }
+  const started = opener.openWith(SOFTWARE_ID, { DASHI_SOFTWARE_PAGE: "updates" });
+  log(started ? "dashi-shell: the update notice opens Software on Updates" : "dashi-shell: the update notice couldn't start Software");
 }
 
 export interface UpdateCheckOptions {
@@ -127,7 +161,7 @@ export class UpdateCheck {
 
   start(): () => void {
     this.stopEvents = this.options.notifications.onEvent((event) => {
-      if (event.type === "action" && event.id === this.noticeId && event.key === SHOW) this.options.open();
+      if (event.type === "action" && event.id === this.noticeId && (event.key === CLICK || event.key === SHOW)) this.options.open();
     });
     this.schedule(Math.max(FIRST_LOOK_MS, dueIn(this.state.checkedAt, this.now())));
     return () => this.stop();
@@ -152,7 +186,7 @@ export class UpdateCheck {
     const systemCount = system.status === "fulfilled" ? system.value.updates.length : 0;
     const key = updatesKey(appList, systemCount);
     const notice = updatesNotice(appList.length, systemCount);
-    if (notice && key !== this.state.told) this.noticeId = this.options.notifications.notify(notice);
+    if (notice && key !== this.state.told) this.noticeId = this.options.notifications.notify(notice, 0, SHELL_SENDER);
     this.state = { checkedAt: this.now(), told: notice ? key : null };
     this.write();
     this.schedule(DAY_MS);
