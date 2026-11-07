@@ -4,7 +4,9 @@
  * confirm.ts says when it is used) but has no "Always Allow": it asks every
  * time. "Don't Allow" is the neutral button; the one that goes ahead is red
  * only for what loses work or can't be taken back (`danger`), else it is the
- * primary one: "Show Copies" and "Install" are not alarms.
+ * primary one: "Show Copies" and "Install" are not alarms. A website an
+ * agent asks to use (agents/sites.ts) is the one question here that may be
+ * kept: it has Allow Once and Always Allow.
  */
 
 import { Shortcut, useColors } from "@dashi/ui";

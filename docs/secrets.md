@@ -149,8 +149,14 @@ and bubblewrap inside it (`src/agents/sandbox.ts`):
 - `$XDG_RUNTIME_DIR` replaced by an empty one with only Dashi's MCP socket
   and a filtered session bus (`xdg-dbus-proxy`: notifications and portals;
   not systemd, so no `systemd-run` out of the scope, not the Secret Service,
-  not Flatpak): no compositor socket (so no raw `agent-input`), no Wayland or
-  X11 display (so no screencopy of its own), no 1Password sockets;
+  not Flatpak): no compositor socket (so no raw `agent-input`), no browser
+  socket (`dashi-browser.sock`, Dashi's extension's: only the shell drives
+  it; `DENIED_SOCKETS`, tested), no Wayland or X11 display (so no screencopy
+  of its own), no 1Password sockets;
+- Helium's profile (`~/.config/net.imput.helium`: the person's cookies and
+  saved passwords, and the `NativeMessagingHosts/` the browser would start
+  outside the sandbox) hidden, and Chromium's and Chrome's
+  `NativeMessagingHosts/` read-only;
 - `/run/dashi-secretd`, the 1Password CLI's configuration and the app's data
   hidden;
 - API tokens only through the token proxy: `HTTPS_PROXY` points at it, and
@@ -292,9 +298,9 @@ Agent tools (`src/agents/tools/secrets.ts`), carried out by
 | Tool | Scope | What it does |
 | --- | --- | --- |
 | `list_logins {site?}` | Sign in for you | Each saved login's site, account, source, whether it has a code, and whether agents may ask (`ask`/`never`). Never a secret |
-| `pay {window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
-| `sign_in {window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
-| `fill_code {window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
+| `pay {ref \| window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
+| `sign_in {ref \| window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
+| `fill_code {ref \| window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
 | `hand_over {window, reason}` | Manage windows and apps | "Your turn: <reason>", Done; the agent waits, the window is blank in its pictures |
 
 "Sign in for you" is a scope like the others, but every login is asked about
@@ -314,6 +320,21 @@ Before the sheet and again just before typing, the broker checks the field
   site (the same host or one under it), over https (http only on
   `*.localhost`), by the documents' `DocURL`;
 - the browser wasn't started with remote debugging (CDP, Marionette).
+
+In Helium with Dashi's extension, the agent names the field by its number
+from `read_page` (`ref`, and `tab`) instead of a window
+(`src/agents/desktop/browser-field.ts`): the extension brings the tab
+forward, focuses that element, and reports what it is now (a password field
+only by `type=password`; for a code or a card, an editable text field), whether
+it has the focus, and the address of its frame and of every frame around it
+(`webNavigation`); the browser's process is the host's parent, so its command
+line is checked for remote debugging the same way. The same check
+(`checkField`) decides. Dashi then types the secret itself, with the agent's
+hands, into the browser's window that shows the tab (its process's, by the
+tab's title): the secret never goes through the extension or its host. The
+extension marks the field filled by Dashi, so `read_page` says
+`(filled: yes, by Dashi)` and never reads it, and agents' pictures blank it
+where the extension placed it.
 
 The secret is fetched only then, typed through the agent's hands (one
 `agent-input` request), and dropped; the typing runs alone, so the agent's own
@@ -627,7 +648,12 @@ setup key.
   (`agent-tokens.test.ts`: the certificates, host matching, the swap, and
   the proxy end to end, an unlisted host getting nothing), Settings' tokens
   (`settings-tokens-view.test.tsx`), and the shell's vault client against a
-  development dashi-secretd (`vault-client.test.ts`, token items included).
+  development dashi-secretd (`vault-client.test.ts`, token items included),
+  and Dashi's browser extension (`browser-page.test.ts`: the page's text and
+  that password, card and code fields never give their value;
+  `browser-pinning.test.ts`: the extension's id, the host's and the policy's;
+  `browser-agents.test.ts`: consent per site, the sandbox's denial of the
+  browser socket, the field check by `ref`).
 
 In the VM (with the `dashi-secretd` package installed, greetd's login so
 PAM opens the vault, and the test site served from the checkout:
@@ -645,6 +671,8 @@ you navigate the page (what the mask does for a filled field).
 
 - Once signed in, the agent acts as the person on that site until the
   session ends.
+- A website's own scripts see what is typed into their page, as they
+  would the person's typing; Dashi checks it is that site's page.
 - An agent with DevTools access to a browser (CDP, `--remote-debugging-port`)
   can read field values and cookies; Dashi refuses to fill into a browser
   started that way, but filling is safe only in a browser the agent drives

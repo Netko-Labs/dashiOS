@@ -58,6 +58,11 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Orca's first announcement is the field, not the selected row (S)
 - [ ] An applet view's first draw well under 0.7 s (M)
 - [ ] Left from 0.4.0: the green control's press-and-hold menu (M), the bottom edge as a drag zone (S), a title-bar menu with Move to (M), Dashi's apps parent their dialogs (M), late prompts blanked for agents (M), errors in people's words (S)
+- [x] Agents drive Helium through Dashi's extension (L; `feat/0.5-browser-extension`, docs/actions.md "Websites"): open_url, read_page (text with numbered elements; password, card and code fields say only whether they are filled), click_element, fill_element, select_option, press, scroll_page, list_tabs, switch_tab; "Use websites" and consent per site; sign_in, fill_code and pay by `ref`; the native host and its socket (denied to the sandbox); dashi-helium installs the CRX by policy. VM: review 25 (read_page 0.16–0.3 s, a click and its load 0.6–1.1 s, against 2–4 s per screenshot step)
+- [ ] The extension's release key: generate it offline, put its public half in the manifest and the id in the host's manifest, the policy and `EXTENSION_ID` (today's is a development key) (S)
+- [ ] `pay` by `ref` checked in the VM with a test card (S; sign_in and fill_code by `ref` are)
+- [ ] Frames in read_page are listed after the page, not where they sit; a field in a cross-origin frame isn't placed for the mask (it is still never read) (M)
+- [ ] Firefox: the same extension as a WebExtension, its native host manifest under `~/.mozilla/native-messaging-hosts` (M)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
