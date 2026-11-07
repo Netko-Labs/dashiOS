@@ -7,7 +7,7 @@ use smithay::{
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
-            AsRenderElements, Element, Id, Kind,
+            AsRenderElements, Element, Kind,
             memory::{MemoryRenderBuffer, MemoryRenderBufferRenderElement},
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
             utils::RescaleRenderElement,
@@ -15,7 +15,6 @@ use smithay::{
     },
     desktop::{PopupManager, Window},
     utils::{Logical, Physical, Point, Rectangle, Scale, Size},
-    wayland::seat::WaylandFocus,
 };
 
 use super::{
@@ -145,10 +144,10 @@ pub(crate) fn framed_window<R>(
         );
     }
     // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window
-    // (and on a maximized one that draws its own).
-    let rounding = rounding(state, renderer, window, scale.x);
+    // (and on a maximized one that draws its own), on every surface that reaches them.
+    let rounding = rounding(state, renderer, window, on_view(at), scale, 1.0);
     elements.extend(tree.into_iter().map(|element| match &rounding {
-        Some(rounding) if element.id() == &rounding.root => {
+        Some(rounding) if rounding.reaches(&element) => {
             DashiElement::Rounded(rounding.element(element))
         }
         _ => DashiElement::Surface(element),
@@ -200,7 +199,7 @@ pub(crate) fn overview_window<R>(
         .windows
         .by_window(window)
         .is_some_and(|entry| entry.decor == Decor::Unified);
-    let rounding = rounding(state, renderer, window, scale.x * s);
+    let rounding = rounding(state, renderer, window, about, scale, s);
     // Its title bar or lights, the whole image shrunk with it at the same spot.
     let title = state
         .windows
@@ -224,7 +223,7 @@ pub(crate) fn overview_window<R>(
             .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
             .into_iter()
             .map(|element| match &rounding {
-                Some(rounding) if element.id() == &rounding.root => DashiElement::ScaledRounded(
+                Some(rounding) if rounding.reaches(&element) => DashiElement::ScaledRounded(
                     RescaleRenderElement::from_element(rounding.element(element), about, s),
                 ),
                 _ => DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s)),
@@ -236,21 +235,54 @@ pub(crate) fn overview_window<R>(
     elements.extend(sides.back.map(DashiElement::Depth));
 }
 
-/// How a framed window's main surface is rounded: which surface, the shader, and the corners.
+/// How a window's corners are cut: the shader, the window's box, and which corners.
 struct Rounding {
-    root: Id,
     program: smithay::backend::renderer::gles::GlesTexProgram,
-    /// In the pixels it is drawn at.
+    /// In the pixels it is drawn at (shrunk with it in the overview).
     radius: f32,
     top: bool,
+    /// The window's geometry, in the physical pixels its surfaces' elements are made at.
+    window: Rectangle<i32, Physical>,
+    /// The scale they are made at, and the radius there.
+    scale: Scale<f64>,
+    reach: i32,
 }
 
 impl Rounding {
-    fn element<R: Renderer>(
+    /// Whether `element` reaches one of the cut corners (a surface away from them is drawn as it is).
+    fn reaches<R: Renderer + ImportAll>(&self, element: &WaylandSurfaceRenderElement<R>) -> bool {
+        let at = element.geometry(self.scale);
+        let (w, r) = (self.window, self.reach);
+        let (left, right) = (w.loc.x, w.loc.x + w.size.w - r);
+        let (upper, lower) = (w.loc.y, w.loc.y + w.size.h - r);
+        let mut corners = vec![(left, lower), (right, lower)];
+        if self.top {
+            corners.extend([(left, upper), (right, upper)]);
+        }
+        corners
+            .into_iter()
+            .any(|(x, y)| at.overlaps(Rectangle::new((x, y).into(), (r, r).into())))
+    }
+
+    fn element<R: Renderer + ImportAll>(
         &self,
         element: WaylandSurfaceRenderElement<R>,
     ) -> super::rounded::RoundedElement<R> {
-        super::rounded::RoundedElement::new(element, self.program.clone(), self.radius, self.top)
+        let at = element.geometry(self.scale);
+        let (w, h) = (at.size.w.max(1) as f32, at.size.h.max(1) as f32);
+        let window = [
+            (self.window.loc.x - at.loc.x) as f32 / w,
+            (self.window.loc.y - at.loc.y) as f32 / h,
+            self.window.size.w as f32 / w,
+            self.window.size.h as f32 / h,
+        ];
+        super::rounded::RoundedElement::new(
+            element,
+            self.program.clone(),
+            self.radius,
+            self.top,
+            window,
+        )
     }
 }
 
@@ -258,8 +290,16 @@ impl Rounding {
 /// maximized (the shell's Fill: its own corners and shadow go then, and a maximized window is
 /// rounded as Dashi's are); none full screen, or with square corners chosen. Under Dashi's
 /// title bar only the bottom corners (the bar rounds the top), otherwise all four.
-/// `pixels`: physical pixels per logical one where it is drawn (its scale, times how small).
-fn rounding<R>(state: &Dashi, renderer: &mut R, window: &Window, pixels: f64) -> Option<Rounding>
+/// `at`: the window's geometry where its surfaces' elements are made, at `scale`; `small`: how
+/// much they are shrunk after (the overview), 1 otherwise.
+fn rounding<R>(
+    state: &Dashi,
+    renderer: &mut R,
+    window: &Window,
+    at: Point<i32, Physical>,
+    scale: Scale<f64>,
+    small: f64,
+) -> Option<Rounding>
 where
     R: Renderer + GlesAccess,
 {
@@ -272,14 +312,14 @@ where
     }
     let top = entry.decor != Decor::Standard;
     let program = super::rounded::program(renderer.gles())?;
-    let root = window
-        .wl_surface()
-        .map(|surface| Id::from_wayland_resource(&*surface))?;
+    let reach = f64::from(state.chrome_style.radius) * scale.x;
     Some(Rounding {
-        root,
         program,
-        radius: (f64::from(state.chrome_style.radius) * pixels) as f32,
+        radius: (reach * small) as f32,
         top,
+        window: Rectangle::new(at, window.geometry().size.to_physical_precise_round(scale)),
+        scale,
+        reach: reach.ceil() as i32,
     })
 }
 
