@@ -21,7 +21,25 @@ export type EngineInput =
   | { t: "copy" }
   /** The terminal's ink, ground, and 16 ANSI colors (palette.ts). */
   | { t: "colors"; fg: string; bg: string; palette: readonly string[] }
-  | { t: "running" };
+  | { t: "running" }
+  /** Bring the prompt `prompts` before (−1, ❖↑) or after (1, ❖↓) the view's top into view. */
+  | { t: "jump"; prompts: number }
+  /** Select the output of the command whose prompt is on view row `y`. */
+  | { t: "select-output"; y: number }
+  /** ❖K: the scrollback goes (and the screen, at a prompt). */
+  | { t: "clear" };
+
+export interface EngineOptions {
+  /** The folder the shell starts in; home when none. */
+  cwd?: string | null;
+  /** The shell integration's scripts (integration/), or null to start the shell without them. */
+  integration?: string | null;
+}
+
+/** The shell integration's scripts, beside this file; `DASHI_TERMINAL_INTEGRATION=0` starts shells without them. */
+export function integrationDir(env: Record<string, string | undefined> = process.env): string | null {
+  return env.DASHI_TERMINAL_INTEGRATION === "0" ? null : join(import.meta.dir, "integration");
+}
 
 export interface Engine {
   send(input: EngineInput): void;
@@ -44,9 +62,31 @@ export function engineBinary(env: Record<string, string | undefined> = process.e
   return candidates.find((path): path is string => typeof path === "string" && path !== "" && exists(path)) ?? null;
 }
 
-export function startEngine(binary: string, size: { cols: number; rows: number }, onMessage: (message: EngineMessage) => void): Engine {
-  const home = process.env.HOME;
-  const child = Bun.spawn([binary, "--cols", String(size.cols), "--rows", String(size.rows), ...(home ? ["--cwd", home] : [])], {
+/** dashi-term's command line. */
+export function engineArgs(binary: string, size: { cols: number; rows: number }, options: EngineOptions, home: string | undefined): string[] {
+  const cwd = options.cwd ?? home;
+  return [
+    binary,
+    "--cols",
+    String(size.cols),
+    "--rows",
+    String(size.rows),
+    ...(cwd ? ["--cwd", cwd] : []),
+    ...(options.integration ? ["--integration", options.integration] : []),
+  ];
+}
+
+/**
+ * Start a dashi-term. `onMessage` hears what it says, and `gone` if it goes
+ * away without saying the shell exited (it crashed, or couldn't start one).
+ */
+export function startEngine(
+  binary: string,
+  size: { cols: number; rows: number },
+  onMessage: (message: EngineMessage) => void,
+  options: EngineOptions = {},
+): Engine {
+  const child = Bun.spawn(engineArgs(binary, size, options, process.env.HOME), {
     stdin: "pipe",
     stdout: "pipe",
     stderr: "inherit",
@@ -54,17 +94,28 @@ export function startEngine(binary: string, size: { cols: number; rows: number }
   const lines = new LineBuffer();
   // Answers to `running` come back in the order the questions went.
   const asking: ((program: string | null) => void)[] = [];
-  void (async () => {
-    for await (const chunk of child.stdout) {
-      for (const line of lines.push(chunk)) {
-        const message = parseEngineLine(line);
-        if (message?.t === "running") asking.shift()?.(message.program);
-        else if (message) onMessage(message);
-      }
-    }
-    for (const answer of asking.splice(0)) answer(null);
-  })();
   let open = true;
+  void (async () => {
+    let exited = false;
+    try {
+      for await (const chunk of child.stdout) {
+        for (const line of lines.push(chunk)) {
+          const message = parseEngineLine(line);
+          if (message?.t === "running") asking.shift()?.(message.program);
+          else if (message) {
+            exited ||= message.t === "exit";
+            onMessage(message);
+          }
+        }
+      }
+    } catch {}
+    for (const answer of asking.splice(0)) answer(null);
+    // Hung up on purpose (`stop`): the tab is closing, there is no one to tell.
+    if (!exited && open) {
+      open = false;
+      onMessage({ t: "gone" });
+    }
+  })();
   const engine: Engine = {
     running() {
       if (!open) return Promise.resolve(null);

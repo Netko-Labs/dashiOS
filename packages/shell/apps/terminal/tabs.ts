@@ -1,16 +1,20 @@
 /**
- * A Terminal window's tabs: one dashi-term each, in the order the tab bar
- * shows them, one of them in front. Pure: the view keeps a `Tabs` in state
- * and the engines beside it, keyed by the tab's id.
+ * A Terminal window's tabs: one dashi-term each, in the order the title
+ * bar shows them, one of them in front. Pure: the view keeps a `Tabs` in
+ * state, the engines beside it keyed by the tab's id, and each tab's screen
+ * in the store (store.ts), so a frame doesn't re-render the tabs.
  */
 
-import { EMPTY_SCREEN, type Screen } from "./screen.ts";
+import { type Naming, UNNAMED } from "./naming.ts";
 
 export interface Tab {
   id: number;
-  /** What the program last set (OSC 0/2), else "Terminal". */
-  title: string;
-  screen: Screen;
+  /** What it is called (naming.ts). */
+  naming: Naming;
+  /** The bell rang while the tab was behind another: a dot on it until it comes forward. */
+  rang: boolean;
+  /** Its engine went away without the shell exiting: the grid says so and Return starts another. */
+  lost: boolean;
 }
 
 export interface Tabs {
@@ -22,7 +26,7 @@ export interface Tabs {
 export const NO_TABS: Tabs = { list: [], active: -1 };
 
 export function newTab(id: number): Tab {
-  return { id, title: "Terminal", screen: EMPTY_SCREEN };
+  return { id, naming: UNNAMED, rang: false, lost: false };
 }
 
 /** `tab` opened just after the one in front, and brought to the front. */
@@ -40,11 +44,17 @@ export function closeTab(tabs: Tabs, id: number): Tabs {
   const list = tabs.list.filter((tab) => tab.id !== id);
   if (list.length === 0) return NO_TABS;
   if (tabs.active !== id) return { list, active: tabs.active };
-  return { list, active: (list[at] ?? list[at - 1] ?? list[0])?.id ?? -1 };
+  return front({ list, active: (list[at] ?? list[at - 1] ?? list[0])?.id ?? -1 });
+}
+
+/** The tab in front has been seen: its bell dot goes. */
+function front(tabs: Tabs): Tabs {
+  const tab = activeTab(tabs);
+  return tab?.rang ? updateTab(tabs, tab.id, (each) => ({ ...each, rang: false })) : tabs;
 }
 
 export function selectTab(tabs: Tabs, id: number): Tabs {
-  return tabs.list.some((tab) => tab.id === id) ? { ...tabs, active: id } : tabs;
+  return tabs.list.some((tab) => tab.id === id) ? front({ ...tabs, active: id }) : tabs;
 }
 
 /** The tab `delta` places from the one in front, wrapping around (⇧❖[ and ⇧❖]). */
@@ -56,19 +66,30 @@ export function stepTab(tabs: Tabs, delta: number): Tabs {
     tabs.list.findIndex((tab) => tab.id === tabs.active),
   );
   const next = tabs.list[(((at + delta) % count) + count) % count];
-  return next ? { ...tabs, active: next.id } : tabs;
+  return next ? selectTab(tabs, next.id) : tabs;
 }
 
 /** The tab at `index` in front (the View menu's rows, ❖1…❖9). */
 export function showIndex(tabs: Tabs, index: number): Tabs {
   const tab = tabs.list[index];
-  return tab ? { ...tabs, active: tab.id } : tabs;
+  return tab ? selectTab(tabs, tab.id) : tabs;
 }
 
-/** Tab `id` changed by `change`; the others keep their identity, so their rows don't redraw. */
+/** Tab `id` changed by `change`; the same object when nothing changed, so the window doesn't re-render. */
 export function updateTab(tabs: Tabs, id: number, change: (tab: Tab) => Tab): Tabs {
-  if (!tabs.list.some((tab) => tab.id === id)) return tabs;
-  return { ...tabs, list: tabs.list.map((tab) => (tab.id === id ? change(tab) : tab)) };
+  let changed = false;
+  const list = tabs.list.map((tab) => {
+    if (tab.id !== id) return tab;
+    const next = change(tab);
+    changed = next !== tab;
+    return next;
+  });
+  return changed ? { ...tabs, list } : tabs;
+}
+
+/** The bell rang in tab `id`: a dot when it is behind another (the one in front flashes instead). */
+export function ring(tabs: Tabs, id: number): Tabs {
+  return id === tabs.active ? tabs : updateTab(tabs, id, (tab) => (tab.rang ? tab : { ...tab, rang: true }));
 }
 
 export function activeTab(tabs: Tabs): Tab | undefined {

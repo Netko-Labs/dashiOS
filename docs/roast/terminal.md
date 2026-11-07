@@ -74,3 +74,28 @@ All of it is calm, all of it is Dashi's, and each piece makes the scrollback fee
 - **Second bars.** Terminal's tab bar is a second chrome row. The guidelines should spell out where tabs go under "one chrome row": in the title bar or unified toolbar, never under it.
 - **Title-bar text.** design.html's Terminal example ("dashi@dashi:~ — 96×26") doesn't match what ships ("Terminal — 96×26"). Either ship the title integration or fix the doc.
 - **Ctrl+arrows are taken globally** for Spaces and Overview (`keymap.ts:83-88`). Terminal users who rely on them (tmux, vim, readline word motion) never get them. The guidelines should decide whether terminals keep Ctrl+arrows or whether Dashi documents ⌥ as the replacement.
+
+**Where it stands (0.5.0, `feat/0.5-terminal`)**
+
+The big idea shipped: shell integration for zsh, bash and fish, on by default without touching anyone's rc files (`apps/terminal/integration/`, `crates/dashi-term/src/integration.rs`); tabs named by folder and running command (`naming.ts`); new tabs and windows open where the front tab is; ❖↑ ❖↓ jump between prompts; a failed command gets an ume mark in the margin, and a press on any command's row in the margin selects its output (`marks.rs`, `grid.tsx`). A notice when a long command ends in a window behind moved to `tasks/todo.md` (Terminal), since an app has no notification client yet.
+
+- [x] 1 Palette: shipped before (`palette.ts`); the cursor has its own kombu now, AA under the letter it covers.
+- [x] 2 The grid: every span is pinned to its columns (`x`, `w` from dashi-term); wide and foreign characters sit in their own cells (`line.tsx`, `frame.rs`).
+- [x] 3 Performance: screens live in a store outside React (`store.ts`); a frame redraws the grid's changed rows, not the tabs or the menus.
+- [x] 4 Closing asks (wave 1).
+- [x] 5 ⇧❖W closes the window; the menu test runs `reservedBy`, with Terminal's own keymap class.
+- [x] 6 Tabs in the title bar's row (`tab-strip.tsx`, VS-1, VS-4).
+- [ ] 7 Mouse: the wheel is ↑ ↓ in a full-screen program that hasn't asked for the mouse (`vt.rs`); mouse reporting moved to `tasks/todo.md`.
+- [ ] 8 Find: moved to `tasks/todo.md`.
+- [x] 9 Scrollback: a bar at the right edge while scrolled back, ⇧PgUp ⇧PgDn, ❖↑ ❖↓ between prompts, ×3 only for a wheel's whole notches. (Typing goes back to the bottom; no separate pill.)
+- [x] 10 Titles: named by folder and command; the size shows only while resizing.
+- [ ] 11 View › Bigger, Smaller, Actual Size (❖= ❖- ❖0) re-measure the cell; the Settings pane and profiles moved to `tasks/todo.md`.
+- [ ] 12 Bell: the grid's edge lights, and a tab behind gets a dot; the Dock's attention dot moved to `tasks/todo.md`.
+- [ ] 13 Links: moved to `tasks/todo.md`.
+- [ ] 14 Copy is enabled only with a selection, and a right-click menu has Copy, Paste, Select All, Clear Scrollback; middle-click and ⇧-click moved (mirin's `PointerInfo` has no button).
+- [x] 15 A lost engine says so and Return starts a new shell; a missing dashi-term opens a window that says so.
+- [ ] 16 Clear Scrollback (❖K) and new tabs in the same folder shipped; split panes, reordering and renaming tabs moved to `tasks/todo.md`.
+- [ ] 17 The block cursor is kombu with the letter in the ground's color; hollow without focus (mirin reports no window focus) and blink moved.
+- [x] 18 No hard-coded grounds left: the tabs sit on the window's surface, the grid on the palette's ground.
+- [ ] 19 PTY writes still block the main loop; moved to `tasks/todo.md`.
+- [x] 20 Tabs: × on the left, the bell's dot on the right (no spacer), + in the toolbar, a cut name shows whole in a tooltip; middle-click close moved (no button).

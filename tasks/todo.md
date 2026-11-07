@@ -39,7 +39,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8; `feat/0.5-notes`, needs mirin's styled-runs patch, VM: not yet)
 - [x] Editor's document surface with versioned autosave (L; `feat/0.5-editor`, mirin patch `mirin-editor.patch`: `TextInput` `highlights` and `lineNumbers`; VM: not yet)
   - Left from the Editor roast (docs/roast/editor.md): per-keystroke O(n) passes and the 4 MB cap, the view following the caret, Reopen with Encoding, Replace one at a time and a find row, wrap/tabs/auto-indent/Print/syntax, tabs, a Settings pane
-- [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
+- [x] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4; `feat/0.5-terminal`, VM: not yet)
 - [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
 - [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
 - [x] Wave 1's nits from the VM reviews (11–14): the bar names an Access dialog; log-out asks one app at a time; no stray kombu cell in Terminal; PopUpButton and Slider take the keyboard; the Dock's Quit asks the app's question; "snip" is Screenshot… and the screenshots stay together; ⇧❖5 leaves an agent's recording running; record_screen's real length (S; `fix/0.5-wave1-nits`, VM: not yet)
@@ -474,8 +474,13 @@ it in the VM.
 - [ ] Terminal and Text Editor: the close control and ❖Q ask too (needs the mirin item above)
 - [x] Text Editor: ❖W asks like File › Close, unsaved text kept as it is typed, a window title
       per document, Revert asks (and is one Undo step), the caret stays put on ❖S and after sheets
-- [ ] Terminal: wide-character width check, mouse reporting to programs,
-      Kitty graphics, cursor blink, URL detection, preferences
+- [ ] Terminal: mouse reporting to programs (the wheel is ↑ ↓ in full-screen programs already),
+      Find in the scrollback, Kitty graphics, cursor blink, URL detection, a preferences pane, split panes
+      (docs/roast/terminal.md, "Where it stands")
+- [ ] Terminal: a notice when a long command ends in a window behind; the Dock's attention dot
+      for the bell; a hollow cursor in a window without focus (mirin reports no window focus yet);
+      middle-click paste, ⇧-click, a tab's middle-click close (PointerInfo has no button);
+      tabs dragged to reorder or out to a window, renamed; PTY writes off the main loop
 - [ ] A Dashi-native installer front end over Anaconda
 
 ## Later

@@ -44,9 +44,9 @@ function matchesKey(keys: readonly string[], key: string): boolean {
   return keys.some((wanted) => wanted === "*" || (wanted === "letter" ? /^[a-z]$/.test(key) : wanted === key));
 }
 
-/** Whether `rule` takes `chord` (Super held) from a Dashi app (the keymap's `metal` class). */
-function takes(rule: Rule, chord: PressedChord): boolean {
-  if (rule.app !== undefined && rule.app !== "metal") return false;
+/** Whether `rule` takes `chord` (Super held) from a Dashi app in the keymap's `classes` (`metal`, and its own). */
+function takes(rule: Rule, chord: PressedChord, classes: readonly string[]): boolean {
+  if (rule.app !== undefined && !classes.includes(rule.app)) return false;
   const when = parseWhen(rule.when);
   // Super, Ctrl, and Alt match exactly; Shift only when the rule names it.
   if (!when.super || when.ctrl !== chord.ctrl || when.alt !== chord.alt) return false;
@@ -55,13 +55,16 @@ function takes(rule: Rule, chord: PressedChord): boolean {
 }
 
 /**
- * The rule that takes the ❖ chord before `app-chord` does, written as the
- * keymap writes it ("super+q"), or null when the chord reaches the app's menus.
+ * The rule that takes the ❖ chord before an `app-chord` rule does, written as
+ * the keymap writes it ("super+q"), or null when the chord reaches the app's
+ * menus. `classes`: the keymap's app classes the app is in (Terminal is in
+ * `dashiTerminal` too, whose own rule hands it ❖↑ and ❖↓).
  */
-export function reservedBy(chord: PressedChord, keymap: Keymap = KEYMAP): string | null {
+export function reservedBy(chord: PressedChord, keymap: Keymap = KEYMAP, classes: readonly string[] = ["metal"]): string | null {
   for (const rule of keymap.rules) {
+    if (!takes(rule, chord, classes)) continue;
     if (rule.bind === APP_CHORD) return null;
-    if (takes(rule, chord)) return rule.bind !== undefined && APP_FIRST.has(rule.bind) ? null : rule.when;
+    return rule.bind !== undefined && APP_FIRST.has(rule.bind) ? null : rule.when;
   }
   return null;
 }

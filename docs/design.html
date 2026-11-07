@@ -250,10 +250,10 @@
     <h2 id="vertical-space">Vertical space</h2>
     <p>A laptop screen is wide and short. Every row of chrome is a row of someone's work, so a window gets exactly one: the 28 px title bar, or the app's 38 px unified toolbar. Everything that wants to live in a second row finds a home in that one, in the sidebar, or in the content.</p>
     <ol class="rules">
-      <li id="vs-1"><b class="rid">VS-1</b><div>One chrome row per window: the title bar or the unified toolbar, with nothing stacked under it.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a> roast · its tab bar is a second 28 px row (<code>apps/terminal/tab-bar.tsx</code>)</span></div></li>
+      <li id="vs-1"><b class="rid">VS-1</b><div>One chrome row per window: the title bar or the unified toolbar, with nothing stacked under it.<span class="tags"><code>dashi-ui/src/window.tsx</code> · Terminal: its tabs are in the title bar's row (<code>shell/apps/terminal/tab-strip.tsx</code>)</span></div></li>
       <li id="vs-2"><b class="rid">VS-2</b><div>Titles are one line. A count or a scope that belongs to the title follows it on the same line, muted, after an em dash ("All Notes — 3 notes", <code>AppWindow</code>'s <code>detail</code>); anything longer goes in the sidebar or the content. <code>AppWindow</code> takes no <code>subtitle</code>, and a toolbar control never wraps to a second line.</div></li>
       <li id="vs-3"><b class="rid">VS-3</b><div>No footer bar. Something that is happening (progress, an error with its action) is a notice that floats over the foot of the content (<code>AppWindow</code>'s <code>notice</code>, <code>@dashi/ui</code>'s <code>Notice</code>), takes no room from it, and leaves when it's done or dismissed. <code>AppWindow</code> takes no <code>footer</code>.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/activity-monitor.md">Activity Monitor</a> roast · its summary graphs are content under the table, 132 px, and View › Show Summary hides them (<code>apps/activity-monitor/summary.tsx</code>)</span></div></li>
-      <li id="vs-4"><b class="rid">VS-4</b><div>Tabs live in the toolbar row, never in a row of their own.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a> roast</span></div></li>
+      <li id="vs-4"><b class="rid">VS-4</b><div>Tabs live in the toolbar row, never in a row of their own.<span class="tags"><code>shell/apps/terminal/tab-strip.tsx</code>, in <code>AppWindow</code>'s <code>center</code></span></div></li>
       <li id="vs-5"><b class="rid">VS-5</b><div>State notices ("Offline · showing saved results") are a chip in the toolbar, not a box above the content: 24 tall, a pill, 11 px muted words on <code>button</code>. Software's saved-results chip and its queue's activity ("Installing VLC 42% · 2 waiting") are two (<code>apps/software/states.tsx</code>).</div></li>
       <li id="vs-6"><b class="rid">VS-6</b><div>Full screen and Fill are different things: making a window bigger never hides the menu bar unless the person asked for full screen.</div></li>
     </ol>
@@ -410,6 +410,19 @@
       <tr><td>Cyan · bright</td><td><code>#22786A</code> · <code>#1B665A</code></td><td><code>#5FBFA6</code> · <code>#86D6C0</code></td></tr>
       <tr><td>White · bright</td><td><code>#D6D3CC</code> · <code>#F3F1EC</code></td><td><code>#D8D8DC</code> · <code>#F5F5F7</code></td></tr>
       <tr><td>Selection</td><td colspan="2">kombu, 25% in Light Mode and 40% in Dark Mode</td></tr>
+      <tr><td>Cursor</td><td><code>#357A64</code></td><td><code>#5FAE95</code></td></tr>
+    </table>
+    <p>The cursor is kombu, and a block cursor draws the letter under it in the ground's color (at least 4.5:1 on the cursor in both modes), so it never hides it. The grid is a fixed grid of cells: each run of text is drawn from its first column, and a character two cells wide (CJK, emoji) or from another face (icons) sits in its own cells, centered and clipped, so the cursor, the selection and the pointer always land on the text (<code>apps/terminal/line.tsx</code>).</p>
+    <h3 id="terminal-shell">Terminal and the shell</h3>
+    <p>Terminal ships shell integration for zsh, bash and fish (<code>apps/terminal/integration/</code>), loaded without editing anyone's rc files: zsh through <code>ZDOTDIR</code>, bash through POSIX mode's <code>ENV</code>, fish through <code>XDG_DATA_DIRS</code>; each puts back what it borrowed before reading the person's own files (<code>crates/dashi-term/src/integration.rs</code>). The shell says its folder (OSC 7) and where each prompt, command and output starts and how it ended (OSC 133). <code>DASHI_TERMINAL_INTEGRATION=0</code> starts shells without it.</p>
+    <table>
+      <tr><th>What</th><th>How it looks</th></tr>
+      <tr><td>A tab's name</td><td>Its folder at the prompt ("dashiOS", "~"), its command while one runs ("cargo build", cut at 40 characters); a program that names itself while it runs (vim, ssh) keeps its name (<code>naming.ts</code>). New tabs and windows open in the front tab's folder.</td></tr>
+      <tr><td>A command that failed</td><td>A 3 px ume bar in the 12 px margin left of the grid, on its prompt row, inset 2 px top and bottom. Every command's row in the margin lights on hover, and a press selects that command's output (<code>grid.tsx</code>).</td></tr>
+      <tr><td>❖↑ ❖↓</td><td>The prompt before or after the view's top comes to the top (View › Previous Prompt, Next Prompt).</td></tr>
+      <tr><td>Scrolled back</td><td>A 4 px bar at the right edge, ink at 50%, at least 16 px tall, only while the view is off the last rows.</td></tr>
+      <tr><td>Resizing</td><td>The grid's size ("96×26") in a pill in the middle for 1 s after it changes; never in the title.</td></tr>
+      <tr><td>The bell</td><td>The grid's edge lights 2 px in the cursor's kombu for 150 ms; in a tab behind, a 6 px dot on its tab until it comes forward.</td></tr>
     </table>
 
     <h3 id="color-rules">Color rules</h3>
@@ -568,7 +581,7 @@
       <li>Standard bar 28 with a centered SemiBold 13 title, clear of 84 px each side. A unified window gives the app a 38 px toolbar strip and keeps a 76 × 38 corner for the controls.</li>
       <li>A unified window keeps its controls in full screen, in the same corner and working the same; its toolbar never shows an empty gap where they were. A standard title bar leaves in full screen, and a window without Dashi's chrome (a game, a video player, an app with its own title bar) stays edge to edge.</li>
       <li>Wherever a window is drawn small or moving (Overview, minimizing to the Dock, a Desktop sliding in, window and Desktop pictures), its controls or title bar shrink with it, at the same spot (<code>render/windows.rs</code>, <code>render/thumbnails/draw.rs</code>).</li>
-      <li>An app with no toolbar controls (Terminal) takes the standard bar, not a unified one, and keeps it current with the window title (<code>setTitle</code>): one slim line, "Terminal — 96×26" today.</li>
+      <li>Terminal takes the unified bar: its one row says the front tab's name ("dashiOS"), or holds the tabs themselves once there are two, with a + at its end (<code>apps/terminal/tab-strip.tsx</code>); the window title (<code>setTitle</code>) follows the front tab for the Dock and the switcher.</li>
       <li>The zoom control uses a lighter kombu (<code>#4A9A7E</code>) than the accent so an 11 px square reads on the bar.</li>
       <li>Windows resize from any edge: 6 px outside and 3 px inside the frame.</li>
       <li>What the square does is in <a href="#window-management">Window management</a>.</li>
