@@ -36,7 +36,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
 - [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
-- [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
+- [x] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8; `feat/0.5-notes`, needs mirin's styled-runs patch, VM: not yet)
 - [ ] Editor's document surface with versioned autosave (L)
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
 - [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)

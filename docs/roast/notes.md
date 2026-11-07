@@ -61,3 +61,26 @@ Make it one live page. Drop the Edit/Preview switch and render Markdown as you t
 - `EmptyState` callers use Title Case ("No Notes"). The brand says sentence case and suggests Kombu for empty states, so `EmptyState` could take an optional Kombu.
 - Popup menus should always anchor to `event.bounds`. Hard-coded coordinates break as soon as the window size changes.
 - System error text needs a shared "plain sentence" helper so errno strings never reach the screen.
+
+**Where it went (0.5.0)**
+
+The big idea shipped in 0.5.0 wave 2: one live page (`apps/notes/editor.tsx`, `markup.ts`, `look.ts`), on mirin's styled runs in a text field (mirin's `docs/metal.md`, "Styled runs"). The Edit/Preview switch is gone.
+
+- [x] 1. Clicking places the caret, dragging selects (mirin's text model, 0.5.0 wave 1).
+- [x] 2. Edit menu: Undo and Redo of the typing (a run of typing is one step, each format command its own) and of a deleted note, Cut, Copy, Paste, Select All, Find, Find Next, Find Previous (`menus.ts`, `model.ts`).
+- [x] 3. A change on disk is never written over: the typing is kept as "Title (conflict)" (0.4, `conflict.ts`).
+- [x] 4. One chrome row: the count follows the title, no footer (0.4).
+- [x] 5. Markdown formatted as it is typed (headings sized, bold, italic, code, struck, links, quotes, markers faded); Format menu with ❖B, ❖I, ⇧❖X, ❖E, ❖K, ❖1–❖3, ❖0 and ⇧❖L (`format.ts`, `formats.ts`).
+- [x] 6. Boxes tick in the text; Checklist turns the lines the caret is on into items (or back).
+- [ ] 7. Attachments: moved to a later Notes item. A field can't draw an image inline yet (mirin), and a dropped file needs a place outside the folder list.
+- [x] 8. A file is renamed to follow its title once, when the note is left, not at every pause (`store.ts` `settleName`). Pins are still keyed by file name: moved on with 15.
+- [x] 9. A save updates that note in memory instead of reading the whole folder again. The watcher's echo of Notes' own write and the uncached trash remain: moved to a later Notes item.
+- [x] 10. Empty states in sentence case with what to do ("Write your first note", "No note open"), and a quiet line in an empty list. Kombu in the empty state waits for the mascot as an image the apps can draw (none exists in code yet).
+- [x] 11. Toolbar buttons have tooltips (0.4); the move menu opens under its button (`ToolbarButton` passes its bounds).
+- [x] 12. Same as 11 (the menu at x 330).
+- [x] 13. Errors are plain sentences, never errno or a note id (`errors.ts`).
+- [ ] 14. The list's "Notes" caption is "Others" now, so it can't collide with a folder. Renaming the default folder and hiding it until a second folder exists: moved on with 15.
+- [ ] 15. Nested folders, dragging notes onto folders, Rename and Delete Folder outside the open folder: moved to a later Notes item, on the shared drag helper (design.html PA-11).
+- [x] 16. Delete from the list can be undone (Edit › Undo Delete Note); the stale "no Ctrl" comments are gone.
+- [x] 17. "New Folder…", "Rename Folder…", "Delete Forever…" have their ellipses; the filler "Name this folder." is gone.
+- [x] 18. The search's words are washed in the open note, Find Next and Find Previous step through them, and Esc in the search gives the keyboard back to the list.

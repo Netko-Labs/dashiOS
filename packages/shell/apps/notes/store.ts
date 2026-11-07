@@ -91,15 +91,22 @@ export class NotesStore {
     }
   }
 
-  /** Saves the title and body (the file is renamed to follow the title); returns the note as it is now, with its new id. */
-  save(id: string, change: { title: string; body: string }): Note {
+  /** Saves the title and body (the file is renamed to follow the title, unless `rename` is false); returns the note as it is now, with its id. */
+  save(id: string, change: { title: string; body: string }, options: { rename?: boolean } = {}): Note {
     const { folder, file } = this.locate(id);
     const path = join(this.dir(folder), file);
     const current = parseNote(readFileSync(path, "utf8"));
     // A file from elsewhere keeps the way it writes its first line; a new, empty note starts with "# ".
     const heading = current.heading || (current.title === "" && current.body.trim() === "");
     writeAtomic(path, serializeNote({ title: change.title, body: change.body, heading }));
-    return this.read(this.follow(folder, file, change.title));
+    // The window saves as it is typed in without renaming (sync tools would see a delete and a create at every pause), and names the file once the note is left (`settleName`).
+    return this.read(options.rename === false ? id : this.follow(folder, file, change.title));
+  }
+
+  /** Renames a note's file to follow its title, if it doesn't yet; returns the id it has now. */
+  settleName(id: string): string {
+    const { folder, file } = this.locate(id);
+    return this.follow(folder, file, this.read(id).title);
   }
 
   /** Adds `text` on a new line at the end of the note. */

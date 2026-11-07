@@ -11,6 +11,9 @@ import { isAbsolute, join, relative, resolve, sep } from "node:path";
 export const MAX_NAME_BYTES = 120;
 /** What an empty title is called on disk. */
 export const UNTITLED = "Untitled";
+/** What an untitled note is called wherever its title shows: what its file is called. */
+export const untitled = (title: string): string => (title.trim() === "" ? UNTITLED : title);
+
 /** What the root folder is called in the sidebar (the notes that sit directly in the root). */
 export const DEFAULT_FOLDER_NAME = "Notes";
 
