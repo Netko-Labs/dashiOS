@@ -17,6 +17,7 @@ import { LINK_BADGE } from "./glyphs.ts";
 import { iconFor, previewFor, thumbnails } from "./icons.ts";
 import type { FileItem } from "./items.ts";
 import { RenameField } from "./rename-field.tsx";
+import { tileName } from "./tile-name.ts";
 
 const TILE_WIDTH = 104;
 const TILE_HEIGHT = 98;
@@ -25,6 +26,8 @@ const TALL_TILE_HEIGHT = 114;
 const PICTURE = 56;
 const ROW_GAP = 4;
 const PADDING = 10;
+/** The room a name has on each of its two lines under a tile, in ems of its 12 px type: 84 px. */
+const NAME_ROOM = (TILE_WIDTH - 20) / 12;
 
 /** How many tiles fit across `width`. */
 export const columnsFor = (width: number): number => Math.max(1, Math.floor((width - 2 * PADDING) / TILE_WIDTH));
@@ -111,7 +114,7 @@ function Tile({
         ) : (
           <View style={{ maxWidth: TILE_WIDTH - 10, paddingHorizontal: 5, paddingVertical: 1 }}>
             <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
-              {middleEllipsis(item.name, 24)}
+              {tileName(item.name, NAME_ROOM)}
             </Text>
           </View>
         )}
