@@ -55,7 +55,9 @@ function savedNotice(file: string) {
 export function recordRefusal(mode: string, state: RecorderState): string | null {
   if (mode !== "record-screen" && mode !== "record-area") return null;
   if (state.kind === "idle") return null;
-  return (state.kind === "recording" || state.kind === "starting") && state.by === "agent" ? "An agent is recording the screen" : "The screen is already being recorded";
+  return (state.kind === "recording" || state.kind === "starting") && state.by === "agent"
+    ? "An agent is recording the screen"
+    : "The screen is already being recorded";
 }
 
 /** Whether ⇧❖5 stops the recording now instead of opening the toolbar: the person's own is running. */
