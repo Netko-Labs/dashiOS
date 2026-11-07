@@ -61,7 +61,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
 | `tools` | `dashi://tool/<name>` (`dashi://tool/force-quit-app`) | the agents' tool, as the person when `who` is `both` |
-| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first |
+| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts`; `…/capture`, `…/screenshot`, `…/screenshot-area` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first. The screenshots are ⇧❖5's toolbar, ⇧❖3's screen, and ⇧❖4's area; Screenshot of the Screen is `destructive`, so a link only opens it (a program must not get the screen without asking) |
 | `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every row of every pane, from the settings registry (see below) | opens the pane; a row that is one value is a toggle or a pick: one named for agents runs `set_setting` as the person, the person's own changes through the registry's store; any other row opens Settings scrolled to it and lit |
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
@@ -535,7 +535,14 @@ keymap again as soon as the file changes. Aliases (`launcher.aliases`, `{
 
 Window arranging is bound so now: ⌃❖←→↑↓ to `dashi://window/arrange/<arrow>`,
 ⌃❖↩ to `…/fill`, ⌃❖C to `…/center`, ⌃❖R to `…/restore`, ⌃❖F to
-`dashi://window/full-screen`. ⌥❖V is `dashi://clipboard/history`.
+`dashi://window/full-screen`. ⌥❖V is `dashi://clipboard/history`. The
+screenshots are too: ⇧❖3 is `dashi://dashi/screenshot` (Screenshot of the
+Screen), ⇧❖4 `…/screenshot-area` (Screenshot of an Area…), ⇧❖5
+`…/capture` (Screenshot…, the toolbar that also records), on the window
+focused when they were pressed; the launcher finds them by "screenshot",
+"print screen", "snip" and the like. Chosen in the launcher, the shell
+takes it down first and waits until it is gone (`main.tsx` `runCapture`),
+so it isn't in the picture.
 
 The other bind names move the same way, one kind at a time: give the
 action an address in its source, change the rule's `bind` to it, delete
@@ -545,7 +552,6 @@ its `case` in `runBinding`, and move its test to the registry.
 | --- | --- | --- |
 | `lock-screen`, `force-quit`, `settings` | `dashi://dashi/lock-screen`, `…/force-quit`, `…/settings` | `dashi` (exists) |
 | `quit-app`, `hide-app`, `minimize-window`, `close-window`, `next-window` | `dashi://window/quit-app` and so on, on the focused window | `windows` |
-| `screenshot-screen`, `screenshot-area`, `capture-toolbar` | `dashi://dashi/screenshot`, `…/screenshot-area`, `…/capture` | `dashi` |
 | `toggle-autohide` | `dashi://settings/desktop-dock/autohide` (exists: a toggle with no value switches) | `settings` |
 | `space-left`, `space-right`, `space-1`…`space-9`, `overview` | `dashi://space/left`, `dashi://space/3`, `dashi://dashi/overview` | a `spaces` source |
 | `volume-up`, `brightness-up`, `media-*`, `power-key` | `dashi://sound/volume-up` and so on | a `hardware` source |

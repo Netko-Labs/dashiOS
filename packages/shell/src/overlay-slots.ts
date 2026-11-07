@@ -59,6 +59,13 @@ export class OverlaySlots<Kind extends string> {
     handle?.close();
   }
 
+  /** Closes `kind` and resolves once its host has exited: at once for a host that stays up hidden (the resident launcher's), or for nothing open. */
+  async closeAndWait(kind: Kind): Promise<void> {
+    const handle = this.slots.get(kind);
+    this.close(kind);
+    await handle?.exited;
+  }
+
   closeAll(): void {
     for (const kind of [...this.slots.keys(), ...this.pending.keys()]) this.close(kind);
   }

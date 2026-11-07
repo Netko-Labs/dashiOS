@@ -29,7 +29,7 @@ import { linksSocketPath, serveLinks } from "./links.ts";
 import { ActionRegistry, fixedSource, mayUse } from "./registry.ts";
 import { type Origin, type RunDeps, runAction } from "./run.ts";
 import { AppSource } from "./sources/apps.ts";
-import { commandActions } from "./sources/commands.ts";
+import { commandActions, type RunCapture } from "./sources/commands.ts";
 import { MenuSource } from "./sources/menus.ts";
 import { settingsActions } from "./sources/settings.ts";
 import { WindowSource } from "./sources/windows.ts";
@@ -59,6 +59,8 @@ export interface ActionsOptions {
   } | null;
   /** A Dashi menu row's action (menus/start.tsx `run`). */
   runMenu(action: MenuAction): Promise<void>;
+  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (sources/commands.ts); none without a compositor. */
+  capture?: RunCapture;
   openSettings(pane: PaneId, row?: string): void;
   keymap: Keymap;
   /** Listen for dashi:// links on the links socket; off in tests. */
@@ -109,7 +111,7 @@ export function startActions(options: ActionsOptions): Actions {
   };
 
   registry.add(fixedSource("tools", TOOL_ACTIONS));
-  registry.add(fixedSource("dashi", commandActions(options.runMenu, options.keymap)));
+  registry.add(fixedSource("dashi", commandActions(options.runMenu, options.keymap, options.capture)));
   const stores = options.settingsStores;
   registry.add(
     fixedSource(

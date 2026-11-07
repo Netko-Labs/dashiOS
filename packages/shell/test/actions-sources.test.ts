@@ -3,8 +3,9 @@ import { desktopActions } from "../src/actions/desktop-actions.ts";
 import { linksEntry } from "../src/actions/entry.ts";
 import { chordGlyphs, keyFor } from "../src/actions/keys.ts";
 import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
+import { linkDecision } from "../src/actions/run.ts";
 import { appActions } from "../src/actions/sources/apps.ts";
-import { commandActions } from "../src/actions/sources/commands.ts";
+import { type CaptureKind, commandActions } from "../src/actions/sources/commands.ts";
 import { appOf, MenuSource, menuActions } from "../src/actions/sources/menus.ts";
 import { settingsActions } from "../src/actions/sources/settings.ts";
 import { WindowSource, windowAction } from "../src/actions/sources/windows.ts";
@@ -18,6 +19,7 @@ import type { MenuAction } from "../src/menus/model.ts";
 import { PANES } from "../src/settings-app/panes.ts";
 import { AGENT_ROWS } from "../src/settings-app/registry/index.ts";
 import { scrollFor } from "../src/settings-app/spot.tsx";
+import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 
 const run = async (action: ActionDef | undefined, args: Record<string, unknown> = {}, ctx: ActionContext = { window: null }) => {
   const checked = action?.check(args);
@@ -334,6 +336,51 @@ describe("Dashi's own commands", () => {
     expect(byId("sleep")).toMatchObject({ destructive: false });
     expect(byId("lock-screen")?.shortcut).toBe("⌃❖Q");
     expect(actions.map((action) => action.address)).toContain("dashi://dashi/log-out");
+  });
+
+  test("the screenshots are ⇧❖3 ⇧❖4 ⇧❖5's own addresses, run on the window focused when asked", async () => {
+    const captured: [CaptureKind, number | null][] = [];
+    const actions = commandActions(
+      async () => {},
+      KEYMAP,
+      async (what, window) => void captured.push([what, window]),
+    );
+    const byId = (id: string) => actions.find((action) => action.address === `dashi://dashi/${id}`);
+    // The keymap binds the addresses, and their rows show its keys.
+    const bound = (chord: string) => KEYMAP.rules.find((rule) => rule.when === chord)?.bind;
+    expect([bound("super+shift+3"), bound("super+shift+4"), bound("super+shift+5")]).toEqual([
+      "dashi://dashi/screenshot",
+      "dashi://dashi/screenshot-area",
+      "dashi://dashi/capture",
+    ]);
+    expect(byId("capture")).toMatchObject({ title: "Screenshot…", shortcut: "⇧❖5", kind: "open", source: "dashi" });
+    expect(byId("screenshot")).toMatchObject({ title: "Screenshot of the Screen", shortcut: "⇧❖3" });
+    expect(byId("screenshot-area")).toMatchObject({ title: "Screenshot of an Area…", shortcut: "⇧❖4" });
+    expect(await run(byId("capture"), {}, { window: 7 })).toEqual({ ok: true, text: "The screenshot toolbar is open." });
+    await run(byId("screenshot"));
+    await run(byId("screenshot-area"), {}, { window: 3 });
+    expect(captured).toEqual([
+      ["toolbar", 7],
+      ["screen", null],
+      ["area", 3],
+    ]);
+    // A link never takes a picture of the screen by itself: it is opened for the person. The toolbar and the area wait for them anyway.
+    expect(linkDecision(byId("screenshot") as ActionDef, {})).toBe("present");
+    expect(linkDecision(byId("capture") as ActionDef, {})).toBe("run");
+    expect(linkDecision(byId("screenshot-area") as ActionDef, {})).toBe("run");
+    // Without a way to capture (no compositor) there are no screenshot rows.
+    expect(commandActions(async () => {}, KEYMAP).some((action) => action.address.includes("screenshot"))).toBe(false);
+  });
+
+  test("a screenshot key reaches the registry as its address, not a name of its own", async () => {
+    const asked: [string, number | null][] = [];
+    const actions = {
+      hardware: { run: async () => false },
+      runAddress: async (address: string, window: number | null) => void asked.push([address, window]),
+    } as unknown as ShellActions;
+    const compositor = { request: async () => ({}), windows: async () => [] } as unknown as Requests;
+    await runBinding("dashi://dashi/capture", 5, compositor, actions);
+    expect(asked).toEqual([["dashi://dashi/capture", 5]]);
   });
 });
 

@@ -41,6 +41,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
+- [x] The screenshots as rows: Screenshot… (⇧❖5), Screenshot of the Screen (⇧❖3), Screenshot of an Area… (⇧❖4); the keys bind their `dashi://dashi/` addresses (S; `feat/0.5-launcher-screenshot`, VM: not yet)
 - [ ] Context chips: "+ this window", "+ selection" (M)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)

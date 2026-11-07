@@ -12,6 +12,7 @@ import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
+import type { CaptureKind } from "./actions/sources/commands.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
@@ -1282,6 +1283,30 @@ function selectArea(window: number | null): void {
   });
   captureArea();
 }
+/** How long a screenshot from the launcher waits once its window is hidden: the host takes it down, then the compositor draws without it. */
+const LAUNCHER_GONE_MS = 150;
+/**
+ * ⇧❖3, ⇧❖4 and ⇧❖5, and the launcher's Screenshot rows (actions/sources/commands.ts). Chosen in the launcher,
+ * it is taken down first and the capture waits until it is gone, so it isn't in the picture; "the focused
+ * window" is then the one it was over (Space in ⇧❖4, Capture Window in the toolbar).
+ */
+async function runCapture(what: CaptureKind, window: number | null): Promise<void> {
+  if (!compositor) return;
+  if (overlays.has("launcher")) {
+    await overlays.closeAndWait("launcher");
+    await Bun.sleep(LAUNCHER_GONE_MS);
+  }
+  const front = window ?? (await compositor.windows().catch(() => [])).find((each) => each.focused)?.id ?? null;
+  switch (what) {
+    case "screen":
+      await takeScreenshot(compositor);
+      return;
+    case "area":
+      return selectArea(front);
+    case "toolbar":
+      return captureTools?.toolbar(front);
+  }
+}
 // The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
 // keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
 const actions = startActions({
@@ -1303,6 +1328,7 @@ const actions = startActions({
   appName: (window) => nameApp?.(window) ?? window.appId,
   arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,
   runMenu: (action) => menus.run(action, "Dashi"),
+  ...(compositor ? { capture: runCapture } : {}),
   openSettings: (pane, row) => settingsApp.open(pane, row),
   settingsStores: registryStores,
   keymap: currentKeymap(),
@@ -1451,8 +1477,6 @@ const stopShortcuts = compositor
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),
       powerKey: () => power.powerKey(),
-      screenshotArea: selectArea,
-      captureToolbar: (window) => captureTools?.toolbar(window),
       launcher: { binding: launcherBinding },
       isLocked: screenLocked,
     })

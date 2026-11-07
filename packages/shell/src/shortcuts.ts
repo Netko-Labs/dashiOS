@@ -28,10 +28,6 @@ export interface ShellActions {
   lock(): void;
   /** The power key was pressed (power/). */
   powerKey(): void;
-  /** Drag out an area to capture; Space there takes `window` (screenshot-area.tsx). */
-  screenshotArea(window: number | null): void;
-  /** ⇧❖5: the screenshot and recording toolbar, or stop the recording (recorder/). */
-  captureToolbar?(window: number | null): void;
   /** Opens Force Quit Applications (force-quit/). */
   forceQuit(): void;
   /** Opens System Settings (settings-app/), on ❖, as on the Mac. */
@@ -106,17 +102,10 @@ export async function runBinding(name: string, window: number | null, compositor
       return actions.switcher.step("previous");
     case "switch-cancel":
       return actions.switcher.cancel();
-    case "screenshot-screen":
-      await takeScreenshot(compositor);
-      return;
     case "lock-screen":
       return actions.lock();
     case "power-key":
       return actions.powerKey();
-    case "screenshot-area":
-      return actions.screenshotArea(window);
-    case "capture-toolbar":
-      return actions.captureToolbar?.(window);
     case "force-quit":
       return actions.forceQuit();
     case "settings":
