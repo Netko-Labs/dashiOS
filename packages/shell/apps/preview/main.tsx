@@ -49,8 +49,7 @@ const follow = (): void => {
   if (empty && !stopListening) {
     claimed = false;
     stopListening = listenWhileEmpty(take);
-  }
-  else if (!empty && stopListening) {
+  } else if (!empty && stopListening) {
     stopListening();
     stopListening = null;
   }
