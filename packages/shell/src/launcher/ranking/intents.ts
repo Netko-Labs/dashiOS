@@ -8,7 +8,7 @@
  * "preferences".
  */
 
-import { SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
+import { SCREENSHOT_APP_ID, SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
 import type { RankKind } from "./item.ts";
 
 export interface Intent {
@@ -78,6 +78,11 @@ export const INTENTS: Intents = {
         "bem vindo",
         "welkom",
       ],
+    },
+    {
+      // The Screenshot app, ⇧❖5's toolbar, as Windows' Snipping Tool taught it.
+      id: SCREENSHOT_APP_ID,
+      phrases: ["snip", "snipping tool", "print screen"],
     },
   ],
   demoted: [SETUP_APP_ID],
