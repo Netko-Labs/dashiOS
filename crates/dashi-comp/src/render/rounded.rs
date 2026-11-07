@@ -48,6 +48,10 @@ uniform float tint;
 // and the corner radius, in the frame's pixels.
 uniform vec2 size;
 uniform vec4 box;
+// The part of the buffer drawn (x, y, width, height, as fractions of it): a client may show a
+// crop of a bigger buffer (the viewporter, Chromium at a fractional scale), and the texture
+// coordinates span the whole buffer, not the quad.
+uniform vec4 crop;
 uniform float radius;
 // 1.0: the top corners are cut too (a unified window has no bar above it).
 uniform float top;
@@ -59,7 +63,7 @@ void main() {
 #else
     color = color * alpha;
 #endif
-    vec2 p = v_coords * size - box.xy;
+    vec2 p = (v_coords - crop.xy) / crop.zw * size - box.xy;
     vec2 s = box.zw;
     bool bottom = p.y > s.y - radius;
     bool upper = top > 0.5 && p.y < radius;
@@ -115,6 +119,7 @@ pub(crate) fn program(renderer: &mut GlesRenderer) -> Option<GlesTexProgram> {
             &[
                 UniformName::new("size", UniformType::_2f),
                 UniformName::new("box", UniformType::_4f),
+                UniformName::new("crop", UniformType::_4f),
                 UniformName::new("radius", UniformType::_1f),
                 UniformName::new("top", UniformType::_1f),
             ],
@@ -223,9 +228,22 @@ where
     ) -> Result<(), R::Error> {
         let (w, h) = (dst.size.w as f32, dst.size.h as f32);
         let [x, y, bw, bh] = self.window;
+        // The shown part of the buffer, both in the surface's logical size.
+        let (view, buffer) = (self.inner.view().src, self.inner.buffer_size().to_f64());
+        let crop = if buffer.w > 0.0 && buffer.h > 0.0 && view.size.w > 0.0 && view.size.h > 0.0 {
+            (
+                (view.loc.x / buffer.w) as f32,
+                (view.loc.y / buffer.h) as f32,
+                (view.size.w / buffer.w) as f32,
+                (view.size.h / buffer.h) as f32,
+            )
+        } else {
+            (0.0, 0.0, 1.0, 1.0)
+        };
         let uniforms = vec![
             Uniform::new("size", (w, h)),
             Uniform::new("box", (x * w, y * h, bw * w, bh * h)),
+            Uniform::new("crop", crop),
             Uniform::new("radius", self.radius),
             Uniform::new("top", if self.top { 1.0f32 } else { 0.0 }),
         ];
