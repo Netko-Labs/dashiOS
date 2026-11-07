@@ -31,7 +31,7 @@ const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 40));
 function mount() {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  const viewer = new Viewer({ cacheDir: join(dir, "cache"), deviceScale: 1 });
+  const viewer = new Viewer({ cacheDir: join(dir, "cache"), deviceScale: 1, memoryFile: null });
   const root = render(<PreviewWindow viewer={viewer} clipboard={{ canWrite: false, writeText: async () => false, readText: async () => null }} />, transport);
   const emit = (event: NativeEvent): void => {
     for (const listener of listeners) listener(event);
@@ -53,17 +53,21 @@ test("with no file, Open With… and Show in Files can't be chosen; Open… can"
     hasPicture: false,
     isPdf: false,
     canTurn: false,
-    canSaveCopy: false,
     canPrevious: false,
     canNext: false,
     canCopy: true,
-    thumbnails: true,
+    hasSelection: false,
+    canExport: false,
+    canPrint: false,
+    sidebar: true,
+    recents: [],
     blocked: false,
     actions,
   });
   const enabled = enabledIds(menus);
   expect(enabled.has("open")).toBeTrue();
-  for (const id of ["open-with", "show-in-files", "info", "trash", "copy-path", "zoom-in", "rotate-left", "next"]) expect(enabled.has(id)).toBeFalse();
+  for (const id of ["open-with", "show-in-files", "export", "print", "info", "trash", "copy", "copy-path", "zoom-in", "rotate-left", "next"])
+    expect(enabled.has(id)).toBeFalse();
 });
 
 test("the empty window has no dead toolbar controls, an Open… button, and opens a dropped file", async () => {

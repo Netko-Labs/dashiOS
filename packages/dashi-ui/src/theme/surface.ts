@@ -16,10 +16,12 @@ export interface Surface {
   field: string;
   /** Every other row of a table (macOS's alternating rows). */
   stripe: string;
+  /** Behind media: a picture or a document's pages in a viewer (Preview), a shade off the window so pages stand out. */
+  canvas: string;
 }
 
-export const LIGHT_SURFACE: Surface = { window: "#f5f5f7", sidebar: "#e8e8ec", card: "#ffffff", field: "#f0f0f3", stripe: "#f4f4f6" };
-export const DARK_SURFACE: Surface = { window: "#1e1e20", sidebar: "#29292c", card: "#2c2c2f", field: "#232326", stripe: "#252528" };
+export const LIGHT_SURFACE: Surface = { window: "#f5f5f7", sidebar: "#e8e8ec", card: "#ffffff", field: "#f0f0f3", stripe: "#f4f4f6", canvas: "#e4e4e8" };
+export const DARK_SURFACE: Surface = { window: "#1e1e20", sidebar: "#29292c", card: "#2c2c2f", field: "#232326", stripe: "#252528", canvas: "#161618" };
 
 export function useSurface(): Surface {
   return useDark() ? DARK_SURFACE : LIGHT_SURFACE;

@@ -60,7 +60,7 @@ const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 40));
 test("in a narrow window the turns and Info are in “…”, not cut at the edge", async () => {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  const viewer = new Viewer({ cacheDir: join(dir, "cache"), deviceScale: 1 });
+  const viewer = new Viewer({ cacheDir: join(dir, "cache"), deviceScale: 1, memoryFile: null });
   const root = render(<PreviewWindow viewer={viewer} clipboard={{ canWrite: false, writeText: async () => false, readText: async () => null }} />, transport);
   const emit = (event: NativeEvent): void => {
     for (const listener of listeners) listener(event);
