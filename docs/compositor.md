@@ -172,15 +172,26 @@ Each milestone ends with the shell running on it in the VM.
   `gpus` reports each GPU, `gpus-changed` says when that changes; the shell
   no longer counts dashi-comp among the card's holders.
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
+- **Dark screens pace their clients (done, 0.5.0):** a screen blanked by
+  `power {on: false}` (the shell, after `idle.blankAfterSeconds` without the
+  person's input) used to stop its loop, and with it every client's frame
+  callbacks: an agent working on through `agent-input`, which isn't the
+  person and doesn't wake the screens, saw every window frozen in its last
+  frame (reviews 20 and 21's "display freeze", five minutes after login each
+  time; the agent's screenshots are drawn on demand from the clients' last
+  buffers, so they looked live). A dark screen now sends its clients frame
+  callbacks once a second, at its refresh for five seconds after an agent's
+  input, and at once on that input (`udev/pace.rs`); every window on it hears,
+  one opened while dark included. A screen has one timer at a time: asking
+  for a sooner frame replaces it, so kicks from `power`, a new screen or the
+  watchdog never start a second loop.
 - **Lost vblanks (done, 0.5.0):** a screen draws its next frame only after the
-  last one's page-flip event, so one that never comes used to stop the screen,
-  and every client's frame callbacks with it, until the session restarted
-  (review 20, on virtio-gpu after an agent's long scroll). A second without it,
-  the frame is given up on (`udev/flip.rs`): one warning per stall naming the
-  screen, the scanout lets the frame go, and the screen draws again; a vblank
-  that turns up later is ignored, or recognized by its timestamp as the old
-  frame's. The nested (winit) backend has no such wait: each redraw asks for
-  the next.
+  last one's page-flip event, so one that never came would stop it for good.
+  A second without it, the frame is given up on (`udev/flip.rs`,
+  `udev/watchdog.rs`): one warning per stall naming the screen, the scanout
+  lets the frame go, and the screen draws again; a vblank that turns up later
+  is ignored, or recognized by its timestamp as the old frame's. The nested
+  (winit) backend has no such wait: each redraw asks for the next.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title

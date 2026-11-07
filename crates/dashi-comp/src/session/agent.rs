@@ -60,6 +60,9 @@ pub(crate) struct Agent {
     pub pointer: Option<(Point<f64, Logical>, String)>,
     pressed_buttons: Vec<u32>,
     pressed_keys: Vec<Keycode>,
+    /// When the agent last acted (`agent-input`): dark screens keep pacing
+    /// their clients briskly for a while after (backend/udev/pace.rs).
+    pub acted_at: Option<std::time::Instant>,
 }
 
 impl Agent {
@@ -69,6 +72,7 @@ impl Agent {
             pointer: None,
             pressed_buttons: Vec::new(),
             pressed_keys: Vec::new(),
+            acted_at: None,
         }
     }
 }

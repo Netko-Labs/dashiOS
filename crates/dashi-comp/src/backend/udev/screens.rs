@@ -129,7 +129,7 @@ fn connector_connected(
                 scanout,
                 global,
                 flip: flip::Flip::default(),
-                scheduled: false,
+                scheduled: None,
                 powered: true,
                 held: false,
                 modes: connector.modes().to_vec(),

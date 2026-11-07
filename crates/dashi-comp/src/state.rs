@@ -400,6 +400,17 @@ impl Dashi {
             .or_else(|| in_layer(Layer::Background))
     }
 
+    /// A dark screen's turn (backend/udev/pace.rs): nothing is drawn, so no
+    /// surface gets it as its primary screen; every window on it hears, a
+    /// window opened since included, then the rest as `send_frames` tells them.
+    pub(crate) fn send_frames_dark(&self, output: &smithay::output::Output) {
+        let elapsed = self.start_time.elapsed();
+        for window in self.space.elements_for_output(output) {
+            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
+        }
+        self.send_frames(output);
+    }
+
     /// Tell every client shown on `output` that a frame went out, so it draws the next.
     pub(crate) fn send_frames(&self, output: &smithay::output::Output) {
         self.send_preferred_scales(output);

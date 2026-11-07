@@ -122,7 +122,14 @@ pub(crate) fn handle(
             Ok(json!({}))
         }
         "capture" => capture(state, connection, params),
-        "agent-input" => done(state.agent_input(params)),
+        "agent-input" => {
+            let result = state.agent_input(params);
+            if result.is_ok() {
+                // The screens may be dark (the person away): its window still shows what it did.
+                backend::udev::agent_acted(state);
+            }
+            done(result)
+        }
         // Secrets for agents (0.4.0): blanked captures, and whose presses were whose.
         "capture-mask" => {
             shell_only(state, connection, "capture-mask")?;

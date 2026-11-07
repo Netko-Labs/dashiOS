@@ -1,11 +1,14 @@
 //! Drawing the screens: a frame when something changed, queued for the next
 //! vblank; at the vblank, presentation feedback, and the next frame scheduled
 //! a little before the following one. A vblank that never comes is given up
-//! on after a second (flip.rs), so one lost page-flip event can't stop a
-//! screen, and every client's frame callbacks with it, for good.
+//! on after a second (flip.rs, watchdog.rs), so one lost page-flip event
+//! can't stop a screen, and every client's frame callbacks with it, for
+//! good; a dark screen still paces its clients (pace.rs).
 
+use super::pace::{dark_pace, schedule, unschedule};
+use super::watchdog::watch;
 use super::*;
-use flip::{FLIP_TIMEOUT, Vblank, Watch};
+use flip::Vblank;
 
 pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
     let crtcs = with_udev(state, |_, data| {
@@ -20,16 +23,31 @@ pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
     }
 }
 
+/// What a turn of a screen's loop did.
+enum Turn {
+    /// A frame is queued: its vblank draws the next.
+    Queued,
+    /// Nothing new, or it failed: look again in about a frame.
+    Idle,
+    /// No renderer: try again in a second.
+    Later,
+    /// The screen is dark: only its clients' frame callbacks are paced (pace.rs).
+    Dark,
+}
+
 /// Draw a screen if anything on it changed; else look again in about a frame.
 pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
-    let outcome = with_udev(state, |state, data| -> Option<(Output, bool)> {
+    unschedule(state, node, crtc);
+    let outcome = with_udev(state, |state, data| -> Option<(Output, Turn)> {
         let primary_gpu = data.primary_gpu;
         let device = data.devices.get_mut(&node)?;
         let render_node = device.render_node.unwrap_or(primary_gpu);
         let screen = device.screens.get_mut(&crtc)?;
-        screen.scheduled = false;
-        if screen.flip.is_queued() || !screen.powered {
+        if screen.flip.is_queued() {
             return None;
+        }
+        if !screen.powered {
+            return Some((screen.output.clone(), Turn::Dark));
         }
         let output = screen.output.clone();
         let fullscreen = state.fullscreen_on(&output).is_some();
@@ -40,11 +58,16 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
             data.gpus
                 .renderer(&primary_gpu, &render_node, screen.scanout.format())
         };
-        let mut renderer = renderer
-            .inspect_err(|error| tracing::warn!(?error, "no renderer for a screen"))
-            .ok()?;
+        let mut renderer = match renderer {
+            Ok(renderer) => renderer,
+            Err(error) => {
+                // Not a reason for the screen to stop for good: it tries again in a second.
+                tracing::warn!(?error, "no renderer for a screen");
+                return Some((output, Turn::Later));
+            }
+        };
         let elements = render::output_elements(state, &mut renderer, &output, true);
-        let drawn = match screen.scanout.render_frame(
+        let turn = match screen.scanout.render_frame(
             &mut renderer,
             &elements,
             BACKGROUND,
@@ -60,34 +83,46 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
                         if screen.flip.queue(monotonic_now()) {
                             watch(&state.loop_handle, node, crtc);
                         }
-                        true
+                        Turn::Queued
                     }
                     // Waiting out a stalled flip, the commits fail (busy) each frame: once is enough.
                     Err(error) if screen.flip.is_stalled() => {
                         tracing::debug!(?error, "queueing a frame");
-                        false
+                        Turn::Idle
                     }
                     Err(error) => {
                         tracing::warn!(?error, "queueing a frame");
-                        false
+                        Turn::Idle
                     }
                 }
             }
-            Ok(_) => false,
+            Ok(_) => Turn::Idle,
             Err(error) => {
                 tracing::warn!(?error, "drawing a frame");
-                false
+                Turn::Idle
             }
         };
-        Some((output, drawn))
+        Some((output, turn))
     })
     .flatten();
-    let Some((output, drawn)) = outcome else {
+    let Some((output, turn)) = outcome else {
         return;
     };
-    state.send_frames(&output);
-    if !drawn {
-        schedule(state, node, crtc, frame_time(&output));
+    match turn {
+        Turn::Queued => state.send_frames(&output),
+        Turn::Idle => {
+            state.send_frames(&output);
+            schedule(state, node, crtc, frame_time(&output));
+        }
+        Turn::Later => {
+            state.send_frames(&output);
+            schedule(state, node, crtc, Duration::from_secs(1));
+        }
+        Turn::Dark => {
+            state.send_frames_dark(&output);
+            let acted = state.agent.acted_at.map(|at| at.elapsed());
+            schedule(state, node, crtc, dark_pace(frame_time(&output), acted));
+        }
     }
 }
 
@@ -125,96 +160,7 @@ pub(super) fn frame_finished(
     schedule(state, node, crtc, frame_time(&output).mul_f64(0.6));
 }
 
-/// Keep an eye on a screen's queued frames: one whose vblank has not come a
-/// second later is given up on, and the screen draws again.
-fn watch(handle: &LoopHandle<'static, Dashi>, node: DrmNode, crtc: crtc::Handle) {
-    let timer = Timer::from_duration(FLIP_TIMEOUT);
-    let inserted = handle.insert_source(timer, move |_, _, state| look(state, node, crtc));
-    if let Err(error) = inserted {
-        tracing::warn!(%error, "watching a screen's frames");
-    }
-}
-
-fn look(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) -> TimeoutAction {
-    let watch = with_udev(state, |_, data| {
-        let active = data.session.is_active();
-        let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
-        if !active || !screen.powered {
-            // Away or dark, flips may well not come; waking or lighting draws again.
-            screen.flip.unwatched();
-            return Some(Watch::Idle);
-        }
-        let watch = screen.flip.check(monotonic_now());
-        if let Watch::Overdue { first } = watch {
-            let output = screen.output.name();
-            if first {
-                tracing::warn!(
-                    output,
-                    "no vblank for a second after a frame; drawing again"
-                );
-            } else {
-                tracing::debug!(output, "no vblank for a second after a frame, again");
-            }
-            // Give the frame up in the scanout too, so the next one is
-            // committed rather than queued behind it.
-            match screen.scanout.frame_submitted() {
-                Ok(Some(Some(mut feedback))) => feedback.discarded(),
-                Ok(_) => {}
-                Err(error) => tracing::debug!(?error, "giving up a frame"),
-            }
-        }
-        Some(watch)
-    })
-    .flatten();
-    match watch {
-        Some(Watch::Wait(after)) => TimeoutAction::ToDuration(after),
-        Some(Watch::Overdue { first }) => {
-            render_screen(state, node, crtc);
-            let queued = with_udev(state, |_, data| {
-                let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
-                let queued = screen.flip.is_queued();
-                if first {
-                    // Which it was: a commit taken now means the event was lost;
-                    // refused (busy), the flip itself is stuck (a fence that never signals).
-                    tracing::info!(
-                        output = screen.output.name(),
-                        queued,
-                        "drawn again after a lost vblank"
-                    );
-                }
-                if !queued {
-                    screen.flip.unwatched();
-                }
-                Some(queued)
-            })
-            .flatten();
-            match queued {
-                Some(true) => TimeoutAction::ToDuration(FLIP_TIMEOUT),
-                _ => TimeoutAction::Drop,
-            }
-        }
-        Some(Watch::Idle) | None => TimeoutAction::Drop,
-    }
-}
-
-fn schedule(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, after: Duration) {
-    let already = with_udev(state, |_, data| {
-        let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
-        Some(std::mem::replace(&mut screen.scheduled, true))
-    })
-    .flatten();
-    if already != Some(false) {
-        return;
-    }
-    let _ = state
-        .loop_handle
-        .insert_source(Timer::from_duration(after), move |_, _, state| {
-            render_screen(state, node, crtc);
-            TimeoutAction::Drop
-        });
-}
-
-fn monotonic_now() -> Duration {
+pub(super) fn monotonic_now() -> Duration {
     Duration::from(Clock::<Monotonic>::new().now())
 }
 
