@@ -96,6 +96,9 @@ export function actionKind(action: ActionDef): RankKind | null {
   }
 }
 
+/** "screenshot..." → "screenshot": a command that opens something ends in an ellipsis its app's name doesn't have. */
+const withoutEllipsis = (folded: string): string => folded.replace(/\.\.\.$/, "");
+
 /** Every word a registry action is found by, in any language. */
 const actionWords = (action: ActionDef): string[] => Object.values(action.keywords).flat();
 
@@ -141,8 +144,8 @@ export function launcherItems(sources: ItemSources): LauncherItem[] {
     const kind = actionKind(action);
     if (kind === null || seen.has(action.address)) continue;
     if (action.source === "tools" && commands.has(action.address.split("/").pop())) continue;
-    // "System Settings" from the Dashi menu is the System Settings app: one row.
-    if (kind === "command" && action.from === undefined && named.has(fold(action.title))) continue;
+    // "System Settings" from the Dashi menu is the System Settings app, and "Screenshot…" the Screenshot app: one row.
+    if (kind === "command" && action.from === undefined && named.has(withoutEllipsis(fold(action.title)))) continue;
     seen.add(action.address);
     // A menu row answers to its own words ("New Note"); its app and menu only narrow ("notes new").
     const path = kind === "menu" ? action.title.split(" › ") : [];

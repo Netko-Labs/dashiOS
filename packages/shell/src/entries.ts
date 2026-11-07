@@ -8,7 +8,19 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { type DesktopAction, desktopActions } from "./actions/desktop-actions.ts";
-import { type App, displayName, iconPath, type LaunchWatch, launch, resolvePinned, SETTINGS_APP_ID, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
+import {
+  type App,
+  displayName,
+  iconPath,
+  type LaunchWatch,
+  launch,
+  resolvePinned,
+  SCREENSHOT_APP_ID,
+  SETTINGS_APP_ID,
+  SETUP_APP_ID,
+  shellApps,
+  shellEntryList,
+} from "./apps.ts";
 import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
 import { themeIcon } from "./icon-themes.ts";
 import { type Localized, localizedDesktop } from "./launcher/ranking/locale.ts";
@@ -252,6 +264,10 @@ const SHELL_APP_WORDS: Readonly<Record<string, Pick<Entry, "keywords" | "detail"
     detail: "all your settings",
   },
   [SETUP_APP_ID]: { keywords: ["setup", "welcome", "first run"], detail: "run first-time setup again" },
+  [SCREENSHOT_APP_ID]: {
+    keywords: ["screenshot", "screen shot", "capture", "screen capture", "record screen", "screen recording", "print screen", "snip", "grab"],
+    detail: "capture or record the screen",
+  },
 };
 
 /** Every launchable app: Dashi's pinned apps first, then the shell's own and the first-party ones, then the installed ones. */

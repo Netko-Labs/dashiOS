@@ -10,7 +10,7 @@
  */
 
 import { formatAddress } from "../../actions/address.ts";
-import { SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
+import { SCREENSHOT_APP_ID, SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
 import type { RankKind } from "./item.ts";
 
 export interface Intent {
@@ -82,10 +82,11 @@ export const INTENTS: Intents = {
       ],
     },
     {
-      // Screenshot…, the toolbar (actions/sources/commands.ts).
+      // Screenshot…, the toolbar (actions/sources/commands.ts); the Screenshot app where it is installed.
       id: formatAddress(["dashi", "capture"]),
       phrases: ["snip", "snipping tool", "print screen"],
     },
+    { id: SCREENSHOT_APP_ID, phrases: ["snip", "snipping tool", "print screen"] },
   ],
   demoted: [SETUP_APP_ID],
   fallback: {

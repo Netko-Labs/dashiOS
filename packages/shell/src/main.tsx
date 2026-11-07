@@ -38,7 +38,7 @@ import { WindowStyleSync } from "./appearance/window-style.ts";
 import { AppletCommands } from "./applets/commands.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
-import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
+import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, registerShellApp, resolvePinned, SCREENSHOT_APP_ID } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { barHold, holdingBar } from "./bar-hold.ts";
@@ -1330,6 +1330,8 @@ async function runCapture(what: CaptureKind, window: number | null): Promise<voi
       return captureTools?.toolbar(front);
   }
 }
+// Screenshot as an app (All apps, the Dock): ⇧❖5's toolbar, over the window in front.
+const stopScreenshotApp = compositor ? registerShellApp(SCREENSHOT_APP_ID, () => void runCapture("toolbar", null)) : null;
 // The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
 // keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
 const actions = startActions({
@@ -1561,6 +1563,7 @@ const quit = () => {
     ["autostart", () => autostart?.close()],
     ["lock watch", stopClosingOnLock],
     ["polkit", () => polkit.close()],
+    ["screenshot app", () => stopScreenshotApp?.()],
     ["polkit lock watch", () => polkitLock?.close()],
     ["shortcuts", stopShortcuts],
     ["screenshot selection", () => captureArea?.close()],

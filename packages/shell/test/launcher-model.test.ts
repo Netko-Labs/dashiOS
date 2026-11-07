@@ -4,10 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { commandActions } from "../src/actions/sources/commands.ts";
 import { settingsActions } from "../src/actions/sources/settings.ts";
+import { registerShellApp, SCREENSHOT_APP_ID } from "../src/apps.ts";
 import { clipboardActions } from "../src/clipboard/actions.ts";
 import { SNIPPETS_ADDRESS } from "../src/clipboard/scope.ts";
 import type { Entry } from "../src/entries.ts";
-import { calculate } from "../src/entries.ts";
+import { calculate, shellEntries } from "../src/entries.ts";
 import { FileSearch, RETRY_MS } from "../src/file-search.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { AppIndex, nearestExisting } from "../src/launcher/app-index.ts";
@@ -239,6 +240,31 @@ describe("screenshots", () => {
 
   test("the three screenshots stay together, before the Settings row that answers to the word", () => {
     expect(titlesOf("screenshot")).toEqual(["Screenshot…", "Screenshot of an Area…", "Screenshot of the Screen", "Apps' permissions"]);
+  });
+
+  test("with the Screenshot app installed, it is the one row for the toolbar, first for the words people use", () => {
+    const stop = registerShellApp(SCREENSHOT_APP_ID, () => {});
+    try {
+      const screenshotApp = shellEntries().find((entry) => entry.id === SCREENSHOT_APP_ID);
+      expect(screenshotApp?.name).toBe("Screenshot");
+      const index = launcherIndex({
+        entries: screenshotApp ? [screenshotApp] : [],
+        actions: [
+          ...commandActions(
+            async () => {},
+            KEYMAP,
+            async () => {},
+          ),
+          ...clipboardActions({ open: () => {}, enabled: () => true, setEnabled: () => {}, count: () => 0, clear: () => {}, confirm: async () => false }),
+        ],
+      });
+      const titles = (query: string) => selectable(buildSections(list({ query, index }))).map((row) => row.title);
+      for (const query of ["screenshot", "snip", "print screen", "record screen"]) expect([query, titles(query)[0]]).toEqual([query, "Screenshot"]);
+      expect(titles("screenshot")).not.toContain("Screenshot…");
+      expect(titles("screenshot")).toContain("Screenshot of an Area…");
+    } finally {
+      stop();
+    }
   });
 });
 
