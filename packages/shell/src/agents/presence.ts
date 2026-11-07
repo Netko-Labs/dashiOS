@@ -48,6 +48,13 @@ export interface Confirm {
   danger?: boolean;
 }
 
+/** "<agent> wants to use bodytech.com.co": a site the website tools touch for the first time (sites.ts). */
+export interface SiteAsk {
+  agent: number;
+  who: Who;
+  site: string;
+}
+
 /** "<agent> wants to sign in to github.com": which saved login, and for how long (secrets/broker.ts). */
 export interface SignInAsk {
   agent: number;
@@ -95,6 +102,8 @@ export interface AgentUi {
   ask(ask: Ask, signal?: AbortSignal): Promise<Answer>;
   /** Ask about one action, in the same queue; resolves true only if the person goes ahead. */
   confirm(confirm: Confirm, signal?: AbortSignal): Promise<boolean>;
+  /** Ask whether an agent may use a website: once, always, or not (sites.ts). */
+  allowSite(ask: SiteAsk, signal?: AbortSignal): Promise<Allow>;
   /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
   signIn(ask: SignInAsk, signal?: AbortSignal): Promise<SignInChoice>;
   /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */

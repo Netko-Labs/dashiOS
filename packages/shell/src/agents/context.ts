@@ -1,5 +1,6 @@
 /** What running a tool needs, and the shape of what it answers. */
 
+import type { BrowserLink } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import type { Atspi } from "./atspi/client.ts";
@@ -35,6 +36,20 @@ export interface SecretsRun {
   handOver(window: number, reason: string): Promise<boolean>;
 }
 
+/** What the website tools need from the connection (desktop/browser.ts). */
+export interface BrowserRun {
+  /** Dashi's extension in the browser, when one is connected. */
+  link(): BrowserLink | null;
+  /** Until an extension connects (a browser just started), at most `ms`. */
+  whenConnected(ms: number): Promise<BrowserLink | null>;
+  /** Whether this agent may use `site`: allowed already, or the person says so now (sites.ts). */
+  allowSite(site: string): Promise<boolean>;
+  /** Whether it may, without asking. */
+  mayUse(site: string): boolean;
+  /** The tab this agent used last: the website tools' tab when none is named. */
+  tab: number | null;
+}
+
 export interface ToolResult {
   content: Array<{ type: "text"; text: string } | { type: "image"; data: string; mimeType: string }>;
   structuredContent?: Record<string, unknown>;
@@ -62,6 +77,8 @@ export interface RunContext {
   mask: AgentMask;
   /** Signing in and handing over (desktop/secrets.ts). */
   secrets: SecretsRun;
+  /** Websites, through Dashi's browser extension (desktop/browser.ts). */
+  browser: BrowserRun;
   /** What the agent's cursor is called on screen: its process name. */
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */

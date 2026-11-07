@@ -13,6 +13,7 @@ import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import { windowToFront } from "../front-window.ts";
 import type { Tile } from "../layout.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
+import { browserCall } from "./desktop/browser.ts";
 import * as desktop from "./desktop/index.ts";
 import { recordScreen } from "./desktop/record.ts";
 import { handOver, listLogins, payCall, signInCall } from "./desktop/secrets.ts";
@@ -187,6 +188,16 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       return handOver(call, ctx);
     case "read_clipboard_history":
       return desktop.readClipboardHistory(call.limit, ctx);
+    case "open_url":
+    case "read_page":
+    case "click_element":
+    case "fill_element":
+    case "select_option":
+    case "press":
+    case "scroll_page":
+    case "list_tabs":
+    case "switch_tab":
+      return browserCall(call, ctx);
     case "click":
     case "scroll":
     case "drag":
