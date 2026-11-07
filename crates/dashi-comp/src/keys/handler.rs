@@ -10,7 +10,8 @@
 //! go to the client as they are. A `binding` carries the key's text as
 //! typed, when it has one, so the shell can take typing too (the launcher's
 //! keys between a ❖ tap and its field taking the keyboard), and a tap switches
-//! to the keymap's `afterTap` rules at once, before the shell has heard of it.
+//! to the keymap's `afterTap` rules at once, before the shell has heard of it
+//! (so does a `bind` rule that `armsAfterTap`: ❖Space).
 
 use std::{collections::HashMap, time::Instant};
 
@@ -126,15 +127,15 @@ impl Dashi {
             return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
         }
         let app_id = self.focused_app_id();
-        let action = self
+        let (action, arms_after_tap) = self
             .keys
             .keymap
-            .action_for(&Pressed {
+            .matched(&Pressed {
                 names: &info.names,
                 mods,
                 app_id: &app_id,
             })
-            .cloned();
+            .map_or((None, false), |(action, arms)| (Some(action.clone()), arms));
         // The overview keeps keys from the windows; a shell surface given the keyboard there (its Desktops row) gets them.
         if action.is_some() {
             self.keys.snippets.reset();
@@ -162,6 +163,10 @@ impl Dashi {
                     event["text"] = json!(text);
                 }
                 self.ipc.emit("binding", event);
+                // As a ❖ tap does: the keys after this one are the shell's from now (keymap.rs).
+                if arms_after_tap {
+                    self.keys.keymap.arm_after_tap();
+                }
             }
             Some(action) => self.replay_action(keycode, &action, info.mods.shift, time),
         }

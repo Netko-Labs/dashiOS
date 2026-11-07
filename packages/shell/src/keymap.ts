@@ -35,6 +35,8 @@ export type Rule = {
   send?: string;
   tap?: string[];
   swallow?: true;
+  /** A `bind` that switches the compositor to `afterTap` the moment it is pressed, as a ❖ tap does (launcher/type-ahead.ts). */
+  armsAfterTap?: true;
 };
 
 export type Keymap = {
