@@ -127,6 +127,11 @@ export class MenusClient {
     if (this.menus) this.send(this.menus);
   }
 
+  /** Asks the shell to bring this app's window forward (protocol.ts `front`); nothing outside Dashi. */
+  front(): void {
+    if (this.socket) this.write(`${JSON.stringify({ type: "front" })}\n`);
+  }
+
   /** Who hears a chosen item (the latest one set). */
   onSelect(handler: (id: string) => void): void {
     this.handler = handler;

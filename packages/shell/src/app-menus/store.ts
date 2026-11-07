@@ -28,6 +28,8 @@ export class AppMenuStore {
   private held = false;
   private active: PublishedMenus | null = null;
   private readonly listeners = new Set<() => void>();
+  /** Told when an app asks for its window to be brought forward (protocol.ts `front`). */
+  private readonly frontListeners = new Set<(pid: number) => void>();
   /** Told of every publish and withdrawal, whoever is focused (the action registry's menus: actions/sources/menus.ts). */
   private readonly publishedListeners = new Set<() => void>();
 
@@ -38,6 +40,17 @@ export class AppMenuStore {
 
   /** The focused app's menus, null when it published none. */
   getSnapshot = (): PublishedMenus | null => this.active;
+
+  /** `owner` asks for its window to be brought forward (protocol.ts `front`). */
+  front(owner: MenuOwner): void {
+    for (const listener of this.frontListeners) listener(owner.pid);
+  }
+
+  /** Hear the apps that ask to be brought forward, by process; returns the way to stop. */
+  onFront(listener: (pid: number) => void): () => void {
+    this.frontListeners.add(listener);
+    return () => this.frontListeners.delete(listener);
+  }
 
   /** `owner`'s menus now (an empty list takes them down); a newer connection of the same process replaces an older one. */
   publish(owner: MenuOwner, menus: readonly AppMenu[], typing = false): void {

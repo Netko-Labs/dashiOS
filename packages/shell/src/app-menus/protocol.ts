@@ -3,6 +3,7 @@
  * newline-delimited JSON, one message per line.
  *
  *   app → shell  {"type":"menus","menus":[{"id":"file","items":[{"id":"new","label":"New Note","shortcut":"❖N"}]}],"typing":true}
+ *                {"type":"front"}                   (bring my window forward: it was handed what a second start would have opened)
  *   shell → app  {"type":"select","id":"new"}
  *                {"type":"quit"}                    (the app is quitting: its window's close request comes next)
  *                {"type":"stay"}                    (that quit is called off, a log out cancelled: take down what it asked)
@@ -13,6 +14,11 @@
  * (the battery menu opening Activity Monitor at an app's energy): at most
  * `LIMITS.openArgs` strings, each at most `LIMITS.openArg` characters. An app
  * reads them as it reads its own command line, and ignores what it doesn't know.
+ *
+ * `front` is the other way round: a second start handed its file to a
+ * running window of the app (Preview's empty one) and left, so that window
+ * asks to be brought forward, as the new one would have come up in front.
+ * The shell brings forward a window of the process that asked, and only that.
  *
  * `typing` (optional) says a text field in the app's window has the
  * keyboard: then the text chords (❖A, ❖C, ❖X, ❖V, ❖Z, ⇧❖Z) go to the field,
@@ -95,7 +101,7 @@ export interface MenuSpec {
   items: readonly MenuItemSpec[];
 }
 
-export type ClientMessage = { type: "menus"; menus: AppMenu[]; typing?: boolean };
+export type ClientMessage = { type: "menus"; menus: AppMenu[]; typing?: boolean } | { type: "front" };
 export type ShellMessage =
   | { type: "select"; id: string }
   | { type: "quit" }
@@ -271,7 +277,8 @@ export function parseClientMessage(line: string): ClientMessage | Refusal {
   }
   const fields = record(value, "the message", ["type", "menus", "typing"]);
   if (isRefusal(fields)) return fields;
-  if (fields.type !== "menus") return refuse('type must be "menus"');
+  if (fields.type === "front" && fields.menus === undefined && fields.typing === undefined) return { type: "front" };
+  if (fields.type !== "menus") return refuse('type must be "menus" or "front"');
   const typing = optionalBoolean(fields.typing, "typing");
   if (isRefusal(typing)) return typing;
   const menus = parseMenus(fields.menus);

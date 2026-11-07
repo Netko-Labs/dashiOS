@@ -291,6 +291,18 @@ export function startMenus(options: MenusOptions): Menus {
       },
     });
 
+  // An app's window that took a second start's file (Preview's empty one) comes forward, as a new window would have.
+  appMenus.onFront((pid) => {
+    if (!compositor) return;
+    void compositor
+      .windows()
+      .then((windows) => {
+        const window = windows.find((each) => ownerPids(each.pid).includes(pid));
+        return window ? compositor.request("focus", { window: window.id }) : undefined;
+      })
+      .catch(() => {});
+  });
+
   const run = (action: MenuAction): void => {
     runMenuAction(action, deps).catch((error) => console.error(`dashi-shell: menu action “${action.kind}” failed:`, error));
   };

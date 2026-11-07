@@ -96,6 +96,7 @@ export class MenuConnection implements MenuOwner {
       this.send({ type: "error", message: message.error });
       return;
     }
+    if (message.type === "front") return this.store.front(this);
     this.store.publish(this, message.menus, message.typing === true);
   }
 
