@@ -26,6 +26,21 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+interface TreeNode {
+  type?: string;
+  props?: Record<string, unknown> & { access?: { label?: string } };
+  children?: TreeNode[];
+}
+
+function findView(node: TreeNode, matches: (node: TreeNode) => boolean): TreeNode | null {
+  if (matches(node)) return node;
+  for (const child of node.children ?? []) {
+    const found = findView(child, matches);
+    if (found) return found;
+  }
+  return null;
+}
+
 const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 async function mount(remembered: Remembered, pasted = "Total: 1,234.50") {
@@ -94,6 +109,12 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
   const calc = await mount({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true, size: { width: 274 + TAPE_WIDTH, height: 440 } });
   expect(calc.tree()).toContain("Tape");
   expect(calc.tree()).toContain("= 5");
+  // A row's lines take its width, right-aligned in it: never squeezed to nothing ("…").
+  const row = findView(JSON.parse(calc.tree()), (node) => node.props?.access?.label === "2 + 3 = 5");
+  expect(row?.props?.align).toBe("stretch");
+  const lines = (row?.children ?? []).map((line) => line.props ?? {});
+  expect(lines.map((line) => line.align ?? line.textAlign)).toEqual(["right", "right"]);
+  expect(lines[0]?.truncate).toBeUndefined();
   await calc.press("key:1");
   await calc.press("key:plus");
   await calc.emit({ type: "press", nodeId: calc.node("tape-clear") });

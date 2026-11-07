@@ -44,8 +44,9 @@ function TapeRow({ entry, locale, onPress, onMenu }: { entry: TapeEntry; locale:
       accessibilityRole="button"
       accessibilityLabel={`${sum} ${result}`}
       style={{
+        // Stretched, so each line has the row's width to sit at the right of (and the sum to wrap in).
         flexDirection: "column",
-        alignItems: "flex-end",
+        alignItems: "stretch",
         gap: 2,
         paddingVertical: 7,
         paddingHorizontal: 10,
@@ -53,7 +54,7 @@ function TapeRow({ entry, locale, onPress, onMenu }: { entry: TapeEntry; locale:
         hoverBackgroundColor: colors.button,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>
+      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>
         {sum}
       </Text>
       <Text numberOfLines={1} style={{ fontSize: 15, color: colors.text, textAlign: "right" }}>
