@@ -117,14 +117,23 @@ function AppletPageBody({ entry }: { entry: IndexApplet }) {
       {installed && <Manage applet={installed} />}
       <Group testID="facts">
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12 }}>
-          <Text style={{ fontSize: 13, color: colors.text }}>Works on</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
-              {describeWhen(manifest.when)}
-            </Text>
+          <View style={{ flexShrink: 0 }}>
+            <Text style={{ fontSize: 13, color: colors.text }}>Works on</Text>
+          </View>
+          {/* One line: the machines it is for give way (cut short), never "this computer". */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 }}>
+            <View style={{ flexShrink: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+                {describeWhen(manifest.when)}
+              </Text>
+            </View>
             {here === true && <Svg markup={CHECK_MARK} size={11} color={colors.moss} />}
             {here !== null && (
-              <Text style={{ fontSize: 13, color: here ? colors.moss : colors.textMuted }}>{here ? "this computer" : "· not this computer"}</Text>
+              <View style={{ flexShrink: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 13, color: here ? colors.moss : colors.textMuted }}>
+                  {here ? "this computer" : "· not this computer"}
+                </Text>
+              </View>
             )}
           </View>
         </View>
