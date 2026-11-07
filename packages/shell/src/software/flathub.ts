@@ -66,6 +66,8 @@ export class Flathub {
   private readonly fetch: FetchLike | undefined;
   private readonly listTtl: number;
   private readonly detailsTtl: number;
+  /** The apps whose pages were read this session, so a card can say what the page says (Get…). */
+  private readonly read = new Map<string, AppDetails>();
 
   constructor(options: FlathubOptions) {
     this.cache = options.cache;
@@ -113,7 +115,14 @@ export class Flathub {
       stale ||= sizes.value.stale;
     }
     if (stats.status === "fulfilled" && stats.value.value !== null) value = { ...value, installsLastMonth: stats.value.value };
+    if (this.read.size >= 500) this.read.clear();
+    this.read.set(valid, value);
     return { value, stale };
+  }
+
+  /** An app's page as read this session, without asking anyone; null when it wasn't. */
+  detailsRead(id: string): AppDetails | null {
+    return this.read.get(id) ?? null;
   }
 
   private async load<T>(url: string, parse: (value: unknown) => T, ttl: number, init?: RequestInit, key: string = url): Promise<Answer<T>> {

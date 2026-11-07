@@ -16,6 +16,8 @@ import { useAppState } from "./hooks.ts";
 import { VerifiedBadge } from "./marks.tsx";
 import { appChip } from "./model.ts";
 import { AppIcon, useActions } from "./parts.tsx";
+import { useServices } from "./services.ts";
+import { askReasons, isProprietary } from "./trust-words.ts";
 
 /** How many columns a grid `width` px wide holds. */
 export function columnsFor(width: number): number {
@@ -29,6 +31,10 @@ export function AppCard({ app }: { app: AppSummary }) {
   const surface = useSurface();
   const actions = useActions();
   const state = useAppState(app.id);
+  const { catalog } = useServices();
+  // Get… when its page's Get asks first: closed code is in the list's answer; far reach is known once its page was read.
+  const read = catalog.detailsRead(app.id);
+  const asks = isProprietary(app.license) || (read !== null && askReasons(read).length > 0);
   // Metal cuts a line that runs out of room but draws no ellipsis, so the lines are fitted to the column's width here.
   const [room, setRoom] = useState(180);
   return (
@@ -71,7 +77,7 @@ export function AppCard({ app }: { app: AppSummary }) {
         )}
       </View>
       <StateChip
-        chip={appChip(state)}
+        chip={appChip(state, asks)}
         testID={`pill:${app.id}`}
         onPress={() =>
           state.kind === "get"

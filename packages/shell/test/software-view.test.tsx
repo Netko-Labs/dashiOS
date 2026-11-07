@@ -257,3 +257,21 @@ test("the update notice's Show opens Software on Updates", async () => {
   expect(view.nodeId("updates")).toBeDefined();
   expect(view.nodeId("discover")).toBeUndefined();
 });
+
+test("a card says Get… once its app's page is known to ask first, as the page does", async () => {
+  const { view, press } = harness();
+  await settle(120);
+  const pill = (): string => {
+    const tree = view.lastTree() ?? "";
+    const at = tree.indexOf(`"id":"${view.nodeId(`pill:${WIDE}`)}"`);
+    expect(at).toBeGreaterThan(0);
+    return tree.slice(at, at + 400);
+  };
+  expect(pill()).toContain('"Get"');
+  await press(`card:${WIDE}`);
+  await settle(80);
+  await press("back");
+  await settle(80);
+  expect(pill()).toContain('"Get…"');
+  view.unmount();
+});
