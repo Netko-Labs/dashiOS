@@ -45,7 +45,8 @@ export function attentionNotice(run: RunView, question: RunQuestion): NotifyInpu
   return {
     ...base(run),
     summary: `${run.harnessName} needs you`,
-    body: cut(`${question.title} ${cut(run.request, 60)}`, 160),
+    // The question, then the task it is for: "Use signin.localhost? · For “sign in to the test site”".
+    body: cut(`${question.title} · For “${cut(run.request, 60)}”`, 160),
     actions: [{ key: SHOW, label: "Show" }],
     transient: true,
   };

@@ -182,5 +182,6 @@ describe("the notifications", () => {
     runs.start({ id: "c", request: "Book it", harness: "codex", harnessName: "Codex" });
     const { question } = runs.ask("c", { kind: "site", title: "Use bodytech.com.co?", detail: "", choices: [], needs: "" });
     expect(attentionNotice(runs.get("c") as never, question).summary).toBe("Codex needs you");
+    expect(attentionNotice(runs.get("c") as never, question).body).toBe(`${question.title} · For “${runs.get("c")?.request}”`);
   });
 });
