@@ -18,7 +18,13 @@ import { parseArgs } from "node:util";
 import { crx3, extensionId, idFromManifestKey, publicDer, updateManifest, zip } from "../src/browser/crx.ts";
 
 const { values } = parseArgs({
-  options: { key: { type: "string" }, out: { type: "string" }, base: { type: "string", default: "file:///usr/share/dashi/browser" } },
+  options: {
+    key: { type: "string" },
+    out: { type: "string" },
+    base: { type: "string", default: "file:///usr/share/dashi/browser" },
+    // A higher version than the one installed, so a browser takes a new build while developing (0.5.0.7).
+    version: { type: "string" },
+  },
 });
 if (!values.key || !values.out) {
   console.error("usage: dashi-browser-pack --key <private.pem> --out <dir> [--base <url of the out dir once installed>]");
@@ -27,6 +33,10 @@ if (!values.key || !values.out) {
 
 const source = resolve(import.meta.dir, "../browser-extension");
 const manifest = JSON.parse(readFileSync(join(source, "manifest.json"), "utf8")) as { version: string; key: string };
+if (values.version) {
+  if (!/^\d+(\.\d+){0,3}$/.test(values.version)) throw new Error("dashi-browser-pack: --version is up to four numbers: 0.5.0.7");
+  manifest.version = values.version;
+}
 const pem = readFileSync(values.key, "utf8");
 const id = idFromManifestKey(manifest.key);
 if (extensionId(publicDer(pem)) !== id) {
@@ -44,7 +54,7 @@ async function bundle(entry: string, format: "esm" | "iife"): Promise<Uint8Array
 }
 
 const files = [
-  { path: "manifest.json", data: new Uint8Array(readFileSync(join(source, "manifest.json"))) },
+  { path: "manifest.json", data: new TextEncoder().encode(`${JSON.stringify(manifest, null, 2)}\n`) },
   { path: "background.js", data: await bundle("src/background/index.ts", "esm") },
   { path: "content.js", data: await bundle("src/content/index.ts", "iife") },
 ];
