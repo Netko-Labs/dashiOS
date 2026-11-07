@@ -10,9 +10,11 @@
  * default. A quit app still running after a few seconds is offered a force
  * quit. The selection is a line's key (an app or a pid), not a place in the
  * list, and the rows hold still while the pointer aims at one (the Table's
- * `steady`). The arrows move the selection from the search field and from
- * the window, ← and → close and open an app, Return or a double click
- * inspects, and a right click offers the same commands. The battery menu
+ * `steady`). The list has the keyboard until the person clicks the search
+ * field or presses ❖F, and takes it back when they click a row: there the
+ * arrows move the selection, ← and → close and open an app, Return or a
+ * double click inspects, and a right click offers the same commands. The
+ * field's ↑ and ↓ move the selection too. The battery menu
  * opens it at Energy with an app selected (args.ts, `onOpen`).
  */
 
@@ -22,7 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useAppMenus } from "../kit/index.ts";
 import type { OpenRequest } from "./args.ts";
 import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
-import { buildLines, type Line, lineForApp, submitSelection } from "./lines.ts";
+import { buildLines, type Line, lineForApp, parentKey, submitSelection } from "./lines.ts";
 import { monitorMenus, TABS, type ViewChoices } from "./menus.ts";
 import type { Monitor, Tab } from "./monitor.ts";
 import { NameCell } from "./name-cell.tsx";
@@ -68,8 +70,13 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
   const [wanted, setWanted] = useState(initial.app ?? null);
   const [sheet, setSheet] = useState<SheetState>(null);
   const [menu, setMenu] = useState<{ kind: "view" | "context"; x: number; y: number } | null>(null);
-  // Bumped when a sheet closes, so the search field takes the keyboard back.
-  const [focus, setFocus] = useState(0);
+  // Who has the keyboard: the list (its key view, remounted to take it from the field) or the search field
+  // (remounted with autoFocus). Each is bumped to hand it over, and again when a sheet closes.
+  // (The person may have clicked into the field meanwhile, so the list's view is remounted on every click of a row.)
+  const [keyboard, setKeyboard] = useState<{ owner: "list" | "field"; list: number; field: number }>({ owner: "list", list: 0, field: 0 });
+  const toList = useCallback((): void => setKeyboard((now) => ({ ...now, owner: "list", list: now.list + 1 })), []);
+  const toField = (): void => setKeyboard((now) => ({ ...now, owner: "field", field: now.field + 1 }));
+  const giveBack = (): void => setKeyboard((now) => (now.owner === "list" ? { ...now, list: now.list + 1 } : { ...now, field: now.field + 1 }));
   const lastPress = useRef<{ key: string; at: number } | null>(null);
   const stillTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,10 +92,22 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
     () =>
       COLUMNS[tab].map((column) =>
         column.key === "name"
-          ? { ...column, cell: (line: Line, chosen: boolean) => <NameCell line={line} selected={chosen} onToggle={(each) => toggle(each.key.slice(4))} /> }
+          ? {
+              ...column,
+              cell: (line: Line, chosen: boolean) => (
+                <NameCell
+                  line={line}
+                  selected={chosen}
+                  onToggle={(each) => {
+                    toggle(each.key.slice(4));
+                    toList();
+                  }}
+                />
+              ),
+            }
           : column,
       ),
-    [tab, toggle],
+    [tab, toggle, toList],
   );
   const lines = useMemo(
     () => buildLines(filterRows(state.rows, query, view), { grouped: view.grouped, expanded, query, columns, sort }),
@@ -128,7 +147,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
 
   const closeSheet = (): void => {
     setSheet(null);
-    setFocus((n) => n + 1);
+    giveBack();
   };
   const quit = (line: Line | null = selectedLine): void => {
     if (!line) return;
@@ -161,9 +180,19 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
     const again = lastPress.current?.key === key && now - lastPress.current.at <= DOUBLE_CLICK_MS;
     lastPress.current = again ? null : { key, at: now };
     setSelected(key);
+    toList();
     if (again) inspect(lines.find((line) => line.key === key) ?? null);
   };
   const blocked = sheet !== null || menu !== null;
+  /** → opens the selected app, ← closes it; ← on one of its processes goes up to the app. */
+  const expandWith = (key: "left" | "right"): void => {
+    if (!selectedLine) return;
+    if (selectedLine.expandable) {
+      if (selectedLine.expanded !== (key === "right")) toggle(selectedLine.key.slice(4));
+      return;
+    }
+    if (key === "left" && selectedLine.depth > 0) setSelected(parentKey(lines, selectedLine.key));
+  };
 
   // The menu bar's menus (src/app-menus/).
   const { menus, run } = monitorMenus({
@@ -172,7 +201,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
     hasSelection: selectedLine !== null,
     blocked,
     actions: {
-      find: () => setFocus((n) => n + 1),
+      find: toField,
       copy: () => copy(),
       setView: (patch) => setView({ ...view, ...patch }),
       chooseTab,
@@ -198,13 +227,14 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
       <Segmented testID="tabs" options={TABS} value={tab} onChange={chooseTab} segmentWidth={64} />
       <View style={{ width: 8 }} />
       <SearchField
-        key={focus}
+        key={`search:${keyboard.field}`}
         testID="search"
         value={query}
         onChangeText={setQuery}
         placeholder="Search processes"
         width={150}
-        autoFocus
+        // Not under a sheet: it asks again when the sheet closes.
+        autoFocus={keyboard.owner === "field" && sheet === null}
         onKeyPress={(key) => {
           if (key === "ArrowUp" || key === "ArrowDown") move(key === "ArrowUp" ? "up" : "down");
         }}
@@ -215,7 +245,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
 
   const closeMenu = (): void => {
     setMenu(null);
-    setFocus((n) => n + 1);
+    giveBack();
   };
   const overlay =
     sheet?.kind === "quit" ? (
@@ -250,16 +280,19 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
   return (
     // One chrome row: the scope is the view button's own label, and the summary is content under the table.
     <AppWindow title="Activity Monitor" toolbar={toolbar} overlay={overlay}>
-      <View
-        style={{ flex: 1, flexDirection: "column", minHeight: 0 }}
-        onWindowKeyDown={(event) => {
-          if (blocked) return;
-          if (event.key === "up" || event.key === "down") move(event.key);
-          else if ((event.key === "left" || event.key === "right") && selectedLine?.expandable) {
-            if (selectedLine.expanded !== (event.key === "right")) toggle(selectedLine.key.slice(4));
-          } else if (event.key === "enter") inspect();
-        }}
-      >
+      <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
+        {/* The list's keys: a view with no size, remounted to take the keyboard from the search field. A sheet's own keys come after it. */}
+        <View
+          key={`list:${keyboard.list}`}
+          testID="list-keys"
+          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+          onWindowKeyDown={(event) => {
+            if (blocked || event.ctrl || event.alt || event.meta) return;
+            if (event.key === "up" || event.key === "down") move(event.key);
+            else if (event.key === "left" || event.key === "right") expandWith(event.key);
+            else if (event.key === "enter") inspect();
+          }}
+        />
         <Table
           testID="processes"
           columns={columns}

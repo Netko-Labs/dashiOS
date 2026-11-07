@@ -199,3 +199,13 @@ export function lineForApp(lines: readonly Line[], app: { key: string; name?: st
   const lower = app.name?.toLowerCase();
   return (lower ? lines.find((line) => line.depth === 0 && line.name.toLowerCase() === lower)?.key : undefined) ?? null;
 }
+
+/** The app line a process line sits under (the nearest line above it at the top level); the line itself at the top. */
+export function parentKey(lines: readonly Pick<Line, "key" | "depth">[], key: string): string {
+  const at = lines.findIndex((line) => line.key === key);
+  for (let index = at; index >= 0; index--) {
+    const line = lines[index] as Pick<Line, "key" | "depth">;
+    if (line.depth === 0) return line.key;
+  }
+  return key;
+}
