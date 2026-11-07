@@ -67,8 +67,8 @@ export function ForHere() {
 export function FromCatalog({ name }: { name: string }) {
   const colors = useColors();
   return (
-    <View testID="from-catalog" style={{ flexShrink: 1, minWidth: 0 }}>
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>{`From ${name}`}</Text>
+    <View testID="from-catalog" style={{ flexDirection: "row", alignItems: "center" }}>
+      <Text style={{ fontSize: 11, color: colors.textMuted }}>{`From ${name}`}</Text>
     </View>
   );
 }
