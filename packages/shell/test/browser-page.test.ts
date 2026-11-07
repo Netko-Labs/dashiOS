@@ -113,13 +113,12 @@ const loginPage: Spec = {
 
 describe("read_page's text", () => {
   test("headings, text in reading order, and numbered elements", () => {
-    const { text, truncated } = readFrame(node(loginPage), numbering());
+    const { text, truncated } = readFrame(node(loginPage), numbering(), undefined, "https://bodytech.example");
     expect(truncated).toBe(false);
     expect(plain(text)).toBe(
       [
         "# Ingresa a tu cuenta",
-        "¿No tienes cuenta?",
-        '[1] link "Regístrate" → https://bodytech.example/registro',
+        '¿No tienes cuenta? [1] link "Regístrate" → /registro',
         '[2] textbox "Correo electrónico" value="alexk@example.com"',
         '[3] password field "Contraseña" (filled: yes)',
         '[4] checkbox "Recordarme" (checked)',

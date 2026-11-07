@@ -51,7 +51,8 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
     case "read": {
       await settle();
       const root = new DomNode(document);
-      const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node));
+      const origin = location.origin === "null" ? null : location.origin;
+      const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), undefined, origin);
       return { doc: DOC, text, truncated, title: document.title };
     }
     case "focus":

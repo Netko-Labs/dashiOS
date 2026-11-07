@@ -38,8 +38,13 @@ const quote = (text: string): string => JSON.stringify(text);
 
 const clip = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
-/** The line for one element (after its number). */
-export function describeElement(node: PageNode, role: Role): string {
+/** A link's address as shown: a path when it is on the page's own origin. */
+export function shownHref(href: string, origin: string | null): string {
+  return origin && href.startsWith(`${origin}/`) ? href.slice(origin.length) : href;
+}
+
+/** The line for one element (after its number); `origin` is the page's, for shorter links. */
+export function describeElement(node: PageNode, role: Role, origin: string | null = null): string {
   const name = nameOf(node, role);
   const parts = [name ? `${role} ${quote(name)}` : role];
   const flags: string[] = [];
@@ -48,7 +53,7 @@ export function describeElement(node: PageNode, role: Role): string {
     flags.push(`filled: ${node.hasValue() || node.dashiFilled() ? "yes" : "no"}${node.dashiFilled() ? ", by Dashi" : ""}`);
   } else if (role === "link") {
     const href = node.href();
-    if (href && !/^javascript:/i.test(href)) parts.push(`→ ${href}`);
+    if (href && !/^javascript:/i.test(href)) parts.push(`→ ${shownHref(href, origin)}`);
   } else if (role === "checkbox" || role === "radio" || role === "switch") {
     flags.push(node.checked() ? "checked" : "not checked");
   } else if (role === "combobox" || role === "listbox") {
@@ -90,7 +95,7 @@ class Writer {
       if (this.line && !this.line.endsWith(" ")) this.line += " ";
       return;
     }
-    this.line += this.line ? clean : clean.trimStart();
+    this.line += this.line && !this.line.endsWith(" ") ? clean : clean.trimStart();
   }
 
   /** A cell of a table row, after the one before. */
@@ -106,13 +111,18 @@ class Writer {
     this.prefix = "";
   }
 
-  element(ref: number, description: string): boolean {
+  /** An element: on a line of its own, or (a link) in the line of text it is part of. */
+  element(ref: number, description: string, inline = false): boolean {
     if (this.elements >= this.limits.elements) {
       this.truncated = true;
       return false;
     }
-    this.flush();
     this.elements++;
+    if (inline) {
+      this.line = `${this.line}${this.line && !this.line.endsWith(" ") ? " " : ""}[${marker(ref)}] ${description} `;
+      return true;
+    }
+    this.flush();
     this.push(`${this.prefix}[${marker(ref)}] ${description}`);
     this.prefix = "";
     return true;
@@ -144,7 +154,13 @@ class Writer {
  * element every time (content.ts keeps them), so a number read stays good
  * for a click.
  */
-export function readFrame(root: PageNode, refOf: (node: PageNode) => number, limits: ReadLimits = READ_LIMITS): FrameText {
+export function readFrame(
+  root: PageNode,
+  refOf: (node: PageNode) => number,
+  limits: ReadLimits = READ_LIMITS,
+  /** The page's origin: links to it are shown by their path. */
+  origin: string | null = null,
+): FrameText {
   const out = new Writer(limits);
   const walk = (node: PageNode, quiet: boolean): void => {
     if (out.full) return;
@@ -156,7 +172,8 @@ export function readFrame(root: PageNode, refOf: (node: PageNode) => number, lim
     if (node.tag === "br") return out.flush();
     const role = roleOf(node);
     if (role && role !== "clickable") {
-      out.element(refOf(node), describeElement(node, role));
+      // Links read in their sentence; every other control on a line of its own.
+      out.element(refOf(node), describeElement(node, role, origin), role === "link");
       return;
     }
     if (node.tag === "img") {
@@ -170,7 +187,7 @@ export function readFrame(root: PageNode, refOf: (node: PageNode) => number, lim
     if (node.tag === "td" || node.tag === "th") out.cell();
     if (block) out.startBlock(heading > 0 ? `${"#".repeat(Math.min(heading, 6))} ` : item ? "- " : "");
     // A clickable container (onclick, tabindex) is numbered, and what is in it still read.
-    if (role === "clickable") out.element(refOf(node), describeElement(node, role));
+    if (role === "clickable") out.element(refOf(node), describeElement(node, role, origin));
     const hush = quiet || node.labelsField();
     for (const child of node.children()) walk(child, hush);
     if (block) out.endBlock();
