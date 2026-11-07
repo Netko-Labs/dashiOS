@@ -15,6 +15,15 @@
  */
 
 const argv = process.argv.slice(2);
+// `codex login status` (how Dashi tells it's signed in, without a model call) and `--version`: a stand-in has no login to lack.
+if (argv[0] === "login" && argv[1] === "status") {
+  console.log("Logged in (a stand-in: there is no account)");
+  process.exit(0);
+}
+if (argv[0] === "--version") {
+  console.log("codex-cli 0.0.0 (stand-in)");
+  process.exit(0);
+}
 const overrides = argv.flatMap((arg, at) => (arg === "-c" ? [argv[at + 1] ?? ""] : []));
 const value = (key: string) => overrides.find((each) => each.startsWith(`mcp_servers.dashi.${key}=`))?.slice(`mcp_servers.dashi.${key}=`.length) ?? "";
 const resumed = argv.includes("resume") ? (argv[argv.indexOf("resume") + 1] ?? null) : null;
