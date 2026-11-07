@@ -55,6 +55,7 @@ function Thumb({ shot, chosen, onPress, index, source }: { shot: Shot; chosen: b
   const surface = useSurface();
   const file = useImage(shot.thumb, source);
   return (
+    // The focusable view doesn't clip, so its ring (drawn just outside it) shows; the picture is clipped inside.
     <View
       testID={`shot:${index}`}
       focusable
@@ -62,24 +63,29 @@ function Thumb({ shot, chosen, onPress, index, source }: { shot: Shot; chosen: b
       accessibilityLabel={shot.caption ?? `Screenshot ${index + 1}`}
       accessibilityState={{ selected: chosen }}
       onPress={onPress}
-      style={{
-        width: 120,
-        height: 76,
-        flexShrink: 0,
-        borderRadius: 8,
-        overflow: "hidden",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: surface.field,
-        hoverBackgroundColor: colors.tileHover,
-        borderWidth: chosen ? 2 : 1,
-        borderColor: chosen ? colors.selection : colors.separator,
-      }}
+      style={{ width: 120, height: 76, flexShrink: 0, borderRadius: 8 }}
     >
-      {file && <Image source={file} resizeMode="contain" style={{ width: 114, height: 70 }} />}
+      <View
+        style={{
+          flex: 1,
+          borderRadius: 8,
+          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: surface.field,
+          hoverBackgroundColor: colors.tileHover,
+          borderWidth: chosen ? 2 : 1,
+          borderColor: chosen ? colors.selection : colors.separator,
+        }}
+      >
+        {file && <Image source={file} resizeMode="contain" style={{ width: 114, height: 70 }} />}
+      </View>
     </View>
   );
 }
+
+/** Room around the thumbnails for the focus ring (2 px out, 2 px wide), which the scrolling strip would clip. */
+const RING_ROOM = 4;
 
 export function Gallery({ shots, source = "flathub" }: { shots: readonly Shot[]; source?: Source }) {
   const [index, setIndex] = useState(0);
@@ -91,7 +97,22 @@ export function Gallery({ shots, source = "flathub" }: { shots: readonly Shot[];
       <Big shot={shot} source={source} />
       {shot.caption !== null && <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{shot.caption}</Text>}
       {shots.length > 1 && (
-        <View focusGroup selectsOnFocus accessibilityRole="tablist" style={{ flexDirection: "row", gap: 8, overflow: "scroll-x", flexShrink: 0 }}>
+        <View
+          focusGroup
+          selectsOnFocus
+          accessibilityRole="tablist"
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            overflow: "scroll-x",
+            flexShrink: 0,
+            padding: RING_ROOM,
+            marginTop: -RING_ROOM,
+            marginBottom: -RING_ROOM,
+            marginLeft: -RING_ROOM,
+            marginRight: -RING_ROOM,
+          }}
+        >
           {shots.map((each, i) => (
             <Thumb key={each.large} shot={each} chosen={i === index} index={i} source={source} onPress={() => setIndex(i)} />
           ))}
