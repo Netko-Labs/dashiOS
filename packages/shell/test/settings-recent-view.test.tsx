@@ -26,6 +26,20 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
+interface TreeNode {
+  props?: Record<string, unknown>;
+  children?: TreeNode[];
+}
+
+function findNode(node: TreeNode, id: string): TreeNode | null {
+  if (node.props?.id === id) return node;
+  for (const child of node.children ?? []) {
+    const found = findNode(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
 async function mount(tree: ReactNode) {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
@@ -163,6 +177,10 @@ test("Agents lists each agent: connected now, what it may do riskiest first, wha
   expect(view.has("agent:/usr/bin/claude")).toBe(true);
   expect(view.has("agent:/usr/bin/codex")).toBe(true);
   expect(view.has("agent-connected")).toBe(true);
+  // "Connected now" keeps to one line beside the name (review 18 saw it wrap): the chip never shrinks.
+  const chip = findNode(JSON.parse(view.root.lastTree() ?? "{}"), view.root.nodeId("agent-connected") ?? "");
+  expect(chip?.props?.shrink).toBe(false);
+  expect(chip?.children?.[0]?.props?.truncate).toBe(true);
   expect(view.has("agent-scope:/usr/bin/claude:signin")).toBe(true);
   // What it changed, with Undo.
   const [motion] = settings.changes.getSnapshot();

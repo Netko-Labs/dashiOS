@@ -86,8 +86,14 @@ export function givenWords(since: number | null, now: Date, locale?: string): st
 function ConnectedChip() {
   const colors = useColors();
   return (
-    <View testID="agent-connected" style={{ height: 18, paddingHorizontal: 7, borderRadius: 9, justifyContent: "center", backgroundColor: colors.agentWash }}>
-      <Text style={{ fontSize: 11, color: colors.agentInk }}>Connected now</Text>
+    // Never squeezed: the name beside it gives way (and is cut) first.
+    <View
+      testID="agent-connected"
+      style={{ height: 18, flexShrink: 0, paddingHorizontal: 7, borderRadius: 9, justifyContent: "center", backgroundColor: colors.agentWash }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.agentInk }}>
+        Connected now
+      </Text>
     </View>
   );
 }
@@ -100,9 +106,11 @@ function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() 
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingHorizontal: 12, paddingVertical: 8 }}>
       <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-            {agent.title}
-          </Text>
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+              {agent.title}
+            </Text>
+          </View>
           {agent.connected && <ConnectedChip />}
         </View>
         <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
