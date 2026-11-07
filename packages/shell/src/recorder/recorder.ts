@@ -17,7 +17,7 @@ export type RecordedBy = "person" | "agent";
 
 export type RecorderState =
   | { kind: "idle" }
-  | { kind: "starting" }
+  | { kind: "starting"; by: RecordedBy }
   | { kind: "recording"; since: number; file: string; target: RecordTarget; by: RecordedBy }
   | { kind: "saving"; file: string };
 
@@ -114,7 +114,7 @@ export class ScreenRecorder {
     const now = this.deps.now ?? Date.now;
     if (this.state.kind !== "idle") throw new Error("A recording is already running.");
     if (!this.available()) throw new Error("Screen recording needs wf-recorder (dnf install wf-recorder).");
-    this.set({ kind: "starting" });
+    this.set({ kind: "starting", by: options.by ?? "person" });
     const directory = (this.deps.directory ?? recordingDirectory)();
     mkdirSync(directory, { recursive: true });
     const exists = this.deps.exists ?? existsSync;

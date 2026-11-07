@@ -6,7 +6,8 @@
  * closes before it captures, so it isn't in the picture. While the person's
  * own recording runs, ⇧❖5 stops it instead (and so does the menu bar's stop
  * button, which stops an agent's too); an agent's record_screen leaves the
- * toolbar opening as ever (start.ts).
+ * toolbar opening as ever (start.ts), and Record then says "An agent is
+ * recording the screen" in the toolbar instead of closing it on nothing.
  */
 
 import { useColors } from "@dashi/ui";
@@ -44,11 +45,29 @@ export interface ToolbarChoice {
   microphone: boolean;
 }
 
-function Toolbar({ initial, onDone }: { initial: ToolbarChoice; onDone: (choice: ToolbarChoice | null) => void }) {
+function Toolbar({
+  initial,
+  onDone,
+  refuse,
+}: {
+  initial: ToolbarChoice;
+  onDone: (choice: ToolbarChoice | null) => void;
+  /** Why this choice can't be done now (an agent is recording), said in the toolbar instead of closing it. */
+  refuse?: (choice: ToolbarChoice) => string | null;
+}) {
   const colors = useColors();
   const [mode, setMode] = useState(initial.mode);
   const [microphone, setMicrophone] = useState(initial.microphone);
-  const go = () => onDone({ mode, microphone });
+  const [notice, setNotice] = useState<string | null>(null);
+  const go = () => {
+    const why = refuse?.({ mode, microphone }) ?? null;
+    if (why) setNotice(why);
+    else onDone({ mode, microphone });
+  };
+  const choose = (next: CaptureMode) => {
+    setNotice(null);
+    setMode(next);
+  };
   const button = (key: string, chosen: boolean, glyph: string, onPress: () => void, testID: string) => (
     <View
       key={key}
@@ -98,16 +117,16 @@ function Toolbar({ initial, onDone }: { initial: ToolbarChoice; onDone: (choice:
       </View>
       {button("close", false, CLOSE, () => onDone(null), "capture-toolbar:close")}
       {divider("d1")}
-      {(["screen", "window", "area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => setMode(each), `capture-toolbar:${each}`))}
+      {(["screen", "window", "area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => choose(each), `capture-toolbar:${each}`))}
       {divider("d2")}
-      {(["record-screen", "record-area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => setMode(each), `capture-toolbar:${each}`))}
+      {(["record-screen", "record-area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => choose(each), `capture-toolbar:${each}`))}
       {divider("d3")}
       <View style={{ opacity: isRecording(mode) ? 1 : 0.35 }}>
         {button("microphone", microphone && isRecording(mode), MICROPHONE, () => isRecording(mode) && setMicrophone(!microphone), "capture-toolbar:microphone")}
       </View>
-      <View style={{ flex: 1, minWidth: 0, marginLeft: 6 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11.5, color: colors.textMuted }}>
-          {isRecording(mode) ? `${TITLES[mode]}${microphone ? ", with sound" : ""}` : TITLES[mode]}
+      <View testID="capture-toolbar:title" style={{ flex: 1, minWidth: 0, marginLeft: 6 }}>
+        <Text numberOfLines={1} style={{ fontSize: 11.5, color: notice ? colors.text : colors.textMuted }}>
+          {notice ?? (isRecording(mode) ? `${TITLES[mode]}${microphone ? ", with sound" : ""}` : TITLES[mode])}
         </Text>
       </View>
       <View
@@ -127,6 +146,8 @@ export interface ToolbarDeps {
   output(): Promise<string | undefined>;
   /** Carry out a choice, after the toolbar's host has exited. */
   act(choice: ToolbarChoice, output: string | undefined): Promise<void>;
+  /** Why a choice can't be done now, said in the toolbar, which stays open (start.ts: an agent is recording). */
+  refuse?(choice: ToolbarChoice): string | null;
   /** Where a toolbar that didn't show is told (the journal). */
   report?(message: string): void;
   now?(): number;
@@ -179,6 +200,7 @@ export function captureToolbar(deps: ToolbarDeps): CaptureToolbar {
         },
         <Toolbar
           initial={last}
+          {...(deps.refuse ? { refuse: deps.refuse } : {})}
           onDone={(chosen) => {
             choice = chosen;
             dismissed = true;

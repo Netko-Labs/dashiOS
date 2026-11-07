@@ -51,6 +51,13 @@ function savedNotice(file: string) {
   };
 }
 
+/** What the toolbar says when Record is pressed while another recording runs (an agent's: the person's own is stopped by ⇧❖5). */
+export function recordRefusal(mode: string, state: RecorderState): string | null {
+  if (mode !== "record-screen" && mode !== "record-area") return null;
+  if (state.kind === "idle") return null;
+  return (state.kind === "recording" || state.kind === "starting") && state.by === "agent" ? "An agent is recording the screen" : "The screen is already being recorded";
+}
+
 /** Whether ⇧❖5 stops the recording now instead of opening the toolbar: the person's own is running. */
 export function stopsRecording(state: RecorderState): boolean {
   return state.kind === "recording" && state.by === "person";
@@ -86,6 +93,8 @@ export function startCapture(deps: CaptureDeps): Capture {
   });
   const bar: CaptureToolbar = captureToolbar({
     open: deps.open,
+    // Record while an agent records: said in the toolbar, which stays, instead of closing on nothing.
+    refuse: (choice) => recordRefusal(choice.mode, recorder.getSnapshot()),
     output: async () => (await deps.screen(front)).output,
     act: async (choice, output) => {
       switch (choice.mode) {
