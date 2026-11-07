@@ -156,7 +156,7 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     if (sheet?.kind === "open") return chooserRequest("open", { appId: "dev.dashi.editor", title: "Open", currentFolder: base });
     if (sheet?.kind !== "save-as") return null;
     const home = homeFolder();
-    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents"))), base, home);
+    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents")), existsSync), base, home);
     return chooserRequest("save", {
       appId: "dev.dashi.editor",
       title: state.path === null ? `Save “${name}”` : "Save As",
@@ -234,9 +234,12 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
         autoFocus={findFocus > 0}
         onChangeText={(query) => model.setQuery(query)}
         onSubmit={() => jump(1)}
+        // One Esc leaves Find: the query stays (❖G goes on), the text takes the keyboard on the current match.
+        variant="find"
         onKeyPress={(key) => {
-          if (key === "Escape") focusText();
-          else jump(key === "ArrowUp" ? -1 : 1);
+          if (key !== "Escape") return jump(key === "ArrowUp" ? -1 : 1);
+          if (find.current < 0) jump(1);
+          focusText();
         }}
       />
     </>

@@ -24,7 +24,7 @@ use smithay::{
     utils::{Logical, Point, SERIAL_COUNTER},
 };
 
-use crate::state::Dashi;
+use crate::{render::titlebar::Part, state::Dashi};
 
 const BTN_LEFT: u32 = 0x110;
 const BTN_RIGHT: u32 = 0x111;
@@ -153,7 +153,19 @@ impl Dashi {
                 .get("action")
                 .and_then(Value::as_str)
                 .unwrap_or("move");
-            self.agent_pointer(&seat, global, under, action, params)?;
+            // The lights are dashi-comp's, drawn over the window, and never reach the client: a click
+            // there is the light's, as the person's press is (input/decorations.rs), active window or not.
+            let light = light_click(action, self.light_of(id, &window, global));
+            self.agent_pointer(
+                &seat,
+                global,
+                under,
+                if light.is_some() { "move" } else { action },
+                params,
+            )?;
+            if let Some(part) = light {
+                self.press_light(id, part)?;
+            }
             if matches!(action, "click" | "press") {
                 self.note_agent_press(id);
             }
@@ -365,9 +377,26 @@ impl Dashi {
     }
 }
 
+/// The light an agent's `action` presses, when it lands on one (`light`): only a click does, as the
+/// lights act on the press and a held press would have nothing to let go.
+fn light_click(action: &str, light: Option<Part>) -> Option<Part> {
+    light.filter(|_| action == "click")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::render::titlebar::{Decor, part_at};
+
+    #[test]
+    fn a_click_on_a_light_is_the_lights() {
+        assert_eq!(light_click("click", Some(Part::Close)), Some(Part::Close));
+        assert_eq!(light_click("click", None), None);
+        assert_eq!(light_click("move", Some(Part::Close)), None);
+        assert_eq!(light_click("press", Some(Part::Zoom)), None);
+        // Over a unified window's surface, the first light is Close (render/titlebar.rs).
+        assert_eq!(part_at(20.0, 19.0, 600, Decor::Unified), Some(Part::Close));
+    }
 
     #[test]
     fn buttons_by_name() {

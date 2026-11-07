@@ -6,7 +6,8 @@
  * is the open field's while one is focused; otherwise it is the kit's
  * KeySink: N new note, Backspace delete (Edit › Undo brings it back), P pin,
  * Enter writes in the note, / or F search, and the up and down arrows move
- * through the list. Esc in a field gives the keyboard back to the list.
+ * through the list. Esc in a field gives the keyboard back to the list; Esc
+ * in the search hands it to the note, on the match, when the note has one.
  */
 
 import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, ToolbarButton, useUndo } from "@dashi/ui";
@@ -17,7 +18,7 @@ import { Editor } from "./editor.tsx";
 import { findMatches } from "./find.ts";
 import type { FormatCommand } from "./formats.ts";
 import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "./glyphs.ts";
-import type { Row } from "./list.ts";
+import { type Row, withDraft } from "./list.ts";
 import { notesMenus } from "./menus.ts";
 import type { NotesModel } from "./model.ts";
 import { DEFAULT_FOLDER_NAME } from "./names.ts";
@@ -58,7 +59,9 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
   }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the model is mutable; these say when its rows changed
-  const rows = useMemo(() => model.rows(), [model, state.notes, state.deleted, state.source, state.query]);
+  const listed = useMemo(() => model.rows(), [model, state.notes, state.deleted, state.source, state.query]);
+  // The open note's row follows its typing at once, not only once it is saved or left.
+  const rows = useMemo(() => withDraft(listed, state.selected, state.draft), [listed, state.selected, state.draft]);
   const row = rows.find((each) => each.id === state.selected) ?? null;
   const inTrash = state.source.kind === "trash";
   const searchingNow = state.query.trim() !== "";
@@ -172,7 +175,14 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
       onChangeText={(q) => model.setQuery(q)}
       width={170}
       autoFocus={searching > 0}
-      onKeyPress={(key) => (key === "Escape" ? takeKeys() : model.moveSelection(key === "ArrowUp" ? -1 : 1))}
+      // Find in the note: one Esc keeps the words and hands the keyboard to the note, on the match;
+      // with none there, to the list.
+      variant="find"
+      onKeyPress={(key) => {
+        if (key !== "Escape") model.moveSelection(key === "ArrowUp" ? -1 : 1);
+        else if (model.findCurrent()) setBodyFocus((n) => n + 1);
+        else takeKeys();
+      }}
     />
   );
   const toolbar = inTrash ? (
@@ -311,7 +321,6 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
           onRestore={() => model.restoreSelected()}
           onNew={() => model.newNote()}
           bodyFocus={bodyFocus}
-          onFocusBody={() => setBodyFocus((n) => n + 1)}
           empty={
             searchingNow
               ? { title: "No matches", message: "Nothing matches your search.", canCreate: false }

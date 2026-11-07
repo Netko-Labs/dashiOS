@@ -9,16 +9,19 @@
  * /usr/share/xdg-desktop-portal. A checkout has neither, so the files in its
  * session/ are linked into the user's config: `systemctl --user link` for the
  * unit, a symlink in ~/.config/xdg-desktop-portal for the config; the portal
- * backend's files are portal-files.ts's.
+ * backend's files are portal-files.ts's. The portal backend is stopped as a
+ * session starts and as it ends, so a session never meets an older one's.
  */
 
 import { existsSync, lstatSync, mkdirSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { forgetCheckoutPortal, linkCheckoutPortal } from "./portal-files.ts";
+import { forgetCheckoutPortal, linkCheckoutPortal, STALE_UNITS } from "./portal-files.ts";
 
 export const TARGET = "dashi-session.target";
 const PORTALS = "dashi-portals.conf";
+/** Has the session bus read its service files again (dbus-broker and dbus-daemon both take it). */
+const BUS_RELOAD = ["busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "ReloadConfig"] as const;
 
 export interface TargetDeps {
   env: Readonly<Record<string, string | undefined>>;
@@ -54,8 +57,11 @@ export async function startSessionTarget(deps: TargetDeps): Promise<void> {
   const files = deps.env.DASHI_SESSION_FILES;
   if (files) await linkCheckoutFiles(files, deps);
   // Dashi's portal backend: a checkout's, or (installed) the system's (session/portal-files.ts).
-  if (files) linkCheckoutPortal(files, deps.env, deps.log);
-  else forgetCheckoutPortal(deps.env);
+  const changes = files ? linkCheckoutPortal(files, deps.env, deps.log) : forgetCheckoutPortal(deps.env);
+  if (changes.unit) await deps.run(["systemctl", "--user", "daemon-reload"]);
+  if (changes.service) await deps.run(BUS_RELOAD);
+  // A backend an earlier session started would serve this one its old code: the next request starts this one's.
+  await stopPortal(deps);
   // The portal may have failed to start earlier in this login (its target
   // was down); clear that so it's activated again on demand.
   await deps.run(["systemctl", "--user", "reset-failed", "xdg-desktop-portal.service"]);
@@ -63,8 +69,14 @@ export async function startSessionTarget(deps: TargetDeps): Promise<void> {
   deps.log(failure === null ? `started ${TARGET}` : `could not start ${TARGET} (${failure}); apps may get no portal`);
 }
 
-/** Take it down at the end of the session (best effort, quickly). */
+/** Stop Dashi's portal backend, in whichever unit it runs (best effort: most are not loaded). */
+async function stopPortal(deps: Pick<TargetDeps, "run">): Promise<void> {
+  for (const unit of STALE_UNITS) await deps.run(["systemctl", "--user", "stop", unit]);
+}
+
+/** Take it down at the end of the session (best effort, quickly); the portal backend goes with it. */
 export async function stopSessionTarget(deps: Pick<TargetDeps, "which" | "run">): Promise<void> {
   if (!deps.which("systemctl")) return;
   await deps.run(["systemctl", "--user", "stop", TARGET]);
+  await stopPortal(deps);
 }

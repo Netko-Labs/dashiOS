@@ -71,6 +71,10 @@ describe("names", () => {
     expect(suggestedSavePath(null, "/home/a")).toBe("~/Documents/Untitled.txt");
     expect(suggestedSavePath(null, "/home/a", false)).toBe("~/Untitled.txt");
     expect(suggestedSavePath("/home/a/n.md", "/home/a")).toBe("~/n.md");
+    // An Untitled.txt there already: the next free name.
+    const taken = new Set(["/home/a/Documents/Untitled.txt", "/home/a/Documents/Untitled 2.txt"]);
+    expect(suggestedSavePath(null, "/home/a", true, (path) => taken.has(path))).toBe("~/Documents/Untitled 3.txt");
+    expect(suggestedSavePath(null, "/home/a", false, (path) => taken.has(path))).toBe("~/Untitled.txt");
   });
 });
 

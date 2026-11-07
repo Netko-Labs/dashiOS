@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { lightColors } from "@dashi/ui";
-import { findMatches, nextMatch } from "../apps/notes/find.ts";
+import { currentMatch, findMatches, nextMatch } from "../apps/notes/find.ts";
 import { BODY_SIZE, lineSizes, lookOf } from "../apps/notes/look.ts";
 import { markup, type Span, spanAt } from "../apps/notes/markup.ts";
 
@@ -129,5 +129,18 @@ describe("find in the note", () => {
     expect(nextMatch(matches, { start: 3, end: 3 }, -1)).toEqual({ start: 0, end: 2 });
     expect(nextMatch(matches, { start: 0, end: 0 }, -1)).toEqual({ start: 5, end: 7 });
     expect(nextMatch([], { start: 0, end: 0 }, 1)).toBeNull();
+  });
+
+  test("leaving Find keeps the match the selection is on, else takes the next after the caret", () => {
+    const matches = [
+      { start: 0, end: 2 },
+      { start: 5, end: 7 },
+    ];
+    expect(currentMatch(matches, { start: 5, end: 7 })).toEqual({ start: 5, end: 7 });
+    expect(currentMatch(matches, { start: 7, end: 5 })).toEqual({ start: 5, end: 7 });
+    expect(currentMatch(matches, { start: 3, end: 3 })).toEqual({ start: 5, end: 7 });
+    expect(currentMatch(matches, { start: 0, end: 0 })).toEqual({ start: 0, end: 2 });
+    expect(currentMatch(matches, { start: 8, end: 8 })).toEqual({ start: 0, end: 2 });
+    expect(currentMatch([], { start: 0, end: 0 })).toBeNull();
   });
 });

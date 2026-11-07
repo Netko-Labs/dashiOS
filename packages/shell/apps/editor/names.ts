@@ -6,6 +6,7 @@
 
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
+import { freeName } from "../files/chooser/index.ts";
 
 export const UNTITLED = "Untitled";
 
@@ -37,8 +38,18 @@ export function resolveInput(input: string, base: string, home: string = homedir
   return isAbsolute(expanded) ? resolve(expanded) : resolve(base, expanded);
 }
 
-/** Where Save As starts: the file itself, or Untitled.txt in Documents (the home folder without one). */
-export function suggestedSavePath(path: string | null, home: string = homedir(), hasDocuments = true): string {
+/**
+ * Where Save As starts: the file itself, or Untitled.txt in Documents (the home folder without one),
+ * "Untitled 2.txt" and on where that is `taken`.
+ */
+export function suggestedSavePath(path: string | null, home: string = homedir(), hasDocuments = true, taken: (path: string) => boolean = () => false): string {
   if (path !== null) return tildePath(path, home);
-  return tildePath(join(hasDocuments ? join(home, "Documents") : home, `${UNTITLED}.txt`), home);
+  const folder = hasDocuments ? join(home, "Documents") : home;
+  return tildePath(
+    join(
+      folder,
+      freeName(`${UNTITLED}.txt`, (name) => taken(join(folder, name))),
+    ),
+    home,
+  );
 }

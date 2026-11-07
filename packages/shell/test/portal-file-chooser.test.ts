@@ -344,6 +344,32 @@ test("Up goes to the folder this one is in; Back retraces the way", async () => 
   model.stop();
 });
 
+test("a folder holding only what the chooser keeps out says so, not that it is empty", async () => {
+  // Choosing folders, in one with only files (and a hidden one).
+  const files = join(docs, "Scans");
+  mkdirSync(files);
+  writeFileSync(join(files, "a.pdf"), "%PDF");
+  const folders = chooser({ directory: true });
+  folders.store.go({ kind: "folder", path: files });
+  await Bun.sleep(30);
+  expect(names(folders)).toEqual([]);
+  expect(folders.store.keptOut()).toBe("No folders here");
+  // Really empty: empty.
+  folders.store.go({ kind: "folder", path: join(docs, "Taxes") });
+  await Bun.sleep(30);
+  expect(folders.store.keptOut()).toBeNull();
+  folders.stop();
+  // A filter that lets nothing here by.
+  const pdfs = chooser({
+    filters: [{ name: "PNG", patterns: [{ kind: "glob", pattern: "*.png" }] }],
+    currentFilter: { name: "PNG", patterns: [{ kind: "glob", pattern: "*.png" }] },
+  });
+  pdfs.store.go({ kind: "folder", path: files });
+  await Bun.sleep(30);
+  expect(pdfs.store.keptOut()).toBe("No files of this kind here");
+  pdfs.stop();
+});
+
 test("the folder pop-up lists the folder and each one it is in, named as people know them", () => {
   expect(folderTrail("/home/alexk/Documents/Taxes", "/home/alexk")).toEqual([
     { name: "Taxes", path: "/home/alexk/Documents/Taxes" },

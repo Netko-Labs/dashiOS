@@ -5,6 +5,7 @@
 mod claims;
 mod constraints;
 mod decorations;
+mod follow;
 mod gestures;
 mod resize_edges;
 pub(crate) mod settings;
