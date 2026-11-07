@@ -133,8 +133,13 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   and DynamicLauncher. Its bus connection is an `FdService` (`src/dbus/fd-service.ts`:
   a worker thread blocks in `poll` and reads the socket with SCM_RIGHTS),
   because Print's document arrives as a file descriptor, which Bun's own
-  sockets drop. A checkout's session links the files into the user's data
-  folder instead (`src/session/portal-files.ts`).
+  sockets drop. The unit is `PartOf=graphical-session.target`, so the
+  backend ends with the session, and each session stops any backend still
+  running as it starts (`STALE_UNITS`): after an update and a new login, the
+  next dialog runs the new code. A checkout's session links the files into
+  the user's data folder instead and writes its own unit,
+  `dashi-portal-checkout.service`, in `~/.config/systemd/user`
+  (`src/session/portal-files.ts`); an installed session removes them.
 - **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
   first-party apps are, one host per dialog, taken from a warm host
   (`src/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
