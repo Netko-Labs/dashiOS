@@ -156,7 +156,7 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     if (sheet?.kind === "open") return chooserRequest("open", { appId: "dev.dashi.editor", title: "Open", currentFolder: base });
     if (sheet?.kind !== "save-as") return null;
     const home = homeFolder();
-    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents"))), base, home);
+    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents")), existsSync), base, home);
     return chooserRequest("save", {
       appId: "dev.dashi.editor",
       title: state.path === null ? `Save “${name}”` : "Save As",
