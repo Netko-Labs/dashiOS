@@ -64,6 +64,8 @@ export interface TaskPolicy {
   refused: readonly Scope[];
   /** The window its context chip named: it may hand that one to the person, whatever "Manage windows and apps" says. */
   window: number | null;
+  /** The harness's name ("Codex"): what sheets and the activity call the run, whatever its process is. */
+  name: string;
 }
 
 /** The launcher's runs' side of a call: what would put it back, and that it went well. */

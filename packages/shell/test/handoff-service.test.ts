@@ -216,8 +216,13 @@ describe("the hand-off service", () => {
     expect(profile.state).toEqual(["/home/alex/.claude", "/home/alex/.claude.json"]);
     // No key of the session reaches it.
     expect(Object.keys(turn?.env ?? {})).not.toContain("ANTHROPIC_API_KEY");
-    // Its connection's policy: the card's grants, the rest refused, the context window handed over.
-    expect(handoff.policy("run1")).toEqual({ granted: ["web", "signin", "pay"], refused: ["see", "screen", "act", "files", "clipboard"], window: 3 });
+    // Its connection's policy: the card's grants, the rest refused, the context window handed over, named for its harness.
+    expect(handoff.policy("run1")).toEqual({
+      granted: ["web", "signin", "pay"],
+      refused: ["see", "screen", "act", "files", "clipboard"],
+      window: 3,
+      name: "Claude Code",
+    });
     expect(handoff.policy("nobody")).toBeNull();
 
     const watcher = watchers.get("run1:1");

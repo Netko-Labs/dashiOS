@@ -217,7 +217,10 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
       {harnessName !== null && (
         <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
       )}
-      <Caption>Only what you type is sent, and only when you ask. Nothing runs until you see the plan and press Return.</Caption>
+      <Caption>
+        Only what you type is sent, with the window or selection you leave beside it, and only when you ask. Ask runs nothing until you see the plan and press
+        Return.
+      </Caption>
       <Spot id="agents/history" cards>
         <Caption above>History</Caption>
         <Group testID="agents-history">

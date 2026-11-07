@@ -9,9 +9,11 @@
  * a script: it never calls one.
  *
  * The first turn opens the test site (test/fixtures/sign-in-site), reads it,
- * and signs in with the password field's number (Dashi asks the person which
- * login). A resumed turn (`resume <id>`) says what it heard and reads the
- * page again. "@slow" in the words waits longer between steps.
+ * signs in from the user name field's number (Dashi asks the person which
+ * login), enters the two-factor code (Dashi asks again) and verifies; it says
+ * it signed in only when the page says so. A resumed turn (`resume <id>`)
+ * says what it heard and reads the page four times, 3 s apart (time to stop
+ * it). "@slow" in the words waits twice as long between steps.
  */
 
 const argv = process.argv.slice(2);
@@ -95,23 +97,41 @@ out({ type: "thread.started", thread_id: resumed ?? `stand-in-${crypto.randomUUI
 out({ type: "turn.started" });
 
 if (resumed) {
-  say(`Steps: 1. You said: “${words.slice(0, 80)}”`);
-  await pause(1500);
-  await call("read_page", {});
-  await pause(1000);
-  say(`Noted: ${words.slice(0, 60)}\nI'll keep it in mind on the test site.`);
+  // A follow-up: it says what it heard, then reads the page a few times, slowly enough to be stopped.
+  say(`Steps: 4. You said: “${words.slice(0, 80)}”`);
+  for (let read = 0; read < 4; read++) {
+    await pause(3000);
+    await call("read_page", {});
+  }
+  say(`Noted: ${words.slice(0, 60)}\nI read the test site again.`);
 } else {
-  say("Steps: 4");
+  say("Steps: 6");
   await pause(1500);
   await call("open_url", { url: site });
-  await pause(2000);
-  const page = (await call("read_page", {})) ?? "";
-  await pause(2000);
-  const ref = /\[(\d+)\] password field/.exec(page)?.[1];
-  const signedIn = ref ? await call("sign_in", { ref: Number(ref), site: "signin.localhost", submit: true }) : null;
-  await pause(2000);
-  await call("read_page", {});
-  say(signedIn ? "Signed you in to the test site\nsignin.localhost · as the login you chose" : "Couldn't sign in to the test site\nNo login was allowed");
+  await pause(1500);
+  const form = (await call("read_page", {})) ?? "";
+  await pause(1500);
+  // Dashi types the account, Tab, the password and Return from the user name field.
+  const user = /\[(\d+)\] textbox "User name"/.exec(form)?.[1];
+  if (user) await call("sign_in", { ref: Number(user), site: "signin.localhost", submit: true });
+  await pause(1500);
+  const second = (await call("read_page", {})) ?? "";
+  const code = /\[(\d+)\] one-time code field/.exec(second)?.[1];
+  const verify = /\[(\d+)\] button "Verify"/.exec(second)?.[1];
+  if (code && verify) {
+    await call("fill_code", { ref: Number(code), site: "signin.localhost" });
+    await pause(1000);
+    await call("click_element", { ref: Number(verify) });
+  }
+  await pause(1000);
+  const last = (await call("read_page", {})) ?? "";
+  // Only what the page says counts.
+  const who = /signed in as (\w+)/i.exec(last)?.[1];
+  say(
+    who
+      ? `Signed you in to the test site as ${who}\nsignin.localhost · with your saved login and its code`
+      : "Couldn't sign in to the test site\nThe page didn't say you were signed in",
+  );
 }
 out({ type: "turn.completed", usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0 } });
 server.kill();

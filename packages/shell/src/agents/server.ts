@@ -219,7 +219,8 @@ export function startAgents({
         const task: SessionTask | null = taskId && policy ? { id: taskId, policy } : null;
         const session = new Session(
           ++nextId,
-          peer,
+          // A launcher run goes by its harness's name on sheets and in the activity ("Codex wants to use …"); its detail stays the process.
+          task ? { ...peer, name: task.policy.name } : peer,
           socket,
           context,
           (gone) => {
