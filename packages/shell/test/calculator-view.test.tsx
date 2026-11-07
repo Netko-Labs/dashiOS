@@ -114,7 +114,8 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
   expect(row?.props?.align).toBe("stretch");
   const lines = (row?.children ?? []).map((line) => line.props ?? {});
   expect(lines.map((line) => line.align ?? line.textAlign)).toEqual(["right", "right"]);
-  expect(lines[0]?.truncate).toBeUndefined();
+  // Neither line is clamped: the clamped result drew only "…" in the host (review 21).
+  expect(lines.map((line) => line.truncate)).toEqual([undefined, undefined]);
   await calc.press("key:1");
   await calc.press("key:plus");
   await calc.emit({ type: "press", nodeId: calc.node("tape-clear") });
