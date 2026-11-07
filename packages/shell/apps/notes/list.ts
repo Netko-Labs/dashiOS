@@ -69,3 +69,9 @@ export function step(rows: readonly Row[], id: string | null, by: -1 | 1): strin
   if (at < 0) return rows[by === 1 ? 0 : rows.length - 1]?.id ?? null;
   return rows[Math.min(rows.length - 1, Math.max(0, at + by))]?.id ?? null;
 }
+
+/** The rows with the open note's row showing what is typed in it (its title and first line), before it is saved. */
+export function withDraft(rows: readonly Row[], id: string | null, draft: { title: string; body: string } | null): Row[] {
+  if (!draft || id === null) return [...rows];
+  return rows.map((row) => (row.id === id && !row.deleted ? { ...row, title: draft.title, body: draft.body } : row));
+}

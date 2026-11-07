@@ -48,9 +48,8 @@ export interface EditorProps {
   follow: () => void;
   onRestore: () => void;
   onNew: () => void;
-  /** Bumped to hand the keyboard to the body (Enter in the title, Enter in the list, Find Next). */
+  /** Bumped to hand the keyboard to the body (Enter in the list, Find Next, a format command); the title's Return moves it in the host. */
   bodyFocus: number;
-  onFocusBody: () => void;
   /** What the page says when the list is empty: nothing at all, nothing here, no matches. */
   empty: { title: string; message: string; canCreate: boolean };
   hasNotes: boolean;
@@ -155,7 +154,6 @@ export function Editor(props: EditorProps) {
     onRestore,
     onNew,
     bodyFocus,
-    onFocusBody,
     empty,
     hasNotes,
     formatDate,
@@ -258,7 +256,9 @@ export function Editor(props: EditorProps) {
             placeholder="Title"
             autoFocus={focusTitle}
             onChangeText={(title) => onEdit({ title: title.replace(/\n/g, " ") })}
-            onSubmitEditing={onFocusBody}
+            // Return hands the keyboard to the body in the host, before the app hears of it:
+            // what is typed right after is the body's, however fast it comes.
+            focusNextOnSubmit
             onKeyPress={(key) => key === "Escape" && onLeave()}
             style={{
               height: TITLE_SIZE + 12,
