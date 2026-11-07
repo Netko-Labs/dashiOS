@@ -50,7 +50,9 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
 - [x] The screenshots as rows: Screenshot… (⇧❖5), Screenshot of the Screen (⇧❖3), Screenshot of an Area… (⇧❖4); the keys bind their `dashi://dashi/` addresses (S; `feat/0.5-launcher-screenshot`, VM: not yet)
-- [ ] Context chips: "+ this window", "+ selection" (M)
+- [x] Context chips: "+ this window", "+ selection" (M; `feat/0.5-launcher-agents`: under the field for a hand-off and Ask, the window in front on until dropped, Helium's page by its address; VM: review 26)
+- [x] Agents from the launcher (L; `feat/0.5-launcher-agents`, docs/actions.md "Agents from the launcher"): "Hand it off" first for a task, one row per harness; the grants card once per kind; runs as user services through `dashi-agent`; the menu bar chip and its panel with each run's card and its questions; the empty launcher lists runs (⇥ follow-up, ❖⌫ stop); the done notification; Settings › Agents "Hand off to". VM: review 26, with a stand-in Codex (no harness signed in there)
+- [ ] Agents from the launcher, left: a shell that restarts picks its runs up again (their streams are kept; the run's request, harness and start aren't); Codex and OpenCode run for real (their flags are from their docs); an agents icon for the done notification (it shows the generic one); "turn on dark mode" finds the setting (the ranking matches no leading verb, so such words hand off) (M)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)
 - [ ] Tab, Home and End reaching the input method mid-composition (S)
