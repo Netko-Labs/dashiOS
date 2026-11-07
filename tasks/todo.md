@@ -33,7 +33,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
 - [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
-- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
+- [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
 - [ ] Editor's document surface with versioned autosave (L)
 - [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
@@ -481,6 +481,9 @@ it in the VM.
       Switch) to `@mirinjs/metal-ui`, styled with Dashi's theme
 - [ ] Theme tokens: Dashi's palettes as a metal-ui theme, so metal-ui
       components and `@dashi/ui` paint from the same colors
+- [ ] Calendar, after 0.5.0's grid: a VTIMEZONE written for a zone a file had none for;
+      Subscribe to a URL; a second alert and travel time; a custom calendar color
+      (docs/roast/calendar.md, "Where this went")
 
 ### Screen recording and dogfooding the agent integration
 

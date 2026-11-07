@@ -1,15 +1,28 @@
-/** The month: weeks of day cells, each listing its events as chips, with "N more" when they do not all fit. */
+/**
+ * The month: weeks of day cells, each listing its events as chips, with "N
+ * more" when they do not all fit. A click picks a day and a double click
+ * makes an event there, named in place; a chip dragged to another day moves
+ * the event there (the days it would cover are washed in its color).
+ */
 
-import { useColors, useSurface } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { useColors, useDark } from "@dashi/ui";
+import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { weekdayNames } from "../../src/region/week.ts";
 import { EventChip, MoreChip } from "./chips.tsx";
-import { type Day, monthOf } from "./dates.ts";
+import { tint } from "./colors.ts";
+import { addMinutes, type Day, dayPart, monthOf } from "./dates.ts";
+import { monthDayAt } from "./drag.ts";
+import { occurrenceKey } from "./event-block.tsx";
 import { dayNumber, monthDay } from "./format.ts";
-import { chipCapacity, fitChips, monthGrid, onDay } from "./layout.ts";
+import type { GridHandlers, GridState } from "./grid-props.ts";
+import { InlineTitle } from "./inline-title.tsx";
+import { chipCapacity, fitChips, MONTH_CHIP_HEIGHT, monthGrid, onDay } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
+
+/** Days outside the month, sunk below the window's ground in both modes (design.html CO-8). */
+export const OUTSIDE_WASH = { light: "#0000000a", dark: "#00000038" } as const;
 
 export interface MonthViewProps {
   anchor: Day;
@@ -18,21 +31,28 @@ export interface MonthViewProps {
   prefs: ClockPrefs;
   occurrences: readonly Occurrence[];
   colorOf: (calendarId: string) => string;
-  /** A click on an empty part of a day. */
-  onNew: (day: Day) => void;
-  onOpen: (occurrence: Occurrence) => void;
-  /** A click on a day's number or its "N more": that day on its own. */
-  onDay: (day: Day) => void;
+  state: GridState;
+  handlers: GridHandlers;
 }
 
-export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf, onNew, onOpen, onDay: openDay }: MonthViewProps) {
+/** Whether a dragged event's new times cover `day`. */
+function covers(preview: { start: string; end: string; allDay: boolean }, day: Day): boolean {
+  const last = preview.end > preview.start ? dayPart(addMinutes(preview.end, -1)) : dayPart(preview.start);
+  return dayPart(preview.start) <= day && day <= last;
+}
+
+export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf, state, handlers }: MonthViewProps) {
   const colors = useColors();
-  const surface = useSurface();
+  const dark = useDark();
   const weeks = monthGrid(anchor, firstDay);
   const { month } = monthOf(anchor);
-  const [gridHeight, setGridHeight] = useState(494);
-  const capacity = chipCapacity(gridHeight / weeks.length);
+  const [grid, setGrid] = useState<Bounds>({ x: 0, y: 0, width: 0, height: 494 });
+  const capacity = chipCapacity(grid.height / weeks.length);
   const names = weekdayNames(prefs.locale, firstDay);
+  const { drag, pending, selected, selectedEvent } = state;
+  const preview = drag?.moved && drag.preview && drag.occurrence ? drag.preview : null;
+  const draggedKey = preview && drag?.occurrence ? occurrenceKey(drag.occurrence) : null;
+  const geometry = { days: weeks.flat(), columnWidth: grid.width / 7, dayAt: (x: number, y: number) => monthDayAt(grid, weeks, x, y) };
 
   return (
     <View testID="month-view" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
@@ -43,19 +63,21 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
           </View>
         ))}
       </View>
-      <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }} onLayout={(bounds) => setGridHeight(bounds.height)}>
+      <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }} onLayout={setGrid}>
         {weeks.map((week, row) => (
           <View key={week[0]} style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
             {week.map((day, column) => {
               const here = onDay(occurrences, day);
-              const { shown, more } = fitChips(here, capacity);
+              const naming = pending !== null && dayPart(pending.start) === day;
+              const { shown, more } = fitChips(here, Math.max(0, capacity - (naming ? 1 : 0)));
               const isToday = day === today;
               const inMonth = monthOf(day).month === month;
+              const target = preview && drag?.occurrence && covers(preview, day) ? tint(colorOf(drag.occurrence.calendarId), 0.2) : null;
               return (
                 <View
                   key={day}
                   testID={`day:${day}`}
-                  onPress={() => onNew(day)}
+                  onPress={() => handlers.clickDay(day, null)}
                   style={{
                     flex: 1,
                     minWidth: 0,
@@ -66,14 +88,14 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                     borderRightWidth: column === 6 ? 0 : 1,
                     borderBottomWidth: row === weeks.length - 1 ? 0 : 1,
                     borderColor: colors.separator,
-                    backgroundColor: inMonth ? "#00000000" : surface.field,
+                    backgroundColor: target ?? (inMonth ? "#00000000" : dark ? OUTSIDE_WASH.dark : OUTSIDE_WASH.light),
                     overflow: "hidden",
                   }}
                 >
                   <View style={{ height: 20, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
                     <View
                       testID={`day-number:${day}`}
-                      onPress={() => openDay(day)}
+                      onPress={() => handlers.showDay(day)}
                       style={{
                         minWidth: 20,
                         height: 20,
@@ -81,7 +103,9 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                         borderRadius: 10,
                         alignItems: "center",
                         justifyContent: "center",
-                        backgroundColor: isToday ? colors.selection : "#00000000",
+                        backgroundColor: isToday ? colors.selection : day === selected ? colors.button : "#00000000",
+                        borderWidth: day === selected && !isToday ? 1 : 0,
+                        borderColor: colors.selection,
                         hoverBackgroundColor: isToday ? colors.selection : colors.button,
                       }}
                     >
@@ -92,17 +116,37 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                       </Text>
                     </View>
                   </View>
-                  {shown.map((occurrence) => (
-                    <EventChip
-                      key={`${occurrence.calendarId}:${occurrence.event.uid}:${occurrence.start}`}
-                      occurrence={occurrence}
-                      color={colorOf(occurrence.calendarId)}
-                      day={day}
-                      prefs={prefs}
-                      onOpen={onOpen}
-                    />
-                  ))}
-                  {more > 0 && <MoreChip testID={`more:${day}`} count={more} onPress={() => openDay(day)} />}
+                  {naming && pending && (
+                    <View style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0 }}>
+                      <InlineTitle
+                        pending={pending}
+                        chip
+                        color={colorOf(pending.calendarId)}
+                        onChange={handlers.pendingTitle}
+                        onDone={handlers.savePending}
+                        onCancel={handlers.dropPending}
+                      />
+                    </View>
+                  )}
+                  {shown.map((occurrence) => {
+                    const key = occurrenceKey(occurrence);
+                    return (
+                      <EventChip
+                        key={key}
+                        occurrence={occurrence}
+                        color={colorOf(occurrence.calendarId)}
+                        day={day}
+                        prefs={prefs}
+                        selected={selectedEvent === key}
+                        dragged={draggedKey === key}
+                        onPress={(bounds) => handlers.open(occurrence, bounds)}
+                        onPointer={(info) =>
+                          info.phase === "down" ? handlers.begin({ kind: "move-days", x: info.x, y: info.y, day, occurrence }, geometry) : handlers.track(info)
+                        }
+                      />
+                    );
+                  })}
+                  {more > 0 && <MoreChip testID={`more:${day}`} count={more} onPress={() => handlers.showDay(day)} />}
                 </View>
               );
             })}

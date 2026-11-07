@@ -2,7 +2,8 @@
  * One Calendar at a time, and a way to tell it to show a day. The running app
  * listens on `$XDG_RUNTIME_DIR/dashi-calendar.sock`; a second start, and the
  * shell (the notification center's month, a reminder's banner), send it one
- * JSON line, `{"day": "2026-11-05"}`, and it answers `{"ok": true}`. The
+ * JSON line, `{"day": "2026-11-05"}` (or `{}`, only to be shown, as a second
+ * start from the Dock sends), and it answers `{"ok": true}`. The
  * runtime directory is the person's own (mode 0700), and the line is parsed as
  * untrusted: only a real day is acted on.
  */
@@ -17,7 +18,8 @@ export function socketPath(env: Readonly<Record<string, string | undefined>> = p
 }
 
 export interface OpenMessage {
-  day: Day;
+  /** The day to show, or null to leave the view as it is. */
+  day: Day | null;
 }
 
 export function parseMessage(line: string): OpenMessage | null {
@@ -25,6 +27,7 @@ export function parseMessage(line: string): OpenMessage | null {
     const value: unknown = JSON.parse(line);
     if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
     const { day } = value as Record<string, unknown>;
+    if (day === undefined) return { day: null };
     return isDay(day) ? { day } : null;
   } catch {
     return null;
@@ -38,8 +41,8 @@ export function dayFromArgs(argv: readonly string[] = Bun.argv.slice(2)): Day | 
   return isDay(value) ? value : null;
 }
 
-/** Tells a running Calendar to show `day`. True when one answered; false when none is running. */
-export async function openInRunning(day: Day, path: string = socketPath(), timeoutMs = 1500): Promise<boolean> {
+/** Tells a running Calendar to show `day` (null: to stay as it is). True when one answered; false when none is running. */
+export async function openInRunning(day: Day | null, path: string = socketPath(), timeoutMs = 1500): Promise<boolean> {
   if (!existsSync(path)) return false;
   return new Promise<boolean>((resolve) => {
     let done = false;
@@ -54,7 +57,7 @@ export async function openInRunning(day: Day, path: string = socketPath(), timeo
       unix: path,
       socket: {
         open: (socket) => {
-          socket.write(`${JSON.stringify({ day })}\n`);
+          socket.write(`${JSON.stringify(day === null ? {} : { day })}\n`);
         },
         data: (socket, data) => {
           finish(data.toString().includes('"ok":true'));
@@ -69,7 +72,7 @@ export async function openInRunning(day: Day, path: string = socketPath(), timeo
 }
 
 /** Listens for open requests; returns the function that stops. A stale socket file from a crashed run is replaced. */
-export function listenForOpen(onOpen: (day: Day) => void, path: string = socketPath()): () => void {
+export function listenForOpen(onOpen: (day: Day | null) => void, path: string = socketPath()): () => void {
   try {
     unlinkSync(path);
   } catch {
