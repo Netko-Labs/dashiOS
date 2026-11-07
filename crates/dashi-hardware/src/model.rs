@@ -98,6 +98,25 @@ impl Dmi {
 }
 
 impl Model {
+    /// Whether one recipe column (a mode, plugged in or on battery) gives
+    /// every knob in `values` exactly that value. Recipes ship in the
+    /// root-owned model database, so a mode switch that writes them writes
+    /// only values Dashi chose for this machine.
+    pub(crate) fn recipe_gives(&self, values: &[(&str, Value)]) -> bool {
+        let Some(Value::Object(modes)) = &self.recipes else {
+            return false;
+        };
+        modes
+            .values()
+            .filter_map(Value::as_object)
+            .flat_map(|columns| columns.values().filter_map(Value::as_object))
+            .any(|column| {
+                values
+                    .iter()
+                    .all(|(knob, value)| column.get(*knob) == Some(value))
+            })
+    }
+
     pub(crate) fn parse(text: &str) -> Result<Self, String> {
         let model: Model = serde_json::from_str(text).map_err(|e| e.to_string())?;
         let rules = model.match_rules();
@@ -207,6 +226,27 @@ mod tests {
         assert!(model.matches(&g14));
         assert_eq!(model.undervolt.as_ref().map(|u| u.cpu), Some([-40, 0]));
         assert_eq!(model.limit("charge-limit"), Some((20, 100)));
+    }
+
+    #[test]
+    fn a_recipe_column_gives_its_own_values_and_nothing_else() {
+        let model = ga403wr();
+        // Balanced on battery and Low Power plugged in both give 30 W.
+        assert!(model.recipe_gives(&[("ppt-spl", Value::from(30))]));
+        assert!(model.recipe_gives(&[
+            ("ppt-spl", Value::from(80)),
+            ("epp", Value::from("performance"))
+        ]));
+        // 80 W is Performance plugged in, never with Balanced's processor preference.
+        assert!(!model.recipe_gives(&[
+            ("ppt-spl", Value::from(80)),
+            ("epp", Value::from("balance_power"))
+        ]));
+        assert!(!model.recipe_gives(&[("ppt-spl", Value::from(81))]));
+        assert!(!model.recipe_gives(&[("nv-tgp", Value::from(80))]));
+        let bare = Model::parse(r#"{"id": "X", "name": "X", "match": {"board_name": "X"}}"#)
+            .expect("parses");
+        assert!(!bare.recipe_gives(&[("ppt-spl", Value::from(30))]));
     }
 
     #[test]

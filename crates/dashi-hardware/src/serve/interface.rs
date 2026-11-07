@@ -106,23 +106,21 @@ impl Hardware1 {
         #[zbus(header)] header: Header<'_>,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> fdo::Result<HashMap<String, OwnedValue>> {
-        // The strongest action any named knob needs.
-        let needed = Knob::ALL
-            .into_iter()
-            .filter(|k| values.contains_key(k.name()))
-            .map(Knob::action)
-            .max()
-            .unwrap_or(Action::Everyday);
+        let mut parsed = Vec::new();
+        for knob in Knob::ALL {
+            if let Some(raw) = values.get(knob.name()) {
+                let value =
+                    KnobValue::from_variant(knob.kind(), raw).map_err(fdo::Error::InvalidArgs)?;
+                parsed.push((knob, value));
+            }
+        }
+        // A mode switch to the model's own recipe needs no password.
+        let needed = self.machine().action_for_many(&parsed);
         self.authorize(connection, &header, needed).await?;
 
         let mut applied = HashMap::new();
-        for knob in Knob::ALL {
-            let Some(raw) = values.get(knob.name()) else {
-                continue;
-            };
-            let parsed =
-                KnobValue::from_variant(knob.kind(), raw).map_err(fdo::Error::InvalidArgs)?;
-            let result = self.machine().set(knob.name(), parsed);
+        for (knob, value) in parsed {
+            let result = self.machine().set(knob.name(), value);
             match result {
                 Ok(value) => {
                     let _ = Self::changed(&emitter, knob.name(), value.variant().into()).await;
