@@ -13,7 +13,7 @@
  */
 
 import { existsSync } from "node:fs";
-import { AlertSheet, AppWindow, Button, glyphs, Note, PopUpButton, SearchField, Switch, TextField, ToolbarButton, useColors, useSurface } from "@dashi/ui";
+import { AlertSheet, AppWindow, Button, glyphs, Note, PopUpButton, SearchField, Switch, TextField, ToolbarButton, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
 import { Text, View, type WindowKeyInfo } from "@mirinjs/metal";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { BrowserKeys, Listing } from "../browser.tsx";
@@ -247,7 +247,12 @@ export function ChooserView(props: ChooserViewProps & { title: string }) {
   );
 }
 
-export const CHOOSER_SHEET = { width: 760, height: 470 } as const;
+/**
+ * The chooser as a sheet: at most this big, and always 16 inside its window at each side and the
+ * foot. It hangs below the window's title bar (8 under its buttons, as `@dashi/ui`'s `Sheet` does),
+ * so the window's own buttons never sit on the chooser's Back and Up.
+ */
+export const CHOOSER_SHEET = { width: 760, height: 470, inset: 16, below: 8 } as const;
 
 /**
  * An app's own Open or Save As: the chooser for `request` over the app's
@@ -271,13 +276,26 @@ export function AppChooser({ request, answer, env }: { request: ChooserRequest; 
 export function ChooserSheet(props: ChooserViewProps & { title: string }) {
   const colors = useColors();
   const surface = useSurface();
+  const inset = useTitleBarInset();
   const parts = useChooserParts(props);
   return (
     <Files.Provider value={parts.context}>
       <View
         occlude
         testID="chooser:scrim"
-        style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", backgroundColor: "#00000026" }}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: Math.max(inset.top, 0) + CHOOSER_SHEET.below,
+          paddingHorizontal: CHOOSER_SHEET.inset,
+          paddingBottom: CHOOSER_SHEET.inset,
+          backgroundColor: "#00000026",
+        }}
       >
         <View
           testID="chooser"
@@ -286,9 +304,12 @@ export function ChooserSheet(props: ChooserViewProps & { title: string }) {
           accessibilityRole="dialog"
           accessibilityLabel={props.title}
           style={{
-            width: CHOOSER_SHEET.width,
+            // As wide as it may be, never wider than the window leaves it; shorter when the window is.
+            width: "100%",
+            maxWidth: CHOOSER_SHEET.width,
             height: CHOOSER_SHEET.height,
-            marginTop: 8,
+            flexShrink: 1,
+            minHeight: 0,
             flexDirection: "column",
             borderRadius: 12,
             backgroundColor: surface.window,
