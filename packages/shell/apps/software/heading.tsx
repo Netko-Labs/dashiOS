@@ -1,0 +1,37 @@
+/** A section's heading on a page (TY-1: 13 bold, a 12 muted line under it), with its action at the right ("See all", "Update all"). */
+
+import { useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
+import type { ReactNode } from "react";
+
+export function SectionHeader({ title, detail, action, testID }: { title: string; detail?: string; action?: ReactNode; testID?: string }) {
+  const colors = useColors();
+  return (
+    <View
+      {...(testID ? { testID } : {})}
+      style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 6 }}
+    >
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
+        <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
+        {detail !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted }}>{detail}</Text>}
+      </View>
+      {action}
+    </View>
+  );
+}
+
+/** A quiet link-like button in a heading ("See all"). */
+export function HeadingLink({ label, onPress, testID }: { label: string; onPress: () => void; testID: string }) {
+  const colors = useColors();
+  return (
+    <View
+      testID={testID}
+      focusable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={{ flexShrink: 0, paddingHorizontal: 4, paddingVertical: 2, borderRadius: 5, hoverBackgroundColor: colors.button }}
+    >
+      <Text style={{ fontSize: 12, color: colors.accentInk }}>{label}</Text>
+    </View>
+  );
+}

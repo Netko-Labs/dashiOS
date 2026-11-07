@@ -134,6 +134,9 @@ import { startSharePicker } from "./share-picker/index.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
+import { Software } from "./software/manager.ts";
+import { standIn } from "./software/stand-in.ts";
+import { checkPath, UpdateCheck } from "./software/update-check.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
@@ -477,6 +480,21 @@ const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
 // Calendar's alerts fire from here, window open or not; the notification center's month marks the days with
 // events and opens the app on one (calendar/). A development run keeps what has fired in memory, not in the state folder.
 const calendar = startCalendar({ notifications: notifications.store, toplevels, ...(developmentRun ? { statePath: null } : {}) });
+// The daily look for app and system updates, told in one quiet notification; it installs nothing (software/update-check.ts).
+const stopUpdateCheck = new UpdateCheck({
+  software: new Software(standIn() ?? {}),
+  notifications: notifications.store,
+  open: () => {
+    const window = toplevels.getSnapshot().find((each) => each.appId === "dev.dashi.software");
+    if (window) toplevels.act(window.id, "activate");
+    else openWith("dev.dashi.software", { DASHI_SOFTWARE_PAGE: "updates" });
+  },
+  canLook: () => {
+    const { battery, network } = system.store.getSnapshot();
+    return network?.kind !== "offline" && battery?.state !== "discharging";
+  },
+  statePath: developmentRun ? null : checkPath(),
+}).start();
 // Do Not Disturb is Control Center's switch; the store holds banners while it's on.
 const flags = controlFlags();
 // The settings registry's rows read and change through these (settings-app/registry/): the launcher's, links', and agents'.
@@ -1601,6 +1619,7 @@ const quit = () => {
     ["screen sharing", () => capture?.stop()],
     ["battery alerts", stopBatteryAlerts],
     ["calendar", () => calendar.close()],
+    ["update check", stopUpdateCheck],
     ["appearance", stopAppearance],
     ["chrome", stopChrome],
     ["notifications", () => notifications.close()],

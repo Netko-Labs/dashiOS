@@ -1,7 +1,13 @@
-/** What a page shows when it can't load (offline, Flathub's trouble), and when it served saved results; a page that is loading shows @dashi/ui's `Loading`. */
+/**
+ * What a page shows when it can't load, and the two chips in the toolbar
+ * that say what state the window is in without a second bar (VS-5): saved
+ * results shown while Flathub can't be reached, and the queue's activity
+ * ("Installing VLC 42% · 2 waiting"). A page that is loading shows
+ * @dashi/ui's `Loading`.
+ */
 
 import { Button, EmptyState, glyphs, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { OFFLINE } from "./glyphs.ts";
 import type { Load } from "./hooks.ts";
 
@@ -10,31 +16,47 @@ export function Failed({ state, onRetry }: { state: Extract<Load<unknown>, { sta
     <EmptyState
       testID="failed"
       glyph={state.offline ? OFFLINE : glyphs.WARNING}
-      title={state.offline ? "You're offline" : "Flathub didn't answer"}
-      message={state.offline ? "Software needs the internet to look for apps. Your installed apps and updates are in the sidebar." : state.message}
-      action={<Button label="Try Again" testID="retry" onPress={onRetry} />}
+      title={state.offline ? "You’re offline" : "Flathub isn’t responding"}
+      message={
+        state.offline
+          ? "Software needs the internet to look for apps. Your installed apps and updates are in the sidebar."
+          : "Try again in a minute. Your installed apps and updates are in the sidebar."
+      }
+      action={<Button label="Try again" testID="retry" onPress={onRetry} />}
     />
   );
 }
 
-/** A quiet line above a page that was served from saved results. */
-export function StaleNote() {
+/** A chip in the toolbar row: 24 tall, a pill, muted words, an optional glyph. */
+export function ToolbarChip({ text, glyph, testID, onPress }: { text: string; glyph?: string; testID: string; onPress?: () => void }) {
   const colors = useColors();
   return (
     <View
-      testID="stale"
+      testID={testID}
+      accessibilityRole={onPress ? "button" : "status"}
+      {...(onPress ? { onPress, focusable: true } : {})}
       style={{
-        flexShrink: 0,
+        height: 24,
+        flexShrink: 1,
+        minWidth: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: 5,
         paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 8,
+        borderRadius: 12,
         backgroundColor: colors.button,
+        ...(onPress ? { hoverBackgroundColor: colors.separator } : {}),
       }}
     >
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>Flathub can't be reached, so these are saved results from earlier.</Text>
+      {glyph !== undefined && <Svg markup={glyph} size={12} color={colors.textMuted} />}
+      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+        {text}
+      </Text>
     </View>
   );
+}
+
+/** "Offline · showing saved results": while a page shows answers Flathub gave earlier. */
+export function StaleChip() {
+  return <ToolbarChip testID="stale" glyph={OFFLINE} text="Offline · showing saved results" />;
 }

@@ -1,6 +1,8 @@
 /**
  * Changes run one at a time, in the order the person asked (flatpak and
- * PackageKit hold locks, and two progress bars racing help nobody). A
+ * PackageKit hold locks, and two progress bars racing help nobody): apps,
+ * applets and the system share this one queue, so the toolbar's activity
+ * chip can say what is happening and what waits. A
  * queued change can be taken back; a running one is stopped through its
  * AbortSignal. The queue knows nothing about flatpak: `start` does the work.
  */
@@ -12,6 +14,8 @@ export interface Job {
   operation: Omit<Operation, "status" | "progress">;
   /** Does the work; reports progress; finishes with how it went. */
   start(report: (progress: Progress) => void, signal: AbortSignal): Promise<Outcome>;
+  /** After it finished, however it went (an applet reads its folder again). */
+  done?(outcome: Outcome): void;
 }
 
 export interface QueueEvents {
@@ -77,6 +81,11 @@ export class OperationQueue {
       outcome = { ok: false, message: error instanceof Error ? error.message : "It did not finish." };
     }
     this.current = null;
+    try {
+      job.done?.(outcome);
+    } catch (error) {
+      console.error("dashi-software: after a change:", error instanceof Error ? error.message : error);
+    }
     this.events.finished(job.operation, outcome);
     this.events.changed(this.operations);
     void this.pump();

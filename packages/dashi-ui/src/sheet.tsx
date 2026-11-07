@@ -25,9 +25,41 @@ export interface SheetProps {
   onConfirm?: () => void;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+/**
+ * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
+ * shadow): `Sheet` hangs one from a window; a surface of its own (the
+ * shell's applet consent) shows one with no window to hang from.
+ */
+export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
   const colors = useColors();
   const surface = useSurface();
+  return (
+    <View
+      testID={testID}
+      occlude
+      // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
+      focusTrap
+      accessibilityRole="dialog"
+      style={{
+        width,
+        marginTop,
+        flexDirection: "column",
+        gap: 10,
+        padding: 20,
+        borderRadius: 12,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        shadow: "xl",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+  const colors = useColors();
   const inset = useTitleBarInset();
   return (
     <View
@@ -53,27 +85,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <View
-        testID={testID}
-        occlude
-        // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
-        focusTrap
-        accessibilityRole="dialog"
-        style={{
-          width,
-          marginTop: Math.max(inset.top, 0) + 8,
-          flexDirection: "column",
-          gap: 10,
-          padding: 20,
-          borderRadius: 12,
-          backgroundColor: surface.card,
-          borderWidth: 1,
-          borderColor: colors.separator,
-          shadow: "xl",
-        }}
-      >
+      <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8}>
         {children}
-      </View>
+      </SheetCard>
     </View>
   );
 }

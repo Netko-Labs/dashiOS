@@ -78,6 +78,27 @@ export function permissionName(permission: Permission): string {
   }
 }
 
+/**
+ * The one set of lines for what a program may reach, in plain words: an
+ * applet's permissions (here), a Flatpak app's sandbox (Software's trust
+ * card), and what apps were allowed through the portal (Settings › Privacy &
+ * Security). One thing, one sentence, wherever it is shown.
+ */
+export const REACH = {
+  network: "Use the network",
+  notifications: "Show notifications",
+  camera: "Use the camera",
+  microphone: "Use the microphone",
+  sound: "Play sound",
+  location: "See your location",
+  background: "Run in the background",
+  screenshot: "Take screenshots",
+  wallpaper: "Change the wallpaper",
+} as const;
+
+/** "Read and change files in Downloads", "Read files in Pictures": a folder, by the name a person knows. */
+export const folderLine = (name: string, write: boolean): string => `${write ? "Read and change" : "Read"} files in ${name}`;
+
 const FOLDER_NAMES: Record<Folder, string> = {
   downloads: "Downloads",
   documents: "Documents",
@@ -108,15 +129,15 @@ const HARDWARE_WORDS: Record<HardwareScope, string> = {
 export function describePermission(permission: Permission): string {
   switch (permission.kind) {
     case "network":
-      return "Use the network";
+      return REACH.network;
     case "notifications":
-      return "Show notifications";
+      return REACH.notifications;
     case "hardware":
       return HARDWARE_WORDS[permission.scope];
     case "dbus":
       return `Talk to ${KNOWN_SERVICES[permission.name] ?? permission.name}${permission.bus === "system" ? " on the system" : ""}`;
     case "files":
-      return `${permission.write ? "Read and change" : "Read"} files in ${FOLDER_NAMES[permission.folder]}`;
+      return folderLine(FOLDER_NAMES[permission.folder], permission.write);
   }
 }
 

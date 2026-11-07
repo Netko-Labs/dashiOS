@@ -37,12 +37,14 @@ export const install = (id: string, progress = false): string[] => [
   assertId(id),
 ];
 
-export const uninstall = (id: string, installation: Installation): string[] => [
+/** Removes an app; `deleteData` also deletes what it saved (`~/.var/app/<id>`), which flatpak keeps otherwise. */
+export const uninstall = (id: string, installation: Installation, deleteData = false): string[] => [
   "flatpak",
   "uninstall",
   assertInstallation(installation),
   "-y",
   "--noninteractive",
+  ...(deleteData ? ["--delete-data"] : []),
   assertId(id),
 ];
 

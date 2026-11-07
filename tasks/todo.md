@@ -31,7 +31,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Wave 2 · The apps' big ideas
 - [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
 - [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
-- [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
+- [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
 - [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
 - [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)

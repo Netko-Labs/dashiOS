@@ -1,5 +1,5 @@
 /**
- * What the Applet Store knows about this machine, for "fits this machine"
+ * What Software knows about this machine, for "fits this machine"
  * (an applet's `when`, @dashi/applet's when.ts): DMI from /sys (readable by
  * anyone; nothing is written) and what dashi-hardware reports, if it runs.
  */

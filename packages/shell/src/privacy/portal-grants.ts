@@ -10,6 +10,8 @@
  * to the store.
  */
 
+import { REACH } from "@dashi/applet";
+
 /** One thing one app was allowed. */
 export interface PortalGrant {
   /** The permission store's table and entry. */
@@ -40,13 +42,14 @@ const yes = (permissions: readonly string[]): boolean => permissions[0] === "yes
 
 /** The tables xdg-desktop-portal writes, and what an entry in each means. */
 export const PORTAL_TABLES: readonly TableSpec[] = [
-  { table: "devices", entries: { camera: "Use the camera", microphone: "Use the microphone", speakers: "Play sound" }, allowed: yes },
+  // The words are the one line set applets and Software's trust card use too (@dashi/applet's REACH).
+  { table: "devices", entries: { camera: REACH.camera, microphone: REACH.microphone, speakers: REACH.sound }, allowed: yes },
   // [accuracy, last used]: NONE is a no.
-  { table: "location", entries: { location: "See your location" }, allowed: (permissions) => permissions[0] !== undefined && permissions[0] !== "NONE" },
-  { table: "background", entries: { background: "Run in the background" }, allowed: yes },
-  { table: "notifications", entries: { notification: "Show notifications" }, allowed: yes },
-  { table: "screenshot", entries: { screenshot: "Take screenshots" }, allowed: yes },
-  { table: "wallpaper", entries: { wallpaper: "Change the wallpaper" }, allowed: yes },
+  { table: "location", entries: { location: REACH.location }, allowed: (permissions) => permissions[0] !== undefined && permissions[0] !== "NONE" },
+  { table: "background", entries: { background: REACH.background }, allowed: yes },
+  { table: "notifications", entries: { notification: REACH.notifications }, allowed: yes },
+  { table: "screenshot", entries: { screenshot: REACH.screenshot }, allowed: yes },
+  { table: "wallpaper", entries: { wallpaper: REACH.wallpaper }, allowed: yes },
   { table: "screencast", entries: null, what: "Share the screen again without asking", screen: true, allowed: (permissions) => permissions[0] !== "no" },
   {
     table: "remote-desktop",

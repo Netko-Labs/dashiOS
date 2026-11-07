@@ -40,6 +40,7 @@ export {
   type MenuSeparator,
   PopupMenu,
   Sheet,
+  SheetCard,
   type SheetProps,
   tidyEntries,
 } from "./sheet.tsx";

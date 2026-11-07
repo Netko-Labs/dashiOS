@@ -59,7 +59,7 @@ systemd --user
   ask every window to close first and wait for the answers
   (`src/closing-apps.ts`); a hung app is still ended by Force Quit, or by
   going anyway.
-- **Applets** (`docs/applets.md`) installed from the Applet Store run each in
+- **Applets** (`docs/applets.md`) installed from Software (its Menu bar applets, the Applet Store folded in) run each in
   bubblewrap with only what their manifest asks for, as systemd user units
   outside the shell's processes, so nothing the compositor trusts the shell
   with reaches them; the shell's launcher (`src/applets/launcher.ts`) starts

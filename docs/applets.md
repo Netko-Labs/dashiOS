@@ -246,7 +246,7 @@ Before an applet runs for the first time, and after an update that asks for
 more, Dashi lists its permissions in those words, what it adds to the
 launcher ("Adds 3 commands to the launcher"), and what it can't do ("It
 can't read your files or use the network."), once
-(`src/applets/consent-sheet.tsx`). The Applet Store asks as it adds one; the
+(`src/applets/consent-sheet.tsx`, on `@dashi/ui`'s sheet with the applet's icon, who vouches for it, and for an update only what is new up front). Software asks as it gets one; the
 shell asks for one that arrived another way (`dashi-applet install`). The
 answer is kept in its `install.json`: the permissions' names, and
 `launcher.commands` for its commands (`consentNames`, `src/installed.ts`),
@@ -501,12 +501,13 @@ checks them; signing with real keys is the `minisign` tool's).
 
 - **Dashi's index key**: made once with `minisign -G` (encrypted with a
   passphrase), kept offline by the maintainers. Its public half is in the
-  Applet Store (`packages/shell/src/applet-store/keys.ts`); its secret half, with the
+  store (`packages/shell/src/applet-store/keys.ts`, read by Software); its secret half, with the
   passphrase, is the catalog's GitHub Actions secrets `DASHI_INDEX_KEY` and
   `DASHI_INDEX_KEY_PASSWORD`, used only by the job that signs the index on
   `main`. Rotating it is a Dashi update that ships the new public key beside
   the old until every index is signed with the new one. Until it is made,
-  the store has no key and says so (`DASHI_APPLETS_KEY` and
+  Software has no key, so its Menu bar applets place isn't shown and Installed
+  lists the applets added by hand (`DASHI_APPLETS_KEY` and
   `DASHI_APPLETS_INDEX` point it at a test catalog).
 - **An author's key**: made with `minisign -G -p author.pub`, the public half
   committed in the applet's repository, the secret half the author's alone.

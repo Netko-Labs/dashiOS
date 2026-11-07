@@ -18,6 +18,8 @@ const details = (id: string): AppDetails => ({
   downloadSize: null,
   installedSize: null,
   categories: [],
+  releases: [],
+  permissions: null,
 });
 
 test("the shelf keeps Dashi's name and line, and takes the catalog's icon and verified mark where it answers", async () => {

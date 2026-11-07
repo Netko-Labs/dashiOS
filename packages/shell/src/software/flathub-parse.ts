@@ -5,7 +5,8 @@
  * hosts. Unknown fields are ignored. Fixtures are in test/fixtures/software.
  */
 
-import type { AppDetails, AppSummary, Page, Screenshot, Sizes } from "./flathub-types.ts";
+import type { AppDetails, AppSummary, Page, Release, Screenshot, Sizes } from "./flathub-types.ts";
+import { parsePermissions } from "./flatpak-permissions.ts";
 import { descriptionBlocks } from "./html.ts";
 import { appIdOrNull } from "./ids.ts";
 import { count, displayUrl, flag, httpsUrl, isRecord, type JsonRecord, list, MEDIA_HOSTS, text, whole } from "./parse-values.ts";
@@ -74,14 +75,20 @@ function parseScreenshot(value: unknown): Screenshot | null {
   return { caption: text(value, "caption", 120), thumb: thumb.src, large: large.src, width: large.width, height: large.height };
 }
 
-function newestRelease(releases: unknown[]): { version: string | null; released: number | null } {
-  let best: { version: string | null; released: number | null; at: number } | null = null;
-  for (const release of releases) {
-    if (!isRecord(release) || (release.type !== undefined && release.type !== null && release.type !== "stable")) continue;
-    const at = whole(release.timestamp) ?? 0;
-    if (!best || at > best.at) best = { version: text(release, "version", 40), released: whole(release.timestamp), at };
-  }
-  return best ?? { version: null, released: null };
+const SHOWN_RELEASES = 3;
+const MAX_NOTES = 8;
+
+/** The stable releases, newest first, with their notes as plain paragraphs. */
+export function parseReleases(releases: unknown[], max = SHOWN_RELEASES): Release[] {
+  return releases
+    .filter((release): release is JsonRecord => isRecord(release) && (release.type === undefined || release.type === null || release.type === "stable"))
+    .map((release) => ({
+      version: text(release, "version", 40),
+      released: whole(release.timestamp),
+      notes: typeof release.description === "string" ? descriptionBlocks(release.description).slice(0, MAX_NOTES) : [],
+    }))
+    .sort((a, b) => (b.released ?? 0) - (a.released ?? 0))
+    .slice(0, max);
 }
 
 /** `appstream/<id>`: the app page's data. Throws when the answer is not an app. */
@@ -94,7 +101,9 @@ export function parseDetails(value: unknown): AppDetails {
   const bundle = isRecord(value.bundle) ? value.bundle : ({} as JsonRecord);
   const icons = list(value, "icons", 20).filter(isRecord);
   const icon = summary.icon ?? httpsUrl(icons.find((each) => each.type === "remote" && httpsUrl(each.url, MEDIA_HOSTS))?.url, MEDIA_HOSTS);
-  const { version, released } = newestRelease(list(value, "releases", 50));
+  const releases = parseReleases(list(value, "releases", 50));
+  const version = releases[0]?.version ?? null;
+  const released = releases[0]?.released ?? null;
   return {
     ...summary,
     icon,
@@ -114,11 +123,18 @@ export function parseDetails(value: unknown): AppDetails {
     downloadSize: null,
     installedSize: null,
     categories: list(value, "categories", 12).filter((each): each is string => typeof each === "string" && /^[A-Za-z]{2,30}$/.test(each)),
+    releases,
+    permissions: null,
   };
 }
 
-/** `summary/<id>`: the download and installed sizes, in bytes. */
+/** `summary/<id>`: the download and installed sizes, in bytes, and what the sandbox lets it reach. */
 export function parseSizes(value: unknown): Sizes {
   if (!isRecord(value)) throw new Error("not a summary");
-  return { downloadSize: count(value, "download_size"), installedSize: count(value, "installed_size") };
+  return { downloadSize: count(value, "download_size"), installedSize: count(value, "installed_size"), permissions: parsePermissions(value) };
+}
+
+/** `stats/<id>`: how many installed it last month, or null. */
+export function parseStats(value: unknown): number | null {
+  return isRecord(value) ? count(value, "installs_last_month") : null;
 }
