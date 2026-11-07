@@ -366,6 +366,8 @@ describe("Dashi's own commands", () => {
     ]);
     // A link never takes a picture of the screen by itself: it is opened for the person. The toolbar and the area wait for them anyway.
     expect(linkDecision(byId("screenshot") as ActionDef, {})).toBe("present");
+    // …without looking dangerous: it isn't destructive, so its button isn't red.
+    expect(byId("screenshot")).toMatchObject({ destructive: false, linkOpens: true });
     expect(linkDecision(byId("capture") as ActionDef, {})).toBe("run");
     expect(linkDecision(byId("screenshot-area") as ActionDef, {})).toBe("run");
     // Without a way to capture (no compositor) there are no screenshot rows.

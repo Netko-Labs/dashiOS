@@ -27,6 +27,7 @@ Code: `packages/shell/src/actions/`. Tests: `packages/shell/test/actions-*.test.
 | `properties`, `required` | the arguments, JSON Schema, as MCP's `inputSchema` |
 | `scope` | what an agent must have been allowed (`agents/consent.ts`); null when no agent can call it |
 | `readOnly`, `destructive`, `idempotent` | as the MCP annotations; `destructive` also means a link only opens it |
+| `linkOpens` | a link only opens it, though it isn't destructive: running it would hand a program something private (Screenshot of the Screen) |
 | `asksEveryTime` | it asks on a sheet every time, the person included (force quit, the Trash) |
 | `who` | `person`, `agents`, or `both` |
 | `source` | the source that added it |
@@ -61,7 +62,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
 | `tools` | `dashi://tool/<name>` (`dashi://tool/force-quit-app`) | the agents' tool, as the person when `who` is `both` |
-| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts`; `…/capture`, `…/screenshot`, `…/screenshot-area` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first. The screenshots are ⇧❖5's toolbar, ⇧❖3's screen, and ⇧❖4's area; Screenshot of the Screen is `destructive`, so a link only opens it (a program must not get the screen without asking) |
+| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts`; `…/capture`, `…/screenshot`, `…/screenshot-area` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first. The screenshots are ⇧❖5's toolbar, ⇧❖3's screen, and ⇧❖4's area; Screenshot of the Screen is `linkOpens`, so a link only opens it (a program must not get the screen without asking) |
 | `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every row of every pane, from the settings registry (see below) | opens the pane; a row that is one value is a toggle or a pick: one named for agents runs `set_setting` as the person, the person's own changes through the registry's store; any other row opens Settings scrolled to it and lit |
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
@@ -196,7 +197,7 @@ One request per connection. A link comes from anywhere, so:
 
 - A settings address with no arguments opens the pane, scrolled to the row,
   and lights the row up for a moment.
-- A destructive action is never run. It is opened with its arguments filled
+- A destructive action (or one marked `linkOpens`) is never run. It is opened with its arguments filled
   in: the launcher shows it ready for Return when it has taken links
   (`actions.setPresenter`), otherwise a sheet asks "Run “…”?" and shows the
   link. Arguments that don't fit say so and open nothing.

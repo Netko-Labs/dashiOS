@@ -44,7 +44,7 @@ export function linkDecision(action: ActionDef, args: Args): "reveal" | "present
   if (action.place && Object.keys(args).length === 0) return "reveal";
   // Its own sheet asks anyway (force quit, restart): the sheet is the opening.
   if (action.asksEveryTime) return "run";
-  if (action.destructive || (action.tool !== undefined && !action.readOnly)) return "present";
+  if (action.destructive || action.linkOpens || (action.tool !== undefined && !action.readOnly)) return "present";
   return "run";
 }
 

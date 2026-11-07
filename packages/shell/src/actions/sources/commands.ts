@@ -131,10 +131,11 @@ export function commandActions(run: (action: MenuAction) => Promise<void>, keyma
       properties: {},
       scope: null,
       readOnly: false,
-      // Ending the session or the machine loses what isn't saved; it asks on its own sheet first. A picture
-      // of the screen is not a link's to take: a program would have the screen without asking for it.
-      destructive: command.ends === true || command.sees === true,
+      // Ending the session or the machine loses what isn't saved; it asks on its own sheet first.
+      destructive: command.ends === true,
       ...(command.ends ? { asksEveryTime: true as const } : {}),
+      // A picture of the screen is not a link's to take: a program would have the screen without asking for it.
+      ...(command.sees ? { linkOpens: true as const } : {}),
       who: "person",
       source: "dashi",
       ...(shortcut ? { shortcut } : {}),
