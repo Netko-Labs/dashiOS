@@ -178,13 +178,65 @@ test("Agents lists each agent: connected now, what it may do riskiest first, wha
   expect(grants.get("/usr/bin/claude")).toEqual(new Set(["see", "settings", "signin"]));
   expect(grants.entries()[0]?.since.signin).toBe(1_760_000_000);
 
-  // All of them.
+  // All of them: the rows stay where they were, marked Revoked, while the notice is up.
   await view.press("agent-revoke-all:/usr/bin/claude");
   expect(grants.entries()).toEqual([]);
-  expect(view.has("agent-scope:/usr/bin/claude:see")).toBe(false);
+  expect(view.has("agent-scope:/usr/bin/claude:see")).toBe(true);
+  expect(view.root.lastTree()).toContain('"Revoked"');
   // Still connected, so still listed: it asks before anything now.
   expect(view.has("agent:/usr/bin/claude")).toBe(true);
   view.root.unmount();
+});
+
+test("Revoke All on an agent that isn't connected keeps its card, its rows and the Undo until the person does something else", async () => {
+  const { ctx, settings, grants } = setup();
+  // Kept before Dashi wrote dates down: no date.
+  grants.restore({ key: "/usr/bin/vm-agent", scopes: ["see", "act", "screen"], since: { see: null, act: null, screen: 1_760_000_000 } });
+  const view = await mount(<AgentsPane ctx={ctx} />);
+  expect(view.root.lastTree()).toContain("Allowed earlier");
+
+  // One Revoke: the rows below don't move up under the pointer.
+  await view.press("agent-revoke:/usr/bin/vm-agent:act");
+  expect(grants.get("/usr/bin/vm-agent")).toEqual(new Set(["see", "screen"]));
+  expect(view.has("agent-scope:/usr/bin/vm-agent:act")).toBe(true);
+  expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(true);
+  // Then all of them: the card stays, with the notice and its Undo, though the agent isn't connected.
+  await view.press("agent-revoke-all:/usr/bin/vm-agent");
+  expect(grants.entries()).toEqual([]);
+  expect(view.has("agent:/usr/bin/vm-agent")).toBe(true);
+  expect(view.has("agent-scope:/usr/bin/vm-agent:see")).toBe(true);
+  expect(view.has("agents-none")).toBe(false);
+  // Still there long after five seconds.
+  await new Promise((done) => setTimeout(done, 60));
+  expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(true);
+  await view.press("agent-revoked-undo:/usr/bin/vm-agent");
+  expect(grants.get("/usr/bin/vm-agent")).toEqual(new Set(["see", "screen"]));
+  expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(false);
+
+  // Revoke all again, then change a setting: the notice goes, and with it the card.
+  await view.press("agent-revoke-all:/usr/bin/vm-agent");
+  expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(true);
+  settings.patch("appearance", { reduceMotion: true });
+  await settle();
+  expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(false);
+  expect(view.has("agent:/usr/bin/vm-agent")).toBe(false);
+  view.root.unmount();
+});
+
+test("an agent that changed settings keeps its card with no permissions; one seen before isn't called new", async () => {
+  const { ctx, settings } = setup();
+  actingAs({ agent: "vm-agent", key: "/usr/bin/vm-agent" }, () => settings.patch("appearance", { reduceMotion: true }));
+  const view = await mount(<AgentsPane ctx={ctx} />);
+  expect(view.has("agent:/usr/bin/vm-agent")).toBe(true);
+  expect(view.root.lastTree()).toContain("asks before anything");
+  view.root.unmount();
+
+  const seen = setup();
+  const answers = { history: () => [{ id: "session:1", time: 1_760_000_000, who: "vm-agent", steps: [], summary: "3 calls" }], onHistory: () => () => {} };
+  const again = await mount(<AgentsPane ctx={{ ...seen.ctx, answers } as unknown as PaneContext} />);
+  expect(again.has("agents-none")).toBe(true);
+  expect(again.root.lastTree()).not.toContain("No agent has connected yet");
+  again.root.unmount();
 });
 
 test("with no agent, Agents says how one gets listed", async () => {

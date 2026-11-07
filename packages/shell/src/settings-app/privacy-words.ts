@@ -94,14 +94,21 @@ export interface AgentCard extends AgentPermissions {
 
 /**
  * Every agent with something to show: each one allowed something for good,
- * and each one connected now (an agent allowed only once is still listed
- * while it is). Connected ones first, then by name.
+ * each one connected now (an agent allowed only once is still listed while
+ * it is), and each one in `active` (it changed settings lately, so its card
+ * lists them with Undo). Connected ones first, then by name.
  */
-export function agentCards(entries: readonly GrantEntry[], connected: ReadonlyArray<{ key?: string; name: string }>, home: string): AgentCard[] {
+export function agentCards(
+  entries: readonly GrantEntry[],
+  connected: ReadonlyArray<{ key?: string; name: string }>,
+  home: string,
+  active: readonly string[] = [],
+): AgentCard[] {
   const live = new Set(connected.flatMap((agent) => (agent.key ? [agent.key] : [])));
   const kept = agentPermissions(entries, home);
   const known = new Set(kept.map((agent) => agent.key));
-  const onlyNow = [...live].filter((key) => !known.has(key)).map((key) => ({ key, ...describeAgentKey(key, home), scopes: [] }));
+  const others = new Set([...live, ...active].filter((key) => !known.has(key)));
+  const onlyNow = [...others].map((key) => ({ key, ...describeAgentKey(key, home), scopes: [] }));
   return [...kept, ...onlyNow]
     .map((agent) => ({ ...agent, connected: live.has(agent.key) }))
     .sort((a, b) => Number(b.connected) - Number(a.connected) || a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
