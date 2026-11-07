@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorder/command.ts";
 import { elapsedText } from "../src/recorder/indicator.tsx";
 import { type RecorderProcess, ScreenRecorder } from "../src/recorder/recorder.ts";
+import { stopsRecording } from "../src/recorder/start.ts";
 
 describe("recordingName", () => {
   test("the Mac's name, a copy number for one taken", () => {
@@ -126,6 +127,37 @@ describe("ScreenRecorder", () => {
     ).rejects.toThrow("couldn't blank");
     expect(order).not.toContain("go");
     expect(refused.getSnapshot().kind).toBe("idle");
+  }, 5000);
+
+  test("⇧❖5 stops only the person's own recording; an agent's runs on and the toolbar opens", async () => {
+    const recorder = new ScreenRecorder({ allow: () => () => {}, spawn: () => fakeProcess(), exists: (path) => path === WF_RECORDER, directory: () => videos });
+    await recorder.start({ kind: "screen", output: "Virtual-1" }, { by: "agent" });
+    expect(stopsRecording(recorder.getSnapshot())).toBe(false);
+    await recorder.stop();
+    await recorder.start({ kind: "screen", output: "Virtual-1" });
+    expect(stopsRecording(recorder.getSnapshot())).toBe(true);
+    await recorder.stop();
+    expect(stopsRecording({ kind: "idle" })).toBe(false);
+  }, 5000);
+
+  test("a recording's length is the recorder's own clock, from wf-recorder's start to its end", async () => {
+    let clock = 1_000;
+    const recorder = new ScreenRecorder({
+      allow: () => () => {},
+      spawn: () => fakeProcess(),
+      exists: (path) => path === WF_RECORDER,
+      directory: () => videos,
+      now: () => clock,
+    });
+    const file = await recorder.start({ kind: "screen", output: "Virtual-1" }, { by: "agent" });
+    clock += 6_400;
+    await recorder.stop();
+    expect(recorder.lengthOf(file)).toBe(6.4);
+    expect(recorder.lengthOf("/elsewhere.mp4")).toBeNull();
+    // record_screen says that, not the time it waited; without it, the wait.
+    const { recordedLength } = await import("../src/agents/desktop/record.ts");
+    expect(recordedLength(6.4, 0, 40_000)).toBe(6.4);
+    expect(recordedLength(null, 0, 40_000)).toBe(40);
   }, 5000);
 
   test("refuses without wf-recorder, and a second recording", async () => {

@@ -3,8 +3,10 @@
  * bottom of the screen: capture the screen, the front window, or an area;
  * record the screen or an area (with the microphone, if switched on); then
  * the button that does it. Return does it too, Escape closes. The toolbar
- * closes before it captures, so it isn't in the picture. While a recording
- * runs, ⇧❖5 stops it instead (and so does the menu bar's stop button).
+ * closes before it captures, so it isn't in the picture. While the person's
+ * own recording runs, ⇧❖5 stops it instead (and so does the menu bar's stop
+ * button, which stops an agent's too); an agent's record_screen leaves the
+ * toolbar opening as ever (start.ts).
  */
 
 import { useColors } from "@dashi/ui";
