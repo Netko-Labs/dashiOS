@@ -667,7 +667,7 @@
     {
       "name": "set_display_mode",
       "title": "Change a screen's resolution",
-      "description": "Run a screen at another resolution (and refresh rate in hertz, if you name one; otherwise its native or fastest rate). Only a mode in the screen's `modes` from list_displays works. The change is tried first: the person is asked on screen to keep it and, with no answer in 15 seconds, the old mode comes back. The call waits for that and says which happened.",
+      "description": "Run a screen at another resolution (and refresh rate in hertz, if you name one; otherwise its native or fastest rate). Only a mode in the screen's `modes` from list_displays works. The change is tried first: the person is asked on screen to keep it and, with no answer in 15 seconds, the old mode comes back. The call waits for that and says which happened. On a laptop's own screen with Automatic refresh rate, the rate you set holds until the computer is next plugged in or unplugged; then Automatic picks again.",
       "inputSchema": {
         "type": "object",
         "properties": {

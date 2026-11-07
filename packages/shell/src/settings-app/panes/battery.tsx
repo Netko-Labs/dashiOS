@@ -3,7 +3,8 @@
  * menu bar shows its percentage, its usage (the draw, the last day's charts,
  * insights, the apps using energy: battery-usage.tsx), the power mode (Automatic, Low Power,
  * Balanced, High Performance: power/modes/, with battery health and the processor on a laptop:
- * battery-laptop.tsx), when the display turns off and
+ * battery-laptop.tsx), what Dashi lowers on battery (the graphics card, the
+ * refresh rate: on-battery.tsx), when the display turns off and
  * the computer sleeps, and what the lid and power button do. Parts that do not
  * apply are left out: a desktop has no battery, and a machine without the
  * daemon has no power modes. The lid is logind's configuration
@@ -25,6 +26,7 @@ import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Page, Setting } from "../ui.tsx";
 import { BatteryHealthGroup, PowerModeGroup, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
+import { OnBatteryGroup, type ShowPane } from "./on-battery.tsx";
 import { Failure, Value } from "./parts.tsx";
 
 const MODE_DETAIL = {
@@ -33,7 +35,7 @@ const MODE_DETAIL = {
   performance: "The most performance, with more heat, fan noise, and power use.",
 } as const;
 
-export function BatteryPane({ services, settings }: { services: PaneServices; settings: SettingsStore }) {
+export function BatteryPane({ services, settings, show }: { services: PaneServices; settings: SettingsStore; show: ShowPane }) {
   const colors = useColors();
   const { energy } = services;
   const state = useEnergy(energy);
@@ -98,6 +100,7 @@ export function BatteryPane({ services, settings }: { services: PaneServices; se
           {state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
         </>
       )}
+      {battery && <OnBatteryGroup laptop={services.laptop} refresh={services.refresh} show={show} />}
       <Caption above>Sleep</Caption>
       <Group testID="power-timers">
         <Setting id="battery/turn-display-off">

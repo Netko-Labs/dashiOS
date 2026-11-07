@@ -50,6 +50,7 @@ import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
+import { AutoRefresh } from "./display-config/auto-refresh.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
 import { parseScreens, startDisplays } from "./displays.ts";
@@ -523,7 +524,7 @@ const forceQuit = startForceQuit(compositor);
 // agent first needs them, from the stores the menus run (menus/start.tsx).
 let paneServices: PaneServices | undefined;
 function paneServicesOf(): PaneServices {
-  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop }));
+  return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop, refresh: autoRefresh }));
 }
 
 // Clipboard history and snippets (clipboard/), started below once the registry and the launcher are.
@@ -711,6 +712,36 @@ const laptop = startLaptop({
   confirmRestart: () => menus.confirmPower("restart"),
 });
 
+// Automatic refresh rate: the built-in screen at its top rate plugged in, about 60 Hz on battery
+// (display-config/auto-refresh.ts). Nothing is set while the screens are blanked or the session is locked.
+let screensBlanked = false;
+const autoRefresh = displays
+  ? new AutoRefresh({
+      displays,
+      choice: (name) => settingsStore.displayRefresh(name),
+      ready: () => !screensBlanked && !screenLocked(),
+      watch: (listener) => compositor?.on((event) => event.event === "outputs-changed" && listener()) ?? (() => {}),
+    })
+  : null;
+const stopAutoRefresh = autoRefresh?.start() ?? (() => {});
+if (autoRefresh) {
+  const followPower = () => {
+    const battery = system.store.getSnapshot().battery;
+    autoRefresh.setPlugged(battery === null || battery.state !== "discharging");
+  };
+  system.store.subscribe(followPower);
+  followPower();
+  settingsStore.subscribe(() => autoRefresh.settingsChanged());
+  polkitLock?.onChange(() => autoRefresh.readyChanged());
+  if (idle) {
+    const before = idle.onBlanked;
+    idle.onBlanked = (blanked) => {
+      before?.(blanked);
+      screensBlanked = blanked;
+      autoRefresh.readyChanged();
+    };
+  }
+}
 // The menu bar's menus and Control Center (menus/, control-center/).
 const menus = startMenus({
   appMenus: appMenus.store,
@@ -1640,6 +1671,7 @@ const quit = () => {
     ["battery monitor", () => batteryMonitor.stop()],
     ["lost card watch", () => lostCard.close()],
     ["laptop", () => laptop.close()],
+    ["refresh rate", stopAutoRefresh],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],

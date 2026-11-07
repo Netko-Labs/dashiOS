@@ -6,8 +6,8 @@
  * dashi-hardware's `Changed` says so, and so does tuned-ppd's ActiveProfile
  * when another program sets it). Whatever the way, the store works out the
  * mode and the column and applies the recipe in one step: tuned-ppd's
- * profile first, then the knobs through dashi-hardware's `SetMany`, then the
- * screen's refresh rate if the recipe names one.
+ * profile first, then the knobs through dashi-hardware's `SetMany`. (The
+ * screen's refresh rate is Displays' Automatic, display-config/auto-refresh.ts.)
  *
  * Both ways without loops: Dashi's own writes come back as echoes, which the
  * guard (guard.ts) recognizes and drops; a change that matches the mode in
@@ -46,8 +46,6 @@ export interface ModeSnapshot {
 export interface ModeDeps {
   profiles: ProfileSource | null;
   hardware: HardwareApi | null;
-  /** The built-in screen's refresh rate, through the compositor. */
-  screenRate?: (rate: number | "max") => Promise<void>;
   /** The settings' power section now. */
   settings(): PowerSection;
   /** Saves a manual pick (or "automatic") as power.mode. */
@@ -258,7 +256,6 @@ export class ModeStore {
         this.machine = { ...this.machine, knobs };
       }
     }
-    if (recipe?.screenRate !== undefined && this.deps.screenRate) await this.deps.screenRate(recipe.screenRate).catch(() => {});
     if (!ok) this.applied = null;
     this.publish({ failed: !ok });
   }

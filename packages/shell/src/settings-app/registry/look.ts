@@ -144,7 +144,7 @@ export const LOOK_ROWS = [
 
   { id: "displays/turned-off", title: "This display is off", detail: "It stays plugged in; its windows are on the other screens.", kind: "action" },
   { id: "displays/resolution", title: "Resolution", keywords: ["screen size", "pixels"], kind: "value", stack: true },
-  { id: "displays/refresh-rate", title: "Refresh rate", keywords: ["hz", "hertz"], kind: "value", stack: true },
+  { id: "displays/refresh-rate", title: "Refresh rate", keywords: ["hz", "hertz", "automatic", "battery"], kind: "value", stack: true },
   {
     id: "displays/variable-refresh-rate",
     title: "Variable refresh rate",

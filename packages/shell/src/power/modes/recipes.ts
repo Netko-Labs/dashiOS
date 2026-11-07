@@ -30,23 +30,22 @@ export const DEFAULT_RECIPES: Recipes = {
   },
 };
 
-/** The key a recipe may hold that is the compositor's, not a knob. */
+/**
+ * A key an older model file may hold that is not a knob: the screen's rate
+ * was a recipe's once, and is Displays' Automatic refresh rate now
+ * (display-config/auto-refresh.ts), so it is left out, never sent as a knob.
+ */
 const SCREEN_RATE = "screen-rate";
 const KNOB_NAME = /^[a-z][a-z0-9-]{0,63}$/;
 
 function parseColumn(raw: unknown): Recipe | null {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
   const values: Record<string, KnobValue> = {};
-  let screenRate: number | "max" | undefined;
   for (const [name, value] of Object.entries(raw)) {
-    if (name === SCREEN_RATE) {
-      if (value === "max" || (typeof value === "number" && value >= 30 && value <= 500)) screenRate = value;
-      continue;
-    }
-    if (!KNOB_NAME.test(name)) continue;
+    if (name === SCREEN_RATE || !KNOB_NAME.test(name)) continue;
     if (typeof value === "string" || typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value))) values[name] = value;
   }
-  return screenRate === undefined ? { knobs: values } : { knobs: values, screenRate };
+  return { knobs: values };
 }
 
 /** The model's recipes; a mode or column the model leaves out is tuned's default. */
@@ -102,5 +101,5 @@ export function resolveRecipe(
     if (column === "battery" && settings.batteryMaxKhz > 0) over("cpu-max-freq", settings.batteryMaxKhz);
     else values["cpu-max-freq"] = 0;
   }
-  return base.screenRate === undefined ? { knobs: values } : { knobs: values, screenRate: base.screenRate };
+  return { knobs: values };
 }

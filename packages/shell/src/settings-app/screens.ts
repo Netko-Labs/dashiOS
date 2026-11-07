@@ -58,7 +58,7 @@ export class ScreensStore {
   /** `compositor` null is a run without dashi-comp: no screens. */
   constructor(
     private readonly compositor: Pick<Compositor, "request" | "on"> | null,
-    private readonly settings: Pick<SettingsStore, "setDisplayScale" | "setDisplayVrr">,
+    private readonly settings: Pick<SettingsStore, "setDisplayScale" | "setDisplayVrr" | "setDisplayRefresh">,
     /** Null without the arrangement service: the pane shows the screens and their scales only. */
     private readonly displays: Arranger | null = null,
   ) {}
@@ -119,31 +119,53 @@ export class ScreensStore {
     await this.refresh();
   }
 
-  /** Run another resolution and rate. The person is asked to keep it. */
-  setMode(name: string, mode: Mode): Promise<void> {
+  /** Run another resolution and rate. The person is asked to keep it. Each change resolves true when it was kept. */
+  setMode(name: string, mode: Mode): Promise<boolean> {
     return this.change((displays) => displays.setMode(name, mode));
   }
 
-  setRotation(name: string, rotation: Rotation): Promise<void> {
+  /**
+   * The refresh rate row: Automatic (the rate follows the power source,
+   * display-config/auto-refresh.ts), or a rate, which turns Automatic off for
+   * the screen once it is kept (the person is asked, as for any mode).
+   */
+  async setRate(name: string, rate: number | "automatic"): Promise<void> {
+    if (rate === "automatic") {
+      this.settings.setDisplayRefresh(name, "automatic");
+      return;
+    }
+    const monitor = this.snapshot.monitors.find((candidate) => candidate.name === name);
+    const mode = monitor?.mode;
+    if (!mode) return;
+    if (Math.abs(mode.refreshMhz - rate) <= 600) {
+      this.settings.setDisplayRefresh(name, "fixed");
+      return;
+    }
+    const kept = await this.change((displays) => displays.setMode(name, { width: mode.width, height: mode.height, refreshMhz: rate }));
+    if (kept) this.settings.setDisplayRefresh(name, "fixed");
+  }
+
+  setRotation(name: string, rotation: Rotation): Promise<boolean> {
     return this.change((displays) => displays.setRotation(name, rotation));
   }
 
   /** Make this the main display: the menu bar and Dock move to it. */
-  setPrimary(name: string): Promise<void> {
+  setPrimary(name: string): Promise<boolean> {
     return this.change((displays) => displays.setPrimary(name));
   }
 
-  setEnabled(name: string, enabled: boolean): Promise<void> {
+  setEnabled(name: string, enabled: boolean): Promise<boolean> {
     return this.change((displays) => displays.setEnabled(name, enabled));
   }
 
   /** Move screens to these places (points); the compositor keeps them apart and touching. */
-  arrange(positions: Readonly<Record<string, { x: number; y: number }>>): Promise<void> {
+  arrange(positions: Readonly<Record<string, { x: number; y: number }>>): Promise<boolean> {
     return this.change((displays) => displays.arrange(positions));
   }
 
-  private async change(make: (displays: Arranger) => Promise<ApplyResult>): Promise<void> {
-    if (!this.displays) return;
+  /** Makes the change; true when it was kept. */
+  private async change(make: (displays: Arranger) => Promise<ApplyResult>): Promise<boolean> {
+    if (!this.displays) return false;
     let result: ApplyResult;
     try {
       result = await make(this.displays);
@@ -152,6 +174,7 @@ export class ScreensStore {
     }
     this.set({ ...this.snapshot, error: result.error ?? null });
     await this.refresh();
+    return result.kept;
   }
 
   private set(next: ScreensState): void {
