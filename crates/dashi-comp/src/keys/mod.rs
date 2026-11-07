@@ -3,6 +3,7 @@
 mod handler;
 mod keymap;
 mod layout;
+mod locked;
 mod replay;
 mod snippets;
 

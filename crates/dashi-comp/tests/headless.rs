@@ -343,9 +343,24 @@ fn the_keymap_is_checked_before_it_is_used() {
             { "when": "super+letter", "app": "terminal", "send": "ctrl+shift+key" },
             { "when": "super+BackSpace", "tap": ["shift+Home", "BackSpace"] },
             { "when": "super+ctrl+*", "swallow": true }
+        ],
+        // The lock screen's (packages/shell/src/keymap.ts LOCKED_RULES).
+        "locked": [
+            { "when": "super+a|c|x|v|z", "send": "ctrl+key" },
+            { "when": "super+BackSpace", "tap": ["shift+Home", "BackSpace"] },
+            { "when": "super+*", "swallow": true }
         ]
     });
     assert_eq!(ipc.request("keymap", keymap)["result"], json!({}));
+    // No shell binding fires while locked: a locked rule that binds is refused.
+    let refused = ipc.request(
+        "keymap",
+        json!({ "rules": [], "locked": [{ "when": "super+q", "bind": "quit-app" }] }),
+    );
+    assert!(
+        refused["error"].as_str().unwrap().contains("locked 0"),
+        "{refused}"
+    );
     let refused = ipc.request(
         "keymap",
         json!({ "rules": [{ "when": "hyper+q", "bind": "x" }] }),

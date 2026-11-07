@@ -397,6 +397,8 @@ const capture = compositor ? startScreenCapture(compositor, screenCapture) : nul
 // need a password sheet: polkit's authentication agent (polkit/). It stays off
 // on a development run, which never registers on the machine's system bus.
 const polkitLock = compositor ? new LockWatch(compositor) : null;
+/** Whether the screen is locked: as the compositor says (lock events), or a lock screen is up or on its way. */
+const screenLocked = (): boolean => (polkitLock?.isLocked ?? false) || (lockScreen?.isLocked ?? false);
 const polkit = startPolkit({
   developmentRun,
   lock: polkitLock ?? { isLocked: false, onChange: () => () => {} },
@@ -1055,6 +1057,8 @@ function openLauncherIn(scope: string, window: number | null): void {
 }
 
 function openLauncher(presented: Presented | null = null, scope: string | null = null, window: number | null = null): void {
+  // Never behind the lock screen (a dashi:// link, Search…): it would hold keys nobody sees.
+  if (screenLocked()) return;
   markOpen();
   // Where the clipboard's ↩ pastes: the window under the launcher.
   clipboard?.opening(window);
@@ -1429,6 +1433,7 @@ const stopShortcuts = compositor
       screenshotArea: selectArea,
       captureToolbar: (window) => captureTools?.toolbar(window),
       launcher: { binding: launcherBinding },
+      isLocked: screenLocked,
     })
   : () => {};
 

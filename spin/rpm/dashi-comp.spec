@@ -60,6 +60,10 @@ cargo test --release --locked -p dashi-comp
 %{_datadir}/licenses/%{name}
 
 %changelog
+* Fri Nov 06 2026 PejeDev <hi@peje.dev> - 0.4.1
+- Security: while locked, the keyboard stays on the lock screen; keys typed
+  there no longer reach a window behind it.
+
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 0.2.0
 - The compositor, rewritten: udev and nested backends, Xwayland, greeter mode,
   explicit sync, VRR, presentation time, and the modern Wayland protocols.

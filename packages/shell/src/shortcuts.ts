@@ -49,6 +49,13 @@ export interface ShellActions {
    * typed before its field has the keyboard, with its text (launcher/type-ahead.ts); says whether it was one.
    */
   launcher?: { binding(name: string, chord?: PressedChord, text?: string): boolean };
+  /**
+   * Whether the screen is locked (lock/). Then no ❖ tap or hold and no
+   * binding acts: the compositor sends none while locked, and one already on
+   * its way when the screen locked must not open the launcher or a sheet, or
+   * type into a window, behind the lock screen.
+   */
+  isLocked?(): boolean;
 }
 
 /** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
@@ -182,6 +189,8 @@ function switcherBinding(name: string, key: string | undefined, switcher: Switch
 export function startShortcuts(compositor: Compositor, actions: ShellActions): () => void {
   return compositor.on((event) => {
     if (event.event === "super") {
+      // Locked: a tap or a hold shows nothing; a chord or ❖ coming up still takes the sheet down.
+      if (actions.isLocked?.() && (event.phase === "tap" || event.phase === "hold")) return;
       switch (event.phase) {
         case "tap":
           actions.toggleLauncher();
@@ -198,6 +207,7 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
           break;
       }
     } else if (event.event === "binding") {
+      if (actions.isLocked?.()) return;
       // The launcher's keys are taken here, in the order they came: typing must not be reordered.
       if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, event.chord, event.text)) return;
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));

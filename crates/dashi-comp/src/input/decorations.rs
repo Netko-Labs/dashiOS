@@ -115,9 +115,6 @@ impl Dashi {
     /// A press away from any decoration: the keyboard goes to what was pressed.
     /// A layer that takes no keyboard (the Dock) leaves it where it was.
     pub(crate) fn focus_at(&mut self, at: Point<f64, Logical>, serial: Serial) {
-        let Some(keyboard) = self.seat.get_keyboard() else {
-            return;
-        };
         if self.lock.locked {
             let lock = self
                 .space
@@ -126,7 +123,7 @@ impl Dashi {
                 .and_then(|o| self.lock_surface_on(o))
                 .map(|s| s.wl_surface().clone());
             if lock.is_some() {
-                keyboard.set_focus(self, lock, serial);
+                self.set_keyboard_focus(lock, serial);
             }
             return;
         }
@@ -144,7 +141,7 @@ impl Dashi {
             });
         if let Some(layer) = top_layer {
             if layer.can_receive_keyboard_focus() {
-                keyboard.set_focus(self, Some(layer.wl_surface().clone()), serial);
+                self.set_keyboard_focus(Some(layer.wl_surface().clone()), serial);
             }
             return;
         }
@@ -160,7 +157,7 @@ impl Dashi {
                 self.space.elements().for_each(|window| {
                     window.set_activated(false);
                 });
-                keyboard.set_focus(self, None, serial);
+                self.set_keyboard_focus(None, serial);
                 self.configure_all();
             }
         }

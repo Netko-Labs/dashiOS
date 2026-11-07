@@ -1,7 +1,7 @@
 {
   "name": "@dashi/ui",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "type": "module",
   "description": "Dashi's own Metal components: what @mirinjs/metal-ui (shadcn) does not cover, painted with Dashi's palettes.",
   "exports": {
