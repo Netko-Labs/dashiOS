@@ -18,7 +18,7 @@ import { useModes } from "../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../power/modes/types.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Row, Slider } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Setting, Slider } from "../ui.tsx";
 
 const MODE_DETAIL = {
   "low-power": "Quieter and cooler, with less performance. Battery lasts longer.",
@@ -40,10 +40,10 @@ export function PowerModeGroup({ laptop }: { laptop: Laptop }) {
     : undefined;
   return (
     <Group testID="power-mode">
-      <Row stack label="Power Mode" {...(detail ? { detail } : {})}>
+      <Setting id="battery/power-mode" {...(detail ? { detail } : {})}>
         <Choices testID="power-mode-choice" value={modes.choice} options={options} onChange={(choice) => laptop.modes.choose(choice)} />
-      </Row>
-      {modes.failed && effective && <Row label={`Couldn’t switch everything to ${MODE_LABEL[effective.mode]}.`} />}
+      </Setting>
+      {modes.failed && effective && <Item label={`Couldn’t switch everything to ${MODE_LABEL[effective.mode]}.`} />}
     </Group>
   );
 }
@@ -64,7 +64,7 @@ export function BatteryHealthGroup({ laptop, settings }: { laptop: Laptop; setti
     <>
       <Caption above>Battery Health</Caption>
       <Group testID="battery-health-limit">
-        <Row stack label="Charge limit" detail="Keeping it below full slows wear.">
+        <Setting id="battery/charge-limit">
           <Slider
             testID="battery-charge-limit"
             value={limit}
@@ -72,25 +72,23 @@ export function BatteryHealthGroup({ laptop, settings }: { laptop: Laptop; setti
             onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
           />
           <Text style={{ fontSize: 12, color: colors.textMuted }}>{pct(limit)}</Text>
-        </Row>
-        <Row label="Charge to full once" detail={power.fullChargeOnce ? (target.why ?? "") : "For a trip: back to the limit after."}>
+        </Setting>
+        <Setting id="battery/full-charge-once" detail={power.fullChargeOnce ? (target.why ?? "") : undefined}>
           <Button
             testID="battery-full-once"
             label={power.fullChargeOnce ? "Charging" : "Charge Now"}
             disabled={power.fullChargeOnce === true || limit >= 100}
             onPress={() => settings.patch("power", { fullChargeOnce: true })}
           />
-        </Row>
-        <Row
-          label="Full by a time"
-          detail={
-            power.fullBy ? `Full by ${power.fullBy} ${power.fullByDays === "daily" ? "every day" : "on weekdays"}.` : "Charges past the limit before you leave."
-          }
+        </Setting>
+        <Setting
+          id="battery/full-by"
+          detail={power.fullBy ? `Full by ${power.fullBy} ${power.fullByDays === "daily" ? "every day" : "on weekdays"}.` : undefined}
         >
           <Switch testID="battery-full-by" on={power.fullBy !== undefined} onChange={(on) => settings.patch("power", { fullBy: on ? "08:00" : undefined })} />
-        </Row>
+        </Setting>
         {power.fullBy !== undefined && (
-          <Row stack label="When">
+          <Setting id="battery/full-by-when">
             <Choices
               testID="battery-full-by-time"
               value={power.fullBy}
@@ -106,7 +104,7 @@ export function BatteryHealthGroup({ laptop, settings }: { laptop: Laptop; setti
               ]}
               onChange={(fullByDays) => settings.patch("power", { fullByDays })}
             />
-          </Row>
+          </Setting>
         )}
       </Group>
     </>
@@ -144,22 +142,22 @@ export function ProcessorGroup({ laptop, settings }: { laptop: Laptop; settings:
       <Caption above>Processor</Caption>
       <Group testID="power-processor">
         {boost && (
-          <Row stack label="Boost clock" detail="Faster bursts, more heat.">
+          <Setting id="battery/boost">
             <Choices testID="power-boost" value={power.boost ?? "always"} options={BOOST_OPTIONS} onChange={(boost) => settings.patch("power", { boost })} />
-          </Row>
+          </Setting>
         )}
         {epp && eppOptions.length > 1 && (
-          <Row stack label="Prefer" detail="By mode follows the power mode's own preference.">
+          <Setting id="battery/prefer">
             <Choices
               testID="power-epp"
               value={power.epp ?? "recipe"}
               options={eppOptions}
               onChange={(value) => settings.patch("power", { epp: value === "recipe" ? undefined : value })}
             />
-          </Row>
+          </Setting>
         )}
         {freq && (
-          <Row stack label="Top speed on battery" detail="Lower runs cooler and lasts longer.">
+          <Setting id="battery/top-speed">
             <Slider
               testID="power-battery-cap"
               value={cap}
@@ -167,7 +165,7 @@ export function ProcessorGroup({ laptop, settings }: { laptop: Laptop; settings:
               onCommit={(value) => settings.patch("power", { batteryMaxKhz: value >= top ? undefined : Math.round(value) })}
             />
             <Text style={{ fontSize: 12, color: colors.textMuted }}>{cap >= top ? "No limit" : `${(cap / 1_000_000).toFixed(1)} GHz`}</Text>
-          </Row>
+          </Setting>
         )}
       </Group>
     </>

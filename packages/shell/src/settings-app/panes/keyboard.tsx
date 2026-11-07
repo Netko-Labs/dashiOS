@@ -10,13 +10,12 @@
 import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../../input-method.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Note, Page, Row, Slider, Spot, useSurface } from "../ui.tsx";
+import { Caption, Group, Note, Page, Setting, Slider, Spot, useSurface } from "../ui.tsx";
 import { ClipboardSection, type HistoryControl, type InstalledApp } from "./clipboard-parts.tsx";
 import { KeyboardLightSection } from "./laptop-parts.tsx";
 
@@ -67,7 +66,7 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
   const shown = searchLayouts(layouts.layouts, query);
   const variants = variantsOf(layouts.variants, current);
   return (
-    <Row stack label="Layout" detail={`${describeLayout(layouts.layouts, keyboard.layout)}${several ? " (several layouts set in settings.json)" : ""}`}>
+    <Setting id="keyboard/layout" detail={`${describeLayout(layouts.layouts, keyboard.layout)}${several ? " (several layouts set in settings.json)" : ""}`}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
         <Svg markup={SEARCH} size={13} color={colors.textMuted} />
         <TextInput
@@ -116,7 +115,7 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
           )}
         </List>
       </View>
-    </Row>
+    </Setting>
   );
 }
 
@@ -130,34 +129,18 @@ function RangeLabels({ low, high }: { low: string; high: string }) {
   );
 }
 
-const INPUT_METHOD_OPTIONS: { value: InputMethodName; label: string }[] = [
-  { value: "none", label: "None" },
-  { value: "fcitx5", label: "Fcitx 5" },
-];
 /** Fcitx 5 is installed (the only input method offered: input-method.ts). */
 const HAS_FCITX = Bun.which("fcitx5") !== null;
 
 /** The input method the session runs, or how to get one. */
-function InputMethodRow({ settings, installed }: { settings: SettingsStore; installed: boolean }) {
-  const { inputMethod } = useSettings(settings).data;
+function InputMethodRow({ installed }: { installed: boolean }) {
   if (!installed)
     return (
-      <Spot pane="keyboard" row="input-method">
+      <Spot id="keyboard/input-method">
         <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>
       </Spot>
     );
-  return (
-    <Spot pane="keyboard" row="input-method">
-      <Row stack label="Input method" detail="For Chinese, Japanese, Korean and other scripts, in every app and the launcher.">
-        <Choices
-          testID="keyboard-input-method"
-          value={inputMethod.engine ?? DEFAULT_INPUT_METHOD}
-          options={INPUT_METHOD_OPTIONS}
-          onChange={(engine) => settings.patch("inputMethod", { engine })}
-        />
-      </Row>
-    </Spot>
-  );
+  return <Setting id="keyboard/input-method" control="keyboard-input-method" />;
 }
 
 export function KeyboardPane({
@@ -180,20 +163,18 @@ export function KeyboardPane({
   return (
     <Page title="Keyboard">
       <Group>
-        <Spot pane="keyboard" row="key-repeat">
-          <Row label="Key repeat rate" detail={describeRate(rate)}>
-            <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-              <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
-              <RangeLabels low="Off" high="Fast" />
-            </View>
-          </Row>
-        </Spot>
-        <Row label="Delay until repeat" detail={describeDelay(delay)}>
+        <Setting id="keyboard/key-repeat" detail={describeRate(rate)}>
+          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
+            <RangeLabels low="Off" high="Fast" />
+          </View>
+        </Setting>
+        <Setting id="keyboard/repeat-delay" detail={describeDelay(delay)}>
           <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <Slider testID="keyboard-delay" value={delay} range={REPEAT_DELAY} onCommit={(value) => settings.patch("keyboard", { repeatDelay: value })} />
             <RangeLabels low="Short" high="Long" />
           </View>
-        </Row>
+        </Setting>
       </Group>
       <Group>
         {layouts.layouts.length === 0 ? (
@@ -204,7 +185,7 @@ export function KeyboardPane({
       </Group>
       <Caption>A new layout applies in a moment, to every app.</Caption>
       <Group>
-        <InputMethodRow settings={settings} installed={HAS_FCITX} />
+        <InputMethodRow installed={HAS_FCITX} />
       </Group>
       <KeyboardLightSection laptop={laptop ?? null} />
       <ClipboardSection settings={settings} history={clipboard ?? null} {...(installed ? { installed } : {})} />

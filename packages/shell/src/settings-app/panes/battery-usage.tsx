@@ -19,7 +19,7 @@ import {
   levelChart,
   useBatteryMonitor,
 } from "../../battery/index.ts";
-import { Caption, Group, Row } from "../ui.tsx";
+import { Caption, Group, Setting } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 
 /** A tip: a small spark. */
@@ -115,16 +115,16 @@ export function BatteryUsage({ monitor }: { monitor: BatteryMonitor }) {
     <>
       <Caption above>Battery Usage</Caption>
       <Group testID="battery-usage">
-        <Row
-          label="Power draw"
-          detail={run && since !== null ? `${since.toFixed(1)} W on average since unplugged ${formatSpan(Date.now() / 1000 - run.since)} ago` : undefined}
+        <Setting
+          id="battery/power-draw"
+          detail={run && since !== null ? `${since.toFixed(1)} W on average since unplugged ${formatSpan(Date.now() / 1000 - run.since)} ago` : null}
         >
           <Value testID="battery-draw">{powerLine(state.watts, state.battery.state)}</Value>
-        </Row>
+        </Setting>
         {run && (
-          <Row label="Since unplugged" detail={run.perHour === null ? undefined : `${run.perHour}% an hour while awake`}>
+          <Setting id="battery/since-unplugged" detail={run.perHour === null ? null : `${run.perHour}% an hour while awake`}>
             <Value testID="battery-since">{`${run.used}% used`}</Value>
-          </Row>
+          </Setting>
         )}
         <Charts state={state} />
       </Group>

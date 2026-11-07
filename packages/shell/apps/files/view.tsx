@@ -7,7 +7,7 @@
  * Enter opens, Backspace goes back, and typing jumps to a name.
  */
 
-import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, type MenuItem, PopupMenu, useColors } from "@dashi/ui";
+import { AppWindow, Button, ConfirmSheet, EmptyState, glyphs, type KeyInput, KeySink, Loading, type MenuEntry, PopupMenu, useColors, useUndo } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -44,7 +44,8 @@ type MenuState = { x: number; y: number; kind: "item" | "background" | "actions"
 
 function Empty({ store }: { store: FilesStore }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  if (state.loading) return <EmptyState title="Loading…" testID="empty" />;
+  // A folder that takes a moment shows the spinner after 200 ms (PA-5).
+  if (state.loading) return <Loading testID="empty" />;
   if (state.error) {
     return (
       <EmptyState
@@ -99,7 +100,6 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
   const [editing, setEditing] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
-  const [frame, setFrame] = useState<{ width: number; height: number }>({ width: FILES_SIZE.width, height: FILES_SIZE.height });
 
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
   const close = useCallback(() => {
@@ -139,8 +139,9 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     [store, ops, refocus],
   );
 
-  // The menu bar's File, Edit, View, and Go are Files' own while it is in front.
-  useAppMenus(menuSpecs(state, store, ops), (id) => chooseMenu(id, store, ops, actions));
+  // The menu bar's File, Edit, View, and Go are Files' own while it is in front; Edit's Undo names the last write.
+  const undo = useUndo(ops.undo);
+  useAppMenus(menuSpecs(state, store, ops, undo), (id) => chooseMenu(id, store, ops, actions));
 
   const items = store.visible();
   // `--info` (the file manager service's ShowItemProperties): Get Info for that item once the folder is listed.
@@ -152,7 +153,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     actions.info(info);
   }, [state.loading, state.items]);
   const deps = { store, ops, actions };
-  const menuItems = (kind: MenuState["kind"]): MenuItem[] =>
+  const menuItems = (kind: MenuState["kind"]): MenuEntry[] =>
     kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps);
 
   const onKey = (key: KeyInput): void => {
@@ -257,10 +258,8 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
       );
     }
     if (menu) {
-      const entries = menuItems(menu.kind);
-      const x = Math.max(8, Math.min(menu.x, frame.width - 210));
-      const y = Math.max(8, Math.min(menu.y, frame.height - entries.length * 24 - 16));
-      return <PopupMenu testID="menu" x={x} y={y} items={entries} onClose={close} />;
+      // The menu keeps itself inside the window, flipped at the pointer when it would run off (PA-9).
+      return <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menuItems(menu.kind)} onClose={close} />;
     }
     if (suggestions) return <SuggestionList suggestions={suggestions} home={store.env.home} />;
     return undefined;
@@ -271,7 +270,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
-      <View style={{ flex: 1 }} onLayout={(bounds) => setFrame({ width: bounds.width, height: bounds.height })}>
+      <View style={{ flex: 1 }}>
         <AppWindow
           title={title}
           leading={<Leading />}

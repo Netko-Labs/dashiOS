@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { Passwords } from "../../agents/secrets/passwords.ts";
 import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
-import { Button, Caption, Choices, Group, Note, Page, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, Choices, FormRow, Group, Item, Note, Page, Setting, Spot, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 import { Payments } from "./payments.tsx";
 import { Tokens } from "./tokens.tsx";
@@ -85,23 +85,25 @@ function AddLogin({ passwords, onSaved }: { passwords: Passwords; onSaved: () =>
       .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)));
   };
   return (
-    <Group testID="passwords-add">
-      <Row label="Site">
-        <Field testID="passwords-add-site" value={form.site} placeholder="github.com" onChange={set("site")} />
-      </Row>
-      <Row label="Account">
-        <Field testID="passwords-add-account" value={form.account} placeholder="User name or email" onChange={set("account")} />
-      </Row>
-      <Row label="Password">
-        <Field testID="passwords-add-password" value={form.password} placeholder="Password" secure onChange={set("password")} />
-      </Row>
-      <Row label="Two-factor secret" detail={problem ?? "Optional: the setup key, or an otpauth:// address"}>
-        <Field testID="passwords-add-totp" value={form.totp} placeholder="Setup key" secure onChange={set("totp")} />
-      </Row>
-      <Row label="">
-        <Button testID="passwords-add-save" label="Save Login" primary disabled={!form.site || !form.account || !form.password} onPress={save} />
-      </Row>
-    </Group>
+    <Spot id="passwords/add-login" cards>
+      <Group testID="passwords-add">
+        <FormRow label="Site">
+          <Field testID="passwords-add-site" value={form.site} placeholder="github.com" onChange={set("site")} />
+        </FormRow>
+        <FormRow label="Account">
+          <Field testID="passwords-add-account" value={form.account} placeholder="User name or email" onChange={set("account")} />
+        </FormRow>
+        <FormRow label="Password">
+          <Field testID="passwords-add-password" value={form.password} placeholder="Password" secure onChange={set("password")} />
+        </FormRow>
+        <FormRow label="Two-factor secret" detail={problem ?? "Optional: the setup key, or an otpauth:// address"}>
+          <Field testID="passwords-add-totp" value={form.totp} placeholder="Setup key" secure onChange={set("totp")} />
+        </FormRow>
+        <FormRow label="">
+          <Button testID="passwords-add-save" label="Save Login" primary disabled={!form.site || !form.account || !form.password} onPress={save} />
+        </FormRow>
+      </Group>
+    </Spot>
   );
 }
 
@@ -111,7 +113,7 @@ function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents
     ? `Delete the password${login.hasCode ? " and two-factor code" : ""} for ${login.account}? You can't undo this.`
     : `${login.account}${login.hasCode ? " · two-factor code" : ""}`;
   return (
-    <Row label={login.site} detail={detail} testID={`login:${login.id}`}>
+    <Item label={login.site} detail={detail} testID={`login:${login.id}`}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Choices
           testID={`login-agents:${login.id}`}
@@ -124,7 +126,7 @@ function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents
         />
         <ConfirmDelete testID={`login-delete:${login.id}`} onDelete={onDelete} onAsking={setAsking} />
       </View>
-    </Row>
+    </Item>
   );
 }
 
@@ -161,15 +163,15 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
     <>
       <Page title="Passwords">
         <Group testID="passwords-sources">
-          <Row label="Dashi" detail="Passkeys, app secrets, tokens, logins">
+          <Setting id="passwords/source-dashi">
             <Switch
               testID="passwords-source-dashi"
               on={prefs.sources.dashi}
               onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, dashi: on } })}
             />
-          </Row>
-          <Row
-            label="1Password"
+          </Setting>
+          <Setting
+            id="passwords/source-1password"
             detail={
               passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
             }
@@ -179,10 +181,10 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
               on={prefs.sources["1password"]}
               onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, "1password": on } })}
             />
-          </Row>
+          </Setting>
         </Group>
         <Group>
-          <Row label="Save new logins to">
+          <Setting id="passwords/save-to">
             <Choices
               testID="passwords-save-to"
               value={prefs.saveTo}
@@ -192,26 +194,28 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
               ]}
               onChange={(saveTo) => passwords.prefs.set({ saveTo })}
             />
-          </Row>
+          </Setting>
         </Group>
         <Caption>
           Agents sign in and enter codes through Dashi, which types them: an agent never sees a password or a code, and each use is asked about on screen.
         </Caption>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Logins in Dashi</Text>
-        <Group testID="passwords-logins">
-          {vault.logins.length === 0 ? (
-            <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
-          ) : (
-            vault.logins.map((login) => (
-              <LoginRow
-                key={login.id}
-                login={login}
-                onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
-                onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
-              />
-            ))
-          )}
-        </Group>
+        <Spot id="passwords/logins" cards>
+          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Logins in Dashi</Text>
+          <Group testID="passwords-logins">
+            {vault.logins.length === 0 ? (
+              <Note testID="passwords-none">{status?.unlocked ? "No logins yet. Add one below." : vaultLine}</Note>
+            ) : (
+              vault.logins.map((login) => (
+                <LoginRow
+                  key={login.id}
+                  login={login}
+                  onAgents={(agents) => change(passwords.vault.setAgents(login.id, agents), `The setting for ${login.site} wasn't changed.`)}
+                  onDelete={() => change(passwords.vault.remove(login.id), `The login for ${login.site} wasn't deleted.`)}
+                />
+              ))
+            )}
+          </Group>
+        </Spot>
         {failure && <Failure testID="passwords-failure">{failure}</Failure>}
         {((status?.unlocked && prefs.saveTo === "dashi") || (prefs.saveTo === "1password" && passwords.onePasswordReady())) && (
           <AddLogin passwords={passwords} onSaved={refresh} />

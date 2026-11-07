@@ -1,0 +1,138 @@
+/** The rows of Network, Bluetooth, Sound, Battery & Power, and Graphics. */
+
+import { BLANK_CHOICES, SLEEP_CHOICES } from "../controls.ts";
+import { DEFAULT_BLANK_AFTER } from "../store.ts";
+import type { ChoiceOption, RowDef } from "./types.ts";
+import { storedChoice, storedSwitch } from "./values.ts";
+
+export const BLANK_OPTIONS: readonly ChoiceOption[] = BLANK_CHOICES;
+const SLEEP_OPTIONS: readonly ChoiceOption[] = SLEEP_CHOICES;
+
+/** When the screens go dark: one setting, shown in Battery & Power and in Lock Screen. */
+export const BLANK_AFTER = storedChoice("idle", "blankAfterSeconds", DEFAULT_BLANK_AFTER, BLANK_OPTIONS);
+
+export const MACHINE_ROWS = [
+  { id: "network/wi-fi", title: "Wi-Fi", keywords: ["wifi", "wireless", "wlan", "internet", "network"], kind: "switch", source: "controls" },
+  { id: "network/status", title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
+  { id: "network/ip-address", title: "IP Address", keywords: ["ip", "address"], kind: "value" },
+  { id: "network/subnet-mask", title: "Subnet Mask", keywords: ["netmask"], kind: "value" },
+  { id: "network/router", title: "Router", keywords: ["gateway"], kind: "value" },
+  { id: "network/dns-servers", title: "DNS Servers", keywords: ["dns", "name server"], kind: "value" },
+  { id: "network/mac-address", title: "MAC Address", keywords: ["mac", "hardware address"], kind: "value" },
+
+  { id: "bluetooth/bluetooth", title: "Bluetooth", keywords: ["bt", "wireless", "headphones", "pairing"], kind: "switch", source: "controls" },
+  {
+    id: "bluetooth/search-again",
+    title: "Search again",
+    name: "Search for Bluetooth devices",
+    detail: "Devices are looked for while this page is open, for a minute at a time.",
+    keywords: ["pair", "scan", "find devices"],
+    kind: "action",
+  },
+
+  { id: "sound/output-volume", title: "Output volume", keywords: ["volume", "loudness", "speakers"], kind: "value" },
+  { id: "sound/output-mute", title: "Mute", name: "Mute output", keywords: ["mute", "silence"], kind: "switch" },
+  { id: "sound/input-volume", title: "Input volume", keywords: ["microphone volume", "mic level", "gain"], kind: "value" },
+  { id: "sound/input-mute", title: "Mute", name: "Mute input", keywords: ["mute microphone", "mute mic"], kind: "switch" },
+  {
+    id: "sound/input-level",
+    title: "Input level",
+    detail: "Speak to see the meter move. Nothing is recorded.",
+    keywords: ["microphone test", "mic test"],
+    kind: "value",
+  },
+  {
+    id: "sound/show-in-menu-bar",
+    title: "Show Sound in menu bar",
+    detail: "The speaker beside the battery and network icons.",
+    keywords: ["speaker", "volume icon"],
+    kind: "switch",
+    value: storedSwitch("menuBar", "sound", true),
+    agent: "sound_in_menu_bar",
+  },
+
+  { id: "battery/battery", title: "Battery", keywords: ["charge", "battery level"], kind: "value" },
+  {
+    id: "battery/battery-health",
+    title: "Battery health",
+    detail: "How much charge it holds compared with when it was new.",
+    keywords: ["capacity", "wear"],
+    kind: "value",
+  },
+  { id: "battery/cycle-count", title: "Cycle count", keywords: ["cycles", "charge cycles"], kind: "value" },
+  {
+    id: "battery/battery-percentage",
+    title: "Show percentage in menu bar",
+    name: "Show battery percentage in menu bar",
+    keywords: ["battery percentage", "battery", "percent"],
+    kind: "switch",
+    value: storedSwitch("menuBar", "batteryPercent", false),
+    agent: "battery_percentage",
+  },
+  { id: "battery/power-draw", title: "Power draw", keywords: ["watts", "energy use"], kind: "value" },
+  { id: "battery/since-unplugged", title: "Since unplugged", keywords: ["battery usage"], kind: "value" },
+  { id: "battery/power-mode", title: "Power Mode", keywords: ["low power mode", "performance", "balanced", "power saver"], kind: "choice", stack: true },
+  {
+    id: "battery/charge-limit",
+    title: "Charge limit",
+    detail: "Keeping it below full slows wear.",
+    keywords: ["battery health", "charge threshold", "stop charging"],
+    kind: "value",
+    stack: true,
+  },
+  { id: "battery/full-charge-once", title: "Charge to full once", detail: "For a trip: back to the limit after.", keywords: ["full charge"], kind: "action" },
+  { id: "battery/full-by", title: "Full by a time", detail: "Charges past the limit before you leave.", keywords: ["charge schedule"], kind: "switch" },
+  { id: "battery/full-by-when", title: "When", name: "Full charge time", kind: "choice", stack: true },
+  { id: "battery/boost", title: "Boost clock", detail: "Faster bursts, more heat.", keywords: ["turbo", "cpu boost"], kind: "choice", stack: true },
+  {
+    id: "battery/prefer",
+    title: "Prefer",
+    name: "Processor energy preference",
+    detail: "By mode follows the power mode's own preference.",
+    keywords: ["epp", "energy preference"],
+    kind: "choice",
+    stack: true,
+  },
+  {
+    id: "battery/top-speed",
+    title: "Top speed on battery",
+    detail: "Lower runs cooler and lasts longer.",
+    keywords: ["cpu frequency", "max frequency"],
+    kind: "value",
+    stack: true,
+  },
+  {
+    id: "battery/turn-display-off",
+    title: "Turn display off after",
+    detail: "The screens go dark when you have been away this long.",
+    keywords: ["screen off", "display sleep", "blank"],
+    kind: "choice",
+    stack: true,
+    options: BLANK_OPTIONS,
+    value: BLANK_AFTER,
+  },
+  {
+    id: "battery/sleep-after",
+    title: "Put computer to sleep after",
+    detail: "The screen locks, then the computer sleeps. Playing video or a presentation holds it off.",
+    keywords: ["sleep", "suspend"],
+    kind: "choice",
+    stack: true,
+    options: SLEEP_OPTIONS,
+    value: storedChoice("idle", "sleepAfterSeconds", 0, SLEEP_OPTIONS),
+  },
+  { id: "battery/lid", title: "Closing the lid", keywords: ["lid"], kind: "value" },
+  { id: "battery/lid-on-power", title: "Closing the lid on power", keywords: ["lid"], kind: "value" },
+  { id: "battery/lid-docked", title: "Closing the lid with a display attached", keywords: ["lid", "docked", "clamshell"], kind: "value" },
+  { id: "battery/power-button", title: "Pressing the power button", keywords: ["power button"], kind: "value" },
+
+  { id: "graphics/mode", title: "Mode", name: "Graphics mode", keywords: ["gpu", "hybrid", "integrated", "dedicated"], kind: "choice", stack: true },
+  {
+    id: "graphics/card-only",
+    title: "Graphics card only",
+    detail: "Fastest for games: the screen runs on the graphics card. Applies at the next restart.",
+    keywords: ["mux", "dgpu", "discrete"],
+    kind: "switch",
+  },
+  { id: "graphics/restart", title: "Restart to apply", name: "Restart to apply the graphics change", kind: "action" },
+] as const satisfies readonly RowDef[];

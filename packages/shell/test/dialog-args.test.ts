@@ -176,6 +176,12 @@ describe("dialogSize", () => {
     expect(dialogSize(spec("--info", `--text=${"word ".repeat(5000)}`)).height).toBe(640);
   });
 
+  test("a message's window is as tall as its alert, nothing to spare", () => {
+    // The controls' strip and 6, the 40 px tile beside two short lines, 10 and 6, the 28 px buttons, 18.
+    expect(dialogSize(spec("--question", "--text=Delete it?\\nYou can't undo this.")).height).toBe(146);
+    expect(dialogSize(spec("--info", "--text=Saved.")).height).toBe(146);
+  });
+
   test("--no-wrap widens the window to the longest line", () => {
     const wide = dialogSize(spec("--info", "--no-wrap", `--text=${"x".repeat(100)}`));
     expect(wide.width).toBeGreaterThan(420);

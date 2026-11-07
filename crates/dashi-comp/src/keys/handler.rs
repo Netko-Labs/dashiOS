@@ -1,7 +1,8 @@
 //! Every key press goes through here before any client sees it.
 //!
-//! ❖ (Super) is Dashi's: no client ever sees it; its tap, hold, chord, and
-//! release go to the shell as `super` events. Every other key is matched
+//! ❖ (Super) is Dashi's: no client ever sees its key; its tap, hold, chord, and
+//! release go to the shell as `super` events (a click with it held lends the
+//! clicked window Super, super_click.rs). Every other key is matched
 //! against the shell's keymap, on the compositor's own thread so typing never
 //! waits on Bun: a `bind` goes to the shell as a `binding` event, a `send` is
 //! replayed to the focused client as another chord while the key is held, a
@@ -36,9 +37,18 @@ pub(crate) struct Keys {
     /// Bumped on every ❖ press, so a hold timer knows whether its press is still the one held.
     super_generation: u64,
     /// Presses the compositor took, and what their release does.
-    taken: HashMap<Keycode, Taken>,
+    pub(super) taken: HashMap<Keycode, Taken>,
     /// The snippets' keywords, and what was just typed (snippets.rs).
     pub snippets: super::snippets::Snippets,
+    /// The button of a ❖-click whose client was lent Super until it comes up (super_click.rs).
+    pub(super) lent_super: Option<u32>,
+}
+
+impl Keys {
+    /// ❖ is held.
+    pub(super) fn super_is_down(&self) -> bool {
+        self.super_down.is_some()
+    }
 }
 
 struct SuperPress {
@@ -46,16 +56,16 @@ struct SuperPress {
     chorded: bool,
 }
 
-enum Taken {
+pub(super) enum Taken {
     Swallowed,
     /// Replayed as another chord, held until this key is released (replay.rs).
     Translated(super::replay::Held),
 }
 
 /// What a key is, read from xkb as it is pressed.
-struct KeyInfo {
+pub(super) struct KeyInfo {
     /// Unshifted keysym names first, then the keysym as typed.
-    names: Vec<String>,
+    pub(super) names: Vec<String>,
     /// What the key types with these modifiers ("a", "A", "é"), if it types anything.
     text: Option<String>,
     mods: ModifiersState,
@@ -72,6 +82,9 @@ impl Dashi {
             return;
         };
         let serial = SERIAL_COUNTER.next_serial();
+        // Locked: whatever moved the keyboard, it is back on the lock screen
+        // (or on nothing) before this key goes anywhere (session/lock.rs).
+        self.keep_keyboard_on_lock();
 
         if state == KeyState::Released {
             let (_, mods_changed) =
@@ -104,9 +117,9 @@ impl Dashi {
             return;
         }
 
-        // Locked: keys go to the lock screen, and nothing else hears them.
+        // Locked: keys go to the lock screen, and nothing else hears them (locked.rs).
         if self.lock.locked {
-            return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
+            return self.on_locked_key(&keyboard, keycode, &info, mods, serial, time, mods_changed);
         }
         // A remote desktop or VM with the keyboard gets the keys the keymap would take.
         if self.shortcuts_inhibited() {
@@ -140,9 +153,6 @@ impl Dashi {
                 keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
                 self.watch_snippets(&info, mods);
             }
-            Some(Action::Swallow) => {
-                self.keys.taken.insert(keycode, Taken::Swallowed);
-            }
             Some(Action::Bind(name)) => {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
                 let window = self.focused_window_id();
@@ -153,23 +163,35 @@ impl Dashi {
                 }
                 self.ipc.emit("binding", event);
             }
-            Some(Action::Send(chord)) => match self.resolve(&chord, keycode, info.mods.shift) {
-                Some((target, target_mods)) => {
-                    let taken = match self.replay_press(target, target_mods, time) {
-                        Some(held) => Taken::Translated(held),
-                        None => Taken::Swallowed,
-                    };
-                    self.keys.taken.insert(keycode, taken);
-                }
-                None => {
-                    self.keys.taken.insert(keycode, Taken::Swallowed);
-                }
-            },
-            Some(Action::Tap(chords)) => {
+            Some(action) => self.replay_action(keycode, &action, info.mods.shift, time),
+        }
+    }
+
+    /// A `send`, `tap`, or `swallow` for the key `keycode`: what the focused
+    /// client gets instead of it, if anything. Its release follows (`taken`).
+    pub(super) fn replay_action(
+        &mut self,
+        keycode: Keycode,
+        action: &Action,
+        shift: bool,
+        time: u32,
+    ) {
+        match action {
+            Action::Send(chord) => {
+                let taken = self
+                    .resolve(chord, keycode, shift)
+                    .and_then(|(target, target_mods)| self.replay_press(target, target_mods, time))
+                    .map_or(Taken::Swallowed, Taken::Translated);
+                self.keys.taken.insert(keycode, taken);
+            }
+            Action::Tap(chords) => {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
-                for chord in &chords {
+                for chord in chords {
                     self.tap(chord, Some(keycode), false, time);
                 }
+            }
+            Action::Swallow | Action::Bind(_) => {
+                self.keys.taken.insert(keycode, Taken::Swallowed);
             }
         }
     }
@@ -270,7 +292,9 @@ impl Dashi {
                 let _ = self.loop_handle.insert_source(
                     Timer::from_duration(hold),
                     move |_, _, state| {
+                        // While locked a hold shows nothing: no shell binding fires (session/lock.rs).
                         let still = state.keys.super_generation == generation
+                            && !state.lock.locked
                             && state
                                 .keys
                                 .super_down
@@ -287,7 +311,9 @@ impl Dashi {
                 let Some(press) = self.keys.super_down.take() else {
                     return;
                 };
+                // While locked a tap opens nothing and switches no rules.
                 let tapped = !press.chorded
+                    && !self.lock.locked
                     && press.since.elapsed().as_millis() < u128::from(self.keys.keymap.tap_ms);
                 if tapped {
                     // The shell's rules for after a tap hold from now, not from when it hears of the tap.
@@ -336,6 +362,9 @@ impl Dashi {
 
     /// `snippet-erase`: delete `keyword` from `window`, if it is still the last thing typed there.
     pub(crate) fn erase_snippet(&mut self, window: u64, keyword: &str) -> Result<(), String> {
+        if self.lock.locked {
+            return Err("the screen is locked".into());
+        }
         if self.focused_window_id() != Some(window)
             || !self.keys.snippets.ends_with_in(window, keyword)
         {

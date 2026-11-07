@@ -21,7 +21,7 @@ import { joinMessage } from "../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../wifi/store.ts";
 import type { SavedNetwork, WifiNetwork } from "../../wifi/types.ts";
 import type { PaneServices } from "../services.ts";
-import { Caption, Group, Note, Page, Row, Spot } from "../ui.tsx";
+import { Caption, Group, Note, Page, Setting } from "../ui.tsx";
 import { CheckSlot, Failure, ListRow, MiniButton, Value } from "./parts.tsx";
 
 function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork; current: boolean; state: WifiState; onJoin: (network: WifiNetwork) => void }) {
@@ -71,11 +71,12 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
     <>
       <Caption above>Wi-Fi</Caption>
       <Group testID="net-wifi-switch">
-        <Spot pane="network" row="wi-fi">
-          <Row label="Wi-Fi" detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}>
-            <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
-          </Row>
-        </Spot>
+        <Setting
+          id="network/wi-fi"
+          detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}
+        >
+          <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
+        </Setting>
       </Group>
       {on && state.available === false && (
         <Group>
@@ -135,35 +136,35 @@ function EthernetSection({ devices }: { devices: readonly EthernetInfo[] }) {
       <Caption above>Ethernet</Caption>
       {devices.map((device) => (
         <Group key={device.name} testID={`net-ethernet:${device.name}`}>
-          <Row label="Status" detail={device.connected ? (device.connection ?? device.name) : device.name}>
+          <Setting id="network/status" detail={device.connected ? (device.connection ?? device.name) : device.name}>
             <Value testID="net-ethernet-status">{device.connected ? "Connected" : "Not connected"}</Value>
-          </Row>
+          </Setting>
           {device.connected && (
             <>
-              <Row label="IP Address">
+              <Setting id="network/ip-address">
                 <Value testID="net-ethernet-ip">{device.address ?? "Unknown"}</Value>
-              </Row>
+              </Setting>
               {device.mask !== null && (
-                <Row label="Subnet Mask">
+                <Setting id="network/subnet-mask">
                   <Value>{device.mask}</Value>
-                </Row>
+                </Setting>
               )}
               {device.router !== null && (
-                <Row label="Router">
+                <Setting id="network/router">
                   <Value>{device.router}</Value>
-                </Row>
+                </Setting>
               )}
               {device.dns.length > 0 && (
-                <Row label="DNS Servers">
+                <Setting id="network/dns-servers">
                   <Value testID="net-ethernet-dns">{device.dns}</Value>
-                </Row>
+                </Setting>
               )}
             </>
           )}
           {device.mac !== null && (
-            <Row label="MAC Address">
+            <Setting id="network/mac-address">
               <Value testID="net-ethernet-mac">{device.mac}</Value>
-            </Row>
+            </Setting>
           )}
         </Group>
       ))}

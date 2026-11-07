@@ -33,6 +33,13 @@ pub(crate) fn handle(
         "close" => done(state.close_window(window(params)?)),
         "minimize" => done(state.park_window(window(params)?, Shown::Minimized)),
         "hide" => done(state.park_window(window(params)?, Shown::Hidden)),
+        "suspend" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            done(state.suspend_window(window(params)?, on))
+        }
         "place" => {
             let at = Point::from((coord(params, "x")?, coord(params, "y")?));
             let space = match params.get("space") {
@@ -79,6 +86,10 @@ pub(crate) fn handle(
             done(state.erase_snippet(window(params)?, text(params, "keyword")?))
         }
         "send-keys" => {
+            // Nothing is typed into a window while locked (session/lock.rs).
+            if state.lock.locked {
+                return Err("the screen is locked".into());
+            }
             let id = window(params)?;
             let chord = Chord::parse(text(params, "chord")?)?;
             state.focus_window(id)?;
@@ -259,6 +270,14 @@ pub(crate) fn handle(
         }
         "wallpaper" => state.set_wallpaper(params),
         "outputs" => Ok(outputs::describe_all(state)),
+        "gpus" => Ok(backend::udev::describe_gpus(state)),
+        "gpu-keep" => {
+            let on = params
+                .get("on")
+                .and_then(Value::as_bool)
+                .ok_or("`on` must be true or false")?;
+            done(backend::udev::keep_gpu(state, text(params, "card")?, on))
+        }
         "screencopy-clients" => {
             let paths = params
                 .get("paths")

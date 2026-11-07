@@ -11,26 +11,28 @@
 import { useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { DEFAULT_WALLPAPER_MODE, selectedRef, type WallpaperMode } from "../../wallpaper/catalog.ts";
+import { DEFAULT_WALLPAPER_MODE, selectedRef } from "../../wallpaper/catalog.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { pathFor, photoProblem, type WallpaperTile, wallpaperTiles, withPhoto } from "../../wallpaper/tiles.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Page, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, Group, Page, Setting, useSurface } from "../ui.tsx";
 import { LiveSection } from "./wallpaper-live.tsx";
-
-const MODE_OPTIONS: ReadonlyArray<{ value: WallpaperMode; label: string }> = [
-  { value: "fill", label: "Fill" },
-  { value: "fit", label: "Fit" },
-  { value: "center", label: "Center" },
-];
 
 const TILE = { width: 148, height: 83 };
 
 function Tile({ tile, selected, onPress }: { tile: WallpaperTile; selected: boolean; onPress: () => void }) {
   const colors = useColors();
   return (
-    <View testID={`wallpaper:${tile.ref}`} onPress={onPress} style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8 }}>
+    <View
+      testID={`wallpaper:${tile.ref}`}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={tile.title}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8, borderRadius: 9 }}
+    >
       <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
         <View style={{ width: TILE.width, height: TILE.height, borderRadius: 6, overflow: "hidden" }}>
           <Image source={tile.image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
@@ -80,18 +82,19 @@ export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; 
   return (
     <Page title="Wallpaper">
       <Group testID="wallpaper-grid">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
+        {/* One Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */}
+        <View focusGroup accessibilityRole="group" style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
           {tiles.map((tile) => (
             <Tile key={tile.ref} tile={tile} selected={tile.ref === selected} onPress={() => choose(tile.ref)} />
           ))}
         </View>
       </Group>
       <Group>
-        <Row label="Add Photo…" detail="A PNG or JPEG from your files; it stays where it is.">
+        <Setting id="wallpaper/add-photo">
           <Button testID="wallpaper-add" label="Add Photo…" onPress={addPhoto} />
-        </Row>
+        </Setting>
         {typing && (
-          <Row stack label="Path of a photo" detail="Press Return to use it.">
+          <Setting id="wallpaper/photo-path">
             <TextInput
               testID="wallpaper-path"
               value={typed}
@@ -103,11 +106,9 @@ export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; 
               }}
               style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
             />
-          </Row>
+          </Setting>
         )}
-        <Row stack label="Picture" detail="Fill covers the screen and crops what does not fit; Fit shows all of the picture; Center leaves it at its size.">
-          <Choices testID="wallpaper-mode" value={mode} options={MODE_OPTIONS} onChange={(next) => settings.patch("wallpaper", { mode: next })} />
-        </Row>
+        <Setting id="wallpaper/picture" control="wallpaper-mode" />
       </Group>
       {note !== null && (
         <View testID="wallpaper-note" style={{ flexShrink: 0 }}>

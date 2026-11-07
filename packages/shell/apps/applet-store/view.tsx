@@ -6,7 +6,7 @@
  */
 
 import type { IndexApplet, InstalledApplet } from "@dashi/applet";
-import { AppWindow, ConfirmSheet, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton } from "@dashi/ui";
+import { AlertSheet, AppWindow, ConfirmSheet, SearchField, SidebarItem, SidebarSection, TINTS, ToolbarButton, WARNING } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
@@ -210,13 +210,14 @@ export function StoreWindow() {
         onCancel={() => answer(false)}
       />
     ) : ask?.kind === "failure" ? (
-      <ConfirmSheet
+      // It only informs: one button, which Esc and Enter press too (UI-5).
+      <AlertSheet
         testID="failure-sheet"
-        title="That didn't work"
+        question="That didn’t work"
         message={ask.message}
-        confirmLabel="OK"
-        onConfirm={() => answer(true)}
-        onCancel={() => answer(false)}
+        glyph={WARNING}
+        tone="warning"
+        buttons={[{ label: "OK", testID: "failure-sheet:ok", onPress: () => answer(true), kind: "primary" }]}
       />
     ) : undefined;
 

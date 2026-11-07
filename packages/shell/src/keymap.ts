@@ -17,6 +17,11 @@
  *   tap      these chords, pressed and released at once
  *   swallow  nothing happens (a reserved chord)
  *
+ * While the screen is locked none of these rules apply: only `locked`
+ * (LOCKED_RULES), for the lock screen's field, which may send, tap, or
+ * swallow but never bind (the compositor refuses a keymap whose locked rule
+ * binds: no shell binding fires while locked).
+ *
  * Built into the compositor, whatever this says: Ctrl+Alt+F1..F12 (VTs),
  * Ctrl+Alt+Backspace (leave the session), Ctrl+Super+Esc (stop agents).
  * The full grammar is in comp/src/keys/keymap.rs.
@@ -39,6 +44,8 @@ export type Keymap = {
   rules: Rule[];
   /** The rules the compositor switches to by itself the moment ❖ is tapped, until the next keymap (launcher/type-ahead.ts). */
   afterTap?: Rule[];
+  /** The only rules while the screen is locked, for the lock screen's field: no `bind`, no `app`. */
+  locked?: Rule[];
 };
 
 /** Terminals keep plain Ctrl chords for the program inside (Ctrl+C interrupts). */
@@ -57,12 +64,39 @@ export const TERMINALS = [
   "dev.dashi.terminal",
 ];
 
+/**
+ * The keys on the lock screen (lock/): ❖ never reaches a client, so its
+ * field gets the Ctrl chords it knows for ❖A ❖C ❖X ❖V ❖Z (⇧❖Z with Shift)
+ * and the Mac's moves, and every other ❖ chord does nothing, rather than
+ * typing its letter into the password. Nothing here reaches the shell or a
+ * window: the compositor sends these to the lock screen only.
+ */
+export const LOCKED_RULES: Rule[] = [
+  { when: "super+a|c|x|v|z", send: "ctrl+key" },
+  { when: "super+Left", send: "Home" },
+  { when: "super+Right", send: "End" },
+  { when: "super+BackSpace", tap: ["shift+Home", "BackSpace"] },
+  { when: "super+*", swallow: true },
+  { when: "super+ctrl+*", swallow: true },
+  { when: "super+alt+*", swallow: true },
+  { when: "super+ctrl+alt+*", swallow: true },
+  { when: "alt+Left", send: "ctrl+Left" },
+  { when: "alt+Right", send: "ctrl+Right" },
+  { when: "alt+BackSpace", send: "ctrl+BackSpace" },
+  { when: "alt+Delete", send: "ctrl+Delete" },
+];
+
 export const KEYMAP: Keymap = {
   apps: {
     terminal: TERMINALS,
-    // Metal apps don't bind Ctrl+W yet, so the shell closes for them.
-    metal: ["", "dev.dashi.*", "dev.mirin.*"],
+    // Metal apps don't bind Ctrl+W yet, so the shell closes for them. No
+    // empty id: the keyboard on one of the shell's own surfaces (a sheet or a
+    // popover's field) has no window and no app id, and its ❖A ❖C ❖X ❖V ❖Z
+    // must reach the field as Ctrl chords, not an app's menus. The lock
+    // screen's field has its own rules (LOCKED_RULES).
+    metal: ["dev.dashi.*", "dev.mirin.*"],
   },
+  locked: LOCKED_RULES,
   // A ❖ tap opens the launcher; holding ❖ shows the shortcut sheet.
   tapMs: 350,
   holdMs: 800,
@@ -134,9 +168,11 @@ export const KEYMAP: Keymap = {
     // ⇧❖3 captures the screen; ⇧❖4 an area dragged out, or with Space the
     // focused window (screenshots.ts, screenshot-area.tsx); ⇧❖5 opens the
     // toolbar that also records the screen, or stops a recording (recorder/).
-    { when: "super+shift+3", bind: "screenshot-screen" },
-    { when: "super+shift+4", bind: "screenshot-area" },
-    { when: "super+shift+5", bind: "capture-toolbar" },
+    // They bind the registry's addresses, the launcher's Screenshot rows
+    // (actions/sources/commands.ts).
+    { when: "super+shift+3", bind: "dashi://dashi/screenshot" },
+    { when: "super+shift+4", bind: "dashi://dashi/screenshot-area" },
+    { when: "super+shift+5", bind: "dashi://dashi/capture" },
 
     // In terminals ❖ and ⌥ move and delete in readline's keys, as Terminal
     // and iTerm do on the Mac: zsh, bash, fish, and most prompts know them,

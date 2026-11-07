@@ -1,8 +1,9 @@
 /**
  * Opening Settings at a row: a `dashi://settings/<pane>/<row>` address
  * (actions/) opens the pane, scrolls the row into view, and lights it up for
- * a moment. A pane marks the rows that have an address with `<Spot row>`;
- * the row id is the address's last part (actions/sources/settings.ts).
+ * a moment. Every registered row is a Spot (setting.tsx `Setting`), and a
+ * pane wraps other content a row of the registry stands for in `<Spot id>`;
+ * the id is the address without `dashi://settings/` (registry/).
  *
  * The page scrolls by the row's distance from its top, measured once both
  * are laid out (the scroll is relative, so a pane already scrolled works
@@ -12,6 +13,7 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
+import { rowPlace, type SettingId } from "./registry/index.ts";
 
 /** How long a row stays lit. */
 export const LIT_MS = 2_500;
@@ -78,8 +80,19 @@ export const PageContext = createContext<{ testID: string; bounds: { current: Bo
 
 const NO_FOCUS = { subscribe: () => () => {}, getSnapshot: (): RowTarget | null => null };
 
-/** A row with an address: scrolled to and lit when it is asked for. */
-export function Spot({ pane, row, children }: { pane: string; row: string; children: ReactNode }) {
+/** The page's gap between its parts (ui.tsx `Page`), kept inside a Spot that holds several. */
+export const PAGE_GAP = 16;
+
+/** Whether the cards here are lit: a `cards` Spot was asked for (ui.tsx's `Group` reads it). */
+export const SpotLit = createContext(false);
+
+/**
+ * A row with an address: scrolled to and lit when it is asked for. A
+ * section's Spot (`cards`: its heading and its cards) lights its cards, not
+ * the strip behind the heading: an opaque card would hide a light under it.
+ */
+export function Spot({ id, cards = false, children }: { id: SettingId; cards?: boolean; children: ReactNode }) {
+  const { pane, row } = rowPlace({ id });
   const colors = useColors();
   const host = useContext(SpotContext);
   const page = useContext(PageContext);
@@ -121,9 +134,9 @@ export function Spot({ pane, row, children }: { pane: string; row: string; child
         bounds.current = laid;
         reveal();
       }}
-      style={{ flexDirection: "column", backgroundColor: lit ? colors.switcherSelection : "#00000000" }}
+      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.switcherSelection : "#00000000" }}
     >
-      {children}
+      {cards ? <SpotLit.Provider value={lit !== null}>{children}</SpotLit.Provider> : children}
     </View>
   );
 }

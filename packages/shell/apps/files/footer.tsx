@@ -1,6 +1,6 @@
 /** The notice over the content's foot, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
-import { Notice, useColors } from "@dashi/ui";
+import { Button, Notice, useColors, useUndo } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState, useJobs } from "./context.ts";
 import { formatCount, formatSize } from "./format.ts";
@@ -47,14 +47,26 @@ export function statusLine(total: number, selected: readonly { size: number; kin
 }
 
 export function Footer() {
-  const { store } = useFiles();
+  const { store, ops } = useFiles();
   const state = useFilesState();
+  const undo = useUndo(ops.undo);
   const jobs = useJobs().filter((job) => job.state === "running");
   // It floats over the listing (AppWindow's notice) only while it has something to say; it is never a bar.
   if (jobs.length === 0 && !state.notice) return null;
   const notice = state.notice;
+  // "Moved “a.txt” to the Trash." with Undo, while that step is still what Undo takes back (design.html PA-2).
+  const action =
+    notice?.undoStep !== undefined && notice.undoStep === undo.undoStep ? (
+      <Button testID="footer:undo" label="Undo" disabled={undo.busy} onPress={() => void ops.undoStep("undo")} />
+    ) : undefined;
   return (
-    <Notice testID="footer" text={notice?.text} tone={notice?.error ? "error" : "info"} onDismiss={notice ? () => store.dismissNotice() : undefined}>
+    <Notice
+      testID="footer"
+      text={notice?.text}
+      tone={notice?.error ? "error" : "info"}
+      action={action}
+      onDismiss={notice ? () => store.dismissNotice() : undefined}
+    >
       {jobs.map((job) => (
         <JobRow key={job.id} job={job} />
       ))}

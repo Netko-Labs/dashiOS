@@ -14,8 +14,7 @@ import { dirname, join } from "node:path";
 import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { Clipboard } from "../kit/index.ts";
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus, useCloseRequest } from "../kit/index.ts";
 import { ENCODING_LABELS, LINE_ENDING_LABELS } from "./codec.ts";
 import { lineOf } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
@@ -30,12 +29,11 @@ export const EDITOR_SIZE = { width: 760, height: 600 } as const;
 
 export interface EditorWindowProps {
   model: EditorModel;
-  clipboard: Clipboard;
   /** Closes the window; `discard` drops what isn't saved instead of keeping it for later (recovery.ts). */
   quit: (discard: boolean) => void;
   /** Opens another window, with these files (none: Untitled). */
   newWindow: (files: readonly string[]) => void;
-  /** Types a chord into the window (GPUI's spelling, "ctrl-v"): Paste and Select All reach the input this way. */
+  /** Types a chord into the window (GPUI's spelling, "ctrl-v"): Cut, Copy, Paste, and Select All reach the input this way. */
   press: (keystroke: string) => void;
   scroll: (dy: number, fromTop: boolean) => void;
   /** Gives the text the keyboard back, the caret where it was (after a sheet, Esc in Find, a Save from the toolbar). */
@@ -63,10 +61,12 @@ function openProblem(path: string): string | null {
   }
 }
 
-export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
+export function EditorWindow({ model, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
   const colors = useColors();
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   const [sheet, setSheet] = useState<SheetState | null>(null);
+  // Whether the document's text has a selection; a new document starts with none.
+  const [selected, setSelected] = useState({ session: state.session, any: false });
   // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
   // Save As asks once before it replaces another file: this is the path it asked about.
@@ -96,6 +96,8 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
     if (dirty) setSheet({ kind: "unsaved", name });
     else quit(false);
   };
+  // The close control, ❖Q, the Dock's Quit, logging out: as File › Close.
+  useCloseRequest(requestClose);
 
   const submitOpen = (input: string): string | null => {
     const path = resolveInput(input, base);
@@ -131,7 +133,9 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
     hasFile: state.path !== null,
     canUndo: state.canUndo,
     canRedo: state.canRedo,
-    canCopy: clipboard.canWrite && state.text !== "",
+    hasSelection: selected.session === state.session && selected.any,
+    undoName: state.undoName,
+    redoName: state.redoName,
     hasMatches: find.matches.length > 0,
     monospace: state.prefs.monospace,
     caseSensitive: find.caseSensitive,
@@ -144,9 +148,10 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
       revert: () => setSheet({ kind: "revert", name }),
       undo: () => model.undo(),
       redo: () => model.redo(),
+      cut: () => press("ctrl-x"),
+      copy: () => press("ctrl-c"),
       paste: () => press("ctrl-v"),
       selectAll: () => press("ctrl-a"),
-      copyAll: () => void clipboard.writeText(state.text),
       find: () => setFindFocus((n) => n + 1),
       findNext: (step) => model.findNext(step),
       replace: () => setSheet({ kind: "replace" }),
@@ -269,6 +274,7 @@ export function EditorWindow({ model, clipboard, quit, newWindow, press, scroll,
         session={state.session}
         onChange={(text) => model.edit(text)}
         onEscape={() => find.query !== "" && model.setQuery("")}
+        onSelectionChange={(any) => setSelected({ session: state.session, any })}
         scroll={scroll}
         reveal={state.reveal}
       />

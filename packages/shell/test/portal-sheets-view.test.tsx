@@ -1,12 +1,25 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { askOnScreen } from "../apps/portal/access.tsx";
+import { accessHeight, askOnScreen } from "../apps/portal/access.tsx";
+import { appInfo } from "../apps/portal/apps.ts";
 import { ChooserModel, type Row, type Sources } from "../apps/portal/file-chooser/model.ts";
 import { type ChooserAnswer, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { ChooserView } from "../apps/portal/file-chooser/view.tsx";
 import { printOnScreen } from "../apps/portal/print/sheet.tsx";
 import type { ShowDialog } from "../apps/portal/windows.ts";
+
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
 
 // The portal's sheets on a stand-in for the Metal host, with input sent back the way the host sends it.
 
@@ -110,7 +123,7 @@ test("the chooser: a slow second click only selects; a real double-click opens; 
   // The folder pop-up lists the folders it is in; choosing one goes there.
   send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
   await settle();
-  send({ type: "press", nodeId: node("chooser:trail:Home") });
+  send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
   await settle();
   expect(model.getSnapshot().place).toEqual({ kind: "folder", path: "/h" });
   root.unmount();
@@ -118,7 +131,11 @@ test("the chooser: a slow second click only selects; a real double-click opens; 
 
 test("an access sheet: Enter never grants; Esc says no; only a click on Allow allows", async () => {
   const { show, mounted } = showHere();
-  const ask = askOnScreen(show);
+  const opened: string[] = [];
+  const ask = askOnScreen(show, async (url) => {
+    opened.push(url);
+    return { ok: true, text: "" };
+  });
   const request = {
     appId: "org.example.Camera",
     parent: "",
@@ -136,10 +153,14 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
   });
   await settle();
   const sheet = mounted();
-  // The line under the question names no Settings pane that doesn't exist.
-  expect(sheet.root.lastTree()).not.toContain("Privacy");
+  // The line under the question, and the way to where the answer can be taken back: a pane that exists.
   expect(sheet.root.lastTree()).toContain("Dashi remembers your answer");
-  sheet.send({ type: "submit", nodeId: sheet.node("portal:keys"), value: "" });
+  expect(sheet.root.lastTree()).toContain("Privacy & Security…");
+  sheet.send({ type: "press", nodeId: sheet.node("access:privacy") });
+  await settle();
+  expect(opened).toEqual(["dashi://settings/privacy/apps"]);
+  expect(answer).toBe("pending");
+  sheet.send(windowKey(sheet.node("portal:keys"), "enter"));
   await settle();
   expect(answer).toBe("pending");
   sheet.send({ type: "press", nodeId: sheet.node("access:grant") });
@@ -152,9 +173,32 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
     second = value;
   });
   await settle();
-  again.mounted().send({ type: "key", nodeId: again.mounted().node("portal:keys"), value: "Escape" });
+  again.mounted().send(windowKey(again.mounted().node("portal:keys"), "escape"));
   await settle();
   expect(second).toEqual({ granted: false, choices: [] });
+});
+
+test("an access sheet opens as tall as its alert, check boxes and all", () => {
+  const request = {
+    appId: "org.example.Camera",
+    parent: "",
+    title: "Use the camera?",
+    subtitle: "",
+    body: "",
+    grantLabel: "Allow",
+    denyLabel: "Don’t Allow",
+    icon: "camera-web-symbolic",
+    choices: [],
+  };
+  const app = appInfo(request.appId);
+  // The controls' strip and 6, the 40 px tile beside the question and its line, 10 and 6, the 28 px buttons, 18.
+  expect(accessHeight(request, app)).toBe(146);
+  const boxes = [
+    { id: "a", label: "Remember", options: [], initial: "true" },
+    { id: "b", label: "Also the microphone", options: [], initial: "false" },
+  ];
+  // Two check boxes, 16 each and 8 apart, 6 under the line: the words outgrow the tile.
+  expect(accessHeight({ ...request, choices: boxes }, app)).toBe(38 + 6 + (17 + 4 + 16 + 4 + 6 + 40) + 10 + 6 + 28 + 18);
 });
 
 test("the print sheet: Copies keeps what is typed, Enter prints from the field, Esc cancels", async () => {
@@ -200,7 +244,7 @@ test("the print sheet: Copies keeps what is typed, Enter prints from the field, 
 
   // Enter with nothing focused prints too; Esc in a field cancels.
   const second = await run();
-  second.sheet.send({ type: "submit", nodeId: second.sheet.node("portal:keys"), value: "" });
+  second.sheet.send(windowKey(second.sheet.node("portal:keys"), "enter"));
   await settle();
   expect(second.answer()).toMatchObject({ kind: "print", choice: { copies: 1 } });
   const third = await run();

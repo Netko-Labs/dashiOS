@@ -3,13 +3,15 @@
  * the clipboard's, the window arrangements, the agents' tools a person runs),
  * drawn in ink on a neutral tile like the Settings panes' (CO-2): the moon,
  * lock, keyboard, clipboard and snippet are the ones Control Center, Settings
- * and the clipboard already draw; the rest are new, in their style (16 × 16,
- * 1.4 strokes, round ends). No command of Dashi's falls back to the gear.
+ * and the clipboard already draw, the screen and the area the ⇧❖5 toolbar's;
+ * the rest are new, in their style (16 × 16, 1.4 strokes, round ends). No
+ * command of Dashi's falls back to the gear.
  */
 
 import { CLIPBOARD, SNIPPET } from "../clipboard/glyphs.ts";
 import { LOCK, MOON } from "../control-center/glyphs.ts";
 import { LOGO } from "../glyphs.ts";
+import { CAPTURE_GLYPHS } from "../recorder/glyphs.ts";
 import { KEYBOARD } from "../settings-app/glyphs.ts";
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
@@ -23,6 +25,12 @@ export const RESTART = svg(stroke("M12.8 8.4a4.8 4.8 0 1 1-1.6-3.9") + stroke("M
 export const LOG_OUT = svg(stroke("M7.2 2.6H3.4v10.8h3.8") + stroke("M6.6 8h6.8") + stroke("M10.8 5.4L13.4 8l-2.6 2.6"));
 /** Force Quit: a stop, crossed. */
 export const FORCE_QUIT = svg(`<circle cx="8" cy="8" r="5.8" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2")}`);
+/** Screenshot… (the ⇧❖5 toolbar): a camera, its top and its lens. */
+export const CAMERA = svg(
+  `<rect x="1.8" y="4.4" width="12.4" height="9" rx="1.8" stroke="#000" stroke-width="1.4" fill="none"/>` +
+    stroke("M5.4 4.4l1-1.8h3.2l1 1.8") +
+    `<circle cx="8" cy="8.9" r="2.4" stroke="#000" stroke-width="1.4" fill="none"/>`,
+);
 
 /** Clear Clipboard History: the clipboard, its lines crossed out. */
 export const CLEAR_CLIPBOARD = svg(
@@ -68,6 +76,9 @@ export const COMMAND_GLYPHS: Readonly<Record<string, string>> = {
   "lock-screen": LOCK,
   "log-out": LOG_OUT,
   shortcuts: KEYBOARD,
+  capture: CAMERA,
+  screenshot: CAPTURE_GLYPHS.screen,
+  "screenshot-area": CAPTURE_GLYPHS.area,
 };
 
 /** The glyphs of Dashi's commands from its other sources (the clipboard, windows, tools), by address. */

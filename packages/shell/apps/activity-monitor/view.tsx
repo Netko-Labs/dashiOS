@@ -7,20 +7,22 @@
  * arrows move the selection, Return selects (the first match when the
  * selection is filtered away), Esc clears. Nothing typed in the search field
  * quits anything, and the quit sheet has no Return default: a quit is always
- * a click (or ❖K) and then a click. The menu bar's View menu has the same
+ * a click (or ❖K) and then a click. The selection is a process (its pid),
+ * not a place in the list, and the rows hold still while the pointer aims
+ * at one (the Table's `steady`), so the sheet names the process clicked.
+ * The menu bar's View menu has the same
  * choices as the toolbar's, the tabs, and Quit Process….
  */
 
 import {
+  AlertSheet,
   AppWindow,
-  Button,
   EmptyState,
   glyphs,
   moveSelection,
   PopupMenu,
   SearchField,
   Segmented,
-  Sheet,
   type SortState,
   sortRows,
   Table,
@@ -49,33 +51,35 @@ export interface MonitorActions {
 type SheetState = { kind: "quit"; row: ProcessRow } | { kind: "refused"; row: ProcessRow; reason: string } | null;
 
 function QuitSheet({ row, onAnswer }: { row: ProcessRow; onAnswer: (signal: QuitSignal | null) => void }) {
-  const colors = useColors();
   return (
-    // Esc cancels; Return does nothing here, so a Return meant for something else can't end a process.
-    <Sheet testID="quit-sheet" width={420} onCancel={() => onAnswer(null)}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Are you sure you want to quit “${row.name}”?`}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>
-        {`Quit asks it to close (SIGTERM to process ${row.pid}). Force Quit ends it at once (SIGKILL), and anything it has not saved is lost.`}
-      </Text>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-        <Button label="Cancel" testID="quit-sheet:cancel" onPress={() => onAnswer(null)} />
-        <Button label="Force Quit" testID="quit-sheet:force" danger onPress={() => onAnswer("SIGKILL")} />
-        <Button label="Quit" testID="quit-sheet:quit" primary onPress={() => onAnswer("SIGTERM")} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID="quit-sheet"
+      width={420}
+      question={`Are you sure you want to quit “${row.name}”?`}
+      message={`Quit asks it to close (SIGTERM to process ${row.pid}). Force Quit ends it at once (SIGKILL), and anything it has not saved is lost.`}
+      glyph={glyphs.STOP}
+      tone="danger"
+      buttons={[
+        { label: "Cancel", testID: "quit-sheet:cancel", onPress: () => onAnswer(null), cancel: true },
+        { label: "Force Quit", testID: "quit-sheet:force", onPress: () => onAnswer("SIGKILL"), kind: "danger" },
+        // Esc cancels; Return presses nothing here, so a Return meant for something else can't end a process.
+        { label: "Quit", testID: "quit-sheet:quit", onPress: () => onAnswer("SIGTERM"), kind: "primary", isDefault: false },
+      ]}
+    />
   );
 }
 
 function RefusedSheet({ row, reason, onClose }: { row: ProcessRow; reason: string; onClose: () => void }) {
-  const colors = useColors();
+  // It only informs: one button, which Esc and Enter press too (UI-5).
   return (
-    <Sheet testID="refused-sheet" width={400} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`“${row.name}” can’t be quit from here.`}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{reason}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8 }}>
-        <Button label="OK" testID="refused-sheet:ok" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID="refused-sheet"
+      width={400}
+      question={`“${row.name}” can’t be quit from here.`}
+      message={reason}
+      glyph={glyphs.INFO}
+      buttons={[{ label: "OK", testID: "refused-sheet:ok", onPress: onClose, kind: "primary" }]}
+    />
   );
 }
 
@@ -228,6 +232,8 @@ export function MonitorWindow({ monitor, actions }: { monitor: Monitor; actions:
         columns={columns}
         rows={shown}
         rowKey={(row) => row.pid}
+        // The list re-sorts every two seconds: rows hold still while the pointer aims, so a click selects the process aimed at.
+        steady
         selected={selectedRow?.pid ?? null}
         onSelect={setSelected}
         sort={sort}

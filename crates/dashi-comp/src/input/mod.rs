@@ -149,6 +149,7 @@ impl Dashi {
                         self.overview_press(at);
                     } else {
                         self.overview_release(at);
+                        self.return_super(button);
                     }
                     return;
                 }
@@ -168,6 +169,7 @@ impl Dashi {
                     && let Some(held) = self.swallowed_buttons.iter().position(|b| *b == button)
                 {
                     self.swallowed_buttons.remove(held);
+                    self.return_super(button);
                     return;
                 }
                 if free && !on_decoration && !on_border {
@@ -177,6 +179,10 @@ impl Dashi {
                     // pointer focus moves only on motion, and input-origin already
                     // counts this press as the new surface's.
                     self.refresh_pointer_focus(&pointer, at, event.time_msec());
+                }
+                if pressed && !on_decoration && !on_border {
+                    // A ❖-click: the window hears Super with it (keys/super_click.rs).
+                    self.lend_super(button);
                 }
                 pointer.button(
                     self,
@@ -193,6 +199,10 @@ impl Dashi {
                 }
                 if on_border {
                     self.press_resize_edge(at, button, serial);
+                }
+                if !pressed {
+                    // After the release, so the click still had Super.
+                    self.return_super(button);
                 }
                 if !pressed && !pointer.is_grabbed() {
                     // A resize just ended: the cursor is what the pointer is over again.

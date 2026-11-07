@@ -75,11 +75,13 @@ impl Dashi {
             }
             None => window,
         };
-        self.space.raise_element(&window, true);
-        if let (Some(keyboard), Some(surface)) =
-            (self.seat.get_keyboard(), toplevel_surface(&window))
-        {
-            keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+        // While locked it is raised but neither active nor given the keyboard,
+        // which stays on the lock screen; the unlock gives it the keyboard
+        // as the window in front (session/lock.rs).
+        let locked = self.lock.locked;
+        self.space.raise_element(&window, !locked);
+        if let Some(surface) = toplevel_surface(&window) {
+            self.set_keyboard_focus(Some(surface), SERIAL_COUNTER.next_serial());
         }
         self.configure_all();
         Ok(())
@@ -149,6 +151,28 @@ impl Dashi {
             self.focus_topmost();
         }
         self.emit_window_state(id);
+        Ok(())
+    }
+
+    /// Tell the app whether anyone can see its window, as the shell says
+    /// (`suspend`): xdg_toplevel's `suspended` state (clients of xdg-shell 6
+    /// and later; smithay leaves it out for older ones), an X11 app's
+    /// `_NET_WM_STATE_HIDDEN`. An app may stop drawing and polling meanwhile.
+    pub(crate) fn suspend_window(&mut self, id: WindowId, on: bool) -> Result<(), String> {
+        let window = self.window_of(id)?;
+        if let Some(toplevel) = window.toplevel() {
+            toplevel.with_pending_state(|state| {
+                if on {
+                    state.states.set(xdg_toplevel::State::Suspended);
+                } else {
+                    state.states.unset(xdg_toplevel::State::Suspended);
+                }
+            });
+            toplevel.send_pending_configure();
+        } else if let Some(x11) = window.x11_surface() {
+            x11.set_suspended(on)
+                .map_err(|error| format!("suspending an X11 window: {error}"))?;
+        }
         Ok(())
     }
 
@@ -291,12 +315,11 @@ impl Dashi {
             .is_some_and(|focus| Some(&focus) == surface.as_ref())
     }
 
-    /// The keyboard to the topmost window still on screen, or to nothing.
+    /// The keyboard to the topmost window still on screen, or to nothing;
+    /// while locked, to the lock screen (session/lock.rs).
     pub(crate) fn focus_topmost(&mut self) {
         let topmost = self.space.elements().last().and_then(toplevel_surface);
-        if let Some(keyboard) = self.seat.get_keyboard() {
-            keyboard.set_focus(self, topmost, SERIAL_COUNTER.next_serial());
-        }
+        self.set_keyboard_focus(topmost, SERIAL_COUNTER.next_serial());
         self.configure_all();
     }
 

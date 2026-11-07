@@ -31,6 +31,9 @@ export interface Palette {
    * hover, or an icon at rest.
    */
   selection: string;
+  /** Kombu under the pointer, and pressed: a primary button deepens, never lightens, so white on it stays AA. */
+  selectionHover: string;
+  selectionPressed: string;
   /**
    * A selected row in a list, a table or a sidebar (the launcher, every app:
    * selection.tsx, CO-9): a 14% kombu wash
@@ -39,6 +42,13 @@ export interface Palette {
    */
   selectionWash: string;
   /**
+   * Selected text in a field (CO-9): kombu washed deeper than a row's
+   * `selectionWash`, since it has no bar to mark it, so a word or two stands
+   * out at least 1.3:1 from every window ground. The field's own ink stays
+   * on it (well over 4.5:1).
+   */
+  textSelection: string;
+  /**
    * The 3 px bar on a `selectionWash` row: `selection` in light mode, the
    * brand's lighter kombu in Dark Mode, where the deeper `selection` would
    * stand out only 2.6:1 on the launcher's glass.
@@ -46,12 +56,20 @@ export interface Palette {
   selectionBar: string;
   /** Text on `selectionWash`. */
   onSelection: string;
+  /**
+   * The focus ring (KB-2): kombu, 2 px wide and 2 px out from the control,
+   * only after the keyboard moved focus. The brand's lighter kombu in Dark
+   * Mode, so it stands 3:1 on every window ground.
+   */
+  focusRing: string;
   /** The chosen app in the switcher, and an open menu bar item: a soft wash. */
   switcherSelection: string;
   /** Secondary buttons' fill (and a hover wash); their edge is `controlEdge`. */
   button: string;
   /** The edge of a secondary button: at least 3:1 against the window, the sidebar, and a card. */
   controlEdge: string;
+  /** A secondary control while it is held down: deeper than its hover (UI-4). */
+  pressed: string;
   checkbox: string;
   /** Urgent things (a critical notification's mark): ume, the same value as `ume`. Prefer `ume` in new code. */
   critical: string;
@@ -59,6 +77,9 @@ export interface Palette {
   ume: string;
   /** Ume under white text: a destructive button (5.1:1). */
   umeFill: string;
+  /** A destructive button under the pointer, and pressed: deeper ume, white still AA. */
+  umeFillHover: string;
+  umeFillPressed: string;
   /** Ume washed: the tile behind a destructive sheet's glyph. */
   umeWash: string;
   /** Broth, for caution and setting aside: warning text, AA on every window ground. */
@@ -101,16 +122,23 @@ export const lightColors: Palette = {
   osdOff: "#1d1d1f26",
   batteryLow: "#AD3F55",
   selection: "#357A64",
+  selectionHover: "#2F6E5A",
+  selectionPressed: "#29614F",
   selectionWash: "#3E8A7224",
+  textSelection: "#3E8A7240",
   selectionBar: "#357A64",
   onSelection: "#1d1d1f",
+  focusRing: "#357A64",
   switcherSelection: "#1d1d1f24",
   button: "#1d1d1f12",
   controlEdge: "#1d1d1f80",
+  pressed: "#1d1d1f42",
   checkbox: "#1d1d1f66",
   critical: "#AD3F55",
   ume: "#AD3F55",
   umeFill: "#B8475C",
+  umeFillHover: "#A94054",
+  umeFillPressed: "#99394B",
   umeWash: "#D0596F24",
   broth: "#86600A",
   brothWash: "#E5B13F33",
@@ -147,16 +175,23 @@ export const darkColors: Palette = {
   osdOff: "#f5f5f726",
   batteryLow: "#E8798F",
   selection: "#357A64",
+  selectionHover: "#2F6E5A",
+  selectionPressed: "#29614F",
   selectionWash: "#3E8A7238",
+  textSelection: "#3E8A7280",
   selectionBar: "#3E8A72",
   onSelection: "#f5f5f7",
+  focusRing: "#3E8A72",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
   controlEdge: "#f5f5f766",
+  pressed: "#ffffff3d",
   checkbox: "#f5f5f766",
   critical: "#E8798F",
   ume: "#E8798F",
   umeFill: "#B8475C",
+  umeFillHover: "#A94054",
+  umeFillPressed: "#99394B",
   umeWash: "#E8798F3d",
   broth: "#E5B13F",
   brothWash: "#E5B13F3d",

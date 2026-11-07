@@ -4,9 +4,10 @@
  * and lets the text spill, so a hidden copy of the text measures it and the
  * input is given that height; typing at the end scrolls the view to its end
  * once the layout catches up. Find's jump (`reveal`) measures the text before
- * the match the same way and scrolls there. The input has a caret moved by
- * the arrow keys and Home/End, no pointer placement and no selection beyond
- * Select All: that is Metal's input today. The input is mounted once per
+ * the match the same way and scrolls there. The input has Metal's caret and
+ * selection: a click places the caret; a drag, a double or triple click, and
+ * ⇧ with the arrows select; and the window hears whether anything is
+ * selected (`onSelectionChange`, for Cut and Copy). The input is mounted once per
  * document (`session`): mounting it again would put the caret at the end, so
  * the window hands the keyboard back by focusing it (main.tsx), never by
  * remounting it.
@@ -27,13 +28,15 @@ export interface TextAreaProps {
   onChange: (text: string) => void;
   /** Esc in the text (it clears Find). */
   onEscape: () => void;
+  /** Whether text is selected, each time that changes. */
+  onSelectionChange: (selected: boolean) => void;
   /** Scrolls the view: by `dy`, or to its top first when `fromTop`. */
   scroll: (dy: number, fromTop: boolean) => void;
   /** Where Find wants the view; `seq` changes with each jump. */
   reveal: { offset: number; seq: number } | null;
 }
 
-export function TextArea({ text, prefs, session, onChange, onEscape, scroll, reveal }: TextAreaProps) {
+export function TextArea({ text, prefs, session, onChange, onEscape, onSelectionChange, scroll, reveal }: TextAreaProps) {
   const colors = useColors();
   const surface = useSurface();
   const font = prefs.monospace ? ("monospace" as const) : ("default" as const);
@@ -76,7 +79,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, scroll, rev
             }}
             style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
           >
-            <Text style={textStyle}>{`${text}▏`}</Text>
+            <Text style={textStyle}>{text}</Text>
           </View>
           {revealing && (
             <View
@@ -89,7 +92,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, scroll, rev
               }}
               style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
             >
-              <Text style={textStyle}>{`${text.slice(0, revealing.offset)}▏`}</Text>
+              <Text style={textStyle}>{text.slice(0, revealing.offset)}</Text>
             </View>
           )}
           <TextInput
@@ -104,6 +107,7 @@ export function TextArea({ text, prefs, session, onChange, onEscape, scroll, rev
               onChange(next);
             }}
             onKeyPress={(key) => key === "Escape" && onEscape()}
+            onSelectionChange={(selection) => onSelectionChange(selection.start !== selection.end)}
             style={{
               width: "100%",
               height: Math.max(200, height - 40, Math.ceil(measured) + 4),

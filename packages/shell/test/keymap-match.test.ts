@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { KEYMAP } from "../src/keymap.ts";
-import { inClass, type KeyChord, resolveChord, ruleFor } from "../src/keymap-match.ts";
+import { KEYMAP, LOCKED_RULES, withSwitcher } from "../src/keymap.ts";
+import { inClass, type KeyChord, resolveChord, resolveLocked, ruleFor } from "../src/keymap-match.ts";
+import { currentKeymap, idleKeymap } from "../src/keymap-state.ts";
+import { withLauncher } from "../src/launcher/keys.ts";
+import { withTyping } from "../src/launcher/type-ahead.ts";
 
 const chord = (mods: KeyChord["mods"], key: string): KeyChord => ({ mods, key });
 
@@ -28,6 +31,13 @@ describe("resolveChord", () => {
     expect(resolveChord(chord(["super", "ctrl"], "x"), "helium")).toEqual({ kind: "swallow" });
   });
 
+  test("a shell sheet's field (no window, no app id) gets ❖A ❖C ❖X ❖V ❖Z as Ctrl chords, not an app's menus", () => {
+    for (const key of ["a", "c", "x", "v", "z"]) {
+      expect(resolveChord(chord(["super"], key), "")).toEqual({ kind: "keys", chords: [{ mods: ["ctrl"], key }] });
+    }
+    expect(resolveChord(chord(["super", "shift"], "z"), "")).toEqual({ kind: "keys", chords: [{ mods: ["ctrl", "shift"], key: "z" }] });
+  });
+
   test("taps press each chord; plain keys pass as they are", () => {
     expect(resolveChord(chord(["super"], "BackSpace"), "helium")).toEqual({
       kind: "keys",
@@ -44,9 +54,48 @@ describe("resolveChord", () => {
 describe("inClass", () => {
   test("exact ids and prefixes", () => {
     expect(inClass(KEYMAP, "metal", "dev.dashi.files")).toBe(true);
-    expect(inClass(KEYMAP, "metal", "")).toBe(true);
+    // A shell surface with the keyboard has no app id: it is no Metal app's window.
+    expect(inClass(KEYMAP, "metal", "")).toBe(false);
     expect(inClass(KEYMAP, "terminal", "foot")).toBe(true);
     expect(inClass(KEYMAP, "terminal", "footx")).toBe(false);
     expect(inClass(KEYMAP, "nope", "foot")).toBe(false);
+  });
+});
+
+describe("resolveLocked (the lock screen's keys)", () => {
+  test("❖A selects in the lock screen's field, and ❖C ❖X ❖V ❖Z are its Ctrl chords", () => {
+    for (const key of ["a", "c", "x", "v", "z"]) {
+      expect(resolveLocked(chord(["super"], key))).toEqual({ kind: "keys", chords: [{ mods: ["ctrl"], key }] });
+    }
+    expect(resolveLocked(chord(["super", "shift"], "z"))).toEqual({ kind: "keys", chords: [{ mods: ["ctrl", "shift"], key: "z" }] });
+    expect(resolveLocked(chord(["super"], "Left"))).toEqual({ kind: "keys", chords: [{ mods: [], key: "Home" }] });
+    expect(resolveLocked(chord(["alt"], "BackSpace"))).toEqual({ kind: "keys", chords: [{ mods: ["ctrl"], key: "BackSpace" }] });
+  });
+
+  test("any other ❖ chord does nothing there, rather than typing its letter into the password", () => {
+    for (const mods of [["super"], ["super", "shift"], ["super", "ctrl"], ["super", "alt"], ["super", "ctrl", "alt"]] as const) {
+      expect(resolveLocked(chord(mods, "q"))).toEqual({ kind: "swallow" });
+    }
+    expect(resolveLocked(chord(["super", "shift"], "3"))).toEqual({ kind: "swallow" });
+  });
+
+  test("plain keys and Ctrl chords reach the field as they are", () => {
+    expect(resolveLocked(chord([], "a"))).toEqual({ kind: "keys", chords: [{ mods: [], key: "a" }] });
+    expect(resolveLocked(chord(["ctrl"], "a"))).toEqual({ kind: "keys", chords: [{ mods: ["ctrl"], key: "a" }] });
+    expect(resolveLocked(chord([], "Return"))).toEqual({ kind: "keys", chords: [{ mods: [], key: "Return" }] });
+  });
+
+  test("no locked rule binds or names an app (the compositor refuses a keymap that does)", () => {
+    for (const rule of KEYMAP.locked ?? []) {
+      expect(rule.bind).toBeUndefined();
+      expect(rule.app).toBeUndefined();
+    }
+    expect(KEYMAP.locked).toBe(LOCKED_RULES);
+  });
+
+  test("every keymap the shell sends keeps the lock screen's rules", () => {
+    for (const keymap of [currentKeymap(), idleKeymap(), withSwitcher(currentKeymap()), withTyping(currentKeymap()), withLauncher(currentKeymap())]) {
+      expect(keymap.locked).toBe(LOCKED_RULES);
+    }
   });
 });

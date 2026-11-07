@@ -1,8 +1,8 @@
 /**
  * The note on the right: when it was edited, the title (the first line), and
  * the body. Edit mode is two Metal text inputs in one scroll view (Metal's
- * input has a caret you move with the arrow keys and Home/End, no pointer
- * placement or selection beyond select-all, and it does not scroll to the
+ * input places its caret where it is clicked and selects by dragging, double
+ * and triple clicks, and ⇧ with the arrows, but it does not scroll to the
  * caret, so `follow` scrolls the view to its end by itself when text is added
  * at the end). Preview mode draws the Markdown (preview.tsx) and its checklist
  * boxes can be tapped. A deleted note is shown read-only, with Restore.
@@ -188,7 +188,7 @@ export function Editor(props: EditorProps) {
             }}
             style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0 }}
           >
-            <Text style={{ fontSize: BODY_SIZE }}>{`${draft.body}▏`}</Text>
+            <Text style={{ fontSize: BODY_SIZE }}>{draft.body}</Text>
           </View>
           <TextInput
             key={`body:${session}:${bodyFocus}`}

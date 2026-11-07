@@ -1,13 +1,12 @@
 /**
- * `--scale`: the prompt and Settings' slider, with the value beside it
+ * `--scale`: the prompt and @dashi/ui's slider, with the value beside it
  * (`--hide-value` leaves it out). The arrow keys step it. OK prints the value;
  * `--print-partial` prints each value as the slider settles on it too.
  */
 
-import { useColors } from "@dashi/ui";
+import { Slider, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Slider } from "../../src/settings-app/ui.tsx";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
 import { LAYOUT } from "./size.ts";
 import type { ScaleSpec } from "./spec.ts";

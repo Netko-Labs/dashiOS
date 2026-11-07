@@ -8,6 +8,7 @@
  */
 
 import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
+import { holdingBar } from "../bar-hold.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { DeviceStore } from "../control-center/devices.ts";
@@ -78,7 +79,8 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
     profiles: fake ? shadowProfiles(powerProfiles(systemBus())) : powerProfiles(systemBus()),
     lid: fake ? fakeLid() : logindLid(),
   });
-  const prompt = new PasswordChangePrompt(openOverlay, accounts.passwords);
+  // Settings' sheet: while it has the keyboard the bar still says System Settings (bar-hold.ts).
+  const prompt = new PasswordChangePrompt(holdingBar(openOverlay), accounts.passwords);
   return {
     ...shared,
     battery: options.battery ?? null,

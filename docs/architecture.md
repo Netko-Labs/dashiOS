@@ -51,6 +51,14 @@ systemd --user
   each surface drawn by its own Metal host.
 - **Apps** (`apps/*`) are separate Bun processes on the app kit (`apps/kit`),
   each with a Metal window, a control socket, and menus served to the shell.
+  A close from outside (the close control, ❖W, ❖Q, the Dock's Quit, logging
+  out: the compositor's `close`, `xdg_toplevel.close`) is a request mirin's
+  host hands the app (`MIRIN_METAL_CLOSE=ask`): the kit closes at once unless
+  the app answers it (`apps/kit/close.ts`), and an app with something to lose
+  holds the window and asks. Log Out, Restart, and Shut Down from the menus
+  ask every window to close first and wait for the answers
+  (`src/closing-apps.ts`); a hung app is still ended by Force Quit, or by
+  going anyway.
 - **Applets** (`docs/applets.md`) installed from the Applet Store run each in
   bubblewrap with only what their manifest asks for, as systemd user units
   outside the shell's processes, so nothing the compositor trusts the shell
@@ -134,8 +142,8 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   it (IPC `attach`). The compositor keeps a sheet under its parent's title
   bar, above it, on its Space, without a title bar of its own, and gives it
   the keyboard and the presses the parent would get. With no parent the
-  dialog is an ordinary window; a question from an app with no window
-  waits as a menu bar item (an applet) that opens it.
+  dialog is an ordinary window, opened at once: a question from an app with
+  no window (Access, Account) does not wait in the menu bar.
 - **What is the shell's stays the shell's.** Holds (Inhibit) go to the
   shell's `InhibitStore` (`src/inhibit/`), which idle reads: while an app
   holds, the screens don't blank and the computer doesn't sleep; the
@@ -152,6 +160,17 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   SettingChanged; Print sends jobs to CUPS over IPP (`apps/portal/print/`);
   Notification goes into Dashi's notification server; Email opens the
   default mail app with the draft.
+- **What was answered.** xdg-desktop-portal keeps the answers (Access's
+  camera, microphone, location and background, screenshots, the
+  wallpaper, notifications, screen shares started again without asking) in
+  its permission store (`org.freedesktop.impl.portal.PermissionStore`).
+  The shell reads it from login and hears its `Changed` signal, dating each
+  grant when it first sees it (`src/privacy/`;
+  `$XDG_STATE_HOME/dashi/privacy/seen.json`), and Settings › Privacy &
+  Security lists the grants per app with the agents' kept answers and
+  `screenSharing.clients`, each taken back on its own (`DeletePermission`).
+  The Access sheet's button opens it there, over the links socket
+  (`src/actions/open-link.ts`).
 
 ## Channels
 
@@ -168,6 +187,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 | agent ↔ shell | `$XDG_RUNTIME_DIR/dashi-mcp.sock` | `src/agents/` |
 | `dashi://` link → shell | `$XDG_RUNTIME_DIR/dashi-links.sock`, one JSON line each way, from `dashi-open` (the `x-scheme-handler/dashi` entry) | `docs/actions.md` |
 | share picker ↔ shell | `$XDG_RUNTIME_DIR/dashi-share.sock`, one JSON line each way | `src/share-picker/protocol.ts` |
+| shell → permission store | D-Bus session bus: `org.freedesktop.impl.portal.PermissionStore` (Lookup, List, DeletePermission; `Changed`) | `src/privacy/` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
 | app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |

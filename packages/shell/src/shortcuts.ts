@@ -28,10 +28,6 @@ export interface ShellActions {
   lock(): void;
   /** The power key was pressed (power/). */
   powerKey(): void;
-  /** Drag out an area to capture; Space there takes `window` (screenshot-area.tsx). */
-  screenshotArea(window: number | null): void;
-  /** ⇧❖5: the screenshot and recording toolbar, or stop the recording (recorder/). */
-  captureToolbar?(window: number | null): void;
   /** Opens Force Quit Applications (force-quit/). */
   forceQuit(): void;
   /** Opens System Settings (settings-app/), on ❖, as on the Mac. */
@@ -42,6 +38,8 @@ export interface ShellActions {
   overview: { toggle(): void };
   /** Chooses the item of `window`'s app menus that shows `shortcut` ("⇧❖N", app-menus/); false when none does. */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
+  /** Tells the app of the window owned by `pid` that it is quitting, before its close request (app-menus/, kit/close.ts). */
+  appQuitting?(pid: number | null): void;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /**
@@ -49,6 +47,13 @@ export interface ShellActions {
    * typed before its field has the keyboard, with its text (launcher/type-ahead.ts); says whether it was one.
    */
   launcher?: { binding(name: string, chord?: PressedChord, text?: string): boolean };
+  /**
+   * Whether the screen is locked (lock/). Then no ❖ tap or hold and no
+   * binding acts: the compositor sends none while locked, and one already on
+   * its way when the screen locked must not open the launcher or a sheet, or
+   * type into a window, behind the lock screen.
+   */
+  isLocked?(): boolean;
 }
 
 /** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
@@ -97,17 +102,10 @@ export async function runBinding(name: string, window: number | null, compositor
       return actions.switcher.step("previous");
     case "switch-cancel":
       return actions.switcher.cancel();
-    case "screenshot-screen":
-      await takeScreenshot(compositor);
-      return;
     case "lock-screen":
       return actions.lock();
     case "power-key":
       return actions.powerKey();
-    case "screenshot-area":
-      return actions.screenshotArea(window);
-    case "capture-toolbar":
-      return actions.captureToolbar?.(window);
     case "force-quit":
       return actions.forceQuit();
     case "settings":
@@ -142,6 +140,8 @@ export async function runBinding(name: string, window: number | null, compositor
       const focused = windows.find((candidate) => candidate.id === window);
       if (!focused) return;
       for (const each of windows.filter((candidate) => sameApp(candidate, focused))) {
+        // A question it asks names quitting ("Quit Terminal?"), not closing a window.
+        actions.appQuitting?.(each.pid);
         await compositor.request("close", { window: each.id });
       }
       return;
@@ -182,6 +182,8 @@ function switcherBinding(name: string, key: string | undefined, switcher: Switch
 export function startShortcuts(compositor: Compositor, actions: ShellActions): () => void {
   return compositor.on((event) => {
     if (event.event === "super") {
+      // Locked: a tap or a hold shows nothing; a chord or ❖ coming up still takes the sheet down.
+      if (actions.isLocked?.() && (event.phase === "tap" || event.phase === "hold")) return;
       switch (event.phase) {
         case "tap":
           actions.toggleLauncher();
@@ -198,6 +200,7 @@ export function startShortcuts(compositor: Compositor, actions: ShellActions): (
           break;
       }
     } else if (event.event === "binding") {
+      if (actions.isLocked?.()) return;
       // The launcher's keys are taken here, in the order they came: typing must not be reordered.
       if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, event.chord, event.text)) return;
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));

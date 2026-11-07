@@ -39,6 +39,9 @@ export interface EditorState {
   notice: Notice | null;
   canUndo: boolean;
   canRedo: boolean;
+  /** What Edit's Undo and Redo name ("Typing", "Replace All"), null when nothing. */
+  undoName: string | null;
+  redoName: string | null;
   prefs: EditorPrefs;
   find: FindState;
   /** The offset Find wants scrolled into view; `seq` changes with each jump. */
@@ -78,6 +81,8 @@ export class EditorModel {
       notice: null,
       canUndo: false,
       canRedo: false,
+      undoName: null,
+      redoName: null,
       prefs: (options.loadPrefs ?? readPrefs)(),
       find: NO_FIND,
       reveal: null,
@@ -145,10 +150,10 @@ export class EditorModel {
     return this.isDirty ? { path, text, encoding, lineEnding, time: this.now() } : null;
   }
 
-  /** The input reported new text. `joinable` false keeps it its own Undo step. */
-  edit(text: string, joinable = true): void {
+  /** The input reported new text. `joinable` false keeps it its own Undo step, named `name`. */
+  edit(text: string, joinable = true, name?: string): void {
     if (text === this.state.text) return;
-    this.history.record(this.state.text, text, this.now(), joinable);
+    this.history.record(this.state.text, text, this.now(), joinable, name);
     this.replaceText(text);
   }
 
@@ -187,7 +192,7 @@ export class EditorModel {
     }
     const { text, encoding, lineEnding } = read.decoded;
     this.set({ saved: text, encoding, lineEnding });
-    this.edit(text, false);
+    this.edit(text, false, "Revert");
     return true;
   }
 
@@ -218,7 +223,7 @@ export class EditorModel {
     const { query, caseSensitive } = this.state.find;
     const result = replaceAll(this.state.text, query, replacement, { caseSensitive });
     if (result.count > 0) {
-      this.edit(result.text, false);
+      this.edit(result.text, false, "Replace All");
       this.set({ notice: { text: `Replaced ${result.count} ${result.count === 1 ? "match" : "matches"}.`, tone: "info" } });
     }
     return result.count;
@@ -265,13 +270,18 @@ export class EditorModel {
     const at = find.current >= 0 ? (find.matches[find.current] ?? 0) : -1;
     const next = this.findFor(text, find);
     const current = at >= 0 ? matchAtOrAfter(next.find.matches, at) : -1;
-    this.set({ text, notice: null, canUndo: this.history.canUndo, canRedo: this.history.canRedo, find: { ...next.find, current } });
+    this.set({ text, notice: null, ...this.undoNames(), find: { ...next.find, current } });
   }
 
   /** `find` with its matches in `text`, and the Undo state (which changes with every new text). */
-  private findFor(text: string, find: FindState): Pick<EditorState, "find" | "canUndo" | "canRedo"> {
+  private undoNames(): Pick<EditorState, "canUndo" | "canRedo" | "undoName" | "redoName"> {
+    const { canUndo, canRedo, undoName, redoName } = this.history;
+    return { canUndo, canRedo, undoName, redoName };
+  }
+
+  private findFor(text: string, find: FindState): Pick<EditorState, "find" | "canUndo" | "canRedo" | "undoName" | "redoName"> {
     const matches = findMatches(text, find.query, { caseSensitive: find.caseSensitive });
-    return { find: { ...find, matches, current: Math.min(find.current, matches.length - 1) }, canUndo: this.history.canUndo, canRedo: this.history.canRedo };
+    return { find: { ...find, matches, current: Math.min(find.current, matches.length - 1) }, ...this.undoNames() };
   }
 
   private set(change: Partial<EditorState>): void {

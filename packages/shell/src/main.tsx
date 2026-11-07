@@ -12,8 +12,8 @@ import { homedir } from "node:os";
 import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
+import type { CaptureKind } from "./actions/sources/commands.ts";
 import { RadioSource } from "./actions/sources/radios.ts";
-import { isSettingKey, settingState } from "./actions/sources/settings.ts";
 import { activeScreen } from "./active-screen.ts";
 import { createAgentUi } from "./agent-sheets.tsx";
 import { modelKeys, vaultTokenSource } from "./agents/ask/keys.ts";
@@ -41,6 +41,7 @@ import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, resolvePinned } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
+import { barHold, holdingBar } from "./bar-hold.ts";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
@@ -48,7 +49,6 @@ import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags } from "./control-center/index.ts";
-import { DEFAULT_CORNERS } from "./corners.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
@@ -72,6 +72,7 @@ import { serveFileManager } from "./file-manager.ts";
 import { FileSearch, iconNamesFor } from "./file-search.ts";
 import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
+import { windowToFront } from "./front-window.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
@@ -114,6 +115,7 @@ import { startPolkit } from "./polkit/index.ts";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "./portal-host/index.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { powerOffReason } from "./power/nested.ts";
+import { startPrivacy } from "./privacy/index.ts";
 import { RecentApps, recentEntries } from "./recents.ts";
 import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
@@ -121,10 +123,10 @@ import { chooseRegion, startRegion } from "./region/index.ts";
 import { ScreenCaptureStore, startScreenCapture } from "./screen-capture.ts";
 import { type AreaCapture, areaCapture, chooseCaptureScreen } from "./screenshot-area.tsx";
 import { takeScreenshot } from "./screenshots.ts";
-import { SCROLL_SPEED_DEFAULT } from "./scroll-speed.ts";
 import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
+import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
 import { startSetupAssistant } from "./setup/start.tsx";
@@ -133,6 +135,7 @@ import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
+import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
 import { BatteryAlerts } from "./system/battery-alerts.ts";
 import { isDevelopmentRun, mayServeTray } from "./system/stand-in.ts";
@@ -171,6 +174,8 @@ compositor?.onClosed(() => {
   console.error("dashi-shell: dashi-comp went away; the shell ends with it");
   process.exit(1);
 });
+// Windows off screen (minimized, hidden, on a Desktop not shown) are told no one sees them, so they can stop polling (suspend.ts).
+if (compositor) followSuspension(compositor);
 // Idle, the keymap also says what keys do from a ❖ tap on: they type into the launcher (launcher/type-ahead.ts).
 compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 // The launcher fades in from a little smaller (launcher/resident.tsx); with Reduce Motion the compositor skips it.
@@ -392,15 +397,28 @@ if (idle) idle.onSleep = () => void power.suspend();
 // programs on our list, and tells us while one is running (screen-capture.ts).
 const screenCapture = new ScreenCaptureStore();
 const capture = compositor ? startScreenCapture(compositor, screenCapture) : null;
+// A program taken off `screenSharing.clients` (Settings › Privacy & Security) loses the protocol at once.
+let captureClients = JSON.stringify(settingsStore.getSnapshot().data.screenSharing.clients ?? []);
+const stopFollowingCaptureClients = settingsStore.subscribe(() => {
+  const next = JSON.stringify(settingsStore.getSnapshot().data.screenSharing.clients ?? []);
+  if (next === captureClients) return;
+  captureClients = next;
+  capture?.refresh();
+});
+// What apps were allowed through the portal, dated as they are given (privacy/; Settings › Privacy & Security).
+const privacy = developmentRun ? null : startPrivacy();
 
 // Privileged actions apps ask for (pkexec, mounting a disk, software installs)
 // need a password sheet: polkit's authentication agent (polkit/). It stays off
 // on a development run, which never registers on the machine's system bus.
 const polkitLock = compositor ? new LockWatch(compositor) : null;
+/** Whether the screen is locked: as the compositor says (lock events), or a lock screen is up or on its way. */
+const screenLocked = (): boolean => (polkitLock?.isLocked ?? false) || (lockScreen?.isLocked ?? false);
 const polkit = startPolkit({
   developmentRun,
   lock: polkitLock ?? { isLocked: false, onChange: () => () => {} },
-  open: openOverlay,
+  // Its password sheet is the app in front's: the bar keeps that app (bar-hold.ts).
+  open: holdingBar(openOverlay),
 });
 
 // Agents (MCP) run here too; they start below, once what they reach exists.
@@ -461,6 +479,8 @@ const stopBatteryAlerts = new BatteryAlerts(notifications.store).start();
 const calendar = startCalendar({ notifications: notifications.store, toplevels, ...(developmentRun ? { statePath: null } : {}) });
 // Do Not Disturb is Control Center's switch; the store holds banners while it's on.
 const flags = controlFlags();
+// The settings registry's rows read and change through these (settings-app/registry/): the launcher's, links', and agents'.
+const registryStores: RegistryStores = { settings: settingsStore, flags, dock: dockPrefs };
 const followFlags = () => notifications.store.setDoNotDisturb(flags.getSnapshot().dnd);
 followFlags();
 const stopFollowingFlags = flags.subscribe(followFlags);
@@ -508,25 +528,10 @@ const agents = compositor
         rememberScale: (name, scale) => settingsStore.setDisplayScale(name, scale),
         ...(displays ? { displays } : {}),
         ...(spaces ? { spaces: spaces.controller } : {}),
-        corners: {
-          get: () => settingsStore.getSnapshot().data.appearance.cornerRadius ?? DEFAULT_CORNERS,
-          set: (name) => settingsStore.patch("appearance", { cornerRadius: name }),
-        },
-        scrollSpeed: {
-          get: (device) => settingsStore.getSnapshot().data[device === "trackpad" ? "touchpad" : "mouse"].scrollSpeed ?? SCROLL_SPEED_DEFAULT,
-          // 1 is no setting, as the panes' slider middle is.
-          set: (device, factor) =>
-            settingsStore.patch(device === "trackpad" ? "touchpad" : "mouse", { scrollSpeed: factor === SCROLL_SPEED_DEFAULT ? undefined : factor }),
-        },
+        // The registry's rows agents may change go through settings.json, as the panes' do (settings-app/registry/).
+        settings: settingsStore,
         lock: () => lockScreen?.lock(),
         region: regionDesktop(region.store, settingsStore),
-        menuBar: {
-          get: () => {
-            const { menuBar } = settingsStore.getSnapshot().data;
-            return { batteryPercent: menuBar.batteryPercent ?? false, sound: menuBar.sound ?? true };
-          },
-          set: (change) => settingsStore.patch("menuBar", change),
-        },
         machine: machineDesktop(paneServicesOf, settingsStore),
         // Late-bound: the Setup Assistant is made after the agents, and an agent can only call it once connected.
         setup: { open: (page) => setupAssistant?.open(page) },
@@ -556,9 +561,12 @@ const settingsApp = startSettingsApp({
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  ...(privacy ? { privacy: privacy.store } : {}),
   answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
   services: paneServicesOf,
+  // Its Edit menu (Undo a setting) goes in the menu bar's store, made below.
+  menus: () => appMenus.store,
 });
 
 // The Setup Assistant: at a person's first login, and from Settings > About and the launcher (setup/).
@@ -748,11 +756,17 @@ configureMachineEnd({
     }),
 });
 // A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar.
-const stopHoldingBars = menus.controller.subscribe(() => {
-  const open = menus.controller.getSnapshot().popover !== null;
-  fullscreenBars?.hold(open);
-  appMenus.hold(open);
+// So does a shell sheet that took the keyboard for the app in front (bar-hold.ts): the bar keeps its menus.
+const holdAppMenus = (): void => appMenus.hold(menus.controller.getSnapshot().popover !== null || barHold.getSnapshot());
+const stopHoldingForPopovers = menus.controller.subscribe(() => {
+  fullscreenBars?.hold(menus.controller.getSnapshot().popover !== null);
+  holdAppMenus();
 });
+const stopHoldingForSheets = barHold.subscribe(holdAppMenus);
+const stopHoldingBars = (): void => {
+  stopHoldingForPopovers();
+  stopHoldingForSheets();
+};
 
 // The Dock sits on the primary screen (dock/start.tsx: the Dock or the taskbar). Unplug that screen
 // and the Dock is opened again on the one that takes over (the menu bars below decide which); a Dock
@@ -1055,6 +1069,8 @@ function openLauncherIn(scope: string, window: number | null): void {
 }
 
 function openLauncher(presented: Presented | null = null, scope: string | null = null, window: number | null = null): void {
+  // Never behind the lock screen (a dashi:// link, Search…): it would hold keys nobody sees.
+  if (screenLocked()) return;
   markOpen();
   // Where the clipboard's ↩ pastes: the window under the launcher.
   clipboard?.opening(window);
@@ -1245,6 +1261,11 @@ async function appShortcut(window: number, shortcut: string): Promise<boolean> {
   return appMenus.store.shortcut(appMenus.ownersOf(pid), shortcut);
 }
 
+/** Tells the app owning a window of `pid` that it quits, just before the window is asked to close (kit/close.ts). */
+function appQuitting(pid: number | null): void {
+  appMenus.store.quitting(appMenus.ownersOf(pid));
+}
+
 // Shortcuts (keymap.ts) and ❖ taps and holds, as the compositor reports them.
 // ⇧❖4's selection overlay, made on first use.
 let captureArea: AreaCapture | undefined;
@@ -1262,6 +1283,30 @@ function selectArea(window: number | null): void {
   });
   captureArea();
 }
+/** How long a screenshot from the launcher waits once its window is hidden: the host takes it down, then the compositor draws without it. */
+const LAUNCHER_GONE_MS = 150;
+/**
+ * ⇧❖3, ⇧❖4 and ⇧❖5, and the launcher's Screenshot rows (actions/sources/commands.ts). Chosen in the launcher,
+ * it is taken down first and the capture waits until it is gone, so it isn't in the picture; "the focused
+ * window" is then the one it was over (Space in ⇧❖4, Capture Window in the toolbar).
+ */
+async function runCapture(what: CaptureKind, window: number | null): Promise<void> {
+  if (!compositor) return;
+  if (overlays.has("launcher")) {
+    await overlays.closeAndWait("launcher");
+    await Bun.sleep(LAUNCHER_GONE_MS);
+  }
+  const front = window ?? (await compositor.windows().catch(() => [])).find((each) => each.focused)?.id ?? null;
+  switch (what) {
+    case "screen":
+      await takeScreenshot(compositor);
+      return;
+    case "area":
+      return selectArea(front);
+    case "toolbar":
+      return captureTools?.toolbar(front);
+  }
+}
 // The action registry (actions/, docs/actions.md): every command at a dashi:// address, read by the
 // keymap's address bindings, dashi:// links (xdg-open, on $XDG_RUNTIME_DIR/dashi-links.sock), and agents' tools/list.
 const actions = startActions({
@@ -1274,7 +1319,7 @@ const actions = startActions({
   activate: async (entry) => {
     const windows = (await compositor?.windows().catch(() => [])) ?? [];
     const own = windows.filter((window) => installedApp(window.appId)?.id === entry.id);
-    const target = own.find((window) => window.focused) ?? own.find((window) => window.state === "normal") ?? own[0];
+    const target = windowToFront(own);
     if (!target || !compositor) return false;
     await compositor.request("focus", { window: target.id });
     return true;
@@ -1283,7 +1328,9 @@ const actions = startActions({
   appName: (window) => nameApp?.(window) ?? window.appId,
   arrange: arranger ? { arrow: (window, arrow) => arranger.arrow(window, arrow), tile, fullscreen: (window) => arranger.toggleFullscreen(window) } : null,
   runMenu: (action) => menus.run(action, "Dashi"),
+  ...(compositor ? { capture: runCapture } : {}),
   openSettings: (pane, row) => settingsApp.open(pane, row),
+  settingsStores: registryStores,
   keymap: currentKeymap(),
 });
 // Wi-Fi and Bluetooth as settings with state, from Control Center's own store (actions/sources/radios.ts).
@@ -1379,7 +1426,10 @@ askAgents = startAsk({
   },
   personPressed: () =>
     compositor ? personAnswered((method, params) => compositor.request(method, params), LAUNCHER_MOTION.namespace) : Promise.resolve(false),
-  settingNow: (name) => (agents && isSettingKey(name) ? settingState(agents.desktop, name) : null),
+  settingNow: (name) => {
+    const row = agentRow(name);
+    return row ? valueOf(row, registryStores) : null;
+  },
   focus: async (window) => {
     await compositor?.request("focus", { window });
   },
@@ -1403,6 +1453,7 @@ if (compositor) {
 const stopShortcuts = compositor
   ? startShortcuts(compositor, {
       appShortcut,
+      appQuitting,
       toggleLauncher: () => (overlays.has("launcher") ? closeOverlay("launcher") : openLauncher()),
       // While the launcher is open, holding ❖ shows the digits ❖1–9 pick instead (launcher/keys.ts).
       showSheet: () => {
@@ -1426,9 +1477,8 @@ const stopShortcuts = compositor
       hardware: system.hardware,
       lock: () => lockScreen?.lock(),
       powerKey: () => power.powerKey(),
-      screenshotArea: selectArea,
-      captureToolbar: (window) => captureTools?.toolbar(window),
       launcher: { binding: launcherBinding },
+      isLocked: screenLocked,
     })
   : () => {};
 
@@ -1498,6 +1548,8 @@ const quit = () => {
     ["full-screen desktops", stopFullscreenDesktops],
     ["attention", () => attention?.close()],
     ["settings", stopSettings],
+    ["screen sharing list", stopFollowingCaptureClients],
+    ["privacy", () => privacy?.stop()],
     ["input method", () => inputMethod?.stop()],
     ["settings file watch", stopWatchingSettings],
     ["wallpaper events", () => stopWallpaperEvents?.()],

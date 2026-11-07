@@ -4,7 +4,7 @@
  * start. The clock ticks every second.
  */
 
-import { Avatar, LoginScreen, type PowerAction } from "@dashi/ui";
+import { Avatar, LOGIN_FOCUS_RING, LoginScreen, type PowerAction } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { formatDay, formatTime } from "./clock.ts";
@@ -139,7 +139,10 @@ export function Backdrop(): ReactNode {
 function UserPicker(props: { day: string; time: string; users: User[]; onPick: (user: User) => void }): ReactNode {
   const { day, time, users, onPick } = props;
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: "#140e22b8" }}>
+    <View
+      testID="greeter-users"
+      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: "#140e22b8", focusRingColor: LOGIN_FOCUS_RING }}
+    >
       <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
         <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>

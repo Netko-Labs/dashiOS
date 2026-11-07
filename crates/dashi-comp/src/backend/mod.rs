@@ -85,14 +85,15 @@ impl Backend {
             data.set_enabled(output, enabled);
         }
     }
+}
 
-    /// Import a client's GPU buffer into the renderer: whether it can be drawn.
-    pub(crate) fn import_dmabuf(&mut self, dmabuf: &Dmabuf) -> bool {
-        match self {
-            Backend::Winit(data) => data.import_dmabuf(dmabuf),
-            Backend::Udev(data) => data.import_dmabuf(dmabuf),
-            Backend::None | Backend::Headless => false,
-        }
+/// Import a client's GPU buffer into the renderer: whether it can be drawn.
+/// On a seat of its own, one only a sleeping GPU can read wakes it (udev/sleep.rs).
+pub(crate) fn import_dmabuf(state: &mut Dashi, dmabuf: &Dmabuf) -> bool {
+    match &mut state.backend {
+        Backend::Winit(data) => data.import_dmabuf(dmabuf),
+        Backend::Udev(_) => udev::import_dmabuf(state, dmabuf),
+        Backend::None | Backend::Headless => false,
     }
 }
 

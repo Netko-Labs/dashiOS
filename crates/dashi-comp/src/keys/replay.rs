@@ -39,6 +39,8 @@ impl Dashi {
         mods: ModifiersState,
         time: u32,
     ) -> Option<Held> {
+        // Locked: only to the lock screen (session/lock.rs).
+        self.keep_keyboard_on_lock();
         let keyboard = self.seat.get_keyboard()?;
         let restore = keyboard.modifier_state();
         keyboard.set_modifier_state(mods);

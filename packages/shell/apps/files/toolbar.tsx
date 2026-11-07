@@ -1,9 +1,9 @@
-/** The toolbar's controls: back and forward before the omnibox; view switch, select-multiple, new folder, and the menu after it. */
+/** The toolbar's controls: back and forward before the omnibox; view switch, new folder, and the menu after it. (⇧-click and ❖-click select several: no select mode.) */
 
 import { ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
-import { BACK, CHECKED, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
+import { BACK, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
 
 export function Leading() {
   const { store } = useFiles();
@@ -24,6 +24,10 @@ function ViewSwitch() {
   const segment = (value: "icons" | "list", glyph: string) => (
     <View
       testID={`view:${value}`}
+      focusable
+      accessibilityRole="tab"
+      accessibilityLabel={value === "icons" ? "Icons" : "List"}
+      accessibilityState={{ selected: view === value }}
       onPress={() => store.setView(value)}
       style={{
         width: 34,
@@ -38,7 +42,12 @@ function ViewSwitch() {
     </View>
   );
   return (
-    <View testID="view" style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}>
+    <View
+      testID="view"
+      focusGroup
+      accessibilityRole="tablist"
+      style={{ flexDirection: "row", flexShrink: 0, height: 26, padding: 2, gap: 2, borderRadius: 8, backgroundColor: colors.button }}
+    >
       {segment("icons", GRID)}
       {segment("list", LIST)}
     </View>
@@ -47,26 +56,11 @@ function ViewSwitch() {
 
 export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onMenu: (point: { x: number; y: number }) => void }) {
   const colors = useColors();
-  const { store, ops, actions } = useFiles();
+  const { ops, actions } = useFiles();
   const state = useFilesState();
   return (
     <>
       <ViewSwitch />
-      <View
-        testID="multi"
-        onPress={() => store.toggleMulti()}
-        style={{
-          height: 28,
-          minWidth: 32,
-          borderRadius: 7,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: state.multi ? colors.selection : "#00000000",
-          hoverBackgroundColor: state.multi ? colors.selection : colors.button,
-        }}
-      >
-        <Svg markup={CHECKED} size={16} color={state.multi ? "#ffffff" : colors.textMuted} />
-      </View>
       {state.location.kind === "trash" ? (
         <ToolbarButton
           glyph={sidebarGlyph("trash")}
@@ -80,6 +74,9 @@ export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onM
       )}
       <View
         testID="more"
+        focusable
+        accessibilityRole="button"
+        accessibilityLabel="More"
         onPress={(event) => onMenu({ x: (event.bounds?.x ?? 0) - 150, y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
         style={{ height: 28, minWidth: 32, borderRadius: 7, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
       >

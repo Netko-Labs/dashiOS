@@ -27,6 +27,7 @@ Code: `packages/shell/src/actions/`. Tests: `packages/shell/test/actions-*.test.
 | `properties`, `required` | the arguments, JSON Schema, as MCP's `inputSchema` |
 | `scope` | what an agent must have been allowed (`agents/consent.ts`); null when no agent can call it |
 | `readOnly`, `destructive`, `idempotent` | as the MCP annotations; `destructive` also means a link only opens it |
+| `linkOpens` | a link only opens it, though it isn't destructive: running it would hand a program something private (Screenshot of the Screen) |
 | `asksEveryTime` | it asks on a sheet every time, the person included (force quit, the Trash) |
 | `who` | `person`, `agents`, or `both` |
 | `source` | the source that added it |
@@ -61,8 +62,8 @@ Sources on day one (`actions/start.ts`, in this order):
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
 | `tools` | `dashi://tool/<name>` (`dashi://tool/force-quit-app`) | the agents' tool, as the person when `who` is `both` |
-| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first |
-| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every setting `set_setting` knows, and for the other rows search finds by name (`SPOT_ROWS`: `appearance/text-size`, `date-time/time-zone`…) | opens the pane; a row's toggle or pick runs `set_setting` as the person; a `SPOT_ROWS` row opens Settings scrolled to it and lit |
+| `dashi` | `dashi://dashi/lock-screen`, `…/sleep`, `…/restart`, `…/shut-down`, `…/log-out`, `…/force-quit`, `…/settings`, `…/about`, `…/shortcuts`; `…/capture`, `…/screenshot`, `…/screenshot-area` | the Dashi menu's own action; Restart, Shut Down, and Log Out ask first. The screenshots are ⇧❖5's toolbar, ⇧❖3's screen, and ⇧❖4's area; Screenshot of the Screen is `linkOpens`, so a link only opens it (a program must not get the screen without asking) |
+| `settings` | `dashi://settings/<pane>`; `dashi://settings/<pane>/<row>` for every row of every pane, from the settings registry (see below) | opens the pane; a row that is one value is a toggle or a pick: one named for agents runs `set_setting` as the person, the person's own changes through the registry's store; any other row opens Settings scrolled to it and lit |
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
@@ -89,8 +90,36 @@ app keeps from agents (`agents: false`) are offered here, because the
 person is choosing; greyed-out ones are left out. Window titles and menu
 labels come from other apps: shown and found by, never obeyed.
 
-A setting's rows are marked in their pane with `<Spot pane row>`
-(`settings-app/spot.tsx`), so its address can open Settings there.
+### The settings registry
+
+Every row of System Settings is one entry in `settings-app/registry/`
+(`look.ts`, `input.ts`, `machine.ts`, `you.ts`; `rows.ts` puts them
+together): its id `<pane>/<row>` (its address without `dashi://settings/`),
+its title as the pane shows it, a `name` where the title leans on the pane
+("Mode" is "Graphics mode" in the launcher), its detail, the words it is
+found by, its kind (`switch`, `choice`, `value`, `action`), a choice's
+options, and, where it is one value, a binding (`value`): its JSON Schema
+and a getter and setter through the settings store (settings.json),
+Control Center's switches, or the Dock's store. A row agents may change
+has an `agent` name.
+
+Everything reads the one list:
+
+- The panes draw their rows from it: `<Setting id>` (`settings-app/setting.tsx`)
+  takes its title and detail from the entry, is a Spot (a link or the
+  launcher scrolls to it and lights it), and draws the entry's own switch
+  or pills when the pane passes no control. A pane passes a live detail or
+  its own control (a slider, a picker) where it must. `<Spot id>` wraps
+  other content an entry stands for (a list, a form). A pane draws no plain
+  row with a label of its own: data rows (a login, a device) are `Item`s,
+  a form's fields are `FormRow`s. Ids are typed, so a pane can't draw a row
+  that isn't registered; `test/settings-registry.test.ts` checks the other
+  way: every entry is drawn by its pane.
+- The launcher and links: this source, one action per row (the radios and
+  the clipboard history are their own sources' rows, `source` on the entry).
+- Agents: `get_settings` and `set_setting` take every row with an `agent`
+  name, checked by its binding's schema. None of Lock Screen, Users &
+  Accounts, Passwords, Agents, or Privacy & Security is an agent's.
 
 ## Addresses
 
@@ -168,7 +197,7 @@ One request per connection. A link comes from anywhere, so:
 
 - A settings address with no arguments opens the pane, scrolled to the row,
   and lights the row up for a moment.
-- A destructive action is never run. It is opened with its arguments filled
+- A destructive action (or one marked `linkOpens`) is never run. It is opened with its arguments filled
   in: the launcher shows it ready for Return when it has taken links
   (`actions.setPresenter`), otherwise a sheet asks "Run “…”?" and shows the
   link. Arguments that don't fit say so and open nothing.
@@ -507,7 +536,14 @@ keymap again as soon as the file changes. Aliases (`launcher.aliases`, `{
 
 Window arranging is bound so now: ⌃❖←→↑↓ to `dashi://window/arrange/<arrow>`,
 ⌃❖↩ to `…/fill`, ⌃❖C to `…/center`, ⌃❖R to `…/restore`, ⌃❖F to
-`dashi://window/full-screen`. ⌥❖V is `dashi://clipboard/history`.
+`dashi://window/full-screen`. ⌥❖V is `dashi://clipboard/history`. The
+screenshots are too: ⇧❖3 is `dashi://dashi/screenshot` (Screenshot of the
+Screen), ⇧❖4 `…/screenshot-area` (Screenshot of an Area…), ⇧❖5
+`…/capture` (Screenshot…, the toolbar that also records), on the window
+focused when they were pressed; the launcher finds them by "screenshot",
+"print screen", "snip" and the like. Chosen in the launcher, the shell
+takes it down first and waits until it is gone (`main.tsx` `runCapture`),
+so it isn't in the picture.
 
 The other bind names move the same way, one kind at a time: give the
 action an address in its source, change the rule's `bind` to it, delete
@@ -517,7 +553,6 @@ its `case` in `runBinding`, and move its test to the registry.
 | --- | --- | --- |
 | `lock-screen`, `force-quit`, `settings` | `dashi://dashi/lock-screen`, `…/force-quit`, `…/settings` | `dashi` (exists) |
 | `quit-app`, `hide-app`, `minimize-window`, `close-window`, `next-window` | `dashi://window/quit-app` and so on, on the focused window | `windows` |
-| `screenshot-screen`, `screenshot-area`, `capture-toolbar` | `dashi://dashi/screenshot`, `…/screenshot-area`, `…/capture` | `dashi` |
 | `toggle-autohide` | `dashi://settings/desktop-dock/autohide` (exists: a toggle with no value switches) | `settings` |
 | `space-left`, `space-right`, `space-1`…`space-9`, `overview` | `dashi://space/left`, `dashi://space/3`, `dashi://dashi/overview` | a `spaces` source |
 | `volume-up`, `brightness-up`, `media-*`, `power-key` | `dashi://sound/volume-up` and so on | a `hardware` source |

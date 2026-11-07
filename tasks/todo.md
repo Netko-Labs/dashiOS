@@ -20,8 +20,8 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
 - [ ] The graphics card sleeps: dashi-comp opens the NVIDIA card only while a screen or a buffer needs it (M; found 2026-11-06)
 - [ ] Modifiers on onPress (S; PA-10)
-- [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
-- [ ] An undo stack in @dashi/ui (M; PA-2)
+- [x] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
+- [x] An undo stack in @dashi/ui (M; PA-2)
 - [ ] A visibility signal; Activity Monitor stops sampling while hidden (S; PA-15)
 - [ ] A settings registry behind every row (M; today `SPOT_ROWS`)
 - [ ] Privacy & Security pane: review and revoke (M)
@@ -42,6 +42,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
+- [x] The screenshots as rows: Screenshot… (⇧❖5), Screenshot of the Screen (⇧❖3), Screenshot of an Area… (⇧❖4); the keys bind their `dashi://dashi/` addresses (S; `feat/0.5-launcher-screenshot`, VM: not yet)
 - [ ] Context chips: "+ this window", "+ selection" (M)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)
@@ -450,7 +451,7 @@ it in the VM.
       and apps) through dashi-extras and pkexec
 - [x] Anaconda profile for Dashi (the installer creates the account)
 - [ ] mirin: a clipboard API (wl-copy shows up as an app for a moment)
-- [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
+- [x] mirin: a way to hold a window open to ask (the Editor's unsaved changes; `MIRIN_METAL_CLOSE=ask`)
 - [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
 - [ ] mirin: text selection in TextInput
 - [x] Menu bar extras: the tray (StatusNotifierItem host + dbusmenu, src/tray/), the applets

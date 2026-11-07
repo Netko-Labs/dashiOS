@@ -81,6 +81,15 @@ describe("closing a tab that runs something", () => {
     expect(closeCopy({ kind: "window", programs: ["sleep", "sleep"] }).message).toBe("Closing it stops 2 running programs.");
     expect(closeCopy({ kind: "window", programs: ["vim"] }).confirmLabel).toBe("Close window");
   });
+
+  test("quitting asks to quit Terminal, naming what still runs", () => {
+    expect(closeCopy({ kind: "window", programs: ["sleep"], quit: true })).toEqual({
+      title: "Quit Terminal?",
+      message: "Quitting stops “sleep”.",
+      confirmLabel: "Quit",
+    });
+    expect(closeCopy({ kind: "window", programs: ["vim", "ssh", "make"], quit: true }).message).toBe("Quitting stops 3 running programs.");
+  });
 });
 
 describe("the Terminal's menus", () => {

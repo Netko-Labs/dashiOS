@@ -1,4 +1,4 @@
-import { CHECK, useColors, WARNING } from "@dashi/ui";
+import { CHECK, ProgressBar, useColors, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { Button, Group } from "../../settings-app/ui.tsx";
@@ -7,17 +7,6 @@ import { STEP_LABELS } from "../extras/plan.ts";
 import { appLine, runNotice, stepLine } from "../extras/words.ts";
 
 type Mark = "waiting" | "running" | "done" | "failed";
-
-/** A thin bar of `fraction`; the step's words say what it is doing. */
-function Bar({ fraction }: { fraction: number }) {
-  const colors = useColors();
-  const width = 120;
-  return (
-    <View style={{ width, height: 4, borderRadius: 2, backgroundColor: colors.track, overflow: "hidden" }}>
-      <View style={{ width: Math.max(4, Math.round(width * fraction)), height: 4, borderRadius: 2, backgroundColor: colors.selection }} />
-    </View>
-  );
-}
 
 function StatusRow({ testID, label, line, mark, fraction }: { testID: string; label: string; line: string; mark: Mark; fraction: number | null }) {
   const colors = useColors();
@@ -32,7 +21,7 @@ function StatusRow({ testID, label, line, mark, fraction }: { testID: string; la
         <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
         <Text style={{ fontSize: 11, color: mark === "failed" ? colors.critical : colors.textMuted }}>{line}</Text>
       </View>
-      {mark === "running" && fraction !== null && <Bar fraction={fraction} />}
+      {mark === "running" && fraction !== null && <ProgressBar value={fraction} width={120} />}
     </View>
   );
 }

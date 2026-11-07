@@ -1,20 +1,37 @@
 /**
  * What the panes are built from, in the way System Settings on the Mac
  * looks: a page with a title, then grouped cards of rows, choices as pills,
- * sliders, and buttons. The cards, rows, pills, and buttons are Dashi's
- * shared controls (../ui/, which the first-party apps use too); the page and
- * the slider are Settings' own. Everything paints with the shell's live
- * palette, so Dark Mode repaints Settings too.
+ * sliders, and buttons. The cards, rows, pills, sliders, and buttons are
+ * @dashi/ui's, which the first-party apps use too; the page is Settings'
+ * own. Everything paints with the shell's live palette, so Dark Mode
+ * repaints Settings too.
  */
 
-import { useColors } from "@dashi/ui";
-import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { fractionAt, fractionOf, type Range, valueAt } from "./controls.ts";
-import { PageContext } from "./spot.tsx";
+import { Group as Card, useColors } from "@dashi/ui";
+import { type Bounds, ScrollView, Text, useWindowChrome } from "@mirinjs/metal";
+import { type ReactNode, useContext, useMemo, useRef } from "react";
+import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
-export { Button, Caption, type Choice, Choices, Group, Note, Row, type Surface, Tile, useSurface } from "@dashi/ui";
+/**
+ * A row whose label is data, not a setting: a login, a card, a device, a
+ * notice with its action. Settings' own rows are `Setting`s, from the
+ * registry; a pane draws no plain row with a fixed label.
+ */
+/** A field of a form (adding a login, a card, a token); the form itself is a registered row, wrapped in its `Spot`. */
+export { Button, Caption, type Choice, Choices, Note, Row as Item, Row as FormRow, Slider, type Surface, Tile, useSurface } from "@dashi/ui";
+export { Setting } from "./setting.tsx";
 export { Spot } from "./spot.tsx";
+
+/** A card of rows (@dashi/ui's), lit while a link to its section (a `cards` Spot) shows it. */
+export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
+  const colors = useColors();
+  const lit = useContext(SpotLit);
+  return (
+    <Card {...(testID !== undefined ? { testID } : {})} {...(lit ? { wash: colors.switcherSelection } : {})}>
+      {children}
+    </Card>
+  );
+}
 
 /**
  * A pane: its title, then its content scrolling under it when it is taller than the window. With
@@ -35,86 +52,11 @@ export function Page({ title, children }: { title: string; children: ReactNode }
         onLayout={(laid) => {
           bounds.current = laid;
         }}
-        style={{ flex: 1, flexDirection: "column", gap: 16, padding: 24, paddingTop: unified ? 8 : 20 }}
+        style={{ flex: 1, flexDirection: "column", gap: PAGE_GAP, padding: 24, paddingTop: unified ? 8 : 20 }}
       >
         {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
         {children}
       </ScrollView>
     </PageContext.Provider>
-  );
-}
-
-const KNOB = 18;
-const TRACK = 4;
-/** A drag that stops moving for this long is saved, in case the release never arrives. */
-const SETTLE_MS = 300;
-
-/**
- * A slider: press or drag on the bar. While dragging it shows the pointer's
- * value; the value is handed to `onCommit` when the button lifts (or the
- * pointer rests), not on every move, so a drag is one write to the file.
- */
-export function Slider({
-  value,
-  range,
-  width = 220,
-  testID,
-  onCommit,
-}: {
-  value: number;
-  range: Range;
-  width?: number;
-  testID: string;
-  onCommit: (value: number) => void;
-}) {
-  const colors = useColors();
-  const [dragging, setDragging] = useState<number | null>(null);
-  // Pointer events carry the bar's bounds; the last layout stands in for one that does not.
-  const laid = useRef<Bounds | null>(null);
-  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(pending.current), []);
-
-  const commit = (next: number) => {
-    clearTimeout(pending.current);
-    setDragging(null);
-    onCommit(next);
-  };
-  const shown = dragging ?? value;
-  const knobLeft = fractionOf(shown, range) * (width - KNOB);
-  return (
-    <View
-      testID={testID}
-      onLayout={(bounds) => {
-        laid.current = bounds;
-      }}
-      onPointer={(event) => {
-        const bar = event.bounds ?? laid.current;
-        if (!bar) return;
-        const next = valueAt(fractionAt(event.x, bar, KNOB), range);
-        setDragging(next);
-        clearTimeout(pending.current);
-        if (event.phase === "up") commit(next);
-        else pending.current = setTimeout(() => commit(next), SETTLE_MS);
-      }}
-      style={{ width, height: KNOB + 4, position: "relative" }}
-    >
-      <View
-        style={{ position: "absolute", left: 0, top: (KNOB + 4 - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          left: 0,
-          top: (KNOB + 4 - TRACK) / 2,
-          width: knobLeft + KNOB / 2,
-          height: TRACK,
-          borderRadius: TRACK / 2,
-          backgroundColor: colors.selection,
-        }}
-      />
-      <View
-        style={{ position: "absolute", left: knobLeft, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }}
-      />
-    </View>
   );
 }

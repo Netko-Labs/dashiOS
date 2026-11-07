@@ -1,42 +1,13 @@
 /**
- * The arithmetic of Settings' sliders: where a pointer is on the bar, and the
- * value it stands for, snapped to the slider's step so a setting is never
- * saved as 0.30000000000000004.
+ * Settings' sliders' ranges and choices: what each runs over and how it
+ * snaps (the arithmetic is @dashi/ui's slider-math.ts), and the lists the
+ * pills pick from.
  */
 
-export interface Range {
-  min: number;
-  max: number;
-  step: number;
-}
+import type { SliderRange } from "@dashi/ui";
 
-/** Where `value` sits on the bar, 0 to 1. */
-export function fractionOf(value: number, { min, max }: Range): number {
-  if (max <= min) return 0;
-  return Math.min(Math.max((value - min) / (max - min), 0), 1);
-}
-
-/** Decimal places a step needs (0.05 → 2). */
-function places(step: number): number {
-  const text = String(step);
-  const dot = text.indexOf(".");
-  return dot < 0 ? 0 : text.length - dot - 1;
-}
-
-/** The value for a position on the bar (0 to 1): snapped to the step, inside the range. */
-export function valueAt(fraction: number, range: Range): number {
-  const { min, max, step } = range;
-  const raw = min + Math.min(Math.max(fraction, 0), 1) * (max - min);
-  const snapped = min + Math.round((raw - min) / step) * step;
-  return Number(Math.min(Math.max(snapped, min), max).toFixed(places(step)));
-}
-
-/** A pointer at window pixel `x` over a bar with these bounds, as 0 to 1 with the knob's center under it. */
-export function fractionAt(x: number, bar: { x: number; width: number }, knob: number): number {
-  const travel = bar.width - knob;
-  if (travel <= 0) return 0;
-  return Math.min(Math.max((x - bar.x - knob / 2) / travel, 0), 1);
-}
+/** A slider's range: where it runs, and the step it snaps to. */
+export type Range = SliderRange;
 
 /** Tracking speed, -1 (slowest) to 1 (fastest), in steps of 0.05. */
 export const SPEED: Range = { min: -1, max: 1, step: 0.05 };

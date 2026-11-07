@@ -8,8 +8,11 @@
 export type CloseQuestion =
   /** One tab, its program's name ("" when it has none). */
   | { kind: "tab"; id: number; program: string }
-  /** The window: the programs still running in its tabs. */
-  | { kind: "window"; programs: readonly string[] };
+  /**
+   * The window: the programs still running in its tabs. `quit`: Terminal is
+   * quitting (❖Q, Quit Terminal, logging out), not only this window closing.
+   */
+  | { kind: "window"; programs: readonly string[]; quit?: boolean };
 
 export interface CloseCopy {
   title: string;
@@ -37,6 +40,9 @@ function stopped(programs: readonly string[]): string {
 export function closeCopy(question: CloseQuestion): CloseCopy {
   if (question.kind === "tab") {
     return { title: "Close this tab?", message: `Closing it stops ${stopped([question.program])}.`, confirmLabel: "Close tab" };
+  }
+  if (question.quit) {
+    return { title: "Quit Terminal?", message: `Quitting stops ${stopped(question.programs)}.`, confirmLabel: "Quit" };
   }
   return { title: "Close this window?", message: `Closing it stops ${stopped(question.programs)}.`, confirmLabel: "Close window" };
 }

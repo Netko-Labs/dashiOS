@@ -37,6 +37,21 @@ export function sortRows<T>(rows: readonly T[], columns: ReadonlyArray<SortableC
     .map(({ row }) => row);
 }
 
+/**
+ * `rows` in the order `held` drew them, so a re-sort moves nothing under the
+ * pointer: rows that are gone drop out, the rest keep their places, and new
+ * ones follow in their own order.
+ */
+export function holdOrder<T, K>(held: readonly K[], rows: readonly T[], rowKey: (row: T) => K): T[] {
+  const byKey = new Map(rows.map((row) => [rowKey(row), row] as const));
+  const kept = held.flatMap((key) => {
+    const row = byKey.get(key);
+    return row === undefined ? [] : [row];
+  });
+  const placed = new Set(held);
+  return [...kept, ...rows.filter((row) => !placed.has(rowKey(row)))];
+}
+
 /** A click on `column`'s header: sort by it, or flip it when it is already the sort. */
 export function nextSort<T>(current: SortState | null, column: SortableColumn<T>): SortState {
   if (current?.key === column.key) return { key: column.key, ascending: !current.ascending };

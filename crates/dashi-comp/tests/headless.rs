@@ -281,6 +281,22 @@ fn the_shells_configuration_is_answered() {
 }
 
 #[test]
+fn no_gpus_are_held_without_a_seat_of_our_own() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(
+        ipc.request("gpus", json!({}))["result"],
+        json!({ "gpus": [] })
+    );
+    assert_eq!(
+        ipc.request("gpu-keep", json!({ "card": "card0", "on": true }))["error"],
+        "no GPU named card0"
+    );
+    assert!(ipc.request("gpu-keep", json!({ "card": "card0" }))["error"].is_string());
+    assert!(ipc.request("gpu-keep", json!({ "on": false }))["error"].is_string());
+}
+
+#[test]
 fn screens_are_described_as_the_shell_parses_them() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
@@ -343,9 +359,24 @@ fn the_keymap_is_checked_before_it_is_used() {
             { "when": "super+letter", "app": "terminal", "send": "ctrl+shift+key" },
             { "when": "super+BackSpace", "tap": ["shift+Home", "BackSpace"] },
             { "when": "super+ctrl+*", "swallow": true }
+        ],
+        // The lock screen's (packages/shell/src/keymap.ts LOCKED_RULES).
+        "locked": [
+            { "when": "super+a|c|x|v|z", "send": "ctrl+key" },
+            { "when": "super+BackSpace", "tap": ["shift+Home", "BackSpace"] },
+            { "when": "super+*", "swallow": true }
         ]
     });
     assert_eq!(ipc.request("keymap", keymap)["result"], json!({}));
+    // No shell binding fires while locked: a locked rule that binds is refused.
+    let refused = ipc.request(
+        "keymap",
+        json!({ "rules": [], "locked": [{ "when": "super+q", "bind": "quit-app" }] }),
+    );
+    assert!(
+        refused["error"].as_str().unwrap().contains("locked 0"),
+        "{refused}"
+    );
     let refused = ipc.request(
         "keymap",
         json!({ "rules": [{ "when": "hyper+q", "bind": "x" }] }),

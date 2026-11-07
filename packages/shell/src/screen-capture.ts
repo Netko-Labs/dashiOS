@@ -10,7 +10,9 @@
  *   { "screenSharing": { "clients": ["/usr/bin/grim"] } }
  *
  * While frames flow the compositor sends `screen-capture {active}`, and the
- * menu bar shows "Screen is being shared" (screen-capture.tsx). Nothing
+ * menu bar shows "Screen is being shared" (screen-capture.tsx). Settings ›
+ * Privacy & Security lists `screenSharing.clients` and takes one off the
+ * list; the shell sends the list again when the file changes. Nothing
  * hides it: an app's own request is only ever served through the portal,
  * which asks the person first.
  *
@@ -81,6 +83,8 @@ export interface ScreenCapture {
    * so it is allowed only while Dashi records.
    */
   allow(path: string): () => void;
+  /** Send the list again: settings.json's changed (a program taken off it in Settings › Privacy & Security). */
+  refresh(): void;
   stop(): void;
 }
 
@@ -120,6 +124,9 @@ export function startScreenCapture(
         else extra.delete(path);
         void send().catch(() => {});
       };
+    },
+    refresh() {
+      void send().catch(() => {});
     },
     stop,
   };

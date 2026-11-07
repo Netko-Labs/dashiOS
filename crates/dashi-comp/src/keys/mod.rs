@@ -3,8 +3,10 @@
 mod handler;
 mod keymap;
 mod layout;
+mod locked;
 mod replay;
 mod snippets;
+mod super_click;
 
 pub(crate) use handler::Keys;
 pub(crate) use keymap::{Chord, Keymap};

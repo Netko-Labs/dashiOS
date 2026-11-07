@@ -186,6 +186,28 @@ describe("did you mean", () => {
   });
 });
 
+describe("screenshots", () => {
+  test("the words people take a screenshot by find Screenshot… first, with its key", () => {
+    const index = launcherIndex({
+      entries: [],
+      actions: commandActions(
+        async () => {},
+        KEYMAP,
+        async () => {},
+      ),
+    });
+    const firstCommand = (query: string) => found(list({ query, index }), 5).items.find((item) => item.action)?.action;
+    for (const query of ["screenshot", "screen shot", "print screen", "Screenshot", "record screen", "snip"]) {
+      expect([query, firstCommand(query)?.title]).toEqual([query, "Screenshot…"]);
+    }
+    expect(firstCommand("screenshot")?.shortcut).toBe("⇧❖5");
+    // The other two come with it.
+    const titles = found(list({ query: "screenshot", index }), 5).items.map((item) => item.action?.title);
+    expect(titles).toContain("Screenshot of the Screen");
+    expect(titles).toContain("Screenshot of an Area…");
+  });
+});
+
 describe("recents", () => {
   test("parse, remember and list as before", () => {
     expect(parseRecents('{"recent":["a","b","a"]}')).toEqual(["a", "b"]);

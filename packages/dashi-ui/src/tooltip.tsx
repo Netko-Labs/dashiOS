@@ -87,6 +87,11 @@ export interface Tooltip {
   node: ReactNode;
 }
 
+/** The window's top layer (`AppWindow` mounts it), for a portal: a pop-up button draws its menu there, over everything. Null outside one. */
+export function useWindowLayer(): unknown {
+  return useContext(LayerContext)?.host ?? null;
+}
+
 /** A tip for a control; `text` undefined, or no `TooltipLayer` above, shows nothing. */
 export function useTooltip(text: string | undefined): Tooltip {
   const layer = useContext(LayerContext);

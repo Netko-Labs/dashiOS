@@ -17,10 +17,8 @@ import { type SoundStore, useSound } from "../../sound/store.ts";
 import type { Output, OutputKind } from "../../sound/types.ts";
 import type { Volume } from "../../system/volume.ts";
 import { MICROPHONE } from "../glyphs-machine.ts";
-import { useSettings } from "../hooks.ts";
 import type { PaneServices } from "../services.ts";
-import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Note, Page, Row, Slider, Spot } from "../ui.tsx";
+import { Caption, Group, Note, Page, Setting, Slider } from "../ui.tsx";
 import { CheckSlot, Failure, ListRow } from "./parts.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
@@ -83,16 +81,16 @@ function VolumeRow({
   const shown = volume.muted ? 0 : Math.min(volume.level, 1);
   return (
     <Group testID={`${side}-volume-group`}>
-      <Row label={side === "output" ? "Output volume" : "Input volume"} detail={volume.muted ? "Muted" : `${Math.round(shown * 100)}%`}>
+      <Setting id={side === "output" ? "sound/output-volume" : "sound/input-volume"} detail={volume.muted ? "Muted" : `${Math.round(shown * 100)}%`}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Svg markup={side === "output" ? speakerGlyph(0, false) : MICROPHONE} size={13} color={colors.textMuted} />
           <Slider testID={`${side}-volume`} value={shown} range={VOLUME} width={200} onCommit={onLevel} />
           <Svg markup={side === "output" ? speakerGlyph(1, false) : MICROPHONE} size={15} color={colors.textMuted} />
         </View>
-      </Row>
-      <Row label="Mute">
+      </Setting>
+      <Setting id={side === "output" ? "sound/output-mute" : "sound/input-mute"}>
         <Switch testID={`${side}-mute`} on={volume.muted} onChange={onMute} />
-      </Row>
+      </Setting>
     </Group>
   );
 }
@@ -122,10 +120,9 @@ function InputMeter({ meter }: { meter: LevelMeter }) {
   );
 }
 
-export function SoundPane({ services, settings }: { services: PaneServices; settings: SettingsStore }) {
+export function SoundPane({ services }: { services: PaneServices }) {
   const { levels, inputs, sound, meter } = services;
   const volumes = useLevels(levels);
-  const { menuBar } = useSettings(settings).data;
   useEffect(() => {
     levels.open();
     return () => levels.close();
@@ -150,18 +147,14 @@ export function SoundPane({ services, settings }: { services: PaneServices; sett
       />
       {volumes.input !== null && !volumes.input.muted && (
         <Group testID="input-level-group">
-          <Row label="Input level" detail="Speak to see the meter move. Nothing is recorded.">
+          <Setting id="sound/input-level">
             <InputMeter meter={meter} />
-          </Row>
+          </Setting>
         </Group>
       )}
       <Caption above>Menu Bar</Caption>
       <Group>
-        <Spot pane="sound" row="show-in-menu-bar">
-          <Row label="Show Sound in menu bar" detail="The speaker beside the battery and network icons.">
-            <Switch testID="sound-menubar" on={menuBar.sound ?? true} onChange={(sound) => settings.patch("menuBar", { sound })} />
-          </Row>
-        </Spot>
+        <Setting id="sound/show-in-menu-bar" control="sound-menubar" />
       </Group>
     </Page>
   );

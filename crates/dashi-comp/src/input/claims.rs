@@ -67,7 +67,8 @@ impl Dashi {
             .collect();
     }
 
+    /// While locked no swipe is the shell's: it goes to the lock screen.
     pub(crate) fn claims_swipe(&self, fingers: u32) -> bool {
-        self.claims.swipe_fingers.contains(&fingers)
+        !self.lock.locked && self.claims.swipe_fingers.contains(&fingers)
     }
 }

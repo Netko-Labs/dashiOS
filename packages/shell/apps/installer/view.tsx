@@ -5,11 +5,11 @@
  * install itself and Restart. model.ts holds the rules; helper.ts runs it.
  */
 
-import { CHECK, Switch, TextField, useColors, WARNING } from "@dashi/ui";
+import { CHECK, ProgressBar, Row, Switch, TextField, useColors, WARNING } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { LOGO } from "../../src/glyphs.ts";
-import { Button, Caption, Group, Note, Row, useSurface } from "../../src/settings-app/ui.tsx";
+import { Button, Caption, Group, Note, useSurface } from "../../src/settings-app/ui.tsx";
 import { type InstallChoice, isDryRun, runInstall, STEPS } from "./helper.ts";
 import {
   type Account,
@@ -142,15 +142,6 @@ function StepRow({ label, mark }: { label: string; mark: "waiting" | "running" |
         {mark === "running" && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.selection }} />}
       </View>
       <Text style={{ fontSize: 13, color: mark === "waiting" ? colors.textMuted : colors.text }}>{label}</Text>
-    </View>
-  );
-}
-
-function Bar({ fraction }: { fraction: number }) {
-  const colors = useColors();
-  return (
-    <View testID="installer-bar" style={{ height: 6, borderRadius: 3, backgroundColor: colors.track, overflow: "hidden", flexShrink: 0 }}>
-      <View style={{ width: `${Math.round(fraction * 1000) / 10}%`, height: 6, borderRadius: 3, backgroundColor: colors.selection }} />
     </View>
   );
 }
@@ -356,7 +347,7 @@ export function InstallerWindow({ restart }: { restart: () => void }) {
     case "installing":
       return (
         <Frame page={page} footer={null}>
-          <Bar fraction={overall(progress)} />
+          <ProgressBar testID="installer-bar" size="regular" value={overall(progress)} />
           <ProgressSteps progress={progress} />
         </Frame>
       );

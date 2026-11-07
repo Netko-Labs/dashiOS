@@ -6,7 +6,7 @@
  * Copies keeps what is typed, and Print waits until it reads as a count.
  */
 
-import { Button, Choices, Row, TextField, useColors } from "@dashi/ui";
+import { Button, Choices, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { variant } from "../../../src/dbus/index.ts";
@@ -54,8 +54,10 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         <Text style={{ fontSize: 13, color: colors.textMuted }}>No printers are set up. Add one in Settings, or save a PDF.</Text>
       ) : (
         <Row label="Printer">
-          <Choices
+          {/* A list of unknown length is a pop-up button, not pills (UI-2). */}
+          <PopUpButton
             testID="print:printer"
+            width={220}
             options={request.printers.map((each) => ({ value: each.name, label: each.label }))}
             value={choice.printer ?? ""}
             onChange={(name) => update({ printer: name })}
@@ -103,8 +105,9 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
       </View>
       {more && media.length > 0 && (
         <Row label="Paper">
-          <Choices
+          <PopUpButton
             testID="print:paper"
+            width={220}
             options={media.map((keyword) => ({ value: keyword, label: mediaLabel(keyword) }))}
             value={choice.media ?? media[0] ?? ""}
             onChange={(keyword) => update({ media: keyword })}

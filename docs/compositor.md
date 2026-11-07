@@ -50,7 +50,7 @@ shell's client:
   (`packages/shell/src/spaces/fullscreen.ts`); `window-state` tells it when a
   window is minimized or hidden however that happened.
 - **Session:** `lock.rs`, `idle/` (`protocols`, `ipc`), `keys/` (keymap,
-  bindings, ❖ phases, the snippets' keywords watched as the person types), `agent_seat/` (a second seat an agent drives, drawn
+  bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
 - **IPC (`ipc/`):** `requests`, `windows`, `outbox`, `dev`.
@@ -70,7 +70,8 @@ crates/dashi-comp/src/
   backend/
     mod.rs          the backend facade the rest of the compositor sees
     udev/           DRM/KMS, GBM, libinput, libseat, hotplug, multi-GPU, gamma,
-                    EDID, keyboard lights (keyboards.rs), VRR (vrr.rs)
+                    EDID, keyboard lights (keyboards.rs), VRR (vrr.rs), the
+                    graphics card let go while nothing needs it (sleep.rs)
     winit.rs        nested in another compositor's window
     headless.rs     no screens: IPC and protocol tests
   handlers/         one module per Wayland protocol (or family): compositor,
@@ -95,7 +96,8 @@ crates/dashi-comp/src/
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
   input/            keyboard and pointer routing, decorations, constraints, gestures
-  keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs)
+  keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs), ❖-click (super_click.rs),
+                    keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager
   ipc/              socket, framing, requests
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes
@@ -127,7 +129,17 @@ Each milestone ends with the shell running on it in the VM.
 ## Better Than 0.1.0
 
 - **The session lock is the compositor's guarantee:** ext-session-lock, so a
-  crashed shell leaves the screen locked, not open.
+  crashed shell leaves the screen locked, not open. While locked the keyboard
+  is the lock screen's whatever asks for it (0.5.0: keys typed on the lock
+  screen once reached System Settings behind it, after something moved the
+  keyboard there): every change of keyboard focus goes through
+  `Dashi::set_keyboard_focus` (`session/lock.rs`), which gives it only to a
+  lock surface then, and every key is checked again before it is sent
+  (`keys/locked.rs`); `send-keys`, `snippet-erase`, `agent-input` and the
+  overview are refused, only the keymap's `locked` rules apply, no binding,
+  ❖ tap or hold, or claimed swipe goes to the shell, and an input method's
+  grab is let go (docs/compositor-ipc.md, "While locked";
+  `tests/lock.rs` tries each way in).
 - **Games:** direct scanout (done: smithay's DRM compositor puts a client
   buffer on a plane when it can, presentation feedback says zero-copy, and
   per-surface dmabuf feedback offers a scanned-out surface the formats its
@@ -140,6 +152,25 @@ Each milestone ends with the shell running on it in the VM.
 - **Software rendering (done):** when the GPU chosen to draw has only a
   software EGL driver (a VM without 3D, `nomodeset`), it draws on its card
   node with llvmpipe into linear buffers, so the live image starts anywhere.
+- **The graphics card sleeps (done, 0.5.0):** a GPU that does not draw (a
+  laptop's NVIDIA card beside the AMD or Intel GPU that drives the panel) is
+  held open only while it is needed: a screen connected to it, client
+  buffers only it can read, or the shell's `gpu-keep`. 10 s after the last
+  of those, dashi-comp drops its renderer and EGL display, its GBM device and
+  its DRM fd (handed back to the seat), and with them the driver's
+  `/dev/nvidia*`, so the card can runtime-suspend; before 0.5.0 it held them
+  all session long and the card never slept. Asleep, it is only a path:
+  udev's hotplug uevent comes without the device open, and the connectors'
+  sysfs `status` (the kernel's last probe, read without waking it) says
+  whether to open it, which happens on its own when a screen is plugged in.
+  Clients are told the drawing GPU (dmabuf feedback, Xwayland's glamor), so
+  a game offloaded to the card (PRIME render offload, Steam's
+  `__NV_PRIME_RENDER_OFFLOAD`) renders there and hands buffers the drawing
+  GPU reads directly: the compositor needs no card for it. A buffer no open
+  GPU can read wakes the sleeping ones for the import (the event loop waits
+  for that once), and the card stays open while such buffers live.
+  `gpus` reports each GPU, `gpus-changed` says when that changes; the shell
+  no longer counts dashi-comp among the card's holders.
 - **Presentation time (done):** feedback at the vblank, from DRM's timestamp.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the

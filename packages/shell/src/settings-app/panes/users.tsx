@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { type Account, initialsOf, nameProblem, useAccount } from "../../accounts/index.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import type { PaneServices } from "../services.ts";
-import { Button, Caption, Group, Note, Page, Row, useSurface } from "../ui.tsx";
+import { Button, Caption, Group, Note, Page, Setting, useSurface } from "../ui.tsx";
 import { Failure, Value } from "./parts.tsx";
 
 const AVATAR = 72;
@@ -57,7 +57,7 @@ function NameRow({ account, onSave, busy }: { account: Account; onSave: (name: s
     setTyped(null);
   };
   return (
-    <Row label="Full name" detail={problem ?? undefined}>
+    <Setting id="users/full-name" detail={problem ?? null}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ width: 200 }}>
           <TextInput
@@ -71,7 +71,7 @@ function NameRow({ account, onSave, busy }: { account: Account; onSave: (name: s
         </View>
         <Button testID="account-name-save" label="Save" primary disabled={!dirty || problem !== null || busy} onPress={save} />
       </View>
-    </Row>
+    </Setting>
   );
 }
 
@@ -121,28 +121,25 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
       </View>
       <Group testID="account-details">
         <NameRow account={account} busy={state.busy !== null} onSave={(name) => void store.setRealName(name)} />
-        <Row label="Account name" detail="The name you log in with.">
+        <Setting id="users/account-name">
           <Value testID="account-login">{account.userName}</Value>
-        </Row>
-        <Row label="Picture" detail="A PNG or JPEG under 1 MB.">
+        </Setting>
+        <Setting id="users/picture">
           <Button
             testID="account-picture"
             label={state.busy === "picture" ? "Changing…" : "Change Picture…"}
             disabled={state.busy !== null}
             onPress={changePicture}
           />
-        </Row>
+        </Setting>
       </Group>
       <Group testID="account-security">
-        <Row label="Password" detail="Asked for on a sheet of its own, which agents can't see or type into.">
+        <Setting id="users/password">
           <Button testID="account-password" label="Change Password…" onPress={() => services.changePassword(account.hasPassword)} />
-        </Row>
-        <Row
-          label="Log in automatically"
-          detail={state.busy === "login" ? "Waiting for permission…" : "Skips the password at the login screen. Needs an administrator's password to change."}
-        >
+        </Setting>
+        <Setting id="users/automatic-login" detail={state.busy === "login" ? "Waiting for permission…" : undefined}>
           <Switch testID="account-autologin" on={account.automaticLogin} onChange={(on) => state.busy === null && void store.setAutomaticLogin(on)} />
-        </Row>
+        </Setting>
       </Group>
       {failure && <Failure testID="account-failure">{failure.message}</Failure>}
       <Caption>Automatic login is honored by login managers that read AccountsService (GDM); SDDM and greetd are configured in their own files.</Caption>

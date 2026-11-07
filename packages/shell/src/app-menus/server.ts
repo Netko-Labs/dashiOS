@@ -96,7 +96,7 @@ export class MenuConnection implements MenuOwner {
       this.send({ type: "error", message: message.error });
       return;
     }
-    this.store.publish(this, message.menus);
+    this.store.publish(this, message.menus, message.typing === true);
   }
 
   private end(): void {

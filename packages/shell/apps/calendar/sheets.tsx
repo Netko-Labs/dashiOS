@@ -1,6 +1,6 @@
 /** Calendar's smaller sheets: a calendar's name and color, the questions that can't be taken back, and the path of a file to import. */
 
-import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
+import { AlertSheet, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { isColor } from "./ics.ts";
@@ -86,13 +86,12 @@ export function DeleteEventSheet({
   onAll: () => void;
   onCancel: () => void;
 }) {
-  const colors = useColors();
   if (!sheet.repeating) {
     return (
       <ConfirmSheet
         testID="delete-event"
         title={`Delete “${sheet.title || "New Event"}”?`}
-        message="You can't undo this."
+        message="Edit › Undo brings it back."
         confirmLabel="Delete"
         danger
         onConfirm={onAll}
@@ -101,15 +100,20 @@ export function DeleteEventSheet({
     );
   }
   return (
-    <Sheet testID="delete-event" width={380} onCancel={onCancel}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Delete “${sheet.title || "New Event"}”?`}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>This event repeats. Delete only this time, or every time it happens?</Text>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="delete-event:cancel" onPress={onCancel} />
-        <Button label="Delete This Time" testID="delete-event:this" onPress={onThis} />
-        <Button label="Delete All" testID="delete-event:ok" danger onPress={onAll} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID="delete-event"
+      width={420}
+      question={`Delete “${sheet.title || "New Event"}”?`}
+      message="This event repeats. Delete only this time, or every time it happens?"
+      glyph={WARNING}
+      tone="danger"
+      buttons={[
+        // Deleting is a click: Enter cancels, as Esc does.
+        { label: "Cancel", testID: "delete-event:cancel", onPress: onCancel, cancel: true, isDefault: true },
+        { label: "Delete This Time", testID: "delete-event:this", onPress: onThis },
+        { label: "Delete All", testID: "delete-event:ok", onPress: onAll, kind: "danger" },
+      ]}
+    />
   );
 }
 

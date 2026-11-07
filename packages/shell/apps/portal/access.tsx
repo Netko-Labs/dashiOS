@@ -3,8 +3,10 @@
  * to use the camera", as a sheet on the asking window, written as a
  * question, with the app's own reason under it. xdg-desktop-portal asks
  * this for the camera, the microphone, location and background running, and
- * remembers the answer itself (its permission store). An app with no window
- * gets an item in the menu bar that opens the sheet (ui/background.ts).
+ * remembers the answer itself (its permission store), which Settings ›
+ * Privacy & Security lists and takes back one by one; the sheet's button
+ * opens it there. An app with no window (a background app, a `gdbus` call)
+ * gets the same question at once, as a window of its own (windows.ts).
  *
  *   AccessDialog(o handle, s app_id, s parent_window, s title, s subtitle,
  *                s body, a{sv} options) → (u response, a{sv} results)
@@ -12,14 +14,15 @@
  *   results: choices a(ss); response 0 granted, 1 denied
  */
 
-import { glyphs, useColors } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { AlertWindow, alertWindowHeight, Button, glyphs } from "@dashi/ui";
 import { useState } from "react";
+import { type LinkAnswer, openLink } from "../../src/actions/open-link.ts";
 import type { InterfaceSpec } from "../../src/dbus/index.ts";
+import { paneTitle } from "../../src/settings-app/panes.ts";
 import { type AppInfo, appInfo } from "./apps.ts";
 import { type Choice, parseChoices } from "./file-chooser/options.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
-import { CheckBox, PortalFrame, Question } from "./ui/frame.tsx";
+import { CheckBox } from "./ui/frame.tsx";
 import { CAMERA } from "./ui/glyphs.ts";
 import { cleanString, results, str, vardict } from "./vardict.ts";
 import type { ShowDialog } from "./windows.ts";
@@ -82,60 +85,73 @@ export function accessInterface(requests: Requests, ask: AskAccess): InterfaceSp
   };
 }
 
-/**
- * The line under the question when the app gave none. It names no Settings
- * pane: none lists these permissions yet (xdg-desktop-portal keeps them),
- * and copy points only at things that exist.
- */
+/** The line under the question when the app gave none. */
 export const accessFallback = (app: string): string => `Dashi remembers your answer, so ${app} won’t ask again.`;
 
-function AccessSheet({ request, app, answer }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void }) {
-  const colors = useColors();
+/** Where the person reviews and takes back what they answered: the pane's name comes from the pane list (CP-7). */
+export const PRIVACY_LINK = "dashi://settings/privacy/apps";
+export const privacyLabel = (): string => `${paneTitle("privacy")}…`;
+
+/** Opens a `dashi://` link in the session (the shell's links socket). */
+export type OpenLink = (url: string) => Promise<LinkAnswer>;
+
+/** The line under the question: the app's own reason, else what Dashi does with the answer. */
+const accessDetail = (request: AccessRequest, app: AppInfo): string =>
+  [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
+
+/** The choices the sheet can draw: on-or-off ones, as check boxes. */
+const checkBoxes = (request: AccessRequest): Choice[] => request.choices.filter((choice) => choice.options.length === 0);
+
+/** The sheet's width, and its height with nothing to spare: the question, the reason, the check boxes (16 each, 8 apart), the buttons. */
+export const ACCESS_WIDTH = 440;
+export function accessHeight(request: AccessRequest, app: AppInfo): number {
+  const boxes = checkBoxes(request).length;
+  return alertWindowHeight({ question: request.title, message: accessDetail(request, app), extra: boxes > 0 ? boxes * 16 + (boxes - 1) * 8 : 0 }, ACCESS_WIDTH);
+}
+
+function AccessSheet({ request, app, answer, open }: { request: AccessRequest; app: AppInfo; answer: (value: AccessAnswer | null) => void; open: OpenLink }) {
   const [choices, setChoices] = useState<Record<string, string>>(() => Object.fromEntries(request.choices.map((c) => [c.id, c.initial])));
   const reply = (granted: boolean) => answer({ granted, choices: Object.entries(choices) });
-  const detail = [request.subtitle, request.body].filter(Boolean).join("\n\n") || accessFallback(app.name);
+  const detail = accessDetail(request, app);
   const camera = /camera|video/i.test(`${request.icon ?? ""} ${request.title}`);
+  const boxes = checkBoxes(request);
   return (
-    <PortalFrame
-      title={app.name}
-      onCancel={() => reply(false)}
+    // The one alert frame (UI-5): the question as the first line, no title row, the app's reason under it.
+    <AlertWindow
+      testID="portal"
+      question={request.title}
+      message={detail}
+      glyph={camera ? CAMERA : glyphs.LOCK}
+      tone="accent"
+      footer={<Button testID="access:privacy" label={privacyLabel()} onPress={() => void open(PRIVACY_LINK)} />}
       buttons={[
-        { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false) },
+        { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false), cancel: true },
         // Allow is the one that goes ahead, but only a click gives access: Enter never does.
-        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), primary: true, grants: true },
+        { label: request.grantLabel, testID: "access:grant", onPress: () => reply(true), kind: "primary", isDefault: false },
       ]}
     >
-      <Question
-        text={request.title}
-        detail={detail}
-        glyph={
-          <View style={{ width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: `${colors.selection}24` }}>
-            <Svg markup={camera ? CAMERA : glyphs.LOCK} size={22} color={colors.selection} />
-          </View>
-        }
-      />
-      {request.choices.map((choice) =>
-        choice.options.length === 0 ? (
-          <CheckBox
-            key={choice.id}
-            testID={`access:choice:${choice.id}`}
-            label={choice.label}
-            checked={choices[choice.id] === "true"}
-            onChange={(on) => setChoices({ ...choices, [choice.id]: on ? "true" : "false" })}
-          />
-        ) : null,
-      )}
-    </PortalFrame>
+      {boxes.length > 0
+        ? boxes.map((choice) => (
+            <CheckBox
+              key={choice.id}
+              testID={`access:choice:${choice.id}`}
+              label={choice.label}
+              checked={choices[choice.id] === "true"}
+              onChange={(on) => setChoices({ ...choices, [choice.id]: on ? "true" : "false" })}
+            />
+          ))
+        : undefined}
+    </AlertWindow>
   );
 }
 
 /** The sheet on screen. */
-export function askOnScreen(show: ShowDialog): AskAccess {
+export function askOnScreen(show: ShowDialog, open: OpenLink = (url) => openLink(url)): AskAccess {
   return (request, signal) => {
     const app = appInfo(request.appId);
     return show<AccessAnswer | null>(
-      { parent: request.parent, title: request.title, width: 440, height: 220 },
-      (answer) => <AccessSheet request={request} app={app} answer={answer} />,
+      { parent: request.parent, title: request.title, width: ACCESS_WIDTH, height: accessHeight(request, app) },
+      (answer) => <AccessSheet request={request} app={app} answer={answer} open={open} />,
       signal,
       null,
     );

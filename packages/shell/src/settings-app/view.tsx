@@ -12,7 +12,7 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, useWindowChrome, View } from "@mirinjs/metal";
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { PaneContext } from "./context.ts";
 import { useSettings } from "./hooks.ts";
 import { AboutPane } from "./panes/about.tsx";
@@ -31,17 +31,23 @@ import { MousePane } from "./panes/mouse.tsx";
 import { NetworkPane } from "./panes/network.tsx";
 import { NotificationsPane } from "./panes/notifications.tsx";
 import { PasswordsPane } from "./panes/passwords.tsx";
+import { PrivacyPane } from "./panes/privacy.tsx";
 import { SoundPane } from "./panes/sound.tsx";
 import { TrackpadPane } from "./panes/trackpad.tsx";
 import { UsersPane } from "./panes/users.tsx";
 import { WallpaperPane } from "./panes/wallpaper.tsx";
 import { type Nav, type PaneId, paneTitle } from "./panes.ts";
+import { PaneStoresContext } from "./setting.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import { SpotContext, type SpotHost } from "./spot.tsx";
 import { useSurface } from "./ui.tsx";
 
-/** The window's size (the Mac's System Settings opens about this big). */
-export const SETTINGS_WINDOW = { width: 760, height: 640 } as const;
+/**
+ * The window's size (the Mac's System Settings opens about this big): tall
+ * enough for every sidebar row, Graphics' too, with nothing to scroll
+ * (sidebar.tsx `sidebarHeight`); a smaller window scrolls the list.
+ */
+export const SETTINGS_WINDOW = { width: 760, height: 700 } as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
@@ -50,9 +56,9 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
-      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} flags={ctx.flags} laptop={ctx.services.laptop} />;
+      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} laptop={ctx.services.laptop} />;
     case "desktop-dock":
-      return <DesktopDockPane settings={ctx.settings} />;
+      return <DesktopDockPane />;
     case "keyboard":
       return (
         <KeyboardPane
@@ -74,11 +80,21 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "lock-screen":
       return <LockScreenPane settings={ctx.settings} lock={ctx.lock} />;
     case "notifications":
-      return <NotificationsPane flags={ctx.flags} />;
+      return <NotificationsPane />;
     case "passwords":
       return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : null;
     case "agents":
-      return <AgentsPane grants={ctx.grants} home={ctx.home} settings={ctx.settings} {...(ctx.answers ? { answers: ctx.answers } : {})} />;
+      return <AgentsPane settings={ctx.settings} show={ctx.show} {...(ctx.answers ? { answers: ctx.answers } : {})} />;
+    case "privacy":
+      return (
+        <PrivacyPane
+          grants={ctx.grants}
+          home={ctx.home}
+          settings={ctx.settings}
+          {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
+          {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
+        />
+      );
     case "about":
       return <AboutPane about={ctx.about} openSetup={ctx.openSetup} />;
     case "network":
@@ -86,7 +102,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "bluetooth":
       return <BluetoothPane services={ctx.services} />;
     case "sound":
-      return <SoundPane services={ctx.services} settings={ctx.settings} />;
+      return <SoundPane services={ctx.services} />;
     case "battery":
       return <BatteryPane services={ctx.services} settings={ctx.settings} />;
     case "graphics":
@@ -127,23 +143,28 @@ export function SettingsWindow({ ctx, nav, spots }: { ctx: PaneContext; nav: Nav
   const { error } = useSettings(ctx.settings);
   const { controls } = useWindowChrome();
   const shown = useOptionalPanes(ctx);
+  // The registry's rows read and write these (setting.tsx).
+  const stores = useMemo(() => ({ settings: ctx.settings, flags: ctx.flags }), [ctx.settings, ctx.flags]);
   return (
-    <SpotContext.Provider value={spots ?? null}>
-      <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
-        <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
-        <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-          {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
-          {/* A pane's state is its own: switching panes starts the next one fresh. */}
-          <Pane key={current} id={current} ctx={ctx} />
-          {error !== null && (
-            <View testID="settings-error" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.critical }}>
-                {`Could not save settings: ${error}`}
-              </Text>
-            </View>
-          )}
+    <PaneStoresContext.Provider value={stores}>
+      <SpotContext.Provider value={spots ?? null}>
+        {/* The focus ring is kombu in every control inside (KB-2). */}
+        <View testID="settings-window" style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, focusRingColor: colors.focusRing }}>
+          <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
+          <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+            {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
+            {/* A pane's state is its own: switching panes starts the next one fresh. */}
+            <Pane key={current} id={current} ctx={ctx} />
+            {error !== null && (
+              <View testID="settings-error" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
+                <Text numberOfLines={1} style={{ fontSize: 11, color: colors.critical }}>
+                  {`Could not save settings: ${error}`}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </SpotContext.Provider>
+      </SpotContext.Provider>
+    </PaneStoresContext.Provider>
   );
 }

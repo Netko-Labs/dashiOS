@@ -8,7 +8,7 @@
  * menu bar's ❖ shortcuts come through useAppMenus).
  */
 
-import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
@@ -52,11 +52,14 @@ type Editing = {
   } | null;
 };
 
-function TodayButton({ onPress }: { onPress: () => void }) {
+export function TodayButton({ onPress }: { onPress: () => void }) {
   const colors = useColors();
   return (
+    // A Tab stop between ‹ and › (KB-1); Space or Return goes to today.
     <View
       testID="today"
+      focusable
+      accessibilityRole="button"
       onPress={onPress}
       style={{
         height: 28,
@@ -66,6 +69,7 @@ function TodayButton({ onPress }: { onPress: () => void }) {
         justifyContent: "center",
         backgroundColor: colors.button,
         hoverBackgroundColor: colors.separator,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Text style={{ fontSize: 12, color: colors.text }}>Today</Text>
@@ -198,9 +202,11 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
     }
   };
 
+  const undo = useUndo(model.undo);
   const { menus, run } = calendarMenus({
     view,
     modal,
+    undo,
     actions: {
       newEvent: () => newEvent(),
       newCalendar: () => setSheet({ kind: "new-calendar" }),
@@ -208,6 +214,8 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       setView: (next) => model.setView(next),
       today: () => model.goToday(),
       step: (direction) => model.step(direction),
+      undo: () => void model.undoStep("undo"),
+      redo: () => void model.undoStep("redo"),
     },
   });
   useAppMenus(menus, run);

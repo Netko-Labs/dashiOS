@@ -75,7 +75,8 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
   const inset = useTitleBarInset();
   const height = Math.max(inset.top, TOOLBAR_HEIGHT);
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative" }}>
+    // The focus ring is kombu in every control inside (KB-2).
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative", focusRingColor: colors.focusRing }}>
       <TooltipLayer>
         {sidebar !== undefined && (
           <View
@@ -152,11 +153,14 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
   );
 }
 
-/** A heading over a run of sidebar rows. */
+/**
+ * A heading over a run of sidebar rows: one Tab stop, where ↑ and ↓ move the
+ * selection, as on the Mac (KB-1).
+ */
 export function SidebarSection({ title, children }: { title?: string; children: ReactNode }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 10 }}>
+    <View focusGroup selectsOnFocus style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 10 }}>
       {title !== undefined && (
         <View style={{ paddingHorizontal: 8, paddingBottom: 2 }}>
           <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
@@ -193,6 +197,9 @@ export function ToolbarButton({
   return (
     <View
       testID={testID}
+      focusable={!disabled}
+      accessibilityRole="button"
+      {...(tooltip !== undefined || label !== undefined ? { accessibilityLabel: tooltip ?? label } : {})}
       onPress={
         disabled
           ? undefined
@@ -212,6 +219,7 @@ export function ToolbarButton({
         alignItems: "center",
         justifyContent: "center",
         hoverBackgroundColor: disabled ? "#00000000" : colors.button,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />

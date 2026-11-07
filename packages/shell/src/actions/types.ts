@@ -90,6 +90,8 @@ export interface ActionDef {
   readOnly: boolean;
   /** It can lose work or can't be taken back: a link only opens it, never runs it (links.ts). */
   destructive: boolean;
+  /** Neither destructive nor an agent's tool, but a link still only opens it: running it hands a program something private (a picture of the screen). */
+  linkOpens?: true;
   idempotent?: boolean;
   /** It asks on a sheet every time, the person included (force quitting, moving to the Trash). */
   asksEveryTime?: true;

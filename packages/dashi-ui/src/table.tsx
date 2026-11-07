@@ -6,11 +6,11 @@
  * rows near the viewport (a scroll column of many children is virtualized).
  */
 
-import { type DragFiles, type DropInfo, ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { type ReactNode, useState } from "react";
+import { type DragFiles, type DropInfo, type Modifiers, type PointerInfo, ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
-import { nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
+import { holdOrder, nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
 import { useColors, useSurface } from "./theme/index.ts";
 
 export interface Column<T> extends SortableColumn<T> {
@@ -28,7 +28,8 @@ export interface TableProps<T, K extends string | number> {
   rows: readonly T[];
   rowKey: (row: T) => K;
   selected: K | null;
-  onSelect: (key: K) => void;
+  /** A click on a row, with the keys held (⇧ and ❖ extend a selection, PA-10). */
+  onSelect: (key: K, held: Modifiers) => void;
   sort: SortState | null;
   onSort: (sort: SortState) => void;
   testID: string;
@@ -47,9 +48,53 @@ export interface TableProps<T, K extends string | number> {
   onDropRow?: (row: T) => ((event: DropInfo) => void) | null;
   /** The header of column titles; on by default (a list of choices may go without it). */
   header?: boolean;
+  /**
+   * For a list that re-sorts as it goes (Activity Monitor's processes): the
+   * rows keep their places while the pointer moves over them and while one is
+   * held, so a click lands on the row that was aimed at.
+   */
+  steady?: boolean;
 }
 
 const PAD = 10;
+/** How long rows stay put after the pointer last crossed one. */
+export const STEADY_MS = 1000;
+
+/** `rows`, or while the pointer is aiming at them, the order they were drawn in (`holdOrder`). */
+function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled: boolean) {
+  const [holding, setHolding] = useState(false);
+  const drawn = useRef<K[]>([]);
+  const pressing = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const hold = (): void => {
+    if (!enabled) return;
+    if (timer.current) clearTimeout(timer.current);
+    setHolding(true);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      // A press outlasting the wait lets go on release.
+      if (!pressing.current) setHolding(false);
+    }, STEADY_MS);
+  };
+  const shown = holding ? holdOrder(drawn.current, rows, rowKey) : [...rows];
+  drawn.current = shown.map(rowKey);
+  return {
+    shown,
+    /** The pointer crossed onto a row. */
+    aim: hold,
+    /** The button went down on a row, or came up. */
+    press: (down: boolean): void => {
+      pressing.current = down;
+      hold();
+    },
+  };
+}
 
 function cellBox(width: number | undefined, align: "left" | "right" | undefined) {
   return {
@@ -78,10 +123,12 @@ export function Table<T, K extends string | number>({
   dragFiles,
   onDropRow,
   header = true,
+  steady = false,
 }: TableProps<T, K>) {
   const colors = useColors();
   const surface = useSurface();
   const [dropOver, setDropOver] = useState<K | null>(null);
+  const { shown, aim, press } = useSteadyRows(rows, rowKey, steady);
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", minHeight: 0, backgroundColor: surface.card }}>
       {header && (
@@ -114,7 +161,7 @@ export function Table<T, K extends string | number>({
         <View style={{ flex: 1 }}>{empty}</View>
       ) : (
         <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column", paddingHorizontal: PAD / 2 }}>
-          {rows.map((row, index) => {
+          {shown.map((row, index) => {
             const key = rowKey(row);
             const chosen = selectedKeys ? selectedKeys.has(key) : key === selected;
             const ink = chosen ? colors.onSelection : muted?.(row) ? colors.textMuted : colors.text;
@@ -124,7 +171,17 @@ export function Table<T, K extends string | number>({
               <View
                 key={key}
                 testID={`${testID}:row:${key}`}
-                onPress={() => onSelect(key)}
+                onPress={(event) => onSelect(key, event.modifiers)}
+                {...(steady
+                  ? {
+                      onHoverChange: (hovered: boolean) => {
+                        if (hovered) aim();
+                      },
+                      onPointer: (event: PointerInfo) => {
+                        if (event.phase !== "move") press(event.phase === "down");
+                      },
+                    }
+                  : {})}
                 {...(drags ? { dragFiles: drags } : {})}
                 {...(drop
                   ? {

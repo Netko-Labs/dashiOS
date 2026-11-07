@@ -11,7 +11,6 @@
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { FlagsStore } from "../../control-center/flags.ts";
 import {
   commonSizes,
   type Monitor,
@@ -28,12 +27,11 @@ import {
 } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { Laptop } from "../../laptop/start.ts";
-import { DEFAULT_X11_SCALING, type X11Scaling } from "../../xwayland-scale.ts";
 import { DISPLAY } from "../glyphs.ts";
-import { useScreens, useSettings } from "../hooks.ts";
+import { useScreens } from "../hooks.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, type Choice, Choices, Group, Note, Page, Row } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Note, Page, Setting } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";
 import { PanelOverdriveSection } from "./laptop-parts.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
@@ -69,9 +67,9 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
     return (
       <Group testID={`display:${name}`}>
         <Heading monitor={monitor} />
-        <Row label="This display is off" detail="It stays plugged in; its windows are on the other screens.">
+        <Setting id="displays/turned-off">
           <Button testID={`display-on:${name}`} label="Turn On" onPress={() => void store.setEnabled(name, true)} />
-        </Row>
+        </Setting>
       </Group>
     );
   }
@@ -88,7 +86,7 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
     <Group testID={`display:${name}`}>
       <Heading monitor={monitor} />
       {every.length > 1 && (
-        <Row stack label="Resolution" detail={`${sizeLabel(here)} now`}>
+        <Setting id="displays/resolution" detail={`${sizeLabel(here)} now`}>
           <Choices
             testID={`display-resolution:${name}`}
             options={sizes.map((size) => ({
@@ -113,76 +111,59 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
               />
             </View>
           )}
-        </Row>
+        </Setting>
       )}
       {rates.length > 1 && (
-        <Row stack label="Refresh rate">
+        <Setting id="displays/refresh-rate">
           <Choices
             testID={`display-refresh:${name}`}
             options={rates.map((rate) => ({ value: rate, label: refreshLabel(rate) }))}
             value={rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz}
             onChange={(rate) => void store.setMode(name, { ...here, refreshMhz: rate })}
           />
-        </Row>
+        </Setting>
       )}
       {monitor.vrr.supported && (
-        <Row
-          stack
-          label="Variable refresh rate"
-          detail={monitor.vrr.active ? "Following the frames now." : "Smoother games and video where the screen allows it."}
-        >
+        <Setting id="displays/variable-refresh-rate" detail={monitor.vrr.active ? "Following the frames now." : undefined}>
           <Choices
             testID={`display-vrr:${name}`}
             options={VRR_MODES.map((mode) => ({ value: mode, label: VRR_LABELS[mode] }))}
             value={monitor.vrr.mode}
             onChange={(mode) => void store.setVrr(name, mode)}
           />
-        </Row>
+        </Setting>
       )}
-      <Row stack label="Rotation">
+      <Setting id="displays/rotation">
         <Choices
           testID={`display-rotation:${name}`}
           options={ROTATIONS.map((rotation) => ({ value: rotation, label: ROTATION_LABELS[rotation] }))}
           value={monitor.rotation}
           onChange={(rotation) => void store.setRotation(name, rotation)}
         />
-      </Row>
+      </Setting>
       {screen && (
-        <Row stack label="Scale" detail={looks ? `Looks like ${looks.width} × ${looks.height}` : undefined}>
+        <Setting id="displays/scale" detail={looks ? `Looks like ${looks.width} × ${looks.height}` : null}>
           <Choices testID={`display-scale:${name}`} options={choices} value={current} onChange={(scale) => void store.setScale(name, scale)} />
-        </Row>
+        </Setting>
       )}
-      <Row label="Main display" detail={monitor.primary ? "The menu bar and Dock are here." : "Put the menu bar and Dock on this screen."}>
+      <Setting id="displays/main-display" detail={monitor.primary ? "The menu bar and Dock are here." : undefined}>
         {!monitor.primary && <Button testID={`display-main:${name}`} label="Use as Main Display" onPress={() => void store.setPrimary(name)} />}
-      </Row>
+      </Setting>
       {canTurnOff && (
-        <Row label="Turn off this display" detail="Its windows move to the other screens.">
+        <Setting id="displays/turn-off">
           <Button testID={`display-off:${name}`} label="Turn Off" onPress={() => void store.setEnabled(name, false)} />
-        </Row>
+        </Setting>
       )}
     </Group>
   );
 }
 
-const X11_OPTIONS: ReadonlyArray<Choice<X11Scaling>> = [
-  { value: "sharp", label: "Sharp" },
-  { value: "stretched", label: "Stretched" },
-];
-
 /** How X11 apps meet a scaled screen (settings.json `appearance.x11Apps`, xwayland-scale.ts). */
-function X11AppsSection({ settings }: { settings: SettingsStore }) {
-  const { appearance } = useSettings(settings).data;
+function X11AppsSection() {
   return (
     <>
       <Group>
-        <Row stack label="Older apps (X11)">
-          <Choices
-            testID="displays-x11-apps"
-            value={appearance.x11Apps ?? DEFAULT_X11_SCALING}
-            options={X11_OPTIONS}
-            onChange={(x11Apps) => settings.patch("appearance", { x11Apps })}
-          />
-        </Row>
+        <Setting id="displays/x11-apps" detail={null} control="displays-x11-apps" />
       </Group>
       <Caption>
         Sharp draws X11 apps such as Steam at the screen's full detail; an app that can't size itself comes out small. Stretched keeps every X11 app the right
@@ -192,17 +173,7 @@ function X11AppsSection({ settings }: { settings: SettingsStore }) {
   );
 }
 
-export function DisplaysPane({
-  screens,
-  settings,
-  flags,
-  laptop,
-}: {
-  screens: ScreensStore;
-  settings: SettingsStore;
-  flags: FlagsStore;
-  laptop?: Laptop | null;
-}) {
+export function DisplaysPane({ screens, settings, laptop }: { screens: ScreensStore; settings: SettingsStore; laptop?: Laptop | null }) {
   const colors = useColors();
   const state = useScreens(screens);
   const on = state.monitors.filter((monitor) => monitor.enabled);
@@ -240,8 +211,8 @@ export function DisplaysPane({
         keep it.
       </Caption>
       <PanelOverdriveSection laptop={laptop ?? null} />
-      <X11AppsSection settings={settings} />
-      <NightShiftSection settings={settings} flags={flags} />
+      <X11AppsSection />
+      <NightShiftSection settings={settings} />
     </Page>
   );
 }

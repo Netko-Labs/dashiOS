@@ -1,6 +1,6 @@
 /** Preview's sheets: file info, the Open With list, and a plain message. */
 
-import { Button, Sheet, useColors } from "@dashi/ui";
+import { AlertSheet, Button, INFO, Sheet, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import type { Handler } from "./handlers.ts";
 import { type FileFacts, formatBytes, formatDate, formatDimensions, megapixels } from "./info.ts";
@@ -109,14 +109,15 @@ export function OpenWithSheet({
 }
 
 export function MessageSheet({ title, message, onClose }: { title: string; message: string; onClose: () => void }) {
-  const colors = useColors();
+  // It only informs: one button, which Esc and Enter press too (UI-5).
   return (
-    <Sheet testID="message" width={400} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>
-        <Button label="OK" testID="message:ok" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID="message"
+      width={400}
+      question={title}
+      message={message}
+      glyph={INFO}
+      buttons={[{ label: "OK", testID: "message:ok", onPress: onClose, kind: "primary" }]}
+    />
   );
 }

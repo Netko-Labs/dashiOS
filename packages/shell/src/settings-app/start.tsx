@@ -8,6 +8,7 @@
  */
 
 import { homedir } from "node:os";
+import { onWindowTyping } from "../../apps/kit/typing.ts";
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
@@ -16,10 +17,12 @@ import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
+import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { PaneContext } from "./context.ts";
+import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
 import { loadLayouts } from "./layouts.ts";
 import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
@@ -48,7 +51,9 @@ export interface SettingsAppOptions {
   /** The system time zone, clock sync, and language. */
   region: RegionStore;
   flags: FlagsStore;
-  grants: Pick<Grants, "entries" | "remove" | "onChange">;
+  grants: Pick<Grants, "entries" | "remove" | "revoke" | "onChange">;
+  /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
+  privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
   /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
@@ -63,6 +68,8 @@ export interface SettingsAppOptions {
 
   /** The machine panes' services; asked for when the window opens, since they come from stores made after Settings. */
   services(): PaneServices;
+  /** The menu bar's store, for Settings' Edit menu (Undo a setting: edit-menu.ts); asked for when the window opens. */
+  menus?(): MenuHost;
 }
 
 interface Session {
@@ -120,6 +127,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       flags: options.flags,
       screens,
       grants: options.grants,
+      ...(options.privacy ? { privacy: options.privacy } : {}),
       ...(options.passwords ? { passwords: options.passwords } : {}),
       ...answersOf(options),
       ...(clipboard ? { clipboard } : {}),
@@ -130,15 +138,27 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       about: readAbout,
       lock: options.lock,
       openSetup: options.openSetup,
+      show: (pane, row) => open(pane, row),
       home: homedir(),
     };
     const stopScreens = screens.start();
     const stopWatching = options.settings.watch();
+    const menus = options.menus?.();
+    // The window's process, by its app id, once the compositor lists it.
+    const editMenu =
+      menus && compositor
+        ? publishEditMenu(
+            menus,
+            options.settings.undo,
+            async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
+          )
+        : null;
     const current: Session = {
       surface: null,
       stop: () => {
         stopScreens();
         stopWatching();
+        editMenu?.stop();
       },
     };
     session = current;
@@ -152,6 +172,8 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
         if (session === current) session = null;
         current.stop();
       },
+      // A field with the keyboard answers ❖A ❖C ❖X ❖V ❖Z itself, before the Edit menu's rows (KB-6).
+      (host) => onWindowTyping(host, (typing) => editMenu?.setTyping(typing)),
     );
   };
 

@@ -33,10 +33,18 @@ export interface Holder {
   watts: number | null;
 }
 
-/** The processes among `processes` holding any of `nodes`. */
+/**
+ * The compositor is never a holder: it opens the card only while a screen is
+ * connected to it, a client's buffer only the card reads is on screen, or the
+ * shell keeps it (IPC `gpus`), each the reason in its own right; and quitting
+ * it would end the session.
+ */
+const COMPOSITOR = "dashi-comp";
+
+/** The processes among `processes` holding any of `nodes`, never the shell itself or the compositor. */
 export function holdingProcesses(processes: readonly ProcessFds[], nodes: readonly string[], self: number = process.pid): ProcessFds[] {
   const wanted = new Set(nodes);
-  return processes.filter((proc) => proc.pid !== self && proc.links.some((link) => wanted.has(link)));
+  return processes.filter((proc) => proc.pid !== self && proc.comm !== COMPOSITOR && proc.links.some((link) => wanted.has(link)));
 }
 
 /**
@@ -58,7 +66,7 @@ export function groupHolders(
     groups.set(name, [...(groups.get(name) ?? []), proc.pid]);
   }
   const holders: Holder[] = [...groups].map(([name, pids]) => ({ name, pids, watts: null }));
-  for (const name of unseen) if (!comms.has(name) && !groups.has(name)) holders.push({ name, pids: [], watts: null });
+  for (const name of unseen) if (name !== COMPOSITOR && !comms.has(name) && !groups.has(name)) holders.push({ name, pids: [], watts: null });
   const total = cardWatts ?? (holders.length > 0 ? AWAKE_WATTS : null);
   return holders.map((holder) => ({ ...holder, watts: total === null ? null : Math.round((total / holders.length) * 10) / 10 }));
 }

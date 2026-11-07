@@ -15,7 +15,7 @@ import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../graphics/policy.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import type { GraphicsChoice } from "../../power/modes/settings.ts";
-import { Button, Caption, Choices, Group, Note, Page, Row } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Note, Page, Setting } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 
 const DRIVER_NAMES: Readonly<Record<string, string>> = { amdgpu: "AMD Radeon", i915: "Intel", xe: "Intel", nvidia: "NVIDIA", nouveau: "NVIDIA" };
@@ -52,9 +52,9 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
     <Page title="Graphics">
       {graphics.lost && (
         <Group testID="graphics-lost">
-          <Row label={LOST_NOTICE.summary} detail={LOST_NOTICE.body}>
+          <Item label={LOST_NOTICE.summary} detail={LOST_NOTICE.body}>
             <Button testID="graphics-restart" label="Restart…" onPress={() => laptop.run({ kind: "restart" })} />
-          </Row>
+          </Item>
         </Group>
       )}
       <Group testID="graphics-cards">
@@ -62,37 +62,37 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
           const builtIn = card === cards.display;
           const brand = DRIVER_NAMES[card.driver ?? ""] ?? card.driver ?? card.name;
           return (
-            <Row
+            <Item
               key={card.name}
               label={nameOf(builtIn, brand)}
               detail={builtIn ? "Built in · drives this screen" : `Graphics card${state ? ` · ${state.toLowerCase()}` : ""}`}
             >
               <Value>{builtIn ? "Active" : graphics.lost ? "Not responding" : graphics.power === "suspended" ? "Asleep" : "Awake"}</Value>
-            </Row>
+            </Item>
           );
         })}
       </Group>
       {graphics.switchable && !graphics.lost && (
         <Group testID="graphics-mode">
-          <Row stack label="Mode" {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
+          <Setting id="graphics/mode" {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
             <Choices<GraphicsChoice>
               testID="graphics-mode-choice"
               value={graphics.choice}
               options={[{ value: "automatic", label: "Automatic" }, ...GRAPHICS_MODES.map((mode) => ({ value: mode, label: GRAPHICS_LABEL[mode] }))]}
               onChange={(choice) => laptop.graphics.choose(choice)}
             />
-          </Row>
+          </Setting>
         </Group>
       )}
       {mux && (
         <>
           <Group testID="graphics-mux">
-            <Row label="Graphics card only" detail="Fastest for games: the screen runs on the graphics card. Applies at the next restart.">
+            <Setting id="graphics/card-only">
               <Switch testID="graphics-mux-switch" on={mux.value === 0} onChange={(on) => void laptop.store.set("gpu-mux", on ? 0 : 1)} />
-            </Row>
-            <Row label="Restart to apply">
+            </Setting>
+            <Setting id="graphics/restart">
               <Button testID="graphics-mux-restart" label="Restart…" onPress={() => laptop.run({ kind: "restart" })} />
-            </Row>
+            </Setting>
           </Group>
           <Caption>Changing it asks for your password.</Caption>
         </>

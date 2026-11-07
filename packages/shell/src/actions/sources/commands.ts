@@ -1,7 +1,9 @@
 /**
  * Dashi's own commands, the rows of the Dashi menu (menus/model.ts) and a
  * few more, at `dashi://dashi/<command>`. Each runs the menu's own action
- * (menus/actions.ts), so Restart asks first here as it does from the menu.
+ * (menus/actions.ts), so Restart asks first here as it does from the menu;
+ * the screenshots run what ⇧❖3, ⇧❖4 and ⇧❖5 bind (keymap.ts binds them
+ * here), on the window focused when they were asked.
  */
 
 import type { Keymap } from "../../keymap.ts";
@@ -10,18 +12,25 @@ import { formatAddress } from "../address.ts";
 import { keyFor } from "../keys.ts";
 import { type ActionDef, type ActionKind, ok, ready } from "../types.ts";
 
-interface Command {
+/** A screenshot: the whole screen (⇧❖3), an area dragged out (⇧❖4), or the toolbar that also records (⇧❖5). */
+export type CaptureKind = "screen" | "area" | "toolbar";
+
+/** Carries a screenshot out (main.tsx: screenshots.ts, screenshot-area.tsx, recorder/); `window` is the one focused when it was asked. */
+export type RunCapture = (what: CaptureKind, window: number | null) => Promise<void>;
+
+type Command = {
   id: string;
   title: string;
   words: readonly string[];
   kind: ActionKind;
-  action: MenuAction;
   /** As the Dashi menu shows it, when the keymap doesn't bind the address. */
   shortcut?: string;
   /** Ends the session or the machine: it asks first, on its own sheet. */
   ends?: true;
+  /** It saves a picture of the screen at once: a link from outside only opens it for the person (run.ts), never takes the picture itself. */
+  sees?: true;
   done: string;
-}
+} & ({ action: MenuAction } | { capture: CaptureKind });
 
 const COMMANDS: readonly Command[] = [
   { id: "about", title: "About Dashi", words: ["version", "about"], kind: "open", action: { kind: "about-dashi" }, done: "About Dashi is open." },
@@ -80,11 +89,37 @@ const COMMANDS: readonly Command[] = [
     action: { kind: "shortcuts" },
     done: "Shortcuts are showing.",
   },
+  {
+    id: "capture",
+    title: "Screenshot…",
+    words: ["screenshot", "screen shot", "capture", "screen capture", "record screen", "screen recording", "print screen", "snip", "grab"],
+    kind: "open",
+    capture: "toolbar",
+    done: "The screenshot toolbar is open.",
+  },
+  {
+    id: "screenshot",
+    title: "Screenshot of the Screen",
+    words: ["screenshot", "capture screen", "whole screen"],
+    kind: "run",
+    capture: "screen",
+    sees: true,
+    done: "The screenshot is in Pictures, Screenshots.",
+  },
+  {
+    id: "screenshot-area",
+    title: "Screenshot of an Area…",
+    words: ["screenshot", "capture area", "selection", "region", "part of the screen"],
+    kind: "run",
+    capture: "area",
+    done: "Drag out the area to capture.",
+  },
 ];
 
-/** Dashi's own commands; `run` carries out the Dashi menu's action. */
-export function commandActions(run: (action: MenuAction) => Promise<void>, keymap: Keymap): ActionDef[] {
-  return COMMANDS.map((command): ActionDef => {
+/** Dashi's own commands; `run` carries out the Dashi menu's action, `capture` a screenshot (without it, there are none). */
+export function commandActions(run: (action: MenuAction) => Promise<void>, keymap: Keymap, capture?: RunCapture): ActionDef[] {
+  const commands = capture ? COMMANDS : COMMANDS.filter((command) => !("capture" in command));
+  return commands.map((command): ActionDef => {
     const address = formatAddress(["dashi", command.id]);
     const shortcut = keyFor(address, keymap) ?? command.shortcut;
     return {
@@ -99,12 +134,15 @@ export function commandActions(run: (action: MenuAction) => Promise<void>, keyma
       // Ending the session or the machine loses what isn't saved; it asks on its own sheet first.
       destructive: command.ends === true,
       ...(command.ends ? { asksEveryTime: true as const } : {}),
+      // A picture of the screen is not a link's to take: a program would have the screen without asking for it.
+      ...(command.sees ? { linkOpens: true as const } : {}),
       who: "person",
       source: "dashi",
       ...(shortcut ? { shortcut } : {}),
       check: () =>
-        ready(async () => {
-          await run(command.action);
+        ready(async (ctx) => {
+          if ("capture" in command) await capture?.(command.capture, ctx.window);
+          else await run(command.action);
           return ok(command.done);
         }),
     };
