@@ -72,6 +72,8 @@ export class Viewer {
       turnsFor: (path, file) => this.memory.turnsFor(path, file),
     });
     this.snapshot = { ...CLOSED, recents: this.memory.recents(), tools, rev: 0 };
+    // Every window is its own process: what another opens is a recent file here too.
+    this.memory.watch(() => this.set({ recents: this.memory.recents() }));
   }
 
   subscribe = (listener: () => void): (() => void) => {

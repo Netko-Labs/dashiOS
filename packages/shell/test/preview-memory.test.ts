@@ -68,6 +68,21 @@ describe("what Preview remembers", () => {
     alone.opened("/home/alexk/x.png");
     expect(alone.recents().map((recent) => recent.path)).toEqual(["/home/alexk/x.png"]);
   });
+
+  test("a window hears what another opens, so its recent files list it too", async () => {
+    // Review 20: fake.png, opened in a second window, never showed in the first one's Open Recent.
+    const file = join(dir, "watched", "memory.json");
+    const first = new MemoryStore(file);
+    first.opened("/home/alexk/img1.jpg");
+    let heard = 0;
+    const stop = first.watch(() => heard++, 20);
+    new MemoryStore(file).opened("/home/alexk/fake.png");
+    const end = Date.now() + 3000;
+    while (heard === 0 && Date.now() < end) await new Promise((done) => setTimeout(done, 20));
+    stop();
+    expect(heard).toBeGreaterThan(0);
+    expect(first.recents().map((recent) => recent.path)).toEqual(["/home/alexk/fake.png", "/home/alexk/img1.jpg"]);
+  });
 });
 
 const NOTHING = new Proxy({}, { get: () => () => {} }) as PreviewMenuContext["actions"];

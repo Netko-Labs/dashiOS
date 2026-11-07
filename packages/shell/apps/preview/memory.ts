@@ -12,9 +12,9 @@
  * forgotten, since the picture may already be upright.
  */
 
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { type FSWatcher, mkdirSync, readFileSync, renameSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 /** How many recent files are kept, and how many rotations. */
 export const MAX_RECENTS = 10;
@@ -156,5 +156,33 @@ export class MemoryStore {
 
   rotated(path: string, turns: number, file: { size: number; mtimeMs: number }): void {
     this.change((memory) => withTurns(memory, path, turns, file));
+  }
+
+  /**
+   * Hear when another window (or this one) writes the file, a burst once, so
+   * this window's recent files follow every window's opens. Its folder is
+   * watched (a write is a rename into it), made first if need be. Returns
+   * the way to stop; nothing to watch keeps memory in this window only.
+   */
+  watch(onChange: () => void, settleMs = 100): () => void {
+    if (this.file === null) return () => {};
+    const file = this.file;
+    let watcher: FSWatcher | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+      watcher = watch(dirname(file), { persistent: false }, (_, name) => {
+        if (name !== null && name !== basename(file)) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(onChange, settleMs);
+      });
+      watcher.on("error", () => watcher?.close());
+    } catch {
+      // Not watchable: the list is read again at each open.
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+      watcher?.close();
+    };
   }
 }
