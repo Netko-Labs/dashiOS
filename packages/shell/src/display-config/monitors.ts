@@ -178,17 +178,18 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
 }
 
 /**
- * The panel's native size: the mode its EDID prefers, unless the screen
- * offers one larger both ways, which a panel could not show if it were
- * native (QEMU's monitor prefers 640 × 480 and runs 1920 × 1200). A screen
- * that prefers 3840 × 2160 and also takes 4096 × 2160 stays at its own.
+ * The panel's native size: the mode its EDID prefers, as long as nothing it
+ * offers is larger both ways (a panel can't show more pixels than it has).
+ * A screen that prefers a smaller mode than it offers has no native size
+ * Dashi can name (QEMU's monitor prefers 640 × 480 and offers up to
+ * 5120 × 2160), so no choice is called native. A 4K screen that prefers
+ * 3840 × 2160 and also takes the cinema 4096 × 2160 keeps its own.
  */
 export function nativeSize(modes: readonly OfferedMode[]): { width: number; height: number } | null {
-  const all = sizesOf(modes);
   const preferred = sizesOf(modes.filter((mode) => mode.preferred))[0];
-  if (!preferred) return all[0] ?? null;
-  const larger = all.find((size) => size.width > preferred.width && size.height > preferred.height);
-  return larger ?? preferred;
+  if (!preferred) return null;
+  const larger = sizesOf(modes).some((size) => size.width > preferred.width && size.height > preferred.height);
+  return larger ? null : preferred;
 }
 
 /**
@@ -199,7 +200,8 @@ export function nativeSize(modes: readonly OfferedMode[]): { width: number; heig
  */
 export function commonSizes(modes: readonly OfferedMode[], current: { width: number; height: number }, limit = 6): Array<{ width: number; height: number }> {
   const all = sizesOf(modes);
-  const native = nativeSize(modes);
+  // Without a native size, the size in use stands for the screen's shape and limit.
+  const native = nativeSize(modes) ?? current;
   if (!native) return [];
   const shape = native.width / native.height;
   const same = (size: { width: number; height: number }) => size.width === current.width && size.height === current.height;

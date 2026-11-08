@@ -147,12 +147,12 @@ test("the display hero says only what no row says, each fact once", () => {
 
 test("the native size: the EDID's preferred one, unless the screen offers one larger both ways", () => {
   const mode = (width: number, height: number, preferred = false) => ({ width, height, refreshMhz: 60_000, preferred, current: false });
-  // QEMU's monitor prefers 640 × 480 and runs 1920 × 1200: "native" goes on 1920 × 1200.
-  expect(nativeSize([mode(1920, 1200), mode(1280, 800), mode(640, 480, true)])).toEqual({ width: 1920, height: 1200 });
+  // QEMU's monitor prefers 640 × 480 and offers up to 5120 × 2160: no size is called native.
+  expect(nativeSize([mode(5120, 2160), mode(1920, 1200), mode(640, 480, true)])).toBeNull();
   // A 4K screen that also takes the cinema width keeps its own.
   expect(nativeSize([mode(4096, 2160), mode(3840, 2160, true), mode(1920, 1080)])).toEqual({ width: 3840, height: 2160 });
   expect(nativeSize([mode(2880, 1800, true), mode(1920, 1200)])).toEqual({ width: 2880, height: 1800 });
-  expect(nativeSize([])).toBeNull();
+  expect(nativeSize([mode(1920, 1200)])).toBeNull();
 });
 
 test("aspect names", () => {

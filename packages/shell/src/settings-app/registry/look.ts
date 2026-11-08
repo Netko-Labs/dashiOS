@@ -74,7 +74,6 @@ export const LOOK_ROWS = [
     id: "appearance/automatic",
     glyph: MOON,
     title: "Automatic",
-    name: "Automatic Dark Mode",
     detail: "Dark from 7 PM to 7 AM.",
     keywords: ["auto", "schedule", "evening", "night", "sunset"],
     kind: "switch",

@@ -1,9 +1,9 @@
 /**
  * The cards under Displays' common choices (displays.tsx): the chosen
  * display's resolution (its usual sizes, "More…" for the rest, "native" on
- * the native size's own pill), variable refresh rate, rotation, the main display and turning it
- * off; a card for each display that is off, with Turn On; and how X11 apps
- * meet a scaled screen.
+ * the native size's own pill where the screen has one), variable refresh
+ * rate, rotation, the main display and turning it off; a card for each
+ * display that is off, with Turn On; and how X11 apps meet a scaled screen.
  */
 
 import {
