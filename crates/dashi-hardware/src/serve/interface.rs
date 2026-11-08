@@ -11,6 +11,7 @@ use zbus::{fdo, interface, message::Header};
 use super::{INTERFACE, OBJECT_PATH, Pending, Shared, countdown, polkit};
 use crate::knobs::{Action, Knob, Value as KnobValue};
 use crate::machine::{Machine, OpError};
+use crate::slash::{Change, Input};
 
 pub(crate) struct Hardware1 {
     shared: Arc<Shared>,
@@ -58,6 +59,7 @@ fn to_fdo(error: OpError) -> fdo::Error {
         OpError::Invalid(s) => fdo::Error::InvalidArgs(s),
         OpError::Io(s) => fdo::Error::Failed(s),
         OpError::Unavailable(s) => fdo::Error::NotSupported(s),
+        OpError::NoDevice(s) => fdo::Error::NotSupported(s),
     }
 }
 
@@ -131,6 +133,37 @@ impl Hardware1 {
             }
         }
         Ok(applied)
+    }
+
+    /// The lid's Slash bar, as JSON (docs/hardware.md, "The Slash bar").
+    async fn slash(&self) -> String {
+        self.machine().slash_json().to_string()
+    }
+
+    /// Set the Slash bar: any of its keys, validated and clamped; saved and
+    /// sent again after boot and waking. Returns `Slash()`'s JSON.
+    async fn set_slash(
+        &self,
+        values: HashMap<String, OwnedValue>,
+        #[zbus(connection)] connection: &zbus::Connection,
+        #[zbus(header)] header: Header<'_>,
+    ) -> fdo::Result<String> {
+        let mut change = Change::default();
+        let mut keys: Vec<&String> = values.keys().collect();
+        keys.sort();
+        for key in keys {
+            let input = slash_input(&values[key]).ok_or_else(|| {
+                fdo::Error::InvalidArgs(format!("{key}: expected a boolean, number or string"))
+            })?;
+            change.put(key, input).map_err(fdo::Error::InvalidArgs)?;
+        }
+        self.authorize(connection, &header, Action::Everyday)
+            .await?;
+        let machine = self.machine();
+        machine
+            .set_slash(&change)
+            .map(|json| json.to_string())
+            .map_err(to_fdo)
     }
 
     async fn get_fan_curve(&self, fan: String) -> fdo::Result<Vec<(u8, u8)>> {
@@ -244,6 +277,26 @@ impl Hardware1 {
         knob: &str,
         value: Value<'_>,
     ) -> zbus::Result<()>;
+}
+
+/// One `SetSlash` value: a boolean, an integer of any width, or a string.
+fn slash_input(value: &Value<'_>) -> Option<Input> {
+    let value = match value {
+        Value::Value(inner) => inner.as_ref(),
+        other => other,
+    };
+    Some(match value {
+        Value::Bool(b) => Input::Bool(*b),
+        Value::Str(s) => Input::Str(s.as_str().to_owned()),
+        Value::U8(n) => Input::Int(i64::from(*n)),
+        Value::U16(n) => Input::Int(i64::from(*n)),
+        Value::U32(n) => Input::Int(i64::from(*n)),
+        Value::U64(n) => Input::Int(i64::try_from(*n).unwrap_or(i64::MAX)),
+        Value::I16(n) => Input::Int(i64::from(*n)),
+        Value::I32(n) => Input::Int(i64::from(*n)),
+        Value::I64(n) => Input::Int(*n),
+        _ => return None,
+    })
 }
 
 /// Poll the sysfs files the knobs live in (platform_profile notifies, Fn F5

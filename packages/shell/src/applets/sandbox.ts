@@ -24,9 +24,9 @@ const HARDWARE_PATH = "/dev/dashi/Hardware1";
 
 /** The methods each hardware scope may call; reading (sensors) comes with every scope. */
 export const HARDWARE_METHODS: Readonly<Record<HardwareScope, readonly string[]>> = {
-  sensors: ["Describe", "Get", "GetFanCurve", "CurveOptimizer", "BootGuard"],
+  sensors: ["Describe", "Get", "GetFanCurve", "CurveOptimizer", "BootGuard", "Slash"],
   power: ["Set", "SetMany"],
-  lighting: ["Set"],
+  lighting: ["Set", "SetSlash"],
   fans: ["GetFanCurve", "SetFanCurve", "ResetFanCurves"],
   tuning: ["Set", "SetMany", "SetCurveOptimizer", "ConfirmTuning", "ClearSavedTuning"],
 };

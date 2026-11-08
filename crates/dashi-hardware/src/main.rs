@@ -8,6 +8,7 @@ mod knobs;
 mod machine;
 mod model;
 mod serve;
+mod slash;
 mod smu;
 mod state;
 mod sysfs;

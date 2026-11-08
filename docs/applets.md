@@ -225,9 +225,9 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | --- | --- | --- |
 | `network` | Use the network | the network namespace, the resolver, the certificates |
 | `notifications` | Show notifications | the session bus through `xdg-dbus-proxy`, talking only to `org.freedesktop.Notifications` |
-| `hardware.sensors` | Read temperatures, fan speeds and power draw | the system bus through the proxy, calling only dashi-hardware's `Describe`, `Get`, `GetFanCurve`, `CurveOptimizer`, `BootGuard`, and hearing `Changed` |
+| `hardware.sensors` | Read temperatures, fan speeds and power draw | the system bus through the proxy, calling only dashi-hardware's `Describe`, `Get`, `GetFanCurve`, `CurveOptimizer`, `BootGuard`, `Slash`, and hearing `Changed` |
 | `hardware.power` | Change the power mode, battery charge limit and processor boost | the above, and `Set`, `SetMany` |
-| `hardware.lighting` | Change the keyboard light | the above, and `Set` |
+| `hardware.lighting` | Change the keyboard and lid lights | the above, and `Set`, `SetSlash` |
 | `hardware.fans` | Change fan curves (asks for your password) | the above, and `SetFanCurve`, `ResetFanCurves` |
 | `hardware.tuning` | Change power limits and undervolt the processor (asks for your password) | the above, and `Set`, `SetMany`, `SetCurveOptimizer`, `ConfirmTuning`, `ClearSavedTuning` |
 | `dbus.system:NAME`, `dbus.session:NAME` | Talk to NAME (known services by their names) | that bus through the proxy, talking only to NAME; `org.freedesktop.DBus`, systemd, logind, polkit, portals, secrets, and `dev.dashi.*` can't be named |

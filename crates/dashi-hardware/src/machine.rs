@@ -9,6 +9,7 @@ use serde_json::{Map, Value, json};
 use crate::fans::{self, Fan};
 use crate::knobs::{self, Found, Knob, SetError};
 use crate::model::{self, Dmi, Model};
+use crate::slash::{self, Bar};
 use crate::smu;
 use crate::state::{SavedTuning, State};
 use crate::sysfs::Sysfs;
@@ -24,6 +25,7 @@ pub(crate) struct Machine {
     model: Option<Model>,
     knobs: Vec<Found>,
     fans: Vec<Fan>,
+    slash: Option<Bar>,
     state: State,
 }
 
@@ -39,6 +41,8 @@ pub(crate) enum OpError {
     Io(String),
     /// The Curve Optimizer isn't available (the reason string).
     Unavailable(String),
+    /// A device the model names isn't there (the Slash bar).
+    NoDevice(String),
 }
 
 impl std::fmt::Display for OpError {
@@ -48,6 +52,7 @@ impl std::fmt::Display for OpError {
             OpError::Invalid(s) => write!(f, "{s}"),
             OpError::Io(s) => write!(f, "{s}"),
             OpError::Unavailable(s) => write!(f, "the Curve Optimizer is unavailable: {s}"),
+            OpError::NoDevice(s) => write!(f, "{s}"),
         }
     }
 }
@@ -58,12 +63,14 @@ impl Machine {
         let model = model::find(models_dir, &dmi);
         let knobs = knobs::discover(&sysfs, model.as_ref());
         let fans = fans::discover(&sysfs);
+        let slash = Bar::from_model(model.as_ref());
         let state = State::for_sysfs(&sysfs);
         Self {
             sysfs,
             model,
             knobs,
             fans,
+            slash,
             state,
         }
     }
@@ -200,7 +207,8 @@ impl Machine {
             .map(|levels| json!({"levels": levels, "rgb": rgb}));
         json!({
             "keyboard": keyboard,
-            "slash": light.map(|l| l.slash.is_some()).unwrap_or(false),
+            // The bar is there when the model names it and its device is found.
+            "slash": self.slash.is_some_and(|bar| bar.node(&self.sysfs).is_some()),
             "aura": light.map(|l| l.aura.is_some()).unwrap_or(false),
             "anime": light.map(|l| l.anime.is_some()).unwrap_or(false),
         })
@@ -231,6 +239,45 @@ impl Machine {
                 .map_err(|e| OpError::Io(e.to_string()))?;
         }
         Ok(())
+    }
+
+    // ---- The Slash bar ----
+
+    /// `Slash()`'s JSON.
+    pub(crate) fn slash_json(&self) -> Value {
+        match &self.slash {
+            Some(bar) => bar.describe(&self.sysfs, &self.state),
+            None => json!({"available": false, "reason": "not-in-database"}),
+        }
+    }
+
+    /// Set the bar (validated and clamped in `change`), save it, and return
+    /// `Slash()`'s JSON.
+    pub(crate) fn set_slash(&self, change: &slash::Change) -> Result<Value, OpError> {
+        let bar = self
+            .slash
+            .as_ref()
+            .ok_or_else(|| OpError::NoDevice("this machine has no Slash bar".into()))?;
+        bar.set(&self.sysfs, &self.state, change)
+            .map_err(|e| match e {
+                slash::SlashError::NoDevice => OpError::NoDevice(e.to_string()),
+                slash::SlashError::Io(_) => OpError::Io(e.to_string()),
+            })?;
+        Ok(self.slash_json())
+    }
+
+    /// Send the saved Slash settings again; whether anything was sent.
+    pub(crate) fn restore_slash(&self) -> bool {
+        let Some(bar) = &self.slash else {
+            return false;
+        };
+        match bar.restore(&self.sysfs, &self.state) {
+            Ok(sent) => sent,
+            Err(e) => {
+                eprintln!("dashi-hardware: {e}");
+                false
+            }
+        }
     }
 
     // ---- The Curve Optimizer ----
@@ -285,9 +332,19 @@ impl Machine {
 
     // ---- Saved tuning and the boot guard ----
 
-    /// Re-apply the saved power limits, GPU limits and Curve Optimizer, but
-    /// only after a clean boot (docs/hardware.md). Returns `{applied, reason}`.
+    /// Re-apply the saved Slash settings (always: they are lights), and the
+    /// saved power limits, GPU limits and Curve Optimizer only after a clean
+    /// boot (docs/hardware.md). Returns `{applied, reason, slash}`.
     pub(crate) fn apply_saved_tuning(&self) -> Value {
+        let slash = self.restore_slash();
+        let mut result = self.apply_saved_limits();
+        if let Value::Object(map) = &mut result {
+            map.insert("slash".into(), json!(slash));
+        }
+        result
+    }
+
+    fn apply_saved_limits(&self) -> Value {
         let tuning = self.state.saved_tuning();
         if tuning.is_empty() {
             return json!({"applied": false, "reason": "nothing-saved"});

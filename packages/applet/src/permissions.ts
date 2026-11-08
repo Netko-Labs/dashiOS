@@ -9,7 +9,7 @@
  *   notifications             org.freedesktop.Notifications on the session bus
  *   hardware.sensors          dashi-hardware: read the machine (Describe, Get, the Changed signal)
  *   hardware.power            dashi-hardware: everyday knobs (mode, charge limit, boost, EPP)
- *   hardware.lighting         dashi-hardware: the keyboard light
+ *   hardware.lighting         dashi-hardware: the keyboard light and the lid's Slash bar
  *   hardware.fans             dashi-hardware: fan curves (asks for the password: polkit `tune`)
  *   hardware.tuning           dashi-hardware: power limits, the Curve Optimizer, the graphics card's limits (`tune`)
  *   dbus.system:NAME          talk to NAME on the system bus
@@ -120,7 +120,7 @@ const KNOWN_SERVICES: Readonly<Record<string, string>> = {
 const HARDWARE_WORDS: Record<HardwareScope, string> = {
   sensors: "Read temperatures, fan speeds and power draw",
   power: "Change the power mode, battery charge limit and processor boost",
-  lighting: "Change the keyboard light",
+  lighting: "Change the keyboard and lid lights",
   fans: "Change fan curves",
   tuning: "Change power limits and undervolt the processor",
 };
