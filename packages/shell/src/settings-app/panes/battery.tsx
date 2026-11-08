@@ -96,12 +96,12 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             />
           </Setting>
         )}
-        {services.laptop && <ChargeLimitRows laptop={services.laptop} settings={settings} />}
+        {services.laptop && limit !== null && <ChargeLimitRows laptop={services.laptop} settings={settings} />}
       </Group>
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">
         {battery && <OnBatteryRow laptop={services.laptop} refresh={services.refresh} show={show} />}
-        <Setting id="battery/turn-display-off" stack={false} detail={null}>
+        <Setting id="battery/turn-display-off" title="Turn the screen off after" stack={false} detail={null}>
           <Choices
             testID="power-blank"
             options={timePills(BLANK_CHOICES)}
@@ -109,7 +109,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
           />
         </Setting>
-        <Setting id="battery/sleep-after" stack={false} detail={null}>
+        <Setting id="battery/sleep-after" title="Sleep after" stack={false} detail={null}>
           <Choices
             testID="power-sleep"
             options={timePills(SLEEP_CHOICES)}

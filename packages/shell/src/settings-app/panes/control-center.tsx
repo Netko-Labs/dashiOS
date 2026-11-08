@@ -48,7 +48,7 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
         ...frame,
         borderRadius: radius,
         backgroundColor: on ? colors.on : colors.off,
-        flexDirection: "row",
+        flexDirection: tile.size === "round" ? "column" : "row",
         alignItems: "center",
         justifyContent: tile.size === "round" ? "center" : "flex-start",
         paddingLeft: tile.size === "round" ? 0 : 10,
@@ -115,7 +115,9 @@ function EditorPane({ editor }: { editor: ControlCenterEditor }) {
   const [editing, setEditing] = useState(false);
   const applets = useSyncExternalStore(editor.applets?.subscribe ?? NO_TILES.subscribe, editor.applets?.getSnapshot ?? NO_TILES.getSnapshot);
   const isSlider = (id: string): boolean => controls.sizesOf(id).includes("tall");
-  const hasSliders = layout.some((item) => isSlider(item.id));
+  // The choice is offered while a slider is in the panel now (one whose device is there).
+  const here = (id: string): boolean => (isAppletTile(id) ? controls.applet(id) !== undefined : isThere(id, controls.snapshot));
+  const hasSliders = shown(layout, here).some((item) => isSlider(item.id));
   return (
     <>
       <Hero testID="cc-hero" padding={18}>

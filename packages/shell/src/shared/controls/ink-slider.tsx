@@ -35,6 +35,27 @@ export interface InkSliderProps {
   disabled?: boolean;
 }
 
+/** The value at the slider's right, laid out on the whole slider's width so both copies sit at the same place. */
+function Value({ words, width, color }: { words: string; width: number; color: string }) {
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width,
+        height: INK_SLIDER.height,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        paddingRight: 14,
+      }}
+    >
+      <Text style={{ fontSize: 11.5, fontWeight: "semibold", color }}>{words}</Text>
+    </View>
+  );
+}
+
 export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, width = INK_SLIDER.width, onChange, onCommit, disabled }: InkSliderProps) {
   const colors = useControlColors();
   const [dragging, setDragging] = useState<number | null>(null);
@@ -89,14 +110,18 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
       }}
     >
       <InkFill length={fill} total={width} standing={false} radius={radius} />
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 4, paddingRight: 14 }}>
-        {glyph !== undefined && <Chip glyph={glyph} />}
-        {words !== undefined && (
-          <View style={{ marginLeft: "auto" }}>
-            <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: fill > width - 48 ? colors.fillInk : colors.muted }}>{words}</Text>
-          </View>
-        )}
-      </View>
+      {glyph !== undefined && (
+        <View style={{ position: "absolute", left: 4, top: 4 }}>
+          <Chip glyph={glyph} />
+        </View>
+      )}
+      {/* The value twice: muted on the track, and in the ink's own color clipped to the fill, so it reads across the edge. */}
+      {words !== undefined && <Value words={words} width={width} color={colors.muted} />}
+      {words !== undefined && fill > 0 && (
+        <View style={{ position: "absolute", left: 0, top: 0, width: fill, height: INK_SLIDER.height, overflow: "hidden" }}>
+          <Value words={words} width={width} color={colors.fillInk} />
+        </View>
+      )}
       {!disabled && (
         <StepKeys
           testID={testID}

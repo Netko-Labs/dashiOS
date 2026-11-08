@@ -49,6 +49,8 @@ function Screen({
           borderRadius: 12,
           borderWidth: 3,
           borderColor: chosen ? colors.text : colors.line,
+          // Any sliver the picture leaves is the frame's ink, not a light line.
+          backgroundColor: chosen ? colors.text : colors.line,
           overflow: "hidden",
         }}
       >

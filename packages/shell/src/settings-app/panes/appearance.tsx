@@ -30,10 +30,10 @@ const THEME = {
 
 type Theme = (typeof THEME)[keyof typeof THEME];
 
-/** The picture, 84 tall: a bar along the top, a card under it. */
-function ThemePicture({ theme }: { theme: Theme }) {
+/** The picture, 84 tall: a bar along the top, a card under it; `ground` false leaves the ground to its holder (Automatic's halves). */
+function ThemePicture({ theme, ground = true }: { theme: Theme; ground?: boolean }) {
   return (
-    <View style={{ flex: 1, position: "relative", backgroundColor: theme.ground }}>
+    <View style={{ flex: 1, position: "relative", borderRadius: 14, backgroundColor: ground ? theme.ground : "#00000000" }}>
       <View style={{ position: "absolute", left: 10, top: 10, right: 36, height: 10, borderRadius: 5, backgroundColor: theme.bar }} />
       <View style={{ position: "absolute", left: 10, top: 28, width: "60%", height: 38, borderRadius: 10, backgroundColor: theme.card }} />
     </View>
@@ -75,7 +75,7 @@ function ThemeChoice({
         borderColor: selected ? colors.on : "#00000000",
       }}
     >
-      <View style={{ width: "100%", height: 84, flexDirection: "row", borderRadius: 14, overflow: "hidden" }}>{children}</View>
+      <View style={{ width: "100%", height: 84, flexDirection: "row" }}>{children}</View>
       <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
     </View>
   );
@@ -118,14 +118,17 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
         selected={auto}
         onPress={() => choose("Automatic", () => settings.patch("appearance", { auto: true }))}
       >
-        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-start" }}>
+        {/* Metal clips to rectangles, so each half rounds its own outer corners and squares the inner ones with a patch. */}
+        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-start", borderRadius: 14, backgroundColor: THEME.light.ground }}>
+          <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 14, backgroundColor: THEME.light.ground }} />
           <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
-            <ThemePicture theme={THEME.light} />
+            <ThemePicture theme={THEME.light} ground={false} />
           </View>
         </View>
-        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-end" }}>
+        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-end", borderRadius: 14, backgroundColor: THEME.dark.ground }}>
+          <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 14, backgroundColor: THEME.dark.ground }} />
           <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
-            <ThemePicture theme={THEME.dark} />
+            <ThemePicture theme={THEME.dark} ground={false} />
           </View>
         </View>
       </ThemeChoice>

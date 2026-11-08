@@ -47,6 +47,10 @@ function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScr
 
 const AUTOMATIC = "automatic";
 
+/** No device store (a test): no backlight. */
+const NO_DEVICE_READING = { wifi: null, bluetooth: null, brightness: null, volume: null, hotspot: null };
+const NO_DEVICES = { subscribe: () => () => {}, getSnapshot: () => NO_DEVICE_READING } as unknown as DeviceStore;
+
 /** A rate as its pill says it: "120", "59.95". */
 const hertz = (refreshMhz: number): string => {
   const value = Math.round(refreshMhz / 10) / 100;
@@ -96,10 +100,8 @@ function Scale({ monitor, screen, store }: { monitor: Monitor; screen: ScreenInf
   );
 }
 
-/** The built-in screen's brightness, as Control Center's slider sets it; only where there is a backlight. */
-function Brightness({ devices }: { devices: DeviceStore }) {
-  const { brightness } = useDevices(devices);
-  if (brightness === null) return null;
+/** The built-in screen's brightness, as Control Center's slider sets it (the pane leaves it out without a backlight). */
+function Brightness({ devices, brightness }: { devices: DeviceStore; brightness: number }) {
   return (
     <Setting id="displays/brightness" glyph={SUN}>
       <Slider
@@ -151,6 +153,9 @@ export function DisplaysPane({
   const screen = monitor ? state.screens.find((each) => each.name === monitor.name) : undefined;
   const several = on.length > 1;
   const name = monitor ? displayHero(monitor, screen, { width: 1, height: 1 }).name : undefined;
+  // A row that has nothing to show is left out here, so the card draws no hairline for it.
+  const { brightness } = useDevices(devices ?? NO_DEVICES);
+  const rates = monitor?.mode ? ratesOf(monitor.modes, monitor.mode).length : 0;
   return (
     <Page title="Displays" {...(name ? { detail: name } : {})}>
       {state.loaded && state.screens.length === 0 && state.monitors.length === 0 && (
@@ -171,8 +176,8 @@ export function DisplaysPane({
       )}
       {monitor?.mode && (
         <Group testID={`display:${monitor.name}`}>
-          {monitor.builtIn && devices && <Brightness devices={devices} />}
-          <RefreshRate monitor={{ ...monitor, mode: monitor.mode }} store={screens} refresh={refresh ?? null} />
+          {monitor.builtIn && devices && brightness !== null && <Brightness devices={devices} brightness={brightness} />}
+          {rates > 1 && <RefreshRate monitor={{ ...monitor, mode: monitor.mode }} store={screens} refresh={refresh ?? null} />}
           {screen && <Scale monitor={monitor} screen={screen} store={screens} />}
           <NightShiftRow settings={settings} />
         </Group>

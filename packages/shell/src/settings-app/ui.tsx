@@ -11,7 +11,7 @@
 
 import { Shortcut, type Surface, Tile, useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
-import { Children, createContext, Fragment, type ReactNode, useContext, useMemo, useRef } from "react";
+import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo, useRef } from "react";
 import { InkSlider } from "../shared/controls/ink-slider.tsx";
 import { ControlSwitch, PillButton, Segmented } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
@@ -33,11 +33,18 @@ export function useSurface(): Surface {
   return { window: colors.window, sidebar: colors.sidebar, card: colors.off, field: colors.window, stripe: colors.surface, canvas: colors.surface };
 }
 
+/** A card's rows: fragments opened up, so rows grouped in `<>…</>` get their hairlines too. */
+function rowsOf(children: ReactNode): ReactNode[] {
+  return Children.toArray(children).flatMap((child) =>
+    isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment ? rowsOf(child.props.children) : [child],
+  );
+}
+
 /** A card of rows, a hairline between them; lit while a link to its section (a `cards` Spot) shows it. */
 export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
   const colors = useControlColors();
   const lit = useContext(SpotLit);
-  const rows = Children.toArray(children);
+  const rows = rowsOf(children);
   return (
     <View
       {...(testID !== undefined ? { testID } : {})}
@@ -171,14 +178,15 @@ function TitleRow({ title, detail }: { title: string; detail?: string | undefine
       dragRegion
       style={{ height: PAGE.title, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: PAGE.margin, paddingRight: PAGE.margin }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>
-        {title}
-      </Text>
+      <View style={{ flexShrink: 0 }}>
+        <Text style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>{title}</Text>
+      </View>
       {detail !== undefined && detail !== "" && (
-        <View testID="settings-title-detail" style={{ minWidth: 0, flexShrink: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.muted }}>{`· ${detail}`}</Text>
+        <View testID="settings-title-detail" style={{ flexShrink: 0 }}>
+          <Text style={{ fontSize: 12.5, color: colors.muted }}>{`· ${detail}`}</Text>
         </View>
       )}
+      <View style={{ flex: 1 }} />
     </View>
   );
 }

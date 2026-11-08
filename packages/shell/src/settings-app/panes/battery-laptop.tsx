@@ -34,11 +34,7 @@ export function PowerModeRow({ laptop }: { laptop: Laptop }) {
     ...modes.available.map((mode) => ({ value: mode, label: MODE_SHORT[mode] })),
   ];
   const effective = modes.effective;
-  const detail = effective
-    ? modes.choice === "automatic"
-      ? `Automatic chose ${MODE_LABEL[effective.mode]}: ${effective.why.toLowerCase()}`
-      : `${effective.why}. ${MODE_DETAIL[effective.mode]}`
-    : undefined;
+  const detail = effective ? (modes.choice === "automatic" ? effective.why : `${effective.why}. ${MODE_DETAIL[effective.mode]}`) : undefined;
   return (
     <>
       <Setting id="battery/power-mode" glyph={GAUGE} stack={false} {...(detail ? { detail } : {})}>
