@@ -46,8 +46,10 @@ export function BatteryPopover({
   screenWidth: number | null;
   close: () => void;
 }) {
-  const { battery } = useSystem(sources.system);
+  const { battery: polled } = useSystem(sources.system);
   const use = useMonitor(sources.monitor);
+  // The monitor's reading is the one its draw and history were taken with (and it reads again as the panel opens).
+  const battery = use?.available && use.battery ? use.battery : polled;
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, as the panel opens (the sources are rebuilt with each draw).
   useEffect(() => {
     void sources.monitor?.sample();
