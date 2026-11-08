@@ -89,6 +89,8 @@ export function startBarTips(open: OpenOverlay, delayMs = TOOLTIP_DELAY_MS): Bar
             surface: {
               layer: "overlay",
               anchor: ["top", "left"],
+              // Not pushed down by the bar's own zone: just under it.
+              exclusiveZone: -1,
               margin: { top: MENU_BAR_HEIGHT, left },
               keyboard: "none",
               namespace: "dashi.bar-tip",

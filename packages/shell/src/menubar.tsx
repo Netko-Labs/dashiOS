@@ -36,7 +36,7 @@ import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus
 import { extraEntries } from "./menus/status-menu.ts";
 import { RecordingButton } from "./recorder/indicator.tsx";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
-import type { ScreenCaptureStore } from "./screen-capture.ts";
+import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
@@ -148,6 +148,8 @@ export function MenuBar({
   const connected = useAgents(agents);
   const launched = useRuns(runs ?? NO_RUNS);
   const recording = useRecording(recorder);
+  // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).
+  const capturing = useScreenCapture(capture) && recording.kind === "idle";
   const allExtras = useExtras(extras);
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
@@ -235,7 +237,7 @@ export function MenuBar({
       ),
     })),
     // Never hidden: someone else sharing the screen, every agent, the person's own recording.
-    { key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> },
+    ...(capturing ? [{ key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> }] : []),
     ...(mark.kind === "none"
       ? []
       : [
@@ -358,7 +360,6 @@ export function MenuBar({
 
   return (
     <View
-      onLayout={(bounds) => setBarWidth(bounds.width)}
       style={{
         flex: 1,
         flexDirection: "row",
@@ -371,7 +372,12 @@ export function MenuBar({
       }}
     >
       {/* A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge. */}
-      <View testID="menu-bar-edge" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }} />
+      {/* It spans the bar, so it says the bar's width too (Metal reports a root's children's layout, not the root's). */}
+      <View
+        testID="menu-bar-edge"
+        onLayout={(bounds) => setBarWidth(bounds.width)}
+        style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }}
+      />
       {/* The app's menus never give way: the status side does (menubar-fit.ts). */}
       <View testID="menu-titles" onLayout={(bounds) => setMenusWidth(bounds.width)} style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
         {menu("dashi", <Svg markup={LOGO} size={16} color={colors.text} />)}

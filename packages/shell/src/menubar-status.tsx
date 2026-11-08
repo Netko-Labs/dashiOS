@@ -135,7 +135,7 @@ export function StatusSide({ slots, room, areaOpen, moreOpen, onMore, onHidden }
   }, [hiddenKey, onHidden]);
   const attention = slots.some((slot) => slot.attention && !shown.has(slot.key));
   const wrap = (slot: StatusSlot) => (
-    <View key={slot.key} style={{ flexShrink: 0 }} onLayout={(bounds) => measure(slot.key, bounds.width)}>
+    <View key={slot.key} testID={`status-slot:${slot.key}`} style={{ flexShrink: 0 }} onLayout={(bounds) => measure(slot.key, bounds.width)}>
       {slot.node}
     </View>
   );
