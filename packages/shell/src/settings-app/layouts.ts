@@ -154,8 +154,15 @@ export function layoutWords(list: unknown, xkb: XkbLayouts = installedLayouts())
   return describeLayout(xkb.layouts, typeof list === "string" ? list : undefined);
 }
 
-/** A saved `keyboard.variant` by its own name ("English (US, euro on 5)"); the id where the list doesn't have it. */
-export function variantWords(variant: unknown, xkb: XkbLayouts = installedLayouts()): string {
-  const id = String(variant);
-  return xkb.variants.find((each) => each.id === id)?.name ?? id;
+/**
+ * A change of `keyboard.variant` in words, both sides: a variant by its own
+ * name ("English (US, euro on 5)"), and none by its layout's ("English (US)"),
+ * the layout the other side's variant belongs to.
+ */
+export function variantWords(from: unknown, to: unknown, xkb: XkbLayouts = installedLayouts()): { from: string; to: string } {
+  const find = (id: unknown) => (typeof id === "string" ? xkb.variants.find((each) => each.id === id) : undefined);
+  const known = find(from) ?? find(to);
+  const plain = known ? (xkb.layouts.find((layout) => layout.id === known.layout)?.name ?? known.layout) : "the layout's own";
+  const say = (id: unknown): string => (typeof id === "string" && id !== "" ? (find(id)?.name ?? id) : plain);
+  return { from: say(from), to: say(to) };
 }

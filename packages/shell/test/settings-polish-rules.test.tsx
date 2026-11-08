@@ -212,7 +212,8 @@ test("the layout has one name: the variant's own when one is chosen", () => {
   expect(layoutName(xkb, undefined, undefined)).toBe("English (US)");
   // Recently changed says it by the same name, not its id.
   expect(layoutWords("us", xkb)).toBe("English (US)");
-  expect(variantWords("euro", xkb)).toBe("English (US, euro on 5)");
+  expect(variantWords(undefined, "euro", xkb)).toEqual({ from: "English (US)", to: "English (US, euro on 5)" });
+  expect(variantWords("euro", undefined, xkb)).toEqual({ from: "English (US, euro on 5)", to: "English (US)" });
   expect(layoutWords("zz", xkb)).toBe("zz");
 });
 

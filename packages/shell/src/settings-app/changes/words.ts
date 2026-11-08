@@ -80,7 +80,6 @@ const OWN: Readonly<Record<string, Named>> = {
   "region.formats": { name: "Formats", row: "language-region/formats", unset: "the language's", say: localeWords },
   // One name for the layout, as the row and the picker say it (layouts.ts).
   "keyboard.layout": { name: "Keyboard layout", row: "keyboard/layout", unset: "English (US)", say: (value) => layoutWords(value) },
-  "keyboard.variant": { name: "Keyboard layout", row: "keyboard/layout", unset: "the layout's own", say: (value) => variantWords(value) },
   "power.mode": { name: "Power mode", row: "battery/power-mode", unset: "Automatic" },
   "power.chargeLimit": { name: "Charge limit", row: "battery/charge-limit", unset: "100%", say: (value) => `${String(value)}%` },
   "power.boost": { name: "Boost clock", row: "battery/boost", unset: "Automatic" },
@@ -124,6 +123,11 @@ function wordsFor(change: Change): ChangeWords | null {
   if (row) {
     const name = rowName(row);
     return { name, menu: menu ?? name, from: sayRow(row, change.from), to: sayRow(row, change.to), row: row.id };
+  }
+  if (change.key === "keyboard.variant") {
+    // A variant, or none, by the layout's one name (layouts.ts).
+    const said = variantWords(change.from, change.to);
+    return { name: "Keyboard layout", menu: menu ?? "Keyboard layout", ...said, row: "keyboard/layout" };
   }
   const own = OWN[change.key];
   if (!own) return null;
