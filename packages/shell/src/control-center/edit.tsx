@@ -32,9 +32,9 @@ function AddTile({ entry, onAdd }: { entry: AddEntry; onAdd: (id: string) => voi
         height: GRID.row,
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 6,
         paddingLeft: 6,
-        paddingRight: 10,
+        paddingRight: 8,
         borderRadius: GRID.radius,
         borderWidth: 1.5,
         borderColor: colors.line,
@@ -53,8 +53,8 @@ function AddTile({ entry, onAdd }: { entry: AddEntry; onAdd: (id: string) => voi
           </Text>
         )}
       </View>
-      <View style={{ width: 24, height: 24, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: colors.text }}>
-        <Svg markup={PLUS} size={13} color={colors.surface} />
+      <View style={{ width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: colors.text }}>
+        <Svg markup={PLUS} size={12} color={colors.surface} />
       </View>
     </View>
   );
@@ -68,7 +68,7 @@ export function AddList({ entries, onAdd }: { entries: readonly AddEntry[]; onAd
       <View style={{ paddingLeft: 6, paddingBottom: 8 }}>
         <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.muted }}>ADD</Text>
       </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: GRID.gap, maxHeight: 4 * GRID.row + 3 * GRID.gap, overflow: "scroll" }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: GRID.gap, maxHeight: 2 * GRID.row + GRID.gap + 28, overflow: "scroll" }}>
         {entries.map((entry) => (
           <AddTile key={entry.id} entry={entry} onAdd={onAdd} />
         ))}

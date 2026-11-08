@@ -67,6 +67,7 @@ export {
   type CommandDefinition,
   defineApplet,
   findManifest,
+  manifestPath,
   type PopoverProps,
   type ViewProps,
 } from "./define.ts";
