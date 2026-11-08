@@ -71,3 +71,15 @@ describe("fitStatus", () => {
     expect(statusRoom(300, 400, 12)).toBe(0);
   });
 });
+
+describe("the bar's tooltip", () => {
+  test("centered under its point, kept inside the bar", async () => {
+    const { tipLeft, tipWidth } = await import("../src/bar-tip.tsx");
+    expect(tipLeft(500, 200, 1100)).toBe(400);
+    // Near the right end it stays 6 inside; near the left, 6 from it.
+    expect(tipLeft(1090, 200, 1100)).toBe(1100 - 200 - 6);
+    expect(tipLeft(20, 200, 1100)).toBe(6);
+    expect(tipWidth("Claude Code · Cutting the demo video")).toBeGreaterThan(200);
+    expect(tipWidth("x".repeat(500))).toBe(460);
+  });
+});

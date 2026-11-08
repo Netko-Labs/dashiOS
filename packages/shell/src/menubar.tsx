@@ -26,12 +26,12 @@ import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
-import { MOON } from "./control-center/glyphs.ts";
 import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
 import { ExtraItem } from "./extras/view.tsx";
-import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
-import { extraGoes, GOES, statusRoom } from "./menubar-fit.ts";
-import { StatusItem, StatusSide, type StatusSlot } from "./menubar-status.tsx";
+import { LOGO } from "./glyphs.ts";
+import { extraGoes, statusRoom } from "./menubar-fit.ts";
+import { systemSlots } from "./menubar-slots.tsx";
+import { StatusSide, type StatusSlot } from "./menubar-status.tsx";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { extraEntries } from "./menus/status-menu.ts";
 import { RecordingButton } from "./recorder/indicator.tsx";
@@ -220,7 +220,6 @@ export function MenuBar({
           }
         : null,
     );
-  const batteryLow = battery?.state === "discharging" && battery.percent <= 10;
   const slots: StatusSlot[] = [
     ...allExtras.map((extra, index) => ({
       key: `extra:${extra.key}`,
@@ -257,105 +256,16 @@ export function MenuBar({
           },
         ]),
     ...(recorder && recordingPill(recording, mark.kind !== "none") ? [{ key: "recording", goes: null, node: <RecordingButton recorder={recorder} /> }] : []),
-    ...(battery
-      ? [
-          {
-            key: "battery",
-            goes: null,
-            inArea: true,
-            node: (
-              <StatusItem testID="status-battery" onPress={openBattery} open={popover?.kind === "battery" && popover.right !== null}>
-                {menuBar.batteryPercent === true && (
-                  <View testID="status-battery-percent" style={{ marginRight: 5 }}>
-                    <Text style={{ fontSize: 12, color: batteryLow ? colors.batteryLow : colors.text }}>{`${battery.percent}%`}</Text>
-                  </View>
-                )}
-                <Svg
-                  markup={batteryGlyph(battery.percent, battery.state === "charging" ? true : battery.state === "discharging" ? false : "plugged")}
-                  width={24}
-                  height={12}
-                  color={batteryLow ? colors.batteryLow : colors.text}
-                />
-              </StatusItem>
-            ),
-          },
-        ]
-      : []),
-    ...(network
-      ? [
-          {
-            key: "network",
-            goes: GOES.network,
-            inArea: true,
-            node: (
-              // The network glyph opens Control Center on its Wi-Fi page; a wired connection has none.
-              <StatusItem testID="status-network" onPress={network.kind === "wired" ? openControlCenter : openWifi}>
-                <Svg markup={networkGlyph(network)} size={15} color={colors.text} />
-              </StatusItem>
-            ),
-          },
-        ]
-      : []),
-    ...(volume && menuBar.sound !== false
-      ? [
-          {
-            key: "sound",
-            goes: GOES.sound,
-            inArea: true,
-            node: (
-              <StatusItem testID="status-volume" onPress={openControlCenter}>
-                <Svg markup={speakerGlyph(volume.level, volume.muted)} size={15} color={colors.text} />
-              </StatusItem>
-            ),
-          },
-        ]
-      : []),
-    ...(dnd
-      ? [
-          {
-            key: "dnd",
-            goes: GOES.dnd,
-            inArea: true,
-            node: (
-              <StatusItem testID="status-dnd" onPress={openControlCenter}>
-                <Svg markup={MOON} size={15} color={colors.text} />
-              </StatusItem>
-            ),
-          },
-        ]
-      : []),
-    {
-      key: "control-center",
-      goes: null,
-      inArea: true,
-      node: (
-        <StatusItem testID="status-control-center" onPress={openControlCenter}>
-          <Svg markup={CONTROL_CENTER} size={15} color={colors.text} />
-        </StatusItem>
-      ),
-    },
-    {
-      key: "clock",
-      goes: null,
-      node: (
-        <View
-          testID="clock"
-          onPress={() => void menus.toggleNotificationCenter(appName, output)}
-          style={{
-            justifyContent: "center",
-            height: 22,
-            paddingLeft: 8,
-            paddingRight: 8,
-            borderRadius: 5,
-            backgroundColor: popover?.kind === "notification-center" ? colors.switcherSelection : "#00000000",
-          }}
-        >
-          <Text numberOfLines={1} style={label}>
-            {formatClock(now, clock)}
-          </Text>
-        </View>
-      ),
-    },
+    ...systemSlots({
+      ...{ battery, network, volume },
+      batteryPercent: menuBar.batteryPercent === true,
+      sound: menuBar.sound !== false,
+      dnd,
+      popover,
+      clock: formatClock(now, clock),
+      colors,
+      on: { battery: openBattery, controlCenter: openControlCenter, wifi: openWifi, clock: () => void menus.toggleNotificationCenter(appName, output) },
+    }),
   ];
 
   return (
