@@ -98,6 +98,7 @@ impl Dashi {
             self.focus_topmost();
         }
         self.foreign_closed(entry.id);
+        self.forget_video_views(entry.id);
         crate::handlers::toplevel_meta::forget_icon_file(entry.icon.path.clone());
         if entry.announced {
             self.ipc

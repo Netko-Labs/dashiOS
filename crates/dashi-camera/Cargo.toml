@@ -1,0 +1,18 @@
+[package]
+name = "dashi-camera"
+version = "0.5.0"
+description = "Dashi's camera service: the webcam through PipeWire, its preview, photos, and video"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# No new crates: the GStreamer bindings (MIT or Apache-2.0) and `image` (MIT
+# or Apache-2.0) are the ones dashi-comp already builds with. GStreamer itself
+# is LGPL, a shared library from the system; the plugins it loads are named
+# with their licenses in docs/camera.md.
+[dependencies]
+gstreamer = "0.25"
+gstreamer-app = "0.25"
+gstreamer-video = "0.25"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+serde_json = "1"

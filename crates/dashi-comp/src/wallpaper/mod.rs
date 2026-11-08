@@ -35,6 +35,8 @@ use smithay::{
 use crate::state::Dashi;
 pub(crate) use fit::Mode;
 use procedural::Look;
+/// A decoded frame, straight RGBA: the video views play theirs the same way (render/video/).
+pub(crate) use video::Frame as VideoFrame;
 
 pub(crate) struct Wallpaper {
     shown: Shown,

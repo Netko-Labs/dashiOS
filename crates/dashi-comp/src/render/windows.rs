@@ -143,6 +143,16 @@ pub(crate) fn framed_window<R>(
             elements,
         );
     }
+    // Live video the shell placed over the window's content (video/): under its popups and lights.
+    if let Some(id) = state.windows.by_window(window).map(|entry| entry.id) {
+        let content = (at - spot.origin).to_f64().to_physical(scale);
+        elements.extend(
+            state
+                .video_elements(renderer, id, content, scale)
+                .into_iter()
+                .map(DashiElement::Video),
+        );
+    }
     // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window
     // (and on a maximized one that draws its own), on every surface that reaches them.
     let rounding = rounding(state, renderer, window, on_view(at), scale, 1.0);

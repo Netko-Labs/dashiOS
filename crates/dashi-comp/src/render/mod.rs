@@ -5,6 +5,8 @@ pub(crate) mod canvas;
 pub(crate) mod capture;
 pub(crate) mod cursor;
 pub(crate) mod depth;
+// The privacy dot over every screen (`privacy-dot`).
+pub(crate) mod dot;
 mod drawn;
 // Agents (0.4.0, secrets): what their pictures blank.
 pub(crate) mod mask;
@@ -15,6 +17,8 @@ mod scene;
 pub(crate) mod text;
 pub(crate) mod thumbnails;
 pub(crate) mod titlebar;
+// Live video in a window's rect (`video-views`): the Camera app's picture.
+pub(crate) mod video;
 mod windows;
 
 use smithay::backend::renderer::{
@@ -47,4 +51,6 @@ smithay::backend::renderer::element::render_elements! {
     ThumbSurface=thumbnails::Thumb<WaylandSurfaceRenderElement<R>>,
     /// or a title bar or wallpaper in it.
     ThumbMemory=thumbnails::Thumb<MemoryRenderBufferRenderElement<R>>,
+    /// Live video in a window (video/): its corners rounded, its holes cut.
+    Video=video::VideoElement<R>,
 }

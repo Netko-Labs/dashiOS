@@ -97,6 +97,10 @@ pub(crate) struct Dashi {
     pub spaces: crate::wm::Spaces,
     /// Live pictures the shell placed (`space-previews`, `window-thumbnails`).
     pub thumbnails: crate::render::thumbnails::Thumbnails,
+    /// Live video the shell placed in windows (`video-views`).
+    pub video_views: crate::render::video::VideoViews,
+    /// The privacy dot over every screen (`privacy-dot`).
+    pub privacy_dot: crate::render::dot::PrivacyDot,
     /// The window held in a move grab, which goes along when the Space changes.
     pub held: Option<crate::wm::WindowId>,
     /// A window the shell asked to carry across the next switch
@@ -295,6 +299,8 @@ impl Dashi {
             overview: None,
             spaces: Default::default(),
             thumbnails: Default::default(),
+            video_views: Default::default(),
+            privacy_dot: Default::default(),
             held: None,
             carried: None,
             held_reframed: false,

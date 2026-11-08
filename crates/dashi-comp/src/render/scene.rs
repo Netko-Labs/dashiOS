@@ -6,7 +6,7 @@ use smithay::{
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
-            AsRenderElements, Kind,
+            AsRenderElements, Element, Kind,
             memory::MemoryRenderBufferRenderElement,
             solid::SolidColorRenderElement,
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
@@ -53,7 +53,7 @@ where
         return Vec::new();
     };
     let scale = Scale::from(output.current_scale().fractional_scale());
-    view_elements(
+    let mut elements = view_elements(
         state,
         renderer,
         &View {
@@ -63,7 +63,16 @@ where
             cursor: with_cursor,
             only: None,
         },
-    )
+    );
+    // The privacy dot (dot.rs): over everything but the pointer, on the screen only, never in a capture.
+    if let Some(dot) = state.privacy_dot.element(renderer, area, area.loc, scale) {
+        let under_pointer = elements
+            .iter()
+            .position(|element| element.kind() != Kind::Cursor)
+            .unwrap_or(elements.len());
+        elements.insert(under_pointer, DashiElement::Memory(dot));
+    }
+    elements
 }
 
 pub(crate) fn view_elements<R>(

@@ -197,6 +197,12 @@ pub(crate) fn handle(
         // Live pictures the shell places (render/thumbnails/).
         "space-previews" => done(state.set_space_previews(params)),
         "window-thumbnails" => done(state.set_window_thumbnails(params)),
+        // Live video in a window's rect, and the privacy dot (render/video/, render/dot.rs).
+        "video-views" => done(state.set_video_views(params)),
+        "privacy-dot" => {
+            state.privacy_dot.set(crate::render::dot::parse(params)?);
+            Ok(json!({}))
+        }
         "spaces" => {
             let count = match params.get("count") {
                 None => None,
