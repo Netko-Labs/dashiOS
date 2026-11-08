@@ -8,8 +8,8 @@
  * the shell's facade for it, plus what only the shell decides: how a
  * menu with submenus reads in the bar's one-level dropdown.
  *
- *   applet → shell  hello (v2, first), applet, remove, popover (v2), dismiss (v2)
- *   shell → applet  welcome (v2), activate, select, error, popover (v2: where), dismiss (v2)
+ *   applet → shell  hello (v2, first), applet, remove, popover (v2), dismiss (v2), result/items/view (v3), power (v4)
+ *   shell → applet  welcome (v2), activate, select, error, popover (v2: where), dismiss (v2), run/view (v3), power (v4)
  *
  * What arrives is untrusted: unknown fields, wrong types, and anything over
  * the limits refuse the whole message; a glyph may not reach outside itself

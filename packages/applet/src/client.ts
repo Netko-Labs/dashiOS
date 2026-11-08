@@ -19,6 +19,7 @@ import { existsSync } from "node:fs";
 import type { CommandResult, CommandRow } from "./commands.ts";
 import { type Manifest, manifestJson } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
+import { POWER_PROTOCOL, type PowerChoice, type PowerState } from "./power.ts";
 import { type AppletShellMessage, type Placement, PROTOCOL, parseApplet, parseAppletShellMessage } from "./protocol.ts";
 
 /** What an applet shows; the shell's limits and rules are in docs/applets.md. */
@@ -148,6 +149,9 @@ export class AppletsClient {
   private shellProtocol = 0;
   /** Views asked for or open, by run. */
   private readonly views = new Set<number>();
+  /** Dashi's power mode as the shell last said it (protocol 4, `power.mode`); null when it doesn't. */
+  private power: PowerState | null = null;
+  private readonly powerListeners = new Set<(state: PowerState | null) => void>();
   private readonly connect: NonNullable<AppletsClientOptions["connect"]>;
   private readonly exists: NonNullable<AppletsClientOptions["exists"]>;
   private readonly later: NonNullable<AppletsClientOptions["later"]>;
@@ -240,6 +244,36 @@ export class AppletsClient {
     if (this.views.delete(seq)) this.answer({ type: "dismiss", seq });
   }
 
+  /**
+   * Dashi's power mode (protocol 4, with `power.mode` in applet.json): the
+   * choice, the mode in effect and why. Null while not connected, on an older
+   * Dashi, or without the permission: feature-detect with it.
+   */
+  get powerMode(): PowerState | null {
+    return this.power;
+  }
+
+  /** Hear the power mode change (and go null when the shell is gone); returns what stops it. */
+  onPowerMode(listener: (state: PowerState | null) => void): () => void {
+    this.powerListeners.add(listener);
+    return () => this.powerListeners.delete(listener);
+  }
+
+  /** Ask Dashi for Automatic or a mode, as a pick in Control Center; false when Dashi doesn't offer it here (`powerMode` is null) or lacks that mode. */
+  choosePowerMode(choice: PowerChoice): boolean {
+    const power = this.power;
+    if (!this.socket || this.shellProtocol < POWER_PROTOCOL || !power) return false;
+    if (choice !== "automatic" && !power.available.includes(choice)) return false;
+    this.write(`${JSON.stringify({ type: "power", choice })}\n`);
+    return true;
+  }
+
+  private setPower(state: PowerState | null): void {
+    if (state === this.power || JSON.stringify(state) === JSON.stringify(this.power)) return;
+    this.power = state;
+    for (const listener of [...this.powerListeners]) listener(state);
+  }
+
   private answer(message: Record<string, unknown>): void {
     if (this.socket && this.runsCommands) this.write(`${JSON.stringify(message)}\n`);
   }
@@ -276,6 +310,7 @@ export class AppletsClient {
         this.connecting = false;
         this.socket = null;
         this.shellProtocol = 0;
+        this.setPower(null);
         // The shell that placed them is gone.
         for (const id of [...this.popovers]) {
           this.popovers.delete(id);
@@ -303,6 +338,12 @@ export class AppletsClient {
       case "welcome":
         this.shellProtocol = message.protocol;
         return;
+      case "power": {
+        if (this.shellProtocol < POWER_PROTOCOL) return;
+        const { type: _type, ...state } = message;
+        this.setPower(state);
+        return;
+      }
       case "run": {
         const { type: _type, ...run } = message;
         this.commands?.onRun(run);

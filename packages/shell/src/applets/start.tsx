@@ -2,7 +2,8 @@
  * Applets in the shell: everyone's socket (`dashi-applets.sock`), the
  * installed applets in their sandboxes (launcher.ts), the layer-shell grants
  * for popovers (grants.ts), the sheet that catches a click outside an open
- * popover, and the consent sheet. main.tsx starts this once.
+ * popover, the consent sheet, and the power mode for applets that ask
+ * for it (power.ts). main.tsx starts this once.
  */
 
 import { join } from "node:path";
@@ -22,6 +23,7 @@ import { AppletGrants } from "./grants.ts";
 import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
 import { AppletLauncher } from "./launcher.ts";
 import type { PopoverScreen } from "./placement.ts";
+import type { AppletPower } from "./power.ts";
 import { appletsSocketPath, type Placement } from "./protocol.ts";
 import { serveApplets } from "./server.ts";
 
@@ -33,6 +35,8 @@ export interface StartAppletsOptions {
   primary(): string | null;
   /** The applets' commands in the launcher (commands.ts): fed the installed ones, answered on their connections. */
   commands?: AppletCommands;
+  /** Dashi's power mode for applets with `power.mode` (power.ts); connected to the mode store once the laptop starts. */
+  power?: AppletPower;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
@@ -46,12 +50,13 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
     grants,
     ...(commands ? { commands } : {}),
+    ...(power ? { power } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     // Under the popover, over everything else below the bar: a click on it closes the popover.
     // The bar stays clickable, so the item again also closes it (connection.ts).

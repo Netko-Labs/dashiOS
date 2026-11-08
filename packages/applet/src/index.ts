@@ -92,12 +92,24 @@ export {
   HARDWARE,
   type HardwareScope,
   type Permission,
+  POWER_MODE_PERMISSION,
   parsePermission,
   permissionName,
   REACH,
   widens,
 } from "./permissions.ts";
 export { metalHost, type OpenPopover, openPopoverWindow, popoverSurface } from "./popover.tsx";
+export {
+  isPowerChoice,
+  isPowerMode,
+  POWER_MODES,
+  POWER_PROTOCOL,
+  type PowerChoice,
+  type PowerMode,
+  type PowerState,
+  parsePowerAsk,
+  parsePowerState,
+} from "./power.ts";
 export {
   APPLET_LIMITS,
   APPLETS_SOCKET,

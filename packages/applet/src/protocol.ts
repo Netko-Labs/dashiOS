@@ -24,6 +24,10 @@
  *                   {"type":"view","seq","height"}                          (a view command draws its answer itself, this tall)
  *   shell → applet  {"type":"view","seq","x","y","width","height","output","namespace"}  (where)
  *   either way      {"type":"dismiss","seq"}                                 (the view closed)
+ * Version 4 adds Dashi's power mode, for an applet with the `power.mode`
+ * permission (power.ts):
+ *   shell → applet  {"type":"power","choice","available","mode","automatic","why","failed"}  (after welcome, and on every change)
+ *   applet → shell  {"type":"power","choice"}                                (ask for Automatic or a mode)
  * A connection that starts with anything but `hello` is version 1, and
  * stays so. A hello's protocol is the newest the applet speaks; the
  * connection speaks the older of it and the shell's.
@@ -35,8 +39,9 @@ import { COMMAND_LIMITS, type CommandResult, type CommandRow, parseResult, parse
 import { type Manifest, parseManifest } from "./manifest.ts";
 import { type AppletMenuRow, parseMenu } from "./menu.ts";
 import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "./parse.ts";
+import { type PowerChoice, type PowerState, parsePowerAsk, parsePowerState } from "./power.ts";
 
-export const PROTOCOL = 3;
+export const PROTOCOL = 4;
 export const APPLETS_SOCKET = "dashi-applets.sock";
 
 /** Where the shell listens; null without a runtime directory. `DASHI_APPLETS_SOCKET` puts it elsewhere (the sandbox's own). */
@@ -87,7 +92,9 @@ export type AppletMessage =
   | { type: "items"; seq: number; rows: CommandRow[] }
   | { type: "view"; seq: number; height: number }
   /** `{"type":"dismiss","seq"}`: the view of run `seq` closed. */
-  | { type: "dismiss-view"; seq: number };
+  | { type: "dismiss-view"; seq: number }
+  /** Version 4: Automatic or a mode, asked for (`power.mode`). */
+  | { type: "power"; choice: PowerChoice };
 
 /** A command run's number: the shell counts them up from 1. */
 export const MAX_SEQ = 2 ** 31;
@@ -111,7 +118,8 @@ export type AppletShellMessage =
   | { type: "dismiss"; id: string }
   | { type: "run"; seq: number; command: string; args: Record<string, string | number | boolean>; query?: string; item?: string }
   | ({ type: "view"; seq: number; namespace: string } & Placement)
-  | { type: "dismiss-view"; seq: number };
+  | { type: "dismiss-view"; seq: number }
+  | ({ type: "power" } & PowerState);
 
 /** What a glyph may not contain: anything that loads, links, or runs. */
 const GLYPH_FORBIDDEN = /<\s*(image|script|style|foreignObject|use|a)\b|href\s*=|<!(ENTITY|DOCTYPE)|url\s*\(/i;
@@ -229,6 +237,9 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
     case "view":
       if (version < 3) return refuse(`“${type}” needs protocol 3: say hello with "protocol":3`);
       return parseCommandMessage(type, raw);
+    case "power":
+      if (version < 4) return refuse(`“power” needs protocol 4: say hello with "protocol":4`);
+      return parsePowerAsk(raw);
     case "popover":
     case "dismiss": {
       if (version < 2) return refuse(`“${type}” needs protocol 2: send hello first`);
@@ -243,11 +254,13 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
     }
     default:
       return refuse(
-        version >= 3
-          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
-          : version >= 2
-            ? 'type must be "applet", "remove", "popover", or "dismiss"'
-            : 'type must be "applet" or "remove"',
+        version >= 4
+          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", or "power"'
+          : version >= 3
+            ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
+            : version >= 2
+              ? 'type must be "applet", "remove", "popover", or "dismiss"'
+              : 'type must be "applet" or "remove"',
       );
   }
 }
@@ -294,6 +307,10 @@ export function parseAppletShellMessage(line: string): AppletShellMessage | null
   const { type, fields } = message;
   if (type === "error") return typeof fields.message === "string" ? { type: "error", message: fields.message } : null;
   if (type === "welcome") return isNumber(fields.protocol) ? { type: "welcome", protocol: fields.protocol } : null;
+  if (type === "power") {
+    const state = parsePowerState(fields);
+    return state ? { type: "power", ...state } : null;
+  }
   if (isNumber(fields.seq)) return parseRunMessage(type, fields, fields.seq);
   if (typeof fields.id !== "string") return null;
   if (type === "activate" && isNumber(fields.x) && isNumber(fields.y)) return { type: "activate", id: fields.id, x: fields.x, y: fields.y };

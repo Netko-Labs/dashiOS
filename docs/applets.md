@@ -21,7 +21,7 @@ One connection can show up to 8 applets; they go when it closes. The
 parsers are `@dashi/applet`'s (`packages/applet/src/protocol.ts`); the shell's
 `src/applets/` serves them. What follows first is version 1, which every
 applet speaks; version 2 (below) adds a manifest, popovers, and submenus;
-version 3, the launcher's commands.
+version 3, the launcher's commands; version 4, Dashi's power mode.
 
 ### Applet → shell
 
@@ -181,6 +181,53 @@ a neutral puzzle piece (never Dashi's mark), never ranks above an exact
 match of an app's or a setting's name, and a command titled like one of
 Dashi's own ("System Settings") reads "Weather › System Settings".
 
+## Version 4: the power mode
+
+A hello with `"protocol":4` from an applet whose manifest asks for
+`power.mode` hears Dashi's power mode and may ask for another: Automatic,
+or one of the machine's modes. It is the same choice Control Center's
+Power Mode page and Settings › Battery make, kept in the same place
+(`power.mode` in Dashi's settings, unset for Automatic): the applet asks,
+and the shell's mode store (`src/power/modes/store.ts`) decides what is in
+effect and applies its recipe, exactly as for a pick in Control Center. The
+shell's side is `src/applets/power.ts`; the wire format,
+`packages/applet/src/power.ts`.
+
+```
+shell → applet  {"type":"power","choice":"automatic","available":["low-power","balanced","performance"],
+                 "mode":"performance","automatic":true,"why":"Automatic chose High Performance: plugged in","failed":false}
+applet → shell  {"type":"power","choice":"low-power"}
+```
+
+The shell sends `power` right after its welcome and again whenever the
+state changes (a pick anywhere, the cable, the battery, Fn F5):
+
+| Field | |
+| --- | --- |
+| `choice` | `automatic`, `low-power`, `balanced`, or `performance`: what the person chose. |
+| `available` | The machine's modes, in that order; empty when it has none (no tuned-ppd and no dashi-hardware). |
+| `mode` | The mode in effect, or null until the power source is known. |
+| `automatic` | Automatic is choosing right now (not a pick, and not Fn F5 holding a mode until the cable changes). |
+| `why` | What is in effect and why, one line, as Settings shows it, or null with `mode`. |
+| `failed` | The last switch didn't go through everywhere. |
+
+An ask for a mode the machine lacks, from an applet without `power.mode`
+(an installed one: as installed), or before the machine's modes are known
+is refused with `error`. Setting `platform-profile` through dashi-hardware
+still works, and Dashi still takes it as a key press (it holds that mode,
+until the cable changes when Automatic is chosen); an applet that wants
+Automatic, or wants to read it, uses this instead.
+
+**Feature-detect it.** An older Dashi answers the hello with protocol 3
+and never sends `power`; one that doesn't grant it sends nothing either.
+`AppletsClient.powerMode` is the state, or null when there is none to use:
+
+```ts
+const client = applet.client; // defineApplet's handle
+const stop = client.onPowerMode((power) => render(power)); // null: not offered here
+if (client.powerMode) client.choosePowerMode("automatic"); // false when not offered, or the machine lacks the mode
+```
+
 ## applet.json
 
 The manifest says who an applet is, when it applies, and what it may touch.
@@ -230,6 +277,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | `hardware.lighting` | Change the keyboard and lid lights | the above, and `Set`, `SetSlash` |
 | `hardware.fans` | Change fan curves (asks for your password) | the above, and `SetFanCurve`, `ResetFanCurves` |
 | `hardware.tuning` | Change power limits and undervolt the processor (asks for your password) | the above, and `Set`, `SetMany`, `SetCurveOptimizer`, `ConfirmTuning`, `ClearSavedTuning` |
+| `power.mode` | See and choose the power mode, Automatic included | nothing more: the shell answers it on the applets socket ([Version 4](#version-4-the-power-mode)) |
 | `dbus.system:NAME`, `dbus.session:NAME` | Talk to NAME (known services by their names) | that bus through the proxy, talking only to NAME; `org.freedesktop.DBus`, systemd, logind, polkit, portals, secrets, and `dev.dashi.*` can't be named |
 | `files.downloads`, `files.documents`, `files.pictures`, `files.music`, `files.videos`, `files.desktop` (`:read` for read-only) | Read and change files in Downloads (Read files in …) | that folder, at its place in the applet's home |
 
@@ -406,7 +454,7 @@ code). The log reads like this:
 
 ```
   18:40:01 hello as dev.example.weather 0.1.0
-  18:40:01 ✓ connected (protocol 3)
+  18:40:01 ✓ connected (protocol 4)
   18:40:01 ✓ “Weather” in the menu bar (dev)
   18:40:02 select refresh
   18:40:09 popover asked 260×170

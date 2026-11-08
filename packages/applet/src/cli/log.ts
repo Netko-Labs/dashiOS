@@ -50,6 +50,8 @@ export class MessageLog {
         return `run ${String(fields.command)} #${String(fields.seq)}${typeof fields.query === "string" ? ` for “${fields.query}”` : ""}${typeof fields.item === "string" ? ` chose ${fields.item}` : ""}`;
       case "view":
         return `view ${String(fields.seq)} open ${String(fields.width)}×${String(fields.height)} at ${String(fields.x)},${String(fields.y)}`;
+      case "power":
+        return `power mode ${String(fields.choice)}${typeof fields.mode === "string" ? ` (${String(fields.why ?? fields.mode)})` : ""}`;
       case "error":
         return `✗ refused: ${String(fields.message)}`;
       default:
@@ -87,6 +89,8 @@ export class MessageLog {
         return `#${String(fields.seq)} → ${Array.isArray(fields.rows) ? fields.rows.length : 0} rows`;
       case "view":
         return `#${String(fields.seq)} view asked ${String(fields.height)} tall`;
+      case "power":
+        return `asked for power mode ${String(fields.choice)}`;
       default:
         return null;
     }

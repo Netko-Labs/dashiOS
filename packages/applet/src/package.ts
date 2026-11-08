@@ -4,7 +4,7 @@
  *
  *   applet.json   the manifest
  *   main.js       the entry and everything it imports, bundled by `bun build`
- *   build.json    {"bun": "1.4.4", "sdk": "0.4.0"}: what built it, for the rebuild in CI
+ *   build.json    {"bun": "1.4.4", "sdk": "0.5.0"}: what built it, for the rebuild in CI
  *   assets/…      files the applet reads at run time (its glyphs, its icon)
  *
  * Packing is reproducible: the same source with the same Bun makes the same
@@ -21,7 +21,7 @@ import { singletons } from "./singletons.ts";
 import { readTar, writeTar } from "./tar.ts";
 
 export const PACKAGE_EXTENSION = ".dashi-applet";
-export const SDK_VERSION = "0.4.0";
+export const SDK_VERSION = "0.5.0";
 
 export const packageName = (manifest: Pick<Manifest, "id" | "version">): string => `${manifest.id}-${manifest.version}${PACKAGE_EXTENSION}`;
 

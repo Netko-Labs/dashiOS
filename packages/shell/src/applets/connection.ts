@@ -5,6 +5,8 @@
  * one (a sandboxed applet must say hello, and say what it was installed
  * as), and it may ask for popovers, which the shell places under the item,
  * grants the layer shell for (grants.ts), and closes on a click outside.
+ * Version 4 adds Dashi's power mode for an applet that asks for
+ * `power.mode` (power.ts).
  *
  * A line too long, a flood of messages, or too many refused ones ends the
  * connection; a refused message otherwise leaves its applets as they were.
@@ -17,6 +19,7 @@ import { LineBuffer } from "../lines.ts";
 import type { AppletCommands, CommandMessage } from "./commands.ts";
 import type { AppletGrants } from "./grants.ts";
 import { type PopoverScreen, placePopover } from "./placement.ts";
+import { type AppletPower, attachPower, mayChoosePower } from "./power.ts";
 import { APPLET_LIMITS, type Applet, type AppletShellMessage, flattenRows, type Placement, PROTOCOL, parseAppletMessage, wireMessage } from "./protocol.ts";
 
 /** Messages a connection may send in one second before it is cut off (a clock ticking once a second is far fewer). */
@@ -44,6 +47,8 @@ export interface AppletContext {
   installed?: Manifest;
   /** The launcher's commands (commands.ts): a version 3 connection answers its applet's. */
   commands?: Pick<AppletCommands, "attach">;
+  /** Dashi's power mode (power.ts): a version 4 connection with `power.mode` hears it and may ask for a choice. */
+  power?: AppletPower;
   now?: () => number;
   parse?: typeof parseAppletMessage;
 }
@@ -111,6 +116,8 @@ export class AppletConnection implements ExtraActions {
   private popover: OpenPopover | null = null;
   /** Its side of the launcher's commands, from a version 3 hello on. */
   private commands: ReturnType<AppletCommands["attach"]> | null = null;
+  /** Stops telling it the power mode; set from a version 4 hello with `power.mode` on. */
+  private stopPower: (() => void) | null = null;
   private readonly extras: ExtrasStore;
   private readonly now: () => number;
   private readonly parse: typeof parseAppletMessage;
@@ -165,6 +172,8 @@ export class AppletConnection implements ExtraActions {
     this.popover = null;
     this.commands?.detach();
     this.commands = null;
+    this.stopPower?.();
+    this.stopPower = null;
     if (this.version >= 2) void this.context.grants?.forget(this.pid).catch(() => {});
     this.extras.dropWhere((extra) => extra.key.startsWith(this.prefix));
     this.applets.clear();
@@ -226,6 +235,8 @@ export class AppletConnection implements ExtraActions {
       case "view":
       case "dismiss-view":
         return this.command(message);
+      case "power":
+        return this.askPower(message.choice);
       case "remove":
         if (this.popover?.id === message.id) this.dismissPopover(true);
         if (this.applets.delete(message.id)) this.extras.drop(this.prefix + message.id);
@@ -250,6 +261,15 @@ export class AppletConnection implements ExtraActions {
   private command(message: CommandMessage): void {
     if (!this.commands) return this.refuse(`${message.type === "dismiss-view" ? "dismiss" : message.type}: this applet has no commands`);
     this.commands.receive(message);
+  }
+
+  /** An ask for Automatic or a mode: a pick, as in Control Center, when its manifest says `power.mode`. */
+  private askPower(choice: Parameters<AppletPower["choose"]>[0]): void {
+    if (!mayChoosePower(this.context.installed ?? this.manifest)) return this.refuse("power: add “power.mode” to applet.json’s permissions");
+    const power = this.context.power;
+    if (!power) return this.refuse("power: this machine has no power modes");
+    const refused = power.choose(choice);
+    if (refused !== null) this.refuse(refused);
   }
 
   private hello(manifest: Manifest, dev: boolean, protocol: number): void {
@@ -278,6 +298,10 @@ export class AppletConnection implements ExtraActions {
         send: (message) => this.send(message),
         grant: (on) => this.context.grants?.set(this.pid, on) ?? Promise.resolve(),
       });
+    }
+    // The power mode now, and on every change, for an applet that asked for it (an installed one as installed).
+    if (this.version >= 4 && this.context.power && mayChoosePower(installed ?? manifest)) {
+      this.stopPower = attachPower(this.context.power, (state) => this.send({ type: "power", ...state }));
     }
   }
 
