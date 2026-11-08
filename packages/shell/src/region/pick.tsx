@@ -4,9 +4,10 @@
  * list, so a person who has seen one knows the other.
  */
 
-import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { useColors } from "../settings-app/colors.ts";
 import { useSurface } from "../settings-app/ui.tsx";
 
 export function SearchField({

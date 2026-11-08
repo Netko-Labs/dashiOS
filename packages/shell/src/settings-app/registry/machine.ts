@@ -72,6 +72,13 @@ export const MACHINE_ROWS = [
   { id: "battery/since-unplugged", title: "Since unplugged", keywords: ["battery usage"], kind: "value" },
   { id: "battery/power-mode", title: "Power mode", keywords: ["low power mode", "performance", "balanced", "power saver"], kind: "choice", stack: true },
   {
+    id: "battery/stop-charging",
+    title: "Stop charging early",
+    detail: "Keeps the battery healthy.",
+    keywords: ["battery health", "charge limit", "stop charging", "80%"],
+    kind: "switch",
+  },
+  {
     id: "battery/charge-limit",
     title: "Charge limit",
     detail: "Keeping it below full slows wear.",

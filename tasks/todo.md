@@ -72,7 +72,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Control Center, the battery panel, applets' controls (`feat/0.5-control-center`; design: `expressive-final.html`, approved)
 - [x] The panel: 344 wide, radius 28, rows 56, no header; wide tiles with a knob (knob toggles, name opens), round tiles with a word, ink sliders standing or lying, the battery row; Dashi green for on with corners 28 → 18 on a 220 ms spring; Light and Dark tokens of its own (`src/control-center/`)
 - [x] The layout per machine (`$XDG_STATE_HOME/dashi/control-center-layout.json` by machine id), packed with no gaps; missing hardware leaves no tile and comes back where it was; the default: Wi-Fi (Ethernet without it), the sliders, Bluetooth, Focus, Dark, Power, Keyboard, the battery; Lock, Night Shift, Graphics, Hotspot and applets' controls in Add
-- [x] Edit mode in the panel (right-click) and Settings › Control Center (a 22nd pane; the window 760 × 733): "−", click to resize, drag and ⌥-arrows to move, Add, Reset · Cancel · Done
+- [x] Edit mode in the panel (right-click) and Settings › Control Center (a 22nd pane; the window then 760 × 733, now 920 × 640): "−", click to resize, drag and ⌥-arrows to move, Add, Reset · Cancel · Done
 - [x] The keyboard: arrows, Space, Return, ⇧-arrows on a slider, Esc; a purple ring after the keyboard
 - [x] Pages grow out of their tile: Wi-Fi (Wi-Fi Settings…), Bluetooth, Sound, the power mode, the keyboard light, graphics, an applet's choice; restyled, same behaviour
 - [x] The battery panel replaces the battery menu (from the item and the battery row): status, gauge with the limit, "Charge, last 24 h", watts that add up (the apps' share an estimate, rows left out when unknown), the laptop's rows (full charge once, the card's holders, keep-awake), Battery Settings; no power modes there any more
@@ -84,6 +84,20 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] A slider's or a status's 30-minute line on a large tile (`spark`, controls.html § 4) (S)
 - [ ] Per-app watts measured, not estimated, where the machine can say (RAPL through dashi-hardware) (M)
 - [ ] Hotspot on a machine with Wi-Fi: checked in code (nmcli), not on hardware (S; laptop)
+
+## Settings in Control Center's language (`feat/0.5-settings-redesign`; design: `settings-final.html`, approved)
+- [x] One chrome row: the lights and search on the sidebar's top row, the pane's title as the content's 56-tall row with "· detail"; the header strip gone (Recently changed is a pane, under You)
+- [x] Control Center's parts shared (`src/shared/controls/`: tokens, spring, slider math, knob, chip, ink fill, limit bar, ring, switch, segmented pills, ink slider, pill buttons); Control Center, the battery panel and the pages draw with them
+- [x] The sidebar: knob pills, the look group then Connect, This laptop, You; the chosen pane green; Agents' count of agents waiting; it scrolls and keeps the chosen pane in view; Wi-Fi, Users, Privacy named as drawn (the old names search words)
+- [x] Heroes: Appearance's themes, Displays' display at its shape (several: each, press to choose; Arrange: the arrangement), Battery & Power's charge, gauge and 24 h line (unknown figures left out), Control Center's miniature with the editor behind Edit; About's and Users' pictures
+- [x] Every other pane restyled on the same parts; every setting kept and in the registry, found by the search, lit where it lands
+- [x] Keyboard: Tab, arrows in the sidebar, pills, themes and sliders, the purple ring, Esc (the search; the Control Center editor's Cancel), ❖F; the editor takes the window's keys as the panel does
+- [x] The window: 920 × 640 (was 760 × 733)
+- [x] VM: `dashi-0.5.0-review/44-settings/` (every pane Light, the drawn four Dark, search, keyboard, the editor; Battery & Power on a fixture in the preview harness `bin/dashi-settings-preview.tsx`, the VM has no battery)
+- [ ] Seen only in unit tests, not in the VM: Agents' count (no agent waiting), Displays' Brightness and Refresh rows (no backlight, one rate), Battery & Power's "On battery" row, the applets card (no applet running) (S; laptop)
+- [ ] Accent and Reduce transparency are drawn in Appearance but Dashi has neither; left out until they exist (M; owner's call)
+- [ ] Display brightness shows only where there is a backlight (none in the VM): check it on the laptop (S; laptop)
+- [ ] The Keyboard and region pickers' lists still wear @dashi/ui's selection look, not a green pill (S)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)

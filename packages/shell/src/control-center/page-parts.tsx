@@ -10,10 +10,10 @@
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
+import { useGrow } from "../shared/controls/motion.ts";
+import { useControlColors } from "../shared/controls/palette.ts";
 import { CHEVRON_LEFT as BACK } from "./glyphs.ts";
 import { GRID } from "./layout.ts";
-import { useGrow } from "./motion.ts";
-import { useControlColors } from "./palette.ts";
 
 /** Where the page's tile was in the grid; the header grows from there. Null: it was opened some other way. */
 export const PageOrigin = createContext<{ left: number; top: number; width: number } | null>(null);

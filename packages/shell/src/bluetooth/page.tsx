@@ -12,9 +12,9 @@
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
-import { useControlColors } from "../control-center/palette.ts";
 import { batteryGlyph } from "../glyphs.ts";
 import { Button } from "../menus/sheets.tsx";
+import { useControlColors } from "../shared/controls/palette.ts";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
 import { type BluetoothState, type BluetoothStore, type Busy, useBluetooth } from "./store.ts";

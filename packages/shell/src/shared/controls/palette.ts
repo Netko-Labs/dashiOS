@@ -1,9 +1,10 @@
 /**
- * Control Center's own tokens (the approved design, docs/design.html
- * "Control Center"): a soft surface, off tiles a shade of it, on tiles Dashi
- * green, sliders filled with ink (dark in Light, light in Dark), and the
- * purple keyboard ring. The battery panel and Settings › Control Center draw
- * with the same ones.
+ * Control Center's tokens (the approved design, docs/design.html "Control
+ * Center"): a soft surface, off tiles a shade of it, on tiles Dashi green,
+ * sliders filled with ink (dark in Light, light in Dark), and the purple
+ * keyboard ring. The battery panel, the Wi-Fi, Bluetooth and Sound pages,
+ * and System Settings draw with the same ones; Settings adds its window,
+ * its sidebar, and a knob's resting circle (docs/design.html "Settings").
  */
 
 import { useDark } from "@dashi/ui";
@@ -32,6 +33,12 @@ export interface ControlPalette {
   chip: string;
   /** The keyboard's ring. */
   focus: string;
+  /** Settings' window, behind its cards. */
+  window: string;
+  /** Settings' sidebar. */
+  sidebar: string;
+  /** A knob's circle at rest: a Settings row's glyph, a sidebar pill's. */
+  knobRest: string;
 }
 
 export const LIGHT_CONTROLS: ControlPalette = {
@@ -49,6 +56,9 @@ export const LIGHT_CONTROLS: ControlPalette = {
   line: "#1d18301f",
   chip: "#f3eff8",
   focus: "#6e56cf",
+  window: "#f7f4fa",
+  sidebar: "#efeaf5",
+  knobRest: "#1d18301a",
 };
 
 export const DARK_CONTROLS: ControlPalette = {
@@ -66,6 +76,9 @@ export const DARK_CONTROLS: ControlPalette = {
   line: "#ffffff1a",
   chip: "#1c1a22",
   focus: "#6e56cf",
+  window: "#1a1820",
+  sidebar: "#211e28",
+  knobRest: "#ffffff1a",
 };
 
 export const controlPalette = (dark: boolean): ControlPalette => (dark ? DARK_CONTROLS : LIGHT_CONTROLS);

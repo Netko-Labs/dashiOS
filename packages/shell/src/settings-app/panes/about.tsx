@@ -1,12 +1,13 @@
 /** About: Dashi and the machine it runs on. */
 
-import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { LOGO } from "../../glyphs.ts";
 import { formatMemory, formatStorage, versionLine } from "../about.ts";
+import { useColors } from "../colors.ts";
 import type { PaneContext } from "../context.ts";
-import { Button, Group, Page, Setting } from "../ui.tsx";
+import { CHIP, GPU, SPARK } from "../knob-glyphs.ts";
+import { Button, Group, Hero, Page, Setting } from "../ui.tsx";
 
 /** The value at the end of a row; several lines (two graphics adapters) stack. */
 function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -16,7 +17,7 @@ function Value({ children, testID }: { children: string | readonly string[]; tes
     <View testID={testID} style={{ flex: 1, flexDirection: "column", alignItems: "flex-end", minWidth: 0 }}>
       {lines.map((line, index) => (
         // Lines of a value never reorder.
-        <Text key={index} style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>
+        <Text key={index} style={{ fontSize: 12.5, color: colors.textMuted, textAlign: "right" }}>
           {line}
         </Text>
       ))}
@@ -31,13 +32,15 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
   const cpu = info.processor ? `${info.processor.model}${info.processor.threads > 0 ? ` (${info.processor.threads} threads)` : ""}` : "Unknown";
   return (
     <Page title="About">
-      <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 4, paddingVertical: 8 }}>
-        <Svg markup={LOGO} size={56} color={colors.selection} />
-        <Text style={{ fontSize: 22, fontWeight: "bold", color: colors.text }}>{info.os?.name ?? "Dashi"}</Text>
-        <View testID="about-version">
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>{versionLine(info)}</Text>
+      <Hero testID="about-hero">
+        <View style={{ flex: 1, flexDirection: "column", alignItems: "center", gap: 4, paddingVertical: 8 }}>
+          <Svg markup={LOGO} size={56} color={colors.selection} />
+          <Text style={{ fontSize: 22, fontWeight: "semibold", color: colors.text }}>{info.os?.name ?? "Dashi"}</Text>
+          <View testID="about-version">
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>{versionLine(info)}</Text>
+          </View>
         </View>
-      </View>
+      </Hero>
       <Group testID="about-system">
         <Setting id="about/name">
           <Value>{info.hostname}</Value>
@@ -52,13 +55,13 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
         </Setting>
       </Group>
       <Group testID="about-hardware">
-        <Setting id="about/processor">
+        <Setting id="about/processor" glyph={CHIP}>
           <Value testID="about-cpu">{cpu}</Value>
         </Setting>
         <Setting id="about/memory">
           <Value testID="about-memory">{formatMemory(info.memory)}</Value>
         </Setting>
-        <Setting id="about/graphics">
+        <Setting id="about/graphics" glyph={GPU}>
           <Value testID="about-gpu">{info.gpus.length > 0 ? info.gpus : "Unknown"}</Value>
         </Setting>
         <Setting id="about/storage" detail={info.disk ? `${formatStorage(info.disk.free)} available` : null}>
@@ -66,7 +69,7 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
         </Setting>
       </Group>
       <Group testID="about-setup">
-        <Setting id="about/setup-assistant">
+        <Setting id="about/setup-assistant" glyph={SPARK}>
           <Button testID="about-setup-open" label="Open…" onPress={openSetup} />
         </Setting>
       </Group>

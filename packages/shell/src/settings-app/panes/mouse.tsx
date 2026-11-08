@@ -2,6 +2,7 @@
 
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
+import { MOUSE } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Page, Setting } from "../ui.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";
@@ -11,7 +12,7 @@ export function MousePane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Mouse">
       <Group>
-        <Setting id="mouse/natural-scrolling" control="mouse-natural" />
+        <Setting id="mouse/natural-scrolling" glyph={MOUSE} control="mouse-natural" />
         <SpeedRow
           id="mouse/tracking-speed"
           testID="mouse-speed"
@@ -24,7 +25,7 @@ export function MousePane({ settings }: { settings: SettingsStore }) {
           value={mouse.scrollSpeed}
           onCommit={(scrollSpeed) => settings.patch("mouse", { scrollSpeed })}
         />
-        <Setting id="mouse/acceleration" control="mouse-profile" />
+        <Setting id="mouse/acceleration" stack={false} control="mouse-profile" />
       </Group>
       <Caption>With no mouse connected, these apply when one is plugged in.</Caption>
     </Page>

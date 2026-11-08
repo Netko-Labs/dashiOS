@@ -6,9 +6,9 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
+import { useControlColors } from "../shared/controls/palette.ts";
 import { PLUS } from "./glyphs.ts";
 import { COLUMN, GRID } from "./layout.ts";
-import { useControlColors } from "./palette.ts";
 
 export interface AddEntry {
   id: string;

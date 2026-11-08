@@ -5,7 +5,8 @@
  * tested apart from the drawing (tiles.tsx).
  */
 
-import type { Direction } from "./layout.ts";
+/** An arrow's way (Control Center's grid names it the same). */
+export type Direction = "left" | "right" | "up" | "down";
 
 export interface SliderBox {
   x: number;

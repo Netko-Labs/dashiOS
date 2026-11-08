@@ -37,16 +37,16 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   "date-time": ["clock", "time zone", "timezone", "24-hour", "ntp"],
   "language-region": ["language", "locale", "region", "formats", "first day of week"],
   "lock-screen": ["lock", "screen saver", "display off", "sleep"],
-  notifications: ["do not disturb", "banners", "alerts"],
+  notifications: ["focus", "do not disturb", "banners", "alerts"],
   passwords: ["vault", "passkeys", "api keys", "tokens", "1password"],
   agents: ["ai", "mcp"],
-  privacy: ["permissions", "security", "consent", "camera", "microphone", "location", "screen sharing", "revoke", "always allow"],
+  privacy: ["privacy & security", "permissions", "security", "consent", "camera", "microphone", "location", "screen sharing", "revoke", "always allow"],
   about: ["version", "system information", "hardware"],
-  network: ["wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],
+  network: ["network", "wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],
   bluetooth: ["headphones", "pairing", "devices"],
   sound: ["volume", "audio", "speakers", "microphone", "output", "input"],
   battery: ["power", "energy", "low power mode", "battery percentage"],
-  users: ["account", "password", "avatar", "login", "automatic login"],
+  users: ["users & accounts", "accounts", "account", "password", "avatar", "login", "automatic login"],
 };
 
 /** What each pane holds, in a few words after its name on the launcher's row (VS-2: the same line). */

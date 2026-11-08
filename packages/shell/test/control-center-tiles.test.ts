@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { levelOf, nextChoice, valueAt } from "../src/control-center/applet-tiles.ts";
 import { type ControlSnapshot, DEFAULT_LAYOUT, isThere, lightToggle, powerToggle, SYSTEM_CONTROLS, tileState } from "../src/control-center/catalog.ts";
 import { LayoutStore, machineId, parseLayouts } from "../src/control-center/layout-store.ts";
-import { fillLength, levelAt, stepLevel } from "../src/control-center/slider-math.ts";
+import { fillLength, levelAt, stepLevel } from "../src/shared/controls/slider-math.ts";
 
 const laptop: ControlSnapshot = {
   wifi: true,

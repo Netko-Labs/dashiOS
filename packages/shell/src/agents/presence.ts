@@ -118,6 +118,14 @@ export interface AgentUi {
   whenNoSheet(): Promise<void>;
 }
 
+/** An agent's status while a sheet of its asks the person something (session.ts): it waits for you. */
+export const WAITING_STATUS = "Waiting for you";
+
+/** How many agents wait for the person now (Settings' sidebar counts them on Agents). */
+export function waitingCount(agents: readonly Pick<AgentInfo, "status">[]): number {
+  return agents.filter((agent) => agent.status === WAITING_STATUS).length;
+}
+
 /** Who is connected, for the menu bar. */
 export class AgentStore {
   private agents: readonly AgentInfo[] = [];

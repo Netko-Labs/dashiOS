@@ -6,13 +6,14 @@
  * `region`).
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useClockPrefs, useMinuteClock } from "../../clock.ts";
 import { LocalePickers } from "../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../region/store.ts";
 import { firstDayIndex, previewFormats, weekdayNames } from "../../region/week.ts";
+import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
+import { CALENDAR, GLOBE, LANGUAGE } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Page, Setting } from "../ui.tsx";
 
@@ -29,7 +30,11 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
   return (
     <Page title="Language & Region">
       <Group>
-        <Setting id="language-region/language" detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}>
+        <Setting
+          id="language-region/language"
+          glyph={LANGUAGE}
+          detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}
+        >
           <LocalePickers
             locales={state.locales}
             language={state.language}
@@ -41,8 +46,8 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
         </Setting>
       </Group>
       <Group>
-        <Setting id="language-region/first-day-of-week" control="region-first-day" />
-        <Setting id="language-region/formats">
+        <Setting id="language-region/first-day-of-week" glyph={CALENDAR} stack={false} control="region-first-day" />
+        <Setting id="language-region/formats" glyph={GLOBE}>
           <View testID="region-preview" style={{ flexDirection: "column", gap: 3 }}>
             <Text style={{ fontSize: 12, color: colors.text }}>{`${preview.date}, ${preview.time}`}</Text>
             <Text style={{ fontSize: 12, color: colors.text }}>{preview.number}</Text>
@@ -54,7 +59,7 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
       </Group>
       {state.busy === "language" && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
       {state.error !== null && (
-        <View testID="region-error" style={{ flexShrink: 0, paddingHorizontal: 4 }}>
+        <View testID="region-error" style={{ flexShrink: 0, paddingHorizontal: 10 }}>
           <Text style={{ fontSize: 11, color: colors.critical }}>{describeFailure(state.error)}</Text>
         </View>
       )}

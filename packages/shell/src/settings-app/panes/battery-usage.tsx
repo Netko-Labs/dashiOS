@@ -5,7 +5,7 @@
  * the apps using the most processor time over the last minutes.
  */
 
-import { INFO, useColors, WARNING } from "@dashi/ui";
+import { INFO, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import {
   averageWatts,
@@ -19,6 +19,7 @@ import {
   levelChart,
   useBatteryMonitor,
 } from "../../battery/index.ts";
+import { useColors } from "../colors.ts";
 import { Caption, Group, Setting } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 

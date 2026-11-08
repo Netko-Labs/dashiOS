@@ -5,12 +5,11 @@
  * was dropped. The main display carries a thin bar on top, as the menu bar.
  */
 
-import { useColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { type Box, beginDrag, type Drag, dropSpot, fitView, moveDrag, type Spot } from "../../display-config/layout.ts";
 import { type Monitor, monitorLabel } from "../../display-config/monitors.ts";
-import { useSurface } from "../ui.tsx";
+import { useControlColors } from "../../shared/controls/palette.ts";
 
 export const ARRANGEMENT_HEIGHT = 190;
 const MARGIN = 14;
@@ -24,12 +23,11 @@ export function boxesOf(monitors: readonly Monitor[]): Box[] {
   );
 }
 
-/** The view's size: the pane's content width at the Settings window's opening size (760 less the sidebar and padding). */
-export const ARRANGEMENT_WIDTH = 512;
+/** The view's size: inside Displays' hero at the Settings window's opening size. */
+export const ARRANGEMENT_WIDTH = 560;
 
 export function ArrangementView({ monitors, onMove }: { monitors: readonly Monitor[]; onMove: (name: string, spot: Spot) => void }) {
-  const colors = useColors();
-  const surface = useSurface();
+  const colors = useControlColors();
   const boxes = boxesOf(monitors);
   const size = { width: ARRANGEMENT_WIDTH, height: ARRANGEMENT_HEIGHT };
   // Pointer events carry the view's bounds; the last layout stands in for one that does not.
@@ -92,8 +90,8 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
           flexShrink: 0,
           position: "relative",
           overflow: "hidden",
-          borderRadius: 8,
-          backgroundColor: surface.field,
+          borderRadius: 16,
+          backgroundColor: colors.line,
         }}
       >
         {boxes.map((box) => {
@@ -110,20 +108,20 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
                 top: view.originY + shown.y * view.scale,
                 width: shown.width * view.scale,
                 height: shown.height * view.scale,
-                borderRadius: 4,
-                borderWidth: lifted ? 2 : 1,
-                borderColor: lifted ? colors.selection : colors.separator,
-                backgroundColor: surface.card,
+                borderRadius: 8,
+                borderWidth: lifted ? 3 : 2,
+                borderColor: lifted ? colors.text : colors.muted,
+                backgroundColor: colors.surface,
                 overflow: "hidden",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
               {monitor?.primary && (
-                <View style={{ position: "absolute", left: 0, top: 0, width: shown.width * view.scale, height: 5, backgroundColor: colors.selection }} />
+                <View style={{ position: "absolute", left: 0, top: 0, width: shown.width * view.scale, height: 5, backgroundColor: colors.text }} />
               )}
-              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted }}>{box.name}</Text>
+              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.offInk }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
+              <Text style={{ fontSize: 10, color: colors.muted }}>{box.name}</Text>
             </View>
           );
         })}

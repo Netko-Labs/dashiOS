@@ -1,7 +1,6 @@
-import { Row, useColors } from "@dashi/ui";
+import { Group, Row, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { AppearancePreviews, CornerChoices } from "../../settings-app/panes/appearance.tsx";
-import { Group } from "../../settings-app/ui.tsx";
 import type { SetupContext } from "../context.ts";
 
 /** Light, Dark, and Auto as previews, and the window corners: the same controls as Settings > Appearance. */
@@ -10,7 +9,7 @@ export function AppearancePage({ ctx }: { ctx: SetupContext }) {
   return (
     <>
       <Group>
-        <View style={{ alignItems: "center" }}>
+        <View style={{ flexDirection: "row", height: 140, padding: 12 }}>
           <AppearancePreviews flags={ctx.flags} settings={ctx.settings} />
         </View>
       </Group>

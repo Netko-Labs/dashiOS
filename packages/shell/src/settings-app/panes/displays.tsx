@@ -1,68 +1,43 @@
 /**
- * Displays: the arrangement of the screens (drag to move one, edges snap),
- * then each screen with its resolution, refresh rate, rotation, and scale,
- * and which is the main display. A built-in screen with a lower rate offers
- * Automatic refresh rate first (display-config/auto-refresh.ts): its top rate
- * plugged in, about 60 Hz on battery, with a line saying which it runs now. A scale applies at once and is remembered
- * for the next session; resolution, rotation, and turning a screen off are
- * tried first and asked about ("Keep these settings?", display-config/), so
- * a mode a monitor cannot show comes back by itself. Night Shift is the
- * section below the screens.
+ * Displays (docs/design.html, "Settings"): its hero is the display at its
+ * real shape with its facts, and the title names it ("Displays ·
+ * Built-in"). With several, each is in the hero and a press chooses which
+ * the cards change; Arrange turns the hero into the arrangement to drag
+ * (edges snap). Then the common choices: the built-in screen's brightness
+ * (Control Center's slider), the refresh rate (Automatic first where the
+ * built-in screen offers it: its top rate plugged in, about 60 Hz on
+ * battery, display-config/auto-refresh.ts), the scale (the nearest three,
+ * "Other…" for the rest), and Night Shift. Resolution, rotation and the
+ * rest sit under it (display-cards.tsx), so the pane stays short. A scale
+ * applies at once and is remembered for the next session; resolution,
+ * rotation, and turning a screen off are tried first and asked about
+ * ("Keep these settings?", display-config/), so a mode a monitor cannot
+ * show comes back by itself.
  */
 
-import { useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
+import { type DeviceStore, useDevices } from "../../control-center/devices.ts";
 import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refresh.ts";
-import {
-  commonSizes,
-  type Mode,
-  type Monitor,
-  modeFor,
-  monitorLabel,
-  ROTATIONS,
-  type Rotation,
-  ratesOf,
-  refreshLabel,
-  sizeLabel,
-  sizesOf,
-  VRR_MODES,
-  type VrrMode,
-} from "../../display-config/monitors.ts";
+import { type Mode, type Monitor, ratesOf, sizeLabel } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { Laptop } from "../../laptop/start.ts";
-import { DISPLAY } from "../glyphs.ts";
-import { useScreens } from "../hooks.ts";
+import { TextLink } from "../../shared/controls/inputs.tsx";
+import { selectedRef } from "../../wallpaper/catalog.ts";
+import { wallpaperTiles } from "../../wallpaper/tiles.ts";
+import { useColors } from "../colors.ts";
+import { chosenMonitor, displayHero, scaleOffer } from "../heroes.ts";
+import { useScreens, useSettings } from "../hooks.ts";
+import { DISPLAY, NIGHT_SHIFT, SUN, TEXT } from "../knob-glyphs.ts";
+import { describeSchedule } from "../night.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Note, Page, Setting } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Hero, Note, Page, Setting, Slider } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";
+import { OffScreenCard, ScreenDetails, X11AppsSection } from "./display-cards.tsx";
+import { DisplayHero } from "./display-hero.tsx";
 import { PanelOverdriveSection } from "./laptop-parts.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
-
-const ROTATION_LABELS: Record<Rotation, string> = { 0: "Standard", 90: "90°", 180: "180°", 270: "270°" };
-const VRR_LABELS: Record<VrrMode, string> = { off: "Off", on: "On", fullscreen: "Full Screen Only" };
-
-function Heading({ monitor }: { monitor: Monitor }) {
-  const colors = useColors();
-  const size = monitor.mode
-    ? sizeLabel(monitor.rotation === 90 || monitor.rotation === 270 ? { width: monitor.mode.height, height: monitor.mode.width } : monitor.mode)
-    : "Off";
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12 }}>
-      <Svg markup={DISPLAY} size={30} color={colors.textMuted} />
-      <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
-        <Text style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>{monitor.name}</Text>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>
-          {[size, monitor.primary ? "Main display" : "", monitor.builtIn ? "Built-in display" : ""].filter((part) => part !== "").join(" · ")}
-        </Text>
-      </View>
-      {monitor.model !== "" && !monitor.builtIn && monitor.model !== monitor.name && (
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{monitorLabel(monitor)}</Text>
-      )}
-    </View>
-  );
-}
 
 /** What Automatic refresh rate says of this screen; null without it (no built-in screen, a test). */
 function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScreen | null {
@@ -71,6 +46,16 @@ function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScr
 }
 
 const AUTOMATIC = "automatic";
+
+/** No device store (a test): no backlight. */
+const NO_DEVICE_READING = { wifi: null, bluetooth: null, brightness: null, volume: null, hotspot: null };
+const NO_DEVICES = { subscribe: () => () => {}, getSnapshot: () => NO_DEVICE_READING } as unknown as DeviceStore;
+
+/** A rate as its pill says it: "120", "59.95". */
+const hertz = (refreshMhz: number): string => {
+  const value = Math.round(refreshMhz / 10) / 100;
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
 
 /** The refresh rate row: Automatic first where the screen offers it, then the rates at its size, fastest first. */
 function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: Mode }; store: ScreensStore; refresh: AutoRefresh | null }) {
@@ -82,10 +67,10 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   const automatic = offered && auto?.choice === "automatic";
   const current = rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz;
   return (
-    <Setting id="displays/refresh-rate" {...(automatic && auto ? { detail: `${auto.decision.why}.` } : {})}>
+    <Setting id="displays/refresh-rate" glyph={DISPLAY} stack={false} detail={automatic && auto ? `Automatic: ${auto.decision.why}` : `${hertz(current)} Hz`}>
       <Choices<number | string>
         testID={`display-refresh:${monitor.name}`}
-        options={[...(offered ? [{ value: AUTOMATIC, label: "Automatic" }] : []), ...rates.map((rate) => ({ value: rate, label: refreshLabel(rate) }))]}
+        options={[...(offered ? [{ value: AUTOMATIC, label: "Auto" }] : []), ...rates.map((rate) => ({ value: rate, label: hertz(rate) }))]}
         value={automatic ? AUTOMATIC : current}
         onChange={(rate) => void store.setRate(monitor.name, typeof rate === "number" ? rate : AUTOMATIC)}
       />
@@ -93,119 +78,55 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   );
 }
 
-function ScreenCard({
-  monitor,
-  screen,
-  store,
-  canTurnOff,
-  refresh,
-}: {
-  monitor: Monitor;
-  screen: ScreenInfo | undefined;
-  store: ScreensStore;
-  canTurnOff: boolean;
-  refresh: AutoRefresh | null;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const { name } = monitor;
-  if (!monitor.enabled || !monitor.mode) {
-    return (
-      <Group testID={`display:${name}`}>
-        <Heading monitor={monitor} />
-        <Setting id="displays/turned-off">
-          <Button testID={`display-on:${name}`} label="Turn On" onPress={() => void store.setEnabled(name, true)} />
-        </Setting>
-      </Group>
-    );
-  }
-  const mode = monitor.mode;
-  const here = { width: mode.width, height: mode.height };
-  const every = sizesOf(monitor.modes);
-  const common = commonSizes(monitor.modes, here);
-  const sizes = showAll || common.length >= every.length ? every : common;
-  const choices = screen ? scaleChoices(screen).map((scale) => ({ value: scale, label: scaleLabel(scale) })) : [];
-  const current = screen ? (choices.find((choice) => isCurrentScale(screen, choice.value))?.value ?? screen.scale) : monitor.scale;
-  const looks = screen ? logicalSize(screen, screen.scale) : null;
+/** The scale: the one in use and its neighbours as pills, "Other…" for the rest. */
+function Scale({ monitor, screen, store }: { monitor: Monitor; screen: ScreenInfo; store: ScreensStore }) {
+  const [all, setAll] = useState(false);
+  const choices = scaleChoices(screen);
+  const current = choices.find((choice) => isCurrentScale(screen, choice)) ?? screen.scale;
+  const offer = scaleOffer(choices, current);
+  const shown = all ? choices : offer.shown;
   return (
-    <Group testID={`display:${name}`}>
-      <Heading monitor={monitor} />
-      {every.length > 1 && (
-        <Setting id="displays/resolution" detail={`${sizeLabel(here)} now`}>
-          <Choices
-            testID={`display-resolution:${name}`}
-            options={sizes.map((size) => ({
-              value: sizeLabel(size),
-              label: monitor.modes.some((offered) => offered.preferred && offered.width === size.width && offered.height === size.height)
-                ? `${sizeLabel(size)} (native)`
-                : sizeLabel(size),
-            }))}
-            value={sizeLabel(here)}
-            onChange={(label) => {
-              const size = sizes.find((candidate) => sizeLabel(candidate) === label);
-              const next = size && modeFor(monitor.modes, size, mode.refreshMhz);
-              if (next) void store.setMode(name, { width: next.width, height: next.height, refreshMhz: next.refreshMhz });
-            }}
-          />
-          {common.length < every.length && (
-            <View style={{ flexDirection: "row" }}>
-              <Button
-                testID={`display-all-resolutions:${name}`}
-                label={showAll ? "Show Fewer" : "Show All Resolutions"}
-                onPress={() => setShowAll((shown) => !shown)}
-              />
-            </View>
-          )}
-        </Setting>
-      )}
-      <RefreshRate monitor={{ ...monitor, mode }} store={store} refresh={refresh} />
-      {monitor.vrr.supported && (
-        <Setting id="displays/variable-refresh-rate" detail={monitor.vrr.active ? "Following the frames now." : undefined}>
-          <Choices
-            testID={`display-vrr:${name}`}
-            options={VRR_MODES.map((mode) => ({ value: mode, label: VRR_LABELS[mode] }))}
-            value={monitor.vrr.mode}
-            onChange={(mode) => void store.setVrr(name, mode)}
-          />
-        </Setting>
-      )}
-      <Setting id="displays/rotation">
+    <Setting id="displays/scale" glyph={TEXT} stack={all} detail={`Looks like ${sizeLabel(logicalSize(screen, screen.scale))}`}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 }}>
         <Choices
-          testID={`display-rotation:${name}`}
-          options={ROTATIONS.map((rotation) => ({ value: rotation, label: ROTATION_LABELS[rotation] }))}
-          value={monitor.rotation}
-          onChange={(rotation) => void store.setRotation(name, rotation)}
+          testID={`display-scale:${monitor.name}`}
+          options={shown.map((scale) => ({ value: scale, label: scaleLabel(scale) }))}
+          value={current}
+          onChange={(scale) => void store.setScale(monitor.name, scale)}
         />
-      </Setting>
-      {screen && (
-        <Setting id="displays/scale" detail={looks ? `Looks like ${looks.width} × ${looks.height}` : null}>
-          <Choices testID={`display-scale:${name}`} options={choices} value={current} onChange={(scale) => void store.setScale(name, scale)} />
-        </Setting>
-      )}
-      <Setting id="displays/main-display" detail={monitor.primary ? "The menu bar and Dock are here." : undefined}>
-        {!monitor.primary && <Button testID={`display-main:${name}`} label="Use as Main Display" onPress={() => void store.setPrimary(name)} />}
-      </Setting>
-      {canTurnOff && (
-        <Setting id="displays/turn-off">
-          <Button testID={`display-off:${name}`} label="Turn Off" onPress={() => void store.setEnabled(name, false)} />
-        </Setting>
-      )}
-    </Group>
+        {offer.more && <TextLink testID={`display-scale-other:${monitor.name}`} label={all ? "Fewer" : "Other…"} onPress={() => setAll((now) => !now)} />}
+      </View>
+    </Setting>
   );
 }
 
-/** How X11 apps meet a scaled screen (settings.json `appearance.x11Apps`, xwayland-scale.ts). */
-function X11AppsSection() {
+/** The built-in screen's brightness, as Control Center's slider sets it (the pane leaves it out without a backlight). */
+function Brightness({ devices, brightness }: { devices: DeviceStore; brightness: number }) {
   return (
-    <>
-      <Group>
-        <Setting id="displays/x11-apps" detail={null} control="displays-x11-apps" />
-      </Group>
-      <Caption>
-        Sharp draws X11 apps such as Steam at the screen's full detail; an app that can't size itself comes out small. Stretched keeps every X11 app the right
-        size, a little soft. Apps opened after the change follow it.
-      </Caption>
-    </>
+    <Setting id="displays/brightness" glyph={SUN}>
+      <Slider
+        testID="display-brightness"
+        value={brightness}
+        glyph={SUN}
+        format={(level) => `${Math.round(level * 100)}%`}
+        onChange={(level) => devices.setBrightnessLevel(level)}
+      />
+    </Setting>
   );
+}
+
+/** Night Shift's switch, the same as Control Center's tile, with its schedule in words. */
+function NightShiftRow({ settings }: { settings: SettingsStore }) {
+  const { nightShift } = useSettings(settings).data;
+  return <Setting id="displays/night-shift" glyph={NIGHT_SHIFT} detail={describeSchedule(nightShift.from, nightShift.to)} control="night-switch" />;
+}
+
+/** The picture the hero's screens show: the wallpaper's tile, else the default one. */
+function useWallpaperPicture(settings: SettingsStore): string {
+  const { wallpaper } = useSettings(settings).data;
+  const tiles = wallpaperTiles(wallpaper.photos ?? []);
+  const ref = selectedRef({ path: wallpaper.path, mode: wallpaper.mode ?? "fill" });
+  return tiles.find((tile) => tile.ref === ref)?.image ?? tiles[0]?.image ?? "";
 }
 
 export function DisplaysPane({
@@ -213,43 +134,68 @@ export function DisplaysPane({
   settings,
   laptop,
   refresh,
+  devices,
 }: {
   screens: ScreensStore;
   settings: SettingsStore;
   laptop?: Laptop | null;
   refresh?: AutoRefresh | null;
+  devices?: DeviceStore | null;
 }) {
   const colors = useColors();
   const state = useScreens(screens);
+  const wallpaper = useWallpaperPicture(settings);
+  const [asked, setAsked] = useState<string | null>(null);
+  const [arranging, setArranging] = useState(false);
   const on = state.monitors.filter((monitor) => monitor.enabled);
-  const sorted = [...on, ...state.monitors.filter((monitor) => !monitor.enabled)];
+  const off = state.monitors.filter((monitor) => !monitor.enabled);
+  const monitor = chosenMonitor(state.monitors, asked);
+  const screen = monitor ? state.screens.find((each) => each.name === monitor.name) : undefined;
+  const several = on.length > 1;
+  const name = monitor ? displayHero(monitor, screen, { width: 1, height: 1 }).name : undefined;
+  // A row that has nothing to show is left out here, so the card draws no hairline for it.
+  const { brightness } = useDevices(devices ?? NO_DEVICES);
+  const rates = monitor?.mode ? ratesOf(monitor.modes, monitor.mode).length : 0;
   return (
-    <Page title="Displays">
+    <Page title="Displays" {...(name ? { detail: name } : {})}>
       {state.loaded && state.screens.length === 0 && state.monitors.length === 0 && (
         <Group>
           <Note testID="displays-none">No displays are reported by the compositor.</Note>
         </Group>
       )}
-      {on.length > 1 && (
-        <>
-          <Caption above>Arrangement</Caption>
-          <ArrangementView monitors={state.monitors} onMove={(name, spot) => void screens.arrange({ [name]: spot })} />
-          <Caption>Drag the screens to match how they sit on your desk. The bar marks the main display.</Caption>
-        </>
+      {monitor && (
+        <Hero testID="displays-hero-card">
+          {arranging && several ? (
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <ArrangementView monitors={state.monitors} onMove={(moved, spot) => void screens.arrange({ [moved]: spot })} />
+            </View>
+          ) : (
+            <DisplayHero monitors={state.monitors} screens={state.screens} chosen={monitor.name} wallpaper={wallpaper} onChoose={setAsked} />
+          )}
+        </Hero>
       )}
-      {sorted.map((monitor) => (
-        <ScreenCard
-          key={monitor.name}
-          monitor={monitor}
-          screen={state.screens.find((screen) => screen.name === monitor.name)}
-          store={screens}
-          canTurnOff={on.length > 1}
-          refresh={refresh ?? null}
-        />
+      {monitor?.mode && (
+        <Group testID={`display:${monitor.name}`}>
+          {monitor.builtIn && devices && brightness !== null && <Brightness devices={devices} brightness={brightness} />}
+          {rates > 1 && <RefreshRate monitor={{ ...monitor, mode: monitor.mode }} store={screens} refresh={refresh ?? null} />}
+          {screen && <Scale monitor={monitor} screen={screen} store={screens} />}
+          <NightShiftRow settings={settings} />
+        </Group>
+      )}
+      {monitor && (
+        <Group testID="displays-arrange">
+          <Setting id="displays/arrange" detail={several ? `${on.length} displays connected` : "One display connected"}>
+            <Button testID="displays-arrange-button" label={arranging ? "Done" : "Arrange"} disabled={!several} onPress={() => setArranging((now) => !now)} />
+          </Setting>
+        </Group>
+      )}
+      {monitor?.mode && <ScreenDetails monitor={monitor} store={screens} canTurnOff={several} />}
+      {off.map((each) => (
+        <OffScreenCard key={each.name} monitor={each} store={screens} />
       ))}
       {state.error !== null && (
-        <View testID="displays-error" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>The displays didn't answer, so nothing changed. Try again in a moment.</Text>
+        <View testID="displays-error" style={{ flexShrink: 0, paddingLeft: 10 }}>
+          <Text style={{ fontSize: 11.5, color: colors.critical }}>The displays didn't answer, so nothing changed. Try again in a moment.</Text>
         </View>
       )}
       <Caption>

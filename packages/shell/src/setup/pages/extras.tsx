@@ -1,7 +1,6 @@
-import { CHECK, Row, Switch, useColors } from "@dashi/ui";
+import { Caption, CHECK, Group, Row, Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useSyncExternalStore } from "react";
-import { Caption, Group } from "../../settings-app/ui.tsx";
 import { RECOMMENDED_APPS, type RecommendedApp } from "../../software/recommended.ts";
 import type { SetupContext } from "../context.ts";
 import type { ExtrasStore } from "../extras/store.ts";

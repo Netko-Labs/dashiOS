@@ -5,9 +5,9 @@
  * caller decides what a pick does.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { useColors } from "../settings-app/colors.ts";
 import { Choices } from "../settings-app/ui.tsx";
 import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "./locale.ts";
 import { PickList, PickNote, PickRow, SearchField } from "./pick.tsx";

@@ -6,15 +6,16 @@
  * shell follow them at once.
  */
 
-import { Switch, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../clock.ts";
 import { TimezonePicker } from "../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../region/store.ts";
 import { describeZone } from "../../region/timezones.ts";
+import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
+import { CALENDAR, CLOCK, GLOBE, REFRESH } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Page, Setting } from "../ui.tsx";
+import { Caption, Group, Page, Setting, Switch } from "../ui.tsx";
 
 export function DateTimePane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
   const colors = useColors();
@@ -28,6 +29,7 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
       <Group>
         <Setting
           id="date-time/automatic-time"
+          glyph={REFRESH}
           detail={
             state.canNtp
               ? state.ntp
@@ -40,22 +42,22 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
         >
           <Switch testID="datetime-ntp" on={state.ntp} onChange={(on) => state.canNtp && void region.setNtp(on)} />
         </Setting>
-        <Setting id="date-time/24-hour-time" detail={clock.hour24 === undefined ? "Follows your region." : null}>
+        <Setting id="date-time/24-hour-time" glyph={CLOCK} detail={clock.hour24 === undefined ? "Follows your region." : null}>
           <Switch testID="datetime-24h" on={usesHour24(prefs)} onChange={(hour24) => settings.patch("clock", { hour24 })} />
         </Setting>
-        <Setting id="date-time/show-date" control="datetime-show-date" />
+        <Setting id="date-time/show-date" glyph={CALENDAR} control="datetime-show-date" />
       </Group>
-      <View testID="datetime-preview" style={{ flexShrink: 0, paddingHorizontal: 4 }}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`The menu bar reads: ${formatClock(now, prefs)}`}</Text>
+      <View testID="datetime-preview" style={{ flexShrink: 0, paddingHorizontal: 10, marginTop: -4 }}>
+        <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{`The menu bar reads: ${formatClock(now, prefs)}`}</Text>
       </View>
       <Group>
-        <Setting id="date-time/time-zone" detail={`${state.timezone.replaceAll("_", " ")}${zone ? ` · ${describeZone(zone)}` : ""}`}>
+        <Setting id="date-time/time-zone" glyph={GLOBE} detail={`${state.timezone.replaceAll("_", " ")}${zone ? ` · ${describeZone(zone)}` : ""}`}>
           <TimezonePicker zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
         </Setting>
       </Group>
       {state.busy !== null && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
       {state.error !== null && (
-        <View testID="datetime-error" style={{ flexShrink: 0, paddingHorizontal: 4 }}>
+        <View testID="datetime-error" style={{ flexShrink: 0, paddingHorizontal: 10 }}>
           <Text style={{ fontSize: 11, color: colors.critical }}>{describeFailure(state.error)}</Text>
         </View>
       )}

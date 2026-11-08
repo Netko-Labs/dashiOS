@@ -2,16 +2,18 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Appearance, darkColors, lightColors } from "@dashi/ui";
+import { Appearance } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { FlagsStore } from "../src/control-center/flags.ts";
 import type { PaneContext } from "../src/settings-app/context.ts";
 import { Nav, PANES, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
+import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 
-// The Settings window and the keyboard (KB-1, KB-2): its ring is kombu in
-// both modes, and its sidebar is one Tab stop whose arrows choose the pane.
+// The Settings window and the keyboard (KB-1, KB-2): its ring is Control
+// Center's purple in both modes, and its sidebar is one Tab stop whose
+// arrows choose the pane.
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-settings-focus-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -63,17 +65,18 @@ async function mount(dark: boolean) {
   return { root, nav, tree, id };
 }
 
-test("Settings rings every control in kombu, Light and Dark (KB-2)", async () => {
+test("Settings rings every control in Control Center's purple, Light and Dark (KB-2)", async () => {
   for (const [dark, colors] of [
-    [false, lightColors],
-    [true, darkColors],
+    [false, LIGHT_CONTROLS],
+    [true, DARK_CONTROLS],
   ] as const) {
     const view = await mount(dark);
     const window = find(view.tree(), view.id("settings-window"));
-    expect(window?.props.focusRingColor).toBe(colors.focusRing);
+    expect(window?.props.focusRingColor).toBe(colors.focus);
+    expect(window?.props.background).toBe(colors.window);
     const all = stops(view.tree());
     expect(all.length).toBeGreaterThan(PANES.length - 1);
-    expect(all.filter((stop) => stop.ring !== colors.focusRing)).toEqual([]);
+    expect(all.filter((stop) => stop.ring !== colors.focus)).toEqual([]);
     view.root.unmount();
   }
 });

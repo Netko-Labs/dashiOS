@@ -6,7 +6,6 @@
  * says so here too. The pane is listed only on a machine with a graphics card.
  */
 
-import { Switch } from "@dashi/ui";
 import { useMemo } from "react";
 import { chooseGpu, readCards } from "../../gpu.ts";
 import { cardState, useGraphics } from "../../graphics/controller.ts";
@@ -15,7 +14,8 @@ import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../graphics/policy.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import type { GraphicsChoice } from "../../power/modes/settings.ts";
-import { Button, Caption, Choices, Group, Item, Note, Page, Setting } from "../ui.tsx";
+import { GAUGE, GPU } from "../knob-glyphs.ts";
+import { Button, Caption, Choices, Group, Item, Note, Page, Setting, Switch } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 
 const DRIVER_NAMES: Readonly<Record<string, string>> = { amdgpu: "AMD Radeon", i915: "Intel", xe: "Intel", nvidia: "NVIDIA", nouveau: "NVIDIA" };
@@ -64,6 +64,7 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
           return (
             <Item
               key={card.name}
+              glyph={GPU}
               label={nameOf(builtIn, brand)}
               detail={builtIn ? "Built in · drives this screen" : `Graphics card${state ? ` · ${state.toLowerCase()}` : ""}`}
             >
@@ -74,7 +75,7 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
       </Group>
       {graphics.switchable && !graphics.lost && (
         <Group testID="graphics-mode">
-          <Setting id="graphics/mode" {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
+          <Setting id="graphics/mode" glyph={GAUGE} {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
             <Choices<GraphicsChoice>
               testID="graphics-mode-choice"
               value={graphics.choice}
@@ -87,7 +88,7 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
       {mux && (
         <>
           <Group testID="graphics-mux">
-            <Setting id="graphics/card-only">
+            <Setting id="graphics/card-only" glyph={GPU}>
               <Switch testID="graphics-mux-switch" on={mux.value === 0} onChange={(on) => void laptop.store.set("gpu-mux", on ? 0 : 1)} />
             </Setting>
             <Setting id="graphics/restart">

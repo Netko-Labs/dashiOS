@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { LIGHT_SURFACE, lightColors } from "@dashi/ui";
 import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
+import { LIT_WASH, RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { Caption, Group, Note, Spot } from "../src/settings-app/ui.tsx";
+import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 
 // A link to a section (Privacy & Security › Apps) lights its card, not the strip behind its heading.
 
@@ -50,14 +50,14 @@ test("a section's Spot lights its card and leaves its heading alone", async () =
   );
   await settle();
   const node = (testID: string): Node | null => byId(JSON.parse(last), root.nodeId(testID) ?? "");
-  const wash = lightColors.switcherSelection;
+  const wash = LIT_WASH;
   expect(grounds(node("spot:apps"))).not.toContain(wash);
 
   focus.request("privacy", "apps");
   await settle();
   // The light is over the card's own ground, once; the Spot paints nothing behind the heading.
   expect(node("spot:apps")?.props?.background).toBeUndefined();
-  expect(grounds(node("apps-card"))).toEqual([LIGHT_SURFACE.card, wash]);
+  expect(grounds(node("apps-card"))).toEqual([LIGHT_CONTROLS.off, wash]);
   expect(grounds(node("spot:apps")).filter((color) => color === wash)).toHaveLength(1);
   root.unmount();
 });

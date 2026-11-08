@@ -6,11 +6,11 @@
  * Pressing the words opens the setting's pane at its row.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Actor } from "../../acting.ts";
 import { ago } from "../../agents/ask/history.ts";
 import { type ChangeEntry, changeLine } from "../changes/index.ts";
+import { useColors } from "../colors.ts";
 import { Button } from "../ui.tsx";
 
 /** Who changed it: an agent's name on shiso's wash, or "You". */

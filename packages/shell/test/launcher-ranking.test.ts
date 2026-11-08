@@ -89,7 +89,7 @@ test("exact name, then keyword, then prefix, word start and keyword prefix", () 
   expect(names("web browser")[0]).toBe("Firefox");
   expect(names("fire")[0]).toBe("Firefox");
   expect(names("power")[0]).toBe("Battery & Power");
-  expect(names("wif")).toEqual(["Network"]);
+  expect(names("wif")).toEqual(["Wi-Fi"]);
   expect(names("dark mode")).toEqual(["Appearance"]);
 });
 

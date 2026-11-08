@@ -1,7 +1,6 @@
-import { CHECK, ProgressBar, useColors, WARNING } from "@dashi/ui";
+import { Button, CHECK, Group, ProgressBar, useColors, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { Button, Group } from "../../settings-app/ui.tsx";
 import type { SetupContext } from "../context.ts";
 import { STEP_LABELS } from "../extras/plan.ts";
 import { appLine, runNotice, stepLine } from "../extras/words.ts";

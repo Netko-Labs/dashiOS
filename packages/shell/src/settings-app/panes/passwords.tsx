@@ -6,13 +6,15 @@
  * field but for dashi-secretd.
  */
 
-import { Switch, useColors, useConfirm } from "@dashi/ui";
+import { useConfirm } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { Passwords } from "../../agents/secrets/passwords.ts";
 import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
-import { Button, Caption, Choices, FormRow, Group, Item, Note, Page, Setting, Spot, useSurface } from "../ui.tsx";
+import { useColors } from "../colors.ts";
+import { KEY, LOCK } from "../knob-glyphs.ts";
+import { Button, Caption, Choices, FormRow, Group, Item, Note, Page, Setting, Spot, Switch, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 import { Payments } from "./payments.tsx";
 import { Tokens } from "./tokens.tsx";
@@ -163,7 +165,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
     <>
       <Page title="Passwords">
         <Group testID="passwords-sources">
-          <Setting id="passwords/source-dashi">
+          <Setting id="passwords/source-dashi" glyph={KEY}>
             <Switch
               testID="passwords-source-dashi"
               on={prefs.sources.dashi}
@@ -172,6 +174,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
           </Setting>
           <Setting
             id="passwords/source-1password"
+            glyph={LOCK}
             detail={
               passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
             }
@@ -184,7 +187,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
           </Setting>
         </Group>
         <Group>
-          <Setting id="passwords/save-to">
+          <Setting id="passwords/save-to" stack={false}>
             <Choices
               testID="passwords-save-to"
               value={prefs.saveTo}

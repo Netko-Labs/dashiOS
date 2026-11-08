@@ -6,8 +6,7 @@
  * this pane is on screen, reads the loudness, and keeps nothing.
  */
 
-import { Switch, useColors } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { BLUETOOTH } from "../../control-center/glyphs.ts";
 import { speakerGlyph } from "../../glyphs.ts";
@@ -16,17 +15,18 @@ import { type LevelMeter, useLevels } from "../../sound/index.ts";
 import { type SoundStore, useSound } from "../../sound/store.ts";
 import type { Output, OutputKind } from "../../sound/types.ts";
 import type { Volume } from "../../system/volume.ts";
+import { useColors } from "../colors.ts";
 import { MICROPHONE } from "../glyphs-machine.ts";
+import { MIC, VOLUME as VOLUME_KNOB } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
-import { Caption, Group, Note, Page, Setting, Slider } from "../ui.tsx";
-import { CheckSlot, Failure, ListRow } from "./parts.tsx";
+import { Caption, Group, Note, Page, Setting, Slider, Switch } from "../ui.tsx";
+import { Failure, ListRow, RoundIcon } from "./parts.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
 const OUTPUT_GLYPH: Record<OutputKind, string> = { speaker: speakerGlyph(1, false), headphones: HEADPHONES, display: DISPLAY, bluetooth: BLUETOOTH };
 
 function Devices({ store, side, testID }: { store: SoundStore; side: "output" | "input"; testID: string }) {
-  const colors = useColors();
   const state = useSound(store);
   useEffect(() => {
     store.open();
@@ -47,12 +47,7 @@ function Devices({ store, side, testID }: { store: SoundStore; side: "output" | 
               testID={`${side}-device:${device.label}`}
               name={device.label}
               bold={device.current}
-              leading={
-                <>
-                  <CheckSlot on={device.current} />
-                  <Svg markup={glyph(device)} size={16} color={colors.text} />
-                </>
-              }
+              leading={<RoundIcon glyph={glyph(device)} lit={device.current} />}
               onPress={device.current ? undefined : () => void store.choose(device.id)}
             />
           ))
@@ -76,17 +71,23 @@ function VolumeRow({
   onLevel: (level: number) => void;
   onMute: (muted: boolean) => void;
 }) {
-  const colors = useColors();
   if (volume === null) return null;
   const shown = volume.muted ? 0 : Math.min(volume.level, 1);
   return (
     <Group testID={`${side}-volume-group`}>
-      <Setting id={side === "output" ? "sound/output-volume" : "sound/input-volume"} detail={volume.muted ? "Muted" : `${Math.round(shown * 100)}%`}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Svg markup={side === "output" ? speakerGlyph(0, false) : MICROPHONE} size={13} color={colors.textMuted} />
-          <Slider testID={`${side}-volume`} value={shown} range={VOLUME} width={200} onCommit={onLevel} />
-          <Svg markup={side === "output" ? speakerGlyph(1, false) : MICROPHONE} size={15} color={colors.textMuted} />
-        </View>
+      <Setting
+        id={side === "output" ? "sound/output-volume" : "sound/input-volume"}
+        glyph={side === "output" ? VOLUME_KNOB : MIC}
+        detail={volume.muted ? "Muted" : null}
+      >
+        <Slider
+          testID={`${side}-volume`}
+          value={shown}
+          range={VOLUME}
+          glyph={side === "output" ? speakerGlyph(1, false) : MICROPHONE}
+          format={(level) => `${Math.round(level * 100)}%`}
+          onCommit={onLevel}
+        />
       </Setting>
       <Setting id={side === "output" ? "sound/output-mute" : "sound/input-mute"}>
         <Switch testID={`${side}-mute`} on={volume.muted} onChange={onMute} />

@@ -7,10 +7,10 @@
  *
  * The page scrolls by the row's distance from its top, measured once both
  * are laid out (the scroll is relative, so a pane already scrolled works
- * too). The light is the switcher's soft wash, gone after `LIT_MS`.
+ * too). The light is the keyboard ring's purple, soft (`LIT_WASH`), gone
+ * after `LIT_MS`.
  */
 
-import { useColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
 import { rowPlace, type SettingId } from "./registry/index.ts";
@@ -80,8 +80,11 @@ export const PageContext = createContext<{ testID: string; bounds: { current: Bo
 
 const NO_FOCUS = { subscribe: () => () => {}, getSnapshot: (): RowTarget | null => null };
 
+/** The light a link or the search lands on: the keyboard ring's purple, soft. */
+export const LIT_WASH = "#6e56cf2e";
+
 /** The page's gap between its parts (ui.tsx `Page`), kept inside a Spot that holds several. */
-export const PAGE_GAP = 16;
+export const PAGE_GAP = 10;
 
 /** Whether the cards here are lit: a `cards` Spot was asked for (ui.tsx's `Group` reads it). */
 export const SpotLit = createContext(false);
@@ -93,7 +96,6 @@ export const SpotLit = createContext(false);
  */
 export function Spot({ id, cards = false, children }: { id: SettingId; cards?: boolean; children: ReactNode }) {
   const { pane, row } = rowPlace({ id });
-  const colors = useColors();
   const host = useContext(SpotContext);
   const page = useContext(PageContext);
   const store = host?.focus ?? NO_FOCUS;
@@ -134,7 +136,7 @@ export function Spot({ id, cards = false, children }: { id: SettingId; cards?: b
         bounds.current = laid;
         reveal();
       }}
-      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.switcherSelection : "#00000000" }}
+      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? LIT_WASH : "#00000000" }}
     >
       {cards ? <SpotLit.Provider value={lit !== null}>{children}</SpotLit.Provider> : children}
     </View>

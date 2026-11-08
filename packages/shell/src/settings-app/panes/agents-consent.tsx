@@ -10,7 +10,6 @@
  * Revoked, and so does the agent's card: nothing moves under the pointer.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
@@ -18,6 +17,7 @@ import type { GrantEntry, Scope } from "../../agents/consent.ts";
 import type { AgentInfo } from "../../agents/presence.ts";
 import { useClockPrefs } from "../../clock.ts";
 import type { ChangeEntry } from "../changes/index.ts";
+import { useColors } from "../colors.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries, useSettings } from "../hooks.ts";
 import { isPaneId } from "../panes.ts";

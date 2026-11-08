@@ -1,5 +1,5 @@
 /**
- * Search in System Settings' header strip: what is typed finds panes and the
+ * Search in System Settings' sidebar: what is typed finds panes and the
  * rows in them, from the settings registry (registry/) and the panes' words
  * (search.ts), so a row added to a pane is found here as it is in the
  * launcher. The sidebar lists what was found in place of the panes; choosing
@@ -23,9 +23,8 @@ export interface Found {
   row?: string;
   /** What the sidebar says: the row's name ("Charge limit"), or the pane's title. */
   label: string;
-  /** The pane it is in, by its tile. */
+  /** The pane it is in, by its glyph. */
   glyph: string;
-  tint: string;
 }
 
 /** How many results the sidebar lists. */
@@ -73,7 +72,7 @@ export function findSettings(query: string, shown: (pane: PaneInfo) => boolean =
   let order = 0;
   for (const pane of panes.values()) {
     if (matches(typed, paneWords(pane))) {
-      found.push({ id: pane.id, pane: pane.id, label: pane.title, glyph: pane.glyph, tint: pane.tint, rank: rank(pane.title, text, true), order: order++ });
+      found.push({ id: pane.id, pane: pane.id, label: pane.title, glyph: pane.glyph, rank: rank(pane.title, text, true), order: order++ });
     }
   }
   for (const row of SETTINGS_ROWS) {
@@ -81,7 +80,7 @@ export function findSettings(query: string, shown: (pane: PaneInfo) => boolean =
     const pane = panes.get(place.pane);
     if (!pane || !matches(typed, rowWords(row, pane))) continue;
     const label = rowName(row);
-    found.push({ id: row.id, pane: pane.id, row: place.row, label, glyph: pane.glyph, tint: pane.tint, rank: rank(label, text, false), order: order++ });
+    found.push({ id: row.id, pane: pane.id, row: place.row, label, glyph: pane.glyph, rank: rank(label, text, false), order: order++ });
   }
   return found
     .sort((a, b) => a.rank - b.rank || a.order - b.order)

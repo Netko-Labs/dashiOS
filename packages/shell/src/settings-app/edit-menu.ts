@@ -1,7 +1,7 @@
 /**
  * System Settings' Edit menu in the menu bar: Undo and Redo of a setting
  * changed (changes/: the newest entry of Recently changed), ❖Z and ⇧❖Z,
- * and Find, ❖F, which puts the keyboard in the header strip's search. Settings runs in the shell, so it
+ * and Find, ❖F, which puts the keyboard in the sidebar's search. Settings runs in the shell, so it
  * publishes into the shell's own menu store, as the window's process: the
  * Metal host that draws it, found by the window's app id. The shell's ❖
  * chords then choose these rows as they would an app's (app-menus/). While a
@@ -47,7 +47,7 @@ export function publishEditMenu(
   undo: UndoStack,
   pid: () => Promise<number | null>,
   sleep: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  /** Edit › Find: the search in the header strip takes the keyboard. */
+  /** Edit › Find: the search on the sidebar's top row takes the keyboard. */
   find?: () => void,
 ): EditMenu {
   let owner: MenuOwner | null = null;

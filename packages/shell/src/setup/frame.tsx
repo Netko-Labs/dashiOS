@@ -4,10 +4,9 @@
  * the page, and the row of buttons with the progress dots.
  */
 
-import { useColors } from "@dashi/ui";
+import { Button, Tile, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { Button, Tile, useSurface } from "../settings-app/ui.tsx";
 import type { FlowView, PageInfo } from "./flow.ts";
 
 export interface FrameProps {

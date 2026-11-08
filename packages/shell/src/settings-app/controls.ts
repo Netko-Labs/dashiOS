@@ -65,3 +65,14 @@ export function sleepChoice(seconds: number): number {
   if (seconds === 0) return 0;
   return SLEEP_CHOICES.find((choice) => choice.value >= seconds && choice.value > 0)?.value ?? 7200;
 }
+
+/** "5 min", "1 h": a time choice's words short enough for a pill. */
+export function shortTime(label: string): string {
+  return label.replace(/\bminutes?\b/, "min").replace(/\bhours?\b/, "h");
+}
+
+/** A time list as pills: the times first, shortened, and "Never" last, as the design reads (Battery & Power, Lock Screen). */
+export function timePills(choices: ReadonlyArray<{ value: number; label: string }>): Array<{ value: number; label: string }> {
+  const times = choices.filter((choice) => choice.value > 0).map((choice) => ({ value: choice.value, label: shortTime(choice.label) }));
+  return [...times, ...choices.filter((choice) => choice.value <= 0)];
+}

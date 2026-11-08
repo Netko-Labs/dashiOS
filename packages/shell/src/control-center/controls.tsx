@@ -35,6 +35,8 @@ export interface Controls {
   /** What Add lists: controls on this machine (and applets' declared ones) not in `layout`. */
   addable(layout: Layout): AddEntry[];
   isOn(id: string): boolean;
+  /** How a tile is drawn now (its name, what it is set to, its glyph, on or off); null for one that isn't there. */
+  lookOf(id: string): TileLook | null;
   /** A slider's level; null for anything else. */
   levelOf(id: string): number | null;
   setLevel(id: string, level: number): void;
@@ -203,6 +205,7 @@ export function useControls(actions: ControlActions): Controls {
       return [...own, ...theirs];
     },
     isOn: (id) => look(id)?.on ?? false,
+    lookOf: look,
     levelOf: levelOfControl,
     setLevel,
     press,
