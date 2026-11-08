@@ -4,31 +4,40 @@
  * pointer then moves between menus without clicking), a click on the status
  * area opens Control Center (the battery has its own panel), and a click on
  * the clock the notification center (menus/). Programs' own items, tray
- * icons and applets, sit left of the status glyphs (extras/). An app that published its own menus (app-menus/) has
- * them here while one of its windows is focused, in place of File, Edit,
- * and View.
+ * icons and applets, sit left of the status glyphs (extras/), then the agent
+ * mark (agent-mark.tsx) and the person's own recording. An app that
+ * published its own menus (app-menus/) has them here while one of its
+ * windows is focused, in place of File, Edit, and View. The bar is one row:
+ * when the status side runs out of room, its items go into "…"
+ * (menubar-status.tsx), never the menus.
  */
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useRef, useState, useSyncExternalStore } from "react";
+import { AgentMark } from "./agent-mark.tsx";
 import type { AgentRuns } from "./agents/handoff/store.ts";
 import { type AgentStore, useAgents } from "./agents/index.ts";
+import { agentRecording, markState, mergeAgents, type Recording, recordingPill } from "./agents/mark.ts";
+import { useRuns } from "./agents-panel.tsx";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
 import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
-import { BarPills } from "./bar-pills.tsx";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
-import { MOON } from "./control-center/glyphs.ts";
-import type { ExtrasStore, MenuBarExtra } from "./extras/index.ts";
-import { ExtraItems } from "./extras/view.tsx";
-import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
+import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
+import { ExtraItem } from "./extras/view.tsx";
+import { LOGO } from "./glyphs.ts";
+import { extraGoes, statusRoom } from "./menubar-fit.ts";
+import { systemSlots } from "./menubar-slots.tsx";
+import { StatusSide, type StatusSlot } from "./menubar-status.tsx";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { extraEntries } from "./menus/status-menu.ts";
+import { RecordingButton } from "./recorder/indicator.tsx";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
-import type { ScreenCaptureStore } from "./screen-capture.ts";
+import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
+import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
 import { type SystemStore, useSystem } from "./system/store.ts";
@@ -76,44 +85,17 @@ function Title({
   );
 }
 
-/**
- * One status glyph and the room around it to click. The glyphs sit side by
- * side with no gaps, so every pixel of the area is some item's: the network
- * glyph opens the Wi-Fi page, the rest open Control Center.
- */
-function StatusItem({
-  testID,
-  onPress,
-  open = false,
-  children,
-}: {
-  testID: string;
-  /** With the item's bounds in the bar, when the event carries them. */
-  onPress: (bounds?: Bounds) => void;
-  /** Its own menu is open: the item's pill is drawn pressed. */
-  open?: boolean;
-  children: ReactNode;
-}) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onPress={({ bounds }) => onPress(bounds)}
-      style={{
-        height: 22,
-        paddingLeft: 7,
-        paddingRight: 7,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 5,
-        backgroundColor: open ? colors.switcherSelection : "#00000000",
-      }}
-    >
-      {children}
-    </View>
-  );
+const IDLE: Recording = { kind: "idle" };
+const NEVER = () => () => {};
+const NO_RUNS = { subscribe: NEVER, getSnapshot: () => [] } as const;
+
+/** The recorder's state, or idle without one. */
+function useRecording(recorder: ScreenRecorder | undefined): Recording {
+  return useSyncExternalStore(recorder?.subscribe ?? NEVER, recorder ? recorder.getSnapshot : () => IDLE);
 }
+
+/** The bar's tooltip (bar-tip.tsx): words under a point of this bar (as wide as `barWidth`), or none. */
+export type BarTip = { text: string; x: number; barWidth?: number; output?: string } | null;
 
 export function MenuBar({
   apps,
@@ -127,15 +109,17 @@ export function MenuBar({
   extras,
   settings,
   output,
-  onStopAgent,
   runs,
   installed,
+  onTip,
+  reduceMotion = () => false,
+  accessible = () => false,
 }: {
   apps: readonly App[];
   toplevels: ToplevelStore;
   agents: AgentStore;
   capture: ScreenCaptureStore;
-  /** The screen recorder, for its stop button (recorder/). */
+  /** The screen recorder: the person's recording's stop button (recorder/), an agent's red dot. */
   recorder?: ScreenRecorder;
   system: SystemStore;
   menus: MenuController;
@@ -147,16 +131,26 @@ export function MenuBar({
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
   output?: string;
-  onStopAgent: (id: number) => void;
-  /** Agents from the launcher: their chip and its panel (agents-panel.tsx). */
+  /** Agents from the launcher: with the connected ones, the mark and its panel (agents-panel.tsx). */
   runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
   /** The installed app a window's app id stands for (the Dock's match), for its name. */
   installed?: (appId: string) => App | undefined;
+  /** Show or take down the bar's tooltip (the agent mark's words). */
+  onTip?: (tip: BarTip) => void;
+  /** Reduce Motion: the mark's ring stands still. */
+  reduceMotion?: () => boolean;
+  /** The Metal host takes accessibility props (launcher/access.ts). */
+  accessible?: () => boolean;
 }) {
   const colors = useColors();
   const label = { fontSize: 13, color: colors.text } as const;
   const windows = useToplevels(toplevels);
   const connected = useAgents(agents);
+  const launched = useRuns(runs ?? NO_RUNS);
+  const recording = useRecording(recorder);
+  // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).
+  const capturing = useScreenCapture(capture) && recording.kind === "idle";
+  const allExtras = useExtras(extras);
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
   // Banners stop while Do Not Disturb is on; the moon says why, as on a Mac.
@@ -166,6 +160,9 @@ export function MenuBar({
   const popover = openOn === output ? current : null;
   const now = useMinuteClock();
   const clock = useClockPrefs();
+  // The room the menus leave the status side: the bar's width and the menus' (both measured).
+  const [barWidth, setBarWidth] = useState<number | null>(null);
+  const [menusWidth, setMenusWidth] = useState<number | null>(null);
   const active = windows.find((window) => window.activated);
   // A portal dialog with the keyboard is named for the app it is over, or by its title (bar-name.ts).
   const dialog = usePortalDialogs(toplevels).find((window) => window.activated);
@@ -210,6 +207,67 @@ export function MenuBar({
     </Title>
   );
 
+  // Every agent, launched or connected, is one mark; an agent's recording is its red dot.
+  const mark = markState(mergeAgents(connected, launched), agentRecording(recording));
+  const tip = (shown: { text: string; bounds: Bounds } | null) =>
+    onTip?.(
+      shown
+        ? {
+            text: shown.text,
+            x: shown.bounds.x + shown.bounds.width / 2,
+            ...(barWidth === null ? {} : { barWidth }),
+            ...(output === undefined ? {} : { output }),
+          }
+        : null,
+    );
+  const slots: StatusSlot[] = [
+    ...allExtras.map((extra, index) => ({
+      key: `extra:${extra.key}`,
+      goes: extraGoes(index),
+      extra: true,
+      attention: extra.attention,
+      node: (
+        <ExtraItem
+          extra={extra}
+          open={statusMenuKey === extra.key}
+          onMenu={openExtraMenu}
+          onActivate={(each, x, y) => extras.activate(each.key, x, y, output)}
+        />
+      ),
+    })),
+    // Never hidden: someone else sharing the screen, every agent, the person's own recording.
+    ...(capturing ? [{ key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> }] : []),
+    ...(mark.kind === "none"
+      ? []
+      : [
+          {
+            key: "agent-mark",
+            goes: null,
+            node: (
+              <AgentMark
+                state={mark}
+                open={popover?.kind === "agents"}
+                onPress={(right) => void menus.toggleAgents(appName, right, null, output)}
+                onTip={tip}
+                reduceMotion={reduceMotion}
+                accessible={accessible()}
+              />
+            ),
+          },
+        ]),
+    ...(recorder && recordingPill(recording, mark.kind !== "none") ? [{ key: "recording", goes: null, node: <RecordingButton recorder={recorder} /> }] : []),
+    ...systemSlots({
+      ...{ battery, network, volume },
+      batteryPercent: menuBar.batteryPercent === true,
+      sound: menuBar.sound !== false,
+      dnd,
+      popover,
+      clock: formatClock(now, clock),
+      colors,
+      on: { battery: openBattery, controlCenter: openControlCenter, wifi: openWifi, clock: () => void menus.toggleNotificationCenter(appName, output) },
+    }),
+  ];
+
   return (
     <View
       style={{
@@ -224,87 +282,40 @@ export function MenuBar({
       }}
     >
       {/* A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge. */}
-      <View testID="menu-bar-edge" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }} />
-      <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {/* It spans the bar, so it says the bar's width too (Metal reports a root's children's layout, not the root's). */}
+      <View
+        testID="menu-bar-edge"
+        onLayout={(bounds) => setBarWidth(bounds.width)}
+        style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }}
+      />
+      {/* The app's menus never give way: the status side does (menubar-fit.ts). */}
+      <View testID="menu-titles" onLayout={(bounds) => setMenusWidth(bounds.width)} style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
         {menu("dashi", <Svg markup={LOGO} size={16} color={colors.text} />)}
-        {menu("app", <Text style={{ ...label, fontWeight: "bold" }}>{appName}</Text>)}
-        {titles.map(({ id, title }) => menu(id, <Text style={label}>{title}</Text>))}
+        {menu(
+          "app",
+          <Text numberOfLines={1} style={{ ...label, fontWeight: "bold" }}>
+            {appName}
+          </Text>,
+        )}
+        {titles.map(({ id, title }) =>
+          menu(
+            id,
+            <Text numberOfLines={1} style={label}>
+              {title}
+            </Text>,
+          ),
+        )}
       </View>
-      <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16, flexShrink: 1, minWidth: 0 }}>
-        <BarPills
-          capture={capture}
-          {...(recorder ? { recorder } : {})}
-          agents={connected}
-          onStopAgent={onStopAgent}
-          {...(runs ? { runs, runsOpen: popover?.kind === "agents", onRuns: (right: number) => void menus.toggleAgents(appName, right, null, output) } : {})}
-        />
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
-          <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y, output)} />
-          <View
-            testID="status-area"
-            style={{
-              flexShrink: 0,
-              flexDirection: "row",
-              alignItems: "center",
-              height: 22,
-              borderRadius: 5,
-              backgroundColor: popover?.kind === "control-center" ? colors.switcherSelection : "#00000000",
-            }}
-          >
-            {battery && (
-              <StatusItem testID="status-battery" onPress={openBattery} open={popover?.kind === "battery" && popover.right !== null}>
-                {menuBar.batteryPercent === true && (
-                  <View testID="status-battery-percent" style={{ marginRight: 5 }}>
-                    <Text
-                      style={{ fontSize: 12, color: battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text }}
-                    >{`${battery.percent}%`}</Text>
-                  </View>
-                )}
-                <Svg
-                  markup={batteryGlyph(battery.percent, battery.state === "charging" ? true : battery.state === "discharging" ? false : "plugged")}
-                  width={24}
-                  height={12}
-                  color={battery.state === "discharging" && battery.percent <= 10 ? colors.batteryLow : colors.text}
-                />
-              </StatusItem>
-            )}
-            {network && (
-              // The network glyph opens Control Center on its Wi-Fi page; a wired connection has none.
-              <StatusItem testID="status-network" onPress={network.kind === "wired" ? openControlCenter : openWifi}>
-                <Svg markup={networkGlyph(network)} size={15} color={colors.text} />
-              </StatusItem>
-            )}
-            {volume && menuBar.sound !== false && (
-              <StatusItem testID="status-volume" onPress={openControlCenter}>
-                <Svg markup={speakerGlyph(volume.level, volume.muted)} size={15} color={colors.text} />
-              </StatusItem>
-            )}
-            {dnd && (
-              <StatusItem testID="status-dnd" onPress={openControlCenter}>
-                <Svg markup={MOON} size={15} color={colors.text} />
-              </StatusItem>
-            )}
-            <StatusItem testID="status-control-center" onPress={openControlCenter}>
-              <Svg markup={CONTROL_CENTER} size={15} color={colors.text} />
-            </StatusItem>
-          </View>
-          <View
-            testID="clock"
-            onPress={() => void menus.toggleNotificationCenter(appName, output)}
-            style={{
-              flexShrink: 0,
-              justifyContent: "center",
-              height: 22,
-              paddingLeft: 8,
-              paddingRight: 8,
-              borderRadius: 5,
-              backgroundColor: popover?.kind === "notification-center" ? colors.switcherSelection : "#00000000",
-            }}
-          >
-            <Text style={label}>{formatClock(now, clock)}</Text>
-          </View>
-        </View>
-      </View>
+      <StatusSide
+        slots={slots}
+        room={barWidth === null || menusWidth === null ? null : statusRoom(barWidth, menusWidth, 12)}
+        areaOpen={popover?.kind === "control-center"}
+        moreOpen={popover?.kind === "overflow"}
+        onMore={(right, hidden) => void menus.toggleOverflow(appName, right, hidden, output)}
+        onHidden={(hidden) => {
+          if (popover?.kind === "overflow") menus.setOverflow(hidden);
+        }}
+      />
     </View>
   );
 }

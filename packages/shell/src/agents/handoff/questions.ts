@@ -3,7 +3,7 @@
  * in sheets over the person's work (docs/actions.md, "Agents from the
  * launcher"): which login (Allow for this task, Once, Other login…, Don't),
  * a website, a hand-over (do it, then Done), another permission, or one
- * action. The question goes on the run's card (store.ts) and the chip turns
+ * action. The question goes on the run's card (store.ts) and the mark turns
  * amber. It shows in one place at a time (route.ts): on the card while the
  * panel is open; while it is closed, in the existing sheet (or the
  * hand-over banner), with a notification. The first answer, in either

@@ -71,6 +71,7 @@ export function PopoverRoot({
   onStatusClosed,
   agentsPanel,
   battery,
+  overflowRow,
 }: {
   controller: MenuController;
   /** The menus apps published; the open app menu follows its updates. */
@@ -87,10 +88,12 @@ export function PopoverRoot({
   onStatusChoose: (action: StatusMenuAction) => void;
   /** A status item's menu closed, chosen from or not (a tray icon's dbusmenu wants to know). */
   onStatusClosed?: (key: string) => void;
-  /** The agents' panel under their chip (agents-panel.tsx), drawn by its owner. */
+  /** The agents' panel under their mark (agents-panel.tsx), drawn by its owner. */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
   /** The battery panel's stores and what its rows do (battery/popover.tsx). */
   battery?: BatteryPopoverSources;
+  /** "…"'s row of the status items that didn't fit (bar-overflow.tsx), drawn by its owner. */
+  overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void }) => ReactElement;
 }) {
   // The surface's width: the battery panel stays inside it.
   const [width, setWidth] = useState<number | null>(null);
@@ -154,6 +157,7 @@ export function PopoverRoot({
       )}
       {popover?.kind === "battery" && battery && <BatteryPopover sources={battery} right={popover.right} screenWidth={width} close={close} />}
       {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close })}
+      {popover?.kind === "overflow" && overflowRow?.({ right: popover.right, keys: popover.keys, close })}
       {popover?.kind === "notification-center" && <NotificationCenterPanel store={notifications} dockInset={dockInset(output)} onClose={close} />}
     </View>
   );

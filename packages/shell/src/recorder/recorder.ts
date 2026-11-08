@@ -19,7 +19,7 @@ export type RecorderState =
   | { kind: "idle" }
   | { kind: "starting"; by: RecordedBy }
   | { kind: "recording"; since: number; file: string; target: RecordTarget; by: RecordedBy }
-  | { kind: "saving"; file: string };
+  | { kind: "saving"; file: string; by: RecordedBy };
 
 /** A running wf-recorder, as far as the recorder needs it. */
 export interface RecorderProcess {
@@ -162,10 +162,10 @@ export class ScreenRecorder {
   /** Stop and save; resolves with the file, or null when nothing was recording. */
   async stop(): Promise<string | null> {
     if (this.state.kind !== "recording" || !this.process) return null;
-    const { file } = this.state;
+    const { file, by } = this.state;
     const process = this.process;
     this.stopping = true;
-    this.set({ kind: "saving", file });
+    this.set({ kind: "saving", file, by });
     process.kill("SIGINT");
     if ((await Promise.race([process.exited, sleep(FINISH_MS)])) === "timeout") process.kill("SIGKILL");
     await process.exited;

@@ -1,58 +1,30 @@
 /**
- * Agents from the launcher in the menu bar (docs/actions.md, "Agents from
- * the launcher"): one chip while any works (agents/handoff/chip.ts), amber
- * while one needs the person, and its panel: each run's card, newest
- * first, with its last three steps (never a transcript), the question it
- * waits on (answered here, not in a sheet over the person's work), Show
- * (the whole log in its own window), Stop, and for an hour after it ends,
- * Undo where its changes can be put back.
+ * The agents' panel, under the menu bar's agent mark (agent-mark.tsx;
+ * docs/actions.md, "Agents from the launcher"): every agent in one place.
+ * A run from the launcher is its card, newest first, with its last three
+ * steps (never a transcript), the question it waits on (answered here, not
+ * in a sheet over the person's work), Show (the whole log in its own
+ * window), Stop, and for an hour after it ends, Undo where its changes can
+ * be put back. An agent connected from outside is a row (agents-rows.tsx):
+ * what it may see or do now, where it's from, Stop. "Stop all" stops them
+ * all, as ⌃❖Esc does.
  */
 
 import { useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { chipState } from "./agents/handoff/chip.ts";
 import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
 import { type AgentRuns, CARD_STEPS, isWorking, progressWords, type RunQuestion, type RunView } from "./agents/handoff/store.ts";
 import { cut } from "./agents/handoff/words.ts";
+import type { AgentInfo } from "./agents/index.ts";
+import { type AgentEntry, mergeAgents } from "./agents/mark.ts";
+import { AccessChip, ConnectionRow, StopAllFooter, TileDot } from "./agents-rows.tsx";
 import { KeyCatcher } from "./overlay.tsx";
 
 export const AGENTS_PANEL = { width: 380, padding: 6, radius: 12 } as const;
-/** The chip's harness mark, where an 8 px dot was. */
-const CHIP_GLYPH = 12;
 
 export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): readonly RunView[] {
   return useSyncExternalStore(runs.subscribe, runs.getSnapshot);
-}
-
-/** The menu bar's chip: its run's harness mark and words, shiso while agents work, amber (broth) while one needs you; a click opens the panel. */
-export function AgentsChip({ runs, open, onPress }: { runs: Pick<AgentRuns, "subscribe" | "getSnapshot">; open: boolean; onPress: (right: number) => void }) {
-  const colors = useColors();
-  const chip = chipState(useRuns(runs));
-  if (!chip) return null;
-  return (
-    <View
-      testID="agents-chip"
-      onPress={({ bounds }) => onPress(bounds ? bounds.x + bounds.width : 0)}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        height: 20,
-        paddingLeft: 7,
-        paddingRight: 8,
-        borderRadius: 10,
-        flexShrink: 1,
-        minWidth: 0,
-        backgroundColor: chip.attention ? colors.brothWash : open ? colors.agent : colors.agentWash,
-      }}
-    >
-      <Svg markup={harnessGlyph(chip.harness)} size={CHIP_GLYPH} color={chip.attention ? colors.broth : open ? "#ffffff" : colors.agent} />
-      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: chip.attention ? colors.broth : open ? "#ffffff" : colors.agentInk }}>
-        {chip.words}
-      </Text>
-    </View>
-  );
 }
 
 function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
@@ -121,9 +93,28 @@ export interface PanelActions {
   stop(run: string): void;
   show(run: string): void;
   undo(run: string, index: number): void;
+  /** Cut a connected agent off (its StoppedNote follows). */
+  stopAgent(id: number): void;
+  /** Every working run and every connected agent, as ⌃❖Esc. */
+  stopAll(): void;
 }
 
-function RunCard({ run, now, first, focused, actions }: { run: RunView; now: number; first: boolean; focused: boolean; actions: PanelActions }) {
+function RunCard({
+  run,
+  entry,
+  now,
+  first,
+  focused,
+  actions,
+}: {
+  run: RunView;
+  /** It as the mark sees it, while it works: what its connection sees. */
+  entry?: AgentEntry;
+  now: number;
+  first: boolean;
+  focused: boolean;
+  actions: PanelActions;
+}) {
   const colors = useColors();
   const working = isWorking(run);
   const steps = run.steps.slice(-CARD_STEPS);
@@ -141,8 +132,19 @@ function RunCard({ run, now, first, focused, actions }: { run: RunView; now: num
         ...(working ? {} : { opacity: 0.8 }),
       }}
     >
-      <View style={{ width: 28, height: 28, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: colors.agentWash }}>
+      <View
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 7,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.agentWash,
+          position: "relative",
+        }}
+      >
         <Svg markup={harnessGlyph(run.harness)} size={15} color={colors.agent} />
+        {entry?.watching && <TileDot ring={colors.launcher} />}
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 2 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
@@ -151,6 +153,11 @@ function RunCard({ run, now, first, focused, actions }: { run: RunView; now: num
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
           {cardLine(run, now)}
         </Text>
+        {entry?.watching && (
+          <View style={{ flexDirection: "row", marginTop: 2 }}>
+            <AccessChip entry={entry} />
+          </View>
+        )}
         {working &&
           steps.map((step) => (
             <View key={step.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 18 }}>
@@ -187,15 +194,18 @@ function RunCard({ run, now, first, focused, actions }: { run: RunView; now: num
   );
 }
 
-/** The panel under the chip: every run's card, newest first (one waiting on you on top). */
+/** The panel under the mark: agents waiting on the person first, then working, then connected; then the runs that ended in the last hour. */
 export function AgentsPanel({
   runs,
+  agents,
   right,
   focus,
   actions,
   onClose,
 }: {
   runs: Pick<AgentRuns, "subscribe" | "getSnapshot">;
+  /** Who is connected (agents/presence.ts). */
+  agents: { subscribe(listener: () => void): () => void; getSnapshot(): readonly AgentInfo[] };
   right: number;
   focus: string | null;
   actions: PanelActions;
@@ -203,15 +213,21 @@ export function AgentsPanel({
 }) {
   const colors = useColors();
   const all = useRuns(runs);
+  const connected = useSyncExternalStore(agents.subscribe, agents.getSnapshot);
   const now = Date.now();
-  const shown = [...all].sort((a, b) => Number(b.question !== null) - Number(a.question !== null) || b.started - a.started);
+  const entries = mergeAgents(connected, all);
+  const ended = all.filter((run) => !isWorking(run)).sort((a, b) => b.started - a.started);
+  const count = entries.length + ended.length;
+  const cardOf = (run: RunView, index: number, entry?: AgentEntry) => (
+    <RunCard key={run.id} run={run} {...(entry ? { entry } : {})} now={now} first={index === 0} focused={run.id === focus && count > 1} actions={actions} />
+  );
   return (
     <View
       testID="agents-panel"
       style={{
         position: "absolute",
         top: 4,
-        // Under the chip's right end; at the screen's right edge when it didn't say (a notification's Show).
+        // Under the mark's right end; at the screen's right edge when it didn't say (a notification's Show).
         ...(right > 0 ? { left: Math.max(8, right - AGENTS_PANEL.width) } : { right: 8 }),
         width: AGENTS_PANEL.width,
         maxHeight: 560,
@@ -225,17 +241,23 @@ export function AgentsPanel({
       }}
     >
       <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
-      {shown.length === 0 ? (
+      {count === 0 ? (
         <View style={{ padding: 12 }}>
           <Text style={{ fontSize: 12.5, color: colors.textMuted }}>No agents in the last hour. Type a task in the launcher to hand it off.</Text>
         </View>
       ) : (
         <ScrollView style={{ flexShrink: 1 }}>
-          {shown.map((run, index) => (
-            <RunCard key={run.id} run={run} now={now} first={index === 0} focused={run.id === focus && shown.length > 1} actions={actions} />
-          ))}
+          {entries.map((entry, index) =>
+            entry.run ? (
+              cardOf(entry.run, index, entry)
+            ) : (
+              <ConnectionRow key={entry.key} entry={entry} first={index === 0} onStop={() => entry.agent && actions.stopAgent(entry.agent.id)} />
+            ),
+          )}
+          {ended.map((run, index) => cardOf(run, entries.length + index))}
         </ScrollView>
       )}
+      {entries.length > 0 && <StopAllFooter onStopAll={actions.stopAll} />}
     </View>
   );
 }

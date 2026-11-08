@@ -155,6 +155,6 @@ test("Record while an agent records says so in the toolbar, which stays; a scree
   state = { kind: "idle" };
   expect(recordRefusal("record-screen", state)).toBeNull();
   expect(recordRefusal("record-area", { kind: "starting", by: "agent" })).toBe("An agent is recording the screen");
-  expect(recordRefusal("record-area", { kind: "saving", file: "/v/a.mp4" })).toBe("The screen is already being recorded");
+  expect(recordRefusal("record-area", { kind: "saving", file: "/v/a.mp4", by: "person" })).toBe("The screen is already being recorded");
   expect(recordRefusal("window", { kind: "starting", by: "agent" })).toBeNull();
 });

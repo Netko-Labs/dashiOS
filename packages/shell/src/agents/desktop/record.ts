@@ -89,14 +89,15 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
   const started = Date.now();
   // Until `until`, or until the person stops it (the menu bar's stop button): a stopped recording isn't waited out.
   const whileRecording = async (until: number): Promise<void> => {
-    while (Date.now() < until && recorder.getSnapshot().kind === "recording") await sleep(Math.min(STOPPED_POLL_MS, until - Date.now()));
+    // A stopped agent's recording stops with it: the menu bar showed it as the agent's, and the agent is gone.
+    while (Date.now() < until && recorder.getSnapshot().kind === "recording" && !ctx.signal.aborted) await sleep(Math.min(STOPPED_POLL_MS, until - Date.now()));
   };
   const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const stills: ToolResult["content"] = [];
   for (const at of stillTimes(call.seconds, call.frames)) {
     await whileRecording(started + at);
-    if (recorder.getSnapshot().kind !== "recording") break;
+    if (recorder.getSnapshot().kind !== "recording" || ctx.signal.aborted) break;
     const path = join(dir, `${crypto.randomUUID()}.png`);
     try {
       await ctx.mask.update();

@@ -1,7 +1,7 @@
 /**
  * What the person sees of agents: the consent sheet (who is asking, what it
- * may do), the menu bar pill (who is connected and what it is doing, with
- * Stop), and the note after a stop. Agents get their own color, shiso;
+ * may do) and the note after a stop. Who is connected and what each does is
+ * the menu bar's agent mark and its panel (agent-mark.tsx, agents-panel.tsx). Agents get their own color, shiso;
  * kombu stays the person's (docs/agents.html, Experience).
  *
  * The sheet never takes the keyboard on its own: a stray Enter while the
@@ -11,7 +11,7 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { AgentInfo, Allow, Ask } from "./agents/index.ts";
+import type { Allow, Ask } from "./agents/index.ts";
 
 /** Short enough for a 1280×720-point screen, with room for its shadow; the card sits `BELOW` above its foot. */
 export const CONSENT = { width: 500, height: 640 } as const;
@@ -256,33 +256,6 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
           <Text style={{ fontSize: 11.5, color: colors.textMuted }}>Stop every agent at any time with</Text>
           <Shortcut keys="⌃❖Esc" color={colors.textMuted} size={11.5} />
         </View>
-      </View>
-    </View>
-  );
-}
-
-/** In the menu bar while an agent is connected: who, what it's doing, Stop. */
-export function AgentPill({ agent, onStop }: { agent: AgentInfo; onStop: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        height: 20,
-        paddingLeft: 7,
-        paddingRight: 3,
-        borderRadius: 10,
-        backgroundColor: colors.agentWash,
-      }}
-    >
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.agent }} />
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.agentInk }}>
-        {agent.name} · {agent.status}
-      </Text>
-      <View style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }} onPress={onStop}>
-        <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: colors.agentInk }} />
       </View>
     </View>
   );

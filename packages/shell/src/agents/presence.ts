@@ -87,6 +87,9 @@ export interface Answer {
   scopes: string[];
 }
 
+/** What an agent's call does that the person must always see (the mark's red dot): records or sees the screen, or uses its own pointer and keys. */
+export type Watching = "recording" | "screen" | "pointer";
+
 export interface AgentInfo {
   id: number;
   name: string;
@@ -94,8 +97,21 @@ export interface AgentInfo {
   key?: string;
   status: string;
   scopes: string[];
-  /** A run started from the launcher (agents/handoff/): its card and the chip speak for it, not a pill of its own. */
+  /** A run started from the launcher (agents/handoff/): its card speaks for it, not a row of its own. */
   task?: string;
+  /** Where it runs from (a path, "connected over SSH"), for its row in the agents' panel. */
+  detail?: string;
+  /** What it says it is (MCP's clientInfo); unverified. */
+  claims?: string | null;
+  remote?: boolean;
+  /** The harness its glyph is (agents/mark.ts `connectionHarness`), or none: the sparkle. */
+  harness?: string | null;
+  /** When it connected (ms). */
+  since?: number;
+  /** A call of it is waiting on the person (a sheet). */
+  waiting?: boolean;
+  /** It records or sees the screen, or uses its pointer and keys, now or a moment ago. */
+  watching?: Watching | null;
 }
 
 /** What the agents server needs from the shell's UI. */

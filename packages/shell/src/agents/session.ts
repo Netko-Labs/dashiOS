@@ -19,10 +19,11 @@ import { type RunContext, type ToolResult, toolError } from "./context.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
+import { connectionHarness, strongest, watchingOf } from "./mark.ts";
 import type { AgentMask } from "./mask.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
-import { type AgentInfo, type AgentUi, WAITING_STATUS, type Who } from "./presence.ts";
+import { type AgentInfo, type AgentUi, WAITING_STATUS, type Watching, type Who } from "./presence.ts";
 import { runCall } from "./run.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import { type SiteAnswer, SiteConsent, type SiteGrants } from "./sites.ts";
@@ -114,6 +115,12 @@ export class Session {
   private readonly sites: SiteConsent;
   /** The browser tab the website tools use when none is named: the agent's last. */
   private browserTab: number | null = null;
+  /** When it connected. */
+  private readonly since = Date.now();
+  /** Calls running now that the menu bar's red dot shows (recording, seeing the screen, its pointer), by kind. */
+  private readonly watchingNow = new Map<Watching, number>();
+  /** The last such call to end: the dot stays as long as its words do (`SETTLE_MS`). */
+  private watchedLast: { kind: Watching; at: number } | null = null;
 
   constructor(
     readonly id: number,
@@ -163,7 +170,39 @@ export class Session {
       status: this.status,
       scopes: [...this.granted],
       ...(this.task ? { task: this.task.id } : {}),
+      detail: this.peer.detail,
+      claims: this.claims,
+      remote: this.peer.remote,
+      harness: connectionHarness(this.peer.name, this.claims),
+      since: this.since,
+      waiting: this.asking || this.confirming > 0,
+      watching: this.watching(),
     };
+  }
+
+  /** The strongest kind of watching going on now, else the last one for a moment after it ended. */
+  private watching(now = Date.now()): Watching | null {
+    let most: Watching | null = null;
+    for (const [kind, count] of this.watchingNow) if (count > 0) most = strongest(most, kind);
+    if (most) return most;
+    return this.watchedLast && now - this.watchedLast.at < SETTLE_MS ? this.watchedLast.kind : null;
+  }
+
+  private watchStart(kind: Watching | null): void {
+    if (!kind) return;
+    this.watchingNow.set(kind, (this.watchingNow.get(kind) ?? 0) + 1);
+    this.ctx.publish();
+  }
+
+  private watchEnd(kind: Watching | null): void {
+    if (!kind) return;
+    this.watchingNow.set(kind, Math.max(0, (this.watchingNow.get(kind) ?? 1) - 1));
+    this.watchedLast = { kind, at: Date.now() };
+    this.ctx.publish();
+    // The dot goes once the moment is over, whatever else happens meanwhile.
+    setTimeout(() => {
+      if (!this.closed) this.ctx.publish();
+    }, SETTLE_MS + 50);
   }
 
   /** Who this agent is in what it changes: the name it shows with (a remote one's claimed name), and its grants' key. */
@@ -383,6 +422,8 @@ export class Session {
     let result: ToolResult;
     const task = this.task;
     const undo = task ? (this.ctx.tasks?.before(task.id, call) ?? null) : null;
+    const watch = watchingOf(call.name);
+    this.watchStart(watch);
     try {
       // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
       // What it changes is this agent's (Settings › Recently changed: acting.ts).
@@ -410,6 +451,7 @@ export class Session {
       result = toolError(`${call.name} failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       this.inFlight.delete(id);
+      this.watchEnd(watch);
     }
     if (signal.aborted) {
       this.log(call.name, "cancelled");

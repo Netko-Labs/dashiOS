@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { chipState } from "../src/agents/handoff/chip.ts";
 import { CLAUDE_CODE_GLYPH, CODEX_GLYPH, harnessGlyph, harnessIconName, OPENCODE_GLYPH } from "../src/agents/handoff/harness-icons.ts";
 import { endedNotice } from "../src/agents/handoff/notices.ts";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
+import { markState, mergeAgents } from "../src/agents/mark.ts";
 import { iconPath } from "../src/apps.ts";
 import { handoffRow, runRow } from "../src/launcher/agents/handoff-rows.ts";
 import { SPARKLE } from "../src/settings-app/glyphs.ts";
@@ -36,14 +36,14 @@ describe("each harness's own mark", () => {
     }
   });
 
-  test("the rows, the chip and the done notification show the run's harness", () => {
+  test("the rows, the mark and the done notification show the run's harness", () => {
     const runs = new AgentRuns();
     runs.start({ id: "run1", request: "Book a class", harness: "codex", harnessName: "Codex" });
     const run = runs.get("run1");
     if (!run) throw new Error("no run");
     expect(runRow(run).icon).toEqual({ glyph: CODEX_GLYPH });
     expect(handoffRow({ id: "opencode", name: "OpenCode", uses: "", signedIn: true }, 0, "book a class").icon).toEqual({ glyph: OPENCODE_GLYPH });
-    expect(chipState(runs.getSnapshot())?.harness).toBe("codex");
+    expect(markState(mergeAgents([], runs.getSnapshot()))).toMatchObject({ discs: ["codex"] });
     runs.event("run1", { kind: "done", text: "Booked it" });
     expect(endedNotice(runs.get("run1") ?? run)?.appIcon).toBe(iconPath("codex"));
   });

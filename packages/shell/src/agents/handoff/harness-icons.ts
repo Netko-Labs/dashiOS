@@ -1,7 +1,7 @@
 /**
  * Each harness's own mark (docs/actions.md, "Agents from the launcher"): on
  * its "Hand it off" row, the grants card's field, a run's row and card, and
- * the menu bar's chip. Dashi's own drawings on the sidebar glyphs' 16-unit
+ * the menu bar's agent mark. Dashi's own drawings on the sidebar glyphs' 16-unit
  * grid, one color, tinted by the Svg `color` like every glyph (shiso, CO-3):
  * a starburst for Claude Code, a knot of three links for Codex, a block in
  * brackets for OpenCode. Never the companies' artwork (design.html, "Never

@@ -29,10 +29,12 @@ export type Popover =
   /** The battery panel (battery/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
   | { kind: "battery"; right: number | null }
   | { kind: "notification-center" }
-  /** The agents' panel under their chip (agents/handoff/panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
+  /** The agents' panel under their mark (agents-panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
   | { kind: "agents"; right: number; focus: string | null }
   /** A status item's menu (an extra's or the battery's), its right edge at `right` (screen pixels); `key` says whose. */
-  | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] };
+  | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] }
+  /** "…": the status items that didn't fit, in a row under it (bar-overflow.tsx), its right edge at `right`. */
+  | { kind: "overflow"; right: number; keys: readonly string[] };
 
 export interface MenuState {
   popover: Popover | null;
@@ -143,13 +145,30 @@ export class MenuController {
     if (this.state.popover?.kind === "control-center") this.set({ ...this.state, popover: { kind: "battery", right: null } });
   }
 
-  /** A click on the agents' chip: their panel, or closed if it is open; `focus` a run's card (a notification's Show). */
+  /** A click on the agent mark: the agents' panel, or closed if it is open; `focus` a run's card (a notification's Show). */
   toggleAgents(appName: string, right: number, focus: string | null = null, output?: string): Promise<void> {
     if (this.state.popover?.kind === "agents" && this.isOn(output) && focus === null) {
       this.close();
       return Promise.resolve();
     }
     return this.show({ kind: "agents", right, focus }, appName, output);
+  }
+
+  /** A click on "…": the hidden status items, or closed if they are showing. */
+  toggleOverflow(appName: string, right: number, keys: readonly string[], output?: string): Promise<void> {
+    if (this.state.popover?.kind === "overflow" && this.isOn(output)) {
+      this.close();
+      return Promise.resolve();
+    }
+    return this.show({ kind: "overflow", right, keys }, appName, output);
+  }
+
+  /** The bar's hidden items changed while "…" is open: the row follows (an extra came or went). */
+  setOverflow(keys: readonly string[]): void {
+    const open = this.state.popover;
+    if (open?.kind !== "overflow") return;
+    if (keys.length === 0) return this.close();
+    if (open.keys.join("\n") !== keys.join("\n")) this.set({ ...this.state, popover: { ...open, keys } });
   }
 
   /** A click on the clock. */
