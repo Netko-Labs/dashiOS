@@ -19,13 +19,13 @@ import type { BatteryMonitor, BatteryMonitorState } from "../../battery/index.ts
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import { describeAction } from "../../power/policy.ts";
-import { describeBattery } from "../../system/battery-details.ts";
 import { useEnergy } from "../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../system/profiles.ts";
 import { BLANK_CHOICES, blankChoice, SLEEP_CHOICES, sleepChoice, timePills } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { GAUGE } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
+import { Spot } from "../spot.tsx";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Hero, Page, Setting } from "../ui.tsx";
 import { BatteryHeroView } from "./battery-hero.tsx";
@@ -81,9 +81,12 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
   return (
     <Page title="Battery & Power">
       {reading && (
-        <Hero testID="battery-hero-card">
-          <BatteryHeroView battery={reading} watts={monitor?.watts ?? null} limit={limit} samples={monitor?.samples ?? []} />
-        </Hero>
+        // The hero is the "Battery" row: it says the charge and what the battery does, so search lands here.
+        <Spot id="battery/battery" cards>
+          <Hero testID="battery-hero-card">
+            <BatteryHeroView battery={reading} watts={monitor?.watts ?? null} limit={limit} samples={monitor?.samples ?? []} />
+          </Hero>
+        </Spot>
       )}
       <Group testID="power-mode">
         {services.laptop && <PowerModeRow laptop={services.laptop} />}
@@ -124,9 +127,6 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
         <>
           <Caption above>Battery</Caption>
           <Group testID="battery-status">
-            <Setting id="battery/battery" detail={describeBattery(battery)}>
-              <Value testID="battery-state">{`${battery.percent}%`}</Value>
-            </Setting>
             {battery.health !== null && (
               <Setting id="battery/battery-health">
                 <Value testID="battery-health">{`${battery.health}%`}</Value>
