@@ -24,6 +24,8 @@ export interface Devices {
   brightness: number | null;
   /** The output volume; null without PipeWire. */
   volume: Volume | null;
+  /** Personal Hotspot; null without Wi-Fi. */
+  hotspot: boolean | null;
 }
 
 export interface DeviceDeps {
@@ -32,6 +34,8 @@ export interface DeviceDeps {
   wifiRadio?: Radio;
   /** The Bluetooth adapter; `bluetoothctl` by default. */
   bluetoothRadio?: Radio;
+  /** Personal Hotspot; none by default (it is read as missing). */
+  hotspotRadio?: Radio;
   /** Where the backlights are (tests). */
   backlightRoot?: string;
   hasBluetoothctl?: boolean;
@@ -43,7 +47,7 @@ export interface DeviceDeps {
 }
 
 export class DeviceStore {
-  private snapshot: Devices = { wifi: null, bluetooth: null, brightness: null, volume: null };
+  private snapshot: Devices = { wifi: null, bluetooth: null, brightness: null, volume: null, hotspot: null };
   private light: Backlight | null = null;
   /** The sink was muted when the slider moved up: the next write unmutes it. */
   private pendingUnmute = false;
@@ -71,11 +75,12 @@ export class DeviceStore {
   async refresh(): Promise<void> {
     const bluetooth = this.deps.hasBluetoothctl ?? hasProgram("bluetoothctl");
     const brightnessctl = this.deps.hasBrightnessctl ?? hasProgram("brightnessctl");
-    const [wifi, bluetoothPower, light, volume] = await Promise.all([
+    const [wifi, bluetoothPower, light, volume, hotspot] = await Promise.all([
       this.radio.read(),
       bluetooth ? this.adapter.read() : Promise.resolve(null),
       brightnessctl ? readBacklight(this.deps.backlightRoot) : Promise.resolve(null),
       readVolume(this.run),
+      this.deps.hotspotRadio?.read() ?? Promise.resolve(null),
     ]);
     this.light = light;
     this.publish({
@@ -83,7 +88,16 @@ export class DeviceStore {
       bluetooth: bluetoothPower,
       brightness: light ? levelOf(light) : null,
       volume,
+      hotspot,
     });
+  }
+
+  async setHotspot(on: boolean): Promise<void> {
+    const radio = this.deps.hotspotRadio;
+    if (!radio) return;
+    this.publish({ hotspot: on });
+    await radio.set(on);
+    this.publish({ hotspot: await radio.read() });
   }
 
   async setWifi(on: boolean): Promise<void> {

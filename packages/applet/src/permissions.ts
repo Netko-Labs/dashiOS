@@ -13,6 +13,7 @@
  *   hardware.fans             dashi-hardware: fan curves (asks for the password: polkit `tune`)
  *   hardware.tuning           dashi-hardware: power limits, the Curve Optimizer, the graphics card's limits (`tune`)
  *   power.mode                Dashi's power mode on the applets channel: read the choice, ask for another (power.ts)
+ *   controls                  its controls in Control Center (controls.ts); nothing else
  *   dbus.system:NAME          talk to NAME on the system bus
  *   dbus.session:NAME         talk to NAME on the session bus
  *   files.DIR, files.DIR:read one of the person's folders (downloads, documents, pictures, music, videos, desktop)
@@ -20,6 +21,9 @@
 
 /** The permission for Dashi's power mode on the applets channel. */
 export const POWER_MODE_PERMISSION = "power.mode";
+
+/** The permission for controls in Control Center (controls.ts). */
+export const CONTROLS_PERMISSION = "controls";
 
 export const FOLDERS = ["downloads", "documents", "pictures", "music", "videos", "desktop"] as const;
 export type Folder = (typeof FOLDERS)[number];
@@ -33,6 +37,8 @@ export type Permission =
   | { kind: "hardware"; scope: HardwareScope }
   /** Dashi's own power mode, Automatic included (power.ts): the shell checks it; the sandbox gives nothing more. */
   | { kind: "power-mode" }
+  /** Tiles in Control Center (controls.ts): drawn by Dashi; grants nothing else. */
+  | { kind: "controls" }
   | { kind: "dbus"; bus: "system" | "session"; name: string }
   | { kind: "files"; folder: Folder; write: boolean };
 
@@ -47,6 +53,7 @@ export function parsePermission(value: unknown): Permission | { error: string } 
   if (value === "network") return { kind: "network" };
   if (value === "notifications") return { kind: "notifications" };
   if (value === POWER_MODE_PERMISSION) return { kind: "power-mode" };
+  if (value === CONTROLS_PERMISSION) return { kind: "controls" };
   const hardware = /^hardware\.([a-z]+)$/.exec(value);
   if (hardware) {
     const scope = HARDWARE.find((each) => each === hardware[1]);
@@ -80,6 +87,8 @@ export function permissionName(permission: Permission): string {
       return `hardware.${permission.scope}`;
     case "power-mode":
       return POWER_MODE_PERMISSION;
+    case "controls":
+      return CONTROLS_PERMISSION;
     case "dbus":
       return `dbus.${permission.bus}:${permission.name}`;
     case "files":
@@ -145,6 +154,8 @@ export function describePermission(permission: Permission): string {
       return HARDWARE_WORDS[permission.scope];
     case "power-mode":
       return "See and choose the power mode, Automatic included";
+    case "controls":
+      return "Add controls to Control Center";
     case "dbus":
       return `Talk to ${KNOWN_SERVICES[permission.name] ?? permission.name}${permission.bus === "system" ? " on the system" : ""}`;
     case "files":

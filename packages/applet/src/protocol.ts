@@ -28,6 +28,11 @@
  * permission (power.ts):
  *   shell → applet  {"type":"power","choice","available","mode","automatic","why","failed"}  (after welcome, and on every change)
  *   applet → shell  {"type":"power","choice"}                                (ask for Automatic or a mode)
+ * Version 5 adds Control Center's controls, for an applet that declares
+ * them and has the `controls` permission (controls.ts):
+ *   shell → applet  {"type":"controls","shown":[…]}                          (which of its controls are in Control Center)
+ *                   {"type":"control-action","id","action",…}               (one was pressed)
+ *   applet → shell  {"type":"control","id","on"?,"detail"?,"choice"?,"value"?,"glyph"?}  (its state)
  * A connection that starts with anything but `hello` is version 1, and
  * stays so. A hello's protocol is the newest the applet speaks; the
  * connection speaks the older of it and the shell's.
@@ -36,12 +41,13 @@
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { COMMAND_LIMITS, type CommandResult, type CommandRow, parseResult, parseRows } from "./commands.ts";
+import { type ControlAction, type ControlUpdate, parseControlAction, parseControlUpdate, parseShown } from "./controls.ts";
 import { type Manifest, parseManifest } from "./manifest.ts";
 import { type AppletMenuRow, parseMenu } from "./menu.ts";
 import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "./parse.ts";
 import { type PowerChoice, type PowerState, parsePowerAsk, parsePowerState } from "./power.ts";
 
-export const PROTOCOL = 4;
+export const PROTOCOL = 5;
 export const APPLETS_SOCKET = "dashi-applets.sock";
 
 /** Where the shell listens; null without a runtime directory. `DASHI_APPLETS_SOCKET` puts it elsewhere (the sandbox's own). */
@@ -94,7 +100,9 @@ export type AppletMessage =
   /** `{"type":"dismiss","seq"}`: the view of run `seq` closed. */
   | { type: "dismiss-view"; seq: number }
   /** Version 4: Automatic or a mode, asked for (`power.mode`). */
-  | { type: "power"; choice: PowerChoice };
+  | { type: "power"; choice: PowerChoice }
+  /** Version 5: a control's state (`controls`). */
+  | ({ type: "control" } & ControlUpdate);
 
 /** A command run's number: the shell counts them up from 1. */
 export const MAX_SEQ = 2 ** 31;
@@ -119,12 +127,16 @@ export type AppletShellMessage =
   | { type: "run"; seq: number; command: string; args: Record<string, string | number | boolean>; query?: string; item?: string }
   | ({ type: "view"; seq: number; namespace: string } & Placement)
   | { type: "dismiss-view"; seq: number }
-  | ({ type: "power" } & PowerState);
+  | ({ type: "power" } & PowerState)
+  /** Version 5: which of its controls are in Control Center. */
+  | { type: "controls"; shown: string[] }
+  /** Version 5: one of its controls was pressed. */
+  | ({ type: "control-action"; id: string } & ControlAction);
 
 /** What a glyph may not contain: anything that loads, links, or runs. */
 const GLYPH_FORBIDDEN = /<\s*(image|script|style|foreignObject|use|a)\b|href\s*=|<!(ENTITY|DOCTYPE)|url\s*\(/i;
 
-function parseGlyph(value: unknown): string | Refusal {
+export function parseGlyph(value: unknown): string | Refusal {
   if (typeof value !== "string") return refuse("glyph must be SVG markup");
   const markup = value.trim();
   if (new TextEncoder().encode(markup).byteLength > APPLET_LIMITS.glyph) return refuse(`glyph is larger than ${APPLET_LIMITS.glyph} bytes`);
@@ -240,6 +252,13 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
     case "power":
       if (version < 4) return refuse(`“power” needs protocol 4: say hello with "protocol":4`);
       return parsePowerAsk(raw);
+    case "control": {
+      if (version < 5) return refuse(`“control” needs protocol 5: say hello with "protocol":5`);
+      const update = parseControlUpdate(raw);
+      if (isRefusal(update) || update.glyph === undefined) return update;
+      const glyph = parseGlyph(update.glyph);
+      return isRefusal(glyph) ? refuse(`control “${update.id}”: ${glyph.error}`) : { ...update, glyph };
+    }
     case "popover":
     case "dismiss": {
       if (version < 2) return refuse(`“${type}” needs protocol 2: send hello first`);
@@ -254,13 +273,15 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
     }
     default:
       return refuse(
-        version >= 4
-          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", or "power"'
-          : version >= 3
-            ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
-            : version >= 2
-              ? 'type must be "applet", "remove", "popover", or "dismiss"'
-              : 'type must be "applet" or "remove"',
+        version >= 5
+          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", "power", or "control"'
+          : version >= 4
+            ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", or "power"'
+            : version >= 3
+              ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
+              : version >= 2
+                ? 'type must be "applet", "remove", "popover", or "dismiss"'
+                : 'type must be "applet" or "remove"',
       );
   }
 }
@@ -310,6 +331,14 @@ export function parseAppletShellMessage(line: string): AppletShellMessage | null
   if (type === "power") {
     const state = parsePowerState(fields);
     return state ? { type: "power", ...state } : null;
+  }
+  if (type === "controls") {
+    const shown = parseShown(fields);
+    return shown ? { type: "controls", shown } : null;
+  }
+  if (type === "control-action") {
+    const action = parseControlAction(fields);
+    return action ? { type: "control-action", ...action } : null;
   }
   if (isNumber(fields.seq)) return parseRunMessage(type, fields, fields.seq);
   if (typeof fields.id !== "string") return null;

@@ -38,6 +38,7 @@ import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { WindowStyleSync } from "./appearance/window-style.ts";
 import { AppletCommands } from "./applets/commands.ts";
+import { AppletControls } from "./applets/controls.ts";
 import { AppletPower } from "./applets/power.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
@@ -51,7 +52,7 @@ import { startCalendar } from "./calendar/index.ts";
 import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
-import { controlFlags } from "./control-center/index.ts";
+import { controlFlags, LayoutStore, setControlMotion } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { AutoRefresh } from "./display-config/auto-refresh.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
@@ -82,10 +83,11 @@ import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
 import { ContextSource, primarySelection, readContext, startHandoffShell } from "./handoff-shell.tsx";
 import { IdlePolicy } from "./idle.ts";
-import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
+import { InhibitFlag, keepAwake, keepAwakeEntries } from "./inhibit/index.ts";
 import { InputMethodRunner } from "./input-method.ts";
 import { withSwitcher } from "./keymap.ts";
 import { currentKeymap, idleKeymap, setPersonRules } from "./keymap-state.ts";
+import { laptopEntries } from "./laptop/menu.ts";
 import { startLaptop } from "./laptop/start.ts";
 import { hostIsAccessible } from "./launcher/access.ts";
 import { AppIndex } from "./launcher/app-index.ts";
@@ -110,6 +112,7 @@ import { MenuBar } from "./menubar.tsx";
 import { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
 import { startMenus } from "./menus/index.ts";
 import { runPower } from "./menus/session.ts";
+import type { StatusMenuAction } from "./menus/status-menu.ts";
 import { startNightShift } from "./night-shift.ts";
 import { startNotifications } from "./notifications/index.ts";
 import { type OpenOverlay, openOverlay } from "./overlay.tsx";
@@ -118,6 +121,7 @@ import { OverviewController } from "./overview/index.ts";
 import { DEFAULT_POINTER_SIZE, PointerSync } from "./pointer.ts";
 import { startPolkit } from "./polkit/index.ts";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "./portal-host/index.ts";
+import { chargeTarget } from "./power/battery-health.ts";
 import { idleOffReason, startPower } from "./power/index.ts";
 import { powerOffReason } from "./power/nested.ts";
 import { startPrivacy } from "./privacy/index.ts";
@@ -131,6 +135,7 @@ import { takeScreenshot } from "./screenshots.ts";
 import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
+import { isPaneId } from "./settings-app/panes.ts";
 import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
@@ -726,7 +731,18 @@ const appletCommands = new AppletCommands({
 // Dashi's power mode for applets that ask for it (applets/power.ts): the mode store joins once the laptop starts, below.
 const appletPower = new AppletPower();
 // Applets: everyone's socket, and the installed ones in their sandboxes (applets/start.tsx).
-const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName, commands: appletCommands, power: appletPower });
+// Control Center's layout on this machine, and applets' controls in it (control-center/, applets/controls.ts).
+const controlLayout = new LayoutStore();
+const appletControls = new AppletControls({ layout: controlLayout.getSnapshot, subscribeLayout: controlLayout.subscribe });
+const stopApplets = startApplets({
+  compositor,
+  extras,
+  openOverlay,
+  primary: () => menuBars.primaryName,
+  commands: appletCommands,
+  power: appletPower,
+  controls: appletControls,
+});
 // Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
 const stopSharePicker = compositor
   ? startSharePicker({
@@ -788,8 +804,40 @@ if (autoRefresh) {
     };
   }
 }
-// The menu bar's menus and Control Center (menus/, control-center/).
+// Control Center's tiles step their corners and pages only while Reduce Motion is off (control-center/motion.ts).
+setControlMotion(() => reduceMotion);
+// The charge limit in effect (Battery Settings), for the battery row's tick and the battery panel.
+const chargeLimit = (): number | null => {
+  if (!laptop.store.getSnapshot().knobs.has("charge-limit")) return null;
+  const target = chargeTarget(settingsStore.getSnapshot().data.power, new Date()).percent;
+  return target !== null && target < 100 ? target : null;
+};
+// The menu bar's menus, Control Center and the battery panel (menus/, control-center/, battery/).
 const menus = startMenus({
+  layout: controlLayout,
+  appletControls,
+  chargeLimit,
+  battery: {
+    system: system.store,
+    monitor: batteryMonitor,
+    // The graphics card's holders are read again as the panel opens.
+    refresh: () => void laptop.graphics.refresh(),
+    // What the laptop adds (the charge, the card's holders: laptop/menu.ts) and what keeps it awake (inhibit/menu.ts).
+    extras: () => [
+      ...laptopEntries<StatusMenuAction>(
+        {
+          laptop: laptop.store.getSnapshot(),
+          modes: laptop.modes.getSnapshot(),
+          graphics: laptop.graphics.getSnapshot(),
+          power: settingsStore.getSnapshot().data.power,
+          now: new Date(),
+        },
+        (action) => ({ kind: "laptop", action }),
+      ),
+      ...keepAwakeEntries(keepAwake().awake(), (id) => installedApp(id)?.name ?? id, { kind: "allow-sleep" as const }),
+    ],
+  },
+  openSettingsPane: (pane) => isPaneId(pane) && settingsApp.open(pane),
   appMenus: appMenus.store,
   apps,
   catalog,
@@ -949,8 +997,6 @@ const menuBars = new MenuBars({
         menus={menus.controller}
         appMenus={appMenus.store}
         extras={extras}
-        batteryMonitor={batteryMonitor}
-        laptop={laptop}
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
         onStopAgent={(id) => agents?.stop(id)}

@@ -1,17 +1,17 @@
 /**
  * The menus under the status area's items: a menu bar extra's (a tray
- * icon's or an applet's, extras/) and the battery's. They open from the
- * right of the bar, below the item, and run through the one popover
- * (controller.ts).
+ * icon's or an applet's, extras/). They open from the right of the bar,
+ * below the item, and run through the one popover (controller.ts). The
+ * battery's is a panel now (battery/panel.tsx), and its rows' actions are
+ * these.
  */
 
 import type { ExtraMenuRow } from "../extras/index.ts";
 import type { AllowSleep } from "../inhibit/menu.ts";
 import type { LaptopAction } from "../laptop/menu.ts";
-import { type Battery, formatMinutes } from "../system/battery.ts";
 import type { MenuEntry } from "./model.ts";
 
-/** A chosen row: an extra's (its source carries it out), or the battery menu's way to Settings. */
+/** A chosen row: an extra's (its source carries it out), or one of the battery panel's. */
 export type StatusMenuAction =
   | { kind: "extra"; key: string; id: string }
   | { kind: "battery-settings" }
@@ -21,13 +21,6 @@ export type StatusMenuAction =
   | { kind: "laptop"; action: LaptopAction }
   /** "Allow Sleep" under what keeps the computer awake (inhibit/menu.ts). */
   | AllowSleep;
-
-/** What the battery's menu shows beyond the battery: the battery monitor's draw and heavy apps (battery/). */
-export interface BatteryUse {
-  watts: number | null;
-  /** The apps using significant energy, heaviest first; `key` is the one Activity Monitor names the app by (process-apps/). */
-  apps: readonly { key: string; name: string }[];
-}
 
 /** An extra's rows as menu entries: a submenu's heading shown, never chosen, and its rows indented under it. */
 export function extraEntries(key: string, rows: readonly ExtraMenuRow[]): MenuEntry<StatusMenuAction>[] {
@@ -41,61 +34,4 @@ export function extraEntries(key: string, rows: readonly ExtraMenuRow[]): MenuEn
       action: row.enabled && !row.heading ? { kind: "extra", key, id: row.id } : null,
     };
   });
-}
-
-/** What the battery is doing, in words: the menu's second line. */
-export function batteryStatus(battery: Battery): string {
-  switch (battery.state) {
-    case "charging":
-      return battery.minutesLeft === undefined ? "Charging" : `${formatMinutes(battery.minutesLeft)} until full`;
-    case "discharging":
-      return battery.minutesLeft === undefined ? "Calculating time left…" : `${formatMinutes(battery.minutesLeft)} remaining`;
-    case "full":
-      return "Fully charged";
-    case "plugged":
-      return "Not charging";
-  }
-}
-
-/**
- * The battery's menu: the charge, the power source, the time, the draw, the
- * apps using significant energy (the heading opens Activity Monitor's Energy
- * tab, and each app opens it with that app selected), other modules'
- * sections (the laptop's: laptop/menu.ts; each starts with its own
- * separator), then Settings.
- */
-export function batteryEntries(
-  battery: Battery,
-  use: BatteryUse = { watts: null, apps: [] },
-  sections: readonly MenuEntry<StatusMenuAction>[] = [],
-): MenuEntry<StatusMenuAction>[] {
-  const info = (label: string): MenuEntry<StatusMenuAction> => ({ kind: "item", label, action: null });
-  const draw =
-    use.watts === null || battery.state === "full" || battery.state === "plugged"
-      ? []
-      : [info(`${battery.state === "charging" ? "Charging at" : "Power Draw:"} ${use.watts.toFixed(1)} W`)];
-  const apps: MenuEntry<StatusMenuAction>[] =
-    use.apps.length === 0
-      ? []
-      : [
-          { kind: "separator" },
-          { kind: "item", label: "Using Significant Energy…", action: { kind: "activity-monitor" } },
-          ...use.apps.slice(0, 5).map(
-            (app): MenuEntry<StatusMenuAction> => ({
-              kind: "item",
-              label: app.name,
-              action: { kind: "activity-monitor", app: { key: app.key, name: app.name } },
-            }),
-          ),
-        ];
-  return [
-    info(`Battery  ${battery.percent}%`),
-    info(`Power Source: ${battery.state === "discharging" ? "Battery" : "Power Adapter"}`),
-    info(batteryStatus(battery)),
-    ...draw,
-    ...apps,
-    ...sections,
-    { kind: "separator" },
-    { kind: "item", label: "Battery Settings…", action: { kind: "battery-settings" } },
-  ];
 }

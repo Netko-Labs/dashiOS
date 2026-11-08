@@ -20,6 +20,7 @@
  */
 
 import { type AppletCommand, parseCommands } from "./commands.ts";
+import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
 import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { parseWhen, type When } from "./when.ts";
@@ -56,6 +57,8 @@ export interface Manifest {
   icon?: string;
   /** What it adds to the launcher (commands.ts); none is the default. */
   commands: AppletCommand[];
+  /** What it adds to Control Center (controls.ts); none is the default. */
+  controls: AppletControl[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
@@ -104,6 +107,7 @@ const FIELDS = [
   "screenshots",
   "icon",
   "commands",
+  "controls",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
@@ -152,6 +156,10 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(icon)) return icon;
   const commands = fields.commands === undefined ? [] : parseCommands(fields.commands);
   if (isRefusal(commands)) return commands;
+  const controls = fields.controls === undefined ? [] : parseControls(fields.controls);
+  if (isRefusal(controls)) return controls;
+  const unpermitted = needsControlsPermission(controls, names);
+  if (unpermitted) return refuse(unpermitted);
   return {
     id: fields.id,
     name,
@@ -169,6 +177,7 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     screenshots,
     ...(icon === undefined ? {} : { icon }),
     commands,
+    controls,
   };
 }
 
@@ -181,10 +190,21 @@ export function readManifest(json: string): Manifest | Refusal {
   }
 }
 
-/** The manifest as applet.json writes it (permissions by name; no `commands` when it has none). */
+/** The manifest as applet.json writes it (permissions by name; no `commands` or `controls` when it has none). */
 export function manifestJson(manifest: Manifest): Record<string, unknown> {
-  const { commands, ...rest } = manifest;
-  return { ...rest, permissions: manifest.permissions.map(permissionName), ...(commands.length > 0 ? { commands } : {}) };
+  const { commands, controls, ...rest } = manifest;
+  return {
+    ...rest,
+    permissions: manifest.permissions.map(permissionName),
+    ...(commands.length > 0 ? { commands } : {}),
+    ...(controls.length > 0 ? { controls: controls.map(controlJson) } : {}),
+  };
+}
+
+/** A control as applet.json writes it: a choice's choices and a slider's range only where they belong. */
+function controlJson(control: AppletControl): Record<string, unknown> {
+  const { choices, min, max, ...rest } = control;
+  return { ...rest, ...(control.kind === "choice" ? { choices } : {}), ...(control.kind === "slider" ? { min, max } : {}) };
 }
 
 /** -1, 0, 1 as semantic versions order (a pre-release before its release). */

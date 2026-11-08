@@ -120,7 +120,7 @@ test("the client says hello first, sends each applet whole, and does it all agai
       onDismiss: () => events.push("dismiss"),
     },
   );
-  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: 4, manifest: { permissions: ASUS.permissions } });
+  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: 5, manifest: { permissions: ASUS.permissions } });
   expect(shell.sent[1]).toMatchObject({ type: "applet", applet: { id: "asus", label: "54°" } });
   // The same applet again sends nothing; a change sends it whole.
   client.show({ id: "asus", title: "ASUS Control", label: "54°" });

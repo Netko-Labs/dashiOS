@@ -20,7 +20,6 @@ import {
 } from "../src/battery/history.ts";
 import { insights } from "../src/battery/insights.ts";
 import { BatteryMonitor } from "../src/battery/monitor.ts";
-import { batteryEntries } from "../src/menus/status-menu.ts";
 import type { PowerSupply } from "../src/system/battery.ts";
 
 const NOW = 1_800_000_000;
@@ -218,21 +217,4 @@ test("the monitor samples the battery, measures the apps, and publishes insights
   expect(state.samples).toHaveLength(2);
   expect(state.significant.map((app) => app.name)).toEqual(["Helium"]);
   expect(state.insights.map((insight) => insight.id)).toContain("apps");
-});
-
-test("the battery's menu adds the draw and the apps using significant energy, each a way to Activity Monitor's Energy tab", () => {
-  const entries = batteryEntries({ percent: 40, state: "discharging", minutesLeft: 120 }, { watts: 9.4, apps: [{ key: "helium", name: "Helium" }] });
-  expect(entries.map((entry) => (entry.kind === "item" ? entry.label : "—"))).toEqual([
-    "Battery  40%",
-    "Power Source: Battery",
-    "2:00 remaining",
-    "Power Draw: 9.4 W",
-    "—",
-    "Using Significant Energy…",
-    "Helium",
-    "—",
-    "Battery Settings…",
-  ]);
-  expect(entries[5]).toMatchObject({ action: { kind: "activity-monitor" } });
-  expect(entries[6]).toMatchObject({ action: { kind: "activity-monitor", app: { key: "helium", name: "Helium" } } });
 });

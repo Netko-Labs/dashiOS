@@ -1,17 +1,18 @@
 /**
- * Control Center's Bluetooth page, the way macOS lays it out: a back arrow,
- * the power switch, and one card with "My Devices" (a round icon that is lit
- * while connected, the name, "Connected" or "Not Connected", the battery
- * when the device says), then "Nearby Devices" with a quiet "Searching…"
- * while the page looks for them. A click connects, disconnects, or pairs.
- * The "…" on a device of yours opens "Forget This Device", which asks once
- * more before it unpairs.
+ * Control Center's Bluetooth page, grown out of the Bluetooth tile
+ * (control-center/page-parts.tsx): the tile is its header (back, the device
+ * connected, the power switch), then "My Devices" (a connected one is green,
+ * as a tile that is on; "Not Connected" otherwise; the battery when the
+ * device says), then "Nearby Devices" with a quiet "Searching…" while the
+ * page looks for them. A press connects, disconnects, or pairs. The "⋯" on a
+ * device of yours opens "Forget This Device", which asks once more before it
+ * unpairs.
  */
 
-import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { CHEVRON_LEFT } from "../control-center/glyphs.ts";
+import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
+import { useControlColors } from "../control-center/palette.ts";
 import { batteryGlyph } from "../glyphs.ts";
 import { Button } from "../menus/sheets.tsx";
 import { failureLine } from "./failures.ts";
@@ -19,7 +20,7 @@ import { deviceGlyph } from "./glyphs.ts";
 import { type BluetoothState, type BluetoothStore, type Busy, useBluetooth } from "./store.ts";
 import type { BluetoothDevice } from "./types.ts";
 
-/** The card shows this many pixels of rows, then scrolls. */
+/** The list shows this many points of rows, then scrolls. */
 const LIST_HEIGHT = 380;
 
 const BUSY_TEXT: Record<Busy, string> = {
@@ -28,48 +29,6 @@ const BUSY_TEXT: Record<Busy, string> = {
   pairing: "Pairing…",
   forgetting: "Forgetting…",
 };
-
-function Caption({ children, trailing }: { children: string; trailing?: { text: string; testID: string; onPress?: () => void } }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 8, paddingRight: 8, paddingTop: 6, paddingBottom: 2 }}>
-      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{children}</Text>
-      {trailing && (
-        <View testID={trailing.testID} onPress={trailing.onPress} style={{ marginLeft: "auto" }}>
-          <Text style={{ fontSize: 11, color: trailing.onPress ? colors.selection : colors.textMuted }}>{trailing.text}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-function Note({ children }: { children: string }) {
-  const colors = useColors();
-  return (
-    <View testID="bt-note" style={{ height: 56, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{children}</Text>
-    </View>
-  );
-}
-
-/** The round icon: lit with the accent while the device is connected. */
-function DeviceIcon({ device }: { device: BluetoothDevice }) {
-  const colors = useColors();
-  return (
-    <View
-      style={{
-        width: 26,
-        height: 26,
-        borderRadius: 13,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: device.connected ? colors.selection : colors.track,
-      }}
-    >
-      <Svg markup={deviceGlyph(device.kind)} size={14} color={device.connected ? "#ffffff" : colors.text} />
-    </View>
-  );
-}
 
 function Row({
   device,
@@ -83,60 +42,43 @@ function Row({
   /** Nothing is being done to this device, so a press does something. */
   idle: boolean;
   onChoose: (device: BluetoothDevice) => void;
-  /** Mine only: the "…" that opens Forget. */
+  /** Mine only: the "⋯" that opens Forget. */
   onMore?: () => void;
 }) {
-  const colors = useColors();
+  const colors = useControlColors();
   const mine = device.paired || device.connected;
   const detail = busy ? BUSY_TEXT[busy] : mine ? (device.connected ? "Connected" : "Not Connected") : null;
+  const ink = device.connected ? colors.onInk : colors.offInk;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", borderRadius: 8 }}>
-      <View
-        testID={`bt-row:${device.name}`}
-        onPress={idle ? () => onChoose(device) : undefined}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
-          height: 38,
-          paddingLeft: 6,
-          paddingRight: 6,
-          borderRadius: 8,
-          hoverBackgroundColor: colors.button,
-        }}
-      >
-        <DeviceIcon device={device} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", overflow: "hidden" }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-            {device.name}
-          </Text>
-          {detail !== null && (
-            <View testID={`bt-detail:${device.name}`}>
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-                {detail}
-              </Text>
+    <PageRow
+      testID={`bt-row:${device.name}`}
+      label={device.name}
+      glyph={deviceGlyph(device.kind)}
+      detail={detail}
+      checked={device.connected}
+      {...(idle ? { onPress: () => onChoose(device) } : {})}
+      trailing={
+        <>
+          {device.battery !== null && !busy && (
+            <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Svg markup={batteryGlyph(device.battery, false)} width={18} height={9} color={ink} />
+              <Text style={{ fontSize: 11, color: ink }}>{`${device.battery}%`}</Text>
             </View>
           )}
-        </View>
-        {device.battery !== null && !busy && (
-          <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-            <Svg markup={batteryGlyph(device.battery, false)} width={18} height={9} color={colors.textMuted} />
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${device.battery}%`}</Text>
-          </View>
-        )}
-      </View>
-      {onMore && (
-        <View
-          testID={`bt-more:${device.name}`}
-          onPress={onMore}
-          style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-        >
-          <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.textMuted }}>⋯</Text>
-        </View>
-      )}
-    </View>
+          {onMore && (
+            <View
+              testID={`bt-more:${device.name}`}
+              onPress={onMore}
+              accessibilityRole="button"
+              accessibilityLabel="More"
+              style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: "bold", color: ink }}>⋯</Text>
+            </View>
+          )}
+        </>
+      }
+    />
   );
 }
 
@@ -154,18 +96,8 @@ function ForgetStrip({
   onCancel: () => void;
   onForget: () => void;
 }) {
-  const colors = useColors();
-  if (!confirming) {
-    return (
-      <View
-        testID={`bt-forget:${device.name}`}
-        onPress={onAsk}
-        style={{ height: 28, justifyContent: "center", paddingLeft: 40, borderRadius: 8, hoverBackgroundColor: colors.button }}
-      >
-        <Text style={{ fontSize: 12, color: colors.critical }}>Forget This Device</Text>
-      </View>
-    );
-  }
+  const colors = useControlColors();
+  if (!confirming) return <PageRow testID={`bt-forget:${device.name}`} label="Forget This Device" onPress={onAsk} />;
   return (
     <View style={{ flexDirection: "column", gap: 6, paddingLeft: 40, paddingRight: 6, paddingTop: 2, paddingBottom: 6 }}>
       <View testID="bt-forget-question">
@@ -180,16 +112,17 @@ function ForgetStrip({
 }
 
 function List({ state, store }: { state: BluetoothState; store: BluetoothStore }) {
+  const colors = useControlColors();
   /** The device whose "…" is open, and whether it is at the are-you-sure. */
   const [more, setMore] = useState<{ path: string; confirming: boolean } | null>(null);
   const idle = (device: BluetoothDevice) => state.busy[device.path] === undefined;
   const choose = (device: BluetoothDevice) => void store.choose(device);
   const searching = state.discovering || state.available === null;
   return (
-    <View style={{ flexDirection: "column", maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
-      {state.mine.length > 0 && <Caption>My Devices</Caption>}
+    <View style={{ flexDirection: "column", gap: 6, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
+      {state.mine.length > 0 && <PageSection>My Devices</PageSection>}
       {state.mine.map((device) => (
-        <View key={device.path} style={{ flexDirection: "column" }}>
+        <View key={device.path} style={{ flexDirection: "column", gap: 6 }}>
           <Row
             device={device}
             busy={state.busy[device.path]}
@@ -211,17 +144,25 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
           )}
         </View>
       ))}
-      <Caption
+      <PageSection
         trailing={
-          searching ? { text: "Searching…", testID: "bt-searching" } : { text: "Search Again", testID: "bt-search-again", onPress: () => store.searchAgain() }
+          searching ? (
+            <View testID="bt-searching">
+              <Text style={{ fontSize: 11, color: colors.muted }}>Searching…</Text>
+            </View>
+          ) : (
+            <View testID="bt-search-again" onPress={() => store.searchAgain()}>
+              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>Search Again</Text>
+            </View>
+          )
         }
       >
         Nearby Devices
-      </Caption>
+      </PageSection>
       {state.nearby.map((device) => (
         <Row key={device.path} device={device} busy={state.busy[device.path]} idle={idle(device)} onChoose={choose} />
       ))}
-      {state.nearby.length === 0 && !searching && <Note>No devices found</Note>}
+      {state.nearby.length === 0 && !searching && <PageNote testID="bt-note">No devices found</PageNote>}
     </View>
   );
 }
@@ -235,7 +176,6 @@ export interface BluetoothPageProps {
 }
 
 export function BluetoothPage({ bluetooth, radio, onRadio, onBack }: BluetoothPageProps) {
-  const colors = useColors();
   const state = useBluetooth(bluetooth);
   useEffect(() => {
     bluetooth.open();
@@ -250,35 +190,29 @@ export function BluetoothPage({ bluetooth, radio, onRadio, onBack }: BluetoothPa
 
   const on = radio !== false;
   const { failure } = state;
+  const connected = state.mine.find((device) => device.connected);
   return (
     <>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, height: 28 }}>
-        <View
-          testID="bt-back"
-          onPress={onBack}
-          style={{ width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-        >
-          <Svg markup={CHEVRON_LEFT} size={14} color={colors.text} />
-        </View>
-        <Text style={{ fontSize: 14, fontWeight: "bold", color: colors.text }}>Bluetooth</Text>
-        <View style={{ marginLeft: "auto" }}>
-          <Switch testID="bt-switch" on={on} onChange={onRadio} />
-        </View>
-      </View>
-      <View testID="bt-list" style={{ flexDirection: "column", padding: 4, borderRadius: 12, backgroundColor: colors.tile }}>
+      <PageHeader
+        testID="bt-header"
+        title="Bluetooth"
+        detail={!on ? "Off" : (connected?.name ?? "On")}
+        on={on}
+        onBack={onBack}
+        toggle={{ on, onChange: onRadio }}
+      />
+      <PageBody testID="bt-list">
         {!on ? (
-          <Note>Bluetooth is off</Note>
+          <PageNote testID="bt-note">Bluetooth is off</PageNote>
         ) : state.available === false ? (
-          <Note>Bluetooth isn't available on this computer</Note>
+          <PageNote testID="bt-note">Bluetooth isn't available on this computer</PageNote>
         ) : (
           <List state={state} store={bluetooth} />
         )}
-      </View>
-      {failure && on && (
-        <View testID="bt-failure" style={{ paddingLeft: 6 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>{`“${failure.name}”: ${failureLine(failure.action, failure.reason, failure.paired)}`}</Text>
-        </View>
-      )}
+        {failure && on && (
+          <PageNote testID="bt-failure" tone="critical">{`“${failure.name}”: ${failureLine(failure.action, failure.reason, failure.paired)}`}</PageNote>
+        )}
+      </PageBody>
     </>
   );
 }

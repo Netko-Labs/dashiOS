@@ -225,6 +225,22 @@ export class AppletLauncher {
     await this.units.stop(unitName(id));
   }
 
+  /**
+   * Starts an installed applet again that isn't connected (its tile in
+   * Control Center was pressed): only one that may run here.
+   */
+  wake(id: string): void {
+    if (this.stopped) return;
+    this.busy = this.busy
+      .then(async () => {
+        const applet = readInstalled(this.options.root).find((each) => each.manifest.id === id);
+        if (!applet || !shouldRun(applet) || !dashiSatisfies(applet.manifest.dashi, this.options.dashiVersion)) return;
+        await this.halt(id);
+        await this.launch(applet);
+      })
+      .catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
+  }
+
   /** The shell is going: every applet stops with it. */
   async stop(): Promise<void> {
     this.stopped = true;

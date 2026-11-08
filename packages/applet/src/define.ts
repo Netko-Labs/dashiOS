@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { type ComponentType, createElement, useSyncExternalStore } from "react";
 import { type AppletSpec, AppletsClient, type CommandRun, type PopoverPlacement } from "./client.ts";
 import type { CommandResult, CommandRow } from "./commands.ts";
+import { type ControlsApi, controlsApi } from "./controls-api.ts";
 import { type Manifest, readManifest } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import { metalHost, type OpenPopover, openPopoverWindow } from "./popover.tsx";
@@ -95,6 +96,8 @@ export interface AppletHandle<S> {
   openPopover(): void;
   closePopover(): void;
   readonly client: AppletsClient;
+  /** Its controls in Control Center (applet.json's `controls`; controls-api.ts). */
+  readonly controls: ControlsApi;
   stop(): void;
 }
 
@@ -138,6 +141,7 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
   let state = definition.initial;
   const listeners = new Set<() => void>();
   let popover: OpenPopover | null = null;
+  let controls: ControlsApi | null = null;
   const warm = warmHostFor(definition, title);
   warm?.start();
 
@@ -205,6 +209,10 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
       client.dismiss(itemId);
     },
     client,
+    get controls() {
+      controls ??= controlsApi(client, () => handle.openPopover());
+      return controls;
+    },
     stop() {
       handle.closePopover();
       warm?.stop();
