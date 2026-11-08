@@ -1396,9 +1396,15 @@ fn an_agent_acts_in_one_window_with_its_own_seat() {
             .contains("outside")
     );
     let busy = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "borrow": { "idleMs": 60000 } });
-    assert_eq!(
-        ipc.request("agent-input", busy)["error"],
-        "the person is using the desktop"
+    // The refusal names how long until the seat is free.
+    let refused = ipc.request("agent-input", busy)["error"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        refused.starts_with("the person is using the desktop (free in ")
+            && refused.ends_with(" ms)"),
+        "{refused}"
     );
     assert_eq!(
         ipc.request("agent-input", json!({ "release": true }))["result"],
@@ -1502,9 +1508,13 @@ fn without_its_own_seat_an_agent_waits_for_the_person() {
     wait_event(&mut ipc, &mut client, "window-opened");
     // Just started counts as the person being there: the agent must wait.
     let click = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "action": "click" });
-    assert_eq!(
-        ipc.request("agent-input", click)["error"],
-        "the person is using the desktop"
+    let refused = ipc.request("agent-input", click)["error"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        refused.starts_with("the person is using the desktop (free in "),
+        "{refused}"
     );
 }
 

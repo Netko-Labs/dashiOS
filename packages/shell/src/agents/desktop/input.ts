@@ -13,7 +13,7 @@ import { type RunContext, type ToolResult, text, toolError } from "../context.ts
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
 import { keySteps } from "../tools/index.ts";
-import { borrowsPersonSeat, PersonBusy } from "./hands.ts";
+import { borrowsPersonSeat, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -84,11 +84,15 @@ function inside(window: CompositorWindow, size: { width: number; height: number 
     : null;
 }
 
-function describePerson(error: PersonBusy): ToolResult {
+const seconds = (ms: number) => `${Math.max(1, Math.ceil(ms / 1000))} s`;
+
+/** Why nothing was done, and how long to wait: the agent may act QUIET_MS after the person's last input. */
+export function describePerson(error: PersonBusy): ToolResult {
+  const rule = `an agent may act once the person has left it alone for ${seconds(QUIET_MS)}`;
   return toolError(
     error.desktop
-      ? "The person is using the desktop and didn't pause in time, so nothing was done. Try again in a moment."
-      : `The person is using w${error.window}, so nothing was done. Wait a couple of seconds and try again, or work in another window.`,
+      ? `The person is using the desktop and didn't pause within ${seconds(WAIT_MS)}, so nothing was done; ${rule}. Wait at least ${seconds(error.waitMs)} and try again.`
+      : `The person is using w${error.window}, so nothing was done; ${rule}. Wait at least ${seconds(error.waitMs)} and try again, or work in another window.`,
   );
 }
 
