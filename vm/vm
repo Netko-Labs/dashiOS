@@ -30,7 +30,8 @@
 #
 # Environment: DASHI_VM_CPUS (8), DASHI_VM_MEM (8G), DASHI_VM_DISK_SIZE (80G),
 # DASHI_VM_RES (1920x1080), DASHI_VM_HEADS (1; 2 for a second screen), DASHI_VM_SSH (2222),
-# DASHI_VM_GPU (venus | virgl | none), DASHI_VM_USER (dashi),
+# DASHI_VM_GPU (venus | virgl | none), DASHI_VM_HOST_GPU (mesa | any: which host
+# drivers the VM's 3D may use; mesa keeps it off an NVIDIA card), DASHI_VM_USER (dashi),
 # DASHI_VM_PASSWORD (for sudo in the guest; checkout-session), DASHI_VM_EXTRA_DISK
 # (a qcow2 image `desktop` attaches as a second disk, for the installer: vm/images/install-test.qcow2).
 set -euo pipefail
@@ -49,6 +50,7 @@ mem=${DASHI_VM_MEM:-8G}
 disk_size=${DASHI_VM_DISK_SIZE:-80G}
 ssh_port=${DASHI_VM_SSH:-2222}
 gpu=${DASHI_VM_GPU:-venus}
+host_gpu=${DASHI_VM_HOST_GPU:-mesa}
 res=${DASHI_VM_RES:-1920x1080}
 heads=${DASHI_VM_HEADS:-1}
 
@@ -78,8 +80,28 @@ gpu_args() {
   esac
 }
 
+# The VM's 3D runs on Mesa's drivers only (the AMD or Intel GPU), never the
+# NVIDIA card: on the G14 that card fell off the bus under the VM's Venus load
+# (2026-11-07), and the host's own desktop never draws on it.
+host_gpu_env() {
+  case $host_gpu in
+    any) ;;
+    mesa)
+      export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json
+      local icds=() f
+      for f in /usr/share/vulkan/icd.d/*.x86_64.json; do
+        case $f in */nvidia_icd.*) ;; *) icds+=("$f") ;; esac
+      done
+      VK_DRIVER_FILES=$(IFS=:; echo "${icds[*]}")
+      export VK_DRIVER_FILES
+      ;;
+    *) die "DASHI_VM_HOST_GPU must be mesa or any" ;;
+  esac
+}
+
 qemu() {
   [ -w /dev/kvm ] || die "/dev/kvm is not usable"
+  host_gpu_env
   # Shared memory backs both Venus's blob resources and virtiofs.
   # shellcheck disable=SC2046
   exec qemu-system-x86_64 \
