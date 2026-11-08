@@ -126,13 +126,15 @@ export interface AgentMarkProps {
 export function AgentMark({ state, open, onPress, onTip, reduceMotion, accessible = false }: AgentMarkProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
-  // A press or the mark going takes its tooltip down.
+  // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
   const tipped = useRef(false);
+  const tipTo = useRef(onTip);
+  tipTo.current = onTip;
   useEffect(
     () => () => {
-      if (tipped.current) onTip?.(null);
+      if (tipped.current) tipTo.current?.(null);
     },
-    [onTip],
+    [],
   );
   if (state.kind === "none") return null;
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
