@@ -22,6 +22,7 @@ import { calculate, type Entry } from "../entries.ts";
 import { MIN_QUERY } from "../file-search.ts";
 import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
 import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsOf } from "./items.ts";
+import { commandCore } from "./ranking/commands.ts";
 import { fold } from "./ranking/fold.ts";
 import type { RankSignals } from "./ranking/item.ts";
 import { type RankIndex, type RankResult, rank } from "./ranking/rank.ts";
@@ -195,11 +196,19 @@ function aliasOf(aliases: ReadonlyMap<string, string> | undefined, address: stri
 
 const TYPOS = new Set(["typo", "keywordTypo"]);
 
-/** What the query finds, best first: an alias first, then the ranking's matches; typos only as a suggestion. */
+/**
+ * What the query finds, best first: an alias first, then the ranking's
+ * matches; typos only as a suggestion. A short command that finds nothing
+ * as it is finds what it names ("turn on dark mode" is Dark Mode:
+ * ranking/commands.ts).
+ */
 export function found(input: ListInput, limit: number): { items: LauncherItem[]; suggestion: LauncherItem | null } {
   const query = input.query.trim();
   const index = indexOf(input);
-  const results: RankResult<LauncherItem>[] = rank(index, query, { limit: limit * 2, ...(input.signals ? { signals: input.signals } : {}) });
+  const options = { limit: limit * 2, ...(input.signals ? { signals: input.signals } : {}) };
+  let results: RankResult<LauncherItem>[] = rank(index, query, options);
+  const core = commandCore(query);
+  if (core && !results.some((result) => !TYPOS.has(result.match))) results = rank(index, core, options);
   const strong = results.filter((result) => !TYPOS.has(result.match)).map((result) => result.item);
   const target = input.aliases?.get(fold(query));
   const aliased = target ? index.prepared.find((each) => each.item.address === target)?.item : undefined;

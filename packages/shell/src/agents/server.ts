@@ -2,10 +2,15 @@
  * The agents' MCP server, `$XDG_RUNTIME_DIR/dashi-mcp.sock`: one session per
  * connection (bin/dashi-mcp bridges an agent's stdio to it). ⌃❖Esc reaches
  * here as a compositor shortcut event; Stop in the menu bar calls `stop`.
+ * The same server answers at `$XDG_RUNTIME_DIR/dashi-mcp.d/dashi-mcp.sock`,
+ * in a folder a task's sandbox binds whole (sandbox.ts `TASK_SOCKET_DIR`):
+ * a socket bound alone stays the old one when the shell restarts, a folder
+ * shows the new one, so a run's bridge connects again (docs/actions.md,
+ * "Agents from the launcher").
  */
 
-import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
@@ -21,7 +26,7 @@ import { AgentMask } from "./mask.ts";
 import { identify, peerPid } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
 import { runCall } from "./run.ts";
-import { isConfined, taskOfCgroup } from "./sandbox.ts";
+import { isConfined, taskOfCgroup, taskSocket } from "./sandbox.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import type { LoginSource } from "./secrets/sources.ts";
 import { Vault } from "./secrets/vault.ts";
@@ -199,56 +204,68 @@ export function startAgents({
       },
     };
   }
-  if (existsSync(path)) unlinkSync(path);
-  const server = Bun.listen<{ session?: Session }>({
-    unix: path,
-    socket: {
-      open(socket) {
-        // Bun sockets carry their fd; SO_PEERCRED says who is on the other end.
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peerPid(fd) : null;
-        if (pid === null) {
-          socket.terminate();
-          return;
-        }
-        const peer = identify(pid);
-        const confined = isConfined(readText, pid, peer.remote);
-        // A run the launcher started: its scope is named for it, and only the shell knows its policy.
-        const taskId = confined && !peer.remote ? taskOfCgroup(readText(`/proc/${pid}/cgroup`) ?? "") : null;
-        const policy = taskId ? (tasks?.policy(taskId) ?? null) : null;
-        const task: SessionTask | null = taskId && policy ? { id: taskId, policy } : null;
-        const session = new Session(
-          ++nextId,
-          // A launcher run goes by its harness's name on sheets and in the activity ("Codex wants to use …"); its detail stays the process.
-          task ? { ...peer, name: task.policy.name } : peer,
-          socket,
-          context,
-          (gone) => {
-            sessions.delete(gone.id);
-            publish();
-          },
-          confined,
-          task,
-        );
-        socket.data = { session };
-        sessions.set(session.id, session);
-        publish();
-      },
-      data(socket, data) {
-        socket.data?.session?.receive(data);
-      },
-      drain(socket) {
-        socket.data?.session?.drain();
-      },
-      close(socket) {
-        socket.data?.session?.stop("disconnected");
-      },
-      error(socket) {
-        socket.data?.session?.stop("disconnected");
-      },
+  const handlers: Bun.SocketHandler<{ session?: Session }> = {
+    open(socket) {
+      // Bun sockets carry their fd; SO_PEERCRED says who is on the other end.
+      const fd = (socket as unknown as { fd?: number }).fd;
+      const pid = typeof fd === "number" ? peerPid(fd) : null;
+      if (pid === null) {
+        socket.terminate();
+        return;
+      }
+      const peer = identify(pid);
+      const confined = isConfined(readText, pid, peer.remote);
+      // A run the launcher started: its scope is named for it, and only the shell knows its policy.
+      const taskId = confined && !peer.remote ? taskOfCgroup(readText(`/proc/${pid}/cgroup`) ?? "") : null;
+      const policy = taskId ? (tasks?.policy(taskId) ?? null) : null;
+      const task: SessionTask | null = taskId && policy ? { id: taskId, policy } : null;
+      const session = new Session(
+        ++nextId,
+        // A launcher run goes by its harness's name on sheets and in the activity ("Codex wants to use …"); its detail stays the process.
+        task ? { ...peer, name: task.policy.name } : peer,
+        socket,
+        context,
+        (gone) => {
+          sessions.delete(gone.id);
+          publish();
+        },
+        confined,
+        task,
+      );
+      socket.data = { session };
+      sessions.set(session.id, session);
+      publish();
     },
-  });
-  chmodSync(path, 0o600);
+    data(socket, data) {
+      socket.data?.session?.receive(data);
+    },
+    drain(socket) {
+      socket.data?.session?.drain();
+    },
+    close(socket) {
+      socket.data?.session?.stop("disconnected");
+    },
+    error(socket) {
+      socket.data?.session?.stop("disconnected");
+    },
+  };
+  /** Listen at `at`, a socket only the person may use; null when it can't be made (logged). */
+  const listen = (at: string) => {
+    try {
+      if (existsSync(at)) unlinkSync(at);
+      const listener = Bun.listen<{ session?: Session }>({ unix: at, socket: handlers });
+      chmodSync(at, 0o600);
+      return listener;
+    } catch (error) {
+      console.error(`dashi-shell: agents can't connect at ${at}:`, error);
+      return null;
+    }
+  };
+  const server = listen(path);
+  // Tasks' bridges: a folder of its own, so a restarted shell's socket shows inside their sandboxes.
+  const forTasks = taskSocket(dirname(path));
+  mkdirSync(dirname(forTasks), { recursive: true, mode: 0o700 });
+  const taskServer = listen(forTasks);
 
   return {
     grants,
@@ -268,10 +285,11 @@ export function startAgents({
       lock.close();
       hands.close();
       for (const session of sessions.values()) session.stop("disconnected");
-      server.stop(true);
+      server?.stop(true);
+      taskServer?.stop(true);
       browser.close();
       atspi?.close();
-      if (existsSync(path)) unlinkSync(path);
+      for (const at of [path, forTasks]) if (existsSync(at)) unlinkSync(at);
     },
   };
 }

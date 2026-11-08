@@ -13,10 +13,13 @@
  *   `--strict-mcp-config --mcp-config {dashi}`, `--allowedTools mcp__dashi`,
  *   `--permission-mode dontAsk`, `--setting-sources ""` (no hooks or
  *   plugins), `--disable-slash-commands`, `--no-chrome`; `--resume <id>`.
- * - Codex (from its docs; not run yet): `codex exec --json` as plan mode
- *   runs it (catalog.ts), the shell tool and web search off, `mcp_servers.dashi`
- *   approved; `exec … resume <id> -`.
- * - OpenCode (from its docs; not run yet): `opencode run --format json
+ * - Codex (checked against codex-cli 0.167.0's `--help`, and run signed
+ *   out: it starts its thread and stops at 401): `codex exec --json` as plan
+ *   mode runs it (catalog.ts), the shell tool and web search off,
+ *   `mcp_servers.dashi` approved; `exec … resume <id> -`.
+ * - OpenCode (checked against opencode 1.19.5's `--help`, and run with no
+ *   account: it makes its session with the `dashi-task` agent, then its free
+ *   model's limit stops it, printing no event): `opencode run --format json
  *   --agent dashi-task`, its config in `OPENCODE_CONFIG_CONTENT` (only
  *   `dashi_*` tools; edits, shell and fetches denied); `--session <id>`.
  */

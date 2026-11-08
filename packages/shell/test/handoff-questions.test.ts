@@ -313,7 +313,7 @@ describe("a question shows in one place at a time", () => {
 
 describe("a task's sandbox", () => {
   const task: PlanProfile = {
-    socket: "/run/user/1000/dashi-mcp.sock",
+    socket: "/run/user/1000/dashi-mcp.d/dashi-mcp.sock",
     readOnly: [],
     state: ["/home/alex/.claude"],
     cwd: "/run/user/1000/dashi-task",
@@ -328,11 +328,14 @@ describe("a task's sandbox", () => {
     plan: task,
   });
 
-  test("an empty home folder with only its login; Dashi's MCP socket where the bridge looks", () => {
+  test("an empty home folder with only its login; Dashi's MCP socket where the bridge looks, through its folder", () => {
     expect(args).toContain("--tmpfs");
     expect(args[args.indexOf("/home/alex") - 1]).toBe("--tmpfs");
-    const at = args.indexOf("/run/user/1000/dashi-mcp.sock");
-    expect(args.slice(at - 1, at + 2)).toEqual(["--bind", "/run/user/1000/dashi-mcp.sock", "/run/user/1000/dashi-mcp.sock"]);
+    // The folder is bound, not the socket: the socket a restarted shell makes shows inside.
+    const at = args.indexOf("/run/user/1000/dashi-mcp.d");
+    expect(args.slice(at - 1, at + 2)).toEqual(["--bind", "/run/user/1000/dashi-mcp.d", "/run/user/1000/dashi-mcp.d"]);
+    const link = args.indexOf("/run/user/1000/dashi-mcp.sock");
+    expect(args.slice(link - 2, link + 1)).toEqual(["--symlink", "dashi-mcp.d/dashi-mcp.sock", "/run/user/1000/dashi-mcp.sock"]);
     expect(args).not.toContain("/run/user/1000/dashi-plan.sock");
   });
 

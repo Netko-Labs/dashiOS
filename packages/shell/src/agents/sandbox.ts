@@ -22,7 +22,7 @@
  * Pure: the paths that exist come in, the arguments go out (tested).
  */
 
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 export interface SandboxEnv {
   home: string;
@@ -155,12 +155,23 @@ export interface PlanProfile {
   cwd: string;
   /**
    * A task from the launcher (agents/handoff/): the socket is Dashi's MCP
-   * socket, bound where the bridge looks for it (`$XDG_RUNTIME_DIR/dashi-mcp.sock`
-   * inside), not the plan socket's place. Everything else is the same least
-   * access: an empty home folder, no bus, no token proxy.
+   * socket for tasks (`taskSocket`), its folder bound and the socket linked
+   * where the bridge looks for it (`$XDG_RUNTIME_DIR/dashi-mcp.sock` inside),
+   * not the plan socket's place. Everything else is the same least access:
+   * an empty home folder, no bus, no token proxy.
    */
   task?: boolean;
 }
+
+/**
+ * The folder of the MCP socket tasks connect to (agents/server.ts listens
+ * there too): a task's sandbox binds the folder, not the socket, so the
+ * socket a restarted shell makes shows inside it.
+ */
+export const TASK_SOCKET_DIR = "dashi-mcp.d";
+
+/** The MCP socket tasks connect to, in `runtime`. */
+export const taskSocket = (runtime: string): string => join(runtime, TASK_SOCKET_DIR, "dashi-mcp.sock");
 
 /** Where the plan socket is inside the sandbox. */
 export const planSocketInside = (runtime: string): string => join(runtime, "dashi-plan.sock");
@@ -187,8 +198,12 @@ function planArgs(env: SandboxEnv, exists: Exists, plan: PlanProfile): string[] 
   const args: string[] = [];
   for (const path of plan.readOnly) if (exists(path)) args.push("--ro-bind", path, path);
   for (const path of plan.state) if (exists(path)) args.push("--bind", path, path);
-  const inside = plan.task ? join(env.runtime, "dashi-mcp.sock") : planSocketInside(env.runtime);
-  args.push("--bind", plan.socket, inside, "--dir", plan.cwd, "--chdir", plan.cwd);
+  if (plan.task) {
+    // The socket's folder, and `dashi-mcp.sock` where the bridge looks, a link into it: a restarted shell's socket shows.
+    const folder = join(env.runtime, TASK_SOCKET_DIR);
+    args.push("--bind", dirname(plan.socket), folder, "--symlink", join(TASK_SOCKET_DIR, basename(plan.socket)), join(env.runtime, "dashi-mcp.sock"));
+  } else args.push("--bind", plan.socket, planSocketInside(env.runtime));
+  args.push("--dir", plan.cwd, "--chdir", plan.cwd);
   return args;
 }
 

@@ -239,7 +239,13 @@ test("adding a catalog checks its index with the key given before anything is sa
   const set = new CatalogSet({
     dashi: { ...dashiSource, key: null },
     cacheDir: mkdtempSync(join(tmpdir(), "dashi-store-cache-")),
-    saved: { read: () => saved, write: (list) => ((saved = [...list]), null) },
+    saved: {
+      read: () => saved,
+      write: (list) => {
+        saved = [...list];
+        return null;
+      },
+    },
   });
   // Signed by someone else than the key given: refused, said plainly, nothing kept.
   const forged = onDisk(generateKeys(), () => [entry("dev.team.only")]);

@@ -20,6 +20,7 @@ import type { HandoffHarness } from "../../agents/handoff/service.ts";
 import { isWorking, progressWords, type RunView, statusWords } from "../../agents/handoff/store.ts";
 import { cut } from "../../agents/handoff/words.ts";
 import type { Store } from "../host.ts";
+import { commandCore } from "../ranking/commands.ts";
 import { fold } from "../ranking/fold.ts";
 import type { Row } from "../row-model.ts";
 import type { Section } from "../rows.ts";
@@ -71,13 +72,16 @@ const namesAThing = (row: Row): boolean =>
 
 /**
  * Whether the ranking found the thing the words name: its top row's name is
- * in the words ("turn on dark mode" finds Dark Mode), or the words begin its
- * name ("visual studio co" finds Visual Studio Code).
+ * in the words ("turn on dark mode now please" finds Dark Mode), the words
+ * begin its name ("visual studio co" finds Visual Studio Code), or the words
+ * are a short command and the ranking found what it names ("set volume to
+ * 30" finds Output volume by its keyword: ranking/commands.ts).
  */
 export function namesFound(query: string, sections: readonly Section[]): boolean {
   const words = ` ${fold(query.trim())} `;
   const top = sections.flatMap((section) => section.rows).find(namesAThing);
   if (!top) return false;
+  if (commandCore(query) !== null && top.action.kind !== "agent") return true;
   const name = fold(top.title.trim());
   if (name.length < 3) return false;
   return words.includes(` ${name} `) || name.startsWith(fold(query.trim()));

@@ -7,9 +7,9 @@
  *   dashi-task --log STREAM --prompt PROMPT -- bun dashi-agent.ts --name task-ID -- claude -p …
  *
  * It gives the command the prompt on stdin, appends what it prints to
- * STREAM (the shell reads it as it grows; a shell that restarts doesn't
- * pick a run up again yet: tasks/todo.md),
- * appends its errors to STREAM.err, and ends STREAM with
+ * STREAM (the shell reads it as it grows; a shell that restarts reads it
+ * again from the start: agents/handoff/pickup.ts), appends its errors to
+ * STREAM.err, and ends STREAM with
  * `{"dashi":"exit","code":N}`. SIGTERM (`systemctl --user stop`, the panel's
  * Stop) reaches the command, which stops the agent and its sandbox.
  */

@@ -89,6 +89,8 @@ export interface StartRun {
   request: string;
   harness: HarnessId;
   harnessName: string;
+  /** When it started, for a run picked up again after the shell restarted (records.ts); now when left out. */
+  started?: number;
 }
 
 export const isWorking = (run: Pick<RunView, "phase">): boolean => run.phase === "starting" || run.phase === "working";
@@ -152,7 +154,7 @@ export class AgentRuns {
   private runs: Run[] = [];
   private snapshot: readonly RunView[] = [];
   private readonly listeners = new Set<() => void>();
-  private readonly now: () => number;
+  private now: () => number;
   private readonly titleOf: (tool: string) => string | undefined;
   private nextQuestion = 0;
 
@@ -173,10 +175,25 @@ export class AgentRuns {
     return this.snapshot.find((run) => run.id === id);
   }
 
+  /**
+   * `replay` with the clock at `at`: a run picked up again after the shell
+   * restarted reads its old turns as they went, so what ended then has
+   * ended then, not now (service.ts).
+   */
+  at<T>(at: number, replay: () => T): T {
+    const clock = this.now;
+    this.now = () => at;
+    try {
+      return replay();
+    } finally {
+      this.now = clock;
+    }
+  }
+
   start(input: StartRun): RunView {
     const run: Run = {
       ...input,
-      started: this.now(),
+      started: input.started ?? this.now(),
       phase: "starting",
       steps: [],
       about: null,
@@ -254,12 +271,16 @@ export class AgentRuns {
     this.publish();
   }
 
-  /** The person stopped it: whatever ends it now is "stopped". */
-  stopping(id: string): void {
+  /**
+   * The person stopped it: whatever ends it now is "stopped". One still
+   * starting ends now, unless `untilExit` (a run picked up again after the
+   * shell restarted, its stream not read yet: its unit's exit ends it).
+   */
+  stopping(id: string, untilExit = false): void {
     const run = this.find(id);
     if (!run) return;
     run.stopping = true;
-    if (run.ended === null && run.phase === "starting") this.end(run, "stopped", "");
+    if (!untilExit && run.ended === null && run.phase === "starting") this.end(run, "stopped", "");
     this.publish();
   }
 

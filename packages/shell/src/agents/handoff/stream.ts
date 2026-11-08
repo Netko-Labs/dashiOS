@@ -13,12 +13,16 @@
  * - Codex: `codex exec --json`, JSONL: `thread.started` (`thread_id`),
  *   `item.started`/`item.completed` with an `item` (`mcp_tool_call`:
  *   `server`, `tool`, `arguments`, `status`, `error`; `command_execution`;
- *   `agent_message`: `text`), `turn.completed`, `turn.failed`, `error`.
- *   From its docs (developers.openai.com/codex); not run yet.
+ *   `agent_message`: `text`), `turn.completed`, `turn.failed`, `error`
+ *   ("Reconnecting... N/5" while it retries, which isn't the end). From its
+ *   docs (developers.openai.com/codex), and a signed-out run recorded from
+ *   codex-cli 0.167.0 (test/fixtures/handoff/codex-signed-out.jsonl).
  * - OpenCode: `opencode run --format json`, JSON events with `sessionID`:
  *   `tool_use` (a `part` of type `tool`: `tool`, `callID`, `state` with
  *   `status`, `input`, `output`, `error`), `text` (`part.text`),
- *   `step_finish`, `error`. From its docs (opencode.ai/docs); not run yet.
+ *   `step_finish`, `error`. From its docs (opencode.ai/docs); 1.19.5 takes
+ *   the flags, but with no account it printed no event to parse (its free
+ *   model's limit; it waits on), so none was recorded.
  */
 
 import type { HarnessId } from "../ask/answerer.ts";
@@ -145,8 +149,11 @@ function codexEvents(line: Raw): RunEvent[] {
     }
     case "turn.completed":
       return [{ kind: "done", text: "" }];
-    case "turn.failed":
     case "error":
+      // "Reconnecting... 2/5 (…)": Codex tries again on its own; only what it gives up on ends the turn.
+      if (/^Reconnecting\b/.test(str(line.message) ?? "")) return [];
+      return [{ kind: "failed", error: str(line.message) ?? "Codex stopped." }];
+    case "turn.failed":
       return [{ kind: "failed", error: str(raw(line.error).message) ?? str(line.message) ?? "Codex stopped." }];
     default:
       return [];

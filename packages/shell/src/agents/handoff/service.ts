@@ -4,7 +4,9 @@
  * which comes first (Settings › Agents, "Hand off to"), the grants card's
  * memory, starting a run and each follow-up as a user service (runner.ts),
  * reading its stream into the store (store.ts), Stop, Undo, and the policy
- * the agents server applies to a run's MCP connection.
+ * the agents server applies to a run's MCP connection. Each run's record is
+ * kept on disk (records.ts), so a shell that starts picks up the runs still
+ * working and those ended in the last hour (`pickUp`).
  */
 
 import { join } from "node:path";
@@ -12,12 +14,15 @@ import { ANSWERERS, HARNESS_IDS, type HarnessId } from "../ask/answerer.ts";
 import { type Files, findHarness, HARNESSES, harnessEnv, hostFiles, type Probe, type ShellPaths, shellPaths, signedIn } from "../ask/harness/index.ts";
 import { settingWords, type Undo } from "../ask/plan.ts";
 import type { Scope } from "../consent.ts";
+import { taskSocket } from "../sandbox.ts";
 import type { Call } from "../tools/index.ts";
 import { TASK_PROMPT, taskCommand } from "./commands.ts";
 import { followUpPrompt, followUpRoute } from "./follow-up.ts";
 import { contextPrompt, GrantsMemory, grantsKind, TASK_GRANTED, TASK_REFUSED, type TaskContext, taskGrants } from "./grants.ts";
 import { harnessOrder } from "./order.ts";
-import { systemdRunner, type TaskRunner } from "./runner.ts";
+import { replayRun, runsToPickUp } from "./pickup.ts";
+import { recordOf } from "./records.ts";
+import { streamOf, systemdRunner, type TaskRunner, unitOf } from "./runner.ts";
 import { AgentRuns, type RunView } from "./store.ts";
 import { eventsOf } from "./stream.ts";
 
@@ -168,9 +173,10 @@ export function startHandoff(options: HandoffOptions): Handoff {
       runs.event(run, { kind: "failed", error: `${ANSWERERS[harness].name} isn't installed.` });
       return false;
     }
-    const command = taskCommand(harness, { prompt, system: TASK_PROMPT, session, mcp: { command: shell.bun, args: [shell.bridge], env: {} } });
+    // The bridge connects again when the shell restarts (bin/dashi-mcp.ts), through the socket folder the sandbox binds.
+    const command = taskCommand(harness, { prompt, system: TASK_PROMPT, session, mcp: { command: shell.bun, args: [shell.bridge, "--reconnect"], env: {} } });
     const profile = {
-      socket: join(runtime, "dashi-mcp.sock"),
+      socket: taskSocket(runtime),
       readOnly: [...where.readOnly, ...[shell.bun, shell.bridge].filter((path) => path.startsWith(`${home}/`))],
       state: spec.state(home, env),
       cwd: join(runtime, "dashi-task"),
@@ -187,6 +193,8 @@ export function startHandoff(options: HandoffOptions): Handoff {
       runs.event(run, { kind: "failed", error });
       return false;
     }
+    onDisk.add(run);
+    saveRecords();
     watch(run, harness, turn);
     return true;
   };
@@ -218,6 +226,34 @@ export function startHandoff(options: HandoffOptions): Handoff {
     await startTurn(run, view.harness, view.turn, prompt, route.kind === "resume" ? route.session : null);
   };
 
+  /** Runs with a folder on disk, whose record is kept there; the record last written for each. */
+  const onDisk = new Set<string>();
+  const written = new Map<string, string>();
+  /** The turn the person stopped, and the turn whose end they were told of, for each run's record. */
+  const stoppedTurn = new Map<string, number>();
+  const toldTurn = new Map<string, number>();
+  /** While runs are picked up again: their records are as they were, not as the replay has them so far. */
+  let replaying = false;
+  const saveRecords = () => {
+    if (replaying) return;
+    for (const run of runs.getSnapshot()) {
+      if (!onDisk.has(run.id)) continue;
+      const policy = policies.get(run.id);
+      const record = recordOf(run, {
+        unit: unitOf(run.id, run.turn),
+        log: streamOf(runtime, run.id, run.turn),
+        window: policy?.window ?? null,
+        sites: policy?.sites ?? [],
+        stopped: stoppedTurn.get(run.id) ?? null,
+        told: toldTurn.get(run.id) ?? null,
+      });
+      const json = JSON.stringify(record);
+      if (written.get(run.id) === json) continue;
+      written.set(run.id, json);
+      runner.save(record);
+    }
+  };
+
   // Ended runs: their notification once; runs over an hour old: their files.
   const told = new Set<string>();
   const offRuns = runs.subscribe(() => {
@@ -225,15 +261,52 @@ export function startHandoff(options: HandoffOptions): Handoff {
       const key = `${run.id}:${run.turn}`;
       if (run.ended === null || told.has(key)) continue;
       told.add(key);
+      toldTurn.set(run.id, run.turn);
       options.ended?.(run);
     }
+    saveRecords();
   });
   const pruner = setInterval(() => {
     for (const run of runs.prune()) {
       runner.forget(run);
       policies.delete(run);
+      for (const map of [written, stoppedTurn, toldTurn]) map.delete(run);
+      onDisk.delete(run);
     }
   }, 60_000);
+
+  /**
+   * What a shell that starts picks up again (pickup.ts): each run whose unit
+   * still runs and each ended in the last hour, its policy and what the
+   * person was told of it as they were.
+   */
+  const pickUp = () => {
+    if (!runtime) return;
+    const { pickUp: found, forget } = runsToPickUp(runner.found(), runner, runtime, options.now?.() ?? Date.now());
+    for (const run of forget) runner.forget(run);
+    for (const each of found) {
+      const { id, harness, turn } = each.record;
+      if (runs.get(id)) continue;
+      const name = ANSWERERS[harness].name;
+      policies.set(id, { granted: TASK_GRANTED, refused: TASK_REFUSED, window: each.record.window, name, sites: new Set(each.record.sites) });
+      onDisk.add(id);
+      written.set(id, JSON.stringify(each.record));
+      if (each.record.stopped !== null) stoppedTurn.set(id, each.record.stopped);
+      if (each.record.told !== null) toldTurn.set(id, each.record.told);
+      // The person heard of the turns before this one (a follow-up came after them), and of this one if the record says so.
+      for (let before = 1; before < turn; before++) told.add(`${id}:${before}`);
+      if (each.record.told === turn) told.add(`${id}:${turn}`);
+      replaying = true;
+      try {
+        replayRun(each, name, runs, runner, watch);
+      } catch (error) {
+        console.error(`dashi-shell: couldn't pick up run ${id} again:`, error);
+      } finally {
+        replaying = false;
+      }
+    }
+  };
+  pickUp();
 
   const settingAddress = () => options.setSettingAddress?.() ?? null;
 
@@ -281,6 +354,7 @@ export function startHandoff(options: HandoffOptions): Handoff {
       const view = runs.get(run);
       if (!view) return;
       waitingWords.delete(run);
+      stoppedTurn.set(run, view.turn);
       runs.stopping(run);
       runner.stop(run, view.turn);
     },
@@ -303,6 +377,7 @@ export function startHandoff(options: HandoffOptions): Handoff {
       if (undo && ok) runs.changed(task, undo);
     },
     close() {
+      saveRecords();
       offSettings();
       offRuns();
       clearInterval(pruner);

@@ -212,8 +212,11 @@ named for its run (`dashi-agent-task-<run>-<n>.scope`):
   own login and sessions bound back (a follow-up resumes its session), its
   install and Bun and `dashi-mcp` read-only; no documents, keys or Dashi
   settings. Its environment is the session's basics, no model keys;
-- **its only Dashi socket is Dashi's MCP socket** (`dashi-mcp.sock`, bound
-  where the bridge looks for it inside), not a plan socket: its calls run.
+- **its only Dashi socket is Dashi's MCP socket**, the one for tasks
+  (`$XDG_RUNTIME_DIR/dashi-mcp.d/dashi-mcp.sock`, the same server): its
+  folder is bound and `dashi-mcp.sock` inside links to it, where the bridge
+  looks, so the socket of a shell that restarted shows and the bridge
+  (`--reconnect`) connects again. Not a plan socket: its calls run.
   No session bus, no token proxy, no compositor or browser socket;
 - **its connection's grants are the run's, not the agent's stored ones.**
   The agents server knows a run's connection by its scope's name
