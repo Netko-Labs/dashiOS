@@ -7,7 +7,32 @@ import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
 import { DEFAULT_WALLPAPER_MODE } from "../../wallpaper/catalog.ts";
 import { DEFAULT_FRAME_RATE, FRAME_RATES } from "../../wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "../../xwayland-scale.ts";
-import { CONTRAST, CORNER, DESKTOPS, DISPLAY, DOCK, IMAGE, MOON, MOTION, NIGHT_SHIFT, POINTER, RING, SCALE, SCROLL, SUN, TEXT, VIDEO } from "../knob-glyphs.ts";
+import {
+  BATTERY,
+  CONTRAST,
+  CORNER,
+  DESKTOPS,
+  DISPLAY,
+  DOCK,
+  GRID,
+  IMAGE,
+  MENUBAR,
+  MOON,
+  MOTION,
+  NIGHT_SHIFT,
+  POINTER,
+  POWER,
+  RESOLUTION,
+  RING,
+  ROTATE,
+  SCALE,
+  SCROLL,
+  SLIDERS,
+  SUN,
+  TEXT,
+  VIDEO,
+  WAVE,
+} from "../knob-glyphs.ts";
 import { DEFAULT_WARMTH, WARMTH } from "../night.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { choiceSchema, dockSetting, flag, storedChoice, storedNumber, storedSwitch } from "./values.ts";
@@ -120,7 +145,7 @@ export const LOOK_ROWS = [
     keywords: ["photo", "picture"],
     kind: "action",
   },
-  { id: "wallpaper/photo-path", title: "Path of a photo", detail: "Press Return to use it.", kind: "value", stack: true },
+  { id: "wallpaper/photo-path", glyph: IMAGE, title: "Path of a photo", detail: "Press Return to use it.", kind: "value", stack: true },
   {
     id: "wallpaper/picture",
     glyph: DISPLAY,
@@ -141,9 +166,10 @@ export const LOOK_ROWS = [
     keywords: ["video wallpaper", "live wallpaper"],
     kind: "action",
   },
-  { id: "wallpaper/video-path", title: "Path of a video", detail: "Press Return to use it.", kind: "value", stack: true },
+  { id: "wallpaper/video-path", glyph: VIDEO, title: "Path of a video", detail: "Press Return to use it.", kind: "value", stack: true },
   {
     id: "wallpaper/pause-on-battery",
+    glyph: BATTERY,
     title: "Pause on battery",
     name: "Pause live wallpaper on battery",
     detail: "Live wallpapers also stop while a window covers the screen, and while the screen is locked or off.",
@@ -152,6 +178,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "wallpaper/frame-rate",
+    glyph: MOTION,
     title: "Frame rate",
     name: "Live wallpaper frame rate",
     detail: "Higher is smoother and uses more power.",
@@ -177,17 +204,18 @@ export const LOOK_ROWS = [
     keywords: ["backlight", "dim", "screen brightness"],
     kind: "value",
   },
-  { id: "displays/resolution", title: "Resolution", keywords: ["screen size", "pixels"], kind: "value", stack: true },
+  { id: "displays/resolution", glyph: RESOLUTION, title: "Resolution", keywords: ["screen size", "pixels"], kind: "value", stack: true },
   { id: "displays/refresh-rate", glyph: DISPLAY, title: "Refresh rate", keywords: ["hz", "hertz", "automatic", "battery"], kind: "value", stack: true },
   {
     id: "displays/variable-refresh-rate",
+    glyph: WAVE,
     title: "Variable refresh rate",
     detail: "Smoother games and video where the screen allows it.",
     keywords: ["vrr", "freesync", "adaptive sync"],
     kind: "value",
     stack: true,
   },
-  { id: "displays/rotation", title: "Rotation", keywords: ["rotate", "portrait"], kind: "value", stack: true },
+  { id: "displays/rotation", glyph: ROTATE, title: "Rotation", keywords: ["rotate", "portrait"], kind: "value", stack: true },
   { id: "displays/scale", glyph: SCALE, title: "Scale", name: "Display scale", keywords: ["scaling", "hidpi", "zoom"], kind: "value", stack: true },
   {
     id: "displays/arrange",
@@ -196,8 +224,15 @@ export const LOOK_ROWS = [
     keywords: ["arrangement", "arrange", "multiple displays", "position"],
     kind: "action",
   },
-  { id: "displays/main-display", title: "Main display", detail: "Put the menu bar and Dock on this screen.", keywords: ["primary display"], kind: "action" },
-  { id: "displays/turn-off", title: "Turn off this display", detail: "Its windows move to the other screens.", kind: "action" },
+  {
+    id: "displays/main-display",
+    glyph: MENUBAR,
+    title: "Main display",
+    detail: "Put the menu bar and Dock on this screen.",
+    keywords: ["primary display"],
+    kind: "action",
+  },
+  { id: "displays/turn-off", glyph: POWER, title: "Turn off this display", detail: "Its windows move to the other screens.", kind: "action" },
   {
     id: "displays/panel-overdrive",
     title: "Panel overdrive",
@@ -249,6 +284,7 @@ export const LOOK_ROWS = [
 
   {
     id: "control-center/edit",
+    glyph: GRID,
     title: "Edit the layout",
     name: "Edit Control Center",
     detail: "Move, resize and add controls: the same as right-clicking the panel.",
@@ -257,6 +293,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "control-center/sliders",
+    glyph: SLIDERS,
     title: "Sliders",
     name: "Control Center sliders",
     detail: "The volume and brightness sliders: standing side by side, or lying across the panel.",

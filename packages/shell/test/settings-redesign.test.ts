@@ -50,8 +50,12 @@ test("search: the jump target is the row's pane and its address there, and the l
   expect(brightness).toMatchObject({ pane: "displays", row: "brightness", label: "Display brightness" });
   const sliders = findSettings("sliders").find((each) => each.id === "control-center/sliders");
   expect(sliders).toMatchObject({ pane: "control-center", row: "sliders" });
-  // The glyph is its pane's, as the sidebar draws it.
-  expect(sliders?.glyph).toBe(PANES.find((pane) => pane.id === "control-center")?.glyph);
+  // The glyph is the row's own, as its knob draws it, and its pane is named beside it.
+  expect(sliders?.glyph).toBe(SETTINGS_ROWS.find((row) => row.id === "control-center/sliders")?.glyph);
+  expect(sliders?.where).toBe("Control Center");
+  // A row with no glyph of its own carries its pane's.
+  const kernel = findSettings("kernel").find((each) => each.id === "about/kernel");
+  expect(kernel?.glyph).toBe(PANES.find((pane) => pane.id === "about")?.glyph);
 });
 
 test("search: at most FOUND_MOST, and a pane the machine doesn't list is left out with its rows", () => {

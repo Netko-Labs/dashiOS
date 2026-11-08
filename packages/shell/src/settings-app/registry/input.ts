@@ -3,7 +3,7 @@
 import { DEFAULT_INPUT_METHOD } from "../../input-method.ts";
 import { SCROLL_SPEED_DEFAULT, SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../../scroll-speed.ts";
 import { DEFAULTS, REPEAT_DELAY, REPEAT_RATE, SPEED } from "../controls.ts";
-import { CLIPBOARD, KEYBOARD, MOUSE, POINTER, REPEAT, SCROLL, TAP, TRACKPAD } from "../knob-glyphs.ts";
+import { CLICK, CLIPBOARD, CURVE, HISTORY, KEYBOARD, MOUSE, POINTER, REPEAT, SCROLL, SHIELD, TAP, TERMINAL, TRACKPAD } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedNumber, storedSwitch } from "./values.ts";
 
@@ -70,9 +70,10 @@ export const INPUT_ROWS = [
     value: storedSwitch("clipboard", "history", true, { unset: true }),
     source: "clipboard",
   },
-  { id: "keyboard/clipboard-kept", title: "Kept now", name: "Clipboard copies kept now", keywords: ["clear clipboard"], kind: "action" },
+  { id: "keyboard/clipboard-kept", glyph: HISTORY, title: "Kept now", name: "Clipboard copies kept now", keywords: ["clear clipboard"], kind: "action" },
   {
     id: "keyboard/clipboard-left-out",
+    glyph: SHIELD,
     title: "Never kept from these apps",
     name: "Apps the clipboard history leaves out",
     detail: "Password fields, copies marked secret, and Dashi's Passwords are never kept either.",
@@ -82,6 +83,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "keyboard/snippets-in-terminals",
+    glyph: TERMINAL,
     title: "Snippets in terminals",
     detail: "A snippet's keyword expands in terminals too. Never in password fields.",
     keywords: ["snippets", "text expansion"],
@@ -141,6 +143,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/click",
+    glyph: CLICK,
     title: "Click",
     name: "Trackpad click",
     detail: "How the pad tells a left click from a right click.",
@@ -184,6 +187,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "mouse/acceleration",
+    glyph: CURVE,
     title: "Acceleration",
     name: "Mouse acceleration",
     detail: "Adaptive speeds up the pointer when the mouse moves fast; flat keeps it steady.",

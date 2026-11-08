@@ -8,9 +8,17 @@
  */
 
 import { Text, View } from "@mirinjs/metal";
-import type { ReactNode } from "react";
+import { type ReactNode, useContext, useLayoutEffect, useRef } from "react";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { Knob } from "../shared/controls/parts.tsx";
+import { CardRowsContext } from "./edge.ts";
+
+/** Tell the card this row is in whether it starts with a knob (edge.ts: one left edge per card). */
+export function useCardRow(knob: boolean): void {
+  const card = useContext(CardRowsContext);
+  const token = useRef(Symbol("row"));
+  useLayoutEffect(() => card?.report(token.current, knob), [card, knob]);
+}
 
 /** The page's measures: the title row, the side margins, a card's corners, a row's height and knob. */
 export const PAGE = { title: 56, margin: 22, cardRadius: 24, heroRadius: 28, row: 56, knob: 40 } as const;
@@ -31,6 +39,7 @@ export interface RowProps {
 /** A row: its knob, its name and a quieter line under it, then the control at the end (or under, `stack`). */
 export function Row({ label, detail, glyph, children, stack, below, testID }: RowProps) {
   const colors = useControlColors();
+  useCardRow(glyph !== undefined);
   const words = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
       <Text style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>

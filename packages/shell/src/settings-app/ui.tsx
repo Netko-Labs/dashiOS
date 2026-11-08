@@ -16,6 +16,7 @@ import { FoldedChoices } from "../shared/controls/folded.tsx";
 import { InkSlider } from "../shared/controls/ink-slider.tsx";
 import { ControlSwitch, PillButton } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
+import { CardRowsContext, cardRows } from "./edge.ts";
 import { PAGE } from "./row.tsx";
 import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
@@ -41,27 +42,30 @@ function rowsOf(children: ReactNode): ReactNode[] {
   );
 }
 
-/** A card of rows, a hairline between them; lit while a link to its section (a `cards` Spot) shows it. */
+/** A card of rows, a hairline between them; lit while a link to its section (a `cards` Spot) shows it. Its rows keep one left edge (edge.ts). */
 export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
   const colors = useControlColors();
   const lit = useContext(SpotLit);
   const rows = rowsOf(children);
+  const edge = useMemo(() => cardRows(testID ?? "card"), [testID]);
   return (
-    <View
-      {...(testID !== undefined ? { testID } : {})}
-      style={{ flexShrink: 0, flexDirection: "column", borderRadius: PAGE.cardRadius, backgroundColor: colors.off, overflow: "hidden" }}
-    >
-      {/* Always there, so lighting the card never remounts its rows. */}
-      <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}>
-        {rows.map((row, index) => (
-          // The rows of a card never reorder.
-          <Fragment key={index}>
-            {index > 0 && <View style={{ height: 1, backgroundColor: colors.line }} />}
-            {row}
-          </Fragment>
-        ))}
+    <CardRowsContext.Provider value={edge}>
+      <View
+        {...(testID !== undefined ? { testID } : {})}
+        style={{ flexShrink: 0, flexDirection: "column", borderRadius: PAGE.cardRadius, backgroundColor: colors.off, overflow: "hidden" }}
+      >
+        {/* Always there, so lighting the card never remounts its rows. */}
+        <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}>
+          {rows.map((row, index) => (
+            // The rows of a card never reorder.
+            <Fragment key={index}>
+              {index > 0 && <View style={{ height: 1, backgroundColor: colors.line }} />}
+              {row}
+            </Fragment>
+          ))}
+        </View>
       </View>
-    </View>
+    </CardRowsContext.Provider>
   );
 }
 

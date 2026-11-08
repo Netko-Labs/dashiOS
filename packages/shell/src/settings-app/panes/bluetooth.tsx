@@ -17,7 +17,7 @@ import { batteryGlyph } from "../../glyphs.ts";
 import { useColors } from "../colors.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Switch } from "../ui.tsx";
-import { Failure, ListRow, MiniButton, RoundIcon } from "./parts.tsx";
+import { Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
 
 const BUSY = { connecting: "Connecting…", disconnecting: "Disconnecting…", pairing: "Pairing…", forgetting: "Forgetting…" } as const;
 
@@ -50,12 +50,8 @@ function MyDevice({
   const busy = state.busy[device.path];
   const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not Connected";
   return (
-    <ListRow
-      testID={`bt-device:${device.name}`}
-      name={device.name}
-      detail={detail}
-      leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={device.connected} />}
-    >
+    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail} bold={device.connected}>
+      <KindMark glyph={deviceGlyph(device.kind)} />
       {device.battery !== null && !busy && <Battery percent={device.battery} name={device.name} />}
       {confirming ? (
         <>
@@ -118,8 +114,8 @@ function Devices({ services }: { services: PaneServices }) {
             testID={`bt-nearby:${device.name}`}
             name={device.name}
             detail={state.busy[device.path] ? BUSY[state.busy[device.path] as keyof typeof BUSY] : undefined}
-            leading={<RoundIcon glyph={deviceGlyph(device.kind)} lit={false} />}
           >
+            <KindMark glyph={deviceGlyph(device.kind)} />
             <MiniButton
               testID={`bt-pair:${device.name}`}
               label="Connect"

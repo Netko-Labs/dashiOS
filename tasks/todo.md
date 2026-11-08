@@ -100,6 +100,14 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Display brightness shows only where there is a backlight (none in the VM): check it on the laptop (S; laptop)
 - [ ] The Keyboard and region pickers' lists still wear @dashi/ui's selection look, not a green pill (S)
 
+## Settings polish from the critics' review (`feat/0.5-settings-polish`; review 47-settings-roast, the owner's picks)
+- [x] Bugs: Sound with no microphone is one row and no input controls; the editor's "−" stays on top after a resize (its own layer, panel and Settings); the charge limit is one control whose title follows its slider; keyboard layout names wrap; the layout has one name (row, picker)
+- [x] Pill rows past five fold: four + "More…" in Dashi's menu, a hidden value in use as the fourth pill (`shared/controls/fold.ts`); the timers, Displays' scale and resolution, Night Shift's hours
+- [x] Automatic once (the themes; its hours a row while chosen); one left edge per card (`settings-app/edge.ts`'s rule, checked by each card; row glyphs in the registry); Done, Cancel and Reset in ink; search one result per setting with its glyph and pane, lit in ink; Displays' facts once and "native" on the native size; distinct Desktop & Dock, Trackpad, Keyboard glyphs; the miniature's glyphs and words with room; Recently changed's "by you · was on, 10 min ago"
+- [ ] After Esc the editor's words came back off-centre in review 44's stills (taken before `02337a5`); not seen at the release head or after, in the panel or in Settings (review 48)
+- [ ] Not taken (the owner's call): R1, R5, R6, T8, K3, D8
+- [ ] The region picker's eleven continents are a picker's filter, not a setting's pill row: left as they are (S)
+
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)

@@ -3,7 +3,7 @@
  * Accounts, Notifications, Passwords, Agents, Privacy & Security, and About.
  */
 
-import { CALENDAR, CHIP, CLOCK, DISPLAY, GLOBE, GPU, IMAGE, KEY, LANGUAGE, LOCK, MOON, REFRESH, SPARK, USER } from "../knob-glyphs.ts";
+import { AT, CALENDAR, CHIP, CLOCK, DISK, DISPLAY, GLOBE, GPU, IMAGE, KEY, LANGUAGE, LOCK, MEMORY, MOON, REFRESH, SPARK, USER } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { flag, storedChoice, storedSwitch } from "./values.ts";
 
@@ -82,7 +82,14 @@ export const YOU_ROWS = [
   },
 
   { id: "users/full-name", glyph: USER, title: "Full name", keywords: ["name", "real name"], kind: "value" },
-  { id: "users/account-name", title: "Account name", detail: "The name you log in with.", keywords: ["user name", "username", "login"], kind: "value" },
+  {
+    id: "users/account-name",
+    glyph: AT,
+    title: "Account name",
+    detail: "The name you log in with.",
+    keywords: ["user name", "username", "login"],
+    kind: "value",
+  },
   {
     id: "users/picture",
     glyph: IMAGE,
@@ -198,9 +205,9 @@ export const YOU_ROWS = [
   { id: "about/based-on", title: "Based on", keywords: ["fedora", "distribution"], kind: "value" },
   { id: "about/kernel", title: "Kernel", keywords: ["linux", "kernel version"], kind: "value" },
   { id: "about/processor", glyph: CHIP, title: "Processor", keywords: ["cpu"], kind: "value" },
-  { id: "about/memory", title: "Memory", keywords: ["ram"], kind: "value" },
+  { id: "about/memory", glyph: MEMORY, title: "Memory", keywords: ["ram"], kind: "value" },
   { id: "about/graphics", glyph: GPU, title: "Graphics", name: "Graphics hardware", keywords: ["gpu"], kind: "value" },
-  { id: "about/storage", title: "Storage", keywords: ["disk", "free space"], kind: "value" },
+  { id: "about/storage", glyph: DISK, title: "Storage", keywords: ["disk", "free space"], kind: "value" },
   {
     id: "about/setup-assistant",
     glyph: SPARK,

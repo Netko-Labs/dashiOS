@@ -22,7 +22,7 @@ import type { SavedNetwork, WifiNetwork } from "../../wifi/types.ts";
 import { useColors } from "../colors.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Switch } from "../ui.tsx";
-import { Failure, ListRow, MiniButton, RoundIcon, Value } from "./parts.tsx";
+import { Failure, KindMark, ListRow, MiniButton, Value } from "./parts.tsx";
 
 function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork; current: boolean; state: WifiState; onJoin: (network: WifiNetwork) => void }) {
   const colors = useColors();
@@ -30,13 +30,8 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
   const thisOne = state.join.phase === "joining" && state.join.key === network.key;
   const detail = current ? "Connected" : network.known ? "Known network" : network.secured ? "Password required" : "Open";
   return (
-    <ListRow
-      testID={`net-wifi:${network.ssid}`}
-      name={network.ssid}
-      detail={detail}
-      bold={current}
-      leading={<RoundIcon glyph={wifiGlyph(network.bars)} lit={current} />}
-    >
+    <ListRow testID={`net-wifi:${network.ssid}`} name={network.ssid} detail={detail} bold={current}>
+      <KindMark glyph={wifiGlyph(network.bars)} />
       {network.secured && <Svg markup={LOCK} size={11} color={colors.textMuted} />}
       {!current &&
         (thisOne ? (

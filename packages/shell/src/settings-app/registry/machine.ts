@@ -1,7 +1,7 @@
 /** The rows of Network, Bluetooth, Sound, Battery & Power, and Graphics. */
 
 import { BLANK_CHOICES, DEFAULT_BLANK_AFTER, SLEEP_CHOICES } from "../controls.ts";
-import { BLUETOOTH, ETHERNET, GAUGE, GPU, MIC, MIC_OFF, MUTE, PLUG, VOLUME, WIFI } from "../knob-glyphs.ts";
+import { BATTERY, BLUETOOTH, DISPLAY, GAUGE, GPU, MIC, MIC_OFF, MOON, MUTE, PLUG, REFRESH, VOLUME, WIFI } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedSwitch } from "./values.ts";
 
@@ -13,7 +13,7 @@ export const BLANK_AFTER = storedChoice("idle", "blankAfterSeconds", DEFAULT_BLA
 
 export const MACHINE_ROWS = [
   { id: "network/wi-fi", glyph: WIFI, title: "Wi-Fi", keywords: ["wifi", "wireless", "wlan", "internet", "network"], kind: "switch", source: "controls" },
-  { id: "network/status", glyph: ETHERNET, title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
+  { id: "network/status", title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
   { id: "network/ip-address", title: "IP address", keywords: ["ip", "address"], kind: "value" },
   { id: "network/subnet-mask", title: "Subnet mask", keywords: ["netmask"], kind: "value" },
   { id: "network/router", title: "Router", keywords: ["gateway"], kind: "value" },
@@ -129,6 +129,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/on-battery-graphics",
+    glyph: BATTERY,
     title: "Graphics card",
     name: "Graphics card on battery",
     keywords: ["gpu", "battery life", "integrated"],
@@ -136,6 +137,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/on-battery-refresh",
+    glyph: BATTERY,
     partOf: "battery/on-battery-graphics",
     title: "Refresh rate",
     name: "Refresh rate on battery",
@@ -144,6 +146,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/turn-display-off",
+    glyph: DISPLAY,
     title: "Turn display off after",
     detail: "The screens go dark when you have been away this long.",
     keywords: ["screen off", "display sleep", "blank"],
@@ -154,6 +157,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/sleep-after",
+    glyph: MOON,
     title: "Put computer to sleep after",
     detail: "The screen locks, then the computer sleeps. Playing video or a presentation holds it off.",
     keywords: ["sleep", "suspend"],
@@ -184,5 +188,5 @@ export const MACHINE_ROWS = [
     keywords: ["mux", "dgpu", "discrete"],
     kind: "switch",
   },
-  { id: "graphics/restart", title: "Restart to apply", name: "Restart to apply the graphics change", kind: "action" },
+  { id: "graphics/restart", glyph: REFRESH, title: "Restart to apply", name: "Restart to apply the graphics change", kind: "action" },
 ] as const satisfies readonly RowDef[];

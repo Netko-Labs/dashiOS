@@ -128,3 +128,15 @@ export function describeLayout(layouts: readonly XkbLayout[], list: string | und
     .filter(Boolean);
   return ids.map((id) => layouts.find((layout) => layout.id === id)?.name ?? id).join(", ");
 }
+
+/**
+ * The layout's one name, as the row, the picker and its search say it: the
+ * variant's own name when one is chosen ("English (US, euro on 5)"), else
+ * the layout's ("English (US)"); several set by hand are listed.
+ */
+export function layoutName(xkb: XkbLayouts, list: string | undefined, variant: string | undefined): string {
+  const layout = primaryLayout(list);
+  const chosen = variant ? xkb.variants.find((each) => each.layout === layout && each.id === variant) : undefined;
+  if ((list ?? "").includes(",") || !chosen) return describeLayout(xkb.layouts, list);
+  return chosen.name;
+}

@@ -5,6 +5,26 @@
  * Accent, keyboard keys as dashes, a shield for Privacy.
  */
 
+/**
+ * One glyph, one meaning (the sidebar's Desktop & Dock, Trackpad and
+ * Keyboard): drawn on the 16-unit grid of Dashi's icon glyphs, 1.2 strokes
+ * (1.75 on 24) and round caps, in one colour, so each reads as its own thing
+ * at 15 px. The screen holds a Dock of three tiles; the pad is wider than
+ * tall with a fingertip on it; the keyboard shows its keys and space bar.
+ */
+const grid16 = (body: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+
+export const DOCK = grid16(
+  `<rect x="1.8" y="2.2" width="12.4" height="11.6" rx="2"/><rect x="4.1" y="9.6" width="2.1" height="2.1" rx=".6" fill="#000" stroke="none"/><rect x="6.95" y="9.6" width="2.1" height="2.1" rx=".6" fill="#000" stroke="none"/><rect x="9.8" y="9.6" width="2.1" height="2.1" rx=".6" fill="#000" stroke="none"/>`,
+);
+export const TRACKPAD = grid16(
+  `<rect x="1.6" y="3.2" width="12.8" height="9.6" rx="2"/><circle cx="9.6" cy="7.4" r="1.5" fill="#000" stroke="none"/><path d="M6.4 10.4a3.4 3.4 0 0 1 0-6"/>`,
+);
+export const KEYBOARD = grid16(
+  `<rect x="1" y="4" width="14" height="8.4" rx="1.6"/><g fill="#000" stroke="none"><rect x="3" y="5.9" width="1.4" height="1.3" rx=".35"/><rect x="5.5" y="5.9" width="1.4" height="1.3" rx=".35"/><rect x="8" y="5.9" width="1.4" height="1.3" rx=".35"/><rect x="10.5" y="5.9" width="1.4" height="1.3" rx=".35"/><rect x="12.5" y="5.9" width=".9" height="1.3" rx=".35"/></g><path d="M4.8 10.1h6.4"/>`,
+);
+
 const svg = (body: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 
@@ -12,7 +32,7 @@ export const SEARCH = svg(`<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4
 export const CONTRAST = svg(`<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="#000"/>`);
 export const IMAGE = svg(`<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 16l5-5 4 4 3-3 6 6"/>`);
 export const DISPLAY = svg(`<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/>`);
-export const DOCK = svg(`<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 16h10"/>`);
+
 export const WIFI = svg(`<path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/>`);
 export const BLUETOOTH = svg(`<path d="M7 7l10 10-5 4V3l5 4L7 17"/>`);
 export const VOLUME = svg(`<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9a4 4 0 0 1 0 6"/>`);
@@ -22,9 +42,9 @@ export const BATTERY = svg(
   `<rect x="2.5" y="7" width="17" height="10" rx="2.5"/><path d="M21.5 10.5v3"/><rect x="5" y="9.5" width="10" height="5" rx="1" fill="#000" stroke="none"/>`,
 );
 export const GPU = svg(`<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="9" cy="12" r="2.5"/>`);
-export const KEYBOARD = svg(`<rect x="2.5" y="7" width="19" height="11" rx="2"/><path d="M5.5 10.5h1.5M9 10.5h1.5M12.5 10.5h1.5M16 10.5h2.5M7 14.5h10"/>`);
+
 export const DROP = svg(`<path d="M12 3.5c3.5 4.2 6 7.4 6 10.5a6 6 0 0 1-12 0c0-3.1 2.5-6.3 6-10.5z"/>`);
-export const TRACKPAD = svg(`<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 15h16M12 15v5"/>`);
+
 export const MOUSE = svg(`<rect x="6.5" y="3.5" width="11" height="17" rx="5.5"/><path d="M12 3.5v5"/>`);
 export const USER = svg(`<circle cx="12" cy="9" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>`);
 export const CLOCK = svg(`<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>`);
@@ -105,3 +125,17 @@ export const DISK = svg(
 export const CLICK = svg(`<path d="M9 3.5v2.5M4.6 5.6l1.8 1.8M3.5 10h2.5"/><path d="M10 10l9.5 3.6-4.2 1.4-1.6 4.5z"/>`);
 /** The pointer's acceleration: a curve that steepens. */
 export const CURVE = svg(`<path d="M4 20V4M4 20h16"/><path d="M7 17c5 0 8-3 11-10"/>`);
+/** A terminal: its window and a prompt. */
+export const TERMINAL = svg(`<rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7 10l3 2.5L7 15M12.5 15h4.5"/>`);
+/** An account's name: the at sign. */
+export const AT = svg(`<circle cx="12" cy="12" r="3.5"/><path d="M15.5 12v1.5a2.5 2.5 0 0 0 5 0V12a8.5 8.5 0 1 0-3.3 6.7"/>`);
+/** Sliders: two tracks with their knobs. */
+export const SLIDERS = svg(`<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>`);
+/** A resolution: a screen divided into its pixels. */
+export const RESOLUTION = svg(`<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 12h18M9 5v14M15 5v14"/>`);
+/** A rate: a wave. */
+export const WAVE = svg(`<path d="M3 12h3l2.5-5.5 4 11 4-11L19 12h2"/>`);
+/** Rotation: a screen turned, an arrow round it. */
+export const ROTATE = svg(`<rect x="9" y="9" width="10" height="11" rx="2"/><path d="M4.5 12V9a4.5 4.5 0 0 1 4.5-4.5h3M10 2.5l2 2-2 2"/>`);
+/** The main display: a screen with its menu bar. */
+export const MENUBAR = svg(`<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 8.5h18"/>`);
