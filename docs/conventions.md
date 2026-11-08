@@ -224,6 +224,26 @@ Rules:
 - Do not log secrets or full message bodies from D-Bus or IPC unless the
   output is explicitly diagnostic.
 
+## Licenses
+
+Dashi is MIT, and stays MIT. A dependency must never change that.
+
+- **Inside Dashi** (linked into its binaries, bundled in its packages,
+  vendored, or downloaded by default): only permissive licenses (MIT,
+  BSD, Apache-2.0, ISC, Zlib, MPL-2.0 for unmodified files; CC-BY or CC0 for
+  models and media; LGPL only as a shared library from the system). Check a
+  model's *weights* license as well as its code's.
+- **GPL, AGPL, non-commercial (CC-BY-NC and the like), or any terms that
+  bind Dashi's users**: never bundled or pulled in by default. They may be
+  an **opt-in the person chooses**: a separate program or download that
+  Settings or Software offers, saying its license in words, run as its own
+  process (not linked). Dashi works without it.
+- A separate program from the distribution that Dashi only runs or talks to
+  over D-Bus (FFmpeg, wf-recorder, cardwire) is not part of Dashi's code.
+  Name it and its license where it is wired in.
+- A new dependency names its license in the commit that adds it; a license
+  that is unclear counts as not permissive until checked.
+
 ## File Size And Splitting
 
 Target normal source files at 300 lines or less. When a file exceeds that,
