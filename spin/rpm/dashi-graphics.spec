@@ -20,9 +20,10 @@ BuildRequires:  systemd-rpm-macros
 
 Requires:       cardwire
 # Exactly one GPU switcher owns the policy and the bus. cardwire supersedes
-# supergfxctl and stands in for switcheroo-control (it serves that name too).
+# supergfxctl and stands in for switcheroo-control: Terra's cardwire
+# (0.12.3-3) Provides switcheroo-control, so a Conflicts on that name would
+# conflict with cardwire itself and nothing could install.
 Conflicts:      supergfxctl
-Conflicts:      switcheroo-control
 
 %description
 dashi-graphics is the graphics-switching piece of Dashi on two-GPU laptops:
