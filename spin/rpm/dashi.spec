@@ -122,7 +122,6 @@ install -Dm0644 session/org.freedesktop.impl.portal.desktop.dashi.service %{buil
 install -Dm0644 session/dashi-portal.service %{buildroot}%{_userunitdir}/dashi-portal.service
 # The Setup Assistant's optional software, run as root through pkexec.
 install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
-%{_libexecdir}/dashi/dashi-browser-host
 install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 install -Dm0644 session/dashi-session.target %{buildroot}%{_userunitdir}/dashi-session.target
 install -Dm0644 session/dashi.desktop %{buildroot}%{_datadir}/wayland-sessions/dashi.desktop
