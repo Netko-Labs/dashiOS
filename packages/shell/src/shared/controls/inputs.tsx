@@ -106,7 +106,6 @@ export function Segmented<T extends string | number>({ options, value, onChange,
       style={{
         flexDirection: "row",
         flexWrap: "wrap",
-        alignSelf: "flex-start",
         flexShrink: 1,
         gap: SEGMENTED.gap,
         padding: SEGMENTED.padding,
