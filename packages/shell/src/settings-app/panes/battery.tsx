@@ -31,7 +31,7 @@ import { Caption, Choices, Group, Hero, Page, Setting } from "../ui.tsx";
 import { BatteryHeroView } from "./battery-hero.tsx";
 import { ChargeLimitRows, FullChargeGroup, PowerModeRow, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
-import { OnBatteryRow, type ShowPane } from "./on-battery.tsx";
+import { OnBatteryRow, type ShowPane, useOnBattery } from "./on-battery.tsx";
 import { Failure, Value } from "./parts.tsx";
 
 const MODE_DETAIL = {
@@ -68,6 +68,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
   const monitor = useMonitorState(services.battery);
   const { idle } = useSettings(settings).data;
   const limit = useChargeLimit(services.laptop, settings);
+  const lowers = useOnBattery(services.laptop, services.refresh);
   useEffect(() => {
     energy.open();
     return () => energy.close();
@@ -100,7 +101,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
       </Group>
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">
-        {battery && <OnBatteryRow laptop={services.laptop} refresh={services.refresh} show={show} />}
+        {battery && lowers && <OnBatteryRow laptop={services.laptop} refresh={services.refresh} show={show} />}
         <Setting id="battery/turn-display-off" title="Turn the screen off after" stack={false} detail={null}>
           <Choices
             testID="power-blank"

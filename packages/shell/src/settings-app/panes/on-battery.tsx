@@ -65,6 +65,11 @@ export function onBatteryLine(
  * One row, "On battery": what Dashi lowers, and links to the panes where
  * each is chosen (Graphics · Displays). Both rows of the registry land on it.
  */
+/** Whether the row has anything to say, for its card to leave it out (and its hairline) when not. */
+export function useOnBattery(laptop: Laptop | null, refresh: AutoRefresh | null): boolean {
+  return onBatteryLine(useSwitchableCard(laptop), useBuiltInScreen(refresh)) !== null;
+}
+
 export function OnBatteryRow({ laptop, refresh, show }: { laptop: Laptop | null; refresh: AutoRefresh | null; show: ShowPane }) {
   const screen = useBuiltInScreen(refresh);
   const graphics = useSwitchableCard(laptop);

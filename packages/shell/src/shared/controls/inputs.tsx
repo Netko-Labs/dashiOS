@@ -56,10 +56,10 @@ export function ControlSwitch({ on, testID, onChange, disabled, focusable = true
   );
 }
 
-/** The pills' track and pills: 4 in, 4 apart; a pill 32 tall, radius 16, 11 when chosen. */
-export const SEGMENTED = { padding: 4, gap: 4, height: 32, radius: 16, chosenRadius: 11 } as const;
+/** The pills' track and pills: 4 in, 4 apart; a pill 32 tall, 12 in (9 with six or more), radius 16, 11 when chosen. */
+export const SEGMENTED = { padding: 4, gap: 4, height: 32, radius: 16, chosenRadius: 11, inset: 12, tightInset: 9, tightFrom: 6 } as const;
 
-function SegmentPill({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress?: () => void }) {
+function SegmentPill({ label, chosen, testID, onPress, tight }: { label: string; chosen: boolean; testID: string; onPress?: () => void; tight: boolean }) {
   const colors = useControlColors();
   const radius = useSpring(chosen ? SEGMENTED.chosenRadius : SEGMENTED.radius);
   return (
@@ -71,8 +71,8 @@ function SegmentPill({ label, chosen, testID, onPress }: { label: string; chosen
       {...(onPress ? { onPress } : {})}
       style={{
         height: SEGMENTED.height,
-        paddingLeft: 12,
-        paddingRight: 12,
+        paddingLeft: tight ? SEGMENTED.tightInset : SEGMENTED.inset,
+        paddingRight: tight ? SEGMENTED.tightInset : SEGMENTED.inset,
         borderRadius: radius,
         alignItems: "center",
         justifyContent: "center",
@@ -120,6 +120,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
           key={String(option.value)}
           label={option.label}
           chosen={option.value === value}
+          tight={options.length >= SEGMENTED.tightFrom}
           testID={`${testID}:${option.value}`}
           {...(disabled ? {} : { onPress: () => onChange(option.value) })}
         />

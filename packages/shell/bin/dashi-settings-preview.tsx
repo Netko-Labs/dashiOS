@@ -69,7 +69,7 @@ void hardware
   .catch(() => null)
   .then((machine) => {
     // The fixture is a laptop whatever the VM's chassis says.
-    store.setMachine(machine, true);
+    store.setMachine(machine ? { ...machine, laptop: true } : null, true);
     modes.setMachine(machine ? { knobs: machine.knobs, recipes: parseRecipes(machine.recipes) } : null);
   });
 void profiles.read().then((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
