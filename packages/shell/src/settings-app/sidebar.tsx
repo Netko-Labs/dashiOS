@@ -6,7 +6,8 @@
  * (Connect, This laptop, You). The chosen pane is a soft pill with its knob
  * in the green "on" shape; Agents shows how many agents wait for you.
  * While the search holds text, the sidebar lists what was found instead
- * (find.ts), the one ↑ and ↓ are on chosen.
+ * (find.ts): each setting once, with its own glyph and its pane's name at
+ * the end, the one ↑ and ↓ are on chosen.
  *
  * The panes fit a tall window; a shorter one scrolls the list, and the
  * chosen pane is scrolled into view when it changes (from a link, an agent,
@@ -114,13 +115,14 @@ function SearchPill({ search }: { search: SearchProps }) {
   );
 }
 
-/** A pane as a pill: its knob, its name, a count at the end; chosen, the knob is green and tighter. */
+/** A pane as a pill: its knob, its name, a count at the end; chosen, the knob is green and tighter. A search result says its pane at the end (`where`). */
 function NavPill({
   testID,
   label,
   glyph,
   selected,
   badge,
+  where,
   onPress,
   onLayout,
 }: {
@@ -129,6 +131,7 @@ function NavPill({
   glyph: string;
   selected: boolean;
   badge?: number;
+  where?: string;
   onPress: () => void;
   onLayout?: (bounds: Bounds) => void;
 }) {
@@ -161,6 +164,13 @@ function NavPill({
           {label}
         </Text>
       </View>
+      {where !== undefined && (
+        <View testID={`${testID}:where`} style={{ flexShrink: 0, maxWidth: 84 }}>
+          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.muted }}>
+            {where}
+          </Text>
+        </View>
+      )}
       {badge !== undefined && badge > 0 && (
         <View
           testID={`${testID}:badge`}
@@ -207,7 +217,8 @@ function Results({ results }: { results: SidebarResults }) {
   if (results.found.length === 0) {
     return (
       <View testID="settings-search-none" style={{ flexShrink: 0, padding: 12 }}>
-        <Text style={{ fontSize: 12, color: colors.muted }}>{`Nothing in Settings matches “${results.query.trim()}”.`}</Text>
+        {/* One line: a long query is cut, never its closing quote left alone on a second line. */}
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.muted }}>{`No setting matches “${results.query.trim()}”.`}</Text>
       </View>
     );
   }
@@ -219,6 +230,7 @@ function Results({ results }: { results: SidebarResults }) {
           testID={`found:${found.id}`}
           label={found.label}
           glyph={found.glyph}
+          {...(found.where !== undefined ? { where: found.where } : {})}
           selected={index === results.chosen}
           onPress={() => results.onChoose(index)}
         />

@@ -128,3 +128,41 @@ export function describeLayout(layouts: readonly XkbLayout[], list: string | und
     .filter(Boolean);
   return ids.map((id) => layouts.find((layout) => layout.id === id)?.name ?? id).join(", ");
 }
+
+/**
+ * The layout's one name, as the row, the picker and its search say it: the
+ * variant's own name when one is chosen ("English (US, euro on 5)"), else
+ * the layout's ("English (US)"); several set by hand are listed.
+ */
+export function layoutName(xkb: XkbLayouts, list: string | undefined, variant: string | undefined): string {
+  const layout = primaryLayout(list);
+  const chosen = variant ? xkb.variants.find((each) => each.layout === layout && each.id === variant) : undefined;
+  if ((list ?? "").includes(",") || !chosen) return describeLayout(xkb.layouts, list);
+  return chosen.name;
+}
+
+let installed: XkbLayouts | null = null;
+
+/** The installed layouts, read once (Recently changed says a layout by its name). */
+function installedLayouts(): XkbLayouts {
+  installed ??= loadLayouts();
+  return installed;
+}
+
+/** A saved `keyboard.layout` as Recently changed says it: its name ("English (US)"), the id where the list doesn't have it. */
+export function layoutWords(list: unknown, xkb: XkbLayouts = installedLayouts()): string {
+  return describeLayout(xkb.layouts, typeof list === "string" ? list : undefined);
+}
+
+/**
+ * A change of `keyboard.variant` in words, both sides: a variant by its own
+ * name ("English (US, euro on 5)"), and none by its layout's ("English (US)"),
+ * the layout the other side's variant belongs to.
+ */
+export function variantWords(from: unknown, to: unknown, xkb: XkbLayouts = installedLayouts()): { from: string; to: string } {
+  const find = (id: unknown) => (typeof id === "string" ? xkb.variants.find((each) => each.id === id) : undefined);
+  const known = find(from) ?? find(to);
+  const plain = known ? (xkb.layouts.find((layout) => layout.id === known.layout)?.name ?? known.layout) : "the layout's own";
+  const say = (id: unknown): string => (typeof id === "string" && id !== "" ? (find(id)?.name ?? id) : plain);
+  return { from: say(from), to: say(to) };
+}

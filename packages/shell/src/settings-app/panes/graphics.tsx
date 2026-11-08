@@ -14,7 +14,7 @@ import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../graphics/policy.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import type { GraphicsChoice } from "../../power/modes/settings.ts";
-import { GAUGE, GPU } from "../knob-glyphs.ts";
+import { GPU } from "../knob-glyphs.ts";
 import { Button, Caption, Choices, Group, Item, Note, Page, Setting, Switch } from "../ui.tsx";
 import { Value } from "./parts.tsx";
 
@@ -75,7 +75,7 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
       </Group>
       {graphics.switchable && !graphics.lost && (
         <Group testID="graphics-mode">
-          <Setting id="graphics/mode" glyph={GAUGE} {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
+          <Setting id="graphics/mode" {...(graphics.decision ? { detail: `${graphics.decision.why}.` } : {})}>
             <Choices<GraphicsChoice>
               testID="graphics-mode-choice"
               value={graphics.choice}
@@ -88,7 +88,7 @@ function GraphicsPaneBody({ laptop }: { laptop: Laptop }) {
       {mux && (
         <>
           <Group testID="graphics-mux">
-            <Setting id="graphics/card-only" glyph={GPU}>
+            <Setting id="graphics/card-only">
               <Switch testID="graphics-mux-switch" on={mux.value === 0} onChange={(on) => void laptop.store.set("gpu-mux", on ? 0 : 1)} />
             </Setting>
             <Setting id="graphics/restart">

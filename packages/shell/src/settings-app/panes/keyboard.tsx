@@ -1,6 +1,8 @@
 /**
  * Keyboard: how fast keys repeat, and the layout. The layout list is every
- * layout xkb knows (searchable), with the chosen layout's variants beside it.
+ * layout xkb knows (searchable), with the chosen layout's variants beside it,
+ * each name whole (a long one wraps), and the layout has one name in the
+ * row and the picker (layouts.ts `layoutName`).
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
  * The input method (settings.json `inputMethod.engine`) is what the session
  * runs to type other scripts (input-method.ts).
@@ -15,7 +17,7 @@ import { useColors } from "../colors.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
 import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../knob-glyphs.ts";
-import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
+import { layoutName, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Note, Page, Setting, Slider, Spot, useSurface } from "../ui.tsx";
 import { ClipboardSection, type HistoryControl, type InstalledApp } from "./clipboard-parts.tsx";
@@ -23,6 +25,7 @@ import { KeyboardLightSection } from "./laptop-parts.tsx";
 
 const LIST_HEIGHT = 196;
 
+/** A layout or a variant: its whole name, wrapping onto a second line rather than cut. */
 function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress: () => void }) {
   const look = rowLook(useColors(), chosen);
   return (
@@ -30,20 +33,21 @@ function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: bo
       testID={testID}
       onPress={onPress}
       style={{
-        height: 28,
+        minHeight: 28,
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
         paddingHorizontal: 8,
+        paddingVertical: 5,
         borderRadius: 6,
         backgroundColor: look.ground,
         hoverBackgroundColor: look.hover,
       }}
     >
-      {chosen && <SelectionBar rowHeight={28} />}
-      <Text numberOfLines={1} style={{ fontSize: 12, color: look.ink }}>
-        {label}
-      </Text>
+      {chosen && <SelectionBar />}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 12, color: look.ink }}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -67,9 +71,23 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
   const several = (keyboard.layout ?? "").includes(",");
   const shown = searchLayouts(layouts.layouts, query);
   const variants = variantsOf(layouts.variants, current);
+  // One name everywhere: the row says it, the variants' first row is the layout's own name, and the chosen one is lit.
+  const name = layoutName(layouts, keyboard.layout, keyboard.variant);
+  const plain = layouts.layouts.find((layout) => layout.id === current)?.name ?? current;
   return (
-    <Setting id="keyboard/layout" detail={`${describeLayout(layouts.layouts, keyboard.layout)}${several ? " (several layouts set in settings.json)" : ""}`}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
+    <Setting id="keyboard/layout" detail={`${name}${several ? " (several layouts set in settings.json)" : ""}`}>
+      <View
+        style={{
+          alignSelf: "stretch",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          height: 28,
+          paddingHorizontal: 8,
+          borderRadius: 8,
+          backgroundColor: surface.field,
+        }}
+      >
         <Svg markup={SEARCH} size={13} color={colors.textMuted} />
         <TextInput
           testID="keyboard-search"
@@ -79,7 +97,7 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
           style={{ flex: 1, fontSize: 12, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
         />
       </View>
-      <View style={{ flexDirection: "row", gap: 10 }}>
+      <View style={{ alignSelf: "stretch", flexDirection: "row", gap: 10 }}>
         <List testID="keyboard-layouts">
           {shown.length === 0 && <Note>No layout matches.</Note>}
           {shown.map((layout) => (
@@ -100,7 +118,7 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
             <>
               <ListRow
                 testID="keyboard-variant:default"
-                label="Default"
+                label={plain}
                 chosen={!keyboard.variant}
                 onPress={() => settings.patch("keyboard", { variant: undefined })}
               />
@@ -155,7 +173,7 @@ export function KeyboardPane({
   return (
     <Page title="Keyboard">
       <Group>
-        <Setting id="keyboard/key-repeat" glyph={REPEAT} detail="Off at the left, fast at the right.">
+        <Setting id="keyboard/key-repeat" detail="Off at the left, fast at the right.">
           <Slider
             testID="keyboard-rate"
             value={rate}
@@ -165,7 +183,7 @@ export function KeyboardPane({
             onCommit={(value) => settings.patch("keyboard", { repeatRate: value })}
           />
         </Setting>
-        <Setting id="keyboard/repeat-delay" glyph={KEYBOARD_KNOB} detail="Short at the left, long at the right.">
+        <Setting id="keyboard/repeat-delay" detail="Short at the left, long at the right.">
           <Slider
             testID="keyboard-delay"
             value={delay}

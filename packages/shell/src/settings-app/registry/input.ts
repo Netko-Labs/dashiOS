@@ -3,6 +3,7 @@
 import { DEFAULT_INPUT_METHOD } from "../../input-method.ts";
 import { SCROLL_SPEED_DEFAULT, SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../../scroll-speed.ts";
 import { DEFAULTS, REPEAT_DELAY, REPEAT_RATE, SPEED } from "../controls.ts";
+import { CLICK, CLIPBOARD, CURVE, HISTORY, KEYBOARD, MOUSE, POINTER, REPEAT, SCROLL, SHIELD, TAP, TERMINAL, TRACKPAD } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedNumber, storedSwitch } from "./values.ts";
 
@@ -25,6 +26,7 @@ const SCROLL_FILE = { unset: SCROLL_SPEED_DEFAULT };
 export const INPUT_ROWS = [
   {
     id: "keyboard/key-repeat",
+    glyph: REPEAT,
     title: "Key repeat rate",
     keywords: ["key repeat", "repeat rate"],
     kind: "value",
@@ -32,12 +34,21 @@ export const INPUT_ROWS = [
   },
   {
     id: "keyboard/repeat-delay",
+    glyph: KEYBOARD,
     title: "Delay until repeat",
     keywords: ["repeat delay", "delay until repeat"],
     kind: "value",
     value: storedNumber("keyboard", "repeatDelay", DEFAULTS.repeatDelay, REPEAT_DELAY),
   },
-  { id: "keyboard/layout", title: "Layout", name: "Keyboard layout", keywords: ["layout", "input source", "xkb", "variant"], kind: "value", stack: true },
+  {
+    id: "keyboard/layout",
+    glyph: KEYBOARD,
+    title: "Layout",
+    name: "Keyboard layout",
+    keywords: ["layout", "input source", "xkb", "variant"],
+    kind: "value",
+    stack: true,
+  },
   {
     id: "keyboard/input-method",
     title: "Input method",
@@ -51,6 +62,7 @@ export const INPUT_ROWS = [
   { id: "keyboard/keyboard-light", title: "Keyboard light", keywords: ["backlight", "keyboard backlight"], kind: "choice", stack: true },
   {
     id: "keyboard/clipboard-history",
+    glyph: CLIPBOARD,
     title: "Keep clipboard history",
     detail: "Copies to paste again from the launcher: 200 at most, for 7 days, on this computer only. Turned off, what was kept is deleted.",
     keywords: ["clipboard history", "paste history"],
@@ -58,9 +70,10 @@ export const INPUT_ROWS = [
     value: storedSwitch("clipboard", "history", true, { unset: true }),
     source: "clipboard",
   },
-  { id: "keyboard/clipboard-kept", title: "Kept now", name: "Clipboard copies kept now", keywords: ["clear clipboard"], kind: "action" },
+  { id: "keyboard/clipboard-kept", glyph: HISTORY, title: "Kept now", name: "Clipboard copies kept now", keywords: ["clear clipboard"], kind: "action" },
   {
     id: "keyboard/clipboard-left-out",
+    glyph: SHIELD,
     title: "Never kept from these apps",
     name: "Apps the clipboard history leaves out",
     detail: "Password fields, copies marked secret, and Dashi's Passwords are never kept either.",
@@ -70,6 +83,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "keyboard/snippets-in-terminals",
+    glyph: TERMINAL,
     title: "Snippets in terminals",
     detail: "A snippet's keyword expands in terminals too. Never in password fields.",
     keywords: ["snippets", "text expansion"],
@@ -79,6 +93,7 @@ export const INPUT_ROWS = [
 
   {
     id: "trackpad/tap-to-click",
+    glyph: TAP,
     title: "Tap to click",
     detail: "Tap the pad with one finger instead of pressing it.",
     keywords: ["tap", "touchpad tap"],
@@ -88,6 +103,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/natural-scrolling",
+    glyph: TRACKPAD,
     title: "Natural scrolling",
     name: "Trackpad natural scrolling",
     detail: "Content follows your fingers.",
@@ -98,6 +114,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/ignore-while-typing",
+    glyph: KEYBOARD,
     title: "Ignore the pad while typing",
     detail: "Keeps a resting palm from moving the pointer.",
     keywords: ["palm rejection", "disable while typing"],
@@ -106,6 +123,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/tracking-speed",
+    glyph: POINTER,
     title: "Tracking speed",
     name: "Trackpad tracking speed",
     keywords: ["pointer speed", "touchpad speed"],
@@ -114,6 +132,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/scrolling-speed",
+    glyph: SCROLL,
     title: "Scrolling speed",
     name: "Trackpad scrolling speed",
     keywords: ["touchpad", "scroll", "scrolling"],
@@ -124,6 +143,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "trackpad/click",
+    glyph: CLICK,
     title: "Click",
     name: "Trackpad click",
     detail: "How the pad tells a left click from a right click.",
@@ -136,6 +156,7 @@ export const INPUT_ROWS = [
 
   {
     id: "mouse/natural-scrolling",
+    glyph: MOUSE,
     title: "Natural scrolling",
     name: "Mouse natural scrolling",
     detail: "Content follows the wheel as if you pushed it.",
@@ -146,6 +167,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "mouse/tracking-speed",
+    glyph: POINTER,
     title: "Tracking speed",
     name: "Mouse tracking speed",
     keywords: ["pointer speed", "mouse speed"],
@@ -154,6 +176,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "mouse/scrolling-speed",
+    glyph: SCROLL,
     title: "Scrolling speed",
     name: "Mouse scrolling speed",
     keywords: ["wheel", "scroll", "scrolling"],
@@ -164,6 +187,7 @@ export const INPUT_ROWS = [
   },
   {
     id: "mouse/acceleration",
+    glyph: CURVE,
     title: "Acceleration",
     name: "Mouse acceleration",
     detail: "Adaptive speeds up the pointer when the mouse moves fast; flat keeps it steady.",

@@ -1,16 +1,24 @@
 /**
  * The cards under Displays' common choices (displays.tsx): the chosen
- * display's resolution (its usual sizes, "Show All Resolutions" for the
- * rest), variable refresh rate, rotation, the main display and turning it
- * off; a card for each display that is off, with Turn On; and how X11 apps
- * meet a scaled screen.
+ * display's resolution (its usual sizes, "More…" for the rest, "native" on
+ * the native size's own pill where the screen has one), variable refresh
+ * rate, rotation, the main display and turning it off; a card for each
+ * display that is off, with Turn On; and how X11 apps meet a scaled screen.
  */
 
-import { View } from "@mirinjs/metal";
-import { useState } from "react";
-import { commonSizes, type Monitor, modeFor, ROTATIONS, type Rotation, sizeLabel, sizesOf, VRR_MODES, type VrrMode } from "../../display-config/monitors.ts";
+import {
+  commonSizes,
+  type Monitor,
+  modeFor,
+  nativeSize,
+  ROTATIONS,
+  type Rotation,
+  sizeLabel,
+  sizesOf,
+  VRR_MODES,
+  type VrrMode,
+} from "../../display-config/monitors.ts";
 import { displayHero } from "../heroes.ts";
-import { DISPLAY } from "../knob-glyphs.ts";
 import type { ScreensStore } from "../screens.ts";
 import { Button, Caption, Choices, Group, Setting } from "../ui.tsx";
 
@@ -19,42 +27,31 @@ const VRR_LABELS: Record<VrrMode, string> = { off: "Off", on: "On", fullscreen: 
 
 /** The chosen display's other choices, under the common ones. */
 export function ScreenDetails({ monitor, store, canTurnOff }: { monitor: Monitor; store: ScreensStore; canTurnOff: boolean }) {
-  const [showAll, setShowAll] = useState(false);
   const { name } = monitor;
   const mode = monitor.mode;
   if (!mode) return null;
   const here = { width: mode.width, height: mode.height };
   const every = sizesOf(monitor.modes);
-  const common = commonSizes(monitor.modes, here);
-  const sizes = showAll || common.length >= every.length ? every : common;
+  const native = nativeSize(monitor.modes);
   return (
     <Group testID={`display-details:${name}`}>
       {every.length > 1 && (
-        <Setting id="displays/resolution" detail={`${sizeLabel(here)} now`}>
+        // The chosen pill says the size; "native" is on the native size's own pill. Past five sizes, the usual four and "More…".
+        <Setting id="displays/resolution" detail={null}>
           <Choices
             testID={`display-resolution:${name}`}
-            options={sizes.map((size) => ({
+            options={every.map((size) => ({
               value: sizeLabel(size),
-              label: monitor.modes.some((offered) => offered.preferred && offered.width === size.width && offered.height === size.height)
-                ? `${sizeLabel(size)} (native)`
-                : sizeLabel(size),
+              label: native && size.width === native.width && size.height === native.height ? `${sizeLabel(size)} (native)` : sizeLabel(size),
             }))}
+            common={commonSizes(monitor.modes, here).map(sizeLabel)}
             value={sizeLabel(here)}
             onChange={(label) => {
-              const size = sizes.find((candidate) => sizeLabel(candidate) === label);
+              const size = every.find((candidate) => sizeLabel(candidate) === label);
               const next = size && modeFor(monitor.modes, size, mode.refreshMhz);
               if (next) void store.setMode(name, { width: next.width, height: next.height, refreshMhz: next.refreshMhz });
             }}
           />
-          {common.length < every.length && (
-            <View style={{ flexDirection: "row" }}>
-              <Button
-                testID={`display-all-resolutions:${name}`}
-                label={showAll ? "Show Fewer" : "Show All Resolutions"}
-                onPress={() => setShowAll((shown) => !shown)}
-              />
-            </View>
-          )}
         </Setting>
       )}
       {monitor.vrr.supported && (
@@ -89,10 +86,10 @@ export function ScreenDetails({ monitor, store, canTurnOff }: { monitor: Monitor
 
 /** A display that is plugged in but off: its name, and Turn On. */
 export function OffScreenCard({ monitor, store }: { monitor: Monitor; store: ScreensStore }) {
-  const facts = displayHero(monitor, undefined, { width: 1, height: 1 }).name;
+  const facts = displayHero(monitor, { width: 1, height: 1 }).name;
   return (
     <Group testID={`display:${monitor.name}`}>
-      <Setting id="displays/turned-off" glyph={DISPLAY} detail={`${facts}. It stays plugged in; its windows are on the other screens.`}>
+      <Setting id="displays/turned-off" detail={`${facts}. It stays plugged in; its windows are on the other screens.`}>
         <Button testID={`display-on:${monitor.name}`} label="Turn On" onPress={() => void store.setEnabled(monitor.name, true)} />
       </Setting>
     </Group>

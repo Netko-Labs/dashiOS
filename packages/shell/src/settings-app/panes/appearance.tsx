@@ -2,22 +2,24 @@
  * Appearance (docs/design.html, "Settings"): its hero is the themes, Light,
  * Dark and Automatic (dark in the evening), as pictures to pick from (the
  * one Dark Mode control here; Control Center's tile is the same switch).
- * Then how it looks: Automatic's hours, the text size of the shell's
- * surfaces and GTK apps (`appearance.textSize`, text-size.ts), how round
- * windows are (`appearance.cornerRadius`; the shell follows the file, so a
- * pick shows on the open windows at once), the pointer's size
- * (`appearance.pointerSize`, pointer.ts); and on a card of their own,
- * reducing motion and the accent ring round the focused window
+ * Automatic is chosen there and only there; while it is, its hours show as
+ * the card's first row ("Dark from 7 PM to 7 AM"). Then how it looks: the
+ * text size of the shell's surfaces and GTK apps (`appearance.textSize`,
+ * text-size.ts), how round windows are (`appearance.cornerRadius`; the
+ * shell follows the file, so a pick shows on the open windows at once), the
+ * pointer's size (`appearance.pointerSize`, pointer.ts); and on a card of
+ * their own, reducing motion and the ring round the focused window
  * (`appearance.highlightActiveWindow`, appearance/window-style.ts).
  */
 
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { AUTO_DARK_FROM, AUTO_DARK_TO } from "../../appearance/auto.ts";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { DEFAULT_CORNERS, isCornerName } from "../../corners.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../../shared/controls/palette.ts";
 import { useSettings } from "../hooks.ts";
-import { CORNER, MOON, POINTER, TEXT } from "../knob-glyphs.ts";
+import { clockLabel } from "../night.ts";
 import { CORNER_OPTIONS } from "../registry/look.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Hero, Page, Setting, Spot } from "../ui.tsx";
@@ -149,22 +151,34 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
   );
 }
 
+/** Automatic's hours, as its row says them: "Dark from 7 PM to 7 AM". */
+export const automaticHours = (): string => `Dark from ${clockLabel(AUTO_DARK_FROM)} to ${clockLabel(AUTO_DARK_TO)}`;
+
 export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
+  const auto = useSettings(settings).data.appearance.auto === true;
+  const hero = (
+    <Hero testID="appearance-hero">
+      <AppearancePreviews flags={flags} settings={settings} />
+    </Hero>
+  );
   return (
     <Page title="Appearance">
-      {/* The themes are Dark Mode's only control: a link or the launcher's Dark Mode row lands here. */}
-      <Spot id="appearance/dark-mode">
-        <Hero testID="appearance-hero">
-          <AppearancePreviews flags={flags} settings={settings} />
-        </Hero>
-      </Spot>
+      {/* The themes are Dark Mode's only control, and Automatic's: a link or the launcher's rows land here (on the hours while Automatic is chosen). */}
+      <Spot id="appearance/dark-mode">{auto ? hero : <Spot id="appearance/automatic">{hero}</Spot>}</Spot>
       <Group testID="appearance-look">
-        <Setting id="appearance/automatic" glyph={MOON} control="appearance-automatic" />
-        <Setting id="appearance/text-size" glyph={TEXT} detail={null} stack={false} control="appearance-text-size" />
-        <Setting id="appearance/window-corners" glyph={CORNER} detail={null} stack={false}>
+        {auto && (
+          <Setting
+            id="appearance/automatic"
+            testID="appearance-automatic-hours"
+            title={automaticHours()}
+            detail="Automatic's hours. Light the rest of the day."
+          />
+        )}
+        <Setting id="appearance/text-size" detail={null} stack={false} control="appearance-text-size" />
+        <Setting id="appearance/window-corners" detail={null} stack={false}>
           <CornerChoices settings={settings} />
         </Setting>
-        <Setting id="appearance/pointer-size" glyph={POINTER} detail={null} stack={false} control="appearance-pointer-size" />
+        <Setting id="appearance/pointer-size" detail={null} stack={false} control="appearance-pointer-size" />
       </Group>
       <Group testID="appearance-motion">
         <Setting id="appearance/reduce-motion" detail="Fades instead of springs." control="appearance-reduce-motion" />

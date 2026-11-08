@@ -11,6 +11,7 @@ import { type ReactNode, useState } from "react";
 import { PillButton } from "../../shared/controls/inputs.tsx";
 import { Knob } from "../../shared/controls/parts.tsx";
 import { useColors } from "../colors.ts";
+import { useCardRow } from "../row.tsx";
 
 /** A value at the end of a row, muted and right-aligned (several lines stack). */
 export function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -73,6 +74,7 @@ export function ListRow({
   bold?: boolean;
 }) {
   const colors = useColors();
+  useCardRow(leading !== undefined);
   return (
     <View
       testID={testID}
@@ -108,6 +110,12 @@ export function ListRow({
 export function CheckSlot({ on }: { on: boolean }) {
   const colors = useColors();
   return <View style={{ width: 16, alignItems: "center" }}>{on && <Svg markup={CHECK} size={13} color={colors.selection} />}</View>;
+}
+
+/** A plain list's glyph at a row's end, small and muted (a device's kind, a network's signal): the names keep one left edge. */
+export function KindMark({ glyph }: { glyph: string }) {
+  const colors = useColors();
+  return <Svg markup={glyph} size={15} color={colors.textMuted} />;
 }
 
 /** A round icon, a knob: green with the tighter corner while `lit` (on, connected). */

@@ -20,10 +20,9 @@ import { joinMessage } from "../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../wifi/store.ts";
 import type { SavedNetwork, WifiNetwork } from "../../wifi/types.ts";
 import { useColors } from "../colors.ts";
-import { ETHERNET, WIFI } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Switch } from "../ui.tsx";
-import { Failure, ListRow, MiniButton, RoundIcon, Value } from "./parts.tsx";
+import { Failure, KindMark, ListRow, MiniButton, Value } from "./parts.tsx";
 
 function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork; current: boolean; state: WifiState; onJoin: (network: WifiNetwork) => void }) {
   const colors = useColors();
@@ -31,13 +30,8 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
   const thisOne = state.join.phase === "joining" && state.join.key === network.key;
   const detail = current ? "Connected" : network.known ? "Known network" : network.secured ? "Password required" : "Open";
   return (
-    <ListRow
-      testID={`net-wifi:${network.ssid}`}
-      name={network.ssid}
-      detail={detail}
-      bold={current}
-      leading={<RoundIcon glyph={wifiGlyph(network.bars)} lit={current} />}
-    >
+    <ListRow testID={`net-wifi:${network.ssid}`} name={network.ssid} detail={detail} bold={current}>
+      <KindMark glyph={wifiGlyph(network.bars)} />
       {network.secured && <Svg markup={LOCK} size={11} color={colors.textMuted} />}
       {!current &&
         (thisOne ? (
@@ -78,7 +72,6 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
       <Group testID="net-wifi-switch">
         <Setting
           id="network/wi-fi"
-          glyph={WIFI}
           detail={!on ? "Off" : state.current ? `Connected to ${state.current.ssid}` : state.scanning ? "Searching…" : "Not connected"}
         >
           <Switch testID="net-wifi-radio" on={on} onChange={onRadio} />
@@ -142,7 +135,7 @@ function EthernetSection({ devices }: { devices: readonly EthernetInfo[] }) {
       <Caption above>Ethernet</Caption>
       {devices.map((device) => (
         <Group key={device.name} testID={`net-ethernet:${device.name}`}>
-          <Setting id="network/status" glyph={ETHERNET} detail={device.connected ? (device.connection ?? device.name) : device.name}>
+          <Setting id="network/status" detail={device.connected ? (device.connection ?? device.name) : device.name}>
             <Value testID="net-ethernet-status">{device.connected ? "Connected" : "Not connected"}</Value>
           </Setting>
           {device.connected && (

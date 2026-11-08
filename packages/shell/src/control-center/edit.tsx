@@ -2,7 +2,8 @@
  * Edit mode's own parts under the grid (docs/design.html, "Control Center"):
  * Add, listing every control that is on this machine and not in the panel,
  * an applet's under its name, each with an ink "+" (green only ever means
- * "on"); and the footer, Reset set apart from Cancel and Done.
+ * "on"); and the footer, Reset set apart from Cancel and Done, all three
+ * ink: Done filled, as the button that goes ahead, the others outlined.
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
@@ -91,12 +92,13 @@ function Pill({ testID, label, primary = false, onPress }: { testID: string; lab
         paddingRight: 14,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: primary ? colors.on : "#00000000",
+        // Ink, never green: Done is an action, and green only means "on".
+        backgroundColor: primary ? colors.text : "#00000000",
         borderWidth: primary ? 0 : 1.5,
         borderColor: colors.line,
       }}
     >
-      <Text style={{ fontSize: 12.5, fontWeight: "semibold", color: primary ? colors.onInk : colors.text }}>{label}</Text>
+      <Text style={{ fontSize: 12.5, fontWeight: "semibold", color: primary ? colors.surface : colors.text }}>{label}</Text>
     </View>
   );
 }

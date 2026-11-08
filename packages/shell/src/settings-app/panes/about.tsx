@@ -6,7 +6,6 @@ import { LOGO } from "../../glyphs.ts";
 import { formatMemory, formatStorage, versionLine } from "../about.ts";
 import { useColors } from "../colors.ts";
 import type { PaneContext } from "../context.ts";
-import { CHIP, GPU, SPARK } from "../knob-glyphs.ts";
 import { Button, Group, Hero, Page, Setting } from "../ui.tsx";
 
 /** The value at the end of a row; several lines (two graphics adapters) stack. */
@@ -55,13 +54,13 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
         </Setting>
       </Group>
       <Group testID="about-hardware">
-        <Setting id="about/processor" glyph={CHIP}>
+        <Setting id="about/processor">
           <Value testID="about-cpu">{cpu}</Value>
         </Setting>
         <Setting id="about/memory">
           <Value testID="about-memory">{formatMemory(info.memory)}</Value>
         </Setting>
-        <Setting id="about/graphics" glyph={GPU}>
+        <Setting id="about/graphics">
           <Value testID="about-gpu">{info.gpus.length > 0 ? info.gpus : "Unknown"}</Value>
         </Setting>
         <Setting id="about/storage" detail={info.disk ? `${formatStorage(info.disk.free)} available` : null}>
@@ -69,7 +68,7 @@ export function AboutPane({ about, openSetup }: Pick<PaneContext, "about" | "ope
         </Setting>
       </Group>
       <Group testID="about-setup">
-        <Setting id="about/setup-assistant" glyph={SPARK}>
+        <Setting id="about/setup-assistant">
           <Button testID="about-setup-open" label="Open…" onPress={openSetup} />
         </Setting>
       </Group>

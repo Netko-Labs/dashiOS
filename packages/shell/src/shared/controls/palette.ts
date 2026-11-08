@@ -39,6 +39,8 @@ export interface ControlPalette {
   sidebar: string;
   /** A knob's circle at rest: a Settings row's glyph, a sidebar pill's. */
   knobRest: string;
+  /** The soft ink wash on the row a link or the search lands on (purple stays the keyboard's and the agents'). */
+  lit: string;
 }
 
 export const LIGHT_CONTROLS: ControlPalette = {
@@ -59,6 +61,7 @@ export const LIGHT_CONTROLS: ControlPalette = {
   window: "#f7f4fa",
   sidebar: "#efeaf5",
   knobRest: "#1d18301a",
+  lit: "#1d183017",
 };
 
 export const DARK_CONTROLS: ControlPalette = {
@@ -79,6 +82,7 @@ export const DARK_CONTROLS: ControlPalette = {
   window: "#1a1820",
   sidebar: "#211e28",
   knobRest: "#ffffff1a",
+  lit: "#ebe7f31f",
 };
 
 export const controlPalette = (dark: boolean): ControlPalette => (dark ? DARK_CONTROLS : LIGHT_CONTROLS);

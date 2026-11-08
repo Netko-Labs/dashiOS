@@ -88,7 +88,7 @@ function setup() {
 
 test("search finds rows by their words and panes by theirs, best first", () => {
   expect(findSettings("")).toEqual([]);
-  expect(findSettings("charge").map((found) => found.id)).toContain("battery/charge-limit");
+  expect(findSettings("charge").map((found) => found.id)).toContain("battery/stop-charging");
   expect(findSettings("night")[0]?.id).toBe("displays/night-shift");
   expect(findSettings("blue")[0]).toMatchObject({ id: "bluetooth", label: "Bluetooth" });
   expect(findSettings("dark mode").map((found) => found.id)).toContain("appearance/dark-mode");

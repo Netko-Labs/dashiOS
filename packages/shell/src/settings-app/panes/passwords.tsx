@@ -13,7 +13,6 @@ import type { Passwords } from "../../agents/secrets/passwords.ts";
 import type { AgentUse, LoginSummary } from "../../agents/secrets/vault.ts";
 import { vaultShown } from "../../agents/secrets/vault-view.ts";
 import { useColors } from "../colors.ts";
-import { KEY, LOCK } from "../knob-glyphs.ts";
 import { Button, Caption, Choices, FormRow, Group, Item, Note, Page, Setting, Spot, Switch, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 import { Payments } from "./payments.tsx";
@@ -165,7 +164,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
     <>
       <Page title="Passwords">
         <Group testID="passwords-sources">
-          <Setting id="passwords/source-dashi" glyph={KEY}>
+          <Setting id="passwords/source-dashi">
             <Switch
               testID="passwords-source-dashi"
               on={prefs.sources.dashi}
@@ -174,7 +173,6 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
           </Setting>
           <Setting
             id="passwords/source-1password"
-            glyph={LOCK}
             detail={
               passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
             }
