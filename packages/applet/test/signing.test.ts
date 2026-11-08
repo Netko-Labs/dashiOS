@@ -150,7 +150,11 @@ test("pack builds an applet into a package that unpacks to its manifest, the sam
   writeFileSync(join(dir, "src/glyph.ts"), 'export const glyph = "<svg/>";\n');
   writeFileSync(join(dir, "assets/fan.svg"), "<svg/>");
   const first = await pack(dir);
-  const second = await pack(dir);
+  // Packed from another folder (CI's, not the author's): the bundle's module names don't change.
+  const from = process.cwd();
+  process.chdir(tmpdir());
+  const second = await pack(dir).finally(() => process.chdir(from));
+  expect(process.cwd()).toBe(from);
   expect(first.name).toBe("dev.netko.asus-control-0.1.0.dashi-applet");
   expect(first.sha256).toBe(second.sha256);
   const unpacked = unpack(first.bytes);
