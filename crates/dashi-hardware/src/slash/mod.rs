@@ -9,6 +9,8 @@ mod packet;
 mod settings;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod vectors;
 
 pub(crate) use bar::{Bar, SlashError};
 pub(crate) use settings::{Change, Input, Settings};

@@ -164,10 +164,13 @@ forgets the offset at reboot and sometimes on resume, so the shell calls
 The lid's light bar on recent ROG laptops (the G14 2024 and 2025, G16, the
 2025 Strix G16) is a USB HID device with no kernel driver of its own; asusd
 used to drive it. dashi-hardware drives it itself, over hidraw, with asusd's
-protocol: the packets are ported from asusctl's `rog-slash` crate
-(`rog-slash/src/usb.rs`, `data.rs`; OpenGamingCollective/asusctl 6.5.0,
-commit `ecd393d`, the same bytes as gitlab.com/asus-linux/asusctl 6.3.8), in
-`crates/dashi-hardware/src/slash/`.
+protocol, in `crates/dashi-hardware/src/slash/`. asusctl is MPL-2.0, so none
+of its code is in Dashi: the packets (`slash/packet.rs`) are implemented clean
+room (docs/conventions.md, "Licenses") from `docs/cleanroom/slash-protocol.md`,
+a spec of facts only (bytes, lengths, orderings, ranges) written by someone
+who read asusctl, by someone who read only that spec. `slash/vectors.rs`
+checks every test vector in the spec byte for byte, and `slash/tests.rs` what
+each change and restore sends.
 
 - **Found** by the model database's `lighting.slash.usb` (`0b05:19b6` on the
   2025 G14): the hidraw node whose `device/uevent` has
