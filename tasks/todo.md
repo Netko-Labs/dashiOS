@@ -18,7 +18,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 ## Wave 1 · Platform foundations
 - [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
 - [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
-- [ ] The graphics card sleeps: dashi-comp opens the NVIDIA card only while a screen or a buffer needs it (M; found 2026-11-06)
+- [x] The graphics card sleeps: dashi-comp opens the NVIDIA card only while a screen or a buffer needs it (M; found 2026-11-06; `feat/0.5-card-sleeps`: every opening probed off the event loop, a card gone while open let go off the event loop; VM: the single-GPU session only; the laptop check (D3cold on battery, a screen on the card's port) waits for a reboot)
 - [ ] Modifiers on onPress (S; PA-10)
 - [x] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
 - [x] An undo stack in @dashi/ui (M; PA-2)

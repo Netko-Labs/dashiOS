@@ -9,7 +9,7 @@ pub(crate) mod headless;
 pub(crate) mod udev;
 pub(crate) mod winit;
 
-use smithay::backend::allocator::dmabuf::Dmabuf;
+use smithay::{backend::allocator::dmabuf::Dmabuf, wayland::dmabuf::ImportNotifier};
 
 use crate::{
     render::{
@@ -87,13 +87,19 @@ impl Backend {
     }
 }
 
-/// Import a client's GPU buffer into the renderer: whether it can be drawn.
-/// On a seat of its own, one only a sleeping GPU can read wakes it (udev/sleep.rs).
-pub(crate) fn import_dmabuf(state: &mut Dashi, dmabuf: &Dmabuf) -> bool {
-    match &mut state.backend {
-        Backend::Winit(data) => data.import_dmabuf(dmabuf),
-        Backend::Udev(_) => udev::import_dmabuf(state, dmabuf),
+/// Import a client's GPU buffer into the renderer and tell the client
+/// whether it can be drawn. On a seat of its own, one only a sleeping GPU
+/// can read wakes it, and the answer waits for that (udev/imports.rs).
+pub(crate) fn import_dmabuf(state: &mut Dashi, dmabuf: Dmabuf, notifier: ImportNotifier) {
+    let imported = match &mut state.backend {
+        Backend::Winit(data) => data.import_dmabuf(&dmabuf),
+        Backend::Udev(_) => return udev::import_dmabuf(state, dmabuf, notifier),
         Backend::None | Backend::Headless => false,
+    };
+    if imported {
+        let _ = notifier.successful::<Dashi>();
+    } else {
+        notifier.failed();
     }
 }
 

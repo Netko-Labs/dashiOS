@@ -58,15 +58,17 @@ pub(crate) fn init(
     )?;
 
     let gpus = GpuManager::new(GbmGlesBackend::default())?;
+    let probes = probe::probes(handle)?;
     state.backend = Backend::Udev(Box::new(UdevData {
         session,
         primary_gpu,
         gpus,
         devices: HashMap::new(),
-        asleep: HashMap::new(),
+        cards: HashMap::new(),
         kept: HashSet::new(),
         buffer_wake_failed: None,
-        openings: 0,
+        probes,
+        waiting: Vec::new(),
         libinput,
         input_devices: Default::default(),
         gamma: None,
