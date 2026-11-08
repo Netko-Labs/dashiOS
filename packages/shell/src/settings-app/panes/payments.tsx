@@ -5,12 +5,12 @@
  * the login password. Every payment still asks for the fingerprint or password.
  */
 
-import { Switch, useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import { dollars, parseAmount } from "../../agents/secrets/pay.ts";
 import type { CardSummary, Vault } from "../../agents/secrets/vault.ts";
-import { Button, Caption, FormRow, Group, Item, Note, Spot, useSurface } from "../ui.tsx";
+import { useColors } from "../colors.ts";
+import { Button, Caption, FormRow, Group, Item, Note, Spot, Switch, useSurface } from "../ui.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 
 function Field({

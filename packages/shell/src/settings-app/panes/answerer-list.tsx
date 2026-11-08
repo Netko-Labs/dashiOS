@@ -5,12 +5,12 @@
  * detail may wrap (an install command is long); its name never does.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { AnswererChoice } from "../../agents/ask/answerer.ts";
 import { type AnswererRow, answererRows } from "../../agents/ask/choices.ts";
 import type { HarnessStatus } from "../../agents/ask/harness/detect.ts";
+import { useColors } from "../colors.ts";
 import { CheckSlot } from "./parts.tsx";
 
 /** The harnesses' rows, looked up while the list is up; null until they answer. */

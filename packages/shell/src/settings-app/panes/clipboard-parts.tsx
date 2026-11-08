@@ -5,15 +5,16 @@
  * and whether snippets expand in terminals. settings.json `clipboard`.
  */
 
-import { Button, useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { iconPath } from "../../apps.ts";
 import type { ClipboardHistory, HistorySnapshot } from "../../clipboard/history.ts";
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../clipboard/privacy.ts";
+import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
+import { CLIPBOARD } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Setting, useSurface } from "../ui.tsx";
+import { Button, Caption, Group, Setting, useSurface } from "../ui.tsx";
 
 /** What Settings reaches of the history: how much it holds, and clearing it. */
 export type HistoryControl = Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
@@ -90,7 +91,7 @@ export function ClipboardSection({ settings, history, installed }: { settings: S
   return (
     <>
       <Group testID="clipboard-settings">
-        <Setting id="keyboard/clipboard-history" control="clipboard-history" />
+        <Setting id="keyboard/clipboard-history" glyph={CLIPBOARD} control="clipboard-history" />
         <Setting id="keyboard/clipboard-kept" detail={count === 0 ? "Nothing" : count === 1 ? "1 copy" : `${count} copies, pinned ones included`}>
           <Button
             testID="clipboard-clear"

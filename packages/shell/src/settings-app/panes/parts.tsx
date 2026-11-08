@@ -5,9 +5,12 @@
  * first, and a failure's sentence.
  */
 
-import { CHECK, useColors } from "@dashi/ui";
+import { CHECK } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import { PillButton } from "../../shared/controls/inputs.tsx";
+import { Knob } from "../../shared/controls/parts.tsx";
+import { useColors } from "../colors.ts";
 
 /** A value at the end of a row, muted and right-aligned (several lines stack). */
 export function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -17,7 +20,7 @@ export function Value({ children, testID }: { children: string | readonly string
     <View testID={testID} style={{ flexShrink: 1, flexDirection: "column", alignItems: "flex-end", minWidth: 0 }}>
       {lines.map((line, index) => (
         // Lines of a value never reorder.
-        <Text key={index} numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>
+        <Text key={index} numberOfLines={1} style={{ fontSize: 12.5, color: colors.textMuted, textAlign: "right" }}>
           {line}
         </Text>
       ))}
@@ -25,7 +28,7 @@ export function Value({ children, testID }: { children: string | readonly string
   );
 }
 
-/** A compact button for a row: Join, Forget, Connect. */
+/** A compact button for a row: Join, Forget, Connect; a small pill in Control Center's language. */
 export function MiniButton({
   label,
   onPress,
@@ -39,24 +42,15 @@ export function MiniButton({
   tone?: "critical" | "primary";
   disabled?: boolean;
 }) {
-  const colors = useColors();
-  const ink = disabled ? colors.textDisabled : tone === "critical" ? colors.critical : tone === "primary" ? "#ffffff" : colors.text;
   return (
-    <View
+    <PillButton
+      small
+      label={label}
+      onPress={onPress}
       testID={testID}
-      onPress={disabled ? undefined : onPress}
-      style={{
-        height: 24,
-        paddingHorizontal: 11,
-        borderRadius: 6,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: tone === "primary" && !disabled ? colors.selection : colors.button,
-        hoverBackgroundColor: disabled ? colors.button : tone === "primary" ? colors.selection : colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: tone === "primary" ? "semibold" : "normal", color: ink }}>{label}</Text>
-    </View>
+      tone={tone === "critical" ? "danger" : tone === "primary" ? "ink" : "plain"}
+      {...(disabled ? { disabled } : {})}
+    />
   );
 }
 
@@ -87,19 +81,20 @@ export function ListRow({
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        minHeight: 44,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        minHeight: 56,
+        paddingLeft: leading ? 8 : 16,
+        paddingRight: 16,
+        paddingVertical: 8,
         hoverBackgroundColor: onPress ? colors.button : "#00000000",
       }}
     >
       {leading}
       <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: bold ? "semibold" : "normal", color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: 13.5, fontWeight: bold ? "semibold" : "normal", color: colors.text }}>
           {name}
         </Text>
         {detail !== undefined && (
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: 11.5, color: colors.textMuted }}>
             {detail}
           </Text>
         )}
@@ -115,23 +110,9 @@ export function CheckSlot({ on }: { on: boolean }) {
   return <View style={{ width: 16, alignItems: "center" }}>{on && <Svg markup={CHECK} size={13} color={colors.selection} />}</View>;
 }
 
-/** A round icon: lit with the accent while `lit`. */
-export function RoundIcon({ glyph, lit, size = 28 }: { glyph: string; lit: boolean; size?: number }) {
-  const colors = useColors();
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: lit ? colors.selection : colors.track,
-      }}
-    >
-      <Svg markup={glyph} size={Math.round(size * 0.52)} color={lit ? "#ffffff" : colors.text} />
-    </View>
-  );
+/** A round icon, a knob: green with the tighter corner while `lit` (on, connected). */
+export function RoundIcon({ glyph, lit, size = 40 }: { glyph: string; lit: boolean; size?: number }) {
+  return <Knob glyph={glyph} size={size} glyphSize={Math.round(size * 0.45)} on={lit} />;
 }
 
 /**
@@ -170,8 +151,8 @@ export const VAULT_TROUBLE = "Try again; if it keeps failing, log out and in aga
 export function Failure({ children, testID }: { children: string; testID: string }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexShrink: 0, paddingHorizontal: 4 }}>
-      <Text style={{ fontSize: 12, color: colors.critical }}>{children}</Text>
+    <View testID={testID} style={{ flexShrink: 0, paddingHorizontal: 10 }}>
+      <Text style={{ fontSize: 11.5, color: colors.critical }}>{children}</Text>
     </View>
   );
 }

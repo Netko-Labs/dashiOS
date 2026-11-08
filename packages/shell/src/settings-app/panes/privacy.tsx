@@ -126,7 +126,7 @@ export function PrivacyPane({
   };
 
   return (
-    <Page title="Privacy & Security">
+    <Page title="Privacy">
       <AgentsSection grants={grants} home={home} show={show} />
 
       <Spot id="privacy/apps" cards>

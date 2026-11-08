@@ -7,12 +7,14 @@
  * Clipboard history and snippets are here too (clipboard-parts.tsx).
  */
 
-import { rowLook, SEARCH, SelectionBar, useColors } from "@dashi/ui";
+import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Laptop } from "../../laptop/start.ts";
+import { useColors } from "../colors.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
+import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../knob-glyphs.ts";
 import { describeLayout, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "../layouts.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Note, Page, Setting, Slider, Spot, useSurface } from "../ui.tsx";
@@ -119,16 +121,6 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
   );
 }
 
-function RangeLabels({ low, high }: { low: string; high: string }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", width: 220 }}>
-      <Text style={{ fontSize: 10, color: colors.textMuted }}>{low}</Text>
-      <Text style={{ fontSize: 10, color: colors.textMuted }}>{high}</Text>
-    </View>
-  );
-}
-
 /** Fcitx 5 is installed (the only input method offered: input-method.ts). */
 const HAS_FCITX = Bun.which("fcitx5") !== null;
 
@@ -163,17 +155,25 @@ export function KeyboardPane({
   return (
     <Page title="Keyboard">
       <Group>
-        <Setting id="keyboard/key-repeat" detail={describeRate(rate)}>
-          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <Slider testID="keyboard-rate" value={rate} range={REPEAT_RATE} onCommit={(value) => settings.patch("keyboard", { repeatRate: value })} />
-            <RangeLabels low="Off" high="Fast" />
-          </View>
+        <Setting id="keyboard/key-repeat" glyph={REPEAT} detail="Off at the left, fast at the right.">
+          <Slider
+            testID="keyboard-rate"
+            value={rate}
+            range={REPEAT_RATE}
+            glyph={REPEAT}
+            format={describeRate}
+            onCommit={(value) => settings.patch("keyboard", { repeatRate: value })}
+          />
         </Setting>
-        <Setting id="keyboard/repeat-delay" detail={describeDelay(delay)}>
-          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <Slider testID="keyboard-delay" value={delay} range={REPEAT_DELAY} onCommit={(value) => settings.patch("keyboard", { repeatDelay: value })} />
-            <RangeLabels low="Short" high="Long" />
-          </View>
+        <Setting id="keyboard/repeat-delay" glyph={KEYBOARD_KNOB} detail="Short at the left, long at the right.">
+          <Slider
+            testID="keyboard-delay"
+            value={delay}
+            range={REPEAT_DELAY}
+            glyph={KEYBOARD_KNOB}
+            format={describeDelay}
+            onCommit={(value) => settings.patch("keyboard", { repeatDelay: value })}
+          />
         </Setting>
       </Group>
       <Group>

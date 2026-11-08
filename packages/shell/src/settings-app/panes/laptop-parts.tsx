@@ -4,10 +4,9 @@
  * in Keyboard. Each shows only when dashi-hardware reports the knob.
  */
 
-import { Switch } from "@dashi/ui";
 import type { Laptop } from "../../laptop/start.ts";
 import { keyboardLight, lightLabel, useLaptop } from "../../laptop/store.ts";
-import { Caption, Choices, Group, Setting } from "../ui.tsx";
+import { Caption, Choices, Group, Setting, Switch } from "../ui.tsx";
 
 /** Displays: the built-in panel's overdrive (faster pixels, for games). */
 export function PanelOverdriveSection({ laptop }: { laptop: Laptop | null }) {

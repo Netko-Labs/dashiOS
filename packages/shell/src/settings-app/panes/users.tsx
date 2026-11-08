@@ -1,5 +1,5 @@
 /**
- * Users & Accounts: the current user's picture and full name, their login
+ * Users: the current user's picture and full name, their login
  * name and account type, Change Password…, and automatic login. The name and
  * picture are AccountsService's (the picture is chosen with the desktop's file
  * chooser, the way Wallpaper's photos are). Changing the password opens its
@@ -8,13 +8,14 @@
  * login needs an administrator: polkit asks, on the shell's own sheet.
  */
 
-import { Switch, useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Account, initialsOf, nameProblem, useAccount } from "../../accounts/index.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
+import { useColors } from "../colors.ts";
+import { IMAGE, KEY, LOCK, USER } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
-import { Button, Caption, Group, Note, Page, Setting, useSurface } from "../ui.tsx";
+import { Button, Caption, Group, Hero, Note, Page, Setting, Switch, useSurface } from "../ui.tsx";
 import { Failure, Value } from "./parts.tsx";
 
 const AVATAR = 72;
@@ -57,7 +58,7 @@ function NameRow({ account, onSave, busy }: { account: Account; onSave: (name: s
     setTyped(null);
   };
   return (
-    <Setting id="users/full-name" detail={problem ?? null}>
+    <Setting id="users/full-name" glyph={USER} detail={problem ?? null}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ width: 200 }}>
           <TextInput
@@ -66,7 +67,7 @@ function NameRow({ account, onSave, busy }: { account: Account; onSave: (name: s
             placeholder="Your name"
             onChangeText={setTyped}
             onSubmitEditing={save}
-            style={{ width: "100%", fontSize: 13, padding: 7, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
+            style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 12, color: colors.text, backgroundColor: surface.field }}
           />
         </View>
         <Button testID="account-name-save" label="Save" primary disabled={!dirty || problem !== null || busy} onPress={save} />
@@ -93,7 +94,7 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
   };
   if (state.available === false) {
     return (
-      <Page title="Users & Accounts">
+      <Page title="Users">
         <Group>
           <Note testID="account-unavailable">Your account can't be read: AccountsService isn't running or doesn't know this user.</Note>
         </Group>
@@ -102,7 +103,7 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
   }
   if (account === null) {
     return (
-      <Page title="Users & Accounts">
+      <Page title="Users">
         <Group>
           <Note testID="account-loading">Loading…</Note>
         </Group>
@@ -111,20 +112,22 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
   }
   const failure = state.failure;
   return (
-    <Page title="Users & Accounts">
-      <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 6, paddingVertical: 4 }}>
-        <Avatar account={account} />
-        <View testID="account-title">
-          <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>{account.realName || account.userName}</Text>
+    <Page title="Users">
+      <Hero testID="account-hero">
+        <View style={{ flex: 1, flexDirection: "column", alignItems: "center", gap: 6, paddingVertical: 4 }}>
+          <Avatar account={account} />
+          <View testID="account-title">
+            <Text style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>{account.realName || account.userName}</Text>
+          </View>
+          <Text style={{ fontSize: 12, color: colors.textMuted }}>{account.administrator ? "Administrator" : "Standard"}</Text>
         </View>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{account.administrator ? "Administrator" : "Standard"}</Text>
-      </View>
+      </Hero>
       <Group testID="account-details">
         <NameRow account={account} busy={state.busy !== null} onSave={(name) => void store.setRealName(name)} />
         <Setting id="users/account-name">
           <Value testID="account-login">{account.userName}</Value>
         </Setting>
-        <Setting id="users/picture">
+        <Setting id="users/picture" glyph={IMAGE}>
           <Button
             testID="account-picture"
             label={state.busy === "picture" ? "Changing…" : "Change Picture…"}
@@ -134,10 +137,10 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
         </Setting>
       </Group>
       <Group testID="account-security">
-        <Setting id="users/password">
+        <Setting id="users/password" glyph={KEY}>
           <Button testID="account-password" label="Change Password…" onPress={() => services.changePassword(account.hasPassword)} />
         </Setting>
-        <Setting id="users/automatic-login" detail={state.busy === "login" ? "Waiting for permission…" : undefined}>
+        <Setting id="users/automatic-login" glyph={LOCK} detail={state.busy === "login" ? "Waiting for permission…" : undefined}>
           <Switch testID="account-autologin" on={account.automaticLogin} onChange={(on) => state.busy === null && void store.setAutomaticLogin(on)} />
         </Setting>
       </Group>

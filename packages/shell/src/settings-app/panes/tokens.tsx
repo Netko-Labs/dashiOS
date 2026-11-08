@@ -7,12 +7,13 @@
  * one asks first, on a confirm sheet.
  */
 
-import { type Confirm, useColors } from "@dashi/ui";
+import type { Confirm } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import type { TokenSummary, VaultTokens } from "../../agents/secrets/vault.ts";
 import { MODEL_KEYS, modelKey } from "../../agents/tokens/model-keys.ts";
 import { DEFAULT_HEADER, placeholder } from "../../agents/tokens/swap.ts";
+import { useColors } from "../colors.ts";
 import { Button, Caption, Choices, FormRow, Group, Item, Note, Spot, useSurface } from "../ui.tsx";
 import { Failure, MiniButton, VAULT_TROUBLE } from "./parts.tsx";
 

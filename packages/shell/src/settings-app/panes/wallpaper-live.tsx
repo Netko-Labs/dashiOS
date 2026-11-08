@@ -6,13 +6,14 @@
  */
 
 import { statSync } from "node:fs";
-import { useColors } from "@dashi/ui";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { isVideoPath } from "../../wallpaper/live/choice.ts";
 import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../wallpaper/live/tiles.ts";
+import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
+import { VIDEO } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Group, Setting, useSurface } from "../ui.tsx";
 
@@ -132,7 +133,7 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
         </>
       )}
       <Group>
-        <Setting id="wallpaper/add-video">
+        <Setting id="wallpaper/add-video" glyph={VIDEO}>
           <Button testID="live-add-video" label="Add Video…" onPress={addVideo} />
         </Setting>
         {typing && (
@@ -151,7 +152,7 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
           </Setting>
         )}
         <Setting id="wallpaper/pause-on-battery" control="live-pause-battery" />
-        <Setting id="wallpaper/frame-rate" control="live-fps" />
+        <Setting id="wallpaper/frame-rate" stack={false} control="live-fps" />
       </Group>
       {note !== null && (
         <View testID="live-note" style={{ flexShrink: 0 }}>

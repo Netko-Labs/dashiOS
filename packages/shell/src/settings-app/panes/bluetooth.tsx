@@ -6,7 +6,6 @@
  * while it is open and stops when it closes.
  */
 
-import { Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { failureLine } from "../../bluetooth/failures.ts";
@@ -15,8 +14,10 @@ import { type BluetoothState, useBluetooth } from "../../bluetooth/store.ts";
 import type { BluetoothDevice } from "../../bluetooth/types.ts";
 import { useDevices } from "../../control-center/index.ts";
 import { batteryGlyph } from "../../glyphs.ts";
+import { useColors } from "../colors.ts";
+import { BLUETOOTH as BLUETOOTH_KNOB } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
-import { Caption, Group, Note, Page, Setting } from "../ui.tsx";
+import { Caption, Group, Note, Page, Setting, Switch } from "../ui.tsx";
 import { Failure, ListRow, MiniButton, RoundIcon } from "./parts.tsx";
 
 const BUSY = { connecting: "Connecting…", disconnecting: "Disconnecting…", pairing: "Pairing…", forgetting: "Forgetting…" } as const;
@@ -165,7 +166,7 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
   return (
     <Page title="Bluetooth">
       <Group testID="bt-power">
-        <Setting id="bluetooth/bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
+        <Setting id="bluetooth/bluetooth" glyph={BLUETOOTH_KNOB} detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
           {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
         </Setting>
       </Group>

@@ -15,7 +15,6 @@
  * show comes back by itself.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { type DeviceStore, useDevices } from "../../control-center/devices.ts";
@@ -26,6 +25,7 @@ import type { Laptop } from "../../laptop/start.ts";
 import { TextLink } from "../../shared/controls/inputs.tsx";
 import { selectedRef } from "../../wallpaper/catalog.ts";
 import { wallpaperTiles } from "../../wallpaper/tiles.ts";
+import { useColors } from "../colors.ts";
 import { chosenMonitor, displayHero, scaleOffer } from "../heroes.ts";
 import { useScreens, useSettings } from "../hooks.ts";
 import { DISPLAY, NIGHT_SHIFT, SUN, TEXT } from "../knob-glyphs.ts";

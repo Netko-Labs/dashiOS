@@ -7,20 +7,21 @@
  * `spaces.fullscreenDesktop`: a full-screen app gets a Desktop of its own).
  */
 
+import { DESKTOPS, DISPLAY, DOCK, IMAGE, SCROLL } from "../knob-glyphs.ts";
 import { Caption, Group, Page, Setting } from "../ui.tsx";
 
 export function DesktopDockPane() {
   return (
     <Page title="Desktop & Dock">
       <Group testID="dock-settings">
-        <Setting id="desktop-dock/show-dock" control="dock-visible" />
-        <Setting id="desktop-dock/style" control="dock-style" />
-        <Setting id="desktop-dock/autohide" control="dock-autohide" />
+        <Setting id="desktop-dock/show-dock" glyph={DOCK} control="dock-visible" />
+        <Setting id="desktop-dock/style" glyph={IMAGE} stack={false} control="dock-style" />
+        <Setting id="desktop-dock/autohide" glyph={SCROLL} control="dock-autohide" />
       </Group>
       <Caption keys="⌥❖D">Hiding is also in the Dock's right-click menu, and on</Caption>
       <Group testID="spaces-settings">
-        <Setting id="desktop-dock/go-to-app-desktop" control="spaces-switch-on-activate" />
-        <Setting id="desktop-dock/full-screen-desktop" control="spaces-fullscreen-desktop" />
+        <Setting id="desktop-dock/go-to-app-desktop" glyph={DESKTOPS} control="spaces-switch-on-activate" />
+        <Setting id="desktop-dock/full-screen-desktop" glyph={DISPLAY} control="spaces-fullscreen-desktop" />
       </Group>
       <Caption keys="⌃↑">Swipe sideways with three fingers to change desktops. Overview shows them all, on</Caption>
     </Page>

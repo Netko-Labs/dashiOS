@@ -6,7 +6,7 @@
  * Undo for settings changes.
  */
 
-import { CHEVRON_DOWN, CHEVRON_UP, Switch, useColors } from "@dashi/ui";
+import { CHEVRON_DOWN, CHEVRON_UP } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../agents/ask/answerer.ts";
@@ -14,9 +14,10 @@ import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
 import type { KeyPlace, Provider } from "../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../agents/ask/service.ts";
 import { harnessOrder } from "../../agents/handoff/order.ts";
+import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Item, Note, Setting, Spot } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Note, Setting, Spot, Switch } from "../ui.tsx";
 import { AnswererList, useHarnesses } from "./answerer-list.tsx";
 import { ListRow } from "./parts.tsx";
 

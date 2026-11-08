@@ -77,3 +77,15 @@ export const CARD = svg(`<rect x="3" y="6" width="18" height="12" rx="2.5"/><pat
 export const ETHERNET = svg(`<rect x="4" y="5" width="16" height="12" rx="2"/><path d="M9 17v3h6v-3M8 9v3M11 9v3M13 9v3M16 9v3"/>`);
 /** Hands for the agents' kept answers. */
 export const CHECKLIST = svg(`<path d="M4 7l2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 8h7M13 16h7"/>`);
+/** Scrolling: up and down. */
+export const SCROLL = svg(`<path d="M12 3.5v17M8 7.5l4-4 4 4M8 16.5l4 4 4-4"/>`);
+/** A tap: a finger's press, ringed. */
+export const TAP = svg(`<circle cx="12" cy="10" r="2.5"/><path d="M7 10a5 5 0 0 1 10 0"/><path d="M12 12.5V21"/>`);
+/** A keyboard key held: repeat. */
+export const REPEAT = svg(
+  `<path d="M17 4.5l2.5 2.5L17 9.5"/><path d="M4.5 12V10a3 3 0 0 1 3-3h12M7 19.5L4.5 17 7 14.5"/><path d="M19.5 12v2a3 3 0 0 1-3 3h-12"/>`,
+);
+/** Languages: an A and a stroke of another script. */
+export const LANGUAGE = svg(`<path d="M3.5 18l4.5-11 4.5 11M5.3 14h5.4"/><path d="M14 6.5h6.5M17.2 4.5v2c0 4-1.7 7-4.2 8.5M15.2 10c1.1 2 2.9 3.6 5.3 4.5"/>`);
+/** A calendar page: dates, the first day of the week. */
+export const CALENDAR = svg(`<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>`);
