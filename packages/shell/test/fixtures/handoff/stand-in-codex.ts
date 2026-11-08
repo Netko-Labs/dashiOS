@@ -13,7 +13,9 @@
  * login), enters the two-factor code (Dashi asks again) and verifies; it says
  * it signed in only when the page says so. A resumed turn (`resume <id>`)
  * says what it heard and reads the page four times, 3 s apart (time to stop
- * it). "@slow" in the words waits twice as long between steps.
+ * it). "@slow" in the words waits twice as long between steps. "@watch" in
+ * the first turn's words opens the test site and reads it twelve times, 4 s
+ * apart (time to restart the shell while it works: its steps go on).
  */
 
 const argv = process.argv.slice(2);
@@ -32,6 +34,7 @@ const resumed = argv.includes("resume") ? (argv[argv.indexOf("resume") + 1] ?? n
 const asked = await new Response(Bun.stdin.stream()).text();
 const words = asked.split("\n\n").at(-1)?.trim() ?? "";
 const slow = asked.includes("@slow");
+const watching = asked.includes("@watch");
 const site = "http://signin.localhost:8443/";
 
 const out = (event: unknown) => process.stdout.write(`${JSON.stringify(event)}\n`);
@@ -104,6 +107,16 @@ if (resumed) {
     await call("read_page", {});
   }
   say(`Noted: ${words.slice(0, 60)}\nI read the test site again.`);
+} else if (watching) {
+  // A long run: the site once, then the page read again and again.
+  say("Steps: 13");
+  await pause(1500);
+  await call("open_url", { url: site });
+  for (let read = 0; read < 12; read++) {
+    await pause(4000);
+    await call("read_page", {});
+  }
+  say("Watched the test site\nI read it twelve times.");
 } else {
   say("Steps: 6");
   await pause(1500);

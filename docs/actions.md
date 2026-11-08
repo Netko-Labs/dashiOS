@@ -635,8 +635,10 @@ grants, the chip's words, the questions, the follow-ups), `bin/dashi-task.ts`,
 `launcher/agents/handoff-rows.ts` and `handoff-views.tsx` (the rows, the
 context chips, the grants card), `agents-panel.tsx` (the chip and its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).
-Tests: `test/launcher-handoff.test.ts`, `test/launcher-commands.test.ts`, `test/handoff-*.test.ts` (the
-streams from `test/fixtures/handoff/`, no network).
+Tests: `test/launcher-handoff.test.ts`, `test/launcher-commands.test.ts`,
+`test/handoff-*.test.ts` (the streams from `test/fixtures/handoff/`, no
+network; `handoff-records.test.ts` and the service's "a shell that
+restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
 
 - **Starting.** Words that read as a task (a verb and three or more words,
   or five or more; not a question) put **Hand it off** first: one row per
@@ -680,7 +682,8 @@ streams from `test/fixtures/handoff/`, no network).
   `dashi-agent` with a task profile (docs/secrets.md, "A task from the
   launcher") and appends its JSON lines to
   `$XDG_RUNTIME_DIR/dashi-agents/<run>/turn-<n>.jsonl`, which the shell reads
-  as it grows (`runner.ts`). No Terminal opens; closing the launcher never
+  as it grows (`runner.ts`), beside the run's record (below, "A shell that
+  restarts"). No Terminal opens; closing the launcher never
   stops it. The command lines (`commands.ts`), as data, Dashi's words after
   the harness's own, its own tools off and Dashi's MCP server its only
   tools:
@@ -752,9 +755,32 @@ streams from `test/fixtures/handoff/`, no network).
   pills; `agents.handOff`) beside "Answer requests with", and "Don't ask for
   these again".
 
-The shell keeps runs in memory: a shell that restarts doesn't pick up a
-run still working (its service goes on, unseen) or the last hour's ended
-ones (tasks/todo.md).
+- **A shell that restarts** picks its runs up again (`pickup.ts`,
+  `records.ts`). Each run keeps a record beside its streams,
+  `$XDG_RUNTIME_DIR/dashi-agents/<run>/run.json` (the request, the harness,
+  when it started, its turn, unit and stream, the words sent to it since,
+  the window its chip named, the sites allowed for the task, what Undo puts
+  back, whether the person stopped it or was told it ended; never the
+  context's text or a secret), written when any of that changes. A shell
+  that starts lists the tasks' units still running (`systemctl --user
+  list-units 'dashi-task-*'`) and the runs' folders: a run whose unit runs
+  gets its card back from its record and its streams, read again from the
+  start (its steps, its session, "step N of about M"), and its turn is read
+  on as it grows, so new steps arrive, Stop stops its unit, ⇥ follows up;
+  one ended in the last hour comes back as it ended, then, told of by a
+  notification only if it ended while the shell was away; the files of one
+  ended longer ago go. A running unit without a record (an older shell
+  started it) comes back from its first prompt's words and the harness its
+  stream reads as. The harness keeps working meanwhile: its bridge
+  (`dashi-mcp --reconnect`, `mcp-relay.ts`) connects again for up to two
+  minutes, says the client's `initialize` again, and answers a call that
+  was on its way when the shell went with an error ("Dashi restarted before
+  this finished. Try it again."); its sandbox binds the folder of the
+  socket for tasks (`$XDG_RUNTIME_DIR/dashi-mcp.d/dashi-mcp.sock`, which
+  the agents server also listens at), not the socket itself, so the
+  restarted shell's socket shows inside. A question waiting when the shell
+  went is lost with its call (the harness hears the error and may ask
+  again).
 
 ## The keymap
 
