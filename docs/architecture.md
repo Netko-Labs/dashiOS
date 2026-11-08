@@ -158,7 +158,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
 - **What is the shell's stays the shell's.** Holds (Inhibit) go to the
   shell's `InhibitStore` (`src/inhibit/`), which idle reads: while an app
   holds, the screens don't blank and the computer doesn't sleep; the
-  battery menu lists the holds with Allow Sleep. The shell also serves
+  battery panel lists the holds with Allow Sleep. The shell also serves
   `org.freedesktop.ScreenSaver` for apps that skip the portal. A caller
   that leaves the bus (an app that dies, or dashi-portal) lets go of its
   holds; xdg-desktop-portal closes a dead app's Request, and its hold goes

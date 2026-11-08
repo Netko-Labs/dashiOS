@@ -21,7 +21,8 @@ One connection can show up to 8 applets; they go when it closes. The
 parsers are `@dashi/applet`'s (`packages/applet/src/protocol.ts`); the shell's
 `src/applets/` serves them. What follows first is version 1, which every
 applet speaks; version 2 (below) adds a manifest, popovers, and submenus;
-version 3, the launcher's commands; version 4, Dashi's power mode.
+version 3, the launcher's commands; version 4, Dashi's power mode; version 5,
+tiles in Control Center.
 
 ### Applet → shell
 
@@ -228,6 +229,83 @@ const stop = client.onPowerMode((power) => render(power)); // null: not offered 
 if (client.powerMode) client.choosePowerMode("automatic"); // false when not offered, or the machine lacks the mode
 ```
 
+## Version 5: Control Center
+
+A hello with `"protocol":5` from an applet whose manifest declares
+`controls` (and asks for the `controls` permission) puts tiles in Control
+Center. They are declared in applet.json, so they are in Control Center's
+**Add** list (under the applet's name) before the applet has ever run, and
+**Dashi draws them** as its own tiles, in Light and Dark, with the keyboard,
+in the sizes they offer and in edit mode. Nothing of the applet's drawing
+appears there; it only says each control's state and hears what was
+pressed. The shell's side is `src/applets/controls.ts`; the wire format
+and the manifest's part, `packages/applet/src/controls.ts`.
+
+```json
+"permissions": ["hardware.lighting", "controls"],
+"controls": [
+  { "id": "lid",  "kind": "toggle", "title": "Lid light", "icon": "assets/controls/lid-light.svg" },
+  { "id": "fans", "kind": "choice", "title": "Fans", "choices": ["Quiet", "Auto", "Max"] },
+  { "id": "boost", "kind": "slider", "title": "Boost", "min": 0, "max": 100 },
+  { "id": "cpu",  "kind": "status", "title": "CPU" }
+]
+```
+
+| Kind | What it is | Sizes (the first is the one it is added in) | A press |
+| --- | --- | --- | --- |
+| `toggle` | on or off, with a line under its name (`detail`) | `round`, `wide` | the knob (a round tile: anywhere) toggles; a wide tile's name sends `open` |
+| `button` | does one thing | `round`, `wide` | `press` |
+| `choice` | one of 2 to 5 `choices` (16 characters each) | `wide`, `round` | the knob steps to the next; the name opens a page of the choices |
+| `slider` | a value from `min` to `max` (whole numbers) | `flat`, `tall` | dragging sends `set` |
+| `status` | a value to read (`detail`) | `wide`, `round` | `open` |
+
+`id` as an applet's; `title` up to 24 characters; `icon` an `.svg` under
+`assets/` (the menu bar glyph's rules: one `<svg>`, nothing that loads,
+links or runs), tinted by Dashi; without one, a neutral puzzle piece.
+`sizes` narrows the kind's sizes. At most 8 controls.
+
+```
+shell → applet  {"type":"controls","shown":["lid","cpu"]}                    after welcome, and when the person changes the layout
+applet → shell  {"type":"control","id":"lid","on":true,"detail":"Bounce"}    its state; parts left out stay as they were
+                {"type":"control","id":"fans","choice":"Max"}
+                {"type":"control","id":"boost","value":40}
+                {"type":"control","id":"lid","glyph":"<svg …>…</svg>"}       a glyph in place of the icon
+shell → applet  {"type":"control-action","id":"lid","action":"toggle","on":false}
+                {"type":"control-action","id":"fans","action":"choose","choice":"Max"}
+                {"type":"control-action","id":"boost","action":"set","value":40}
+                {"type":"control-action","id":"go","action":"press"}
+                {"type":"control-action","id":"cpu","action":"open"}         its name, or a status tile: open the applet
+```
+
+- **Checked**: `on` only for a toggle, `choice` only one of its choices,
+  `value` only in its range, `detail` up to 40 characters; anything else is
+  refused with `error` (and counts toward the refused messages).
+- **Spaced**: at most 4 updates a second per control are drawn; one that
+  comes sooner waits, and a newer one replaces it. The SDK spaces them too.
+- **Not running**: an installed applet's tiles keep the last state they had
+  (kept across restarts in `$XDG_STATE_HOME/dashi/applet-controls.json`),
+  dimmed, and a press starts the applet again (its unit, if it may run here)
+  rather than reaching it. An applet in development has its tiles in Add
+  only while it is connected.
+- **The permission** `controls` ("Add controls to Control Center" on the
+  consent sheet) grants nothing else: a control can only do what the
+  applet's other permissions allow. A manifest that declares controls
+  without it doesn't parse.
+
+From `defineApplet`, `applet.controls`:
+
+```ts
+const stop = applet.controls.on("lid", (action) => action.action === "toggle" && slash.set({ enabled: action.on }));
+applet.controls.update("lid", { on: true, detail: "Bounce" });   // false for an id applet.json doesn't declare
+applet.controls.onOpen("cpu", () => applet.openPopover());       // with no listener, open opens the popover
+applet.controls.shown;                                           // the ids the person has in Control Center now
+```
+
+`update` keeps each control's whole state and sends it again on every
+welcome (a shell restart), and each declared icon is sent as its glyph once.
+Underneath, `AppletsClient.updateControl` and `onControls`; `drawsControls`
+says whether the shell speaks 5.
+
 ## applet.json
 
 The manifest says who an applet is, when it applies, and what it may touch.
@@ -265,6 +343,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | `when` | | When it applies: `vendor`, `product`, `board`, `family` (DMI's `sys_vendor`, `product_name`, `board_name`, `product_family`; text or a list, a trailing `*` is a prefix), `laptop` (true or false), `hardware` (names dashi-hardware must report). Every condition given must hold. The store says "fits this machine" from it. |
 | `permissions` | | What it may touch (below). None is the default. |
 | `commands` | | What it adds to the launcher, up to 16: `{id, title, keywords?, args?, mode}`. `id` as an applet's; `title` 60 characters, sentence case; `keywords` up to 12; `args` up to 4 of `{name, type, title?, required?}` (`name` lowercase, `type` one of `string`, `number`, `boolean`); `mode` one of `instant`, `pick`, `view` ([Version 3](#version-3-commands)). `src/commands.ts` parses them. |
+| `controls` | | Its tiles in Control Center, up to 8: `{id, kind, title, icon?, sizes?, choices?, min?, max?}` ([Version 5](#version-5-control-center)); needs the `controls` permission. `src/controls.ts` parses them. |
 
 ### Permissions
 
@@ -278,6 +357,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | `hardware.fans` | Change fan curves (asks for your password) | the above, and `SetFanCurve`, `ResetFanCurves` |
 | `hardware.tuning` | Change power limits and undervolt the processor (asks for your password) | the above, and `Set`, `SetMany`, `SetCurveOptimizer`, `ConfirmTuning`, `ClearSavedTuning` |
 | `power.mode` | See and choose the power mode, Automatic included | nothing more: the shell answers it on the applets socket ([Version 4](#version-4-the-power-mode)) |
+| `controls` | Add controls to Control Center | nothing more: Dashi draws the tiles the manifest declares ([Version 5](#version-5-control-center)) |
 | `dbus.system:NAME`, `dbus.session:NAME` | Talk to NAME (known services by their names) | that bus through the proxy, talking only to NAME; `org.freedesktop.DBus`, systemd, logind, polkit, portals, secrets, and `dev.dashi.*` can't be named |
 | `files.downloads`, `files.documents`, `files.pictures`, `files.music`, `files.videos`, `files.desktop` (`:read` for read-only) | Read and change files in Downloads (Read files in …) | that folder, at its place in the applet's home |
 
@@ -454,7 +534,7 @@ code). The log reads like this:
 
 ```
   18:40:01 hello as dev.example.weather 0.1.0
-  18:40:01 ✓ connected (protocol 4)
+  18:40:01 ✓ connected (protocol 5)
   18:40:01 ✓ “Weather” in the menu bar (dev)
   18:40:02 select refresh
   18:40:09 popover asked 260×170
@@ -638,7 +718,10 @@ author key pinned across updates, pulled versions refused.
 - Tooltips are kept but not drawn yet (Metal has no tooltip).
 - A middle click on a tray icon (SecondaryActivate) is not sent yet.
 - XEmbed tray icons (old X11 apps) are not shown; StatusNotifierItem only.
-- Control Center tiles from applets (SDK C) wait for Control Center's room rules.
+- An applet can't hide a control it declared: one that doesn't apply on
+  this machine says so in its `detail` ("Not on this lid").
+- A slider and a status can't show a line of history yet (proposed: a
+  `spark` of the last 30 minutes on a large tile).
 - The D-Bus proxy filters hardware calls by method, not by knob (above).
 - A command isn't an MCP tool for agents yet (`agents: true` in a command,
   proposed): applets' commands are the person's.
