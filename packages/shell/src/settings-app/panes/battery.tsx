@@ -29,7 +29,7 @@ import type { PaneServices } from "../services.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Hero, Page, Setting } from "../ui.tsx";
 import { BatteryHeroView } from "./battery-hero.tsx";
-import { ChargeLimitRows, FullChargeGroup, PowerModeRow, ProcessorGroup } from "./battery-laptop.tsx";
+import { ChargeLimitRow, FullChargeGroup, PowerModeRow, ProcessorGroup, StopChargingRow } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
 import { OnBatteryRow, type ShowPane, useOnBattery } from "./on-battery.tsx";
 import { Failure, Value } from "./parts.tsx";
@@ -97,7 +97,8 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             />
           </Setting>
         )}
-        {services.laptop && limit !== null && <ChargeLimitRows laptop={services.laptop} settings={settings} />}
+        {services.laptop && limit !== null && <StopChargingRow laptop={services.laptop} settings={settings} />}
+        {services.laptop && limit !== null && limit < 100 && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
       </Group>
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">

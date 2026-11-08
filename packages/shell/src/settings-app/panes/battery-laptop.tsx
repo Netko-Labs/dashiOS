@@ -47,37 +47,43 @@ export function PowerModeRow({ laptop }: { laptop: Laptop }) {
 
 const pct = (value: number) => `${Math.round(value)}%`;
 
-/** Where charging stops: a switch ("Stop charging at 80%"), and while it is on, the limit's slider. Null without the knob. */
-export function ChargeLimitRows({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
+/** Where charging stops, as a switch: "Stop charging at 80%". The pane shows it where the laptop has the knob. */
+export function StopChargingRow({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
   const machine = useLaptop(laptop.store);
   const { power } = useSettings(settings).data;
   const knob = machine.knobs.get("charge-limit");
-  if (!machine.laptop || !knob) return null;
   const limit = power.chargeLimit ?? 100;
-  const min = Math.max(CHARGE_LIMIT_MIN, knob.min ?? CHARGE_LIMIT_MIN);
+  const min = Math.max(CHARGE_LIMIT_MIN, knob?.min ?? CHARGE_LIMIT_MIN);
   const early = limit < 100;
   return (
-    <>
-      <Setting id="battery/stop-charging" glyph={PLUG} title={early ? `Stop charging at ${pct(limit)}` : "Stop charging early"}>
-        <Switch
-          testID="battery-stop-charging"
-          on={early}
-          onChange={(on) => settings.patch("power", { chargeLimit: on ? Math.max(DEFAULT_EARLY_LIMIT, min) : 100 })}
-        />
-      </Setting>
-      {early && (
-        <Setting id="battery/charge-limit" stack={false}>
-          <Slider
-            testID="battery-charge-limit"
-            value={limit}
-            range={{ min, max: 100, step: 5 }}
-            glyph={PLUG}
-            format={pct}
-            onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
-          />
-        </Setting>
-      )}
-    </>
+    <Setting id="battery/stop-charging" glyph={PLUG} title={early ? `Stop charging at ${pct(limit)}` : "Stop charging early"}>
+      <Switch
+        testID="battery-stop-charging"
+        on={early}
+        onChange={(on) => settings.patch("power", { chargeLimit: on ? Math.max(DEFAULT_EARLY_LIMIT, min) : 100 })}
+      />
+    </Setting>
+  );
+}
+
+/** The limit's slider, while charging stops early. */
+export function ChargeLimitRow({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
+  const machine = useLaptop(laptop.store);
+  const { power } = useSettings(settings).data;
+  const knob = machine.knobs.get("charge-limit");
+  const limit = power.chargeLimit ?? 100;
+  const min = Math.max(CHARGE_LIMIT_MIN, knob?.min ?? CHARGE_LIMIT_MIN);
+  return (
+    <Setting id="battery/charge-limit" stack={false}>
+      <Slider
+        testID="battery-charge-limit"
+        value={limit}
+        range={{ min, max: 100, step: 5 }}
+        glyph={PLUG}
+        format={pct}
+        onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
+      />
+    </Setting>
   );
 }
 
