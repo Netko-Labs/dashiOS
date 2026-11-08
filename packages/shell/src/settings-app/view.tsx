@@ -24,6 +24,7 @@ import { AgentsPane } from "./panes/agents.tsx";
 import { AppearancePane } from "./panes/appearance.tsx";
 import { BatteryPane } from "./panes/battery.tsx";
 import { BluetoothPane } from "./panes/bluetooth.tsx";
+import { ControlCenterPane } from "./panes/control-center.tsx";
 import { DateTimePane } from "./panes/date-time.tsx";
 import { DesktopDockPane } from "./panes/desktop-dock.tsx";
 import { DisplaysPane } from "./panes/displays.tsx";
@@ -52,7 +53,7 @@ import { Group, Note, Page, SaveError, useSurface } from "./ui.tsx";
  * enough for every sidebar row, Graphics' too, with nothing to scroll
  * (sidebar.tsx `sidebarHeight`); a smaller window scrolls the list.
  */
-export const SETTINGS_WINDOW = { width: 760, height: 704 } as const;
+export const SETTINGS_WINDOW = { width: 760, height: 733 } as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
@@ -62,6 +63,8 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
       return <DisplaysPane screens={ctx.screens} settings={ctx.settings} laptop={ctx.services.laptop} refresh={ctx.services.refresh} />;
+    case "control-center":
+      return <ControlCenterPane editor={ctx.controlCenter?.() ?? null} />;
     case "desktop-dock":
       return <DesktopDockPane />;
     case "keyboard":

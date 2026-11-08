@@ -19,8 +19,10 @@ export {
   AppletsClient,
   type AppletsClientOptions,
   type ClientSocket,
+  CONTROL_SPACING_MS,
   type CommandHandlers,
   type CommandRun,
+  type ControlHandlers,
   type PopoverPlacement,
   type SocketHandlers,
 } from "./client.ts";
@@ -41,12 +43,31 @@ export {
   parseRows,
 } from "./commands.ts";
 export {
+  type AppletControl,
+  CONTROL_KINDS,
+  CONTROL_LIMITS,
+  CONTROL_SIZES,
+  CONTROLS_PROTOCOL,
+  type ControlAction,
+  type ControlKind,
+  type ControlSize,
+  type ControlUpdate,
+  checkUpdate,
+  KIND_SIZES,
+  parseControlAction,
+  parseControls,
+  parseControlUpdate,
+  parseShown,
+} from "./controls.ts";
+export { type ControlsApi, controlsApi } from "./controls-api.ts";
+export {
   type AppletDefinition,
   type AppletHandle,
   type CommandAnswer,
   type CommandDefinition,
   defineApplet,
   findManifest,
+  manifestPath,
   type PopoverProps,
   type ViewProps,
 } from "./define.ts";
@@ -83,6 +104,7 @@ export { PACKAGE_EXTENSION, type Packed, pack, packageName, SDK_VERSION, sha256,
 export { isRefusal, type Refusal } from "./parse.ts";
 export {
   asksForPassword,
+  CONTROLS_PERMISSION,
   cannotDo,
   consentLines,
   describePermission,
@@ -123,6 +145,7 @@ export {
   parseApplet,
   parseAppletMessage,
   parseAppletShellMessage,
+  parseGlyph,
   type Stat,
   wireMessage,
 } from "./protocol.ts";

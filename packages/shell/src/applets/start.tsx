@@ -19,6 +19,7 @@ import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";
 import type { AppletContext } from "./connection.ts";
 import { APPLET_CONSENT, AppletConsentCard } from "./consent-sheet.tsx";
+import type { AppletControls } from "./controls.ts";
 import { AppletGrants } from "./grants.ts";
 import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
 import { AppletLauncher } from "./launcher.ts";
@@ -37,6 +38,8 @@ export interface StartAppletsOptions {
   commands?: AppletCommands;
   /** Dashi's power mode for applets with `power.mode` (power.ts); connected to the mode store once the laptop starts. */
   power?: AppletPower;
+  /** Applets' controls in Control Center (controls.ts): fed the installed ones, their state from their connections. */
+  controls?: AppletControls;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
@@ -50,13 +53,14 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands, power }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
     grants,
     ...(commands ? { commands } : {}),
     ...(power ? { power } : {}),
+    ...(controls ? { controls } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     // Under the popover, over everything else below the bar: a click on it closes the popover.
     // The bar stays clickable, so the item again also closes it (connection.ts).
@@ -124,9 +128,14 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
         runScript: new URL("../../bin/dashi-applet-run.ts", import.meta.url).pathname,
         dashiVersion: SDK_VERSION,
         askConsent,
-        ...(commands ? { onInstalled: (applets: readonly InstalledApplet[]) => commands.setInstalled(applets) } : {}),
+        onInstalled: (applets: readonly InstalledApplet[]) => {
+          commands?.setInstalled(applets);
+          controls?.setInstalled(applets);
+        },
       })
     : null;
+  // A press on the tile of an applet that isn't running starts it.
+  if (launcher) controls?.setWake((id) => launcher.wake(id));
   launcher?.start();
   // Pulled versions are turned off even when Software isn't opened.
   const stopKillSwitch = watchKillSwitch();

@@ -17,6 +17,7 @@
 
 import { existsSync } from "node:fs";
 import type { CommandResult, CommandRow } from "./commands.ts";
+import { CONTROL_LIMITS, CONTROLS_PROTOCOL, type ControlAction, type ControlUpdate } from "./controls.ts";
 import { type Manifest, manifestJson } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import { POWER_PROTOCOL, type PowerChoice, type PowerState } from "./power.ts";
@@ -72,6 +73,17 @@ export interface CommandHandlers {
   onViewDismiss?(seq: number): void;
 }
 
+/** What Control Center does with the applet's controls (protocol 5). */
+export interface ControlHandlers {
+  /** One was pressed. */
+  onAction(action: { id: string } & ControlAction): void;
+  /** Which of them the person has in Control Center now (keep those up to date). */
+  onShown?(shown: readonly string[]): void;
+}
+
+/** The time between two sends of one control's state: 4 a second. */
+export const CONTROL_SPACING_MS = 1000 / CONTROL_LIMITS.updatesPerSecond;
+
 /** A connection as the client uses it (Bun's socket, or a test's). */
 export interface ClientSocket {
   write(data: Uint8Array): number;
@@ -96,6 +108,8 @@ export interface AppletsClientOptions {
   connect?(path: string, handlers: SocketHandlers): void;
   exists?(path: string): boolean;
   later?(fn: () => void, ms: number): () => void;
+  /** Milliseconds, for spacing control updates (tests). */
+  now?(): number;
 }
 
 const RETRY_MS = [500, 1000, 2000, 4000, 8000, 15000] as const;
@@ -152,6 +166,12 @@ export class AppletsClient {
   /** Dashi's power mode as the shell last said it (protocol 4, `power.mode`); null when it doesn't. */
   private power: PowerState | null = null;
   private readonly powerListeners = new Set<(state: PowerState | null) => void>();
+  /** Each control's whole state as last given, sent again on every welcome. */
+  private readonly controlStates = new Map<string, ControlUpdate>();
+  /** When each control's state last went, and whether a newer one waits for its turn. */
+  private readonly controlSends = new Map<string, { at: number; waiting: (() => void) | null }>();
+  private controlHandlers: ControlHandlers | null = null;
+  private shown: readonly string[] = [];
   private readonly connect: NonNullable<AppletsClientOptions["connect"]>;
   private readonly exists: NonNullable<AppletsClientOptions["exists"]>;
   private readonly later: NonNullable<AppletsClientOptions["later"]>;
@@ -160,7 +180,10 @@ export class AppletsClient {
     this.connect = options.connect ?? bunConnect;
     this.exists = options.exists ?? existsSync;
     this.later = options.later ?? unrefTimeout;
+    this.now = options.now ?? Date.now;
   }
+
+  private readonly now: () => number;
 
   /** Whether the shell is listening (a Dashi session). */
   get available(): boolean {
@@ -268,6 +291,53 @@ export class AppletsClient {
     return true;
   }
 
+  /**
+   * A control's state (protocol 5, the manifest's `controls`): what is given
+   * replaces those parts, the rest stays. Sent at most 4 times a second per
+   * control (a newer one waiting replaces the one before), and again
+   * whenever the shell says welcome. False for a control the manifest
+   * doesn't declare.
+   */
+  updateControl(update: ControlUpdate): boolean {
+    const declared = this.options.manifest?.controls.some((control) => control.id === update.id) ?? false;
+    if (!declared) {
+      console.error(`dashi applets: there is no control “${update.id}” in applet.json`);
+      return false;
+    }
+    this.controlStates.set(update.id, { ...this.controlStates.get(update.id), ...update });
+    this.sendControl(update.id);
+    return true;
+  }
+
+  /** Hear Control Center's presses (protocol 5). */
+  onControls(handlers: ControlHandlers | null): void {
+    this.controlHandlers = handlers;
+  }
+
+  /** Whether the shell speaks protocol 5 (it draws controls). */
+  get drawsControls(): boolean {
+    return this.shellProtocol >= CONTROLS_PROTOCOL;
+  }
+
+  /** Which of its controls are in the person's Control Center, as the shell last said. */
+  get shownControls(): readonly string[] {
+    return this.shown;
+  }
+
+  private sendControl(id: string): void {
+    if (!this.socket || !this.drawsControls) return;
+    const sent = this.controlSends.get(id);
+    if (sent?.waiting) return;
+    const wait = sent ? sent.at + CONTROL_SPACING_MS - this.now() : 0;
+    const send = (): void => {
+      const state = this.controlStates.get(id);
+      this.controlSends.set(id, { at: this.now(), waiting: null });
+      if (state && this.socket && this.drawsControls) this.write(`${JSON.stringify({ type: "control", ...state })}\n`);
+    };
+    if (wait <= 0) return send();
+    this.controlSends.set(id, { at: sent?.at ?? 0, waiting: this.later(send, wait) });
+  }
+
   private setPower(state: PowerState | null): void {
     if (state === this.power || JSON.stringify(state) === JSON.stringify(this.power)) return;
     this.power = state;
@@ -311,6 +381,8 @@ export class AppletsClient {
         this.socket = null;
         this.shellProtocol = 0;
         this.setPower(null);
+        for (const sent of this.controlSends.values()) sent.waiting?.();
+        this.controlSends.clear();
         // The shell that placed them is gone.
         for (const id of [...this.popovers]) {
           this.popovers.delete(id);
@@ -337,7 +409,19 @@ export class AppletsClient {
     switch (message.type) {
       case "welcome":
         this.shellProtocol = message.protocol;
+        for (const id of this.controlStates.keys()) this.sendControl(id);
         return;
+      case "controls":
+        if (!this.drawsControls) return;
+        this.shown = message.shown;
+        this.controlHandlers?.onShown?.(message.shown);
+        return;
+      case "control-action": {
+        if (!this.drawsControls) return;
+        const { type: _type, ...action } = message;
+        this.controlHandlers?.onAction(action);
+        return;
+      }
       case "power": {
         if (this.shellProtocol < POWER_PROTOCOL) return;
         const { type: _type, ...state } = message;

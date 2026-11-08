@@ -1,38 +1,40 @@
 /**
- * Control Center, macOS style: tiles for Wi-Fi, Bluetooth, Do Not Disturb,
- * and Dark Mode (on is the accent color), sliders for the display and the
- * sound, and a Lock Screen button. A tile for hardware the machine lacks is
- * not shown.
+ * Control Center (docs/design.html, "Control Center"): a 344-wide panel of
+ * tiles in the person's own layout (layout.ts, layout-store.ts), with no
+ * header (the date is the menu bar clock's). A tile's page grows out of the
+ * tile (page-parts.tsx). Right-click turns the panel into its own editor
+ * (edit mode: remove, resize, drag, Add; Cancel throws the session's edits
+ * away). From the keyboard: the arrows move between tiles, Space toggles,
+ * Return opens, ⇧ and an arrow move a slider, Esc goes back or closes; in
+ * edit mode ⌥ and an arrow move the tile, Space resizes it, ⌫ removes it.
  */
 
-import { Slider, useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
-import { type ReactElement, type ReactNode, useEffect } from "react";
-import { BluetoothPage } from "../bluetooth/page.tsx";
+import { type KeyDownInfo, View } from "@mirinjs/metal";
+import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
-import { ETHERNET, SUN, speakerGlyph, wifiGlyph } from "../glyphs.ts";
 import type { Laptop } from "../laptop/start.ts";
-import { KeyCatcher } from "../overlay.tsx";
-import { SoundPage } from "../sound/page.tsx";
 import type { SoundStore } from "../sound/store.ts";
-import { type SystemStore, useSystem } from "../system/store.ts";
-import { WifiPage } from "../wifi/page.tsx";
+import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";
-import { type DeviceStore, useDevices } from "./devices.ts";
-import { type FlagsStore, useFlags } from "./flags.ts";
-import { BLUETOOTH, CHEVRON_RIGHT, CONTRAST, LOCK, MOON, SUNSET } from "./glyphs.ts";
-import { LaptopPageView } from "./laptop-pages.tsx";
-import { type LaptopPage, LaptopRow } from "./laptop-row.tsx";
+import { type AppletTileSource, isAppletTile } from "./applet-tiles.ts";
+import { type ControlPage, DEFAULT_LAYOUT, isThere } from "./catalog.ts";
+import { useControls } from "./controls.tsx";
+import type { DeviceStore } from "./devices.ts";
+import { AddList, EditFooter } from "./edit.tsx";
+import type { FlagsStore } from "./flags.ts";
+import { ControlGrid } from "./grid.tsx";
+import { addItem, type Direction, frameOf, GRID, type Layout, moveItem, moveToward, neighbor, nextSize, pack, removeItem, shown } from "./layout.ts";
+import { type LayoutStore, useLayout } from "./layout-store.ts";
+import { PageOrigin } from "./page-parts.tsx";
+import { PageView } from "./pages.tsx";
+import { useControlColors } from "./palette.ts";
+import { stepLevel } from "./slider-math.ts";
+import { TILE_RADIUS } from "./tiles.tsx";
 
-export const CONTROL_CENTER_PANEL = { width: 340, padding: 12, gap: 8 } as const;
+export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;
 
-const INNER = CONTROL_CENTER_PANEL.width - 2 * CONTROL_CENTER_PANEL.padding;
-/** A slider card: its padding is 10 on each side. */
-const SLIDER = INNER - 20;
-
-/** What the panel shows: the tiles and sliders, or a tile's own page. */
-export type ControlPage = "main" | "wifi" | "sound" | "bluetooth" | LaptopPage;
+export type { ControlPage };
 
 export interface ControlCenterProps {
   flags: FlagsStore;
@@ -41,253 +43,149 @@ export interface ControlCenterProps {
   wifi: WifiStore;
   sound: SoundStore;
   bluetooth: BluetoothStore;
-  /** The laptop row (laptop-row.tsx); shown only on laptops. */
+  /** The laptop's power modes, keyboard light and graphics card; their tiles show only on laptops. */
   laptop?: Laptop;
+  /** The person's layout, per machine. */
+  layout: LayoutStore;
+  /** Applets' controls (applets/controls.ts). */
+  applets?: AppletTileSource;
+  /** The charge limit in percent now; null without one (the battery row's tick). */
+  chargeLimit?: () => number | null;
   page: ControlPage;
   onPage: (page: ControlPage) => void;
   /** A network was picked on the Wi-Fi page. */
   onJoin: (network: WifiNetwork) => void;
   onLock: () => void;
+  /** The battery row: the battery panel. */
+  onBattery?: () => void;
+  /** A page's "… Settings": System Settings at that pane. */
+  onSettings?: (pane: string) => void;
   onClose: () => void;
+  /**
+   * Settings › Control Center: the panel as an editor in a window, always
+   * editing, in the flow of the page (not on the popover surface), and
+   * leaving the window's keys to it. Done saves and goes on editing.
+   */
+  embedded?: boolean;
 }
 
-function Tile({
-  glyph,
-  label,
-  detail,
-  on,
-  testID,
-  onPress,
-  onOpen,
-}: {
-  glyph: string;
-  label: string;
-  detail: string;
-  on: boolean;
-  testID: string;
-  /** The switch: the whole tile, or just its circle when the tile also opens a page. */
-  onPress: () => void;
-  /** The tile has a page of its own: the label and the chevron open it. */
-  onOpen?: () => void;
-}) {
-  const colors = useColors();
-  const circle = (
-    <View
-      testID={onOpen ? `${testID}-switch` : undefined}
-      onPress={onOpen ? onPress : undefined}
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: on ? colors.selection : colors.track,
-      }}
-    >
-      <Svg markup={glyph} size={17} color={on ? "#ffffff" : colors.text} />
-    </View>
-  );
-  const labels = (
-    <View style={{ flex: 1, flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
-        {label}
-      </Text>
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-        {detail}
-      </Text>
-    </View>
-  );
-  return (
-    <View
-      testID={testID}
-      onPress={onOpen ? undefined : onPress}
-      style={{
-        flex: 1,
-        height: 56,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingLeft: 10,
-        paddingRight: 6,
-        borderRadius: 12,
-        backgroundColor: colors.tile,
-      }}
-    >
-      {onOpen ? (
-        <>
-          {circle}
-          {/* A press on the circle toggles; one anywhere else on the tile opens the page. */}
-          <View
-            testID={`${testID}-open`}
-            onPress={onOpen}
-            style={{ flex: 1, height: 56, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 8, minWidth: 0 }}
-          >
-            {labels}
-            <Svg markup={CHEVRON_RIGHT} size={12} color={colors.textMuted} />
-          </View>
-        </>
-      ) : (
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 }}>
-          {circle}
-          {labels}
-        </View>
-      )}
-    </View>
-  );
-}
+const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "right", up: "up", down: "down" };
 
-/** A card's title; with `onOpen` the title and a chevron open the card's page. */
-function Card({ title, children, onOpen }: { title: string; children: ReactNode; onOpen?: () => void }) {
-  const colors = useColors();
-  const heading = <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{title}</Text>;
-  return (
-    <View style={{ flexDirection: "column", gap: 6, padding: 10, borderRadius: 12, backgroundColor: colors.tile }}>
-      {onOpen ? (
-        <View testID={`cc-${title.toLowerCase()}-open`} onPress={onOpen} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          {heading}
-          <View style={{ flex: 1 }} />
-          <Svg markup={CHEVRON_RIGHT} size={12} color={colors.textMuted} />
-        </View>
-      ) : (
-        heading
-      )}
-      {children}
-    </View>
-  );
-}
-
-/** Rows of two; a lone last tile takes its row. */
-export function pairs<T>(items: readonly T[]): T[][] {
-  const rows: T[][] = [];
-  for (let index = 0; index < items.length; index += 2) rows.push(items.slice(index, index + 2));
-  return rows;
-}
-
-export function ControlCenterPanel({
-  flags,
-  devices,
-  system,
-  wifi,
-  sound,
-  bluetooth: bluetoothStore,
-  laptop,
-  page,
-  onPage,
-  onJoin,
-  onLock,
-  onClose,
-}: ControlCenterProps) {
-  const colors = useColors();
-  const { dnd, dark, night } = useFlags(flags);
-  const { wifi: radio, bluetooth, brightness, volume } = useDevices(devices);
-  const { network } = useSystem(system);
+export function ControlCenterPanel(props: ControlCenterProps) {
+  const { page, onPage, onClose, embedded = false } = props;
+  const colors = useControlColors();
+  const saved = useLayout(props.layout);
+  /** The layout being edited; null outside edit mode. */
+  const [editDraft, setDraft] = useState<Layout | null>(null);
+  // Embedded, the panel is always editing: what is saved until something changes.
+  const draft = editDraft ?? (embedded ? saved : null);
+  /** The tile the keyboard is on; its ring shows once the keyboard was used. */
+  const [focus, setFocus] = useState<string | null>(null);
+  /** Where the tile whose page is open was, for the page to grow from. */
+  const [origin, setOrigin] = useState<{ left: number; top: number; width: number } | null>(null);
+  const controls = useControls(props);
 
   useEffect(() => {
-    void devices.refresh();
-    void system.refresh("network");
-  }, [devices, system]);
+    void props.devices.refresh();
+    void props.system.refresh("network");
+  }, [props.devices, props.system]);
 
-  const connected = network?.kind === "wifi" && network.ssid ? network.ssid : "Not Connected";
-  const tiles = [
-    radio !== null && (
-      <Tile
-        key="wifi"
-        testID="cc-wifi"
-        glyph={wifiGlyph(radio ? 3 : "offline")}
-        label="Wi-Fi"
-        detail={radio ? connected : "Off"}
-        on={radio}
-        onPress={() => void devices.setWifi(!radio)}
-        onOpen={() => onPage("wifi")}
-      />
-    ),
-    // No Wi-Fi hardware: the wired connection is what there is to show.
-    radio === null && network?.kind === "wired" && (
-      <Tile key="ethernet" testID="cc-ethernet" glyph={ETHERNET} label="Ethernet" detail="Connected" on onPress={() => {}} />
-    ),
-    bluetooth !== null && (
-      <Tile
-        key="bluetooth"
-        testID="cc-bluetooth"
-        glyph={BLUETOOTH}
-        label="Bluetooth"
-        detail={bluetooth ? "On" : "Off"}
-        on={bluetooth}
-        onPress={() => void devices.setBluetooth(!bluetooth)}
-        onOpen={() => onPage("bluetooth")}
-      />
-    ),
-    <Tile key="dnd" testID="cc-dnd" glyph={MOON} label="Do Not Disturb" detail={dnd ? "On" : "Off"} on={dnd} onPress={() => flags.toggle("dnd")} />,
-    <Tile key="dark" testID="cc-dark" glyph={CONTRAST} label="Dark Mode" detail={dark ? "On" : "Off"} on={dark} onPress={() => flags.toggle("dark")} />,
-    <Tile key="night" testID="cc-night" glyph={SUNSET} label="Night Shift" detail={night ? "On" : "Off"} on={night} onPress={() => flags.toggle("night")} />,
-  ].filter((tile): tile is ReactElement => tile !== false);
+  const layout = draft ?? saved;
+  const here = (id: string): boolean => (isAppletTile(id) ? controls.applet(id) !== undefined : isThere(id, controls.snapshot));
+  const placed = pack(shown(layout, here));
+  const editing = draft !== null;
+
+  const openPage = (id: string, next: ControlPage): void => {
+    const tile = placed.find((each) => each.id === id);
+    setOrigin(tile ? frameOf(tile) : null);
+    onPage(next);
+  };
+
+  const editHandlers = draft
+    ? {
+        onRemove: (id: string) => setDraft(removeItem(draft, id)),
+        onResize: (id: string) => setDraft(nextSize(draft, id, controls.sizesOf(id))),
+        onMove: (id: string, over: string) => setDraft(moveItem(draft, id, over)),
+      }
+    : null;
+
+  const addable = editing ? controls.addable(layout) : [];
+
+  const key = (event: KeyDownInfo): void => {
+    const name = event.key;
+    if (name === "escape") {
+      if (page !== "main") return onPage("main");
+      if (draft) return setDraft(null);
+      return onClose();
+    }
+    if (page !== "main") return;
+    const direction = ARROWS[name];
+    if (direction) {
+      if (focus === null) return setFocus(placed[0]?.id ?? null);
+      if (draft && event.alt) return setDraft(moveToward(draft, placed, focus, direction));
+      if (event.shift && !draft) {
+        const level = controls.levelOf(focus);
+        if (level !== null) return controls.setLevel(focus, stepLevel(level, direction));
+      }
+      setFocus(neighbor(placed, focus, direction) ?? focus);
+      return;
+    }
+    if (focus === null) return;
+    if (draft) {
+      if (name === "space" || name === "enter") setDraft(nextSize(draft, focus, controls.sizesOf(focus)));
+      if (name === "backspace" || name === "delete") setDraft(removeItem(draft, focus));
+      return;
+    }
+    if (name === "space") controls.press(focus, (next) => openPage(focus, next));
+    if (name === "enter") controls.open(focus, (next) => openPage(focus, next));
+  };
 
   return (
-    <>
-      <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
-      <View
-        occlude
-        testID="control-center"
-        style={{
-          position: "absolute",
-          right: 8,
-          top: 2,
-          width: CONTROL_CENTER_PANEL.width,
-          flexDirection: "column",
-          gap: CONTROL_CENTER_PANEL.gap,
-          padding: CONTROL_CENTER_PANEL.padding,
-          borderRadius: 18,
-          backgroundColor: colors.menu,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: "xl",
-        }}
-      >
-        {page === "wifi" ? (
-          <WifiPage wifi={wifi} radio={radio} onRadio={(on) => void devices.setWifi(on)} onChoose={onJoin} onBack={() => onPage("main")} />
-        ) : page === "sound" ? (
-          <SoundPage sound={sound} volume={volume} onVolume={(level) => devices.setVolumeLevel(level)} sliderWidth={SLIDER} onBack={() => onPage("main")} />
-        ) : page === "bluetooth" ? (
-          <BluetoothPage bluetooth={bluetoothStore} radio={bluetooth} onRadio={(on) => void devices.setBluetooth(on)} onBack={() => onPage("main")} />
-        ) : page !== "main" ? (
-          laptop ? (
-            <LaptopPageView page={page} laptop={laptop} onBack={() => onPage("main")} onRestart={() => laptop.run({ kind: "restart" })} />
-          ) : null
-        ) : (
-          <>
-            {pairs(tiles).map((row, index) => (
-              // The rows never reorder.
-              <View key={index} style={{ flexDirection: "row", gap: CONTROL_CENTER_PANEL.gap }}>
-                {row}
-              </View>
-            ))}
-            {laptop && <LaptopRow laptop={laptop} gap={CONTROL_CENTER_PANEL.gap} onPage={onPage} />}
-            {brightness !== null && (
-              <Card title="Display">
-                <Slider testID="cc-brightness" width={SLIDER} value={brightness} glyph={SUN} onChange={(value) => devices.setBrightnessLevel(value)} />
-              </Card>
-            )}
-            {volume !== null && (
-              <Card title="Sound" onOpen={() => onPage("sound")}>
-                <Slider
-                  testID="cc-volume"
-                  width={SLIDER}
-                  value={volume.muted ? 0 : volume.level}
-                  glyph={speakerGlyph(volume.level, volume.muted)}
-                  onChange={(value) => devices.setVolumeLevel(value)}
-                />
-              </Card>
-            )}
-            <View
-              testID="cc-lock"
-              onPress={onLock}
-              style={{ flexDirection: "row", alignItems: "center", gap: 10, height: 40, paddingLeft: 12, borderRadius: 12, backgroundColor: colors.tile }}
-            >
-              <Svg markup={LOCK} size={15} color={colors.text} />
-              <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Lock Screen</Text>
-            </View>
-          </>
-        )}
-      </View>
-    </>
+    <View
+      occlude
+      testID="control-center"
+      {...(embedded ? {} : { onWindowKeyDown: key })}
+      onContextMenu={() => {
+        if (page === "main" && !draft) setDraft(saved);
+      }}
+      style={{
+        ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
+        width: GRID.width,
+        flexDirection: "column",
+        padding: GRID.padding,
+        borderRadius: GRID.radius,
+        backgroundColor: colors.surface,
+        ...(embedded ? {} : { shadow: "xl" as const }),
+      }}
+    >
+      {page !== "main" ? (
+        <PageOrigin.Provider value={origin}>
+          <PageView page={page} props={props} controls={controls} onBack={() => onPage("main")} />
+        </PageOrigin.Provider>
+      ) : (
+        <>
+          <ControlGrid
+            placed={placed}
+            focused={focus}
+            editing={editHandlers}
+            radiusOf={(id) => (controls.isOn(id) ? TILE_RADIUS.on : TILE_RADIUS.off)}
+            renderTile={(tile, frame) => controls.render(tile, frame, editing, (next) => openPage(tile.id, next))}
+          />
+          {draft && (
+            <>
+              <AddList entries={addable} onAdd={(id) => setDraft(addItem(draft, id, controls.sizesOf(id)[0] ?? "round"))} />
+              <EditFooter
+                onReset={() => setDraft(DEFAULT_LAYOUT)}
+                onCancel={() => setDraft(null)}
+                onDone={() => {
+                  props.layout.set(draft);
+                  setDraft(null);
+                }}
+              />
+            </>
+          )}
+        </>
+      )}
+    </View>
   );
 }

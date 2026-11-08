@@ -69,6 +69,22 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Frames in read_page are listed after the page, not where they sit; a field in a cross-origin frame isn't placed for the mask (it is still never read) (M)
 - [ ] Firefox: the same extension as a WebExtension, its native host manifest under `~/.mozilla/native-messaging-hosts` (M)
 
+## Control Center, the battery panel, applets' controls (`feat/0.5-control-center`; design: `expressive-final.html`, approved)
+- [x] The panel: 344 wide, radius 28, rows 56, no header; wide tiles with a knob (knob toggles, name opens), round tiles with a word, ink sliders standing or lying, the battery row; Dashi green for on with corners 28 → 18 on a 220 ms spring; Light and Dark tokens of its own (`src/control-center/`)
+- [x] The layout per machine (`$XDG_STATE_HOME/dashi/control-center-layout.json` by machine id), packed with no gaps; missing hardware leaves no tile and comes back where it was; the default: Wi-Fi (Ethernet without it), the sliders, Bluetooth, Focus, Dark, Power, Keyboard, the battery; Lock, Night Shift, Graphics, Hotspot and applets' controls in Add
+- [x] Edit mode in the panel (right-click) and Settings › Control Center (a 22nd pane; the window 760 × 733): "−", click to resize, drag and ⌥-arrows to move, Add, Reset · Cancel · Done
+- [x] The keyboard: arrows, Space, Return, ⇧-arrows on a slider, Esc; a purple ring after the keyboard
+- [x] Pages grow out of their tile: Wi-Fi (Wi-Fi Settings…), Bluetooth, Sound, the power mode, the keyboard light, graphics, an applet's choice; restyled, same behaviour
+- [x] The battery panel replaces the battery menu (from the item and the battery row): status, gauge with the limit, "Charge, last 24 h", watts that add up (the apps' share an estimate, rows left out when unknown), the laptop's rows (full charge once, the card's holders, keep-awake), Battery Settings; no power modes there any more
+- [x] Applets' controls: protocol 5, the `controls` permission, `controls.update / on / onOpen`, ≤ 8 controls, ≤ 4 updates a second, last state dimmed and a press starts the applet (docs/applets.md, Version 5)
+- [x] ASUS Control 0.3.0 (`asus-control` `feat/controls`): Lid light, Fans, CPU
+- [x] VM: `dashi-0.5.0-review/41-control-center/` (fake Wi-Fi and Bluetooth, a fixture battery, a virtual sink, the fake G14)
+- [ ] Mirroring: its glyph is drawn, its tile waits for the compositor to mirror a screen (M)
+- [ ] The rows of a page by the keyboard (the arrows reach the tiles, not yet a page's rows) (S)
+- [ ] A slider's or a status's 30-minute line on a large tile (`spark`, controls.html § 4) (S)
+- [ ] Per-app watts measured, not estimated, where the machine can say (RAPL through dashi-hardware) (M)
+- [ ] Hotspot on a machine with Wi-Fi: checked in code (nmcli), not on hardware (S; laptop)
+
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)

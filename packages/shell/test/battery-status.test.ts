@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { batteryEntries, batteryStatus, extraEntries } from "../src/menus/status-menu.ts";
+import { extraEntries } from "../src/menus/status-menu.ts";
 import { formatMinutes, minutesLeft, type PowerSupply, summarizeBattery } from "../src/system/battery.ts";
 import { pluggedIn } from "../src/system/charger.ts";
 
@@ -42,20 +42,8 @@ test("the summary carries the time while charging or discharging, never on hold"
   expect(held).toEqual({ percent: 50, state: "plugged" });
 });
 
-test("the battery menu says the charge, the source, and the time", () => {
+test("minutes are written as hours and minutes", () => {
   expect(formatMinutes(125)).toBe("2:05");
-  expect(batteryStatus({ percent: 40, state: "charging", minutesLeft: 75 })).toBe("1:15 until full");
-  expect(batteryStatus({ percent: 40, state: "discharging" })).toBe("Calculating time left…");
-  expect(batteryStatus({ percent: 80, state: "plugged" })).toBe("Not charging");
-  const entries = batteryEntries({ percent: 40, state: "discharging", minutesLeft: 200 });
-  expect(entries.map((entry) => (entry.kind === "item" ? entry.label : "—"))).toEqual([
-    "Battery  40%",
-    "Power Source: Battery",
-    "3:20 remaining",
-    "—",
-    "Battery Settings…",
-  ]);
-  expect(entries.at(-1)).toMatchObject({ action: { kind: "battery-settings" } });
 });
 
 test("plugging in shows the HUD once; staying on power, unplugging, and the first reading show nothing", () => {

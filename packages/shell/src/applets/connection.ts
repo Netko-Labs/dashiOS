@@ -6,7 +6,8 @@
  * as), and it may ask for popovers, which the shell places under the item,
  * grants the layer shell for (grants.ts), and closes on a click outside.
  * Version 4 adds Dashi's power mode for an applet that asks for
- * `power.mode` (power.ts).
+ * `power.mode` (power.ts); version 5, its controls in Control Center
+ * (controls.ts).
  *
  * A line too long, a flood of messages, or too many refused ones ends the
  * connection; a refused message otherwise leaves its applets as they were.
@@ -17,6 +18,7 @@ import { nameApplet } from "../apps.ts";
 import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../extras/index.ts";
 import { LineBuffer } from "../lines.ts";
 import type { AppletCommands, CommandMessage } from "./commands.ts";
+import type { AppletControls } from "./controls.ts";
 import type { AppletGrants } from "./grants.ts";
 import { type PopoverScreen, placePopover } from "./placement.ts";
 import { type AppletPower, attachPower, mayChoosePower } from "./power.ts";
@@ -49,6 +51,8 @@ export interface AppletContext {
   commands?: Pick<AppletCommands, "attach">;
   /** Dashi's power mode (power.ts): a version 4 connection with `power.mode` hears it and may ask for a choice. */
   power?: AppletPower;
+  /** Control Center's applet controls (controls.ts): a version 5 connection whose manifest declares them says their state. */
+  controls?: Pick<AppletControls, "attach">;
   now?: () => number;
   parse?: typeof parseAppletMessage;
 }
@@ -87,7 +91,8 @@ export function sameManifest(hello: Manifest, installed: Manifest): boolean {
     hello.id === installed.id &&
     hello.version === installed.version &&
     names(hello) === names(installed) &&
-    JSON.stringify(hello.commands) === JSON.stringify(installed.commands)
+    JSON.stringify(hello.commands) === JSON.stringify(installed.commands) &&
+    JSON.stringify(hello.controls) === JSON.stringify(installed.controls)
   );
 }
 
@@ -118,6 +123,8 @@ export class AppletConnection implements ExtraActions {
   private commands: ReturnType<AppletCommands["attach"]> | null = null;
   /** Stops telling it the power mode; set from a version 4 hello with `power.mode` on. */
   private stopPower: (() => void) | null = null;
+  /** Its controls in Control Center, from a version 5 hello with `controls` on. */
+  private controls: ReturnType<AppletControls["attach"]> | null = null;
   private readonly extras: ExtrasStore;
   private readonly now: () => number;
   private readonly parse: typeof parseAppletMessage;
@@ -174,6 +181,8 @@ export class AppletConnection implements ExtraActions {
     this.commands = null;
     this.stopPower?.();
     this.stopPower = null;
+    this.controls?.detach();
+    this.controls = null;
     if (this.version >= 2) void this.context.grants?.forget(this.pid).catch(() => {});
     this.extras.dropWhere((extra) => extra.key.startsWith(this.prefix));
     this.applets.clear();
@@ -237,6 +246,12 @@ export class AppletConnection implements ExtraActions {
         return this.command(message);
       case "power":
         return this.askPower(message.choice);
+      case "control": {
+        if (!this.controls) return this.refuse("control: declare it in applet.json’s controls, with the “controls” permission");
+        const { type: _type, ...update } = message;
+        const refused = this.controls.receive(update);
+        return refused === null ? undefined : this.refuse(refused);
+      }
       case "remove":
         if (this.popover?.id === message.id) this.dismissPopover(true);
         if (this.applets.delete(message.id)) this.extras.drop(this.prefix + message.id);
@@ -278,7 +293,7 @@ export class AppletConnection implements ExtraActions {
     if (installed && !sameManifest(manifest, installed)) {
       this.send({
         type: "error",
-        message: `hello: this is not ${installed.id} ${installed.version} as installed (its id, version, permissions, or commands differ)`,
+        message: `hello: this is not ${installed.id} ${installed.version} as installed (its id, version, permissions, commands, or controls differ)`,
       });
       return this.end();
     }
@@ -302,6 +317,11 @@ export class AppletConnection implements ExtraActions {
     // The power mode now, and on every change, for an applet that asked for it (an installed one as installed).
     if (this.version >= 4 && this.context.power && mayChoosePower(installed ?? manifest)) {
       this.stopPower = attachPower(this.context.power, (state) => this.send({ type: "power", ...state }));
+    }
+    // Its controls (an installed one's as installed): their state comes in, presses go out.
+    const declared = installed ?? manifest;
+    if (this.version >= 5 && this.context.controls && declared.controls.length > 0 && declared.permissions.some((each) => each.kind === "controls")) {
+      this.controls = this.context.controls.attach({ manifest: declared, send: (message) => this.send(message) });
     }
   }
 

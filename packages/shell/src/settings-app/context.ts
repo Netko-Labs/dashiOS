@@ -9,6 +9,7 @@ import type { RegionStore } from "../region/store.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { AboutInfo } from "./about.ts";
 import type { XkbLayouts } from "./layouts.ts";
+import type { ControlCenterEditor } from "./panes/control-center.tsx";
 import type { PaneId } from "./panes.ts";
 import type { ScreensStore } from "./screens.ts";
 import type { PaneServices } from "./services.ts";
@@ -41,6 +42,8 @@ export interface PaneContext {
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */
   chooser: PhotoChooser;
+  /** Control Center's stores and layout, for its editor (Settings › Control Center); null before the menus start. */
+  controlCenter?: () => ControlCenterEditor | null;
   /** Wi-Fi, Bluetooth, sound, power, and accounts: the machine panes (services.ts). */
   services: PaneServices;
   about(): AboutInfo;

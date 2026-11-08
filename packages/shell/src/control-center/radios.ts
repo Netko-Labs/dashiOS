@@ -63,6 +63,30 @@ export function bluetoothRadio(run: Run): Radio {
   };
 }
 
+/** Whether `nmcli -t -f NAME,TYPE connection show --active` lists the hotspot NetworkManager makes (`Hotspot`). */
+export function parseHotspot(output: string): boolean {
+  return output.split("\n").some((line) => /^Hotspot:802-11-wireless$/.test(line.trim()));
+}
+
+/**
+ * Personal Hotspot through `nmcli`: on shares this machine's connection over
+ * its Wi-Fi (`nmcli device wifi hotspot`, the connection NetworkManager names
+ * `Hotspot`), off takes that connection down. Read as null without Wi-Fi.
+ */
+export function hotspotRadio(run: Run): Radio {
+  return {
+    read: async () => {
+      const devices = await run(["nmcli", "-t", "-f", "TYPE", "dev", "status"]);
+      if (devices === null || !hasWifiDevice(devices)) return null;
+      const active = await run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"]);
+      return active === null ? null : parseHotspot(active);
+    },
+    set: async (on) => {
+      await run(on ? ["nmcli", "device", "wifi", "hotspot"] : ["nmcli", "connection", "down", "Hotspot"]);
+    },
+  };
+}
+
 /**
  * A radio that reads the real one until it is written, and keeps what it was
  * told from then on: the switch works on screen, and nothing reaches the machine.
@@ -81,12 +105,20 @@ export function shadowRadio(real: Radio): Radio {
  * The radios the switches use. On a stand-in run the Wi-Fi radio is the
  * stand-in's own (`wifi`), or a shadow of `nmcli` if it has none, and
  * Bluetooth likewise (`bluetooth`, else a shadow: reads real, writes in
- * memory). Off the stand-in a radio that is passed is used as it is (the
+ * memory), and the hotspot is always a shadow there. Off the stand-in a radio that is passed is used as it is (the
  * Bluetooth one goes through BlueZ, with `bluetoothctl` behind it).
  */
-export function radiosFor(options: { standIn: boolean; run: Run; wifi?: Radio | null; bluetooth?: Radio | null }): { wifi: Radio; bluetooth: Radio } {
+export function radiosFor(options: { standIn: boolean; run: Run; wifi?: Radio | null; bluetooth?: Radio | null }): {
+  wifi: Radio;
+  bluetooth: Radio;
+  hotspot: Radio;
+} {
   const { standIn, run } = options;
   const bluetooth = bluetoothRadio(run);
-  if (!standIn) return { wifi: options.wifi ?? nmcliRadio(run), bluetooth: options.bluetooth ?? bluetooth };
-  return { wifi: options.wifi ?? shadowRadio(nmcliRadio(run)), bluetooth: options.bluetooth ?? shadowRadio(bluetooth) };
+  if (!standIn) return { wifi: options.wifi ?? nmcliRadio(run), bluetooth: options.bluetooth ?? bluetooth, hotspot: hotspotRadio(run) };
+  return {
+    wifi: options.wifi ?? shadowRadio(nmcliRadio(run)),
+    bluetooth: options.bluetooth ?? shadowRadio(bluetooth),
+    hotspot: shadowRadio(hotspotRadio(run)),
+  };
 }

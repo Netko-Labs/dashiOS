@@ -56,7 +56,19 @@
       "uniqueItems": true,
       "items": {
         "anyOf": [
-          { "enum": ["network", "notifications", "hardware.sensors", "hardware.power", "hardware.lighting", "hardware.fans", "hardware.tuning", "power.mode"] },
+          {
+            "enum": [
+              "network",
+              "notifications",
+              "hardware.sensors",
+              "hardware.power",
+              "hardware.lighting",
+              "hardware.fans",
+              "hardware.tuning",
+              "power.mode",
+              "controls"
+            ]
+          },
           { "type": "string", "pattern": "^dbus\\.(system|session):[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+$" },
           { "type": "string", "pattern": "^files\\.(downloads|documents|pictures|music|videos|desktop)(:read)?$" }
         ]
@@ -95,6 +107,26 @@
             "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself.",
             "enum": ["instant", "pick", "view"]
           }
+        }
+      }
+    },
+    "controls": {
+      "description": "What it adds to Control Center: listed in Add before it ever runs, drawn by Dashi, its state over protocol 5 (docs/applets.md, Version 5). Needs the controls permission.",
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "title"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+          "kind": { "enum": ["toggle", "button", "choice", "slider", "status"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 24 },
+          "icon": { "type": "string", "pattern": "\\.svg$" },
+          "sizes": { "type": "array", "uniqueItems": true, "minItems": 1, "maxItems": 2, "items": { "enum": ["round", "wide", "tall", "flat"] } },
+          "choices": { "type": "array", "minItems": 2, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 16 } },
+          "min": { "type": "integer" },
+          "max": { "type": "integer" }
         }
       }
     }

@@ -11,11 +11,12 @@ import { AppMenuStore } from "../app-menus/store.ts";
 import { type App, appFor, iconPath } from "../apps.ts";
 import { type Arranger, parseOutputs } from "../arrange.ts";
 import { holdingBar } from "../bar-hold.ts";
+import type { BatteryPopoverSources } from "../battery/popover.tsx";
 import { PairingPrompt } from "../bluetooth/prompt.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import { BluetoothStore } from "../bluetooth/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { controlFlags, DeviceStore, radiosFor } from "../control-center/index.ts";
+import { type AppletTileSource, type ControlCenterProps, controlFlags, DeviceStore, LayoutStore, radiosFor } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import type { Laptop } from "../laptop/start.ts";
@@ -89,12 +90,24 @@ export interface MenusOptions {
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
   appMenus?: AppMenuStore;
-  /** The laptop's stores, for Control Center's laptop row (laptop/). */
+  /** The laptop's stores, for Control Center's laptop tiles (laptop/). */
   laptop?: Laptop;
+  /** Control Center's layout on this machine; one in memory when absent (tests). */
+  layout?: LayoutStore;
+  /** Applets' controls in Control Center (applets/controls.ts). */
+  appletControls?: AppletTileSource;
+  /** The charge limit in percent now, or null (the battery row's and panel's tick). */
+  chargeLimit?: () => number | null;
+  /** The battery panel's stores and rows (battery/popover.tsx); without them the battery item opens nothing. */
+  battery?: Omit<BatteryPopoverSources, "onApp" | "onAction" | "onSettings" | "chargeLimit">;
+  /** System Settings at a pane ("network", "battery", "control-center"). */
+  openSettingsPane?(pane: string): void;
 }
 
 export interface Menus {
   controller: MenuController;
+  /** Control Center's stores and layout, as the panel has them (Settings › Control Center edits with them). */
+  controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "onBattery">;
   /** The stores Control Center runs, which System Settings' machine panes share. */
   shared: SharedStores;
   /** Asks first, in the menus' sheet, then restarts, shuts down, or logs out. */
@@ -172,6 +185,7 @@ export function startMenus(options: MenusOptions): Menus {
     bluetooth: options.bluetooth.radio,
   });
   const devices = new DeviceStore({
+    hotspotRadio: radios.hotspot,
     volumeChanged: (volume) => options.system.publish("volume", volume),
     ...(options.brightnessChanged ? { brightnessChanged: options.brightnessChanged } : {}),
     wifiRadio: radios.wifi,
@@ -212,6 +226,34 @@ export function startMenus(options: MenusOptions): Menus {
     };
   };
 
+  const layout = options.layout ?? new LayoutStore(null);
+  const chargeLimit = options.chargeLimit ?? (() => null);
+  const controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "onBattery"> = {
+    flags: controlFlags(),
+    devices,
+    system: options.system,
+    wifi,
+    sound,
+    bluetooth,
+    ...(options.laptop ? { laptop: options.laptop } : {}),
+    layout,
+    ...(options.appletControls ? { applets: options.appletControls } : {}),
+    chargeLimit,
+    onSettings: (pane) => {
+      controller.close();
+      options.openSettingsPane?.(pane);
+    },
+    onJoin: (network) =>
+      void chooseNetwork(wifi, network, (secured) => {
+        // The sheet takes the keyboard; the popover would only sit in its way.
+        controller.close();
+        passwords.ask(secured);
+      }),
+    onLock: () => {
+      controller.close();
+      setTimeout(options.lock, SETTLE_MS);
+    },
+  };
   const controller: MenuController = new MenuController({
     context,
     openSurface: (onClosed, output) =>
@@ -220,25 +262,7 @@ export function startMenus(options: MenusOptions): Menus {
         <PopoverRoot
           controller={controller}
           appMenus={appMenus}
-          controlCenter={{
-            flags: controlFlags(),
-            devices,
-            system: options.system,
-            wifi,
-            sound,
-            bluetooth,
-            ...(options.laptop ? { laptop: options.laptop } : {}),
-            onJoin: (network) =>
-              void chooseNetwork(wifi, network, (secured) => {
-                // The sheet takes the keyboard; the popover would only sit in its way.
-                controller.close();
-                passwords.ask(secured);
-              }),
-            onLock: () => {
-              controller.close();
-              setTimeout(options.lock, SETTLE_MS);
-            },
-          }}
+          controlCenter={controlCenter}
           notifications={options.notifications}
           dockInset={(output) => options.dockInset?.(output) ?? 0}
           onChoose={(action, appName) => {
@@ -249,6 +273,17 @@ export function startMenus(options: MenusOptions): Menus {
           onStatusChoose={(action) => (action.kind === "activity-monitor" ? void showEnergy(action.app) : options.runStatus(action))}
           onStatusClosed={(key) => options.statusClosed?.(key)}
           {...(options.agentsPanel ? { agentsPanel: options.agentsPanel } : {})}
+          {...(options.battery
+            ? {
+                battery: {
+                  ...options.battery,
+                  chargeLimit,
+                  onApp: (app) => void showEnergy(app),
+                  onAction: (action) => (action.kind === "activity-monitor" ? void showEnergy(action.app) : options.runStatus(action)),
+                  onSettings: () => options.runStatus({ kind: "battery-settings" }),
+                },
+              }
+            : {})}
         />,
         onClosed,
       ),
@@ -330,6 +365,7 @@ export function startMenus(options: MenusOptions): Menus {
 
   return {
     controller,
+    controlCenter,
     shared: {
       wifi,
       devices,

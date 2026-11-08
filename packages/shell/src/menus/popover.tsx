@@ -6,8 +6,9 @@
 
 import { type NativeHostOptions, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../app-menus/store.ts";
+import { BatteryPopover, type BatteryPopoverSources } from "../battery/popover.tsx";
 import { ControlCenterPanel, type ControlCenterProps } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { NotificationCenterPanel, type NotificationStore } from "../notifications/index.ts";
@@ -69,11 +70,12 @@ export function PopoverRoot({
   onStatusChoose,
   onStatusClosed,
   agentsPanel,
+  battery,
 }: {
   controller: MenuController;
   /** The menus apps published; the open app menu follows its updates. */
   appMenus: AppMenuStore;
-  controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose">;
+  controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "onBattery">;
   notifications: NotificationStore;
   /** How much room the Dock takes at the bottom of that screen (the popover's own) now, asked at each draw (the Dock's settings can change). */
   dockInset: (output?: string) => number;
@@ -87,7 +89,11 @@ export function PopoverRoot({
   onStatusClosed?: (key: string) => void;
   /** The agents' panel under their chip (agents-panel.tsx), drawn by its owner. */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
+  /** The battery panel's stores and what its rows do (battery/popover.tsx). */
+  battery?: BatteryPopoverSources;
 }) {
+  // The surface's width: the battery panel stays inside it.
+  const [width, setWidth] = useState<number | null>(null);
   const { popover, context, appName, output } = useMenus(controller);
   const app = useAppMenus(appMenus);
   const entries = popover?.kind === "menu" && context ? buildMenu(popover.id, { ...context, app }) : [];
@@ -98,7 +104,7 @@ export function PopoverRoot({
     if (vanished) controller.close();
   }, [vanished, controller]);
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onLayout={(bounds) => setWidth(bounds.width)}>
       <View testID="popover-backdrop" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
       {popover?.kind === "menu" && (
         <DropdownMenu
@@ -138,8 +144,15 @@ export function PopoverRoot({
         />
       )}
       {popover?.kind === "control-center" && (
-        <ControlCenterPanel {...controlCenter} page={popover.page} onPage={(page) => controller.setControlPage(page)} onClose={close} />
+        <ControlCenterPanel
+          {...controlCenter}
+          page={popover.page}
+          onPage={(page) => controller.setControlPage(page)}
+          onBattery={() => controller.showBatteryFromControlCenter()}
+          onClose={close}
+        />
       )}
+      {popover?.kind === "battery" && battery && <BatteryPopover sources={battery} right={popover.right} screenWidth={width} close={close} />}
       {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close })}
       {popover?.kind === "notification-center" && <NotificationCenterPanel store={notifications} dockInset={dockInset(output)} onClose={close} />}
     </View>

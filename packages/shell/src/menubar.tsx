@@ -2,7 +2,7 @@
  * The menu bar: the Dashi menu and the focused app's name and menus on the
  * left, status and the clock on the right. A click opens a title's menu (the
  * pointer then moves between menus without clicking), a click on the status
- * area opens Control Center (the battery has its own menu), and a click on
+ * area opens Control Center (the battery has its own panel), and a click on
  * the clock the notification center (menus/). Programs' own items, tray
  * icons and applets, sit left of the status glyphs (extras/). An app that published its own menus (app-menus/) has
  * them here while one of its windows is focused, in place of File, Edit,
@@ -19,18 +19,14 @@ import { type App, appFor } from "./apps.ts";
 import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 import { BarPills } from "./bar-pills.tsx";
-import type { BatteryMonitor } from "./battery/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
 import { controlFlags, useFlags } from "./control-center/flags.ts";
 import { MOON } from "./control-center/glyphs.ts";
 import type { ExtrasStore, MenuBarExtra } from "./extras/index.ts";
 import { ExtraItems } from "./extras/view.tsx";
 import { batteryGlyph, CONTROL_CENTER, LOGO, networkGlyph, speakerGlyph } from "./glyphs.ts";
-import { keepAwake, keepAwakeEntries } from "./inhibit/index.ts";
-import { laptopEntries } from "./laptop/menu.ts";
-import type { Laptop } from "./laptop/start.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
-import { batteryEntries, extraEntries, type StatusMenuAction } from "./menus/status-menu.ts";
+import { extraEntries } from "./menus/status-menu.ts";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
 import type { ScreenCaptureStore } from "./screen-capture.ts";
 import { useSettings } from "./settings-app/hooks.ts";
@@ -129,8 +125,6 @@ export function MenuBar({
   menus,
   appMenus,
   extras,
-  batteryMonitor,
-  laptop,
   settings,
   output,
   onStopAgent,
@@ -149,10 +143,6 @@ export function MenuBar({
   appMenus: AppMenuStore;
   /** Tray icons and applets (extras/). */
   extras: ExtrasStore;
-  /** The battery's draw and heavy apps, for its menu (battery/). */
-  batteryMonitor?: BatteryMonitor;
-  /** The laptop's sections of the battery menu (laptop/). */
-  laptop?: Laptop;
   /** settings.json: what the status area shows (`menuBar`, set in System Settings). */
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
@@ -196,26 +186,8 @@ export function MenuBar({
   const statusMenuKey = popover?.kind === "status-menu" ? popover.key : null;
   const openBattery = (bounds?: Bounds) => {
     if (!battery || !bounds) return;
-    // The monitor knows the draw and the heavy apps; without it the menu has the battery alone.
-    const use = batteryMonitor?.getSnapshot();
-    // The laptop's sections (the mode, the charge, the graphics card's holders): laptop/menu.ts.
-    void laptop?.graphics.refresh();
-    const sections = laptop
-      ? laptopEntries<StatusMenuAction>(
-          {
-            laptop: laptop.store.getSnapshot(),
-            modes: laptop.modes.getSnapshot(),
-            graphics: laptop.graphics.getSnapshot(),
-            power: settings.getSnapshot().data.power,
-            now: new Date(),
-          },
-          (action) => ({ kind: "laptop", action }),
-        )
-      : [];
-    const entries = batteryEntries(battery, { watts: use?.watts ?? null, apps: use?.significant ?? [] }, sections);
-    // What keeps the computer awake, above Battery Settings (inhibit/menu.ts).
-    entries.splice(-2, 0, ...keepAwakeEntries(keepAwake().awake(), (id) => installed?.(id)?.name ?? id, { kind: "allow-sleep" as const }));
-    void menus.toggleStatusMenu("battery", bounds.x + bounds.width, entries, appName, output);
+    // The battery panel (battery/panel.tsx) under the item, its right edge at the item's.
+    void menus.toggleBattery(bounds.x + bounds.width, appName, output);
   };
   const openExtraMenu = (extra: MenuBarExtra, right: number) => {
     if (statusMenuKey === extra.key) {
@@ -280,7 +252,7 @@ export function MenuBar({
             }}
           >
             {battery && (
-              <StatusItem testID="status-battery" onPress={openBattery} open={statusMenuKey === "battery"}>
+              <StatusItem testID="status-battery" onPress={openBattery} open={popover?.kind === "battery" && popover.right !== null}>
                 {menuBar.batteryPercent === true && (
                   <View testID="status-battery-percent" style={{ marginRight: 5 }}>
                     <Text

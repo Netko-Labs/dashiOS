@@ -14,6 +14,6 @@ test("the sidebar's height: the strip, the rows, their gaps, the padding", () =>
 
 test("every pane fits the window at its default size, Graphics' too, so About is never cut off", () => {
   const groups = paneGroups().map((group) => group.length);
-  expect(groups.reduce((sum, count) => sum + count, 0)).toBe(21);
+  expect(groups.reduce((sum, count) => sum + count, 0)).toBe(22);
   expect(sidebarHeight(groups)).toBeLessThanOrEqual(SETTINGS_WINDOW.height);
 });

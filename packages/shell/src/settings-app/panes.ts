@@ -5,6 +5,7 @@
 
 import { INFO, lightColors, TINTS } from "@dashi/ui";
 import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
+import { CONTROL_CENTER } from "../glyphs.ts";
 import { graphicsGlyph } from "../laptop/glyphs.ts";
 import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, HAND, HISTORY, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
 import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
@@ -15,6 +16,7 @@ export type PaneId =
   | "wallpaper"
   | "displays"
   | "desktop-dock"
+  | "control-center"
   | "keyboard"
   | "trackpad"
   | "mouse"
@@ -61,6 +63,7 @@ export const PANES: readonly PaneInfo[] = [
   { id: "wallpaper", title: "Wallpaper", glyph: PICTURE, tint: TINTS.wakame, group: 0 },
   { id: "displays", title: "Displays", glyph: DISPLAY, tint: TINTS.mizu, group: 0 },
   { id: "desktop-dock", title: "Desktop & Dock", glyph: DOCK_GLYPH, tint: TINTS.wakame, group: 0 },
+  { id: "control-center", title: "Control Center", glyph: CONTROL_CENTER, tint: TINTS.nori, group: 0 },
   { id: "network", title: "Network", glyph: NETWORK, tint: TINTS.mizu, group: 1 },
   { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, tint: TINTS.mizu, group: 1 },
   { id: "sound", title: "Sound", glyph: SPEAKER, tint: TINTS.kabocha, group: 1 },

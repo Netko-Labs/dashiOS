@@ -26,6 +26,8 @@ export type Popover =
   /** An app's menu in the Dock: its rows were built when it opened; `x` is the icon's center. */
   | { kind: "dock-menu"; x: number; entries: readonly MenuEntry<DockMenuAction>[]; above?: number }
   | { kind: "control-center"; page: ControlPage }
+  /** The battery panel (battery/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
+  | { kind: "battery"; right: number | null }
   | { kind: "notification-center" }
   /** The agents' panel under their chip (agents/handoff/panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
   | { kind: "agents"; right: number; focus: string | null }
@@ -125,6 +127,20 @@ export class MenuController {
       return Promise.resolve();
     }
     return this.show({ kind: "status-menu", key, right, entries }, appName, output);
+  }
+
+  /** A click on the battery item: its panel under it, or closed if it is open. */
+  toggleBattery(right: number, appName: string, output?: string): Promise<void> {
+    if (this.state.popover?.kind === "battery" && this.isOn(output)) {
+      this.close();
+      return Promise.resolve();
+    }
+    return this.show({ kind: "battery", right }, appName, output);
+  }
+
+  /** Control Center's battery row: the battery panel takes Control Center's place. */
+  showBatteryFromControlCenter(): void {
+    if (this.state.popover?.kind === "control-center") this.set({ ...this.state, popover: { kind: "battery", right: null } });
   }
 
   /** A click on the agents' chip: their panel, or closed if it is open; `focus` a run's card (a notification's Show). */

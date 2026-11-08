@@ -128,7 +128,7 @@ test("an applet in development shows its own commands, even when an older copy w
 test("a newer applet gets the shell's version; an older one stays at 2 and can't send version 3's messages", () => {
   const newer = harness();
   newer.send({ type: "hello", protocol: 7, manifest: MANIFEST });
-  expect(newer.written[0]).toEqual({ type: "welcome", protocol: 4 });
+  expect(newer.written[0]).toEqual({ type: "welcome", protocol: 5 });
   const older = harness();
   older.send({ type: "hello", protocol: 2, manifest: MANIFEST });
   expect(older.written[0]).toEqual({ type: "welcome", protocol: 2 });

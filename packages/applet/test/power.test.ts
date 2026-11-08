@@ -4,6 +4,7 @@ import {
   consentLines,
   type Manifest,
   type PowerState,
+  PROTOCOL,
   parseAppletMessage,
   parseAppletShellMessage,
   parseManifest,
@@ -94,12 +95,12 @@ function client(shell: ReturnType<typeof fakeShell>): AppletsClient {
   return made;
 }
 
-test("the client: hello at 4; the power mode only when the shell speaks 4 and says it", () => {
+test("the client: hello at the newest protocol; the power mode only when the shell speaks 4 and says it", () => {
   const shell = fakeShell();
   const applets = client(shell);
   const heard: Array<PowerState | null> = [];
   applets.onPowerMode((state) => heard.push(state));
-  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: 4 });
+  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: PROTOCOL });
   // An older Dashi: welcome at 3, and a stray power line isn't believed.
   shell.reply({ type: "welcome", protocol: 3 });
   shell.reply({ type: "power", ...STATE });

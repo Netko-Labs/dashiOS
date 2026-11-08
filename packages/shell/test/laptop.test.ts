@@ -143,7 +143,7 @@ const modes: ModeSnapshot = {
   failed: false,
 };
 
-test("the battery menu as the hub: the mode and why, the charge, the card's holders with Quit", () => {
+test("the battery panel's laptop rows: the charge and the card's holders with Quit; no power modes (Control Center has them)", () => {
   const graphics = {
     hasCard: true,
     switchable: true,
@@ -165,13 +165,6 @@ test("the battery menu as the hub: the mode and why, the charge, the card's hold
   );
   const labels = entries.map((entry) => (entry.kind === "item" ? `${entry.checked ? "✓ " : ""}${entry.label}${entry.keys ? ` [${entry.keys}]` : ""}` : "—"));
   expect(labels).toEqual([
-    "—",
-    "Power Mode",
-    "✓ Automatic · Balanced now",
-    "Low Power",
-    "Balanced",
-    "High Performance",
-    "Automatic chose Balanced: on battery.",
     "—",
     "Charging stops at 80%",
     "Charge to Full Once",

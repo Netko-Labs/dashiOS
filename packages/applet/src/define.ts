@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { type ComponentType, createElement, useSyncExternalStore } from "react";
 import { type AppletSpec, AppletsClient, type CommandRun, type PopoverPlacement } from "./client.ts";
 import type { CommandResult, CommandRow } from "./commands.ts";
+import { type ControlsApi, controlsApi } from "./controls-api.ts";
 import { type Manifest, readManifest } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import { metalHost, type OpenPopover, openPopoverWindow } from "./popover.tsx";
@@ -95,11 +96,25 @@ export interface AppletHandle<S> {
   openPopover(): void;
   closePopover(): void;
   readonly client: AppletsClient;
+  /** Its controls in Control Center (applet.json's `controls`; controls-api.ts). */
+  readonly controls: ControlsApi;
   stop(): void;
 }
 
 /** applet.json beside the running file or above it (`DASHI_APPLET_MANIFEST` names it outright). */
 export function findManifest(env: Record<string, string | undefined> = process.env, from: string = dirname(Bun.main)): Manifest | null {
+  const path = manifestPath(env, from);
+  if (!path) return null;
+  const manifest = readManifest(readFileSync(path, "utf8"));
+  if ("error" in manifest) {
+    console.error(`dashi applets: ${path}: ${manifest.error}`);
+    return null;
+  }
+  return manifest;
+}
+
+/** Where applet.json is (beside the running file or above it, or `DASHI_APPLET_MANIFEST`); null when there is none. */
+export function manifestPath(env: Record<string, string | undefined> = process.env, from: string = dirname(Bun.main)): string | null {
   const named = env.DASHI_APPLET_MANIFEST;
   let dir = from;
   for (let depth = 0; depth < 6 && !named; depth++) {
@@ -109,13 +124,25 @@ export function findManifest(env: Record<string, string | undefined> = process.e
     dir = up;
   }
   const path = named ?? join(dir, "applet.json");
-  if (!existsSync(path)) return null;
-  const manifest = readManifest(readFileSync(path, "utf8"));
-  if ("error" in manifest) {
-    console.error(`dashi applets: ${path}: ${manifest.error}`);
-    return null;
+  return existsSync(path) ? path : null;
+}
+
+/**
+ * Each control's icon (applet.json's `icon`, an .svg under `assets/`) sent
+ * as its glyph, so Control Center draws it for an applet in development
+ * too (an installed one's the shell reads itself).
+ */
+function sendIcons(client: AppletsClient, manifest: Manifest | null, root: string | null): void {
+  if (!manifest || !root) return;
+  for (const control of manifest.controls) {
+    if (!control.icon) continue;
+    try {
+      const glyph = readFileSync(join(root, control.icon), "utf8").trim();
+      if (glyph.length <= 16 * 1024) client.updateControl({ id: control.id, glyph });
+    } catch {
+      // No icon file: Dashi draws a neutral one.
+    }
   }
-  return manifest;
 }
 
 const value = <S, T>(of: Of<S, T>, state: S): T => (typeof of === "function" ? (of as (state: S) => T)(state) : of);
@@ -138,6 +165,7 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
   let state = definition.initial;
   const listeners = new Set<() => void>();
   let popover: OpenPopover | null = null;
+  let controls: ControlsApi | null = null;
   const warm = warmHostFor(definition, title);
   warm?.start();
 
@@ -205,6 +233,14 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
       client.dismiss(itemId);
     },
     client,
+    get controls() {
+      if (!controls) {
+        controls = controlsApi(client, () => handle.openPopover());
+        const path = definition.manifest ? null : manifestPath();
+        sendIcons(client, manifest, path ? dirname(path) : null);
+      }
+      return controls;
+    },
     stop() {
       handle.closePopover();
       warm?.stop();
