@@ -135,6 +135,7 @@ import { takeScreenshot } from "./screenshots.ts";
 import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
+import type { ControlCenterEditor } from "./settings-app/panes/control-center.tsx";
 import { isPaneId } from "./settings-app/panes.ts";
 import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
@@ -615,7 +616,10 @@ const agents = compositor
 
 // System Settings: from the Dashi menu, ❖, and the launcher (settings-app/). It
 // registers itself as a shell app, so it comes before the catalogs below.
+// Control Center's stores for Settings › Control Center, once the menus (below) have made them.
+let controlCenterEditor: ControlCenterEditor | null = null;
 const settingsApp = startSettingsApp({
+  controlCenter: () => controlCenterEditor,
   compositor,
   displays,
   settings: settingsStore,
@@ -878,6 +882,8 @@ const menus = startMenus({
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
 });
+
+controlCenterEditor = menus.controlCenter;
 
 // Restart and Shut Down give the apps 10 s, then go regardless of what is stuck (shutdown.ts).
 configureMachineEnd({

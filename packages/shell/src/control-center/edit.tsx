@@ -32,19 +32,19 @@ function AddTile({ entry, onAdd }: { entry: AddEntry; onAdd: (id: string) => voi
         height: GRID.row,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
         paddingLeft: 6,
-        paddingRight: 12,
+        paddingRight: 10,
         borderRadius: GRID.radius,
         borderWidth: 1.5,
         borderColor: colors.line,
       }}
     >
-      <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: colors.knobOff }}>
-        <Svg markup={entry.glyph} size={18} color={colors.text} />
+      <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: colors.knobOff }}>
+        <Svg markup={entry.glyph} size={16} color={colors.text} />
       </View>
-      <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+      <View style={{ flex: 1, flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+        <Text numberOfLines={1} style={{ fontSize: 12.5, fontWeight: "semibold", color: colors.text }}>
           {entry.title}
         </Text>
         {entry.from && (

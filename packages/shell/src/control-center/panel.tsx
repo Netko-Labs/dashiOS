@@ -61,16 +61,24 @@ export interface ControlCenterProps {
   /** A page's "… Settings": System Settings at that pane. */
   onSettings?: (pane: string) => void;
   onClose: () => void;
+  /**
+   * Settings › Control Center: the panel as an editor in a window, always
+   * editing, in the flow of the page (not on the popover surface), and
+   * leaving the window's keys to it. Done saves and goes on editing.
+   */
+  embedded?: boolean;
 }
 
 const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "right", up: "up", down: "down" };
 
 export function ControlCenterPanel(props: ControlCenterProps) {
-  const { page, onPage, onClose } = props;
+  const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
   const saved = useLayout(props.layout);
   /** The layout being edited; null outside edit mode. */
-  const [draft, setDraft] = useState<Layout | null>(null);
+  const [editDraft, setDraft] = useState<Layout | null>(null);
+  // Embedded, the panel is always editing: what is saved until something changes.
+  const draft = editDraft ?? (embedded ? saved : null);
   /** The tile the keyboard is on; its ring shows once the keyboard was used. */
   const [focus, setFocus] = useState<string | null>(null);
   /** Where the tile whose page is open was, for the page to grow from. */
@@ -136,20 +144,18 @@ export function ControlCenterPanel(props: ControlCenterProps) {
     <View
       occlude
       testID="control-center"
-      onWindowKeyDown={key}
+      {...(embedded ? {} : { onWindowKeyDown: key })}
       onContextMenu={() => {
         if (page === "main" && !draft) setDraft(saved);
       }}
       style={{
-        position: "absolute",
-        right: 8,
-        top: 4,
+        ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
         width: GRID.width,
         flexDirection: "column",
         padding: GRID.padding,
         borderRadius: GRID.radius,
         backgroundColor: colors.surface,
-        shadow: "xl",
+        ...(embedded ? {} : { shadow: "xl" as const }),
       }}
     >
       {page !== "main" ? (

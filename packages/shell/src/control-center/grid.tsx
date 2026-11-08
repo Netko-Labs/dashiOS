@@ -51,13 +51,14 @@ function RemoveMark({ id, onRemove }: { id: string; onRemove: (id: string) => vo
 
 /** What takes a tile's presses in edit mode: a click resizes, a drag moves. */
 function EditCover({ id, placed, origin, edit }: { id: string; placed: readonly Placed[]; origin: () => Bounds | null; edit: EditHandlers }) {
-  const press = useRef<{ x: number; y: number; dragging: boolean } | null>(null);
+  /** The press, and the tile it last traded places with: the reflow moves tiles under a still pointer, and they mustn't trade back. */
+  const press = useRef<{ x: number; y: number; dragging: boolean; over: string | null } | null>(null);
   return (
     <View
       testID={`cc-edit:${id}`}
       onPointer={(event) => {
         if (event.phase === "down") {
-          press.current = { x: event.x, y: event.y, dragging: false };
+          press.current = { x: event.x, y: event.y, dragging: false, over: null };
           return;
         }
         const start = press.current;
@@ -68,7 +69,10 @@ function EditCover({ id, placed, origin, edit }: { id: string; placed: readonly 
           const grid = origin();
           if (!grid) return;
           const over = tileAt(placed, event.x - grid.x, event.y - grid.y);
-          if (over && over !== id) edit.onMove(id, over);
+          if (over && over !== id && over !== start.over) {
+            start.over = over;
+            edit.onMove(id, over);
+          }
           return;
         }
         press.current = null;

@@ -16,7 +16,7 @@ import { PairingPrompt } from "../bluetooth/prompt.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import { BluetoothStore } from "../bluetooth/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { type AppletTileSource, controlFlags, DeviceStore, LayoutStore, radiosFor } from "../control-center/index.ts";
+import { type AppletTileSource, type ControlCenterProps, controlFlags, DeviceStore, LayoutStore, radiosFor } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import type { Laptop } from "../laptop/start.ts";
@@ -106,6 +106,8 @@ export interface MenusOptions {
 
 export interface Menus {
   controller: MenuController;
+  /** Control Center's stores and layout, as the panel has them (Settings › Control Center edits with them). */
+  controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "onBattery">;
   /** The stores Control Center runs, which System Settings' machine panes share. */
   shared: SharedStores;
   /** Asks first, in the menus' sheet, then restarts, shuts down, or logs out. */
@@ -226,6 +228,32 @@ export function startMenus(options: MenusOptions): Menus {
 
   const layout = options.layout ?? new LayoutStore(null);
   const chargeLimit = options.chargeLimit ?? (() => null);
+  const controlCenter: Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "onBattery"> = {
+    flags: controlFlags(),
+    devices,
+    system: options.system,
+    wifi,
+    sound,
+    bluetooth,
+    ...(options.laptop ? { laptop: options.laptop } : {}),
+    layout,
+    ...(options.appletControls ? { applets: options.appletControls } : {}),
+    chargeLimit,
+    onSettings: (pane) => {
+      controller.close();
+      options.openSettingsPane?.(pane);
+    },
+    onJoin: (network) =>
+      void chooseNetwork(wifi, network, (secured) => {
+        // The sheet takes the keyboard; the popover would only sit in its way.
+        controller.close();
+        passwords.ask(secured);
+      }),
+    onLock: () => {
+      controller.close();
+      setTimeout(options.lock, SETTLE_MS);
+    },
+  };
   const controller: MenuController = new MenuController({
     context,
     openSurface: (onClosed, output) =>
@@ -234,32 +262,7 @@ export function startMenus(options: MenusOptions): Menus {
         <PopoverRoot
           controller={controller}
           appMenus={appMenus}
-          controlCenter={{
-            flags: controlFlags(),
-            devices,
-            system: options.system,
-            wifi,
-            sound,
-            bluetooth,
-            ...(options.laptop ? { laptop: options.laptop } : {}),
-            layout,
-            ...(options.appletControls ? { applets: options.appletControls } : {}),
-            chargeLimit,
-            onSettings: (pane) => {
-              controller.close();
-              options.openSettingsPane?.(pane);
-            },
-            onJoin: (network) =>
-              void chooseNetwork(wifi, network, (secured) => {
-                // The sheet takes the keyboard; the popover would only sit in its way.
-                controller.close();
-                passwords.ask(secured);
-              }),
-            onLock: () => {
-              controller.close();
-              setTimeout(options.lock, SETTLE_MS);
-            },
-          }}
+          controlCenter={controlCenter}
           notifications={options.notifications}
           dockInset={(output) => options.dockInset?.(output) ?? 0}
           onChoose={(action, appName) => {
@@ -362,6 +365,7 @@ export function startMenus(options: MenusOptions): Menus {
 
   return {
     controller,
+    controlCenter,
     shared: {
       wifi,
       devices,

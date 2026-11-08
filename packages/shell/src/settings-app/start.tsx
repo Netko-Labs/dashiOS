@@ -26,6 +26,7 @@ import type { PaneContext } from "./context.ts";
 import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
 import { FindFocus } from "./find.ts";
 import { loadLayouts } from "./layouts.ts";
+import type { ControlCenterEditor } from "./panes/control-center.tsx";
 import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
 import { ScreensStore } from "./screens.ts";
@@ -45,6 +46,8 @@ export interface SettingsApp {
 }
 
 export interface SettingsAppOptions {
+  /** Control Center's stores and layout, for its editor (Settings › Control Center). */
+  controlCenter?: () => ControlCenterEditor | null;
   /** Null without dashi-comp: the window opens, but has no screens to list and cannot be found to raise. */
   compositor: Compositor | null;
   /** The arrangement service (display-config/); null without a compositor. */
@@ -151,6 +154,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       layouts: loadLayouts(),
       chooser: portalChooser(),
       services: options.services(),
+      ...(options.controlCenter ? { controlCenter: options.controlCenter } : {}),
       about: readAbout,
       ...(options.agents ? { agents: options.agents } : {}),
       lock: options.lock,

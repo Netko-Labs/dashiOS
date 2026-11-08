@@ -119,7 +119,7 @@ export function RoundTile({ look, onToggle, onOpen }: { look: TileLook } & TileP
       }}
     >
       <Svg markup={look.glyph} size={18} color={ink} />
-      <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: ink, opacity: 0.85 }}>
+      <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: ink, opacity: 0.85, textAlign: "center" }}>
         {look.title}
       </Text>
     </View>
