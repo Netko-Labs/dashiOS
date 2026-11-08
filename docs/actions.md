@@ -653,7 +653,9 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   off and the ranking looks for what is left, three words at most
   (`launcher/ranking/commands.ts`): "turn on dark mode" is Dark Mode, "set
   volume to 30" Output volume, each before Hand it off; "find me a hotel in
-  SF next week and add it to my calendar" is still a task. A harness that isn't installed has no row; one that
+  SF next week and add it to my calendar" is still a task. Space never
+  flips a switch found so ("turn on dark" then Space types on, and "turn on
+  dark mode" may go on "and email alexk the report"); Return does. A harness that isn't installed has no row; one that
   isn't signed in says so and Return opens Terminal. Keys on a hand-off
   row: ↩ Start, ⌥↩ Start and watch (the panel opens on its card), ⇥ Ask
   instead.

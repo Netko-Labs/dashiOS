@@ -3,8 +3,9 @@ import { type ActionDef, ok, ready } from "../src/actions/types.ts";
 import type { Entry } from "../src/entries.ts";
 import { type HandoffSnapshot, withHandoff } from "../src/launcher/agents/handoff-rows.ts";
 import { launcherIndex } from "../src/launcher/items.ts";
-import { commandCore } from "../src/launcher/ranking/commands.ts";
+import { commandCore, startsWithCommand } from "../src/launcher/ranking/commands.ts";
 import { buildSections, type ListInput, type Section } from "../src/launcher/rows.ts";
+import { spaceFlips } from "../src/launcher/verbs.ts";
 import { ENTRIES } from "./ranking-fixture.ts";
 
 /** A Settings row as the registry lists it (settings-app/registry/: look.ts, machine.ts). */
@@ -100,5 +101,18 @@ describe("a short command finds what it names", () => {
     // A task that starts with a command's verb is still a task.
     expect(launcher("turn on dark mode and email alexk the report")[0]?.id).toBe("handoff");
     expect(launcher("book a spinning class at bodytech thursday 7am")[0]?.id).toBe("handoff");
+  });
+
+  test("in words that start with a command's verb, Space types a space: it never flips the switch found", () => {
+    // Found from "turn on dark" already: Space must not flip Dark Mode under the person's typing (the VM found it did),
+    // nor after "turn on dark mode", which may go on "and email alexk the report". Return flips it.
+    const found = firstRow(launcher("turn on dark"));
+    expect(found?.title).toBe("Dark Mode");
+    const row = { ...(found as NonNullable<typeof found>), control: { kind: "switch" as const, on: false } };
+    for (const query of ["turn", "turn on", "turn on the", "turn on dark", "turn on dark mode"]) expect(spaceFlips(row, query)).toBe(false);
+    // Its name alone still flips on Space, as before.
+    expect(spaceFlips(row, "dark mode")).toBe(true);
+    expect(startsWithCommand("turn on dark")).toBe(true);
+    expect(startsWithCommand("dark mode")).toBe(false);
   });
 });

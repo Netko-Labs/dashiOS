@@ -52,12 +52,8 @@ const JOINS = new Set(["to", "at", "by"]);
 /** The most words the thing a command names may have. */
 export const MOST_CORE_WORDS = 3;
 
-/**
- * The thing a short command names, folded ("dark mode" for "Turn on Dark
- * Mode"), or null when the words aren't a command to something (no verb in
- * front, nothing left, or more than MOST_CORE_WORDS words left).
- */
-export function commandCore(query: string): string | null {
+/** The words after a command's verb and article, or null when the words don't start with one. */
+function afterLead(query: string): string[] | null {
   let words = fold(query.trim())
     .replace(/[.!]+$/, "")
     .split(/\s+/)
@@ -66,6 +62,20 @@ export function commandCore(query: string): string | null {
   if (!lead) return null;
   words = words.slice(lead.length);
   while (words.length > 0 && ARTICLES.has(words[0] as string)) words = words.slice(1);
+  return words;
+}
+
+/** Whether the words start with a command's verb ("turn on", "set the volume"): a sentence the person is typing. */
+export const startsWithCommand = (query: string): boolean => afterLead(query) !== null;
+
+/**
+ * The thing a short command names, folded ("dark mode" for "Turn on Dark
+ * Mode"), or null when the words aren't a command to something (no verb in
+ * front, nothing left, or more than MOST_CORE_WORDS words left).
+ */
+export function commandCore(query: string): string | null {
+  let words = afterLead(query);
+  if (!words) return null;
   // The value at the end, and its "to": "volume to 30" is the volume; "brightness 50%" the brightness.
   while (words.length > 1 && VALUE.test(words.at(-1) as string)) {
     words = words.slice(0, -1);
