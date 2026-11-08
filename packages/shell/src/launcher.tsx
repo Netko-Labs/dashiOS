@@ -322,7 +322,7 @@ export function Launcher(props: LauncherProps) {
     query: scope ? "" : query,
     entries,
     recent: recent.slice(0, m.listRows - 1),
-    limits: { local: m.localRows, files: m.fileRows },
+    limits: { local: m.localRows, files: m.fileRows, allApps: m.allAppsRows },
     files: filesState,
     index,
     windows: world.windows,
@@ -899,9 +899,9 @@ export function Launcher(props: LauncherProps) {
   });
 
   const drawn = (section: Section): Row[] => {
-    // A scope's list (its `window`, as many as fit at the text size) and All apps are drawn a window at a time.
-    const shown = section.window !== undefined ? Math.min(section.window, m.listRows) : section.id === "all" ? m.allAppsRows : null;
-    if (shown === null) return section.rows;
+    // A scope's list and All apps (a `window`, as many as fit at the text size) are drawn a window at a time.
+    if (section.window === undefined) return section.rows;
+    const shown = Math.min(section.window, m.listRows);
     const at = Math.max(
       0,
       section.rows.findIndex((row) => row.id === selected),
