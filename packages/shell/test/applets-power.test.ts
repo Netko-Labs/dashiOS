@@ -158,6 +158,8 @@ test("a pick from the applet is a pick in Control Center: saved, Automatic's rea
   send({ type: "power", choice: "low-power" });
   fromControlCenter.store.choose("low-power");
   await flush();
+  // One message for the pick, as it ended up (not the choice first and its reason after).
+  expect(powers()).toHaveLength(2);
   expect(fromApplet.saved).toEqual(fromControlCenter.saved);
   expect(fromApplet.store.getSnapshot()).toEqual(fromControlCenter.store.getSnapshot());
   expect(powers().at(-1)).toMatchObject({ choice: "low-power", mode: "low-power", automatic: false, why: "Low Power, chosen by you" });
@@ -168,7 +170,7 @@ test("a pick from the applet is a pick in Control Center: saved, Automatic's rea
   expect(powers().at(-1)).toMatchObject({ choice: "automatic", mode: "performance", automatic: true });
 });
 
-test("a mode the machine lacks, or no modes at all, is refused with the reason", () => {
+test("a mode the machine lacks, or no modes at all, is refused with the reason", async () => {
   const power = new AppletPower();
   const early = harness({ power });
   early.send({ type: "hello", protocol: 4, manifest: MANIFEST });
@@ -182,6 +184,7 @@ test("a mode the machine lacks, or no modes at all, is refused with the reason",
   store.setPowerSource({ plugged: true, percent: 70 });
   power.connect(store);
   // Connected later: the applet hears it then.
+  await flush();
   expect(early.powers().at(-1)).toMatchObject({ available: ["low-power", "balanced"] });
   early.send({ type: "power", choice: "performance" });
   expect(early.written.at(-1)).toEqual({ type: "error", message: "power: this machine has no High Performance mode" });

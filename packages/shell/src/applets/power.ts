@@ -83,18 +83,34 @@ export class AppletPower {
   }
 }
 
-/** One connection's side: the state sent once on attach and again whenever it changes. */
+/**
+ * One connection's side: the state sent once on attach, and again whenever
+ * it changes. The store publishes a pick in two steps (the choice, then what
+ * it puts in effect); changes in one turn are sent once, as they end up.
+ */
 export function attachPower(power: AppletPower, send: (state: PowerState) => void): () => void {
   let last = "";
+  let waiting = false;
+  let stopped = false;
   const tell = (): void => {
     const state = power.state();
-    if (!state) return;
+    if (!state || stopped) return;
     const line = JSON.stringify(state);
     if (line === last) return;
     last = line;
     send(state);
   };
-  const stop = power.subscribe(tell);
+  const stop = power.subscribe(() => {
+    if (waiting) return;
+    waiting = true;
+    queueMicrotask(() => {
+      waiting = false;
+      tell();
+    });
+  });
   tell();
-  return stop;
+  return () => {
+    stopped = true;
+    stop();
+  };
 }
