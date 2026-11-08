@@ -8,7 +8,7 @@ import { FlagsStore } from "../src/control-center/flags.ts";
 import { BLANK_CHOICES, BLANK_COMMON, blankChoice, SLEEP_CHOICES, SLEEP_COMMON, timePills } from "../src/settings-app/controls.ts";
 import { oneLeftEdge, onMixedCard } from "../src/settings-app/edge.ts";
 import { findSettings } from "../src/settings-app/find.ts";
-import { layoutName } from "../src/settings-app/layouts.ts";
+import { layoutName, layoutWords, variantWords } from "../src/settings-app/layouts.ts";
 import { AboutPane } from "../src/settings-app/panes/about.tsx";
 import { AppearancePane } from "../src/settings-app/panes/appearance.tsx";
 import { chargeLimitTitle } from "../src/settings-app/panes/battery-laptop.tsx";
@@ -210,6 +210,10 @@ test("the layout has one name: the variant's own when one is chosen", () => {
   expect(layoutName(xkb, "us", undefined)).toBe("English (US)");
   expect(layoutName(xkb, "us", "euro")).toBe("English (US, euro on 5)");
   expect(layoutName(xkb, undefined, undefined)).toBe("English (US)");
+  // Recently changed says it by the same name, not its id.
+  expect(layoutWords("us", xkb)).toBe("English (US)");
+  expect(variantWords("euro", xkb)).toBe("English (US, euro on 5)");
+  expect(layoutWords("zz", xkb)).toBe("zz");
 });
 
 // ── One left edge ──────────────────────────────────────────────────────────

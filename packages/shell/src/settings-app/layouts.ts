@@ -140,3 +140,22 @@ export function layoutName(xkb: XkbLayouts, list: string | undefined, variant: s
   if ((list ?? "").includes(",") || !chosen) return describeLayout(xkb.layouts, list);
   return chosen.name;
 }
+
+let installed: XkbLayouts | null = null;
+
+/** The installed layouts, read once (Recently changed says a layout by its name). */
+function installedLayouts(): XkbLayouts {
+  installed ??= loadLayouts();
+  return installed;
+}
+
+/** A saved `keyboard.layout` as Recently changed says it: its name ("English (US)"), the id where the list doesn't have it. */
+export function layoutWords(list: unknown, xkb: XkbLayouts = installedLayouts()): string {
+  return describeLayout(xkb.layouts, typeof list === "string" ? list : undefined);
+}
+
+/** A saved `keyboard.variant` by its own name ("English (US, euro on 5)"); the id where the list doesn't have it. */
+export function variantWords(variant: unknown, xkb: XkbLayouts = installedLayouts()): string {
+  const id = String(variant);
+  return xkb.variants.find((each) => each.id === id)?.name ?? id;
+}

@@ -9,6 +9,7 @@
  */
 
 import { toBcp47 } from "../../region/locale.ts";
+import { layoutWords, variantWords } from "../layouts.ts";
 import { describeValue, findRow, type RowDef, rowName, SETTINGS_ROWS } from "../registry/index.ts";
 import type { Change, ChangeWords } from "./log.ts";
 
@@ -77,7 +78,9 @@ const OWN: Readonly<Record<string, Named>> = {
   "appearance.auto": { name: "Automatic appearance", row: "appearance/dark-mode", unset: "off" },
   "clock.hour24": { name: "24-hour time", row: "date-time/24-hour-time", unset: "the region's" },
   "region.formats": { name: "Formats", row: "language-region/formats", unset: "the language's", say: localeWords },
-  "keyboard.layout": { name: "Keyboard layout", row: "keyboard/layout", unset: "English (US)", say: (value) => String(value) },
+  // One name for the layout, as the row and the picker say it (layouts.ts).
+  "keyboard.layout": { name: "Keyboard layout", row: "keyboard/layout", unset: "English (US)", say: (value) => layoutWords(value) },
+  "keyboard.variant": { name: "Keyboard layout", row: "keyboard/layout", unset: "the layout's own", say: (value) => variantWords(value) },
   "power.mode": { name: "Power mode", row: "battery/power-mode", unset: "Automatic" },
   "power.chargeLimit": { name: "Charge limit", row: "battery/charge-limit", unset: "100%", say: (value) => `${String(value)}%` },
   "power.boost": { name: "Boost clock", row: "battery/boost", unset: "Automatic" },
