@@ -227,6 +227,100 @@ for byte and checks every tool is still called the same way (`parseCall`
 and an action's `check` share `checkToolArgs`). Changing a tool changes the
 fixture in the same commit.
 
+## Websites
+
+Agents use web pages through Dashi's own extension in Helium, not through
+screenshots and clicks by pixel: a page comes back as text with numbered
+elements, the tools wait for the browser's own load events, and a number
+names the same element until its page goes. In the VM a step takes
+0.2–1.1 s, a page load included, against 2–4 s of guessed wait and
+screenshot per step by pixel (`dashi-0.5.0-review/25-browser`).
+
+```txt
+agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host ──native messaging──> extension ──> tab's frames
+                (src/browser/bridge.ts)       (bin/dashi-browser-host.ts)              (browser-extension/)
+```
+
+- **The extension** (`packages/shell/browser-extension`, Manifest V3) takes
+  commands only from its native host (`connectNative("dev.dashi.browser")`):
+  no page or other extension can reach it. Its content script runs in every
+  frame from the document's start; the background keeps each tab's element
+  numbers (`page/refs.ts`: a frame's document and its own number), reads
+  every frame, and waits for loads through `webNavigation`, never a timer.
+- **The host** (`session/dashi-browser-host`, installed at
+  `/usr/libexec/dashi/`) is started by the browser for Dashi's extension
+  only: its manifest's `allowed_origins` is the extension's id, and the host
+  checks the origin Chromium passes it again (`src/browser/native.ts`). It
+  relays to the shell's socket and takes requests from nowhere else.
+- **The shell's socket** (`$XDG_RUNTIME_DIR/dashi-browser.sock`, 0600)
+  accepts only Dashi's host script, outside any agent's scope (its peer by
+  `SO_PEERCRED`, its command line and cgroup); agents' sandboxes never see
+  it (docs/secrets.md, "The agent sandbox").
+- **Installed by the packages**: `dashi` ships the host; `dashi-helium` ships
+  the CRX and its update manifest at `/usr/share/dashi/browser/`, a managed
+  policy (`/etc/chromium/policies/managed/dashi.json`:
+  `ExtensionSettings`, `force_installed`, `update_url` a `file://` update
+  manifest) and the host's manifest
+  (`/etc/chromium/native-messaging-hosts/dev.dashi.browser.json`). Helium
+  is Chromium unbranded, so it reads Chromium's system paths (its binary
+  names `/etc/chromium/policies` and `/etc/chromium/native-messaging-hosts`);
+  Chromium gets the extension too. A policy install was chosen over the
+  external-extensions JSON (`/usr/share/chromium/extensions/<id>.json`)
+  because Chromium enables a policy's extension without asking and keeps it
+  installed (the person can't remove it by mistake), while an external
+  extension is, by Chromium's rules, held disabled until the person accepts
+  an "extension added" prompt (not tried in Helium). Measured in the VM: Helium 0.20.3 installs the CRX from the
+  `file://` update manifest at start (location 7, policy download, enabled).
+- **The id is pinned** by the manifest's `key` (the public half of the
+  extension's signing key): `mngbphpldanjlpbagnkmfalmglolgkmb`.
+  `bin/dashi-browser-pack.ts` builds and signs the CRX (CRX3, `src/browser/crx.ts`);
+  `spin/build-rpms` runs it with `$DASHI_EXTENSION_KEY` (by default
+  `~/.config/dashi-build/browser-extension.pem` on the machine that builds
+  the packages). The private key is never in the repository; losing it means
+  a new key and a new id in the manifest, the host's manifest, the policy
+  and `EXTENSION_ID` (tested to agree: `browser-pinning.test.ts`). The key
+  in the manifest today is a development key generated for 0.5.0.
+
+The tools (`src/agents/tools/browser.ts`, carried out by
+`src/agents/desktop/browser.ts`), all under the scope "Use websites":
+
+| Tool | What it does |
+| --- | --- |
+| `open_url {url, tab?}` | Opens an http(s) address in a new tab (or `tab`), starting Helium if no extension is connected, and returns once the page has loaded |
+| `read_page {tab?}` | The page as text: headings (`#`), text in reading order, links in their sentence with their address (a path on the page's own site), every other control on its own line: `[7] textbox "Correo electrónico" value="…"`, `[9] password field "Contraseña" (filled: no)`, `[12] button "Ingresar"` |
+| `click_element {ref, tab?}` | Clicks an element; when that loads a page, returns once it has |
+| `fill_element {ref, text, tab?}` | Replaces a text field's value as typing would (`insertText`, else the value's setter and `input`/`change`); refused on password, card and code fields |
+| `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label |
+| `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll) |
+| `scroll_page {direction?, pages?, ref?, tab?}` | Scrolls, or brings an element into view; says whether the page is at its end |
+| `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
+
+Without `tab`, a tool uses the tab the agent used last, else the one in
+front. The menu bar's agent chip says what it does in words: "Opening
+wikipedia.org", "Reading bodytech.com.co", "Clicking on auth.wikimedia.org".
+
+**Each site is asked about** the first time an agent touches it
+(`src/agents/sites.ts`): "Claude wants to use bodytech.com.co" with Don't
+Allow, Allow Once (this connection) and Always Allow (kept in
+`~/.local/state/dashi/agents/sites.json` by the agent's grant key). A site
+covers its subdomains; a refusal holds for the connection; a sheet nobody
+answered remembers nothing. Revoking an agent, or its "Use websites", in
+Settings forgets its sites.
+
+**Nothing secret leaves the page.** The reader (`page/node.ts`,
+`page/read.ts`, pure and tested with made-up trees) never reads the value
+of a password field (by its type, or one that was a password field before a
+"show password" button made it text), an `autocomplete` password, a card
+field (`cc-*`, or a name that says card, CVC, CVV), a one-time code field
+(`one-time-code`, or a name that says OTP or 2FA), or a field Dashi typed a
+secret into: each says only `(filled: yes|no)`, and `(filled: yes, by
+Dashi)`. `fill_element` and typed characters (`press`) are refused there.
+`sign_in`, `fill_code` and `pay` take the field's number instead of a window
+(docs/secrets.md).
+
+When no extension is connected (another browser), these tools say so, and
+the screenshot tools work as before.
+
 ## In the launcher
 
 The launcher (`launcher.tsx`) lists `registry.list({ who: "person" })`

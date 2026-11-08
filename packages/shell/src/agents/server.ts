@@ -6,6 +6,7 @@
 
 import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { Atspi } from "./atspi/client.ts";
@@ -25,6 +26,7 @@ import type { LoginSource } from "./secrets/sources.ts";
 import { Vault } from "./secrets/vault.ts";
 import { isVaultWindow } from "./secrets/vault-view.ts";
 import { Session } from "./session.ts";
+import { SiteGrants } from "./sites.ts";
 import type { Call } from "./tools/index.ts";
 
 export interface Agents {
@@ -91,6 +93,9 @@ export function startAgents({
   const lock = new LockWatch(compositor);
   const grants = new Grants();
   const hands = new Hands(compositor);
+  const sites = new SiteGrants();
+  // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
+  const browser: BrowserBridge = startBrowserBridge();
   // The accessibility bus, joined when a picture first needs it; a failure is tried again next time.
   let atspi: Atspi | null = null;
   const joinAtspi = async () => (atspi ??= await Atspi.connect());
@@ -118,7 +123,7 @@ export function startAgents({
     isVault: isVaultWindow,
   });
   secrets.touched = (window) => mask.prompts.touched(window);
-  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets };
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets, browser, sites };
   let nextId = 0;
   // The person's calls: never confined (no sign-in for them), named "You" where a sheet would name an agent.
   const personSecrets = new SessionSecrets(secrets, ui, false);
@@ -138,6 +143,8 @@ export function startAgents({
       tile,
       arrangement,
       mayName: () => true,
+      // The person's own calls use any site, in the tab in front.
+      browser: { link: () => browser.current(), whenConnected: (ms) => browser.whenConnected(ms), allowSite: async () => true, mayUse: () => true, tab: null },
       confirm,
       signal,
     });
@@ -157,6 +164,8 @@ export function startAgents({
   // A revoked answer is gone from the connections that hold it too.
   const offGrants = grants.onChange((change) => {
     if (!change.removed && !change.revoked) return;
+    // Its websites go with it, and with "Use websites".
+    if (change.removed || change.revoked?.includes("web")) sites.remove(change.key);
     for (const session of sessions.values()) session.revoke(change.key, change.revoked);
     publish();
   });
@@ -179,6 +188,7 @@ export function startAgents({
         offGrants();
         lock.close();
         hands.close();
+        browser.close();
       },
     };
   }
@@ -245,6 +255,7 @@ export function startAgents({
       hands.close();
       for (const session of sessions.values()) session.stop("disconnected");
       server.stop(true);
+      browser.close();
       atspi?.close();
       if (existsSync(path)) unlinkSync(path);
     },

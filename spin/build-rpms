@@ -73,6 +73,16 @@ cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$mod
 mkdir -p "$modules/@dashi/applet"
 cp -r "$repo/packages/applet/src" "$repo/packages/applet/package.json" "$repo/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
 git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
+# Dashi's browser extension, signed (dashi-helium installs it): the key never
+# leaves this machine and is never in the repository (docs/actions.md, "Websites").
+extension_key=${DASHI_EXTENSION_KEY:-$HOME/.config/dashi-build/browser-extension.pem}
+if [ -f "$extension_key" ]; then
+  bun "$repo/packages/shell/bin/dashi-browser-pack.ts" --key "$extension_key" --out "$stage/$name/vendor/browser" >/dev/null
+  rm -rf "$stage/$name/vendor/browser/unpacked"
+elif [[ " ${packages[*]} " == *" dashi-helium "* ]]; then
+  echo "build-rpms: dashi-helium needs the extension's key at $extension_key (or set DASHI_EXTENSION_KEY)" >&2
+  exit 1
+fi
 tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 
 # mirin's source, for mirin-metal-host: its HEAD, as Dashi's tree pins it by commit.

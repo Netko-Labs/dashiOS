@@ -74,12 +74,13 @@ the same change.
   model database is `data/models/`, a captured laptop `data/fixtures/`.
 - `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
-  (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`).
+  (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`),
+  and Dashi's Helium extension (`browser-extension/`, docs/actions.md "Websites").
 - `packages/greeter` - `@dashi/greeter`: the login screen, greetd's greeter.
 - `packages/dashi-ui` - `@dashi/ui`: Dashi's own components and palettes.
 - `packages/applet` - `@dashi/applet`: the applet SDK (client, popovers, manifest,
   packages, signatures, the `dashi-applet` CLI; `docs/applets.md`).
-- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-agent` (the agent sandbox), `dashi-dialog`, `dashi-applet`, session target, portal/mime config.
+- `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-agent` (the agent sandbox), `dashi-browser-host`, `dashi-dialog`, `dashi-applet`, session target, portal/mime config.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).
 - `docs/` - architecture, compositor, IPC, and convention docs.

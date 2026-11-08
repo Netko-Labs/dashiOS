@@ -8,12 +8,13 @@
  */
 
 import { type Actor, actingAs } from "../acting.ts";
+import type { BrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { LineBuffer } from "../lines.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";
-import { type ToolResult, toolError } from "./context.ts";
+import { type RunContext, type ToolResult, toolError } from "./context.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
@@ -23,6 +24,7 @@ import { grantKey, type Peer } from "./peer.ts";
 import type { AgentInfo, AgentUi, Who } from "./presence.ts";
 import { runCall } from "./run.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
+import { type SiteAnswer, SiteConsent, type SiteGrants } from "./sites.ts";
 import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall, scopeOf } from "./tools/index.ts";
 
 /** How long a finished action stays in the menu bar before "Idle". */
@@ -47,6 +49,10 @@ export interface SessionContext {
   arrangement(window: number): Tile | null;
   /** Login sources, the accessibility bus, and the windows handed to the person. */
   secrets: SecretsShared;
+  /** Dashi's browser extension, when a browser has it (browser/bridge.ts). */
+  browser: BrowserBridge;
+  /** The websites agents may always use (sites.ts). */
+  sites: SiteGrants;
 }
 
 /** What a Bun socket offers the session. */
@@ -77,6 +83,10 @@ export class Session {
   private readonly inFlight = new Map<mcp.Id, AbortController>();
   /** The scope sheet up now, to take down when no waiting call needs it any more. */
   private askAbort: AbortController | null = null;
+  /** The websites this connection may use, asked one by one (sites.ts). */
+  private readonly sites: SiteConsent;
+  /** The browser tab the website tools use when none is named: the agent's last. */
+  private browserTab: number | null = null;
 
   constructor(
     readonly id: number,
@@ -89,6 +99,25 @@ export class Session {
   ) {
     this.granted = peer.remote ? new Set() : ctx.grants.get(peer.key);
     this.secrets = new SessionSecrets(ctx.secrets, ctx.ui, confined);
+    this.sites = new SiteConsent(
+      ctx.sites,
+      () => grantKey(this.peer, this.claims),
+      (site) => this.askSite(site),
+    );
+  }
+
+  /** "<agent> wants to use <site>": the person's answer, or null when there was none (locked, the agent gone). */
+  private async askSite(site: string): Promise<SiteAnswer | null> {
+    if (this.closed || this.ctx.lock.isLocked) return null;
+    this.confirming++;
+    this.setStatus("Waiting for you");
+    try {
+      const answer = await this.ctx.ui.allowSite({ agent: this.id, who: this.who, site });
+      return this.closed || this.ctx.lock.isLocked ? null : answer;
+    } finally {
+      this.confirming--;
+      if (!this.asking && this.confirming === 0) this.setStatus("Connected");
+    }
   }
 
   info(): AgentInfo {
@@ -321,6 +350,7 @@ export class Session {
             tile: this.ctx.tile,
             arrangement: this.ctx.arrangement,
             mayName: () => this.granted.has("see"),
+            browser: this.browserRun(),
             confirm: (question) => this.confirm(question, signal),
             signal,
           }),
@@ -339,6 +369,23 @@ export class Session {
     // Locked meanwhile: whatever it saw or did stays between it and the lock screen.
     if (this.ctx.lock.isLocked && !locksScreen(call.name)) result = toolError(LOCKED_WHILE_RUNNING);
     this.reply(id, call.name, result);
+  }
+
+  /** The website tools' side of this connection: the extension, its sites, its tab. */
+  private browserRun(): RunContext["browser"] {
+    const session = this;
+    return {
+      link: () => this.ctx.browser.current(),
+      whenConnected: (ms) => this.ctx.browser.whenConnected(ms),
+      allowSite: (site) => this.sites.allow(site),
+      mayUse: (site) => this.sites.has(site),
+      get tab() {
+        return session.browserTab;
+      },
+      set tab(tab: number | null) {
+        session.browserTab = tab;
+      },
+    };
   }
 
   /**

@@ -10,8 +10,11 @@
  * - the cgroup tree read-only, so it can't leave its scope;
  * - its own process namespace: no other process to see, signal or read;
  * - of $XDG_RUNTIME_DIR, only Dashi's MCP socket and a filtered session bus
- *   (notifications and portals): no compositor socket, no Wayland or X11
+ *   (notifications and portals): no compositor socket, no browser socket
+ *   (the extension's, which only the shell may drive), no Wayland or X11
  *   display, no systemd, Secret Service, Flatpak or 1Password sockets;
+ * - no Helium profile (the person's sessions and saved passwords, and where
+ *   the browser looks for native hosts), and Chromium's native hosts read-only;
  * - no 1Password CLI configuration or app data;
  * - API tokens only through the shell's token proxy (tokenProxyArgs), with
  *   a CA trusted inside this sandbox alone.
@@ -68,9 +71,24 @@ export function isConfined(read: (path: string) => string | null, pid: number, r
   return inAgentScope(read(`/proc/${pid}/cgroup`) ?? "");
 }
 
+/**
+ * Sockets in $XDG_RUNTIME_DIR an agent must never reach: the runtime
+ * directory is emptied inside the sandbox and only the MCP socket (or a plan's)
+ * and the filtered bus come back, never these (tested).
+ */
+export const DENIED_SOCKETS = ["dashi-comp.sock", "dashi-browser.sock", "dashi-links.sock", "dashi-tokens.sock", "wayland-1"] as const;
+
 /** Directories hidden from agents (tmpfs over them). */
 function hidden(env: SandboxEnv): string[] {
-  return ["/run/dashi-secretd", join(env.config, "op"), join(env.home, ".op"), join(env.home, ".1password"), join(env.config, "1Password")];
+  return [
+    "/run/dashi-secretd",
+    join(env.config, "op"),
+    join(env.home, ".op"),
+    join(env.home, ".1password"),
+    join(env.config, "1Password"),
+    // Helium's profile: cookies, saved passwords, and NativeMessagingHosts/ (a host there would run outside the sandbox).
+    join(env.config, "net.imput.helium"),
+  ];
 }
 
 /** What agents may read but not change. */
@@ -83,6 +101,9 @@ function readOnly(env: SandboxEnv): string[] {
     join(env.config, "environment.d"),
     join(env.config, "fish/config.fish"),
     join(env.home, ".local/share/applications"),
+    // Native hosts the browsers start, outside the sandbox.
+    join(env.config, "chromium/NativeMessagingHosts"),
+    join(env.config, "google-chrome/NativeMessagingHosts"),
     ...[".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile", ".zshenv"].map((file) => join(env.home, file)),
   ];
 }

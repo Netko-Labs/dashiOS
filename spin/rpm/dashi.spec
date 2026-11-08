@@ -104,6 +104,8 @@ install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
 # Agents in a sandbox that can use secrets through Dashi but never read them.
 install -Dm0755 session/dashi-agent %{buildroot}%{_bindir}/dashi-agent
+# The native messaging host of Dashi's browser extension (dashi-helium installs the extension and the host's manifest).
+install -Dm0755 session/dashi-browser-host %{buildroot}%{_libexecdir}/dashi/dashi-browser-host
 # The applet SDK's CLI (@dashi/applet, in node_modules): new, dev, pack, publish.
 install -Dm0755 session/dashi-applet %{buildroot}%{_bindir}/dashi-applet
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
@@ -120,6 +122,7 @@ install -Dm0644 session/org.freedesktop.impl.portal.desktop.dashi.service %{buil
 install -Dm0644 session/dashi-portal.service %{buildroot}%{_userunitdir}/dashi-portal.service
 # The Setup Assistant's optional software, run as root through pkexec.
 install -Dm0755 session/dashi-extras %{buildroot}%{_libexecdir}/dashi/dashi-extras
+%{_libexecdir}/dashi/dashi-browser-host
 install -Dm0644 session/dev.dashi.extras.policy %{buildroot}%{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 install -Dm0644 session/dashi-session.target %{buildroot}%{_userunitdir}/dashi-session.target
 install -Dm0644 session/dashi.desktop %{buildroot}%{_datadir}/wayland-sessions/dashi.desktop
@@ -144,6 +147,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_userunitdir}/dashi-portal.service
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
+%{_libexecdir}/dashi/dashi-browser-host
 %{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 %{_userunitdir}/dashi-session.target
 %{_datadir}/wayland-sessions/dashi.desktop

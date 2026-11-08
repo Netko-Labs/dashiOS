@@ -99,10 +99,23 @@ export type Call =
   | { name: "list_menus"; window: number | null }
   | { name: "choose_menu_item"; window: number; menu: string; item: string }
   | { name: "list_logins"; site: string | null }
-  | { name: "sign_in" | "fill_code"; window: number; site: string; account: string | null; submit: boolean }
+  /** In a window (the field focused, checked through accessibility), or on a browser tab's element (`ref`, checked through Dashi's extension). */
+  | { name: "sign_in" | "fill_code"; target: SecretTarget; site: string; account: string | null; submit: boolean }
   | { name: "hand_over"; window: number; reason: string }
-  | { name: "pay"; window: number; site: string; cents: number; card: string | null }
+  | { name: "pay"; target: SecretTarget; site: string; cents: number; card: string | null }
+  | { name: "open_url"; url: string; tab: number | null }
+  | { name: "read_page"; tab: number | null }
+  | { name: "click_element"; ref: number; tab: number | null }
+  | { name: "fill_element"; ref: number; text: string; tab: number | null }
+  | { name: "select_option"; ref: number; value: string; tab: number | null }
+  | { name: "press"; keys: string; chords: Chord[]; tab: number | null }
+  | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null }
+  | { name: "list_tabs" }
+  | { name: "switch_tab"; tab: number }
   | { name: "read_clipboard_history"; limit: number };
+
+/** Where Dashi types a secret: the focused field of a window, or an element of a browser tab. */
+export type SecretTarget = { window: number } | { ref: number; tab: number | null };
 
 export type ToolName = Call["name"];
 

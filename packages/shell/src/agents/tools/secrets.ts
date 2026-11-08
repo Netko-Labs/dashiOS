@@ -7,8 +7,9 @@
  */
 
 import { parseAmount } from "../secrets/pay.ts";
+import { refArg, tabArg } from "./browser.ts";
 import { type Args, fail, type ToolDef, windowArg, windowProp } from "./define.ts";
-import type { CallError } from "./types.ts";
+import type { CallError, SecretTarget } from "./types.ts";
 
 /** A site as an agent may name it: a host, or an address whose host is taken. */
 export function parseSite(value: unknown): string | null {
@@ -41,6 +42,31 @@ function account(args: Args): string | null | CallError {
     : fail("`account` must be an account name from list_logins.");
 }
 
+/** A window (its focused field), or a browser tab's element read_page numbered. */
+function target(args: Args): SecretTarget | CallError {
+  if (args.ref !== undefined) {
+    if (args.window !== undefined) return fail("Give `ref` (an element of a browser tab) or `window`, not both.");
+    const ref = refArg(args);
+    if (ref === null || typeof ref === "object") return ref ?? fail("`ref` is required.");
+    const tab = tabArg(args);
+    return tab !== null && typeof tab === "object" ? tab : { ref, tab };
+  }
+  if (args.tab !== undefined) return fail("`tab` goes with `ref`.");
+  const window = windowArg(args);
+  return typeof window === "number" ? { window } : fail("`ref` (a password, code or card field read_page numbered) or `window` is required.");
+}
+
+const isTarget = (value: SecretTarget | CallError): value is SecretTarget => "window" in value || "ref" in value;
+
+const fieldProps = {
+  ref: {
+    type: "integer",
+    description: "In the browser with Dashi's extension: the field's number from read_page (the user name, password, code or card number field).",
+  },
+  tab: { type: "string", description: 'The tab of `ref` (default: the tab you used last), like "t12".' },
+  window: { ...windowProp, description: 'Another app or browser: the window whose focused field Dashi fills, like "w3".' },
+};
+
 const siteProp = { type: "string", description: 'The site, as a host ("github.com") or the page\'s address.' };
 const accountProp = { type: "string", description: "Which account, when list_logins shows more than one for the site." };
 const submitProp = { type: "boolean", description: "Press Return after typing (default false)." };
@@ -65,51 +91,52 @@ export const secretTools: readonly ToolDef[] = [
     name: "sign_in",
     title: "Sign in for the person",
     description:
-      "Sign in to a site in a browser window with one of the person's saved logins. Click into the page's user name or password field first. " +
+      "Sign in to a site with one of the person's saved logins. In the browser with Dashi's extension, name the user name or password field read_page numbered (`ref`); " +
+      "elsewhere, click into the field first and name the window. " +
       "The person is asked on screen which login, and whether for this once or the whole task; then Dashi types the account name (when the user name field is focused), " +
       "presses Tab, and types the password, only into a real password field on a page of that site. You never see the password, in results or screenshots (they show a blank). " +
       'A login marked "Never", a bank, or a CAPTCHA: use hand_over.',
     scope: "signin",
     readOnly: false,
     destructive: false,
-    properties: { window: windowProp, site: siteProp, account: accountProp, submit: submitProp },
-    required: ["window", "site"],
+    properties: { ...fieldProps, site: siteProp, account: accountProp, submit: submitProp },
+    required: ["site"],
     parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
+      const where = target(args);
+      if (!isTarget(where)) return where;
       const s = site(args, true);
       if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
       const a = account(args);
       if (a !== null && typeof a === "object") return a;
-      return { name: "sign_in", window, site: s, account: a, submit: args.submit === true };
+      return { name: "sign_in", target: where, site: s, account: a, submit: args.submit === true };
     },
   },
   {
     name: "fill_code",
     title: "Enter a one-time code",
     description:
-      "Enter the 6-digit two-factor code (TOTP) for a site into the focused field of a browser window, computed from the person's saved login; within the approval of sign_in when there was one. " +
+      "Enter the 6-digit two-factor code (TOTP) for a site into a code field (`ref` from read_page, or the focused field of a window), computed from the person's saved login; within the approval of sign_in when there was one. " +
       "You never see the code. Codes sent by email or text message are the person's: use hand_over.",
     scope: "signin",
     readOnly: false,
     destructive: false,
-    properties: { window: windowProp, site: siteProp, account: accountProp, submit: submitProp },
-    required: ["window", "site"],
+    properties: { ...fieldProps, site: siteProp, account: accountProp, submit: submitProp },
+    required: ["site"],
     parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
+      const where = target(args);
+      if (!isTarget(where)) return where;
       const s = site(args, true);
       if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
       const a = account(args);
       if (a !== null && typeof a === "object") return a;
-      return { name: "fill_code", window, site: s, account: a, submit: args.submit === true };
+      return { name: "fill_code", target: where, site: s, account: a, submit: args.submit === true };
     },
   },
   {
     name: "pay",
     title: "Pay for the person",
     description:
-      "Pay on a checkout page with one of the person's saved cards (a single-use card first): click into the card number field first. " +
+      "Pay on a checkout page with one of the person's saved cards (a single-use card first): name the card number field read_page numbered (`ref`), or click into it and name the window. " +
       "Within their limits per payment and per month, the person confirms the site and the amount with their fingerprint or password, every time; " +
       "then Dashi types the card number, expiry and security code into the fields that follow each other. You never see the card, and those fields are blank in your screenshots. " +
       "Then press the page's own pay button.",
@@ -117,22 +144,22 @@ export const secretTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: true,
     properties: {
-      window: windowProp,
+      ...fieldProps,
       site: siteProp,
       amount: { type: "string", description: 'The total the page shows, in dollars: "48.90".' },
       card: { type: "string", description: "Which card, by its last four digits or its name in Settings (default: a single-use card)." },
     },
-    required: ["window", "site", "amount"],
+    required: ["site", "amount"],
     parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
+      const where = target(args);
+      if (!isTarget(where)) return where;
       const s = site(args, true);
       if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
       const cents = typeof args.amount === "string" ? parseAmount(args.amount) : null;
       if (cents === null) return fail('`amount` must be the total in dollars, like "48.90".');
       if (args.card !== undefined && (typeof args.card !== "string" || args.card.length > 100))
         return fail("`card` must be a card's last four digits or its name.");
-      return { name: "pay", window, site: s, cents, card: typeof args.card === "string" ? args.card : null };
+      return { name: "pay", target: where, site: s, cents, card: typeof args.card === "string" ? args.card : null };
     },
   },
   {

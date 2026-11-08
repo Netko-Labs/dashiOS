@@ -21,6 +21,12 @@ export const SCOPES = [
     detail:
       "Open apps; bring forward, arrange, minimize, or close windows; choose items in their menus; click and type in them with its own pointer and keyboard; lock the screen. Force quitting an app always asks you first",
   },
+  {
+    id: "web",
+    label: "Use websites",
+    detail:
+      "Open pages in your browser, read them as text, and click, fill in and choose things on them, through Dashi's browser extension. You are asked about each site the first time. It never reads a password, card or code field",
+  },
   { id: "notifications", label: "See notifications", detail: "Read your recent notifications, and dismiss them" },
   {
     id: "files",

@@ -136,6 +136,31 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
         ),
       );
     },
+    allowSite(ask, signal) {
+      const confirm = {
+        agent: ask.agent,
+        who: ask.who,
+        summary: `use ${ask.site}`,
+        detail: `It could read the pages of ${ask.site} in your browser as text, and click, fill in and choose things on them. It never sees what password, card or code fields hold.`,
+        action: "Allow",
+      };
+      return new Promise((resolve) =>
+        queue(
+          {
+            agent: ask.agent,
+            view: (answer) => (
+              <ConfirmSheet
+                confirm={confirm}
+                onAnswer={(yes) => answer(yes ? { allow: "once", scopes: [] } : DENY)}
+                onAlways={() => answer({ allow: "always", scopes: [] })}
+              />
+            ),
+            resolve: (answer) => resolve(answer.allow),
+          },
+          signal,
+        ),
+      );
+    },
     confirmPerson(question, signal) {
       return new Promise((resolve) =>
         queue(

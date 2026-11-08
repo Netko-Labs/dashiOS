@@ -13,7 +13,8 @@ import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
 import { payWith } from "../secrets/pay.ts";
 import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
 import { named, noWindow, subject } from "../subject.ts";
-import type { Call } from "../tools/index.ts";
+import type { Call, SecretTarget } from "../tools/index.ts";
+import { browserField } from "./browser-field.ts";
 
 /** How long a browser just woken (Atspi.wake) takes to publish its page: about a second in the VM's Helium. */
 const WOKEN_MS = 1200;
@@ -97,12 +98,38 @@ function brokerFor(window: CompositorWindow, ctx: RunContext): BrokerContext {
   };
 }
 
+/**
+ * The broker for a call's target: a window's focused field (accessibility
+ * checks it), or a browser tab's element (Dashi's extension checks it, and
+ * Dashi's keys go to the browser's window showing it).
+ */
+async function brokerAt(target: SecretTarget, ctx: RunContext): Promise<{ broker: BrokerContext; window: CompositorWindow } | ToolResult> {
+  if ("window" in target) {
+    const window = await named(ctx.compositor, target.window);
+    if (!window) return noWindow(target.window);
+    if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
+    return { broker: brokerFor(window, ctx), window };
+  }
+  const field = await browserField(target.ref, target.tab, ctx, cmdlineOf);
+  if ("content" in field) return field;
+  const { window } = field;
+  const broker: BrokerContext = {
+    ...brokerFor(window, ctx),
+    inspect: field.inspect,
+    type: async (payload) => {
+      await ctx.hands.send(window, payload, ctx.agent, ctx.status);
+      field.typed();
+    },
+    filled: field.filled,
+  };
+  return { broker, window };
+}
+
 export async function signInCall(call: Extract<Call, { name: "sign_in" | "fill_code" }>, ctx: RunContext): Promise<ToolResult> {
   if (!ctx.secrets.confined) return toolError(UNCONFINED);
-  const window = await named(ctx.compositor, call.window);
-  if (!window) return noWindow(call.window);
-  if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
-  const broker = brokerFor(window, ctx);
+  const at = await brokerAt(call.target, ctx);
+  if ("content" in at) return at;
+  const { broker } = at;
   if (broker.sources.length === 0) return toolError(NO_SOURCE);
   return call.name === "sign_in" ? signIn(broker, call.site, call.account, call.submit) : fillCode(broker, call.site, call.account, call.submit);
 }
@@ -120,15 +147,14 @@ export async function handOver(call: Extract<Call, { name: "hand_over" }>, ctx: 
 
 export async function payCall(call: Extract<Call, { name: "pay" }>, ctx: RunContext): Promise<ToolResult> {
   if (!ctx.secrets.confined) return toolError(UNCONFINED);
-  const window = await named(ctx.compositor, call.window);
-  if (!window) return noWindow(call.window);
-  if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
-  const broker = brokerFor(window, ctx);
+  const at = await brokerAt(call.target, ctx);
+  if ("content" in at) return at;
+  const { broker } = at;
   const pay = {
     ...broker,
     cards: () => ctx.secrets.vault.cards(),
     pay: (merchant: string, cents: number, card: number) => ctx.secrets.vault.pay(merchant, cents, card),
-    filled: (field: Placed) => ctx.secrets.filled(window.id, placeIn(window, field), field.again),
+    filled: (field: Placed) => broker.filled?.(field),
   };
   return payWith(pay, call.site, call.cents, call.card);
 }
