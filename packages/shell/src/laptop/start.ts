@@ -23,7 +23,6 @@ import type { NotificationStore } from "../notifications/store.ts";
 import { Logind } from "../power/logind.ts";
 import type { PowerSource } from "../power/modes/automatic.ts";
 import { parseRecipes } from "../power/modes/recipes.ts";
-import { screenRateApplier } from "../power/modes/screen-rate.ts";
 import type { GraphicsChoice, PowerSection } from "../power/modes/settings.ts";
 import { ModeStore } from "../power/modes/store.ts";
 import { MODE_LABEL } from "../power/modes/types.ts";
@@ -82,7 +81,6 @@ export function startLaptop(options: LaptopOptions): Laptop {
   const modes = new ModeStore({
     profiles,
     hardware,
-    ...(compositor && !options.developmentRun ? { screenRate: screenRateApplier(compositor) } : {}),
     settings: power,
     saveChoice: (choice) => settings.patch("power", { mode: choice === "automatic" ? undefined : choice }),
     announce: (mode) => system.osd.show({ kind: "mode", mode, label: MODE_LABEL[mode] }),

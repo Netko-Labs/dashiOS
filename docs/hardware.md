@@ -140,6 +140,12 @@ range). Example:
 }
 ```
 
+A recipe column holds knobs only. The built-in screen's refresh rate is not a
+recipe's: it follows the power source by itself (Settings › Displays,
+Automatic refresh rate; `docs/architecture.md`, "Screens and the power
+source"), and a `screen-rate` key an older file still carries is left out,
+never sent as a knob.
+
 ## The Curve Optimizer
 
 Sent to the SMU's MP1 mailbox through the PCI root complex's SMN index/data

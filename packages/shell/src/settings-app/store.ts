@@ -16,7 +16,7 @@
  *     "dock": { "style": "taskbar", "autohide": true, "visible": true },
  *     "clock": { "hour24": true, "showDate": false },
  *     "region": { "formats": "de_DE.UTF-8", "firstWeekday": "monday" },
- *     "displays": { "eDP-1": { "scale": 1.5 } },
+ *     "displays": { "eDP-1": { "scale": 1.5, "refresh": "fixed" } },
  *     "spaces": { "count": 3, "names": ["Work", null], "switchOnActivate": true },
  *     "power": { "mode": "automatic", "chargeLimit": 80 },
  *     "graphics": { "mode": "automatic" },
@@ -43,6 +43,7 @@ import { isModelName } from "../agents/ask/local.ts";
 import { type CatalogSetting, isCatalogList } from "../applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
+import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
 import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
 import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
@@ -236,6 +237,11 @@ export interface DisplaySettings {
   scale?: number;
   /** Variable refresh rate as the person chose it (off when unset). */
   vrr?: VrrMode;
+  /**
+   * "fixed": the person picked a rate, so Automatic leaves it (display-config/refresh-policy.ts).
+   * Unset is Automatic, the default, also for a file from before there was a choice.
+   */
+  refresh?: RefreshChoice;
 }
 
 /** The file as Settings understands it; anything else in the file is kept but not read. */
@@ -451,6 +457,7 @@ export function readSettings(raw: unknown): SettingsData {
     const display: DisplaySettings = {
       ...(isScale(entry.scale) ? { scale: entry.scale as number } : {}),
       ...(isVrrMode(entry.vrr) ? { vrr: entry.vrr } : {}),
+      ...(entry.refresh === "fixed" ? { refresh: "fixed" as const } : {}),
     };
     if (Object.keys(display).length > 0) displays[name] = display;
   }
@@ -606,6 +613,23 @@ export class SettingsStore {
       const screen = ensure(ensure(root, ["displays"]), [name]);
       if (vrr === undefined) delete screen.vrr;
       else screen.vrr = vrr;
+      prune(root, ["displays", name]);
+    });
+  }
+
+  /** Automatic refresh rate or a rate the person picked, for a screen (Automatic when nothing is saved). */
+  displayRefresh(name: string): RefreshChoice {
+    return this.snapshot.data.displays[name]?.refresh ?? "automatic";
+  }
+
+  /** Remember whether a screen's rate is Automatic; Automatic is the default, so it is written as nothing. */
+  setDisplayRefresh(name: string, choice: RefreshChoice): void {
+    if (!isOutputName(name)) throw new TypeError(`bad screen name: ${JSON.stringify(name)}`);
+    if (!isRefreshChoice(choice)) throw new TypeError(`bad refresh rate choice: ${JSON.stringify(choice)}`);
+    this.update((root) => {
+      const screen = ensure(ensure(root, ["displays"]), [name]);
+      if (choice === "automatic") delete screen.refresh;
+      else screen.refresh = choice;
       prune(root, ["displays", name]);
     });
   }

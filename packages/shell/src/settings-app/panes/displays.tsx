@@ -1,7 +1,9 @@
 /**
  * Displays: the arrangement of the screens (drag to move one, edges snap),
  * then each screen with its resolution, refresh rate, rotation, and scale,
- * and which is the main display. A scale applies at once and is remembered
+ * and which is the main display. A built-in screen with a lower rate offers
+ * Automatic refresh rate first (display-config/auto-refresh.ts): its top rate
+ * plugged in, about 60 Hz on battery, with a line saying which it runs now. A scale applies at once and is remembered
  * for the next session; resolution, rotation, and turning a screen off are
  * tried first and asked about ("Keep these settings?", display-config/), so
  * a mode a monitor cannot show comes back by itself. Night Shift is the
@@ -10,9 +12,11 @@
 
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
+import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refresh.ts";
 import {
   commonSizes,
+  type Mode,
   type Monitor,
   modeFor,
   monitorLabel,
@@ -60,7 +64,48 @@ function Heading({ monitor }: { monitor: Monitor }) {
   );
 }
 
-function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; screen: ScreenInfo | undefined; store: ScreensStore; canTurnOff: boolean }) {
+/** What Automatic refresh rate says of this screen; null without it (no built-in screen, a test). */
+function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScreen | null {
+  const subscribe = useCallback((listener: () => void) => refresh?.subscribe(listener) ?? (() => {}), [refresh]);
+  return useSyncExternalStore(subscribe, () => refresh?.getSnapshot().screens.find((screen) => screen.name === name) ?? null);
+}
+
+const AUTOMATIC = "automatic";
+
+/** The refresh rate row: Automatic first where the screen offers it, then the rates at its size, fastest first. */
+function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: Mode }; store: ScreensStore; refresh: AutoRefresh | null }) {
+  const auto = useRefreshScreen(refresh, monitor.name);
+  const mode = monitor.mode;
+  const rates = ratesOf(monitor.modes, mode);
+  if (rates.length <= 1) return null;
+  const offered = auto?.decision.offered === true;
+  const automatic = offered && auto?.choice === "automatic";
+  const current = rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz;
+  return (
+    <Setting id="displays/refresh-rate" {...(automatic && auto ? { detail: `${auto.decision.why}.` } : {})}>
+      <Choices<number | string>
+        testID={`display-refresh:${monitor.name}`}
+        options={[...(offered ? [{ value: AUTOMATIC, label: "Automatic" }] : []), ...rates.map((rate) => ({ value: rate, label: refreshLabel(rate) }))]}
+        value={automatic ? AUTOMATIC : current}
+        onChange={(rate) => void store.setRate(monitor.name, typeof rate === "number" ? rate : AUTOMATIC)}
+      />
+    </Setting>
+  );
+}
+
+function ScreenCard({
+  monitor,
+  screen,
+  store,
+  canTurnOff,
+  refresh,
+}: {
+  monitor: Monitor;
+  screen: ScreenInfo | undefined;
+  store: ScreensStore;
+  canTurnOff: boolean;
+  refresh: AutoRefresh | null;
+}) {
   const [showAll, setShowAll] = useState(false);
   const { name } = monitor;
   if (!monitor.enabled || !monitor.mode) {
@@ -78,7 +123,6 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
   const every = sizesOf(monitor.modes);
   const common = commonSizes(monitor.modes, here);
   const sizes = showAll || common.length >= every.length ? every : common;
-  const rates = ratesOf(monitor.modes, here);
   const choices = screen ? scaleChoices(screen).map((scale) => ({ value: scale, label: scaleLabel(scale) })) : [];
   const current = screen ? (choices.find((choice) => isCurrentScale(screen, choice.value))?.value ?? screen.scale) : monitor.scale;
   const looks = screen ? logicalSize(screen, screen.scale) : null;
@@ -113,16 +157,7 @@ function ScreenCard({ monitor, screen, store, canTurnOff }: { monitor: Monitor; 
           )}
         </Setting>
       )}
-      {rates.length > 1 && (
-        <Setting id="displays/refresh-rate">
-          <Choices
-            testID={`display-refresh:${name}`}
-            options={rates.map((rate) => ({ value: rate, label: refreshLabel(rate) }))}
-            value={rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz}
-            onChange={(rate) => void store.setMode(name, { ...here, refreshMhz: rate })}
-          />
-        </Setting>
-      )}
+      <RefreshRate monitor={{ ...monitor, mode }} store={store} refresh={refresh} />
       {monitor.vrr.supported && (
         <Setting id="displays/variable-refresh-rate" detail={monitor.vrr.active ? "Following the frames now." : undefined}>
           <Choices
@@ -173,7 +208,17 @@ function X11AppsSection() {
   );
 }
 
-export function DisplaysPane({ screens, settings, laptop }: { screens: ScreensStore; settings: SettingsStore; laptop?: Laptop | null }) {
+export function DisplaysPane({
+  screens,
+  settings,
+  laptop,
+  refresh,
+}: {
+  screens: ScreensStore;
+  settings: SettingsStore;
+  laptop?: Laptop | null;
+  refresh?: AutoRefresh | null;
+}) {
   const colors = useColors();
   const state = useScreens(screens);
   const on = state.monitors.filter((monitor) => monitor.enabled);
@@ -199,6 +244,7 @@ export function DisplaysPane({ screens, settings, laptop }: { screens: ScreensSt
           screen={state.screens.find((screen) => screen.name === monitor.name)}
           store={screens}
           canTurnOff={on.length > 1}
+          refresh={refresh ?? null}
         />
       ))}
       {state.error !== null && (

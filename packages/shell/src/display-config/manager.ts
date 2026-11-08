@@ -55,6 +55,19 @@ export interface DisplayManagerOptions {
 export interface ChangeOptions {
   /** Ask the person to keep it (default for resolution, rotation, and turning a screen off). */
   confirm?: boolean;
+  /** Who made it: Automatic refresh rate (auto-refresh.ts), or a person or an agent (the default). */
+  by?: "automatic";
+}
+
+/**
+ * A mode the screens run changed: put back from what was saved (`restore`:
+ * login, a monitor plugged, the lid), set by Automatic refresh rate, or set
+ * by a person or an agent (`manual`).
+ */
+export interface ModeChange {
+  cause: "restore" | "automatic" | "manual";
+  /** The screens whose mode was set. */
+  names: readonly string[];
 }
 
 const later = (fn: () => void, ms: number): (() => void) => {
@@ -67,6 +80,7 @@ export class DisplayManager {
   /** The set of monitors the last restore was for: a change of state alone does not restore again. */
   private restoredFor: string | null = null;
   private readonly listeners = new Set<() => void>();
+  private readonly modeListeners = new Set<(change: ModeChange) => void>();
   private busy = 0;
 
   constructor(private readonly options: DisplayManagerOptions) {}
@@ -80,6 +94,12 @@ export class DisplayManager {
   onPending(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  /** Runs after a mode was set and kept (auto-refresh.ts tells its own changes from others'). */
+  onModeChange(listener: (change: ModeChange) => void): () => void {
+    this.modeListeners.add(listener);
+    return () => this.modeListeners.delete(listener);
   }
 
   get lidClosed(): boolean {
@@ -120,7 +140,10 @@ export class DisplayManager {
         await this.options.compositor.request("outputs-config", toWire(plan));
       } catch (error) {
         console.error("dashi-shell: could not restore the display arrangement:", error instanceof Error ? error.message : error);
+        return;
       }
+      const names = plan.outputs.filter((output) => output.mode !== undefined || output.enabled === true).map((output) => output.name);
+      if (names.length > 0) this.tellMode({ cause: "restore", names });
     }).catch((error) => console.error("dashi-shell: displays:", error instanceof Error ? error.message : error));
   }
 
@@ -167,7 +190,7 @@ export class DisplayManager {
     const offered = modeFor(monitor.modes, mode, mode.refreshMhz);
     if (!offered) return refused(`${monitor.name} has no ${mode.width} × ${mode.height} mode`);
     const scale = this.scaleAfter(monitor, offered, monitor.rotation);
-    return this.apply(
+    const result = await this.apply(
       {
         outputs: [
           {
@@ -180,6 +203,8 @@ export class DisplayManager {
       `Resolution of ${monitor.name}`,
       options,
     );
+    if (result.kept) this.tellMode({ cause: options.by === "automatic" ? "automatic" : "manual", names: [monitor.name] });
+    return result;
   }
 
   /** Turn a screen (0, 90, 180, 270 degrees counter-clockwise); the scale is kept if the turned screen still has room at it. */
@@ -229,6 +254,10 @@ export class DisplayManager {
   private scaleAfter(monitor: Monitor, mode: Mode, rotation: Rotation): number {
     const upright = rotation === 90 || rotation === 270 ? { width: mode.height, height: mode.width } : { width: mode.width, height: mode.height };
     return leavesRoom(upright, monitor.scale) ? monitor.scale : this.options.scaleFor(monitor, mode, rotation);
+  }
+
+  private tellMode(change: ModeChange): void {
+    for (const listener of [...this.modeListeners]) listener(change);
   }
 
   private remember(monitors: readonly Monitor[]): void {

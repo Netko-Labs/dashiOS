@@ -23,11 +23,9 @@ export const MODE_SHORT: Readonly<Record<Mode, string>> = { "low-power": "Low", 
 export const MODE_PROFILE: Readonly<Record<Mode, ProfileId>> = { "low-power": "power-saver", balanced: "balanced", performance: "performance" };
 export const modeOfProfile = (profile: ProfileId): Mode => (profile === "power-saver" ? "low-power" : profile);
 
-/** One column of a recipe: knob values (docs/hardware.md, Knobs), and optionally the built-in screen's refresh rate. */
+/** One column of a recipe: knob values (docs/hardware.md, Knobs). The screen's refresh rate is Displays' (display-config/auto-refresh.ts). */
 export interface Recipe {
   knobs: Readonly<Record<string, KnobValue>>;
-  /** Hz, or "max"; absent leaves the screen alone. */
-  screenRate?: number | "max";
 }
 
 export type Recipes = Readonly<Record<Mode, Readonly<Record<Column, Recipe>>>>;

@@ -36,13 +36,12 @@ const GA403WR = parseRecipes({
 });
 
 test("recipe resolution per column: the cable switches columns, not modes", () => {
+  // An older model file's "screen-rate" is left out: the rate is Displays' Automatic now, and it is no knob.
   expect(resolveRecipe(GA403WR, "performance", "plugged", G14_KNOBS)).toEqual({
     knobs: { "platform-profile": "performance", epp: "performance", "ppt-spl": 80 },
-    screenRate: "max",
   });
   expect(resolveRecipe(GA403WR, "performance", "battery", G14_KNOBS)).toEqual({
     knobs: { "platform-profile": "balanced", epp: "balance_performance", "ppt-spl": 45 },
-    screenRate: 60,
   });
   expect(resolveRecipe(GA403WR, "low-power", "battery", G14_KNOBS).knobs.boost).toBe(false);
 });

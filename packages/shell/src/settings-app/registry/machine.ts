@@ -101,6 +101,20 @@ export const MACHINE_ROWS = [
     stack: true,
   },
   {
+    id: "battery/on-battery-graphics",
+    title: "Graphics card",
+    name: "Graphics card on battery",
+    keywords: ["gpu", "battery life", "integrated"],
+    kind: "action",
+  },
+  {
+    id: "battery/on-battery-refresh",
+    title: "Refresh rate",
+    name: "Refresh rate on battery",
+    keywords: ["hz", "hertz", "battery life", "60 hz", "120 hz"],
+    kind: "action",
+  },
+  {
     id: "battery/turn-display-off",
     title: "Turn display off after",
     detail: "The screens go dark when you have been away this long.",

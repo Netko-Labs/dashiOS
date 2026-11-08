@@ -61,7 +61,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
-      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} laptop={ctx.services.laptop} />;
+      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} laptop={ctx.services.laptop} refresh={ctx.services.refresh} />;
     case "desktop-dock":
       return <DesktopDockPane />;
     case "keyboard":
@@ -118,7 +118,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "sound":
       return <SoundPane services={ctx.services} />;
     case "battery":
-      return <BatteryPane services={ctx.services} settings={ctx.settings} />;
+      return <BatteryPane services={ctx.services} settings={ctx.settings} show={ctx.show} />;
     case "graphics":
       return <GraphicsPane laptop={ctx.services.laptop} />;
     case "users":

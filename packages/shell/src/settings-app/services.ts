@@ -12,6 +12,7 @@ import { holdingBar } from "../bar-hold.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { DeviceStore } from "../control-center/devices.ts";
+import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Laptop } from "../laptop/start.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
@@ -50,6 +51,8 @@ export interface PaneServices extends SharedStores {
   battery: BatteryMonitor | null;
   /** The power modes, the charge limit, the keyboard light, the graphics card (laptop/); null in tests. */
   laptop: Laptop | null;
+  /** Automatic refresh rate for the built-in screen (display-config/auto-refresh.ts); null without the display manager. */
+  refresh: AutoRefresh | null;
   account: AccountStore;
   /** Opens the password sheet; `needsCurrent` asks for the current password first. */
   changePassword(needsCurrent: boolean): void;
@@ -67,6 +70,8 @@ export interface ServicesOptions {
   battery?: BatteryMonitor | null;
   /** The shell's laptop (laptop/start.ts). */
   laptop?: Laptop | null;
+  /** The shell's Automatic refresh rate. */
+  refresh?: AutoRefresh | null;
 }
 
 export function createPaneServices(options: ServicesOptions): PaneServices {
@@ -85,6 +90,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
     ...shared,
     battery: options.battery ?? null,
     laptop: options.laptop ?? null,
+    refresh: options.refresh ?? null,
     netinfo: new NetInfoStore(fake ? fakeNetInfo() : nmcliNetInfo(run)),
     inputs: new SoundStore(inputsOf(shared.audio)),
     levels: new LevelsStore(fake ? shadowLevels(real) : real, (volume) => system.publish("volume", volume)),

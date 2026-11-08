@@ -183,6 +183,43 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   The Access sheet's button opens it there, over the links socket
   (`src/actions/open-link.ts`).
 
+## Screens and the power source
+
+The compositor runs what it is told; which modes the screens run, and what
+changes when the laptop is unplugged, is the shell's.
+
+- **The arrangement** (`src/display-config/`): where each screen sits, what it
+  runs and which is the main display are saved per set of connected monitors
+  (`~/.config/dashi/displays.json`) and put back when that set is plugged in,
+  at login, and when the lid opens or shuts. A new resolution, rotation, or a
+  screen turned off is a trial: "Keep these settings?", and without a yes in
+  15 seconds the old arrangement comes back.
+- **Automatic refresh rate** (`src/display-config/auto-refresh.ts`, the
+  decision in `refresh-policy.ts`): the default on a built-in screen that has
+  a lower rate at the size it runs. Plugged in it runs its top rate; on
+  battery the rate at that size nearest 60 Hz that is not under 59 (60 over
+  59.94 when it has both, 59.94 when that is all it has). Only the rate
+  changes, never the size or the scale; external screens are never changed.
+  It sets the rate at login, when the power source changes and has held for
+  5 seconds (so a loose charger doesn't flicker the screen), when Automatic is
+  turned on, and after the arrangement is put back. Picking a rate in
+  Displays turns it off for that screen (settings.json
+  `displays.<name>.refresh: "fixed"`; no key is Automatic). A mode set any
+  other way for the session (Displays' resolution, an agent's
+  `set_display_mode`) is kept until the power source next changes, and then
+  Automatic picks again. Nothing is set while the screens are blanked or the
+  session is locked; the change waits until they are back. Its changes are
+  saved with the arrangement, so putting the arrangement back doesn't undo
+  them.
+- **The graphics card** (`src/graphics/policy.ts`): Automatic uses the
+  built-in graphics on battery, so the card sleeps, and the card plugged in.
+- **The power mode** (`src/power/modes/`): one recipe per mode, a column for
+  plugged in and one for battery (`docs/hardware.md`).
+
+Settings › Battery & Power's "On battery" group names what Dashi lowers when
+unplugged, the graphics card and the refresh rate, one row each, with a
+button to the pane where each is chosen.
+
 ## Channels
 
 | Between | Channel | Doc |
