@@ -4,14 +4,16 @@
  * battery reports, the gauge with the limit's tick, the last 24 hours).
  * Then the power mode with all its modes in one row of pills and what
  * Automatic chose and why (power/modes/; power-profiles-daemon's profiles on
- * a machine without them), where charging stops; then what Dashi lowers on
- * battery (on-battery.tsx), when the display turns off and the computer
- * sleeps. Under those: the battery's health and cycles and whether the menu
- * bar shows its percentage, a full charge for a trip, the processor
- * (battery-laptop.tsx), the usage (battery-usage.tsx), and what the lid and
- * power button do. Parts that do not apply are left out: a desktop has no
- * battery, and a machine without the daemon has no power modes. The lid is
- * logind's configuration (/etc/systemd/logind.conf), shown as it is.
+ * a machine without them), where charging stops (one row: its switch names
+ * the limit, its slider under it); then what Dashi lowers on battery
+ * (on-battery.tsx), when the display turns off and the computer sleeps (the
+ * four usual times as pills, "More…" for the rest). Under those: the
+ * battery's health and cycles and whether the menu bar shows its
+ * percentage, a full charge for a trip, the processor (battery-laptop.tsx),
+ * the usage (battery-usage.tsx), and what the lid and power button do.
+ * Parts that do not apply are left out: a desktop has no battery, and a
+ * machine without the daemon has no power modes. The lid is logind's
+ * configuration (/etc/systemd/logind.conf), shown as it is.
  */
 
 import { useEffect, useSyncExternalStore } from "react";
@@ -21,15 +23,14 @@ import { useLaptop } from "../../laptop/store.ts";
 import { describeAction } from "../../power/policy.ts";
 import { useEnergy } from "../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../system/profiles.ts";
-import { BLANK_CHOICES, blankChoice, SLEEP_CHOICES, sleepChoice, timePills } from "../controls.ts";
+import { BLANK_CHOICES, BLANK_COMMON, blankChoice, SLEEP_CHOICES, SLEEP_COMMON, sleepChoice, timePills } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
-import { GAUGE } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Spot } from "../spot.tsx";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Hero, Page, Setting } from "../ui.tsx";
 import { BatteryHeroView } from "./battery-hero.tsx";
-import { ChargeLimitRow, FullChargeGroup, PowerModeRow, ProcessorGroup, StopChargingRow } from "./battery-laptop.tsx";
+import { ChargeLimitRow, FullChargeGroup, PowerModeRow, ProcessorGroup } from "./battery-laptop.tsx";
 import { BatteryUsage } from "./battery-usage.tsx";
 import { OnBatteryRow, type ShowPane, useOnBattery } from "./on-battery.tsx";
 import { Failure, Value } from "./parts.tsx";
@@ -91,7 +92,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
       <Group testID="power-mode">
         {services.laptop && <PowerModeRow laptop={services.laptop} />}
         {!services.laptop && profiles && (
-          <Setting id="battery/power-mode" glyph={GAUGE} stack={false} detail={MODE_DETAIL[profiles.active]}>
+          <Setting id="battery/power-mode" stack={false} detail={MODE_DETAIL[profiles.active]}>
             <Choices
               testID="power-profile"
               value={profiles.active}
@@ -100,8 +101,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             />
           </Setting>
         )}
-        {services.laptop && limit !== null && <StopChargingRow laptop={services.laptop} settings={settings} />}
-        {services.laptop && limit !== null && limit < 100 && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
+        {services.laptop && limit !== null && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
       </Group>
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">
@@ -110,6 +110,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
           <Choices
             testID="power-blank"
             options={timePills(BLANK_CHOICES)}
+            common={BLANK_COMMON}
             value={blankChoice(blank)}
             onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
           />
@@ -118,6 +119,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
           <Choices
             testID="power-sleep"
             options={timePills(SLEEP_CHOICES)}
+            common={SLEEP_COMMON}
             value={sleepChoice(sleep)}
             onChange={(sleepAfterSeconds) => settings.patch("idle", { sleepAfterSeconds })}
           />

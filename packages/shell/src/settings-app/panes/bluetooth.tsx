@@ -15,7 +15,6 @@ import type { BluetoothDevice } from "../../bluetooth/types.ts";
 import { useDevices } from "../../control-center/index.ts";
 import { batteryGlyph } from "../../glyphs.ts";
 import { useColors } from "../colors.ts";
-import { BLUETOOTH as BLUETOOTH_KNOB } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Switch } from "../ui.tsx";
 import { Failure, ListRow, MiniButton, RoundIcon } from "./parts.tsx";
@@ -166,7 +165,7 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
   return (
     <Page title="Bluetooth">
       <Group testID="bt-power">
-        <Setting id="bluetooth/bluetooth" glyph={BLUETOOTH_KNOB} detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
+        <Setting id="bluetooth/bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
           {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
         </Setting>
       </Group>

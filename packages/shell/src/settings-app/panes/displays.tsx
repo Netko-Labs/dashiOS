@@ -6,8 +6,8 @@
  * (edges snap). Then the common choices: the built-in screen's brightness
  * (Control Center's slider), the refresh rate (Automatic first where the
  * built-in screen offers it: its top rate plugged in, about 60 Hz on
- * battery, display-config/auto-refresh.ts), the scale (the nearest three,
- * "Other…" for the rest), and Night Shift. Resolution, rotation and the
+ * battery, display-config/auto-refresh.ts), the scale (the nearest four,
+ * "More…" for the rest), and Night Shift. Resolution, rotation and the
  * rest sit under it (display-cards.tsx), so the pane stays short. A scale
  * applies at once and is remembered for the next session; resolution,
  * rotation, and turning a screen off are tried first and asked about
@@ -22,13 +22,12 @@ import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refre
 import { type Mode, type Monitor, ratesOf, sizeLabel } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { Laptop } from "../../laptop/start.ts";
-import { TextLink } from "../../shared/controls/inputs.tsx";
 import { selectedRef } from "../../wallpaper/catalog.ts";
 import { wallpaperTiles } from "../../wallpaper/tiles.ts";
 import { useColors } from "../colors.ts";
 import { chosenMonitor, displayHero, scaleOffer } from "../heroes.ts";
 import { useScreens, useSettings } from "../hooks.ts";
-import { DISPLAY, NIGHT_SHIFT, SUN, TEXT } from "../knob-glyphs.ts";
+import { SUN } from "../knob-glyphs.ts";
 import { describeSchedule } from "../night.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
@@ -67,7 +66,7 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   const automatic = offered && auto?.choice === "automatic";
   const current = rates.find((rate) => Math.abs(rate - mode.refreshMhz) <= 600) ?? mode.refreshMhz;
   return (
-    <Setting id="displays/refresh-rate" glyph={DISPLAY} stack={false} detail={automatic && auto ? `Automatic: ${auto.decision.why}` : `${hertz(current)} Hz`}>
+    <Setting id="displays/refresh-rate" stack={false} detail={automatic && auto ? `Automatic: ${auto.decision.why}` : `${hertz(current)} Hz`}>
       <Choices<number | string>
         testID={`display-refresh:${monitor.name}`}
         options={[...(offered ? [{ value: AUTOMATIC, label: "Auto" }] : []), ...rates.map((rate) => ({ value: rate, label: hertz(rate) }))]}
@@ -78,24 +77,19 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   );
 }
 
-/** The scale: the one in use and its neighbours as pills, "Other…" for the rest. */
+/** The scale: the one in use and its neighbours as pills, "More…" for the rest; the row says what the screen looks like. */
 function Scale({ monitor, screen, store }: { monitor: Monitor; screen: ScreenInfo; store: ScreensStore }) {
-  const [all, setAll] = useState(false);
   const choices = scaleChoices(screen);
   const current = choices.find((choice) => isCurrentScale(screen, choice)) ?? screen.scale;
-  const offer = scaleOffer(choices, current);
-  const shown = all ? choices : offer.shown;
   return (
-    <Setting id="displays/scale" glyph={TEXT} stack={all} detail={`Looks like ${sizeLabel(logicalSize(screen, screen.scale))}`}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 }}>
-        <Choices
-          testID={`display-scale:${monitor.name}`}
-          options={shown.map((scale) => ({ value: scale, label: scaleLabel(scale) }))}
-          value={current}
-          onChange={(scale) => void store.setScale(monitor.name, scale)}
-        />
-        {offer.more && <TextLink testID={`display-scale-other:${monitor.name}`} label={all ? "Fewer" : "Other…"} onPress={() => setAll((now) => !now)} />}
-      </View>
+    <Setting id="displays/scale" stack={false} detail={`Looks like ${sizeLabel(logicalSize(screen, screen.scale))}`}>
+      <Choices
+        testID={`display-scale:${monitor.name}`}
+        options={choices.map((scale) => ({ value: scale, label: scaleLabel(scale) }))}
+        common={scaleOffer(choices, current, 4).shown}
+        value={current}
+        onChange={(scale) => void store.setScale(monitor.name, scale)}
+      />
     </Setting>
   );
 }
@@ -103,7 +97,7 @@ function Scale({ monitor, screen, store }: { monitor: Monitor; screen: ScreenInf
 /** The built-in screen's brightness, as Control Center's slider sets it (the pane leaves it out without a backlight). */
 function Brightness({ devices, brightness }: { devices: DeviceStore; brightness: number }) {
   return (
-    <Setting id="displays/brightness" glyph={SUN}>
+    <Setting id="displays/brightness">
       <Slider
         testID="display-brightness"
         value={brightness}
@@ -118,7 +112,7 @@ function Brightness({ devices, brightness }: { devices: DeviceStore; brightness:
 /** Night Shift's switch, the same as Control Center's tile, with its schedule in words. */
 function NightShiftRow({ settings }: { settings: SettingsStore }) {
   const { nightShift } = useSettings(settings).data;
-  return <Setting id="displays/night-shift" glyph={NIGHT_SHIFT} detail={describeSchedule(nightShift.from, nightShift.to)} control="night-switch" />;
+  return <Setting id="displays/night-shift" detail={describeSchedule(nightShift.from, nightShift.to)} control="night-switch" />;
 }
 
 /** The picture the hero's screens show: the wallpaper's tile, else the default one. */
@@ -152,7 +146,7 @@ export function DisplaysPane({
   const monitor = chosenMonitor(state.monitors, asked);
   const screen = monitor ? state.screens.find((each) => each.name === monitor.name) : undefined;
   const several = on.length > 1;
-  const name = monitor ? displayHero(monitor, screen, { width: 1, height: 1 }).name : undefined;
+  const name = monitor ? displayHero(monitor, { width: 1, height: 1 }).name : undefined;
   // A row that has nothing to show is left out here, so the card draws no hairline for it.
   const { brightness } = useDevices(devices ?? NO_DEVICES);
   const rates = monitor?.mode ? ratesOf(monitor.modes, monitor.mode).length : 0;
@@ -170,7 +164,7 @@ export function DisplaysPane({
               <ArrangementView monitors={state.monitors} onMove={(moved, spot) => void screens.arrange({ [moved]: spot })} />
             </View>
           ) : (
-            <DisplayHero monitors={state.monitors} screens={state.screens} chosen={monitor.name} wallpaper={wallpaper} onChoose={setAsked} />
+            <DisplayHero monitors={state.monitors} chosen={monitor.name} rateRow={rates > 1} wallpaper={wallpaper} onChoose={setAsked} />
           )}
         </Hero>
       )}

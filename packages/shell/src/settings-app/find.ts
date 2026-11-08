@@ -9,6 +9,12 @@
  * keyword: "night" finds Night Shift, "charge" the charge limit. A title
  * that starts with what was typed comes first, then one that holds it, then
  * a pane, then a row found by its other words.
+ *
+ * One result per setting: a row that is part of another (Night Shift's
+ * hours and warmth, the charge limit's slider: the registry's `partOf`) is
+ * listed only when the words find it and not its setting, and then once.
+ * A row's result carries its own glyph (its pane's when it has none) and
+ * the name of the pane it is in.
  */
 
 import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
@@ -23,8 +29,10 @@ export interface Found {
   row?: string;
   /** What the sidebar says: the row's name ("Charge limit"), or the pane's title. */
   label: string;
-  /** The pane it is in, by its glyph. */
+  /** The row's glyph, else its pane's. */
   glyph: string;
+  /** The pane a row is in, by its title, said after the row; absent for a pane. */
+  where?: string;
 }
 
 /** How many results the sidebar lists. */
@@ -75,14 +83,35 @@ export function findSettings(query: string, shown: (pane: PaneInfo) => boolean =
       found.push({ id: pane.id, pane: pane.id, label: pane.title, glyph: pane.glyph, rank: rank(pane.title, text, true), order: order++ });
     }
   }
+  /** The best row found for each setting, by the setting's id. */
+  const settings = new Map<string, Found & { rank: number; order: number; whole: boolean }>();
   for (const row of SETTINGS_ROWS) {
     const place = rowPlace(row);
     const pane = panes.get(place.pane);
     if (!pane || !matches(typed, rowWords(row, pane))) continue;
     const label = rowName(row);
-    found.push({ id: row.id, pane: pane.id, row: place.row, label, glyph: pane.glyph, rank: rank(label, text, false), order: order++ });
+    const each = {
+      id: row.id,
+      pane: pane.id,
+      row: place.row,
+      label,
+      glyph: row.glyph ?? pane.glyph,
+      where: pane.title,
+      rank: rank(label, text, false),
+      order: order++,
+      whole: row.partOf === undefined,
+    };
+    const setting = row.partOf ?? row.id;
+    const kept = settings.get(setting);
+    // The setting itself wins over its parts; among parts, the better rank.
+    if (!kept || (each.whole && !kept.whole) || (each.whole === kept.whole && each.rank < kept.rank)) settings.set(setting, each);
   }
+  for (const { whole: _whole, ...each } of settings.values()) found.push(each);
+  // A pane's own switch, named as the pane ("Bluetooth"), is the pane's result: one setting, listed once.
   return found
+    .filter(
+      (each) => each.row === undefined || !(panes.has(each.pane) && each.label === panes.get(each.pane)?.title && found.some((pane) => pane.id === each.pane)),
+    )
     .sort((a, b) => a.rank - b.rank || a.order - b.order)
     .slice(0, FOUND_MOST)
     .map(({ rank: _rank, order: _order, ...each }) => each);

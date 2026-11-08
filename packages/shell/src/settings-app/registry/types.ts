@@ -64,6 +64,18 @@ export interface RowDef {
   name?: string;
   /** The quieter line under the title; a pane may show a live one instead. */
   detail?: string;
+  /**
+   * The glyph on its row's knob (knob-glyphs.ts), which the search's result
+   * carries too. A row in a card of plain facts or a list has none, and every
+   * row of a card has one or none does (row.tsx, one left edge).
+   */
+  glyph?: string;
+  /**
+   * The setting this row is a part of (Night Shift's hours, the charge limit's
+   * slider): the search lists that setting once, and this row only when the
+   * words find it and not its setting.
+   */
+  partOf?: string;
   /** Other words it is found by, lowercase. */
   keywords?: readonly string[];
   kind: RowKind;

@@ -1,6 +1,7 @@
 /** The rows of Network, Bluetooth, Sound, Battery & Power, and Graphics. */
 
 import { BLANK_CHOICES, DEFAULT_BLANK_AFTER, SLEEP_CHOICES } from "../controls.ts";
+import { BLUETOOTH, ETHERNET, GAUGE, GPU, MIC, MIC_OFF, MUTE, PLUG, VOLUME, WIFI } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedSwitch } from "./values.ts";
 
@@ -11,15 +12,22 @@ const SLEEP_OPTIONS: readonly ChoiceOption[] = SLEEP_CHOICES;
 export const BLANK_AFTER = storedChoice("idle", "blankAfterSeconds", DEFAULT_BLANK_AFTER, BLANK_OPTIONS);
 
 export const MACHINE_ROWS = [
-  { id: "network/wi-fi", title: "Wi-Fi", keywords: ["wifi", "wireless", "wlan", "internet", "network"], kind: "switch", source: "controls" },
-  { id: "network/status", title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
+  { id: "network/wi-fi", glyph: WIFI, title: "Wi-Fi", keywords: ["wifi", "wireless", "wlan", "internet", "network"], kind: "switch", source: "controls" },
+  { id: "network/status", glyph: ETHERNET, title: "Status", name: "Ethernet status", keywords: ["ethernet", "wired", "cable"], kind: "value" },
   { id: "network/ip-address", title: "IP address", keywords: ["ip", "address"], kind: "value" },
   { id: "network/subnet-mask", title: "Subnet mask", keywords: ["netmask"], kind: "value" },
   { id: "network/router", title: "Router", keywords: ["gateway"], kind: "value" },
   { id: "network/dns-servers", title: "DNS servers", keywords: ["dns", "name server"], kind: "value" },
   { id: "network/mac-address", title: "MAC address", keywords: ["mac", "hardware address"], kind: "value" },
 
-  { id: "bluetooth/bluetooth", title: "Bluetooth", keywords: ["bt", "wireless", "headphones", "pairing"], kind: "switch", source: "controls" },
+  {
+    id: "bluetooth/bluetooth",
+    glyph: BLUETOOTH,
+    title: "Bluetooth",
+    keywords: ["bt", "wireless", "headphones", "pairing"],
+    kind: "switch",
+    source: "controls",
+  },
   {
     id: "bluetooth/search-again",
     title: "Search again",
@@ -29,12 +37,13 @@ export const MACHINE_ROWS = [
     kind: "action",
   },
 
-  { id: "sound/output-volume", title: "Output volume", keywords: ["volume", "loudness", "speakers"], kind: "value" },
-  { id: "sound/output-mute", title: "Mute", name: "Mute output", keywords: ["mute", "silence"], kind: "switch" },
-  { id: "sound/input-volume", title: "Input volume", keywords: ["microphone volume", "mic level", "gain"], kind: "value" },
-  { id: "sound/input-mute", title: "Mute", name: "Mute input", keywords: ["mute microphone", "mute mic"], kind: "switch" },
+  { id: "sound/output-volume", glyph: VOLUME, title: "Output volume", keywords: ["volume", "loudness", "speakers"], kind: "value" },
+  { id: "sound/output-mute", glyph: MUTE, title: "Mute", name: "Mute output", keywords: ["mute", "silence"], kind: "switch" },
+  { id: "sound/input-volume", glyph: MIC, title: "Input volume", keywords: ["microphone volume", "mic level", "gain"], kind: "value" },
+  { id: "sound/input-mute", glyph: MIC_OFF, title: "Mute", name: "Mute input", keywords: ["mute microphone", "mute mic"], kind: "switch" },
   {
     id: "sound/input-level",
+    glyph: MIC,
     title: "Input level",
     detail: "Speak to see the meter move. Nothing is recorded.",
     keywords: ["microphone test", "mic test"],
@@ -42,6 +51,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "sound/show-in-menu-bar",
+    glyph: VOLUME,
     title: "Show Sound in menu bar",
     detail: "The speaker beside the battery and network icons.",
     keywords: ["speaker", "volume icon"],
@@ -70,9 +80,17 @@ export const MACHINE_ROWS = [
   },
   { id: "battery/power-draw", title: "Power draw", keywords: ["watts", "energy use"], kind: "value" },
   { id: "battery/since-unplugged", title: "Since unplugged", keywords: ["battery usage"], kind: "value" },
-  { id: "battery/power-mode", title: "Power mode", keywords: ["low power mode", "performance", "balanced", "power saver"], kind: "choice", stack: true },
+  {
+    id: "battery/power-mode",
+    glyph: GAUGE,
+    title: "Power mode",
+    keywords: ["low power mode", "performance", "balanced", "power saver"],
+    kind: "choice",
+    stack: true,
+  },
   {
     id: "battery/stop-charging",
+    glyph: PLUG,
     title: "Stop charging early",
     detail: "Keeps the battery healthy.",
     keywords: ["battery health", "charge limit", "stop charging", "80%"],
@@ -80,6 +98,8 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/charge-limit",
+    partOf: "battery/stop-charging",
+    glyph: PLUG,
     title: "Charge limit",
     detail: "Keeping it below full slows wear.",
     keywords: ["battery health", "charge threshold", "stop charging"],
@@ -88,7 +108,7 @@ export const MACHINE_ROWS = [
   },
   { id: "battery/full-charge-once", title: "Charge to full once", detail: "For a trip: back to the limit after.", keywords: ["full charge"], kind: "action" },
   { id: "battery/full-by", title: "Full by a time", detail: "Charges past the limit before you leave.", keywords: ["charge schedule"], kind: "switch" },
-  { id: "battery/full-by-when", title: "When", name: "Full charge time", kind: "choice", stack: true },
+  { id: "battery/full-by-when", partOf: "battery/full-by", title: "When", name: "Full charge time", kind: "choice", stack: true },
   { id: "battery/boost", title: "Boost clock", detail: "Faster bursts, more heat.", keywords: ["turbo", "cpu boost"], kind: "choice", stack: true },
   {
     id: "battery/prefer",
@@ -116,6 +136,7 @@ export const MACHINE_ROWS = [
   },
   {
     id: "battery/on-battery-refresh",
+    partOf: "battery/on-battery-graphics",
     title: "Refresh rate",
     name: "Refresh rate on battery",
     keywords: ["hz", "hertz", "battery life", "60 hz", "120 hz"],
@@ -146,9 +167,18 @@ export const MACHINE_ROWS = [
   { id: "battery/lid-docked", title: "Closing the lid with a display attached", keywords: ["lid", "docked", "clamshell"], kind: "value" },
   { id: "battery/power-button", title: "Pressing the power button", keywords: ["power button"], kind: "value" },
 
-  { id: "graphics/mode", title: "Mode", name: "Graphics mode", keywords: ["gpu", "hybrid", "integrated", "dedicated"], kind: "choice", stack: true },
+  {
+    id: "graphics/mode",
+    glyph: GAUGE,
+    title: "Mode",
+    name: "Graphics mode",
+    keywords: ["gpu", "hybrid", "integrated", "dedicated"],
+    kind: "choice",
+    stack: true,
+  },
   {
     id: "graphics/card-only",
+    glyph: GPU,
     title: "Graphics card only",
     detail: "Fastest for games: the screen runs on the graphics card. Applies at the next restart.",
     keywords: ["mux", "dgpu", "discrete"],

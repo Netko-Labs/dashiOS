@@ -9,7 +9,8 @@
 
 import { createContext, type ReactNode, useCallback, useContext, useSyncExternalStore } from "react";
 import type { FlagsStore } from "../control-center/flags.ts";
-import { ControlSwitch, Segmented } from "../shared/controls/inputs.tsx";
+import { FoldedChoices } from "../shared/controls/folded.tsx";
+import { ControlSwitch } from "../shared/controls/inputs.tsx";
 import { type RowDef, type SettingId, type SettingValue, settingRow, valueOf } from "./registry/index.ts";
 import { Row } from "./row.tsx";
 import { Spot } from "./spot.tsx";
@@ -52,14 +53,14 @@ export function useSetRow(row: RowDef): (value: SettingValue) => void {
   };
 }
 
-/** The registry's own control for a row: a switch, or a choice's pills. */
+/** The registry's own control for a row: a switch, or a choice's pills (folded past five). */
 function RegistryControl({ row, testID }: { row: RowDef; testID: string }) {
   const value = useRowValue(row);
   const set = useSetRow(row);
   if (value === null) return null;
   if (row.kind === "switch") return <ControlSwitch testID={testID} on={value === true} onChange={set} />;
   if (row.kind === "choice" && row.options && typeof value !== "boolean")
-    return <Segmented testID={testID} value={value} options={row.options} onChange={set} />;
+    return <FoldedChoices testID={testID} value={value} options={row.options} onChange={set} />;
   return null;
 }
 
@@ -75,24 +76,28 @@ export interface SettingProps {
   testID?: string;
   /** The test id of the control the registry draws, when the pane passes none. */
   control?: string;
-  /** The glyph on the row's knob (a card's main rows have one; the rest start with their words). */
+  /** The glyph on the row's knob, in place of the registry's (a card's main rows have one; the rest start with their words). */
   glyph?: string;
+  /** A second part under the words while the control stays at the end (row.tsx). */
+  below?: ReactNode;
   children?: ReactNode;
 }
 
 /** A row from the registry, in its pane. */
-export function Setting({ id, title, detail, stack, testID, control, glyph, children }: SettingProps) {
+export function Setting({ id, title, detail, stack, testID, control, glyph, below, children }: SettingProps) {
   const row = settingRow(id);
   const shown = detail === null ? undefined : (detail ?? row.detail);
+  const knob = glyph ?? row.glyph;
   const content = children ?? (control !== undefined && row.value ? <RegistryControl row={row} testID={control} /> : null);
   return (
     <Spot id={id}>
       <Row
         label={title ?? row.title}
-        {...(glyph !== undefined ? { glyph } : {})}
+        {...(knob !== undefined ? { glyph: knob } : {})}
         {...(shown !== undefined ? { detail: shown } : {})}
         {...((stack ?? row.stack === true) ? { stack: true } : {})}
         {...(testID !== undefined ? { testID } : {})}
+        {...(below !== undefined ? { below } : {})}
       >
         {content}
       </Row>

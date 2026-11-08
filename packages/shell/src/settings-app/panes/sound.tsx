@@ -2,44 +2,65 @@
  * Sound: the output device and its volume, the input device (microphone) and
  * its volume with a live level meter, and whether the menu bar shows the
  * volume. The outputs are Control Center's Sound store, so a choice made in
- * either is seen in the other. The meter listens to the microphone only while
- * this pane is on screen, reads the loudness, and keeps nothing.
+ * either is seen in the other. The devices are a plain list: their names,
+ * the one in use in SemiBold with an ink tick, no knobs. With no
+ * microphone, the input is one row that says so, and none of its controls
+ * (a slider for a microphone that isn't there would say there is one). The
+ * meter listens to the microphone only while this pane is on screen, reads
+ * the loudness, and keeps nothing.
  */
 
-import { View } from "@mirinjs/metal";
+import { CHECK } from "@dashi/ui";
+import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { BLUETOOTH } from "../../control-center/glyphs.ts";
 import { speakerGlyph } from "../../glyphs.ts";
-import { DISPLAY, HEADPHONES } from "../../sound/glyphs.ts";
 import { type LevelMeter, useLevels } from "../../sound/index.ts";
-import { type SoundStore, useSound } from "../../sound/store.ts";
-import type { Output, OutputKind } from "../../sound/types.ts";
+import { type SoundState, type SoundStore, useSound } from "../../sound/store.ts";
 import type { Volume } from "../../system/volume.ts";
 import { useColors } from "../colors.ts";
 import { MICROPHONE } from "../glyphs-machine.ts";
-import { MIC, VOLUME as VOLUME_KNOB } from "../knob-glyphs.ts";
+import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Slider, Switch } from "../ui.tsx";
-import { Failure, ListRow, RoundIcon } from "./parts.tsx";
+import { Failure, ListRow } from "./parts.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
-const OUTPUT_GLYPH: Record<OutputKind, string> = { speaker: speakerGlyph(1, false), headphones: HEADPHONES, display: DISPLAY, bluetooth: BLUETOOTH };
+/** What a side has to show: its devices, that the system can't say, or that there are none. */
+export type DeviceList = "devices" | "unavailable" | "none" | "reading";
 
-function Devices({ store, side, testID }: { store: SoundStore; side: "output" | "input"; testID: string }) {
+export function deviceList(state: Pick<SoundState, "available" | "outputs">): DeviceList {
+  if (state.available === false) return "unavailable";
+  if (state.available === null) return "reading";
+  return state.outputs.length === 0 ? "none" : "devices";
+}
+
+/** Whether a microphone's controls belong on the pane: one is there, and its volume can be read. */
+export function showsInputControls(state: Pick<SoundState, "available" | "outputs">, volume: Volume | null): boolean {
+  return deviceList(state) === "devices" && volume !== null;
+}
+
+/** A side's devices, read while the pane is up. */
+function useDevices(store: SoundStore): SoundState {
   const state = useSound(store);
   useEffect(() => {
     store.open();
     return () => store.close();
   }, [store]);
-  const glyph = (device: Output) => (side === "input" ? (device.kind === "bluetooth" ? BLUETOOTH : MICROPHONE) : OUTPUT_GLYPH[device.kind]);
+  return state;
+}
+
+function Devices({ store, state, side, testID }: { store: SoundStore; state: SoundState; side: "output" | "input"; testID: string }) {
+  const colors = useColors();
+  const list = deviceList(state);
+  if (list === "reading") return null;
   return (
     <>
       <Group testID={testID}>
-        {state.available === false ? (
+        {list === "unavailable" ? (
           <Note>{side === "output" ? "Sound isn't available on this computer." : "Input devices aren't available on this computer."}</Note>
-        ) : state.available === true && state.outputs.length === 0 ? (
-          <Note>{side === "output" ? "No output devices found." : "No input devices found."}</Note>
+        ) : list === "none" ? (
+          <Note>No output devices found.</Note>
         ) : (
           state.outputs.map((device) => (
             <ListRow
@@ -47,9 +68,10 @@ function Devices({ store, side, testID }: { store: SoundStore; side: "output" | 
               testID={`${side}-device:${device.label}`}
               name={device.label}
               bold={device.current}
-              leading={<RoundIcon glyph={glyph(device)} lit={device.current} />}
               onPress={device.current ? undefined : () => void store.choose(device.id)}
-            />
+            >
+              {device.current && <Svg markup={CHECK} size={14} color={colors.text} />}
+            </ListRow>
           ))
         )}
       </Group>
@@ -89,7 +111,7 @@ function VolumeRow({
           onCommit={onLevel}
         />
       </Setting>
-      <Setting id={side === "output" ? "sound/output-mute" : "sound/input-mute"}>
+      <Setting id={side === "output" ? "sound/output-mute" : "sound/input-mute"} glyph={side === "output" ? MUTE : MIC_OFF}>
         <Switch testID={`${side}-mute`} on={volume.muted} onChange={onMute} />
       </Setting>
     </Group>
@@ -121,9 +143,48 @@ function InputMeter({ meter }: { meter: LevelMeter }) {
   );
 }
 
+/** The input: its devices, volume, mute and meter while there is a microphone; else one row that says there is none. */
+function Input({ services, volume }: { services: PaneServices; volume: Volume | null }) {
+  const { inputs, levels, meter } = services;
+  const state = useDevices(inputs);
+  const list = deviceList(state);
+  if (list === "reading") return null;
+  if (list === "none") {
+    return (
+      <Group testID="sound-inputs">
+        {/* One plain row in the input volume's place: no slider, no mute, no meter. */}
+        <Setting id="sound/input-volume" testID="sound-no-microphone" title="No microphone found" detail="Plug one in, and its volume and mute show up here." />
+      </Group>
+    );
+  }
+  return (
+    <>
+      <Devices store={inputs} state={state} side="input" testID="sound-inputs" />
+      {showsInputControls(state, volume) && (
+        <>
+          <VolumeRow
+            side="input"
+            volume={volume}
+            onLevel={(level) => void levels.setLevel("input", level)}
+            onMute={(muted) => void levels.setMuted("input", muted)}
+          />
+          {volume !== null && !volume.muted && (
+            <Group testID="input-level-group">
+              <Setting id="sound/input-level">
+                <InputMeter meter={meter} />
+              </Setting>
+            </Group>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
 export function SoundPane({ services }: { services: PaneServices }) {
-  const { levels, inputs, sound, meter } = services;
+  const { levels, sound } = services;
   const volumes = useLevels(levels);
+  const outputs = useDevices(sound);
   useEffect(() => {
     levels.open();
     return () => levels.close();
@@ -131,7 +192,7 @@ export function SoundPane({ services }: { services: PaneServices }) {
   return (
     <Page title="Sound">
       <Caption above>Output</Caption>
-      <Devices store={sound} side="output" testID="sound-outputs" />
+      <Devices store={sound} state={outputs} side="output" testID="sound-outputs" />
       <VolumeRow
         side="output"
         volume={volumes.output}
@@ -139,20 +200,7 @@ export function SoundPane({ services }: { services: PaneServices }) {
         onMute={(muted) => void levels.setMuted("output", muted)}
       />
       <Caption above>Input</Caption>
-      <Devices store={inputs} side="input" testID="sound-inputs" />
-      <VolumeRow
-        side="input"
-        volume={volumes.input}
-        onLevel={(level) => void levels.setLevel("input", level)}
-        onMute={(muted) => void levels.setMuted("input", muted)}
-      />
-      {volumes.input !== null && !volumes.input.muted && (
-        <Group testID="input-level-group">
-          <Setting id="sound/input-level">
-            <InputMeter meter={meter} />
-          </Setting>
-        </Group>
-      )}
+      <Input services={services} volume={volumes.input} />
       <Caption above>Menu Bar</Caption>
       <Group>
         <Setting id="sound/show-in-menu-bar" control="sound-menubar" />

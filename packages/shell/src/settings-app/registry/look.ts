@@ -7,6 +7,7 @@ import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
 import { DEFAULT_WALLPAPER_MODE } from "../../wallpaper/catalog.ts";
 import { DEFAULT_FRAME_RATE, FRAME_RATES } from "../../wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "../../xwayland-scale.ts";
+import { CONTRAST, CORNER, DESKTOPS, DISPLAY, DOCK, IMAGE, MOON, MOTION, NIGHT_SHIFT, POINTER, RING, SCALE, SCROLL, SUN, TEXT, VIDEO } from "../knob-glyphs.ts";
 import { DEFAULT_WARMTH, WARMTH } from "../night.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { choiceSchema, dockSetting, flag, storedChoice, storedNumber, storedSwitch } from "./values.ts";
@@ -36,6 +37,7 @@ const X11_OPTIONS: readonly ChoiceOption[] = [
 export const LOOK_ROWS = [
   {
     id: "appearance/dark-mode",
+    glyph: CONTRAST,
     title: "Dark Mode",
     detail: "The shell and apps repaint dark.",
     keywords: ["dark", "light mode", "theme", "night mode", "auto"],
@@ -45,7 +47,9 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/automatic",
+    glyph: MOON,
     title: "Automatic",
+    name: "Automatic Dark Mode",
     detail: "Dark from 7 PM to 7 AM.",
     keywords: ["auto", "schedule", "evening", "night", "sunset"],
     kind: "switch",
@@ -53,6 +57,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/window-corners",
+    glyph: CORNER,
     title: "Window corners",
     detail: "How round windows are, app content included.",
     keywords: ["corners", "round", "radius"],
@@ -64,8 +69,9 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/highlight-active-window",
+    glyph: RING,
     title: "Highlight the active window",
-    detail: "A ring in the accent color around the window you're typing in.",
+    detail: "A ring around the window you're typing in.",
     keywords: ["active window", "focus ring", "highlight"],
     kind: "switch",
     value: storedSwitch("appearance", "highlightActiveWindow", false),
@@ -73,6 +79,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/pointer-size",
+    glyph: POINTER,
     title: "Pointer size",
     detail: "On every screen and at every scale. Apps that draw their own pointer follow when they next open.",
     keywords: ["cursor size", "bigger pointer", "larger pointer", "cursor"],
@@ -84,6 +91,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/text-size",
+    glyph: TEXT,
     title: "Text size",
     detail: "The launcher grows with it, and so do apps that follow GNOME's text size.",
     keywords: ["font size", "bigger text", "larger text", "smaller text"],
@@ -95,6 +103,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "appearance/reduce-motion",
+    glyph: MOTION,
     title: "Reduce motion",
     detail: "Windows open, close, minimize, and move without animation.",
     keywords: ["animations", "motion"],
@@ -105,6 +114,7 @@ export const LOOK_ROWS = [
 
   {
     id: "wallpaper/add-photo",
+    glyph: IMAGE,
     title: "Add Photo…",
     detail: "A PNG or JPEG from your files; it stays where it is.",
     keywords: ["photo", "picture"],
@@ -113,6 +123,7 @@ export const LOOK_ROWS = [
   { id: "wallpaper/photo-path", title: "Path of a photo", detail: "Press Return to use it.", kind: "value", stack: true },
   {
     id: "wallpaper/picture",
+    glyph: DISPLAY,
     title: "Picture",
     name: "Wallpaper fit",
     detail: "Fill covers the screen and crops what does not fit; Fit shows all of the picture; Center leaves it at its size.",
@@ -124,6 +135,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "wallpaper/add-video",
+    glyph: VIDEO,
     title: "Add Video…",
     detail: "An MP4, WebM, MKV, or MOV from your files; it plays muted, in a loop, and stays where it is.",
     keywords: ["video wallpaper", "live wallpaper"],
@@ -150,16 +162,23 @@ export const LOOK_ROWS = [
     value: storedChoice("wallpaper", "fps", DEFAULT_FRAME_RATE, FRAME_RATE_OPTIONS),
   },
 
-  { id: "displays/turned-off", title: "This display is off", detail: "It stays plugged in; its windows are on the other screens.", kind: "action" },
+  {
+    id: "displays/turned-off",
+    glyph: DISPLAY,
+    title: "This display is off",
+    detail: "It stays plugged in; its windows are on the other screens.",
+    kind: "action",
+  },
   {
     id: "displays/brightness",
+    glyph: SUN,
     title: "Brightness",
     name: "Display brightness",
     keywords: ["backlight", "dim", "screen brightness"],
     kind: "value",
   },
   { id: "displays/resolution", title: "Resolution", keywords: ["screen size", "pixels"], kind: "value", stack: true },
-  { id: "displays/refresh-rate", title: "Refresh rate", keywords: ["hz", "hertz", "automatic", "battery"], kind: "value", stack: true },
+  { id: "displays/refresh-rate", glyph: DISPLAY, title: "Refresh rate", keywords: ["hz", "hertz", "automatic", "battery"], kind: "value", stack: true },
   {
     id: "displays/variable-refresh-rate",
     title: "Variable refresh rate",
@@ -169,7 +188,7 @@ export const LOOK_ROWS = [
     stack: true,
   },
   { id: "displays/rotation", title: "Rotation", keywords: ["rotate", "portrait"], kind: "value", stack: true },
-  { id: "displays/scale", title: "Scale", name: "Display scale", keywords: ["scaling", "hidpi", "zoom"], kind: "value", stack: true },
+  { id: "displays/scale", glyph: SCALE, title: "Scale", name: "Display scale", keywords: ["scaling", "hidpi", "zoom"], kind: "value", stack: true },
   {
     id: "displays/arrange",
     title: "Arrange displays…",
@@ -199,6 +218,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "displays/night-shift",
+    glyph: NIGHT_SHIFT,
     title: "Night Shift",
     detail: "Warms the colors of the screens, easier on the eyes in the evening.",
     keywords: ["warm", "blue light", "night"],
@@ -206,11 +226,20 @@ export const LOOK_ROWS = [
     value: flag("night"),
     agent: "night_shift",
   },
-  { id: "displays/night-shift-schedule", title: "Schedule", name: "Night Shift schedule", keywords: ["night shift schedule"], kind: "choice", stack: true },
-  { id: "displays/night-shift-from", title: "From", name: "Night Shift starts", kind: "value", stack: true },
-  { id: "displays/night-shift-to", title: "To", name: "Night Shift ends", kind: "value", stack: true },
+  {
+    id: "displays/night-shift-schedule",
+    partOf: "displays/night-shift",
+    title: "Schedule",
+    name: "Night Shift schedule",
+    keywords: ["night shift schedule"],
+    kind: "choice",
+    stack: true,
+  },
+  { id: "displays/night-shift-from", partOf: "displays/night-shift", title: "From", name: "Night Shift starts", kind: "value", stack: true },
+  { id: "displays/night-shift-to", partOf: "displays/night-shift", title: "To", name: "Night Shift ends", kind: "value", stack: true },
   {
     id: "displays/night-shift-warmth",
+    partOf: "displays/night-shift",
     title: "Warmth",
     name: "Night Shift warmth",
     keywords: ["color temperature", "kelvin"],
@@ -248,6 +277,7 @@ export const LOOK_ROWS = [
 
   {
     id: "desktop-dock/style",
+    glyph: IMAGE,
     title: "Style",
     name: "Dock style",
     detail: "The Dock floats above the bottom edge; the taskbar fills it, with a button for each window.",
@@ -260,6 +290,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "desktop-dock/autohide",
+    glyph: SCROLL,
     title: "Automatically hide and show",
     name: "Automatically hide and show the Dock",
     detail: "The Dock slides away and gives its room back to windows. Push the pointer against the bottom edge to bring it back.",
@@ -270,6 +301,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "desktop-dock/show-dock",
+    glyph: DOCK,
     title: "Show the Dock",
     detail: "With it off, there is no Dock, and windows reach the bottom edge.",
     keywords: ["dock", "taskbar"],
@@ -278,6 +310,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "desktop-dock/go-to-app-desktop",
+    glyph: DESKTOPS,
     title: "Go to an app's desktop",
     detail: "Opening an app goes to the desktop its window is on, instead of bringing the window to you.",
     keywords: ["spaces", "desktops", "switch desktop"],
@@ -286,6 +319,7 @@ export const LOOK_ROWS = [
   },
   {
     id: "desktop-dock/full-screen-desktop",
+    glyph: DISPLAY,
     title: "Give full-screen apps their own desktop",
     detail: "A game or video in full screen gets a desktop next to yours, and comes back when it leaves.",
     keywords: ["full screen", "fullscreen", "full-screen apps", "games"],

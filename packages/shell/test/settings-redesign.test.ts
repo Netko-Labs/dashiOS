@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { waitingCount } from "../src/agents/presence.ts";
-import type { Monitor } from "../src/display-config/monitors.ts";
+import { type Monitor, nativeSize } from "../src/display-config/monitors.ts";
 import { timePills } from "../src/settings-app/controls.ts";
 import { FOUND_MOST, findSettings } from "../src/settings-app/find.ts";
 import {
@@ -30,10 +30,10 @@ test("search: a pane's name first, then a row whose name starts with the words, 
   // A pane by its name comes before the rows found by its other words.
   expect(findSettings("displays")[0]).toMatchObject({ id: "displays", pane: "displays" });
   expect(findSettings("displays")[0]?.row).toBeUndefined();
-  // A word that only starts a keyword still finds the row, after the ones named so.
+  // A word that only starts a keyword still finds the row, after the ones named so; the charge limit is one setting, found once.
   const charge = findSettings("charge").map((each) => each.id);
-  expect(charge).toContain("battery/charge-limit");
   expect(charge).toContain("battery/stop-charging");
+  expect(charge).not.toContain("battery/charge-limit");
 });
 
 test("search: every typed word must start a word, and the old pane names still find the renamed panes", () => {
@@ -68,9 +68,13 @@ test("every registry row is reachable: its pane is in the sidebar, and searching
     const place = rowPlace(row);
     if (!sidebar.has(place.pane)) lost.push(`${row.id}: no pane`);
     const found = findSettings(rowName(row)).concat(findSettings(row.title));
-    const hit = found.find((each) => each.id === row.id);
-    if (!hit) lost.push(`${row.id}: not found by "${rowName(row)}"`);
-    else if (hit.pane !== place.pane || hit.row !== place.row) lost.push(`${row.id}: lands on ${hit.pane}/${hit.row}`);
+    // A part of a setting (the charge limit's slider) may be found as its setting, which lands on the same row.
+    const hit = found.find((each) => each.id === row.id) ?? found.find((each) => each.id === row.partOf);
+    const target = hit?.id === row.id ? place : rowPlace({ id: (row.partOf ?? row.id) as typeof row.id });
+    // A pane's own switch named as the pane ("Bluetooth") is found as the pane, which opens on it.
+    const asPane = found.some((each) => each.id === place.pane && each.label === rowName(row));
+    if (!hit && !asPane) lost.push(`${row.id}: not found by "${rowName(row)}"`);
+    else if (hit && (hit.pane !== target.pane || hit.row !== target.row)) lost.push(`${row.id}: lands on ${hit.pane}/${hit.row}`);
   }
   expect(lost).toEqual([]);
 });
@@ -116,25 +120,35 @@ const monitor = (over: Partial<Monitor>): Monitor => ({
   ...over,
 });
 
-const screen = { name: "eDP-1", width: 2880, height: 1800, widthMm: 300, heightMm: 190, scale: 1.75 };
-
-test("the display hero: its name, facts and shape, as the panel reports them", () => {
-  const hero = displayHero(monitor({}), screen, { width: 220, height: 138 });
+test("the display hero says only what no row says, each fact once", () => {
+  const hero = displayHero(monitor({}), { width: 220, height: 138 });
   expect(hero.name).toBe("Built-in");
-  expect(hero.facts).toBe("Built-in · 2880 × 1800 · 16:10");
-  expect(hero.looks).toBe("Looks like 1646 × 1029 at 175% · 120 Hz");
+  // The title names a lone display, Resolution says its size, Scale what it looks like: the hero keeps its shape and its rate.
+  expect(hero.caption).toBe("16:10 · 120 Hz");
+  expect(hero.label).toBe("Built-in · 2880 × 1800 · 16:10");
   expect(hero.shape).toEqual({ width: 220, height: 138 });
+  // With a Refresh rate row, the rate is that row's to say; with several displays, each picture carries its name.
+  expect(displayHero(monitor({}), { width: 220, height: 138 }, { rateRow: true }).caption).toBe("16:10");
+  expect(displayHero(monitor({}), { width: 170, height: 106 }, { several: true, rateRow: true }).caption).toBe("Built-in · 16:10");
   // Turned on its side: taller than wide, the box's height first.
-  const portrait = displayHero(monitor({ rotation: 90 }), undefined, { width: 220, height: 138 });
-  expect(portrait.facts).toBe("Built-in · 1800 × 2880 · 16:10");
+  const portrait = displayHero(monitor({ rotation: 90 }), { width: 220, height: 138 });
+  expect(portrait.label).toBe("Built-in · 1800 × 2880 · 16:10");
   expect(portrait.shape.height).toBe(138);
   expect(portrait.shape.width).toBeLessThan(portrait.shape.height);
-  // No screen (no scale reported): no "Looks like".
-  expect(portrait.looks).toBeNull();
-  // An odd shape has no name, and is left out.
-  expect(displayHero(monitor({ mode: { width: 1366, height: 768, refreshMhz: 60_000 } }), undefined, { width: 220, height: 138 }).facts).toBe(
-    "Built-in · 1366 × 768",
+  // An odd shape has no name, and is left out; with nothing else to say, the name stands.
+  expect(displayHero(monitor({ mode: { width: 1366, height: 768, refreshMhz: 60_000 } }), { width: 220, height: 138 }, { rateRow: true }).caption).toBe(
+    "Built-in",
   );
+});
+
+test("the native size: the EDID's preferred one, unless the screen offers one larger both ways", () => {
+  const mode = (width: number, height: number, preferred = false) => ({ width, height, refreshMhz: 60_000, preferred, current: false });
+  // QEMU's monitor prefers 640 × 480 and runs 1920 × 1200: "native" goes on 1920 × 1200.
+  expect(nativeSize([mode(1920, 1200), mode(1280, 800), mode(640, 480, true)])).toEqual({ width: 1920, height: 1200 });
+  // A 4K screen that also takes the cinema width keeps its own.
+  expect(nativeSize([mode(4096, 2160), mode(3840, 2160, true), mode(1920, 1080)])).toEqual({ width: 3840, height: 2160 });
+  expect(nativeSize([mode(2880, 1800, true), mode(1920, 1200)])).toEqual({ width: 2880, height: 1800 });
+  expect(nativeSize([])).toBeNull();
 });
 
 test("aspect names", () => {

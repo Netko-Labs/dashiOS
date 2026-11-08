@@ -8,6 +8,7 @@
  * reports the knob, and battery health only on a laptop.
  */
 
+import { useState } from "react";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import { chargeTarget } from "../../power/battery-health.ts";
@@ -15,9 +16,9 @@ import { type BoostChoice, CHARGE_LIMIT_MIN, type EppChoice } from "../../power/
 import { useModes } from "../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../power/modes/types.ts";
 import { useSettings } from "../hooks.ts";
-import { GAUGE, PLUG } from "../knob-glyphs.ts";
+import { PLUG } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Item, Setting, Slider, Switch } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Setting, Slider, Spot, Switch } from "../ui.tsx";
 
 const MODE_DETAIL = {
   "low-power": "Quieter and cooler, with less performance. Battery lasts longer.",
@@ -37,7 +38,7 @@ export function PowerModeRow({ laptop }: { laptop: Laptop }) {
   const detail = effective ? (modes.choice === "automatic" ? effective.why : `${effective.why}. ${MODE_DETAIL[effective.mode]}`) : undefined;
   return (
     <>
-      <Setting id="battery/power-mode" glyph={GAUGE} stack={false} {...(detail ? { detail } : {})}>
+      <Setting id="battery/power-mode" stack={false} {...(detail ? { detail } : {})}>
         <Choices testID="power-mode-choice" value={modes.choice} options={options} onChange={(choice) => laptop.modes.choose(choice)} />
       </Setting>
       {modes.failed && effective && <Item label={`Couldn’t switch everything to ${MODE_LABEL[effective.mode]}.`} />}
@@ -47,43 +48,55 @@ export function PowerModeRow({ laptop }: { laptop: Laptop }) {
 
 const pct = (value: number) => `${Math.round(value)}%`;
 
-/** Where charging stops, as a switch: "Stop charging at 80%". The pane shows it where the laptop has the knob. */
-export function StopChargingRow({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
-  const machine = useLaptop(laptop.store);
-  const { power } = useSettings(settings).data;
-  const knob = machine.knobs.get("charge-limit");
-  const limit = power.chargeLimit ?? 100;
-  const min = Math.max(CHARGE_LIMIT_MIN, knob?.min ?? CHARGE_LIMIT_MIN);
-  const early = limit < 100;
-  return (
-    <Setting id="battery/stop-charging" glyph={PLUG} title={early ? `Stop charging at ${pct(limit)}` : "Stop charging early"}>
-      <Switch
-        testID="battery-stop-charging"
-        on={early}
-        onChange={(on) => settings.patch("power", { chargeLimit: on ? Math.max(DEFAULT_EARLY_LIMIT, min) : 100 })}
-      />
-    </Setting>
-  );
+/** The charge limit's title: it names the limit while charging stops early ("Stop charging at 75%"). */
+export function chargeLimitTitle(limit: number): string {
+  return limit < 100 ? `Stop charging at ${pct(limit)}` : "Stop charging early";
 }
 
-/** The limit's slider, while charging stops early. */
+/**
+ * Where charging stops, as one control: a switch whose title names the
+ * limit, and while it is on, the limit's slider under the words. The title
+ * follows the slider as it moves, before the value is saved, so it never
+ * says a limit the slider has left. The pane shows it where the laptop has
+ * the knob; the registry's "Charge limit" row lands here too.
+ */
 export function ChargeLimitRow({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
   const machine = useLaptop(laptop.store);
   const { power } = useSettings(settings).data;
+  /** The slider's value while it is being moved; null once it settled. */
+  const [moving, setMoving] = useState<number | null>(null);
   const knob = machine.knobs.get("charge-limit");
-  const limit = power.chargeLimit ?? 100;
+  const saved = power.chargeLimit ?? 100;
   const min = Math.max(CHARGE_LIMIT_MIN, knob?.min ?? CHARGE_LIMIT_MIN);
+  const early = saved < 100;
+  const limit = early ? (moving ?? saved) : saved;
+  const slider = early ? (
+    <Slider
+      testID="battery-charge-limit"
+      value={limit}
+      range={{ min, max: 100, step: 5 }}
+      glyph={PLUG}
+      format={pct}
+      onChange={(value) => setMoving(Math.round(value))}
+      onCommit={(value) => {
+        setMoving(null);
+        settings.patch("power", { chargeLimit: Math.round(value) });
+      }}
+    />
+  ) : null;
   return (
-    <Setting id="battery/charge-limit" stack={false}>
-      <Slider
-        testID="battery-charge-limit"
-        value={limit}
-        range={{ min, max: 100, step: 5 }}
-        glyph={PLUG}
-        format={pct}
-        onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
-      />
-    </Setting>
+    <Spot id="battery/charge-limit">
+      <Setting id="battery/stop-charging" title={chargeLimitTitle(limit)} below={slider}>
+        <Switch
+          testID="battery-stop-charging"
+          on={early}
+          onChange={(on) => {
+            setMoving(null);
+            settings.patch("power", { chargeLimit: on ? Math.max(DEFAULT_EARLY_LIMIT, min) : 100 });
+          }}
+        />
+      </Setting>
+    </Spot>
   );
 }
 

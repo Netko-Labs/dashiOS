@@ -12,7 +12,6 @@ import type { ClipboardHistory, HistorySnapshot } from "../../clipboard/history.
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../clipboard/privacy.ts";
 import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
-import { CLIPBOARD } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Group, Setting, useSurface } from "../ui.tsx";
 
@@ -91,7 +90,7 @@ export function ClipboardSection({ settings, history, installed }: { settings: S
   return (
     <>
       <Group testID="clipboard-settings">
-        <Setting id="keyboard/clipboard-history" glyph={CLIPBOARD} control="clipboard-history" />
+        <Setting id="keyboard/clipboard-history" control="clipboard-history" />
         <Setting id="keyboard/clipboard-kept" detail={count === 0 ? "Nothing" : count === 1 ? "1 copy" : `${count} copies, pinned ones included`}>
           <Button
             testID="clipboard-clear"

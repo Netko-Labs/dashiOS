@@ -13,7 +13,7 @@
  * at once.
  */
 
-import { Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { type AppletTile, isAppletTile } from "../../control-center/applet-tiles.ts";
 import { isThere } from "../../control-center/catalog.ts";
@@ -29,7 +29,10 @@ import { Caption, Choices, Group, Hero, Item, Page, Setting, Spot } from "../ui.
 
 export type ControlCenterEditor = Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "embedded">;
 
-/** One tile of the miniature, in the panel's own colors and shapes, smaller. */
+/** The miniature's glyph and word: 14 and 10.5 SemiBold; a word keeps 8 clear of its tile's edges. */
+export const MINI_TILE = { glyph: 14, word: 10.5, inset: 8 } as const;
+
+/** One tile of the miniature, in the panel's own colors and shapes, smaller: its glyph and its word, as the panel draws them. */
 function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
   const colors = useControlColors();
   const look = controls.lookOf(tile.id);
@@ -39,7 +42,35 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
   const slider = level !== null && (tile.size === "tall" || tile.size === "flat");
   const battery = tile.id === "battery" ? controls.snapshot.battery : null;
   const words = battery ? `${battery.percent}% · battery` : (look?.title ?? "");
+  const round = tile.size === "round";
+  const ink = on ? colors.onInk : colors.offInk;
   const radius = on ? 14 : 22;
+  const glyph = look?.glyph;
+  if (slider) {
+    const standing = tile.size === "tall";
+    const total = standing ? frame.height : frame.width;
+    const fill = Math.round(total * Math.min(Math.max(level, 0), 1));
+    // The glyph sits where the panel's chip does (the bottom of a tall slider, the left of a flat one), on the ink or on the track.
+    const onInk = fill > 26;
+    return (
+      <View
+        testID={`cc-mini:${tile.id}`}
+        style={{ position: "absolute", ...frame, borderRadius: radius, backgroundColor: colors.off, overflow: "hidden", opacity: look?.dim ? 0.5 : 1 }}
+      >
+        <InkFill length={fill} total={total} standing={standing} radius={22} />
+        {glyph && (
+          <View
+            style={{
+              position: "absolute",
+              ...(standing ? { left: 0, right: 0, bottom: 8, alignItems: "center" } : { left: 10, top: 0, bottom: 0, justifyContent: "center" }),
+            }}
+          >
+            <Svg markup={glyph} size={MINI_TILE.glyph} color={onInk ? colors.fillInk : colors.offInk} />
+          </View>
+        )}
+      </View>
+    );
+  }
   return (
     <View
       testID={`cc-mini:${tile.id}`}
@@ -48,29 +79,23 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
         ...frame,
         borderRadius: radius,
         backgroundColor: on ? colors.on : colors.off,
-        flexDirection: tile.size === "round" ? "column" : "row",
+        flexDirection: round ? "column" : "row",
         alignItems: "center",
-        justifyContent: tile.size === "round" ? "center" : "flex-start",
-        paddingLeft: tile.size === "round" ? 0 : 10,
-        overflow: slider ? "hidden" : "visible",
+        justifyContent: round ? "center" : "flex-start",
+        gap: round ? 2 : 6,
+        paddingLeft: round ? MINI_TILE.inset : 10,
+        paddingRight: MINI_TILE.inset,
+        overflow: "hidden",
         opacity: look?.dim ? 0.5 : 1,
       }}
     >
-      {slider ? (
-        <InkFill
-          length={Math.round((tile.size === "tall" ? frame.height : frame.width) * Math.min(Math.max(level, 0), 1))}
-          total={tile.size === "tall" ? frame.height : frame.width}
-          standing={tile.size === "tall"}
-          radius={22}
-        />
-      ) : (
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: 10.5, fontWeight: "semibold", color: on ? colors.onInk : colors.offInk, textAlign: tile.size === "round" ? "center" : "left" }}
-        >
+      {glyph && <Svg markup={glyph} size={MINI_TILE.glyph} color={ink} />}
+      {/* A round tile's word is centred across it, a wide tile's follows its glyph. */}
+      <View style={{ ...(round ? { alignSelf: "stretch" } : { flex: 1 }), minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: MINI_TILE.word, fontWeight: "semibold", color: ink, textAlign: round ? "center" : "left" }}>
           {words}
         </Text>
-      )}
+      </View>
     </View>
   );
 }

@@ -16,6 +16,8 @@ export const DOCK = svg(`<rect x="3" y="4" width="18" height="16" rx="3"/><path 
 export const WIFI = svg(`<path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1"/>`);
 export const BLUETOOTH = svg(`<path d="M7 7l10 10-5 4V3l5 4L7 17"/>`);
 export const VOLUME = svg(`<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 9a4 4 0 0 1 0 6"/>`);
+/** The speaker, silenced: mute. */
+export const MUTE = svg(`<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>`);
 export const BATTERY = svg(
   `<rect x="2.5" y="7" width="17" height="10" rx="2.5"/><path d="M21.5 10.5v3"/><rect x="5" y="9.5" width="10" height="5" rx="1" fill="#000" stroke="none"/>`,
 );
@@ -59,6 +61,8 @@ export const RING = svg(`<rect x="4" y="5" width="16" height="14" rx="3"/><rect 
 export const DESKTOPS = svg(`<rect x="3" y="6" width="13" height="10" rx="2"/><path d="M8 19h11a2 2 0 0 0 2-2V9"/>`);
 /** A speaker over a microphone: Sound's input. */
 export const MIC = svg(`<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>`);
+/** The microphone, struck through: the input muted. */
+export const MIC_OFF = svg(`<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/>`);
 /** A photo for the account picture, a video for live wallpaper. */
 export const VIDEO = svg(`<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/>`);
 /** The processor: a chip with its pins. */
@@ -89,3 +93,15 @@ export const REPEAT = svg(
 export const LANGUAGE = svg(`<path d="M3.5 18l4.5-11 4.5 11M5.3 14h5.4"/><path d="M14 6.5h6.5M17.2 4.5v2c0 4-1.7 7-4.2 8.5M15.2 10c1.1 2 2.9 3.6 5.3 4.5"/>`);
 /** A calendar page: dates, the first day of the week. */
 export const CALENDAR = svg(`<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>`);
+/** A screen's scale: two corners drawn out from the middle (not the T of text). */
+export const SCALE = svg(`<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M8 9.5V8h1.5M16 14.5V16h-1.5M8 8l3 3M16 16l-3-3"/>`);
+/** Memory: a module with its pins. */
+export const MEMORY = svg(`<rect x="3" y="7" width="18" height="9" rx="1.5"/><path d="M7 16v2.5M11 16v2.5M15 16v2.5M7.5 10.5h2M14.5 10.5h2"/>`);
+/** Storage: a drive with its light. */
+export const DISK = svg(
+  `<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 13.5h17"/><circle cx="16.5" cy="16.3" r=".9" fill="#000" stroke="none"/>`,
+);
+/** A click: a pointer pressing, with the press's rays. */
+export const CLICK = svg(`<path d="M9 3.5v2.5M4.6 5.6l1.8 1.8M3.5 10h2.5"/><path d="M10 10l9.5 3.6-4.2 1.4-1.6 4.5z"/>`);
+/** The pointer's acceleration: a curve that steepens. */
+export const CURVE = svg(`<path d="M4 20V4M4 20h16"/><path d="M7 17c5 0 8-3 11-10"/>`);

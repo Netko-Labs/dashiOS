@@ -155,7 +155,7 @@ export function KeyboardPane({
   return (
     <Page title="Keyboard">
       <Group>
-        <Setting id="keyboard/key-repeat" glyph={REPEAT} detail="Off at the left, fast at the right.">
+        <Setting id="keyboard/key-repeat" detail="Off at the left, fast at the right.">
           <Slider
             testID="keyboard-rate"
             value={rate}
@@ -165,7 +165,7 @@ export function KeyboardPane({
             onCommit={(value) => settings.patch("keyboard", { repeatRate: value })}
           />
         </Setting>
-        <Setting id="keyboard/repeat-delay" glyph={KEYBOARD_KNOB} detail="Short at the left, long at the right.">
+        <Setting id="keyboard/repeat-delay" detail="Short at the left, long at the right.">
           <Slider
             testID="keyboard-delay"
             value={delay}

@@ -7,7 +7,6 @@
 
 import { DEFAULTS } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
-import { KEYBOARD, TAP, TRACKPAD } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Group, Page, Setting } from "../ui.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";
@@ -17,9 +16,9 @@ export function TrackpadPane({ settings }: { settings: SettingsStore }) {
   return (
     <Page title="Trackpad">
       <Group>
-        <Setting id="trackpad/tap-to-click" glyph={TAP} control="trackpad-tap" />
-        <Setting id="trackpad/natural-scrolling" glyph={TRACKPAD} control="trackpad-natural" />
-        <Setting id="trackpad/ignore-while-typing" glyph={KEYBOARD} control="trackpad-dwt" />
+        <Setting id="trackpad/tap-to-click" control="trackpad-tap" />
+        <Setting id="trackpad/natural-scrolling" control="trackpad-natural" />
+        <Setting id="trackpad/ignore-while-typing" control="trackpad-dwt" />
         <SpeedRow
           id="trackpad/tracking-speed"
           testID="trackpad-speed"

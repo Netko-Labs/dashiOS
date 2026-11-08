@@ -9,6 +9,7 @@
  * comes back to it.
  */
 
+import { TooltipLayer } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
@@ -200,27 +201,30 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
     <PaneStoresContext.Provider value={stores}>
       <SpotContext.Provider value={spots ?? null}>
         <SaveError.Provider value={error !== null}>
-          {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
-          <View
-            testID="settings-window"
-            onWindowKeyDown={(event) => {
-              if (event.key === "escape" && search.query !== "") search.onQuery("");
-            }}
-            style={{ flex: 1, flexDirection: "row", backgroundColor: colors.window, focusRingColor: colors.focus }}
-          >
-            <Sidebar
-              current={current}
-              onSelect={(pane) => nav.select(pane)}
-              shown={shown}
-              search={{ ...search, focusSerial }}
-              waiting={waitingCount(agents)}
-              {...(results ? { results } : {})}
-            />
-            <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-              {/* A pane's state is its own: switching panes starts the next one fresh. */}
-              <Pane key={current} id={current} ctx={ctx} />
+          {/* The window's top layer: a row's "More…" menu draws there, over the cards (shared/controls/folded.tsx). */}
+          <TooltipLayer>
+            {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
+            <View
+              testID="settings-window"
+              onWindowKeyDown={(event) => {
+                if (event.key === "escape" && search.query !== "") search.onQuery("");
+              }}
+              style={{ flex: 1, flexDirection: "row", backgroundColor: colors.window, focusRingColor: colors.focus }}
+            >
+              <Sidebar
+                current={current}
+                onSelect={(pane) => nav.select(pane)}
+                shown={shown}
+                search={{ ...search, focusSerial }}
+                waiting={waitingCount(agents)}
+                {...(results ? { results } : {})}
+              />
+              <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+                {/* A pane's state is its own: switching panes starts the next one fresh. */}
+                <Pane key={current} id={current} ctx={ctx} />
+              </View>
             </View>
-          </View>
+          </TooltipLayer>
         </SaveError.Provider>
       </SpotContext.Provider>
     </PaneStoresContext.Provider>

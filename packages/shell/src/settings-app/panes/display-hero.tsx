@@ -9,36 +9,35 @@
 
 import { Image, Text, View } from "@mirinjs/metal";
 import type { Monitor } from "../../display-config/monitors.ts";
-import type { ScreenInfo } from "../../displays.ts";
 import { useControlColors } from "../../shared/controls/palette.ts";
-import { displayHero } from "../heroes.ts";
+import { displayHero, type HeroPlace } from "../heroes.ts";
 
 /** The box a display is drawn in: 220 × 138 at most, smaller when several share the hero. */
 const BOX = { width: 220, height: 138 } as const;
 
 function Screen({
   monitor,
-  screen,
   wallpaper,
   chosen,
   box,
+  place,
   onChoose,
 }: {
   monitor: Monitor;
-  screen: ScreenInfo | undefined;
   wallpaper: string;
   chosen: boolean;
   box: { width: number; height: number };
+  place: HeroPlace;
   onChoose?: () => void;
 }) {
   const colors = useControlColors();
-  const hero = displayHero(monitor, screen, box);
+  const hero = displayHero(monitor, box, place);
   return (
     <View
       testID={`display-hero:${monitor.name}`}
       {...(onChoose ? { focusable: true, onPress: onChoose } : {})}
       accessibilityRole="button"
-      accessibilityLabel={hero.facts}
+      accessibilityLabel={hero.label}
       accessibilityState={{ selected: chosen }}
       style={{ flexDirection: "column", alignItems: "center", gap: 6, borderRadius: 12, opacity: chosen ? 1 : 0.6 }}
     >
@@ -56,22 +55,24 @@ function Screen({
       >
         <Image source={wallpaper} resizeMode="cover" style={{ width: hero.shape.width - 6, height: hero.shape.height - 6 }} />
       </View>
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>{hero.facts}</Text>
-      {hero.looks && <Text style={{ fontSize: 11.5, color: colors.muted }}>{hero.looks}</Text>}
+      <View testID={`display-hero-caption:${monitor.name}`}>
+        <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>{hero.caption}</Text>
+      </View>
     </View>
   );
 }
 
 export function DisplayHero({
   monitors,
-  screens,
   chosen,
+  rateRow,
   wallpaper,
   onChoose,
 }: {
   monitors: readonly Monitor[];
-  screens: readonly ScreenInfo[];
   chosen: string;
+  /** The chosen display's cards have a Refresh rate row (so its rate isn't said here too). */
+  rateRow: boolean;
   wallpaper: string;
   onChoose: (name: string) => void;
 }) {
@@ -88,7 +89,7 @@ export function DisplayHero({
         <Screen
           key={monitor.name}
           monitor={monitor}
-          screen={screens.find((screen) => screen.name === monitor.name)}
+          place={{ several, rateRow: rateRow && monitor.name === chosen }}
           wallpaper={wallpaper}
           chosen={!several || monitor.name === chosen}
           box={box}

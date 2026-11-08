@@ -178,6 +178,20 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
 }
 
 /**
+ * The panel's native size: the mode its EDID prefers, unless the screen
+ * offers one larger both ways, which a panel could not show if it were
+ * native (QEMU's monitor prefers 640 × 480 and runs 1920 × 1200). A screen
+ * that prefers 3840 × 2160 and also takes 4096 × 2160 stays at its own.
+ */
+export function nativeSize(modes: readonly OfferedMode[]): { width: number; height: number } | null {
+  const all = sizesOf(modes);
+  const preferred = sizesOf(modes.filter((mode) => mode.preferred))[0];
+  if (!preferred) return all[0] ?? null;
+  const larger = all.find((size) => size.width > preferred.width && size.height > preferred.height);
+  return larger ?? preferred;
+}
+
+/**
  * The sizes worth offering first, largest first: the native one, the current
  * one, and up to `limit` others of the native shape (within 2%) that are no
  * larger than it. A monitor's EDID lists dozens, most of them odd shapes or
@@ -185,7 +199,7 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
  */
 export function commonSizes(modes: readonly OfferedMode[], current: { width: number; height: number }, limit = 6): Array<{ width: number; height: number }> {
   const all = sizesOf(modes);
-  const native = modes.find((mode) => mode.preferred) ?? all[0];
+  const native = nativeSize(modes);
   if (!native) return [];
   const shape = native.width / native.height;
   const same = (size: { width: number; height: number }) => size.width === current.width && size.height === current.height;

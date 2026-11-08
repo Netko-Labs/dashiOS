@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import { type Account, initialsOf, nameProblem, useAccount } from "../../accounts/index.ts";
 import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { useColors } from "../colors.ts";
-import { IMAGE, KEY, LOCK, USER } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Button, Caption, Group, Hero, Note, Page, Setting, Switch, useSurface } from "../ui.tsx";
 import { Failure, Value } from "./parts.tsx";
@@ -58,7 +57,7 @@ function NameRow({ account, onSave, busy }: { account: Account; onSave: (name: s
     setTyped(null);
   };
   return (
-    <Setting id="users/full-name" glyph={USER} detail={problem ?? null}>
+    <Setting id="users/full-name" detail={problem ?? null}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ width: 200 }}>
           <TextInput
@@ -127,7 +126,7 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
         <Setting id="users/account-name">
           <Value testID="account-login">{account.userName}</Value>
         </Setting>
-        <Setting id="users/picture" glyph={IMAGE}>
+        <Setting id="users/picture">
           <Button
             testID="account-picture"
             label={state.busy === "picture" ? "Changing…" : "Change Picture…"}
@@ -137,10 +136,10 @@ export function UsersPane({ services, chooser }: { services: PaneServices; choos
         </Setting>
       </Group>
       <Group testID="account-security">
-        <Setting id="users/password" glyph={KEY}>
+        <Setting id="users/password">
           <Button testID="account-password" label="Change Password…" onPress={() => services.changePassword(account.hasPassword)} />
         </Setting>
-        <Setting id="users/automatic-login" glyph={LOCK} detail={state.busy === "login" ? "Waiting for permission…" : undefined}>
+        <Setting id="users/automatic-login" detail={state.busy === "login" ? "Waiting for permission…" : undefined}>
           <Switch testID="account-autologin" on={account.automaticLogin} onChange={(on) => state.busy === null && void store.setAutomaticLogin(on)} />
         </Setting>
       </Group>

@@ -6,7 +6,6 @@
 
 import { BLANK_CHOICES, blankChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
-import { DISPLAY, LOCK } from "../knob-glyphs.ts";
 import { paneTitle } from "../panes.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Button, Caption, Group, Page, Setting } from "../ui.tsx";
@@ -23,10 +22,10 @@ export function LockScreenPane({ settings, lock, show }: { settings: SettingsSto
   return (
     <Page title="Lock Screen">
       <Group>
-        <Setting id="lock-screen/lock-now" glyph={LOCK}>
+        <Setting id="lock-screen/lock-now">
           <Button testID="lock-now" label="Lock" primary onPress={lock} />
         </Setting>
-        <Setting id="lock-screen/turn-display-off" glyph={DISPLAY} detail={`${blankWords(seconds)}. Set in ${paneTitle("battery")}, beside sleep.`}>
+        <Setting id="lock-screen/turn-display-off" detail={`${blankWords(seconds)}. Set in ${paneTitle("battery")}, beside sleep.`}>
           <Button testID="lock-blank" label={`${paneTitle("battery")}…`} onPress={() => show("battery", "turn-display-off")} />
         </Setting>
       </Group>

@@ -3,6 +3,7 @@
  * Accounts, Notifications, Passwords, Agents, Privacy & Security, and About.
  */
 
+import { CALENDAR, CHIP, CLOCK, DISPLAY, GLOBE, GPU, IMAGE, KEY, LANGUAGE, LOCK, MOON, REFRESH, SPARK, USER } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { flag, storedChoice, storedSwitch } from "./values.ts";
 
@@ -24,24 +25,27 @@ export const YOU_ROWS = [
   },
   {
     id: "date-time/automatic-time",
+    glyph: REFRESH,
     title: "Set time and date automatically",
     keywords: ["ntp", "time server", "clock sync"],
     kind: "switch",
   },
-  { id: "date-time/24-hour-time", title: "24-hour time", keywords: ["24-hour", "24 hour", "clock format"], kind: "switch" },
+  { id: "date-time/24-hour-time", glyph: CLOCK, title: "24-hour time", keywords: ["24-hour", "24 hour", "clock format"], kind: "switch" },
   {
     id: "date-time/show-date",
+    glyph: CALENDAR,
     title: "Show date in the menu bar",
     keywords: ["date", "menu bar clock"],
     kind: "switch",
     value: storedSwitch("clock", "showDate", true),
     agent: "date_in_menu_bar",
   },
-  { id: "date-time/time-zone", title: "Time zone", keywords: ["timezone"], kind: "value", stack: true },
+  { id: "date-time/time-zone", glyph: GLOBE, title: "Time zone", keywords: ["timezone"], kind: "value", stack: true },
 
-  { id: "language-region/language", title: "Language and region", keywords: ["language", "locale", "region"], kind: "value", stack: true },
+  { id: "language-region/language", glyph: LANGUAGE, title: "Language and region", keywords: ["language", "locale", "region"], kind: "value", stack: true },
   {
     id: "language-region/first-day-of-week",
+    glyph: CALENDAR,
     title: "First day of the week",
     keywords: ["first day of week", "week starts"],
     kind: "choice",
@@ -51,6 +55,7 @@ export const YOU_ROWS = [
   },
   {
     id: "language-region/formats",
+    glyph: GLOBE,
     title: "Formats",
     detail: "How dates, times, and numbers look in your region.",
     keywords: ["date format", "number format"],
@@ -60,6 +65,7 @@ export const YOU_ROWS = [
 
   {
     id: "lock-screen/turn-display-off",
+    glyph: DISPLAY,
     title: "Turn display off after",
     name: "When the screens go dark",
     detail: "Set in Battery & Power, beside sleep.",
@@ -68,17 +74,27 @@ export const YOU_ROWS = [
   },
   {
     id: "lock-screen/lock-now",
+    glyph: LOCK,
     title: "Lock the screen",
     detail: "Covers the screen until you type your password.",
     keywords: ["lock"],
     kind: "action",
   },
 
-  { id: "users/full-name", title: "Full name", keywords: ["name", "real name"], kind: "value" },
+  { id: "users/full-name", glyph: USER, title: "Full name", keywords: ["name", "real name"], kind: "value" },
   { id: "users/account-name", title: "Account name", detail: "The name you log in with.", keywords: ["user name", "username", "login"], kind: "value" },
-  { id: "users/picture", title: "Picture", name: "Account picture", detail: "A PNG or JPEG under 1 MB.", keywords: ["avatar", "photo"], kind: "action" },
+  {
+    id: "users/picture",
+    glyph: IMAGE,
+    title: "Picture",
+    name: "Account picture",
+    detail: "A PNG or JPEG under 1 MB.",
+    keywords: ["avatar", "photo"],
+    kind: "action",
+  },
   {
     id: "users/password",
+    glyph: KEY,
     title: "Password",
     name: "Change your login password",
     detail: "Asked for on a sheet of its own, which agents can't see or type into.",
@@ -87,6 +103,7 @@ export const YOU_ROWS = [
   },
   {
     id: "users/automatic-login",
+    glyph: LOCK,
     title: "Log in automatically",
     detail: "Skips the password at the login screen. Needs an administrator's password to change.",
     keywords: ["automatic login", "autologin"],
@@ -95,6 +112,7 @@ export const YOU_ROWS = [
 
   {
     id: "notifications/do-not-disturb",
+    glyph: MOON,
     title: "Do Not Disturb",
     detail: "Banners are held back until you turn it off; they wait in the notification center.",
     keywords: ["dnd", "focus", "quiet", "banners"],
@@ -105,13 +123,14 @@ export const YOU_ROWS = [
 
   {
     id: "passwords/source-dashi",
+    glyph: KEY,
     title: "Dashi",
     name: "Logins from Dashi's vault",
     detail: "Passkeys, app secrets, tokens, logins",
     keywords: ["vault"],
     kind: "switch",
   },
-  { id: "passwords/source-1password", title: "1Password", name: "Logins from 1Password", keywords: ["1password", "op"], kind: "switch" },
+  { id: "passwords/source-1password", glyph: LOCK, title: "1Password", name: "Logins from 1Password", keywords: ["1password", "op"], kind: "switch" },
   { id: "passwords/save-to", title: "Save new logins to", keywords: ["save logins"], kind: "choice" },
   { id: "passwords/logins", title: "Logins in Dashi", keywords: ["saved passwords", "logins", "two-factor"], kind: "value" },
   { id: "passwords/add-login", title: "Add a login", keywords: ["new password", "save password"], kind: "action" },
@@ -178,12 +197,13 @@ export const YOU_ROWS = [
   { id: "about/name", title: "Name", name: "Computer name", keywords: ["hostname", "computer name"], kind: "value" },
   { id: "about/based-on", title: "Based on", keywords: ["fedora", "distribution"], kind: "value" },
   { id: "about/kernel", title: "Kernel", keywords: ["linux", "kernel version"], kind: "value" },
-  { id: "about/processor", title: "Processor", keywords: ["cpu"], kind: "value" },
+  { id: "about/processor", glyph: CHIP, title: "Processor", keywords: ["cpu"], kind: "value" },
   { id: "about/memory", title: "Memory", keywords: ["ram"], kind: "value" },
-  { id: "about/graphics", title: "Graphics", name: "Graphics hardware", keywords: ["gpu"], kind: "value" },
+  { id: "about/graphics", glyph: GPU, title: "Graphics", name: "Graphics hardware", keywords: ["gpu"], kind: "value" },
   { id: "about/storage", title: "Storage", keywords: ["disk", "free space"], kind: "value" },
   {
     id: "about/setup-assistant",
+    glyph: SPARK,
     title: "Setup Assistant",
     detail: "Language, keyboard, Wi-Fi, time zone, appearance, and agents, one page at a time.",
     keywords: ["setup", "first run"],

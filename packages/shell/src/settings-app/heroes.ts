@@ -9,9 +9,7 @@
 import { formatWatts, statusLine } from "../battery/panel-numbers.ts";
 import type { Placed } from "../control-center/layout.ts";
 import { type Monitor, monitorLabel, refreshLabel, sizeLabel, uprightSize } from "../display-config/monitors.ts";
-import type { ScreenInfo } from "../displays.ts";
 import type { Battery } from "../system/battery.ts";
-import { logicalSize, scaleLabel } from "./screens.ts";
 
 export interface BatteryHero {
   percent: number;
@@ -58,28 +56,37 @@ export function aspectLabel(width: number, height: number): string | null {
 export interface DisplayHero {
   /** "Built-in", or the monitor's make and model. */
   name: string;
-  /** "Built-in · 2880 × 1800 · 16:10". */
-  facts: string;
-  /** "Looks like 1646 × 1029 at 175% · 120 Hz"; null for a screen that is off. */
-  looks: string | null;
+  /**
+   * What only the hero says, under the picture, each fact once (the title
+   * names a lone display, the Resolution row its size, the Scale row what it
+   * looks like): the name where several share the hero, the shape, and the
+   * refresh rate where no Refresh rate row says it ("16:10 · 59.89 Hz").
+   */
+  caption: string;
+  /** Everything at once, for the screen reader: "Built-in · 2880 × 1800 · 16:10". */
+  label: string;
   /** The picture's size, at the screen's real shape, inside `box`. */
   shape: { width: number; height: number };
 }
 
-/** The display hero for a monitor (and its screen, for the scale): its name, its facts, and its shape fitted in `box`. */
-export function displayHero(monitor: Monitor, screen: ScreenInfo | undefined, box: { width: number; height: number }): DisplayHero {
+export interface HeroPlace {
+  /** Several displays share the hero, so each picture carries its name. */
+  several?: boolean;
+  /** The cards have a Refresh rate row, which says the rate. */
+  rateRow?: boolean;
+}
+
+/** The display hero for a monitor: its name, the facts only it says, and its shape fitted in `box`. */
+export function displayHero(monitor: Monitor, box: { width: number; height: number }, place: HeroPlace = {}): DisplayHero {
   const name = monitor.builtIn ? "Built-in" : monitorLabel(monitor);
   const size = uprightSize(monitor);
   const aspect = size ? aspectLabel(size.width, size.height) : null;
-  const facts = [name, ...(size ? [sizeLabel(size)] : ["Off"]), ...(aspect ? [aspect] : [])].join(" · ");
-  const looksLike = screen ? logicalSize(screen, screen.scale) : null;
-  const looks =
-    looksLike && monitor.mode
-      ? `Looks like ${sizeLabel(looksLike)} at ${scaleLabel(screen?.scale ?? monitor.scale)} · ${refreshLabel(monitor.mode.refreshMhz)}`
-      : null;
+  const label = [name, ...(size ? [sizeLabel(size)] : ["Off"]), ...(aspect ? [aspect] : [])].join(" · ");
+  const rate = monitor.mode && !place.rateRow ? refreshLabel(monitor.mode.refreshMhz) : null;
+  const facts = [...(place.several ? [name] : []), ...(aspect ? [aspect] : []), ...(rate ? [rate] : [])];
   const ratio = size && size.height > 0 ? size.width / size.height : 16 / 10;
   const width = Math.min(box.width, Math.round(box.height * ratio));
-  return { name, facts, looks, shape: { width, height: Math.round(width / ratio) } };
+  return { name, caption: facts.length > 0 ? facts.join(" · ") : name, label, shape: { width, height: Math.round(width / ratio) } };
 }
 
 /** The display the title names and the cards change: the one asked for while it is on, else the main one, else the first on. */

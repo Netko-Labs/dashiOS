@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import { LIT_WASH, RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
+import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { Caption, Group, Note, Spot } from "../src/settings-app/ui.tsx";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 
@@ -50,7 +50,9 @@ test("a section's Spot lights its card and leaves its heading alone", async () =
   );
   await settle();
   const node = (testID: string): Node | null => byId(JSON.parse(last), root.nodeId(testID) ?? "");
-  const wash = LIT_WASH;
+  // A soft wash of the page's ink: purple is the keyboard ring's and the agents'.
+  const wash = LIGHT_CONTROLS.lit;
+  expect(wash.toLowerCase().startsWith(LIGHT_CONTROLS.text.toLowerCase())).toBe(true);
   expect(grounds(node("spot:apps"))).not.toContain(wash);
 
   focus.request("privacy", "apps");

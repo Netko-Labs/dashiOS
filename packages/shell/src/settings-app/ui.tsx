@@ -12,11 +12,12 @@
 import { Shortcut, type Surface, Tile, useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo, useRef } from "react";
+import { FoldedChoices } from "../shared/controls/folded.tsx";
 import { InkSlider } from "../shared/controls/ink-slider.tsx";
-import { ControlSwitch, PillButton, Segmented } from "../shared/controls/inputs.tsx";
+import { ControlSwitch, PillButton } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { PAGE } from "./row.tsx";
-import { LIT_WASH, PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
+import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
 export { Tile };
 
@@ -51,7 +52,7 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
       style={{ flexShrink: 0, flexDirection: "column", borderRadius: PAGE.cardRadius, backgroundColor: colors.off, overflow: "hidden" }}
     >
       {/* Always there, so lighting the card never remounts its rows. */}
-      <View style={{ flexDirection: "column", backgroundColor: lit ? LIT_WASH : "#00000000" }}>
+      <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}>
         {rows.map((row, index) => (
           // The rows of a card never reorder.
           <Fragment key={index}>
@@ -114,15 +115,20 @@ export interface Choice<T> {
   label: string;
 }
 
-/** Choices as segmented pills, the chosen one green with the tighter corner. */
+/**
+ * Choices as segmented pills, the chosen one green with the tighter corner;
+ * past five, the four commonest (`common`, else the first four) and "More…"
+ * for the rest, the one in use always among the pills (shared/controls/fold.ts).
+ */
 export function Choices<T extends string | number>(props: {
   options: ReadonlyArray<Choice<T>>;
   value: T;
   onChange: (value: T) => void;
   testID: string;
   disabled?: boolean;
+  common?: readonly T[];
 }) {
-  return <Segmented {...props} />;
+  return <FoldedChoices {...props} />;
 }
 
 /** A setting's slider: Control Center's flat ink slider, its glyph on a chip and its value at the right. */

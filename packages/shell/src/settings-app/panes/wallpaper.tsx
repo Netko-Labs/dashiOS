@@ -15,7 +15,6 @@ import type { PhotoChooser } from "../../wallpaper/chooser.ts";
 import { pathFor, photoProblem, type WallpaperTile, wallpaperTiles, withPhoto } from "../../wallpaper/tiles.ts";
 import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
-import { DISPLAY, IMAGE } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
 import { Button, Caption, Group, Page, Setting, useSurface } from "../ui.tsx";
 import { LiveSection } from "./wallpaper-live.tsx";
@@ -91,7 +90,7 @@ export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; 
         </View>
       </Group>
       <Group>
-        <Setting id="wallpaper/add-photo" glyph={IMAGE}>
+        <Setting id="wallpaper/add-photo">
           <Button testID="wallpaper-add" label="Add Photo…" onPress={addPhoto} />
         </Setting>
         {typing && (
@@ -109,7 +108,7 @@ export function WallpaperPane({ settings, chooser }: { settings: SettingsStore; 
             />
           </Setting>
         )}
-        <Setting id="wallpaper/picture" glyph={DISPLAY} stack={false} detail={null} control="wallpaper-mode" />
+        <Setting id="wallpaper/picture" stack={false} detail={null} control="wallpaper-mode" />
       </Group>
       {note !== null && (
         <View testID="wallpaper-note" style={{ flexShrink: 0 }}>
