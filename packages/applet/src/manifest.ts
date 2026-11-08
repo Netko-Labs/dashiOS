@@ -205,7 +205,7 @@ export function compareVersions(a: string, b: string): number {
   return leftPre < rightPre ? -1 : 1;
 }
 
-/** Whether Dashi `version` (0.4.0) is in `range` (">=0.4", "^0.4", "~0.4.1", "0.4"). */
+/** Whether Dashi `version` (0.5.0) is in `range` (">=0.4", "^0.4", "~0.4.1", "0.4"). */
 export function dashiSatisfies(range: string, version: string): boolean {
   const match = RANGE.exec(range);
   if (!match) return false;
