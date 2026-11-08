@@ -528,7 +528,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   where the words go ("Claude Code · your Claude subscription", "Codex ·
   your ChatGPT plan", "OpenCode · its own provider", "Local · stays on this
   computer", "Claude · Anthropic, your key", "GPT · OpenAI, your key"). With nothing picked yet, ⇥ offers "Set up an agent…"; "None"
-  hides Ask. Only the typed words are sent.
+  hides Ask. Only the typed words are sent, with the context chips the
+  person left on (below, "Agents from the launcher"): after the words, the
+  window in front ("The window in front is Notes (window w2)") and the
+  selection; never the window's contents.
 - **The plan.** The answerer is offered the actions a person and agents
   both use (`who: "both"` with a tool) as tools; its calls come back as
   numbered steps in Dashi's words (from the action and its arguments, never
@@ -621,6 +624,131 @@ plan server and prints each CLI's output):
    scope if it hasn't ended 3 s later). A CLI that says it isn't signed in
    (`Not logged in`, a 401…) is "isn't signed in"; one that isn't
    installed any more is "isn't installed".
+
+## Agents from the launcher
+
+An agent that works on its own for minutes, in Dashi's sandbox, started
+from the launcher and back when it's done or needs the person (the 0.5.0
+design, dashi-0.5.0-review/mockups.html sections 1 to 3). Code:
+`agents/handoff/` (the service, the store of runs, the stream parsers, the
+grants, the chip's words, the questions, the follow-ups), `bin/dashi-task.ts`,
+`launcher/agents/handoff-rows.ts` and `handoff-views.tsx` (the rows, the
+context chips, the grants card), `agents-panel.tsx` (the chip and its
+panel), `handoff-shell.tsx` (the wiring, the notifications, the context).
+Tests: `test/launcher-handoff.test.ts`, `test/handoff-*.test.ts` (the
+streams from `test/fixtures/handoff/`, no network).
+
+- **Starting.** Words that read as a task (a verb and three or more words,
+  or five or more; not a question) put **Hand it off** first: one row per
+  installed harness, "Start Codex", the one Settings › Agents names in
+  "Hand off to" first (else the one answering Ask, else the catalog's
+  order), ⌥1… for the others. Ask stays under **Right now** (⇥ goes to it).
+  The ranking decides, not a mode: when the top row found names what the
+  words say ("open notes" finding Notes), that row stays first and Hand it
+  off comes after it. A harness that isn't installed has no row; one that
+  isn't signed in says so and Return opens Terminal. Keys on a hand-off
+  row: ↩ Start, ⌥↩ Start and watch (the panel opens on its card), ⇥ Ask
+  instead.
+- **Context chips.** Under the field, once the words read as a request
+  (for a hand-off or Ask): "＋ Browser · signin.localhost" from the window
+  in front when the launcher opened (on until clicked, or ⌫ in an empty
+  field; in Helium the page's address through Dashi's extension), and
+  "＋ Selection" only when there is a primary selection (off until clicked).
+  What is on goes with the words: the window's app, id, title and address,
+  the selection's text (8 KB at most). A task may hand that window to the
+  person (`hand_over`) whatever "Manage windows and apps" says; Ask's plan
+  only hears of it.
+- **The grants card.** Return on a hand-off row shows, the first time for
+  a kind of task, what the agent may use, in words, from the sandbox's real
+  limits: "Websites: asks per site", "Your logins: asks each time",
+  "Payments: asks each time", "Sees: <the chips left on>", and struck
+  through, "Your files" and "Other windows". A kind is the set of grants
+  (`grantsKind`), kept in `$XDG_STATE_HOME/dashi/agents/handoff.json` once
+  the person starts from the card; then Return starts straight away.
+  Settings › Agents' "Don't ask for these again" (`agents.skipGrants`) turns
+  the card off. Return on the card starts it; "Change what it may use…"
+  (❖,) opens Settings › Agents; Esc goes back.
+- **Running.** Each turn is a transient user service,
+  `dashi-task-<run>-<turn>.service` (`systemd-run --user`, as applets run),
+  whose main process is `dashi-task`: it runs the harness through
+  `dashi-agent` with a task profile (docs/secrets.md, "A task from the
+  launcher") and appends its JSON lines to
+  `$XDG_RUNTIME_DIR/dashi-agents/<run>/turn-<n>.jsonl`, which the shell reads
+  as it grows (`runner.ts`). No Terminal opens; closing the launcher never
+  stops it. The command lines (`commands.ts`), as data, Dashi's words after
+  the harness's own, its own tools off and Dashi's MCP server its only
+  tools:
+  - Claude Code (checked against `claude --help` 2.1.319, a stream recorded
+    with it): `claude -p --output-format stream-json --verbose
+    --append-system-prompt … --tools "" --strict-mcp-config --mcp-config
+    {dashi} --allowedTools mcp__dashi --permission-mode dontAsk
+    --setting-sources "" --disable-slash-commands --no-chrome`, the prompt
+    on stdin; a follow-up adds `--resume <session_id>`.
+  - Codex (from its docs, not yet run with a real Codex): `codex exec --json
+    --skip-git-repo-check --sandbox read-only --ignore-user-config` with the
+    shell tool and web search off and `mcp_servers.dashi` approved, the
+    prompt on stdin as `-`; a follow-up is `exec … resume <thread_id> -`.
+  - OpenCode (from its docs, not yet run): `opencode run --format json
+    --agent dashi-task [--session <id>] -- <prompt>`, its config in
+    `OPENCODE_CONFIG_CONTENT` (only `dashi_*` tools; edits, shell and
+    fetches denied).
+  Their events become steps (`stream.ts`): the session, each tool call in
+  Dashi's words ("Opening signin.localhost", "Signed in to signin.localhost"),
+  how it went, what it said, how it ended. "Steps: N" said before its first
+  call is the "about M" of "step 3 of about 6".
+- **Each harness's mark.** Its row, the grants card's field, a run's row
+  and card, and the chip show the harness's own glyph (`harness-icons.ts`):
+  a starburst for Claude Code, a knot of three links for Codex, a block in
+  brackets for OpenCode, Dashi's drawings in one color (shiso), never the
+  companies' artwork; any other harness gets the agents' sparkle. The done
+  notification's icon is the same mark on a shiso tile
+  (`shell/icons/claude-code.svg`, `codex.svg`, `opencode.svg`, and
+  `agents.svg` for the rest).
+- **The menu bar chip.** One chip while any run works: the newest's words
+  ("Codex · Opened signin.localhost"), "2 agents · Codex is signing in" with
+  more, shiso; broth (amber), "Codex needs you", while one waits on the
+  person (`chip.ts`). Click: the panel (380 wide) with each run's card,
+  waiting first, then newest first: its words, harness, time, "step N of
+  about M", its last three steps (never a transcript), Show (the whole log,
+  `log.txt` beside its streams, in Text Editor) and Stop; a finished run
+  stays an hour, with Undo for each settings change it made.
+- **Questions in the panel.** A run's questions go on its card: a website
+  (Allow, Always, Don't), which login (Allow for this task, Once, Other
+  login… when there is more than one, Don't), a hand-over (do it, then Done), another permission, one
+  action. A yes counts only from the person's own press on the panel
+  (`input-origin`, as on a sheet); an answer closes the panel, so what Dashi
+  types next (a login, a code) reaches the person's window, not the panel.
+  A question shows in one place at a time (`route.ts`): on the card while
+  the panel is open, no sheet; while it is closed, the existing sheet (the
+  hand-over's banner for a hand-over), the chip amber and, the first time,
+  a notification ("Codex needs you · Use signin.localhost? · For “…”").
+  Opening the panel takes the sheet down; closing it unanswered puts the
+  sheet back up. The first answer, on the card or the sheet, settles it and
+  the other comes down; a later press counts for nothing. The same holds
+  for a website, a login, a hand-over, another permission and an action. A
+  payment has only dashi-secretd's fingerprint or password sheet (that is
+  the proof; the card's step reads "Paying …"). A site allowed (not
+  always) holds for the whole run, through its follow-ups.
+- **The empty launcher** lists up to three runs first, under **Agents**
+  (waiting on the person, then working, then ended in the last hour): ↩
+  opens its card in the panel, ⇥ turns the field into words to it ("Tell
+  Codex something"; Return sends them), ❖⌫ stops a working one.
+- **Follow-ups** go into the run's own session (`follow-up.ts`): an ended
+  run is resumed with the words; a working one is stopped where it is and
+  resumed with them ("The person stopped you to add this…"), since a
+  headless harness hears nothing until its turn ends; words for a run still
+  starting wait for its session; a run that failed before it had one starts
+  over with the request and the words.
+- **Done.** A normal notification with the run's last words (its first line
+  the title, the rest the body), Show (its card) and Follow up (the launcher
+  talking to it). A run the person stopped posts none.
+- **Settings › Agents** has "Hand off to" (the installed harnesses as
+  pills; `agents.handOff`) beside "Answer requests with", and "Don't ask for
+  these again".
+
+The shell keeps runs in memory: a shell that restarts doesn't pick up a
+run still working (its service goes on, unseen) or the last hour's ended
+ones (tasks/todo.md).
 
 ## The keymap
 

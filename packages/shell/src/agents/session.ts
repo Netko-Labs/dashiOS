@@ -12,6 +12,7 @@ import type { BrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { LineBuffer } from "../lines.ts";
+import type { Undo } from "./ask/plan.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";
 import { type RunContext, type ToolResult, toolError } from "./context.ts";
@@ -53,6 +54,32 @@ export interface SessionContext {
   browser: BrowserBridge;
   /** The websites agents may always use (sites.ts). */
   sites: SiteGrants;
+  /** An agent started from the launcher: Undo for its settings changes (agents/handoff/service.ts). */
+  tasks?: TaskHooks;
+}
+
+/** What a run started from the launcher may do on its connection (agents/handoff/grants.ts). */
+export interface TaskPolicy {
+  granted: readonly Scope[];
+  refused: readonly Scope[];
+  /** The window its context chip named: it may hand that one to the person, whatever "Manage windows and apps" says. */
+  window: number | null;
+  /** The harness's name ("Codex"): what sheets and the activity call the run, whatever its process is. */
+  name: string;
+  /** The sites the person allowed for this task (not always): every turn's connection shares them. */
+  sites?: Set<string>;
+}
+
+/** The launcher's runs' side of a call: what would put it back, and that it went well. */
+export interface TaskHooks {
+  before(task: string, call: Call): Undo | null;
+  after(task: string, undo: Undo | null, ok: boolean): void;
+}
+
+/** A launcher run on this connection: its id and policy (agents/handoff/). */
+export interface SessionTask {
+  id: string;
+  policy: TaskPolicy;
 }
 
 /** What a Bun socket offers the session. */
@@ -96,13 +123,21 @@ export class Session {
     private readonly onGone: (session: Session) => void,
     /** In Dashi's agent sandbox, or on another machine (sandbox.ts): only then may it sign in. */
     confined = false,
+    /** A run started from the launcher: its card's grants, for this connection only, and nothing kept. */
+    private readonly task: SessionTask | null = null,
   ) {
-    this.granted = peer.remote ? new Set() : ctx.grants.get(peer.key);
+    this.granted = peer.remote ? new Set() : task ? new Set(task.policy.granted) : ctx.grants.get(peer.key);
+    if (task) {
+      for (const scope of task.policy.granted) this.once.add(scope);
+      for (const scope of task.policy.refused) this.refused.add(scope);
+    }
     this.secrets = new SessionSecrets(ctx.secrets, ctx.ui, confined);
     this.sites = new SiteConsent(
       ctx.sites,
       () => grantKey(this.peer, this.claims),
       (site) => this.askSite(site),
+      // A launcher run's sites hold for the whole task, through its follow-ups' connections.
+      task?.policy.sites,
     );
   }
 
@@ -121,7 +156,14 @@ export class Session {
   }
 
   info(): AgentInfo {
-    return { id: this.id, name: this.peer.name, key: grantKey(this.peer, this.claims), status: this.status, scopes: [...this.granted] };
+    return {
+      id: this.id,
+      name: this.peer.name,
+      key: grantKey(this.peer, this.claims),
+      status: this.status,
+      scopes: [...this.granted],
+      ...(this.task ? { task: this.task.id } : {}),
+    };
   }
 
   /** Who this agent is in what it changes: the name it shows with (a remote one's claimed name), and its grants' key. */
@@ -196,8 +238,8 @@ export class Session {
         const name = typeof info?.name === "string" ? info.name : null;
         // Control characters out, and short: it is shown on the sheet.
         this.claims = name ? name.replace(/\p{Cc}/gu, "").slice(0, 64) : null;
-        // An agent over SSH is known by its name; its stored grants show up now.
-        for (const scope of this.ctx.grants.get(grantKey(this.peer, this.claims))) this.granted.add(scope);
+        // An agent over SSH is known by its name; its stored grants show up now. A launcher run has its card's only.
+        if (!this.task) for (const scope of this.ctx.grants.get(grantKey(this.peer, this.claims))) this.granted.add(scope);
         this.send(
           mcp.result(id, {
             protocolVersion: mcp.negotiate(params.protocolVersion),
@@ -230,13 +272,19 @@ export class Session {
     // Locked: no tool runs and no sheet goes up, whatever has been allowed.
     if (this.ctx.lock.isLocked) return this.reply(id, call.name, toolError(LOCKED));
     const scope = scopeOf(call);
-    if (this.granted.has(scope)) {
+    // A launcher run may hand the window its context chip named to the person.
+    const handsOwnWindow = call.name === "hand_over" && this.task !== null && call.window === this.task.policy.window;
+    if (this.granted.has(scope) || handsOwnWindow) {
       void this.run(id, call);
     } else if (this.refused.has(scope)) {
       this.reply(
         id,
         call.name,
-        toolError(`The person did not allow "${label(scope)}". Tell them what you need it for; don't call this again unless they agree.`),
+        toolError(
+          this.task?.policy.refused.includes(scope)
+            ? `"${label(scope)}" isn't allowed for this task: it can't see your other windows or files. Say what you need in your last words instead.`
+            : `The person did not allow "${label(scope)}". Tell them what you need it for; don't call this again unless they agree.`,
+        ),
       );
     } else {
       this.waiting.push({ id, call });
@@ -333,6 +381,8 @@ export class Session {
     this.inFlight.set(id, controller);
     const { signal } = controller;
     let result: ToolResult;
+    const task = this.task;
+    const undo = task ? (this.ctx.tasks?.before(task.id, call) ?? null) : null;
     try {
       // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
       // What it changes is this agent's (Settings › Recently changed: acting.ts).
@@ -368,6 +418,7 @@ export class Session {
     }
     // Locked meanwhile: whatever it saw or did stays between it and the lock screen.
     if (this.ctx.lock.isLocked && !locksScreen(call.name)) result = toolError(LOCKED_WHILE_RUNNING);
+    if (task) this.ctx.tasks?.after(task.id, undo, result.isError !== true);
     this.reply(id, call.name, result);
   }
 

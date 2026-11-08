@@ -12,6 +12,7 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
+import type { AgentRuns } from "./agents/handoff/store.ts";
 import { type AgentStore, useAgents } from "./agents/index.ts";
 import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
@@ -133,6 +134,7 @@ export function MenuBar({
   settings,
   output,
   onStopAgent,
+  runs,
   installed,
 }: {
   apps: readonly App[];
@@ -156,6 +158,8 @@ export function MenuBar({
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
   output?: string;
   onStopAgent: (id: number) => void;
+  /** Agents from the launcher: their chip and its panel (agents-panel.tsx). */
+  runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
   /** The installed app a window's app id stands for (the Dock's match), for its name. */
   installed?: (appId: string) => App | undefined;
 }) {
@@ -255,7 +259,13 @@ export function MenuBar({
         {titles.map(({ id, title }) => menu(id, <Text style={label}>{title}</Text>))}
       </View>
       <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 16, flexShrink: 1, minWidth: 0 }}>
-        <BarPills capture={capture} {...(recorder ? { recorder } : {})} agents={connected} onStopAgent={onStopAgent} />
+        <BarPills
+          capture={capture}
+          {...(recorder ? { recorder } : {})}
+          agents={connected}
+          onStopAgent={onStopAgent}
+          {...(runs ? { runs, runsOpen: popover?.kind === "agents", onRuns: (right: number) => void menus.toggleAgents(appName, right, null, output) } : {})}
+        />
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
           <ExtraItems store={extras} openKey={statusMenuKey} onMenu={openExtraMenu} onActivate={(extra, x, y) => extras.activate(extra.key, x, y, output)} />
           <View

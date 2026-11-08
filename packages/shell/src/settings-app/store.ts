@@ -38,7 +38,7 @@ import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, re
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { isTextSize, UndoStack } from "@dashi/ui";
-import { type AnswererChoice, isAnswererChoice } from "../agents/ask/answerer.ts";
+import { type AnswererChoice, type HarnessId, isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
 import { type CatalogSetting, isCatalogList } from "../applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
@@ -198,6 +198,10 @@ export interface AgentsSettings {
   localModel?: string;
   /** The OpenAI model GPT answers with; the most capable chat model the key lists when unset (agents/ask/gpt-models.ts). */
   gptModel?: string;
+  /** Who a task from the launcher is handed to first ("Hand it off"; agents/handoff/); the answerer, else the first installed, when unset. */
+  handOff?: HarnessId;
+  /** "Don't ask for these again": a task starts without its grants card (agents/handoff/grants.ts). */
+  skipGrants?: boolean;
 }
 
 /** `clipboard`: clipboard history and snippets (clipboard/; Settings › Keyboard). */
@@ -358,7 +362,10 @@ const SECTIONS = {
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },
-  agents: { path: ["agents"], fields: { answerer: isAnswererChoice, localModel: isModelName, gptModel: isModelName } },
+  agents: {
+    path: ["agents"],
+    fields: { answerer: isAnswererChoice, localModel: isModelName, gptModel: isModelName, handOff: isHarnessId, skipGrants: isBoolean },
+  },
   clipboard: {
     path: ["clipboard"],
     fields: { history: isBoolean, leftOut: (value) => Array.isArray(value) && value.length <= 64 && value.every(isAppName), snippetsInTerminals: isBoolean },

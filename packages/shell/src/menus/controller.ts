@@ -27,6 +27,8 @@ export type Popover =
   | { kind: "dock-menu"; x: number; entries: readonly MenuEntry<DockMenuAction>[]; above?: number }
   | { kind: "control-center"; page: ControlPage }
   | { kind: "notification-center" }
+  /** The agents' panel under their chip (agents/handoff/panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
+  | { kind: "agents"; right: number; focus: string | null }
   /** A status item's menu (an extra's or the battery's), its right edge at `right` (screen pixels); `key` says whose. */
   | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] };
 
@@ -123,6 +125,15 @@ export class MenuController {
       return Promise.resolve();
     }
     return this.show({ kind: "status-menu", key, right, entries }, appName, output);
+  }
+
+  /** A click on the agents' chip: their panel, or closed if it is open; `focus` a run's card (a notification's Show). */
+  toggleAgents(appName: string, right: number, focus: string | null = null, output?: string): Promise<void> {
+    if (this.state.popover?.kind === "agents" && this.isOn(output) && focus === null) {
+      this.close();
+      return Promise.resolve();
+    }
+    return this.show({ kind: "agents", right, focus }, appName, output);
   }
 
   /** A click on the clock. */

@@ -88,6 +88,8 @@ const OWN: Readonly<Record<string, Named>> = {
   "nightShift.from": { name: "Night Shift from", row: "displays/night-shift-from", unset: "sunset", say: (value) => String(value) },
   "nightShift.to": { name: "Night Shift to", row: "displays/night-shift-to", unset: "sunrise", say: (value) => String(value) },
   "agents.answerer": { name: "Answer requests with", row: "agents/answer-with", unset: "nothing chosen" },
+  "agents.handOff": { name: "Hand off to", row: "agents/hand-off-to", unset: "the first installed" },
+  "agents.skipGrants": { name: "Don't ask for these again", row: "agents/skip-grants", unset: "off" },
   "agents.localModel": { name: "Local model", row: "agents/model", unset: "the first installed", say: (value) => String(value) },
   "agents.gptModel": { name: "GPT model", row: "agents/model", unset: "the most capable", say: (value) => String(value) },
 };

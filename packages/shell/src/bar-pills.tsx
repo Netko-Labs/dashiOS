@@ -7,7 +7,9 @@
  * it from under the pointer, and the click found nothing.
  */
 
+import type { AgentRuns } from "./agents/handoff/store.ts";
 import type { AgentInfo } from "./agents/index.ts";
+import { AgentsChip } from "./agents-panel.tsx";
 import { AgentPill } from "./consent.tsx";
 import { RecordingButton } from "./recorder/indicator.tsx";
 import type { ScreenRecorder } from "./recorder/recorder.ts";
@@ -19,19 +21,30 @@ export function BarPills({
   recorder,
   agents,
   onStopAgent,
+  runs,
+  runsOpen = false,
+  onRuns,
 }: {
   capture: ScreenCaptureStore;
   recorder?: ScreenRecorder;
   agents: readonly AgentInfo[];
   onStopAgent: (id: number) => void;
+  /** Agents from the launcher: one chip for all of them, its panel on a click (agents-panel.tsx). */
+  runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
+  runsOpen?: boolean;
+  onRuns?: (right: number) => void;
 }) {
   return (
     // A fragment: the bar's row spaces them, and leaves no gap when there are none.
     <>
       <CapturePill store={capture} {...(recorder ? { recorder } : {})} />
-      {agents.map((agent) => (
-        <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
-      ))}
+      {runs && onRuns ? <AgentsChip runs={runs} open={runsOpen} onPress={onRuns} /> : null}
+      {/* A run from the launcher speaks through the chip, not a pill of its own connection. */}
+      {agents
+        .filter((agent) => agent.task === undefined)
+        .map((agent) => (
+          <AgentPill key={agent.id} agent={agent} onStop={() => onStopAgent(agent.id)} />
+        ))}
       {recorder ? <RecordingButton recorder={recorder} /> : null}
     </>
   );

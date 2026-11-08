@@ -201,6 +201,39 @@ It does reach the network, as any agent does: its provider, with its own
 login. `dashi-agent --print` with `DASHI_AGENT_PLAN` set shows the
 command line.
 
+### A task from the launcher
+
+An agent the person hands a task to from the launcher (docs/actions.md,
+"Agents from the launcher") runs through `dashi-agent` with the same
+profile, marked a task (`DASHI_AGENT_PLAN` with `task: true`), in a scope
+named for its run (`dashi-agent-task-<run>-<n>.scope`):
+
+- **its home folder is an empty one**, as in plan mode: only the harness's
+  own login and sessions bound back (a follow-up resumes its session), its
+  install and Bun and `dashi-mcp` read-only; no documents, keys or Dashi
+  settings. Its environment is the session's basics, no model keys;
+- **its only Dashi socket is Dashi's MCP socket** (`dashi-mcp.sock`, bound
+  where the bridge looks for it inside), not a plan socket: its calls run.
+  No session bus, no token proxy, no compositor or browser socket;
+- **its connection's grants are the run's, not the agent's stored ones.**
+  The agents server knows a run's connection by its scope's name
+  (`sandbox.ts` `taskOfCgroup`) and asks the shell for its policy: granted
+  for the task, "Use websites", "Sign in for you" and "Pay for you", each
+  still asking per site, per login and per payment; refused whatever it
+  asks, "See windows and apps", "See the screen", "Manage windows and apps",
+  "Browse your files" and the clipboard history; any other (notes, the
+  calendar, settings) is asked about as for any agent, on the run's card.
+  Its stored grants aren't read. The one window the context
+  chip named may be handed to the person (`hand_over`). This is what the
+  grants card says, struck through what it can't. Sheets and the activity
+  call the connection by its harness's name ("Codex wants to use …"); the
+  sheet's detail still shows the process;
+- the sites the person allowed for the task (not always) hold for every
+  turn of the run, and no longer;
+- Stop (the panel, ❖⌫ on its row) is `systemctl --user stop` of the turn's
+  service: SIGTERM reaches `dashi-agent`, which stops the harness and its
+  scope.
+
 ## Blanked captures
 
 The shell decides what agents' pictures blank; dashi-comp paints it

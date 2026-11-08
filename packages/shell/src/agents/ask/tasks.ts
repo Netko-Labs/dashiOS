@@ -137,8 +137,12 @@ export class AskTasks {
     return this.tasks.find((task) => task.id === id);
   }
 
-  /** Ask the answerer about `request`: a new task, or null when no answerer is chosen. */
-  ask(request: string): string | null {
+  /**
+   * Ask the answerer about `request`: a new task, or null when no answerer is
+   * chosen. `context` (the launcher's context chips left on, in words) goes
+   * after the words to the answerer, not into the task's title.
+   */
+  ask(request: string, context?: string): string | null {
     const answerer = this.deps.answerer();
     const text = request.trim();
     if (!answerer || !text) return null;
@@ -151,7 +155,7 @@ export class AskTasks {
       said: "",
       failure: null,
       history: [],
-      turn: { text, results: [] },
+      turn: { text: context?.trim() ? `${text}\n\n${context.trim()}` : text, results: [] },
       serial: 0,
       controller: new AbortController(),
       leftNow: false,

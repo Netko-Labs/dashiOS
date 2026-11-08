@@ -149,7 +149,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
         )}
         {row.detail !== undefined && (
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: m.detail, color: quiet }}>
+            <Text numberOfLines={1} style={{ fontSize: m.detail, color: row.attention && !selected ? colors.broth : quiet }}>
               {row.detail}
             </Text>
           </View>

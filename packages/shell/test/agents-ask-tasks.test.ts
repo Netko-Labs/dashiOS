@@ -81,6 +81,15 @@ test("Ask shows a plan; nothing runs until Return", async () => {
   expect(ran).toEqual([]);
 });
 
+test("Ask with the context chips: the answerer hears them after the words; the task keeps the words alone", async () => {
+  const answerer = fakeAnswerer([darkAndDock]);
+  const { tasks } = harness(answerer);
+  const id = tasks.ask("dark mode and hide the dock", "The window in front is Notes (window w2).") as string;
+  await settle();
+  expect(tasks.get(id)?.request).toBe("dark mode and hide the dock");
+  expect(answerer.turns[0]?.text).toBe("dark mode and hide the dock\n\nThe window in front is Notes (window w2).");
+});
+
 test("Return runs exactly those calls, in order, as the answerer's, in its task; a setting keeps its Undo", async () => {
   const { tasks, ran, kept } = harness(fakeAnswerer([darkAndDock]), { settings: { dark_mode: false, dock_autohide: false } });
   const id = tasks.ask("dark mode and hide the dock") as string;

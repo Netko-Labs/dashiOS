@@ -218,7 +218,7 @@ export function startAsk(options: AskOptions): Ask {
       };
     },
     getSnapshot,
-    ask: (request) => tasks.ask(request),
+    ask: (request, context) => tasks.ask(request, context),
     followUp: (task, text) => tasks.followUp(task, text),
     run: (task) => void tasks.run(task),
     allowOnce: (task, step) => void tasks.allowOnce(task, step),

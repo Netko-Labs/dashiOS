@@ -20,6 +20,7 @@ import { modelKeys, vaultTokenSource } from "./agents/ask/keys.ts";
 import { TurnWatch } from "./agents/ask/now.ts";
 import { type Ask, startAsk } from "./agents/ask/service.ts";
 import { Grants } from "./agents/consent.ts";
+import { NO_CONTEXT } from "./agents/handoff/grants.ts";
 import { AgentStore, startAgents } from "./agents/index.ts";
 import { LockWatch } from "./agents/lock.ts";
 import { personAnswered } from "./agents/person.ts";
@@ -27,6 +28,7 @@ import { watchApprovals } from "./agents/secrets/approvals.ts";
 import { startPasswords } from "./agents/secrets/passwords.ts";
 import { isVaultWindow } from "./agents/secrets/vault-view.ts";
 import { serveTokens, tokensSocketPath } from "./agents/tokens/index.ts";
+import { TOOLS } from "./agents/tools/index.ts";
 import { AppCatalog } from "./app-catalog.ts";
 import { startAppMenus } from "./app-menus/index.ts";
 import type { PressedChord } from "./app-menus/shortcut.ts";
@@ -76,6 +78,7 @@ import { windowToFront } from "./front-window.ts";
 import { FullscreenBars } from "./fullscreen.ts";
 import { startGestures } from "./gestures.ts";
 import { startLostCardWatch } from "./graphics/lost-start.ts";
+import { ContextSource, primarySelection, readContext, startHandoffShell } from "./handoff-shell.tsx";
 import { IdlePolicy } from "./idle.ts";
 import { InhibitFlag, keepAwake } from "./inhibit/index.ts";
 import { InputMethodRunner } from "./input-method.ts";
@@ -526,13 +529,51 @@ function paneServicesOf(): PaneServices {
   return (paneServices ??= createPaneServices({ shared: menus.shared, system: system.store, battery: batteryMonitor, laptop }));
 }
 
+// Agents from the launcher (agents/handoff/): tasks run in the background as user services, through
+// dashi-agent; one chip in the menu bar, its panel for their cards and questions, a notification when done.
+// What they reach (the registry, the menus, the launcher) is late-bound: they start once a person asks.
+const launcherContext = new ContextSource();
+/** The run the next launcher opens talking to (a notification's Follow up). */
+let launcherTalkTo: string | null = null;
+const handoffShell = startHandoffShell({
+  settings: settingsStore,
+  env: process.env,
+  agents: agentStore,
+  notifications: notifications.store,
+  menus: () => menus.controller,
+  personPressed: (layer) => (compositor ? personAnswered((method, params) => compositor.request(method, params), layer) : Promise.resolve(false)),
+  titleOf: (tool) => TOOLS.find((each) => each.name === tool)?.title,
+  settingNow: (name) => {
+    const row = agentRow(name);
+    return row ? valueOf(row, registryStores) : null;
+  },
+  setSettingAddress: () => actions.registry.list().find((action) => action.tool === "set_setting")?.address ?? null,
+  runAsPerson: (address, args) => {
+    const action = actions.registry.get(address);
+    return action ? actions.run(action, args) : Promise.resolve({ ok: false, error: `Nothing is at ${address}.` });
+  },
+  openFile: (path) => openFile(`file://${path}`),
+  openSettings: () => settingsApp.open("agents"),
+  openTerminal: () => {
+    const terminal = actions.registry.get(formatAddress(["app", "dev.dashi.terminal"]));
+    if (terminal) void actions.run(terminal, {});
+  },
+  talkTo: (run) => {
+    if (overlays.has("launcher")) closeOverlay("launcher");
+    launcherTalkTo = run;
+    openLauncher();
+  },
+});
+
 // Clipboard history and snippets (clipboard/), started below once the registry and the launcher are.
 let clipboard: Clipboard | null = null;
 // Agents reach the same stores and controllers the menus use (agents/desktop/).
 const agents = compositor
   ? startAgents({
       compositor,
-      ui: agentUi,
+      // A launcher run's questions go to the chip's panel (and the sheets while it is closed).
+      ui: handoffShell.ui(agentUi),
+      tasks: { policy: handoffShell.service.policy, before: handoffShell.service.before, after: handoffShell.service.after },
       sources: passwords.sources,
       vault: passwords.vault,
       store: agentStore,
@@ -748,6 +789,7 @@ const menus = startMenus({
           : settingsApp.open("battery"),
   laptop,
   statusClosed: (key) => extras.menuClosed(key),
+  agentsPanel: (props) => handoffShell.panel(props),
   showShortcuts: (appName) => {
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
@@ -876,6 +918,7 @@ const menuBars = new MenuBars({
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
         onStopAgent={(id) => agents?.stop(id)}
+        runs={handoffShell.service.runs}
         installed={installedApp}
       />,
       onClosed,
@@ -939,7 +982,7 @@ const launcherKeymap = {
   typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () =>
     void compositor
-      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted))
+      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted, launcherKeys.extrasWanted))
       .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
@@ -949,6 +992,10 @@ launcherKeys.onRecording = () => {
   if (overlays.has("launcher")) launcherKeysAgain();
 };
 // ← and → are the launcher's while a row's windows can show (launcher/pictures.ts); they wait for the field like every key.
+// The agents' keys (⌥1–9, ❖⌫, ⌫ on a chip, ❖,) are the launcher's only while they mean something there.
+launcherKeys.onExtras = () => {
+  if (overlays.has("launcher") && handedOff) launcherKeymap.begin();
+};
 launcherKeys.onArrows = () => {
   if (overlays.has("launcher") && handedOff) launcherKeymap.begin();
 };
@@ -1104,6 +1151,20 @@ function openLauncher(presented: Presented | null = null, scope: string | null =
   const limit = setTimeout(launcherReady, TYPE_AHEAD_LIMIT_MS);
   const close = () => closeOverlay("launcher");
   const entries = appIndex.entries();
+  // The context chips: the window in front and the selection, read before the launcher takes the keyboard.
+  const talkTo = launcherTalkTo;
+  launcherTalkTo = null;
+  launcherContext.set(NO_CONTEXT);
+  handoffShell.service.refresh();
+  if (compositor && !presented && !scope)
+    void readContext({
+      window: async () => {
+        const front = (await compositor.windows()).find((each) => each.focused && each.state === "normal");
+        return front ? { id: front.id, app: appFor(apps, front, installedApp).name, appId: front.appId, title: front.title } : null;
+      },
+      page: () => agents?.frontPage() ?? Promise.resolve(null),
+      selection: primarySelection,
+    }).then((context) => launcherContext.set(context));
   void launcherWorld?.refresh();
   let opened = false;
   const finished = () => {
@@ -1162,6 +1223,9 @@ function openLauncher(presented: Presented | null = null, scope: string | null =
         languages={launcherLanguages}
         typeAhead={typeAhead}
         {...(askAgents ? { agents: askAgents.launcher } : {})}
+        handoff={handoffShell.launcher}
+        context={launcherContext}
+        talkTo={talkTo}
         extensions={extensions.session}
         {...(launcherHeightMs() ? { heightTransitionMs: launcherHeightMs() } : {})}
         onPictures={launcherPictures}
@@ -1622,6 +1686,7 @@ const quit = () => {
     ],
     ["actions", () => actions.close()],
     ["ask", () => askAgents?.close()],
+    ["handoff", () => handoffShell.close()],
     ["flags", stopFollowingFlags],
     ["night shift", stopNightShift],
     ["screen recording", () => captureTools?.close()],
