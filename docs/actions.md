@@ -635,7 +635,7 @@ grants, the chip's words, the questions, the follow-ups), `bin/dashi-task.ts`,
 `launcher/agents/handoff-rows.ts` and `handoff-views.tsx` (the rows, the
 context chips, the grants card), `agents-panel.tsx` (the chip and its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).
-Tests: `test/launcher-handoff.test.ts`, `test/handoff-*.test.ts` (the
+Tests: `test/launcher-handoff.test.ts`, `test/launcher-commands.test.ts`, `test/handoff-*.test.ts` (the
 streams from `test/fixtures/handoff/`, no network).
 
 - **Starting.** Words that read as a task (a verb and three or more words,
@@ -645,7 +645,13 @@ streams from `test/fixtures/handoff/`, no network).
   order), ⌥1… for the others. Ask stays under **Right now** (⇥ goes to it).
   The ranking decides, not a mode: when the top row found names what the
   words say ("open notes" finding Notes), that row stays first and Hand it
-  off comes after it. A harness that isn't installed has no row; one that
+  off comes after it. A short command finds what it names: when the whole
+  words find nothing, the verb in front ("turn on", "set", "switch off",
+  "enable"…), an article and a value at the end ("to 30", "50%", "on") come
+  off and the ranking looks for what is left, three words at most
+  (`launcher/ranking/commands.ts`): "turn on dark mode" is Dark Mode, "set
+  volume to 30" Output volume, each before Hand it off; "find me a hotel in
+  SF next week and add it to my calendar" is still a task. A harness that isn't installed has no row; one that
   isn't signed in says so and Return opens Terminal. Keys on a hand-off
   row: ↩ Start, ⌥↩ Start and watch (the panel opens on its card), ⇥ Ask
   instead.
