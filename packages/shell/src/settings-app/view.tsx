@@ -151,7 +151,7 @@ const NO_FIND = { subscribe: () => () => {}, getSnapshot: () => 0 };
 const NO_AGENT_LIST: readonly { status: string }[] = [];
 const NO_AGENTS = { subscribe: () => () => {}, getSnapshot: () => NO_AGENT_LIST };
 
-/** The header strip's search: what was typed, what it found, and which result ↑ and ↓ are on. */
+/** The sidebar's search: what was typed, what it found, and which result ↑ and ↓ are on. */
 function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void) {
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState(0);

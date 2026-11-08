@@ -2,8 +2,8 @@
  * Recently changed: every change to a setting, newest first, with who made
  * it (you, or an agent by name, in shiso) and Undo while the setting still
  * holds what that change set (changes/log.ts `canUndo`). ❖Z undoes the
- * newest. Pressing a change opens its pane at its row. Opened from the
- * header strip's button (header.tsx), and at dashi://settings/recent.
+ * newest. Pressing a change opens its pane at its row. A pane in the
+ * sidebar (You), and at dashi://settings/recent.
  */
 
 import { useState, useSyncExternalStore } from "react";

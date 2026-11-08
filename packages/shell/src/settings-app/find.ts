@@ -1,5 +1,5 @@
 /**
- * Search in System Settings' header strip: what is typed finds panes and the
+ * Search in System Settings' sidebar: what is typed finds panes and the
  * rows in them, from the settings registry (registry/) and the panes' words
  * (search.ts), so a row added to a pane is found here as it is in the
  * launcher. The sidebar lists what was found in place of the panes; choosing

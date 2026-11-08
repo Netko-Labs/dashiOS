@@ -14,7 +14,7 @@
  */
 
 import { type Bounds, ScrollView, Svg, Text, TextInput, useWindowChrome, View } from "@mirinjs/metal";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { Knob } from "../shared/controls/parts.tsx";
 import type { Found } from "./find.ts";
@@ -63,6 +63,33 @@ export interface SearchProps {
   focusSerial: number;
 }
 
+/**
+ * The field itself, made again by ❖F (keyed by `focusSerial`): it then asks
+ * for the keyboard and selects what was typed, so new words replace it, as
+ * on the Mac. The selection is taken once, when it is made.
+ */
+function SearchInput({ search }: { search: SearchProps }) {
+  const colors = useControlColors();
+  const [selected] = useState(() => (search.focusSerial > 0 ? { start: 0, end: search.query.length } : null));
+  return (
+    <TextInput
+      testID="settings-search"
+      value={search.query}
+      placeholder="Search"
+      {...(search.focusSerial > 0 ? { autoFocus: true } : {})}
+      {...(selected ? { selection: selected } : {})}
+      onChangeText={search.onQuery}
+      onSubmitEditing={() => search.onSubmit()}
+      onKeyPress={(key) => {
+        // Esc empties the field first, as on the Mac; ↑ and ↓ move through what it found.
+        if (key === "Escape" && search.query !== "") search.onQuery("");
+        else search.onKey(key);
+      }}
+      style={{ flex: 1, height: 24, padding: 2, fontSize: 12.5, color: colors.text, placeholderColor: colors.muted, backgroundColor: "#00000000" }}
+    />
+  );
+}
+
 /** The search field: a 32-tall pill the color of an off tile. */
 function SearchPill({ search }: { search: SearchProps }) {
   const colors = useControlColors();
@@ -82,21 +109,7 @@ function SearchPill({ search }: { search: SearchProps }) {
       }}
     >
       <Svg markup={SEARCH} size={15} color={colors.muted} />
-      <TextInput
-        key={search.focusSerial}
-        testID="settings-search"
-        value={search.query}
-        placeholder="Search"
-        {...(search.focusSerial > 0 ? { autoFocus: true } : {})}
-        onChangeText={search.onQuery}
-        onSubmitEditing={() => search.onSubmit()}
-        onKeyPress={(key) => {
-          // Esc empties the field first, as on the Mac; ↑ and ↓ move through what it found.
-          if (key === "Escape" && search.query !== "") search.onQuery("");
-          else search.onKey(key);
-        }}
-        style={{ flex: 1, height: 24, padding: 2, fontSize: 12.5, color: colors.text, placeholderColor: colors.muted, backgroundColor: "#00000000" }}
-      />
+      <SearchInput key={search.focusSerial} search={search} />
     </View>
   );
 }
