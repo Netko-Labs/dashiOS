@@ -5,7 +5,6 @@ use std::ffi::{CStr, CString, OsString};
 use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::ffi::OsStringExt;
-use std::path::Component;
 use std::sync::mpsc::Sender;
 
 use crate::Message;
@@ -64,12 +63,14 @@ fn environment(extra: &[(String, String)]) -> Vec<CString> {
 /// points. Shells keep an inherited `PWD` when it is absolute, has no `.` or
 /// `..`, and names their working directory; else they take `getcwd()`'s.
 fn logical_pwd(cwd: &str) -> Option<String> {
-    let path = std::path::Path::new(cwd);
-    let plain = path.is_absolute()
-        && path
-            .components()
-            .all(|part| matches!(part, Component::RootDir | Component::Normal(_)));
-    (plain && std::fs::metadata(path).is_ok_and(|meta| meta.is_dir())).then(|| cwd.to_string())
+    // Checked on the text itself: `Path::components` drops a `.` in the middle
+    // ("/tmp/./x" reads as "/tmp/x"), so it would let one through.
+    let plain = cwd == "/"
+        || cwd.strip_prefix('/').is_some_and(|rest| {
+            rest.split('/')
+                .all(|part| !part.is_empty() && part != "." && part != "..")
+        });
+    (plain && std::fs::metadata(cwd).is_ok_and(|meta| meta.is_dir())).then(|| cwd.to_string())
 }
 
 /// What the PTY's child runs, as the program's path and its argv: the
@@ -301,6 +302,9 @@ mod tests {
         assert_eq!(logical_pwd("Developer"), None);
         assert_eq!(logical_pwd("/tmp/../tmp"), None);
         assert_eq!(logical_pwd("/tmp/./x"), None);
+        assert_eq!(logical_pwd("/tmp/."), None);
+        assert_eq!(logical_pwd("/tmp//x"), None);
+        assert_eq!(logical_pwd("/tmp/"), None);
         assert_eq!(logical_pwd("/no/such/folder/here"), None);
         assert_eq!(logical_pwd("/"), Some("/".into()));
     }
