@@ -1,6 +1,8 @@
 /**
  * The grid of tiles (layout.ts places them; tiles.tsx draws each). In edit
- * mode every tile wears one "−" mark at its top left, a click switches it
+ * mode every tile wears one "−" mark at its top left, drawn in a layer of
+ * its own over every tile and the keyboard's ring, so a tile that grows or
+ * moves under it (a slider laid flat) never covers it; a click switches it
  * between its sizes (round ↔ wide, tall ↔ flat), and a drag moves it: the
  * grid reflows under the pointer as it goes, so where it lands is what is
  * shown. The tiles' own presses are off meanwhile.
@@ -24,7 +26,14 @@ export interface EditHandlers {
 }
 
 /** The "−" on a tile in edit mode: ink, round, 20 across, 5 out from the corner. */
-function RemoveMark({ id, onRemove }: { id: string; onRemove: (id: string) => void }) {
+export const REMOVE_MARK = { size: 20, out: 5 } as const;
+
+/** Where a tile's "−" sits in the grid: 5 out from the tile's top left. */
+export function removeMarkAt(frame: { left: number; top: number }): { left: number; top: number } {
+  return { left: frame.left - REMOVE_MARK.out, top: frame.top - REMOVE_MARK.out };
+}
+
+function RemoveMark({ id, frame, onRemove }: { id: string; frame: { left: number; top: number }; onRemove: (id: string) => void }) {
   const colors = useControlColors();
   return (
     <View
@@ -34,11 +43,10 @@ function RemoveMark({ id, onRemove }: { id: string; onRemove: (id: string) => vo
       accessibilityLabel="Remove"
       style={{
         position: "absolute",
-        left: -5,
-        top: -5,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        ...removeMarkAt(frame),
+        width: REMOVE_MARK.size,
+        height: REMOVE_MARK.size,
+        borderRadius: REMOVE_MARK.size / 2,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colors.text,
@@ -114,10 +122,11 @@ export function ControlGrid({
           <TileFrame key={tile.id} frame={frame} focused={focused === tile.id} radius={radiusOf(tile.id)}>
             {renderTile(tile, frame)}
             {editing && <EditCover id={tile.id} placed={placed} origin={() => bounds.current} edit={editing} />}
-            {editing && <RemoveMark id={tile.id} onRemove={editing.onRemove} />}
           </TileFrame>
         );
       })}
+      {/* After every tile and ring: the marks are drawn last, so nothing in the grid covers one. */}
+      {editing && placed.map((tile) => <RemoveMark key={`remove:${tile.id}`} id={tile.id} frame={frameOf(tile)} onRemove={editing.onRemove} />)}
     </View>
   );
 }
