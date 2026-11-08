@@ -195,8 +195,10 @@ Each milestone ends with the shell running on it in the VM.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title
-  bar, all four on a unified window; a texture shader on the main surface
-  (render/rounded.rs), so such a surface is never scanned out directly.
+  bar, all four on a unified window, and all four on a window that draws its
+  own frame while it is maximized (Fill: its own corners and shadow go then);
+  a texture shader on the main surface (render/rounded.rs), so such a surface
+  is never scanned out directly.
 - **Depth between windows (done, 0.4.0):** the shell's `window-style` look:
   a shadow under each window (deeper on the focused one, cross-faded), a
   hairline just inside its frame, an optional ring outside the focused one's;
