@@ -78,6 +78,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
 
 ## Verification (alongside)
+- [ ] Before 0.5 ships: the Applet Store skips an applet whose manifest it can't read (a permission it doesn't know) instead of refusing the whole index; Dashi 0.4 refuses the whole index, so ASUS Control 0.2.0 (`power.mode`, Netko-Labs/dashi-applets#3, a draft) waits until 0.5 is on main
 - [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes
 - [ ] The G14: unplugged, eDP-1 goes to 60 Hz about 5 s later at 2880 × 1800 and 175%; plugged in, back to 120 Hz; a loose cable doesn't flicker; a rate picked in Displays stays
 - [ ] Live Claude and GPT APIs, with the owner's keys as tokens
