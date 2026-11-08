@@ -201,16 +201,16 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
     <PaneStoresContext.Provider value={stores}>
       <SpotContext.Provider value={spots ?? null}>
         <SaveError.Provider value={error !== null}>
-          {/* The window's top layer: a row's "More…" menu draws there, over the cards (shared/controls/folded.tsx). */}
-          <TooltipLayer>
-            {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
-            <View
-              testID="settings-window"
-              onWindowKeyDown={(event) => {
-                if (event.key === "escape" && search.query !== "") search.onQuery("");
-              }}
-              style={{ flex: 1, flexDirection: "row", backgroundColor: colors.window, focusRingColor: colors.focus }}
-            >
+          {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
+          <View
+            testID="settings-window"
+            onWindowKeyDown={(event) => {
+              if (event.key === "escape" && search.query !== "") search.onQuery("");
+            }}
+            style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
+          >
+            {/* The window's top layer (as AppWindow's): a row's "More…" menu draws there, over the cards (shared/controls/folded.tsx). */}
+            <TooltipLayer>
               <Sidebar
                 current={current}
                 onSelect={(pane) => nav.select(pane)}
@@ -223,8 +223,8 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
                 {/* A pane's state is its own: switching panes starts the next one fresh. */}
                 <Pane key={current} id={current} ctx={ctx} />
               </View>
-            </View>
-          </TooltipLayer>
+            </TooltipLayer>
+          </View>
         </SaveError.Provider>
       </SpotContext.Provider>
     </PaneStoresContext.Provider>

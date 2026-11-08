@@ -84,6 +84,41 @@ test("the timers show their four usual times; 20 minutes, set, stands fourth", (
   expect(foldChoices(sleep, 7200, SLEEP_COMMON).shown.map((pill) => pill.label)).toEqual(["15 min", "30 min", "1 h", "2 h"]);
 });
 
+test("More… opens every choice in Dashi's menu, and a hidden one picked there takes the fourth pill", async () => {
+  const { TooltipLayer } = await import("@dashi/ui");
+  const { View } = await import("@mirinjs/metal");
+  const { FoldedChoices } = await import("../src/shared/controls/folded.tsx");
+  const listeners: ((event: NativeEvent) => void)[] = [];
+  const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
+  let value = "a";
+  const tree = () => (
+    <View style={{ position: "relative" }}>
+      <TooltipLayer>
+        <FoldedChoices testID="timer" options={seven} common={["a", "b", "c", "d"]} value={value} onChange={(next) => void (value = next)} />
+      </TooltipLayer>
+    </View>
+  );
+  const root = render(tree(), transport);
+  await settle();
+  const send = async (event: NativeEvent) => {
+    for (const listener of listeners) listener(event);
+    await settle();
+  };
+  expect(root.nodeId("timer:f")).toBeUndefined();
+  // A press carries the link's bounds: the menu opens under it, in the window's top layer.
+  await send({ type: "press", nodeId: root.nodeId("timer:more") ?? "", bounds: { x: 600, y: 140, width: 40, height: 16 } });
+  expect(root.nodeId("timer:menu:away")).toBeDefined();
+  const rows = (root.lastTree() ?? "").match(/"G"/g) ?? [];
+  expect(rows.length).toBeGreaterThan(0);
+  root.unmount();
+  value = "f";
+  const again = render(tree(), transport);
+  await settle();
+  expect(again.nodeId("timer:f")).toBeDefined();
+  expect(again.nodeId("timer:d")).toBeUndefined();
+  again.unmount();
+});
+
 // ── Sound with no microphone ───────────────────────────────────────────────
 
 const backend = (devices: Output[]) => ({ list: async () => devices, setDefault: async () => true });
