@@ -7,10 +7,11 @@
  * registry's would not do (a slider, a picker, a live reading).
  */
 
-import { Choices, Row, Switch } from "@dashi/ui";
 import { createContext, type ReactNode, useCallback, useContext, useSyncExternalStore } from "react";
 import type { FlagsStore } from "../control-center/flags.ts";
+import { ControlSwitch, Segmented } from "../shared/controls/inputs.tsx";
 import { type RowDef, type SettingId, type SettingValue, settingRow, valueOf } from "./registry/index.ts";
+import { Row } from "./row.tsx";
 import { Spot } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
 
@@ -56,13 +57,16 @@ function RegistryControl({ row, testID }: { row: RowDef; testID: string }) {
   const value = useRowValue(row);
   const set = useSetRow(row);
   if (value === null) return null;
-  if (row.kind === "switch") return <Switch testID={testID} on={value === true} onChange={set} />;
-  if (row.kind === "choice" && row.options && typeof value !== "boolean") return <Choices testID={testID} value={value} options={row.options} onChange={set} />;
+  if (row.kind === "switch") return <ControlSwitch testID={testID} on={value === true} onChange={set} />;
+  if (row.kind === "choice" && row.options && typeof value !== "boolean")
+    return <Segmented testID={testID} value={value} options={row.options} onChange={set} />;
   return null;
 }
 
 export interface SettingProps {
   id: SettingId;
+  /** A live title in place of the registry's ("Stop charging at 80%"). */
+  title?: string;
   /** A live line in place of the registry's detail; null shows none. */
   detail?: string | null;
   /** Stacked or not when that depends on what the row shows now. */
@@ -71,18 +75,21 @@ export interface SettingProps {
   testID?: string;
   /** The test id of the control the registry draws, when the pane passes none. */
   control?: string;
+  /** The glyph on the row's knob (a card's main rows have one; the rest start with their words). */
+  glyph?: string;
   children?: ReactNode;
 }
 
 /** A row from the registry, in its pane. */
-export function Setting({ id, detail, stack, testID, control, children }: SettingProps) {
+export function Setting({ id, title, detail, stack, testID, control, glyph, children }: SettingProps) {
   const row = settingRow(id);
   const shown = detail === null ? undefined : (detail ?? row.detail);
   const content = children ?? (control !== undefined && row.value ? <RegistryControl row={row} testID={control} /> : null);
   return (
     <Spot id={id}>
       <Row
-        label={row.title}
+        label={title ?? row.title}
+        {...(glyph !== undefined ? { glyph } : {})}
         {...(shown !== undefined ? { detail: shown } : {})}
         {...((stack ?? row.stack === true) ? { stack: true } : {})}
         {...(testID !== undefined ? { testID } : {})}

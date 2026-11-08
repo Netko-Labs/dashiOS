@@ -1,4 +1,4 @@
-import { Button, Row, Shortcut, useColors } from "@dashi/ui";
+import { Button, Group, Row, Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { useClockPrefs, usesHour24 } from "../../clock.ts";
@@ -6,7 +6,6 @@ import { useFlags } from "../../control-center/flags.ts";
 import { useRegion } from "../../region/store.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
 import { describeLayout } from "../../settings-app/layouts.ts";
-import { Group } from "../../settings-app/ui.tsx";
 import { useWifi } from "../../wifi/store.ts";
 import type { SetupContext } from "../context.ts";
 import { runSummary } from "../extras/words.ts";

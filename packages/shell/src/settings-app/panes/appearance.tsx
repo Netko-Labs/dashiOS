@@ -1,57 +1,62 @@
 /**
- * Appearance: Light, Dark, or Auto (dark in the evening), as small previews to pick from (the
- * one Dark Mode control here; Control Center's tile is the same switch), and how round
- * windows are (settings.json `appearance.cornerRadius`; the shell follows the
- * file, so a pick shows on the open windows at once), whether the focused
- * window wears the accent ring (`appearance.highlightActiveWindow`,
- * appearance/window-style.ts), the pointer's size
- * (`appearance.pointerSize`, pointer.ts), and the text size of the shell's
- * surfaces and GTK apps (`appearance.textSize`, text-size.ts).
+ * Appearance (docs/design.html, "Settings"): its hero is the themes, Light,
+ * Dark and Automatic (dark in the evening), as pictures to pick from (the
+ * one Dark Mode control here; Control Center's tile is the same switch).
+ * Then how it looks: Automatic's hours, the text size of the shell's
+ * surfaces and GTK apps (`appearance.textSize`, text-size.ts), how round
+ * windows are (`appearance.cornerRadius`; the shell follows the file, so a
+ * pick shows on the open windows at once), the pointer's size
+ * (`appearance.pointerSize`, pointer.ts); and on a card of their own,
+ * reducing motion and the accent ring round the focused window
+ * (`appearance.highlightActiveWindow`, appearance/window-style.ts).
  */
 
-import { darkColors, lightColors, type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
+import type { ReactNode } from "react";
 import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
 import { DEFAULT_CORNERS, isCornerName } from "../../corners.ts";
+import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../../shared/controls/palette.ts";
 import { useSettings } from "../hooks.ts";
+import { CORNER, MOON, POINTER, TEXT } from "../knob-glyphs.ts";
 import { CORNER_OPTIONS } from "../registry/look.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Choices, Group, Page, Setting, Spot } from "../ui.tsx";
+import { Caption, Choices, Group, Hero, Page, Setting, Spot } from "../ui.tsx";
 
-/** A miniature desktop: a menu bar, a window with two lines of text. */
-function MiniDesktop({ palette }: { palette: Palette }) {
-  const ground = palette === darkColors ? "#1e1e20" : "#f5f5f7";
+/** A theme's picture: its surface, a bar, and a card, in that theme's own tokens. */
+const THEME = {
+  light: { ground: LIGHT_CONTROLS.surface, bar: "#d9d1e6", card: LIGHT_CONTROLS.off },
+  dark: { ground: DARK_CONTROLS.surface, bar: "#3a3644", card: DARK_CONTROLS.off },
+} as const;
+
+type Theme = (typeof THEME)[keyof typeof THEME];
+
+/** The picture, 84 tall: a bar along the top, a card under it. */
+function ThemePicture({ theme }: { theme: Theme }) {
   return (
-    <View style={{ width: 126, height: 78, backgroundColor: "#3E8A72" }}>
-      <View style={{ height: 8, backgroundColor: palette.menuBar }} />
-      <View
-        style={{ position: "absolute", left: 18, top: 20, width: 82, height: 40, borderRadius: 5, padding: 6, gap: 4, backgroundColor: ground, shadow: "sm" }}
-      >
-        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: palette.text }} />
-        <View style={{ width: 60, height: 3, borderRadius: 2, backgroundColor: palette.textMuted }} />
-        <View style={{ width: 50, height: 3, borderRadius: 2, backgroundColor: palette.textMuted }} />
-      </View>
+    <View style={{ flex: 1, position: "relative", backgroundColor: theme.ground }}>
+      <View style={{ position: "absolute", left: 10, top: 10, right: 36, height: 10, borderRadius: 5, backgroundColor: theme.bar }} />
+      <View style={{ position: "absolute", left: 10, top: 28, width: "60%", height: 38, borderRadius: 10, backgroundColor: theme.card }} />
     </View>
   );
 }
 
-/** A preview to pick from: one palette, or (`auto`) light on the left and dark on the right. */
-function Preview({
-  palette,
+/** A theme to pick: its picture and its name, ringed in green when chosen. */
+function ThemeChoice({
   label,
   selected,
   testID,
   onPress,
+  children,
 }: {
-  palette: Palette | "auto";
   label: string;
   selected: boolean;
   testID: string;
   onPress: () => void;
+  children: ReactNode;
 }) {
-  const colors = useColors();
+  const colors = useControlColors();
   return (
-    // A Tab stop in the previews' group: the arrows move between them, Space or Return picks one (KB-1).
+    // A Tab stop in the themes' group: the arrows move between them, Space or Return picks one (KB-1).
     <View
       testID={testID}
       focusable
@@ -59,44 +64,36 @@ function Preview({
       accessibilityLabel={label}
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={{ flexDirection: "column", alignItems: "center", gap: 6, borderRadius: 10 }}
+      style={{
+        flex: 1,
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+        padding: 8,
+        borderRadius: 20,
+        borderWidth: 2.5,
+        borderColor: selected ? colors.on : "#00000000",
+      }}
     >
-      <View style={{ width: 132, height: 84, borderRadius: 10, padding: 3, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
-        <View style={{ flex: 1, borderRadius: 7, overflow: "hidden", backgroundColor: "#3E8A72" }}>
-          {palette === "auto" ? (
-            <View style={{ flex: 1, flexDirection: "row" }}>
-              <View style={{ width: 63, height: 78, overflow: "hidden" }}>
-                <MiniDesktop palette={lightColors} />
-              </View>
-              <View style={{ width: 63, height: 78, overflow: "hidden" }}>
-                <View style={{ position: "absolute", left: -63, top: 0 }}>
-                  <MiniDesktop palette={darkColors} />
-                </View>
-              </View>
-            </View>
-          ) : (
-            <MiniDesktop palette={palette} />
-          )}
-        </View>
-      </View>
-      <Text style={{ fontSize: 12, fontWeight: selected ? "semibold" : "normal", color: colors.text }}>{label}</Text>
+      <View style={{ width: "100%", height: 84, flexDirection: "row", borderRadius: 14, overflow: "hidden" }}>{children}</View>
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
     </View>
   );
 }
 
-/** Which of Light, Dark, and Auto is chosen, as its preview says it. */
-const modeWord = (auto: boolean, dark: boolean): string => (auto ? "Auto" : dark ? "Dark" : "Light");
+/** Which of Light, Dark, and Automatic is chosen, as Recently changed says it. */
+const modeWord = (auto: boolean, dark: boolean): string => (auto ? "Automatic" : dark ? "Dark" : "Light");
 
 /**
- * Light, Dark, and Auto as previews to pick from. Light and Dark are Control Center's Dark Mode
- * switch; Auto (settings.json `appearance.auto`) lets the shell flip it by the time of day.
+ * Light, Dark, and Automatic as pictures to pick from. Light and Dark are Control Center's Dark Mode
+ * switch; Automatic (settings.json `appearance.auto`) lets the shell flip it by the time of day.
  */
 export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
   const { dark } = useFlags(flags);
   const { appearance } = useSettings(settings).data;
   const auto = appearance.auto === true;
   const now = modeWord(auto, dark);
-  // One choice, one entry in Recently changed: Auto off and Dark Mode on are "Appearance: Dark".
+  // One choice, one entry in Recently changed: Automatic off and Dark Mode on are "Appearance: Dark".
   const choose = (to: string, change: () => void) =>
     settings.changes.group({ name: "Appearance", menu: "Appearance", from: now, to, row: "appearance/dark-mode" }, change);
   const pick = (next: boolean) =>
@@ -107,17 +104,31 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
       settings.changes.record([{ key: "flags.dark", from, to: next }]);
     });
   return (
-    // One Tab stop, entered at the chosen preview (KB-1).
-    <View testID="appearance-mode" focusGroup accessibilityRole="group" style={{ flexDirection: "row", gap: 20, padding: 16, paddingBottom: 12 }}>
-      <Preview testID="appearance-light" palette={lightColors} label="Light" selected={!auto && !dark} onPress={() => pick(false)} />
-      <Preview testID="appearance-dark" palette={darkColors} label="Dark" selected={!auto && dark} onPress={() => pick(true)} />
-      <Preview
+    // One Tab stop, entered at the chosen theme (KB-1).
+    <View testID="appearance-mode" focusGroup accessibilityRole="group" style={{ flex: 1, flexDirection: "row", gap: 12 }}>
+      <ThemeChoice testID="appearance-light" label="Light" selected={!auto && !dark} onPress={() => pick(false)}>
+        <ThemePicture theme={THEME.light} />
+      </ThemeChoice>
+      <ThemeChoice testID="appearance-dark" label="Dark" selected={!auto && dark} onPress={() => pick(true)}>
+        <ThemePicture theme={THEME.dark} />
+      </ThemeChoice>
+      <ThemeChoice
         testID="appearance-auto"
-        palette="auto"
-        label="Auto"
+        label="Automatic"
         selected={auto}
-        onPress={() => choose("Auto", () => settings.patch("appearance", { auto: true }))}
-      />
+        onPress={() => choose("Automatic", () => settings.patch("appearance", { auto: true }))}
+      >
+        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-start" }}>
+          <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
+            <ThemePicture theme={THEME.light} />
+          </View>
+        </View>
+        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-end" }}>
+          <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
+            <ThemePicture theme={THEME.dark} />
+          </View>
+        </View>
+      </ThemeChoice>
     </View>
   );
 }
@@ -138,20 +149,25 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
 export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
   return (
     <Page title="Appearance">
-      <Group>
-        {/* The previews are Dark Mode's only control: a link or the launcher's Dark Mode row lands here. */}
-        <Spot id="appearance/dark-mode">
+      {/* The themes are Dark Mode's only control: a link or the launcher's Dark Mode row lands here. */}
+      <Spot id="appearance/dark-mode">
+        <Hero testID="appearance-hero">
           <AppearancePreviews flags={flags} settings={settings} />
-        </Spot>
+        </Hero>
+      </Spot>
+      <Group testID="appearance-look">
+        <Setting id="appearance/automatic" glyph={MOON} control="appearance-automatic" />
+        <Setting id="appearance/text-size" glyph={TEXT} detail={null} stack={false} control="appearance-text-size" />
+        <Setting id="appearance/window-corners" glyph={CORNER} detail={null} stack={false}>
+          <CornerChoices settings={settings} />
+        </Setting>
+        <Setting id="appearance/pointer-size" glyph={POINTER} detail={null} stack={false} control="appearance-pointer-size" />
       </Group>
-      <Group>
-        <Setting id="appearance/window-corners" control="appearance-corners" />
+      <Group testID="appearance-motion">
+        <Setting id="appearance/reduce-motion" detail="Fades instead of springs." control="appearance-reduce-motion" />
         <Setting id="appearance/highlight-active-window" control="appearance-highlight-window" />
-        <Setting id="appearance/pointer-size" control="appearance-pointer-size" />
-        <Setting id="appearance/text-size" control="appearance-text-size" />
-        <Setting id="appearance/reduce-motion" control="appearance-reduce-motion" />
       </Group>
-      <Caption>Light and Dark are the same choice as Control Center's Dark Mode. Auto turns Dark Mode on at 7 PM and off at 7 AM.</Caption>
+      <Caption>Light and Dark are the same choice as Control Center's Dark Mode.</Caption>
     </Page>
   );
 }

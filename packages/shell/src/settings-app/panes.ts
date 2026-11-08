@@ -1,14 +1,34 @@
 /**
- * The panes in the sidebar, in order. Pure data: which pane a row opens, how
- * it is drawn, and which gap of the sidebar it sits under.
+ * The panes in the sidebar, in order. Pure data: which pane a row opens, its
+ * glyph on the row's knob, and the group it sits in (docs/design.html,
+ * "Settings": the look of the desktop first, then three plain labels).
  */
 
-import { INFO, lightColors, TINTS } from "@dashi/ui";
-import { CONTRAST, LOCK } from "../control-center/glyphs.ts";
-import { CONTROL_CENTER } from "../glyphs.ts";
-import { graphicsGlyph } from "../laptop/glyphs.ts";
-import { BELL, CLOCK, DISPLAY, DOCK_GLYPH, GLOBE, HAND, HISTORY, KEY, KEYBOARD, MOUSE, PICTURE, SPARKLE, TRACKPAD } from "./glyphs.ts";
-import { BATTERY, BLUETOOTH, NETWORK, PERSON, SPEAKER } from "./glyphs-machine.ts";
+import {
+  BATTERY,
+  BELL,
+  BLUETOOTH,
+  CLOCK,
+  CONTRAST,
+  DISPLAY,
+  DOCK,
+  GLOBE,
+  GPU,
+  GRID,
+  HISTORY,
+  IMAGE,
+  INFO,
+  KEY,
+  KEYBOARD,
+  LOCK,
+  MOUSE,
+  SHIELD,
+  SPARK,
+  TRACKPAD,
+  USER,
+  VOLUME,
+  WIFI,
+} from "./knob-glyphs.ts";
 
 export type PaneId =
   | "recent"
@@ -35,52 +55,56 @@ export type PaneId =
   | "graphics"
   | "users";
 
+/** The sidebar's groups: the desktop's look (no label), then Connect, This laptop, and You. */
+export type PaneGroup = "look" | "connect" | "laptop" | "you";
+
+/** Each group's label over its panes; the first has none. */
+export const GROUP_LABELS: Readonly<Record<PaneGroup, string | null>> = { look: null, connect: "Connect", laptop: "This laptop", you: "You" };
+
 export interface PaneInfo {
   id: PaneId;
   title: string;
+  /** The glyph on its knob in the sidebar, and on its row in the launcher. */
   glyph: string;
-  /** The color of the row's icon tile. */
-  tint: string;
-  /** Rows of one group sit together; a gap separates groups. */
-  group: number;
+  group: PaneGroup;
   /** Listed only when the machine has it (the sidebar is told which: view.tsx). */
   optional?: true;
   /** Agents' pictures blank the window while it shows (agents/secrets/vault-view.ts): Settings never reopens on it. */
   private?: true;
-  /** Opened from the header strip (its button), not listed in the sidebar: Recently changed. */
-  strip?: true;
 }
 
 /**
- * In six groups: how it looks; connections and power; input; you, your time
- * and language; privacy and security; About. Tiles take Dashi's tints
- * (docs/design.html, "Tints"), never a job color: Agents alone wears shiso,
- * because it is about agents, and no tile is ume.
+ * As the approved design lists them: Appearance to Control Center, then
+ * Connect (Wi-Fi, Bluetooth, Sound), This laptop (Battery & Power, Graphics,
+ * Keyboard, Trackpad), You (Users, Passwords, Agents, Privacy). The panes it
+ * didn't draw join the group they belong to, after the drawn ones:
+ * Notifications with the desktop, Mouse and About with the laptop, Lock
+ * Screen, Date & Time, Language & Region and Recently changed with you.
  */
 export const PANES: readonly PaneInfo[] = [
-  { id: "recent", title: "Recently changed", glyph: HISTORY, tint: TINTS.goma, group: -1, strip: true },
-  { id: "appearance", title: "Appearance", glyph: CONTRAST, tint: TINTS.nori, group: 0 },
-  { id: "wallpaper", title: "Wallpaper", glyph: PICTURE, tint: TINTS.wakame, group: 0 },
-  { id: "displays", title: "Displays", glyph: DISPLAY, tint: TINTS.mizu, group: 0 },
-  { id: "desktop-dock", title: "Desktop & Dock", glyph: DOCK_GLYPH, tint: TINTS.wakame, group: 0 },
-  { id: "control-center", title: "Control Center", glyph: CONTROL_CENTER, tint: TINTS.nori, group: 0 },
-  { id: "network", title: "Network", glyph: NETWORK, tint: TINTS.mizu, group: 1 },
-  { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, tint: TINTS.mizu, group: 1 },
-  { id: "sound", title: "Sound", glyph: SPEAKER, tint: TINTS.kabocha, group: 1 },
-  { id: "battery", title: "Battery & Power", glyph: BATTERY, tint: TINTS.matcha, group: 1 },
-  { id: "graphics", title: "Graphics", glyph: graphicsGlyph(), tint: TINTS.nori, group: 1, optional: true },
-  { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, tint: TINTS.goma, group: 2 },
-  { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, tint: TINTS.goma, group: 2 },
-  { id: "mouse", title: "Mouse", glyph: MOUSE, tint: TINTS.goma, group: 2 },
-  { id: "users", title: "Users & Accounts", glyph: PERSON, tint: TINTS.goma, group: 3 },
-  { id: "date-time", title: "Date & Time", glyph: CLOCK, tint: TINTS.miso, group: 3 },
-  { id: "language-region", title: "Language & Region", glyph: GLOBE, tint: TINTS.mizu, group: 3 },
-  { id: "lock-screen", title: "Lock Screen", glyph: LOCK, tint: TINTS.goma, group: 4 },
-  { id: "notifications", title: "Notifications", glyph: BELL, tint: TINTS.kabocha, group: 4 },
-  { id: "passwords", title: "Passwords", glyph: KEY, tint: TINTS.shiitake, group: 4, private: true },
-  { id: "agents", title: "Agents", glyph: SPARKLE, tint: lightColors.agent, group: 4 },
-  { id: "privacy", title: "Privacy & Security", glyph: HAND, tint: TINTS.goma, group: 4 },
-  { id: "about", title: "About", glyph: INFO, tint: TINTS.goma, group: 5 },
+  { id: "appearance", title: "Appearance", glyph: CONTRAST, group: "look" },
+  { id: "wallpaper", title: "Wallpaper", glyph: IMAGE, group: "look" },
+  { id: "displays", title: "Displays", glyph: DISPLAY, group: "look" },
+  { id: "desktop-dock", title: "Desktop & Dock", glyph: DOCK, group: "look" },
+  { id: "control-center", title: "Control Center", glyph: GRID, group: "look" },
+  { id: "notifications", title: "Notifications", glyph: BELL, group: "look" },
+  { id: "network", title: "Wi-Fi", glyph: WIFI, group: "connect" },
+  { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, group: "connect" },
+  { id: "sound", title: "Sound", glyph: VOLUME, group: "connect" },
+  { id: "battery", title: "Battery & Power", glyph: BATTERY, group: "laptop" },
+  { id: "graphics", title: "Graphics", glyph: GPU, group: "laptop", optional: true },
+  { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, group: "laptop" },
+  { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, group: "laptop" },
+  { id: "mouse", title: "Mouse", glyph: MOUSE, group: "laptop" },
+  { id: "about", title: "About", glyph: INFO, group: "laptop" },
+  { id: "users", title: "Users", glyph: USER, group: "you" },
+  { id: "passwords", title: "Passwords", glyph: KEY, group: "you", private: true },
+  { id: "agents", title: "Agents", glyph: SPARK, group: "you" },
+  { id: "privacy", title: "Privacy", glyph: SHIELD, group: "you" },
+  { id: "lock-screen", title: "Lock Screen", glyph: LOCK, group: "you" },
+  { id: "date-time", title: "Date & Time", glyph: CLOCK, group: "you" },
+  { id: "language-region", title: "Language & Region", glyph: GLOBE, group: "you" },
+  { id: "recent", title: "Recently changed", glyph: HISTORY, group: "you" },
 ];
 
 export const FIRST_PANE: PaneId = "appearance";
@@ -99,16 +123,23 @@ export function paneTitle(id: PaneId): string {
   return PANES.find((pane) => pane.id === id)?.title ?? "";
 }
 
-/** The panes the sidebar lists (Recently changed is the header strip's). */
-export const SIDEBAR_PANES: readonly PaneInfo[] = PANES.filter((pane) => !pane.strip);
+/** Every pane is in the sidebar. */
+export const SIDEBAR_PANES: readonly PaneInfo[] = PANES;
 
-/** The sidebar as groups of panes. */
-export function paneGroups(panes: readonly PaneInfo[] = SIDEBAR_PANES): PaneInfo[][] {
-  const groups: PaneInfo[][] = [];
+export interface SidebarGroup {
+  group: PaneGroup;
+  /** Its label; null for the first. */
+  label: string | null;
+  panes: PaneInfo[];
+}
+
+/** The sidebar as its groups, in order, each with its label; a group with no panes shown is left out. */
+export function paneGroups(panes: readonly PaneInfo[] = SIDEBAR_PANES): SidebarGroup[] {
+  const groups: SidebarGroup[] = [];
   for (const pane of panes) {
     const last = groups.at(-1);
-    if (last && last[0]?.group === pane.group) last.push(pane);
-    else groups.push([pane]);
+    if (last && last.group === pane.group) last.panes.push(pane);
+    else groups.push({ group: pane.group, label: GROUP_LABELS[pane.group], panes: [pane] });
   }
   return groups;
 }

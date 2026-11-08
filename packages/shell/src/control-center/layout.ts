@@ -14,6 +14,8 @@
  * order but isn't packed, so it leaves no gap and comes back where it was.
  */
 
+import type { Direction } from "../shared/controls/slider-math.ts";
+
 export const TILE_SIZES = ["round", "wide", "tall", "flat"] as const;
 export type TileSize = (typeof TILE_SIZES)[number];
 
@@ -131,7 +133,7 @@ export function moveItem(layout: Layout, id: string, before: string): Layout {
   return [...rest.slice(0, at), moving, ...rest.slice(at)];
 }
 
-export type Direction = "left" | "right" | "up" | "down";
+export type { Direction };
 
 /**
  * The tile the arrow keys go to from `from`: the nearest one whose frame

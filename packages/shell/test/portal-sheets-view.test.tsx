@@ -164,7 +164,7 @@ test("an access sheet: Enter never grants; Esc says no; only a click on Allow al
   const sheet = mounted();
   // The line under the question, and the way to where the answer can be taken back: a pane that exists.
   expect(sheet.root.lastTree()).toContain("Dashi remembers your answer");
-  expect(sheet.root.lastTree()).toContain("Privacy & Security…");
+  expect(sheet.root.lastTree()).toContain("Privacy…");
   sheet.send({ type: "press", nodeId: sheet.node("access:privacy") });
   await settle();
   expect(opened).toEqual(["dashi://settings/privacy/apps"]);

@@ -9,7 +9,7 @@ import { AutoRefresh } from "../src/display-config/auto-refresh.ts";
 import type { ApplyResult } from "../src/display-config/manager.ts";
 import { parseMonitors } from "../src/display-config/monitors.ts";
 import { DisplaysPane } from "../src/settings-app/panes/displays.tsx";
-import { OnBatteryGroup } from "../src/settings-app/panes/on-battery.tsx";
+import { OnBatteryRow } from "../src/settings-app/panes/on-battery.tsx";
 import type { PaneId } from "../src/settings-app/panes.ts";
 import { type Arranger, ScreensStore } from "../src/settings-app/screens.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
@@ -104,14 +104,14 @@ test("Battery & Power's On battery names the refresh rate and goes to its row in
   const shown: Array<[PaneId, string]> = [];
   const view = await mount(
     <Page title="Battery & Power">
-      <OnBatteryGroup laptop={null} refresh={refresh} show={(pane, row) => shown.push([pane, row])} />
+      <OnBatteryRow laptop={null} refresh={refresh} show={(pane, row) => shown.push([pane, row])} />
     </Page>,
   );
   expect(view.has("on-battery")).toBe(true);
   expect(view.has("on-battery-graphics")).toBe(false);
   await view.press("on-battery-refresh");
   expect(shown).toEqual([["displays", "refresh-rate"]]);
-  // Without a built-in screen to lower, or a card to switch, there is no group.
-  const none = await mount(<OnBatteryGroup laptop={null} refresh={null} show={() => {}} />);
+  // Without a built-in screen to lower, or a card to switch, there is no row.
+  const none = await mount(<OnBatteryRow laptop={null} refresh={null} show={() => {}} />);
   expect(none.has("on-battery")).toBe(false);
 });

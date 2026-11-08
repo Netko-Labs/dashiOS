@@ -13,6 +13,8 @@ import { type KeyDownInfo, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
+import { useControlColors } from "../shared/controls/palette.ts";
+import { stepLevel } from "../shared/controls/slider-math.ts";
 import type { SoundStore } from "../sound/store.ts";
 import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
@@ -28,8 +30,6 @@ import { addItem, type Direction, frameOf, GRID, type Layout, moveItem, moveTowa
 import { type LayoutStore, useLayout } from "./layout-store.ts";
 import { PageOrigin } from "./page-parts.tsx";
 import { PageView } from "./pages.tsx";
-import { useControlColors } from "./palette.ts";
-import { stepLevel } from "./slider-math.ts";
 import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;
@@ -63,8 +63,9 @@ export interface ControlCenterProps {
   onClose: () => void;
   /**
    * Settings › Control Center: the panel as an editor in a window, always
-   * editing, in the flow of the page (not on the popover surface), and
-   * leaving the window's keys to it. Done saves and goes on editing.
+   * editing, in the flow of the page (not on the popover surface). The
+   * window's keys reach it as the panel's do; Done saves, and Done, Cancel
+   * and Esc close it (`onClose`).
    */
   embedded?: boolean;
 }
@@ -115,6 +116,11 @@ export function ControlCenterPanel(props: ControlCenterProps) {
     const name = event.key;
     if (name === "escape") {
       if (page !== "main") return onPage("main");
+      // Embedded, Esc is Cancel: the edits go and the editor closes.
+      if (embedded) {
+        setDraft(null);
+        return onClose();
+      }
       if (draft) return setDraft(null);
       return onClose();
     }
@@ -144,7 +150,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
     <View
       occlude
       testID="control-center"
-      {...(embedded ? {} : { onWindowKeyDown: key })}
+      onWindowKeyDown={key}
       onContextMenu={() => {
         if (page === "main" && !draft) setDraft(saved);
       }}
@@ -176,10 +182,14 @@ export function ControlCenterPanel(props: ControlCenterProps) {
               <AddList entries={addable} onAdd={(id) => setDraft(addItem(draft, id, controls.sizesOf(id)[0] ?? "round"))} />
               <EditFooter
                 onReset={() => setDraft(DEFAULT_LAYOUT)}
-                onCancel={() => setDraft(null)}
+                onCancel={() => {
+                  setDraft(null);
+                  if (embedded) onClose();
+                }}
                 onDone={() => {
                   props.layout.set(draft);
                   setDraft(null);
+                  if (embedded) onClose();
                 }}
               />
             </>

@@ -56,3 +56,9 @@ export function scheduleOf(from: string | undefined, to: string | undefined): { 
   const end = minutesOf(to);
   return start !== null && end !== null ? { from: start, to: end } : null;
 }
+
+/** Night Shift's row in words: "On from 9 PM to 7 AM" with a schedule, else that it changes only by hand. */
+export function describeSchedule(from: string | undefined, to: string | undefined): string {
+  const schedule = scheduleOf(from, to);
+  return schedule ? `On from ${clockLabel(schedule.from)} to ${clockLabel(schedule.to)}` : "Only when you switch it";
+}

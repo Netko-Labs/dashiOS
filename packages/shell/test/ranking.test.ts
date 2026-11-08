@@ -33,7 +33,7 @@ describe("an app over a Settings pane that matches as well (the wave 1 VM run)",
     ["s", "System Settings", "Sound"],
     ["a", "Activity Monitor", "About"],
     ["b", "Backups", "Bluetooth"],
-    ["n", "Notes", "Network"],
+    ["n", "Notes", "Notifications"],
   ];
   for (const [query, expected, pane] of Rows) {
     test(`"${query}" is ${expected}, not ${pane}`, () => {
@@ -147,10 +147,10 @@ describe("the reports' examples", () => {
     ["first run", "Setup Assistant"],
     ["ter", "Terminal"],
     ["term", "Terminal"],
-    ["wif", "Network"],
-    ["wifi", "Network"],
-    ["wi fi", "Network"],
-    ["wi-fi", "Network"],
+    ["wif", "Wi-Fi"],
+    ["wifi", "Wi-Fi"],
+    ["wi fi", "Wi-Fi"],
+    ["wi-fi", "Wi-Fi"],
     ["dark mode", "Appearance"],
     ["dark", "Appearance"],
     ["display", "Displays"],

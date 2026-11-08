@@ -1,23 +1,20 @@
 /**
- * The System Settings window: the sidebar of panes on the left, the chosen
- * pane on the right. Everything paints with the live palette.
- *
- * The window has a unified title bar (as System Settings on the Mac): the
- * sidebar runs to the top edge with the compositor's window controls over it,
- * and the header strip over the pane is the window's one chrome row (VS-1):
- * the pane's title, Recently changed's button, and the search field, which
- * is also where the window is grabbed. Typing there lists the panes and rows
- * found in the sidebar's place (find.ts); ↑ ↓ choose, Return opens, Esc
- * clears; ❖F (Edit › Find) comes back to it. Where there is no such
- * compositor the window keeps an ordinary title bar and the strip under it.
+ * The System Settings window (docs/design.html, "Settings"): the sidebar of
+ * panes on the left, the chosen pane on the right, in Control Center's
+ * tokens. One chrome row: the compositor's window lights and the search
+ * field sit on the sidebar's top row, and the pane's title is the content's
+ * own top row; no toolbar, no second bar. Typing in the search lists the
+ * panes and rows found in the sidebar's place (find.ts); ↑ ↓ choose, Return
+ * opens the pane at the row and lights it, Esc clears; ❖F (Edit › Find)
+ * comes back to it.
  */
 
-import { useColors } from "@dashi/ui";
-import { useWindowChrome, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
+import { waitingCount } from "../agents/presence.ts";
+import { useControlColors } from "../shared/controls/palette.ts";
 import type { PaneContext } from "./context.ts";
 import { type FindFocus, type Found, findSettings, moveFound } from "./find.ts";
-import { HEADER, HeaderStrip } from "./header.tsx";
 import { useSettings } from "./hooks.ts";
 import { AboutPane } from "./panes/about.tsx";
 import { AgentsPane } from "./panes/agents.tsx";
@@ -42,18 +39,18 @@ import { SoundPane } from "./panes/sound.tsx";
 import { TrackpadPane } from "./panes/trackpad.tsx";
 import { UsersPane } from "./panes/users.tsx";
 import { WallpaperPane } from "./panes/wallpaper.tsx";
-import { type Nav, type PaneId, paneTitle } from "./panes.ts";
+import type { Nav, PaneId } from "./panes.ts";
 import { PaneStoresContext } from "./setting.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import { SpotContext, type SpotHost } from "./spot.tsx";
-import { Group, Note, Page, SaveError, useSurface } from "./ui.tsx";
+import { Group, Note, Page, SaveError } from "./ui.tsx";
 
 /**
- * The window's size (the Mac's System Settings opens about this big): tall
- * enough for every sidebar row, Graphics' too, with nothing to scroll
- * (sidebar.tsx `sidebarHeight`); a smaller window scrolls the list.
+ * The window's size: the design's height (640), and wide enough for its
+ * rows (a knob, the words, and four pills of the power mode) beside the
+ * 232 sidebar. The sidebar scrolls in it, with the chosen pane kept in view.
  */
-export const SETTINGS_WINDOW = { width: 760, height: 733 } as const;
+export const SETTINGS_WINDOW = { width: 920, height: 640 } as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
@@ -62,7 +59,15 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
-      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} laptop={ctx.services.laptop} refresh={ctx.services.refresh} />;
+      return (
+        <DisplaysPane
+          screens={ctx.screens}
+          settings={ctx.settings}
+          laptop={ctx.services.laptop}
+          refresh={ctx.services.refresh}
+          devices={ctx.services.devices}
+        />
+      );
     case "control-center":
       return <ControlCenterPane editor={ctx.controlCenter?.() ?? null} />;
     case "desktop-dock":
@@ -143,6 +148,8 @@ function useOptionalPanes(ctx: PaneContext): ReadonlySet<PaneId> {
 const GRAPHICS_PANES: ReadonlySet<PaneId> = new Set(["graphics"]);
 const NONE: ReadonlySet<PaneId> = new Set();
 const NO_FIND = { subscribe: () => () => {}, getSnapshot: () => 0 };
+const NO_AGENT_LIST: readonly { status: string }[] = [];
+const NO_AGENTS = { subscribe: () => () => {}, getSnapshot: () => NO_AGENT_LIST };
 
 /** The header strip's search: what was typed, what it found, and which result ↑ and ↓ are on. */
 function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void) {
@@ -175,13 +182,12 @@ function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void) {
 }
 
 export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; nav: Nav; spots?: SpotHost; find?: FindFocus }) {
-  const colors = useColors();
-  const surface = useSurface();
+  const colors = useControlColors();
   const current = useSyncExternalStore(nav.subscribe, nav.getSnapshot);
   const { error } = useSettings(ctx.settings);
-  const { controls } = useWindowChrome();
   const shown = useOptionalPanes(ctx);
   const focusSerial = useSyncExternalStore(find?.subscribe ?? NO_FIND.subscribe, find?.getSnapshot ?? NO_FIND.getSnapshot);
+  const agents = useSyncExternalStore(ctx.agents?.subscribe ?? NO_AGENTS.subscribe, ctx.agents?.getSnapshot ?? NO_AGENTS.getSnapshot);
   // A result opens its pane at its row, lit (spot.tsx).
   const search = useSearch(shown, (found) => {
     nav.select(found.pane);
@@ -189,17 +195,28 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
   });
   // The registry's rows read and write these (setting.tsx).
   const stores = useMemo(() => ({ settings: ctx.settings, flags: ctx.flags }), [ctx.settings, ctx.flags]);
-  const strip = controls ? Math.ceil(controls.y + controls.height) : HEADER.height;
   const results = search.query.trim() === "" ? null : { query: search.query, found: search.found, chosen: search.chosen, onChoose: search.choose };
   return (
     <PaneStoresContext.Provider value={stores}>
       <SpotContext.Provider value={spots ?? null}>
         <SaveError.Provider value={error !== null}>
-          {/* The focus ring is kombu in every control inside (KB-2). */}
-          <View testID="settings-window" style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, focusRingColor: colors.focusRing }}>
-            <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} {...(results ? { results } : {})} />
+          {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
+          <View
+            testID="settings-window"
+            onWindowKeyDown={(event) => {
+              if (event.key === "escape" && search.query !== "") search.onQuery("");
+            }}
+            style={{ flex: 1, flexDirection: "row", backgroundColor: colors.window, focusRingColor: colors.focus }}
+          >
+            <Sidebar
+              current={current}
+              onSelect={(pane) => nav.select(pane)}
+              shown={shown}
+              search={{ ...search, focusSerial }}
+              waiting={waitingCount(agents)}
+              {...(results ? { results } : {})}
+            />
             <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-              <HeaderStrip title={paneTitle(current)} height={strip} onRecent={() => nav.select("recent")} search={{ ...search, focusSerial }} />
               {/* A pane's state is its own: switching panes starts the next one fresh. */}
               <Pane key={current} id={current} ctx={ctx} />
             </View>

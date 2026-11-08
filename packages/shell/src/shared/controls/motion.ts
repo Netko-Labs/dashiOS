@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { springOut } from "../dock/slide.tsx";
+import { springOut } from "../../dock/slide.tsx";
 
 /** The spring's length. */
 export const CONTROL_MOTION_MS = 220;

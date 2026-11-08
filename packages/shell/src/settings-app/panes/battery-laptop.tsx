@@ -1,15 +1,13 @@
 /**
  * Battery & Power's laptop parts (docs/0.4.0.html, Laptop features C and
- * CPU C): the power mode with Automatic (from power/modes/), battery health
- * (the charge limit, a one-time full charge, the schedule), and the
+ * CPU C): the power mode with Automatic (from power/modes/), where charging
+ * stops, battery health (a one-time full charge, the schedule), and the
  * processor (boost, the energy preference over the mode's, the top speed on
  * battery). Each part shows only where the machine has it: the mode where
  * tuned-ppd or dashi-hardware offer modes, the rest where dashi-hardware
  * reports the knob, and battery health only on a laptop.
  */
 
-import { Switch, useColors } from "@dashi/ui";
-import { Text } from "@mirinjs/metal";
 import type { Laptop } from "../../laptop/start.ts";
 import { useLaptop } from "../../laptop/store.ts";
 import { chargeTarget } from "../../power/battery-health.ts";
@@ -17,8 +15,9 @@ import { type BoostChoice, CHARGE_LIMIT_MIN, type EppChoice } from "../../power/
 import { useModes } from "../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../power/modes/types.ts";
 import { useSettings } from "../hooks.ts";
+import { GAUGE, PLUG } from "../knob-glyphs.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Item, Setting, Slider } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Item, Setting, Slider, Switch } from "../ui.tsx";
 
 const MODE_DETAIL = {
   "low-power": "Quieter and cooler, with less performance. Battery lasts longer.",
@@ -26,53 +25,81 @@ const MODE_DETAIL = {
   performance: "The most performance, with more heat, fan noise, and power use.",
 } as const;
 
-/** The mode row: Automatic and the three, and in one line what is in effect and why. */
-export function PowerModeGroup({ laptop }: { laptop: Laptop }) {
+/** The power mode: Automatic and the modes as pills, and what Automatic chose and why. */
+export function PowerModeRow({ laptop }: { laptop: Laptop }) {
   const modes = useModes(laptop.modes);
   if (modes.available.length === 0) return null;
   const options: Array<{ value: ModeChoice; label: string }> = [
-    { value: "automatic", label: "Automatic" },
+    { value: "automatic", label: "Auto" },
     ...modes.available.map((mode) => ({ value: mode, label: MODE_SHORT[mode] })),
   ];
   const effective = modes.effective;
   const detail = effective
-    ? `${effective.why}. ${modes.choice === "automatic" ? "Follows the power source and the battery level." : MODE_DETAIL[effective.mode]}`
+    ? modes.choice === "automatic"
+      ? `Automatic chose ${MODE_LABEL[effective.mode]}: ${effective.why.toLowerCase()}`
+      : `${effective.why}. ${MODE_DETAIL[effective.mode]}`
     : undefined;
   return (
-    <Group testID="power-mode">
-      <Setting id="battery/power-mode" {...(detail ? { detail } : {})}>
+    <>
+      <Setting id="battery/power-mode" glyph={GAUGE} stack={false} {...(detail ? { detail } : {})}>
         <Choices testID="power-mode-choice" value={modes.choice} options={options} onChange={(choice) => laptop.modes.choose(choice)} />
       </Setting>
       {modes.failed && effective && <Item label={`Couldn’t switch everything to ${MODE_LABEL[effective.mode]}.`} />}
-    </Group>
+    </>
   );
 }
 
 const pct = (value: number) => `${Math.round(value)}%`;
 
-/** Battery health: where charging stops, a full charge for a trip, and the schedule. */
-export function BatteryHealthGroup({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
-  const colors = useColors();
+/** Where charging stops: a switch ("Stop charging at 80%"), and while it is on, the limit's slider. Null without the knob. */
+export function ChargeLimitRows({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
+  const machine = useLaptop(laptop.store);
+  const { power } = useSettings(settings).data;
+  const knob = machine.knobs.get("charge-limit");
+  if (!machine.laptop || !knob) return null;
+  const limit = power.chargeLimit ?? 100;
+  const min = Math.max(CHARGE_LIMIT_MIN, knob.min ?? CHARGE_LIMIT_MIN);
+  const early = limit < 100;
+  return (
+    <>
+      <Setting id="battery/stop-charging" glyph={PLUG} title={early ? `Stop charging at ${pct(limit)}` : "Stop charging early"}>
+        <Switch
+          testID="battery-stop-charging"
+          on={early}
+          onChange={(on) => settings.patch("power", { chargeLimit: on ? Math.max(DEFAULT_EARLY_LIMIT, min) : 100 })}
+        />
+      </Setting>
+      {early && (
+        <Setting id="battery/charge-limit" stack={false}>
+          <Slider
+            testID="battery-charge-limit"
+            value={limit}
+            range={{ min, max: 100, step: 5 }}
+            glyph={PLUG}
+            format={pct}
+            onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
+          />
+        </Setting>
+      )}
+    </>
+  );
+}
+
+/** The limit "Stop charging early" turns on at. */
+const DEFAULT_EARLY_LIMIT = 80;
+
+/** Battery health's other parts: a full charge for a trip, and the schedule. Null without the charge limit. */
+export function FullChargeGroup({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
   const machine = useLaptop(laptop.store);
   const { power } = useSettings(settings).data;
   const knob = machine.knobs.get("charge-limit");
   if (!machine.laptop || !knob) return null;
   const limit = power.chargeLimit ?? 100;
   const target = chargeTarget(power, new Date());
-  const min = Math.max(CHARGE_LIMIT_MIN, knob.min ?? CHARGE_LIMIT_MIN);
   return (
     <>
       <Caption above>Battery Health</Caption>
       <Group testID="battery-health-limit">
-        <Setting id="battery/charge-limit">
-          <Slider
-            testID="battery-charge-limit"
-            value={limit}
-            range={{ min, max: 100, step: 5 }}
-            onCommit={(value) => settings.patch("power", { chargeLimit: Math.round(value) })}
-          />
-          <Text style={{ fontSize: 12, color: colors.textMuted }}>{pct(limit)}</Text>
-        </Setting>
         <Setting id="battery/full-charge-once" detail={power.fullChargeOnce ? (target.why ?? "") : undefined}>
           <Button
             testID="battery-full-once"
@@ -125,7 +152,6 @@ const EPP_OPTIONS: Array<{ value: EppChoice; label: string }> = [
 
 /** The processor: boost, the energy preference over the mode's, and the top speed on battery. */
 export function ProcessorGroup({ laptop, settings }: { laptop: Laptop; settings: SettingsStore }) {
-  const colors = useColors();
   const machine = useLaptop(laptop.store);
   const { power } = useSettings(settings).data;
   const boost = machine.knobs.get("boost");
@@ -162,9 +188,9 @@ export function ProcessorGroup({ laptop, settings }: { laptop: Laptop; settings:
               testID="power-battery-cap"
               value={cap}
               range={{ min: low, max: top, step: 100_000 }}
+              format={(value) => (value >= top ? "No limit" : `${(value / 1_000_000).toFixed(1)} GHz`)}
               onCommit={(value) => settings.patch("power", { batteryMaxKhz: value >= top ? undefined : Math.round(value) })}
             />
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>{cap >= top ? "No limit" : `${(cap / 1_000_000).toFixed(1)} GHz`}</Text>
           </Setting>
         )}
       </Group>

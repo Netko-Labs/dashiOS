@@ -44,6 +44,14 @@ export const LOOK_ROWS = [
     agent: "dark_mode",
   },
   {
+    id: "appearance/automatic",
+    title: "Automatic",
+    detail: "Dark from 7 PM to 7 AM.",
+    keywords: ["auto", "schedule", "evening", "night", "sunset"],
+    kind: "switch",
+    value: storedSwitch("appearance", "auto", false),
+  },
+  {
     id: "appearance/window-corners",
     title: "Window corners",
     detail: "How round windows are, app content included.",
@@ -143,6 +151,13 @@ export const LOOK_ROWS = [
   },
 
   { id: "displays/turned-off", title: "This display is off", detail: "It stays plugged in; its windows are on the other screens.", kind: "action" },
+  {
+    id: "displays/brightness",
+    title: "Brightness",
+    name: "Display brightness",
+    keywords: ["backlight", "dim", "screen brightness"],
+    kind: "value",
+  },
   { id: "displays/resolution", title: "Resolution", keywords: ["screen size", "pixels"], kind: "value", stack: true },
   { id: "displays/refresh-rate", title: "Refresh rate", keywords: ["hz", "hertz", "automatic", "battery"], kind: "value", stack: true },
   {
@@ -155,6 +170,13 @@ export const LOOK_ROWS = [
   },
   { id: "displays/rotation", title: "Rotation", keywords: ["rotate", "portrait"], kind: "value", stack: true },
   { id: "displays/scale", title: "Scale", name: "Display scale", keywords: ["scaling", "hidpi", "zoom"], kind: "value", stack: true },
+  {
+    id: "displays/arrange",
+    title: "Arrange displays…",
+    detail: "Drag the screens to match how they sit on your desk.",
+    keywords: ["arrangement", "arrange", "multiple displays", "position"],
+    kind: "action",
+  },
   { id: "displays/main-display", title: "Main display", detail: "Put the menu bar and Dock on this screen.", keywords: ["primary display"], kind: "action" },
   { id: "displays/turn-off", title: "Turn off this display", detail: "Its windows move to the other screens.", kind: "action" },
   {
@@ -194,6 +216,34 @@ export const LOOK_ROWS = [
     keywords: ["color temperature", "kelvin"],
     kind: "value",
     value: storedNumber("nightShift", "kelvin", DEFAULT_WARMTH, WARMTH),
+  },
+
+  {
+    id: "control-center/edit",
+    title: "Edit the layout",
+    name: "Edit Control Center",
+    detail: "Move, resize and add controls: the same as right-clicking the panel.",
+    keywords: ["edit controls", "tiles", "customize", "add controls", "remove controls"],
+    kind: "action",
+  },
+  {
+    id: "control-center/sliders",
+    title: "Sliders",
+    name: "Control Center sliders",
+    detail: "The volume and brightness sliders: standing side by side, or lying across the panel.",
+    keywords: ["tall", "flat", "volume slider", "brightness slider"],
+    kind: "choice",
+    options: [
+      { value: "tall", label: "Tall pair" },
+      { value: "flat", label: "Flat" },
+    ],
+  },
+  {
+    id: "control-center/applets",
+    title: "Applets' controls",
+    detail: "Controls that programs in the menu bar offer, drawn by Dashi.",
+    keywords: ["applet controls", "applets"],
+    kind: "value",
   },
 
   {

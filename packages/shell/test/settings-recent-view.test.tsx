@@ -134,7 +134,8 @@ test("Recently changed lists who changed what, agents by name, each with Undo wh
       <SettingsWindow ctx={ctx} nav={nav} />
     </PaneStoresContext.Provider>,
   );
-  await view.press("settings-recent");
+  // Recently changed is a pane in the sidebar (You), as the header strip and its button are gone.
+  await view.press("sidebar:recent");
   expect(nav.getSnapshot()).toBe("recent");
   const [date, text] = settings.changes.getSnapshot();
   if (!date || !text) throw new Error("no entries");

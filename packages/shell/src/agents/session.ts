@@ -22,7 +22,7 @@ import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
 import type { AgentMask } from "./mask.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
-import type { AgentInfo, AgentUi, Who } from "./presence.ts";
+import { type AgentInfo, type AgentUi, WAITING_STATUS, type Who } from "./presence.ts";
 import { runCall } from "./run.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import { type SiteAnswer, SiteConsent, type SiteGrants } from "./sites.ts";
@@ -145,7 +145,7 @@ export class Session {
   private async askSite(site: string): Promise<SiteAnswer | null> {
     if (this.closed || this.ctx.lock.isLocked) return null;
     this.confirming++;
-    this.setStatus("Waiting for you");
+    this.setStatus(WAITING_STATUS);
     try {
       const answer = await this.ctx.ui.allowSite({ agent: this.id, who: this.who, site });
       return this.closed || this.ctx.lock.isLocked ? null : answer;
@@ -310,7 +310,7 @@ export class Session {
     const needs = new Set(this.waiting.map(({ call }) => scopeOf(call)).filter((s) => !this.granted.has(s) && !this.refused.has(s)));
     if (needs.size === 0) return;
     this.asking = true;
-    this.setStatus("Waiting for you");
+    this.setStatus(WAITING_STATUS);
     const ask = { agent: this.id, who: this.who, scopes: choices(needs, this.granted) };
     const controller = new AbortController();
     this.askAbort = controller;
@@ -448,7 +448,7 @@ export class Session {
   private async confirm(question: Question, signal: AbortSignal): Promise<boolean> {
     if (this.closed || this.ctx.lock.isLocked || signal.aborted) return false;
     this.confirming++;
-    this.setStatus("Waiting for you");
+    this.setStatus(WAITING_STATUS);
     try {
       const yes = await this.ctx.ui.confirm({ agent: this.id, who: this.who, ...question }, signal);
       return yes && !this.closed && !this.ctx.lock.isLocked && !signal.aborted;
