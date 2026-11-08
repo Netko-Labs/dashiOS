@@ -38,6 +38,7 @@ import { CornerFeed } from "./appearance/corner-feed.ts";
 import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { WindowStyleSync } from "./appearance/window-style.ts";
 import { AppletCommands } from "./applets/commands.ts";
+import { AppletPower } from "./applets/power.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, registerShellApp, resolvePinned, SCREENSHOT_APP_ID } from "./apps.ts";
@@ -722,8 +723,10 @@ const appletCommands = new AppletCommands({
     return screen ? { output: screen.name, x: Math.round((screen.width - LAUNCHER.width) / 2), y: screen.barHeight + LAUNCHER.top } : null;
   },
 });
+// Dashi's power mode for applets that ask for it (applets/power.ts): the mode store joins once the laptop starts, below.
+const appletPower = new AppletPower();
 // Applets: everyone's socket, and the installed ones in their sandboxes (applets/start.tsx).
-const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName, commands: appletCommands });
+const stopApplets = startApplets({ compositor, extras, openOverlay, primary: () => menuBars.primaryName, commands: appletCommands, power: appletPower });
 // Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
 const stopSharePicker = compositor
   ? startSharePicker({
@@ -752,6 +755,8 @@ const laptop = startLaptop({
   openSettings: (pane) => settingsApp.open(pane),
   confirmRestart: () => menus.confirmPower("restart"),
 });
+// An applet's pick of the power mode is the same as one in Control Center.
+appletPower.connect(laptop.modes);
 
 // Automatic refresh rate: the built-in screen at its top rate plugged in, about 60 Hz on battery
 // (display-config/auto-refresh.ts). Nothing is set while the screens are blanked or the session is locked.

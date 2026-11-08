@@ -1,7 +1,7 @@
 /**
  * The one power mode (docs/0.4.0.html, "ASUS power states in sync"). Three
  * ways land here: the person picks (the battery menu, Control Center,
- * Settings), Automatic's rule fires (the power source, the battery), or the
+ * Settings, or an applet with `power.mode`, applets/power.ts), Automatic's rule fires (the power source, the battery), or the
  * firmware changes behind Dashi's back (Fn F5 cycles the platform profile;
  * dashi-hardware's `Changed` says so, and so does tuned-ppd's ActiveProfile
  * when another program sets it). Whatever the way, the store works out the

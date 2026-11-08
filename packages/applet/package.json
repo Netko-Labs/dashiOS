@@ -9,6 +9,7 @@
     "./manifest": "./src/manifest.ts",
     "./permissions": "./src/permissions.ts",
     "./protocol": "./src/protocol.ts",
+    "./power": "./src/power.ts",
     "./package": "./src/package.ts",
     "./signing": "./src/signing/index.ts",
     "./catalog": "./src/catalog.ts",

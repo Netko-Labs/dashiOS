@@ -8,7 +8,10 @@ service (`crates/dashi-hardware`), D-Bus activated on the **system** bus, with
 a polkit action per kind of change. The shell, Settings and applets (ASUS
 Control) call it; nothing else in Dashi writes these files.
 
-It decides nothing: which mode applies when is the shell's (`src/power/`).
+It decides nothing: which mode applies when is the shell's (`src/power/`). An
+applet that wants Dashi's power mode (Automatic included) asks the shell on
+the applets channel (`power.mode`, docs/applets.md "Version 4"); a
+`platform-profile` set here is taken as a press of Fn F5.
 It enforces ranges: every value is clamped to what the kernel reports and the
 model database allows for this machine, whatever the caller asked.
 
