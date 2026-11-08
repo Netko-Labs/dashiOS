@@ -53,6 +53,13 @@ describe("Codex's exec --json (from its docs)", () => {
     expect(events.at(-1)).toEqual({ kind: "done", text: "" });
   });
 
+  test("signed out (recorded from codex-cli 0.167.0): its retries aren't the end, its last error is", () => {
+    const signedOut = streamEvents("codex", fixture("codex-signed-out.jsonl"));
+    expect(signedOut.map((event) => event.kind)).toEqual(["session", "failed", "failed"]);
+    expect(signedOut[1]).toMatchObject({ kind: "failed", error: expect.stringContaining("401 Unauthorized") });
+    expect(eventsOf("codex", '{"type":"error","message":"Reconnecting... 2/5 (unexpected status 401)"}')).toEqual([]);
+  });
+
   test("a failed turn", () => {
     expect(eventsOf("codex", '{"type":"turn.failed","error":{"message":"401 Unauthorized"}}')).toEqual([{ kind: "failed", error: "401 Unauthorized" }]);
   });

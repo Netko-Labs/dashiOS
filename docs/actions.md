@@ -695,11 +695,16 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
     {dashi} --allowedTools mcp__dashi --permission-mode dontAsk
     --setting-sources "" --disable-slash-commands --no-chrome`, the prompt
     on stdin; a follow-up adds `--resume <session_id>`.
-  - Codex (from its docs, not yet run with a real Codex): `codex exec --json
+  - Codex (checked against codex-cli 0.167.0's `--help`; run in the VM with
+    no account, it starts its thread, retries, and fails with 401 Unauthorized,
+    recorded as `codex-signed-out.jsonl`; never run signed in): `codex exec --json
     --skip-git-repo-check --sandbox read-only --ignore-user-config` with the
     shell tool and web search off and `mcp_servers.dashi` approved, the
     prompt on stdin as `-`; a follow-up is `exec … resume <thread_id> -`.
-  - OpenCode (from its docs, not yet run): `opencode run --format json
+  - OpenCode (checked against opencode 1.19.5's `--help`; run in the VM with
+    no account, it makes its session with the `dashi-task` agent and its free
+    model's limit stops it, printing no JSON event and not exiting, so the
+    card waits at "starting" until stopped; never run signed in): `opencode run --format json
     --agent dashi-task [--session <id>] -- <prompt>`, its config in
     `OPENCODE_CONFIG_CONTENT` (only `dashi_*` tools; edits, shell and
     fetches denied).
