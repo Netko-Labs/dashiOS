@@ -1,7 +1,7 @@
 /**
  * What the notification center says about agents from the launcher: a run
  * that ended (its last words, with Show and Follow up), and a question that
- * went up while the chip's panel was closed. Pure: main.tsx posts them.
+ * went up while the agents' panel was closed. Pure: main.tsx posts them.
  */
 
 import { iconPath } from "../../apps.ts";
@@ -43,7 +43,7 @@ export function endedNotice(run: RunView): NotifyInput | null {
   return null;
 }
 
-/** A question went up while the panel was closed: the sheet is up too, and the chip is amber. */
+/** A question went up while the panel was closed: the sheet is up too, and the mark is amber. */
 export function attentionNotice(run: RunView, question: RunQuestion): NotifyInput {
   return {
     ...base(run),

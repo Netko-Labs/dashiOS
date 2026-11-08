@@ -84,8 +84,10 @@ export interface MenusOptions {
   runStatus(action: StatusMenuAction): void;
   /** A status item's menu closed. */
   statusClosed?(key: string): void;
-  /** The agents' panel under their chip (agents-panel.tsx). */
+  /** The agents' panel under their mark (agents-panel.tsx). */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
+  /** "…"'s row of the status items that didn't fit (bar-overflow.tsx). */
+  overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void }) => ReactElement;
   /** How much of that screen's bottom the Dock takes now (dock/presenter.ts `bottomInset`); the notification center stops above it. */
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
@@ -273,6 +275,7 @@ export function startMenus(options: MenusOptions): Menus {
           onStatusChoose={(action) => (action.kind === "activity-monitor" ? void showEnergy(action.app) : options.runStatus(action))}
           onStatusClosed={(key) => options.statusClosed?.(key)}
           {...(options.agentsPanel ? { agentsPanel: options.agentsPanel } : {})}
+          {...(options.overflowRow ? { overflowRow: options.overflowRow } : {})}
           {...(options.battery
             ? {
                 battery: {

@@ -296,8 +296,9 @@ The tools (`src/agents/tools/browser.ts`, carried out by
 | `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
 
 Without `tab`, a tool uses the tab the agent used last, else the one in
-front. The menu bar's agent chip says what it does in words: "Opening
-wikipedia.org", "Reading bodytech.com.co", "Clicking on auth.wikimedia.org".
+front. The menu bar's agent mark says what it does in words when pointed
+at, and on its row in the agents' panel: "Opening wikipedia.org", "Reading
+bodytech.com.co", "Clicking on auth.wikimedia.org".
 
 **Each site is asked about** the first time an agent touches it
 (`src/agents/sites.ts`): "Claude wants to use bodytech.com.co" with Don't
@@ -631,9 +632,10 @@ An agent that works on its own for minutes, in Dashi's sandbox, started
 from the launcher and back when it's done or needs the person (the 0.5.0
 design, dashi-0.5.0-review/mockups.html sections 1 to 3). Code:
 `agents/handoff/` (the service, the store of runs, the stream parsers, the
-grants, the chip's words, the questions, the follow-ups), `bin/dashi-task.ts`,
+grants, the questions, the follow-ups), `bin/dashi-task.ts`,
 `launcher/agents/handoff-rows.ts` and `handoff-views.tsx` (the rows, the
-context chips, the grants card), `agents-panel.tsx` (the chip and its
+context chips, the grants card), `agents/mark.ts` and `agent-mark.tsx` (the
+menu bar's agent mark), `agents-panel.tsx` and `agents-rows.tsx` (its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).
 Tests: `test/launcher-handoff.test.ts`, `test/launcher-commands.test.ts`,
 `test/handoff-*.test.ts` (the streams from `test/fixtures/handoff/`, no
@@ -713,21 +715,46 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   how it went, what it said, how it ended. "Steps: N" said before its first
   call is the "about M" of "step 3 of about 6".
 - **Each harness's mark.** Its row, the grants card's field, a run's row
-  and card, and the chip show the harness's own glyph (`harness-icons.ts`):
+  and card, and the menu bar's agent mark show the harness's own glyph (`harness-icons.ts`):
   a starburst for Claude Code, a knot of three links for Codex, a block in
   brackets for OpenCode, Dashi's drawings in one color (shiso), never the
   companies' artwork; any other harness gets the agents' sparkle. The done
   notification's icon is the same mark on a shiso tile
   (`shell/icons/claude-code.svg`, `codex.svg`, `opencode.svg`, and
   `agents.svg` for the rest).
-- **The menu bar chip.** One chip while any run works: the newest's words
-  ("Codex · Opened signin.localhost"), "2 agents · Codex is signing in" with
-  more, shiso; broth (amber), "Codex needs you", while one waits on the
-  person (`chip.ts`). Click: the panel (380 wide) with each run's card,
-  waiting first, then newest first: its words, harness, time, "step N of
-  about M", its last three steps (never a transcript), Show (the whole log,
-  `log.txt` beside its streams, in Text Editor) and Stop; a finished run
-  stays an hour, with Undo for each settings change it made.
+- **The agent mark** (the approved design, 46-menu-bar.html option A;
+  `agents/mark.ts`, `agent-mark.tsx`). One mark in the menu bar for every
+  agent: the runs from the launcher and the agents connected from outside
+  (an MCP client, Claude on a phone over SSH) are one list
+  (`mergeAgents`; a run's own connection folds into its run, a connection
+  whose run ended stays while it is connected). Each agent's harness glyph
+  on a small disc, overlapping, up to three, then "+N" (a connection's
+  harness from its process's name or the name it claims, else the
+  sparkle). A ring turns round the lead disc while one works (still with
+  Reduce Motion). The red dot shows while any agent records or sees the
+  screen (`record_screen`, `screenshot`) or uses its own pointer and keys
+  (`click`, `drag`, `scroll`, `type_text`, `press_keys`), and for 3 s
+  after, or while the recorder records for an agent. At rest it has no
+  words: pointing at it shows "‹Name› · ‹what it's doing›". Only while one
+  needs the person is it an amber pill, "Waiting for you". An agent's
+  recording is the red dot, not a timer of its own; the person's own
+  recording keeps its timer pill, which a click stops (and an agent's
+  recording whose agent is already gone keeps the pill too: a recording is
+  never out of sight). Stopping an agent stops its recording.
+- **The panel**, from a click on the mark (380 wide): agents waiting on the
+  person first, then working, then connected, newest first, then runs that
+  ended in the last hour. A run is its card: its words, harness, time,
+  "step N of about M", its last three steps (never a transcript), Show (the
+  whole log, `log.txt` beside its streams, in Text Editor) and Stop; while
+  its connection watches, its tile has the red dot and an access chip
+  ("Recording the screen"); a finished run stays an hour, with Undo for
+  each settings change it made. A connected agent is a row
+  (`agents-rows.tsx`): its glyph, its name, an access chip ("Recording the
+  screen", "Seeing the screen", "Using its pointer", "Waiting for you",
+  "Connected"), where it's from ("“claude-ai”, connected over SSH", "from
+  ~/.local/bin/claude") and Stop, which cuts it off as ⌃❖Esc does, with
+  the "Stopped …" note. The foot has "Stop all": every working run and
+  every connection.
 - **Questions in the panel.** A run's questions go on its card: a website
   (Allow, Always, Don't), which login (Allow for this task, Once, Other
   login… when there is more than one, Don't), a hand-over (do it, then Done), another permission, one
@@ -736,7 +763,7 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   types next (a login, a code) reaches the person's window, not the panel.
   A question shows in one place at a time (`route.ts`): on the card while
   the panel is open, no sheet; while it is closed, the existing sheet (the
-  hand-over's banner for a hand-over), the chip amber and, the first time,
+  hand-over's banner for a hand-over), the mark amber and, the first time,
   a notification ("Codex needs you · Use signin.localhost? · For “…”").
   Opening the panel takes the sheet down; closing it unanswered puts the
   sheet back up. The first answer, on the card or the sheet, settles it and

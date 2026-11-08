@@ -2,7 +2,7 @@
  * A task's steps in Dashi's words, from the tool and its arguments (never
  * the model's): "Opening bodytech.com.co" while it runs, "Opened
  * bodytech.com.co" once it has. The card in the menu bar's panel shows the
- * last three; the chip shows the one going on.
+ * last three; the mark's tooltip shows the one going on.
  */
 
 type Input = Readonly<Record<string, unknown>>;

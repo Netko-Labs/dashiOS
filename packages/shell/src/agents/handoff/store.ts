@@ -46,7 +46,7 @@ export interface RunQuestion {
   /** "1Password · alexk@example.com" */
   detail: string;
   choices: readonly QuestionChoice[];
-  /** Short, after the run's title in the launcher and the chip: "needs your OK to sign in". */
+  /** Short, after the run's title in the launcher and the panel: "needs your OK to sign in". */
   needs: string;
 }
 

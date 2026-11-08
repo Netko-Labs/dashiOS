@@ -1,6 +1,6 @@
 /**
  * Agents from the launcher, wired to the shell (main.tsx starts it): the
- * service (agents/handoff/service.ts), its questions in the chip's panel
+ * service (agents/handoff/service.ts), its questions in the agents' panel
  * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
  * notifications, the launcher's side (launcher/agents/handoff-rows.ts), and
  * the context chips' source: the window in front and the selection when
@@ -15,6 +15,7 @@ import { NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
 import { attentionNotice, endedNotice, FOLLOW_UP, logText, SHOW } from "./agents/handoff/notices.ts";
 import { routedUi } from "./agents/handoff/questions.ts";
 import { type Handoff, type HandoffOptions, startHandoff } from "./agents/handoff/service.ts";
+import { isWorking } from "./agents/handoff/store.ts";
 import { hostOf } from "./agents/handoff/words.ts";
 import type { AgentStore, AgentUi } from "./agents/presence.ts";
 import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
@@ -27,7 +28,10 @@ import { type NotificationStore, SHELL_SENDER } from "./notifications/store.ts";
 export const PANEL_LAYER = "dashi.popover";
 
 export interface HandoffShellDeps extends Omit<HandoffOptions, "ended"> {
-  agents: Pick<AgentStore, "getSnapshot">;
+  agents: Pick<AgentStore, "getSnapshot" | "subscribe">;
+  /** Cut a connected agent off (the panel's Stop on its row), and every one (Stop all); the StoppedNote follows. */
+  stopAgent(id: number): void;
+  stopAgents(): void;
   notifications: NotificationStore;
   /** The menus' controller, once it exists (the panel is a popover). */
   menus(): MenuController | null;
@@ -93,7 +97,7 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
 
   const panelOpen = () => deps.menus()?.getSnapshot().popover?.kind === "agents";
   function open(run: string | null): void {
-    // Under the menu bar's right end when the chip didn't say where it is.
+    // Under the menu bar's right end when the mark didn't say where it is.
     void deps.menus()?.toggleAgents("Desktop", 0, run);
   }
 
@@ -131,6 +135,13 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
       }
     },
     undo: (run, index) => void service.undo(run, index),
+    stopAgent: (id) => deps.stopAgent(id),
+    stopAll() {
+      // As ⌃❖Esc: every connection, and every run still working (its connection may be between turns).
+      for (const run of service.runs.getSnapshot()) if (isWorking(run)) service.stop(run.id);
+      deps.stopAgents();
+      deps.menus()?.close();
+    },
   };
 
   const store = snapshotStore(service);
@@ -171,7 +182,7 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
         },
       }),
     launcher,
-    panel: ({ right, focus, close }) => <AgentsPanel runs={service.runs} right={right} focus={focus} actions={actions} onClose={close} />,
+    panel: ({ right, focus, close }) => <AgentsPanel runs={service.runs} agents={deps.agents} right={right} focus={focus} actions={actions} onClose={close} />,
     open,
     close() {
       offNotices();

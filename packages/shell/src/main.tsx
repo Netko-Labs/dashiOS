@@ -46,6 +46,8 @@ import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { barHold, holdingBar } from "./bar-hold.ts";
+import { OverflowRow } from "./bar-overflow.tsx";
+import { startBarTips } from "./bar-tip.tsx";
 import { startBatteryMonitor } from "./battery/index.ts";
 import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
@@ -110,9 +112,10 @@ import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "./local-search.t
 import { LockController } from "./lock/index.ts";
 import { MenuBar } from "./menubar.tsx";
 import { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
-import { startMenus } from "./menus/index.ts";
+import { startMenus, useMenus } from "./menus/index.ts";
 import { runPower } from "./menus/session.ts";
 import type { StatusMenuAction } from "./menus/status-menu.ts";
+import { extraEntries } from "./menus/status-menu.ts";
 import { startNightShift } from "./night-shift.ts";
 import { startNotifications } from "./notifications/index.ts";
 import { type OpenOverlay, openOverlay } from "./overlay.tsx";
@@ -547,6 +550,9 @@ const handoffShell = startHandoffShell({
   settings: settingsStore,
   env: process.env,
   agents: agentStore,
+  // The agents' server starts below; the panel's Stop reaches it once it has.
+  stopAgent: (id) => agents?.stop(id),
+  stopAgents: () => agents?.stopAll(),
   notifications: notifications.store,
   menus: () => menus.controller,
   personPressed: (layer) => (compositor ? personAnswered((method, params) => compositor.request(method, params), layer) : Promise.resolve(false)),
@@ -579,7 +585,7 @@ let clipboard: Clipboard | null = null;
 const agents = compositor
   ? startAgents({
       compositor,
-      // A launcher run's questions go to the chip's panel (and the sheets while it is closed).
+      // A launcher run's questions go to the agents' panel (and the sheets while it is closed).
       ui: handoffShell.ui(agentUi),
       tasks: { policy: handoffShell.service.policy, before: handoffShell.service.before, after: handoffShell.service.after },
       sources: passwords.sources,
@@ -878,12 +884,42 @@ const menus = startMenus({
   laptop,
   statusClosed: (key) => extras.menuClosed(key),
   agentsPanel: (props) => handoffShell.panel(props),
+  // "…": the status items the bar had no room for, each working as it does there (bar-overflow.tsx).
+  overflowRow: ({ right, keys, close }) => <OverflowRowFor right={right} keys={keys} close={close} />,
   showShortcuts: (appName) => {
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
 });
 
 controlCenterEditor = menus.controlCenter;
+
+/** "…"'s row with the bar's stores: an item's menu, or Control Center, takes the row's place. */
+function OverflowRowFor({ right, keys, close }: { right: number; keys: readonly string[]; close: () => void }) {
+  const { popover, appName, output } = useMenus(menus.controller);
+  const name = appName ?? "Desktop";
+  return (
+    <OverflowRow
+      keys={keys}
+      right={right}
+      extras={extras}
+      system={system.store}
+      openKey={popover?.kind === "status-menu" ? popover.key : null}
+      onClose={close}
+      actions={{
+        menu: (extra, at) =>
+          void extras.menu(extra.key).then((rows) => {
+            if (rows.length > 0) void menus.controller.toggleStatusMenu(extra.key, at, extraEntries(extra.key, rows), name, output);
+          }),
+        // The row's surface starts under the bar; the item is told where it is on the screen.
+        activate: (extra, x, y) => extras.activate(extra.key, x, y + MENU_BAR_HEIGHT, output),
+        controlCenter: (page) => void menus.controller.toggleControlCenter(name, page, output),
+      }}
+    />
+  );
+}
+
+/** The bar's tooltip (the agent mark's words), a small surface under it. */
+const barTips = startBarTips(openOverlay);
 
 // Restart and Shut Down give the apps 10 s, then go regardless of what is stuck (shutdown.ts).
 configureMachineEnd({
@@ -1005,9 +1041,11 @@ const menuBars = new MenuBars({
         extras={extras}
         settings={settingsStore}
         {...(output === undefined ? {} : { output })}
-        onStopAgent={(id) => agents?.stop(id)}
         runs={handoffShell.service.runs}
         installed={installedApp}
+        onTip={(tip) => barTips.show(tip)}
+        reduceMotion={() => reduceMotion}
+        accessible={() => launcherAccessible}
       />,
       onClosed,
       primary ? (host) => toplevels.attach(host) : undefined,

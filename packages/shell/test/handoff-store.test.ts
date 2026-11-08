@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { chipState } from "../src/agents/handoff/chip.ts";
 import { followUpPrompt, followUpRoute } from "../src/agents/handoff/follow-up.ts";
 import { AgentRuns, progressWords, RETAIN_MS, statusWords, summaryLines } from "../src/agents/handoff/store.ts";
+import { markState, mergeAgents } from "../src/agents/mark.ts";
 
 function clock(start = 1_000_000) {
   let now = start;
@@ -160,47 +160,51 @@ describe("the agents' store", () => {
   });
 });
 
-describe("the menu bar's chip", () => {
+describe("the menu bar's mark, for runs", () => {
+  const mark = (runs: AgentRuns) => markState(mergeAgents([], runs.getSnapshot()));
+
   test("none while nothing works", () => {
     const runs = new AgentRuns();
-    expect(chipState(runs.getSnapshot())).toBeNull();
+    expect(mark(runs)).toEqual({ kind: "none" });
     start(runs);
     runs.event("run1", { kind: "done", text: "ok" });
-    expect(chipState(runs.getSnapshot())).toBeNull();
+    expect(mark(runs)).toEqual({ kind: "none" });
   });
 
-  test("one agent: its harness and what it does", () => {
+  test("one agent: its harness, the ring, and its words in the tip", () => {
     const runs = new AgentRuns();
     start(runs);
-    expect(chipState(runs.getSnapshot())?.words).toBe("Claude Code · Starting");
+    expect(mark(runs)).toMatchObject({ kind: "mark", tip: "Claude Code · Starting", working: true });
     runs.event("run1", { kind: "call", id: "a", tool: "sign_in", input: { site: "bodytech.com.co" } });
-    expect(chipState(runs.getSnapshot())).toEqual({
-      words: "Claude Code · Signing in to bodytech.com.co",
-      attention: false,
-      count: 1,
-      run: "run1",
-      harness: "claude-code",
+    expect(mark(runs)).toEqual({
+      kind: "mark",
+      discs: ["claude-code"],
+      more: 0,
+      working: true,
+      watching: false,
+      tip: "Claude Code · Signing in to bodytech.com.co",
+      label: "Agent: Claude Code, Signing in to bodytech.com.co",
     });
   });
 
-  test("two: how many, and the newest's words", () => {
+  test("two: both discs, the newest leads", () => {
     const time = clock();
     const runs = new AgentRuns({ now: time.now });
     start(runs, "a", "codex");
     time.tick(1);
     start(runs, "b");
     runs.event("b", { kind: "call", id: "x", tool: "sign_in", input: { site: "bodytech.com.co" } });
-    expect(chipState(runs.getSnapshot())?.words).toBe("2 agents · Claude Code is signing in to bodytech.com.co");
+    expect(mark(runs)).toMatchObject({ discs: ["claude-code", "codex"], tip: "Claude Code · Signing in to bodytech.com.co, and 1 more" });
   });
 
-  test("amber while one needs the person, whichever it is", () => {
+  test("amber words while one needs the person, whichever it is", () => {
     const time = clock();
     const runs = new AgentRuns({ now: time.now });
     start(runs, "a", "codex");
     time.tick(1);
     start(runs, "b");
     runs.ask("a", question);
-    expect(chipState(runs.getSnapshot())).toEqual({ words: "2 agents · Codex needs you", attention: true, count: 2, run: "a", harness: "codex" });
+    expect(mark(runs)).toMatchObject({ kind: "ask", harness: "codex", tip: "Codex · Waiting for you, and 1 more" });
   });
 });
 

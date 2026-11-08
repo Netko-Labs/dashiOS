@@ -1,6 +1,7 @@
 /**
- * The extras in the menu bar's status area (types.ts): each one's picture
- * and label in a pill like the status glyphs' own. A click activates it or
+ * An extra in the menu bar's status side (types.ts): its picture and label
+ * in a pill like the status glyphs' own, in the bar or in "…"'s row
+ * (bar-overflow.tsx). A click activates it or
  * opens its menu (`menuOnClick`); a right-click opens its menu. An extra
  * that asks for attention gets a dot, as a Dock icon does.
  */
@@ -8,46 +9,26 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Image, Svg, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { type ExtrasStore, useExtras } from "./store.ts";
 import type { MenuBarExtra } from "./types.ts";
 
 /** The picture's size in the bar: the status glyphs' own. */
 const SIZE = 16;
+/** A tile in "…"'s row. */
+export const TILE = 36;
 
-export interface ExtraItemsProps {
-  store: ExtrasStore;
-  /** The key of the extra whose menu is open, to draw its pill pressed. */
-  openKey: string | null;
+export interface ExtraItemProps {
+  extra: MenuBarExtra;
+  /** Its menu is open: the pill is drawn pressed. */
+  open: boolean;
   /** Open (or close) the extra's menu below it, its right edge at `right`. */
   onMenu(extra: MenuBarExtra, right: number): void;
   /** A click on an extra that activates, at (x, y) in the bar's pixels. */
   onActivate(extra: MenuBarExtra, x: number, y: number): void;
+  /** Drawn as a tile in "…"'s row (bar-overflow.tsx) instead of a pill in the bar. */
+  tile?: boolean;
 }
 
-export function ExtraItems({ store, openKey, onMenu, onActivate }: ExtraItemsProps) {
-  const extras = useExtras(store);
-  if (extras.length === 0) return null;
-  return (
-    // On a narrow screen the extras give way (clipped from the left) before Dashi's own items and the clock do.
-    <View testID="extras" style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
-      {extras.map((extra) => (
-        <ExtraItem key={extra.key} extra={extra} open={openKey === extra.key} onMenu={onMenu} onActivate={onActivate} />
-      ))}
-    </View>
-  );
-}
-
-function ExtraItem({
-  extra,
-  open,
-  onMenu,
-  onActivate,
-}: {
-  extra: MenuBarExtra;
-  open: boolean;
-  onMenu: ExtraItemsProps["onMenu"];
-  onActivate: ExtraItemsProps["onActivate"];
-}) {
+export function ExtraItem({ extra, open, onMenu, onActivate, tile = false }: ExtraItemProps) {
   const colors = useColors();
   // Events carry the pill's bounds; the last layout stands in for one that does not.
   const laid = useRef<Bounds | null>(null);
@@ -66,15 +47,17 @@ function ExtraItem({
       onPress={({ bounds }) => press(bounds)}
       onContextMenu={extra.hasMenu ? () => onMenu(extra, boxOf().x + boxOf().width) : undefined}
       style={{
-        height: 22,
-        paddingLeft: 7,
-        paddingRight: 7,
+        height: tile ? TILE : 22,
+        ...(tile ? { minWidth: TILE } : {}),
+        paddingLeft: tile ? 9 : 7,
+        paddingRight: tile ? 9 : 7,
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
         gap: 5,
-        borderRadius: 5,
+        borderRadius: tile ? 12 : 5,
         position: "relative",
-        backgroundColor: open ? colors.switcherSelection : "#00000000",
+        backgroundColor: open ? colors.switcherSelection : tile ? colors.button : "#00000000",
       }}
     >
       {extra.icon?.kind === "glyph" && <Svg markup={extra.icon.markup} size={SIZE} color={colors.text} />}
