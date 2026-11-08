@@ -6,7 +6,7 @@
 
 import { type TokenRef, token } from "../tokens/model-keys.ts";
 import { dashiSource } from "./dashi-source.ts";
-import { onePasswordSource, opRunner, saveToOnePassword } from "./onepassword.ts";
+import { type OpRunner, onePasswordSource, opRunner, saveToOnePassword } from "./onepassword.ts";
 import { PasswordPrefsStore } from "./preferences.ts";
 import type { LoginSource, SourceId } from "./sources.ts";
 import { fileUsedStore } from "./used.ts";
@@ -31,25 +31,41 @@ export interface Passwords {
 
 /** `op`, 1Password's CLI, where it is installed. */
 function findOp(): string | null {
-  return process.env.DASHI_OP || Bun.which("op") || null;
+  return process.env.DASHI_OP || Bun.which("op", { PATH: process.env.PATH ?? "" }) || null;
 }
 
 export function startPasswords(): Passwords {
   const vault = new Vault();
   const prefs = new PasswordPrefsStore();
-  const op = findOp();
-  const run = op ? opRunner(op) : null;
-  const all: Partial<Record<SourceId, LoginSource>> = { dashi: dashiSource(vault), ...(run ? { "1password": onePasswordSource(run, fileUsedStore()) } : {}) };
+  // `op` is looked for when it's needed, not once at login: installed during the session, it works at once.
+  let run: OpRunner | null = null;
+  const opNow = (): OpRunner | null => {
+    if (!run) {
+      const op = findOp();
+      if (op) run = opRunner(op);
+    }
+    return run;
+  };
+  const dashi = dashiSource(vault);
+  let onePassword: LoginSource | null = null;
+  const source = (id: SourceId): LoginSource | null => {
+    if (id === "dashi") return dashi;
+    const runner = opNow();
+    if (!runner) return null;
+    onePassword ??= onePasswordSource(runner, fileUsedStore());
+    return onePassword;
+  };
   return {
     vault,
     prefs,
-    sources: () => prefs.enabled().flatMap((id) => all[id] ?? []),
-    onePasswordReady: () => run !== null,
+    sources: () => prefs.enabled().flatMap((id) => source(id) ?? []),
+    onePasswordReady: () => opNow() !== null,
     token: (name) => token(name, vault.tokens),
     async save(login) {
       if (prefs.getSnapshot().saveTo === "1password") {
-        if (!run) throw new Error("1Password's CLI (op) isn't installed.");
-        await saveToOnePassword(run, login);
+        const runner = opNow();
+        if (!runner) throw new Error("1Password's CLI (op) isn't installed.");
+        await saveToOnePassword(runner, login);
         return;
       }
       await vault.save(login);
