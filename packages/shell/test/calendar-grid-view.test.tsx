@@ -71,7 +71,7 @@ test("drawing on empty time makes an event, named in place", async () => {
 test("a block dragged across days and down moves, its foot stretches it, and Undo takes each back", async () => {
   model.addEvent("Home", { title: "Review", allDay: false, start: "2026-11-03T09:00", end: "2026-11-03T10:00" });
   await settle();
-  const block = "event:Home:" + events()[0]?.uid + ":2026-11-03T09:00";
+  const block = `event:Home:${events()[0]?.uid}:2026-11-03T09:00`;
   // One column right and 45 minutes down: Wednesday at 9:45.
   await drag(block, HOUR_HEIGHT * 9, 100, HOUR_HEIGHT * 0.75);
   expect(events()[0]?.start).toBe("2026-11-04T09:45");
