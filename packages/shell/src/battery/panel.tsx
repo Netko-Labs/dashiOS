@@ -63,7 +63,8 @@ function Line({ row, last, onApp }: { row: PowerRow; last: boolean; onApp: (app:
       {...(app ? { onPress: () => onApp(app) } : {})}
       style={{ flexDirection: "row", alignItems: "center", gap: 9, height: 34, borderBottomWidth: last ? 0 : 1, borderColor: colors.line }}
     >
-      {row.kind !== "total" && <View style={{ width: 18, height: 18, borderRadius: 5, backgroundColor: app ? tintFor(app.name) : colors.line }} />}
+      {/* A swatch for an app and for the rest of what the machine draws; the charging rows have none. */}
+      {(app || row.key === "other") && <View style={{ width: 18, height: 18, borderRadius: 5, backgroundColor: app ? tintFor(app.name) : colors.line }} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           numberOfLines={1}
