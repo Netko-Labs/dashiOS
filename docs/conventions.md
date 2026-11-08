@@ -226,21 +226,28 @@ Rules:
 
 ## Licenses
 
-Dashi is MIT, and stays MIT. A dependency must never change that.
+Dashi is MIT (`LICENSE`), and stays MIT. Nothing may change that.
 
-- **Inside Dashi** (linked into its binaries, bundled in its packages,
-  vendored, or downloaded by default): only permissive licenses (MIT,
-  BSD, Apache-2.0, ISC, Zlib, MPL-2.0 for unmodified files; CC-BY or CC0 for
-  models and media; LGPL only as a shared library from the system). Check a
-  model's *weights* license as well as its code's.
-- **GPL, AGPL, non-commercial (CC-BY-NC and the like), or any terms that
-  bind Dashi's users**: never bundled or pulled in by default. They may be
-  an **opt-in the person chooses**: a separate program or download that
-  Settings or Software offers, saying its license in words, run as its own
-  process (not linked). Dashi works without it.
-- A separate program from the distribution that Dashi only runs or talks to
-  over D-Bus (FFmpeg, wf-recorder, cardwire) is not part of Dashi's code.
-  Name it and its license where it is wired in.
+- **Dashi's own code** is MIT. Code adapted from another MIT, BSD, ISC or
+  Zlib project keeps its authors' notice in `THIRD-PARTY-NOTICES.md` and
+  says where it came from in a comment.
+- **Libraries Dashi links or bundles**: permissive (MIT, BSD, Apache-2.0,
+  ISC, Zlib; a choice that includes one of these), MPL-2.0 used unmodified
+  as a library, or LGPL as a shared library from the system. Models and
+  media: permissive, CC-BY (credited) or CC0. Check a model's *weights*
+  license as well as its code's.
+- **Copyleft or restricted code is never copied, ported or translated into
+  Dashi** (GPL, AGPL, MPL, EPL, non-commercial). When Dashi needs what such a
+  project does, it is written **clean room**: one person (or agent) reads the
+  project and writes down only the facts (a protocol's bytes, a file format,
+  behavior) in a spec with no code; someone who has never read the project
+  implements from that spec. The spec names its source; the implementation
+  names the spec.
+- **A separate program** Dashi only runs or talks to (FFmpeg, wf-recorder,
+  cardwire, Kdenlive) keeps its own license and may be installed with Dashi;
+  name it and its license where it is wired in. Non-commercial terms, or
+  anything that binds the person, are only ever **an opt-in the person
+  chooses**, saying its license in words.
 - A new dependency names its license in the commit that adds it; a license
   that is unclear counts as not permissive until checked.
 
