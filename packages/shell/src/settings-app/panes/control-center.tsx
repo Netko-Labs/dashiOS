@@ -64,12 +64,12 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
           radius={22}
         />
       ) : (
-        // A round tile's word is centred across it, a wide tile's starts at its left.
-        <View style={{ width: "100%", flexDirection: "row", justifyContent: tile.size === "round" ? "center" : "flex-start" }}>
-          <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: on ? colors.onInk : colors.offInk }}>
-            {words}
-          </Text>
-        </View>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 10.5, fontWeight: "semibold", color: on ? colors.onInk : colors.offInk, textAlign: tile.size === "round" ? "center" : "left" }}
+        >
+          {words}
+        </Text>
       )}
     </View>
   );
