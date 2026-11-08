@@ -13,6 +13,9 @@
 //! its key is pressed (❖Space opens the launcher as a tap does): keys queued
 //! behind it, while the compositor was busy, are matched by them at once.
 //!
+//! A `bind` rule with `release: true` also reports its key coming up, as a
+//! `binding-release` event (hold to talk: the shell listens while it is held).
+//!
 //! `locked` is the list matched while the screen is locked, for the lock
 //! screen's field (❖A as Ctrl+A, say); none of the other rules apply then. A
 //! locked rule may `send`, `tap`, or `swallow`, never `bind` (no shell binding
@@ -110,6 +113,16 @@ struct Rule {
     action: Action,
     /// A `bind` that switches to the `afterTap` rules as a ❖ tap does (`armsAfterTap`).
     arms_after_tap: bool,
+    /// A `bind` whose key coming up is reported too (`release`).
+    release: bool,
+}
+
+/// The rule a key matched: what it does, and what else it asked for.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Matched<'a> {
+    pub action: &'a Action,
+    pub arms_after_tap: bool,
+    pub release: bool,
 }
 
 /// A key as pressed: its keysym names (unshifted first, then as typed).
@@ -236,15 +249,20 @@ impl Keymap {
     /// The first rule that matches, if any.
     #[cfg(test)]
     pub(crate) fn action_for(&self, pressed: &Pressed<'_>) -> Option<&Action> {
-        self.matched(pressed).map(|(action, _)| action)
+        self.matched(pressed).map(|matched| matched.action)
     }
 
-    /// The first rule that matches: its action, and whether it arms the `afterTap` rules.
-    pub(crate) fn matched(&self, pressed: &Pressed<'_>) -> Option<(&Action, bool)> {
+    /// The first rule that matches: its action, whether it arms the `afterTap`
+    /// rules, and whether its release is reported.
+    pub(crate) fn matched(&self, pressed: &Pressed<'_>) -> Option<Matched<'_>> {
         self.rules
             .iter()
             .find(|rule| self.matches(rule, pressed))
-            .map(|rule| (&rule.action, rule.arms_after_tap))
+            .map(|rule| Matched {
+                action: &rule.action,
+                arms_after_tap: rule.arms_after_tap,
+                release: rule.release,
+            })
     }
 
     /// While locked: the first `locked` rule that matches, if any (never a `bind`).
@@ -334,11 +352,18 @@ fn parse_rule(rule: &Value, apps: &HashMap<String, Vec<String>>) -> Result<Rule,
         Some(Value::Bool(true)) => return Err("only a bind rule arms afterTap".into()),
         Some(_) => return Err("armsAfterTap must be true or false".into()),
     };
+    let release = match rule.get("release") {
+        None | Some(Value::Bool(false)) => false,
+        Some(Value::Bool(true)) if matches!(action, Action::Bind(_)) => true,
+        Some(Value::Bool(true)) => return Err("only a bind rule reports its release".into()),
+        Some(_) => return Err("release must be true or false".into()),
+    };
     Ok(Rule {
         when,
         app,
         action,
         arms_after_tap,
+        release,
     })
 }
 
@@ -694,7 +719,9 @@ mod tests {
             mods,
             app_id: "foot",
         };
-        let (action, arms) = map.matched(&pressed).map(|(a, arms)| (a.clone(), arms))?;
+        let (action, arms) = map
+            .matched(&pressed)
+            .map(|matched| (matched.action.clone(), matched.arms_after_tap))?;
         if arms {
             map.arm_after_tap();
         }
@@ -788,6 +815,48 @@ mod tests {
             assert_eq!(press(&mut map, &["Escape"], Mods::default()), None);
             map = shell_keymap("idle");
         }
+    }
+
+    #[test]
+    fn a_held_binding_reports_its_release() {
+        let map = Keymap::parse(
+            json!({ "rules": [
+                { "when": "alt+space", "bind": "voice-hold", "release": true },
+                { "when": "super+space", "bind": "launcher" },
+            ] })
+            .as_object()
+            .unwrap(),
+        )
+        .unwrap();
+        let names = vec!["space".to_string()];
+        let pressed = |mods| Pressed {
+            names: &names,
+            mods,
+            app_id: "foot",
+        };
+        let alt = Mods {
+            alt: true,
+            ..Mods::default()
+        };
+        assert!(
+            map.matched(&pressed(alt))
+                .is_some_and(|matched| matched.release)
+        );
+        assert!(
+            map.matched(&pressed(SUPER))
+                .is_some_and(|matched| !matched.release)
+        );
+        let refused = |rule: Value| {
+            Keymap::parse(json!({ "rules": [rule] }).as_object().unwrap()).unwrap_err()
+        };
+        assert!(
+            refused(json!({ "when": "alt+space", "swallow": true, "release": true }))
+                .contains("only a bind")
+        );
+        assert!(
+            refused(json!({ "when": "alt+space", "bind": "x", "release": "yes" }))
+                .contains("true or false")
+        );
     }
 
     #[test]

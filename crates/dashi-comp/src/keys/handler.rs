@@ -59,6 +59,8 @@ struct SuperPress {
 
 pub(super) enum Taken {
     Swallowed,
+    /// A `bind` with `release`: its coming up goes to the shell as `binding-release`.
+    Bound(String),
     /// Replayed as another chord, held until this key is released (replay.rs).
     Translated(super::replay::Held),
 }
@@ -93,6 +95,9 @@ impl Dashi {
             match self.keys.taken.remove(&keycode) {
                 None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
                 Some(Taken::Swallowed) => {}
+                Some(Taken::Bound(name)) => {
+                    self.ipc.emit("binding-release", json!({ "name": name }))
+                }
                 Some(Taken::Translated(held)) => self.replay_release(held, time),
             }
             return;
@@ -127,7 +132,7 @@ impl Dashi {
             return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
         }
         let app_id = self.focused_app_id();
-        let (action, arms_after_tap) = self
+        let (action, arms_after_tap, release) = self
             .keys
             .keymap
             .matched(&Pressed {
@@ -135,7 +140,13 @@ impl Dashi {
                 mods,
                 app_id: &app_id,
             })
-            .map_or((None, false), |(action, arms)| (Some(action.clone()), arms));
+            .map_or((None, false, false), |matched| {
+                (
+                    Some(matched.action.clone()),
+                    matched.arms_after_tap,
+                    matched.release,
+                )
+            });
         // The overview keeps keys from the windows; a shell surface given the keyboard there (its Desktops row) gets them.
         if action.is_some() {
             self.keys.snippets.reset();
@@ -155,7 +166,12 @@ impl Dashi {
                 self.watch_snippets(&info, mods);
             }
             Some(Action::Bind(name)) => {
-                self.keys.taken.insert(keycode, Taken::Swallowed);
+                let taken = if release {
+                    Taken::Bound(name.clone())
+                } else {
+                    Taken::Swallowed
+                };
+                self.keys.taken.insert(keycode, taken);
                 let window = self.focused_window_id();
                 let key = info.names.first().cloned().unwrap_or_default();
                 let mut event = json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt });
