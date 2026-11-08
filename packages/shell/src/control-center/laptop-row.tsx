@@ -1,47 +1,27 @@
 /**
  * Control Center's laptop row (docs/0.4.0.html, Laptop features B): tiles
  * that appear only on laptops, for the power mode, the graphics card, and
- * the keyboard light (fans come from ASUS Control later). A click toggles or
- * cycles; a long press (or a right-click) opens the tile's page with the
- * choices (laptop-pages.tsx). A tile for something the machine lacks is
- * left out, and with none the row is not there.
+ * the keyboard light (fans come from ASUS Control later). A click opens the
+ * tile's page with every choice (laptop-pages.tsx): Automatic and each mode,
+ * each level of the light, each graphics mode. A click never steps a setting
+ * blindly: stepping the mode left Automatic, and the light only knew off and
+ * full. A tile for something the machine lacks is left out, and with none the
+ * row is not there.
  */
 
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { type ReactElement, useRef } from "react";
+import type { ReactElement } from "react";
 import { cardState, shownMode, useGraphics } from "../graphics/controller.ts";
-import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../graphics/policy.ts";
+import { GRAPHICS_LABEL } from "../graphics/policy.ts";
 import { graphicsGlyph, keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
 import type { Laptop } from "../laptop/start.ts";
 import { keyboardLight, lightLabel, useLaptop } from "../laptop/store.ts";
 import { useModes } from "../power/modes/store.ts";
-import { MODE_SHORT, nextMode } from "../power/modes/types.ts";
+import { MODE_SHORT } from "../power/modes/types.ts";
 
 /** The pages the row's tiles open. */
 export type LaptopPage = "laptop-mode" | "laptop-light" | "graphics";
-
-/** A press held this long opens the tile's page instead of toggling. */
-export const LONG_PRESS_MS = 450;
-
-/** A press that tells a click from a long press: down starts the timer, up before it fires is a click. */
-export function usePressOrHold(onPress: () => void, onHold: () => void): (phase: "down" | "move" | "up") => void {
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const held = useRef(false);
-  return (phase) => {
-    if (phase === "down") {
-      held.current = false;
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        held.current = true;
-        onHold();
-      }, LONG_PRESS_MS);
-    } else if (phase === "up") {
-      clearTimeout(timer.current);
-      if (!held.current) onPress();
-    }
-  };
-}
 
 function LaptopTile({
   testID,
@@ -49,7 +29,6 @@ function LaptopTile({
   label,
   detail,
   on,
-  onPress,
   onOpen,
 }: {
   testID: string;
@@ -57,15 +36,13 @@ function LaptopTile({
   label: string;
   detail: string;
   on: boolean;
-  onPress: () => void;
   onOpen: () => void;
 }) {
   const colors = useColors();
-  const press = usePressOrHold(onPress, onOpen);
   return (
     <View
       testID={testID}
-      onPointer={(event) => press(event.phase)}
+      onPress={onOpen}
       onContextMenu={onOpen}
       // The other tiles' shape (panel.tsx): the circle, then the label and what it is set to.
       style={{
@@ -121,12 +98,6 @@ export function LaptopRow({ laptop, gap, onPage }: { laptop: Laptop; gap: number
         label={MODE_SHORT[effective.mode]}
         detail={modes.choice === "automatic" ? "Automatic" : "Power mode"}
         on={effective.mode !== "balanced"}
-        // A click steps to the next mode the machine has.
-        onPress={() => {
-          let next = nextMode(effective.mode);
-          while (!modes.available.includes(next) && next !== effective.mode) next = nextMode(next);
-          laptop.modes.choose(next);
-        }}
         onOpen={() => onPage("laptop-mode")}
       />,
     );
@@ -141,11 +112,6 @@ export function LaptopRow({ laptop, gap, onPage }: { laptop: Laptop; gap: number
         label={graphics.lost ? "Not responding" : mode ? GRAPHICS_LABEL[mode] : "Graphics"}
         detail={graphics.lost ? "Graphics card" : cardState(graphics) || "Graphics"}
         on={!graphics.lost && mode !== "integrated"}
-        onPress={() => {
-          if (graphics.lost) return onPage("graphics");
-          const index = mode ? GRAPHICS_MODES.indexOf(mode) : -1;
-          laptop.graphics.choose(GRAPHICS_MODES[(index + 1) % GRAPHICS_MODES.length] ?? "integrated");
-        }}
         onOpen={() => onPage("graphics")}
       />,
     );
@@ -160,7 +126,6 @@ export function LaptopRow({ laptop, gap, onPage }: { laptop: Laptop; gap: number
         label={lightLabel(light.level, light.max)}
         detail="Keyboard light"
         on={light.level > 0}
-        onPress={() => laptop.setLight(light.level > 0 ? 0 : light.max)}
         onOpen={() => onPage("laptop-light")}
       />,
     );

@@ -47,3 +47,15 @@ export function keepInView(index: number, offset: number, size: number, count: n
   const top = index < offset ? index : index >= offset + size ? index - size + 1 : offset;
   return Math.max(0, Math.min(top, count - size));
 }
+
+/**
+ * The wheel or touchpad over the list, in lines (mirin's `onWheel`: positive
+ * `dy` is toward the start): whole rows to move the selection by (negative is
+ * up), and the part of a line kept for the next event, so a touchpad's small
+ * steps add up and a long list (All apps) can be scrolled with the pointer.
+ */
+export function wheelSteps(rest: number, dy: number): { steps: number; rest: number } {
+  const total = rest + dy;
+  const whole = Math.trunc(total);
+  return { steps: -whole, rest: total - whole };
+}

@@ -63,7 +63,7 @@ import type { LauncherPrefsSnapshot } from "./launcher/prefs.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./launcher/row-view.tsx";
 import { buildSections, FILE_ROWS, type FileRow, fileNameMatches, filesStateFor, placeholderFor, type Row, type Section, selectable } from "./launcher/rows.ts";
 import type { LauncherScope, ScopeResult } from "./launcher/scope.ts";
-import { keepInView, type Move, moveSelection, resolveSelection } from "./launcher/selection.ts";
+import { keepInView, type Move, moveSelection, resolveSelection, wheelSteps } from "./launcher/selection.ts";
 import { logTiming, timingNow } from "./launcher/timing.ts";
 import { applyEdits } from "./launcher/type-ahead.ts";
 import { usePictures } from "./launcher/use-pictures.ts";
@@ -210,6 +210,8 @@ export function Launcher(props: LauncherProps) {
   const [digits, setDigits] = useState(false);
   const [notice, setNotice] = useState<{ text: string; ok: boolean } | null>(null);
   const offset = useRef(0);
+  /** The part of a wheel line not yet turned into a row (launcher/selection.ts `wheelSteps`). */
+  const wheelRest = useRef(0);
   // A scope narrows the panel to its rows; `alone` when it was opened for it (⌥❖V), so Esc closes.
   const [scoped, setScoped] = useState<{ scope: LauncherScope; alone: boolean } | null>(() => {
     const opened = scopeNamed(props.scopes, props.scope);
@@ -793,6 +795,12 @@ export function Launcher(props: LauncherProps) {
     <View
       testID="launcher:list"
       {...(access ? listAccess(mode.kind === "search" ? "Results" : "Actions") : {})}
+      // The wheel and the touchpad move the selection, as ↑ and ↓ do, so a list drawn a window at a time scrolls.
+      onWheel={(event) => {
+        const { steps, rest } = wheelSteps(wheelRest.current, event.dy);
+        wheelRest.current = rest;
+        for (let step = 0; step < Math.abs(steps); step++) move.current(steps > 0 ? "down" : "up");
+      }}
       style={{
         flexDirection: "column",
         borderTopWidth: 1,
