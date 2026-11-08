@@ -420,6 +420,8 @@ describe("a shell that restarts picks its runs up again", () => {
       name: "Codex",
       sites: new Set(["bodytech.com.co"]),
     });
+    // Its record isn't written over with what the replay had halfway.
+    expect(saved.filter((each) => each.turn < 2)).toEqual([]);
     // Its turn goes on being read.
     const watcher = watchers.get("abcd1234:2");
     expect(watcher).toBeDefined();

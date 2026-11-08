@@ -232,7 +232,10 @@ export function startHandoff(options: HandoffOptions): Handoff {
   /** The turn the person stopped, and the turn whose end they were told of, for each run's record. */
   const stoppedTurn = new Map<string, number>();
   const toldTurn = new Map<string, number>();
+  /** While runs are picked up again: their records are as they were, not as the replay has them so far. */
+  let replaying = false;
   const saveRecords = () => {
+    if (replaying) return;
     for (const run of runs.getSnapshot()) {
       if (!onDisk.has(run.id)) continue;
       const policy = policies.get(run.id);
@@ -293,10 +296,13 @@ export function startHandoff(options: HandoffOptions): Handoff {
       // The person heard of the turns before this one (a follow-up came after them), and of this one if the record says so.
       for (let before = 1; before < turn; before++) told.add(`${id}:${before}`);
       if (each.record.told === turn) told.add(`${id}:${turn}`);
+      replaying = true;
       try {
         replayRun(each, name, runs, runner, watch);
       } catch (error) {
         console.error(`dashi-shell: couldn't pick up run ${id} again:`, error);
+      } finally {
+        replaying = false;
       }
     }
   };
