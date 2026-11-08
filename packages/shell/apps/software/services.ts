@@ -1,19 +1,23 @@
 /**
  * What the window talks to, made once: Flathub's catalog and its images, the
  * store of installed apps, updates and the one queue of changes, and the
- * menu bar applets (their catalog, checked with Dashi's key, the installer,
- * their images). `DASHI_APPLETS_INDEX` and `DASHI_APPLETS_KEY` point the
- * applets at another catalog (a test one).
+ * menu bar applets (their catalogs: Dashi's, checked with Dashi's key, and
+ * the ones the person added in the settings file, each with its own; the
+ * installer, their images). `DASHI_APPLETS_INDEX` and `DASHI_APPLETS_KEY`
+ * point Dashi's at another catalog (a test one).
  */
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
 import { createContext, useContext } from "react";
-import { Catalog, DEFAULT_INDEX, keyFrom, storeCacheDir } from "../../src/applet-store/catalog.ts";
+import { hostsFor, keyFrom, storeCacheDir } from "../../src/applet-store/catalog.ts";
+import { CatalogSet, readSavedCatalogs } from "../../src/applet-store/catalog-set.ts";
+import { dashiCatalog } from "../../src/applet-store/catalogs.ts";
 import { StoreImages } from "../../src/applet-store/images.ts";
 import { AppletInstaller } from "../../src/applet-store/installer.ts";
 import { DASHI_INDEX_KEY } from "../../src/applet-store/keys.ts";
 import { readMachine } from "../../src/applet-store/machine.ts";
 import { spawnDetached } from "../../src/menus/launch.ts";
+import { SettingsStore, settingsPath } from "../../src/settings-app/store.ts";
 import { ImageCache, JsonCache } from "../../src/software/cache.ts";
 import { Flathub } from "../../src/software/flathub.ts";
 import { Images } from "../../src/software/images.ts";
@@ -46,23 +50,34 @@ export function createServices(restart: () => void, env: Readonly<Record<string,
   const root = cacheRoot();
   const store = new SoftwareStore(new Software(standIn() ?? {}));
   const appletCache = storeCacheDir(env);
-  const appletCatalog = new Catalog({
-    url: env.DASHI_APPLETS_INDEX ?? DEFAULT_INDEX,
-    key: keyFrom(env.DASHI_APPLETS_KEY) ?? DASHI_INDEX_KEY,
+  const dashi = dashiCatalog(env, keyFrom(env.DASHI_APPLETS_KEY) ?? DASHI_INDEX_KEY);
+  const path = settingsPath(env);
+  // The added catalogs are read from the file each time, and written through the settings store (read-modify-write, atomic); no change-log entry.
+  const settings = new SettingsStore(path, null);
+  const appletCatalogs = new CatalogSet({
+    dashi,
     cacheDir: appletCache,
+    saved: {
+      read: () => readSavedCatalogs(path, dashi.url).catalogs,
+      write: (catalogs) => {
+        settings.patch("applets", { catalogs: catalogs.length > 0 ? [...catalogs] : undefined });
+        return settings.getSnapshot().error;
+      },
+    },
   });
   const installer = new AppletInstaller({
     root: appletsRoot(),
     dataRoot: appletDataRoot(),
     dashiVersion: SDK_VERSION,
-    download: (url, size) => appletCatalog.download(url, size),
+    dashiCatalog: dashi.url,
+    download: (url, size, catalog) => appletCatalogs.download(url, size, catalog),
   });
   return {
     catalog: new Flathub({ cache: new JsonCache(root) }),
     images: new Images(new ImageCache(root)),
     store,
-    applets: new AppletStore(appletCatalog, installer, () => readMachine(), SDK_VERSION, store),
-    appletImages: new StoreImages(`${appletCache}/images`),
+    applets: new AppletStore(appletCatalogs, installer, () => readMachine(), SDK_VERSION, store),
+    appletImages: new StoreImages(`${appletCache}/images`, undefined, () => [...new Set(appletCatalogs.sources().flatMap((source) => hostsFor(source.url)))]),
     restart,
     openUrl: (url) => openInBrowser(url),
   };

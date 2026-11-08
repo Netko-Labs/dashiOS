@@ -1,8 +1,8 @@
 /**
  * Software's sidebar: Discover, Installed, Updates (one badge for the
- * system, the apps and the applets), Menu bar applets (only while there is
- * a catalog to show: a store with no shelves isn't shown), and Flathub's
- * categories.
+ * system, the apps and the applets), Menu bar applets (always: its
+ * Catalogs… is where a catalog is added, even before Dashi's opens), and
+ * Flathub's categories.
  */
 
 import { SidebarItem, SidebarSection, TINTS } from "@dashi/ui";
@@ -12,7 +12,7 @@ import type { Nav, Page } from "./nav.ts";
 
 const inSidebar = (nav: Nav, page: Page): boolean => JSON.stringify(nav.page) === JSON.stringify(page);
 
-export function SoftwareSidebar({ nav, updates, appletsReady, go }: { nav: Nav; updates: number; appletsReady: boolean; go: (page: Page) => void }) {
+export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: number; go: (page: Page) => void }) {
   return (
     <>
       <SidebarSection>
@@ -38,15 +38,13 @@ export function SoftwareSidebar({ nav, updates, appletsReady, go }: { nav: Nav; 
           selected={inSidebar(nav, { kind: "updates" })}
           onPress={() => go({ kind: "updates" })}
         />
-        {appletsReady && (
-          <SidebarItem
-            testID="nav:applets"
-            label="Menu bar applets"
-            glyph={APPLETS}
-            selected={inSidebar(nav, { kind: "applets" })}
-            onPress={() => go({ kind: "applets" })}
-          />
-        )}
+        <SidebarItem
+          testID="nav:applets"
+          label="Menu bar applets"
+          glyph={APPLETS}
+          selected={inSidebar(nav, { kind: "applets" })}
+          onPress={() => go({ kind: "applets" })}
+        />
       </SidebarSection>
       <SidebarSection title="Categories">
         {CATEGORIES.map((category) => (

@@ -6,7 +6,8 @@
  * people use it. Pure, so the card, the Get… sheet and the tests agree.
  */
 
-import { cannotDo, type IndexApplet } from "@dashi/applet";
+import { cannotDo } from "@dashi/applet";
+import type { StoreApplet } from "../../src/applet-store/merge.ts";
 import { abilityLines, commandsLine } from "../../src/applets/consent-sheet.tsx";
 import type { AppDetails } from "../../src/software/flathub-types.ts";
 import { cannotReach, describeReach } from "../../src/software/flatpak-permissions.ts";
@@ -91,12 +92,17 @@ export function askReasons(app: AppDetails): string[] {
   ];
 }
 
-export function appletTrust(entry: IndexApplet, locale = "en-US"): TrustFacts {
+export function appletTrust(entry: StoreApplet, locale = "en-US"): TrustFacts {
   const { manifest } = entry;
   const newest = entry.versions[0];
   const commands = commandsLine(manifest);
   return {
-    maker: { name: manifest.author.name, line: entry.reviewed ? "Reviewed by Dashi" : "Not reviewed by Dashi", mark: entry.reviewed ? "reviewed" : null },
+    // Dashi's review mark is Dashi's catalog's alone (merge.ts): another catalog's applet says whose list it is on.
+    maker: {
+      name: manifest.author.name,
+      line: entry.reviewed ? "Reviewed by Dashi" : entry.from.builtIn ? "Not reviewed by Dashi" : `From ${entry.from.name} · not reviewed by Dashi`,
+      mark: entry.reviewed ? "reviewed" : null,
+    },
     signed: "Signed by its author. Dashi checks the signature before it installs.",
     reach: { lines: [...abilityLines(manifest), ...(commands ? [commands] : [])], cannot: cannotDo(manifest.permissions), known: true },
     changed: newest

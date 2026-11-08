@@ -6,9 +6,10 @@
  * on or off in the menu bar, what it was allowed, and Remove….
  */
 
-import { describeWhen, type IndexApplet, type InstalledApplet, permissionName } from "@dashi/applet";
+import { describeWhen, type InstalledApplet, permissionName } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Switch, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import type { StoreApplet } from "../../../src/applet-store/merge.ts";
 import { abilityLines } from "../../../src/applets/consent-sheet.tsx";
 import { formatBytes } from "../../../src/software/text.ts";
 import { Gallery } from "../gallery.tsx";
@@ -19,6 +20,7 @@ import { useServices } from "../services.ts";
 import { TrustCard } from "../trust.tsx";
 import { appletTrust } from "../trust-words.ts";
 import { AppletChip, useAppletState } from "./rows.tsx";
+import type { AppletOrigin } from "./store.ts";
 
 function Fact({ label, value, onPress, testID }: { label: string; value: string; onPress?: () => void; testID?: string }) {
   const colors = useColors();
@@ -80,7 +82,7 @@ function Manage({ applet }: { applet: InstalledApplet }) {
   );
 }
 
-function AppletPageBody({ entry }: { entry: IndexApplet }) {
+function AppletPageBody({ entry }: { entry: StoreApplet }) {
   const colors = useColors();
   const actions = useActions();
   const { applets } = useServices();
@@ -90,7 +92,9 @@ function AppletPageBody({ entry }: { entry: IndexApplet }) {
   const newest = entry.versions[0];
   const here = applets.fitsHere(entry);
   const installed = state.installed.find((each) => each.manifest.id === manifest.id);
-  const byline = [manifest.author.name, newest?.version, newest ? formatBytes(newest.size) : null].filter((part): part is string => !!part).join(" · ");
+  const byline = [manifest.author.name, newest?.version, newest ? formatBytes(newest.size) : null, entry.from.builtIn ? null : `From ${entry.from.name}`]
+    .filter((part): part is string => !!part)
+    .join(" · ");
   return (
     <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
       <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
@@ -145,9 +149,22 @@ function AppletPageBody({ entry }: { entry: IndexApplet }) {
   );
 }
 
-/** One added by hand (or no longer in the catalog): what it is, and Manage. */
+/** Where an installed applet that the store has no entry for came from, in words. */
+function originWords(origin: AppletOrigin): string {
+  switch (origin.kind) {
+    case "local":
+      return "added by hand";
+    case "removed":
+      return "catalog removed · no updates";
+    case "catalog":
+      return origin.source.builtIn ? "no longer in the catalog" : `no longer in ${origin.source.name}`;
+  }
+}
+
+/** One added by hand, no longer in its catalog, or whose catalog was removed: what it is, and Manage. */
 function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
   const colors = useColors();
+  const { applets } = useServices();
   const { manifest } = applet;
   return (
     <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
@@ -157,7 +174,7 @@ function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
           <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{manifest.name}</Text>
           <Text
             style={{ fontSize: 12, color: colors.textMuted }}
-          >{`${manifest.author.name} · ${manifest.version} · ${applet.record.source === "local" ? "added by hand" : "no longer in the catalog"}`}</Text>
+          >{`${manifest.author.name} · ${manifest.version} · ${originWords(applets.originOf(applet))}`}</Text>
           <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{manifest.summary}</Text>
         </View>
       </View>
@@ -167,8 +184,9 @@ function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
 }
 
 export function AppletPage({ id }: { id: string }) {
+  const { applets } = useServices();
   const state = useAppletState();
-  const entry = state.index?.applets.find((each) => each.manifest.id === id);
+  const entry = applets.entry(id);
   const installed = state.installed.find((each) => each.manifest.id === id);
   if (!entry && installed) return <LocalAppletPage applet={installed} />;
   if (!entry) {

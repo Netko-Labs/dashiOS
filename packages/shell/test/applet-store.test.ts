@@ -2,11 +2,12 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { generateKeys, type KeyPair, readInstalled, sha256, sign, trustedComment, writeTar } from "@dashi/applet";
+import { generateKeys, type IndexApplet, type KeyPair, readInstalled, sha256, sign, trustedComment, writeTar } from "@dashi/applet";
 import { Catalog, CatalogError } from "../src/applet-store/catalog.ts";
 import { AppletInstaller, statusOf } from "../src/applet-store/installer.ts";
 import { applyKillSwitch } from "../src/applet-store/kill-switch.ts";
 import { hardwareNames, parseBusctlString, readMachine } from "../src/applet-store/machine.ts";
+import type { StoreApplet } from "../src/applet-store/merge.ts";
 
 // Throwaway keys for this run only.
 const dashi = generateKeys();
@@ -74,6 +75,13 @@ function catalogTree(options: { versions: string[]; signer?: KeyPair; listedKey?
   return { dir, url: `file://${join(dir, "index.json")}` };
 }
 
+/** Dashi's catalog as installs record it: each tree below is the same catalog's index at another time. */
+const DASHI_URL = "https://raw.githubusercontent.com/Netko-Labs/dashi-applets/index/index.json";
+const fromDashi = (entry: IndexApplet | undefined): StoreApplet => {
+  if (!entry) throw new Error("an entry");
+  return { ...entry, from: { name: "Dashi", url: DASHI_URL, builtIn: true } };
+};
+
 function setup(tree: { url: string }, root = mkdtempSync(join(tmpdir(), "dashi-applets-"))) {
   const cacheDir = mkdtempSync(join(tmpdir(), "dashi-store-cache-"));
   const catalog = new Catalog({ url: tree.url, key: dashi.publicKey, cacheDir });
@@ -81,6 +89,7 @@ function setup(tree: { url: string }, root = mkdtempSync(join(tmpdir(), "dashi-a
     root,
     dataRoot: join(root, "..", "data"),
     dashiVersion: "0.4.0",
+    dashiCatalog: DASHI_URL,
     download: (url, size) => catalog.download(url, size),
   });
   return { catalog, installer, root, cacheDir };
@@ -91,13 +100,18 @@ test("the store installs only what checks: Dashi's index, the size and hash, the
   const { catalog, installer, root } = setup(tree);
   const { index, stale } = await catalog.load();
   expect(stale).toBe(false);
-  const entry = index.applets[0];
-  if (!entry) throw new Error("an entry");
-  expect(statusOf(entry, [], "0.4.0").kind).toBe("get");
+  const entry = fromDashi(index.applets[0]);
+  expect(statusOf(entry, [], "0.4.0", DASHI_URL).kind).toBe("get");
   await installer.install(entry, ["hardware.power", "notifications", "network"]);
   const [installed] = readInstalled(root);
-  expect(installed?.record).toMatchObject({ version: "0.1.0", source: "catalog", authorKey: keyLine(author), consent: ["hardware.power", "notifications"] });
-  expect(statusOf(entry, readInstalled(root), "0.4.0").kind).toBe("installed");
+  expect(installed?.record).toMatchObject({
+    version: "0.1.0",
+    source: "catalog",
+    catalog: DASHI_URL,
+    authorKey: keyLine(author),
+    consent: ["hardware.power", "notifications"],
+  });
+  expect(statusOf(entry, readInstalled(root), "0.4.0", DASHI_URL).kind).toBe("installed");
 
   // A tampered package: its bytes changed after the index listed them.
   writeFileSync(new URL(entry.versions[0]?.url ?? "").pathname, packageOf("0.1.0-tampered"));
@@ -122,21 +136,18 @@ test("an index not signed by Dashi is refused, and the last good one stands in",
 test("a package signed by someone else than the listed author, or an update under a new key, is refused", async () => {
   const imposter = catalogTree({ versions: ["0.1.0"], signer: stranger });
   const one = setup(imposter);
-  const entry = (await one.catalog.load()).index.applets[0];
-  if (!entry) throw new Error("an entry");
+  const entry = fromDashi((await one.catalog.load()).index.applets[0]);
   await expect(one.installer.install(entry, [])).rejects.toThrow(/signed by key/);
 
   const first = catalogTree({ versions: ["0.1.0"] });
   const two = setup(first);
-  const v1 = (await two.catalog.load()).index.applets[0];
-  if (!v1) throw new Error("an entry");
+  const v1 = fromDashi((await two.catalog.load()).index.applets[0]);
   await two.installer.install(v1, []);
   // The next index lists 0.2.0 under another author key (signed by it): the installed one's key doesn't match.
   const rekeyed = catalogTree({ versions: ["0.1.0", "0.2.0"], signer: stranger, listedKey: stranger });
   const three = setup(rekeyed, two.root);
-  const v2 = (await three.catalog.load()).index.applets[0];
-  if (!v2) throw new Error("an entry");
-  expect(statusOf(v2, readInstalled(two.root), "0.4.0").kind).toBe("update");
+  const v2 = fromDashi((await three.catalog.load()).index.applets[0]);
+  expect(statusOf(v2, readInstalled(two.root), "0.4.0", DASHI_URL).kind).toBe("update");
   await expect(three.installer.install(v2, [])).rejects.toThrow(/different key/);
   expect(readInstalled(two.root)[0]?.record.version).toBe("0.1.0");
 });
@@ -144,21 +155,20 @@ test("a package signed by someone else than the listed author, or an update unde
 test("the kill switch: a pulled version is disabled where it is installed, and the good one offered", async () => {
   const before = catalogTree({ versions: ["0.1.0", "0.2.0"] });
   const one = setup(before);
-  const entry = (await one.catalog.load()).index.applets[0];
-  if (!entry) throw new Error("an entry");
+  const entry = fromDashi((await one.catalog.load()).index.applets[0]);
   await one.installer.install(entry, []);
   expect(readInstalled(one.root)[0]?.record.version).toBe("0.2.0");
   const after = catalogTree({ versions: ["0.1.0", "0.2.0"], pulled: ["0.2.0"] });
   const two = setup(after, one.root);
   const { index } = await two.catalog.load();
   // The shell's daily look does it without the store open.
-  expect(await applyKillSwitch(two.catalog, two.installer)).toEqual([MANIFEST.id]);
-  expect(two.installer.disablePulled(index)).toEqual([]);
+  const asDashi = { url: DASHI_URL, load: () => two.catalog.load() };
+  expect(await applyKillSwitch([asDashi], two.installer)).toEqual([MANIFEST.id]);
+  expect(two.installer.disablePulled(index, DASHI_URL)).toEqual([]);
   const [installed] = readInstalled(one.root);
   expect(installed?.record.disabled).toEqual({ reason: "pulled", detail: "drains the battery" });
-  const pulled = index.applets[0];
-  if (!pulled) throw new Error("an entry");
-  expect(statusOf(pulled, readInstalled(one.root), "0.4.0")).toMatchObject({ kind: "pulled", good: { version: "0.1.0" } });
+  const pulled = fromDashi(index.applets[0]);
+  expect(statusOf(pulled, readInstalled(one.root), "0.4.0", DASHI_URL)).toMatchObject({ kind: "pulled", good: { version: "0.1.0" } });
   // Installing the good one turns it back on.
   await two.installer.install(pulled, []);
   expect(readInstalled(one.root)[0]?.record).toMatchObject({ version: "0.1.0" });

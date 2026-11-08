@@ -4,10 +4,13 @@
  * `install.json`, what Dashi keeps about it:
  *
  *   {"version": "0.1.0", "sha256": "…", "authorKey": "RWQ…", "source": "catalog",
+ *    "catalog": "https://…/index.json",
  *    "consent": ["hardware.power", "notifications"], "disabled": {"reason": "pulled", "detail": "…"}}
  *
  * `authorKey` is the key the installed version was signed with: an update
- * must be signed by the same one (catalog.ts). `consent` is what the person
+ * must be signed by the same one (catalog.ts). `catalog` is the index it came
+ * from: updates and the kill switch come from that catalog alone. A record
+ * from before there was more than one catalog has none, and means Dashi's. `consent` is what the person
  * allowed; an applet runs only when it covers every permission it asks for.
  * The store (and `dashi-applet install`) installs and removes; the shell's
  * launcher (shell's src/applets/launcher.ts) runs
@@ -28,6 +31,8 @@ export interface InstallRecord {
   /** The author key it was verified with; null for one installed from a local file (`dashi-applet install`). */
   authorKey: string | null;
   source: "catalog" | "local";
+  /** The index.json address of the catalog it was installed from; absent means Dashi's own (or a local file). */
+  catalog?: string;
   /** Permission names the person allowed. */
   consent: string[];
   disabled?: { reason: "pulled" | "off"; detail?: string };
@@ -49,6 +54,10 @@ export const appletsRoot = (env: Record<string, string | undefined> = process.en
 export const appletDataRoot = (env: Record<string, string | undefined> = process.env, home: string = homedir()): string =>
   join(dataHome(env, home), "dashi/applet-data");
 
+/** A catalog's index.json address as a record keeps it: https, or file:// (a test catalog). */
+export const isCatalogAddress = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 2048 && /^(https:\/\/|file:\/\/\/)[^\s"<>]+$/.test(value);
+
 /** install.json's text → the record, or null when it isn't one. */
 export function parseRecord(text: string): InstallRecord | null {
   let value: unknown;
@@ -63,6 +72,7 @@ export function parseRecord(text: string): InstallRecord | null {
   if (typeof fields.version !== "string" || typeof fields.sha256 !== "string" || !strings(fields.consent)) return null;
   if (fields.authorKey !== null && typeof fields.authorKey !== "string") return null;
   if (fields.source !== "catalog" && fields.source !== "local") return null;
+  if (fields.catalog !== undefined && !isCatalogAddress(fields.catalog)) return null;
   const disabled = fields.disabled as Record<string, unknown> | undefined;
   const reason = disabled?.reason;
   return {
@@ -70,6 +80,7 @@ export function parseRecord(text: string): InstallRecord | null {
     sha256: fields.sha256,
     authorKey: fields.authorKey,
     source: fields.source,
+    ...(typeof fields.catalog === "string" ? { catalog: fields.catalog } : {}),
     consent: fields.consent,
     ...(reason === "pulled" || reason === "off" ? { disabled: { reason, ...(typeof disabled?.detail === "string" ? { detail: disabled.detail } : {}) } } : {}),
   };

@@ -8,7 +8,8 @@ import { AppletStore } from "../apps/software/applets/store.ts";
 import { type Services, ServicesContext } from "../apps/software/services.ts";
 import { SoftwareStore } from "../apps/software/store.ts";
 import { SoftwareWindow } from "../apps/software/view.tsx";
-import { Catalog } from "../src/applet-store/catalog.ts";
+import { CatalogSet } from "../src/applet-store/catalog-set.ts";
+import type { CatalogSetting } from "../src/applet-store/catalogs.ts";
 import { StoreImages } from "../src/applet-store/images.ts";
 import { AppletInstaller } from "../src/applet-store/installer.ts";
 import { ImageCache, JsonCache } from "../src/software/cache.ts";
@@ -77,13 +78,14 @@ function fakeTools(log: string[]): Software {
   return new Software({ run, which: (program) => `/fake/${program}`, launch: () => {} });
 }
 
-function testCatalog() {
+/** A catalog on disk signed with throwaway keys: Dashi's (ASUS Control), or another one's applet. */
+function testCatalog(applet: { id: string; name: string } = { id: "dev.netko.asus-control", name: "ASUS Control" }) {
   const dashi = generateKeys();
   const author = generateKeys();
   const dir = mkdtempSync(join(tmpdir(), "dashi-software-applets-"));
   const manifest = {
-    id: "dev.netko.asus-control",
-    name: "ASUS Control",
+    id: applet.id,
+    name: applet.name,
     version: "0.1.0",
     dashi: ">=0.4",
     entry: "src/main.tsx",
@@ -136,12 +138,25 @@ function harness(options: { key?: boolean; initialPage?: string } = {}) {
   const root = mkdtempSync(join(tmpdir(), "dashi-software-root-"));
   const log: string[] = [];
   const store = new SoftwareStore(fakeTools(log));
-  const catalog = new Catalog({ url: tree.url, key: options.key === false ? null : tree.key, cacheDir: join(tree.dir, "cache") });
+  // The added catalogs, kept here instead of the settings file.
+  let saved: CatalogSetting[] = [];
+  const catalogs = new CatalogSet({
+    dashi: { name: "Dashi", url: tree.url, key: options.key === false ? null : tree.key, builtIn: true },
+    cacheDir: join(tree.dir, "cache"),
+    saved: {
+      read: () => saved,
+      write: (list) => {
+        saved = [...list];
+        return null;
+      },
+    },
+  });
   const installer = new AppletInstaller({
     root,
     dataRoot: join(tree.dir, "data"),
     dashiVersion: "0.4.0",
-    download: (url, size) => catalog.download(url, size),
+    dashiCatalog: tree.url,
+    download: (url, size, catalog) => catalogs.download(url, size, catalog),
   });
   const g14 = { vendor: "ASUSTeK COMPUTER INC.", product: "ROG Zephyrus G14", laptop: true };
   const opened: string[] = [];
@@ -149,7 +164,7 @@ function harness(options: { key?: boolean; initialPage?: string } = {}) {
     catalog: new Flathub({ cache: new JsonCache(join(tree.dir, "flathub")), fetch: flathubFetch }),
     images: new Images(new ImageCache(join(tree.dir, "images")), async () => new Response("", { status: 404 })),
     store,
-    applets: new AppletStore(catalog, installer, async () => g14, "0.4.0", store),
+    applets: new AppletStore(catalogs, installer, async () => g14, "0.4.0", store),
     appletImages: new StoreImages(join(tree.dir, "applet-images")),
     restart: () => {},
     openUrl: (url) => opened.push(url),
@@ -168,7 +183,13 @@ function harness(options: { key?: boolean; initialPage?: string } = {}) {
     for (const listener of listeners) listener({ type: "press", nodeId });
     await settle();
   };
-  return { view, press, store, root, log, opened, services };
+  const type = async (testID: string, value: string): Promise<void> => {
+    const nodeId = view.nodeId(testID);
+    if (!nodeId) throw new Error(`no node ${testID}`);
+    for (const listener of listeners) listener({ type: "change", nodeId, value });
+    await settle();
+  };
+  return { view, press, type, store, root, log, opened, services, saved: () => saved };
 }
 
 test("an app's page leads with the trust card, and an app that reaches far asks before it installs", async () => {
@@ -244,12 +265,69 @@ test("applets are a section of Software: one search, the trust card, and the con
   view.unmount();
 });
 
-test("without a catalog key the applets' place isn't in the sidebar", async () => {
-  const { view } = harness({ key: false });
+test("without a key for Dashi's catalog, the applets' place is where another catalog is added", async () => {
+  const { view, press } = harness({ key: false });
   await settle(120);
-  expect(view.nodeId("nav:discover")).toBeDefined();
-  expect(view.nodeId("nav:applets")).toBeUndefined();
   expect(view.nodeId("section:applets")).toBeUndefined();
+  await press("nav:applets");
+  expect(view.nodeId("applets-coming")).toBeDefined();
+  await press("catalogs");
+  expect(view.nodeId("catalogs")).toBeDefined();
+  expect(view.lastTree()).toContain("Built in · not set up in this Dashi yet");
+  expect(view.nodeId("catalog:Dashi:remove")).toBeUndefined();
+  view.unmount();
+});
+
+test("Catalogs…: one that doesn't check isn't added, one that does lists its applets “From” it, never reviewed", async () => {
+  const { view, press, type, saved, root } = harness();
+  const team = testCatalog({ id: "dev.alexk.timer", name: "Team Timer" });
+  const wrong = generateKeys();
+  await settle(150);
+  await press("nav:applets");
+  await press("catalogs");
+  await press("catalogs:add");
+  await type("add-catalog:name", "Team");
+  await type("add-catalog:url", team.url);
+  await type("add-catalog:key", wrong.publicKey);
+  await press("add-catalog:add");
+  await settle(100);
+  expect(view.nodeId("add-catalog:error")).toBeDefined();
+  expect(view.lastTree()).toContain("isn’t signed with this key");
+  expect(saved()).toEqual([]);
+
+  await type("add-catalog:key", team.key);
+  await press("add-catalog:add");
+  await settle(150);
+  expect(view.nodeId("add-catalog")).toBeUndefined();
+  expect(saved()).toMatchObject([{ name: "Team", url: team.url }]);
+  expect(view.nodeId("catalog:Team")).toBeDefined();
+  expect(view.lastTree()).toContain("1 applet · ");
+  await press("catalogs:done");
+
+  // Listed beside Dashi's, from its catalog, without Dashi's review mark.
+  expect(view.nodeId("applet:dev.alexk.timer")).toBeDefined();
+  expect(view.nodeId("applet:dev.netko.asus-control")).toBeDefined();
+  expect(view.lastTree()).toContain("From Team");
+  await press("applet:dev.alexk.timer:open");
+  expect(view.lastTree()).toContain("From Team · not reviewed by Dashi");
+  expect(view.nodeId("mark:reviewed")).toBeUndefined();
+  await press("get");
+  await press("consent-add");
+  await settle(150);
+  expect(readInstalled(root).find((each) => each.manifest.id === "dev.alexk.timer")?.record.catalog).toBe(team.url);
+
+  // Removing the catalog keeps what came from it, with no updates.
+  await press("nav:applets");
+  await press("catalogs");
+  await press("catalog:Team:remove");
+  await press("remove-catalog:confirm");
+  await settle(150);
+  expect(saved()).toEqual([]);
+  expect(view.nodeId("catalog:Team")).toBeUndefined();
+  await press("catalogs:done");
+  expect(view.nodeId("applet:dev.alexk.timer")).toBeUndefined();
+  await press("nav:installed");
+  expect(view.lastTree()).toContain("catalog removed");
   view.unmount();
 });
 

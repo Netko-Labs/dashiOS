@@ -2,7 +2,8 @@
  * The catalog's index (Netko-Labs/dashi-applets' index.json, built by its CI)
  * and the checks that come before anything runs:
  *
- *   1. the index is signed by Dashi's key (index.json.minisig);
+ *   1. the index is signed by its catalog's key (index.json.minisig): Dashi's
+ *      for Dashi's catalog, the one the person gave for a catalog they added;
  *   2. a package's bytes have the size and sha256 the index lists;
  *   3. the package is signed by its author's key, which the index lists;
  *   4. an update is signed by the same key as the installed version;
@@ -144,10 +145,10 @@ export function parseIndex(value: unknown): CatalogIndex | Refusal {
   return { format: INDEX_FORMAT, generated: fields.generated, applets };
 }
 
-/** The index's bytes and Dashi's signature on them → the index, or why not. */
-export function verifyIndex(bytes: Uint8Array, signature: string, dashiKey: string): CatalogIndex | Refusal {
-  const checked = verify(bytes, signature, dashiKey);
-  if (!checked.ok) return refuse(`the index isn't signed by Dashi: ${checked.reason}`);
+/** The index's bytes and its catalog's signature on them → the index, or why not. */
+export function verifyIndex(bytes: Uint8Array, signature: string, catalogKey: string): CatalogIndex | Refusal {
+  const checked = verify(bytes, signature, catalogKey);
+  if (!checked.ok) return refuse(`the index isn't signed by its catalog's key: ${checked.reason}`);
   try {
     return parseIndex(JSON.parse(new TextDecoder().decode(bytes)));
   } catch {

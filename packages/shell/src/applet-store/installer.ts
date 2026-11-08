@@ -4,8 +4,11 @@
  * author's signature, the installed version's key for an update, not
  * pulled: @dashi/applet's verifyPackage), and nothing runs before that: the
  * shell's launcher starts what lands in the applets folder, in its sandbox.
- * The kill switch is here too: a pulled version that is installed is
- * disabled, and the launcher stops it.
+ * Each install records the catalog it came from (its index address) beside
+ * the author key it was verified with; an update comes only from that
+ * catalog, signed with that key. The kill switch is here too: a pulled
+ * version that is installed is disabled, and the launcher stops it, by the
+ * pulled list of the catalog it came from alone.
  */
 
 import {
@@ -25,12 +28,16 @@ import {
   verifyPackage,
   writeRecord,
 } from "@dashi/applet";
+import { installedFrom, type StoreApplet } from "./merge.ts";
 
 export interface InstallerOptions {
   root: string;
   dataRoot: string;
   dashiVersion: string;
-  download(url: string, size: number): Promise<Uint8Array>;
+  /** Dashi's catalog's index address: where an install record that names none came from. */
+  dashiCatalog: string;
+  /** A package's bytes, from the catalog at `catalog` (its hosts' rules). */
+  download(url: string, size: number, catalog: string): Promise<Uint8Array>;
 }
 
 export class InstallError extends Error {}
@@ -42,6 +49,11 @@ export class AppletInstaller {
     return readInstalled(this.options.root);
   }
 
+  /** The catalog an installed applet came from; null for one added by hand. */
+  catalogOf(applet: Pick<InstalledApplet, "record">): string | null {
+    return installedFrom(applet.record, this.options.dashiCatalog);
+  }
+
   /** The newest version of `applet` this Dashi can install, or null. */
   available(applet: IndexApplet): IndexVersion | null {
     return installable(applet, this.options.dashiVersion);
@@ -51,13 +63,17 @@ export class AppletInstaller {
    * Installs (or updates to) the newest good version, with the permissions
    * the person allowed on the consent sheet; returns the version installed.
    */
-  async install(applet: IndexApplet, consent: readonly string[]): Promise<string> {
+  async install(applet: StoreApplet, consent: readonly string[]): Promise<string> {
     const version = this.available(applet);
     if (!version) throw new InstallError(`${applet.manifest.name} has no version for this Dashi`);
     const current = this.installed().find((each) => each.manifest.id === applet.manifest.id);
+    // An update comes only from the catalog the installed version came from (one installed by hand has none).
+    const from = current ? this.catalogOf(current) : null;
+    if (from !== null && from !== applet.from.url)
+      throw new InstallError(`${applet.manifest.name} was installed from another catalog, and only that catalog can update it`);
     // An update must be signed by the key the installed version was; one installed by hand has none to match.
     const installedKey = current?.record.authorKey ?? undefined;
-    const bytes = await this.options.download(version.url, version.size);
+    const bytes = await this.options.download(version.url, version.size, applet.from.url);
     const checked = verifyPackage(bytes, applet, version, installedKey);
     if (checked !== true) throw new InstallError(checked.error);
     const unpacked = unpack(bytes);
@@ -70,6 +86,7 @@ export class AppletInstaller {
       sha256: sha256(bytes),
       authorKey: applet.authorKey,
       source: "catalog",
+      catalog: applet.from.url,
       // Only what it asks for now, of what was allowed.
       consent: consent.filter((name) => asked.has(name)),
     });
@@ -80,10 +97,11 @@ export class AppletInstaller {
     removeInstalled(this.options.root, id, withData ? this.options.dataRoot : undefined);
   }
 
-  /** Turns off every installed version the index pulled; returns their ids. */
-  disablePulled(index: CatalogIndex): string[] {
+  /** Turns off every installed version the index of the catalog at `catalog` pulled, of the applets that came from it; returns their ids. */
+  disablePulled(index: CatalogIndex, catalog: string): string[] {
     const disabled: string[] = [];
     for (const applet of this.installed()) {
+      if (this.catalogOf(applet) !== catalog) continue;
       const entry = index.applets.find((each) => each.manifest.id === applet.manifest.id);
       if (!entry || !isPulled(entry, applet.record.version) || applet.record.disabled?.reason === "pulled") continue;
       const reason = entry.pulled.find((pull) => pull.version === applet.record.version)?.reason;
@@ -101,10 +119,21 @@ export type AppletStatus =
   | { kind: "update"; installed: InstalledApplet; version: IndexVersion }
   | { kind: "pulled"; installed: InstalledApplet; reason: string; good: IndexVersion | null };
 
-export function statusOf(entry: IndexApplet, installed: readonly InstalledApplet[], dashiVersion: string): AppletStatus {
+/**
+ * `entry`'s state against what is installed. One installed from another
+ * catalog (or by hand) than `entry`'s is installed, never updated or pulled
+ * from here: only its own catalog speaks for it.
+ */
+export function statusOf(entry: StoreApplet, installed: readonly InstalledApplet[], dashiVersion: string, dashiCatalog: string): AppletStatus {
   const mine = installed.find((each) => each.manifest.id === entry.manifest.id);
   const good = installable(entry, dashiVersion);
   if (!mine) return { kind: "get", version: good };
+  const from = installedFrom(mine.record, dashiCatalog);
+  if (from !== null && from !== entry.from.url) {
+    return mine.record.disabled?.reason === "pulled"
+      ? { kind: "pulled", installed: mine, reason: mine.record.disabled.detail ?? "It was pulled from its catalog.", good: null }
+      : { kind: "installed", installed: mine };
+  }
   if (isPulled(entry, mine.record.version) || mine.record.disabled?.reason === "pulled") {
     const reason =
       entry.pulled.find((pull) => pull.version === mine.record.version)?.reason ?? mine.record.disabled?.detail ?? "It was pulled from the catalog.";
