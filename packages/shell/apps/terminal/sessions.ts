@@ -20,8 +20,8 @@ export interface Sessions {
   store: ScreenStore;
   engine(id: number): Engine | undefined;
   engines(): Engine[];
-  /** A new tab after the one in front, its shell in `folder` (home when null). */
-  open(folder: string | null): void;
+  /** A new tab after the one in front, its shell in `folder` (home when null), or `command` in place of the shell. */
+  open(folder: string | null, command?: readonly string[] | null): void;
   /** Start tab `id`'s shell again after its engine went away. */
   restart(id: number, folder: string | null): void;
   /** Hang up tab `id` and close it. */
@@ -95,11 +95,11 @@ export function useSessions(options: SessionsOptions): Sessions {
     }
   };
 
-  const launch = (id: number, folder: string | null): boolean => {
+  const launch = (id: number, folder: string | null, command: readonly string[] | null = null): boolean => {
     const at = size.current;
     if (!at) return false;
     const { binary, palette } = latest.current;
-    const engine = startEngine(binary, at, (message) => hear(id, message), { cwd: folder, integration: integrationDir() });
+    const engine = startEngine(binary, at, (message) => hear(id, message), { cwd: folder, integration: integrationDir(), command });
     engine.send(colorsMessage(palette()));
     engine.send({ t: "resize", cols: at.cols, rows: at.rows, cw: at.cw, ch: at.ch });
     engines.current.set(id, engine);
@@ -111,9 +111,9 @@ export function useSessions(options: SessionsOptions): Sessions {
     size,
     engine: (id) => engines.current.get(id),
     engines: () => [...engines.current.values()],
-    open(folder) {
+    open(folder, command = null) {
       const id = nextId.current;
-      if (!launch(id, folder)) return;
+      if (!launch(id, folder, command)) return;
       nextId.current += 1;
       latest.current.setTabs((tabs) => addTab(tabs, newTab(id)));
     },

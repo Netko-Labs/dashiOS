@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { engineArgs, integrationDir } from "../apps/terminal/engine.ts";
+import { engineArgs, integrationDir, splitCommand } from "../apps/terminal/engine.ts";
 import { lineHeightFor, stepFontSize } from "../apps/terminal/line.tsx";
 import { commandName, folderName, localFolder, type Naming, renamed, tabName, UNNAMED } from "../apps/terminal/naming.ts";
 import { EMPTY_SCREEN } from "../apps/terminal/screen.ts";
@@ -70,6 +70,25 @@ test("dashi-term starts in the folder asked for, else home, with the integration
   expect(engineArgs("/t", { cols: 80, rows: 24 }, {}, HOME)).toEqual(["/t", "--cols", "80", "--rows", "24", "--cwd", HOME]);
   expect(integrationDir({ DASHI_TERMINAL_INTEGRATION: "0" })).toBeNull();
   expect(integrationDir({})?.endsWith("terminal/integration")).toBe(true);
+});
+
+test("a command (an app with Terminal=true) runs after --, in place of the shell and its integration", () => {
+  expect(engineArgs("/t", { cols: 80, rows: 24 }, { integration: "/i", command: ["htop", "--tree"] }, HOME)).toEqual([
+    "/t",
+    "--cols",
+    "80",
+    "--rows",
+    "24",
+    "--cwd",
+    HOME,
+    "--",
+    "htop",
+    "--tree",
+  ]);
+  // The Terminal's own words before `--`, the command's after: a path in the command is never the Metal host.
+  expect(splitCommand(["--host", "/h", "--", "/usr/bin/htop", "-d", "10"])).toEqual({ own: ["--host", "/h"], command: ["/usr/bin/htop", "-d", "10"] });
+  expect(splitCommand(["/h"])).toEqual({ own: ["/h"], command: null });
+  expect(splitCommand(["--"])).toEqual({ own: [], command: null });
 });
 
 test("the face steps through its sizes and stops at the ends", () => {

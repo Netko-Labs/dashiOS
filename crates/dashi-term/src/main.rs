@@ -5,8 +5,10 @@
 //! (packages/shell/apps/terminal, Bun + Metal) draws it and sends input back
 //! on stdin. Rust keeps the terminal; TypeScript draws it.
 //!
-//! Usage: `dashi-term [--cols N] [--rows N] [--cwd DIR] [--integration DIR]`
-//! (`--integration`: the shell integration's scripts, integration.rs).
+//! Usage: `dashi-term [--cols N] [--rows N] [--cwd DIR] [--integration DIR] [-- COMMAND...]`
+//! (`--integration`: the shell integration's scripts, integration.rs; after
+//! `--`, a command to run in place of the shell: an app whose desktop entry
+//! says `Terminal=true`).
 
 #[allow(
     non_upper_case_globals,
@@ -52,6 +54,8 @@ struct Options {
     rows: u16,
     cwd: Option<String>,
     integration: Option<String>,
+    /// What runs in place of the shell (after `--`); empty for the shell.
+    command: Vec<String>,
 }
 
 fn options() -> Options {
@@ -60,6 +64,7 @@ fn options() -> Options {
         rows: 24,
         cwd: None,
         integration: None,
+        command: Vec::new(),
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -68,6 +73,10 @@ fn options() -> Options {
             "--rows" => options.rows = args.next().and_then(|v| v.parse().ok()).unwrap_or(24),
             "--cwd" => options.cwd = args.next(),
             "--integration" => options.integration = args.next(),
+            "--" => {
+                options.command = args.collect();
+                break;
+            }
             _ => {}
         }
     }
@@ -89,6 +98,7 @@ fn main() {
         options.rows,
         options.cwd.as_deref(),
         options.integration.as_deref(),
+        &options.command,
     ) {
         Ok(pty) => pty,
         Err(error) => {

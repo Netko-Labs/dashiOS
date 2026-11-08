@@ -34,6 +34,8 @@ export interface EngineOptions {
   cwd?: string | null;
   /** The shell integration's scripts (integration/), or null to start the shell without them. */
   integration?: string | null;
+  /** A command to run in place of the shell (an app whose desktop entry says `Terminal=true`); its exit ends the tab. */
+  command?: readonly string[] | null;
 }
 
 /** The shell integration's scripts, beside this file; `DASHI_TERMINAL_INTEGRATION=0` starts shells without them. */
@@ -62,6 +64,18 @@ export function engineBinary(env: Record<string, string | undefined> = process.e
   return candidates.find((path): path is string => typeof path === "string" && path !== "" && exists(path)) ?? null;
 }
 
+/**
+ * The Terminal's arguments (`[host] [-- COMMAND...]`), split at the first
+ * `--`: its own before, and the command its first tab runs after (null when
+ * there is none).
+ */
+export function splitCommand(args: readonly string[]): { own: string[]; command: string[] | null } {
+  const at = args.indexOf("--");
+  if (at < 0) return { own: [...args], command: null };
+  const command = args.slice(at + 1);
+  return { own: args.slice(0, at), command: command.length > 0 ? command : null };
+}
+
 /** dashi-term's command line. */
 export function engineArgs(binary: string, size: { cols: number; rows: number }, options: EngineOptions, home: string | undefined): string[] {
   const cwd = options.cwd ?? home;
@@ -72,7 +86,8 @@ export function engineArgs(binary: string, size: { cols: number; rows: number },
     "--rows",
     String(size.rows),
     ...(cwd ? ["--cwd", cwd] : []),
-    ...(options.integration ? ["--integration", options.integration] : []),
+    ...(options.command?.length ? [] : options.integration ? ["--integration", options.integration] : []),
+    ...(options.command?.length ? ["--", ...options.command] : []),
   ];
 }
 
