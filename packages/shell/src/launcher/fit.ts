@@ -4,8 +4,9 @@
  * rows also come from outside (search providers, an applet's answer) and
  * from agents (Now, Ask); at a large text size those ran past the panel's
  * foot. This drops rows from the end until everything fits, never "All apps"
- * or the Ask row (how the person goes further), and never a scope's own
- * scrolled list (`window`), which keeps to its height already.
+ * or the Ask row (how the person goes further), and never a scrolled list
+ * (`window`: a scope's, All apps), which keeps to its height already: cut,
+ * its last rows could never be scrolled to (All apps ended at Preview).
  */
 
 import type { Section } from "./rows.ts";

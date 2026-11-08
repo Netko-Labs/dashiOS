@@ -1,7 +1,7 @@
 //! The pseudo-terminal: the person's shell on the PTY's far end, its size,
 //! and a thread that reads what it prints.
 
-use std::ffi::{CString, OsString};
+use std::ffi::{CStr, CString, OsString};
 use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::ffi::OsStringExt;
@@ -72,15 +72,54 @@ fn logical_pwd(cwd: &str) -> Option<String> {
     (plain && std::fs::metadata(path).is_ok_and(|meta| meta.is_dir())).then(|| cwd.to_string())
 }
 
+/// What the PTY's child runs, as the program's path and its argv: the
+/// shell as a login shell (`-zsh`) with the integration's arguments, or a
+/// command (`dashi-term -- htop`, an app whose desktop entry says
+/// `Terminal=true`) through `/bin/sh`, which finds it on `PATH`: the child
+/// can't search for it itself after the fork. The command's arguments are
+/// passed to `exec "$@"` as they are, never parsed by the shell.
+fn exec_line(shell: &CStr, args: &[String], command: &[String]) -> (CString, Vec<CString>) {
+    let owned = |words: &[String]| -> Vec<CString> {
+        words
+            .iter()
+            .filter_map(|word| CString::new(word.as_str()).ok())
+            .collect()
+    };
+    if !command.is_empty() {
+        let mut argv = vec![
+            CString::from(c"sh"),
+            CString::from(c"-c"),
+            CString::from(c"exec \"$@\""),
+            CString::from(c"sh"),
+        ];
+        argv.extend(owned(command));
+        return (CString::from(c"/bin/sh"), argv);
+    }
+    let name = shell
+        .to_bytes()
+        .rsplit(|b| *b == b'/')
+        .next()
+        .unwrap_or(b"sh");
+    let mut login = b"-".to_vec();
+    login.extend_from_slice(name);
+    let argv0 = CString::new(login).unwrap_or_else(|_| CString::from(c"-sh"));
+    let mut argv = vec![argv0];
+    argv.extend(owned(args));
+    (shell.to_owned(), argv)
+}
+
 impl Pty {
     /// Start the shell (a login shell, `-zsh`) on a new PTY of this size,
-    /// with the shell integration in `integration` (a folder) when given.
+    /// with the shell integration in `integration` (a folder) when given;
+    /// or, when `command` isn't empty, that command in place of the shell
+    /// (without the integration), whose exit ends the terminal.
     /// Called before any thread starts: the child only calls async-signal-safe functions.
     pub(crate) fn spawn(
         cols: u16,
         rows: u16,
         cwd: Option<&str>,
         integration: Option<&str>,
+        command: &[String],
     ) -> io::Result<Pty> {
         let shell = shell();
         let name = shell
@@ -89,6 +128,7 @@ impl Pty {
             .next()
             .unwrap_or(b"sh");
         let mut launch = integration
+            .filter(|_| command.is_empty())
             .map(|dir| {
                 integration::launch(&String::from_utf8_lossy(name), dir, |key| {
                     std::env::var(key).ok()
@@ -98,16 +138,8 @@ impl Pty {
         if let Some(pwd) = cwd.and_then(logical_pwd) {
             launch.env.push(("PWD".into(), pwd));
         }
-        let mut login = b"-".to_vec();
-        login.extend_from_slice(name);
-        let argv0 = CString::new(login).map_err(io::Error::other)?;
-        let args: Vec<CString> = launch
-            .args
-            .iter()
-            .filter_map(|arg| CString::new(arg.as_str()).ok())
-            .collect();
-        let mut argv: Vec<*const libc::c_char> = vec![argv0.as_ptr()];
-        argv.extend(args.iter().map(|arg| arg.as_ptr()));
+        let (program, args) = exec_line(&shell, &launch.args, command);
+        let mut argv: Vec<*const libc::c_char> = args.iter().map(|arg| arg.as_ptr()).collect();
         argv.push(std::ptr::null());
         let env = environment(&launch.env);
         let mut envp: Vec<*const libc::c_char> = env.iter().map(|e| e.as_ptr()).collect();
@@ -133,7 +165,7 @@ impl Pty {
                 if let Some(dir) = &cwd {
                     libc::chdir(dir.as_ptr());
                 }
-                libc::execve(shell.as_ptr(), argv.as_ptr(), envp.as_ptr());
+                libc::execve(program.as_ptr(), argv.as_ptr(), envp.as_ptr());
                 libc::_exit(127);
             }
         }
@@ -241,7 +273,8 @@ pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{environment, logical_pwd, running_program};
+    use super::{environment, exec_line, logical_pwd, running_program};
+    use std::ffi::CString;
 
     #[test]
     fn a_shell_started_through_a_link_keeps_the_links_path() {
@@ -287,5 +320,32 @@ mod tests {
             Some("sleep".to_string())
         );
         assert_eq!(running_program(120, 100, |_| None), Some(String::new()));
+    }
+
+    #[test]
+    fn a_command_runs_in_place_of_the_shell_its_words_untouched() {
+        let words = |argv: Vec<CString>| -> Vec<String> {
+            argv.into_iter()
+                .map(|arg| arg.into_string().unwrap())
+                .collect()
+        };
+        let (program, argv) = exec_line(c"/bin/zsh", &["-i".into()], &[]);
+        assert_eq!(program.to_str().unwrap(), "/bin/zsh");
+        assert_eq!(words(argv), ["-zsh", "-i"]);
+        let command = ["htop".to_string(), "--tree".into(), "a b; rm -rf ~".into()];
+        let (program, argv) = exec_line(c"/bin/zsh", &["-i".into()], &command);
+        assert_eq!(program.to_str().unwrap(), "/bin/sh");
+        assert_eq!(
+            words(argv),
+            [
+                "sh",
+                "-c",
+                "exec \"$@\"",
+                "sh",
+                "htop",
+                "--tree",
+                "a b; rm -rf ~"
+            ]
+        );
     }
 }

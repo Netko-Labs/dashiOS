@@ -319,7 +319,7 @@ describe("recents", () => {
 describe("the app index", () => {
   function fakes() {
     let loads = 0;
-    const watched: Array<{ path: string; fire: () => void; closed: boolean }> = [];
+    const watched: Array<{ path: string; fire: () => void; closed: boolean; recursive: boolean }> = [];
     const timers: Array<() => void> = [];
     const index = new AppIndex({
       load: () => {
@@ -328,8 +328,8 @@ describe("the app index", () => {
       },
       dirs: () => ["/home/alexk/.local/share/applications", "/usr/share/applications"],
       exists: (path) => path !== "/home/alexk/.local/share/applications",
-      watch: (path, fire) => {
-        const watcher = { path, fire, closed: false };
+      watch: (path, fire, recursive) => {
+        const watcher = { path, fire, closed: false, recursive };
         watched.push(watcher);
         return { close: () => (watcher.closed = true) };
       },
@@ -368,6 +368,11 @@ describe("the app index", () => {
         .map((each) => each.path)
         .sort(),
     ).toEqual(["/home/alexk/.local/share", "/usr/share/applications"]);
+    // An applications directory with its subfolders (Wine's wine/Programs/); the parent of a missing one alone.
+    expect(Object.fromEntries(open().map((each) => [each.path, each.recursive]))).toEqual({
+      "/home/alexk/.local/share": false,
+      "/usr/share/applications": true,
+    });
     const system = open().find((each) => each.path === "/usr/share/applications");
     system?.fire();
     system?.fire();

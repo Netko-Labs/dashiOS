@@ -12,6 +12,7 @@ import {
   type App,
   displayName,
   iconPath,
+  inTerminal,
   type LaunchWatch,
   launch,
   resolvePinned,
@@ -51,6 +52,8 @@ export interface Entry extends App {
   localized?: Localized;
   /** Its `[Desktop Action]` groups ("New Private Window"): commands of the app in the action registry (actions/). */
   actions?: DesktopAction[];
+  /** `Terminal=true` (htop): it runs in a terminal window, so `exec` starts the pinned Terminal with it (`loadEntries`). */
+  terminal?: true;
 }
 
 /**
@@ -93,7 +96,7 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
   const exec = fields.get("Exec");
   if (fields.get("Type") !== "Application" || !name || !exec) return null;
   // Hidden is the spec's "deleted"; NoDisplay only keeps it out of lists (`hidden` below).
-  if (yes("Hidden") || yes("Terminal")) return null;
+  if (yes("Hidden")) return null;
   // Entries meant only for other desktops (KDE settings modules and such).
   if (fields.has("OnlyShowIn") && !splitList(fields.get("OnlyShowIn")).includes("Dashi")) return null;
   if (splitList(fields.get("NotShowIn")).includes("Dashi")) return null;
@@ -111,6 +114,8 @@ export function parseDesktopEntry(id: string, text: string): (Omit<Entry, "icon"
     iconName: fields.get("Icon") ?? "",
     ...(fields.get("StartupWMClass") ? { wmClass: fields.get("StartupWMClass") as string } : {}),
     ...(yes("NoDisplay") ? { hidden: true as const } : {}),
+    // A program for a terminal (htop, a TUI) is listed as GNOME lists it; it opens in the Terminal (`loadEntries`).
+    ...(yes("Terminal") ? { terminal: true as const } : {}),
     ...(actions.length > 0 ? { actions } : {}),
     // The freedesktop key, and KDE's older one (Steam sets both).
     ...(yes("PrefersNonDefaultGPU") || yes("X-KDE-RunOnDiscreteGpu") ? { gpu: "discrete" as const } : {}),
@@ -305,6 +310,48 @@ export function shellEntries(): Entry[] {
   return [...own, ...registered];
 }
 
+/** The most `.desktop` files read from one applications folder, its subfolders included. */
+const MAX_DESKTOP_FILES = 4096;
+
+/**
+ * The desktop files under an applications folder, with their desktop ids:
+ * the path below the folder with `/` as `-`, as the specification says, so
+ * Wine's `wine/Programs/Notepad++.desktop` is `wine-Programs-Notepad++`.
+ * Subfolders count: Wine puts the programs it installs there.
+ */
+export function desktopFiles(dir: string, list: (dir: string) => string[] = listTree): Array<{ id: string; path: string }> {
+  let files: string[];
+  try {
+    files = list(dir);
+  } catch {
+    return [];
+  }
+  return files
+    .filter((file) => file.endsWith(".desktop"))
+    .sort()
+    .slice(0, MAX_DESKTOP_FILES)
+    .map((file) => ({ id: file.slice(0, -".desktop".length).replaceAll("/", "-"), path: join(dir, file) }));
+}
+
+/** Every file below `dir`, as paths relative to it. */
+function listTree(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, encoding: "utf8" });
+}
+
+/**
+ * An installed entry as the launcher starts it: one with `Terminal=true`
+ * runs in the pinned Terminal (apps.ts `inTerminal`); null when there is no
+ * terminal to run it in.
+ */
+export function launchable<T extends Pick<Entry, "exec" | "cwd" | "env" | "terminal">>(
+  entry: T,
+  terminal: (argv: readonly string[]) => Pick<App, "exec" | "cwd" | "env"> | null = inTerminal,
+): T | null {
+  if (!entry.terminal) return entry;
+  const wrapped = terminal(entry.exec ?? []);
+  return wrapped ? { ...entry, ...wrapped } : null;
+}
+
 /** The installed apps; `withHidden` adds the `NoDisplay` ones, which only name windows (app-catalog.ts), never a list. */
 export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
   // A pinned app stands in for its desktop entry (the pinned Terminal is
@@ -316,27 +363,21 @@ export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
   const seen = new Set(entries.map((entry) => entry.id));
   const roots = iconRoots();
   for (const dir of dataDirs()) {
-    const apps = join(dir, "applications");
-    let files: string[] = [];
-    try {
-      files = readdirSync(apps).filter((file) => file.endsWith(".desktop"));
-    } catch {
-      continue;
-    }
-    for (const file of files) {
-      const id = file.slice(0, -".desktop".length);
+    // The first folder with an id has it (the person's own over the system's), as the specification says.
+    for (const { id, path } of desktopFiles(join(dir, "applications"))) {
       if (seen.has(id)) continue;
       seen.add(id);
       let text: string;
       try {
-        text = readFileSync(join(apps, file), "utf8");
+        text = readFileSync(path, "utf8");
       } catch {
         continue;
       }
       const parsed = parseDesktopEntry(id, text);
       if (!parsed || (parsed.hidden && !options.withHidden)) continue;
       const { iconName, ...entry } = parsed;
-      entries.push({ ...entry, icon: cachedIcon(iconName, roots) });
+      const runnable = launchable(entry);
+      if (runnable) entries.push({ ...runnable, icon: cachedIcon(iconName, roots) });
     }
   }
   return withDistinctNames(entries);

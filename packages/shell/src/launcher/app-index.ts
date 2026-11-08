@@ -2,9 +2,11 @@
  * The launcher's app index, built once and kept: a ❖ tap reads it from
  * memory and never the disk. It is built in the background at startup and
  * again when an applications directory changes (inotify, through `fs.watch`):
- * an app installed or removed shows up on the next tap. A directory that
- * doesn't exist yet (a fresh home's ~/.local/share/applications) is watched
- * through the nearest folder above it that does, so its creation counts too.
+ * an app installed or removed shows up on the next tap. An applications
+ * directory is watched with its subfolders (Wine installs programs' entries
+ * in `wine/Programs/`). A directory that doesn't exist yet (a fresh home's
+ * ~/.local/share/applications) is watched through the nearest folder above
+ * it that does, alone, so its creation counts too.
  */
 
 import { existsSync, type FSWatcher, watch as fsWatch } from "node:fs";
@@ -19,8 +21,8 @@ export interface AppIndexOptions {
   load?: () => Entry[];
   /** The folders whose changes rebuild it: every XDG data dir's `applications`. */
   dirs?: () => string[];
-  /** `fs.watch`, or a stand-in in tests. */
-  watch?: (path: string, listener: () => void) => Pick<FSWatcher, "close">;
+  /** `fs.watch`, with the subfolders when `recursive` (an applications directory), or a stand-in in tests. */
+  watch?: (path: string, listener: () => void, recursive: boolean) => Pick<FSWatcher, "close">;
   exists?: (path: string) => boolean;
   /** Timers, or a stand-in in tests. */
   schedule?: (run: () => void, ms: number) => () => void;
@@ -40,7 +42,7 @@ export class AppIndex {
   constructor(options: AppIndexOptions = {}) {
     this.load = options.load ?? (() => loadEntries());
     this.dirs = options.dirs ?? (() => dataDirs().map((dir) => join(dir, "applications")));
-    this.watchPath = options.watch ?? ((path, listener) => fsWatch(path, { persistent: false }, listener));
+    this.watchPath = options.watch ?? ((path, listener, recursive) => fsWatch(path, { persistent: false, recursive }, listener));
     this.exists = options.exists ?? existsSync;
     this.schedule =
       options.schedule ??
@@ -107,10 +109,15 @@ export class AppIndex {
   private arm(): void {
     for (const watcher of this.watchers) watcher.close();
     this.watchers = [];
-    const targets = new Set(this.dirs().flatMap((dir) => nearestExisting(dir, this.exists) ?? []));
-    for (const path of targets) {
+    // Each folder to watch, and whether it is an applications directory itself (watched with its subfolders).
+    const targets = new Map<string, boolean>();
+    for (const dir of this.dirs()) {
+      const at = nearestExisting(dir, this.exists);
+      if (at !== null) targets.set(at, (targets.get(at) ?? false) || at === dir);
+    }
+    for (const [path, recursive] of targets) {
       try {
-        this.watchers.push(this.watchPath(path, () => this.refreshSoon()));
+        this.watchers.push(this.watchPath(path, () => this.refreshSoon(), recursive));
       } catch (error) {
         console.error(`dashi-shell: cannot watch ${path} for new apps:`, error instanceof Error ? error.message : error);
       }

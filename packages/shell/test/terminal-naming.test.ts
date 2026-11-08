@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
-import { engineArgs, integrationDir } from "../apps/terminal/engine.ts";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { engineArgs, integrationDir, splitCommand } from "../apps/terminal/engine.ts";
 import { lineHeightFor, stepFontSize } from "../apps/terminal/line.tsx";
 import { commandName, folderName, localFolder, type Naming, renamed, tabName, UNNAMED } from "../apps/terminal/naming.ts";
 import { EMPTY_SCREEN } from "../apps/terminal/screen.ts";
@@ -70,6 +73,40 @@ test("dashi-term starts in the folder asked for, else home, with the integration
   expect(engineArgs("/t", { cols: 80, rows: 24 }, {}, HOME)).toEqual(["/t", "--cols", "80", "--rows", "24", "--cwd", HOME]);
   expect(integrationDir({ DASHI_TERMINAL_INTEGRATION: "0" })).toBeNull();
   expect(integrationDir({})?.endsWith("terminal/integration")).toBe(true);
+});
+
+test("a command (an app with Terminal=true) runs after --, in place of the shell and its integration", () => {
+  expect(engineArgs("/t", { cols: 80, rows: 24 }, { integration: "/i", command: ["htop", "--tree"] }, HOME)).toEqual([
+    "/t",
+    "--cols",
+    "80",
+    "--rows",
+    "24",
+    "--cwd",
+    HOME,
+    "--",
+    "htop",
+    "--tree",
+  ]);
+  // The Terminal's own words before `-e`, the command's after (its own `-e` too): a path in the command is never the Metal host.
+  expect(splitCommand(["--host", "/h", "-e", "/usr/bin/htop", "-e", "10"])).toEqual({ own: ["--host", "/h"], command: ["/usr/bin/htop", "-e", "10"] });
+  expect(splitCommand(["/h"])).toEqual({ own: ["/h"], command: null });
+  expect(splitCommand(["-e"])).toEqual({ own: [], command: null });
+});
+
+test("the command reaches the Terminal as Bun runs it (Bun drops a `--` after the script, so it is `-e`)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-terminal-argv-"));
+  const script = join(dir, "argv.ts");
+  writeFileSync(
+    script,
+    `import { splitCommand } from ${JSON.stringify(join(import.meta.dir, "../apps/terminal/engine.ts"))};\nconsole.log(JSON.stringify(splitCommand(Bun.argv.slice(2))));\n`,
+  );
+  try {
+    const run = Bun.spawnSync([process.execPath, script, "-e", "/usr/bin/top", "-d", "1"]);
+    expect(JSON.parse(run.stdout.toString())).toEqual({ own: [], command: ["/usr/bin/top", "-d", "1"] });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("the face steps through its sizes and stops at the ends", () => {

@@ -41,6 +41,8 @@ interface Choice {
   exec: readonly string[];
   env?: Readonly<Record<string, string>>;
   cwd?: string;
+  /** A terminal's: what goes between its command line and a program it is to run (`-e`). */
+  runs?: readonly string[];
 }
 
 interface PinnedSpec {
@@ -75,10 +77,10 @@ const PINNED: readonly PinnedSpec[] = [
     icon: "terminal",
     choices: [
       // Dashi's own (apps/terminal, on dashi-term and Ghostty's libghostty-vt); the others are fallbacks.
-      { id: "dev.dashi.terminal", exec: [process.execPath, `${shellRoot}apps/terminal/main.tsx`], cwd: shellRoot },
-      { id: "foot", exec: ["foot"] },
-      { id: "org.kde.konsole", exec: ["konsole"] },
-      { id: "Alacritty", exec: ["alacritty"] },
+      { id: "dev.dashi.terminal", exec: [process.execPath, `${shellRoot}apps/terminal/main.tsx`], cwd: shellRoot, runs: ["-e"] },
+      { id: "foot", exec: ["foot"], runs: ["--"] },
+      { id: "org.kde.konsole", exec: ["konsole"], runs: ["-e"] },
+      { id: "Alacritty", exec: ["alacritty"], runs: ["-e"] },
     ],
   },
   {
@@ -128,6 +130,24 @@ export function resolvePinned(which: (program: string) => string | null = (progr
       },
     ];
   });
+}
+
+/**
+ * How to run `argv` in a terminal window (an app whose desktop entry says
+ * `Terminal=true`, as htop's does): the pinned Terminal with the program
+ * after its `--` or `-e`, in its folder; null when no terminal is installed.
+ */
+export function inTerminal(
+  argv: readonly string[],
+  which: (program: string) => string | null = (program) => Bun.which(program),
+): Pick<App, "exec" | "cwd" | "env"> | null {
+  const terminal = PINNED.find((spec) => spec.icon === "terminal")?.choices.find((choice) => choice.runs && isInstalled(choice.exec, which));
+  if (!terminal?.runs || argv.length === 0) return null;
+  return {
+    exec: [...terminal.exec, ...terminal.runs, ...argv],
+    ...(terminal.cwd ? { cwd: terminal.cwd } : {}),
+    ...(terminal.env ? { env: terminal.env } : {}),
+  };
 }
 
 /** The app id System Settings' window reports. */

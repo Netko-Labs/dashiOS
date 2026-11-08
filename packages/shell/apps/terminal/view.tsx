@@ -46,6 +46,8 @@ export interface TerminalWindowProps {
   clipboard: Clipboard;
   /** Where the first tab's shell starts (a window opened from another); home when null. */
   firstFolder?: string | null;
+  /** What the first tab runs in place of the shell (`… -e htop`: an app whose desktop entry says `Terminal=true`). */
+  firstCommand?: readonly string[] | null;
 }
 
 export function TerminalWindow(props: TerminalWindowProps) {
@@ -59,7 +61,15 @@ export function TerminalWindow(props: TerminalWindowProps) {
   return <Terminal {...props} binary={props.binary} />;
 }
 
-function Terminal({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboard, firstFolder = null }: TerminalWindowProps & { binary: string }) {
+function Terminal({
+  binary,
+  onExit,
+  newWindow,
+  setTitle: setWindowTitle,
+  clipboard,
+  firstFolder = null,
+  firstCommand = null,
+}: TerminalWindowProps & { binary: string }) {
   const dark = useDark();
   const palette = terminalPalette(dark);
   const home = process.env.HOME;
@@ -136,7 +146,7 @@ function Terminal({ binary, onExit, newWindow, setTitle: setWindowTitle, clipboa
     if (was?.cols === cols && was.rows === rows && was.cw === cw && was.ch === ch) return;
     sessions.size.current = { cols, rows, cw, ch };
     sessions.broadcast({ t: "resize", cols, rows, cw, ch });
-    if (!sessions.started()) sessions.open(firstFolder);
+    if (!sessions.started()) sessions.open(firstFolder, firstCommand);
   };
   // biome-ignore lint/correctness/useExhaustiveDependencies: fit reads refs; it runs when the cell is measured again.
   useEffect(fit, [cell]);

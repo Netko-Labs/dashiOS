@@ -52,7 +52,7 @@ export interface Section {
   rows: Row[];
   /** Blank slots held for rows still coming (files): drawn empty, never selected. */
   reserved?: number;
-  /** Draw this many rows at once, scrolled with the selection (a scope's long list: scope.ts). */
+  /** Draw this many rows at once, scrolled with the selection (a scope's long list: scope.ts; All apps). */
   window?: number;
 }
 
@@ -113,13 +113,15 @@ export interface ListInput {
   icons: { calculator: string; files: string; software: string; command?: string };
   /** The Region, the clock and the zone answers are worked out in (answers/). */
   answers?: AnswerContext;
-  /** Rows that fit at the person's text size (measures.ts); LOCAL_ROWS and FILE_ROWS when left out. */
-  limits?: { local: number; files: number };
+  /** Rows that fit at the person's text size (measures.ts); LOCAL_ROWS, FILE_ROWS and ALL_APPS_ROWS when left out. */
+  limits?: { local: number; files: number; allApps?: number };
 }
 
 /** Instant rows the panel has room for (the answer included), and file rows below them. */
 export const LOCAL_ROWS = 5;
 export const FILE_ROWS = 3;
+/** All apps drawn at once, scrolled with the selection (measures.ts `allAppsRows`). */
+export const ALL_APPS_ROWS = 8;
 
 const FILES_ID = "dev.dashi.files";
 const SOFTWARE_ID = "dev.dashi.software";
@@ -319,7 +321,11 @@ export function buildSections(input: ListInput): Section[] {
     ? [{ id: "failed", rows: [{ ...entryRow(input.failed, "failed"), title: `Couldn't open ${shownName(input.failed)}`, detail: "try again", kind: "" }] }]
     : [];
   if (!query) {
-    if (input.allApps) return [...failed, { id: "all", title: "All apps", rows: allApps(input.entries).map((entry) => entryRow(entry)) }];
+    if (input.allApps) {
+      // Every app, drawn a window at a time that the selection and the wheel scroll: the list is never cut to fit the panel (fit.ts).
+      const rows = allApps(input.entries).map((entry) => entryRow(entry));
+      return [...failed, { id: "all", title: "All apps", rows, window: Math.min(input.limits?.allApps ?? ALL_APPS_ROWS, rows.length) }];
+    }
     if (input.recent.length > 0)
       return [...failed, { id: "recent", title: "Recent", rows: [...input.recent.map((entry) => entryRow(entry, "recent")), allAppsRow] }];
     return [...failed, { id: "try", title: "Try", aside: "Searches this computer only", rows: [...examples(input), allAppsRow] }];
