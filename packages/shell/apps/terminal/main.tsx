@@ -1,6 +1,6 @@
 /**
- * Terminal (dev.dashi.terminal): `bun apps/terminal/main.tsx [host] [-- COMMAND...]`
- * (after `--`, what the first tab runs in place of the shell: an app whose
+ * Terminal (dev.dashi.terminal): `bun apps/terminal/main.tsx [host] [-e COMMAND...]`
+ * (after `-e`, what the first tab runs in place of the shell: an app whose
  * desktop entry says `Terminal=true`, src/entries.ts). The
  * terminal itself is dashi-term (crates/dashi-term, on Ghostty's
  * libghostty-vt); this process draws it (view.tsx) and talks to it
@@ -34,7 +34,7 @@ let setTitle = (_title: string): void => {};
 const retitle = (title: string): void => setTitle(title);
 // The unified title bar: one row for the title, or the tabs once there are two (VS-1, VS-4).
 const app = runApp(
-  // The host is named before `--`: a command's own words (a path) are never taken for it.
+  // The host is named before `-e`: a command's own words (a path) are never taken for it.
   { id: "dev.dashi.terminal", title: "Terminal", size: TERMINAL_SIZE, host: hostBinary(own) },
   <TerminalWindow
     binary={binary}

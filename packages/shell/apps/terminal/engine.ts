@@ -65,12 +65,12 @@ export function engineBinary(env: Record<string, string | undefined> = process.e
 }
 
 /**
- * The Terminal's arguments (`[host] [-- COMMAND...]`), split at the first
- * `--`: its own before, and the command its first tab runs after (null when
- * there is none).
+ * The Terminal's arguments (`[host] [-e COMMAND...]`), split at the first
+ * `-e`: its own before, and the command its first tab runs after (null when
+ * there is none). Not `--`: Bun drops a `--` that follows the script.
  */
 export function splitCommand(args: readonly string[]): { own: string[]; command: string[] | null } {
-  const at = args.indexOf("--");
+  const at = args.indexOf("-e");
   if (at < 0) return { own: [...args], command: null };
   const command = args.slice(at + 1);
   return { own: args.slice(0, at), command: command.length > 0 ? command : null };

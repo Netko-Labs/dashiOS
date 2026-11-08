@@ -46,7 +46,7 @@ export interface TerminalWindowProps {
   clipboard: Clipboard;
   /** Where the first tab's shell starts (a window opened from another); home when null. */
   firstFolder?: string | null;
-  /** What the first tab runs in place of the shell (`… -- htop`: an app whose desktop entry says `Terminal=true`). */
+  /** What the first tab runs in place of the shell (`… -e htop`: an app whose desktop entry says `Terminal=true`). */
   firstCommand?: readonly string[] | null;
 }
 

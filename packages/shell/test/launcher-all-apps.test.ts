@@ -146,7 +146,7 @@ test("Wine's programs in a subfolder are read, with the specification's desktop 
   ]);
 });
 
-test("a Terminal=true entry is listed and opens in the pinned Terminal, its command after --", () => {
+test("a Terminal=true entry is listed and opens in the pinned Terminal, its command after -e (or --)", () => {
   const text = desktop("Htop").replace("Terminal=false", "Terminal=true");
   const parsed = parseDesktopEntry("htop", text);
   expect(parsed).toMatchObject({ name: "Htop", exec: ["htop"], terminal: true });
@@ -156,7 +156,7 @@ test("a Terminal=true entry is listed and opens in the pinned Terminal, its comm
   expect(launchable({ exec: ["htop"], terminal: true as const }, (argv) => inTerminal(argv, has(["konsole"])))?.exec).toEqual(["konsole", "-e", "htop"]);
   // Dashi's own Terminal (a Bun app) runs it in its folder.
   const own = inTerminal(["htop"], () => "/usr/bin/x");
-  expect(own?.exec?.slice(-2)).toEqual(["--", "htop"]);
+  expect(own?.exec?.slice(-2)).toEqual(["-e", "htop"]);
   expect(own?.exec?.at(-3)?.endsWith("apps/terminal/main.tsx")).toBe(true);
   expect(own?.cwd).toBeDefined();
   // No terminal installed: it can't be opened, so it isn't listed.
