@@ -227,6 +227,31 @@ for byte and checks every tool is still called the same way (`parseCall`
 and an action's `check` share `checkToolArgs`). Changing a tool changes the
 fixture in the same commit.
 
+### The agents' hands
+
+`click`, `type_text`, `press_keys`, `scroll` and `drag` use the agent's own
+pointer and keyboard in one window (`agents/desktop/hands.ts`, the
+compositor's `agent-input`), and never fight the person:
+
+- **The person wins at once.** When the person presses a key or a button in
+  a window, the agent's next action there is refused ("The person is using
+  w3"), until they have left that window alone for **2 s** (`QUIET_MS`). The
+  agent waits, or works in another window.
+- **Borrowing the person's seat.** Apps that hear only the person's seat
+  (Dashi's Metal apps, Helium and the Chromium family, Electron, X11 apps)
+  get the agent's input on the person's seat. dashi-comp lets that happen only
+  once the person's own last input (a key, a button, the pointer moving) is
+  2 s old; until then the call waits, up to **6 s** (`WAIT_MS`, "Waiting for
+  you to pause" in the menu bar), and then gives up: "The person is using the
+  desktop and didn't pause within 6 s, so nothing was done; an agent may act
+  once the person has left it alone for 2 s. Wait at least 2 s and try again."
+- **Only the person's hands count.** The agent's own input, on its seat or
+  the borrowed one, never makes the person look busy. Nor does a window that
+  keeps the screen awake (idle-inhibit: a video, a page playing sound): it
+  holds off blanking and sleep, but it is not someone at the desktop
+  (`Activity`, `session/idle.rs`). In 0.5.0 it was, and a page the agent
+  had just made play sound locked the agent out for as long as it played.
+
 ## Websites
 
 Agents use web pages through Dashi's own extension in Helium, not through

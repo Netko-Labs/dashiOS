@@ -127,8 +127,16 @@ impl Dashi {
                     .and_then(Value::as_u64)
                     .unwrap_or(BORROW_AFTER_MS)
                     .min(60_000);
-                if self.idle_for() < Duration::from_millis(idle) {
-                    return Err("the person is using the desktop".into());
+                // Only the person's own input counts: a page keeping the screen
+                // awake (session/idle.rs) and the agent's own actions do not.
+                if let Err(wait) = self
+                    .activity()
+                    .may_borrow(std::time::Instant::now(), Duration::from_millis(idle))
+                {
+                    return Err(format!(
+                        "the person is using the desktop (free in {} ms)",
+                        wait.as_millis()
+                    ));
                 }
                 self.seat.clone()
             }
