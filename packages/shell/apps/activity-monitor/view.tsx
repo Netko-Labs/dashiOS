@@ -19,24 +19,29 @@
  * opens it at Energy with an app selected (args.ts, `onOpen`).
  */
 
-import { AppWindow, EmptyState, glyphs, moveSelection, SearchField, Segmented, Table, ToolbarButton } from "@dashi/ui";
+import { AppWindow, EmptyState, glyphs, moveSelection, Table, useTitleBarInset } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
 import type { OpenRequest } from "./args.ts";
-import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
+import { COLUMNS, DEFAULT_SORT, fitColumns } from "./columns.ts";
 import { buildLines, type Line, lineForApp, parentKey, submitSelection } from "./lines.ts";
-import { monitorMenus, TABS, type ViewChoices } from "./menus.ts";
+import { monitorMenus, type ViewChoices } from "./menus.ts";
 import type { Monitor, Tab } from "./monitor.ts";
 import { NameCell } from "./name-cell.tsx";
 import { STILL_RUNNING_MS } from "./policy.ts";
 import { lineRefusal, type QuitActions, sendQuit } from "./quit.ts";
 import { filterRows, scopeTotals } from "./sample.ts";
-import { InspectSheet, QuitSheet, RefusedSheet, StillRunningSheet } from "./sheets.tsx";
+import { factsRoom, InspectSheet, QuitSheet, RefusedSheet, StillRunningSheet } from "./sheets.tsx";
+import { Sized, type WindowSize } from "./sized.tsx";
 import { Summary } from "./summary.tsx";
-import { ContextMenu, ViewButton, ViewMenu } from "./view-menus.tsx";
+import { MonitorToolbar } from "./toolbar.tsx";
+import { TOOLBAR_MIN_WIDTH, toolbarFit, toolbarRoom } from "./toolbar-fit.ts";
+import { ContextMenu, ViewMenu } from "./view-menus.tsx";
 
 export const MONITOR_SIZE = { width: 940, height: 640 } as const;
+/** The least size: the toolbar's last step in one row, and the summary's one line over a few rows. */
+export const MONITOR_MIN_SIZE = { width: TOOLBAR_MIN_WIDTH, height: 360 } as const;
 
 export interface MonitorActions extends QuitActions {
   copy(text: string): void;
@@ -78,6 +83,10 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
   const toList = useCallback((): void => setKeyboard((now) => ({ ...now, owner: "list", list: now.list + 1 })), []);
   const toField = (): void => setKeyboard((now) => ({ ...now, owner: "field", field: now.field + 1 }));
   const giveBack = (): void => setKeyboard((now) => (now.owner === "list" ? { ...now, list: now.list + 1 } : { ...now, field: now.field + 1 }));
+  // The toolbar, the columns and the summary fit the window's size (sized.tsx).
+  const [size, setSize] = useState<WindowSize>(MONITOR_SIZE);
+  const inset = useTitleBarInset();
+  const fit = toolbarFit(toolbarRoom(size.width, inset.leading));
   const lastPress = useRef<{ key: string; at: number } | null>(null);
   const stillTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -214,38 +223,29 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
 
   const refusal = selectedLine ? lineRefusal(selectedLine, state.rows, actions.guard) : null;
   const toolbar = (
-    <>
-      <ToolbarButton
-        glyph={glyphs.STOP}
-        label="Quit…"
-        testID="stop"
-        disabled={!selectedLine || refusal !== null}
-        tooltip={selectedLine ? (refusal ?? `Quit ${selectedLine.name}`) : "Select an app to quit it"}
-        onPress={() => quit()}
-      />
-      <ViewButton view={view} onOpen={(x, y) => setMenu({ kind: "view", x, y })} />
-      <View style={{ width: 8 }} />
-      <Segmented testID="tabs" options={TABS} value={tab} onChange={chooseTab} segmentWidth={64} />
-      <View style={{ width: 8 }} />
-      <SearchField
-        key={`search:${keyboard.field}`}
-        testID="search"
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search processes"
-        width={150}
+    <MonitorToolbar
+      fit={fit}
+      tab={tab}
+      onTab={chooseTab}
+      view={view}
+      onViewMenu={(x, y) => setMenu({ kind: "view", x, y })}
+      quit={selectedLine ? { name: selectedLine.name, refusal } : null}
+      onQuit={() => quit()}
+      search={{
+        key: keyboard.field,
+        value: query,
+        onChange: setQuery,
         // Not under a sheet: it asks again when the sheet closes.
-        autoFocus={keyboard.owner === "field" && sheet === null}
-        onKeyPress={(key) => {
-          if (key === "ArrowUp" || key === "ArrowDown") move(key === "ArrowUp" ? "up" : "down");
-        }}
-        // Return selects, and the list takes the keyboard: ← and → then open and close what was found.
-        onSubmit={() => {
+        focused: keyboard.owner === "field" && sheet === null,
+        onOpen: toField,
+        onArrow: move,
+        onLeave: toList,
+        onSubmit: () => {
           setSelected(submitSelection(keys, selectedLine?.key ?? null));
           toList();
-        }}
-      />
-    </>
+        },
+      }}
+    />
   );
 
   const closeMenu = (): void => {
@@ -265,6 +265,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
         line={lines.find((line) => line.key === sheet.line.key) ?? sheet.line}
         parentName={state.rows.find((row) => row.pid === sheet.line.process?.ppid)?.name ?? null}
         onClose={closeSheet}
+        maxFacts={factsRoom(size.height, Math.max(inset.top, 0), sheet.line.kind === "app" && sheet.line.members.length > 1)}
       />
     ) : menu?.kind === "view" ? (
       <ViewMenu x={menu.x} y={menu.y} view={view} onChange={(patch) => setView({ ...view, ...patch })} onClose={closeMenu} />
@@ -284,46 +285,55 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
 
   return (
     // One chrome row: the scope is the view button's own label, and the summary is content under the table.
-    <AppWindow title="Activity Monitor" toolbar={toolbar} overlay={overlay}>
-      <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
-        {/* The list's keys: a view with no size, remounted to take the keyboard from the search field. A sheet's own keys come after it. */}
-        <View
-          key={`list:${keyboard.list}`}
-          testID="list-keys"
-          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-          onWindowKeyDown={(event) => {
-            if (blocked || event.ctrl || event.alt || event.meta) return;
-            if (event.key === "up" || event.key === "down") move(event.key);
-            else if (event.key === "left" || event.key === "right") expandWith(event.key);
-            else if (event.key === "enter") inspect();
-          }}
-        />
-        <Table
-          testID="processes"
-          columns={columns}
-          rows={lines}
-          rowKey={(line) => line.key}
-          // The list re-sorts every two seconds: rows hold still while the pointer is over them and just after a choice, so a click selects the line aimed at.
-          steady
-          selected={selectedLine?.key ?? null}
-          onSelect={press}
-          onContextMenu={(key, point) => {
-            setSelected(key);
-            setMenu({ kind: "context", x: point.x, y: point.y });
-          }}
-          sort={sort}
-          onSort={(next) => setSorts({ ...sorts, [tab]: next })}
-          muted={(line) => !line.own}
-          empty={
-            state.rows.length === 0 ? (
-              <EmptyState title="Reading processes…" />
-            ) : (
-              <EmptyState title="No matches" message={query ? `Nothing matches “${query.trim()}”.` : "Nothing in this view."} glyph={glyphs.SEARCH} />
-            )
-          }
-        />
-        {view.summary && <Summary tab={tab} state={state} totals={totals} top={heaviest(lines)} />}
-      </View>
-    </AppWindow>
+    <Sized onSize={(next) => setSize((now) => (now.width === next.width && now.height === next.height ? now : next))}>
+      <AppWindow
+        title="Activity Monitor"
+        // In a narrow window the title gives its room to the controls first (toolbar-fit.ts).
+        {...(fit.title ? {} : { center: <View style={{ flex: 1 }} /> })}
+        toolbar={toolbar}
+        overlay={overlay}
+      >
+        <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
+          {/* The list's keys: a view with no size, remounted to take the keyboard from the search field. A sheet's own keys come after it. */}
+          <View
+            key={`list:${keyboard.list}`}
+            testID="list-keys"
+            style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+            onWindowKeyDown={(event) => {
+              if (blocked || event.ctrl || event.alt || event.meta) return;
+              if (event.key === "up" || event.key === "down") move(event.key);
+              else if (event.key === "left" || event.key === "right") expandWith(event.key);
+              else if (event.key === "enter") inspect();
+            }}
+          />
+          <Table
+            testID="processes"
+            // Short of room the name keeps its least width, and the figures it can spare go (columns.ts).
+            columns={fitColumns(tab, columns, size.width, sort?.key ?? null)}
+            rows={lines}
+            rowKey={(line) => line.key}
+            // The list re-sorts every two seconds: rows hold still while the pointer is over them and just after a choice, so a click selects the line aimed at.
+            steady
+            selected={selectedLine?.key ?? null}
+            onSelect={press}
+            onContextMenu={(key, point) => {
+              setSelected(key);
+              setMenu({ kind: "context", x: point.x, y: point.y });
+            }}
+            sort={sort}
+            onSort={(next) => setSorts({ ...sorts, [tab]: next })}
+            muted={(line) => !line.own}
+            empty={
+              state.rows.length === 0 ? (
+                <EmptyState title="Reading processes…" />
+              ) : (
+                <EmptyState title="No matches" message={query ? `Nothing matches “${query.trim()}”.` : "Nothing in this view."} glyph={glyphs.SEARCH} />
+              )
+            }
+          />
+          {view.summary && <Summary tab={tab} state={state} totals={totals} top={heaviest(lines)} width={size.width} height={size.height} />}
+        </View>
+      </AppWindow>
+    </Sized>
   );
 }

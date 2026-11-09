@@ -139,3 +139,31 @@ test("Inspect from the menu leaves the keyboard to its sheet, and Esc closes it"
   expect(view.has("inspect-sheet")).toBe(false);
   view.root.unmount();
 });
+
+test("in a narrow, short window search is a glyph that opens the field in the tabs' place, and the summary is one line", async () => {
+  const view = await mount();
+  expect(view.has("search")).toBe(true);
+  expect(view.has("summary-graph")).toBe(true);
+  await view.emitRaw({ type: "resize", nodeId: view.node("monitor-window"), bounds: { x: 0, y: 0, width: 600, height: 400 } });
+  expect(view.has("search")).toBe(false);
+  expect(view.has("tabs")).toBe(true);
+  expect(view.has("summary-brief")).toBe(true);
+  expect(view.has("summary-graph")).toBe(false);
+  await view.press("search-open");
+  expect(view.has("search")).toBe(true);
+  expect(view.has("tabs")).toBe(false);
+  expect(autofocused(view.root)).toBe(true);
+  // A query keeps the field showing after the list takes the keyboard back.
+  await view.emitRaw({ type: "change", nodeId: view.node("search"), value: "term" });
+  await view.press("processes:row:app:dev.dashi.terminal");
+  expect(view.has("search")).toBe(true);
+  // Emptied while the list has the keyboard, the tabs come back; opened again, Esc in the empty field gives them back too.
+  await view.emitRaw({ type: "change", nodeId: view.node("search"), value: "" });
+  expect(view.has("tabs")).toBe(true);
+  await view.press("search-open");
+  expect(view.has("tabs")).toBe(false);
+  await view.emitRaw({ type: "key", nodeId: view.node("search"), value: "Escape" });
+  expect(view.has("search")).toBe(false);
+  expect(view.has("tabs")).toBe(true);
+  view.root.unmount();
+});

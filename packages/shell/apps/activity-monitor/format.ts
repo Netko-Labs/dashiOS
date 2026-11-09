@@ -58,3 +58,17 @@ const STATES: Readonly<Record<string, string>> = {
 export function formatState(state: string): string {
   return STATES[state] ?? state;
 }
+
+/**
+ * `text` in at most `max` characters, cut in the middle so both ends show:
+ * "alex-kim-quarterly…whole-design-team". A process's name often differs
+ * from its siblings' only at the end, so the end is kept.
+ */
+export function middleCut(text: string, max: number): string {
+  const chars = [...text];
+  if (chars.length <= max) return text;
+  if (max <= 1) return "…";
+  const tail = Math.floor((max - 1) / 2);
+  const head = max - 1 - tail;
+  return `${chars.slice(0, head).join("")}…${tail > 0 ? chars.slice(-tail).join("") : ""}`;
+}

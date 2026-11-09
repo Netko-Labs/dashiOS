@@ -66,11 +66,19 @@ export const STEADY_MS = 1000;
 /** How long rows stay put after the selection changed. */
 export const STEADY_SELECTED_MS = 3000;
 
-/** `rows`, or while the pointer is over them or a row was just chosen, the order they were drawn in (`holdOrder`). */
-function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled: boolean, selected: K | null) {
+/**
+ * `rows`, or while the pointer is over them or a row was just chosen, the order they were drawn in (`holdOrder`).
+ * A new sort (`sortId`), from the header or from the app (a tab, a menu, a key), shows at once.
+ */
+function useSteadyRows<T, K>(rows: readonly T[], rowKey: (row: T) => K, enabled: boolean, selected: K | null, sortId: string) {
   const [over, setOver] = useState(false);
   const [timed, setTimed] = useState(false);
   const drawn = useRef<K[]>([]);
+  const drawnSort = useRef(sortId);
+  if (drawnSort.current !== sortId) {
+    drawnSort.current = sortId;
+    drawn.current = [];
+  }
   const pressing = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -155,7 +163,7 @@ export function Table<T, K extends string | number>({
   const colors = useColors();
   const surface = useSurface();
   const [dropOver, setDropOver] = useState<K | null>(null);
-  const { shown, aim, pointerOver, press, release } = useSteadyRows(rows, rowKey, steady, selected);
+  const { shown, aim, pointerOver, press, release } = useSteadyRows(rows, rowKey, steady, selected, sort ? `${sort.key}:${sort.ascending}` : "");
   return (
     <View testID={testID} style={{ flex: 1, flexDirection: "column", minHeight: 0, backgroundColor: surface.card }}>
       {header && (

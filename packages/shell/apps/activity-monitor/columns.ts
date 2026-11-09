@@ -156,3 +156,33 @@ export const DEFAULT_SORT: Record<Tab, SortState> = {
   disk: { key: "writeRate", ascending: false },
   network: { key: "sockets", ascending: false },
 };
+
+/** The least room a name keeps: the chevron, the icon, about fifteen letters and the process count. */
+export const NAME_MIN = 180;
+/** The table's own padding either side of its cells (dashi-ui table.tsx `PAD`). */
+const TABLE_PAD = 10;
+
+/** Which columns give way first when the window is too narrow for them and a name, per tab: the name's neighbours stay longest. */
+const GIVE_WAY: Record<Tab, readonly string[]> = {
+  cpu: ["user", "state", "pid", "cpuTime", "threads"],
+  memory: ["user", "pid", "threads"],
+  energy: ["user", "gpu", "wakeups", "cpu"],
+  disk: ["user", "pid", "read", "written", "readRate"],
+  network: ["user", "pid"],
+};
+
+/**
+ * The columns that fit a table `width` wide while the name keeps `NAME_MIN`:
+ * the tab's columns, dropping the least needed first (`GIVE_WAY`), never the
+ * name, the first figure, or the column the list is sorted by.
+ */
+export function fitColumns<C extends { key: string; width?: number }>(tab: Tab, columns: readonly C[], width: number, sortKey: string | null = null): C[] {
+  const room = width - TABLE_PAD;
+  let kept = [...columns];
+  const fixed = (): number => kept.reduce((sum, column) => sum + (column.width ?? 0), 0);
+  for (const key of GIVE_WAY[tab]) {
+    if (room - fixed() >= NAME_MIN) break;
+    if (key !== sortKey) kept = kept.filter((column) => column.key !== key);
+  }
+  return kept;
+}

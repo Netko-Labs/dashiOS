@@ -17,7 +17,7 @@ import type { Target } from "./policy.ts";
 import { parseStat } from "./proc.ts";
 import { readUsers, sysconf } from "./read.ts";
 import { Sampler } from "./sampling.ts";
-import { MONITOR_SIZE, MonitorWindow } from "./view.tsx";
+import { MONITOR_MIN_SIZE, MONITOR_SIZE, MonitorWindow } from "./view.tsx";
 
 /** The process `target` named, if it is still that one (a pid is reused once its process ends): its state letter, else null. */
 function stateOf(target: Target): string | null {
@@ -32,7 +32,7 @@ monitor.start();
 const clipboard = systemClipboard();
 
 const app = runApp(
-  { id: "dev.dashi.activity-monitor", title: "Activity Monitor", size: MONITOR_SIZE },
+  { id: "dev.dashi.activity-monitor", title: "Activity Monitor", size: MONITOR_SIZE, minSize: MONITOR_MIN_SIZE },
   <MonitorWindow
     monitor={monitor}
     initial={parseOpenArgs(Bun.argv.slice(2))}

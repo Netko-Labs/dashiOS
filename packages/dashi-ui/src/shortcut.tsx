@@ -42,9 +42,13 @@ export function shortcutParts(keys: string): string[] {
   return parts;
 }
 
+/**
+ * The keys as one run: no gap between the parts, since each glyph's drawing
+ * already keeps a little room at its sides, so "❖I" reads as one token.
+ */
 export function Shortcut({ keys, color, size = 13 }: { keys: string; color: string; size?: number }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 0 }}>
       {shortcutParts(keys).map((part, index) =>
         KEY_GLYPHS[part] ? (
           <Svg key={index} markup={KEY_GLYPHS[part] as string} size={size} color={color} />
