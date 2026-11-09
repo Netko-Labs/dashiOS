@@ -80,10 +80,12 @@ where
 {
     let size = crate::outputs::drawn_size(output).ok_or("that screen has no mode")?;
     let elements = super::output_elements(state, renderer, output, cursor);
+    // Its scale is the picture's while it mirrors (render/mirror.rs).
+    let scale = output.current_scale().fractional_scale();
     render_offscreen(
         renderer,
         size,
-        1.0.into(),
+        scale.into(),
         &elements,
         crate::backend::BACKGROUND,
     )

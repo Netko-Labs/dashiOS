@@ -9,7 +9,7 @@ use smithay::{
         ImportAll, ImportMem, Renderer,
         element::{Kind, solid::SolidColorRenderElement},
     },
-    output::Output,
+    output::{Output, Scale},
     utils::{Physical, Point, Rectangle, Size},
 };
 
@@ -43,6 +43,10 @@ where
         return Vec::new();
     };
     let (scale, at) = letterbox(screen.size, size);
+    // The renderer sizes elements by the screen's scale: while it mirrors, that is the picture's.
+    if (target.current_scale().fractional_scale() - scale).abs() > 1e-9 {
+        target.change_current_state(None, None, Some(Scale::Fractional(scale)), None);
+    }
     // The area of the space the target shows: the source's, widened by the
     // bars (whole points; the bars cover what lies past the source).
     let before = Point::from(((at.x / scale).floor() as i32, (at.y / scale).floor() as i32));
@@ -82,7 +86,12 @@ where
         .zip(mirror_bars(picture, size))
         .filter(|(_, rect)| rect.size.w > 0 && rect.size.h > 0)
         .map(|(buffer, rect)| {
-            buffer.update(rect.size.to_logical(1), MIRROR_BAR);
+            // Drawn at the screen's scale (the picture's): the bar's own size is in its points.
+            let points = (
+                (f64::from(rect.size.w) / scale).ceil() as i32,
+                (f64::from(rect.size.h) / scale).ceil() as i32,
+            );
+            buffer.update(points, MIRROR_BAR);
             DashiElement::Solid(SolidColorRenderElement::from_buffer(
                 buffer,
                 rect.loc,

@@ -79,7 +79,7 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         "mirrorOf": mirror_of,
         "primary": primary,
         "physicalMm": { "width": properties.size.w, "height": properties.size.h },
-        "scale": output.current_scale().fractional_scale(),
+        "scale": state.mirrors.of(output).map_or_else(|| output.current_scale().fractional_scale(), |m| m.own_scale()),
         "transform": { "rotation": rotation, "flipped": flipped },
         "mode": current.map(|mode| json!({ "width": mode.size.w, "height": mode.size.h, "refreshMhz": mode.refresh })),
         "modes": modes,

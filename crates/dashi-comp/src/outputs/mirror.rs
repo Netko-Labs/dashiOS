@@ -11,7 +11,7 @@
 use serde_json::{Map, Value};
 use smithay::{
     backend::renderer::element::solid::SolidColorBuffer,
-    output::Output,
+    output::{Output, Scale},
     utils::{Logical, Physical, Point, Rectangle, Size},
 };
 
@@ -27,12 +27,24 @@ pub(crate) struct Mirror {
     pub source: String,
     /// Where it was in the space before, to go back to.
     at: Point<i32, Logical>,
+    /// Its own scale, given back when it stops. While it mirrors its scale
+    /// is the picture's (target pixels a source point), so that the
+    /// renderer, which sizes elements by the screen's scale, draws the
+    /// source's elements at the picture's size.
+    own_scale: Scale,
     /// The letterbox's bars: steady buffers, so their damage is tracked.
     pub bars: [SolidColorBuffer; 4],
 }
 
 #[derive(Default)]
 pub(crate) struct Mirrors(Vec<Mirror>);
+
+impl Mirror {
+    /// The scale it had before it mirrored (what `outputs` reports for it).
+    pub(crate) fn own_scale(&self) -> f64 {
+        self.own_scale.fractional_scale()
+    }
+}
 
 impl Mirrors {
     pub(crate) fn of(&self, target: &Output) -> Option<&Mirror> {
@@ -142,10 +154,12 @@ impl Dashi {
                 .map(|g| g.loc)
                 .unwrap_or_default();
             self.space.unmap_output(&target);
+            let own_scale = target.current_scale();
             self.mirrors.0.push(Mirror {
                 target,
                 source: source.to_owned(),
                 at,
+                own_scale,
                 bars: std::array::from_fn(|_| SolidColorBuffer::new((0, 0), BAR)),
             });
         }
@@ -158,7 +172,7 @@ impl Dashi {
         let Some(mirror) = self.mirrors.take(target) else {
             return;
         };
-        self.space.map_output(&mirror.target, mirror.at);
+        self.give_back(mirror);
         self.mirrors_changed();
     }
 
@@ -186,8 +200,16 @@ impl Dashi {
     /// is back in the space, where it was), so the arrangement applies to it as to any other.
     pub(crate) fn unmirror_for_config(&mut self, output: &Output) {
         if let Some(mirror) = self.mirrors.take(output) {
-            self.space.map_output(&mirror.target, mirror.at);
+            self.give_back(mirror);
         }
+    }
+
+    /// A screen that mirrored shows its own desktop again: its scale, and its place.
+    fn give_back(&mut self, mirror: Mirror) {
+        mirror
+            .target
+            .change_current_state(None, None, Some(mirror.own_scale), None);
+        self.space.map_output(&mirror.target, mirror.at);
     }
 
     fn mirrors_changed(&mut self) {
