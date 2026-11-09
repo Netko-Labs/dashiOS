@@ -19,7 +19,7 @@
 import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
+import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Text, type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppChooser, chooserRequest } from "../files/chooser/index.ts";
@@ -367,9 +367,13 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
   );
 }
 
-/** The counts at the text's foot, at its right: a quiet pill, as a toolbar's state chip is (VS-5). */
+/**
+ * The counts at the text's foot, at its right: a quiet pill, as a toolbar's state chip is (VS-5), but on the
+ * window's own ground with a hairline edge, since it floats over text that must not show through it.
+ */
 function CountsChip({ text }: { text: string }) {
   const colors = useColors();
+  const surface = useSurface();
   return (
     <View
       testID="counts"
@@ -382,7 +386,9 @@ function CountsChip({ text }: { text: string }) {
         borderRadius: 12,
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: colors.button,
+        backgroundColor: surface.window,
+        borderWidth: 1,
+        borderColor: colors.separator,
       }}
     >
       <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
