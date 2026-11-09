@@ -153,6 +153,26 @@ export function fitFrame(frame: Rect, usable: Rect): Rect {
   };
 }
 
+/**
+ * `frame` at least `least` big (an app's own minimum), as far as `usable`
+ * allows: it grows from the side facing the usable area's middle, so a
+ * right tile grows to the left and a bottom one upward, and stays inside.
+ */
+export function keepLeast(frame: Rect, least: { width: number; height: number } | undefined, usable: Rect): Rect {
+  if (!least || (frame.width >= least.width && frame.height >= least.height)) return frame;
+  const width = Math.max(frame.width, Math.min(least.width, usable.width));
+  const height = Math.max(frame.height, Math.min(least.height, usable.height));
+  const right = frame.x + frame.width / 2 > usable.x + usable.width / 2;
+  const below = frame.y + frame.height / 2 > usable.y + usable.height / 2;
+  const grown = {
+    x: right ? frame.x + frame.width - width : frame.x,
+    y: below ? frame.y + frame.height - height : frame.y,
+    width,
+    height,
+  };
+  return fitFrame(grown, usable);
+}
+
 /** The screen holding `frame`'s center (else the first). */
 export function screenFor<S extends { frame: Rect }>(frame: Rect, screens: readonly S[]): S | null {
   const cx = frame.x + frame.width / 2;

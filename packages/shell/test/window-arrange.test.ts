@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Arranger } from "../src/arrange.ts";
 import { type Compositor, type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
-import { carryFrame, centerFrame, dragZones, frameUnderPointer, type Rect, TILES, tileFrame } from "../src/layout.ts";
+import { carryFrame, centerFrame, dragZones, frameUnderPointer, keepLeast, type Rect, TILES, tileFrame } from "../src/layout.ts";
 import { arrowStep, screenToward } from "../src/tiling.ts";
 
 /** The VM's screen: 1646 × 937 points, the menu bar (28) and the Dock (65 + 6) leaving 838 between them. */
@@ -586,5 +586,44 @@ describe("configuring", () => {
     });
     expect(parseEvent({ event: "window-opened", window: { ...base, configuring: null } })).not.toHaveProperty("window.configuring");
     expect(parseEvent({ event: "window-opened", window: { ...base, configuring: { width: 0, height: 5 } } })).not.toHaveProperty("window.configuring");
+  });
+});
+
+describe("an app's least size", () => {
+  const SettingsLeast = { width: 748, height: 300 };
+  const settings = (): CompositorWindow => ({ ...files(), id: 9, appId: "dev.dashi.settings", title: "System Settings", minSize: { ...SettingsLeast } });
+
+  test("a window says the least frame its app allows", () => {
+    const base = { id: 3, appId: "dev.dashi.settings", title: "System Settings", pid: 42, focused: true, state: "normal" };
+    expect(parseEvent({ event: "window-opened", window: { ...base, minSize: { width: 748, height: 300 } } })).toMatchObject({
+      window: { minSize: { width: 748, height: 300 } },
+    });
+    expect(parseEvent({ event: "window-opened", window: { ...base, minSize: null } })).not.toHaveProperty("window.minSize");
+  });
+
+  test("a frame grows to it away from the screen's edge, and stays inside the usable area", () => {
+    const left = tileFrame("left", USABLE);
+    expect(keepLeast(left, { width: 1000, height: 300 }, USABLE)).toEqual({ ...left, width: 1000 });
+    const right = tileFrame("right", USABLE);
+    expect(keepLeast(right, { width: 1000, height: 300 }, USABLE)).toEqual({ ...right, x: right.x + right.width - 1000, width: 1000 });
+    const bottom = tileFrame("bottom-right", USABLE);
+    const kept = keepLeast(bottom, { width: 300, height: 600 }, USABLE);
+    expect(kept.y + kept.height).toBe(bottom.y + bottom.height);
+    expect(kept.height).toBe(600);
+    // Bigger than the screen: as big as the usable area.
+    expect(keepLeast(left, { width: 5000, height: 5000 }, USABLE)).toEqual(USABLE);
+    // Already big enough, or no least size: unchanged.
+    expect(keepLeast(left, { width: 100, height: 100 }, USABLE)).toBe(left);
+    expect(keepLeast(left, undefined, USABLE)).toBe(left);
+  });
+
+  test("a half of a small screen too narrow for System Settings takes its least width", async () => {
+    const small = { x: 0, y: 28, width: 1097, height: 620 };
+    const { arranger, frames } = await started(settings(), [{ name: "Virtual-1", frame: { x: 0, y: 0, width: 1097, height: 686 }, usable: small }]);
+    await arranger.arrow(9, "right");
+    const asked = frames().at(-1)?.[1] as unknown as Rect & { tiled?: boolean };
+    expect(asked.width).toBe(SettingsLeast.width);
+    expect(asked.x + asked.width).toBe(tileFrame("right", small).x + tileFrame("right", small).width);
+    expect(asked.tiled).toBe(true);
   });
 });

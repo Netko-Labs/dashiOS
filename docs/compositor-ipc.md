@@ -50,7 +50,7 @@ them until the compositor side pins them down here.
 | `attach` | `{window, parent: int\|null, top?: int}` | `{}`; `window` becomes a sheet of `parent` (null: an ordinary window again): no title bar, centred under the parent's title bar (or `top` points, 0 to 512, below the top of the parent's frame: for a parent that draws its own title bar and toolbar, whose height only the shell can guess) and kept there, above it, on its Space, off screen with it; the keyboard goes to the sheet when the parent would get it, and a press inside the parent only brings the sheet forward. A window not yet placed is placed there (an answer to `window-placing`). A sheet whose parent closes becomes an ordinary window. Refused for a parent that is itself a sheet.; *see* `src/portal-host/sheets.ts` |
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
-"normal"|"minimized"|"hidden", frame: Frame|null, configuring: {width, height}|null, titleBar: int,
+"normal"|"minimized"|"hidden", frame: Frame|null, configuring: {width, height}|null, minSize: {width, height}|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
 string|null, path: string|null}, toplevel?: string, sheetOf?: int, parent?: int}`;
 `parent` is the window it is a dialog of (its xdg parent, or the X11 window
@@ -62,7 +62,10 @@ answers with; absent until the list has it); `icon` is what the app gave
 xdg app was last asked to take (`frame`, full screen, a resize) while it has
 not yet acked and committed that configure (until then `frame` has the old
 size; the position is already the new one), null once it has and for X11
-windows; an X11 window's `pid` is its own
+windows; `minSize` is the smallest outer frame (title bar included) the app
+allows (xdg `set_min_size`, X11's `WM_NORMAL_HINTS`), null when it sets none:
+a person's resize stops there, and the shell keeps the frames it asks for at
+least that big (`src/arrange.ts`, `keepLeast`); an X11 window's `pid` is its own
 (`_NET_WM_PID`); `Frame` is
 `{x, y, width, height}` (outer frame, title bar included).
 

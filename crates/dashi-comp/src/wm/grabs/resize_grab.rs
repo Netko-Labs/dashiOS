@@ -106,7 +106,7 @@ impl ResizeSurfaceGrab {
 }
 
 /// The smallest and largest size the client allows (0: no limit).
-fn size_limits(window: &Window) -> (Size<i32, Logical>, Size<i32, Logical>) {
+pub(crate) fn size_limits(window: &Window) -> (Size<i32, Logical>, Size<i32, Logical>) {
     if let Some(x11) = window.x11_surface() {
         return (
             x11.min_size().unwrap_or_default(),

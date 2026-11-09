@@ -76,10 +76,35 @@ export class WarmHost {
 }
 
 /** Whether the host binary knows deferred windows: it names `MIRIN_METAL_DEFERRED`. */
-export async function hostSupportsDeferred(binary: string): Promise<boolean> {
-  const grep = Bun.spawn(["grep", "-aqF", "MIRIN_METAL_DEFERRED", binary], {
+export function hostSupportsDeferred(binary: string): Promise<boolean> {
+  return binaryNames(binary, "MIRIN_METAL_DEFERRED");
+}
+
+/**
+ * Whether the host binary's `open` takes a least size: it names
+ * `MIRIN_METAL_OPEN_MIN_SIZE`. A host from before refuses an open line with
+ * `minWidth` in it, and no window opens at all.
+ */
+export function hostTakesLeast(binary: string): Promise<boolean> {
+  return binaryNames(binary, "MIRIN_METAL_OPEN_MIN_SIZE");
+}
+
+async function binaryNames(binary: string, marker: string): Promise<boolean> {
+  const grep = Bun.spawn(["grep", "-aqF", marker, binary], {
     stdout: "ignore",
     stderr: "ignore",
   });
   return (await grep.exited) === 0;
+}
+
+/**
+ * The window part of a host's options, for a warm host's `open`: its least
+ * size only when the host takes it (`hostTakesLeast`) and both sizes are set.
+ */
+export function windowFor(
+  { title, appId, width, height, minWidth, minHeight, surface, titleBar }: NativeHostOptions,
+  takesLeast: boolean,
+): NativeWindowOptions {
+  const least = takesLeast && minWidth !== undefined && minHeight !== undefined ? { minWidth, minHeight } : {};
+  return { title, appId, width, height, ...least, surface, titleBar };
 }

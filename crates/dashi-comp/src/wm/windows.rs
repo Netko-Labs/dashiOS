@@ -319,6 +319,15 @@ pub(crate) fn configuring(state: &Dashi, window: &Window) -> Option<Size<i32, Lo
     Some(Size::from((size.w, size.h + bar_of(state, window))))
 }
 
+/// The smallest outer frame its app allows (xdg `set_min_size`, X11's
+/// `WM_NORMAL_HINTS`), title bar included; None when it sets no minimum.
+/// The shell keeps the frames it asks for at least this big.
+pub(crate) fn min_frame(state: &Dashi, window: &Window) -> Option<Size<i32, Logical>> {
+    let (least, _) = super::grabs::resize_grab::size_limits(window);
+    (least.w > 0 || least.h > 0)
+        .then(|| Size::from((least.w.max(1), least.h.max(1) + bar_of(state, window))))
+}
+
 /// Its frame as it is about to be: where it is, at the size it is being
 /// configured to while its app has not drawn that yet.
 pub(crate) fn frame_to_be(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
@@ -354,6 +363,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
         "state": entry.shown.name(),
         "frame": frame,
         "configuring": configuring(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
+        "minSize": min_frame(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
         "titleBar": state.bar_height(&entry.window),
         "fullscreen": entry.fullscreen.is_some(),
         "space": entry.space,
