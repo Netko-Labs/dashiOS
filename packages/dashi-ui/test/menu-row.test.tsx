@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { HUNG_ROWS, hungHeight, MENU, menuFits, menuLabelLeft, menuMaxWidth } from "../src/menu-place.ts";
-import { MenuRow } from "../src/menu-row.tsx";
+import { MenuHighlightContext, MenuRow } from "../src/menu-row.tsx";
 import { Shortcut } from "../src/shortcut.tsx";
 import { fakeHost, settle } from "./host.ts";
 
@@ -47,6 +47,18 @@ describe("MenuRow", () => {
     expect(lit.props.background).not.toBe("#00000000");
     const off = await drawn(<MenuRow testID="r" label="Copy" ticks={false} lit disabled />);
     expect(off.props.background).toBe("#00000000");
+  });
+
+  test("inside a MenuHighlightContext a lit row takes the surface's fill and ink (Settings' green, not kombu)", async () => {
+    const look = { fill: "#86d3b6", ink: "#0b2a20", keysInk: "#0b2a20cc" };
+    const row = await drawn(
+      <MenuHighlightContext.Provider value={look}>
+        <MenuRow testID="r" label="5 min" ticks checked lit />
+      </MenuHighlightContext.Provider>,
+    );
+    expect(String(row.props.background).toLowerCase()).toContain("86d3b6");
+    expect(JSON.stringify(row)).toContain("0b2a20");
+    expect(JSON.stringify(row)).not.toContain('#ffffff"');
   });
 });
 

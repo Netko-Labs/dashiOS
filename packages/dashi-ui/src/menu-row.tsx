@@ -11,10 +11,32 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
+import { createContext, useContext } from "react";
 import { CHECK } from "./glyphs.ts";
 import { MENU } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors } from "./theme/index.ts";
+
+/** How a lit row is drawn: its fill, the words on it, and its shortcut's ink. */
+export interface MenuHighlight {
+  fill: string;
+  ink: string;
+  keysInk: string;
+}
+
+/**
+ * Menus inside it light their rows with this instead of kombu under white:
+ * Settings and Control Center give their own "on" green and its ink, so a
+ * menu opened from a row of pills lights in the chosen pill's green
+ * (docs/design.html CO-9). Portals keep it: a menu in the window's layer
+ * still reads it.
+ */
+export const MenuHighlightContext = createContext<MenuHighlight | null>(null);
+
+/** The lit row's look: the surface's (`MenuHighlightContext`), else kombu under white. */
+export function menuHighlight(own: MenuHighlight | null, selection: string): MenuHighlight {
+  return own ?? { fill: selection, ink: "#ffffff", keysInk: "#ffffffcc" };
+}
 
 export interface MenuRowProps {
   label: string;
@@ -25,7 +47,7 @@ export interface MenuRowProps {
   ticks: boolean;
   checked?: boolean;
   disabled?: boolean;
-  /** Under the pointer or the arrow keys: kombu, white ink. */
+  /** Under the pointer or the arrow keys: kombu, white ink (or the surface's `MenuHighlightContext`). */
   lit: boolean;
   /** Tab can reach it (a window's menu; the menu bar's take the keys themselves). */
   focusable?: boolean;
@@ -35,9 +57,10 @@ export interface MenuRowProps {
 
 export function MenuRow({ label, testID, keys, ticks, checked, disabled = false, lit, focusable = false, onHoverChange, onPress }: MenuRowProps) {
   const colors = useColors();
+  const look = menuHighlight(useContext(MenuHighlightContext), colors.selection);
   const shown = lit && !disabled;
-  const ink = disabled ? colors.textDisabled : shown ? "#ffffff" : colors.text;
-  const keysInk = disabled ? colors.textDisabled : shown ? "#ffffffcc" : colors.textMuted;
+  const ink = disabled ? colors.textDisabled : shown ? look.ink : colors.text;
+  const keysInk = disabled ? colors.textDisabled : shown ? look.keysInk : colors.textMuted;
   return (
     <View
       testID={testID}
@@ -56,7 +79,7 @@ export function MenuRow({ label, testID, keys, ticks, checked, disabled = false,
         gap: MENU.keysGap,
         paddingHorizontal: MENU.inset,
         borderRadius: MENU.rowRadius,
-        backgroundColor: shown ? colors.selection : "#00000000",
+        backgroundColor: shown ? look.fill : "#00000000",
         focusRingColor: colors.focusRing,
       }}
     >

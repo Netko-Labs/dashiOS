@@ -40,7 +40,7 @@ export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
-export { MenuLine, MenuRow, type MenuRowProps } from "./menu-row.tsx";
+export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
