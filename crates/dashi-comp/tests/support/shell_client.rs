@@ -1,7 +1,8 @@
 //! The clients of the lock tests (tests/lock.rs), one Wayland connection
 //! each: a window, the lock screen, a shell sheet (a layer surface), and a
-//! virtual keyboard that types. Each hears its keyboard (enter, leave, keys),
-//! so a test can tell which of them the keys went to.
+//! virtual keyboard that types, and an input method that grabs the keyboard.
+//! Each hears its keyboard (enter, leave, keys), so a test can tell which of
+//! them the keys went to.
 
 use std::{io::Write, os::fd::AsFd, path::Path};
 
@@ -22,8 +23,11 @@ use wayland_protocols::{
         shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base},
     },
 };
-use wayland_protocols_misc::zwp_virtual_keyboard_v1::client::{
-    zwp_virtual_keyboard_manager_v1, zwp_virtual_keyboard_v1,
+use wayland_protocols_misc::{
+    zwp_input_method_v2::client::{
+        zwp_input_method_keyboard_grab_v2, zwp_input_method_manager_v2, zwp_input_method_v2,
+    },
+    zwp_virtual_keyboard_v1::client::{zwp_virtual_keyboard_manager_v1, zwp_virtual_keyboard_v1},
 };
 use wayland_protocols_wlr::layer_shell::v1::client::{zwlr_layer_shell_v1, zwlr_layer_surface_v1};
 
@@ -65,6 +69,13 @@ pub struct State {
     /// An activation token, once the compositor gave it.
     token: Option<String>,
     keyboard_typist: Option<zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1>,
+    /// An input method (fcitx5's part), kept alive; the keys its keyboard grab heard (tests/agent_keys.rs).
+    #[allow(dead_code)]
+    input_method: Option<(
+        zwp_input_method_v2::ZwpInputMethodV2,
+        zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2,
+    )>,
+    pub input_method_keys: Vec<u32>,
 }
 
 impl Conn {
@@ -219,6 +230,19 @@ impl Conn {
         let token = self.state.token.take().expect("an activation token");
         let surface = self.state.surface.as_ref().expect("a window first");
         activation.activate(token, surface);
+        self.roundtrip();
+    }
+
+    /// Be the seat's input method and grab its keyboard, as fcitx5 does while a field is active.
+    #[allow(dead_code)] // tests/agent_keys.rs; the lock tests don't.
+    pub fn grab_keyboard_as_input_method(&mut self) {
+        let manager: zwp_input_method_manager_v2::ZwpInputMethodManagerV2 = self
+            .globals
+            .bind(&self.qh, 1..=1, ())
+            .expect("zwp_input_method_manager_v2 (the shell's)");
+        let method = manager.get_input_method(&self.seat, &self.qh, ());
+        let grab = method.grab_keyboard(&self.qh, ());
+        self.state.input_method = Some((method, grab));
         self.roundtrip();
     }
 
@@ -449,3 +473,26 @@ delegate_noop!(State: ignore zwlr_layer_shell_v1::ZwlrLayerShellV1);
 delegate_noop!(State: ignore xdg_activation_v1::XdgActivationV1);
 delegate_noop!(State: ignore zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1);
 delegate_noop!(State: ignore zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1);
+
+impl Dispatch<zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2, ()> for State {
+    fn event(
+        state: &mut Self,
+        _: &zwp_input_method_keyboard_grab_v2::ZwpInputMethodKeyboardGrabV2,
+        event: zwp_input_method_keyboard_grab_v2::Event,
+        _: &(),
+        _: &Connection,
+        _: &QueueHandle<Self>,
+    ) {
+        if let zwp_input_method_keyboard_grab_v2::Event::Key {
+            key,
+            state: WEnum::Value(wl_keyboard::KeyState::Pressed),
+            ..
+        } = event
+        {
+            state.input_method_keys.push(key);
+        }
+    }
+}
+
+delegate_noop!(State: ignore zwp_input_method_manager_v2::ZwpInputMethodManagerV2);
+delegate_noop!(State: ignore zwp_input_method_v2::ZwpInputMethodV2);

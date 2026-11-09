@@ -22,9 +22,10 @@ use smithay::{
     },
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Point, SERIAL_COUNTER},
+    wayland::input_method::InputMethodSeat,
 };
 
-use crate::{render::titlebar::Part, state::Dashi};
+use crate::{render::titlebar::Part, session::agent_keys::key_route, state::Dashi};
 
 const BTN_LEFT: u32 = 0x110;
 const BTN_RIGHT: u32 = 0x111;
@@ -285,26 +286,16 @@ impl Dashi {
         if keyboard.current_focus().as_ref() != Some(&surface) {
             if seat == &self.seat {
                 // The person's seat, borrowed: its keyboard follows the lock's rule (session/lock.rs).
-                self.set_keyboard_focus(Some(surface), SERIAL_COUNTER.next_serial());
+                self.set_keyboard_focus(Some(surface.clone()), SERIAL_COUNTER.next_serial());
             } else {
-                keyboard.set_focus(self, Some(surface), SERIAL_COUNTER.next_serial());
+                keyboard.set_focus(self, Some(surface.clone()), SERIAL_COUNTER.next_serial());
             }
         }
         let time = self.start_time.elapsed().as_millis() as u32;
+        // Past the person's input method, while it holds the keyboard (session/agent_keys.rs).
+        let route = key_route(seat.input_method().keyboard_grabbed());
         let send = |state: &mut Dashi, code: Keycode, down: bool| {
-            let key_state = if down {
-                KeyState::Pressed
-            } else {
-                KeyState::Released
-            };
-            keyboard.input::<(), _>(
-                state,
-                code,
-                key_state,
-                SERIAL_COUNTER.next_serial(),
-                time,
-                |_, _, _| FilterResult::Forward,
-            );
+            state.agent_key(&keyboard, &surface, route, code, down, time);
         };
         for step in steps {
             if let Some(text) = step.get("text").and_then(Value::as_str) {
