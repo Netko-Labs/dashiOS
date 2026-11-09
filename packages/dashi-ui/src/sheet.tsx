@@ -6,12 +6,12 @@
  * over everything (pass them as `AppWindow`'s `overlay`).
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
+import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { CHECK } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
-import { litAfter, MENU, type MenuRowKind, menuHeight, placeMenu, type Size } from "./menu-place.ts";
+import { litAfter, MENU, type MenuRowKind, menuFits, menuHeight, placeMenu, type Size } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
@@ -136,6 +136,7 @@ export function MenuList({
   minWidth = MENU.minWidth,
   lit,
   onLit,
+  maxHeight,
 }: {
   items: readonly MenuEntry[];
   /** A row was pressed (before its own `onPress`): a popup closes. */
@@ -145,6 +146,8 @@ export function MenuList({
   /** The row drawn in kombu, by its place among the drawn rows, when the owner moves it with keys too (`PopupMenu`). */
   lit?: number | null;
   onLit?: (row: number | null) => void;
+  /** At most this tall, padding and edge included: the rows scroll inside (`PopupMenu`, in a window shorter than the menu). */
+  maxHeight?: number;
 }) {
   const colors = useColors();
   const rows = tidyEntries(items);
@@ -157,6 +160,52 @@ export function MenuList({
     if (lit === undefined) setOwnLit(row);
     onLit?.(row);
   };
+  // Each row keeps its height: in a menu too tall for the window they scroll, never squeeze.
+  const list = rows.map((item, index) => {
+    if (isSeparator(item)) {
+      return (
+        // The rows of an open menu never reorder.
+        <View key={index} style={{ height: MENU.separator, flexShrink: 0, justifyContent: "center", paddingHorizontal: 8 }}>
+          <View style={{ height: 1, backgroundColor: colors.separator }} />
+        </View>
+      );
+    }
+    const lit = !item.disabled && index === hovered;
+    const ink = item.disabled ? colors.textDisabled : lit ? "#ffffff" : colors.text;
+    return (
+      <View
+        key={index}
+        testID={`${testID}:${item.label}`}
+        focusable={!item.disabled}
+        accessibilityRole="menuitem"
+        onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
+        onPress={() => {
+          onChoose?.();
+          if (!item.disabled) item.onPress();
+        }}
+        style={{
+          height: MENU.row,
+          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 18,
+          paddingHorizontal: 8,
+          borderRadius: 5,
+          backgroundColor: lit ? colors.selection : "#00000000",
+          focusRingColor: colors.focusRing,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
+          <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+            {item.label}
+          </Text>
+        </View>
+        {item.keys !== undefined && <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />}
+      </View>
+    );
+  });
   return (
     <View
       occlude
@@ -166,6 +215,7 @@ export function MenuList({
       accessibilityRole="menu"
       style={{
         minWidth,
+        ...(maxHeight !== undefined ? { height: maxHeight } : {}),
         flexDirection: "column",
         padding: MENU.padding,
         borderRadius: 9,
@@ -175,52 +225,13 @@ export function MenuList({
         shadow: "xl",
       }}
     >
-      {rows.map((item, index) => {
-        if (isSeparator(item)) {
-          return (
-            // The rows of an open menu never reorder.
-            <View key={index} style={{ height: MENU.separator, justifyContent: "center", paddingHorizontal: 8 }}>
-              <View style={{ height: 1, backgroundColor: colors.separator }} />
-            </View>
-          );
-        }
-        const lit = !item.disabled && index === hovered;
-        const ink = item.disabled ? colors.textDisabled : lit ? "#ffffff" : colors.text;
-        return (
-          <View
-            key={index}
-            testID={`${testID}:${item.label}`}
-            focusable={!item.disabled}
-            accessibilityRole="menuitem"
-            onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
-            onPress={() => {
-              onChoose?.();
-              if (!item.disabled) item.onPress();
-            }}
-            style={{
-              height: MENU.row,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 18,
-              paddingHorizontal: 8,
-              borderRadius: 5,
-              backgroundColor: lit ? colors.selection : "#00000000",
-              focusRingColor: colors.focusRing,
-            }}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
-              <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
-                {item.label}
-              </Text>
-            </View>
-            {item.keys !== undefined && (
-              <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />
-            )}
-          </View>
-        );
-      })}
+      {maxHeight === undefined ? (
+        list
+      ) : (
+        <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column" }}>
+          {list}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -229,7 +240,8 @@ export function MenuList({
  * A menu at a point (a right-click, a pop-up button): a click on a row or
  * anywhere else closes it, and so does Esc. It stays inside the window,
  * flipped to the other side of the point when it would run off, or (with
- * `flip` false) slid back in (PA-9, menu-place.ts).
+ * `flip` false) slid back in (PA-9, menu-place.ts); one taller than the
+ * window is as tall as the window allows, and its rows scroll.
  */
 export function PopupMenu({
   x,
@@ -268,7 +280,10 @@ export function PopupMenu({
     }
   };
   const kinds = rows.map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
-  const at = placeMenu({ x, y }, { width: width ?? minWidth, height: menuHeight(kinds) }, room, flip);
+  // Taller than the window, it fits the window and its rows scroll.
+  const full = menuHeight(kinds);
+  const height = menuFits(full, room.height);
+  const at = placeMenu({ x, y }, { width: width ?? minWidth, height }, room, flip);
   return (
     <View
       occlude
@@ -286,7 +301,15 @@ export function PopupMenu({
         style={{ position: "absolute", left: at.x, top: at.y }}
         onLayout={(bounds) => setWidth((now) => (now === bounds.width ? now : bounds.width))}
       >
-        <MenuList items={items} onChoose={onClose} testID={testID} minWidth={minWidth} lit={lit} onLit={setLit} />
+        <MenuList
+          items={items}
+          onChoose={onClose}
+          testID={testID}
+          minWidth={minWidth}
+          lit={lit}
+          onLit={setLit}
+          {...(height < full ? { maxHeight: height } : {})}
+        />
       </View>
     </View>
   );

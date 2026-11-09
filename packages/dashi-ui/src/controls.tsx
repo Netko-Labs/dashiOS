@@ -13,7 +13,16 @@ import { useControlState } from "./control-state.tsx";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 
-/** A heading over a group, or a sentence under it; `keys` draws a shortcut after it ("⌃❖Q"). */
+/**
+ * A sentence pulled 8 closer to the group above it. It keeps the default
+ * `flexShrink`: mirin's layout (its vendored taffy 0.9) makes a column
+ * shorter by the margin times the child's height when a child with
+ * `flexShrink: 0` has a negative margin, and a scroll view that holds the
+ * column loses its range. A column as tall as its content never shrinks it.
+ */
+const TUCK = { marginTop: -8 } as const;
+
+/** A heading over a group, or a sentence under it (`TUCK`); `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useColors();
   const text = <Text style={{ fontSize: above ? 12 : 11, fontWeight: above ? "semibold" : "normal", color: colors.textMuted }}>{children}</Text>;
@@ -22,9 +31,8 @@ export function Caption({ children, above, keys }: { children: string; above?: b
     // With keys, a row the width of its content, so the shortcut sits right after the text (keep such captions to one line).
     <View
       style={{
-        flexShrink: 0,
+        ...(above ? { flexShrink: 0, marginTop: 4 } : TUCK),
         paddingHorizontal: 4,
-        marginTop: above ? 4 : -8,
         ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
       }}
     >

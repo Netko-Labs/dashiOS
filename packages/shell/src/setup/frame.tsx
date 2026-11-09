@@ -60,11 +60,11 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
           </View>
         </View>
       )}
-      <ScrollView
-        testID={`setup-page:${info.id}`}
-        style={{ flex: 1, flexDirection: "column", gap: 14, paddingHorizontal: 56, paddingTop: 18, paddingBottom: 12 }}
-      >
-        {children}
+      <ScrollView testID={`setup-page:${info.id}`} style={{ flex: 1, flexDirection: "column", paddingHorizontal: 56, paddingTop: 18, paddingBottom: 12 }}>
+        {/* Never shorter than its content: the scroll range is this column's height (as Settings' pages, settings-app/ui.tsx). */}
+        <View testID={`setup-page:${info.id}:content`} style={{ flexShrink: 0, flexDirection: "column", gap: 14 }}>
+          {children}
+        </View>
       </ScrollView>
       <View
         style={{

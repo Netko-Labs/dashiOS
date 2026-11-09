@@ -108,6 +108,15 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] Not taken (the owner's call): R1, R5, R6, T8, K3, D8
 - [ ] The region picker's eleven continents are a picker's filter, not a setting's pill row: left as they are (S)
 
+## Settings' scroll in a small window (`fix/0.5-settings-scroll`; review 52-settings-scroll)
+- [x] A page scrolls to its last line: a line pulled up under a card (`TUCK`: Settings' Caption, Date & Time's line, @dashi/ui's Caption) no longer keeps its size, which made mirin's taffy size the page's column short by the margin times the line's height; a page's content column never shrinks (a row of wrapped pills was guessed short); Setup's frame holds its page the same way (`test/settings-scroll.test.tsx`)
+- [x] Nothing cut off sideways: a row's words keep 120 beside their control, so pills wrap first; the least window is 748 × 300 (`SETTINGS_WINDOW`: the sidebar, the margins and a knob, words and slider across; the title and Displays' hero down)
+- [x] "More…" and any `PopupMenu` taller than the window fits it and scrolls its rows (`menuFits`)
+- [ ] mirin: the taffy fix for a negative margin on an item that doesn't shrink (`52-settings-scroll/mirin-a-taffy-negative-margin.diff`); then `TUCK` can keep `flexShrink: 0` again (the owner's call)
+- [ ] mirin: `minWidth`/`minHeight` on a warm host's `open` (`52-settings-scroll/mirin-b-open-min-size.diff`); then `overlay.tsx`'s `pick` passes them to a host that knows them, and Settings' least size holds (today only a host started for it holds it)
+- [ ] A slider's row exactly at its words' least width grows tall in mirin's layout (seen at 744; the least size keeps 4 to spare)
+- [ ] The wheel over an open menu also scrolls the page under it (the menu's ground takes presses, not the wheel)
+
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)

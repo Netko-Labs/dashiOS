@@ -13,6 +13,7 @@ import { TooltipLayer } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
+import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import type { PaneContext } from "./context.ts";
 import { type FindFocus, type Found, findSettings, moveFound } from "./find.ts";
@@ -41,17 +42,38 @@ import { TrackpadPane } from "./panes/trackpad.tsx";
 import { UsersPane } from "./panes/users.tsx";
 import { WallpaperPane } from "./panes/wallpaper.tsx";
 import type { Nav, PaneId } from "./panes.ts";
+import { PAGE } from "./row.tsx";
 import { PaneStoresContext } from "./setting.tsx";
-import { Sidebar } from "./sidebar.tsx";
+import { SIDEBAR, Sidebar } from "./sidebar.tsx";
 import { SpotContext, type SpotHost } from "./spot.tsx";
 import { Group, Note, Page, SaveError } from "./ui.tsx";
+
+/**
+ * The widest row that can't fold: a knob, its words at their least
+ * (`PAGE.words`) and a slider beside them (Mouse's and Trackpad's speeds,
+ * Keyboard's repeat). Pills wrap and stacked controls sit under the words,
+ * so every other row fits in it.
+ */
+const WIDEST_ROW = 8 + PAGE.knob + 12 + PAGE.words + 12 + INK_SLIDER.width + 16;
 
 /**
  * The window's size: the design's height (640), and wide enough for its
  * rows (a knob, the words, and four pills of the power mode) beside the
  * 232 sidebar. The sidebar scrolls in it, with the chosen pane kept in view.
+ *
+ * Its least size is where the sidebar and every pane still work: across,
+ * the sidebar, the page's margins and the widest row (744), and 4 more,
+ * since a fractional scale (1.75) can take part of a point off the window
+ * and a slider's row then grows tall in mirin's layout; down, the title row,
+ * the tallest hero (Displays', 207) and the page's bottom margin (285),
+ * rounded up to 300. A page taller than the window scrolls.
  */
-export const SETTINGS_WINDOW = { width: 920, height: 640 } as const;
+export const SETTINGS_WINDOW = {
+  width: 920,
+  height: 640,
+  minWidth: SIDEBAR.width + 2 * PAGE.margin + WIDEST_ROW + 4,
+  minHeight: 300,
+} as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {

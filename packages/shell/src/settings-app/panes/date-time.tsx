@@ -14,7 +14,7 @@ import { describeZone } from "../../region/timezones.ts";
 import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
-import { Caption, Group, Page, Setting, Switch } from "../ui.tsx";
+import { Caption, Group, Page, Setting, Switch, TUCK } from "../ui.tsx";
 
 export function DateTimePane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
   const colors = useColors();
@@ -45,7 +45,7 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
         </Setting>
         <Setting id="date-time/show-date" control="datetime-show-date" />
       </Group>
-      <View testID="datetime-preview" style={{ flexShrink: 0, paddingHorizontal: 10, marginTop: -4 }}>
+      <View testID="datetime-preview" style={{ ...TUCK, paddingHorizontal: 10 }}>
         <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{`The menu bar reads: ${formatClock(now, prefs)}`}</Text>
       </View>
       <Group>

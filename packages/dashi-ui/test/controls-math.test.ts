@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { buttonLook } from "../src/button-look.ts";
 import { isHeld } from "../src/control-state.tsx";
-import { litAfter, MENU, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
+import { litAfter, MENU, menuFits, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
 import { popUpOrigin } from "../src/popup-button.tsx";
 import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, sweepOffset } from "../src/progress-math.ts";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/sheet.tsx";
@@ -117,6 +117,17 @@ describe("menus", () => {
     expect(placeMenu({ x: 700, y: -20 }, size, room, false)).toEqual({ x: 594, y: 6 });
     // Before the window's size is known, it stays where it was asked.
     expect(placeMenu({ x: 700, y: 500 }, size, { width: 0, height: 0 })).toEqual({ x: 700, y: 500 });
+  });
+  test("a menu taller than the window is drawn as tall as the window allows, its rows scrolling", () => {
+    const twenty = menuHeight(Array.from({ length: 20 }, () => "item" as const));
+    expect(menuFits(twenty, 0)).toBe(twenty);
+    expect(menuFits(twenty, 1000)).toBe(twenty);
+    expect(menuFits(twenty, 300)).toBe(300 - 2 * MENU.margin);
+    // However short the window, one row still shows.
+    expect(menuFits(twenty, 20)).toBe(MENU.row + 2 * (MENU.padding + MENU.edge));
+    // Placed at that height, it fits the window.
+    const at = placeMenu({ x: 10, y: 200 }, { width: 160, height: menuFits(twenty, 300) }, { width: 800, height: 300 });
+    expect(at.y).toBe(MENU.margin);
   });
   test("a pop-up's menu puts the chosen row over the button", () => {
     const button = { x: 300, y: 100, width: 120, height: 28 };
