@@ -74,11 +74,11 @@ test("a warm host's window takes the least size only when the host's open takes 
     appId: "dev.dashi.settings",
     width: 920,
     height: 640,
-    minWidth: 748,
+    minWidth: 744,
     minHeight: 300,
     titleBar: "unified" as const,
   };
-  expect(windowFor(settings, true)).toMatchObject({ minWidth: 748, minHeight: 300, width: 920, height: 640 });
+  expect(windowFor(settings, true)).toMatchObject({ minWidth: 744, minHeight: 300, width: 920, height: 640 });
   // A host from before refuses an open line with minWidth in it: no window at all.
   expect(windowFor(settings, false)).not.toHaveProperty("minWidth");
   expect(windowFor(settings, false)).not.toHaveProperty("minHeight");

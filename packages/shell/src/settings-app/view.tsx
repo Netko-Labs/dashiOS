@@ -62,16 +62,14 @@ const WIDEST_ROW = 8 + PAGE.knob + 12 + PAGE.words + 12 + INK_SLIDER.width + 16;
  * 232 sidebar. The sidebar scrolls in it, with the chosen pane kept in view.
  *
  * Its least size is where the sidebar and every pane still work: across,
- * the sidebar, the page's margins and the widest row (744), and 4 more,
- * since a fractional scale (1.75) can take part of a point off the window
- * and a slider's row then grows tall in mirin's layout; down, the title row,
+ * the sidebar, the page's margins and the widest row (744); down, the title row,
  * the tallest hero (Displays', 207) and the page's bottom margin (285),
  * rounded up to 300. A page taller than the window scrolls.
  */
 export const SETTINGS_WINDOW = {
   width: 920,
   height: 640,
-  minWidth: SIDEBAR.width + 2 * PAGE.margin + WIDEST_ROW + 4,
+  minWidth: SIDEBAR.width + 2 * PAGE.margin + WIDEST_ROW,
   minHeight: 300,
 } as const;
 

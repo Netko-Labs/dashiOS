@@ -590,13 +590,13 @@ describe("configuring", () => {
 });
 
 describe("an app's least size", () => {
-  const SettingsLeast = { width: 748, height: 300 };
+  const SettingsLeast = { width: 744, height: 300 };
   const settings = (): CompositorWindow => ({ ...files(), id: 9, appId: "dev.dashi.settings", title: "System Settings", minSize: { ...SettingsLeast } });
 
   test("a window says the least frame its app allows", () => {
     const base = { id: 3, appId: "dev.dashi.settings", title: "System Settings", pid: 42, focused: true, state: "normal" };
-    expect(parseEvent({ event: "window-opened", window: { ...base, minSize: { width: 748, height: 300 } } })).toMatchObject({
-      window: { minSize: { width: 748, height: 300 } },
+    expect(parseEvent({ event: "window-opened", window: { ...base, minSize: { width: 744, height: 300 } } })).toMatchObject({
+      window: { minSize: { width: 744, height: 300 } },
     });
     expect(parseEvent({ event: "window-opened", window: { ...base, minSize: null } })).not.toHaveProperty("window.minSize");
   });
