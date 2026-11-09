@@ -82,6 +82,8 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
   const notices = new Map<number, string>();
   const service = startHandoff({
     ...deps,
+    // A run stuck signed out offers Sign In…, which opens Terminal as the launcher's does.
+    signIn: deps.openTerminal,
     ended(run) {
       const notice = endedNotice(run);
       if (notice) notices.set(deps.notifications.notify(notice, 0, SHELL_SENDER), run.id);

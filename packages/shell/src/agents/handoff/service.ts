@@ -11,6 +11,7 @@
 
 import { join } from "node:path";
 import { ANSWERERS, HARNESS_IDS, type HarnessId } from "../ask/answerer.ts";
+import { signInCommand } from "../ask/harness/catalog.ts";
 import { type Files, findHarness, HARNESSES, harnessEnv, hostFiles, type Probe, type ShellPaths, shellPaths, signedIn } from "../ask/harness/index.ts";
 import { settingWords, type Undo } from "../ask/plan.ts";
 import type { Scope } from "../consent.ts";
@@ -21,9 +22,10 @@ import { followUpPrompt, followUpRoute } from "./follow-up.ts";
 import { contextPrompt, GrantsMemory, grantsKind, TASK_GRANTED, TASK_REFUSED, type TaskContext, taskGrants } from "./grants.ts";
 import { harnessOrder } from "./order.ts";
 import { replayRun, runsToPickUp } from "./pickup.ts";
+import { plainFailure, QUIET_MS, quietQuestion, quietReason } from "./quiet.ts";
 import { recordOf } from "./records.ts";
 import { streamOf, systemdRunner, type TaskRunner, unitOf } from "./runner.ts";
-import { AgentRuns, type RunView } from "./store.ts";
+import { AgentRuns, isWorking, type RunView } from "./store.ts";
 import { eventsOf } from "./stream.ts";
 
 /** What settings.json's `agents` says about handing off. */
@@ -77,6 +79,10 @@ export interface HandoffOptions {
   runAsPerson?(address: string, args: Record<string, unknown>): Promise<{ ok: boolean }>;
   /** A run ended: the notification (main.tsx). */
   ended?(run: RunView): void;
+  /** Sign a harness in (Terminal); a run stuck signed out offers it. */
+  signIn?(harness: HarnessId): void;
+  /** How long a turn may print nothing before its card asks (quiet.ts `QUIET_MS`). */
+  quietMs?: number;
   /** For tests: the clock and the ids. */
   now?: () => number;
   newId?: () => string;
@@ -151,14 +157,22 @@ export function startHandoff(options: HandoffOptions): Handoff {
       run,
       turn,
       (line) => {
-        for (const event of eventsOf(harness, line)) runs.event(run, event);
+        const events = eventsOf(harness, line);
+        if (events.length > 0) heard(run);
+        const name = ANSWERERS[harness].name;
+        for (const event of events) runs.event(run, event.kind === "failed" ? { ...event, error: plainFailure(name, event.error) } : event);
         // Words that waited for its session go now.
         if (runs.get(run)?.session && waitingWords.has(run) && watching.get(run)?.turn === turn) flushWords(run);
       },
       (code) => {
         if (watching.get(run)?.turn !== turn) return;
         watching.delete(run);
+        heard(run);
         if (waitingWords.has(run)) return void resume(run, true);
+        // Ended badly without a word on its stream: what it wrote to its errors, in plain words when they are known ones.
+        const errors = code !== 0 && runs.get(run)?.error === null ? (runner.readErrors?.(run, turn) ?? "") : "";
+        const plain = errors ? plainFailure(ANSWERERS[harness].name, errors) : "";
+        if (plain && plain !== errors && !runs.get(run)?.ended) runs.event(run, { kind: "failed", error: plain });
         runs.exited(run, code);
       },
     );
@@ -196,7 +210,47 @@ export function startHandoff(options: HandoffOptions): Handoff {
     onDisk.add(run);
     saveRecords();
     watch(run, harness, turn);
+    waitQuiet(run, harness, turn);
     return true;
+  };
+
+  /** Each run's turn waiting for its first event, and the timer that asks once it has waited too long. */
+  const silent = new Map<string, ReturnType<typeof setTimeout>>();
+  /** It printed something (or ended): no question about its silence. */
+  const heard = (run: string) => {
+    clearTimeout(silent.get(run));
+    silent.delete(run);
+  };
+  /** After `quietMs` with nothing from turn `turn`, its card says what's likely wrong: sign in, keep waiting, or stop. */
+  const waitQuiet = (run: string, harness: HarnessId, turn: number) => {
+    heard(run);
+    const timer = setTimeout(() => {
+      silent.delete(run);
+      void askQuiet(run, harness, turn);
+    }, options.quietMs ?? QUIET_MS);
+    silent.set(run, timer);
+  };
+  const askQuiet = async (run: string, harness: HarnessId, turn: number) => {
+    const still = () => {
+      const view = runs.get(run);
+      return view !== undefined && view.turn === turn && isWorking(view) && view.question === null;
+    };
+    if (!still()) return;
+    const spec = HARNESSES[harness];
+    const where = home ? findHarness(spec, home, env.PATH, files) : null;
+    const signed = where ? await signedIn(spec, where, home, env, options.probe).catch(() => null) : null;
+    if (!still() || silent.has(run)) return;
+    const name = ANSWERERS[harness].name;
+    const reason = quietReason(runner.readErrors?.(run, turn) ?? "", signed);
+    const { answer } = runs.ask(
+      run,
+      quietQuestion(name, reason, options.signIn ? signInCommand(harness) : null, Math.round((options.quietMs ?? QUIET_MS) / 1000)),
+    );
+    const choice = await answer;
+    if (choice === "wait") return waitQuiet(run, harness, turn);
+    if (choice === "sign-in") options.signIn?.(harness);
+    // Signing in means asking again once it is; the run as it is can't go on.
+    if (choice === "sign-in" || choice === "no") stopRun(run);
   };
 
   /** The words waiting for `run` go into its session: stopped where it is first if it still works. */
@@ -310,6 +364,16 @@ export function startHandoff(options: HandoffOptions): Handoff {
 
   const settingAddress = () => options.setSettingAddress?.() ?? null;
 
+  function stopRun(run: string): void {
+    const view = runs.get(run);
+    if (!view) return;
+    heard(run);
+    waitingWords.delete(run);
+    stoppedTurn.set(run, view.turn);
+    runs.stopping(run);
+    runner.stop(run, view.turn);
+  }
+
   return {
     runs,
     harnesses: () => found,
@@ -350,14 +414,7 @@ export function startHandoff(options: HandoffOptions): Handoff {
       else if (route.kind !== "wait") void resume(run, false);
       return true;
     },
-    stop(run) {
-      const view = runs.get(run);
-      if (!view) return;
-      waitingWords.delete(run);
-      stoppedTurn.set(run, view.turn);
-      runs.stopping(run);
-      runner.stop(run, view.turn);
-    },
+    stop: (run) => stopRun(run),
     async undo(run, index) {
       const entry = runs.get(run)?.undos[index];
       if (!entry || entry.undone || !options.runAsPerson) return false;
@@ -381,6 +438,8 @@ export function startHandoff(options: HandoffOptions): Handoff {
       offSettings();
       offRuns();
       clearInterval(pruner);
+      for (const timer of silent.values()) clearTimeout(timer);
+      silent.clear();
       for (const { off } of watching.values()) off();
       watching.clear();
     },

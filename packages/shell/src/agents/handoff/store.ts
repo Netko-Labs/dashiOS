@@ -40,7 +40,7 @@ export interface QuestionChoice {
 /** What a run waits on the person for: one at a time, in the panel and (closed) a sheet. */
 export interface RunQuestion {
   id: string;
-  kind: "sign-in" | "site" | "turn" | "scopes" | "confirm";
+  kind: "sign-in" | "site" | "turn" | "scopes" | "confirm" | "stuck";
   /** "Use your bodytech.com.co login?" */
   title: string;
   /** "1Password · alexk@example.com" */

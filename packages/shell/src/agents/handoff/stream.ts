@@ -22,7 +22,8 @@
  *   `status`, `input`, `output`, `error`), `text` (`part.text`),
  *   `step_finish`, `error`. From its docs (opencode.ai/docs); 1.19.5 takes
  *   the flags, but with no account it printed no event to parse (its free
- *   model's limit; it waits on), so none was recorded.
+ *   model's limit; it waits on), so none was recorded: after a while the
+ *   card asks instead (quiet.ts).
  */
 
 import type { HarnessId } from "../ask/answerer.ts";
