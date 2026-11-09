@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 import { Caption, Group, ROW_INSET, Row, SidebarItem, TILE_SIZE } from "@dashi/ui";
-import { type NativeTransport, render, View } from "@mirinjs/metal";
+import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { PAGE, pillsUnder } from "../src/settings-app/row.tsx";
+import { PAGE, pillsUnder, roomBeside, Row as SettingsRow } from "../src/settings-app/row.tsx";
 import { titleLine } from "../src/settings-app/ui.tsx";
-import { pillsWrapped, SEGMENTED } from "../src/shared/controls/inputs.tsx";
+import { pillsWrapped, SEGMENTED, Segmented } from "../src/shared/controls/inputs.tsx";
 
 // Shared edges (review 0.6 04-align-b): one line for the lights, the search
 // and the title; one left edge for a list's labels and a card's captions;
@@ -42,11 +42,13 @@ test("Settings' title sits on the window lights' line in its 56 row, the row's m
   expect(titleLine({ x: 14, y: 60, width: 56, height: 12 })).toBe(PAGE.title / 2);
 });
 
-test("a row's pills go under its words at the width they wrapped at and under, and are tried beside them again past it", () => {
-  expect(pillsUnder(744, null)).toBe(false);
-  expect(pillsUnder(744, 744)).toBe(true);
-  expect(pillsUnder(700, 744)).toBe(true);
-  expect(pillsUnder(745, 744)).toBe(false);
+test("a row's pills go under its words when the room beside them is less than their one-line width", () => {
+  expect(pillsUnder(300, null)).toBe(false);
+  expect(pillsUnder(300, 300)).toBe(false);
+  expect(pillsUnder(299, 300)).toBe(true);
+  // The room: the row's insets, the knob and its gap, the words' least width and the gap after them.
+  expect(roomBeside(800, true)).toBe(800 - PAGE.knobInset - PAGE.knob - 12 - PAGE.inset - PAGE.words - 12);
+  expect(roomBeside(800, false)).toBe(800 - 2 * PAGE.inset - PAGE.words - 12);
   // One line of pills is a pill and the track's padding; anything taller wrapped.
   const line = SEGMENTED.height + 2 * SEGMENTED.padding;
   expect(pillsWrapped(line)).toBe(false);
@@ -84,4 +86,54 @@ test("a caption's words start where its card's rows' words do", async () => {
   expect(captions.length).toBeGreaterThanOrEqual(2);
   for (const caption of captions) expect(caption.props.paddingX).toBe(ROW_INSET);
   expect(all.some((view) => view.props.direction === "row" && view.props.paddingX === ROW_INSET && view.props.minHeight === 44)).toBe(true);
+});
+
+const LINE = SEGMENTED.height + 2 * SEGMENTED.padding;
+
+test("pills squeezed while the window narrows go back beside the words when it widens, whichever layout event comes first", async () => {
+  // mirin reports a parent's children after laying them out: the pills' layout comes before their row's.
+  const trees: string[] = [];
+  const listeners: ((event: NativeEvent) => void)[] = [];
+  const transport: NativeTransport = {
+    send: (sent) => trees.push(sent),
+    onEvent: (listener) => listeners.push(listener),
+    onClose() {},
+    simulate() {},
+    close() {},
+  };
+  const options = ["Default", "Large", "Larger", "Largest"].map((label) => ({ value: label, label }));
+  const root = render(
+    <SettingsRow testID="row" label="Text size" glyph="<svg/>">
+      <Segmented testID="pills" options={options} value="Default" onChange={() => {}} />
+    </SettingsRow>,
+    transport,
+  );
+  const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
+  const laid = async (testID: string, width: number, height: number): Promise<void> => {
+    const nodeId = root.nodeId(testID);
+    if (!nodeId) throw new Error(`no ${testID}`);
+    for (const listener of listeners) listener({ type: "resize", nodeId, bounds: { x: 0, y: 0, width, height } });
+    await settle();
+  };
+  const under = (): boolean => {
+    const id = root.nodeId("row");
+    const row = views(JSON.parse(trees.at(-1) ?? "{}") as Node).find((node) => node.props.id === id);
+    return (row?.children ?? []).filter(isNode).length > 1;
+  };
+  await settle();
+  // A wide window: one line of pills beside the words.
+  await laid("pills", 300, LINE);
+  await laid("row", 822, 56);
+  expect(under()).toBe(false);
+  // Half the screen: the pills wrap (their event first), then the row tells its new width.
+  await laid("pills", 180, 2 * LINE);
+  await laid("row", 500, 56);
+  expect(under()).toBe(true);
+  // Under the words they lie on one line again; back at the first width they go beside the words.
+  await laid("pills", 300, LINE);
+  await laid("row", 744, 56);
+  expect(under()).toBe(false);
+  await laid("row", 822, 56);
+  expect(under()).toBe(false);
+  root.unmount();
 });
