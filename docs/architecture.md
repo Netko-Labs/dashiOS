@@ -237,7 +237,9 @@ separate MIT programs, with structured arguments only; it links nothing.
 - **The apps' sound** (`src/sound/apps/`): one `pw-dump --monitor` for the
   session (`watch.ts`, `pipewireWatch`, shared by everything above), restarted after 1, 2, then 5 s if it exits. It prints
   every object once, then only the objects that change, whole, so the shell
-  keeps a map by id (`graph-map.ts`) and parses streams from it
+  keeps a map by id (`graph-map.ts`; a metadata update lists only the
+  entries that changed, so those are merged, and since one taken away isn't
+  listed, that object is read again with `pw-dump <id>`) and parses streams from it
   (`streams.ts`: a stream's client, its links to a device, its Props, the
   "default" metadata's `target.object`). Streams are named as the Dock
   names apps (`identity.ts`, on `src/process-apps/`): a Flatpak by its portal

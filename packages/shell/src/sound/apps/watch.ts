@@ -9,8 +9,13 @@
  * starts again after 1, 2, then 5 seconds, and until it is back there are
  * no objects. pw-dump is PipeWire's own (MIT), run as a separate program,
  * and only reads. Without it there is nothing to watch: `available` is false.
+ *
+ * The monitor doesn't say which metadata entry was taken away (Play on ›
+ * Default deletes `target.object`): after a metadata update that object is
+ * read again whole with a one-off `pw-dump <id>` (graph-map.ts).
  */
 
+import { run as defaultRun } from "../../system/exec.ts";
 import { type WatchOptions, watchLines } from "../../system/watch.ts";
 import { GraphMap, JsonArrays } from "./graph-map.ts";
 import { type Graph, parseGraph } from "./streams.ts";
@@ -44,10 +49,28 @@ const followPipeWire =
   (onLine, onStart) =>
     watchLines(["pw-dump", "--monitor", "--no-colors"], onLine, { restartMs: 1000, maxDelayMs: 5000, healthyMs: 10_000, onStart, ...options });
 
+/** Reads one object whole (`pw-dump <id>`): its text, or null. */
+export type ReadObject = (id: number) => Promise<string | null>;
+
+const readPipeWireObject: ReadObject = (id) => defaultRun(["pw-dump", "--no-colors", String(id)]);
+
+export interface PipeWireWatchOptions {
+  follow?: Follow;
+  available?: boolean;
+  /** Reads a metadata object again whole after an update. */
+  readObject?: ReadObject;
+}
+
 /** The session's one watcher: pw-dump runs from the first listener to the last one's stop. */
-export function pipewireWatch(options: { follow?: Follow; available?: boolean } = {}): PipeWireWatch {
+export function pipewireWatch(options: PipeWireWatchOptions = {}): PipeWireWatch {
   const available = options.available ?? Bun.which("pw-dump") !== null;
   const follow = options.follow ?? followPipeWire();
+  const readObject = options.readObject ?? readPipeWireObject;
+  /** Each metadata object's updates, counted: a read that started before the latest is read again. */
+  const updates = new Map<number, number>();
+  const reading = new Set<number>();
+  /** Counts pw-dump's starts: a read from before a restart is dropped. */
+  let generation = 0;
   const listeners = new Set<(objects: PipeWireObjects) => void>();
   const arrays = new JsonArrays();
   const map = new GraphMap();
@@ -64,15 +87,38 @@ export function pipewireWatch(options: { follow?: Follow; available?: boolean } 
       for (const listener of [...listeners]) listener(objects);
     }, SETTLE_MS);
   };
+  const reread = (id: number): void => {
+    if (reading.has(id)) return;
+    reading.add(id);
+    const seen = updates.get(id) ?? 0;
+    const started = generation;
+    void readObject(id)
+      .catch(() => null)
+      .then((text) => {
+        reading.delete(id);
+        if (started !== generation || stopFollow === null) return;
+        // An update came while reading: what was read may be older than it.
+        if ((updates.get(id) ?? 0) !== seen) {
+          reread(id);
+          return;
+        }
+        if (text !== null && map.apply(text, { whole: true })) tell();
+      });
+  };
   const begin = () => {
     stopFollow = follow(
       (line) => {
         let changed = false;
         for (const array of arrays.push(line)) changed = map.apply(array) || changed;
+        for (const id of map.takeMetadata()) {
+          updates.set(id, (updates.get(id) ?? 0) + 1);
+          reread(id);
+        }
         if (changed) tell();
       },
       () => {
         // A new pw-dump starts with a whole dump: what the last one said is gone.
+        generation++;
         arrays.reset();
         map.clear();
         tell();
@@ -80,6 +126,7 @@ export function pipewireWatch(options: { follow?: Follow; available?: boolean } 
     );
   };
   const end = () => {
+    generation++;
     clearTimeout(timer);
     stopFollow?.();
     stopFollow = null;
@@ -121,7 +168,7 @@ export function graphOf(watch: PipeWireWatch): GraphWatch {
 }
 
 /** A watcher of its own, as a graph (tests; the session shares one through `graphOf`). */
-export function pipewireGraph(options: { follow?: Follow; available?: boolean } = {}): GraphWatch {
+export function pipewireGraph(options: PipeWireWatchOptions = {}): GraphWatch {
   return graphOf(pipewireWatch(options));
 }
 

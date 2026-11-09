@@ -39,8 +39,24 @@ function monitor() {
       lines = null;
     };
   };
+  /** What `pw-dump <id>` prints now, by id: a metadata object read again whole. */
+  const objects = new Map<number, Json>();
+  const reads: number[] = [];
   return {
-    watch: pipewireWatch({ follow, available: true }),
+    watch: pipewireWatch({
+      follow,
+      available: true,
+      readObject: async (id) => {
+        reads.push(id);
+        const object = objects.get(id);
+        return object ? JSON.stringify([object], null, 2) : null;
+      },
+    }),
+    /** Sets what reading an object whole gives. */
+    truth(object: Json): void {
+      objects.set(object.id as number, object);
+    },
+    reads,
     print(objects: readonly Json[]): void {
       this.text(JSON.stringify(objects, null, 2));
     },
@@ -118,6 +134,77 @@ describe("the watcher", () => {
     });
     watch.subscribe(() => {})();
     expect(started).toBe(false);
+  });
+});
+
+describe("metadata, as the monitor prints it", () => {
+  // `wpctl set-default 56`: the monitor prints the default metadata twice, each time with only the entry that changed.
+  const only = (key: string, name: string): Json => metadata(33, [{ subject: 0, key, type: "Spa:String:JSON", value: { name } }]);
+
+  test("an update lists only what changed: the rest is kept", async () => {
+    const pw = monitor();
+    const lists: string[][] = [];
+    const stop = pipewireBackend(quietRun(), pw.watch).follow?.((list) => lists.push(list.map((output) => `${output.label}${output.current ? " ✓" : ""}`)));
+    pw.print([defaults("mixer-speakers"), speakers(), headphones(), mic]);
+    await settle();
+    pw.print([only("default.audio.sink", "mixer-headphones")]);
+    pw.print([only("default.configured.audio.sink", "mixer-headphones")]);
+    await settle();
+    expect(lists.at(-1)).toEqual(["Speakers", "Headphones ✓"]);
+    stop?.();
+  });
+
+  test("an entry taken away isn't printed: the object is read again whole", async () => {
+    const pw = monitor();
+    const levels: Array<number | null> = [];
+    const stop = followOutputVolume(pw.watch)((volume) => levels.push(volume?.level ?? null));
+    pw.print([defaults("mixer-speakers"), speakers(), headphones(), mic]);
+    await settle();
+    expect(levels.at(-1)).toBe(0.4);
+    // The default sink's entry deleted: the monitor prints the metadata with no entries.
+    pw.truth(metadata(33, [{ subject: 0, key: "default.audio.source", type: "Spa:String:JSON", value: { name: "mixer-mic" } }]));
+    pw.print([metadata(33, [])]);
+    await settle();
+    expect(pw.reads).toEqual([33]);
+    expect(levels.at(-1)).toBeNull();
+    stop?.();
+  });
+
+  test("a read that started before a newer update is read again", async () => {
+    let release: (text: string | null) => void = () => {};
+    const reads: number[] = [];
+    let lines: ((line: string) => void) | null = null;
+    const watch = pipewireWatch({
+      available: true,
+      follow: (onLine, onStart) => {
+        lines = onLine;
+        onStart();
+        return () => {};
+      },
+      readObject: (id) => {
+        reads.push(id);
+        return new Promise((resolve) => {
+          release = resolve;
+        });
+      },
+    });
+    const print = (objects: Json[]) => {
+      for (const line of JSON.stringify(objects, null, 2).split("\n")) lines?.(line);
+    };
+    const names: Array<string | undefined> = [];
+    const stop = watch.subscribe((objects) => names.push(devicesFrom(objects).find((output) => output.current)?.label));
+    print([defaults("mixer-speakers"), speakers(), headphones()]);
+    print([only("default.audio.sink", "mixer-headphones")]);
+    expect(reads).toEqual([33]);
+    // A newer update while the read runs: the old read's answer is dropped and the object read again.
+    print([only("default.audio.sink", "mixer-speakers")]);
+    release(JSON.stringify([defaults("mixer-headphones")]));
+    await Bun.sleep(5);
+    expect(reads).toEqual([33, 33]);
+    release(JSON.stringify([defaults("mixer-speakers")]));
+    await settle();
+    expect(names.at(-1)).toBe("Speakers");
+    stop();
   });
 });
 
