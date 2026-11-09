@@ -82,7 +82,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] ASUS Control 0.3.0 (`asus-control` `feat/controls`): Lid light, Fans, CPU
 - [x] VM: `dashi-0.5.0-review/41-control-center/` (fake Wi-Fi and Bluetooth, a fixture battery, a virtual sink, the fake G14)
 - [ ] Mirroring: its glyph is drawn, its tile waits for the compositor to mirror a screen (M)
-- [ ] The rows of a page by the keyboard (the arrows reach the tiles, not yet a page's rows) (S)
+- [x] The rows of a page by the keyboard: ↑ ↓ from the header's switch down the rows, Space and Return press, the tiles' ring (`page-keys.ts`; `night/0.5-menubar`); a page's slider (Sound's volume) and Bluetooth's Search Again are not reached yet
 - [ ] A slider's or a status's 30-minute line on a large tile (`spark`, controls.html § 4) (S)
 - [ ] Per-app watts measured, not estimated, where the machine can say (RAPL through dashi-hardware) (M)
 - [ ] Hotspot on a machine with Wi-Fi: checked in code (nmcli), not on hardware (S; laptop)
