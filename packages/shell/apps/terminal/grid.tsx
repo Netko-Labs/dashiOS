@@ -20,9 +20,18 @@ import type { TerminalPalette } from "./palette.ts";
 import { cellAt, cellText, type Screen, scrolledBack } from "./screen.ts";
 import { type ScreenStore, useScreen } from "./store.ts";
 
-/** The margin left of the grid, where the marks go, and the gap over it. */
+/**
+ * The margin left of the grid, where the marks go, and the same on the
+ * right, so text never meets the window's edge; the gap over the grid, and
+ * the same under it. The cells' leftover (less than one) adds to the right
+ * and the bottom.
+ */
 export const MARGIN = 12;
 export const GRID_TOP = 6;
+/** The ground's room around the grid, both sides together: what fitting a grid to the window subtracts. */
+export const GRID_INSET = { width: MARGIN * 2, height: GRID_TOP * 2 } as const;
+/** The lost-shell notice's distance from the window's sides. */
+const NOTICE_INSET = 12;
 /** A failed command's mark: 3 px wide, inset 2 px from its row's top and bottom. */
 const MARK_WIDTH = 3;
 const MARK_INSET = 2;
@@ -81,7 +90,15 @@ export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, o
   return (
     <View
       testID="terminal-ground"
-      style={{ flex: 1, backgroundColor: look.ground, paddingLeft: MARGIN, paddingTop: GRID_TOP, position: "relative" }}
+      style={{
+        flex: 1,
+        backgroundColor: look.ground,
+        paddingLeft: MARGIN,
+        paddingRight: MARGIN,
+        paddingTop: GRID_TOP,
+        paddingBottom: GRID_TOP,
+        position: "relative",
+      }}
       onContextMenu={(event) => onContextMenu(event.x, event.y)}
     >
       <Marks screen={screen} cell={cell} failed={colors.ume} hover={colors.separator} onMark={onMark} />
@@ -99,7 +116,8 @@ export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, o
         {screen.lines.map((spans, y) => (
           <Line key={y} spans={spans} look={look} cell={cell} />
         ))}
-        <TerminalCursor screen={screen} cell={cell} look={look} />
+        {/* A lost shell takes no typing: no cursor invites it. */}
+        {!lost && <TerminalCursor screen={screen} cell={cell} look={look} />}
       </View>
       {scrolledBack(screen.scroll) && <ScrollBar scroll={screen.scroll} track={screen.rows * cell.height} color={colors.textMuted} />}
       {size !== null && (
@@ -112,11 +130,18 @@ export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, o
         </View>
       )}
       {lost && (
-        <View testID="terminal-lost" style={{ position: "absolute", left: 0, right: 0, bottom: 24, alignItems: "center" }}>
+        <View testID="terminal-lost" style={{ position: "absolute", left: NOTICE_INSET, right: NOTICE_INSET, bottom: 24, alignItems: "center" }}>
           <View
-            style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 9, backgroundColor: colors.menu, borderWidth: 1, borderColor: colors.separator }}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 9,
+              backgroundColor: colors.menu,
+              borderWidth: 1,
+              borderColor: colors.separator,
+            }}
           >
-            <Text style={{ fontSize: 13, color: colors.text }}>The shell stopped unexpectedly. Press Return to start a new one.</Text>
+            <Text style={{ fontSize: 13, color: colors.text, textAlign: "center" }}>The shell stopped. Press Return to restart.</Text>
           </View>
         </View>
       )}

@@ -97,7 +97,7 @@ test("one chrome row: the tab is named by its folder, the failed command is mark
     if (!found) throw new Error(`no ${id}`);
     return found;
   };
-  // The cell is 8 px wide; the window's content 812 × 406 holds 100 × 22 cells inside the margin.
+  // The cell is 8 px wide; the window's content 812 × 406 holds 98 × 21 cells inside the margins (12 each side, 6 over and under).
   host.emit({ type: "resize", nodeId: node("terminal-probe"), bounds: { x: 0, y: -200, width: 80, height: 18 } });
   host.emit({ type: "resize", nodeId: node("terminal-starting"), bounds: { x: 0, y: 38, width: 812, height: 406 } });
   await until(() => titles.includes("dashiOS"));
@@ -109,7 +109,7 @@ test("one chrome row: the tab is named by its folder, the failed command is mark
   expect(tree).toContain("界");
   // The title bar's one row says the tab's name.
   expect(tree).toContain("dashiOS");
-  expect(readLog()).toContain('"t":"resize","cols":100,"rows":22');
+  expect(readLog()).toContain('"t":"resize","cols":98,"rows":21');
 
   // A press on the mark selects that command's output.
   host.emit({ type: "press", nodeId: node("terminal-mark-0") });
@@ -119,6 +119,13 @@ test("one chrome row: the tab is named by its folder, the failed command is mark
   host.emit({ type: "press", nodeId: node("terminal-tab-new") });
   await until(() => root.nodeId("terminal-tab-1") !== undefined);
   expect(root.nodeId("terminal-tabs")).toBeDefined();
+  // A strip too narrow for two: the tab in front stays, named, and the other folds into "+1", whose menu lists both.
+  host.emit({ type: "resize", nodeId: node("terminal-tabs"), bounds: { x: 80, y: 6, width: 150, height: 26 } });
+  await until(() => root.nodeId("terminal-tabs-more") !== undefined);
+  expect(root.nodeId("terminal-tab-0")).toBeUndefined();
+  expect(root.nodeId("terminal-tab-1")).toBeDefined();
+  host.emit({ type: "press", nodeId: node("terminal-tabs-more") });
+  await until(() => root.nodeId("terminal-tabs-menu") !== undefined);
   // Both engines heard their size before the window goes.
   await until(() => readLog().split('"t":"resize"').length === 3);
   root.unmount();
