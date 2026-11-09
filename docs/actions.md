@@ -251,6 +251,20 @@ compositor's `agent-input`), and never fight the person:
   holds off blanking and sleep, but it is not someone at the desktop
   (`Activity`, `session/idle.rs`). In 0.5.0 it was, and a page the agent
   had just made play sound locked the agent out for as long as it played.
+- **The agent's keys skip the input method.** While a field is active, the
+  person's input method (fcitx5) holds the keyboard and every key goes
+  through it. An agent's keys never do: they go straight to the window, in
+  order, after the keyboard's enter and modifiers (`session/agent_keys.rs`).
+  What an agent types is literal (an input method would compose "ni" into
+  你), and the input method follows a field's focus a moment after the
+  click: in 0.5.0, a click then `type_text` in Helium lost up to 14 of 50
+  keys while fcitx5 caught up. The person's own keys still go through it.
+- **Waiting for a pause is not "Waiting for you".** While a borrowing action
+  waits, the agent's status says "Waiting for you to pause", which shows
+  when the person points at the mark; the mark keeps its red dot and gets no
+  amber pill. The pill means the person must answer something (a sheet, a
+  question); a pause needs nothing from them, and it would flash amber every
+  time they typed while an agent worked.
 
 ## Websites
 
