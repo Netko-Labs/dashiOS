@@ -26,7 +26,7 @@ export interface SystemSlotsInput extends Pick<SystemSnapshot, "battery" | "netw
   popover: Popover | null;
   clock: string;
   colors: Palette;
-  on: { battery: (bounds?: Bounds) => void; controlCenter: () => void; wifi: () => void; clock: () => void };
+  on: { battery: (bounds?: Bounds) => void; controlCenter: () => void; wifi: () => void; sound: () => void; clock: () => void };
   /** The Metal host takes accessibility props: each item is named. */
   accessible?: boolean;
 }
@@ -108,7 +108,8 @@ export function systemSlots({
             label: "Sound",
             open: toCenter,
             node: (
-              <StatusItem testID="status-volume" onPress={on.controlCenter} {...named("Sound")}>
+              // The speaker opens Control Center on its Sound page: the outputs and each app's volume.
+              <StatusItem testID="status-volume" onPress={on.sound} {...named("Sound")}>
                 <Svg markup={speakerGlyph(volume.level, volume.muted)} size={15} color={colors.text} />
               </StatusItem>
             ),

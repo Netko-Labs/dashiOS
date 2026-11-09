@@ -216,14 +216,15 @@ export class MenuController {
   }
 
   /**
-   * A click on the status icons (the main page) or on the network glyph (the
-   * Wi-Fi page): opens Control Center there, or closes it. Asking for the
-   * Wi-Fi page while it shows the main one turns the page instead.
+   * A click on the status icons (the main page), on the network glyph (the
+   * Wi-Fi page) or on the speaker or the microphone (the Sound page): opens
+   * Control Center there, or closes it. Asking for a page while it shows
+   * another turns the page instead.
    */
   toggleControlCenter(appName: string, page: ControlPage = "main", output?: string): Promise<void> {
     const open = this.state.popover;
     if (open?.kind === "control-center" && this.isOn(output)) {
-      if (page === "wifi" && open.page !== "wifi") this.setControlPage(page);
+      if (page !== "main" && open.page !== page) this.setControlPage(page);
       else this.close();
       return Promise.resolve();
     }

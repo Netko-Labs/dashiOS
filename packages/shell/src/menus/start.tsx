@@ -24,6 +24,7 @@ import type { Laptop } from "../laptop/start.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { SharedStores } from "../settings-app/services.ts";
+import type { AppMixer } from "../sound/apps/index.ts";
 import { SoundStore, soundBackendFor } from "../sound/index.ts";
 import { run as runCommand } from "../system/exec.ts";
 import type { SystemStore } from "../system/store.ts";
@@ -109,6 +110,8 @@ export interface MenusOptions {
   battery?: Omit<BatteryPopoverSources, "onApp" | "onAction" | "onSettings" | "chargeLimit">;
   /** System Settings at a pane ("network", "battery", "control-center"). */
   openSettingsPane?(pane: string): void;
+  /** The apps' sound (sound/apps/), for Control Center's Sound page and Settings › Sound. */
+  mixer?: AppMixer;
 }
 
 export interface Menus {
@@ -241,6 +244,7 @@ export function startMenus(options: MenusOptions): Menus {
     system: options.system,
     wifi,
     sound,
+    ...(options.mixer ? { mixer: options.mixer } : {}),
     bluetooth,
     ...(options.laptop ? { laptop: options.laptop } : {}),
     layout,
@@ -382,6 +386,7 @@ export function startMenus(options: MenusOptions): Menus {
       bluetooth,
       sound,
       audio,
+      ...(options.mixer ? { mixer: options.mixer } : {}),
       // The popover is not up when Settings asks, so there is nothing to close first.
       askWifiPassword: (network) => passwords.ask(network),
     },

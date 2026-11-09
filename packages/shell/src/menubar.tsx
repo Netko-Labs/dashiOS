@@ -5,7 +5,8 @@
  * area opens Control Center (the battery has its own panel), and a click on
  * the clock the notification center (menus/). Programs' own items, tray
  * icons and applets, sit left of the status glyphs (extras/), then the agent
- * mark (agent-mark.tsx) and the person's own recording. An app that
+ * mark (agent-mark.tsx), the person's own recording, and the microphone
+ * while an app records from it (sound/mic-pill.tsx). An app that
  * published its own menus (app-menus/) has them here while one of its
  * windows is focused, in place of File, Edit, and View. The bar is one row:
  * when the status side runs out of room, its items go into "…"
@@ -41,6 +42,8 @@ import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
+import { type AppMixer, useMicWords } from "./sound/apps/index.ts";
+import { MicPill } from "./sound/mic-pill.tsx";
 import { type SystemStore, useSystem } from "./system/store.ts";
 import { type ToplevelStore, usePortalDialogs, useToplevels } from "./toplevels.ts";
 
@@ -124,6 +127,7 @@ export function MenuBar({
   output,
   runs,
   installed,
+  mixer,
   onTip,
   reduceMotion = () => false,
   accessible = () => false,
@@ -148,6 +152,8 @@ export function MenuBar({
   runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
   /** The installed app a window's app id stands for (the Dock's match), for its name. */
   installed?: (appId: string) => App | undefined;
+  /** The apps' sound: the microphone indicator while one records (sound/apps/). */
+  mixer?: AppMixer;
   /** Show or take down the bar's tooltip (the agent mark's words). */
   onTip?: (tip: BarTip) => void;
   /** Reduce Motion: the mark's ring stands still. */
@@ -164,6 +170,7 @@ export function MenuBar({
   // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).
   const capturing = useScreenCapture(capture) && recording.kind === "idle";
   const allExtras = useExtras(extras);
+  const micWords = useMicWords(mixer);
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
   // Banners stop while Do Not Disturb is on; the moon says why, as on a Mac.
@@ -197,6 +204,7 @@ export function MenuBar({
   const titles = barMenus(useAppMenus(appMenus));
   const openControlCenter = () => void menus.toggleControlCenter(appName, "main", output);
   const openWifi = () => void menus.toggleControlCenter(appName, "wifi", output);
+  const openSound = () => void menus.toggleControlCenter(appName, "sound", output);
   const statusMenuKey = popover?.kind === "status-menu" ? popover.key : null;
   const openBattery = (bounds?: Bounds) => {
     if (!battery || !bounds) return;
@@ -318,6 +326,19 @@ export function MenuBar({
           },
         ]
       : []),
+    // Never hidden either: an app using the microphone.
+    ...(micWords !== ""
+      ? [
+          {
+            key: "microphone",
+            goes: null,
+            label: micWords,
+            radius: 10,
+            open: { kind: "action" as const, run: openSound },
+            node: <MicPill words={micWords} onPress={openSound} onTip={tip} />,
+          },
+        ]
+      : []),
     ...systemSlots({
       ...{ battery, network, volume },
       batteryPercent: menuBar.batteryPercent === true,
@@ -327,7 +348,13 @@ export function MenuBar({
       clock: formatClock(now, clock),
       colors,
       accessible: accessible(),
-      on: { battery: openBattery, controlCenter: openControlCenter, wifi: openWifi, clock: () => void menus.toggleNotificationCenter(appName, output) },
+      on: {
+        battery: openBattery,
+        controlCenter: openControlCenter,
+        wifi: openWifi,
+        sound: openSound,
+        clock: () => void menus.toggleNotificationCenter(appName, output),
+      },
     }),
   ];
 

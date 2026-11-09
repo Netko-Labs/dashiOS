@@ -54,7 +54,16 @@ export function PageView({ page, props, controls, onBack }: { page: ControlPage;
         />
       );
     case "sound":
-      return <SoundPage sound={props.sound} volume={snapshot.volume} onVolume={(level) => devices.setVolumeLevel(level)} onBack={onBack} />;
+      return (
+        <SoundPage
+          sound={props.sound}
+          volume={snapshot.volume}
+          onVolume={(level) => devices.setVolumeLevel(level)}
+          onBack={onBack}
+          {...(props.mixer ? { mixer: props.mixer } : {})}
+          {...(props.onSettings ? { onSettings: () => props.onSettings?.("sound") } : {})}
+        />
+      );
     case "bluetooth":
       return <BluetoothPage bluetooth={props.bluetooth} radio={snapshot.bluetooth} onRadio={(on) => void devices.setBluetooth(on)} onBack={onBack} />;
     case "laptop-mode":

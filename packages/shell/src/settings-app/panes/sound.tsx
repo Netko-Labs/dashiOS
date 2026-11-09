@@ -7,7 +7,10 @@
  * microphone, the input is one row that says so, and none of its controls
  * (a slider for a microphone that isn't there would say there is one). The
  * meter listens to the microphone only while this pane is on screen, reads
- * the loudness, and keeps nothing.
+ * the loudness, and keeps nothing. Each app's volume, mute and output are
+ * the Apps card under the output's volume, and the apps using the
+ * microphone a card under the input (sound-apps.tsx). The title's detail is
+ * the output in use (VS-2).
  */
 
 import { CHECK } from "@dashi/ui";
@@ -23,6 +26,7 @@ import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../knob-glyphs.ts";
 import type { PaneServices } from "../services.ts";
 import { Caption, Group, Note, Page, Setting, Slider, Switch } from "../ui.tsx";
 import { Failure, ListRow } from "./parts.tsx";
+import { AppsCard, RecordingCard } from "./sound-apps.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
@@ -189,8 +193,9 @@ export function SoundPane({ services }: { services: PaneServices }) {
     levels.open();
     return () => levels.close();
   }, [levels]);
+  const current = outputs.outputs.find((output) => output.current);
   return (
-    <Page title="Sound">
+    <Page title="Sound" {...(current ? { detail: current.label } : {})}>
       <Caption above>Output</Caption>
       <Devices store={sound} state={outputs} side="output" testID="sound-outputs" />
       <VolumeRow
@@ -199,8 +204,10 @@ export function SoundPane({ services }: { services: PaneServices }) {
         onLevel={(level) => void levels.setLevel("output", level)}
         onMute={(muted) => void levels.setMuted("output", muted)}
       />
+      {services.mixer && <AppsCard mixer={services.mixer} />}
       <Caption above>Input</Caption>
       <Input services={services} volume={volumes.input} />
+      {services.mixer && <RecordingCard mixer={services.mixer} />}
       <Caption above>Menu Bar</Caption>
       <Group>
         <Setting id="sound/show-in-menu-bar" control="sound-menubar" />

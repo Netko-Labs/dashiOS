@@ -3,7 +3,9 @@
  * (control-center/page-parts.tsx): the header names the output in use, the
  * volume lies flat under it, then the outputs, the one in use chosen (green).
  * Choosing another makes it the default. The list is read again while the
- * page is open, so a headset plugged in appears on its own.
+ * page is open, so a headset plugged in appears on its own. Under them,
+ * each app playing sound with its own volume and mute, and the apps using
+ * the microphone (app-rows.tsx).
  */
 
 import { View } from "@mirinjs/metal";
@@ -15,6 +17,8 @@ import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control
 import { SliderTile } from "../control-center/tiles.tsx";
 import { speakerGlyph } from "../glyphs.ts";
 import type { Volume } from "../system/volume.ts";
+import { AppSections } from "./app-rows.tsx";
+import { type AppMixer, useMixer } from "./apps/index.ts";
 import { DISPLAY, HEADPHONES } from "./glyphs.ts";
 import { type SoundStore, useSound } from "./store.ts";
 import type { OutputKind } from "./types.ts";
@@ -33,10 +37,15 @@ export interface SoundPageProps {
   /** Sets the output volume, 0 to 1. */
   onVolume: (level: number) => void;
   onBack: () => void;
+  /** The apps' sound; none shows no apps. */
+  mixer?: AppMixer;
+  /** Sound Settings (the apps that didn't fit). */
+  onSettings?: () => void;
 }
 
-export function SoundPage({ sound, volume, onVolume, onBack }: SoundPageProps) {
+export function SoundPage({ sound, volume, onVolume, onBack, mixer, onSettings }: SoundPageProps) {
   const state = useSound(sound);
+  const apps = useMixer(mixer);
   useEffect(() => {
     sound.open();
     return () => sound.close();
@@ -82,6 +91,15 @@ export function SoundPage({ sound, volume, onVolume, onBack }: SoundPageProps) {
         <PageSection>Output</PageSection>
         {list()}
         {state.failed !== null && <PageNote testID="sound-failure" tone="critical">{`Couldn’t make “${state.failed}” the output.`}</PageNote>}
+        {mixer && (
+          <AppSections
+            apps={apps.apps}
+            recording={apps.recording}
+            onLevel={(key, level) => void mixer.setLevel(key, level)}
+            onMute={(key, muted) => void mixer.setMuted(key, muted)}
+            {...(onSettings ? { onMore: onSettings } : {})}
+          />
+        )}
       </PageBody>
     </>
   );

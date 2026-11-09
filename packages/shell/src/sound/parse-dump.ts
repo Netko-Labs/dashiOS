@@ -28,9 +28,10 @@ function textProp(props: Props, key: string): string | undefined {
 /** Which side of the machine's audio: the outputs (sinks) or the inputs (sources). */
 export type Side = "output" | "input";
 
+/** A virtual source (a noise filter's, a null microphone) is an input as much as a sound card's. */
 const SIDES = {
-  output: { mediaClass: "Audio/Sink", defaultKey: "default.audio.sink" },
-  input: { mediaClass: "Audio/Source", defaultKey: "default.audio.source" },
+  output: { mediaClasses: ["Audio/Sink"], defaultKey: "default.audio.sink" },
+  input: { mediaClasses: ["Audio/Source", "Audio/Source/Virtual"], defaultKey: "default.audio.source" },
 } as const;
 
 /** The default device's node.name, from the metadata entry for `default.audio.sink` (or `.source`). */
@@ -47,7 +48,8 @@ function defaultName(metadata: unknown, key: string): string | undefined {
 
 /** The outputs (or inputs) in the dump's order, with the default marked; null if the text is not a dump. */
 export function parseDump(text: string, side: Side = "output"): Output[] | null {
-  const { mediaClass, defaultKey } = SIDES[side];
+  const { mediaClasses, defaultKey } = SIDES[side];
+  const isSide = (mediaClass: unknown): boolean => (mediaClasses as readonly unknown[]).includes(mediaClass);
   let dump: unknown;
   try {
     dump = JSON.parse(text);
@@ -66,7 +68,7 @@ export function parseDump(text: string, side: Side = "output"): Output[] | null 
       if (textProp(props, "metadata.name") === "default") defaultNodeName ??= defaultName(object.metadata, defaultKey);
       continue;
     }
-    if (object.type !== "PipeWire:Interface:Node" || props["media.class"] !== mediaClass) continue;
+    if (object.type !== "PipeWire:Interface:Node" || !isSide(props["media.class"])) continue;
     const id = object.id;
     const name = textProp(props, "node.name");
     const label = textProp(props, "node.description") ?? textProp(props, "node.nick") ?? name;

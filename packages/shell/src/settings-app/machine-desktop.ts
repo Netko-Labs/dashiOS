@@ -3,13 +3,14 @@
  * the same stores the machine panes of System Settings use, so what an agent
  * changes is what the person sees there. What is here is chosen for being safe
  * to hand over: reads of the state, and changes the person could undo with a
- * click (the sound output and volume, the power mode, connecting a device they
- * already paired). Not here, on purpose: passwords of any kind, pairing,
+ * click (the sound output and volume, an app's volume, mute and output, the
+ * power mode, connecting a device they already paired). Not here, on purpose: passwords of any kind, pairing,
  * forgetting a network or a device, VPN switches, automatic login, and the
  * microphone's level meter (which would be a way to listen).
  */
 
 import { describeAction } from "../power/policy.ts";
+import { type AppSound, playOnLabel } from "../sound/apps/index.ts";
 import { describeBattery } from "../system/battery-details.ts";
 import { isProfileId, PROFILE_LABEL, type ProfileId } from "../system/profiles.ts";
 import type { Volume } from "../system/volume.ts";
@@ -47,7 +48,21 @@ export interface SoundReading {
   outputVolume: Volume | null;
   inputVolume: Volume | null;
   showInMenuBar: boolean;
+  /** Each app playing sound; `output` is "default" or the output's name. */
+  apps: AppReading[];
+  /** The apps recording, and from which input. */
+  recording: Array<{ name: string; input: string }>;
 }
+
+export interface AppReading {
+  name: string;
+  playing: boolean;
+  level: number;
+  muted: boolean;
+  output: string;
+}
+
+export type AppVolumeOutcome = { ok: true; app: AppReading } | { ok: false; reason: "unavailable" | "none" | "many" | "no-output" | "failed" };
 
 export type OutputOutcome = { ok: true; name: string; changed: boolean } | { ok: false; reason: "none" | "many" | "failed" };
 
@@ -76,12 +91,20 @@ export interface MachineDesktop {
   setSoundOutput(name: string): Promise<OutputOutcome>;
   /** Null when there is no such device to set. */
   setVolume(target: "output" | "input", change: { level?: number; muted?: boolean }): Promise<Volume | null>;
+  /** One app's level, mute, and output (a name from `sound`, or "default"). */
+  setAppVolume(app: string, change: { level?: number; muted?: boolean; output?: string }): Promise<AppVolumeOutcome>;
   power(): Promise<PowerReading>;
   setPowerProfile(id: ProfileId): Promise<"ok" | "unavailable" | "failed">;
   account(): Promise<AccountReading | null>;
 }
 
 const minutes = (seconds: number): number => Math.round(seconds / 60);
+
+/** An app as agents read it: "default" for an app that follows the default output, else the output's name. */
+function appReading(app: AppSound, outputs: Parameters<typeof playOnLabel>[1]): AppReading {
+  const output = app.target === null ? "default" : playOnLabel(app.target, outputs);
+  return { name: app.name, playing: app.playing, level: Math.round(app.level * 100) / 100, muted: app.muted, output };
+}
 
 /** `services` is asked for on each call: the panes' stores are made when first needed. */
 export function machineDesktop(services: () => PaneServices, settings: SettingsStore): MachineDesktop {
@@ -125,9 +148,10 @@ export function machineDesktop(services: () => PaneServices, settings: SettingsS
     },
 
     async sound() {
-      const { sound, inputs, levels } = services();
+      const { sound, inputs, levels, mixer } = services();
       await Promise.all([sound.refresh(), inputs.refresh(), levels.refresh()]);
       const volumes = levels.getSnapshot();
+      const apps = mixer?.getSnapshot() ?? { apps: [], recording: [], outputs: [] };
       const names = (list: ReturnType<typeof sound.getSnapshot>["outputs"]) => list.map((device) => ({ name: device.label, current: device.current }));
       return {
         outputs: names(sound.getSnapshot().outputs),
@@ -135,7 +159,35 @@ export function machineDesktop(services: () => PaneServices, settings: SettingsS
         outputVolume: volumes.output,
         inputVolume: volumes.input,
         showInMenuBar: settings.getSnapshot().data.menuBar.sound ?? true,
+        apps: apps.apps.map((app) => appReading(app, apps.outputs)),
+        recording: apps.recording.map((each) => ({ name: each.name, input: each.monitor ? "this computer's sound" : each.input })),
       };
+    },
+
+    async setAppVolume(name, change) {
+      const { mixer } = services();
+      if (!mixer?.getSnapshot().available) return { ok: false, reason: "unavailable" };
+      const found = pickByName(mixer.getSnapshot().apps, name, (app) => app.name);
+      if (found.kind !== "one") return { ok: false, reason: found.kind };
+      const key = found.item.key;
+      let target: string | null | undefined;
+      if (change.output !== undefined) {
+        if (change.output.trim().toLowerCase() === "default") target = null;
+        else {
+          const output = pickByName(mixer.getSnapshot().outputs, change.output, (each) => each.label);
+          if (output.kind !== "one") return { ok: false, reason: "no-output" };
+          target = output.item.name;
+        }
+      }
+      const results = await Promise.all([
+        change.level === undefined ? true : mixer.setLevel(key, change.level),
+        change.muted === undefined ? true : mixer.setMuted(key, change.muted),
+        target === undefined ? true : mixer.setOutput(key, target),
+      ]);
+      const now = mixer.getSnapshot();
+      const app = now.apps.find((each) => each.key === key);
+      if (!results.every(Boolean) || !app) return { ok: false, reason: "failed" };
+      return { ok: true, app: appReading(app, now.outputs) };
     },
 
     async setSoundOutput(name) {

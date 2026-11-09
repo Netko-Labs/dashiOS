@@ -47,6 +47,7 @@ export type Call =
   | { name: "get_sound" }
   | { name: "set_sound_output"; device: string }
   | { name: "set_volume"; target: "output" | "input"; level?: number; muted?: boolean }
+  | { name: "set_app_volume"; app: string; level?: number; muted?: boolean; output?: string }
   | { name: "get_power" }
   | { name: "set_power_profile"; profile: ProfileId }
   | { name: "get_account" }

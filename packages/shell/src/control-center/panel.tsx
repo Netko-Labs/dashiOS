@@ -17,6 +17,7 @@ import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
 import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
 import { stepLevel } from "../shared/controls/slider-math.ts";
+import type { AppMixer } from "../sound/apps/index.ts";
 import type { SoundStore } from "../sound/store.ts";
 import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
@@ -44,6 +45,8 @@ export interface ControlCenterProps {
   system: SystemStore;
   wifi: WifiStore;
   sound: SoundStore;
+  /** The apps' sound (sound/apps/): the Sound page's apps and who uses the microphone. */
+  mixer?: AppMixer;
   bluetooth: BluetoothStore;
   /** The laptop's power modes, keyboard light and graphics card; their tiles show only on laptops. */
   laptop?: Laptop;
