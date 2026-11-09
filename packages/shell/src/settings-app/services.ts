@@ -17,7 +17,7 @@ import type { Laptop } from "../laptop/start.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { fakeLid, logindLid } from "../power/policy.ts";
-import type { AppMixer } from "../sound/apps/index.ts";
+import type { AppMixer, PipeWireWatch } from "../sound/apps/index.ts";
 import { fakeMeter, inputsOf, type LevelMeter, LevelsStore, pipewireMeter, SoundStore, shadowLevels, wpctlLevels } from "../sound/index.ts";
 import type { AudioBackend } from "../sound/types.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
@@ -40,6 +40,8 @@ export interface SharedStores {
   audio: AudioBackend;
   /** The apps' sound: Settings › Sound's Apps card and who uses the microphone. */
   mixer?: AppMixer;
+  /** The session's PipeWire watcher, which the levels follow (sound/apps/watch.ts). */
+  pipewire?: PipeWireWatch;
   /** Asks for a Wi-Fi network's password on its own sheet. */
   askWifiPassword(network: WifiNetwork): void;
 }
@@ -81,7 +83,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
   const { shared, system } = options;
   const fake = standsIn(options.env ?? process.env, options.nesting);
   const accounts = options.accounts ?? chooseAccounts(options.env ?? process.env, options.nesting);
-  const real = wpctlLevels(run);
+  const real = wpctlLevels(run, shared.pipewire);
   const energy = new EnergyStore({
     battery: () => readBatteryDetails(),
     profiles: fake ? shadowProfiles(powerProfiles(systemBus())) : powerProfiles(systemBus()),

@@ -103,7 +103,7 @@ const EVENT_ROLES = new Set(["notification", "event", "alert"]);
 export const levelOf = (linear: number): number => (linear <= 0 ? 0 : Math.cbrt(linear));
 
 /** The node's Props param: its volume and mute. */
-function volumeOf(info: Json): { level: number; muted: boolean } {
+export function volumeOf(info: Json): { level: number; muted: boolean } {
   const params = isRecord(info.params) ? info.params : {};
   const props = Array.isArray(params.Props) ? params.Props : [];
   const found = props.find((entry): entry is Json => isRecord(entry) && (Array.isArray(entry.channelVolumes) || typeof entry.mute === "boolean"));

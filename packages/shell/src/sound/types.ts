@@ -21,10 +21,14 @@ export interface SoundBackend {
   list(): Promise<Output[] | null>;
   /** Whether the default is now `id`. */
   setDefault(id: number): Promise<boolean>;
+  /** Tells the list each time PipeWire changes (apps/watch.ts), so nothing polls; absent where PipeWire can't be watched. Returns the stop. */
+  follow?(onList: (list: Output[]) => void): () => void;
 }
 
 /** The backend Settings' Sound pane uses: the outputs and the inputs (microphones). */
 export interface AudioBackend extends SoundBackend {
   /** The input devices (PipeWire sources); `setDefault` makes one the default input. Null means PipeWire cannot be asked. */
   listInputs(): Promise<Output[] | null>;
+  /** `follow` for the inputs. */
+  followInputs?(onList: (list: Output[]) => void): () => void;
 }

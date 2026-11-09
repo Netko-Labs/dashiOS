@@ -16,13 +16,15 @@ export interface OwnerOptions {
   /** The installed apps, read when first needed. */
   catalog: () => AppCatalog;
   read: IdentityDeps["read"];
+  /** A theme icon's file by name, for an app no entry names (identity.ts). */
+  icon?: IdentityDeps["icon"];
   /** Each window's process and its app, as the Dock names it. */
   windows?: () => Promise<ReadonlyMap<number, AppIdentity>>;
   /** Who something is changed: make the rows again. */
   onChange?: () => void;
 }
 
-const clientKey = (stream: Stream): string => `${stream.portalAppId ?? ""}|${streamPid(stream) ?? ""}|${stream.appName ?? ""}`;
+const clientKey = (stream: Stream): string => `${stream.portalAppId ?? ""}|${streamPid(stream) ?? ""}|${stream.appName ?? ""}|${stream.iconName ?? ""}`;
 
 export function streamOwners(options: OwnerOptions): Owner {
   const known = new Map<string, AppIdentity | null>();
@@ -54,7 +56,12 @@ export function streamOwners(options: OwnerOptions): Owner {
     const cached = known.get(key);
     if (cached !== undefined) return cached;
     catalog ??= options.catalog();
-    const app = streamApp(stream, { catalog, read: options.read, windowOwner: (pid) => windows.get(pid) ?? null });
+    const app = streamApp(stream, {
+      catalog,
+      read: options.read,
+      windowOwner: (pid) => windows.get(pid) ?? null,
+      ...(options.icon ? { icon: options.icon } : {}),
+    });
     const owner = app.key === DASHI_KEY ? null : app;
     known.set(key, owner);
     const pid = streamPid(stream);

@@ -6,13 +6,13 @@
 
 import { type App, appFor, iconPath } from "../../apps.ts";
 import type { Compositor } from "../../compositor.ts";
-import type { Entry } from "../../entries.ts";
+import { cachedIcon, type Entry } from "../../entries.ts";
 import { type AppIdentity, catalogFrom } from "../../process-apps/index.ts";
 import { heldControl, pipewireControl } from "./commands.ts";
 import { streamOwners } from "./owners.ts";
 import { readProcess } from "./proc-look.ts";
 import { AppMixer } from "./store.ts";
-import { pipewireGraph } from "./watch.ts";
+import { graphOf, type PipeWireWatch, pipewireWatch } from "./watch.ts";
 
 export interface MixerOptions {
   compositor: Pick<Compositor, "windows"> | null;
@@ -23,6 +23,8 @@ export interface MixerOptions {
   installed: (appId: string) => Entry | undefined;
   /** A development run: changes stay in memory. */
   standIn: boolean;
+  /** The session's watcher (shared with the outputs and levels); a watcher of its own without it. */
+  pipewire?: PipeWireWatch;
 }
 
 export function startAppMixer(options: MixerOptions): AppMixer {
@@ -43,8 +45,20 @@ export function startAppMixer(options: MixerOptions): AppMixer {
     );
   };
   let mixer: AppMixer | null = null;
-  const owner = streamOwners({ catalog: () => catalogFrom(options.entries()), read: (pid) => readProcess(pid), windows, onChange: () => mixer?.refresh() });
-  mixer = new AppMixer({ graph: pipewireGraph(), control: options.standIn ? heldControl() : pipewireControl(), owner });
+  const generic = iconPath("generic");
+  // An app no entry names gets the icon its stream names, from the icon theme (once per client: owners.ts).
+  const icon = (name: string): string | null => {
+    const path = cachedIcon(name);
+    return path === generic ? null : path;
+  };
+  const owner = streamOwners({
+    catalog: () => catalogFrom(options.entries()),
+    read: (pid) => readProcess(pid),
+    windows,
+    icon,
+    onChange: () => mixer?.refresh(),
+  });
+  mixer = new AppMixer({ graph: graphOf(options.pipewire ?? pipewireWatch()), control: options.standIn ? heldControl() : pipewireControl(), owner });
   mixer.start();
   return mixer;
 }

@@ -3,7 +3,9 @@
  * (actions/) opens the pane, scrolls the row into view, and lights it up for
  * a moment. Every registered row is a Spot (setting.tsx `Setting`), and a
  * pane wraps other content a row of the registry stands for in `<Spot id>`;
- * the id is the address without `dashi://settings/` (registry/).
+ * the id is the address without `dashi://settings/` (registry/). A row
+ * that is there only for now (an app's in Sound's Apps card) has one too
+ * (find.ts `appSpot`), so Settings' search can open it.
  *
  * The page scrolls by the row's distance from its top, measured once both
  * are laid out (the scroll is relative, so a pane already scrolled works
@@ -14,6 +16,7 @@
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
 import { useControlColors } from "../shared/controls/palette.ts";
+import type { AppSpotId } from "./find.ts";
 import { rowPlace, type SettingId } from "./registry/index.ts";
 
 /** How long a row stays lit. */
@@ -92,7 +95,7 @@ export const SpotLit = createContext(false);
  * section's Spot (`cards`: its heading and its cards) lights its cards, not
  * the strip behind the heading: an opaque card would hide a light under it.
  */
-export function Spot({ id, cards = false, children }: { id: SettingId; cards?: boolean; children: ReactNode }) {
+export function Spot({ id, cards = false, children }: { id: SettingId | AppSpotId; cards?: boolean; children: ReactNode }) {
   const { pane, row } = rowPlace({ id });
   const colors = useControlColors();
   const host = useContext(SpotContext);

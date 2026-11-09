@@ -1,7 +1,10 @@
 /**
  * The Sound page's outputs and which one is the default, as a store the page
- * subscribes to. Opening the page reads the list and keeps reading it, so an
- * output plugged in while the page is open shows up; closing stops that.
+ * subscribes to. Opening the page reads the list and follows PipeWire's
+ * changes (the session's `pw-dump --monitor`, apps/watch.ts), so an output
+ * plugged in, or a default chosen elsewhere, shows at once; closing stops
+ * that. Only where PipeWire can't be watched (no pw-dump) is the list read
+ * again every few seconds instead.
  *
  * Choosing an output shows it as the default at once, makes it the default,
  * and then reads the truth back. Reads that started before a choice are
@@ -13,7 +16,7 @@
 import { useSyncExternalStore } from "react";
 import type { Output, SoundBackend } from "./types.ts";
 
-/** How often the list is read while the page is open. */
+/** How often the list is read while the page is open, where it can't be followed. */
 export const SOUND_POLL_MS = 3000;
 
 export interface SoundState {
@@ -39,6 +42,7 @@ export class SoundStore {
   /** The output being made the default; reads wait for it. */
   private choosing: number | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
+  private stopFollow: (() => void) | null = null;
 
   constructor(
     private readonly backend: SoundBackend,
@@ -52,15 +56,19 @@ export class SoundStore {
 
   getSnapshot = (): SoundState => this.snapshot;
 
-  /** The page opened: read now, and keep reading until `close`. */
+  /** The page opened: read now, and follow the changes (or keep reading) until `close`. */
   open(): void {
-    this.timer ??= setInterval(() => void this.refresh(), this.options.pollMs ?? SOUND_POLL_MS);
+    const { follow } = this.backend;
+    if (follow) this.stopFollow ??= follow((outputs) => this.followed(outputs));
+    else this.timer ??= setInterval(() => void this.refresh(), this.options.pollMs ?? SOUND_POLL_MS);
     void this.refresh();
   }
 
   close(): void {
     clearInterval(this.timer);
     this.timer = undefined;
+    this.stopFollow?.();
+    this.stopFollow = null;
     // An old failure is not news the next time the page opens.
     if (this.snapshot.failed !== null) this.publish({ failed: null });
   }
@@ -71,6 +79,14 @@ export class SoundStore {
     const outputs = await this.backend.list().catch(() => null);
     if (read !== this.reads) return;
     this.publish(outputs === null ? { available: false, outputs: [] } : { available: true, outputs });
+  }
+
+  /** PipeWire changed: the list as it is now, unless a choice is being made (its read-back follows it). */
+  private followed(outputs: Output[]): void {
+    if (this.choosing !== null) return;
+    // A read still running started before this change.
+    this.reads++;
+    this.publish({ available: true, outputs });
   }
 
   /** Makes `id` the default output. Choosing the current one, or one not listed, does nothing. */

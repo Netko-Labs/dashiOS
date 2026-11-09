@@ -1,6 +1,8 @@
 /**
  * What the menu bar shows of the machine: battery, network, and volume,
- * kept fresh by polling (and by `nmcli monitor` for the network), as a store
+ * kept fresh by polling (and by `nmcli monitor` for the network, the
+ * kernel's power-supply events for the battery, and the session's
+ * `pw-dump --monitor` for the volume, which then isn't polled), as a store
  * React components subscribe to.
  */
 
@@ -33,6 +35,8 @@ export interface SystemSources {
   battery(): Promise<Battery | null>;
   network(): Promise<Network | null>;
   volume(): Promise<Volume | null>;
+  /** Tells the output volume each time PipeWire changes (sound/apps/watch.ts); with it the volume isn't polled. Returns the stop. */
+  followVolume?(onVolume: (volume: Volume | null) => void): () => void;
 }
 
 export function systemSources(run: Run = defaultRun): SystemSources {
@@ -74,7 +78,13 @@ export class SystemStore {
     };
     every(INTERVALS.battery, () => this.refresh("battery"));
     every(INTERVALS.network, () => this.refresh("network"));
-    every(INTERVALS.volume, () => this.refresh("volume"));
+    const { followVolume } = this.sources;
+    if (followVolume) {
+      void this.refresh("volume");
+      this.stops.push(followVolume((volume) => this.publish("volume", volume)));
+    } else {
+      every(INTERVALS.volume, () => this.refresh("volume"));
+    }
 
     let debounce: ReturnType<typeof setTimeout> | undefined;
     this.stops.push(

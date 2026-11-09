@@ -24,8 +24,8 @@ import type { Laptop } from "../laptop/start.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { SharedStores } from "../settings-app/services.ts";
-import type { AppMixer } from "../sound/apps/index.ts";
-import { SoundStore, soundBackendFor } from "../sound/index.ts";
+import type { AppMixer, PipeWireWatch } from "../sound/apps/index.ts";
+import { followOutputVolume, SoundStore, soundBackendFor } from "../sound/index.ts";
 import { run as runCommand } from "../system/exec.ts";
 import type { SystemStore } from "../system/store.ts";
 import { chooseNetwork } from "../wifi/flow.ts";
@@ -112,6 +112,8 @@ export interface MenusOptions {
   openSettingsPane?(pane: string): void;
   /** The apps' sound (sound/apps/), for Control Center's Sound page and Settings › Sound. */
   mixer?: AppMixer;
+  /** The session's PipeWire watcher: the outputs and Control Center's slider follow it (sound/apps/watch.ts). */
+  pipewire?: PipeWireWatch;
 }
 
 export interface Menus {
@@ -150,7 +152,7 @@ export function aboutInfo(target: AboutTarget, icon: string | undefined): AboutI
 }
 
 export function startMenus(options: MenusOptions): Menus {
-  const { compositor } = options;
+  const { compositor, pipewire } = options;
   const appMenus = options.appMenus ?? new AppMenuStore();
   let entries: readonly Entry[] | null = options.catalog ?? null;
   const entryFor = (appId: string) => findEntry((entries ??= loadEntries()), appId);
@@ -197,15 +199,18 @@ export function startMenus(options: MenusOptions): Menus {
   const devices = new DeviceStore({
     hotspotRadio: radios.hotspot,
     volumeChanged: (volume) => options.system.publish("volume", volume),
+    ...(pipewire?.available ? { followVolume: followOutputVolume(pipewire) } : {}),
     ...(options.brightnessChanged ? { brightnessChanged: options.brightnessChanged } : {}),
     wifiRadio: radios.wifi,
     bluetoothRadio: radios.bluetooth,
     // The Bluetooth radio asks BlueZ itself (and falls back to bluetoothctl, which may be missing).
     hasBluetoothctl: true,
   });
+  // The slider follows the volume however it changes (keys, wpctl, another output).
+  const stopDevices = devices.start();
   const wifi = options.wifiStore;
   // On a development run the output switch is remembered in memory, never made the default on the developer's machine.
-  const audio = soundBackendFor({ standIn: options.wifi.fake, run: runCommand });
+  const audio = soundBackendFor({ standIn: options.wifi.fake, run: runCommand, ...(pipewire ? { watch: pipewire } : {}) });
   const sound = new SoundStore(audio);
   // Sheets that take the keyboard for the app in front: the bar keeps that app meanwhile (bar-hold.ts).
   const passwords = new PasswordPrompt(holdingBar(openOverlay), wifi);
@@ -387,6 +392,7 @@ export function startMenus(options: MenusOptions): Menus {
       sound,
       audio,
       ...(options.mixer ? { mixer: options.mixer } : {}),
+      ...(pipewire ? { pipewire } : {}),
       // The popover is not up when Settings asks, so there is nothing to close first.
       askWifiPassword: (network) => passwords.ask(network),
     },
@@ -408,6 +414,7 @@ export function startMenus(options: MenusOptions): Menus {
       dialogs.close();
       passwords.close();
       sound.close();
+      stopDevices();
       pairing.close();
       options.wifi.backend.close();
       options.bluetooth.backend.close();

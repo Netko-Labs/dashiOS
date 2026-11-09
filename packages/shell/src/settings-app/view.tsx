@@ -15,8 +15,9 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
 import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
+import { type AppMixer, useAppNames } from "../sound/apps/index.ts";
 import type { PaneContext } from "./context.ts";
-import { type FindFocus, type Found, findSettings, moveFound } from "./find.ts";
+import { appRows, type FindFocus, type Found, findSettings, moveFound } from "./find.ts";
 import { useSettings } from "./hooks.ts";
 import { AboutPane } from "./panes/about.tsx";
 import { AgentsPane } from "./panes/agents.tsx";
@@ -173,10 +174,12 @@ const NO_AGENT_LIST: readonly { status: string }[] = [];
 const NO_AGENTS = { subscribe: () => () => {}, getSnapshot: () => NO_AGENT_LIST };
 
 /** The sidebar's search: what was typed, what it found, and which result ↑ and ↓ are on. */
-function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void) {
+function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void, mixer: AppMixer | undefined) {
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState(0);
-  const found = useMemo(() => findSettings(query, (pane) => !pane.optional || shown.has(pane.id)), [query, shown]);
+  // The apps playing sound are found by name, at their rows in Sound's Apps card.
+  const apps = useAppNames(mixer);
+  const found = useMemo(() => findSettings(query, (pane) => !pane.optional || shown.has(pane.id), appRows(apps)), [query, shown, apps]);
   const at = Math.min(chosen, found.length - 1);
   return {
     query,
@@ -210,10 +213,14 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
   const focusSerial = useSyncExternalStore(find?.subscribe ?? NO_FIND.subscribe, find?.getSnapshot ?? NO_FIND.getSnapshot);
   const agents = useSyncExternalStore(ctx.agents?.subscribe ?? NO_AGENTS.subscribe, ctx.agents?.getSnapshot ?? NO_AGENTS.getSnapshot);
   // A result opens its pane at its row, lit (spot.tsx).
-  const search = useSearch(shown, (found) => {
-    nav.select(found.pane);
-    if (found.row) spots?.focus.request(found.pane, found.row);
-  });
+  const search = useSearch(
+    shown,
+    (found) => {
+      nav.select(found.pane);
+      if (found.row) spots?.focus.request(found.pane, found.row);
+    },
+    ctx.services.mixer,
+  );
   // The registry's rows read and write these (setting.tsx).
   const stores = useMemo(() => ({ settings: ctx.settings, flags: ctx.flags }), [ctx.settings, ctx.flags]);
   const results = search.query.trim() === "" ? null : { query: search.query, found: search.found, chosen: search.chosen, onChoose: search.choose };

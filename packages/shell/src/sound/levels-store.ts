@@ -1,20 +1,18 @@
 /**
  * The Sound pane's two volumes (the default output and the default input) as
- * a store: read when the pane opens and every few seconds while it is up (the
- * volume keys move the output while the pane is showing), and changed with
- * the sliders. A change shows at once and the system is read back.
+ * a store: read when the pane opens, then following PipeWire while it is up
+ * (the volume keys, or `wpctl`, move the output while the pane is showing;
+ * every few seconds' read only where PipeWire can't be watched), and changed
+ * with the sliders. A change shows at once and the system is read back.
  */
 
 import { useSyncExternalStore } from "react";
 import type { Volume } from "../system/volume.ts";
-import type { Levels } from "./levels.ts";
+import { VolumeFollow } from "../system/volume-follow.ts";
+import type { Levels, SideVolumes } from "./levels.ts";
 import type { Side } from "./parse-dump.ts";
 
-export interface LevelsState {
-  /** Null without PipeWire or a default device on that side. */
-  output: Volume | null;
-  input: Volume | null;
-}
+export type LevelsState = SideVolumes;
 
 export const LEVELS_POLL_MS = 3000;
 
@@ -24,6 +22,12 @@ export class LevelsStore {
   private reads = 0;
   private writing = 0;
   private timer: ReturnType<typeof setInterval> | undefined;
+  private stopFollow: (() => void) | null = null;
+  /** PipeWire's word per side, held a moment after a slider set it. */
+  private readonly follows: Record<Side, VolumeFollow> = {
+    output: new VolumeFollow((volume) => this.heard("output", volume)),
+    input: new VolumeFollow((volume) => this.heard("input", volume)),
+  };
 
   constructor(
     private readonly levels: Levels,
@@ -40,13 +44,32 @@ export class LevelsStore {
   getSnapshot = (): LevelsState => this.snapshot;
 
   open(): void {
-    this.timer ??= setInterval(() => void this.refresh(), this.pollMs);
+    const { follow } = this.levels;
+    if (follow) {
+      this.stopFollow ??= follow((levels) => {
+        this.follows.output.heard(levels.output);
+        this.follows.input.heard(levels.input);
+      });
+    } else {
+      this.timer ??= setInterval(() => void this.refresh(), this.pollMs);
+    }
     void this.refresh();
   }
 
   close(): void {
     clearInterval(this.timer);
     this.timer = undefined;
+    this.stopFollow?.();
+    this.stopFollow = null;
+    this.follows.output.stop();
+    this.follows.input.stop();
+  }
+
+  /** PipeWire's word for one side (past the hold). */
+  private heard(side: Side, volume: Volume | null): void {
+    // A read still running started before this change.
+    this.reads++;
+    this.publish({ [side]: volume });
   }
 
   async refresh(): Promise<void> {
@@ -74,6 +97,7 @@ export class LevelsStore {
   private async write(side: Side, shown: Volume, work: () => Promise<Volume | null>): Promise<void> {
     this.writing++;
     this.reads++;
+    this.follows[side].set(shown);
     this.publish({ [side]: shown });
     let truth: Volume | null = null;
     try {
@@ -83,6 +107,7 @@ export class LevelsStore {
     }
     this.writing--;
     if (truth) {
+      this.follows[side].set(truth);
       this.publish({ [side]: truth });
       if (side === "output") this.outputChanged?.(truth);
     } else {

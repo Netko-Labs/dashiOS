@@ -6,6 +6,13 @@
  * lines back into whole arrays by counting brackets outside strings, and
  * `GraphMap` keeps the latest of each object by id. Pure: no process here
  * (watch.ts runs pw-dump).
+ *
+ * A metadata object is the exception: an update lists only the entries that
+ * changed (`wpctl set-default` sends `default.audio.sink`, then
+ * `default.configured.audio.sink`, each alone), so its entries are merged
+ * by subject and key. An entry taken away isn't listed at all (its update
+ * has fewer entries, often none), so a metadata update is noted
+ * (`takeMetadata`) and watch.ts reads that object again whole.
  */
 
 import { isRecord } from "./streams.ts";
@@ -60,11 +67,38 @@ export class JsonArrays {
 }
 
 /** The objects by id, as the dump and its updates leave them. */
-export class GraphMap {
-  private readonly objects = new Map<number, Record<string, unknown>>();
+type Json = Record<string, unknown>;
 
-  /** Applies one array of the monitor's; whether anything changed. Text that isn't a JSON array changes nothing. */
-  apply(arrayText: string): boolean {
+const entryKey = (entry: unknown): string | null =>
+  isRecord(entry) && typeof entry.key === "string" ? `${typeof entry.subject === "number" ? entry.subject : ""}\u0000${entry.key}` : null;
+
+/** The entries of `before` with `changes` laid over them, by subject and key; a change whose value is null takes its entry away. */
+function mergeEntries(before: readonly unknown[], changes: readonly unknown[]): unknown[] {
+  const merged = new Map<string, unknown>();
+  for (const entry of before) {
+    const key = entryKey(entry);
+    if (key !== null) merged.set(key, entry);
+  }
+  for (const entry of changes) {
+    const key = entryKey(entry);
+    if (key === null) continue;
+    if (isRecord(entry) && entry.value === null) merged.delete(key);
+    else merged.set(key, entry);
+  }
+  return [...merged.values()];
+}
+
+export class GraphMap {
+  private readonly objects = new Map<number, Json>();
+  private readonly metadataSeen = new Set<number>();
+
+  /**
+   * Applies one array of the monitor's; whether anything changed. Text that
+   * isn't a JSON array changes nothing. `whole`: the array is a fresh read,
+   * so a metadata object's entries replace what was kept instead of being
+   * merged into it.
+   */
+  apply(arrayText: string, options: { whole?: boolean } = {}): boolean {
     let parsed: unknown;
     try {
       parsed = JSON.parse(arrayText);
@@ -80,14 +114,28 @@ export class GraphMap {
         changed = this.objects.delete(object.id) || changed;
         continue;
       }
-      this.objects.set(object.id, object);
+      const before = this.objects.get(object.id);
+      if (Array.isArray(object.metadata) && !options.whole && before && Array.isArray(before.metadata)) {
+        this.objects.set(object.id, { ...object, metadata: mergeEntries(before.metadata, object.metadata) });
+        this.metadataSeen.add(object.id);
+      } else {
+        this.objects.set(object.id, object);
+      }
       changed = true;
     }
     return changed;
   }
 
+  /** The metadata objects an update touched since the last call: their entries may have lost one, so read them again. */
+  takeMetadata(): number[] {
+    const ids = [...this.metadataSeen];
+    this.metadataSeen.clear();
+    return ids;
+  }
+
   clear(): void {
     this.objects.clear();
+    this.metadataSeen.clear();
   }
 
   values(): Record<string, unknown>[] {

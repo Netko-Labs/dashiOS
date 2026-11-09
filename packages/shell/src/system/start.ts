@@ -1,12 +1,14 @@
 /** Starts the system services the shell shows: the status store and the hardware keys. */
 
+import type { PipeWireWatch } from "../sound/apps/watch.ts";
+import { followOutputVolume } from "../sound/levels.ts";
 import { watchCharger } from "./charger.ts";
 import { HardwareKeys } from "./keys.ts";
 import type { Network } from "./network.ts";
 import { openOsdSurface } from "./osd-panel.tsx";
 import { OsdController } from "./osd-state.ts";
 import { type ScreenHost, startScreenDark } from "./screen-dark.ts";
-import { SystemStore, systemSources } from "./store.ts";
+import { type SystemSources, SystemStore, systemSources } from "./store.ts";
 
 export interface System {
   /** For the menu bar. */
@@ -30,11 +32,18 @@ export interface SystemOptions {
   monitor?: (onChange: () => void) => () => void;
   /** dashi-comp, to turn the built-in screen off at brightness 0 (none: the backlight alone). */
   compositor?: ScreenHost | null;
+  /** The session's PipeWire watcher: the bar's speaker follows it instead of polling. */
+  pipewire?: PipeWireWatch;
 }
 
 export function startSystem(options: SystemOptions = {}): System {
   const { network } = options;
-  const store = network ? new SystemStore({ ...systemSources(), network: async () => network() }, options.monitor ?? (() => () => {})) : new SystemStore();
+  const pipewire = options.pipewire;
+  const sources: SystemSources = {
+    ...systemSources(),
+    ...(pipewire?.available ? { followVolume: followOutputVolume(pipewire) } : {}),
+  };
+  const store = network ? new SystemStore({ ...sources, network: async () => network() }, options.monitor ?? (() => () => {})) : new SystemStore(sources);
   const osd = new OsdController(openOsdSurface);
   const dark = options.compositor ? startScreenDark(options.compositor) : null;
   const brightnessChanged = (level: number): void => void dark?.then((screen) => screen.follow(level));
