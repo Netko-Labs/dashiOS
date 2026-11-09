@@ -63,6 +63,9 @@ export interface Manifest {
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
 const APPLET_ID = /^[a-z0-9]+(\.[a-z0-9][a-z0-9-]*){2,}$/;
+
+/** Whether `value` is an applet id. */
+export const isAppletId = (value: unknown): value is string => typeof value === "string" && value.length <= 64 && APPLET_ID.test(value);
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
 const RANGE = /^(>=|\^|~)?(\d+)(\.\d+)?(\.\d+)?$/;
 const HTTPS = /^https:\/\/[^\s"<>]+$/;
@@ -113,8 +116,7 @@ const FIELDS = [
 export function parseManifest(value: unknown): Manifest | Refusal {
   const fields = record(value, "applet.json", FIELDS);
   if (isRefusal(fields)) return fields;
-  if (typeof fields.id !== "string" || fields.id.length > 64 || !APPLET_ID.test(fields.id))
-    return refuse("id must be reverse-DNS in lowercase, such as dev.example.weather (64 characters at most)");
+  if (!isAppletId(fields.id)) return refuse("id must be reverse-DNS in lowercase, such as dev.example.weather (64 characters at most)");
   const name = text(fields.name, "name", 40);
   if (isRefusal(name)) return name;
   if (typeof fields.version !== "string" || !SEMVER.test(fields.version)) return refuse("version must be a semantic version, such as 0.1.0");

@@ -5,7 +5,7 @@
  * sidebar shows this place only while there is a catalog to show.
  */
 
-import type { InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { StoreApplet } from "../../../src/applet-store/merge.ts";
@@ -14,7 +14,7 @@ import { useReportStale } from "../hooks.ts";
 import { AppIcon, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
-import { CATEGORY_LABELS } from "./words.ts";
+import { CATEGORY_LABELS, skippedWords } from "./words.ts";
 
 const byName = (a: StoreApplet, b: StoreApplet): number => a.manifest.name.localeCompare(b.manifest.name);
 
@@ -47,8 +47,9 @@ export function AppletsProblem() {
   );
 }
 
-/** Menu bar applets: for this computer first, then each category. */
+/** Menu bar applets: for this computer first, then each category, and under them how many this Dashi can't read, if any. */
 export function AppletsPage() {
+  const colors = useColors();
   const { applets } = useServices();
   const state = useAppletState();
   useReportStale(state.stale);
@@ -57,6 +58,7 @@ export function AppletsPage() {
   const forHere = entries.filter((entry) => entry.manifest.when !== undefined && applets.fitsHere(entry) === true);
   const rest = entries.filter((entry) => !forHere.includes(entry));
   const categories = Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>;
+  const skipped = skippedWords(state.skipped);
   return (
     <ScrollView testID="applets" style={{ flex: 1, flexDirection: "column", gap: 18, padding: 22 }}>
       <AppletGroup title="Made for this computer" detail="They know this machine’s hardware" entries={forHere} testID="for-here" />
@@ -69,6 +71,11 @@ export function AppletsPage() {
         />
       ))}
       <AppletGroup title="Other" entries={rest.filter((entry) => entry.manifest.categories.length === 0)} testID="applets:other" />
+      {skipped !== null && (
+        <View testID="applets-skipped" style={{ flexShrink: 0, paddingHorizontal: 12 }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>{skipped}</Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -119,6 +126,39 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
   );
 }
 
+/** One installed applet whose files no longer read: it doesn't run, and needs an update (from its page, when its catalog has one) or Remove…. */
+function UnreadableAppletRow({ applet, entry }: { applet: UnreadableApplet; entry: StoreApplet | undefined }) {
+  const colors = useColors();
+  const actions = useActions();
+  const name = entry?.manifest.name ?? applet.name ?? applet.id;
+  return (
+    <View
+      testID={`installed:${applet.id}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+    >
+      <View
+        testID={`installed:${applet.id}:open`}
+        focusable
+        accessibilityRole="button"
+        accessibilityLabel={name}
+        onPress={() => actions.openApplet(applet.id)}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+      >
+        <AppIcon url={entry?.icon ?? null} name={name} size={36} source="applets" />
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
+          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+            {name}
+          </Text>
+          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+            {[applet.record?.version, "Needs an update"].filter((part): part is string => part !== undefined).join(" · ")}
+          </Text>
+        </View>
+      </View>
+      <Button label="Remove…" testID={`remove:${applet.id}`} onPress={() => actions.removeApplet(applet)} />
+    </View>
+  );
+}
+
 /** The applets on Installed (filtered by `needle`); nothing when there are none. */
 export function InstalledApplets({ needle }: { needle: string }) {
   const { applets } = useServices();
@@ -126,11 +166,17 @@ export function InstalledApplets({ needle }: { needle: string }) {
   const shown = state.installed
     .filter((applet) => needle === "" || `${applet.manifest.name} ${applet.manifest.id}`.toLowerCase().includes(needle))
     .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
-  if (shown.length === 0) return null;
+  const unreadable = state.unreadable
+    .filter((applet) => needle === "" || `${applet.name ?? ""} ${applet.id}`.toLowerCase().includes(needle))
+    .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
+  if (shown.length === 0 && unreadable.length === 0) return null;
   return (
     <Group testID="installed-applets">
       {shown.map((applet) => (
         <InstalledAppletRow key={applet.manifest.id} applet={applet} entry={applets.entry(applet.manifest.id)} />
+      ))}
+      {unreadable.map((applet) => (
+        <UnreadableAppletRow key={applet.id} applet={applet} entry={applets.entry(applet.id)} />
       ))}
     </Group>
   );

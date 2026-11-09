@@ -21,8 +21,9 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { type Manifest, readManifest } from "./manifest.ts";
+import { isAppletId, type Manifest, readManifest } from "./manifest.ts";
 import type { Unpacked } from "./package.ts";
+import { isRefusal, refuse } from "./parse.ts";
 import { permissionName } from "./permissions.ts";
 
 export interface InstallRecord {
@@ -86,26 +87,84 @@ export function parseRecord(text: string): InstallRecord | null {
   };
 }
 
-/** Every applet installed under `root`; folders that aren't one are skipped (and said so). */
-export function readInstalled(root: string = appletsRoot()): InstalledApplet[] {
-  if (!existsSync(root)) return [];
-  const out: InstalledApplet[] = [];
-  for (const name of readdirSync(root).sort()) {
+/**
+ * An installed applet whose files no longer read (its manifest names a
+ * permission or a field this Dashi doesn't know, or a file is damaged): it
+ * never runs, and Software lists it as needing an update, with Remove….
+ */
+export interface UnreadableApplet {
+  /** Its folder's name, which is its id. */
+  id: string;
+  dir: string;
+  /** The name applet.json gives, when that much reads. */
+  name: string | null;
+  /** install.json, when it reads: the catalog and the key an update must match. */
+  record: InstallRecord | null;
+  /** Why, in the parser's words (for the log). */
+  reason: string;
+}
+
+const readText = (path: string): string | null => {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+};
+
+/** applet.json's `name`, read as little as can be: for a list's row only. */
+function nameOf(json: string | null): string | null {
+  try {
+    const name: unknown = json === null ? null : (JSON.parse(json) as Record<string, unknown> | null)?.name;
+    return typeof name === "string" && name.trim() !== "" && name.length <= 40 && !/\p{Cc}/u.test(name) ? name.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** One folder under the applets root: an applet, one that no longer reads, or null when it isn't one at all. */
+function readFolder(root: string, name: string): InstalledApplet | UnreadableApplet | null {
+  const dir = join(root, name);
+  const manifestText = readText(join(dir, "applet.json"));
+  const recordText = readText(join(dir, "install.json"));
+  // Not an applet's folder: no id for a name, or neither file.
+  if (!isAppletId(name) || (manifestText === null && recordText === null)) return null;
+  const record = recordText === null ? null : parseRecord(recordText);
+  const manifest = manifestText === null ? refuse("there is no applet.json") : readManifest(manifestText);
+  const unreadable = (reason: string): UnreadableApplet => ({ id: name, dir, name: nameOf(manifestText), record, reason });
+  if (isRefusal(manifest)) return unreadable(manifest.error);
+  if (manifest.id !== name) return unreadable(`applet.json says it is ${manifest.id}`);
+  if (!record) return unreadable("install.json is missing or damaged");
+  if (record.version !== manifest.version) return unreadable(`install.json says ${record.version}, applet.json ${manifest.version}`);
+  return { manifest, record, dir };
+}
+
+/** Every folder under `root`: the applets, and the ones that no longer read (said so in the log). */
+export function scanInstalled(root: string = appletsRoot()): { applets: InstalledApplet[]; unreadable: UnreadableApplet[] } {
+  const applets: InstalledApplet[] = [];
+  const unreadable: UnreadableApplet[] = [];
+  let names: string[];
+  try {
+    names = existsSync(root) ? readdirSync(root).sort() : [];
+  } catch {
+    names = [];
+  }
+  for (const name of names) {
     if (name.startsWith(".") || name.endsWith(".partial") || name.endsWith(".old")) continue;
-    const dir = join(root, name);
-    try {
-      const manifest = readManifest(readFileSync(join(dir, "applet.json"), "utf8"));
-      const record = parseRecord(readFileSync(join(dir, "install.json"), "utf8"));
-      if ("error" in manifest || manifest.id !== name || !record || record.version !== manifest.version) {
-        console.error(`dashi-shell: ${dir} is not an installed applet`);
-        continue;
-      }
-      out.push({ manifest, record, dir });
-    } catch {
-      console.error(`dashi-shell: ${dir} is not an installed applet`);
+    const read = readFolder(root, name);
+    if (read === null) console.error(`dashi-shell: ${join(root, name)} is not an installed applet`);
+    else if ("manifest" in read) applets.push(read);
+    else {
+      console.error(`dashi-shell: ${read.dir} no longer reads, so it doesn't run: ${read.reason}`);
+      unreadable.push(read);
     }
   }
-  return out;
+  return { applets, unreadable };
+}
+
+/** Every applet installed under `root` that reads; the rest are left out (and said so). */
+export function readInstalled(root: string = appletsRoot()): InstalledApplet[] {
+  return scanInstalled(root).applets;
 }
 
 /** What the consent sheet asks for, by name: its permissions, and its commands in the launcher (one name for all of them). */

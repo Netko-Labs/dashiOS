@@ -11,7 +11,7 @@
  * or an applet asks for something new.
  */
 
-import type { InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { AppWindow, SearchField, ToolbarButton } from "@dashi/ui";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { StoreApplet } from "../../src/applet-store/merge.ts";
@@ -104,7 +104,13 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
         if (applets.needsConsent(entry)) setAsks((now) => [...now, { kind: "consent", entry, update: applets.status(entry).kind !== "get" }]);
         else applets.install(entry);
       },
-      removeApplet: (applet: InstalledApplet) => setAsks((now) => [...now, { kind: "remove-applet", id: applet.manifest.id, name: applet.manifest.name }]),
+      removeApplet: (applet: InstalledApplet | UnreadableApplet) =>
+        setAsks((now) => [
+          ...now,
+          "manifest" in applet
+            ? { kind: "remove-applet", id: applet.manifest.id, name: applet.manifest.name }
+            : { kind: "remove-applet", id: applet.id, name: applet.name ?? applet.id },
+        ]),
       openUrl,
       showPicture: setPicture,
     }),
@@ -120,8 +126,8 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
       case "remove":
         return store.remove(current.app, reply.deleteData === true);
       case "remove-applet": {
-        const applet = appletState.installed.find((each) => each.manifest.id === current.id);
-        if (applet) applets.remove(applet, reply.deleteData === true);
+        const there = appletState.installed.some((each) => each.manifest.id === current.id) || appletState.unreadable.some((each) => each.id === current.id);
+        if (there) applets.remove(current, reply.deleteData === true);
         return;
       }
       case "get":

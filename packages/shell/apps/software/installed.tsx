@@ -75,9 +75,10 @@ export function Installed({ query }: { query: string }) {
   const apps = [...(state.installed ?? [])]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))
     .sort((a, b) => a.name.localeCompare(b.name));
-  const appletCount = applets.installed.filter(
-    (applet) => needle === "" || `${applet.manifest.name} ${applet.manifest.id}`.toLowerCase().includes(needle),
-  ).length;
+  const appletCount = [
+    ...applets.installed.map((applet) => `${applet.manifest.name} ${applet.manifest.id}`),
+    ...applets.unreadable.map((applet) => `${applet.name ?? ""} ${applet.id}`),
+  ].filter((words) => needle === "" || words.toLowerCase().includes(needle)).length;
   if (apps.length === 0 && appletCount === 0) {
     return (
       <EmptyState

@@ -18,12 +18,15 @@ import {
   type IndexApplet,
   type IndexVersion,
   type InstalledApplet,
+  type InstallRecord,
   installable,
   installFiles,
   isPulled,
-  readInstalled,
+  type PulledVersion,
   removeInstalled,
+  scanInstalled,
   sha256,
+  type UnreadableApplet,
   unpack,
   verifyPackage,
   writeRecord,
@@ -46,7 +49,12 @@ export class AppletInstaller {
   constructor(private readonly options: InstallerOptions) {}
 
   installed(): InstalledApplet[] {
-    return readInstalled(this.options.root);
+    return scanInstalled(this.options.root).applets;
+  }
+
+  /** What is installed, and what is installed but no longer reads (it doesn't run; it needs an update). */
+  scan(): { applets: InstalledApplet[]; unreadable: UnreadableApplet[] } {
+    return scanInstalled(this.options.root);
   }
 
   /** The catalog an installed applet came from; null for one added by hand. */
@@ -66,13 +74,13 @@ export class AppletInstaller {
   async install(applet: StoreApplet, consent: readonly string[]): Promise<string> {
     const version = this.available(applet);
     if (!version) throw new InstallError(`${applet.manifest.name} has no version for this Dashi`);
-    const current = this.installed().find((each) => each.manifest.id === applet.manifest.id);
+    const current = this.installedRecord(applet.manifest.id);
     // An update comes only from the catalog the installed version came from (one installed by hand has none).
-    const from = current ? this.catalogOf(current) : null;
+    const from = current ? this.catalogOf({ record: current }) : null;
     if (from !== null && from !== applet.from.url)
       throw new InstallError(`${applet.manifest.name} was installed from another catalog, and only that catalog can update it`);
     // An update must be signed by the key the installed version was; one installed by hand has none to match.
-    const installedKey = current?.record.authorKey ?? undefined;
+    const installedKey = current?.authorKey ?? undefined;
     const bytes = await this.options.download(version.url, version.size, applet.from.url);
     const checked = verifyPackage(bytes, applet, version, installedKey);
     if (checked !== true) throw new InstallError(checked.error);
@@ -93,18 +101,40 @@ export class AppletInstaller {
     return version.version;
   }
 
+  /**
+   * The record of what is installed as `id`, read or not: an update to one
+   * that no longer reads answers to its record's catalog and key all the
+   * same. One whose record is damaged too can't be updated, only removed.
+   */
+  private installedRecord(id: string): InstallRecord | null {
+    const { applets, unreadable } = this.scan();
+    const mine = applets.find((each) => each.manifest.id === id);
+    if (mine) return mine.record;
+    const broken = unreadable.find((each) => each.id === id);
+    if (broken && !broken.record) throw new InstallError(`${broken.name ?? id} can’t be read, so it can’t be updated: remove it, then get it again`);
+    return broken?.record ?? null;
+  }
+
   remove(id: string, withData = false): void {
     removeInstalled(this.options.root, id, withData ? this.options.dataRoot : undefined);
   }
 
-  /** Turns off every installed version the index of the catalog at `catalog` pulled, of the applets that came from it; returns their ids. */
+  /**
+   * Turns off every installed version the index of the catalog at `catalog`
+   * pulled, of the applets that came from it; returns their ids. An entry
+   * this Dashi can't read still pulls: its pulled list is read alone.
+   */
   disablePulled(index: CatalogIndex, catalog: string): string[] {
+    const pulls = (id: string): PulledVersion[] => [
+      ...(index.applets.find((each) => each.manifest.id === id)?.pulled ?? []),
+      ...index.skipped.filter((each) => each.id === id).flatMap((each) => each.pulled),
+    ];
     const disabled: string[] = [];
     for (const applet of this.installed()) {
-      if (this.catalogOf(applet) !== catalog) continue;
-      const entry = index.applets.find((each) => each.manifest.id === applet.manifest.id);
-      if (!entry || !isPulled(entry, applet.record.version) || applet.record.disabled?.reason === "pulled") continue;
-      const reason = entry.pulled.find((pull) => pull.version === applet.record.version)?.reason;
+      if (this.catalogOf(applet) !== catalog || applet.record.disabled?.reason === "pulled") continue;
+      const pull = pulls(applet.manifest.id).find((each) => each.version === applet.record.version);
+      if (!pull) continue;
+      const reason = pull.reason;
       writeRecord(applet.dir, { ...applet.record, disabled: { reason: "pulled", ...(reason ? { detail: reason } : {}) } });
       disabled.push(applet.manifest.id);
     }
@@ -117,16 +147,30 @@ export type AppletStatus =
   | { kind: "get"; version: IndexVersion | null }
   | { kind: "installed"; installed: InstalledApplet }
   | { kind: "update"; installed: InstalledApplet; version: IndexVersion }
-  | { kind: "pulled"; installed: InstalledApplet; reason: string; good: IndexVersion | null };
+  | { kind: "pulled"; installed: InstalledApplet; reason: string; good: IndexVersion | null }
+  /** Installed, but its files no longer read: `good` is the version that mends it, when this entry may update it. */
+  | { kind: "unreadable"; unreadable: UnreadableApplet; good: IndexVersion | null };
 
 /**
  * `entry`'s state against what is installed. One installed from another
  * catalog (or by hand) than `entry`'s is installed, never updated or pulled
  * from here: only its own catalog speaks for it.
  */
-export function statusOf(entry: StoreApplet, installed: readonly InstalledApplet[], dashiVersion: string, dashiCatalog: string): AppletStatus {
+export function statusOf(
+  entry: StoreApplet,
+  installed: readonly InstalledApplet[],
+  dashiVersion: string,
+  dashiCatalog: string,
+  unreadable: readonly UnreadableApplet[] = [],
+): AppletStatus {
   const mine = installed.find((each) => each.manifest.id === entry.manifest.id);
   const good = installable(entry, dashiVersion);
+  const broken = mine ? undefined : unreadable.find((each) => each.id === entry.manifest.id);
+  if (broken) {
+    // Only its own catalog mends it, and only when its record says which that is.
+    const mends = broken.record !== null && installedFrom(broken.record, dashiCatalog) === entry.from.url;
+    return { kind: "unreadable", unreadable: broken, good: mends ? good : null };
+  }
   if (!mine) return { kind: "get", version: good };
   const from = installedFrom(mine.record, dashiCatalog);
   if (from !== null && from !== entry.from.url) {
