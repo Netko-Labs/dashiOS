@@ -10,7 +10,7 @@ import type { Files } from "../src/agents/ask/harness/index.ts";
 import { GrantsMemory, NO_CONTEXT } from "../src/agents/handoff/grants.ts";
 import { plainFailure, quietQuestion, quietReason } from "../src/agents/handoff/quiet.ts";
 import type { TaskRunner } from "../src/agents/handoff/runner.ts";
-import { startHandoff } from "../src/agents/handoff/service.ts";
+import { startHandoff, usesWords } from "../src/agents/handoff/service.ts";
 import { statusWords } from "../src/agents/handoff/store.ts";
 
 test("silence reads as signed out unless it is signed in; its errors say better", () => {
@@ -25,10 +25,12 @@ test("the question names the harness, says what to type, and offers Stop", () =>
   const signedOut = quietQuestion("OpenCode", "signed-out", "opencode auth login", 30);
   expect(signedOut.title).toBe("OpenCode isn't signed in");
   expect(signedOut.detail).toBe("It hasn't answered in 30 seconds. Sign in to a provider in Terminal (opencode auth login), then ask again.");
-  expect(signedOut.choices.map((choice) => choice.label)).toEqual(["Sign In…", "Keep Waiting", "Stop"]);
+  expect(signedOut.choices.map((choice) => choice.label)).toEqual(["Sign In…", "Keep Waiting"]);
   expect(signedOut.needs).toBe("isn't signed in");
-  expect(quietQuestion("OpenCode", "quiet", "opencode auth login").choices.map((choice) => choice.id)).toEqual(["wait", "no"]);
-  expect(quietQuestion("Codex", "limit", null).choices.map((choice) => choice.id)).toEqual(["wait", "no"]);
+  expect(quietQuestion("OpenCode", "quiet", "opencode auth login").choices.map((choice) => choice.id)).toEqual(["wait"]);
+  expect(quietQuestion("Codex", "limit", null).choices.map((choice) => choice.id)).toEqual(["wait"]);
+  expect(usesWords("codex")).toBe("your ChatGPT plan");
+  expect(usesWords("opencode")).toBe("OpenCode's configured provider");
   expect(plainFailure("OpenCode", "AI_APICallError: 429 Too Many Requests")).toBe("OpenCode's model is at its limit. Try again later.");
   expect(plainFailure("OpenCode", "401 Unauthorized")).toBe("OpenCode isn't signed in.");
   expect(plainFailure("OpenCode", "The page didn't load.")).toBe("The page didn't load.");
@@ -90,7 +92,7 @@ test("a fake OpenCode that prints nothing: its card asks, and Sign In… opens T
   handoff.close();
 });
 
-test("Keep Waiting asks again later; Stop stops it", async () => {
+test("Keep Waiting asks again later; the card's Stop stops it", async () => {
   const { handoff, stopped } = quietService("Error: rate limit reached");
   await handoff.start({ harness: "opencode", request: "Book a class", context: NO_CONTEXT });
   await settle(60);
@@ -102,9 +104,10 @@ test("Keep Waiting asks again later; Stop stops it", async () => {
   await settle(60);
   const again = handoff.runs.get("run1")?.question;
   expect(again?.title).toBe("OpenCode is at its limit");
-  handoff.runs.answer("run1", again?.id ?? "", "no");
-  await settle(5);
+  handoff.stop("run1");
   expect(stopped).toEqual(["run1:1"]);
+  // Stopped, nothing waits on the person.
+  expect(handoff.runs.get("run1")?.question).toBeNull();
   handoff.close();
 });
 

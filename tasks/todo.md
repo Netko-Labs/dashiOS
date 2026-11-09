@@ -118,6 +118,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] mirin: the taffy fix for a negative margin on an item that doesn't shrink (`52-settings-scroll/mirin-a-taffy-negative-margin.diff`); then `TUCK` can keep `flexShrink: 0` again (the owner's call)
 - [ ] mirin: `minWidth`/`minHeight` on a warm host's `open` (`52-settings-scroll/mirin-b-open-min-size.diff`); then `overlay.tsx`'s `pick` passes them to a host that knows them, and Settings' least size holds (today only a host started for it holds it)
 - [x] A slider's row exactly at its words' least width grew tall in mirin's layout: taffy's cache handed a flex container clamped to its `min-width` the height its words had wrapped word by word (mirin's taffy fork, `compute_flexbox_layout`); the least window is 744 again, nothing to spare (`night/0.5-leftovers`)
+- [ ] At exactly 744 (scale 1.75) Mouse's card keeps about 75 points empty under its last row, though every row keeps its height; at 760 it doesn't (review 59, `01-slider-row-mouse-744.png`): another height from a pass at another width, likely the same family in mirin's taffy (S)
 - [ ] The wheel over an open menu also scrolls the page under it (the menu's ground takes presses, not the wheel)
 
 ## Wave 4 · The open design rules

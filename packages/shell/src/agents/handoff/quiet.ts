@@ -4,8 +4,8 @@
  * still silent after `QUIET_MS` is stuck. OpenCode with no account is the
  * one seen: its free model is at its limit, it prints no event and never
  * exits. The card then asks the person, in plain words, what is wrong and
- * what to do: sign in, keep waiting, or stop (service.ts asks; the panel
- * shows it as a question). What the harness wrote to its errors
+ * what to do: sign in or keep waiting, and the card's Stop stops it (service.ts asks; the panel
+ * shows it as a question, its Stop under it). What the harness wrote to its errors
  * (`turn-N.jsonl.err`) and whether it is signed in say which words.
  */
 
@@ -36,7 +36,6 @@ export function quietReason(errors: string, signedIn: boolean | null): QuietReas
 
 /** The card's question for a silent turn. `signIn` is what to type in Terminal ("opencode auth login"), when there is one. */
 export function quietQuestion(name: string, reason: QuietReason, signIn: string | null, seconds = Math.round(QUIET_MS / 1000)): Omit<RunQuestion, "id"> {
-  const stop = { id: "no", label: "Stop", danger: true as const };
   const wait = { id: "wait", label: "Keep Waiting" };
   const signInChoice = signIn ? [{ id: "sign-in", label: "Sign In…", primary: true as const }] : [];
   switch (reason) {
@@ -45,7 +44,7 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
         kind: "stuck",
         title: `${name} isn't signed in`,
         detail: `It hasn't answered in ${seconds} seconds.${signIn ? ` Sign in to a provider in Terminal (${signIn}), then ask again.` : " Sign it in, then ask again."}`,
-        choices: [...signInChoice, wait, stop],
+        choices: [...signInChoice, wait],
         needs: "isn't signed in",
       };
     case "limit":
@@ -53,7 +52,7 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
         kind: "stuck",
         title: `${name} is at its limit`,
         detail: `Its model has had too many requests. Try again later${signIn ? `, or sign in to your own provider (${signIn})` : ""}.`,
-        choices: [...signInChoice, wait, stop],
+        choices: [...signInChoice, wait],
         needs: "is at its limit",
       };
     case "quiet":
@@ -61,7 +60,7 @@ export function quietQuestion(name: string, reason: QuietReason, signIn: string 
         kind: "stuck",
         title: `${name} isn't answering`,
         detail: `Nothing from it in ${seconds} seconds.`,
-        choices: [wait, stop],
+        choices: [wait],
         needs: "isn't answering",
       };
   }

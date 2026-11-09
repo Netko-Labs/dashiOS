@@ -115,8 +115,11 @@ export interface Handoff {
 /** A run's id: letters and digits only, as its scope's name needs (sandbox.ts `taskOfCgroup`). */
 const randomId = (): string => crypto.randomUUID().replace(/-/g, "").slice(0, 10);
 
-/** The harnesses' words for their rows: "your ChatGPT plan". */
-const usesWords = (id: HarnessId): string => HARNESSES[id].uses.charAt(0).toLowerCase() + HARNESSES[id].uses.slice(1);
+/** The harnesses' words for their rows, mid-sentence: "your ChatGPT plan", "OpenCode's configured provider" (a name keeps its capital). */
+export function usesWords(id: HarnessId): string {
+  const uses = HARNESSES[id].uses;
+  return /^(?:Your|A|An|The)\b/.test(uses) ? uses.charAt(0).toLowerCase() + uses.slice(1) : uses;
+}
 
 export function startHandoff(options: HandoffOptions): Handoff {
   const env = options.env;
@@ -248,9 +251,10 @@ export function startHandoff(options: HandoffOptions): Handoff {
     );
     const choice = await answer;
     if (choice === "wait") return waitQuiet(run, harness, turn);
-    if (choice === "sign-in") options.signIn?.(harness);
+    if (choice !== "sign-in") return;
     // Signing in means asking again once it is; the run as it is can't go on.
-    if (choice === "sign-in" || choice === "no") stopRun(run);
+    options.signIn?.(harness);
+    stopRun(run);
   };
 
   /** The words waiting for `run` go into its session: stopped where it is first if it still works. */

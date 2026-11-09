@@ -742,8 +742,8 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   A turn that prints no event for 30 s is stuck (`quiet.ts`): its card asks,
   in plain words from its errors and whether it is signed in, "OpenCode
   isn't signed in" (with what to type in Terminal), "… is at its limit" or
-  "… isn't answering", with Sign In… (opens Terminal and stops the run),
-  Keep Waiting (asks again 30 s later) and Stop. A run that ends with a
+  "… isn't answering", with Sign In… (opens Terminal and stops the run) and
+  Keep Waiting (asks again 30 s later), the card's Stop under them. A run that ends with a
   sign-in or limit error says so the same way.
   Their events become steps (`stream.ts`): the session, each tool call in
   Dashi's words ("Opening signin.localhost", "Signed in to signin.localhost"),
