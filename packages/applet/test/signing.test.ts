@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { signatureNote } from "../src/cli/publish.ts";
 import {
   type CatalogIndex,
   generateKeys,
@@ -175,4 +176,16 @@ test("pack builds an applet into a package that unpacks to its manifest, the sam
       ),
     ),
   ).toHaveProperty("error");
+});
+
+test("pack says “signed” only when the .minisig beside the package is this build's", () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-pack-"));
+  writeFileSync(join(dir, "author.pub"), author.publicKey);
+  const before = bytes("the package as it was built yesterday");
+  const now = bytes("the package as it was built today");
+  const yesterday = sign(before, author.secretKey, "yesterday");
+  expect(signatureNote(dir, before, yesterday)).toBe(", signed");
+  // Packed again without --sign: the old signature is still there, but not for these bytes.
+  expect(signatureNote(dir, now, yesterday)).toContain("from another build");
+  expect(signatureNote(dir, now, null)).toBe("");
 });
