@@ -1,6 +1,6 @@
 /** Small pieces the pages share: what a click asks the window for, and an app's or applet's icon. */
 
-import type { InstalledApplet } from "@dashi/applet";
+import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
@@ -34,7 +34,8 @@ export interface Actions {
   cancel(key: string): void;
   /** Gets or updates an applet: the consent sheet first when it asks for anything new. */
   getApplet(entry: StoreApplet): void;
-  removeApplet(applet: InstalledApplet): void;
+  /** Asks first; one installed that no longer reads goes the same way. */
+  removeApplet(applet: InstalledApplet | UnreadableApplet): void;
   openUrl(url: string): void;
   /** Shows a screenshot's file at the window's full size. */
   showPicture(file: string): void;

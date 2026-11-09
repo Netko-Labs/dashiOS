@@ -5,7 +5,9 @@
  * branch on raw.githubusercontent.com (no API, no token), checked with
  * Dashi's key; one the person added is checked with the key they gave
  * (catalogs.ts). The last index that checked is kept, so the store works
- * offline and a bad answer never replaces a good one.
+ * offline and a bad answer never replaces a good one. An entry this Dashi
+ * can't read is left out (and logged) and the rest are listed; a signature
+ * that doesn't check still refuses all of it.
  *
  * `DASHI_APPLETS_INDEX` points Dashi's at another index (a fork, a test
  * catalog, file:// for checks); `DASHI_APPLETS_KEY` at another key (a .pub
@@ -137,6 +139,12 @@ export class Catalog {
     }
   }
 
+  /** Says in the log which entries were left out of `index`, and why: the rest of it is listed. */
+  private logSkipped(index: CatalogIndex): CatalogIndex {
+    for (const each of index.skipped) console.error(`dashi-shell: ${this.options.url}: skipped ${each.id ?? "an entry with no id"}: ${each.reason}`);
+    return index;
+  }
+
   /** The index, checked; the saved one when the network fails or the answer doesn't check; an error when neither is to be had. */
   async load(): Promise<Loaded> {
     let fresh: Awaited<ReturnType<Catalog["fetchChecked"]>>;
@@ -144,18 +152,18 @@ export class Catalog {
       fresh = await this.fetchChecked();
     } catch (error) {
       const saved = error instanceof CatalogError && error.kind === "no-key" ? null : this.cached();
-      if (saved) return { index: saved, stale: true };
+      if (saved) return { index: this.logSkipped(saved), stale: true };
       throw error;
     }
     this.save(fresh.bytes, fresh.signature);
-    return { index: fresh.index, stale: false };
+    return { index: this.logSkipped(fresh.index), stale: false };
   }
 
   /** Adding a catalog: its index now, checked with its key, never a saved copy; kept once it checks. */
   async check(): Promise<CatalogIndex> {
     const fresh = await this.fetchChecked();
     this.save(fresh.bytes, fresh.signature);
-    return fresh.index;
+    return this.logSkipped(fresh.index);
   }
 
   /**

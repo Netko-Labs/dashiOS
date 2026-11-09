@@ -8,7 +8,9 @@ export {
   type IndexVersion,
   installable,
   isPulled,
+  type PulledVersion,
   parseIndex,
+  type SkippedApplet,
   trustedComment,
   verifyIndex,
   verifyPackage,
@@ -84,7 +86,9 @@ export {
   parseRecord,
   readInstalled,
   removeInstalled,
+  scanInstalled,
   shouldRun,
+  type UnreadableApplet,
   writeRecord,
 } from "./installed.ts";
 export {

@@ -32,6 +32,9 @@ export const tileOf = (id: Category): { glyph: string; tint: string } => {
   return { glyph: CATEGORY_GLYPHS[nearest] ?? DISCOVER, tint: CATEGORY_TINTS[nearest] ?? TINTS.goma };
 };
 
+/** What the store says, under the list, of the applets a catalog lists that this Dashi can't read; null when there are none. */
+export const skippedWords = (count: number): string | null => (count === 0 ? null : `${count} applet${count === 1 ? " needs" : "s need"} a newer Dashi`);
+
 /** An applet's chip: Get, Update (with "…" when the consent sheet comes first), Installed in plain words, or why it can't be had. */
 export function appletChip(status: AppletStatus, operation: Operation | undefined, asks: boolean): Chip {
   if (operation) return { kind: "busy", operation };
@@ -44,5 +47,7 @@ export function appletChip(status: AppletStatus, operation: Operation | undefine
       return status.good ? { kind: "update", asks } : { kind: "unavailable", detail: "Turned off" };
     case "installed":
       return { kind: "installed" };
+    case "unreadable":
+      return status.good ? { kind: "update", asks } : { kind: "unavailable", detail: "Needs an update" };
   }
 }

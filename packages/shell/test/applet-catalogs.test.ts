@@ -88,13 +88,13 @@ function entry(
   };
 }
 
-const indexOf = (applets: IndexApplet[]): CatalogIndex => ({ format: 1, generated: "2026-11-05T00:00:00Z", applets });
+const indexOf = (applets: IndexApplet[]): CatalogIndex => ({ format: 1, generated: "2026-11-05T00:00:00Z", applets, skipped: [] });
 const loaded = (source: CatalogSource, applets: IndexApplet[]): CatalogLoad => ({ source, index: indexOf(applets), stale: false, problem: null });
 
 /** An index on disk, signed with `signer`, its packages beside it: a file:// catalog. */
 function onDisk(signer: KeyPair, applets: (dir: string) => IndexApplet[]): { url: string; dir: string } {
   const dir = mkdtempSync(join(tmpdir(), "dashi-catalog-"));
-  const bytes = new TextEncoder().encode(JSON.stringify(indexOf(applets(dir))));
+  const bytes = new TextEncoder().encode(JSON.stringify({ format: 1, generated: "2026-11-05T00:00:00Z", applets: applets(dir) }));
   writeFileSync(join(dir, "index.json"), bytes);
   writeFileSync(join(dir, "index.json.minisig"), sign(bytes, signer.secretKey, "timestamp:1 file:index.json"));
   return { url: `file://${join(dir, "index.json")}`, dir };

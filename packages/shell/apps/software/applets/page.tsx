@@ -6,7 +6,7 @@
  * on or off in the menu bar, what it was allowed, and Remove….
  */
 
-import { describeWhen, type InstalledApplet, permissionName } from "@dashi/applet";
+import { describeWhen, type InstalledApplet, permissionName, type UnreadableApplet } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Switch, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import type { StoreApplet } from "../../../src/applet-store/merge.ts";
@@ -85,6 +85,25 @@ function Manage({ applet }: { applet: InstalledApplet }) {
   );
 }
 
+/** One installed that no longer reads: it doesn't run until an update mends it; Remove…. */
+function Mend({ applet }: { applet: UnreadableApplet }) {
+  const colors = useColors();
+  const actions = useActions();
+  return (
+    <View testID="mend" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
+      <SectionHeader title="Manage" />
+      <Group>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>The copy you have needs an update, and doesn’t run until it has one.</Text>
+          </View>
+          <Button label="Remove…" testID="remove" onPress={() => actions.removeApplet(applet)} />
+        </View>
+      </Group>
+    </View>
+  );
+}
+
 function AppletPageBody({ entry }: { entry: StoreApplet }) {
   const colors = useColors();
   const actions = useActions();
@@ -122,6 +141,7 @@ function AppletPageBody({ entry }: { entry: StoreApplet }) {
         </View>
       )}
       {installed && <Manage applet={installed} />}
+      {status.kind === "unreadable" && <Mend applet={status.unreadable} />}
       <Group testID="facts">
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12 }}>
           <View style={{ flexShrink: 0 }}>
@@ -186,12 +206,39 @@ function LocalAppletPage({ applet }: { applet: InstalledApplet }) {
   );
 }
 
+/** One installed that no longer reads, which no catalog in the list has: its name, and Remove…. */
+function UnreadableAppletPage({ applet }: { applet: UnreadableApplet }) {
+  const colors = useColors();
+  const { applets } = useServices();
+  const state = useAppletState();
+  const name = applet.name ?? applet.id;
+  // Its catalog still lists it, in a form this Dashi can't read either: a newer Dashi mends it, not the catalog.
+  const listed = state.catalogs.some((load) => load.index?.skipped.some((each) => each.id === applet.id));
+  const byline = [applet.record?.version, ...(listed ? ["Needs a newer Dashi"] : ["Needs an update", originWords(applets.originOf(applet))])].filter(
+    (part): part is string => part !== undefined,
+  );
+  return (
+    <ScrollView testID="applet-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
+      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
+        <AppIcon url={null} name={name} size={80} />
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{name}</Text>
+          <Text style={{ fontSize: 12, color: colors.textMuted }}>{byline.join(" · ")}</Text>
+        </View>
+      </View>
+      <Mend applet={applet} />
+    </ScrollView>
+  );
+}
+
 export function AppletPage({ id }: { id: string }) {
   const { applets } = useServices();
   const state = useAppletState();
   const entry = applets.entry(id);
   const installed = state.installed.find((each) => each.manifest.id === id);
+  const unreadable = state.unreadable.find((each) => each.id === id);
   if (!entry && installed) return <LocalAppletPage applet={installed} />;
+  if (!entry && unreadable) return <UnreadableAppletPage applet={unreadable} />;
   if (!entry) {
     return state.loading ? null : (
       <EmptyState

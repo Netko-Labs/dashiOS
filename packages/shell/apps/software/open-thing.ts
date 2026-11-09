@@ -58,10 +58,10 @@ export function useOpenThing(page: Page, actions: Actions): OpenThingHandle | nu
   }
   if (page.kind === "applet") {
     const entry = applets.entry(page.id);
-    const installed = appletState.installed.find((each) => each.manifest.id === page.id);
+    const installed = appletState.installed.find((each) => each.manifest.id === page.id) ?? appletState.unreadable.find((each) => each.id === page.id);
     const status = entry ? applets.status(entry) : null;
     const canGet = status?.kind === "get" && status.version !== null;
-    const canUpdate = status?.kind === "update" || (status?.kind === "pulled" && status.good !== null);
+    const canUpdate = status?.kind === "update" || ((status?.kind === "pulled" || status?.kind === "unreadable") && status.good !== null);
     return {
       can: { canOpen: false, canGet, canUpdate, canRemove: installed !== undefined, asks: entry ? applets.needsConsent(entry) : false },
       open: () => {},

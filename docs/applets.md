@@ -625,6 +625,28 @@ installed, and where it is installed it is turned off (by the store, and by
 the shell's look at each catalog's index a few minutes after login and daily,
 `src/applet-store/kill-switch.ts`) and the store offers the newest good one.
 
+**One entry at a time.** The signature is checked over the whole index
+first: one that doesn't check refuses all of it. Then each applet's entry is
+read on its own (`parseIndex`'s `skipped`). An entry this Dashi can't read (a
+permission or a field from a newer Dashi, or a mistake) is left out of the
+list, is never installable, and is logged with its id and why
+(`dashi-shell: <index>: skipped <id>: <reason>`); the rest are listed. Under
+the list the store says how many it left out, once each, quietly: "1 applet
+needs a newer Dashi". The kill switch still reaches a skipped entry: its
+`pulled` list is read alone. An id listed twice is skipped both times. The
+top of the index (`format`, `generated`, `applets`) is still read whole: a
+new top-level field is a new `format`. So an index can list an applet only a
+newer Dashi reads without hiding the others from 0.5 on; Dashi 0.4 refuses
+such an index whole (and keeps its last good copy).
+
+**Installed, but no longer readable.** An installed applet whose
+`applet.json` doesn't parse any more (or doesn't match its `install.json`)
+never runs; the store lists it on Installed as "Needs an update", with
+Remove… (`scanInstalled`'s `unreadable`). An update from the catalog it came
+from, signed with the key its `install.json` names, mends it, and what was
+allowed stays allowed; with `install.json` damaged too, nothing says which
+key may update it, so only Remove… is left.
+
 ### Keys
 
 Signatures are Ed25519 in minisign's format (`packages/applet/src/signing/`

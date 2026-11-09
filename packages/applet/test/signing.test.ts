@@ -107,8 +107,9 @@ test("the store's checks: Dashi's signature on the index, then the package's siz
     ]),
   );
   const entry = catalogEntry(packageBytes);
-  const index: CatalogIndex = { format: 1, generated: "2026-11-05T00:00:00Z", applets: [entry] };
-  const indexBytes = bytes(JSON.stringify({ ...index, applets: index.applets.map((applet) => ({ ...applet, manifest: ASUS })) }));
+  const index: CatalogIndex = { format: 1, generated: "2026-11-05T00:00:00Z", applets: [entry], skipped: [] };
+  const { skipped: _none, ...wire } = index;
+  const indexBytes = bytes(JSON.stringify({ ...wire, applets: index.applets.map((applet) => ({ ...applet, manifest: ASUS })) }));
   const indexSignature = sign(indexBytes, dashi.secretKey, "timestamp:1 file:index.json");
   const verified = verifyIndex(indexBytes, indexSignature, dashi.publicKey);
   if ("error" in verified) throw new Error(verified.error);

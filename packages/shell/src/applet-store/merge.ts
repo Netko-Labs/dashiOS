@@ -85,3 +85,15 @@ export function entryFromItsCatalog(
   const load = loads.find((each) => each.source.url === url);
   return load?.index ? storeEntries(load.index, load.source).find((entry) => entry.manifest.id === applet.manifest.id) : undefined;
 }
+
+/**
+ * How many applets the catalogs list that this Dashi can't read (merge.ts's
+ * list leaves them out): each id once, none the list shows from another
+ * catalog; an entry with no id that reads counts alone.
+ */
+export function skippedCount(loads: readonly CatalogLoad[], listed: readonly StoreApplet[]): number {
+  const shown = new Set(listed.map((entry) => entry.manifest.id));
+  const skipped = loads.flatMap((load) => load.index?.skipped ?? []);
+  const ids = new Set(skipped.flatMap((each) => (each.id !== null && !shown.has(each.id) ? [each.id] : [])));
+  return ids.size + skipped.filter((each) => each.id === null).length;
+}
