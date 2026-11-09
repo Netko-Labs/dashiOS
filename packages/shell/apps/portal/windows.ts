@@ -27,6 +27,8 @@ export interface DialogWindow {
   title: string;
   width: number;
   height: number;
+  /** The least the person may make it: its toolbar's one row still fits (the file chooser's). */
+  least?: { width: number; height: number };
 }
 
 /** Shows a dialog until it answers, its window is closed, or `signal` aborts (the app gave up); `closed` is the answer then. */
@@ -54,6 +56,7 @@ export function dialogWindows(shell: ShellLink, binary: string = METAL_HOST): Sh
       height: window.height,
       titleBar: "unified",
     });
+    if (window.least) transport.setMinSize(window.least.width, window.least.height);
     return new Promise((resolve) => {
       let done = false;
       let retitle: ReturnType<typeof setTimeout> | null = null;

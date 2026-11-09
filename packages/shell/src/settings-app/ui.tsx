@@ -10,7 +10,7 @@
  */
 
 import { Shortcut, type Surface, Tile, useColors } from "@dashi/ui";
-import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
+import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo, useRef } from "react";
 import { FoldedChoices } from "../shared/controls/folded.tsx";
 import { InkSlider } from "../shared/controls/ink-slider.tsx";
@@ -191,14 +191,36 @@ export function Switch({ on, testID, onChange, disabled }: { on: boolean; testID
 /** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */
 export const SaveError = createContext(false);
 
+/**
+ * Where the title's line sits in its 56 row: on the window lights' centre,
+ * so the lights, the sidebar's search and the title share one line (one
+ * chrome row); without lights, the row's middle.
+ */
+export function titleLine(controls: Bounds | null): number {
+  if (!controls) return PAGE.title / 2;
+  return Math.min(Math.round(controls.y + controls.height / 2), PAGE.title / 2);
+}
+
 /** The title row: the pane's name, 18 SemiBold, and an optional "· detail"; where the window is grabbed on this side. */
 function TitleRow({ title, detail }: { title: string; detail?: string | undefined }) {
   const colors = useControlColors();
+  const { controls } = useWindowChrome();
+  const line = titleLine(controls);
   return (
     <View
       testID="settings-title"
       dragRegion
-      style={{ height: PAGE.title, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: PAGE.margin, paddingRight: PAGE.margin }}
+      style={{
+        height: PAGE.title,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingLeft: PAGE.margin,
+        paddingRight: PAGE.margin,
+        // Centred on `line`: the row's middle moved up by what is left below it.
+        paddingBottom: PAGE.title - 2 * line,
+      }}
     >
       <View style={{ flexShrink: 0 }}>
         <Text style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>{title}</Text>

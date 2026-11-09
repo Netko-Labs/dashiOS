@@ -16,7 +16,7 @@ export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, 
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
 export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStates, useControlState } from "./control-state.tsx";
-export { Button, Caption, type Choice, Choices, Group, Note, Row, Tile } from "./controls.tsx";
+export { Button, Caption, type Choice, Choices, Group, Note, ROW_INSET, Row, TILE_SIZE, Tile } from "./controls.tsx";
 export { SearchField, Segmented, TextField, type TextFieldProps } from "./fields.tsx";
 export * as glyphs from "./glyphs.ts";
 export { CHECK, CHEVRON_DOWN, CHEVRON_UP, CHEVRON_UP_DOWN, CLEAR, CLOSE, INFO, LOCK, RESTART, SEARCH, SHUT_DOWN, SLEEP, STOP, WARNING } from "./glyphs.ts";

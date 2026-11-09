@@ -12,7 +12,7 @@ import type { Actor } from "../../acting.ts";
 import { ago } from "../../agents/ask/history.ts";
 import { type ChangeEntry, changeLine } from "../changes/index.ts";
 import { useColors } from "../colors.ts";
-import { Button } from "../ui.tsx";
+import { Button, PAGE } from "../ui.tsx";
 
 /** Who changed it, in words: "you", or the agent by its name. */
 export function changedBy(by: Pick<Actor, "agent"> | null): string {
@@ -57,7 +57,7 @@ export function ChangeRow({
 }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 6 }}>
+    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: PAGE.inset, paddingVertical: 6 }}>
       <View {...(onOpen ? { onPress: onOpen, accessibilityRole: "link" as const } : {})} style={{ flex: 1, flexDirection: "column", gap: 3, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, color: entry.undone ? colors.textMuted : colors.text }}>
           {changeLine(entry.words)}

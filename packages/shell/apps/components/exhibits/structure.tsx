@@ -40,7 +40,7 @@ export function RowsPage() {
       </Exhibit>
       <Exhibit title="Note and tile" note="A line where there is nothing to show; a glyph on a tile of its tint.">
         <Note testID="note:demo">No devices nearby.</Note>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Tile glyph={glyphs.LOCK} tint={TINTS.mizu} />
           <Tile glyph={glyphs.INFO} tint={TINTS.kabocha} />
           <Tile glyph={glyphs.SEARCH} tint={TINTS.nori} size={32} />
@@ -81,6 +81,7 @@ export function ListsPage() {
                 testID={`sidebar:${state}:glyph`}
                 label="Documents"
                 glyph={glyphs.SEARCH}
+                tileColumn
                 badge="12"
                 selected={selected || chosen === "documents"}
                 onPress={() => setChosen("documents")}
@@ -131,7 +132,8 @@ export function ShortcutsPage() {
       <Exhibit title="Glyphs" note="@dashi/ui's own, on a 16-unit grid, tinted by the ink they are drawn in.">
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
           {Object.entries(glyphs).map(([name, markup]) => (
-            <View key={name} style={{ width: 84, flexDirection: "column", alignItems: "center", gap: 4 }}>
+            // As wide as the longest name (CHEVRON_UP_DOWN), so no name runs past its cell into the card's edge.
+            <View key={name} style={{ width: 124, flexDirection: "column", alignItems: "center", gap: 4 }}>
               <Svg markup={markup} size={18} color={colors.text} />
               <Caption>{name}</Caption>
             </View>

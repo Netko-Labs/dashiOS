@@ -37,6 +37,13 @@ export interface Shown {
   selected: boolean;
 }
 
+/**
+ * The least a mode's panel is drawn: a state's name and one button. Two
+ * panels that don't both fit side by side go one under the other, so a
+ * control is never drawn wider than its panel (over the next one).
+ */
+const PANEL_LEAST = 260;
+
 function Ground({ children }: { children: ReactNode }) {
   const colors = useColors();
   const surface = useSurface();
@@ -46,7 +53,7 @@ function Ground({ children }: { children: ReactNode }) {
       testID={dark ? "exhibit:dark" : "exhibit:light"}
       style={{
         flex: 1,
-        minWidth: 0,
+        minWidth: PANEL_LEAST,
         flexDirection: "column",
         gap: 10,
         padding: 14,
@@ -70,7 +77,7 @@ export function Exhibit({ title, note, children }: { title: string; note?: strin
     <View style={{ flexShrink: 0, flexDirection: "column", gap: 6 }}>
       <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{title}</Text>
       {note !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{note}</Text>}
-      <View style={{ flexDirection: "row", gap: 12, marginTop: 4, alignItems: "flex-start" }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 4, alignItems: "flex-start" }}>
         {columnsFor(mode).map((dark) => (
           <Appearance key={dark ? "dark" : "light"} dark={dark}>
             <Ground>{children}</Ground>

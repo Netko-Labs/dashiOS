@@ -30,6 +30,9 @@ import { type Disk, type Machine, probeMachine, sizeLabel } from "./probe.ts";
 
 export const INSTALLER_SIZE = { width: 720, height: 600 };
 
+/** A line under a card starts where Settings' captions do (`Caption`), 10 in from the card's edge. */
+const CAPTION_INSET = 10;
+
 const HEADINGS: Record<Page, { title: string; subtitle: string }> = {
   welcome: { title: "Install Dashi", subtitle: "Put Dashi on this computer. It takes about ten minutes." },
   disk: { title: "Choose a Disk", subtitle: "Dashi takes the whole disk you choose." },
@@ -246,7 +249,8 @@ export function InstallerWindow({ restart }: { restart: () => void }) {
           ) : (
             <Note>Dashi erases the disk you choose and puts a fresh system on it, with your account. Your other disks are left alone.</Note>
           )}
-          {dryRun && <Caption>This is a practice run: the computer didn't start from the Dashi USB drive, so nothing will be erased.</Caption>}
+          {/* Centred, as the welcome's other words are. */}
+          {dryRun && <Note>This is a practice run: the computer didn't start from the Dashi USB drive, so nothing will be erased.</Note>}
         </Frame>
       );
     }
@@ -300,7 +304,7 @@ export function InstallerWindow({ restart }: { restart: () => void }) {
             </Field>
           </Group>
           {typed && problem && (
-            <View testID="installer-account-problem">
+            <View testID="installer-account-problem" style={{ paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
               <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
             </View>
           )}
@@ -362,7 +366,7 @@ export function InstallerWindow({ restart }: { restart: () => void }) {
       return (
         <Frame page={page} footer={<Button testID="installer-retry" label="Start Over" primary onPress={() => setPage("welcome")} />}>
           <ProgressSteps progress={progress} />
-          <View testID="installer-failure" style={{ flexShrink: 0 }}>
+          <View testID="installer-failure" style={{ flexShrink: 0, paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
             <Text style={{ fontSize: 12, color: colors.critical }}>{progress.failed?.message ?? "The install stopped."}</Text>
           </View>
           {!dryRun && <Caption>What the installer's tools said is in /var/log/dashi-install.log.</Caption>}

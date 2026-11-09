@@ -11,7 +11,7 @@ import { type ReactNode, useState } from "react";
 import { PillButton } from "../../shared/controls/inputs.tsx";
 import { Knob } from "../../shared/controls/parts.tsx";
 import { useColors } from "../colors.ts";
-import { useCardRow } from "../row.tsx";
+import { PAGE, useCardRow } from "../row.tsx";
 
 /** A value at the end of a row, muted and right-aligned (several lines stack). */
 export function Value({ children, testID }: { children: string | readonly string[]; testID?: string }) {
@@ -84,8 +84,8 @@ export function ListRow({
         alignItems: "center",
         gap: 10,
         minHeight: 56,
-        paddingLeft: leading ? 8 : 16,
-        paddingRight: 16,
+        paddingLeft: leading ? PAGE.knobInset : PAGE.inset,
+        paddingRight: PAGE.inset,
         paddingVertical: 8,
         hoverBackgroundColor: onPress ? colors.button : "#00000000",
       }}

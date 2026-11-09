@@ -26,6 +26,7 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
           testID="nav:discover"
           label="Discover"
           glyph={DISCOVER}
+          tileColumn
           selected={inSidebar(nav, { kind: "discover" })}
           onPress={() => go({ kind: "discover" })}
         />
@@ -33,6 +34,7 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
           testID="nav:installed"
           label="Installed"
           glyph={INSTALLED}
+          tileColumn
           selected={inSidebar(nav, { kind: "installed" })}
           onPress={() => go({ kind: "installed" })}
         />
@@ -40,6 +42,7 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
           testID="nav:updates"
           label="Updates"
           glyph={UPDATES}
+          tileColumn
           badge={updates > 0 ? String(updates) : undefined}
           selected={inSidebar(nav, { kind: "updates" })}
           onPress={() => go({ kind: "updates" })}
@@ -48,6 +51,7 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
           testID="nav:applets"
           label="Menu bar applets"
           glyph={APPLETS}
+          tileColumn
           selected={inSidebar(nav, { kind: "applets" })}
           onPress={() => go({ kind: "applets" })}
         />

@@ -6,7 +6,7 @@
  * Copies keeps what is typed, and Print waits until it reads as a count.
  */
 
-import { Button, Choices, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
+import { Button, Choices, Group, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { variant } from "../../../src/dbus/index.ts";
@@ -50,69 +50,75 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         { label: "Print", testID: "print:print", onPress: print, primary: true, disabled: !canPrint },
       ]}
     >
-      {request.printers.length === 0 ? (
+      {request.printers.length === 0 && (
         <Text style={{ fontSize: 13, color: colors.textMuted }}>No printers are set up. Add one in Settings, or save a PDF.</Text>
-      ) : (
-        <Row label="Printer">
-          {/* A list of unknown length is a pop-up button, not pills (UI-2). */}
-          <PopUpButton
-            testID="print:printer"
-            width={220}
-            options={request.printers.map((each) => ({ value: each.name, label: each.label }))}
-            value={choice.printer ?? ""}
-            onChange={(name) => update({ printer: name })}
-          />
-        </Row>
       )}
       {printer && !printer.accepting && <Text style={{ fontSize: 12, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>}
-      <Row label="Copies" {...(copies === null ? { detail: `A number from 1 to ${MAX_COPIES}` } : {})}>
-        <TextField
-          testID="print:copies"
-          width={60}
-          value={copiesText}
-          onChangeText={(text) => setCopiesText(text.replace(/[^0-9]/g, "").slice(0, 4))}
-          onSubmit={print}
-          onKeyPress={fieldKeys}
-        />
-      </Row>
-      <Row label={request.pages ? `Pages (${request.pages})` : "Pages"}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Choices
-            testID="print:pages"
-            options={[
-              { value: "all", label: "All" },
-              { value: "range", label: "Range" },
-            ]}
-            value={rangeMode ? "range" : "all"}
-            onChange={(mode) => setRangeMode(mode === "range")}
-          />
-          {rangeMode && (
-            <TextField
-              testID="print:range"
-              width={120}
-              placeholder="1-3, 5"
-              value={choice.pages}
-              onChangeText={(pages) => update({ pages })}
-              onSubmit={print}
-              onKeyPress={fieldKeys}
+      {/* The rows on a card, so their 12 of inset is the card's: the words around it, More… and the buttons keep the sheet's edge. */}
+      <Group testID="print:rows">
+        {request.printers.length > 0 && (
+          <Row label="Printer">
+            {/* A list of unknown length is a pop-up button, not pills (UI-2). */}
+            <PopUpButton
+              testID="print:printer"
+              width={220}
+              options={request.printers.map((each) => ({ value: each.name, label: each.label }))}
+              value={choice.printer ?? ""}
+              onChange={(name) => update({ printer: name })}
             />
-          )}
-        </View>
-      </Row>
+          </Row>
+        )}
+        <Row label="Copies" {...(copies === null ? { detail: `A number from 1 to ${MAX_COPIES}` } : {})}>
+          <TextField
+            testID="print:copies"
+            width={60}
+            value={copiesText}
+            onChangeText={(text) => setCopiesText(text.replace(/[^0-9]/g, "").slice(0, 4))}
+            onSubmit={print}
+            onKeyPress={fieldKeys}
+          />
+        </Row>
+        <Row label={request.pages ? `Pages (${request.pages})` : "Pages"}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Choices
+              testID="print:pages"
+              options={[
+                { value: "all", label: "All" },
+                { value: "range", label: "Range" },
+              ]}
+              value={rangeMode ? "range" : "all"}
+              onChange={(mode) => setRangeMode(mode === "range")}
+            />
+            {rangeMode && (
+              <TextField
+                testID="print:range"
+                width={120}
+                placeholder="1-3, 5"
+                value={choice.pages}
+                onChangeText={(pages) => update({ pages })}
+                onSubmit={print}
+                onKeyPress={fieldKeys}
+              />
+            )}
+          </View>
+        </Row>
+      </Group>
       {twoSided && <CheckBox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
       <View testID="print:more" onPress={() => setMore(!more)} style={{ flexDirection: "row" }}>
         <Text style={{ fontSize: 12, color: colors.selection }}>{more ? "Fewer Options" : "More…"}</Text>
       </View>
       {more && media.length > 0 && (
-        <Row label="Paper">
-          <PopUpButton
-            testID="print:paper"
-            width={220}
-            options={media.map((keyword) => ({ value: keyword, label: mediaLabel(keyword) }))}
-            value={choice.media ?? media[0] ?? ""}
-            onChange={(keyword) => update({ media: keyword })}
-          />
-        </Row>
+        <Group testID="print:more-rows">
+          <Row label="Paper">
+            <PopUpButton
+              testID="print:paper"
+              width={220}
+              options={media.map((keyword) => ({ value: keyword, label: mediaLabel(keyword) }))}
+              value={choice.media ?? media[0] ?? ""}
+              onChange={(keyword) => update({ media: keyword })}
+            />
+          </Row>
+        </Group>
       )}
       {more && printer?.color && <CheckBox testID="print:color" label="Color" checked={choice.color} onChange={(on) => update({ color: on })} />}
     </PortalFrame>
