@@ -107,7 +107,10 @@ the same change.
   speaks MCP to the VM session's `dashi-mcp` over ssh (`vm/vm mcp`), the server
   any agent uses: `vm/agent screenshot [PNG]`, `vm/agent call TOOL JSON`
   (`launch_app`, `click`, `type_text`, `press_keys`, `record_screen`, …),
-  `vm/agent batch -` for several calls. `.mcp.json` offers the same server to
+  `vm/agent batch -` for several calls; `vm/agent pointer X Y [right]` clicks the
+  real pointer at a screenshot's pixels inside the session. A bare QMP click after
+  a screenshot lands one menu bar item off: the agents' mark is in the bar only
+  while an agent is connected. `.mcp.json` offers the same server to
   Claude Code as `dashi-vm`. The first call of each kind asks for consent on the
   VM's screen; allow it there once ("Always Allow"). `vm/vm ipc METHOD JSON` sends one
   compositor request (setting the VM's mode, say).
