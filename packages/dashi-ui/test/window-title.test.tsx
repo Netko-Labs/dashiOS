@@ -8,7 +8,7 @@ const unified = { type: "chrome", nodeId: "root", titleBar: "unified", controls:
 /** The props the host was sent for the node with this id. */
 function propsOf(tree: string, id: string | undefined): Record<string, unknown> | null {
   const walk = (node: { props?: Record<string, unknown>; children?: unknown[] }): Record<string, unknown> | null => {
-    if (node.props?.id === id) return node.props;
+    if (node.props?.id === id) return node.props ?? null;
     for (const child of node.children ?? []) {
       if (child && typeof child === "object") {
         const found = walk(child as { props?: Record<string, unknown>; children?: unknown[] });

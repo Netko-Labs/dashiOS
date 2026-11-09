@@ -236,25 +236,28 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
       <ToolbarButton testID="new" glyph={NEW} tooltip="New document" onPress={() => newWindow([])} />
       <ToolbarButton testID="open" glyph={OPEN} tooltip="Open" onPress={() => setSheet({ kind: "open" })} />
       <ToolbarButton testID="save" glyph={SAVE} tooltip={state.path === null ? "Save" : "Save a version"} disabled={model.isPristine} onPress={save} />
-      <SearchField
-        key={`find:${findFocus}`}
-        testID="find"
-        placeholder="Find"
-        value={find.query}
-        status={findPlace(find)}
-        width={FIND_WIDTH}
-        minWidth={FIND_MIN}
-        autoFocus={findFocus > 0}
-        onChangeText={(query) => model.setQuery(query)}
-        onSubmit={() => jump(1)}
-        // One Esc leaves Find: the query stays (❖G goes on), the text takes the keyboard on the current match.
-        variant="find"
-        onKeyPress={(key) => {
-          if (key !== "Escape") return jump(key === "ArrowUp" ? -1 : 1);
-          if (find.current < 0) jump(1);
-          focusText();
-        }}
-      />
+      {/* Find shares the row with the title: from FIND_MIN, growing to FIND_WIDTH as the row allows. */}
+      <View testID="find-box" style={{ flex: 1, minWidth: FIND_MIN, maxWidth: FIND_WIDTH, flexDirection: "row" }}>
+        <SearchField
+          key={`find:${findFocus}`}
+          testID="find"
+          placeholder="Find"
+          value={find.query}
+          status={findPlace(find)}
+          width={FIND_WIDTH}
+          minWidth={FIND_MIN}
+          autoFocus={findFocus > 0}
+          onChangeText={(query) => model.setQuery(query)}
+          onSubmit={() => jump(1)}
+          // One Esc leaves Find: the query stays (❖G goes on), the text takes the keyboard on the current match.
+          variant="find"
+          onKeyPress={(key) => {
+            if (key !== "Escape") return jump(key === "ArrowUp" ? -1 : 1);
+            if (find.current < 0) jump(1);
+            focusText();
+          }}
+        />
+      </View>
     </>
   );
 

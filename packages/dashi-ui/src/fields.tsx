@@ -133,9 +133,7 @@ export function TextField({ value, onChangeText, testID, placeholder, width, aut
  * A search (the default, a list's filter) empties itself on the first Esc, as on the Mac.
  * A find (`variant="find"`, Find in a document) keeps its query on Esc and passes the key
  * on at once: the app hands the keyboard back to the document, the current match selected.
- * With `minWidth` it shares its row's room (a toolbar in a narrow window): it grows from
- * `minWidth` up to `width` as the row allows. `status` is a few muted words at its end,
- * about what it found ("2 of 4").
+ * `status` is a few muted words at its end, about what it found ("2 of 4").
  */
 export function SearchField({
   value,
@@ -144,34 +142,34 @@ export function SearchField({
   placeholder = "Search",
   width = 200,
   minWidth,
-  status,
   autoFocus,
   variant = "search",
   onKeyPress,
   onSubmit,
+  status,
 }: {
   value: string;
   onChangeText: (text: string) => void;
   testID: string;
   placeholder?: string;
   width?: number;
-  /** The narrowest it gets when its row is short of room (it is `width` at most); without it the field keeps `width`. */
+  /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
   minWidth?: number;
-  /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
-  status?: string | null;
   autoFocus?: boolean;
   /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
   variant?: "search" | "find";
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
   onSubmit?: (text: string) => void;
+  /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
+  status?: string | null;
 }) {
   const colors = useColors();
   return (
     <View
       style={{
-        // Sharing: it grows with its row's room from nothing, between `minWidth` and `width`.
-        ...(minWidth !== undefined ? { flex: 1, minWidth, maxWidth: width } : { width, flexShrink: 0 }),
+        width,
         height: 28,
+        ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
