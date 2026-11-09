@@ -1,9 +1,12 @@
 /**
  * Text Editor's window: the unified toolbar with the document's name and, on
- * the same line and muted, its folder (or "Draft"), the counts or Find's
- * place, and an encoding or line ending that isn't UTF-8 and LF; then New,
- * Open, Save, and the Find field; the text, with Find's matches washed and
- * line numbers in a gutter; and a notice over it when something needs saying.
+ * the same line and muted, its folder (or "Draft"); then New, Open, Save, and
+ * the Find field, with Find's place in it ("2 of 4"). The name gives way
+ * before the controls do, and the window is never narrower than they need
+ * (EDITOR_MIN_SIZE). The text, with Find's matches washed and line numbers
+ * in a gutter; the counts, and an encoding or line ending that isn't UTF-8
+ * and LF, in a quiet chip at its foot; and a notice over it when something
+ * needs saying.
  * Each window is its own process with one document, as Preview's are: New
  * opens another window, and Open (or files dropped on the window) opens in
  * this one only while it is an untouched Untitled.
@@ -17,22 +20,31 @@ import { existsSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors } from "@dashi/ui";
-import { type TextSelection, View } from "@mirinjs/metal";
+import { Text, type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AppChooser, chooserRequest } from "../files/chooser/index.ts";
 import { useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
-import { lineCount, lineOf, lineStart } from "./find.ts";
+import { lineCount, lineStart } from "./find.ts";
 import { NEW, OPEN, SAVE } from "./glyphs.ts";
 import { editorMenus } from "./menus.ts";
 import type { EditorModel } from "./model.ts";
 import { displayName, folderLabel, resolveInput, suggestedSavePath } from "./names.ts";
 import { ConflictSheet, GoToLineSheet, ReplaceSheet, type SheetState, VersionsSheet } from "./sheets.tsx";
 import { formatStats, textStats } from "./stats.ts";
-import { findHighlights, findStatus, statusLine } from "./status.ts";
+import { countsLine, findHighlights, findPlace, titleDetail } from "./status.ts";
 import { TextArea } from "./text-area.tsx";
 import { versionDifference } from "./versions.ts";
 
 export const EDITOR_SIZE = { width: 760, height: 600 } as const;
+/**
+ * The smallest the window gets (LA-3): New, Open, Save and a 120 pt Find
+ * field, with room for the start of the name; the chooser and every sheet
+ * fit it. A half-screen tile on the smallest screen is wider.
+ */
+export const EDITOR_MIN_SIZE = { width: 480, height: 320 } as const;
+/** Find's field: as wide as this with room, never narrower than FIND_MIN. */
+const FIND_WIDTH = 200;
+const FIND_MIN = 120;
 
 /** How long the counts wait for typing to pause before counting again. */
 const COUNT_DELAY_MS = 300;
@@ -224,13 +236,14 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
       <ToolbarButton testID="new" glyph={NEW} tooltip="New document" onPress={() => newWindow([])} />
       <ToolbarButton testID="open" glyph={OPEN} tooltip="Open" onPress={() => setSheet({ kind: "open" })} />
       <ToolbarButton testID="save" glyph={SAVE} tooltip={state.path === null ? "Save" : "Save a version"} disabled={model.isPristine} onPress={save} />
-      <View style={{ width: 4 }} />
       <SearchField
         key={`find:${findFocus}`}
         testID="find"
         placeholder="Find"
         value={find.query}
-        width={180}
+        status={findPlace(find)}
+        width={FIND_WIDTH}
+        minWidth={FIND_MIN}
         autoFocus={findFocus > 0}
         onChangeText={(query) => model.setQuery(query)}
         onSubmit={() => jump(1)}
@@ -292,7 +305,8 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
           <ConfirmSheet
             testID="delete-draft"
             title={`Delete the draft “${name}”?`}
-            message="The window closes and its text is gone. You can't undo this."
+            // Two sentences, two lines: broken by hand, so no word is left alone on the second.
+            message={"The window closes and its text is gone.\nYou can't undo this."}
             confirmLabel="Delete"
             danger
             onConfirm={() => quit(true)}
@@ -314,16 +328,16 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
     }
   })();
 
-  // One chrome row: the folder, the counts (or Find's place), and an unusual encoding are muted words after the
-  // title on its line, and a notice floats over the text until dismissed.
-  const place = findStatus(find, () => lineOf(state.text, find.matches[find.current] ?? 0)) ?? stats;
-  const detail = statusLine({ folder: folderLabel(state.path), place, encoding: state.encoding, lineEnding: state.lineEnding });
+  // One chrome row: the folder is the muted words after the title, and Find's place is in its field. The counts
+  // wait in a chip at the text's foot; a notice floats over the text until dismissed, and the chip makes way for it.
+  const detail = titleDetail(folderLabel(state.path));
+  const counts = countsLine({ counts: stats, encoding: state.encoding, lineEnding: state.lineEnding });
   const notice = state.notice ? <Notice tone={state.notice.tone} text={state.notice.text} onDismiss={() => model.dismissNotice()} /> : undefined;
 
   return (
     <AppWindow title={name} detail={detail} toolbar={toolbar} overlay={overlay} notice={notice}>
       <View
-        style={{ flex: 1, flexDirection: "column" }}
+        style={{ flex: 1, flexDirection: "column", position: "relative" }}
         onDrop={(drop) => {
           if (drop.phase !== "drop" || drop.paths.length === 0) return;
           const [first, ...rest] = drop.paths;
@@ -344,7 +358,33 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
           scroll={scroll}
           reveal={state.reveal}
         />
+        {notice === undefined && <CountsChip text={counts} />}
       </View>
     </AppWindow>
+  );
+}
+
+/** The counts at the text's foot, at its right: a quiet pill, as a toolbar's state chip is (VS-5). */
+function CountsChip({ text }: { text: string }) {
+  const colors = useColors();
+  return (
+    <View
+      testID="counts"
+      style={{
+        position: "absolute",
+        right: 16,
+        bottom: 12,
+        height: 24,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.button,
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+        {text}
+      </Text>
+    </View>
   );
 }

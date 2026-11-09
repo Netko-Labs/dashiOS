@@ -133,6 +133,9 @@ export function TextField({ value, onChangeText, testID, placeholder, width, aut
  * A search (the default, a list's filter) empties itself on the first Esc, as on the Mac.
  * A find (`variant="find"`, Find in a document) keeps its query on Esc and passes the key
  * on at once: the app hands the keyboard back to the document, the current match selected.
+ * With `minWidth` it shares its row's room (a toolbar in a narrow window): it grows from
+ * `minWidth` up to `width` as the row allows. `status` is a few muted words at its end,
+ * about what it found ("2 of 4").
  */
 export function SearchField({
   value,
@@ -140,6 +143,8 @@ export function SearchField({
   testID,
   placeholder = "Search",
   width = 200,
+  minWidth,
+  status,
   autoFocus,
   variant = "search",
   onKeyPress,
@@ -150,6 +155,10 @@ export function SearchField({
   testID: string;
   placeholder?: string;
   width?: number;
+  /** The narrowest it gets when its row is short of room (it is `width` at most); without it the field keeps `width`. */
+  minWidth?: number;
+  /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
+  status?: string | null;
   autoFocus?: boolean;
   /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
   variant?: "search" | "find";
@@ -160,9 +169,9 @@ export function SearchField({
   return (
     <View
       style={{
-        width,
+        // Sharing: it grows with its row's room from nothing, between `minWidth` and `width`.
+        ...(minWidth !== undefined ? { flex: 1, minWidth, maxWidth: width } : { width, flexShrink: 0 }),
         height: 28,
-        flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
@@ -187,6 +196,13 @@ export function SearchField({
         }}
         style={{ flex: 1, height: 24, padding: 2, fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
       />
+      {status ? (
+        <View testID={`${testID}:status`} style={{ flexShrink: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+            {status}
+          </Text>
+        </View>
+      ) : null}
       {value !== "" && (
         <View testID={`${testID}:clear`} onPress={() => onChangeText("")} style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}>
           <Svg markup={CLEAR} size={13} color={colors.textMuted} />
