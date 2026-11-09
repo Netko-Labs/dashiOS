@@ -53,7 +53,7 @@ export function StateChip({ chip, onPress, onCancel, testID, wide }: StateChipPr
     // Words end where a button would (the row's right edge), centered on a button's height.
     return (
       <View testID={`${testID}:${chip.kind}`} style={{ minWidth, height: 28, flexShrink: 0, alignItems: "flex-end", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted, textAlign: "right" }}>
           {chipLabel(chip)}
         </Text>
       </View>
