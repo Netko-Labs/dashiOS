@@ -10,6 +10,7 @@
 
 import { CHEVRON_DOWN, DISABLED_OPACITY, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
+import { createContext, useContext } from "react";
 import { useSpring } from "./motion.ts";
 import { useControlColors } from "./palette.ts";
 
@@ -136,17 +137,29 @@ function MoreSegment({ testID, more, disabled }: { testID: string; more: MorePil
 }
 
 /**
+ * Told, as the pills are laid out, whether they had to wrap onto a second
+ * line: a Settings row then puts them under its words instead (row.tsx),
+ * where they have the card's width and keep one line.
+ */
+export const PillsWrapped = createContext<((wrapped: boolean) => void) | null>(null);
+
+/** Whether a row of pills `height` tall took more than one line. */
+export const pillsWrapped = (height: number): boolean => height > SEGMENTED.height + 2 * SEGMENTED.padding + 1;
+
+/**
  * Choices as segmented pills: one Tab stop, the arrows move between them,
  * Space or Return picks one. A folded row (`more`) ends in a "More" pill in
  * the same track, on the pills' line.
  */
 export function Segmented<T extends string | number>({ options, value, onChange, testID, disabled, more }: SegmentedProps<T> & { more?: MorePill }) {
   const colors = useControlColors();
+  const report = useContext(PillsWrapped);
   return (
     <View
       testID={testID}
       focusGroup
       accessibilityRole="group"
+      {...(report ? { onLayout: (laid: { height: number }) => report(pillsWrapped(laid.height)) } : {})}
       style={{
         flexDirection: "row",
         flexWrap: "wrap",

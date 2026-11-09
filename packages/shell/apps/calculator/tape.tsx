@@ -12,8 +12,11 @@ import { TAPE_WIDTH } from "./layout.ts";
 import { shownExpression, type TapeEntry } from "./line.ts";
 import type { NumberLocale } from "./locale.ts";
 
-/** The head's inset, both ends: the display's, and clear of the window's corner. */
-const HEAD_INSET = 14;
+/** The list's side padding and a row's: a row's words end 16 in. */
+const LIST_INSET = 6;
+const ROW_INSET = 10;
+/** The head's inset, both ends: the rows', so Clear ends where the results do (and clear of the window's corner). */
+const HEAD_INSET = LIST_INSET + ROW_INSET;
 
 /** A menu to open at a point in the window. */
 export interface MenuAt {
@@ -52,7 +55,7 @@ function TapeRow({ entry, locale, onPress, onMenu }: { entry: TapeEntry; locale:
         alignItems: "stretch",
         gap: 2,
         paddingVertical: 7,
-        paddingHorizontal: 10,
+        paddingHorizontal: ROW_INSET,
         borderRadius: 7,
         hoverBackgroundColor: colors.button,
       }}
@@ -102,7 +105,7 @@ export function Tape({ tape, locale, headHeight, canCopy, onUse, onEdit, onCopy,
           <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>Your sums show up here.</Text>
         </View>
       ) : (
-        <ScrollView testID="tape-rows" style={{ flex: 1, flexDirection: "column", paddingHorizontal: 6, paddingBottom: 8 }}>
+        <ScrollView testID="tape-rows" style={{ flex: 1, flexDirection: "column", paddingHorizontal: LIST_INSET, paddingBottom: 8 }}>
           {tape
             .map((entry, index) => ({ entry, index }))
             .reverse()

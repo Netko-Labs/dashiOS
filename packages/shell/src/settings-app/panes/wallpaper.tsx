@@ -38,9 +38,12 @@ function Tile({ tile, selected, onPress }: { tile: WallpaperTile; selected: bool
           <Image source={tile.image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
         </View>
       </View>
-      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: selected ? "semibold" : "normal", color: colors.text }}>
-        {tile.title}
-      </Text>
+      {/* A one-line text is as wide as its slot, so the slot's centring needs the text's own; the ring's 4 kept at the sides. */}
+      <View style={{ alignSelf: "stretch", paddingHorizontal: 4 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: selected ? "semibold" : "normal", color: colors.text, textAlign: "center" }}>
+          {tile.title}
+        </Text>
+      </View>
     </View>
   );
 }

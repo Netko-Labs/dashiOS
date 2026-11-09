@@ -5,7 +5,7 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import { Tile } from "./controls.tsx";
+import { TILE_SIZE, Tile } from "./controls.tsx";
 import { rowLook, SelectionBar } from "./selection.tsx";
 import { useColors } from "./theme/index.ts";
 
@@ -18,6 +18,12 @@ export interface SidebarItemProps {
   tile?: { glyph: string; tint: string };
   /** A bare glyph in muted ink, ink when selected (a Files-style list). */
   glyph?: string;
+  /**
+   * The bare glyph centred in a tile's width (22), for a list that mixes
+   * glyph rows with tile rows (Software's places over its categories), so
+   * every label starts at one edge.
+   */
+  tileColumn?: boolean;
   /** Quiet text at the end: a count. */
   badge?: string;
   /** A tighter row (28 high), for a list that must fit a window (Settings' eighteen panes). */
@@ -28,7 +34,7 @@ export interface SidebarItemProps {
 export const SIDEBAR_ROW_HEIGHT = 32;
 const COMPACT_ROW_HEIGHT = 28;
 
-export function SidebarItem({ label, selected, onPress, testID, tile, glyph, badge, compact }: SidebarItemProps) {
+export function SidebarItem({ label, selected, onPress, testID, tile, glyph, tileColumn, badge, compact }: SidebarItemProps) {
   const colors = useColors();
   const look = rowLook(colors, selected);
   const height = compact === true ? COMPACT_ROW_HEIGHT : SIDEBAR_ROW_HEIGHT;
@@ -54,7 +60,14 @@ export function SidebarItem({ label, selected, onPress, testID, tile, glyph, bad
       {selected && <SelectionBar rowHeight={height} />}
       {tile && <Tile glyph={tile.glyph} tint={tile.tint} />}
       {/* Kombu marks the selected row only (its wash and bar); a glyph is ink on it and muted at rest (CO-2). */}
-      {glyph !== undefined && <Svg markup={glyph} size={16} color={look.glyph} />}
+      {glyph !== undefined &&
+        (tileColumn === true ? (
+          <View style={{ width: TILE_SIZE, flexShrink: 0, alignItems: "center" }}>
+            <Svg markup={glyph} size={16} color={look.glyph} />
+          </View>
+        ) : (
+          <Svg markup={glyph} size={16} color={look.glyph} />
+        ))}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: selected ? "semibold" : "normal", color: look.ink }}>
           {label}

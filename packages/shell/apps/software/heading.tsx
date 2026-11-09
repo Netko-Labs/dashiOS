@@ -2,7 +2,7 @@
  * A section's heading on a page (TY-1: 13 bold, a 12 muted line under it),
  * with its action at the right ("See all", "Update all"). It is inset as
  * the rows under it are (`ROW.inset`), so its words start where theirs do
- * and its button ends where theirs do.
+ * and its button ends where theirs do; the button is centred on the words.
  */
 
 import { useColors } from "@dashi/ui";
@@ -18,7 +18,7 @@ export function SectionHeader({ title, detail, action, testID }: { title: string
       style={{
         flexShrink: 0,
         flexDirection: "row",
-        alignItems: "flex-end",
+        alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
         marginTop: 6,

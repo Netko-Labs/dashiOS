@@ -26,9 +26,10 @@ import { SpotContext, scrollFor } from "./spot.tsx";
 /** The sidebar's measures (docs/design.html, "Settings"). */
 export const SIDEBAR = {
   width: 232,
-  /** The top row, lights and search: at least this tall, centred on the lights. */
+  /** The top band, lights and search: at least this tall, its row centred on the lights and the rest of it below. */
   bar: 46,
-  search: 32,
+  /** The search pill: a toolbar field's height, so centred on the lights it keeps 5 under the window's top. */
+  search: 28,
   paddingTop: 5,
   paddingX: 10,
   paddingBottom: 10,
@@ -49,10 +50,17 @@ export function sidebarListHeight(groups: readonly number[]): number {
   return rows * SIDEBAR.row + Math.max(rows - 1, 0) * SIDEBAR.rowGap + labels * (SIDEBAR.label + SIDEBAR.rowGap);
 }
 
-/** The top row's height: the lights' centre is its centre, and it is never shorter than the design's 46. */
-export function barHeight(controls: Bounds | null): number {
-  if (!controls) return SIDEBAR.bar;
-  return Math.max(SIDEBAR.bar - SIDEBAR.paddingTop, Math.ceil(2 * (controls.y + controls.height / 2) - SIDEBAR.paddingTop));
+/**
+ * The top band under the sidebar's padding: a row whose centre is the
+ * lights' centre (the search sits on their line, as every app's toolbar
+ * does), then the room that keeps the band the design's 46 in all. Without
+ * lights the row is the whole band.
+ */
+export function topBand(controls: Bounds | null): { row: number; below: number } {
+  const band = SIDEBAR.bar - SIDEBAR.paddingTop;
+  if (!controls) return { row: band, below: 0 };
+  const row = Math.max(Math.round(2 * (controls.y + controls.height / 2 - SIDEBAR.paddingTop)), SIDEBAR.search);
+  return { row, below: Math.max(band - row, 0) };
 }
 
 export interface SearchProps {
@@ -150,7 +158,7 @@ function NavPill({
         flexDirection: "row",
         alignItems: "center",
         gap: 9,
-        paddingLeft: 3,
+        paddingLeft: PILL_INSET,
         paddingRight: 10,
         borderRadius: SIDEBAR.row / 2,
         backgroundColor: selected ? colors.off : "#00000000",
@@ -192,11 +200,14 @@ function NavPill({
   );
 }
 
-/** A group's plain label. */
+/** A pill's inset before its knob: a group's label starts there too, on the knobs' left edge. */
+const PILL_INSET = 3;
+
+/** A group's plain label, on the knobs' left edge. */
 function GroupLabel({ children }: { children: string }) {
   const colors = useControlColors();
   return (
-    <View style={{ height: SIDEBAR.label, flexShrink: 0, justifyContent: "flex-end", paddingLeft: 10, paddingBottom: 2 }}>
+    <View style={{ height: SIDEBAR.label, flexShrink: 0, justifyContent: "flex-end", paddingLeft: PILL_INSET, paddingBottom: 2 }}>
       <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: colors.muted }}>{children.toUpperCase()}</Text>
     </View>
   );
@@ -274,6 +285,7 @@ export function Sidebar({
   useEffect(reveal);
   // Room for the lights before the field; the whole row but the field is where the window is grabbed.
   const lights = controls ? Math.max(Math.ceil(controls.x + controls.width) - SIDEBAR.paddingX + 8, 0) : 0;
+  const band = topBand(controls);
   return (
     <View
       testID="settings-sidebar"
@@ -289,13 +301,13 @@ export function Sidebar({
         testID="settings-sidebar-top"
         dragRegion
         style={{
-          height: barHeight(controls),
+          height: band.row,
           flexShrink: 0,
           flexDirection: "row",
           alignItems: "center",
           paddingLeft: SIDEBAR.paddingX + lights,
           paddingRight: SIDEBAR.paddingX + 4,
-          marginBottom: 2,
+          marginBottom: 2 + band.below,
         }}
       >
         <SearchPill search={search} />

@@ -13,6 +13,9 @@ import type { TrustFacts } from "./trust-words.ts";
 
 const SHOWN_NOTES = 2;
 
+/** A fact's first line, its label's and its value's alike, so the two share a baseline whatever their size. */
+const FACT_LINE = 17;
+
 function Fact({ label, children, testID, last }: { label: string; children: ReactNode; testID: string; last?: boolean }) {
   const colors = useColors();
   return (
@@ -28,7 +31,7 @@ function Fact({ label, children, testID, last }: { label: string; children: Reac
       }}
     >
       <View style={{ width: 108, flexShrink: 0 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 17 }}>{label}</Text>
+        <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: FACT_LINE }}>{label}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>{children}</View>
     </View>
@@ -84,7 +87,7 @@ export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: 
       label: "Made by",
       body: (
         <>
-          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text, lineHeight: 17 }}>{facts.maker.name}</Text>
+          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text, lineHeight: FACT_LINE }}>{facts.maker.name}</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
             {facts.maker.mark === "verified" && <VerifiedBadge size={12} />}
             {facts.maker.mark === "reviewed" && <ReviewedSeal size={12} />}
@@ -98,11 +101,11 @@ export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: 
       key: "reach",
       label: "It can",
       body: !facts.reach.known ? (
-        <Text style={{ fontSize: 13, color: colors.textMuted }}>Flathub doesn’t say what it can reach.</Text>
+        <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: FACT_LINE }}>Flathub doesn’t say what it can reach.</Text>
       ) : (
         <>
           {facts.reach.lines.length === 0 ? (
-            <Text style={{ fontSize: 13, color: colors.text }}>Nothing beyond its own window</Text>
+            <Text style={{ fontSize: 13, color: colors.text, lineHeight: FACT_LINE }}>Nothing beyond its own window</Text>
           ) : (
             <ReachLines lines={facts.reach.lines} strong={strong} />
           )}
@@ -118,13 +121,18 @@ export function TrustCard({ facts, strong = [] }: { facts: TrustFacts; strong?: 
       label: "What’s new",
       body: (
         <>
-          {heading !== "" && <Text style={{ fontSize: 12, color: colors.textMuted }}>{heading}</Text>}
-          {notes.length === 0 ? <Text style={{ fontSize: 13, color: colors.textMuted }}>No notes for this version.</Text> : <Notes notes={notes} />}
+          {heading !== "" && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: FACT_LINE }}>{heading}</Text>}
+          {notes.length === 0 ? (
+            <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: FACT_LINE }}>No notes for this version.</Text>
+          ) : (
+            <Notes notes={notes} />
+          )}
         </>
       ),
     });
   }
-  if (facts.users !== null) rows.push({ key: "users", label: "Used by", body: <Text style={{ fontSize: 13, color: colors.text }}>{facts.users}</Text> });
+  if (facts.users !== null)
+    rows.push({ key: "users", label: "Used by", body: <Text style={{ fontSize: 13, color: colors.text, lineHeight: FACT_LINE }}>{facts.users}</Text> });
   return (
     <View
       testID="trust-card"

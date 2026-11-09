@@ -22,7 +22,7 @@ import type { PaneContext } from "../context.ts";
 import { useGrantEntries, useSettings } from "../hooks.ts";
 import { isPaneId } from "../panes.ts";
 import { type AgentCard, agentCards, CONSEQUENCES, sinceWords } from "../privacy-words.ts";
-import { Button, Caption, Group, Item, Note, Spot } from "../ui.tsx";
+import { Button, Caption, Group, Item, Note, PAGE, Spot } from "../ui.tsx";
 import { ChangeRow } from "./change-row.tsx";
 import { placeOf, useUndoEntry } from "./recent.tsx";
 
@@ -103,7 +103,7 @@ function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() 
   const colors = useColors();
   const asksFirst = agent.scopes.every((scope) => scope.revoked);
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingHorizontal: 12, paddingVertical: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingHorizontal: PAGE.inset, paddingVertical: 8 }}>
       <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{ flexShrink: 1, minWidth: 0 }}>

@@ -22,6 +22,9 @@ import { useColors, useSurface } from "./theme/index.ts";
  */
 const TUCK = { marginTop: -8 } as const;
 
+/** A row's inset at both ends, its separators' at the left, and a caption's: one edge for a card's words and its captions'. */
+export const ROW_INSET = 12;
+
 /** A heading over a group, or a sentence under it (`TUCK`); `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useColors();
@@ -32,7 +35,8 @@ export function Caption({ children, above, keys }: { children: string; above?: b
     <View
       style={{
         ...(above ? { flexShrink: 0, marginTop: 4 } : TUCK),
-        paddingHorizontal: 4,
+        // The rows' inset: a caption's words start where its card's rows' words do.
+        paddingHorizontal: ROW_INSET,
         ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
       }}
     >
@@ -73,7 +77,7 @@ export function Group({
         {rows.map((row, index) => (
           // The rows of a group never reorder.
           <Fragment key={index}>
-            {index > 0 && <View style={{ height: 1, marginLeft: 12, backgroundColor: colors.separator }} />}
+            {index > 0 && <View style={{ height: 1, marginLeft: ROW_INSET, backgroundColor: colors.separator }} />}
             {row}
           </Fragment>
         ))}
@@ -116,7 +120,7 @@ export function Row({
   );
   if (stack) {
     return (
-      <View testID={testID} style={{ flexDirection: "column", gap: 10, padding: 12 }}>
+      <View testID={testID} style={{ flexDirection: "column", gap: 10, padding: ROW_INSET }}>
         {labels}
         {children}
       </View>
@@ -133,7 +137,7 @@ export function Row({
           alignItems: "flex-start",
           gap: 12,
           minHeight: ROW_MIN,
-          paddingHorizontal: 12,
+          paddingHorizontal: ROW_INSET,
           paddingTop: over,
           paddingBottom: ROW_MIN - LINE_13 - over,
         }}
@@ -144,7 +148,7 @@ export function Row({
     );
   }
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW_MIN, paddingHorizontal: 12, paddingVertical: 8 }}>
+    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW_MIN, paddingHorizontal: ROW_INSET, paddingVertical: 8 }}>
       {labels}
       {children}
     </View>
@@ -297,8 +301,11 @@ export function Button({
   );
 }
 
+/** A tile's side unless a caller asks for another (a sidebar's, Settings' panes). */
+export const TILE_SIZE = 22;
+
 /** A glyph on a rounded tile of its color: the sidebar's icons and the About logo. */
-export function Tile({ glyph, tint, size = 22 }: { glyph: string; tint: string; size?: number }) {
+export function Tile({ glyph, tint, size = TILE_SIZE }: { glyph: string; tint: string; size?: number }) {
   return (
     <View style={{ width: size, height: size, borderRadius: size * 0.27, alignItems: "center", justifyContent: "center", backgroundColor: tint }}>
       <Svg markup={glyph} size={Math.round(size * 0.64)} color="#ffffff" />

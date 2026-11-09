@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { GROUP_LABELS, PANES, paneGroups, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
-import { barHeight, SIDEBAR, sidebarListHeight } from "../src/settings-app/sidebar.tsx";
+import { SIDEBAR, sidebarListHeight, topBand } from "../src/settings-app/sidebar.tsx";
 import { SETTINGS_WINDOW } from "../src/settings-app/view.tsx";
 
 const ids = (panes: readonly { id: string }[]) => panes.map((pane) => pane.id);
@@ -46,9 +46,16 @@ test("the window is the design's height, so the sidebar scrolls; the chosen pane
   expect(sidebarListHeight(groups) + SIDEBAR.bar).toBeGreaterThan(SETTINGS_WINDOW.height);
 });
 
-test("the top row is centred on the window lights, never shorter than the design's", () => {
-  expect(barHeight(null)).toBe(SIDEBAR.bar);
-  // dashi-comp's lights: a 12 row 13 down; the row centres on them.
-  expect(barHeight({ x: 14, y: 13, width: 56, height: 12 })).toBe(SIDEBAR.bar - SIDEBAR.paddingTop);
-  expect(barHeight({ x: 14, y: 30, width: 56, height: 12 })).toBe(2 * 36 - SIDEBAR.paddingTop);
+test("the search row is centred on the window lights; the band stays the design's height", () => {
+  expect(topBand(null)).toEqual({ row: SIDEBAR.bar - SIDEBAR.paddingTop, below: 0 });
+  // dashi-comp's lights: a 12 row 13 down, centred at 19; the search's row centres there too.
+  const band = topBand({ x: 14, y: 13, width: 56, height: 12 });
+  expect(SIDEBAR.paddingTop + band.row / 2).toBe(19);
+  expect(SIDEBAR.paddingTop + band.row + band.below).toBe(SIDEBAR.bar);
+  // The pill fits its row, so it is centred on the lights, not pushed down.
+  expect(band.row).toBeGreaterThanOrEqual(SIDEBAR.search);
+  // Lights lower down: a taller row, still centred on them, and nothing below.
+  const low = topBand({ x: 14, y: 30, width: 56, height: 12 });
+  expect(SIDEBAR.paddingTop + low.row / 2).toBe(36);
+  expect(low.below).toBe(0);
 });

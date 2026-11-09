@@ -33,12 +33,19 @@ export function fileChooserInterface(requests: Requests, choose: ChooseFiles): I
 }
 
 /** The real sheet, on screen. */
+/**
+ * The chooser window's least size: its sidebar and one toolbar row (back,
+ * up, the title cut short, the folder, the views, a new folder and the
+ * search at its least) side by side, so nothing is pushed past the edge.
+ */
+export const CHOOSER_LEAST = { width: 720, height: 400 } as const;
+
 export function chooseOnScreen(show: ShowDialog, env?: Env): ChooseFiles {
   return async (request, signal) => {
     const model = openChooser(request, env);
     try {
       return await show<ChooserAnswer | null>(
-        { parent: request.parent, title: request.title, width: 820, height: 520 },
+        { parent: request.parent, title: request.title, width: 820, height: 520, least: CHOOSER_LEAST },
         (answer) => <ChooserView model={model} title={request.title} exists={existsSync} answer={answer} />,
         signal,
         null,
