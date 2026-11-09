@@ -35,11 +35,15 @@ function Fact({ label, children, testID, last }: { label: string; children: Reac
   );
 }
 
-/** Bulleted lines; `strong` ones (broad access) in ink and bold. */
+/**
+ * Bulleted lines; `strong` ones (broad access) in ink and bold. The one list
+ * Software draws (the trust card, the Get sheet, an applet's Allowed): an
+ * indented dot, 17 of leading, 4 between items, wherever it sits.
+ */
 export function ReachLines({ lines, strong = [] }: { lines: readonly string[]; strong?: readonly string[] }) {
   const colors = useColors();
   return (
-    <>
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
       {lines.map((line) => (
         <View key={line} style={{ flexDirection: "row", gap: 7, alignItems: "flex-start" }}>
           <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 17 }}>•</Text>
@@ -50,7 +54,7 @@ export function ReachLines({ lines, strong = [] }: { lines: readonly string[]; s
           </View>
         </View>
       ))}
-    </>
+    </View>
   );
 }
 

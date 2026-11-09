@@ -17,7 +17,7 @@ import { INSTALLED } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
 import { useAppState, useInstalledIcon } from "./hooks.ts";
 import { whereInstalled } from "./model.ts";
-import { AppIcon, useActions } from "./parts.tsx";
+import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 
 export function InstalledRow({ app }: { app: InstalledApp }) {
@@ -29,7 +29,7 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
   return (
     <View
       testID={`installed:${app.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 60, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
     >
       <View
         testID={`installed:${app.id}:open-page`}
@@ -39,7 +39,7 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
         onPress={() => actions.openApp(app.id)}
         style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <AppIcon file={icon.file} url={icon.url} name={app.name} size={44} />
+        <AppIcon file={icon.file} url={icon.url} name={app.name} size={ROW.icon} />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
             {app.name}

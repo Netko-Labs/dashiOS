@@ -20,10 +20,12 @@ import { UPDATES } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
 import { useInstalledIcon } from "./hooks.ts";
 import type { Operation } from "./model.ts";
-import { AppIcon, useActions } from "./parts.tsx";
+import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 
 const SHOWN_PACKAGES = 8;
+/** A system package's name keeps at least this much of its row; its version gives way first. */
+const SYSTEM_NAME_MIN = 110;
 
 function Busy({ operation, testID }: { operation: Operation; testID: string }) {
   const actions = useActions();
@@ -38,7 +40,8 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
   const icon = useInstalledIcon(update);
   const have = state.installed?.find((app) => app.id === update.id && app.installation === update.installation);
   const detail = [
-    have?.version && update.version ? `${have.version} → ${update.version}` : update.version,
+    // "to" in words: the arrow fell back to a face that sets it small and low.
+    have?.version && update.version ? `${have.version} to ${update.version}` : update.version,
     update.downloadSize === null ? null : formatBytes(update.downloadSize),
     update.installation === "system" ? "for everyone" : null,
   ]
@@ -47,7 +50,7 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
   return (
     <View
       testID={`app-update:${update.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
     >
       <View
         focusable
@@ -56,7 +59,7 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
         onPress={() => actions.openApp(update.id)}
         style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <AppIcon file={icon.file} url={icon.url} name={update.name} size={40} />
+        <AppIcon file={icon.file} url={icon.url} name={update.name} size={ROW.icon} />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
             {update.name}
@@ -81,8 +84,19 @@ function KindChip({ kind }: { kind: string }) {
   if (kind === "Available" || kind === "Normal" || kind === "") return null;
   const security = kind === "Security";
   return (
-    <View style={{ paddingHorizontal: 6, height: 18, justifyContent: "center", borderRadius: 9, backgroundColor: security ? colors.brothWash : colors.button }}>
-      <Text style={{ fontSize: 11, color: security ? colors.broth : colors.textMuted }}>{kind}</Text>
+    <View
+      style={{
+        flexShrink: 0,
+        paddingHorizontal: 6,
+        height: 18,
+        justifyContent: "center",
+        borderRadius: 9,
+        backgroundColor: security ? colors.brothWash : colors.button,
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 11, color: security ? colors.broth : colors.textMuted }}>
+        {kind}
+      </Text>
     </View>
   );
 }
@@ -108,17 +122,18 @@ function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
       <Group testID="system-updates">
         {shown.map((update) => (
           <View key={`${update.name}.${update.arch}`} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28, paddingHorizontal: 12 }}>
-            <View style={{ flex: 1, minWidth: 0 }}>
+            {/* The name keeps room for itself; the version gives way first, with an ellipsis. */}
+            <View style={{ flex: 1, minWidth: SYSTEM_NAME_MIN }}>
               <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
                 {update.name}
               </Text>
             </View>
-            <View style={{ width: 180, flexShrink: 1 }}>
+            <View style={{ width: 180, flexShrink: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
                 {update.version}
               </Text>
             </View>
-            <View style={{ width: 84, alignItems: "flex-start" }}>
+            <View style={{ width: 84, flexShrink: 0, alignItems: "flex-start" }}>
               <KindChip kind={update.kind} />
             </View>
           </View>

@@ -156,6 +156,13 @@ test("the state chip: one word per action, “…” when a sheet comes first, p
   expect(queueLine([op({ kind: "system-update", id: undefined, progress: null })])).toBe("Updating the system…");
 });
 
+test("a narrow toolbar's queue line keeps the progress and gives up the name and the waiting count", () => {
+  expect(queueLine([], { short: true })).toBeNull();
+  expect(queueLine([op(), op({ key: "b", status: "queued" })], { short: true })).toBe("Installing 42%");
+  expect(queueLine([op({ kind: "system-update", id: undefined, progress: null })], { short: true })).toBe("Updating…");
+  expect(queueLine([op({ status: "queued" }), op({ key: "b", status: "queued" })], { short: true })).toBe("2 waiting");
+});
+
 test("an applet's chip: Get, Update…, Installed as words, and why it can't be had", () => {
   const installed = { manifest: {}, record: {}, dir: "" } as never;
   expect(appletChip({ kind: "get", version: null }, undefined, false)).toEqual({ kind: "unavailable", detail: "Needs a newer Dashi" });

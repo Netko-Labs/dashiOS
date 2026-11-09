@@ -18,7 +18,7 @@ import { SectionHeader } from "./heading.tsx";
 import { useAppState, useLoad } from "./hooks.ts";
 import { VerifiedBadge } from "./marks.tsx";
 import { whereInstalled } from "./model.ts";
-import { AppIcon, useActions } from "./parts.tsx";
+import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 import { Failed } from "./states.tsx";
 import { TrustCard } from "./trust.tsx";
@@ -96,12 +96,15 @@ function Page({ app }: { app: AppDetails }) {
     sections.push(
       <View key="about" testID="description" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
         <SectionHeader title="About" />
-        {app.description.map((block, index) => (
-          // Paragraphs never reorder.
-          <Text key={index} style={{ fontSize: 13, lineHeight: 19, color: colors.text }}>
-            {block}
-          </Text>
-        ))}
+        {/* Inset as the heading and the facts' rows are. */}
+        <View style={{ flexShrink: 0, flexDirection: "column", gap: 8, paddingHorizontal: ROW.inset }}>
+          {app.description.map((block, index) => (
+            // Paragraphs never reorder.
+            <Text key={index} style={{ fontSize: 13, lineHeight: 19, color: colors.text }}>
+              {block}
+            </Text>
+          ))}
+        </View>
       </View>,
     );
   }

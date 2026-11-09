@@ -223,6 +223,8 @@ export function ToolbarButton({
       style={{
         height: 28,
         minWidth: 32,
+        // Its words never wrap and it never shrinks: a toolbar's one row gives way elsewhere.
+        flexShrink: 0,
         paddingHorizontal: label ? 10 : 0,
         flexDirection: "row",
         gap: 6,
@@ -234,7 +236,11 @@ export function ToolbarButton({
       }}
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />
-      {label !== undefined && <Text style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>{label}</Text>}
+      {label !== undefined && (
+        <Text numberOfLines={1} style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>
+          {label}
+        </Text>
+      )}
       {tip.node}
     </View>
   );

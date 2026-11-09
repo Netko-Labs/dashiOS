@@ -1,7 +1,7 @@
 /**
  * An applet in a list: its icon, name, what it does and who made it (with
- * Dashi's reviewed seal), and the state chip. Grouped rows, as Installed and
- * Updates draw apps.
+ * Dashi's reviewed seal), and the state chip. Grouped rows in an app's row
+ * geometry (`ROW`), as Installed and Updates draw apps.
  */
 
 import { Group, useColors } from "@dashi/ui";
@@ -14,7 +14,7 @@ import { SectionHeader } from "../heading.tsx";
 import { useSelected } from "../hooks.ts";
 import { ReviewedSeal } from "../marks.tsx";
 import { appletOperation, type Operation } from "../model.ts";
-import { AppIcon, useActions } from "../parts.tsx";
+import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import type { AppletState } from "./store.ts";
 import { appletChip } from "./words.ts";
@@ -73,7 +73,7 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
   return (
     <View
       testID={`applet:${manifest.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
     >
       <View
         testID={`applet:${manifest.id}:open`}
@@ -83,7 +83,7 @@ export function AppletRow({ entry }: { entry: StoreApplet }) {
         onPress={() => actions.openApplet(manifest.id)}
         style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <AppIcon url={entry.icon ?? null} name={manifest.name} size={36} source="applets" />
+        <AppIcon url={entry.icon ?? null} name={manifest.name} size={ROW.icon} source="applets" />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>

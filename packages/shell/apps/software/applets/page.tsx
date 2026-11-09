@@ -15,9 +15,9 @@ import { formatBytes } from "../../../src/software/text.ts";
 import { Gallery } from "../gallery.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";
-import { AppIcon, useActions } from "../parts.tsx";
+import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
-import { TrustCard } from "../trust.tsx";
+import { ReachLines, TrustCard } from "../trust.tsx";
 import { appletTrust } from "../trust-words.ts";
 import { AppletChip, useAppletState } from "./rows.tsx";
 import type { AppletOrigin } from "./store.ts";
@@ -42,7 +42,10 @@ function Fact({ label, value, onPress, testID }: { label: string; value: string;
   );
 }
 
-/** On or off, what it was allowed, Remove…. */
+/** The Manage group's rows: one padding for all, so no row sits deeper than another. */
+const MANAGE_ROW = { minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 } as const;
+
+/** On or off, what it was allowed (the trust card's list), Remove…. */
 function Manage({ applet }: { applet: InstalledApplet }) {
   const colors = useColors();
   const actions = useActions();
@@ -54,7 +57,7 @@ function Manage({ applet }: { applet: InstalledApplet }) {
     <View testID="manage" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
       <SectionHeader title="Manage" />
       <Group>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...MANAGE_ROW }}>
           <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
             <Text style={{ fontSize: 13, color: colors.text }}>In the menu bar</Text>
             <Text style={{ fontSize: 11, color: colors.textMuted }}>
@@ -63,16 +66,16 @@ function Manage({ applet }: { applet: InstalledApplet }) {
           </View>
           <Switch testID="manage:on" on={applet.record.disabled === undefined} disabled={pulled} onChange={(on) => applets.setOn(applet, on)} />
         </View>
-        <View style={{ flexDirection: "column", gap: 4, paddingHorizontal: 12, paddingVertical: 10 }}>
+        <View style={{ flexDirection: "column", justifyContent: "center", gap: 6, ...MANAGE_ROW }}>
           <Text style={{ fontSize: 13, color: colors.text }}>Allowed</Text>
           {lines.length === 0 ? (
             <Text style={{ fontSize: 12, color: colors.textMuted }}>Nothing beyond showing itself in the menu bar</Text>
           ) : (
-            lines.map((line) => <Text key={line} style={{ fontSize: 12, color: colors.textMuted }}>{`• ${line}`}</Text>)
+            <ReachLines lines={lines} />
           )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", minHeight: 44, paddingHorizontal: 12 }}>
-          <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...MANAGE_ROW }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: 12, color: colors.textMuted }}>Removing it can also delete what it saved.</Text>
           </View>
           <Button label="Remove…" testID="remove" onPress={() => actions.removeApplet(applet)} />
@@ -114,7 +117,7 @@ function AppletPageBody({ entry }: { entry: StoreApplet }) {
       <TrustCard facts={appletTrust(entry)} />
       {entry.screenshots.length > 0 && <Gallery shots={entry.screenshots.map((url) => ({ caption: null, thumb: url, large: url }))} source="applets" />}
       {manifest.description !== undefined && (
-        <View testID="description" style={{ flexShrink: 0 }}>
+        <View testID="description" style={{ flexShrink: 0, paddingHorizontal: ROW.inset }}>
           <Text style={{ fontSize: 13, lineHeight: 19, color: colors.text }}>{manifest.description}</Text>
         </View>
       )}

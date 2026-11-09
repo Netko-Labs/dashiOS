@@ -2,10 +2,12 @@
  * Software's sidebar: Discover, Installed, Updates (one badge for the
  * system, the apps and the applets), Menu bar applets (always: its
  * Catalogs… is where a catalog is added, even before Dashi's opens), and
- * Flathub's categories.
+ * Flathub's categories. The rows scroll in their own column, under the
+ * window controls' strip, so a short window still reaches every category.
  */
 
 import { SidebarItem, SidebarSection, TINTS } from "@dashi/ui";
+import { ScrollView } from "@mirinjs/metal";
 import { CATEGORIES } from "../../src/software/flathub.ts";
 import { APPLETS, CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER, INSTALLED, UPDATES } from "./glyphs.ts";
 import type { Nav, Page } from "./nav.ts";
@@ -14,7 +16,11 @@ const inSidebar = (nav: Nav, page: Page): boolean => JSON.stringify(nav.page) ==
 
 export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: number; go: (page: Page) => void }) {
   return (
-    <>
+    // The sidebar's 10 of side padding moves inside the scroll, so a row's focus ring isn't clipped.
+    <ScrollView
+      testID="sidebar-rows"
+      style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: 2, marginLeft: -10, marginRight: -10, paddingHorizontal: 10 }}
+    >
       <SidebarSection>
         <SidebarItem
           testID="nav:discover"
@@ -58,6 +64,6 @@ export function SoftwareSidebar({ nav, updates, go }: { nav: Nav; updates: numbe
           />
         ))}
       </SidebarSection>
-    </>
+    </ScrollView>
   );
 }

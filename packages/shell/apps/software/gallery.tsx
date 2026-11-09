@@ -84,7 +84,7 @@ function Thumb({ shot, chosen, onPress, index, source }: { shot: Shot; chosen: b
   );
 }
 
-/** Room around the thumbnails for the focus ring (2 px out, 2 px wide), which the scrolling strip would clip. */
+/** Room around the thumbnails for the focus ring (2 px out, 2 px wide), which the scrolling strip would clip; given back at the sides only. */
 const RING_ROOM = 4;
 
 export function Gallery({ shots, source = "flathub" }: { shots: readonly Shot[]; source?: Source }) {
@@ -95,7 +95,12 @@ export function Gallery({ shots, source = "flathub" }: { shots: readonly Shot[];
   return (
     <View testID="gallery" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
       <Big shot={shot} source={source} />
-      {shot.caption !== null && <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{shot.caption}</Text>}
+      {/* One line: a wrapping caption here is measured far taller than it draws (mirin), which pushed About down. */}
+      {shot.caption !== null && (
+        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>
+          {shot.caption}
+        </Text>
+      )}
       {shots.length > 1 && (
         <View
           focusGroup
@@ -107,8 +112,6 @@ export function Gallery({ shots, source = "flathub" }: { shots: readonly Shot[];
             overflow: "scroll-x",
             flexShrink: 0,
             padding: RING_ROOM,
-            marginTop: -RING_ROOM,
-            marginBottom: -RING_ROOM,
             marginLeft: -RING_ROOM,
             marginRight: -RING_ROOM,
           }}

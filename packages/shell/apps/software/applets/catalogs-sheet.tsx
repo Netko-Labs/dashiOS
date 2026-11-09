@@ -9,11 +9,14 @@
 
 import { AlertSheet, Button, Group, Row, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import type { CatalogSource } from "../../../src/applet-store/catalogs.ts";
 import type { CatalogLoad } from "../../../src/applet-store/merge.ts";
 import { useServices } from "../services.ts";
 import { useAppletState } from "./rows.tsx";
+
+/** The list and the Add a Catalog form are one sheet, so they keep one width. */
+const SHEET_WIDTH = 480;
 
 /** What a catalog's row says under its name: built in, how many applets, or why it isn't listing any. */
 export function catalogDetail(source: CatalogSource, load: CatalogLoad | undefined): string {
@@ -71,33 +74,45 @@ function AddCatalog({ onDone }: { onDone: () => void }) {
   const escape = (pressed: string): void => {
     if (pressed === "Escape") leave();
   };
-  const label = (text: string) => <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>;
+  // A label sits 4 over its own field, and the sheet's gap away from the field above.
+  const field = (text: string, input: ReactNode) => (
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>
+      {input}
+    </View>
+  );
   return (
-    <Sheet testID="add-catalog" width={460} onCancel={leave}>
+    <Sheet testID="add-catalog" width={SHEET_WIDTH} onCancel={leave}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Add a Catalog</Text>
       <Text style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted }}>
         Applets from it are checked as Dashi’s are, but nobody at Dashi reviews them. Add only catalogs you trust.
       </Text>
-      {label("Name")}
-      <TextField testID="add-catalog:name" value={name} placeholder="Team Applets" autoFocus onChangeText={setName} onSubmit={submit} onKeyPress={escape} />
-      {label("Index address")}
-      <TextField
-        testID="add-catalog:url"
-        value={url}
-        placeholder="https://example.com/applets/index.json"
-        onChangeText={setUrl}
-        onSubmit={submit}
-        onKeyPress={escape}
-      />
-      {label("Public key")}
-      <TextField
-        testID="add-catalog:key"
-        value={key}
-        placeholder="RWQ… (from the catalog’s .pub file)"
-        onChangeText={setKey}
-        onSubmit={submit}
-        onKeyPress={escape}
-      />
+      {field(
+        "Name",
+        <TextField testID="add-catalog:name" value={name} placeholder="Team Applets" autoFocus onChangeText={setName} onSubmit={submit} onKeyPress={escape} />,
+      )}
+      {field(
+        "Index address",
+        <TextField
+          testID="add-catalog:url"
+          value={url}
+          placeholder="https://example.com/applets/index.json"
+          onChangeText={setUrl}
+          onSubmit={submit}
+          onKeyPress={escape}
+        />,
+      )}
+      {field(
+        "Public key",
+        <TextField
+          testID="add-catalog:key"
+          value={key}
+          placeholder="RWQ… (from the catalog’s .pub file)"
+          onChangeText={setKey}
+          onSubmit={submit}
+          onKeyPress={escape}
+        />,
+      )}
       {error !== null && (
         <View testID="add-catalog:error" style={{ paddingTop: 2 }}>
           <Text style={{ fontSize: 12, lineHeight: 17, color: colors.ume }}>{error}</Text>
@@ -149,7 +164,7 @@ export function CatalogsSheet({ onClose }: { onClose: () => void }) {
   if (mode.kind === "remove") return <RemoveCatalog source={mode.source} onDone={() => setMode({ kind: "list" })} />;
   const sources = applets.sources();
   return (
-    <Sheet testID="catalogs" width={480} onCancel={onClose} onConfirm={onClose}>
+    <Sheet testID="catalogs" width={SHEET_WIDTH} onCancel={onClose} onConfirm={onClose}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Catalogs</Text>
       <Text style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted }}>
         Menu bar applets come from these catalogs. Dashi checks each one’s signature before it lists anything from it.

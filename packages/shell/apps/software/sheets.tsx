@@ -40,7 +40,8 @@ function RemoveSheet({ name, system, applet, onAnswer }: { name: string; system:
       testID="remove-sheet"
       width={420}
       question={`Remove “${name}”?`}
-      message={`${message}${system ? " It is installed for everyone, so you’ll be asked for your password." : ""}`}
+      // A no-break space keeps "password." from ending the message alone on its line.
+      message={`${message}${system ? " It is installed for everyone, so you’ll be asked for your\u00a0password." : ""}`}
       glyph={WARNING}
       tone="danger"
       buttons={[

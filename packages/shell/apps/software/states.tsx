@@ -27,8 +27,24 @@ export function Failed({ state, onRetry }: { state: Extract<Load<unknown>, { sta
   );
 }
 
-/** A chip in the toolbar row: 24 tall, a pill, muted words, an optional glyph. */
-export function ToolbarChip({ text, glyph, testID, onPress }: { text: string; glyph?: string; testID: string; onPress?: () => void }) {
+/**
+ * A chip in the toolbar row: 24 tall, a pill, muted words, an optional
+ * glyph. It keeps its width while the search field gives way; past
+ * `maxWidth` its words end in an ellipsis.
+ */
+export function ToolbarChip({
+  text,
+  glyph,
+  testID,
+  onPress,
+  maxWidth,
+}: {
+  text: string;
+  glyph?: string;
+  testID: string;
+  onPress?: () => void;
+  maxWidth?: number;
+}) {
   const colors = useColors();
   return (
     <View
@@ -37,8 +53,8 @@ export function ToolbarChip({ text, glyph, testID, onPress }: { text: string; gl
       {...(onPress ? { onPress, focusable: true } : {})}
       style={{
         height: 24,
-        flexShrink: 1,
-        minWidth: 0,
+        flexShrink: 0,
+        ...(maxWidth === undefined ? {} : { maxWidth }),
         flexDirection: "row",
         alignItems: "center",
         gap: 5,
@@ -56,7 +72,7 @@ export function ToolbarChip({ text, glyph, testID, onPress }: { text: string; gl
   );
 }
 
-/** "Offline · showing saved results": while a page shows answers Flathub gave earlier. */
-export function StaleChip() {
-  return <ToolbarChip testID="stale" glyph={OFFLINE} text="Offline · showing saved results" />;
+/** "Offline · showing saved results" ("Offline" when `short`): while a page shows answers Flathub gave earlier. */
+export function StaleChip({ short = false }: { short?: boolean }) {
+  return <ToolbarChip testID="stale" glyph={OFFLINE} text={short ? "Offline" : "Offline · showing saved results"} />;
 }
