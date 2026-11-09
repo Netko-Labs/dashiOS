@@ -59,6 +59,8 @@ export interface TableProps<T, K extends string | number> {
 }
 
 const PAD = 10;
+/** Room under the last row, so its wash never runs into the window's rounded corner. */
+const END_INSET = 8;
 /** How long rows stay put after the pointer last crossed one, or left the list. */
 export const STEADY_MS = 1000;
 /** How long rows stay put after the selection changed. */
@@ -176,10 +178,16 @@ export function Table<T, K extends string | number>({
                   hoverBackgroundColor: colors.button,
                 }}
               >
-                <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>
-                  {column.title}
-                </Text>
-                {sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />}
+                {/* A right-aligned column's title ends on its figures' edge, its arrow before it; a one-line Text fills its cell, so this one is bare. */}
+                {column.align === "right" && sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />}
+                {column.align === "right" ? (
+                  <Text style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>{column.title}</Text>
+                ) : (
+                  <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted }}>
+                    {column.title}
+                  </Text>
+                )}
+                {column.align !== "right" && sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />}
               </View>
             );
           })}
@@ -191,7 +199,8 @@ export function Table<T, K extends string | number>({
         <ScrollView
           testID={`${testID}:rows`}
           {...(steady ? { onHoverChange: pointerOver } : {})}
-          style={{ flex: 1, flexDirection: "column", paddingHorizontal: PAD / 2 }}
+          // The last row clears the window's rounded corner when scrolled to the end.
+          style={{ flex: 1, flexDirection: "column", paddingHorizontal: PAD / 2, paddingBottom: END_INSET }}
         >
           {shown.map((row, index) => {
             const key = rowKey(row);

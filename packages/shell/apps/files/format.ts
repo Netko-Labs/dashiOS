@@ -77,13 +77,3 @@ export function permissionString(mode: number): string {
 export function octal(mode: number): string {
   return (mode & 0o7777).toString(8).padStart(4, "0");
 }
-
-/** `middleEllipsis("A very long file name.txt", 16)` is "A very l…name.txt": names keep their ends, where the extension is. */
-export function middleEllipsis(text: string, max: number): string {
-  const chars = [...text];
-  if (chars.length <= max) return text;
-  const keep = max - 1;
-  const tail = Math.ceil(keep / 2);
-  const head = keep - tail;
-  return `${chars.slice(0, head).join("")}…${chars.slice(chars.length - tail).join("")}`;
-}

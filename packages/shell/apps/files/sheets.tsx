@@ -61,7 +61,7 @@ export function InfoSheet({ item, home, onClose }: { item: FileItem; home: strin
   return (
     <Sheet testID="info-sheet" width={440} onCancel={onClose} onConfirm={onClose}>
       <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "bold", color: colors.text }}>{`${item.name} Info`}</Text>
+        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`${item.name} Info`}</Text>
       </View>
       {typeof info === "string" ? (
         <Text style={{ fontSize: 12, color: colors.critical }}>{info}</Text>

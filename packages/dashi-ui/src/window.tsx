@@ -39,6 +39,16 @@ export function useTitleBarInset(): TitleBarInset {
   return { unified: true, top: Math.ceil(controls.y + controls.height), leading: Math.ceil(controls.x + controls.width) };
 }
 
+/**
+ * The toolbar's left inset: 18 after a sidebar, else clear of the window
+ * controls by 14. A sidebar narrower than the controls (a rail) leaves the
+ * toolbar to clear what they still cover.
+ */
+export function toolbarInset(leading: number, sidebarWidth: number): number {
+  if (leading <= 0) return 18;
+  return Math.max(18, leading + 14 - sidebarWidth);
+}
+
 /** The widest a window's title gets in its toolbar before it is cut. */
 const TITLE_MAX = 320;
 
@@ -108,7 +118,7 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 10,
-                paddingLeft: sidebar === undefined && inset.leading > 0 ? inset.leading + 14 : 18,
+                paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
                 paddingRight: 12,
                 borderBottomWidth: 1,
                 borderColor: colors.separator,

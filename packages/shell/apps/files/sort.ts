@@ -45,6 +45,29 @@ export function fileColumns(mode: ColumnMode | boolean): FileColumn[] {
   ];
 }
 
+/** The least room the Name column keeps; the other columns leave before it gets less. */
+export const NAME_FLOOR = 160;
+/** The table's own side padding and each cell's (Table's PAD). */
+const TABLE_PAD = 10;
+/** Which columns leave first when the list is narrow: what kind, or where, then when, then how big. */
+const LEAVE_ORDER = ["kind", "where", "modified", "deleted", "size"];
+
+/**
+ * The columns that fit a list `width` wide with Name keeping at least
+ * `NAME_FLOOR`: Kind (or Where) leaves first, then the date, then Size, so
+ * no column is ever drawn in part and the names never go (0: not laid out yet, all of them).
+ */
+export function fitColumns(columns: readonly FileColumn[], width: number): FileColumn[] {
+  if (width <= 0) return [...columns];
+  const fixed = (shown: readonly FileColumn[]): number => shown.reduce((sum, column) => sum + (column.width ?? 0), TABLE_PAD);
+  let shown = [...columns];
+  for (const key of LEAVE_ORDER) {
+    if (width - fixed(shown) >= NAME_FLOOR) break;
+    shown = shown.filter((column) => column.key !== key);
+  }
+  return shown;
+}
+
 export const DEFAULT_SORT: SortState = { key: "name", ascending: true };
 
 /** `items` sorted by `sort` with folders first. The sort within each group is stable. */
