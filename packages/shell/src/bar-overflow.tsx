@@ -46,6 +46,7 @@ export function OverflowRow({
   openKey,
   actions,
   onClose,
+  onEscape = onClose,
 }: {
   /** The hidden items' keys (menubar.tsx's slots: `extra:<key>`, "network", "sound", "dnd"). */
   keys: readonly string[];
@@ -56,6 +57,8 @@ export function OverflowRow({
   openKey: string | null;
   actions: OverflowActions;
   onClose: () => void;
+  /** Esc: closed, or back to the menu bar when the keyboard came from it (menus/bar-keys.ts). */
+  onEscape?: () => void;
 }) {
   const colors = useColors();
   const all = useExtras(extras);
@@ -111,7 +114,7 @@ export function OverflowRow({
         shadow: "xl",
       }}
     >
-      <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
+      <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
       {tiles}
     </View>
   );

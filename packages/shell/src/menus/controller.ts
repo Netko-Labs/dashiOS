@@ -18,6 +18,7 @@ import { useSyncExternalStore } from "react";
 import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import type { OverlayHandle } from "../overlay.tsx";
+import { type BarStop, barCommand, sideStep, stepStop, stopOfPopover, titleStop } from "./bar-keys.ts";
 import type { BarMenuId, MenuContext, MenuEntry } from "./model.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
 
@@ -43,6 +44,18 @@ export interface MenuState {
   context: MenuContext | null;
   /** The screen the popover is on (an output name); absent when the bar did not say, which is the compositor's choice. */
   output?: string;
+  /**
+   * The keyboard is in that screen's bar (bar-keys.ts, ⌃F2): the stop the
+   * ring is on, while the popover surface holds the keys, with or without a
+   * popover open. Absent otherwise.
+   */
+  bar?: string;
+}
+
+/** What a bar tells the controller about itself (menubar.tsx): its stops in order, and the app name it shows. */
+export interface BarInfo {
+  appName: string;
+  stops: readonly BarStop[];
 }
 
 const CLOSED: MenuState = { popover: null, appName: null, context: null };
@@ -60,8 +73,114 @@ export class MenuController {
   /** Bumped by every open and close, so a slow `context` cannot reopen what was closed. */
   private generation = 0;
   private readonly listeners = new Set<() => void>();
+  /** Each bar's stops and name, by its screen ("" for a bar placed by the compositor). */
+  private readonly bars = new Map<string, BarInfo & { output: string | undefined }>();
+  /** The stop being opened from the keyboard, so what opens keeps the ring on it. */
+  private opening: string | null = null;
 
   constructor(private readonly deps: ControllerDeps) {}
+
+  /** A bar says what its stops are now (every time it draws). */
+  setBar(output: string | undefined, info: BarInfo): void {
+    this.bars.set(output ?? "", { ...info, output });
+  }
+
+  /** A bar went (its screen left). */
+  dropBar(output: string | undefined): void {
+    this.bars.delete(output ?? "");
+  }
+
+  /**
+   * ⌃F2: the keyboard goes to the bar on `output` (the first bar when that
+   * screen has none, or none was named), its ring on the Dashi menu; with a
+   * menu open from a click, on that menu. Again while it is there: it
+   * leaves, and the window that had the keyboard has it back.
+   */
+  async focusBar(output?: string): Promise<void> {
+    if (this.state.bar !== undefined) return this.close();
+    if (this.surface) {
+      const stops = this.stopsHere();
+      const key = stopOfPopover(this.state.popover) ?? stops[0]?.key;
+      if (key !== undefined) this.set({ ...this.state, bar: key });
+      return;
+    }
+    const bar = this.bars.get(output ?? "") ?? this.bars.values().next().value;
+    const first = bar?.stops[0]?.key;
+    if (!bar || first === undefined) return;
+    const generation = ++this.generation;
+    const context = await this.deps.context(bar.appName);
+    if (generation !== this.generation) return;
+    this.set({ popover: null, appName: bar.appName, context, ...(bar.output === undefined ? {} : { output: bar.output }), bar: first });
+    this.surface = this.open(generation, bar.output);
+  }
+
+  /** A key while the ring is in the bar and nothing is open (popover.tsx): move, open, or leave. */
+  barKey(key: string): void {
+    const bar = this.state.bar;
+    const command = barCommand(key);
+    if (bar === undefined || command === null) return;
+    if (command.kind === "leave") return this.close();
+    const stops = this.stopsHere();
+    if (command.kind === "move") {
+      const next = stepStop(
+        stops.map((stop) => stop.key),
+        bar,
+        command.toward,
+      );
+      if (next !== null && next !== bar) this.set({ ...this.state, bar: next });
+      return;
+    }
+    const stop = stops.find((each) => each.key === bar);
+    if (stop) this.openStop(stop);
+  }
+
+  /**
+   * ← or → in a menu that dropped from the bar (clicked or from the keys):
+   * the next title's menu opens in its place; past the titles the menu
+   * closes and the ring stands on the status item.
+   */
+  side(toward: "left" | "right"): void {
+    const stops = this.stopsHere();
+    const step = sideStep(stops, this.state.bar ?? stopOfPopover(this.state.popover), toward);
+    if (!step) return;
+    this.set({ ...this.state, popover: null, bar: step.key });
+    const stop = stops.find((each) => each.key === step.key);
+    if (step.opens && stop) this.openStop(stop);
+  }
+
+  /**
+   * Esc in what is open: back to the bar when the keyboard came from it, so
+   * a second Esc leaves; closed otherwise.
+   */
+  back(): void {
+    if (this.state.bar !== undefined && this.surface) this.set({ ...this.state, popover: null });
+    else this.close();
+  }
+
+  private openStop(stop: BarStop): void {
+    // An item that only acts (an app's item, the recording's stop) leaves the bar first, so its window gets the keyboard.
+    if (stop.kind === "action") {
+      this.close();
+      stop.open();
+      return;
+    }
+    this.opening = stop.key;
+    try {
+      stop.open();
+    } finally {
+      this.opening = null;
+    }
+  }
+
+  /** What a screen reader says for a stop of the bar the popover is on. */
+  labelOf(key: string): string | null {
+    return this.stopsHere().find((stop) => stop.key === key)?.label ?? null;
+  }
+
+  /** The stops of the bar the popover is on. */
+  private stopsHere(): readonly BarStop[] {
+    return (this.bars.get(this.state.output ?? "") ?? this.bars.values().next().value)?.stops ?? [];
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -85,7 +204,7 @@ export class MenuController {
     const open = this.state.popover;
     if (open?.kind !== "menu") return;
     if (!this.isOn(output)) this.relocate({ kind: "menu", id, x }, output);
-    else if (open.id !== id) this.set({ ...this.state, popover: { kind: "menu", id, x } });
+    else if (open.id !== id) this.set({ ...this.state, popover: { kind: "menu", id, x }, ...(this.state.bar === undefined ? {} : { bar: titleStop(id) }) });
   }
 
   /**
@@ -190,8 +309,10 @@ export class MenuController {
 
   private async show(popover: Popover, appName: string, output?: string): Promise<void> {
     if (this.surface) {
-      if (this.isOn(output)) this.set({ ...this.state, popover });
-      else this.relocate(popover, output);
+      if (!this.isOn(output)) return this.relocate(popover, output);
+      // With the keyboard in the bar, the ring goes to what opened (a click elsewhere in the bar moves it too).
+      const bar = this.state.bar === undefined ? {} : { bar: this.opening ?? stopOfPopover(popover) ?? this.state.bar };
+      this.set({ ...this.state, popover, ...bar });
       return;
     }
     const generation = ++this.generation;

@@ -32,11 +32,13 @@ export const centerBottom = (dockInset: number): number => Math.max(0, dockInset
 export interface NotificationCenterProps {
   store: NotificationStore;
   onClose: () => void;
+  /** Esc: closed, or back to the menu bar when the keyboard came from it (menus/bar-keys.ts). */
+  onEscape?: () => void;
   /** How tall the Dock's zone at the screen's bottom is now (dock/presenter.ts `bottomInset`); 0 when it is hidden or autohides. */
   dockInset: number;
 }
 
-export function NotificationCenterPanel({ store, onClose, dockInset }: NotificationCenterProps) {
+export function NotificationCenterPanel({ store, onClose, onEscape = onClose, dockInset }: NotificationCenterProps) {
   const colors = useColors();
   const { history, doNotDisturb } = useNotifications(store);
   const now = useMinuteClock();
@@ -59,7 +61,7 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
 
   return (
     <>
-      <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
+      <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
       <View
         occlude
         testID="notification-center"

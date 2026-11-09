@@ -116,7 +116,13 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] mirin: the taffy fix for a negative margin on an item that doesn't shrink (`52-settings-scroll/mirin-a-taffy-negative-margin.diff`); then `TUCK` can keep `flexShrink: 0` again (the owner's call)
 - [ ] mirin: `minWidth`/`minHeight` on a warm host's `open` (`52-settings-scroll/mirin-b-open-min-size.diff`); then `overlay.tsx`'s `pick` passes them to a host that knows them, and Settings' least size holds (today only a host started for it holds it)
 - [ ] A slider's row exactly at its words' least width grows tall in mirin's layout (seen at 744; the least size keeps 4 to spare)
-- [ ] The wheel over an open menu also scrolls the page under it (the menu's ground takes presses, not the wheel)
+- [x] The wheel over an open menu also scrolls the page under it: mirin's `occlude` now takes the wheel too (`night-menubar` in mirin; `night/0.5-menubar`)
+
+## The menu bar by the keyboard, and leftovers (`night/0.5-menubar`; review 58-menu-bar-keys)
+- [x] ⌃F2 moves the keyboard to the menu bar: ← → across the menus and the status items as drawn, Return/Space/↓ open, ← → in a menu go to the next title, Esc back to the bar then out, the purple ring inside each item; a screen reader hears each item (`menus/bar-keys.ts`, the controller's `focusBar`)
+- [x] The agents' panel: a connected agent's row says how long it has recorded or seen the screen, live (`agents/watch-clock.ts`)
+- [x] The wheel over an open menu (mirin's `occlude`), and Control Center's page rows by the keyboard (above)
+- [ ] Inside a bar menu, a screen reader hears the menu (role menu, rows menuitem) but not each row as ↑ ↓ light it: the highlight is not focus (S)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)

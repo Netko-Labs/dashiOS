@@ -87,7 +87,9 @@ export interface MenusOptions {
   /** The agents' panel under their mark (agents-panel.tsx). */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
   /** "…"'s row of the status items that didn't fit (bar-overflow.tsx). */
-  overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void }) => ReactElement;
+  overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void; escape: () => void }) => ReactElement;
+  /** The Metal host takes accessibility props (launcher/access.ts): the bar's ring is spoken. */
+  accessible?: () => boolean;
   /** How much of that screen's bottom the Dock takes now (dock/presenter.ts `bottomInset`); the notification center stops above it. */
   dockInset?(output?: string): number;
   /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
@@ -276,6 +278,7 @@ export function startMenus(options: MenusOptions): Menus {
           onStatusClosed={(key) => options.statusClosed?.(key)}
           {...(options.agentsPanel ? { agentsPanel: options.agentsPanel } : {})}
           {...(options.overflowRow ? { overflowRow: options.overflowRow } : {})}
+          {...(options.accessible ? { accessible: options.accessible } : {})}
           {...(options.battery
             ? {
                 battery: {

@@ -826,6 +826,8 @@ const chargeLimit = (): number | null => {
 };
 // The menu bar's menus, Control Center and the battery panel (menus/, control-center/, battery/).
 const menus = startMenus({
+  // The bar's ring is spoken from the popover's surface (menus/popover.tsx).
+  accessible: () => launcherAccessible,
   layout: controlLayout,
   appletControls,
   chargeLimit,
@@ -887,7 +889,7 @@ const menus = startMenus({
   statusClosed: (key) => extras.menuClosed(key),
   agentsPanel: (props) => handoffShell.panel(props),
   // "…": the status items the bar had no room for, each working as it does there (bar-overflow.tsx).
-  overflowRow: ({ right, keys, close }) => <OverflowRowFor right={right} keys={keys} close={close} />,
+  overflowRow: ({ right, keys, close, escape }) => <OverflowRowFor right={right} keys={keys} close={close} escape={escape} />,
   showShortcuts: (appName) => {
     if (!overlays.has("sheet")) openSheet(true, appName);
   },
@@ -896,7 +898,7 @@ const menus = startMenus({
 controlCenterEditor = menus.controlCenter;
 
 /** "…"'s row with the bar's stores: an item's menu, or Control Center, takes the row's place. */
-function OverflowRowFor({ right, keys, close }: { right: number; keys: readonly string[]; close: () => void }) {
+function OverflowRowFor({ right, keys, close, escape }: { right: number; keys: readonly string[]; close: () => void; escape: () => void }) {
   const { popover, appName, output } = useMenus(menus.controller);
   const name = appName ?? "Desktop";
   return (
@@ -907,6 +909,7 @@ function OverflowRowFor({ right, keys, close }: { right: number; keys: readonly 
       system={system.store}
       openKey={popover?.kind === "status-menu" ? popover.key : null}
       onClose={close}
+      onEscape={escape}
       actions={{
         menu: (extra, at) =>
           void extras.menu(extra.key).then((rows) => {
@@ -1685,6 +1688,8 @@ const stopShortcuts = compositor
       settings: () => settingsApp.open(),
       toggleAutohide: () => dockPrefs.toggleAutohide(),
       overview: { toggle: () => overview?.toggle() },
+      // The bar of the screen the person is on (the primary's with one screen).
+      menuBar: () => void whereIsPerson().then((output) => menus.controller.focusBar(output ?? menuBars.primaryName ?? undefined)),
       ...(spaces ? { spaces: spaces.controller } : {}),
       switcher: switcherController ?? new SwitcherController(compositor, { show: showSwitcher, hide: () => closeOverlay("switcher") }),
       runAddress: async (address, window) => {

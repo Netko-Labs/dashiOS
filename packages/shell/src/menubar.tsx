@@ -14,7 +14,7 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
-import { type ReactNode, useRef, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AgentMark } from "./agent-mark.tsx";
 import type { AgentRuns } from "./agents/handoff/store.ts";
 import { type AgentStore, useAgents } from "./agents/index.ts";
@@ -31,7 +31,8 @@ import { ExtraItem } from "./extras/view.tsx";
 import { LOGO } from "./glyphs.ts";
 import { extraGoes, statusRoom } from "./menubar-fit.ts";
 import { systemSlots } from "./menubar-slots.tsx";
-import { StatusSide, type StatusSlot } from "./menubar-status.tsx";
+import { BarRing, StatusSide, type StatusSlot } from "./menubar-status.tsx";
+import { type BarStop, titleStop } from "./menus/bar-keys.ts";
 import { type BarMenuId, barMenus, type MenuController, useMenus } from "./menus/index.ts";
 import { extraEntries } from "./menus/status-menu.ts";
 import { RecordingButton } from "./recorder/indicator.tsx";
@@ -45,18 +46,26 @@ import { type ToplevelStore, usePortalDialogs, useToplevels } from "./toplevels.
 
 export { formatClock };
 
-/** A title's pill: padding to click, and the wash behind it while its menu is open. */
+/** A title's pill: padding to click, the wash behind it while its menu is open, and the keyboard's ring (menus/bar-keys.ts). */
 function Title({
   id,
   open,
+  focused,
+  label,
   onOpen,
   onHover,
+  onBounds,
   children,
 }: {
   id: BarMenuId;
   open: boolean;
+  focused: boolean;
+  /** Its name for a screen reader, on a host that takes accessibility props. */
+  label?: string;
   onOpen: (x: number) => void;
   onHover: (x: number) => void;
+  /** Where it is drawn, for opening it from the keyboard. */
+  onBounds: (bounds: Bounds) => void;
   children: ReactNode;
 }) {
   const colors = useColors();
@@ -65,8 +74,10 @@ function Title({
   return (
     <View
       testID={`menu-title:${id}`}
+      {...(label === undefined ? {} : { accessibilityRole: "button" as const, accessibilityLabel: label, accessibilityState: { expanded: open } })}
       onLayout={(bounds) => {
         laid.current = bounds;
+        onBounds(bounds);
       }}
       onPress={({ bounds }) => onOpen((bounds ?? laid.current)?.x ?? 0)}
       onHoverChange={(hovered, bounds) => hovered && onHover((bounds ?? laid.current)?.x ?? 0)}
@@ -77,10 +88,12 @@ function Title({
         paddingLeft: 10,
         paddingRight: 10,
         borderRadius: 5,
+        position: "relative",
         backgroundColor: open ? colors.switcherSelection : "#00000000",
       }}
     >
       {children}
+      {focused && <BarRing radius={5} />}
     </View>
   );
 }
@@ -155,9 +168,13 @@ export function MenuBar({
   const { menuBar } = useSettings(settings).data;
   // Banners stop while Do Not Disturb is on; the moon says why, as on a Mac.
   const { dnd } = useFlags(controlFlags());
-  const { popover: current, appName: frozenName, output: openOn } = useMenus(menus);
-  // Only the bar the popover opened from shows it as open.
+  const { popover: current, appName: frozenName, output: openOn, bar: ring } = useMenus(menus);
+  // Only the bar the popover opened from shows it as open, and the keyboard's ring.
   const popover = openOn === output ? current : null;
+  const focused = openOn === output ? (ring ?? null) : null;
+  // Where the titles are drawn, and the status side's stops, for the keyboard (menus/bar-keys.ts).
+  const titleBounds = useRef(new Map<BarMenuId, Bounds>());
+  const statusStops = useRef<BarStop[]>([]);
   const now = useMinuteClock();
   const clock = useClockPrefs();
   // The room the menus leave the status side: the bar's width and the menus' (both measured).
@@ -195,17 +212,36 @@ export function MenuBar({
       if (rows.length > 0) void menus.toggleStatusMenu(extra.key, right, extraEntries(extra.key, rows), appName, output);
     });
   };
+  const labelOf = (id: BarMenuId): string => (id === "dashi" ? "Dashi" : id === "app" ? appName : (titles.find((title) => title.id === id)?.title ?? id));
   const menu = (id: BarMenuId, children: ReactNode) => (
     <Title
       key={id}
       id={id}
       open={openMenu === id}
+      focused={focused === titleStop(id)}
+      {...(accessible() && id === "dashi" ? { label: labelOf(id) } : {})}
       onOpen={(x) => void menus.toggleMenu(id, x, appName, output)}
       onHover={(x) => menus.hoverMenu(id, x, output)}
+      onBounds={(bounds) => titleBounds.current.set(id, bounds)}
     >
       {children}
     </Title>
   );
+  const menuIds: BarMenuId[] = ["dashi", "app", ...titles.map((title) => title.id)];
+  // The bar's stops for the keyboard, after each draw: its titles, then the status side's (StatusSide's `onStops` comes first).
+  useEffect(() => {
+    const titleStops = menuIds.map(
+      (id): BarStop => ({
+        key: titleStop(id),
+        label: labelOf(id),
+        kind: "menu",
+        open: () => void menus.toggleMenu(id, titleBounds.current.get(id)?.x ?? 0, appName, output),
+      }),
+    );
+    menus.setBar(output, { appName, stops: [...titleStops, ...statusStops.current] });
+  });
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, when this bar goes.
+  useEffect(() => () => menus.dropBar(output), []);
 
   // Every agent, launched or connected, is one mark; an agent's recording is its red dot.
   const mark = markState(mergeAgents(connected, launched), agentRecording(recording));
@@ -226,6 +262,14 @@ export function MenuBar({
       goes: extraGoes(index),
       extra: true,
       attention: extra.attention,
+      label: extra.title,
+      // As a click does: its menu under it, or the app's own answer (it leaves the bar).
+      open: extra.menuOnClick
+        ? { kind: "panel" as const, run: (bounds: Bounds | null) => openExtraMenu(extra, bounds ? bounds.x + bounds.width : 0) }
+        : {
+            kind: "action" as const,
+            run: (bounds: Bounds | null) => extras.activate(extra.key, bounds ? bounds.x + bounds.width / 2 : 0, bounds ? bounds.y + bounds.height : 0, output),
+          },
       node: (
         <ExtraItem
           extra={extra}
@@ -243,6 +287,12 @@ export function MenuBar({
           {
             key: "agent-mark",
             goes: null,
+            label: mark.label,
+            radius: 11,
+            open: {
+              kind: "panel" as const,
+              run: (bounds: Bounds | null) => void menus.toggleAgents(appName, bounds ? bounds.x + bounds.width : 0, null, output),
+            },
             node: (
               <AgentMark
                 state={mark}
@@ -255,7 +305,18 @@ export function MenuBar({
             ),
           },
         ]),
-    ...(recorder && recordingPill(recording, mark.kind !== "none") ? [{ key: "recording", goes: null, node: <RecordingButton recorder={recorder} /> }] : []),
+    ...(recorder && recordingPill(recording, mark.kind !== "none")
+      ? [
+          {
+            key: "recording",
+            goes: null,
+            label: "Stop recording",
+            radius: 10,
+            open: { kind: "action" as const, run: () => void recorder.stop() },
+            node: <RecordingButton recorder={recorder} />,
+          },
+        ]
+      : []),
     ...systemSlots({
       ...{ battery, network, volume },
       batteryPercent: menuBar.batteryPercent === true,
@@ -264,6 +325,7 @@ export function MenuBar({
       popover,
       clock: formatClock(now, clock),
       colors,
+      accessible: accessible(),
       on: { battery: openBattery, controlCenter: openControlCenter, wifi: openWifi, clock: () => void menus.toggleNotificationCenter(appName, output) },
     }),
   ];
@@ -315,6 +377,11 @@ export function MenuBar({
         onHidden={(hidden) => {
           if (popover?.kind === "overflow") menus.setOverflow(hidden);
         }}
+        focused={focused}
+        onStops={(stops) => {
+          statusStops.current = stops;
+        }}
+        accessible={accessible()}
       />
     </View>
   );

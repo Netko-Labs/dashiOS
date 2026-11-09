@@ -124,6 +124,8 @@ export const KEYMAP: Keymap = {
     // (the keymap calls it XF86LaunchA). Shift, if held, does not matter.
     { when: "ctrl+Up", bind: "overview" },
     { when: "XF86LaunchA", bind: "overview" },
+    // ⌃F2 moves the keyboard to the menu bar (menus/bar-keys.ts), as on a Mac.
+    { when: "ctrl+F2", bind: "menu-bar" },
     // ⌃← ⌃→ move between Spaces and ⌃1…⌃9 jump to one (spaces/), as on a Mac.
     { when: "ctrl+Left", bind: "space-left" },
     { when: "ctrl+Right", bind: "space-right" },
