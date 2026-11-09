@@ -147,3 +147,40 @@ test("a popover or view opens on the warm host when one is ready, else on a new 
   second.close();
   warm.stop();
 });
+
+test("an applet's popover draws on a solid ground, clipped to its corners, whatever its own tint", () => {
+  const sent: string[] = [];
+  const host = {
+    send: (frame: string) => sent.push(frame),
+    hide() {},
+    onEvent() {},
+    onClose() {},
+    simulate() {},
+    close() {},
+    onToplevel() {},
+    toplevel() {},
+    unlock() {},
+    setTitle() {},
+    setSize() {},
+    setMinSize() {},
+    open() {},
+  } as unknown as NativeHostTransport;
+  const popover = openPopoverWindow({
+    appId: "dev.example.weather",
+    title: "Weather",
+    placement: { x: 10, y: 20, width: 400, height: 160, namespace: "dashi.applet", output: null },
+    element: createElement(View, { testID: "glass", style: { flex: 1, backgroundColor: "#f5f5f7f5" } }),
+    onClosed() {},
+    spawn: () => host,
+  });
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      const tree = JSON.parse(sent.at(-1) ?? "{}") as { props: Record<string, unknown>; children: { props: Record<string, unknown> }[] };
+      // The ground (solid card, the popover's radius, clipping), then the applet's own glass on it.
+      expect(tree.props).toMatchObject({ background: "#ffffff", cornerRadius: 12, clip: true });
+      expect(tree.children[0]?.props.background).toBe("#f5f5f7f5");
+      popover.close();
+      resolve();
+    }, 50);
+  });
+});

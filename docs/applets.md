@@ -101,7 +101,10 @@ layer-shell surface anchored at the screen's top-left with margins `y` and
 `x`, on `output`, with `namespace` (`@dashi/applet`'s `popover.tsx` opens it
 with mirin's `surface` option, which the Metal host supports), on the
 applet's warm host when one is ready (as a view is, under "Commands"). A
-screen reader calls it by the applet's name (`MIRIN_METAL_APP_NAME`). The layer
+screen reader calls it by the applet's name (`MIRIN_METAL_APP_NAME`). The
+SDK draws the applet's tree on a solid ground (`PopoverGround`: the card
+color, radius 12, clipped), so an applet's own glass tint never lets the
+window under it ghost through: a layer surface has no blur behind it. The layer
 shell is privileged: the shell grants it to that applet's processes for as
 long as the popover is open (`applet-clients`, docs/compositor-ipc.md), and
 the placement is sent only once the grant is in place. Under the popover the
