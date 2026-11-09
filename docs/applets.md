@@ -404,6 +404,9 @@ package's files and `install.json`) and keeps its own files in
 (`src/applets/launcher.ts`) runs each one that is allowed, not disabled, and
 for this Dashi, as a systemd user unit (`dashi-applet-<id>.service`) outside
 the shell's own processes, so the compositor never takes it for the shell.
+An applet installed again (an update, or the same version rebuilt: its
+`install.json`'s `sha256` changed) has its unit stopped and started on the
+new files, once it is allowed.
 The unit is held to `CPUQuota=50%`, `MemoryMax=768M` (with its Metal host),
 and `Nice=10` (`UNIT_LIMITS`), so one that runs away while it answers the
 launcher can't starve the shell or the compositor.
