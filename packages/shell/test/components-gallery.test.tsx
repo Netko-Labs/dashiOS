@@ -2,6 +2,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { paletteFor } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { galleryMenus } from "../apps/components/menus.ts";
 import { columnsFor, PAGES, stepPage } from "../apps/components/pages.ts";
@@ -89,6 +90,48 @@ test("every page draws its exhibits in Light and Dark side by side", async () =>
     expect(gallery.root.nodeId(`components:page:${page.id}`)).toBeDefined();
     expect(gallery.root.nodeId("exhibit:light")).toBeDefined();
     expect(gallery.root.nodeId("exhibit:dark")).toBeDefined();
+  }
+  gallery.root.unmount();
+});
+
+interface Drawn {
+  type?: string;
+  props?: { color?: string; size?: number };
+  children?: ReadonlyArray<Drawn | string>;
+}
+
+/** Every exhibit's panel the tree draws under its mode's name ("Light", "Dark"), at 11, as drawn. */
+function panels(node: Drawn | string, name: string, found: Drawn[] = []): Drawn[] {
+  if (typeof node === "string") return found;
+  const first = node.children?.[0];
+  if (typeof first === "object" && first.props?.size === 11 && first.children?.[0] === name) found.push(node);
+  for (const child of node.children ?? []) panels(child, name, found);
+  return found;
+}
+
+/** The colors `types` nodes are drawn in. */
+function inks(node: Drawn | string, types: ReadonlySet<string>, found: Set<string> = new Set()): Set<string> {
+  if (typeof node === "string") return found;
+  if (node.props?.color !== undefined && types.has(node.type ?? "")) found.add(node.props.color.toLowerCase());
+  for (const child of node.children ?? []) inks(child, types, found);
+  return found;
+}
+
+test("a Dark panel draws in Dark's ink on every page, in a Light window", async () => {
+  const gallery = mount();
+  await settle();
+  const light = paletteFor(false);
+  const lightInks = new Set([light.text, light.textMuted].map((color) => color.toLowerCase()));
+  for (const page of PAGES) {
+    await gallery.emit({ type: "press", nodeId: gallery.node(`page:${page.id}`) });
+    const dark = panels(JSON.parse(gallery.tree()) as Drawn, "Dark");
+    expect(dark.length).toBeGreaterThan(0);
+    for (const panel of dark) {
+      // Glyphs too where they are drawn in the words' ink; elsewhere a glyph may sit on a light fill (the level slider's).
+      const types = new Set(page.id === "shortcuts" ? ["text", "svg"] : ["text"]);
+      const wrong = [...inks(panel, types)].filter((color) => lightInks.has(color));
+      expect({ page: page.id, wrong }).toEqual({ page: page.id, wrong: [] });
+    }
   }
   gallery.root.unmount();
 });
