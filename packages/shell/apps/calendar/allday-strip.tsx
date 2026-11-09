@@ -121,7 +121,7 @@ export function AllDayStrip({
                 onPress={() => handlers.showDay(day)}
                 style={{ height: MONTH_CHIP_HEIGHT - 1, justifyContent: "center", paddingHorizontal: 5 }}
               >
-                <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${all.length - shown.length} more`}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${all.length - shown.length} more`}</Text>
               </View>
             )}
           </View>

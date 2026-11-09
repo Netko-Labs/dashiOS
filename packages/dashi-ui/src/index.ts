@@ -39,6 +39,8 @@ export {
   MenuList,
   type MenuSeparator,
   PopupMenu,
+  SCRIM,
+  SHEET_MARGIN,
   Sheet,
   SheetCard,
   type SheetProps,

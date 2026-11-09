@@ -140,6 +140,7 @@ export function SearchField({
   testID,
   placeholder = "Search",
   width = 200,
+  minWidth,
   autoFocus,
   variant = "search",
   onKeyPress,
@@ -150,6 +151,8 @@ export function SearchField({
   testID: string;
   placeholder?: string;
   width?: number;
+  /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
+  minWidth?: number;
   autoFocus?: boolean;
   /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
   variant?: "search" | "find";
@@ -162,7 +165,7 @@ export function SearchField({
       style={{
         width,
         height: 28,
-        flexShrink: 0,
+        ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
         flexDirection: "row",
         alignItems: "center",
         gap: 4,

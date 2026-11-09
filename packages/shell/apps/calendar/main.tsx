@@ -10,6 +10,7 @@
  */
 
 import { runApp } from "../kit/index.ts";
+import { CALENDAR_LEAST } from "./chrome.ts";
 import { portalIcsChooser } from "./import.ts";
 import { dayFromArgs, listenForOpen, openInRunning } from "./instance.ts";
 import { CalendarModel } from "./model.ts";
@@ -29,7 +30,8 @@ const model = new CalendarModel(new CalendarStore(defaultRoot()), () => new Date
 const handle: { scroll: (testID: string, dy: number) => void } = { scroll: () => {} };
 
 const app = runApp(
-  { id: "dev.dashi.calendar", title: "Calendar", size: CALENDAR_SIZE },
+  // The least size keeps every toolbar control and a week's seven columns readable (chrome.ts).
+  { id: "dev.dashi.calendar", title: "Calendar", size: CALENDAR_SIZE, minSize: CALENDAR_LEAST },
   <CalendarWindow model={model} chooser={portalIcsChooser()} scroll={(testID, dy) => handle.scroll(testID, dy)} />,
 );
 handle.scroll = (testID, dy) => {

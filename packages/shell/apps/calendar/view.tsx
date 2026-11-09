@@ -9,14 +9,15 @@
  * window is imported.
  */
 
-import { AppWindow, Button, type MenuItem, Notice, PopupMenu, SEARCH, SearchField, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
+import { AppWindow, Button, type MenuItem, Notice, PopUpButton, PopupMenu, SEARCH, SearchField, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useAppMenus } from "../kit/index.ts";
+import { chromeFor, VIEW_POPUP_WIDTH } from "./chrome.ts";
 import { dayPart } from "./dates.ts";
 import { type Draft, draftOf, inputOf, repeatChanged } from "./draft.ts";
 import { EventSheet } from "./event-sheet.tsx";
-import { viewTitle } from "./format.ts";
+import { shortViewTitle, viewTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT, PLUS } from "./glyphs.ts";
 import { asksScope, refOf, zonedTimes } from "./grid-edits.ts";
 import { parseIcs } from "./ics.ts";
@@ -28,18 +29,16 @@ import { MonthView } from "./month-view.tsx";
 import { EventPopover } from "./popover.tsx";
 import { useRegionPrefs } from "./prefs.ts";
 import { searchEvents } from "./search.ts";
-import { SearchResults } from "./search-results.tsx";
+import { resultsPlace, SearchResults } from "./search-results.tsx";
 import { SheetLayer } from "./sheet-layer.tsx";
 import type { SheetState } from "./sheets.tsx";
-import { Sidebar } from "./sidebar.tsx";
+import { CalendarRail, Sidebar } from "./sidebar.tsx";
 import { choosableCalendars, newEventTarget } from "./target.ts";
 import { TimeGrid } from "./time-grid.tsx";
 import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
 import { useGrid } from "./use-grid.ts";
 
 export const CALENDAR_SIZE = { width: 1120, height: 740 } as const;
-/** Where Find's answers start, under the unified toolbar. */
-const RESULTS_TOP = 42;
 
 const VIEW_OPTIONS = [
   { value: "day", label: "Day" },
@@ -88,6 +87,11 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   const [deleted, setDeleted] = useState<{ text: string; step: number | null } | null>(null);
   const [search, setSearch] = useState<{ query: string; active: number } | null>(null);
   const [area, setArea] = useState<Bounds>({ x: 0, y: 0, width: CALENDAR_SIZE.width, height: CALENDAR_SIZE.height });
+  // Where Find's field is, for its answers to hang from.
+  const [findAt, setFindAt] = useState<Bounds | null>(null);
+  // The content sits right of the sidebar, so together they are the window's width (Metal records no bounds for the root).
+  const windowWidth = area.x + area.width;
+  const chrome = chromeFor(windowWidth);
   const [dropping, setDropping] = useState(false);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -267,22 +271,25 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
 
   // The month view shows every day of the mini month, so only the week and day views tint what they show.
   const shown = useMemo(() => new Set(view === "month" ? [] : days), [days, view]);
-  const title = viewTitle(view, anchor, view === "week" ? weekDays(anchor, firstDay) : days, prefs);
-  const toolbar = (
-    <>
-      <ToolbarButton testID="previous" glyph={CHEVRON_LEFT} tooltip={`Previous ${view}`} onPress={() => model.step(-1)} />
-      <TodayButton onPress={() => model.goToday()} />
-      <ToolbarButton testID="next" glyph={CHEVRON_RIGHT} tooltip={`Next ${view}`} onPress={() => model.step(1)} />
-      <View style={{ width: 6 }} />
-      <Segmented testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} segmentWidth={58} />
-      <View style={{ width: 4 }} />
-      {search ? (
+  const days7 = view === "week" ? weekDays(anchor, firstDay) : days;
+  const title = viewTitle(view, anchor, days7, prefs);
+  // The period shown, or Find's field, in the title's place: opening Find moves no control. The title
+  // takes the room the controls leave and ends in an ellipsis; a narrow window shows its short form.
+  const center = search ? (
+    <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+      <View
+        onLayout={(bounds) => {
+          if (findAt === null || bounds.x !== findAt.x || bounds.y !== findAt.y || bounds.width !== findAt.width) setFindAt(bounds);
+        }}
+        style={{ flex: 1, minWidth: 0, maxWidth: 260, flexDirection: "row" }}
+      >
         <SearchField
           testID="find"
           value={search.query}
           placeholder="Find events"
           autoFocus
-          width={200}
+          width={260}
+          minWidth={96}
           onChangeText={(query) => setSearch({ query, active: 0 })}
           onSubmit={() => pickResult(results[search.active])}
           onKeyPress={(key) => {
@@ -292,9 +299,40 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
             } else setSearch({ ...search, active: Math.max(0, Math.min(results.length - 1, search.active + (key === "ArrowDown" ? 1 : -1))) });
           }}
         />
+      </View>
+    </View>
+  ) : (
+    <View testID="window-title" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+      <View style={{ flexShrink: 1, minWidth: 0, maxWidth: 320 }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+          {chrome.compact ? shortViewTitle(view, anchor, days7, prefs) : title}
+        </Text>
+      </View>
+    </View>
+  );
+  const toolbar = (
+    <>
+      <ToolbarButton testID="previous" glyph={CHEVRON_LEFT} tooltip={`Previous ${view}`} onPress={() => model.step(-1)} />
+      <TodayButton onPress={() => model.goToday()} />
+      <ToolbarButton testID="next" glyph={CHEVRON_RIGHT} tooltip={`Next ${view}`} onPress={() => model.step(1)} />
+      {chrome.compact ? (
+        <View style={{ width: VIEW_POPUP_WIDTH, flexShrink: 0 }}>
+          <PopUpButton testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} width={VIEW_POPUP_WIDTH} />
+        </View>
       ) : (
-        <ToolbarButton testID="find-button" glyph={SEARCH} tooltip="Find events" onPress={() => setSearch({ query: "", active: 0 })} />
+        <Segmented testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} segmentWidth={52} />
       )}
+      <ToolbarButton
+        testID="find-button"
+        glyph={SEARCH}
+        tooltip={search ? "Close Find" : "Find events"}
+        onPress={() => {
+          if (search) {
+            setSearch(null);
+            takeKeys();
+          } else setSearch({ query: "", active: 0 });
+        }}
+      />
       <ToolbarButton testID="new-event" glyph={PLUS} tooltip="New event" disabled={calendars.length === 0} onPress={grid.newEvent} />
     </>
   );
@@ -352,7 +390,15 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
   ) : menu ? (
     <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
   ) : search ? (
-    <SearchResults results={results} query={search.query} active={search.active} prefs={prefs} colorOf={colorOf} top={RESULTS_TOP} onPick={pickResult} />
+    <SearchResults
+      results={results}
+      query={search.query}
+      active={search.active}
+      prefs={prefs}
+      colorOf={colorOf}
+      place={resultsPlace(findAt, windowWidth)}
+      onPick={pickResult}
+    />
   ) : grid.popover ? (
     <EventPopover
       occurrence={grid.popover.occurrence}
@@ -372,32 +418,45 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
       toolbar={toolbar}
       overlay={overlay}
       notice={notice}
+      center={center}
+      sidebarWidth={chrome.sidebarWidth}
       sidebar={
-        <Sidebar
-          anchor={anchor}
-          today={today}
-          firstDay={firstDay}
-          prefs={prefs}
-          shown={shown}
-          busy={(from, to) => model.busy(from, to)}
-          onPick={(day) => {
-            model.goTo(day);
-            takeKeys();
-          }}
-          calendars={calendars}
-          hidden={hidden}
-          onToggle={(id) => model.toggle(id)}
-          target={destination?.reveal === false ? destination.calendarId : null}
-          onChoose={(id) => {
-            // A hidden calendar picked as the one for new events shows again: they never go into a hidden one.
-            if (!model.isVisible(id)) model.toggle(id);
-            setChosen(id);
-            takeKeys();
-          }}
-          onMenu={calendarMenu}
-          onNewCalendar={() => setSheet({ kind: "new-calendar" })}
-          onImport={importFile}
-        />
+        chrome.rail ? (
+          <CalendarRail
+            calendars={calendars}
+            hidden={hidden}
+            onToggle={(id) => model.toggle(id)}
+            onMenu={calendarMenu}
+            onNewCalendar={() => setSheet({ kind: "new-calendar" })}
+            onImport={importFile}
+          />
+        ) : (
+          <Sidebar
+            anchor={anchor}
+            today={today}
+            firstDay={firstDay}
+            prefs={prefs}
+            shown={shown}
+            busy={(from, to) => model.busy(from, to)}
+            onPick={(day) => {
+              model.goTo(day);
+              takeKeys();
+            }}
+            calendars={calendars}
+            hidden={hidden}
+            onToggle={(id) => model.toggle(id)}
+            target={destination?.reveal === false ? destination.calendarId : null}
+            onChoose={(id) => {
+              // A hidden calendar picked as the one for new events shows again: they never go into a hidden one.
+              if (!model.isVisible(id)) model.toggle(id);
+              setChosen(id);
+              takeKeys();
+            }}
+            onMenu={calendarMenu}
+            onNewCalendar={() => setSheet({ kind: "new-calendar" })}
+            onImport={importFile}
+          />
+        )
       }
     >
       <View

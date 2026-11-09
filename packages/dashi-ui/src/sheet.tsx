@@ -13,7 +13,7 @@ import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
 import { litAfter, MENU, type MenuRowKind, menuFits, menuHeight, placeMenu, type Size } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
-import { useColors, useSurface } from "./theme/index.ts";
+import { useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
 export interface SheetProps {
@@ -27,11 +27,35 @@ export interface SheetProps {
 }
 
 /**
+ * What a sheet's scrim lays over the window: black, deeper in Dark, where the
+ * ground is near black or black and a light wash would show nothing.
+ */
+export const SCRIM = { light: "#00000026", dark: "#0000008c" } as const;
+/** The least room a sheet keeps from the window's sides and foot. */
+export const SHEET_MARGIN = 16;
+
+/**
  * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
  * shadow): `Sheet` hangs one from a window; a surface of its own (the
- * shell's applet consent) shows one with no window to hang from.
+ * shell's applet consent) shows one with no window to hang from. With
+ * `fit`, a window narrower or shorter than its `width` and its content
+ * makes it give way: a body that scrolls (`flexShrink: 1, minHeight: 0`)
+ * takes the cut, and its buttons stay.
  */
-export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
+export function SheetCard({
+  children,
+  testID,
+  width = 380,
+  marginTop = 0,
+  fit = false,
+}: {
+  children: ReactNode;
+  testID: string;
+  width?: number;
+  marginTop?: number;
+  /** In a window (`Sheet`): at most `width`, and never wider or taller than the room its parent leaves. */
+  fit?: boolean;
+}) {
   const colors = useColors();
   const surface = useSurface();
   return (
@@ -42,7 +66,7 @@ export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { ch
       focusTrap
       accessibilityRole="dialog"
       style={{
-        width,
+        ...(fit ? { width: "100%" as const, maxWidth: width, flexShrink: 1 as const, minHeight: 0 } : { width }),
         marginTop,
         flexDirection: "column",
         gap: 10,
@@ -61,8 +85,11 @@ export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { ch
 
 export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
   const colors = useColors();
+  const dark = useDark();
   const inset = useTitleBarInset();
   return (
+    // The card hangs under the toolbar and never runs past the window: SHEET_MARGIN from its sides
+    // and foot, so in a small window the body scrolls and the buttons stay in reach.
     <View
       occlude
       testID={`${testID}:scrim`}
@@ -72,8 +99,11 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
         top: 0,
         right: 0,
         bottom: 0,
+        flexDirection: "column",
         alignItems: "center",
-        backgroundColor: "#00000026",
+        paddingHorizontal: SHEET_MARGIN,
+        paddingBottom: SHEET_MARGIN,
+        backgroundColor: dark ? SCRIM.dark : SCRIM.light,
         focusRingColor: colors.focusRing,
       }}
     >
@@ -86,7 +116,7 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8}>
+      <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8} fit>
         {children}
       </SheetCard>
     </View>
@@ -150,6 +180,7 @@ export function MenuList({
   maxHeight?: number;
 }) {
   const colors = useColors();
+  const surface = useSurface();
   const rows = tidyEntries(items);
   const ticks = rows.some((row) => !isSeparator(row) && row.checked !== undefined);
   const [ownLit, setOwnLit] = useState<number | null>(null);
@@ -219,7 +250,8 @@ export function MenuList({
         flexDirection: "column",
         padding: MENU.padding,
         borderRadius: 9,
-        backgroundColor: colors.menu,
+        // Solid: a menu in a window is one layer over the work, and nothing blurs what is under it (the line's 40 pt digits read through glass).
+        backgroundColor: surface.card,
         borderWidth: MENU.edge,
         borderColor: colors.separator,
         shadow: "xl",

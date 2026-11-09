@@ -19,6 +19,7 @@ export function EventChip({
   color,
   day,
   prefs,
+  timed = true,
   selected,
   dragged,
   onPress,
@@ -28,6 +29,8 @@ export function EventChip({
   color: string;
   day: string;
   prefs: ClockPrefs;
+  /** The cell has room for the start after the title. */
+  timed?: boolean;
   selected: boolean;
   dragged: boolean;
   onPress: (bounds: Bounds | undefined) => void;
@@ -76,7 +79,7 @@ export function EventChip({
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: 6,
         paddingHorizontal: 3,
         borderRadius: 4,
         backgroundColor: selected ? tint(color, 0.3) : "#00000000",
@@ -91,11 +94,13 @@ export function EventChip({
           {title}
         </Text>
       </View>
-      <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
-          {clockShort(occurrence.start, prefs)}
-        </Text>
-      </View>
+      {timed && (
+        <View style={{ flexShrink: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+            {clockShort(occurrence.start, prefs)}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -115,7 +120,7 @@ export function MoreChip({ count, onPress, testID }: { count: number; onPress: (
         hoverBackgroundColor: colors.button,
       }}
     >
-      <Text style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${count} more`}</Text>
+      <Text numberOfLines={1} style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${count} more`}</Text>
     </View>
   );
 }

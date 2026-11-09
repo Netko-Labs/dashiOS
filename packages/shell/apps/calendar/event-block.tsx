@@ -6,10 +6,10 @@
  * it is dragged it stays faintly where it was.
  */
 
-import { useColors } from "@dashi/ui";
+import { useColors, useSurface } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
 import type { ClockPrefs } from "../../src/clock.ts";
-import { tint } from "./colors.ts";
+import { over, tint } from "./colors.ts";
 import type { DragKind } from "./drag.ts";
 import { clock, titleOf } from "./format.ts";
 import { type Placed, yAtMinutes } from "./layout.ts";
@@ -36,14 +36,33 @@ export interface BlockProps {
   onPress: (bounds: Bounds | undefined) => void;
 }
 
+/** A one-line block shows its start after the title only from this width; the title comes first. */
+export const TIME_BESIDE_FROM = 120;
+/** A taller block shows its start on its own line only from this width. */
+export const TIME_UNDER_FROM = 60;
+
+/** What a block `width` wide and `height` tall shows besides its title. */
+export function blockParts(width: number, height: number): { oneLine: boolean; time: boolean; place: boolean } {
+  const oneLine = height < 34;
+  const known = width > 0;
+  return {
+    oneLine,
+    time: !known || width >= (oneLine ? TIME_BESIDE_FROM : TIME_UNDER_FROM),
+    place: !oneLine && height >= 46 && (!known || width >= TIME_UNDER_FROM),
+  };
+}
+
 export function EventBlock({ placed, color, width, prefs, selected, dragged, resizable, onPointer, onPress }: BlockProps) {
   const colors = useColors();
+  const surface = useSurface();
   const { occurrence } = placed;
   const { event } = occurrence;
   const top = yAtMinutes(placed.top);
   const height = Math.max(yAtMinutes(placed.bottom - placed.top) - 1, 16);
-  const share = width > 0 ? (width - 6) / placed.columns : 0;
-  const compact = height < 34;
+  const room = width > 0 ? width - 6 : 0;
+  const blockWidth = room > 0 ? (placed.right - placed.left) * room - 2 : 0;
+  const parts = blockParts(blockWidth, height);
+  const compact = parts.oneLine;
   return (
     <View
       testID={`event:${occurrenceKey(occurrence)}`}
@@ -56,10 +75,10 @@ export function EventBlock({ placed, color, width, prefs, selected, dragged, res
         position: "absolute",
         top,
         height,
-        left: width > 0 ? 2 + placed.column * share : 2,
-        width: width > 0 ? share - 2 : "100%",
+        left: room > 0 ? 2 + placed.left * room : 2,
+        width: room > 0 ? blockWidth : "100%",
         flexDirection: compact ? "row" : "column",
-        gap: compact ? 5 : 1,
+        gap: compact ? 6 : 1,
         alignItems: compact ? "center" : "flex-start",
         overflow: "hidden",
         paddingHorizontal: 6,
@@ -67,26 +86,33 @@ export function EventBlock({ placed, color, width, prefs, selected, dragged, res
         borderRadius: 5,
         borderLeftWidth: 3,
         borderColor: color,
-        backgroundColor: tint(color, selected ? 0.55 : 0.26),
-        hoverBackgroundColor: tint(color, selected ? 0.6 : 0.4),
+        // Solid, on the window's ground: the hour lines stop at its edge, and a block drawn over another hides what it covers.
+        backgroundColor: over(color, selected ? 0.55 : 0.26, surface.window),
+        hoverBackgroundColor: over(color, selected ? 0.6 : 0.4, surface.window),
+        ...(placed.left > 0 ? { shadow: "sm" as const } : {}),
         opacity: dragged ? 0.35 : 1,
         focusRingColor: colors.focusRing,
       }}
     >
-      <View style={compact ? { flex: 1, minWidth: 0 } : { width: "100%" }}>
+      {/* The title first: it takes the room, and the time gives way before it does. */}
+      <View style={compact ? { flexShrink: 1, minWidth: 0 } : { width: "100%" }}>
         <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>
           {titleOf(event)}
         </Text>
       </View>
-      <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
-          {clock(occurrence.start, prefs)}
-        </Text>
-      </View>
-      {!compact && event.location !== "" && (
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
-          {event.location}
-        </Text>
+      {parts.time && (
+        <View style={compact ? { flexShrink: 0 } : { width: "100%" }}>
+          <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+            {clock(occurrence.start, prefs)}
+          </Text>
+        </View>
+      )}
+      {parts.place && event.location !== "" && (
+        <View style={{ width: "100%" }}>
+          <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+            {event.location}
+          </Text>
+        </View>
       )}
       {resizable && (
         <View

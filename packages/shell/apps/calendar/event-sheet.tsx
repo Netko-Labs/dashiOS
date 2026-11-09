@@ -13,7 +13,7 @@ import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { weekdayNames } from "../../src/region/week.ts";
 import { type Draft, type EndsChoice, type MonthlyBy, moveStart, nthOf, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
-import { DayField, FormRow, Stepper, TimeField, ZoneField } from "./form-fields.tsx";
+import { DayField, FIELD_LINE, FormRow, LineText, Stepper, TimeField, ZoneField } from "./form-fields.tsx";
 import { ALL_DAY_ALERTS, alertLabel, nthName, TIMED_ALERTS } from "./format.ts";
 import type { Calendar } from "./types.ts";
 
@@ -70,7 +70,8 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
 
   return (
     <Sheet testID="event-sheet" width={520} onCancel={onCancel}>
-      <ScrollView testID="event-form" style={{ maxHeight: 540 }}>
+      {/* The form scrolls, and gives way first in a short window; the problem and the buttons stay in reach. */}
+      <ScrollView testID="event-form" style={{ flexShrink: 1, minHeight: 0, maxHeight: 540 }}>
         <View style={{ flexDirection: "column", gap: 10, paddingBottom: 2 }}>
           <FormRow label="Title">
             <TextField
@@ -83,7 +84,7 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               onKeyPress={(key) => key === "Escape" && onCancel()}
             />
           </FormRow>
-          <FormRow label="Calendar">
+          <FormRow label="Calendar" pills>
             <View testID="event-calendar" focusGroup style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {calendars.map((calendar) => {
                 const chosen = calendar.id === draft.calendarId;
@@ -96,6 +97,8 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
                     onPress={() => change({ calendarId: calendar.id })}
                     style={{
                       height: 26,
+                      flexShrink: 1,
+                      minWidth: 0,
                       paddingHorizontal: 10,
                       borderRadius: 13,
                       flexDirection: "row",
@@ -106,16 +109,30 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
                     }}
                   >
                     <View
-                      style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: calendar.color, borderWidth: chosen ? 1 : 0, borderColor: "#ffffff" }}
+                      style={{
+                        width: 9,
+                        height: 9,
+                        flexShrink: 0,
+                        borderRadius: 5,
+                        backgroundColor: calendar.color,
+                        borderWidth: chosen ? 1 : 0,
+                        borderColor: "#ffffff",
+                      }}
                     />
-                    <Text style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>{calendar.name}</Text>
+                    <View style={{ flexShrink: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
+                        {calendar.name}
+                      </Text>
+                    </View>
                   </View>
                 );
               })}
             </View>
           </FormRow>
           <FormRow label="All-day">
-            <Switch on={draft.allDay} testID="event-all-day" onChange={(allDay) => setDraft(setAllDay(draft, allDay))} />
+            <View style={{ height: FIELD_LINE, justifyContent: "center" }}>
+              <Switch on={draft.allDay} testID="event-all-day" onChange={(allDay) => setDraft(setAllDay(draft, allDay))} />
+            </View>
           </FormRow>
           <FormRow label="Starts">
             <DayField id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
@@ -142,17 +159,17 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               onKeyPress={(key) => key === "Escape" && onCancel()}
             />
           </FormRow>
-          <FormRow label="Repeat" top>
+          <FormRow label="Repeat" pills>
             <Choices testID="event-repeat" options={repeatChoices} value={draft.repeat} onChange={(repeat) => change({ repeat })} />
           </FormRow>
           {repeats && (
             <>
               <FormRow label="Every">
                 <Stepper id="event-every" value={draft.every} min={1} max={99} onChange={(every) => change({ every })} />
-                <Text style={{ fontSize: 12, color: colors.textMuted }}>{`${UNITS[draft.repeat as keyof typeof UNITS]}${draft.every === 1 ? "" : "s"}`}</Text>
+                <LineText>{`${UNITS[draft.repeat as keyof typeof UNITS]}${draft.every === 1 ? "" : "s"}`}</LineText>
               </FormRow>
               {draft.repeat === "weekly" && (
-                <FormRow label="On">
+                <FormRow label="On" pills>
                   <View testID="event-weekdays" style={{ flexDirection: "row", gap: 4 }}>
                     {order.map((index) => {
                       const on = draft.weekdays.includes(index);
@@ -184,23 +201,23 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
                 </FormRow>
               )}
               {draft.repeat === "monthly" && (
-                <FormRow label="On">
+                <FormRow label="On" pills>
                   <Choices testID="event-monthly" options={monthly} value={draft.monthlyBy} onChange={(monthlyBy) => change({ monthlyBy })} />
                 </FormRow>
               )}
-              <FormRow label="Ends">
+              <FormRow label="Ends" pills>
                 <Choices testID="event-ends" options={ENDS} value={draft.ends} onChange={(ends) => change({ ends })} />
                 {draft.ends === "count" && (
                   <>
                     <Stepper id="event-count" value={draft.count} min={1} max={999} onChange={(count) => change({ count })} />
-                    <Text style={{ fontSize: 12, color: colors.textMuted }}>times</Text>
+                    <LineText>times</LineText>
                   </>
                 )}
                 {draft.ends === "until" && <DayField id="until" value={draft.until} {...fields} onChange={(until) => change({ until })} />}
               </FormRow>
             </>
           )}
-          <FormRow label="Alert" top>
+          <FormRow label="Alert" pills>
             <Choices
               testID="event-alert"
               options={alertChoices}
@@ -208,7 +225,7 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               onChange={(value) => change({ alert: value === "none" ? null : Number(value) })}
             />
           </FormRow>
-          <FormRow label="Notes" top>
+          <FormRow label="Notes">
             <TextInput
               testID="event-notes"
               multiline
@@ -233,11 +250,11 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
         </View>
       </ScrollView>
       {problem !== null && (
-        <View testID="event-problem">
+        <View testID="event-problem" style={{ flexShrink: 0 }}>
           <Text style={{ fontSize: 12, color: colors.ume }}>{problem}</Text>
         </View>
       )}
-      <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
+      <View style={{ flexDirection: "row", flexShrink: 0, gap: 8, marginTop: 2 }}>
         {editing !== null && <Button label="Delete" testID="event-delete" danger onPress={onDelete} />}
         <View style={{ flex: 1 }} />
         <Button label="Cancel" testID="event-cancel" onPress={onCancel} />
