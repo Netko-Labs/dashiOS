@@ -6,6 +6,7 @@
  */
 
 import { useDark } from "./appearance.ts";
+import { TRUE_BLACK } from "./palette.ts";
 
 export interface Surface {
   window: string;
@@ -21,7 +22,20 @@ export interface Surface {
 }
 
 export const LIGHT_SURFACE: Surface = { window: "#f5f5f7", sidebar: "#e8e8ec", card: "#ffffff", field: "#f0f0f3", stripe: "#f4f4f6", canvas: "#e4e4e8" };
-export const DARK_SURFACE: Surface = { window: "#1e1e20", sidebar: "#29292c", card: "#2c2c2f", field: "#232326", stripe: "#252528", canvas: "#161618" };
+/**
+ * True black: the window is #000000, and the sidebar, a field and a stripe
+ * are the first lift (#0b0b0d), a card the second (#141417), so a field in a
+ * card is sunk below it. Media sits on the black itself: there is nothing
+ * darker for `canvas` to be.
+ */
+export const DARK_SURFACE: Surface = {
+  window: TRUE_BLACK.ground,
+  sidebar: TRUE_BLACK.lift,
+  card: TRUE_BLACK.raised,
+  field: TRUE_BLACK.lift,
+  stripe: TRUE_BLACK.lift,
+  canvas: TRUE_BLACK.ground,
+};
 
 export function useSurface(): Surface {
   return useDark() ? DARK_SURFACE : LIGHT_SURFACE;

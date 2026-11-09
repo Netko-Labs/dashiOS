@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 import { formatTime, useClockPrefs } from "../clock.ts";
 import type { MenuEntry } from "../menus/model.ts";
 import type { StatusMenuAction } from "../menus/status-menu.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
+import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
 import { LimitBar } from "../shared/controls/parts.tsx";
 import type { Battery } from "../system/battery.ts";
 import { chargeLine } from "./chart.ts";
@@ -84,6 +84,7 @@ function Line({ row, last, onApp }: { row: PowerRow; last: boolean; onApp: (app:
 
 export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction, onSettings }: BatteryPanelProps) {
   const colors = useControlColors();
+  const edge = usePanelEdge();
   const clock = useClockPrefs();
   const rows = use
     ? wattRows({ battery, watts: use.watts, floor: idleFloor(use.samples), apps: use.apps, significant: use.significant, adapter: use.adapter })
@@ -100,6 +101,7 @@ export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction
         borderRadius: BATTERY_PANEL.radius,
         backgroundColor: colors.surface,
         shadow: "xl",
+        ...edge,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 6, paddingRight: 6, paddingTop: 4, paddingBottom: 14 }}>

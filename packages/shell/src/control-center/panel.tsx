@@ -13,7 +13,7 @@ import { type KeyDownInfo, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
+import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
 import { stepLevel } from "../shared/controls/slider-math.ts";
 import type { SoundStore } from "../sound/store.ts";
 import type { SystemStore } from "../system/store.ts";
@@ -75,6 +75,7 @@ const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "righ
 export function ControlCenterPanel(props: ControlCenterProps) {
   const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
+  const edge = usePanelEdge();
   const saved = useLayout(props.layout);
   /** The layout being edited; null outside edit mode. */
   const [editDraft, setDraft] = useState<Layout | null>(null);
@@ -161,7 +162,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
         padding: GRID.padding,
         borderRadius: GRID.radius,
         backgroundColor: colors.surface,
-        ...(embedded ? {} : { shadow: "xl" as const }),
+        ...(embedded ? {} : { shadow: "xl" as const, ...edge }),
       }}
     >
       {page !== "main" ? (

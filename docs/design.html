@@ -64,8 +64,8 @@
     .shapes .zoom { left: 60px; width: 11px; height: 11px; border-radius: 3px; background: var(--c-zoom); }
     .win.light { --win-bg: #fff; --tb-bg: #EEEBE4; --tb-line: #D9D5CC; --tb-ink: #262B28; --c-close: #D0596F; --c-min: #E5B13F; --c-zoom: #4A9A7E; }
     .win.light.inactive { --tb-bg: #F6F4EF; --tb-ink: #9B9890; --c-close: #CECBC6; --c-min: #CECBC6; --c-zoom: #CECBC6; }
-    .win.dark { --win-bg: #1e1e20; --tb-bg: #2C2C2E; --tb-line: #ffffff14; --tb-ink: #E6E6E8; --c-close: #D0596F; --c-min: #E5B13F; --c-zoom: #4A9A7E; }
-    .win.dark.inactive { --tb-bg: #242426; --tb-ink: #8A8A8F; --c-close: #525256; --c-min: #525256; --c-zoom: #525256; }
+    .win.dark { --win-bg: #000000; --tb-bg: #141417; --tb-line: #000000; --tb-ink: #ECECEE; --c-close: #D0596F; --c-min: #E5B13F; --c-zoom: #4A9A7E; }
+    .win.dark.inactive { --tb-bg: #0B0B0D; --tb-ink: #8A8A8F; --c-close: #525256; --c-min: #525256; --c-zoom: #525256; }
     .win.light.inactive .shapes:hover .close, .win.dark.inactive .shapes:hover .close { background: #D0596F; }
     .win.light.inactive .shapes:hover .min, .win.dark.inactive .shapes:hover .min { background: #E5B13F; }
     .win.light.inactive .shapes:hover .zoom, .win.dark.inactive .shapes:hover .zoom { background: #4A9A7E; }
@@ -102,7 +102,7 @@
     .desk .lbl { display: none; }
     .desk.taskbar .lbl { display: inline; }
     .desk.light { --mb: #f5f5f7c7; --edge: #0000002b; --mn: #f6f6f8f7; --osd: #f5f5f7e0; --dk: #f5f5f799; --dkb: #ffffff73; --ink2: #1d1d1f; --on: #1d1d1fd9; --off: #1d1d1f26; --hov: #ffffff59; }
-    .desk.dark { --mb: #1e1e1ecc; --edge: #ffffff1f; --mn: #232325f7; --osd: #1e1e1ee0; --dk: #1e1e1e99; --dkb: #ffffff26; --ink2: #f5f5f7; --on: #f5f5f7d9; --off: #f5f5f726; --hov: #ffffff1a; }
+    .desk.dark { --mb: #000000e6; --edge: #ffffff1f; --mn: #141417f7; --osd: #0b0b0de6; --dk: #000000cc; --dkb: #ffffff1f; --ink2: #ececee; --on: #ececeed9; --off: #ececee26; --hov: #ffffff1a; }
 
     /* Motion */
     .motion-stage { height: 230px; position: relative; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); }
@@ -354,22 +354,33 @@
       <span>Translucent swatches show a checkerboard through them.</span>
     </div>
     <div class="swatches" id="palette"></div>
+    <h3 id="true-black">Dark is true black</h3>
+    <p>Dark Mode paints on true black (<code>TRUE_BLACK</code> in <code>palette.ts</code>), for OLED screens, where black is a pixel turned off, and for calm at night. It replaces the graphite Dark; there is no separate Black setting. Light is unchanged.</p>
+    <table>
+      <tr><th>Step</th><th>Value</th><th>Where</th></tr>
+      <tr><td>ground</td><td><code>#000000</code></td><td>Every window and page: <code>surface.window</code> and <code>canvas</code>, Settings' window, Control Center's panel, Terminal, GTK's window and view</td></tr>
+      <tr><td>lift</td><td><code>#0B0B0D</code></td><td>A sidebar, a field, a table's stripe, the launcher and the on-screen display, an unfocused title bar</td></tr>
+      <tr><td>raised</td><td><code>#141417</code></td><td>A card, an off tile, a menu or popover, a focused title bar, GTK's headerbar, cards and dialogs</td></tr>
+      <tr><td>ink · muted</td><td><code>#ECECEE</code> · 60% of it</td><td>92% white: pure white on black glares</td></tr>
+      <tr><td>hairline · edge</td><td><code>#FFFFFF1A</code> · <code>#FFFFFF1F</code></td><td>Between rows (10%), and round anything raised (12%)</td></tr>
+    </table>
+    <p class="small muted">Why: on black a gray wash reads as smoke, so surfaces lift by near-black steps instead, and a shadow has nothing to darken, so every panel, menu, sheet and popover carries a 12% hairline (Control Center and the battery panel take theirs only in Dark, <code>panelEdge</code>). Glass over the wallpaper (the menu bar, the Dock) is black, not graphite. Nothing is darker than the ground, so a field sinks below its card, not below the window, and media sits on the black itself. Green (<code>#86D3B6</code>), kombu, ume, broth, moss and shiso keep their jobs and their Dark inks; every one is checked on every step (<code>dashi-ui/test/contrast.test.ts</code>, <code>shell/test/true-black.test.ts</code>). The login and lock screens have one look, Dark's: the wallpaper darkened to 72% black under the same ink.</p>
 
     <h3 id="contrast">Contrast</h3>
     <p>Measured from the tokens (WCAG 2, a translucent ink composited on its ground; <code>dashi-ui/src/theme/contrast.ts</code>), and checked by <code>dashi-ui/test/contrast.test.ts</code>: a token that drops below its bar fails the tests. Text needs 4.5:1, a control's edge 3:1.</p>
     <table>
       <tr><th>Ink</th><th>Light: window · sidebar · card</th><th>Dark: window · sidebar · card</th></tr>
-      <tr><td><code>text</code></td><td>15.46 · 13.77 · 16.83</td><td>15.29 · 13.32 · 12.79</td></tr>
-      <tr><td><code>textMuted</code> (65% light, 60% dark)</td><td>5.08 · 4.84 · 5.25</td><td>6.30 · 5.79 · 5.64</td></tr>
-      <tr><td><code>ume</code> (errors, destructive words; <code>critical</code> is the same)</td><td>5.33 · 4.75 · 5.80 (<code>#AD3F55</code>)</td><td>5.99 · 5.22 · 5.01 (<code>#E8798F</code>)</td></tr>
-      <tr><td><code>broth</code> (warnings)</td><td>5.23 · 4.66 · 5.69 (<code>#86600A</code>)</td><td>8.47 · 7.39 · 7.09 (<code>#E5B13F</code>)</td></tr>
-      <tr><td><code>moss</code> (success)</td><td>5.34 · 4.76 · 5.81 (<code>#38722C</code>)</td><td>6.59 · 5.74 · 5.51 (<code>#6CB45B</code>)</td></tr>
-      <tr><td><code>accentInk</code> (kombu as words: a store pill's verb, a link)</td><td>5.51 · 4.91 · 6.00 (<code>#2F6E5A</code>)</td><td>9.25 · 8.06 · 7.73 (<code>#7FD1B2</code>)</td></tr>
-      <tr><td><code>controlEdge</code> (a secondary button's edge)</td><td>3.22 · 3.13 · 3.29</td><td>3.57 · 3.42 · 3.36</td></tr>
+      <tr><td><code>text</code></td><td>15.46 · 13.77 · 16.83</td><td>17.80 · 16.67 · 15.58</td></tr>
+      <tr><td><code>textMuted</code> (65% light, 60% dark)</td><td>5.08 · 4.84 · 5.25</td><td>6.38 · 6.33 · 6.20</td></tr>
+      <tr><td><code>ume</code> (errors, destructive words; <code>critical</code> is the same)</td><td>5.33 · 4.75 · 5.80 (<code>#AD3F55</code>)</td><td>7.56 · 7.08 · 6.62 (<code>#E8798F</code>)</td></tr>
+      <tr><td><code>broth</code> (warnings)</td><td>5.23 · 4.66 · 5.69 (<code>#86600A</code>)</td><td>10.69 · 10.01 · 9.36 (<code>#E5B13F</code>)</td></tr>
+      <tr><td><code>moss</code> (success)</td><td>5.34 · 4.76 · 5.81 (<code>#38722C</code>)</td><td>8.32 · 7.79 · 7.28 (<code>#6CB45B</code>)</td></tr>
+      <tr><td><code>accentInk</code> (kombu as words: a store pill's verb, a link)</td><td>5.51 · 4.91 · 6.00 (<code>#2F6E5A</code>)</td><td>11.67 · 10.92 · 10.21 (<code>#7FD1B2</code>)</td></tr>
+      <tr><td><code>controlEdge</code> (a secondary button's edge)</td><td>3.22 · 3.13 · 3.29</td><td>3.26 · 3.38 · 3.43</td></tr>
       <tr><td>White on <code>selection</code> (kombu) and on <code>umeFill</code></td><td colspan="2">5.10 and 5.13, in both modes</td></tr>
       <tr><td>White on a button under the pointer and held (<code>selectionHover</code> · <code>selectionPressed</code>, <code>umeFillHover</code> · <code>umeFillPressed</code>)</td><td colspan="2">6.00 · 7.20 and 5.92 · 6.90: they deepen, so white only gains</td></tr>
     </table>
-    <p class="small muted">Before November 2026: muted text 4.32 on the light window and 4.15 on the light sidebar, white on kombu <code>#3E8A72</code> 4.13, white on the dark red <code>#FF5A4F</code> 3.08, and a secondary button 1.15 against the window with no edge.</p>
+    <p class="small muted">Dark is measured on true black (window <code>#000000</code>, sidebar <code>#0B0B0D</code>, card <code>#141417</code>); before it, on graphite, text was 15.29 · 13.32 · 12.79. Before November 2026: muted text 4.32 on the light window and 4.15 on the light sidebar, white on kombu <code>#3E8A72</code> 4.13, white on the dark red <code>#FF5A4F</code> 3.08, and a secondary button 1.15 against the window with no edge.</p>
 
     <h3 id="tints">Tints</h3>
     <p>Color that only tells things apart: Setup's headings, calendar colors, store categories, the letter that stands in for a missing icon, Activity Monitor's graph series. One list for all of them (<code>packages/dashi-ui/src/theme/tints.ts</code>), named for more of the kitchen, and none of them a job color, so a tile never says "selected", "destroy", "warning", "done" or "agent". Agents' own tiles are the one exception: they wear shiso because they are about agents. White glyphs and text read on every tint, at least 3.5:1, in both modes. Select one to copy it.</p>
@@ -389,9 +400,9 @@
     <p>Drawn by the compositor for windows it frames (<code>crates/dashi-comp/src/render/titlebar.rs</code>), and given to GTK apps through <code>appearance/gtk-css.ts</code> so both match.</p>
     <table>
       <tr><th></th><th>Light, active</th><th>Light, inactive</th><th>Dark, active</th><th>Dark, inactive</th></tr>
-      <tr><td>Bar</td><td><code>#EEEBE4</code></td><td><code>#F6F4EF</code></td><td><code>#2C2C2E</code></td><td><code>#242426</code></td></tr>
-      <tr><td>Title</td><td><code>#262B28</code></td><td><code>#9B9890</code></td><td><code>#E6E6E8</code></td><td><code>#8A8A8F</code></td></tr>
-      <tr><td>Bottom line</td><td><code>#D9D5CC</code></td><td colspan="3" class="muted">as active</td></tr>
+      <tr><td>Bar</td><td><code>#EEEBE4</code></td><td><code>#F6F4EF</code></td><td><code>#141417</code></td><td><code>#0B0B0D</code></td></tr>
+      <tr><td>Title</td><td><code>#262B28</code></td><td><code>#9B9890</code></td><td><code>#ECECEE</code></td><td><code>#8A8A8F</code></td></tr>
+      <tr><td>Bottom line</td><td><code>#D9D5CC</code></td><td class="muted">as active</td><td colspan="2">black <code>#000000</code>, the window's ground</td></tr>
       <tr><td>Controls</td><td colspan="2">ume, broth, kombu · gray <code>#CECBC6</code> when inactive</td><td colspan="2">ume, broth, kombu · gray <code>#525256</code> when inactive</td></tr>
     </table>
 
@@ -399,8 +410,8 @@
     <p>Terminal's own ground and ink and the 16 ANSI colors programs name (<code>packages/shell/apps/terminal/palette.ts</code>), made from the ingredients: red from ume, yellow from broth, green from moss, cyan from kombu, magenta from shiso. dashi-term resolves programs' colors through them; a program that sets its own (OSC 4, 10, 11) keeps them. Every color programs write text in is at least 4.5:1 on the ground, except the ground's own side (white and bright white in Light Mode, black in Dark Mode). In Light Mode the bright colors are a step darker, not lighter, so they stay readable. The other 240 of the 256 colors are libghostty-vt's.</p>
     <table>
       <tr><th></th><th>Light</th><th>Dark</th></tr>
-      <tr><td>Ground</td><td><code>#FBFAF7</code></td><td><code>#1C1C1E</code></td></tr>
-      <tr><td>Ink</td><td><code>#1D1D1F</code></td><td><code>#E8E8EA</code></td></tr>
+      <tr><td>Ground</td><td><code>#FBFAF7</code></td><td><code>#000000</code></td></tr>
+      <tr><td>Ink</td><td><code>#1D1D1F</code></td><td><code>#ECECEE</code></td></tr>
       <tr><td>Black · bright</td><td><code>#1D1D1F</code> · <code>#636260</code></td><td><code>#3A3A3D</code> · <code>#8E8E93</code></td></tr>
       <tr><td>Red · bright</td><td><code>#B23A50</code> · <code>#A8304A</code></td><td><code>#F07A8F</code> · <code>#FF97A8</code></td></tr>
       <tr><td>Green · bright</td><td><code>#3D7A2E</code> · <code>#336B26</code></td><td><code>#7FC46A</code> · <code>#9CD988</code></td></tr>
@@ -431,10 +442,10 @@
       <li id="co-2"><b class="rid">CO-2</b><div>Kombu never decorates: not for hover, not for icons at rest, not for a category or a whole group of controls. Sidebar glyphs are ink or muted; only the selected row is kombu.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/files.md">Files</a> roast · <code>SidebarItem</code>'s glyphs are muted, and so are Files' sidebar glyphs and the file chooser's file and folder glyphs (ink on a selected row); Open With rows (Preview, Files, the chooser) show each app's own icon and hover in a wash. Calculator's keys follow it: kombu only on =, the one primary key; the operator waiting shows in the expression line, not as a lit key (<code>apps/calculator/keypad.tsx</code>). Some links are still kombu text (the consent sheet's "Other permissions", the print sheet's "More…")</span></div></li>
       <li id="co-3"><b class="rid">CO-3</b><div>Shiso appears only where an agent is acting or asking, and on what is about agents (Setup's Agents page; Settings' Agents count wears Control Center's purple, which is the keyboard ring's). No category, tile or tint wears it otherwise. In the launcher: the Ask row's glyph and words (<code>agentInk</code>), the plan's scope chips, the field's spark on a plan, and a 6 px dot on each "Now" row's icon; a "Hand it off" row's glyph and a run's row on the empty launcher (its dot, its stop square). In the menu bar the agents' chip is <code>agentWash</code> with <code>agentInk</code> words while runs work and <code>brothWash</code> with broth words ("Codex needs you") while one waits on the person; a question on a run's card is <code>brothWash</code>. A selected agents' row is still kombu: selecting is the person's (<code>launcher/row-view.tsx</code>, <code>launcher/agents/plan-view.tsx</code>).</div></li>
       <li id="co-4"><b class="rid">CO-4</b><div>No palette copied from another platform. Decorative tints (calendar colors, store categories, chart series) come from one Dashi-made list that leaves out the job colors: <a href="#tints">Tints</a>.</div></li>
-      <li id="co-5"><b class="rid">CO-5</b><div>Tokens only. No hex in apps or the shell: grounds come from <code>Surface</code>, inks from <code>Palette</code>. A new need adds a token to <code>palette.ts</code> and to this page in the same commit. Media sits on <code>surface.canvas</code>, a shade off the window (<code>#E4E4E8</code> light, <code>#161618</code> dark; <code>dashi-ui/src/theme/surface.ts</code>): Preview's pictures and pages, and its empty window, so nothing jumps when a file opens. Code asks the palette whether it is dark; it never compares palette objects.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a>, <a href="roast/preview.md">Preview</a> roasts · Terminal's palette is its own (<code>apps/terminal/palette.ts</code>), and its tab shades are hex (<code>apps/terminal/view.tsx</code>); an identity check remains in Appearance's previews (<code>settings-app/panes/appearance.tsx</code>); Software's pill ink and Flathub's verified seal are tokens now (<code>accentInk</code>, <code>verified</code>)</span></div></li>
-      <li id="co-6"><b class="rid">CO-6</b><div>Contrast: text is at least 4.5:1 against its ground, muted text and white-on-kombu included; control edges (buttons, fields, checkboxes, an off switch) are at least 3:1. Check both modes before merging; the tokens' ratios are in <a href="#contrast">Contrast</a>.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · the tokens and <code>Button</code> pass; text fields, checkboxes, and the off switch (<code>dashi-ui/src/switch.tsx</code>) have no 3:1 edge yet. The selection meets it (CO-9): <code>onSelection</code> ink on <code>selectionWash</code> is at least 11.2:1 light and 10.4:1 dark over the launcher's glass, whatever the wallpaper, and at least 11.8:1 light and 9.9:1 dark on every window ground; its bar is at least 3:1 against the ground beside the row (<code>dashi-ui/test/selection-contrast.test.ts</code>)</span></div></li>
+      <li id="co-5"><b class="rid">CO-5</b><div>Tokens only. No hex in apps or the shell: grounds come from <code>Surface</code>, inks from <code>Palette</code>. A new need adds a token to <code>palette.ts</code> and to this page in the same commit. Media sits on <code>surface.canvas</code>, a shade off the window in Light (<code>#E4E4E8</code>), and in Dark the black itself (<code>#000000</code>: nothing is darker); <code>dashi-ui/src/theme/surface.ts</code>): Preview's pictures and pages, and its empty window, so nothing jumps when a file opens. Code asks the palette whether it is dark; it never compares palette objects.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/terminal.md">Terminal</a>, <a href="roast/preview.md">Preview</a> roasts · Terminal's palette is its own (<code>apps/terminal/palette.ts</code>), and its tab shades are hex (<code>apps/terminal/view.tsx</code>); an identity check remains in Appearance's previews (<code>settings-app/panes/appearance.tsx</code>); Software's pill ink and Flathub's verified seal are tokens now (<code>accentInk</code>, <code>verified</code>)</span></div></li>
+      <li id="co-6"><b class="rid">CO-6</b><div>Contrast: text is at least 4.5:1 against its ground, muted text and white-on-kombu included; control edges (buttons, fields, checkboxes, an off switch) are at least 3:1. Check both modes before merging; the tokens' ratios are in <a href="#contrast">Contrast</a>.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · the tokens and <code>Button</code> pass; text fields, checkboxes, and the off switch (<code>dashi-ui/src/switch.tsx</code>) have no 3:1 edge yet. The selection meets it (CO-9): <code>onSelection</code> ink on <code>selectionWash</code> is at least 11.2:1 light and 12.0:1 dark over the launcher's glass, whatever the wallpaper, and at least 11.8:1 light and 12.0:1 dark on every window ground; its bar is at least 3:1 against the ground beside the row (<code>dashi-ui/test/selection-contrast.test.ts</code>)</span></div></li>
       <li id="co-7"><b class="rid">CO-7</b><div>Error and destructive text uses one token in both modes: <code>ume</code> (<code>critical</code> and <code>batteryLow</code> are the same value). A destructive button is <code>umeFill</code> under white text.</div></li>
-      <li id="co-8"><b class="rid">CO-8</b><div>Every window follows the shell's Dark Mode from its first frame. No app has its own theme switch. A recessed field is darker than its window in both modes.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · Components opens dark on a light desktop; <code>surface.field</code> is lighter than the window in Dark Mode (<code>surface.ts:22</code>). Calendar's days outside the month no longer use it: they sink under a black wash, <code>#0000000a</code> in Light and <code>#00000038</code> in Dark (<code>apps/calendar/month-view.tsx</code>, <code>OUTSIDE_WASH</code>)</span></div></li>
+      <li id="co-8"><b class="rid">CO-8</b><div>Every window follows the shell's Dark Mode from its first frame. No app has its own theme switch. A recessed field is darker than what it sits in: its window in Light, its card in Dark, where the window is true black and nothing is darker.<span class="tags"><span class="pill wip">Not yet in code</span><a href="roast/dashi-ui.md">@dashi/ui</a> roast · Components opens dark on a light desktop; <code>surface.field</code> is the first lift in Dark Mode (<code>#0B0B0D</code>), sunk below a card but above the black window. Calendar's days outside the month no longer use it: they sink under a black wash, <code>#0000000a</code>, in Light, and take the first lift, <code>#0B0B0D</code>, on Dark's black (<code>apps/calendar/month-view.tsx</code>, <code>OUTSIDE_WASH</code>)</span></div></li>
       <li id="co-9"><b class="rid">CO-9</b><div>One selection look. A selected row in a list, a table or a sidebar, in the launcher or an app, sits on <code>selectionWash</code> with a 3 px <code>selectionBar</code> at its left edge (20 tall, or the row's height less 6 above and below), and every word and glyph on it is <code>onSelection</code> ink. No row is solid kombu under white: <code>@dashi/ui</code>'s <code>rowLook</code> and <code>SelectionBar</code> draw it (<code>dashi-ui/src/selection.tsx</code>), and <code>SidebarItem</code> and <code>Table</code> use them, as do Notes' list, Files' sidebar, list, icons and path suggestions, Calendar's calendars, the file and app choosers, Force Quit, and Settings' pickers. An icon view washes the whole tile and draws no bar. Selected text in a field sits on the same kombu, washed deeper since it has no bar (<code>textSelection</code>: at least 1.3:1 from every ground a field sits on, in both modes, where a row's wash is 1.29:1 on a Dark card), under the field's own ink, while the field has the keyboard; a password field's dots are washed too (<code>TextSelectionLook</code> in <code>dashi-ui/src/selection.tsx</code>, around every surface's tree, gives each <code>TextInput</code> mirin's <code>selectionColor</code>; <code>dashi-ui/test/selection-contrast.test.ts</code>). The caret is a thin bar in the field's ink, drawn on the boundary between two characters: it takes no room, so no text moves when it or a selection does. A menu's highlighted item is not a selection: it follows the pointer and stays kombu under white (5.1:1).</div></li>
     </ol>
 
@@ -519,13 +530,13 @@
     </div>
     <table>
       <tr><th>Surface</th><th>Light</th><th>Dark</th><th>Notes</th></tr>
-      <tr><td>Menu bar</td><td><code>#F5F5F7C7</code></td><td><code>#1E1E1ECC</code></td><td>28 tall; text 13, app name Bold; edge <code>#0000002B</code> / <code>#FFFFFF1F</code></td></tr>
-      <tr><td>Dock</td><td><code>#F5F5F799</code></td><td><code>#1E1E1E99</code></td><td>Icons 48, gap 6, radius 18, 6 above the edge; running dot 4. No magnification.</td></tr>
+      <tr><td>Menu bar</td><td><code>#F5F5F7C7</code></td><td><code>#000000E6</code></td><td>28 tall; text 13, app name Bold; edge <code>#0000002B</code> / <code>#FFFFFF1F</code></td></tr>
+      <tr><td>Dock</td><td><code>#F5F5F799</code></td><td><code>#000000CC</code></td><td>Icons 48, gap 6, radius 18, 6 above the edge; running dot 4. No magnification.</td></tr>
       <tr><td>Taskbar</td><td colspan="2">Dock's glass</td><td>48 tall; buttons 38 tall, up to 180 wide; icons 24; radius 8</td></tr>
-      <tr><td>Launcher, shortcut sheet</td><td><code>#F5F5F7EB</code></td><td><code>#1E1E1EEB</code></td><td>More tint: they hold text</td></tr>
-      <tr><td>Menus</td><td><code>#F6F6F8F7</code></td><td><code>#232325F7</code></td><td>Nearly opaque until blur exists</td></tr>
-      <tr><td>Control Center, the battery panel</td><td><code>#F3EFF8</code></td><td><code>#1C1A22</code></td><td>Opaque, its own soft surface (<code>control-center/palette.ts</code>)</td></tr>
-      <tr><td>On-screen display</td><td><code>#F5F5F7E0</code></td><td><code>#1E1E1EE0</code></td><td>Ink segments, on and off</td></tr>
+      <tr><td>Launcher, shortcut sheet</td><td><code>#F5F5F7EB</code></td><td><code>#0B0B0DF5</code></td><td>More tint: they hold text</td></tr>
+      <tr><td>Menus</td><td><code>#F6F6F8F7</code></td><td><code>#141417F7</code></td><td>Nearly opaque until blur exists</td></tr>
+      <tr><td>Control Center, the battery panel</td><td><code>#F3EFF8</code></td><td><code>#000000</code></td><td>Opaque, its own soft surface (<code>shared/controls/palette.ts</code>); in Dark, black with a 12% hairline edge</td></tr>
+      <tr><td>On-screen display</td><td><code>#F5F5F7E0</code></td><td><code>#0B0B0DE6</code></td><td>Ink segments, on and off</td></tr>
     </table>
 
     <h3 id="shadows">Shadows</h3>
@@ -761,7 +772,7 @@
       <tr><td>agentWash · agent · agentInk</td><td><code>#6E56CF24</code> · <code>#6E56CF</code> · <code>#3B2A8A</code></td><td><code>#8B76E83D</code> · <code>#8B76E8</code> · <code>#CFC6F7</code></td><td>The mark, its glyphs and "+N", a connected agent's tile and its Connected chip</td></tr>
       <tr><td>brothWash · broth</td><td><code>#E5B13F33</code> · <code>#86600A</code></td><td><code>#E5B13F3D</code> · <code>#E5B13F</code></td><td>Waiting for you, in the bar and on a row's chip</td></tr>
       <tr><td>critical · captureWash · criticalInk</td><td><code>#AD3F55</code> · <code>#D0596F24</code> · <code>#963549</code></td><td><code>#E8798F</code> · <code>#E8798F3D</code> · <code>#F09AAB</code></td><td>The red dot; your recording's pill; a watching agent's chip, Stop, Stop all</td></tr>
-      <tr><td>launcher, made opaque</td><td><code>#F5F5F7</code></td><td><code>#1E1E1E</code></td><td>The discs and the red dot's ring</td></tr>
+      <tr><td>launcher, made opaque</td><td><code>#F5F5F7</code></td><td><code>#0B0B0D</code></td><td>The discs and the red dot's ring</td></tr>
     </table>
     <ol class="rules">
       <li id="mb-1"><b class="rid">MB-1</b><div>One mark for every agent. Agents from the launcher and agents connected from outside (an MCP client, Claude on a phone) share it and its panel; nothing else in the bar says "an agent". It has words only while one needs the person.<span class="tags"><code>agents/mark.ts</code> (<code>mergeAgents</code>, <code>markState</code>)</span></div></li>
@@ -787,12 +798,12 @@
     </table>
     <table>
       <tr><th>Token</th><th>Light</th><th>Dark</th><th>Use</th></tr>
-      <tr><td>surface</td><td><code>#F3EFF8</code></td><td><code>#1C1A22</code></td><td>The panel, the battery panel, a slider's chips</td></tr>
-      <tr><td>off · its ink</td><td><code>#E4DDEE</code> · <code>#1D1830</code></td><td><code>#2B2834</code> · <code>#EBE7F3</code></td><td>An off tile, a page row, a slider's track</td></tr>
+      <tr><td>surface</td><td><code>#F3EFF8</code></td><td><code>#000000</code></td><td>The panel, the battery panel, a slider's chips</td></tr>
+      <tr><td>off · its ink</td><td><code>#E4DDEE</code> · <code>#1D1830</code></td><td><code>#141417</code> · <code>#ECECEE</code></td><td>An off tile, a page row, a slider's track</td></tr>
       <tr><td>on · its ink</td><td><code>#2F6F5B</code> · <code>#FFFFFF</code></td><td><code>#86D3B6</code> · <code>#0B2A20</code></td><td>An on tile, a chosen row, a chosen pill; Dashi's green</td></tr>
       <tr><td>knob on · off</td><td><code>#FFFFFF2E</code> · <code>#1D18300F</code></td><td><code>#0B2A201F</code> · <code>#FFFFFF0D</code></td><td>A tile's knob</td></tr>
-      <tr><td>fill · its ink</td><td><code>#1D1830</code> · <code>#F3EFF8</code></td><td><code>#EBE7F3</code> · <code>#1C1A22</code></td><td>A slider's fill</td></tr>
-      <tr><td>text · muted · line</td><td><code>#1D1830</code> · <code>#1D183094</code> · <code>#1D18301F</code></td><td><code>#EBE7F3</code> · <code>#EBE7F38C</code> · <code>#FFFFFF1A</code></td><td>Words, quieter words, hairlines and a bar's track</td></tr>
+      <tr><td>fill · its ink</td><td><code>#1D1830</code> · <code>#F3EFF8</code></td><td><code>#ECECEE</code> · <code>#000000</code></td><td>A slider's fill</td></tr>
+      <tr><td>text · muted · line</td><td><code>#1D1830</code> · <code>#1D183094</code> · <code>#1D18301F</code></td><td><code>#ECECEE</code> · <code>#ECECEE99</code> · <code>#FFFFFF1F</code></td><td>Words, quieter words, hairlines and a bar's track</td></tr>
       <tr><td>focus</td><td colspan="2"><code>#6E56CF</code></td><td>The keyboard's ring</td></tr>
     </table>
     <ol class="rules">
@@ -819,10 +830,10 @@
     </table>
     <table>
       <tr><th>Token</th><th>Light</th><th>Dark</th><th>Use</th></tr>
-      <tr><td>window</td><td><code>#F7F4FA</code></td><td><code>#1A1820</code></td><td>Settings' window behind its cards</td></tr>
-      <tr><td>sidebar</td><td><code>#EFEAF5</code></td><td><code>#211E28</code></td><td>Settings' sidebar</td></tr>
+      <tr><td>window</td><td><code>#F7F4FA</code></td><td><code>#000000</code></td><td>Settings' window behind its cards</td></tr>
+      <tr><td>sidebar</td><td><code>#EFEAF5</code></td><td><code>#0B0B0D</code></td><td>Settings' sidebar</td></tr>
       <tr><td>knob rest</td><td><code>#1D18301A</code></td><td><code>#FFFFFF1A</code></td><td>A knob's circle at rest: a row's glyph, a sidebar pill's</td></tr>
-      <tr><td>lit</td><td><code>#1D183017</code></td><td><code>#EBE7F31F</code></td><td>The row or card a link or the search lands on, for 2.5 s: a soft wash of the ink (purple is the keyboard ring's and the agents')</td></tr>
+      <tr><td>lit</td><td><code>#1D183017</code></td><td><code>#ECECEE1F</code></td><td>The row or card a link or the search lands on, for 2.5 s: a soft wash of the ink (purple is the keyboard ring's and the agents')</td></tr>
     </table>
     <ol class="rules">
       <li id="se-1"><b class="rid">SE-1</b><div>One chrome row. Lights and search on the sidebar's top, the pane's title on the content's; nothing else above the content.</div></li>
@@ -1056,7 +1067,7 @@
 /* ── Palette ── */
 const PALETTE = {
   light: { text: "#1d1d1f", textMuted: "#1d1d1fa6", textDisabled: "#1d1d1f55", menuBar: "#f5f5f7c7", menuBarEdge: "#0000002b", dock: "#f5f5f799", dockBorder: "#ffffff73", hover: "#ffffff59", separator: "#1d1d1f26", dot: "#1d1d1fcc", launcher: "#f5f5f7f5", menu: "#f6f6f8f7", osd: "#f5f5f7e0", osdOn: "#1d1d1fd9", osdOff: "#1d1d1f26", batteryLow: "#AD3F55", selection: "#357A64", selectionHover: "#2F6E5A", selectionPressed: "#29614F", selectionWash: "#3E8A7224", textSelection: "#3E8A7240", selectionBar: "#357A64", onSelection: "#1d1d1f", focusRing: "#357A64", switcherSelection: "#1d1d1f24", button: "#1d1d1f12", controlEdge: "#1d1d1f80", pressed: "#1d1d1f42", checkbox: "#1d1d1f66", critical: "#AD3F55", ume: "#AD3F55", umeFill: "#B8475C", umeFillHover: "#A94054", umeFillPressed: "#99394B", umeWash: "#D0596F24", broth: "#86600A", brothWash: "#E5B13F33", findWash: "#E5B13F40", findCurrent: "#E5B13F99", moss: "#38722C", accentInk: "#2F6E5A", verified: "#3B8FD0", criticalInk: "#963549", tile: "#ffffffb8", tileHover: "#ffffffe6", track: "#1d1d1f1f", agent: "#6E56CF", agentInk: "#3B2A8A", agentWash: "#6E56CF24", captureWash: "#D0596F24" },
-  dark: { text: "#f5f5f7", textMuted: "#f5f5f799", textDisabled: "#f5f5f755", menuBar: "#1e1e1ecc", menuBarEdge: "#ffffff1f", dock: "#1e1e1e99", dockBorder: "#ffffff26", hover: "#ffffff1a", separator: "#ffffff1a", dot: "#f5f5f7cc", launcher: "#1e1e1ef5", menu: "#232325f7", osd: "#1e1e1ee0", osdOn: "#f5f5f7d9", osdOff: "#f5f5f726", batteryLow: "#E8798F", selection: "#357A64", selectionHover: "#2F6E5A", selectionPressed: "#29614F", selectionWash: "#3E8A7238", textSelection: "#3E8A7280", selectionBar: "#3E8A72", onSelection: "#f5f5f7", focusRing: "#3E8A72", switcherSelection: "#ffffff24", button: "#ffffff1f", controlEdge: "#f5f5f766", pressed: "#ffffff3d", checkbox: "#f5f5f766", critical: "#E8798F", ume: "#E8798F", umeFill: "#B8475C", umeFillHover: "#A94054", umeFillPressed: "#99394B", umeWash: "#E8798F3d", broth: "#E5B13F", brothWash: "#E5B13F3d", findWash: "#E5B13F33", findCurrent: "#E5B13F73", moss: "#6CB45B", accentInk: "#7FD1B2", verified: "#3B8FD0", criticalInk: "#F09AAB", tile: "#ffffff17", tileHover: "#ffffff29", track: "#ffffff2e", agent: "#8B76E8", agentInk: "#cfc6f7", agentWash: "#8B76E83d", captureWash: "#E8798F3d" },
+  dark: { text: "#ececee", textMuted: "#ececee99", textDisabled: "#ececee55", menuBar: "#000000e6", menuBarEdge: "#ffffff1f", dock: "#000000cc", dockBorder: "#ffffff1f", hover: "#ffffff1a", separator: "#ffffff1a", dot: "#ececeecc", launcher: "#0b0b0df5", menu: "#141417f7", osd: "#0b0b0de6", osdOn: "#ececeed9", osdOff: "#ececee26", batteryLow: "#E8798F", selection: "#357A64", selectionHover: "#2F6E5A", selectionPressed: "#29614F", selectionWash: "#3E8A7238", textSelection: "#3E8A7280", selectionBar: "#3E8A72", onSelection: "#ececee", focusRing: "#3E8A72", switcherSelection: "#ffffff24", button: "#ffffff1f", controlEdge: "#ececee66", pressed: "#ffffff3d", checkbox: "#ececee66", critical: "#E8798F", ume: "#E8798F", umeFill: "#B8475C", umeFillHover: "#A94054", umeFillPressed: "#99394B", umeWash: "#E8798F3d", broth: "#E5B13F", brothWash: "#E5B13F3d", findWash: "#E5B13F33", findCurrent: "#E5B13F73", moss: "#6CB45B", accentInk: "#7FD1B2", verified: "#3B8FD0", criticalInk: "#F09AAB", tile: "#ffffff17", tileHover: "#ffffff29", track: "#ffffff2e", agent: "#8B76E8", agentInk: "#cfc6f7", agentWash: "#8B76E83d", captureWash: "#E8798F3d" },
 };
 const USE = {
   text: "Primary ink", textMuted: "Details, secondary labels", textDisabled: "What can't be used now", menuBar: "Menu bar glass", menuBarEdge: "Menu bar's bottom hairline",
@@ -1072,7 +1083,7 @@ function drawPalette(mode) {
   paletteEl.style.background = mode === "dark" ? "#161617" : "transparent";
   paletteEl.style.padding = mode === "dark" ? "14px" : "0";
   paletteEl.style.borderRadius = "16px";
-  paletteEl.innerHTML = Object.entries(set).map(([name, hex]) => `<button class="swatch" data-copy="${hex}" style="${mode === "dark" ? "background:#1f1f21;color:#f5f5f7;border-color:#ffffff1a" : ""}"><div class="chip" style="--c:${hex}"></div><div class="meta"><span class="name">${name}</span><span class="hex">${hex}</span><span class="use" style="${mode === "dark" ? "color:#f5f5f799" : ""}">${USE[name]}</span></div></button>`).join("");
+  paletteEl.innerHTML = Object.entries(set).map(([name, hex]) => `<button class="swatch" data-copy="${hex}" style="${mode === "dark" ? "background:#000000;color:#ececee;border-color:#ffffff1f" : ""}"><div class="chip" style="--c:${hex}"></div><div class="meta"><span class="name">${name}</span><span class="hex">${hex}</span><span class="use" style="${mode === "dark" ? "color:#ececee99" : ""}">${USE[name]}</span></div></button>`).join("");
 }
 segmented(document.getElementById("palette-mode"), drawPalette);
 drawPalette("light");
