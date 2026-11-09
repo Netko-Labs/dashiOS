@@ -9,7 +9,7 @@
  * (place.ts).
  */
 
-import { MENU, MenuLine, MenuRow, menuHeight, type Size, useColors } from "@dashi/ui";
+import { MENU, MenuLine, MenuRow, menuHeight, type Size, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { isEnabled, type MenuEntry, stepHighlight } from "./model.ts";
@@ -70,6 +70,7 @@ export function DropdownMenu<A>({
   onClose: () => void;
 }) {
   const colors = useColors();
+  const surface = useSurface();
   const [highlight, setHighlight] = useState<number | null>(() => (fromKeys ? stepHighlight(entries, null, "down") : null));
   // Its width as last drawn (its least until then), to keep it inside the screen.
   const [width, setWidth] = useState<number>(DROPDOWN.minWidth);
@@ -124,21 +125,31 @@ export function DropdownMenu<A>({
         minWidth: DROPDOWN.minWidth,
         maxWidth: DROPDOWN.maxWidth,
         flexDirection: "column",
-        padding: MENU.padding,
         borderRadius: MENU.radius,
-        backgroundColor: colors.menu,
+        // Solid, as a window's menu: the window under it never ghosts through its rows (the menu's tint lies on the card ground).
+        backgroundColor: surface.card,
         borderWidth: MENU.edge,
         borderColor: colors.menuEdge,
         shadow: "xl",
       }}
     >
-      {place.maxHeight === undefined ? (
-        rows
-      ) : (
-        <ScrollView testID="menu-rows" style={{ flex: 1, flexDirection: "column" }}>
-          {rows}
-        </ScrollView>
-      )}
+      <View
+        style={{
+          ...(place.maxHeight !== undefined ? { flex: 1, minHeight: 0 } : {}),
+          flexDirection: "column",
+          padding: MENU.padding,
+          borderRadius: MENU.radius - MENU.edge,
+          backgroundColor: colors.menu,
+        }}
+      >
+        {place.maxHeight === undefined ? (
+          rows
+        ) : (
+          <ScrollView testID="menu-rows" style={{ flex: 1, flexDirection: "column" }}>
+            {rows}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
