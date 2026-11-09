@@ -100,33 +100,31 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: PAGE.row - 16 }}>
       {knob}
       {words}
-      {!stack && children}
+      {!stack && <PillsWrapped.Provider value={fit.report}>{children}</PillsWrapped.Provider>}
     </View>
   );
   return (
-    <PillsWrapped.Provider value={fit.report}>
-      <View
-        {...(testID !== undefined ? { testID } : {})}
-        onLayout={(laid) => fit.onWidth(laid.width)}
-        style={{
-          minHeight: PAGE.row,
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 10,
-          paddingTop: 8,
-          paddingBottom: stack || below ? 12 : 8,
-          paddingLeft: glyph !== undefined ? PAGE.knobInset : PAGE.inset,
-          paddingRight: PAGE.inset,
-        }}
-      >
-        {top}
-        {stack && children !== undefined && children !== null && children !== false && (
-          <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{children}</View>
-        )}
-        {below !== undefined && below !== null && below !== false && (
-          <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{below}</View>
-        )}
-      </View>
-    </PillsWrapped.Provider>
+    <View
+      {...(testID !== undefined ? { testID } : {})}
+      onLayout={(laid) => fit.onWidth(laid.width)}
+      style={{
+        minHeight: PAGE.row,
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: 10,
+        paddingTop: 8,
+        paddingBottom: stack || below ? 12 : 8,
+        paddingLeft: glyph !== undefined ? PAGE.knobInset : PAGE.inset,
+        paddingRight: PAGE.inset,
+      }}
+    >
+      {top}
+      {stack && children !== undefined && children !== null && children !== false && (
+        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{children}</View>
+      )}
+      {below !== undefined && below !== null && below !== false && (
+        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{below}</View>
+      )}
+    </View>
   );
 }
