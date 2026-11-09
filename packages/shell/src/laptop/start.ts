@@ -14,7 +14,7 @@ import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphics/cardwire.ts";
 import { GraphicsController } from "../graphics/controller.ts";
 import type { LostCardStart } from "../graphics/lost-start.ts";
-import { listNames } from "../graphics/policy.ts";
+import { graphicsNoticePlace } from "../graphics/notice-place.ts";
 import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
 import { detectLaptop } from "../hardware/laptop.ts";
 import { idleKeymap, setMachineRules } from "../keymap-state.ts";
@@ -50,8 +50,10 @@ export interface LaptopOptions {
   lostCard: LostCardStart;
   /** What the person calls a window's app (the Dock's names). */
   nameOf(window: CompositorWindow): string;
-  /** Opens a Settings pane (the ROG key). */
-  openSettings(pane: "battery"): void;
+  /** Opens a Settings pane (the ROG key, a graphics notice's Graphics Settings…). */
+  openSettings(pane: "battery" | "graphics"): void;
+  /** The built-in screen's rate for this power source, when Automatic moves it with the cable ("60 Hz"); else null. */
+  refreshRate?(plugged: boolean): string | null;
   confirmRestart(): void;
 }
 
@@ -113,42 +115,19 @@ export function startLaptop(options: LaptopOptions): Laptop {
 
   const backendReal: GraphicsBackend | null = options.lostCard.card ? cardwireClient(systemBus()) : null;
   const backend = backendReal && options.developmentRun ? shadowGraphics(backendReal) : backendReal;
-  let waitingId = 0;
-  let waitingQuit: (() => void) | null = null;
-  let waitingKeep: (() => void) | null = null;
+  // Graphics notices have one place: the waiting notice, then the switch's, each replacing the last (graphics/notice-place.ts).
+  const noticePlace = graphicsNoticePlace(notifications, {
+    keepHybrid: () => graphics.keepHybrid(),
+    openSettings: () => options.openSettings("graphics"),
+  });
   const graphics = new GraphicsController({
     card: options.lostCard.card,
     backend,
     choice: graphicsChoice,
     saveChoice: (choice) => settings.patch("graphics", { mode: choice === "automatic" ? undefined : choice }),
     appOf,
-    sayWaiting: (names, quit, keep) => {
-      waitingQuit = quit;
-      waitingKeep = keep;
-      const who = listNames(names);
-      waitingId = notifications.notify({
-        appName: "Graphics",
-        appIcon: "",
-        summary: "Switching to built-in graphics",
-        body: `You’re on battery. ${who} ${names.length === 1 ? "is" : "are"} still using the graphics card; it switches when ${names.length === 1 ? "it quits" : "they quit"}.`,
-        actions: [
-          { key: "quit", label: names.length === 1 ? `Quit ${who}` : "Quit Them" },
-          { key: "keep", label: "Keep Hybrid" },
-        ],
-        urgency: "normal",
-        expireTimeout: -1,
-        imagePath: "",
-        desktopEntry: "",
-        category: "device",
-        transient: false,
-        resident: false,
-      });
-    },
-  });
-  const stopNoticeActions = notifications.onEvent((event) => {
-    if (event.type !== "action" || event.id !== waitingId) return;
-    if (event.key === "quit") waitingQuit?.();
-    if (event.key === "keep") waitingKeep?.();
+    ...noticePlace.deps,
+    rate: (plugged) => options.refreshRate?.(plugged) ?? null,
   });
   const stopLost = options.lostCard.watch?.onLost((loss) => graphics.setLost(loss)) ?? (() => {});
   // dashi-comp opened the card or let it sleep: who holds it, and whether it is awake, changed.
@@ -266,7 +245,7 @@ export function startLaptop(options: LaptopOptions): Laptop {
     },
     close() {
       clearInterval(windowsTimer);
-      stopNoticeActions();
+      noticePlace.close();
       stopLost();
       stopGpus();
       stopPower();

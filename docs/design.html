@@ -884,6 +884,11 @@
       <li id="pa-15"><b class="rid">PA-15</b><div>An app stops polling while its window is hidden or minimized, and never reads files on the UI thread in a loop. The shell suspends every window that is off screen (minimized, hidden, on a Desktop not shown: <code>shell/src/suspend.ts</code>, the compositor's <code>suspend</code>), the app hears it through the kit (<code>apps/kit/visibility.ts</code>), and Activity Monitor stops looking until it is seen again, then looks at once (<code>apps/activity-monitor/main.tsx</code>; its reads run on a worker thread, <code>sampler.ts</code>).</div></li>
     </ol>
 
+    <h3 id="saying-what-changed">Saying what changed</h3>
+    <ol class="rules">
+      <li id="pa-16"><b class="rid">PA-16</b><div>A change Dashi makes on its own is said once, in a plain notification: what changed as its title, why in one sentence ("Using the built-in graphics" · "Unplugged, so the graphics card sleeps to save battery."), and the one action that undoes or adjusts it. A change the person just made says nothing: the control they used already shows it. A change that had to wait says so when it is done, in place of the notice that said it was waiting. A feature's notices have one place: a new one replaces the last, never stacks beside it. A change is said only once it has held (6 s) and at most once in 30 s, so a loose cable says nothing, or one thing at the end; two changes from one cause are one notice ("…the graphics card sleeps and the screen runs at 60 Hz…"). A failure keeps its own words, and a machine without the feature hears nothing.<span class="tags">The graphics mode (<code>shell/src/graphics/notice.ts</code>: <code>decideNotice</code>, <code>NOTICE_SETTLE_MS</code>, <code>NOTICE_QUIET_MS</code>; <code>teller.ts</code>; the one place, <code>notice-place.ts</code>; on a made-up two-GPU laptop: <code>bin/dashi-graphics-preview.tsx</code>): unplugged "Using the built-in graphics" with Use Hybrid; plugged in "The graphics card is on" · "Plugged in, so apps can use the graphics card again, and the screen is back to 120 Hz." with Graphics Settings…; a screen on the card's port; "Steam quit, so the graphics card sleeps to save battery." replacing "Switching to built-in graphics"</span></div></li>
+    </ol>
+
     <h2 id="voice">Voice and copy</h2>
     <p>Dashi speaks like a good host: calm, plain, and brief. It tells you what will happen, not how it works, and it never shouts.</p>
     <div class="grid two">
@@ -895,6 +900,7 @@
     <table class="voice">
       <tr><th>Instead of</th><th>Write</th></tr>
       <tr><td>Error: EACCES writing settings.json!</td><td>Your settings couldn't be saved. Check that your home folder isn't full.</td></tr>
+      <tr><td>GPU mode switched to Integrated (AC adapter disconnected)</td><td>Using the built-in graphics · Unplugged, so the graphics card sleeps to save battery.</td></tr>
       <tr><td>Are you sure?</td><td>Delete "Groceries"? You can't undo this.</td></tr>
       <tr><td>Configure display output scaling</td><td>Make text and windows larger</td></tr>
       <tr><td>Install Now!</td><td>Install Dashi…</td></tr>

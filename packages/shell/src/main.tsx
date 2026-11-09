@@ -56,7 +56,7 @@ import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags, LayoutStore, setControlMotion } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
-import { AutoRefresh } from "./display-config/auto-refresh.ts";
+import { AutoRefresh, rateOnPower } from "./display-config/auto-refresh.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
 import { parseScreens, startDisplays } from "./displays.ts";
@@ -780,6 +780,8 @@ const laptop = startLaptop({
   nameOf: (window) => appFor(apps, window, installedApp).name,
   openSettings: (pane) => settingsApp.open(pane),
   confirmRestart: () => menus.confirmPower("restart"),
+  // Asked only once a switch has held (seconds after login), when the refresh rate below exists.
+  refreshRate: (plugged) => (autoRefresh ? rateOnPower(autoRefresh.getSnapshot(), plugged) : null),
 });
 // An applet's pick of the power mode is the same as one in Control Center.
 appletPower.connect(laptop.modes);

@@ -18,6 +18,7 @@
 import { useSyncExternalStore } from "react";
 import type { DisplayManager, ModeChange } from "./manager.ts";
 import type { Monitor } from "./monitors.ts";
+import { refreshLabel } from "./monitors.ts";
 import { type AutoRates, autoRates, decideRefresh, type RefreshChoice, type RefreshDecision } from "./refresh-policy.ts";
 import { type Later, Steady } from "./steady.ts";
 
@@ -183,4 +184,15 @@ export function useAutoRefresh(refresh: AutoRefresh): RefreshSnapshot {
 /** The first built-in screen where Automatic is offered (the one Battery & Power speaks of). */
 export function builtInScreen(snapshot: RefreshSnapshot): RefreshScreen | null {
   return snapshot.screens.find((screen) => screen.decision.offered) ?? null;
+}
+
+/**
+ * The built-in screen's rate for this power source when Automatic has
+ * moved it there ("60 Hz"), for the graphics notice to say both at once;
+ * null when Automatic doesn't run that screen or hasn't followed the cable yet.
+ */
+export function rateOnPower(snapshot: RefreshSnapshot, plugged: boolean): string | null {
+  const screen = builtInScreen(snapshot);
+  if (!screen?.decision.automatic || !screen.rates || snapshot.plugged !== plugged) return null;
+  return refreshLabel((plugged ? screen.rates.plugged : screen.rates.battery).refreshMhz);
 }
