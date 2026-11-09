@@ -12,6 +12,9 @@ import { TAPE_WIDTH } from "./layout.ts";
 import { shownExpression, type TapeEntry } from "./line.ts";
 import type { NumberLocale } from "./locale.ts";
 
+/** The head's inset, both ends: the display's, and clear of the window's corner. */
+const HEAD_INSET = 14;
+
 /** A menu to open at a point in the window. */
 export interface MenuAt {
   x: number;
@@ -80,7 +83,14 @@ export function Tape({ tape, locale, headHeight, canCopy, onUse, onEdit, onCopy,
     >
       <View
         dragRegion
-        style={{ height: Math.max(headHeight, 38), flexShrink: 0, flexDirection: "row", alignItems: "center", paddingLeft: 14, paddingRight: 8 }}
+        style={{
+          height: Math.max(headHeight, 38),
+          flexShrink: 0,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingLeft: HEAD_INSET,
+          paddingRight: HEAD_INSET,
+        }}
       >
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Tape</Text>
@@ -89,7 +99,7 @@ export function Tape({ tape, locale, headHeight, canCopy, onUse, onEdit, onCopy,
       </View>
       {tape.length === 0 ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 20 }}>
-          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>Sums you work out show up here.</Text>
+          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>Your sums show up here.</Text>
         </View>
       ) : (
         <ScrollView testID="tape-rows" style={{ flex: 1, flexDirection: "column", paddingHorizontal: 6, paddingBottom: 8 }}>
