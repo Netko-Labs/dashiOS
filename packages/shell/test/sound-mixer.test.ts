@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { catalogFrom, DASHI_KEY } from "../src/process-apps/index.ts";
 import {
   AppMixer,
@@ -224,6 +225,39 @@ describe("the monitor's output", () => {
     expect(paplay?.level).toBeCloseTo(0.5, 3);
     expect(paplay?.muted).toBe(false);
     expect(parseGraph(map.values()).streams.find((stream) => stream.id === 84)?.target).toBe("mixer-headphones");
+  });
+});
+
+describe("a real dump (the VM, PipeWire 1.6.11)", () => {
+  // pw-dump's own text, kept as it printed it (it repeats a key inside Tag params, which JSON.parse takes the last of).
+  // pw-play and paplay playing on a null "Speakers", pw-record on a null "Microphone", and Settings' own level meter (pid 170666).
+  const text = readFileSync(new URL("./fixtures/pw-dump-vm.txt", import.meta.url), "utf8");
+
+  test("the monitor's lines put back together are the same dump", () => {
+    const arrays = new JsonArrays();
+    const done = text.split("\n").flatMap((line) => arrays.push(line));
+    expect(done).toHaveLength(1);
+    const map = new GraphMap();
+    expect(map.apply(done[0] as string)).toBe(true);
+    expect(parseGraph(map.values())).toEqual(parseGraph(JSON.parse(text)));
+  });
+
+  test("rows: the Pulse client named by the pid it claims, Dashi's meter hidden", () => {
+    const shell = { comm: "bun", ppid: 1, argv: ["/usr/libexec/dashi/bin/bun", "/mnt/developer/dashiOS/packages/shell/src/main.tsx"], cgroup: "" };
+    const processes = new Map<number, ProcessLook>([
+      [172000, shell],
+      [170666, { comm: "pw-record", ppid: 172000, argv: ["pw-record", "--raw", "-"], cgroup: "" }],
+    ]);
+    const graph = parseGraph(JSON.parse(text));
+    const paplay = graph.streams.find((stream) => stream.appName === "paplay");
+    expect(paplay).toMatchObject({ pulse: true, pid: 168644, secPid: 86425, level: 0.6 });
+    const rows = rowsFrom(graph.streams, streamOwners({ catalog: () => catalog, read: (pid) => processes.get(pid) ?? null }));
+    expect(rows.apps.map((app) => [app.name, app.level, app.output])).toEqual([
+      ["pw-play", 1, "Speakers"],
+      ["paplay", 0.6, "Speakers"],
+    ]);
+    expect(rows.recording).toEqual([{ key: "sound:pw-record", name: "pw-record", icon: catalog.genericIcon, input: "Microphone", monitor: false }]);
+    expect(graph.outputs.map((output) => output.label)).toEqual(["Speakers", "Headphones"]);
   });
 });
 
