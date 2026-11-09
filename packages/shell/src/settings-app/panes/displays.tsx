@@ -7,7 +7,7 @@
  * (Control Center's slider), the refresh rate (Automatic first where the
  * built-in screen offers it: its top rate plugged in, about 60 Hz on
  * battery, display-config/auto-refresh.ts), the scale (the nearest four,
- * "More…" for the rest), and Night Shift. Resolution, rotation and the
+ * "More" for the rest), and Night Shift. Resolution, rotation and the
  * rest sit under it (display-cards.tsx), so the pane stays short. A scale
  * applies at once and is remembered for the next session; resolution,
  * rotation, and turning a screen off are tried first and asked about
@@ -78,7 +78,7 @@ function RefreshRate({ monitor, store, refresh }: { monitor: Monitor & { mode: M
   );
 }
 
-/** The scale: the one in use and its neighbours as pills, "More…" for the rest; the row says what the screen looks like. */
+/** The scale: the one in use and its neighbours as pills, "More" for the rest; the row says what the screen looks like. */
 function Scale({ monitor, screen, store }: { monitor: Monitor; screen: ScreenInfo; store: ScreensStore }) {
   const choices = scaleChoices(screen);
   const current = choices.find((choice) => isCurrentScale(screen, choice)) ?? screen.scale;

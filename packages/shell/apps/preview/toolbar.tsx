@@ -4,8 +4,8 @@
  * to a screen reader (UI-3), with the menu bar's words.
  */
 
-import { type MenuItem, ToolbarButton, useColors, useTooltip } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { type MenuItem, MORE, ToolbarButton, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { Fragment } from "react";
 import { dividerBefore, TOOLS, type ToolId } from "./fold.ts";
 import * as glyphs from "./glyphs.ts";
@@ -28,6 +28,8 @@ export interface ToolbarProps {
   onTurnRight: () => void;
   onInfo: () => void;
   onMore: (bounds: { x: number; y: number; width: number; height: number } | undefined) => void;
+  /** "…"'s menu is open: the button stays lit. */
+  moreOpen?: boolean;
   /** A file is open (it may still be loading, or not showable). Without one the toolbar holds nothing: there is nothing to act on. */
   hasFile: boolean;
   hasPicture: boolean;
@@ -124,27 +126,9 @@ export function foldedItems(folded: readonly ToolId[], props: ToolbarProps): Men
   return folded.flatMap((tool) => rows[tool]);
 }
 
-/** "…": the rest of the commands, in a menu that hangs from it. */
-function MoreButton({ onMore }: { onMore: ToolbarProps["onMore"] }) {
-  const colors = useColors();
-  const tip = useTooltip("More");
-  return (
-    <View
-      testID="more"
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel="More"
-      onPress={(event) => {
-        tip.hide();
-        onMore(event.bounds);
-      }}
-      onHoverChange={tip.onHoverChange}
-      style={{ height: 28, minWidth: 32, borderRadius: 7, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-    >
-      <Svg markup={glyphs.MORE} size={16} color={colors.textMuted} />
-      {tip.node}
-    </View>
-  );
+/** "…": the rest of the commands, in a menu that hangs from it, lit while it is open. */
+function MoreButton({ onMore, open }: { onMore: ToolbarProps["onMore"]; open: boolean }) {
+  return <ToolbarButton glyph={MORE} testID="more" tooltip="More" active={open} onPress={(event) => onMore(event.bounds)} />;
 }
 
 export function PreviewToolbar(props: ToolbarProps) {
@@ -159,7 +143,7 @@ export function PreviewToolbar(props: ToolbarProps) {
           <Tool tool={tool} props={props} />
         </Fragment>
       ))}
-      <MoreButton onMore={props.onMore} />
+      <MoreButton onMore={props.onMore} open={props.moreOpen === true} />
     </>
   );
 }

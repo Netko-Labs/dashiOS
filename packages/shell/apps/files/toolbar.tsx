@@ -6,10 +6,10 @@
  * (⇧-click and ❖-click select several: no select mode.)
  */
 
-import { ToolbarButton, useColors, useSurface } from "@dashi/ui";
+import { MORE, ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useFiles, useFilesOps, useFilesState } from "./context.ts";
-import { BACK, FOLDER_PLUS, FORWARD, GRID, LIST, MORE, sidebarGlyph } from "./glyphs.ts";
+import { BACK, FOLDER_PLUS, FORWARD, GRID, LIST, sidebarGlyph } from "./glyphs.ts";
 
 export function Leading() {
   const { store } = useFiles();
@@ -63,14 +63,17 @@ export function ViewSwitch() {
 export function Controls({
   onNewFolder,
   onMenu,
+  menuOpen = false,
   compact = false,
 }: {
   onNewFolder: () => void;
+  /** "…" was pressed: where the menu's top right goes. */
   onMenu: (point: { x: number; y: number }) => void;
+  /** "…"'s menu is open: the button stays lit. */
+  menuOpen?: boolean;
   /** A narrow window: New Folder and Empty are in "…" only. */
   compact?: boolean;
 }) {
-  const colors = useColors();
   const { actions } = useFiles();
   const ops = useFilesOps();
   const state = useFilesState();
@@ -88,24 +91,14 @@ export function Controls({
       ) : (
         <ToolbarButton glyph={FOLDER_PLUS} testID="new-folder" tooltip="New folder" disabled={!ops.writable} onPress={onNewFolder} />
       )}
-      <View
+      <ToolbarButton
+        glyph={MORE}
         testID="more"
-        focusable
-        accessibilityRole="button"
-        accessibilityLabel="More"
-        onPress={(event) => onMenu({ x: (event.bounds?.x ?? 0) - 150, y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
-        style={{
-          height: 28,
-          minWidth: 32,
-          flexShrink: 0,
-          borderRadius: 7,
-          alignItems: "center",
-          justifyContent: "center",
-          hoverBackgroundColor: colors.button,
-        }}
-      >
-        <Svg markup={MORE} size={16} color={colors.textMuted} />
-      </View>
+        tooltip="More"
+        active={menuOpen}
+        // Hung from "…": the menu's right edge under the button's (anchor "end" in view.tsx).
+        onPress={(event) => onMenu({ x: (event.bounds?.x ?? 0) + (event.bounds?.width ?? 32), y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
+      />
     </>
   );
 }

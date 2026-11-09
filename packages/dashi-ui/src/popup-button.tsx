@@ -14,7 +14,7 @@ import { buttonLook } from "./button-look.ts";
 import { useControlState } from "./control-state.tsx";
 import type { Choice } from "./controls.tsx";
 import { CHEVRON_UP_DOWN } from "./glyphs.ts";
-import { MENU, type MenuRowKind, rowTop } from "./menu-place.ts";
+import { MENU, type MenuRowKind, menuLabelLeft, rowTop } from "./menu-place.ts";
 import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu } from "./sheet.tsx";
 import { StepKeys } from "./step-keys.tsx";
 import { useColors } from "./theme/index.ts";
@@ -25,8 +25,8 @@ export type PopUpOption<T> = Choice<T> | MenuSeparator;
 
 const isOption = <T,>(option: PopUpOption<T>): option is Choice<T> => !("type" in option);
 
-/** How far left of the button the menu starts, so its labels line up with the button's (the tick's room and the row's padding). */
-const MENU_INSET = MENU.padding + MENU.edge + 8 + 18 - 10;
+/** How far left of the button the menu starts, so its labels line up with the button's (its edge, padding, a row's inset and the ticks' column, less the button's own 10 in). */
+const MENU_INSET = menuLabelLeft(true) - 10;
 
 /** The menu's top-left for a button at `anchor`: the chosen row over the button. */
 export function popUpOrigin(anchor: Bounds, rows: readonly MenuRowKind[], chosen: number): { x: number; y: number } {

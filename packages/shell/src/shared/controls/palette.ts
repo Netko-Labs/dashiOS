@@ -7,7 +7,7 @@
  * its sidebar, and a knob's resting circle (docs/design.html "Settings").
  */
 
-import { TRUE_BLACK, useDark } from "@dashi/ui";
+import { type MenuHighlight, TRUE_BLACK, useDark } from "@dashi/ui";
 
 export interface ControlPalette {
   /** The panel. */
@@ -97,6 +97,17 @@ export const controlPalette = (dark: boolean): ControlPalette => (dark ? DARK_CO
 export function useControlColors(): ControlPalette {
   return controlPalette(useDark());
 }
+
+/**
+ * A menu's lit row in these surfaces: the chosen pill's green and its ink, so
+ * a "More" menu under a row of pills lights the way the pills do (one green
+ * side by side, not kombu beside the light Dark green).
+ */
+export const controlMenuHighlight = (palette: ControlPalette): MenuHighlight => ({
+  fill: palette.on,
+  ink: palette.onInk,
+  keysInk: `${palette.onInk}cc`,
+});
 
 /**
  * A floating panel's edge and padding: in Light, only the padding, since its

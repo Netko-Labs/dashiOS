@@ -129,7 +129,7 @@ function Glance({ state }: ViewProps<State>) {
 function Panel({ state, set, close }: PopoverProps<State>) {
   const colors = useColors();
   return (
-    <View style={{ flex: 1, flexDirection: "column", gap: 6, padding: 16, borderRadius: 12, backgroundColor: colors.launcher, borderWidth: 1, borderColor: colors.dockBorder }}>
+    <View style={{ flex: 1, flexDirection: "column", gap: 6, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.menuEdge }}>
       <Text style={{ fontSize: 30, fontWeight: "bold", color: colors.text }}>{shown(state)}</Text>
       <Text style={{ fontSize: 13, color: colors.textMuted }}>Clear</Text>
       <View

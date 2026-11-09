@@ -181,6 +181,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
     onTurnRight: () => actions.rotate(1),
     onInfo: showInfo,
     // Hung from "…": its right edge under the button's, at the width it is drawn (the menu keeps itself in the window).
+    moreOpen: menu !== null,
     onMore: (bounds) => setMenu({ x: (bounds?.x ?? 0) + (bounds?.width ?? 32), y: (bounds?.y ?? 0) + (bounds?.height ?? 28) + 4 }),
     hasFile: snap.path !== null,
     hasPicture,

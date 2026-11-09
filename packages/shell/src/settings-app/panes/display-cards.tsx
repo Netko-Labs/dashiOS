@@ -1,6 +1,6 @@
 /**
  * The cards under Displays' common choices (displays.tsx): the chosen
- * display's resolution (its usual sizes, "More…" for the rest, "native" on
+ * display's resolution (its usual sizes, "More" for the rest, "native" on
  * the native size's own pill where the screen has one), variable refresh
  * rate, rotation, the main display and turning it off; a card for each
  * display that is off, with Turn On; and how X11 apps meet a scaled screen.
@@ -36,7 +36,7 @@ export function ScreenDetails({ monitor, store, canTurnOff }: { monitor: Monitor
   return (
     <Group testID={`display-details:${name}`}>
       {every.length > 1 && (
-        // The chosen pill says the size; "native" is on the native size's own pill. Past five sizes, the usual four and "More…".
+        // The chosen pill says the size; "native" is on the native size's own pill. Past five sizes, the usual four and "More".
         <Setting id="displays/resolution" detail={null}>
           <Choices
             testID={`display-resolution:${name}`}

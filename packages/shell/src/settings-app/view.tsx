@@ -9,12 +9,12 @@
  * comes back to it.
  */
 
-import { TooltipLayer } from "@dashi/ui";
+import { MenuHighlightContext, TooltipLayer } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
 import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
-import { useControlColors } from "../shared/controls/palette.ts";
+import { controlMenuHighlight, useControlColors } from "../shared/controls/palette.ts";
 import { type AppMixer, useAppNames } from "../sound/apps/index.ts";
 import type { PaneContext } from "./context.ts";
 import { appRows, type FindFocus, type Found, findSettings, moveFound } from "./find.ts";
@@ -224,36 +224,39 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
   // The registry's rows read and write these (setting.tsx).
   const stores = useMemo(() => ({ settings: ctx.settings, flags: ctx.flags }), [ctx.settings, ctx.flags]);
   const results = search.query.trim() === "" ? null : { query: search.query, found: search.found, chosen: search.chosen, onChoose: search.choose };
+  const highlight = useMemo(() => controlMenuHighlight(colors), [colors]);
   return (
     <PaneStoresContext.Provider value={stores}>
-      <SpotContext.Provider value={spots ?? null}>
-        <SaveError.Provider value={error !== null}>
-          {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
-          <View
-            testID="settings-window"
-            onWindowKeyDown={(event) => {
-              if (event.key === "escape" && search.query !== "") search.onQuery("");
-            }}
-            style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
-          >
-            {/* The window's top layer (as AppWindow's): a row's "More…" menu draws there, over the cards (shared/controls/folded.tsx). */}
-            <TooltipLayer>
-              <Sidebar
-                current={current}
-                onSelect={(pane) => nav.select(pane)}
-                shown={shown}
-                search={{ ...search, focusSerial }}
-                waiting={waitingCount(agents)}
-                {...(results ? { results } : {})}
-              />
-              <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-                {/* A pane's state is its own: switching panes starts the next one fresh. */}
-                <Pane key={current} id={current} ctx={ctx} />
-              </View>
-            </TooltipLayer>
-          </View>
-        </SaveError.Provider>
-      </SpotContext.Provider>
+      <MenuHighlightContext.Provider value={highlight}>
+        <SpotContext.Provider value={spots ?? null}>
+          <SaveError.Provider value={error !== null}>
+            {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
+            <View
+              testID="settings-window"
+              onWindowKeyDown={(event) => {
+                if (event.key === "escape" && search.query !== "") search.onQuery("");
+              }}
+              style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
+            >
+              {/* The window's top layer (as AppWindow's): a row's "More" menu draws there, over the cards (shared/controls/folded.tsx). */}
+              <TooltipLayer>
+                <Sidebar
+                  current={current}
+                  onSelect={(pane) => nav.select(pane)}
+                  shown={shown}
+                  search={{ ...search, focusSerial }}
+                  waiting={waitingCount(agents)}
+                  {...(results ? { results } : {})}
+                />
+                <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+                  {/* A pane's state is its own: switching panes starts the next one fresh. */}
+                  <Pane key={current} id={current} ctx={ctx} />
+                </View>
+              </TooltipLayer>
+            </View>
+          </SaveError.Provider>
+        </SpotContext.Provider>
+      </MenuHighlightContext.Provider>
     </PaneStoresContext.Provider>
   );
 }

@@ -43,7 +43,7 @@ export const BLANK_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
   { value: 1800, label: "30 minutes" },
 ];
 
-/** The four the screen-off row shows as pills; the rest are under "More…" (shared/controls/fold.ts). */
+/** The four the screen-off row shows as pills; the rest are under "More" (shared/controls/fold.ts). */
 export const BLANK_COMMON: readonly number[] = [120, 300, 600, 0];
 
 /** The choice for a saved number of seconds: itself when listed, else the one nearest above (a hand-edited 90 s shows as 2 minutes). */
@@ -63,7 +63,7 @@ export const SLEEP_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
   { value: 7200, label: "2 hours" },
 ];
 
-/** The four the sleep row shows as pills; the rest are under "More…". */
+/** The four the sleep row shows as pills; the rest are under "More". */
 export const SLEEP_COMMON: readonly number[] = [900, 1800, 3600, 0];
 
 /** The sleep choice for a saved number of seconds: itself when listed, else the one nearest above (a hand-edited 8 minutes shows as 10). */

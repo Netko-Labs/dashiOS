@@ -1,6 +1,20 @@
 /** The gallery's control pages: buttons, pickers, switches and sliders, and fields. */
 
-import { Button, Choices, glyphs, PopUpButton, type PopUpOption, SearchField, Segmented, Slider, Switch, TextField, ToolbarButton } from "@dashi/ui";
+import {
+  Button,
+  Choices,
+  glyphs,
+  MoreButton,
+  PopUpButton,
+  type PopUpOption,
+  SearchField,
+  Segmented,
+  Slider,
+  Switch,
+  TextField,
+  ToolbarButton,
+} from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Exhibit, PageBody, States } from "../specimen.tsx";
 
@@ -43,7 +57,25 @@ export function ButtonsPage() {
           )}
         </States>
       </Exhibit>
+      <MoreExhibit />
     </PageBody>
+  );
+}
+
+/** "More", one treatment: the word and a chevron where there is room, the three dots on a toolbar button where there isn't. */
+function MoreExhibit() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Exhibit
+      title="More"
+      note="The word and a chevron, ink, never underlined, never an ellipsis; pressed, it says Less. Without room for a word: the dots, lit while their menu is open."
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        <MoreButton testID="more:words" open={open} onPress={() => setOpen((now) => !now)} />
+        <ToolbarButton testID="more:glyph" glyph={glyphs.MORE} tooltip="More" onPress={noop} />
+        <ToolbarButton testID="more:glyph-open" glyph={glyphs.MORE} tooltip="More" active onPress={noop} />
+      </View>
+    </Exhibit>
   );
 }
 

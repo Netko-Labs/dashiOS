@@ -7,15 +7,12 @@
  * something went, with a dot when one of those wants attention.
  */
 
-import { useColors } from "@dashi/ui";
+import { MORE, useColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { fitStatus, MORE_WIDTH, STATUS_GAP, statusRow, UNMEASURED } from "./menubar-fit.ts";
 import { type BarStop, MORE_STOP, type StopKind } from "./menus/bar-keys.ts";
 import { useControlColors } from "./shared/controls/palette.ts";
-
-/** "…": three dots on the status glyphs' grid. */
-export const MORE_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/></svg>`;
 
 /** "…"'s name for a screen reader. */
 const MORE_LABEL = "More menu bar items";
@@ -136,7 +133,7 @@ function More({
         backgroundColor: open ? colors.switcherSelection : "#00000000",
       }}
     >
-      <Svg markup={MORE_GLYPH} size={16} color={colors.text} />
+      <Svg markup={MORE} size={16} color={colors.text} />
       {focused && <BarRing radius={MORE_WIDTH / 2} />}
       {attention && (
         <View

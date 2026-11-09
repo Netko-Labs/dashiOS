@@ -6,8 +6,31 @@
  * place first; its width is measured once it is.
  */
 
-/** The menu's measures: its padding, a row, and a separator (a hairline with 4 above and below). */
-export const MENU = { padding: 5, row: 24, separator: 9, edge: 1, minWidth: 160, margin: 6 } as const;
+/**
+ * Every menu's measures, in a window or from the menu bar (docs/design.html,
+ * "Menu"): its padding, a row, and a separator (a hairline with 4 above and
+ * below); a row's side inset, the tick's column and the gap after it, the
+ * least room between a label and its shortcut, the shortcut's key column
+ * (`Shortcut`'s `keyColumn`); the card's and a row's corners.
+ */
+export const MENU = {
+  padding: 5,
+  row: 24,
+  separator: 9,
+  edge: 1,
+  minWidth: 160,
+  margin: 6,
+  inset: 8,
+  tick: 12,
+  tickGap: 6,
+  keysGap: 24,
+  keyColumn: 14,
+  radius: 9,
+  rowRadius: 5,
+} as const;
+
+/** How far right of the menu's outer edge its labels start: past the edge, the padding, a row's inset, and the ticks' column when it has one. */
+export const menuLabelLeft = (ticks: boolean): number => MENU.edge + MENU.padding + MENU.inset + (ticks ? MENU.tick + MENU.tickGap : 0);
 
 /** A row of a menu: an item, or the line between two groups of them. */
 export type MenuRowKind = "item" | "separator";
@@ -34,6 +57,34 @@ export interface Size {
  */
 export function menuFits(height: number, room: number): number {
   return room <= 0 ? height : Math.min(height, Math.max(room - 2 * MENU.margin, MENU.row + 2 * (MENU.padding + MENU.edge)));
+}
+
+/** A menu hung from a button keeps under it while this many rows fit there; fewer, and it slides up over the button. */
+export const HUNG_ROWS = 4;
+
+/**
+ * How tall a menu hung under a button (`anchor` "end": a toolbar's or a
+ * pill row's "More") is drawn when its top is at `top` in a window `room`
+ * tall: the room under the button, less the margin, its rows scrolling, so
+ * it never slides up over the button that opened it; its own height when
+ * that fits, and `menuFits`' when not even HUNG_ROWS rows fit under it.
+ */
+export function hungHeight(height: number, top: number, room: number): number {
+  if (room <= 0) return height;
+  const under = Math.floor(room - top - MENU.margin);
+  if (height <= under) return height;
+  return under >= HUNG_ROWS * MENU.row + 2 * (MENU.padding + MENU.edge) ? under : menuFits(height, room);
+}
+
+/**
+ * The most a menu may be wide in a window `room` wide (0: not known yet):
+ * its own cap, if any, and never wider than the window less 6 a side, so a
+ * long label ends in an ellipsis rather than off the window's edge.
+ */
+export function menuMaxWidth(own: number | undefined, room: number): number | undefined {
+  const window = room > 0 ? Math.max(MENU.minWidth / 2, room - 2 * MENU.margin) : undefined;
+  if (window === undefined) return own;
+  return own === undefined ? window : Math.min(own, window);
 }
 
 /**

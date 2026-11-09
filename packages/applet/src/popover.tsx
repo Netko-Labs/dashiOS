@@ -7,9 +7,9 @@
  * switch (appearance.ts).
  */
 
-import { setAppearanceSource } from "@dashi/ui";
-import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost } from "@mirinjs/metal";
-import type { ReactElement } from "react";
+import { setAppearanceSource, useSurface } from "@dashi/ui";
+import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost, View } from "@mirinjs/metal";
+import type { ReactElement, ReactNode } from "react";
 import { appearance } from "./appearance.ts";
 import type { PopoverPlacement } from "./client.ts";
 import type { WarmHost } from "./warm-host.ts";
@@ -31,6 +31,28 @@ export function popoverSurface(placement: PopoverPlacement): SurfaceOptions {
     namespace: placement.namespace,
     ...(placement.output === null ? {} : { output: placement.output }),
   };
+}
+
+/** The popover's corner, the shell's own panels' (a sheet's radius). */
+export const POPOVER_RADIUS = 12;
+
+/**
+ * The ground under every applet's popover: solid, rounded, and clipping the
+ * applet's tree to its corners. An applet's own ground may be glass (the
+ * launcher's 96% tint was the template's), but a layer surface has no blur
+ * behind it, so a window under it ghosted through every row. On this ground
+ * any tint the applet lays on top comes out solid.
+ */
+export function PopoverGround({ children }: { children: ReactNode }) {
+  const surface = useSurface();
+  return (
+    <View
+      testID="applet-popover-ground"
+      style={{ flex: 1, flexDirection: "column", borderRadius: POPOVER_RADIUS, overflow: "hidden", backgroundColor: surface.card }}
+    >
+      {children}
+    </View>
+  );
 }
 
 export interface OpenPopover {
@@ -62,7 +84,7 @@ export function openPopoverWindow({ appId, title, placement, element, onClosed, 
   const shape = { appId, title, width: placement.width, height: placement.height, surface: popoverSurface(placement) };
   // A warm host draws on its first frame; a new one takes a second or two to start. Either is named for screen readers.
   const host = warm?.take(shape) ?? spawn(metalHost(), { ...shape, env: { MIRIN_METAL_APP_NAME: title } });
-  const root = render(element, host);
+  const root = render(<PopoverGround>{element}</PopoverGround>, host);
   let open = true;
   const finish = (): void => {
     if (!open) return;

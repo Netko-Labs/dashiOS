@@ -19,11 +19,29 @@ export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStat
 export { Button, Caption, type Choice, Choices, Group, Note, Row, Tile } from "./controls.tsx";
 export { SearchField, Segmented, TextField, type TextFieldProps } from "./fields.tsx";
 export * as glyphs from "./glyphs.ts";
-export { CHECK, CHEVRON_DOWN, CHEVRON_UP, CHEVRON_UP_DOWN, CLEAR, CLOSE, INFO, LOCK, RESTART, SEARCH, SHUT_DOWN, SLEEP, STOP, WARNING } from "./glyphs.ts";
+export {
+  CHECK,
+  CHEVRON_DOWN,
+  CHEVRON_UP,
+  CHEVRON_UP_DOWN,
+  CLEAR,
+  CLOSE,
+  INFO,
+  LOCK,
+  MORE,
+  RESTART,
+  SEARCH,
+  SHUT_DOWN,
+  SLEEP,
+  STOP,
+  WARNING,
+} from "./glyphs.ts";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
-export { MENU, type MenuRowKind, menuHeight, placeMenu, rowTop } from "./menu-place.ts";
+export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
+export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
+export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { LOADING_DELAY_MS, Loading, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";

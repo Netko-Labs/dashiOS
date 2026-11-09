@@ -22,6 +22,7 @@ import { DropdownMenu } from "./view.tsx";
 function StatusMenu({
   entries,
   right,
+  room,
   fromKeys,
   onSide,
   onClosed,
@@ -30,6 +31,7 @@ function StatusMenu({
 }: {
   entries: readonly MenuEntry<StatusMenuAction>[];
   right: number;
+  room: { width: number; height: number };
   fromKeys: boolean;
   onSide: (toward: "left" | "right") => void;
   onClosed: () => void;
@@ -38,7 +40,7 @@ function StatusMenu({
 }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, when this menu goes.
   useEffect(() => onClosed, []);
-  return <DropdownMenu entries={entries} x={right} alignRight fromKeys={fromKeys} onSide={onSide} onClose={onClose} onChoose={onChoose} />;
+  return <DropdownMenu entries={entries} x={right} alignRight room={room} fromKeys={fromKeys} onSide={onSide} onClose={onClose} onChoose={onChoose} />;
 }
 
 /**
@@ -123,8 +125,9 @@ export function PopoverRoot({
   /** The Metal host takes accessibility props (launcher/access.ts). */
   accessible?: () => boolean;
 }) {
-  // The surface's width: the battery panel stays inside it.
-  const [width, setWidth] = useState<number | null>(null);
+  // The surface's size (the screen under the bar): the battery panel and the menus stay inside it.
+  const [room, setRoom] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const width = room.width > 0 ? room.width : null;
   const { popover, context, appName, output, bar } = useMenus(controller);
   const app = useAppMenus(appMenus);
   const entries = popover?.kind === "menu" && context ? buildMenu(popover.id, { ...context, app }) : [];
@@ -140,7 +143,9 @@ export function PopoverRoot({
   return (
     <View
       style={{ flex: 1 }}
-      onLayout={(bounds) => setWidth(bounds.width)}
+      onLayout={(bounds) =>
+        setRoom((now) => (now.width === bounds.width && now.height === bounds.height ? now : { width: bounds.width, height: bounds.height }))
+      }
       // The keys no open menu or panel takes: the bar's, while its ring is there (a panel without keys of its own: Esc).
       onWindowKeyDown={(event) => (popover === null ? controller.barKey(event.key) : event.key === "escape" && back())}
     >
@@ -151,6 +156,7 @@ export function PopoverRoot({
           key={popover.id}
           entries={entries}
           x={popover.x}
+          room={room}
           fromKeys={fromBar}
           onSide={(toward) => controller.side(toward)}
           onClose={back}
@@ -165,6 +171,7 @@ export function PopoverRoot({
           entries={popover.entries}
           x={popover.x}
           above={popover.above ?? DOCK_MENU_ABOVE}
+          room={room}
           onClose={close}
           onChoose={(action) => {
             close();
@@ -177,6 +184,7 @@ export function PopoverRoot({
           key={popover.key}
           entries={popover.entries}
           right={popover.right}
+          room={room}
           fromKeys={fromBar}
           onSide={(toward) => controller.side(toward)}
           onClosed={() => onStatusClosed?.(popover.key)}

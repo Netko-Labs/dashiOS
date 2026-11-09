@@ -1,12 +1,12 @@
 /**
  * The print sheet: the printer, copies, pages and two-sided printing in
- * view, paper size and color under "More", Save as PDF as a button beside
+ * view, paper size and color under "More Options", Save as PDF as a button beside
  * Cancel and Print. Printers are CUPS's, as Settings would list them. Esc
  * cancels and Enter prints from anywhere in the sheet, a field included;
  * Copies keeps what is typed, and Print waits until it reads as a count.
  */
 
-import { Button, Choices, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
+import { Button, Choices, MoreButton, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { variant } from "../../../src/dbus/index.ts";
@@ -100,9 +100,7 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         </View>
       </Row>
       {twoSided && <CheckBox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
-      <View testID="print:more" onPress={() => setMore(!more)} style={{ flexDirection: "row" }}>
-        <Text style={{ fontSize: 12, color: colors.selection }}>{more ? "Fewer Options" : "More…"}</Text>
-      </View>
+      <MoreButton testID="print:more" open={more} more="More Options" less="Fewer Options" onPress={() => setMore(!more)} />
       {more && media.length > 0 && (
         <Row label="Paper">
           <PopUpButton

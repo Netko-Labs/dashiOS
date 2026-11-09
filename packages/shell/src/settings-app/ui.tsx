@@ -133,7 +133,7 @@ export interface Choice<T> {
 
 /**
  * Choices as segmented pills, the chosen one green with the tighter corner;
- * past five, the four commonest (`common`, else the first four) and "More…"
+ * past five, the four commonest (`common`, else the first four) and "More"
  * for the rest, the one in use always among the pills (shared/controls/fold.ts).
  */
 export function Choices<T extends string | number>(props: {
