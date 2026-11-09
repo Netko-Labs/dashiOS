@@ -40,12 +40,12 @@ describe("a tab's row in the View menu", () => {
     expect(tabLabel("x".repeat(TAB_LABEL))).toBe("x".repeat(TAB_LABEL));
   });
 
-  test("a long one is cut in the middle to 40 characters, its start and its end kept", () => {
+  test("a long one is cut in the middle to 36 characters, its start and its end kept", () => {
     const label = tabLabel("community-garden-volunteer-schedule-and-watering-rota-2027");
     expect(Array.from(label).length).toBeLessThanOrEqual(TAB_LABEL);
-    expect(label.startsWith("community-garden-volunteer")).toBe(true);
+    expect(label.startsWith("community-garden-volun")).toBe(true);
     expect(label.endsWith("watering-rota-2027")).toBe(false);
-    expect(label.endsWith("-rota-2027")).toBe(true);
+    expect(label.endsWith("rota-2027")).toBe(true);
     expect(label).toContain("…");
     // A wide character is one character, never half of one.
     expect(Array.from(tabLabel("界".repeat(50))).length).toBe(TAB_LABEL);

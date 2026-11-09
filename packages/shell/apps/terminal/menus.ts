@@ -40,12 +40,12 @@ export interface TerminalMenuContext {
 }
 
 /**
- * A tab's row: at most 40 characters, so the row and its ❖ key stay inside
- * the menu bar's dropdown (360 at most). A longer name is cut in the
+ * A tab's row: at most 36 characters, so the row and its ❖ key stay inside
+ * the menu bar's dropdown (360 at most) with no second cut. A longer name is cut in the
  * middle, its start and its end kept: two tabs of one long folder differ
  * at the end ("…-2026", "…-2027"), and a command at its start.
  */
-export const TAB_LABEL = 40;
+export const TAB_LABEL = 36;
 
 export function tabLabel(title: string): string {
   const chars = Array.from(title);
