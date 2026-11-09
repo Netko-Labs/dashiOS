@@ -230,41 +230,44 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
-      <View
-        testID="files-window"
-        onLayout={(bounds) => setWidth((now) => (now === Math.round(bounds.width) ? now : Math.round(bounds.width)))}
-        style={{ flex: 1 }}
-      >
-        <AppWindow
-          title={title}
-          leading={<Leading />}
-          center={
-            <Omnibox
-              editing={editing}
-              session={editSession}
-              onEdit={setEditing}
-              onDone={() => {
-                setEditing(null);
-                refocus();
-              }}
-              onSuggest={setSuggestions}
-            />
-          }
-          toolbar={<Controls compact={chrome.compact} onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
-          sidebar={<Sidebar rail={chrome.rail} />}
-          {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
-          notice={<Footer />}
-          overlay={overlay}
+      {/* The window's root reports no bounds of its own (Metal records a view's from its parent): its one child does. */}
+      <View style={{ flex: 1 }}>
+        <View
+          testID="files-window"
+          onLayout={(bounds) => setWidth((now) => (now === Math.round(bounds.width) ? now : Math.round(bounds.width)))}
+          style={{ flex: 1 }}
         >
-          {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
-          <Listing
-            // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
-            onBackgroundMenu={(point) => {
-              store.select([]);
-              setMenu({ ...point, kind: "background" });
-            }}
-          />
-        </AppWindow>
+          <AppWindow
+            title={title}
+            leading={<Leading />}
+            center={
+              <Omnibox
+                editing={editing}
+                session={editSession}
+                onEdit={setEditing}
+                onDone={() => {
+                  setEditing(null);
+                  refocus();
+                }}
+                onSuggest={setSuggestions}
+              />
+            }
+            toolbar={<Controls compact={chrome.compact} onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
+            sidebar={<Sidebar rail={chrome.rail} />}
+            {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+            notice={<Footer />}
+            overlay={overlay}
+          >
+            {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
+            <Listing
+              // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
+              onBackgroundMenu={(point) => {
+                store.select([]);
+                setMenu({ ...point, kind: "background" });
+              }}
+            />
+          </AppWindow>
+        </View>
       </View>
     </Files.Provider>
   );
