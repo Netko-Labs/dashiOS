@@ -5,8 +5,6 @@
  * of the hidden choices, it takes the fourth pill's place, chosen.
  */
 
-import { menuLabelLeft } from "@dashi/ui";
-
 export interface Choice<T> {
   value: T;
   label: string;
@@ -37,16 +35,16 @@ export function foldChoices<T>(options: ReadonlyArray<Choice<T>>, value: T, comm
   return { shown: [...usual.slice(0, FOLDED_PILLS - 1), current], more: true };
 }
 
-/** The "More" pill's label is this far in from its left edge (`SEGMENTED.inset`, inputs.tsx). */
-const PILL_INSET = 12;
 /** The menu clears the pills' track (4 of padding) by 4. */
 const BELOW_TRACK = 4 + 4;
 
 /**
- * Where "More"'s menu goes for the pill at `pill`: under the track, its
- * labels (past the ticks' column) on the pill's label's left edge, so the
- * word and the choices read down one line. `PopupMenu` keeps it in the window.
+ * Where "More"'s menu hangs for the pill at `pill`: under the track, its
+ * right edge under the pill's (`PopupMenu`'s `anchor` "end"), as every
+ * "More" menu hangs. The pill ends the row, so a menu opened at its left
+ * would run off the window and flip away from it. `PopupMenu` keeps it in
+ * the window.
  */
 export function moreMenuOrigin(pill: { x: number; y: number; width: number; height: number }): { x: number; y: number } {
-  return { x: Math.round(pill.x + PILL_INSET - menuLabelLeft(true)), y: Math.round(pill.y + pill.height + BELOW_TRACK) };
+  return { x: Math.round(pill.x + pill.width), y: Math.round(pill.y + pill.height + BELOW_TRACK) };
 }

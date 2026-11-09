@@ -2,7 +2,6 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { menuLabelLeft } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { FlagsStore } from "../src/control-center/flags.ts";
@@ -135,13 +134,11 @@ test("More opens every choice in Dashi's menu, and a hidden one picked there tak
   again.unmount();
 });
 
-test("More's menu hangs under the track, its labels on the pill's label's edge", () => {
+test("More's menu hangs under the track by its right edge, under the pill's", () => {
+  // The pill ends the row: opened at its left, the menu ran off the window and flipped away from it.
   const pill = { x: 600, y: 140, width: 64, height: 32 };
-  const at = moreMenuOrigin(pill);
-  // Under the track (4 of padding) with 4 of air.
-  expect(at.y).toBe(pill.y + pill.height + 8);
-  // The menu's labels start past its edge, padding, a row's inset and the ticks' column: on the pill's 12 in.
-  expect(at.x + menuLabelLeft(true)).toBe(pill.x + 12);
+  // Under the track (4 of padding) with 4 of air; its right edge (anchor "end") under the pill's.
+  expect(moreMenuOrigin(pill)).toEqual({ x: pill.x + pill.width, y: pill.y + pill.height + 8 });
 });
 
 // ── Sound with no microphone ───────────────────────────────────────────────

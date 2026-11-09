@@ -2,8 +2,8 @@
  * Choices as segmented pills that fold past five (fold.ts): the four
  * commonest, then a "More" pill with a chevron in the same track, on the
  * pills' line, which opens every choice in Dashi's menu (@dashi/ui
- * `PopupMenu`), the one in use ticked, its labels on the pill's label's
- * edge. The pill is washed while the menu is open. A row of five or fewer
+ * `PopupMenu`), the one in use ticked, hung by its right edge under the
+ * pill's. The pill is washed while the menu is open. A row of five or fewer
  * is plain `Segmented`. "More" is one treatment everywhere (docs/design.html,
  * "More"): the word and a chevron, never an underline or an ellipsis.
  */
@@ -38,6 +38,7 @@ export function FoldedChoices<T extends string | number>({ options, value, onCha
               testID={`${testID}:menu`}
               x={at.x}
               y={at.y}
+              anchor="end"
               items={options.map((option) => ({
                 label: option.label,
                 checked: option.value === value,
