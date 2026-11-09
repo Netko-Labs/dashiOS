@@ -54,8 +54,8 @@ export function InfoSheet({ name, rows, onClose }: { name: string; rows: readonl
       </Text>
       <Group testID="info-sheet:rows">
         {rows.map(([label, value]) => (
-          <Row key={label} label={label}>
-            {/* Two thirds of the row, from a zero basis: a long value wraps there and the row grows with it. */}
+          <Row key={label} label={label} wraps>
+            {/* Two thirds of the row, from a zero basis: a long value wraps there, the row grows with it, and the label stays on its first line. */}
             <View testID={`info-sheet:${label}`} style={{ flex: 2, minWidth: 0 }}>
               <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>{value}</Text>
             </View>

@@ -79,6 +79,9 @@ test("an Untitled document is a draft, counted once typing pauses; the Save shee
   expect(host.trees.at(-1)).toContain(' — Draft"');
   expect(host.trees.at(-1)).toContain("1 line · 0 words");
   expect(root.nodeId("counts")).toBeDefined();
+  // The chip ends on the toolbar's right edge (paddingRight 12), under Find.
+  expect(host.trees.at(-1)).toMatch(new RegExp(`"id":"${root.nodeId("counts")}"[^}]*"absolute":true,"right":12,`));
+  expect(host.trees.at(-1)).toContain('"paddingRight":12,"borderBottom":1,"height":38');
   await new Promise((done) => setTimeout(done, 350));
   expect(host.trees.at(-1)).toContain("1 line · 2 words");
 

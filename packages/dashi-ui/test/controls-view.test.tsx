@@ -3,7 +3,7 @@ import { type NativeEvent, render, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type AlertButton, AlertSheet, AlertWindow, alertKeyTarget } from "../src/alert.tsx";
 import { ShowStates } from "../src/control-state.tsx";
-import { Button } from "../src/controls.tsx";
+import { Button, Row } from "../src/controls.tsx";
 import { WARNING } from "../src/glyphs.ts";
 import { PopUpButton } from "../src/popup-button.tsx";
 import { ProgressBar } from "../src/progress.tsx";
@@ -301,5 +301,38 @@ test("the arrows step a slider, each press a move and a commit; the click that e
   host.emit({ type: "press", nodeId: root.nodeId("s:key:4") as string });
   await settle();
   expect(commits).toEqual([75, 0]);
+  root.unmount();
+});
+
+test("a row whose value wraps keeps its label on the first line; one line still sits on the middle", async () => {
+  const host = fakeHost();
+  const root = render(
+    <View>
+      <Row testID="plain" label="Kind">
+        <View />
+      </Row>
+      <Row testID="long" label="Title" wraps>
+        <View />
+      </Row>
+    </View>,
+    host.transport,
+  );
+  await settle();
+  const tree = JSON.parse(host.last()) as { props: Record<string, unknown>; children?: unknown[] };
+  const find = (node: { props: Record<string, unknown>; children?: unknown[] }, id: string): Record<string, unknown> | undefined => {
+    if (node.props.id === id) return node.props;
+    for (const child of node.children ?? []) {
+      if (typeof child === "object" && child !== null && "props" in child) {
+        const found = find(child as { props: Record<string, unknown>; children?: unknown[] }, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+  expect(find(tree, root.nodeId("plain") ?? "")?.align).toBe("center");
+  const long = find(tree, root.nodeId("long") ?? "") ?? {};
+  expect(long.align).toBe("start");
+  // A 21 px line of 13 px text in a 44 row: 11 over it and 12 under, the middle a one-line row has too.
+  expect([long.paddingTop, long.paddingBottom, long.minHeight]).toEqual([11, 12, 44]);
   root.unmount();
 });

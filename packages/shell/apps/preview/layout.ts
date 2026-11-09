@@ -10,8 +10,11 @@
 
 import type { Size } from "./dimensions.ts";
 
-/** Room around the column and between pages (a fitted picture keeps the same, zoom.ts FIT_MARGIN). */
-export const MARGIN = 16;
+/**
+ * Room around the column (a fitted picture keeps the same, zoom.ts FIT_MARGIN): 18, the toolbar's inset after
+ * the strip (@dashi/ui toolbarInset), so a page that fills the width starts under the title's first letter.
+ */
+export const MARGIN = 18;
 export const PAGE_GAP = 12;
 /** How far past the screen pages are still drawn (and rendered ahead), in screens. */
 export const OVERSCAN = 0.75;

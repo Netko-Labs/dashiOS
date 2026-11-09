@@ -24,10 +24,14 @@ export interface SidebarItemProps {
   compact?: boolean;
 }
 
+/** A sidebar row's height (LA-1); a compact one is 28. Apps that draw their own rows (Files' places, Notes' New folder) take it too. */
+export const SIDEBAR_ROW_HEIGHT = 32;
+const COMPACT_ROW_HEIGHT = 28;
+
 export function SidebarItem({ label, selected, onPress, testID, tile, glyph, badge, compact }: SidebarItemProps) {
   const colors = useColors();
   const look = rowLook(colors, selected);
-  const height = compact === true ? 28 : 32;
+  const height = compact === true ? COMPACT_ROW_HEIGHT : SIDEBAR_ROW_HEIGHT;
   return (
     <View
       testID={testID}

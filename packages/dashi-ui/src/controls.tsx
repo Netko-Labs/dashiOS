@@ -82,8 +82,31 @@ export function Group({
   );
 }
 
-/** A label (and a quieter line under it) with a control at the end; `stack` puts the control under the label. */
-export function Row({ label, detail, children, stack, testID }: { label: string; detail?: string; children?: ReactNode; stack?: boolean; testID?: string }) {
+/** One line of 13 px text: GPUI's line height is φ times the size (vendor/gpui style.rs). */
+const LINE_13 = 21;
+/** A row's least height (LA-1). */
+const ROW_MIN = 44;
+
+/**
+ * A label (and a quieter line under it) with a control at the end; `stack` puts the control under the label.
+ * `wraps`: the end is 13 px text that may wrap (a long value in an Info card), so the label sits on its first
+ * line, not on the middle of all of them. One line still sits on the row's middle.
+ */
+export function Row({
+  label,
+  detail,
+  children,
+  stack,
+  wraps,
+  testID,
+}: {
+  label: string;
+  detail?: string;
+  children?: ReactNode;
+  stack?: boolean;
+  wraps?: boolean;
+  testID?: string;
+}) {
   const colors = useColors();
   const labels = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
@@ -99,8 +122,29 @@ export function Row({ label, detail, children, stack, testID }: { label: string;
       </View>
     );
   }
+  if (wraps) {
+    // Top-aligned, with the padding that puts one line on the middle of a least-height row: 11 over, 12 under.
+    const over = Math.floor((ROW_MIN - LINE_13) / 2);
+    return (
+      <View
+        testID={testID}
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: 12,
+          minHeight: ROW_MIN,
+          paddingHorizontal: 12,
+          paddingTop: over,
+          paddingBottom: ROW_MIN - LINE_13 - over,
+        }}
+      >
+        {labels}
+        {children}
+      </View>
+    );
+  }
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }}>
+    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW_MIN, paddingHorizontal: 12, paddingVertical: 8 }}>
       {labels}
       {children}
     </View>

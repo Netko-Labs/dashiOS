@@ -67,7 +67,7 @@ export {
   tidyEntries,
 } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
-export { SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
+export { SIDEBAR_ROW_HEIGHT, SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
 export { Slider, type SliderProps } from "./slider.tsx";
 export { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
 export { StepKeys, type StepKeysProps } from "./step-keys.tsx";

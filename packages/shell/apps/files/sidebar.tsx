@@ -7,7 +7,7 @@
  * tooltip (chrome.ts).
  */
 
-import { rowLook, SelectionBar, SidebarSection, useColors, useTooltip } from "@dashi/ui";
+import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesState } from "./context.ts";
 import { mount } from "./drives.ts";
@@ -54,7 +54,7 @@ function Row({
       onHoverChange={tip.onHoverChange}
       {...drop.props}
       style={{
-        height: 30,
+        height: SIDEBAR_ROW_HEIGHT,
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
@@ -68,7 +68,7 @@ function Row({
         ...(drop.over ? { borderWidth: 2, borderColor: colors.selection } : {}),
       }}
     >
-      {current && <SelectionBar rowHeight={30} />}
+      {current && <SelectionBar rowHeight={SIDEBAR_ROW_HEIGHT} />}
       {/* Kombu marks the selected row only; a glyph is muted at rest and ink on the wash (CO-2). */}
       <Svg markup={sidebarGlyph(glyph)} size={16} color={look.glyph} />
       {!rail && (
