@@ -10,6 +10,10 @@ export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-wid
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
 export const CHEVRON_UP = svg(stroke("M4.5 10l3.5-3.5 3.5 3.5", 1.6));
 export const CHEVRON_DOWN = svg(stroke("M4.5 6.5l3.5 3.5 3.5-3.5", 1.6));
+/** Three dots: "More" where there is no room for the word (a toolbar's, the menu bar's, a row's). One glyph everywhere. */
+export const MORE = svg(
+  '<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>',
+);
 /** A chevron up over a chevron down: a pop-up button, whose menu opens over it. */
 export const CHEVRON_UP_DOWN = svg(stroke("M5.2 6.2L8 3.4l2.8 2.8", 1.5) + stroke("M5.2 9.8L8 12.6l2.8-2.8", 1.5));
 /** An octagon with an x: stop (quit) a process. */

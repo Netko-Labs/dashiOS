@@ -220,7 +220,17 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     }
     if (menu) {
       // The menu keeps itself inside the window, flipped at the pointer when it would run off (PA-9).
-      return <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menuItems(menu.kind)} onClose={close} />;
+      // "…"'s hangs by its right edge under the button, at the width it is drawn.
+      return (
+        <PopupMenu
+          testID="menu"
+          x={menu.x}
+          y={menu.y}
+          items={menuItems(menu.kind)}
+          onClose={close}
+          {...(menu.kind === "actions" ? { anchor: "end" as const } : {})}
+        />
+      );
     }
     if (suggestions) return <SuggestionList suggestions={suggestions} home={store.env.home} />;
     return undefined;
@@ -252,7 +262,14 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
                 onSuggest={setSuggestions}
               />
             }
-            toolbar={<Controls compact={chrome.compact} onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
+            toolbar={
+              <Controls
+                compact={chrome.compact}
+                onNewFolder={actions.newFolder}
+                onMenu={(point) => setMenu({ ...point, kind: "actions" })}
+                menuOpen={menu?.kind === "actions"}
+              />
+            }
             sidebar={<Sidebar rail={chrome.rail} />}
             {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
             notice={<Footer />}

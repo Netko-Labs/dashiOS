@@ -2,6 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { menuLabelLeft } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { FlagsStore } from "../src/control-center/flags.ts";
@@ -24,7 +25,7 @@ import { SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import type { PaneServices } from "../src/settings-app/services.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
-import { FOLD_PAST, foldChoices } from "../src/shared/controls/fold.ts";
+import { FOLD_PAST, foldChoices, moreMenuOrigin } from "../src/shared/controls/fold.ts";
 import { fakeMeter, LevelsStore, SoundStore } from "../src/sound/index.ts";
 import type { Output } from "../src/sound/types.ts";
 
@@ -55,11 +56,20 @@ async function mount(tree: ReactNode) {
 
 const stores = () => ({ settings: new SettingsStore(join(dir, `settings-${Math.random()}.json`)), flags: new FlagsStore(null) });
 
-// ── Four + More… ────────────────────────────────────────────────────────────
+// ── Four + More ────────────────────────────────────────────────────────────
+
+interface Node {
+  props: { id?: string };
+  children?: Node[];
+}
+const findById = (node: Node, id: string): Node | undefined =>
+  node.props.id === id
+    ? node
+    : (node.children ?? []).map((child) => (typeof child === "object" && child !== null && "props" in child ? findById(child, id) : undefined)).find(Boolean);
 
 const seven = ["a", "b", "c", "d", "e", "f", "g"].map((value) => ({ value, label: value.toUpperCase() }));
 
-test("a pill row of five or fewer shows every choice; past five, four and More…", () => {
+test("a pill row of five or fewer shows every choice; past five, four and More", () => {
   const five = seven.slice(0, FOLD_PAST);
   expect(foldChoices(five, "e")).toEqual({ shown: five, more: false });
   expect(foldChoices(seven, "b")).toEqual({ shown: seven.slice(0, 4), more: true });
@@ -84,7 +94,7 @@ test("the timers show their four usual times; 20 minutes, set, stands fourth", (
   expect(foldChoices(sleep, 7200, SLEEP_COMMON).shown.map((pill) => pill.label)).toEqual(["15 min", "30 min", "1 h", "2 h"]);
 });
 
-test("More… opens every choice in Dashi's menu, and a hidden one picked there takes the fourth pill", async () => {
+test("More opens every choice in Dashi's menu, and a hidden one picked there takes the fourth pill", async () => {
   const { TooltipLayer } = await import("@dashi/ui");
   const { View } = await import("@mirinjs/metal");
   const { FoldedChoices } = await import("../src/shared/controls/folded.tsx");
@@ -105,8 +115,14 @@ test("More… opens every choice in Dashi's menu, and a hidden one picked there 
     await settle();
   };
   expect(root.nodeId("timer:f")).toBeUndefined();
-  // A press carries the link's bounds: the menu opens under it, in the window's top layer.
-  await send({ type: "press", nodeId: root.nodeId("timer:more") ?? "", bounds: { x: 600, y: 140, width: 40, height: 16 } });
+  // "More" is the last pill in the pills' own track, on their line: no link beside it.
+  const track = JSON.parse(root.lastTree() ?? "{}") as Node;
+  const pills = (findById(track, root.nodeId("timer") ?? "")?.children ?? []).map((pill) => pill.props.id);
+  expect(pills.at(-1)).toBe(root.nodeId("timer:more"));
+  expect(root.lastTree()).not.toContain("underline");
+  expect(root.lastTree()).not.toContain("More…");
+  // A press carries the pill's bounds: the menu opens under the track, in the window's top layer.
+  await send({ type: "press", nodeId: root.nodeId("timer:more") ?? "", bounds: { x: 600, y: 140, width: 64, height: 32 } });
   expect(root.nodeId("timer:menu:away")).toBeDefined();
   const rows = (root.lastTree() ?? "").match(/"G"/g) ?? [];
   expect(rows.length).toBeGreaterThan(0);
@@ -117,6 +133,15 @@ test("More… opens every choice in Dashi's menu, and a hidden one picked there 
   expect(again.nodeId("timer:f")).toBeDefined();
   expect(again.nodeId("timer:d")).toBeUndefined();
   again.unmount();
+});
+
+test("More's menu hangs under the track, its labels on the pill's label's edge", () => {
+  const pill = { x: 600, y: 140, width: 64, height: 32 };
+  const at = moreMenuOrigin(pill);
+  // Under the track (4 of padding) with 4 of air.
+  expect(at.y).toBe(pill.y + pill.height + 8);
+  // The menu's labels start past its edge, padding, a row's inset and the ticks' column: on the pill's 12 in.
+  expect(at.x + menuLabelLeft(true)).toBe(pill.x + 12);
 });
 
 // ── Sound with no microphone ───────────────────────────────────────────────

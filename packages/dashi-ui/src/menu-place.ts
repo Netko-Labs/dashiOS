@@ -6,8 +6,31 @@
  * place first; its width is measured once it is.
  */
 
-/** The menu's measures: its padding, a row, and a separator (a hairline with 4 above and below). */
-export const MENU = { padding: 5, row: 24, separator: 9, edge: 1, minWidth: 160, margin: 6 } as const;
+/**
+ * Every menu's measures, in a window or from the menu bar (docs/design.html,
+ * "Menu"): its padding, a row, and a separator (a hairline with 4 above and
+ * below); a row's side inset, the tick's column and the gap after it, the
+ * least room between a label and its shortcut, the shortcut's key column
+ * (`Shortcut`'s `keyColumn`); the card's and a row's corners.
+ */
+export const MENU = {
+  padding: 5,
+  row: 24,
+  separator: 9,
+  edge: 1,
+  minWidth: 160,
+  margin: 6,
+  inset: 8,
+  tick: 12,
+  tickGap: 6,
+  keysGap: 24,
+  keyColumn: 14,
+  radius: 9,
+  rowRadius: 5,
+} as const;
+
+/** How far right of the menu's outer edge its labels start: past the edge, the padding, a row's inset, and the ticks' column when it has one. */
+export const menuLabelLeft = (ticks: boolean): number => MENU.edge + MENU.padding + MENU.inset + (ticks ? MENU.tick + MENU.tickGap : 0);
 
 /** A row of a menu: an item, or the line between two groups of them. */
 export type MenuRowKind = "item" | "separator";
@@ -34,6 +57,17 @@ export interface Size {
  */
 export function menuFits(height: number, room: number): number {
   return room <= 0 ? height : Math.min(height, Math.max(room - 2 * MENU.margin, MENU.row + 2 * (MENU.padding + MENU.edge)));
+}
+
+/**
+ * The most a menu may be wide in a window `room` wide (0: not known yet):
+ * its own cap, if any, and never wider than the window less 6 a side, so a
+ * long label ends in an ellipsis rather than off the window's edge.
+ */
+export function menuMaxWidth(own: number | undefined, room: number): number | undefined {
+  const window = room > 0 ? Math.max(MENU.minWidth / 2, room - 2 * MENU.margin) : undefined;
+  if (window === undefined) return own;
+  return own === undefined ? window : Math.min(own, window);
 }
 
 /**

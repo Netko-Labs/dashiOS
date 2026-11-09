@@ -236,7 +236,7 @@ export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; na
             }}
             style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
           >
-            {/* The window's top layer (as AppWindow's): a row's "More…" menu draws there, over the cards (shared/controls/folded.tsx). */}
+            {/* The window's top layer (as AppWindow's): a row's "More" menu draws there, over the cards (shared/controls/folded.tsx). */}
             <TooltipLayer>
               <Sidebar
                 current={current}

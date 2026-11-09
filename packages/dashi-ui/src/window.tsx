@@ -188,7 +188,10 @@ export function SidebarSection({ title, children }: { title?: string; children: 
 /**
  * A glyph button in a toolbar: square, quiet until hovered. A glyph-only
  * button names itself with `tooltip`, shown under it when the pointer rests
- * on it (UI-3); one with a `label` shows its words instead.
+ * on it (UI-3); one with a `label` shows its words instead. A toolbar's
+ * "More" is one of these: the `MORE` glyph, the tooltip "More", `active`
+ * while its menu is open, the menu hung by its right edge under the
+ * button's (`PopupMenu`'s `anchor` "end").
  */
 export function ToolbarButton({
   glyph,
@@ -197,6 +200,7 @@ export function ToolbarButton({
   disabled,
   label,
   tooltip,
+  active = false,
 }: {
   glyph: string;
   /** With the press: the button's bounds, for a menu that opens under it (PA-9). */
@@ -206,6 +210,8 @@ export function ToolbarButton({
   label?: string;
   /** The button's name, in sentence case ("New note"); shown after a rest. */
   tooltip?: string;
+  /** Held lit, as under the pointer: the menu it opened is open ("…"'s). */
+  active?: boolean;
 }) {
   const colors = useColors();
   const tip = useTooltip(tooltip);
@@ -235,6 +241,7 @@ export function ToolbarButton({
         borderRadius: 7,
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: active && !disabled ? colors.button : "#00000000",
         hoverBackgroundColor: disabled ? "#00000000" : colors.button,
         focusRingColor: colors.focusRing,
       }}

@@ -68,7 +68,7 @@ const MENU_ITEMS: readonly MenuEntry[] = [
   { label: "Open", keys: "❖O", onPress: noop },
   { label: "Open With…", onPress: noop },
   MENU_SEPARATOR,
-  { label: "Show Hidden Files", checked: true, onPress: noop },
+  { label: "Show Hidden Files", keys: "⇧❖.", checked: true, onPress: noop },
   { label: "View as List", checked: false, onPress: noop },
   MENU_SEPARATOR,
   { label: "Paste", keys: "❖V", disabled: true, onPress: noop },

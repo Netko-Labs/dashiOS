@@ -5,7 +5,7 @@
  * its newest version, and how many people use it (trust-words.ts says them).
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { MoreButton, useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { ReviewedSeal, VerifiedBadge } from "./marks.tsx";
@@ -70,11 +70,7 @@ function Notes({ notes }: { notes: readonly string[] }) {
           {note}
         </Text>
       ))}
-      {notes.length > SHOWN_NOTES && (
-        <View testID="trust:more-notes" focusable accessibilityRole="button" onPress={() => setAll((now) => !now)}>
-          <Text style={{ fontSize: 12, color: colors.accentInk }}>{all ? "Less" : "More…"}</Text>
-        </View>
-      )}
+      {notes.length > SHOWN_NOTES && <MoreButton testID="trust:more-notes" open={all} onPress={() => setAll((now) => !now)} />}
     </>
   );
 }

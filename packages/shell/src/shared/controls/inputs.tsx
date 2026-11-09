@@ -8,8 +8,8 @@
  * disabled, the whole control is at 40%.
  */
 
-import { DISABLED_OPACITY, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { CHEVRON_DOWN, DISABLED_OPACITY, useColors } from "@dashi/ui";
+import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useSpring } from "./motion.ts";
 import { useControlColors } from "./palette.ts";
 
@@ -95,8 +95,52 @@ export interface SegmentedProps<T extends string | number> {
   disabled?: boolean;
 }
 
-/** Choices as segmented pills: one Tab stop, the arrows move between them, Space or Return picks one. */
-export function Segmented<T extends string | number>({ options, value, onChange, testID, disabled }: SegmentedProps<T>) {
+/** A folded row's last pill (folded.tsx): "More" and a chevron, opening every choice in a menu; never chosen, washed while its menu is open. */
+export interface MorePill {
+  open: boolean;
+  onPress: (bounds: Bounds | undefined) => void;
+  onLayout: (bounds: Bounds) => void;
+}
+
+function MoreSegment({ testID, more, disabled }: { testID: string; more: MorePill; disabled: boolean }) {
+  const colors = useControlColors();
+  return (
+    <View
+      testID={testID}
+      focusable={!disabled}
+      accessibilityRole="button"
+      accessibilityLabel="More choices"
+      accessibilityState={{ expanded: more.open, disabled }}
+      {...(disabled ? {} : { onPress: (event: { bounds?: Bounds }) => more.onPress(event.bounds) })}
+      onLayout={more.onLayout}
+      style={{
+        height: SEGMENTED.height,
+        paddingLeft: SEGMENTED.inset,
+        // The chevron's own drawing keeps room at its side: 2 less, so the pill looks even.
+        paddingRight: SEGMENTED.inset - 2,
+        borderRadius: SEGMENTED.radius,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 3,
+        backgroundColor: more.open ? colors.knobOff : "#00000000",
+        hoverBackgroundColor: disabled ? "#00000000" : colors.knobOff,
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>
+        More
+      </Text>
+      <Svg markup={CHEVRON_DOWN} size={12} color={colors.muted} />
+    </View>
+  );
+}
+
+/**
+ * Choices as segmented pills: one Tab stop, the arrows move between them,
+ * Space or Return picks one. A folded row (`more`) ends in a "More" pill in
+ * the same track, on the pills' line.
+ */
+export function Segmented<T extends string | number>({ options, value, onChange, testID, disabled, more }: SegmentedProps<T> & { more?: MorePill }) {
   const colors = useControlColors();
   return (
     <View
@@ -125,6 +169,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
           {...(disabled ? {} : { onPress: () => onChange(option.value) })}
         />
       ))}
+      {more && <MoreSegment testID={`${testID}:more`} more={more} disabled={disabled === true} />}
     </View>
   );
 }

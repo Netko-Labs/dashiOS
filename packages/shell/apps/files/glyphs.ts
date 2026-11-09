@@ -11,7 +11,6 @@ export const BACK = svg(stroke("M10 3.2L5.2 8L10 12.8", 1.7));
 export const FORWARD = svg(stroke("M6 3.2L10.8 8L6 12.8", 1.7));
 export const CHEVRON = svg(stroke("M6 4L10 8L6 12", 1.5));
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
-export const MORE = svg(`${dot(3.2, 8, 1.2)}${dot(8, 8, 1.2)}${dot(12.8, 8, 1.2)}`);
 export const GRID = svg(
   `<g fill="none" stroke="#000" stroke-width="1.4" stroke-linejoin="round"><rect x="2.4" y="2.4" width="4.4" height="4.4" rx="1"/><rect x="9.2" y="2.4" width="4.4" height="4.4" rx="1"/><rect x="2.4" y="9.2" width="4.4" height="4.4" rx="1"/><rect x="9.2" y="9.2" width="4.4" height="4.4" rx="1"/></g>`,
 );

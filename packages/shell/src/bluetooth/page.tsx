@@ -9,6 +9,7 @@
  * unpairs.
  */
 
+import { MORE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
@@ -36,14 +37,17 @@ function Row({
   idle,
   onChoose,
   onMore,
+  moreOpen = false,
 }: {
   device: BluetoothDevice;
   busy: Busy | undefined;
   /** Nothing is being done to this device, so a press does something. */
   idle: boolean;
   onChoose: (device: BluetoothDevice) => void;
-  /** Mine only: the "⋯" that opens Forget. */
+  /** Mine only: "…" (the `MORE` glyph), which opens Forget under the row. */
   onMore?: () => void;
+  /** Forget is open under the row: "…" stays washed. */
+  moreOpen?: boolean;
 }) {
   const colors = useControlColors();
   const mine = device.paired || device.connected;
@@ -69,11 +73,22 @@ function Row({
             <View
               testID={`bt-more:${device.name}`}
               onPress={onMore}
+              focusable
               accessibilityRole="button"
               accessibilityLabel="More"
-              style={{ width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" }}
+              accessibilityState={{ expanded: moreOpen }}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: moreOpen ? colors.knobOff : "#00000000",
+                hoverBackgroundColor: colors.knobOff,
+                focusRingColor: colors.focus,
+              }}
             >
-              <Text style={{ fontSize: 13, fontWeight: "bold", color: ink }}>⋯</Text>
+              <Svg markup={MORE} size={16} color={ink} />
             </View>
           )}
         </>
@@ -129,6 +144,7 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
             idle={idle(device)}
             onChoose={choose}
             onMore={() => setMore(more?.path === device.path ? null : { path: device.path, confirming: false })}
+            moreOpen={more?.path === device.path}
           />
           {more?.path === device.path && (
             <ForgetStrip

@@ -18,6 +18,8 @@ export interface Palette {
   launcher: string;
   /** Dropdowns and Control Center: nearly opaque, since nothing blurs what is behind them yet. */
   menu: string;
+  /** Every menu's edge, the menu bar's and a window's alike: a dark hairline in Light, true black's 12% edge in Dark, where a shadow has nothing to darken. */
+  menuEdge: string;
   /** The on-screen display (volume, brightness): glass with ink segments. */
   osd: string;
   osdOn: string;
@@ -139,6 +141,7 @@ export const lightColors: Palette = {
   dot: "#1d1d1fcc",
   launcher: "#f5f5f7f5",
   menu: "#f6f6f8f7",
+  menuEdge: "#1d1d1f26",
   osd: "#f5f5f7e0",
   osdOn: "#1d1d1fd9",
   osdOff: "#1d1d1f26",
@@ -223,6 +226,7 @@ export const darkColors: Palette = {
   dot: `${INK}cc`,
   launcher: `${LIFT}f5`,
   menu: `${RAISED}f7`,
+  menuEdge: EDGE,
   osd: `${LIFT}e6`,
   osdOn: `${INK}d9`,
   osdOff: `${INK}26`,

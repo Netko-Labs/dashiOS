@@ -7,7 +7,7 @@
  * a machine without them), where charging stops (one row: its switch names
  * the limit, its slider under it); then what Dashi lowers on battery
  * (on-battery.tsx), when the display turns off and the computer sleeps (the
- * four usual times as pills, "More…" for the rest). Under those: the
+ * four usual times as pills, "More" for the rest). Under those: the
  * battery's health and cycles and whether the menu bar shows its
  * percentage, a full charge for a trip, the processor (battery-laptop.tsx),
  * the usage (battery-usage.tsx), and what the lid and power button do.

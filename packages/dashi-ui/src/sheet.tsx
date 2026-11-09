@@ -8,11 +8,10 @@
 
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { CHECK } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
-import { litAfter, MENU, type MenuRowKind, menuFits, menuHeight, placeMenu, type Size } from "./menu-place.ts";
-import { Shortcut } from "./shortcut.tsx";
+import { litAfter, MENU, type MenuRowKind, menuFits, menuHeight, menuMaxWidth, placeMenu, type Size } from "./menu-place.ts";
+import { MenuLine, MenuRow } from "./menu-row.tsx";
 import { useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
@@ -197,55 +196,29 @@ export function MenuList({
     if (lit === undefined) setOwnLit(row);
     onLit?.(row);
   };
-  // Each row keeps its height: in a menu too tall for the window they scroll, never squeeze.
-  const list = rows.map((item, index) => {
-    if (isSeparator(item)) {
-      return (
-        // The rows of an open menu never reorder.
-        <View key={index} style={{ height: MENU.separator, flexShrink: 0, justifyContent: "center", paddingHorizontal: 8 }}>
-          <View style={{ height: 1, backgroundColor: colors.separator }} />
-        </View>
-      );
-    }
-    const lit = !item.disabled && index === hovered;
-    const ink = item.disabled ? colors.textDisabled : lit ? "#ffffff" : colors.text;
-    return (
-      <View
+  // The rows of an open menu never reorder, so a row's place is its key.
+  const list = rows.map((item, index) =>
+    isSeparator(item) ? (
+      <MenuLine key={index} />
+    ) : (
+      <MenuRow
         key={index}
         testID={`${testID}:${item.label}`}
-        focusable={!item.disabled}
-        accessibilityRole="menuitem"
+        label={item.label}
+        {...(item.keys !== undefined ? { keys: item.keys } : {})}
+        ticks={ticks}
+        {...(item.checked !== undefined ? { checked: item.checked } : {})}
+        {...(item.disabled ? { disabled: true } : {})}
+        lit={index === hovered}
+        focusable
         onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
         onPress={() => {
           onChoose?.();
           if (!item.disabled) item.onPress();
         }}
-        style={{
-          height: MENU.row,
-          flexShrink: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 18,
-          paddingHorizontal: 8,
-          borderRadius: 5,
-          backgroundColor: lit ? colors.selection : "#00000000",
-          focusRingColor: colors.focusRing,
-        }}
-      >
-        {/* Every row keeps the tick's column at its full width, so all the labels start on one edge. */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
-          {ticks && <View style={{ width: 12, flexShrink: 0 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
-          <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
-              {item.label}
-            </Text>
-          </View>
-        </View>
-        {item.keys !== undefined && <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />}
-      </View>
-    );
-  });
+      />
+    ),
+  );
   return (
     <View
       occlude
@@ -258,11 +231,11 @@ export function MenuList({
         ...(maxWidth !== undefined ? { maxWidth } : {}),
         ...(maxHeight !== undefined ? { height: maxHeight } : {}),
         flexDirection: "column",
-        borderRadius: 9,
+        borderRadius: MENU.radius,
         // Solid: a menu in a window is one layer over the work, and nothing blurs what is under it (the line's 40 pt digits read through glass).
         backgroundColor: surface.card,
         borderWidth: MENU.edge,
-        borderColor: colors.separator,
+        borderColor: colors.menuEdge,
         shadow: "xl",
       }}
     >
@@ -271,7 +244,7 @@ export function MenuList({
           ...(maxHeight !== undefined ? { flex: 1, minHeight: 0 } : {}),
           flexDirection: "column",
           padding: MENU.padding,
-          borderRadius: 9 - MENU.edge,
+          borderRadius: MENU.radius - MENU.edge,
           backgroundColor: colors.menu,
         }}
       >
@@ -292,7 +265,9 @@ export function MenuList({
  * anywhere else closes it, and so does Esc. It stays inside the window,
  * flipped to the other side of the point when it would run off, or (with
  * `flip` false) slid back in (PA-9, menu-place.ts); one taller than the
- * window is as tall as the window allows, and its rows scroll. With
+ * window is as tall as the window allows, and its rows scroll; one wider
+ * than the window is as wide as it allows, its labels ending in an
+ * ellipsis. With
  * `anchor` "end", `x` is where its right edge goes (a menu hung from a
  * toolbar's "…" at the window's right), at the width it is drawn.
  */
@@ -341,6 +316,7 @@ export function PopupMenu({
   // Taller than the window, it fits the window and its rows scroll.
   const full = menuHeight(kinds);
   const height = menuFits(full, room.height);
+  const widest = menuMaxWidth(maxWidth, room.width);
   const drawn = width ?? minWidth;
   const at = placeMenu({ x: anchor === "end" ? x - drawn : x, y }, { width: drawn, height }, room, flip);
   return (
@@ -364,8 +340,8 @@ export function PopupMenu({
           items={items}
           onChoose={onClose}
           testID={testID}
-          minWidth={minWidth}
-          {...(maxWidth !== undefined ? { maxWidth } : {})}
+          minWidth={widest === undefined ? minWidth : Math.min(minWidth, widest)}
+          {...(widest !== undefined ? { maxWidth: widest } : {})}
           lit={lit}
           onLit={setLit}
           {...(height < full ? { maxHeight: height } : {})}

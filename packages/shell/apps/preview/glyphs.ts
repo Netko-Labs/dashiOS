@@ -19,9 +19,6 @@ export const ACTUAL = svg(
 const turn = stroke("M3.2 8.2A4.9 4.9 0 1 0 5 4.4") + stroke("M3 2.2v3.4h3.4", 1.5);
 export const ROTATE_LEFT = svg(turn);
 export const ROTATE_RIGHT = svg(`<g transform="translate(16 0) scale(-1 1)">${turn}</g>`);
-export const MORE = svg(
-  '<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>',
-);
 /** A page with a folded corner: an empty state. */
 export const PICTURE = svg(
   `${stroke("M2.5 3.5h11v9h-11z", 1.2)}<circle cx="10.6" cy="6.4" r="1.2" fill="#000"/>${stroke("M2.8 12l3.6-3.8 2.4 2.4 1.6-1.6 2.8 3", 1.2)}`,
