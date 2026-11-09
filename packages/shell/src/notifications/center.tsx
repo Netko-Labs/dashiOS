@@ -76,9 +76,10 @@ export function NotificationCenterPanel({ store, onClose, onEscape = onClose, do
           gap: NOTIFICATION_CENTER.gap,
           padding: NOTIFICATION_CENTER.padding,
           borderRadius: NOTIFICATION_CENTER.radius,
-          backgroundColor: colors.menu,
+          // Solid, as the menus are: the menu's tint without its alpha, so a window under the empty half never ghosts through.
+          backgroundColor: colors.menu.slice(0, 7),
           borderWidth: 1,
-          borderColor: colors.dockBorder,
+          borderColor: colors.menuEdge,
           shadow: "xl",
         }}
       >
