@@ -112,7 +112,20 @@ shell lays a clear sheet over the rest of the screen; a click there, or on
 the item again, makes the shell send `dismiss`. The applet sends `dismiss`
 when it closes the popover itself (Esc, a choice made in it). Either way the
 grant goes, and the compositor closes any layer surface the applet still
-has. One popover per connection at a time.
+has.
+
+A popover behaves as the shell's own menus do:
+
+- **It takes the keyboard** when it opens (`keyboard: "exclusive"`, as the
+  menus' surface does), so Esc and Tab reach it without a click first, and
+  a field in it types. The SDK closes it on Esc (`PopoverGround`) and sends
+  `dismiss`. A launcher view leaves the keyboard to the launcher, which
+  closes it on Esc.
+- **One at a time**, with the shell's menus (`src/applets/popovers.ts`): an
+  applet's popover opening dismisses the one another applet had open and
+  closes a shell menu or panel; a shell menu opening (a title, Control
+  Center, the clock, the agents' mark, the battery, ⌃F2) dismisses the
+  applet's. One popover per connection, too.
 
 ### Submenus
 
@@ -391,6 +404,9 @@ package's files and `install.json`) and keeps its own files in
 (`src/applets/launcher.ts`) runs each one that is allowed, not disabled, and
 for this Dashi, as a systemd user unit (`dashi-applet-<id>.service`) outside
 the shell's own processes, so the compositor never takes it for the shell.
+An applet installed again (an update, or the same version rebuilt: its
+`install.json`'s `sha256` changed) has its unit stopped and started on the
+new files, once it is allowed.
 The unit is held to `CPUQuota=50%`, `MemoryMax=768M` (with its Metal host),
 and `Nice=10` (`UNIT_LIMITS`), so one that runs away while it answers the
 launcher can't starve the shell or the compositor.
@@ -551,6 +567,21 @@ code). The log reads like this:
 An applet in development that isn't installed has its commands in the
 launcher while `dev` runs (from its own applet.json, without a consent
 sheet: it is the developer's own code).
+
+When the shell goes (a session or shell restart), the applet waits and
+connects again, saying hello and sending its items anew: `defineApplet`'s
+client keeps the process running while it waits (`keepAlive`), and tries
+again while the socket is missing (0.5 s, then longer, up to 15 s). If the
+applet's process ends anyway (an error), `dev` says so ("✗ the applet
+stopped …") and starts it again on the next save.
+
+To click it in the VM with the real pointer, use `vm/agent pointer X Y`
+(or `pointer` lines in a `vm/agent batch`), at a screenshot's pixels. The
+menu bar has the agents' mark in it only while an agent is connected, and
+every `vm/agent` run connects one, so a screenshot shows the status items
+one place left of where they are once it ends: a bare QMP click
+(`vm/qmp.py click`) made at a screenshot's place lands one item off, and
+on the newest applet (the leftmost) it hits empty bar and nothing happens.
 
 `publish` packs and checks the signature against `author.pub` in the
 applet's folder, needs a clean git tree with an `origin`, and in a checkout

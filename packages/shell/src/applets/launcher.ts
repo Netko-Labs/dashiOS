@@ -108,6 +108,8 @@ export interface LauncherOptions {
 
 interface Running {
   version: string;
+  /** The package it runs from: the same version installed again from new bytes (a rebuild) is another. */
+  sha256: string;
   stopSocket: () => void;
 }
 
@@ -165,7 +167,8 @@ export class AppletLauncher {
         if (current) await this.halt(id);
         continue;
       }
-      if (current?.version === version) continue;
+      // Installed again (an update, or the same version rebuilt): the new files run, not the old process.
+      if (current?.version === version && current.sha256 === applet.record.sha256) continue;
       if (current) await this.halt(id);
       await this.launch(applet);
     }
@@ -207,7 +210,7 @@ export class AppletLauncher {
     ensureSocketDir(this.options.runtimeDir);
     mkdirSync(paths.socketDir, { recursive: true, mode: 0o700 });
     const stopSocket = serveApplets({ ...this.options.context, path: join(paths.socketDir, "applets.sock"), installed: applet.manifest, maxConnections: 1 });
-    this.running.set(id, { version, stopSocket });
+    this.running.set(id, { version, sha256: applet.record.sha256, stopSocket });
     const plans = join(appletSocketDir(this.options.runtimeDir), "plans");
     mkdirSync(plans, { recursive: true, mode: 0o700 });
     const planPath = join(plans, `${id}.json`);

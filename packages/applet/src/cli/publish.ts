@@ -52,6 +52,19 @@ export async function packTo(dir: string, key?: string): Promise<{ packed: Packe
   return { packed, path, signature };
 }
 
+/**
+ * How `pack` speaks of the .minisig beside the package: ", signed" when it
+ * checks against author.pub (or there is none to check with), and a warning
+ * when it is left from another build, whose bytes are gone (pack without
+ * `--sign` writes the package, not its signature).
+ */
+export function signatureNote(dir: string, bytes: Uint8Array, signature: string | null): string {
+  if (!signature) return "";
+  const pub = join(dir, "author.pub");
+  if (!existsSync(pub) || verify(bytes, signature, readFileSync(pub, "utf8")).ok) return ", signed";
+  return "; its .minisig is from another build, so it isn't signed now (sign it again: --sign KEY)";
+}
+
 export async function publish(dir: string, args: readonly string[]): Promise<number> {
   const catalog = resolve(flag(args, "--catalog") ?? process.env.DASHI_APPLETS_CATALOG ?? join(dirname(dir), "dashi-applets"));
   if (!existsSync(join(catalog, "applets")) || !git(catalog, "rev-parse", "--git-dir").ok) {

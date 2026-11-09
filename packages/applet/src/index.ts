@@ -124,7 +124,7 @@ export {
   REACH,
   widens,
 } from "./permissions.ts";
-export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, popoverSurface } from "./popover.tsx";
+export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, type PopoverKeyboard, popoverSurface } from "./popover.tsx";
 export {
   isPowerChoice,
   isPowerMode,

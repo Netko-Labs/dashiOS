@@ -4,7 +4,8 @@
  * first makes it version 2: its manifest is checked against the installed
  * one (a sandboxed applet must say hello, and say what it was installed
  * as), and it may ask for popovers, which the shell places under the item,
- * grants the layer shell for (grants.ts), and closes on a click outside.
+ * grants the layer shell for (grants.ts), and closes on a click outside or
+ * when another popover or a shell menu opens (popovers.ts).
  * Version 4 adds Dashi's power mode for an applet that asks for
  * `power.mode` (power.ts); version 5, its controls in Control Center
  * (controls.ts).
@@ -21,6 +22,7 @@ import type { AppletCommands, CommandMessage } from "./commands.ts";
 import type { AppletControls } from "./controls.ts";
 import type { AppletGrants } from "./grants.ts";
 import { type PopoverScreen, placePopover } from "./placement.ts";
+import type { AppletPopovers } from "./popovers.ts";
 import { type AppletPower, attachPower, mayChoosePower } from "./power.ts";
 import { APPLET_LIMITS, type Applet, type AppletShellMessage, flattenRows, type Placement, PROTOCOL, parseAppletMessage, wireMessage } from "./protocol.ts";
 
@@ -43,6 +45,8 @@ export interface AppletContext {
   grants?: AppletGrants;
   /** The screen a popover goes on: the one clicked on (by output name), else the primary; null when none is known. */
   screen?(output: string | null): PopoverScreen | null | Promise<PopoverScreen | null>;
+  /** One popover at a time, across applets and the shell's own menus (popovers.ts). */
+  popovers?: AppletPopovers;
   /** The shell's sheet under an open popover that hears a click outside it; returns what takes it away. */
   catcher?(placement: Placement, onOutside: () => void): () => void;
   /** The installed applet this connection must be (its own socket in the sandbox). */
@@ -335,11 +339,14 @@ export class AppletConnection implements ExtraActions {
     const placement = placePopover(size, click?.x ?? null, screen);
     const namespace = `dashi.applet.${this.manifest?.id ?? "dev"}`;
     let removeCatcher: (() => void) | null = null;
+    let release: (() => void) | null = null;
     const open: OpenPopover = {
       id,
       close: () => {
         removeCatcher?.();
         removeCatcher = null;
+        release?.();
+        release = null;
         void this.context.grants?.set(this.pid, false).catch(() => {});
       },
     };
@@ -353,6 +360,8 @@ export class AppletConnection implements ExtraActions {
     // It may have been dismissed, or the connection gone, while the grant was on its way.
     if (this.popover !== open || this.closed) return open.close();
     removeCatcher = this.context.catcher?.(placement, () => this.dismissPopover(true)) ?? null;
+    // Another applet's popover, or a shell menu, closes as this one opens.
+    release = this.context.popovers?.opened(() => this.dismissPopover(true)) ?? null;
     this.send({ type: "popover", id, namespace, ...placement });
   }
 

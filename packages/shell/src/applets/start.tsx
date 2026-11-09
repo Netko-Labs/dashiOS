@@ -24,6 +24,7 @@ import { AppletGrants } from "./grants.ts";
 import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
 import { AppletLauncher } from "./launcher.ts";
 import type { PopoverScreen } from "./placement.ts";
+import type { AppletPopovers } from "./popovers.ts";
 import type { AppletPower } from "./power.ts";
 import { appletsSocketPath, type Placement } from "./protocol.ts";
 import { serveApplets } from "./server.ts";
@@ -40,6 +41,8 @@ export interface StartAppletsOptions {
   power?: AppletPower;
   /** Applets' controls in Control Center (controls.ts): fed the installed ones, their state from their connections. */
   controls?: AppletControls;
+  /** One popover at a time with the shell's menus (popovers.ts). */
+  popovers?: AppletPopovers;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
@@ -53,7 +56,7 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
@@ -61,6 +64,7 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
     ...(commands ? { commands } : {}),
     ...(power ? { power } : {}),
     ...(controls ? { controls } : {}),
+    ...(popovers ? { popovers } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     // Under the popover, over everything else below the bar: a click on it closes the popover.
     // The bar stays clickable, so the item again also closes it (connection.ts).

@@ -231,3 +231,21 @@ test("the launcher runs an allowed applet in its unit, asks once about one that 
   expect(off.runningIds()).toEqual([]);
   expect(third.log).toEqual([]);
 });
+
+test("the same version installed again from new bytes (a rebuild) runs the new files: the old process stops", async () => {
+  const root = installedTree(["network"]);
+  const { log, units } = fakeUnits();
+  const running = launcher(root, units);
+  await running.reconcile();
+  const unit = unitName("dev.example.weather");
+  log.length = 0;
+  // Nothing changed: it keeps running.
+  await running.reconcile();
+  expect(log).toEqual([]);
+  // `dashi-applet install` of a rebuilt 0.1.0: another package, the same version.
+  const record = join(root, "dev.example.weather", "install.json");
+  writeFileSync(record, JSON.stringify({ version: "0.1.0", sha256: "y", authorKey: null, source: "local", consent: ["network"] }));
+  await running.reconcile();
+  expect(log).toEqual([`stop ${unit}`, `stop ${unit}`, `start ${unit} dev.example.weather.json`]);
+  await running.stop();
+});
