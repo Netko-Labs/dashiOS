@@ -175,6 +175,51 @@ test("a steady table holds still while the pointer is over the list and just aft
   root.unmount();
 });
 
+test("a steady table shows a sort the app asks for at once, though the pointer is over the list", async () => {
+  // Activity Monitor's tabs: ❖2 changes the sort from % CPU to Memory while the pointer rests on the rows.
+  const host = fakeHost();
+  let switchTab: () => void = () => {};
+  const byCpu = [
+    { pid: 10, cpu: 9 },
+    { pid: 20, cpu: 5 },
+    { pid: 30, cpu: 1 },
+  ];
+  const byMemory = [byCpu[2], byCpu[0], byCpu[1]] as Proc[];
+  function Live() {
+    const [memory, setMemory] = useState(false);
+    switchTab = () => setMemory(true);
+    return (
+      <Table
+        testID="t"
+        columns={COLUMNS}
+        rows={memory ? byMemory : byCpu}
+        rowKey={(row) => row.pid}
+        selected={null}
+        onSelect={() => {}}
+        sort={{ key: memory ? "memory" : "cpu", ascending: false }}
+        onSort={() => {}}
+        steady
+      />
+    );
+  }
+  const root = render(<Live />, host.transport);
+  await settle();
+  const node = (testID: string): string => root.nodeId(testID) ?? "";
+  const order = (): number[] => {
+    const tree = host.last();
+    return [10, 20, 30]
+      .map((pid) => ({ pid, at: tree.indexOf(`"id":"${node(`t:row:${pid}`)}"`) }))
+      .sort((a, b) => a.at - b.at)
+      .map(({ pid }) => pid);
+  };
+  host.emit({ type: "hover", nodeId: node("t:rows"), hovered: true });
+  await settle();
+  switchTab();
+  await settle();
+  expect(order()).toEqual([30, 10, 20]);
+  root.unmount();
+});
+
 interface Drawn {
   type: string;
   props: Record<string, unknown>;
