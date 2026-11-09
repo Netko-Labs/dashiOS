@@ -10,9 +10,13 @@
  * reverse of how much they are reached for: Actual Size, Zoom to Fit, Info,
  * the turns, the zoom, and moving last. Each keeps its keys in the menu bar
  * and shows them in "…".
+ *
+ * The file's name shares the row (planToolbar): the quiet size words go
+ * first, then the name gives way, down to a floor, with an ellipsis; only
+ * then does a tool fold.
  */
 
-import { textWidth } from "./detail.ts";
+import { fitDetail, textWidth } from "./detail.ts";
 
 /** The toolbar's labels are 12 px (toolbar.tsx). */
 const LABEL_SIZE = 12;
@@ -85,4 +89,46 @@ export function dividerBefore(shown: readonly ToolId[], tool: ToolId): boolean {
   const index = shown.indexOf(tool);
   const previous = index > 0 ? shown[index - 1] : undefined;
   return previous !== undefined && GROUP[previous] !== GROUP[tool];
+}
+
+/** The title's type (@dashi/ui window.tsx): 13 px bold. Bold runs a little wider than textWidth's estimate. */
+const TITLE_SIZE = 13;
+const BOLD = 1.06;
+/** The widest the name gets (@dashi/ui window.tsx TITLE_MAX), and the least it keeps before a tool folds. */
+export const TITLE_MAX = 320;
+export const TITLE_FLOOR = 120;
+/** The spinner beside the words while Preview is busy. */
+const SPINNER = 16;
+
+/** About how wide the window's name is drawn, whole. */
+export const titleWidth = (title: string): number => Math.ceil(textWidth(title, TITLE_SIZE) * BOLD);
+
+export interface ToolbarPlan extends Fold {
+  /** The most the name may take (it ends in an ellipsis when it needs more); 0 when the compositor draws it. */
+  title: number;
+  /** The size words that fit what is left, or null. */
+  detail: string | null;
+}
+
+/**
+ * The whole chrome row in `room` px (the name, the size words, the tools and
+ * "…"; null before it is measured). The name keeps its width while the words
+ * give way; past that it shortens down to TITLE_FLOOR (its own width when it
+ * is shorter), and only then do tools fold, the least important first. The
+ * name then takes back what the folding freed, never more than it needs.
+ */
+export function planToolbar(
+  room: number | null,
+  { title, widths, detail, busy }: { title: string | null; widths: Readonly<Record<ToolId, number>>; detail: readonly string[]; busy: boolean },
+): ToolbarPlan {
+  const { gap } = MEASURES;
+  const want = title === null ? 0 : Math.min(titleWidth(title), TITLE_MAX);
+  if (room === null) return { ...foldTools(null, widths), title: want, detail: null };
+  const named = want > 0 ? gap : 0;
+  const spinner = busy ? SPINNER + gap : 0;
+  const floor = Math.min(want, TITLE_FLOOR);
+  const fold = foldTools(room - floor - named - spinner, widths);
+  const name = Math.max(0, Math.min(want, room - fold.width - named - spinner));
+  const words = fitDetail(detail, room - name - named - spinner - fold.width - gap);
+  return { ...fold, title: name, detail: words };
 }

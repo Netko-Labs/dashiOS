@@ -4,7 +4,8 @@
  * again when the folder changes (a watch on it); and each picture's small
  * copy, made when its row comes into the strip (ImageMagick, cached) and
  * turned as Preview shows the picture (its kept rotation), or the picture
- * itself when it is small enough to draw as it is.
+ * itself when it is small enough to draw as it is. A made copy tells the
+ * strip the picture's shape, so a panorama's row is a band, not a 4:3 slot.
  */
 
 import { existsSync, type FSWatcher, watch } from "node:fs";
@@ -12,6 +13,7 @@ import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { cacheFile, cacheKey, partialName, publish } from "./cache.ts";
 import { CONVERT_MEMORY_MIB, thumbnailArgs } from "./convert.ts";
+import { HEADER_BYTES, jpegOrientation, readSize, swapsSides } from "./dimensions.ts";
 import { FORMATS, formatFromName } from "./kinds.ts";
 import { orderSiblings } from "./siblings.ts";
 import { type RunOptions, type RunResult, runTool } from "./tools.ts";
@@ -29,6 +31,20 @@ export async function listPictures(dir: string): Promise<string[]> {
     return orderSiblings((await readdir(dir)).slice(0, MAX_ENTRIES), "image");
   } catch {
     return [];
+  }
+}
+
+/** A picture's shape (height over width) from its header, upright; null when the header says nothing. */
+export async function shapeOf(path: string): Promise<number | null> {
+  const format = formatFromName(path);
+  if (!format) return null;
+  try {
+    const head = new Uint8Array(await Bun.file(path).slice(0, HEADER_BYTES).arrayBuffer());
+    const size = readSize(format, head);
+    if (!size) return null;
+    return format === "jpeg" && swapsSides(jpegOrientation(head)) ? size.width / size.height : size.height / size.width;
+  } catch {
+    return null;
   }
 }
 
@@ -58,6 +74,7 @@ export class Folder {
   dir = "";
   files: string[] = [];
   private readonly thumbs = new Map<string, string>();
+  private readonly shaped = new Map<string, number>();
   private readonly failed = new Set<string>();
   /** Thumbnails shown until their remade copy (turned since) replaces them. */
   private readonly stale = new Set<string>();
@@ -76,12 +93,18 @@ export class Folder {
     return new Map(this.thumbs);
   }
 
+  /** The shapes (height over width) the thumbnails made so far tell, by name. */
+  get shapes(): ReadonlyMap<string, number> {
+    return new Map(this.shaped);
+  }
+
   /** Show this folder: listed now if it is a new one (or `again`), watched while it is shown. */
   async show(dir: string, again = false): Promise<void> {
     if (dir === this.dir && !again) return;
     if (dir !== this.dir) {
       this.stopWatching();
       this.thumbs.clear();
+      this.shaped.clear();
       this.failed.clear();
       this.stale.clear();
       this.queue = [];
@@ -132,10 +155,12 @@ export class Folder {
       if (name === undefined) return;
       if (!this.needs(name)) continue;
       const made = await this.thumbnail(join(dir, name));
+      const shape = made ? await shapeOf(made) : null;
       if (dir !== this.dir) return;
       this.stale.delete(name);
       if (made) this.thumbs.set(name, made);
       else if (!this.thumbs.has(name)) this.failed.add(name);
+      if (shape !== null) this.shaped.set(name, shape);
       this.options.onChange();
     }
   }

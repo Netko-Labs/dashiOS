@@ -13,9 +13,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LINE_PX } from "./document.ts";
 import { clampScroll, type PageBox, visiblePages } from "./layout.ts";
 
-/** A thumbnail's width; its height follows its page's shape, held between these. */
+/** A thumbnail's width in the widest strip; its height follows its page's shape, held between these (a 4:1 panorama is drawn whole). */
 export const THUMB_WIDTH = 150;
-const SHAPE = { least: 0.4, most: 2.5 } as const;
+export const SHAPE = { least: 0.25, most: 2.5 } as const;
+/** A folder picture's shape before its thumbnail says (4:3). */
+export const UNKNOWN_SHAPE = 0.75;
+/**
+ * How wide the strip is: a share of the window, between `least` and `most`;
+ * a window narrower than `hideBelow` gives the picture all of it (the View
+ * menu's Sidebar still shows it). The thumbnails keep the strip's margins.
+ */
+export const STRIP = { share: 0.2, least: 132, most: 200, hideBelow: 480, margins: 50 } as const;
+/** How far the rows fade under the window controls once the strip is scrolled, in bands. */
+const FADE = { bands: 5, band: 3 } as const;
 /** The label under a thumbnail, the gap between rows, and the room above the first and below the last. */
 const LABEL = 18;
 const GAP = 10;
@@ -32,17 +42,35 @@ export interface StripItem {
   shape: number;
 }
 
-/** Where each row sits in the strip, top to bottom. */
-export function stripRows(items: readonly StripItem[]): { rows: PageBox[]; height: number } {
+/** The strip's width in a window `window` wide (null: not measured yet, the widest); 0 when it gives way. */
+export function stripWidth(window: number | null): number {
+  if (window === null) return STRIP.most;
+  if (window < STRIP.hideBelow) return 0;
+  return Math.min(STRIP.most, Math.max(STRIP.least, Math.round(window * STRIP.share)));
+}
+
+/** A thumbnail's width in a strip `width` wide. */
+export const thumbWidth = (width: number): number => Math.max(40, Math.min(THUMB_WIDTH, width - STRIP.margins));
+
+/** Where each row sits in the strip, top to bottom, its thumbnails `thumbWide` wide. */
+export function stripRows(items: readonly StripItem[], thumbWide: number = THUMB_WIDTH): { rows: PageBox[]; height: number } {
   const rows: PageBox[] = [];
   let top = PAD;
   items.forEach((item, index) => {
-    const thumb = Math.round(THUMB_WIDTH * Math.min(Math.max(item.shape, SHAPE.least), SHAPE.most));
+    const thumb = Math.round(thumbWide * Math.min(Math.max(item.shape, SHAPE.least), SHAPE.most));
     const height = thumb + FRAME * 2 + LABEL;
-    rows.push({ page: index + 1, left: 0, top, width: THUMB_WIDTH + FRAME * 2, height });
+    rows.push({ page: index + 1, left: 0, top, width: thumbWide + FRAME * 2, height });
     top += height + GAP;
   });
   return { rows, height: items.length === 0 ? 0 : top - GAP + PAD };
+}
+
+/** `color` (#rrggbb or #rrggbbaa) at `opacity` of its own alpha; any other form is kept as it is. */
+export function faded(color: string, opacity: number): string {
+  const match = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(color);
+  if (!match) return color;
+  const alpha = Math.round((match[2] ? Number.parseInt(match[2], 16) : 255) * Math.min(1, Math.max(0, opacity)));
+  return `#${match[1]}${alpha.toString(16).padStart(2, "0")}`;
 }
 
 /** The scroll that brings row `index` whole into a view of `height` at `scroll`, moving as little as it can. */
@@ -58,6 +86,7 @@ export function Strip({
   current,
   onPick,
   onVisible,
+  width = STRIP.most,
   testID = "strip",
 }: {
   items: readonly StripItem[];
@@ -66,13 +95,16 @@ export function Strip({
   onPick: (index: number) => void;
   /** The indexes on screen (and a little past), for their thumbnails. */
   onVisible: (indexes: number[]) => void;
+  /** The strip's width (stripWidth). */
+  width?: number;
   testID?: string;
 }) {
   const colors = useColors();
   const surface = useSurface();
   const [height, setHeight] = useState(0);
   const [scroll, setScroll] = useState(0);
-  const { rows, height: content } = useMemo(() => stripRows(items), [items]);
+  const thumbWide = thumbWidth(width);
+  const { rows, height: content } = useMemo(() => stripRows(items, thumbWide), [items, thumbWide]);
   const held = clampScroll(scroll, content, height);
   const live = useRef(held);
   live.current = held;
@@ -116,7 +148,7 @@ export function Strip({
           >
             <View
               style={{
-                width: THUMB_WIDTH + FRAME * 2,
+                width: thumbWide + FRAME * 2,
                 height: thumb + FRAME * 2,
                 alignItems: "center",
                 justifyContent: "center",
@@ -127,22 +159,34 @@ export function Strip({
               }}
             >
               {item.source !== null ? (
-                <Image source={item.source} resizeMode="contain" style={{ width: THUMB_WIDTH, height: thumb, borderRadius: 2 }} />
+                <Image source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} />
               ) : (
                 // A page not drawn yet: the card ground, quiet in both modes.
                 <View
-                  style={{ width: THUMB_WIDTH, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }}
+                  style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }}
                 />
               )}
             </View>
-            <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: 4, maxWidth: THUMB_WIDTH + FRAME * 2 }}>
-              <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: marked ? "semibold" : "normal", color: marked ? colors.selection : colors.textMuted }}>
+            {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}
+            <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: 4, width: thumbWide + FRAME * 2 }}>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 11, fontWeight: marked ? "semibold" : "normal", color: marked ? colors.accentInk : colors.textMuted, textAlign: "center" }}
+              >
                 {item.label}
               </Text>
             </View>
           </View>
         );
       })}
+      {held > 0 && (
+        // Scrolled: the rows fade out under the window controls instead of being sliced there.
+        <View testID={`${testID}:fade`} style={{ position: "absolute", left: 0, right: 0, top: 0, flexDirection: "column" }}>
+          {Array.from({ length: FADE.bands }, (_, band) => (
+            <View key={band} style={{ height: FADE.band, backgroundColor: faded(surface.sidebar, 1 - band / FADE.bands) }} />
+          ))}
+        </View>
+      )}
     </View>
   );
 }

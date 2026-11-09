@@ -13,6 +13,8 @@ import type { Recent } from "./memory.ts";
 
 /** How many recent files the empty window lists. */
 export const EMPTY_RECENTS = 5;
+/** The most a recent row's folder takes (it ends in an ellipsis past it); the name has the rest. */
+export const RECENT_FOLDER_WIDTH = 120;
 
 /** A folder for a recent row's second word: the home folder as "~". */
 export function shortFolder(path: string, home: string = process.env.HOME ?? ""): string {
@@ -57,12 +59,13 @@ export function EmptyView({ recents, onOpen, onRecent }: { recents: readonly Rec
                   }}
                 >
                   <Svg markup={/\.pdf$/i.test(recent.path) ? glyphs.DOCUMENT : glyphs.PICTURE} size={16} color={colors.textMuted} />
-                  <View style={{ flexShrink: 1, minWidth: 0 }}>
+                  {/* The name takes the room and gives way with an ellipsis; the folder keeps its column in every row. */}
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
                       {basename(recent.path)}
                     </Text>
                   </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
+                  <View testID={`recent-folder:${basename(recent.path)}`} style={{ flexShrink: 0, maxWidth: RECENT_FOLDER_WIDTH }}>
                     <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted, textAlign: "right" }}>
                       {shortFolder(recent.path)}
                     </Text>

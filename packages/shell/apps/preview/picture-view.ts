@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Size } from "./dimensions.ts";
 import type { Picture } from "./snapshot.ts";
-import { clampPan, FIT, fitScale, type Pan, panAfterZoom, scaled, scaleOf, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
+import { clampPan, FIT, fitArea, fitScale, type Pan, panAfterZoom, scaled, scaleOf, type ZoomMode, zoomIn, zoomOut } from "./zoom.ts";
 
 export interface PictureView {
   scale: number;
@@ -23,7 +23,8 @@ export function usePictureView(picture: Picture | null, path: string | null, tur
   const [mode, setMode] = useState<ZoomMode>(FIT);
   const [pan, setPan] = useState<Pan>({ x: 0, y: 0 });
   const [area, setArea] = useState<Size>({ width: 0, height: 0 });
-  const fitted = picture ? fitScale(picture, area) : 1;
+  // Fitted, it keeps a margin, as a PDF's page does; zoomed past the window it runs to the edges and pans.
+  const fitted = picture ? fitScale(picture, fitArea(area)) : 1;
   const scale = scaleOf(mode, fitted);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a different file resets the zoom and the pan

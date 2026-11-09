@@ -100,7 +100,16 @@ export class Viewer {
     // Stepping through a folder keeps its strip, and knows the new neighbours at once (a quick ← ← steps twice).
     const sameFolder = this.folder.dir !== "" && this.folder.dir === dirname(path);
     const folder = sameFolder ? { dir: this.folder.dir, files: this.folder.files, ...neighbours(this.folder.files, basename(path)) } : EMPTY_FOLDER;
-    this.set({ ...CLOSED, phase: "loading", path, name: basename(path), busy: true, folder, folderThumbs: sameFolder ? this.folder.thumbnails : new Map() });
+    this.set({
+      ...CLOSED,
+      phase: "loading",
+      path,
+      name: basename(path),
+      busy: true,
+      folder,
+      folderThumbs: sameFolder ? this.folder.thumbnails : new Map(),
+      folderShapes: sameFolder ? this.folder.shapes : new Map(),
+    });
     let stamp: Stamp;
     try {
       const info = await stat(path);
@@ -129,7 +138,7 @@ export class Viewer {
     this.set({ kind, format, mime: FORMATS[format].mime, stamp, turns, facts: factsFrom(path, stamp, format), recents: this.memory.recents() });
     if (kind === "pdf") {
       this.folder.hide();
-      this.set({ folder: EMPTY_FOLDER, folderThumbs: new Map() });
+      this.set({ folder: EMPTY_FOLDER, folderThumbs: new Map(), folderShapes: new Map() });
       await this.openPdf(path, stamp, turns, generation);
     } else {
       void this.showFolder(path);
@@ -192,7 +201,11 @@ export class Viewer {
     const { path, kind } = this.snapshot;
     if (!path || kind === "pdf") return;
     const files = this.folder.files;
-    this.set({ folder: { dir: this.folder.dir, files, ...neighbours(files, basename(path)) }, folderThumbs: this.folder.thumbnails });
+    this.set({
+      folder: { dir: this.folder.dir, files, ...neighbours(files, basename(path)) },
+      folderThumbs: this.folder.thumbnails,
+      folderShapes: this.folder.shapes,
+    });
   }
 
   /** The strip's rows that need a small copy, the most wanted first. */

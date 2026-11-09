@@ -33,6 +33,9 @@ export function popUpOrigin(anchor: Bounds, rows: readonly MenuRowKind[], chosen
   return { x: Math.round(anchor.x - MENU_INSET), y: Math.round(anchor.y + (anchor.height - MENU.row) / 2 - rowTop(rows, Math.max(chosen, 0))) };
 }
 
+/** The menu's least width for a button at `anchor`: from the button's left, less the ticks' room, to its right edge. */
+export const popUpMenuWidth = (anchor: Bounds): number => Math.round(anchor.width) + MENU_INSET;
+
 export interface PopUpButtonProps<T extends string | number> {
   options: ReadonlyArray<PopUpOption<T>>;
   value: T;
@@ -91,7 +94,8 @@ export function PopUpButton<T extends string | number>({
               y={at.y}
               items={entries}
               flip={false}
-              minWidth={Math.max(MENU.minWidth, Math.round(open.width) + MENU_INSET + 6)}
+              // Its right edge on the button's (wider only by the ticks' column it opens to the left), unless its rows need more.
+              minWidth={popUpMenuWidth(open)}
               onClose={() => setOpen(null)}
             />
           );

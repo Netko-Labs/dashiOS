@@ -12,7 +12,7 @@ import { menusClient, runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { cacheRoot, pruneCache } from "./cache.ts";
 import { handToEmpty, listenWhileEmpty } from "./instance.ts";
-import { PREVIEW_SIZE, PreviewWindow } from "./view.tsx";
+import { PREVIEW_MIN_SIZE, PREVIEW_SIZE, PreviewWindow } from "./view.tsx";
 import { Viewer } from "./viewer.ts";
 
 const args = parseArgs(Bun.argv.slice(2));
@@ -22,7 +22,13 @@ if (first && (await handToEmpty(resolve(first)))) process.exit(0);
 
 const viewer = new Viewer();
 runApp(
-  { id: "dev.dashi.preview", title: "Preview", size: PREVIEW_SIZE, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST },
+  {
+    id: "dev.dashi.preview",
+    title: "Preview",
+    size: PREVIEW_SIZE,
+    minSize: PREVIEW_MIN_SIZE,
+    host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST,
+  },
   <PreviewWindow viewer={viewer} />,
 );
 
