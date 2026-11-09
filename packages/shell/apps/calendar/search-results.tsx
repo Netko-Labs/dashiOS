@@ -1,11 +1,11 @@
 /**
- * Edit › Find's answers, in a list under the toolbar's search field: each
+ * Edit › Find's answers, in a list under the search field in the title's place: each
  * event's day, time, and title in its calendar's color. ↑ ↓ move through
  * them in the field, Return or a click goes to the event, Esc ends the search.
  */
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
-import { ScrollView, Text, View } from "@mirinjs/metal";
+import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { dayPart } from "./dates.ts";
 import { occurrenceKey } from "./event-block.tsx";
@@ -14,6 +14,15 @@ import type { Occurrence } from "./types.ts";
 
 export const RESULTS_WIDTH = 340;
 const ROW = 30;
+/** Where the answers start when Find's field has not been laid out yet: under the toolbar, at the window's right. */
+const FALLBACK = { top: 42, right: 12 } as const;
+
+/** Where the answers hang: under Find's field, from its left edge, kept 12 inside the window. */
+export function resultsPlace(field: Bounds | null, windowWidth: number): { top: number; left: number; width: number } {
+  const width = Math.min(RESULTS_WIDTH, Math.max(0, windowWidth - 24));
+  if (field === null) return { top: FALLBACK.top, left: Math.max(12, windowWidth - FALLBACK.right - width), width };
+  return { top: Math.round(field.y + field.height + 6), left: Math.round(Math.max(12, Math.min(field.x, windowWidth - 12 - width))), width };
+}
 
 export function SearchResults({
   results,
@@ -21,7 +30,7 @@ export function SearchResults({
   active,
   prefs,
   colorOf,
-  top,
+  place,
   onPick,
 }: {
   results: readonly Occurrence[];
@@ -30,8 +39,8 @@ export function SearchResults({
   active: number;
   prefs: ClockPrefs;
   colorOf: (calendarId: string) => string;
-  /** Where the list starts, under the toolbar. */
-  top: number;
+  /** Where the list hangs (`resultsPlace`). */
+  place: { top: number; left: number; width: number };
   onPick: (occurrence: Occurrence) => void;
 }) {
   const colors = useColors();
@@ -43,9 +52,9 @@ export function SearchResults({
       occlude
       style={{
         position: "absolute",
-        right: 12,
-        top,
-        width: RESULTS_WIDTH,
+        left: place.left,
+        top: place.top,
+        width: place.width,
         maxHeight: 360,
         flexDirection: "column",
         padding: 5,

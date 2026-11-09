@@ -23,17 +23,24 @@ export const weekdayShort = (day: Day, prefs: ClockPrefs): string => format(pref
 export const monthDay = (day: Day, prefs: ClockPrefs): string => format(prefs.locale, { month: "short", day: "numeric" }, day);
 export const dayNumber = (day: Day): string => String(Number(day.slice(8, 10)));
 
-/** "Nov 1 – 7, 2026" for a week. */
-export function weekTitle(days: readonly Day[], prefs: ClockPrefs): string {
+/** "Nov 1 – 7, 2026" for a week; without the year, "Nov 1 – 7". */
+export function weekTitle(days: readonly Day[], prefs: ClockPrefs, withYear = true): string {
   const first = parseDay(days[0] ?? "");
   const last = parseDay(days[days.length - 1] ?? "");
   if (first === null || last === null) return "";
-  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" };
+  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", ...(withYear ? { year: "numeric" as const } : {}), timeZone: "UTC" };
   try {
     return new Intl.DateTimeFormat(prefs.locale, options).formatRange(new Date(first), new Date(last));
   } catch {
     return new Intl.DateTimeFormat("en-US", options).formatRange(new Date(first), new Date(last));
   }
+}
+
+/** The title over a view in a narrow window: "Nov 2026", "Nov 1 – 7", "Wed, Nov 4". */
+export function shortViewTitle(view: View, anchor: Day, days: readonly Day[], prefs: ClockPrefs): string {
+  if (view === "month") return format(prefs.locale, { month: "short", year: "numeric" }, anchor);
+  if (view === "week") return weekTitle(days, prefs, false);
+  return shortDay(anchor, prefs);
 }
 
 /** The title over a view. */

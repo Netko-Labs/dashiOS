@@ -58,10 +58,15 @@ export interface Placed {
   /** Minutes after midnight the block starts and ends, clipped to the day. */
   top: number;
   bottom: number;
-  /** Which of `columns` side-by-side columns it takes. */
-  column: number;
-  columns: number;
+  /** Its left and right edges, as fractions of the column's width (0 to 1). */
+  left: number;
+  right: number;
 }
+
+/** Events that start this close (minutes) to one they overlap sit beside it; one starting later is drawn over it. */
+export const SIDE_BY_SIDE = 30;
+/** How far in a block drawn over another starts, as a fraction of the width it is drawn over. */
+const CASCADE = 1 / 3;
 
 /** Whether a timed occurrence happens on `day` (an all-day one is `coversDay`). */
 export function touchesDay(occurrence: Occurrence, day: Day): boolean {
@@ -70,7 +75,13 @@ export function touchesDay(occurrence: Occurrence, day: Day): boolean {
   return occurrence.end > occurrence.start ? occurrence.end > from && occurrence.start < to : occurrence.start >= from && occurrence.start < to;
 }
 
-/** The timed occurrences that touch `day`, placed on its grid: overlapping ones sit side by side. */
+/**
+ * The timed occurrences that touch `day`, placed on its grid, in the order
+ * to draw them. A column is split only where events really overlap: events
+ * that start within `SIDE_BY_SIDE` minutes of each other share the width side
+ * by side; one that starts later is drawn over the one it overlaps, a third
+ * in, so the first keeps its whole width (and its title) outside the clash.
+ */
 export function placeDay(occurrences: readonly Occurrence[], day: Day): Placed[] {
   const items = occurrences
     .filter((occurrence) => !occurrence.event.allDay && touchesDay(occurrence, day))
@@ -82,24 +93,35 @@ export function placeDay(occurrences: readonly Occurrence[], day: Day): Placed[]
     .sort((a, b) => a.top - b.top || b.bottom - a.bottom);
 
   const placed: Placed[] = [];
-  let cluster: Placed[] = [];
-  let clusterEnd = -1;
-  let ends: number[] = [];
-  const close = (): void => {
-    for (const item of cluster) item.columns = ends.length;
-    placed.push(...cluster);
-    cluster = [];
-    ends = [];
-  };
+  // Each run of side-by-side events: the span they share and its members, in order.
+  const groups: Array<{ left: number; right: number; members: Placed[] }> = [];
+  const groupOf = new Map<Placed, (typeof groups)[number]>();
   for (const item of items) {
-    if (cluster.length > 0 && item.top >= clusterEnd) close();
-    let column = ends.findIndex((end) => end <= item.top);
-    if (column < 0) column = ends.length;
-    ends[column] = item.bottom;
-    cluster.push({ ...item, column, columns: 1 });
-    clusterEnd = Math.max(clusterEnd, item.bottom);
+    const over = placed.filter((other) => other.top < item.bottom && item.top < other.bottom);
+    const near = over.filter((other) => item.top - other.top < SIDE_BY_SIDE);
+    const beside = near.at(-1);
+    const group = beside ? groupOf.get(beside) : undefined;
+    const block: Placed = { ...item, left: 0, right: 1 };
+    if (group) {
+      group.members.push(block);
+      const share = (group.right - group.left) / group.members.length;
+      group.members.forEach((member, index) => {
+        member.left = group.left + index * share;
+        member.right = group.left + (index + 1) * share;
+      });
+      groupOf.set(block, group);
+    } else {
+      // Over the topmost block it overlaps (or the whole width when it overlaps none).
+      const under = over.reduce<Placed | null>((top, other) => (top === null || other.left >= top.left ? other : top), null);
+      const left = under === null ? 0 : under.left + (under.right - under.left) * CASCADE;
+      const fresh = { left, right: under === null ? 1 : under.right, members: [block] };
+      block.left = fresh.left;
+      block.right = fresh.right;
+      groups.push(fresh);
+      groupOf.set(block, fresh);
+    }
+    placed.push(block);
   }
-  close();
   return placed;
 }
 
@@ -137,6 +159,8 @@ export const revealOffset = (minutes: number): number => Math.max(0, yAtMinutes(
 // ---- The month grid -----------------------------------------------------------------
 
 export const MONTH_CHIP_HEIGHT = 17;
+/** A month cell at least this wide shows a timed chip's start after its title; a narrower one gives the title all of it. */
+export const CHIP_TIME_FROM = 92;
 /** The day number's row and the cell's padding. */
 const MONTH_CELL_HEAD = 28;
 

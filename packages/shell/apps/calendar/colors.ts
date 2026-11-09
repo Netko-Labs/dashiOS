@@ -1,4 +1,4 @@
-/** Calendar colors on the screen: the ink that reads on one, and a see-through wash of it. */
+/** Calendar colors on the screen: the ink that reads on one, a see-through wash of it, and the same wash made solid on a ground. */
 
 /** 0 (black) to 1 (white), by the usual weights of red, green, and blue. */
 export function luminance(color: string): number {
@@ -15,4 +15,18 @@ export const inkOn = (color: string): string => (luminance(color) > 0.68 ? "#1d1
 export function tint(color: string, alpha: number): string {
   const byte = Math.max(0, Math.min(255, Math.round(alpha * 255)));
   return `${color.slice(0, 7)}${byte.toString(16).padStart(2, "0")}`;
+}
+
+/** `color` at `alpha` (0 to 1) laid on `ground`, as one solid #RRGGBB: what `tint` shows there, but nothing under it shows through. */
+export function over(color: string, alpha: number, ground: string): string {
+  const parts = (hex: string): number[] => [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) || 0);
+  const [top, under] = [parts(color), parts(ground)];
+  const a = Math.max(0, Math.min(1, alpha));
+  return `#${top
+    .map((value, index) =>
+      Math.round(value * a + (under[index] ?? 0) * (1 - a))
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
 }

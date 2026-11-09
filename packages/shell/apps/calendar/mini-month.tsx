@@ -1,6 +1,6 @@
 /** The small month in the sidebar: days to jump to, today filled, the days the view shows tinted, a dot under days with events. */
 
-import { useColors } from "@dashi/ui";
+import { useColors, useSurface } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
@@ -28,6 +28,7 @@ export interface MiniMonthProps {
 
 export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick, idPrefix = "mini" }: MiniMonthProps) {
   const colors = useColors();
+  const surface = useSurface();
   const [page, setPage] = useState<Day>(firstOfMonth(monthOf(anchor).year, monthOf(anchor).month));
   // The main view moved to another month: follow it.
   useEffect(() => {
@@ -94,14 +95,15 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick,
                     borderRadius: (CELL - 2) / 2,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: isToday ? colors.selection : "#00000000",
+                    // Today is an ink mark, and a day with events a muted dot: green means "on".
+                    backgroundColor: isToday ? colors.text : "#00000000",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 11,
                       fontWeight: isToday ? "bold" : "normal",
-                      color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted,
+                      color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
                       opacity: inMonth || isToday ? 1 : 0.55,
                     }}
                   >
@@ -109,7 +111,14 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick,
                   </Text>
                   {dots.has(day) && (
                     <View
-                      style={{ position: "absolute", bottom: 1, width: 3, height: 3, borderRadius: 2, backgroundColor: isToday ? "#ffffff" : colors.selection }}
+                      style={{
+                        position: "absolute",
+                        bottom: 1,
+                        width: 3,
+                        height: 3,
+                        borderRadius: 2,
+                        backgroundColor: isToday ? surface.window : colors.textMuted,
+                      }}
                     />
                   )}
                 </View>

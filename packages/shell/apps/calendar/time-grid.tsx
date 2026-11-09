@@ -7,7 +7,7 @@
  * stretches one (drag.ts).
  */
 
-import { useColors } from "@dashi/ui";
+import { useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
@@ -20,6 +20,8 @@ import { firstHour, GRID_HEIGHT, HOUR_HEIGHT, revealOffset } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
 
 const GUTTER = 58;
+/** Below this column width a day's name sits over its number, so the two never print over a neighbour's. */
+export const STACK_HEAD_BELOW = 76;
 
 export interface TimeGridProps {
   days: readonly Day[];
@@ -36,7 +38,9 @@ export interface TimeGridProps {
 
 export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state, handlers, scroll }: TimeGridProps) {
   const colors = useColors();
+  const surface = useSurface();
   const [columnWidth, setColumnWidth] = useState(0);
+  const stacked = columnWidth > 0 && columnWidth < STACK_HEAD_BELOW;
   const showsToday = days.includes(today);
   const nowMinutes = showsToday ? now.getHours() * 60 + now.getMinutes() : null;
 
@@ -71,20 +75,35 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
               key={day}
               testID={`head:${day}`}
               onPress={() => handlers.showDay(day)}
-              style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7 }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                flexDirection: stacked ? "column" : "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: stacked ? 1 : 7,
+                overflow: "hidden",
+              }}
             >
-              <Text style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.selection : colors.textMuted }}>{weekdayShort(day, prefs)}</Text>
+              <View style={{ flexShrink: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
+                  {weekdayShort(day, prefs)}
+                </Text>
+              </View>
+              {/* Today is an ink mark: green means "on". */}
               <View
                 style={{
                   minWidth: 26,
                   height: 26,
+                  flexShrink: 0,
+                  paddingHorizontal: 3,
                   borderRadius: 13,
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isToday ? colors.selection : day === state.selected && days.length > 1 ? colors.button : "#00000000",
+                  backgroundColor: isToday ? colors.text : day === state.selected && days.length > 1 ? colors.button : "#00000000",
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : colors.text }}>{dayNumber(day)}</Text>
+                <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
               </View>
             </View>
           );

@@ -5,7 +5,7 @@
  * the event there (the days it would cover are washed in its color).
  */
 
-import { TRUE_BLACK, useColors, useDark } from "@dashi/ui";
+import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
@@ -18,7 +18,7 @@ import { occurrenceKey } from "./event-block.tsx";
 import { dayNumber, monthDay } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { InlineTitle } from "./inline-title.tsx";
-import { chipCapacity, fitChips, MONTH_CHIP_HEIGHT, monthGrid, onDay } from "./layout.ts";
+import { CHIP_TIME_FROM, chipCapacity, fitChips, MONTH_CHIP_HEIGHT, monthGrid, onDay } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
 
 /**
@@ -47,6 +47,7 @@ function covers(preview: { start: string; end: string; allDay: boolean }, day: D
 
 export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf, state, handlers }: MonthViewProps) {
   const colors = useColors();
+  const surface = useSurface();
   const dark = useDark();
   const weeks = monthGrid(anchor, firstDay);
   const { month } = monthOf(anchor);
@@ -56,6 +57,8 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
   const { drag, pending, selected, selectedEvent } = state;
   const preview = drag?.moved && drag.preview && drag.occurrence ? drag.preview : null;
   const draggedKey = preview && drag?.occurrence ? occurrenceKey(drag.occurrence) : null;
+  // A narrow cell gives its chips' room to their titles: the time goes first.
+  const timed = grid.width <= 0 || grid.width / 7 >= CHIP_TIME_FROM;
   const geometry = { days: weeks.flat(), columnWidth: grid.width / 7, dayAt: (x: number, y: number) => monthDayAt(grid, weeks, x, y) };
 
   return (
@@ -107,14 +110,21 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                         borderRadius: 10,
                         alignItems: "center",
                         justifyContent: "center",
-                        backgroundColor: isToday ? colors.selection : day === selected ? colors.button : "#00000000",
+                        flexShrink: 0,
+                        // Today is an ink mark: green means "on".
+                        backgroundColor: isToday ? colors.text : day === selected ? colors.button : "#00000000",
                         borderWidth: day === selected && !isToday ? 1 : 0,
                         borderColor: colors.selection,
-                        hoverBackgroundColor: isToday ? colors.selection : colors.button,
+                        hoverBackgroundColor: isToday ? colors.text : colors.button,
                       }}
                     >
                       <Text
-                        style={{ fontSize: 12, fontWeight: isToday ? "bold" : "normal", color: isToday ? "#ffffff" : inMonth ? colors.text : colors.textMuted }}
+                        numberOfLines={1}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: isToday ? "bold" : "normal",
+                          color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
+                        }}
                       >
                         {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
                       </Text>
@@ -141,6 +151,7 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
                         color={colorOf(occurrence.calendarId)}
                         day={day}
                         prefs={prefs}
+                        timed={timed}
                         selected={selectedEvent === key}
                         dragged={draggedKey === key}
                         onPress={(bounds) => handlers.open(occurrence, bounds)}

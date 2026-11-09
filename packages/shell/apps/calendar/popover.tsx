@@ -7,6 +7,7 @@
 
 import { Button, useColors, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
+import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
 import { alertLabel, repeatSummary, timeSpan, titleOf } from "./format.ts";
 import type { Calendar, Occurrence } from "./types.ts";
@@ -59,7 +60,9 @@ export function EventPopover({
   const lines = [zone, repeats, event.alert !== null ? `Alert: ${alertLabel(event.alert, event.allDay)}` : null, event.location || null].filter(
     (line): line is string => line !== null,
   );
-  const at = popoverOrigin(anchor, area, 110 + lines.length * 17);
+  // Placed by its drawn height once it has one (an estimate first), so a short window never cuts its buttons.
+  const [drawn, setDrawn] = useState<number | null>(null);
+  const at = popoverOrigin(anchor, area, drawn ?? 146 + lines.length * 17);
   const line = (text: string, key: string) => (
     <Text key={key} numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
       {text}
@@ -68,6 +71,9 @@ export function EventPopover({
   return (
     <View
       testID="popover"
+      onLayout={(bounds) => {
+        if (Math.round(bounds.height) !== drawn) setDrawn(Math.round(bounds.height));
+      }}
       occlude
       focusTrap
       accessibilityRole="dialog"

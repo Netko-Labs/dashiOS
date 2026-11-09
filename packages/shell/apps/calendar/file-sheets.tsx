@@ -76,6 +76,10 @@ export function ImportTargetSheet({
   );
 }
 
+/** The Export sheet's width, and its column inside (less its 20 of padding and 1 of edge a side): the pop-up and the path end on one edge. */
+const EXPORT_WIDTH = 440;
+export const EXPORT_COLUMN = EXPORT_WIDTH - 2 * 21;
+
 /** File › Export…: a calendar written as an .ics file where the person says. */
 export function ExportSheet({
   calendars,
@@ -98,7 +102,7 @@ export function ExportSheet({
     if (path.trim() !== "") onExport(calendarId, path);
   };
   return (
-    <Sheet testID="export-sheet" width={440}>
+    <Sheet testID="export-sheet" width={EXPORT_WIDTH}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Export a calendar</Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <PopUpButton
@@ -110,7 +114,7 @@ export function ExportSheet({
             if (path === `${home}/${nameOf(calendarId)}.ics`) setPath(`${home}/${nameOf(id)}.ics`);
             setCalendarId(id);
           }}
-          width={380}
+          width={EXPORT_COLUMN}
         />
       </View>
       <TextField testID="export:path" value={path} autoFocus onChangeText={setPath} onSubmit={submit} onKeyPress={(key) => key === "Escape" && onCancel()} />

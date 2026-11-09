@@ -39,9 +39,13 @@ export {
   MenuList,
   type MenuSeparator,
   PopupMenu,
+  SCRIM,
+  SHEET_MARGIN,
   Sheet,
   SheetCard,
   type SheetProps,
+  sheetBodyRoom,
+  sheetWidth,
   tidyEntries,
 } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
