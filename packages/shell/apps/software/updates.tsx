@@ -84,8 +84,19 @@ function KindChip({ kind }: { kind: string }) {
   if (kind === "Available" || kind === "Normal" || kind === "") return null;
   const security = kind === "Security";
   return (
-    <View style={{ paddingHorizontal: 6, height: 18, justifyContent: "center", borderRadius: 9, backgroundColor: security ? colors.brothWash : colors.button }}>
-      <Text style={{ fontSize: 11, color: security ? colors.broth : colors.textMuted }}>{kind}</Text>
+    <View
+      style={{
+        flexShrink: 0,
+        paddingHorizontal: 6,
+        height: 18,
+        justifyContent: "center",
+        borderRadius: 9,
+        backgroundColor: security ? colors.brothWash : colors.button,
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 11, color: security ? colors.broth : colors.textMuted }}>
+        {kind}
+      </Text>
     </View>
   );
 }
@@ -122,7 +133,7 @@ function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
                 {update.version}
               </Text>
             </View>
-            <View style={{ width: 84, alignItems: "flex-start" }}>
+            <View style={{ width: 84, flexShrink: 0, alignItems: "flex-start" }}>
               <KindChip kind={update.kind} />
             </View>
           </View>
