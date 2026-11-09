@@ -276,6 +276,7 @@ export function MenuBar({
           open={statusMenuKey === extra.key}
           onMenu={openExtraMenu}
           onActivate={(each, x, y) => extras.activate(each.key, x, y, output)}
+          accessible={accessible()}
         />
       ),
     })),
