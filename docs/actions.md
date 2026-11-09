@@ -879,3 +879,4 @@ its `case` in `runBinding`, and move its test to the registry.
 | `space-left`, `space-right`, `space-1`…`space-9`, `overview` | `dashi://space/left`, `dashi://space/3`, `dashi://dashi/overview` | a `spaces` source |
 | `volume-up`, `brightness-up`, `media-*`, `power-key` | `dashi://sound/volume-up` and so on | a `hardware` source |
 | `launcher`, `switch-*`, `switcher-*`, `app-chord`, `app-erase` | stay names: they are the launcher and the switcher themselves, and `app-chord` and `app-erase` (❖⌫) are the app's own menu | |
+| `menu-bar` (⌃F2) | stays a name: it moves the keyboard into the bar (`menus/bar-keys.ts`), which means nothing from the launcher or a link | |

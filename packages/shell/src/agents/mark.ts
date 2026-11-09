@@ -11,6 +11,7 @@
  * entry while it is connected, whatever its run did. Pure.
  */
 
+import { elapsedText } from "../shared/time/elapsed.ts";
 import { harnessGlyph } from "./handoff/harness-icons.ts";
 import { currentStep, isWorking, type RunView } from "./handoff/store.ts";
 import type { AgentInfo, Watching } from "./presence.ts";
@@ -33,6 +34,8 @@ export interface AgentEntry {
   phase: EntryPhase;
   /** It sees or records the screen, or uses its own pointer or keys, now. */
   watching: Watching | null;
+  /** Since when it has been doing so (ms); null when not, or not known. */
+  watchingSince: number | null;
   /** When it started or connected, for the order. */
   since: number;
   run?: RunView;
@@ -73,6 +76,7 @@ function connectionEntry(agent: AgentInfo): AgentEntry {
     doing: agent.waiting ? "Waiting for you" : agent.status,
     phase,
     watching: agent.watching ?? null,
+    watchingSince: agent.watching ? (agent.watchingSince ?? null) : null,
     since: agent.since ?? 0,
     agent,
   };
@@ -89,6 +93,8 @@ export function mergeAgents(connections: readonly AgentInfo[], runs: readonly Ru
   const fromRuns = working.map((run): AgentEntry => {
     const own = connections.filter((agent) => agent.task === run.id);
     const watching = own.reduce<Watching | null>((most, agent) => strongest(most, agent.watching), null);
+    // The earliest of its connections doing what it shows.
+    const sinces = own.flatMap((agent) => (watching !== null && agent.watching === watching && agent.watchingSince !== undefined ? [agent.watchingSince] : []));
     // A run's own connection asking (a question routed to the sheets) waits on the person too.
     const waiting = run.question !== null || own.some((agent) => agent.waiting === true);
     return {
@@ -99,6 +105,7 @@ export function mergeAgents(connections: readonly AgentInfo[], runs: readonly Ru
       doing: waiting ? "Waiting for you" : runDoing(run),
       phase: waiting ? "waiting" : "working",
       watching,
+      watchingSince: sinces.length > 0 ? Math.min(...sinces) : null,
       since: run.started,
       run,
     };
@@ -137,6 +144,16 @@ export function accessWords(entry: Pick<AgentEntry, "watching" | "phase" | "kind
   if (entry.watching) return WATCH_WORDS[entry.watching];
   if (entry.phase === "waiting") return "Waiting for you";
   return entry.kind === "run" ? "Working" : "Connected";
+}
+
+/**
+ * How long it has been recording or seeing the screen ("2:14"), for its
+ * row's chip; null while it does neither (its pointer's clicks are moments)
+ * or the time isn't known.
+ */
+export function watchTime(entry: Pick<AgentEntry, "watching" | "watchingSince">, now: number): string | null {
+  if ((entry.watching !== "recording" && entry.watching !== "screen") || entry.watchingSince === null) return null;
+  return elapsedText(now - entry.watchingSince);
 }
 
 /** "Claude Code · Cutting the demo video", and how many more. */

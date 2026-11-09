@@ -89,6 +89,7 @@ const GROUPS: ReadonlyArray<[string, Rows]> = [
       ["Lock screen", "⌃❖Q"],
       ["Force Quit", "⌥❖Esc"],
       ["Dock hiding", "⌥❖D"],
+      ["Menu bar", "⌃F2"],
     ],
   ],
   [

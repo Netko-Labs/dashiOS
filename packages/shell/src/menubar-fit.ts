@@ -74,3 +74,23 @@ export const GOES = { sound: 10_000, network: 10_001, dnd: 10_002 } as const;
 
 /** An extra's turn: the store keeps the newest first, so the newest goes first. */
 export const extraGoes = (index: number): number => index;
+
+/**
+ * The status side's row as drawn (menubar-status.tsx): the items shown, in
+ * their order, with "…" (`more`) right of the extras still shown, where the
+ * ones that went were, while something went. `moreAt` is "…"'s place among
+ * the shown items (-1 without it). The keyboard walks this order
+ * (menus/bar-keys.ts).
+ */
+export function statusRow(
+  slots: readonly { key: string; extra?: boolean }[],
+  hidden: readonly string[],
+  more: string,
+): { visible: string[]; moreAt: number; order: string[] } {
+  const gone = new Set(hidden);
+  const visible = slots.filter((slot) => !gone.has(slot.key)).map((slot) => slot.key);
+  const lastExtra = slots.reduce((at, slot, index) => (slot.extra ? index : at), -1);
+  const moreAt = hidden.length === 0 ? -1 : slots.filter((slot, index) => !gone.has(slot.key) && index <= lastExtra).length;
+  const order = moreAt < 0 ? visible : [...visible.slice(0, moreAt), more, ...visible.slice(moreAt)];
+  return { visible, moreAt, order };
+}

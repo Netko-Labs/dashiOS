@@ -34,6 +34,8 @@ export interface ShellActions {
   settings?(): void;
   /** Turns Dock autohide on or off (dock/prefs.ts), on ⌥❖D, as on the Mac. */
   toggleAutohide?(): void;
+  /** ⌃F2: the keyboard to the menu bar, or back from it (menus/bar-keys.ts). */
+  menuBar?(): void;
   /** Mission Control: all windows at once (overview/). */
   overview: { toggle(): void };
   /** Chooses the item of `window`'s app menus that shows `shortcut` ("⇧❖N", app-menus/); false when none does. */
@@ -127,6 +129,8 @@ export async function runBinding(name: string, window: number | null, compositor
       return actions.toggleAutohide?.();
     case "overview":
       return actions.overview.toggle();
+    case "menu-bar":
+      return actions.menuBar?.();
   }
   // The rest act on the focused window, if there is one.
   if (window === null) return;

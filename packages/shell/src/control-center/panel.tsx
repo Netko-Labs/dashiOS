@@ -7,6 +7,8 @@
  * away). From the keyboard: the arrows move between tiles, Space toggles,
  * Return opens, ⇧ and an arrow move a slider, Esc goes back or closes; in
  * edit mode ⌥ and an arrow move the tile, Space resizes it, ⌫ removes it.
+ * On a tile's page ↑ and ↓ move between its rows and Space or Return
+ * presses one (page-keys.ts), with the same ring.
  */
 
 import { type KeyDownInfo, View } from "@mirinjs/metal";
@@ -28,7 +30,7 @@ import type { FlagsStore } from "./flags.ts";
 import { ControlGrid } from "./grid.tsx";
 import { addItem, type Direction, frameOf, GRID, type Layout, moveItem, moveToward, neighbor, nextSize, pack, removeItem, shown } from "./layout.ts";
 import { type LayoutStore, useLayout } from "./layout-store.ts";
-import { PageOrigin } from "./page-parts.tsx";
+import { PageKeysContext, PageOrigin, usePageKeys } from "./page-parts.tsx";
 import { PageView } from "./pages.tsx";
 import { TILE_RADIUS } from "./tiles.tsx";
 
@@ -86,6 +88,8 @@ export function ControlCenterPanel(props: ControlCenterProps) {
   /** Where the tile whose page is open was, for the page to grow from. */
   const [origin, setOrigin] = useState<{ left: number; top: number; width: number } | null>(null);
   const controls = useControls(props);
+  /** A page's rows by the keyboard (page-parts.tsx `usePageKeys`). */
+  const { pageKeys, pageKey } = usePageKeys(page);
 
   useEffect(() => {
     void props.devices.refresh();
@@ -125,7 +129,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
       if (draft) return setDraft(null);
       return onClose();
     }
-    if (page !== "main") return;
+    if (page !== "main") return pageKey(name);
     const direction = ARROWS[name];
     if (direction) {
       if (focus === null) return setFocus(placed[0]?.id ?? null);
@@ -167,7 +171,9 @@ export function ControlCenterPanel(props: ControlCenterProps) {
     >
       {page !== "main" ? (
         <PageOrigin.Provider value={origin}>
-          <PageView page={page} props={props} controls={controls} onBack={() => onPage("main")} />
+          <PageKeysContext.Provider value={pageKeys}>
+            <PageView page={page} props={props} controls={controls} onBack={() => onPage("main")} />
+          </PageKeysContext.Provider>
         </PageOrigin.Provider>
       ) : (
         <>

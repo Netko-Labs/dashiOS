@@ -39,12 +39,15 @@ export function BatteryPopover({
   right,
   screenWidth,
   close,
+  onEscape,
 }: {
   sources: BatteryPopoverSources;
   /** The panel's right edge in screen points; null: Control Center's place. */
   right: number | null;
   screenWidth: number | null;
   close: () => void;
+  /** Esc: closed, or back to the menu bar when the keyboard came from it (menus/bar-keys.ts). */
+  onEscape?: () => void;
 }) {
   const { battery: polled } = useSystem(sources.system);
   const use = useMonitor(sources.monitor);
@@ -59,7 +62,12 @@ export function BatteryPopover({
   const place =
     right === null || screenWidth === null ? { right: 8 } : { left: Math.max(8, Math.min(right - BATTERY_PANEL.width, screenWidth - BATTERY_PANEL.width - 8)) };
   return (
-    <View occlude testID="battery-popover" onWindowKeyDown={(key) => key.key === "escape" && close()} style={{ position: "absolute", top: 4, ...place }}>
+    <View
+      occlude
+      testID="battery-popover"
+      onWindowKeyDown={(key) => key.key === "escape" && (onEscape ?? close)()}
+      style={{ position: "absolute", top: 4, ...place }}
+    >
       <BatteryPanel
         battery={battery}
         use={use?.available ? use : null}

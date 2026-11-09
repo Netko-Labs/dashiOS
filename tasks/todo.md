@@ -82,7 +82,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] ASUS Control 0.3.0 (`asus-control` `feat/controls`): Lid light, Fans, CPU
 - [x] VM: `dashi-0.5.0-review/41-control-center/` (fake Wi-Fi and Bluetooth, a fixture battery, a virtual sink, the fake G14)
 - [ ] Mirroring: its glyph is drawn, its tile waits for the compositor to mirror a screen (M)
-- [ ] The rows of a page by the keyboard (the arrows reach the tiles, not yet a page's rows) (S)
+- [x] The rows of a page by the keyboard: ↑ ↓ from the header's switch down the rows, Space and Return press, the tiles' ring (`page-keys.ts`; `night/0.5-menubar`); a page's slider (Sound's volume) and Bluetooth's Search Again are not reached yet
 - [ ] A slider's or a status's 30-minute line on a large tile (`spark`, controls.html § 4) (S)
 - [ ] Per-app watts measured, not estimated, where the machine can say (RAPL through dashi-hardware) (M)
 - [ ] Hotspot on a machine with Wi-Fi: checked in code (nmcli), not on hardware (S; laptop)
@@ -116,7 +116,14 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] mirin: the taffy fix for a negative margin on an item that doesn't shrink (`52-settings-scroll/mirin-a-taffy-negative-margin.diff`); then `TUCK` can keep `flexShrink: 0` again (the owner's call)
 - [x] mirin: `minWidth`/`minHeight` on a warm host's `open` (`52-settings-scroll/mirin-b-open-min-size.diff`); then `overlay.tsx`'s `pick` passes them to a host that knows them, and Settings' least size holds (today only a host started for it holds it)
 - [ ] A slider's row exactly at its words' least width grows tall in mirin's layout (seen at 744; the least size keeps 4 to spare)
-- [ ] The wheel over an open menu also scrolls the page under it (the menu's ground takes presses, not the wheel)
+- [x] The wheel over an open menu also scrolls the page under it: mirin's `occlude` now takes the wheel too (`night-menubar` in mirin; `night/0.5-menubar`)
+
+## The menu bar by the keyboard, and leftovers (`night/0.5-menubar`; review 58-menu-bar-keys)
+- [x] ⌃F2 moves the keyboard to the menu bar: ← → across the menus and the status items as drawn, Return/Space/↓ open, ← → in a menu go to the next title, Esc back to the bar then out, the purple ring inside each item; a screen reader hears each item (`menus/bar-keys.ts`, the controller's `focusBar`)
+- [x] The agents' panel: a connected agent's row says how long it has recorded or seen the screen, live (`agents/watch-clock.ts`)
+- [x] The wheel over an open menu (mirin's `occlude`), and Control Center's page rows by the keyboard (above)
+- [ ] Inside a bar menu, a screen reader hears the menu (role menu, rows menuitem) but not each row as ↑ ↓ light it: the highlight is not focus (S)
+- [ ] An arrow pressed at once after ⌃F2 (or a click on a title) can reach the window under the bar before the popover's surface has the keyboard (seen twice in review 58, on a session's first popover) (S)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)

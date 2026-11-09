@@ -26,9 +26,11 @@ export interface ExtraItemProps {
   onActivate(extra: MenuBarExtra, x: number, y: number): void;
   /** Drawn as a tile in "…"'s row (bar-overflow.tsx) instead of a pill in the bar. */
   tile?: boolean;
+  /** Named for a screen reader by its title, on a host that takes accessibility props. */
+  accessible?: boolean;
 }
 
-export function ExtraItem({ extra, open, onMenu, onActivate, tile = false }: ExtraItemProps) {
+export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, accessible = false }: ExtraItemProps) {
   const colors = useColors();
   // Events carry the pill's bounds; the last layout stands in for one that does not.
   const laid = useRef<Bounds | null>(null);
@@ -41,6 +43,7 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false }: Ext
   return (
     <View
       testID={`extra:${extra.key}`}
+      {...(accessible ? { accessibilityRole: "button" as const, accessibilityLabel: extra.title, accessibilityState: { expanded: open } } : {})}
       onLayout={(bounds) => {
         laid.current = bounds;
       }}

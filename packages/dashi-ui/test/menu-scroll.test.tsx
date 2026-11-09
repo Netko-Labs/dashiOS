@@ -47,3 +47,22 @@ test("a menu taller than the window scrolls its rows inside the window; a short 
     root.unmount();
   }
 });
+
+// The wheel over an open menu never scrolls the page under it: the menu's ground covers the
+// window and occludes, which in Metal takes the wheel as well as presses (mirin's render.rs
+// `hitbox_behavior`); the card and its rows are drawn over the ground, so they still scroll.
+test("the menu's ground covers the window and occludes, so the wheel stays off the page", async () => {
+  const host = fakeHost();
+  const root = render(<PopupMenu testID="more" x={20} y={40} items={items} onClose={() => {}} />, host.transport);
+  await settle();
+  const away = root.nodeId("more:away");
+  if (away === undefined) throw new Error("no menu");
+  host.emit({ type: "resize", nodeId: away, bounds: { x: 0, y: 0, width: 800, height: 300 } });
+  await settle();
+  const tree = JSON.parse(host.last()) as Node;
+  const ground = find(tree, away);
+  expect(ground?.props).toMatchObject({ occlude: true, left: 0, top: 0, right: 0, bottom: 0 });
+  // The rows' scroll view is inside the ground, so it is in front of it.
+  expect(find(ground as Node, root.nodeId("more:rows") ?? "")?.props.scroll).toBe(true);
+  root.unmount();
+});

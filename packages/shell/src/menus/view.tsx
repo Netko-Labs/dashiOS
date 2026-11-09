@@ -2,13 +2,13 @@
  * A dropdown, the way macOS draws one: a glass panel, rows with the label
  * on the left and the shortcut on the right, thin separators, disabled rows
  * greyed, a check in the gutter for the chosen one. The pointer or the
- * arrow keys highlight a row; a click or Enter chooses it.
+ * arrow keys highlight a row; a click, Return or Space chooses it, and
+ * from the menu bar ← → go to the next menu (bar-keys.ts).
  */
 
 import { CHECK, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { KeyCatcher } from "../overlay.tsx";
 import { isEnabled, type MenuEntry, stepHighlight } from "./model.ts";
 
 export const DROPDOWN = { minWidth: 230, maxWidth: 360, rowHeight: 22, radius: 10, padding: 5, gutter: 18 } as const;
@@ -35,6 +35,8 @@ function Row<A>({
   return (
     <View
       testID={`menu-row:${entry.label}`}
+      accessibilityRole="menuitem"
+      accessibilityState={{ disabled: !enabled, selected: enabled && highlighted, ...(entry.checked === undefined ? {} : { checked: entry.checked }) }}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -64,11 +66,37 @@ function Row<A>({
   );
 }
 
+/**
+ * A key in an open dropdown (GPUI's names): ↑ ↓ move the highlight, Return
+ * or Space choose, ← → go to the bar's next menu (`side`), Esc closes.
+ */
+export function dropdownKey(
+  key: string,
+): { kind: "step"; direction: "up" | "down" } | { kind: "choose" } | { kind: "side"; toward: "left" | "right" } | { kind: "close" } | null {
+  switch (key) {
+    case "up":
+    case "down":
+      return { kind: "step", direction: key };
+    case "enter":
+    case "space":
+      return { kind: "choose" };
+    case "left":
+    case "right":
+      return { kind: "side", toward: key };
+    case "escape":
+      return { kind: "close" };
+    default:
+      return null;
+  }
+}
+
 export function DropdownMenu<A>({
   entries,
   x,
   above,
   alignRight = false,
+  fromKeys = false,
+  onSide,
   onChoose,
   onClose,
 }: {
@@ -82,11 +110,15 @@ export function DropdownMenu<A>({
    * its bottom edge this far above the screen's bottom edge (the Dock's menus).
    */
   above?: number;
+  /** Opened from the keyboard (the menu bar's ring): the first row it can choose is lit, as on a Mac. */
+  fromKeys?: boolean;
+  /** ← or →: the menu bar's next menu (menus/bar-keys.ts); a menu not from the bar has none. */
+  onSide?: (toward: "left" | "right") => void;
   onChoose: (action: A) => void;
   onClose: () => void;
 }) {
   const colors = useColors();
-  const [highlight, setHighlight] = useState<number | null>(null);
+  const [highlight, setHighlight] = useState<number | null>(() => (fromKeys ? stepHighlight(entries, null, "down") : null));
   const gutter = entries.some((entry) => entry.kind === "item" && entry.checked !== undefined);
   const choose = () => {
     const entry = highlight === null ? undefined : entries[highlight];
@@ -99,6 +131,14 @@ export function DropdownMenu<A>({
     <View
       occlude
       testID="menu-panel"
+      accessibilityRole="menu"
+      onWindowKeyDown={(event) => {
+        const command = dropdownKey(event.key);
+        if (command?.kind === "close") onClose();
+        else if (command?.kind === "step") setHighlight((current) => stepHighlight(entries, current, command.direction));
+        else if (command?.kind === "choose") choose();
+        else if (command?.kind === "side") onSide?.(command.toward);
+      }}
       style={{
         ...placement,
         minWidth: DROPDOWN.minWidth,
@@ -132,13 +172,6 @@ export function DropdownMenu<A>({
 
   return (
     <>
-      <KeyCatcher
-        onKey={(key) => {
-          if (key === "Escape") onClose();
-          else setHighlight((current) => stepHighlight(entries, current, key === "ArrowDown" ? "down" : "up"));
-        }}
-        onSubmit={choose}
-      />
       {alignRight ? (
         // A box from the left edge to `x`, so the panel ends at `x` without knowing its own width.
         <View style={{ position: "absolute", left: 0, width: Math.max(x, DROPDOWN.minWidth + 8), top: 2, alignItems: "flex-end" }}>{panel}</View>
