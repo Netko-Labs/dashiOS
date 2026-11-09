@@ -134,6 +134,7 @@ export function MenuList({
   onChoose,
   testID = "menu",
   minWidth = MENU.minWidth,
+  maxWidth,
   lit,
   onLit,
   maxHeight,
@@ -143,6 +144,8 @@ export function MenuList({
   onChoose?: () => void;
   testID?: string;
   minWidth?: number;
+  /** At most this wide, edge included: a longer label ends in an ellipsis (a folder's long name). */
+  maxWidth?: number;
   /** The row drawn in kombu, by its place among the drawn rows, when the owner moves it with keys too (`PopupMenu`). */
   lit?: number | null;
   onLit?: (row: number | null) => void;
@@ -196,11 +199,14 @@ export function MenuList({
           focusRingColor: colors.focusRing,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
-          <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
-            {item.label}
-          </Text>
+        {/* Every row keeps the tick's column at its full width, so all the labels start on one edge. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
+          {ticks && <View style={{ width: 12, flexShrink: 0 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+              {item.label}
+            </Text>
+          </View>
         </View>
         {item.keys !== undefined && <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />}
       </View>
@@ -215,6 +221,7 @@ export function MenuList({
       accessibilityRole="menu"
       style={{
         minWidth,
+        ...(maxWidth !== undefined ? { maxWidth } : {}),
         ...(maxHeight !== undefined ? { height: maxHeight } : {}),
         flexDirection: "column",
         padding: MENU.padding,
@@ -241,7 +248,9 @@ export function MenuList({
  * anywhere else closes it, and so does Esc. It stays inside the window,
  * flipped to the other side of the point when it would run off, or (with
  * `flip` false) slid back in (PA-9, menu-place.ts); one taller than the
- * window is as tall as the window allows, and its rows scroll.
+ * window is as tall as the window allows, and its rows scroll. With
+ * `anchor` "end", `x` is where its right edge goes (a menu hung from a
+ * toolbar's "…" at the window's right), at the width it is drawn.
  */
 export function PopupMenu({
   x,
@@ -250,7 +259,9 @@ export function PopupMenu({
   onClose,
   testID = "menu",
   minWidth = MENU.minWidth,
+  maxWidth,
   flip = true,
+  anchor = "start",
 }: {
   x: number;
   y: number;
@@ -258,7 +269,10 @@ export function PopupMenu({
   onClose: () => void;
   testID?: string;
   minWidth?: number;
+  /** At most this wide: longer labels end in an ellipsis. */
+  maxWidth?: number;
   flip?: boolean;
+  anchor?: "start" | "end";
 }) {
   const [room, setRoom] = useState<Size>({ width: 0, height: 0 });
   const [width, setWidth] = useState<number | null>(null);
@@ -283,7 +297,8 @@ export function PopupMenu({
   // Taller than the window, it fits the window and its rows scroll.
   const full = menuHeight(kinds);
   const height = menuFits(full, room.height);
-  const at = placeMenu({ x, y }, { width: width ?? minWidth, height }, room, flip);
+  const drawn = width ?? minWidth;
+  const at = placeMenu({ x: anchor === "end" ? x - drawn : x, y }, { width: drawn, height }, room, flip);
   return (
     <View
       occlude
@@ -306,6 +321,7 @@ export function PopupMenu({
           onChoose={onClose}
           testID={testID}
           minWidth={minWidth}
+          {...(maxWidth !== undefined ? { maxWidth } : {})}
           lit={lit}
           onLit={setLit}
           {...(height < full ? { maxHeight: height } : {})}

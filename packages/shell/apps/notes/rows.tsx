@@ -8,8 +8,6 @@ import { untitled } from "./names.ts";
 import { KEEP_DAYS } from "./store.ts";
 import { daysLeft, listDate, preview } from "./text.ts";
 
-export const LIST_WIDTH = 276;
-
 export interface NoteListProps {
   rows: readonly Row[];
   selected: string | null;
@@ -22,6 +20,8 @@ export interface NoteListProps {
   now: number;
   /** What an empty list says ("No notes yet"). */
   emptyText: string;
+  /** The list's width (layout.ts: narrower in a narrow window). */
+  width: number;
 }
 
 function Caption({ children }: { children: string }) {
@@ -93,16 +93,18 @@ function NoteRow({
       {folder !== null && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <Svg markup={FOLDER} size={11} color={quiet} />
-          <Text numberOfLines={1} style={{ fontSize: 11, color: quiet }}>
-            {folder}
-          </Text>
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 11, color: quiet }}>
+              {folder}
+            </Text>
+          </View>
         </View>
       )}
     </View>
   );
 }
 
-export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now, emptyText }: NoteListProps) {
+export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderLabel, now, emptyText, width }: NoteListProps) {
   const colors = useColors();
   const surface = useSurface();
   const pinned = rows.filter((row) => row.pinned);
@@ -122,7 +124,7 @@ export function NoteList({ rows, selected, onSelect, onMenu, showFolder, folderL
     <ScrollView
       testID="note-list"
       style={{
-        width: LIST_WIDTH,
+        width,
         flexShrink: 0,
         flexDirection: "column",
         paddingVertical: 6,

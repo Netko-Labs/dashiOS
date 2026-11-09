@@ -8,6 +8,8 @@
  * Enter writes in the note, / or F search, and the up and down arrows move
  * through the list. Esc in a field gives the keyboard back to the list; Esc
  * in the search hands it to the note, on the match, when the note has one.
+ * A narrow window folds the folders to a rail and narrows the list
+ * (layout.ts); the notice floats at the foot of the note it is about.
  */
 
 import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, ToolbarButton, useUndo } from "@dashi/ui";
@@ -18,7 +20,8 @@ import { Editor } from "./editor.tsx";
 import { findMatches } from "./find.ts";
 import type { FormatCommand } from "./formats.ts";
 import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "./glyphs.ts";
-import { type Row, withDraft } from "./list.ts";
+import { type DateForm, notesLayout, RAIL_WIDTH, SEARCH_MIN } from "./layout.ts";
+import { type Row, type Source, withDraft } from "./list.ts";
 import { notesMenus } from "./menus.ts";
 import type { NotesModel } from "./model.ts";
 import { DEFAULT_FOLDER_NAME } from "./names.ts";
@@ -29,7 +32,17 @@ import { noteCount, wordCount } from "./text.ts";
 
 export const NOTES_SIZE = { width: 980, height: 640 } as const;
 
-type Menu = { x: number; y: number; items: MenuItem[] };
+/** A menu at a point; "end" hangs it by its right edge (the toolbar's Move, under its button). */
+type Menu = { x: number; y: number; items: MenuItem[]; anchor?: "start" | "end" };
+/** The widest a menu gets: a long folder's name ends in an ellipsis (PA-9). */
+const MENU_MAX_WIDTH = 280;
+
+const DATE_FORMS: Record<DateForm, Intl.DateTimeFormatOptions> = {
+  long: { dateStyle: "long", timeStyle: "short" },
+  medium: { dateStyle: "medium", timeStyle: "short" },
+  short: { month: "short", day: "numeric" },
+};
+const sourceKey = (source: Source): string => (source.kind === "folder" ? `folder:${source.name}` : source.kind);
 
 /** What the window needs from the app around it. */
 export interface NotesHost {
@@ -42,7 +55,7 @@ export interface NotesHost {
 }
 
 const folderLabel = (folder: string): string => (folder === "" ? DEFAULT_FOLDER_NAME : folder);
-const formatEdited = (time: number): string => new Date(time).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" });
+const formatEdited = (time: number, form: DateForm): string => new Date(time).toLocaleString(undefined, DATE_FORMS[form]);
 
 export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHost }) {
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
@@ -53,6 +66,9 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
   const [searching, setSearching] = useState(0);
   const [bodyFocus, setBodyFocus] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  // The window's width: a narrow one folds the folders to a rail and narrows the list (layout.ts).
+  const [windowWidth, setWindowWidth] = useState(0);
+  const layout = notesLayout(windowWidth);
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(tick);
@@ -84,7 +100,9 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
   const moveItems = (id: string | null, current: string): MenuItem[] =>
     [{ name: "", label: DEFAULT_FOLDER_NAME }, ...state.folders.map((name) => ({ name, label: name }))].map((folder) => ({
       label: `Move to ${folder.label}`,
+      // Where the note is: ticked, and not a place to move it to, so the menu never opens lit on it.
       checked: folder.name === current,
+      disabled: folder.name === current,
       onPress: () => model.moveTo(folder.name, id),
     }));
 
@@ -174,6 +192,7 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
       value={state.query}
       onChangeText={(q) => model.setQuery(q)}
       width={170}
+      minWidth={SEARCH_MIN}
       autoFocus={searching > 0}
       // Find in the note: one Esc keeps the words and hands the keyboard to the note, on the match;
       // with none there, to the list.
@@ -187,15 +206,30 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
   );
   const toolbar = inTrash ? (
     <>
-      <ToolbarButton testID="restore" glyph={RESTORE} label="Restore" disabled={!row} onPress={() => model.restoreSelected()} />
-      <ToolbarButton testID="purge" glyph={TRASH} label="Delete" disabled={!row} onPress={() => row && setSheet({ kind: "purge", title: row.title })} />
+      {/* Narrow, the words go and Delete All leaves for File's "Delete All Recently Deleted…", so two trash glyphs never sit side by side. */}
       <ToolbarButton
-        testID="empty-trash"
-        glyph={TRASH}
-        label="Delete All"
-        disabled={state.deleted.length === 0}
-        onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
+        testID="restore"
+        glyph={RESTORE}
+        {...(layout.compact ? { tooltip: "Restore" } : { label: "Restore" })}
+        disabled={!row}
+        onPress={() => model.restoreSelected()}
       />
+      <ToolbarButton
+        testID="purge"
+        glyph={TRASH}
+        {...(layout.compact ? { tooltip: "Delete forever" } : { label: "Delete" })}
+        disabled={!row}
+        onPress={() => row && setSheet({ kind: "purge", title: row.title })}
+      />
+      {!layout.compact && (
+        <ToolbarButton
+          testID="empty-trash"
+          glyph={TRASH}
+          label="Delete All"
+          disabled={state.deleted.length === 0}
+          onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
+        />
+      )}
       <View style={{ width: 8 }} />
       {search}
     </>
@@ -215,9 +249,15 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
         glyph={FOLDER_MOVE}
         tooltip="Move to a folder"
         disabled={!row}
-        // The menu opens under the button that opened it (PA-9).
+        // The menu hangs under the button that opened it, its right edge on the button's (PA-9).
         onPress={(event) =>
-          row && setMenu({ x: event.bounds?.x ?? 0, y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0) + 4, items: moveItems(row.id, row.folder) })
+          row &&
+          setMenu({
+            x: (event.bounds?.x ?? 0) + (event.bounds?.width ?? 0),
+            y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0) + 4,
+            anchor: "end",
+            items: moveItems(row.id, row.folder),
+          })
         }
       />
       <ToolbarButton testID="checklist" glyph={CHECKLIST} tooltip="Checklist" disabled={!row} onPress={() => format("checklist")} />
@@ -242,99 +282,117 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
       }}
     />
   ) : menu ? (
-    <PopupMenu testID="menu" x={menu.x} y={menu.y} items={menu.items} onClose={closeOverlay} />
+    <PopupMenu testID="menu" x={menu.x} y={menu.y} anchor={menu.anchor ?? "start"} maxWidth={MENU_MAX_WIDTH} items={menu.items} onClose={closeOverlay} />
   ) : undefined;
 
-  // One chrome row: the count follows the title on its line (and the sidebar's badges), the words follow the note's date, and an error or a conflict copy floats as a notice.
+  // An error or a conflict copy is about the note: it floats at the foot of the note's column, clear of the list, and is dismissed by hand.
+  const notice = state.error ? (
+    <Notice testID="error" tone="error" text={state.error} onDismiss={() => model.dismissError()} />
+  ) : state.notice ? (
+    <Notice testID="conflict" text={state.notice} onDismiss={() => model.dismissNotice()} />
+  ) : null;
+
+  // One chrome row: the count follows the title on its line (and the sidebar's badges), the words follow the note's date.
   return (
-    <AppWindow
-      title={title}
-      detail={noteCount(rows.length)}
-      toolbar={toolbar}
-      overlay={overlay}
-      notice={
-        state.error ? (
-          <Notice testID="error" tone="error" text={state.error} />
-        ) : state.notice ? (
-          <Notice testID="conflict" text={state.notice} onDismiss={() => model.dismissNotice()} />
-        ) : undefined
-      }
-      sidebar={
-        <Sidebar
-          folders={state.folders}
-          counts={counts}
-          source={state.source}
-          onSource={(source) => {
-            model.setSource(source);
-            takeKeys();
-          }}
-          onNewFolder={() => setSheet({ kind: "new-folder" })}
-          onFolderMenu={openFolderMenu}
-        />
-      }
+    <View
+      testID="notes-window"
+      style={{ flex: 1, flexDirection: "column" }}
+      onLayout={(bounds) => setWindowWidth((was) => (was === Math.round(bounds.width) ? was : Math.round(bounds.width)))}
     >
-      {sheet === null && menu === null && (
-        <KeySink
-          focusKey={keys}
-          onKey={(key) => {
-            if (key.kind === "up" || key.kind === "down") return model.moveSelection(key.kind === "up" ? -1 : 1);
-            if (key.kind === "backspace") return inTrash ? row && setSheet({ kind: "purge", title: row.title }) : model.trashSelected();
-            if (key.kind === "enter") {
-              if (row && !inTrash) setBodyFocus((n) => n + 1);
-              return;
-            }
-            if (key.kind !== "text") return;
-            const letter = key.text.toLowerCase();
-            if (letter === "n" && !inTrash) model.newNote();
-            else if (letter === "p" && !inTrash) model.togglePin();
-            else if (letter === "/" || letter === "f") setSearching((n) => n + 1);
-          }}
-        />
-      )}
-      <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
-        <NoteList
-          rows={rows}
-          selected={state.selected}
-          onSelect={(id) => {
-            model.select(id);
-            takeKeys();
-          }}
-          onMenu={openRowMenu}
-          showFolder={searchingNow || state.source.kind === "all"}
-          folderLabel={folderLabel}
-          now={now}
-          emptyText={searchingNow ? "No matches" : inTrash ? "Nothing deleted" : "No notes yet"}
-        />
-        <Editor
-          draft={state.draft}
-          row={row}
-          selection={state.selection}
-          query={state.query}
-          session={state.session}
-          focusTitle={state.focusTitle}
-          onEdit={(change) => model.edit(change)}
-          onSelection={(selection) => model.setSelection(selection)}
-          onToggleCheck={(line) => model.toggleCheck(line)}
-          onOpenLink={host.openLink}
-          onLeave={takeKeys}
-          follow={() => host.scroll("editor", 1_000_000)}
-          onRestore={() => model.restoreSelected()}
-          onNew={() => model.newNote()}
-          bodyFocus={bodyFocus}
-          empty={
-            searchingNow
-              ? { title: "No matches", message: "Nothing matches your search.", canCreate: false }
-              : inTrash
-                ? { title: "Nothing deleted", message: "Deleted notes stay here for 30 days.", canCreate: false }
-                : counts.all === 0
-                  ? { title: "Write your first note", message: "Notes are Markdown files in Documents › Notes, yours to open anywhere.", canCreate: true }
-                  : { title: "No notes here yet", message: "Make one, or move one here from the Note menu.", canCreate: true }
-          }
-          hasNotes={rows.length > 0}
-          formatDate={formatEdited}
-          words={words}
-        />
-      </View>
-    </AppWindow>
+      <AppWindow
+        title={title}
+        detail={noteCount(rows.length)}
+        toolbar={toolbar}
+        overlay={overlay}
+        {...(layout.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+        sidebar={
+          <Sidebar
+            rail={layout.rail}
+            folders={state.folders}
+            counts={counts}
+            source={state.source}
+            onSource={(source) => {
+              model.setSource(source);
+              takeKeys();
+            }}
+            onNewFolder={() => setSheet({ kind: "new-folder" })}
+            onFolderMenu={openFolderMenu}
+          />
+        }
+      >
+        {sheet === null && menu === null && (
+          <KeySink
+            focusKey={keys}
+            onKey={(key) => {
+              if (key.kind === "up" || key.kind === "down") return model.moveSelection(key.kind === "up" ? -1 : 1);
+              if (key.kind === "backspace") return inTrash ? row && setSheet({ kind: "purge", title: row.title }) : model.trashSelected();
+              if (key.kind === "enter") {
+                if (row && !inTrash) setBodyFocus((n) => n + 1);
+                return;
+              }
+              if (key.kind !== "text") return;
+              const letter = key.text.toLowerCase();
+              if (letter === "n" && !inTrash) model.newNote();
+              else if (letter === "p" && !inTrash) model.togglePin();
+              else if (letter === "/" || letter === "f") setSearching((n) => n + 1);
+            }}
+          />
+        )}
+        <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
+          <NoteList
+            // A new source starts at the top of its list, where its first note, the one it opens, is.
+            key={sourceKey(state.source)}
+            width={layout.listWidth}
+            rows={rows}
+            selected={state.selected}
+            onSelect={(id) => {
+              model.select(id);
+              takeKeys();
+            }}
+            onMenu={openRowMenu}
+            showFolder={searchingNow || state.source.kind === "all"}
+            folderLabel={folderLabel}
+            now={now}
+            emptyText={searchingNow ? "No matches" : inTrash ? "Nothing deleted" : "No notes yet"}
+          />
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "column", position: "relative" }}>
+            <Editor
+              now={now}
+              draft={state.draft}
+              row={row}
+              selection={state.selection}
+              query={state.query}
+              session={state.session}
+              focusTitle={state.focusTitle}
+              onEdit={(change) => model.edit(change)}
+              onSelection={(selection) => model.setSelection(selection)}
+              onToggleCheck={(line) => model.toggleCheck(line)}
+              onOpenLink={host.openLink}
+              onLeave={takeKeys}
+              follow={() => host.scroll("editor", 1_000_000)}
+              onNew={() => model.newNote()}
+              bodyFocus={bodyFocus}
+              empty={
+                searchingNow
+                  ? { title: "No matches", message: "Nothing matches your search.", canCreate: false }
+                  : inTrash
+                    ? { title: "Nothing deleted", message: "Deleted notes stay here for 30 days.", canCreate: false }
+                    : counts.all === 0
+                      ? { title: "Write your first note", message: "Notes are Markdown files in Documents › Notes, yours to open anywhere.", canCreate: true }
+                      : { title: "No notes here yet", message: "Make one, or move one here from the Note menu.", canCreate: true }
+              }
+              hasNotes={rows.length > 0}
+              formatDate={formatEdited}
+              words={words}
+            />
+            {notice && (
+              <View testID="note-notice" style={{ position: "absolute", left: 8, right: 8, bottom: 14, alignItems: "center" }}>
+                {notice}
+              </View>
+            )}
+          </View>
+        </View>
+      </AppWindow>
+    </View>
   );
 }
