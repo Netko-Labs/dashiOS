@@ -221,7 +221,6 @@ export function MenuList({
         minWidth,
         ...(maxHeight !== undefined ? { height: maxHeight } : {}),
         flexDirection: "column",
-        padding: MENU.padding,
         borderRadius: 9,
         // Solid: a menu in a window is one layer over the work, and nothing blurs what is under it (the line's 40 pt digits read through glass).
         backgroundColor: surface.card,
@@ -230,13 +229,23 @@ export function MenuList({
         shadow: "xl",
       }}
     >
-      {maxHeight === undefined ? (
-        list
-      ) : (
-        <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column" }}>
-          {list}
-        </ScrollView>
-      )}
+      <View
+        style={{
+          ...(maxHeight !== undefined ? { flex: 1, minHeight: 0 } : {}),
+          flexDirection: "column",
+          padding: MENU.padding,
+          borderRadius: 9 - MENU.edge,
+          backgroundColor: colors.menu,
+        }}
+      >
+        {maxHeight === undefined ? (
+          list
+        ) : (
+          <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column" }}>
+            {list}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 }
@@ -246,7 +255,9 @@ export function MenuList({
  * anywhere else closes it, and so does Esc. It stays inside the window,
  * flipped to the other side of the point when it would run off, or (with
  * `flip` false) slid back in (PA-9, menu-place.ts); one taller than the
- * window is as tall as the window allows, and its rows scroll.
+ * window is as tall as the window allows, and its rows scroll. With
+ * `anchor` "end", `x` is where its right edge goes (a menu hung from a
+ * toolbar's "…" at the window's right), at the width it is drawn.
  */
 export function PopupMenu({
   x,
@@ -256,6 +267,7 @@ export function PopupMenu({
   testID = "menu",
   minWidth = MENU.minWidth,
   flip = true,
+  anchor = "start",
 }: {
   x: number;
   y: number;
@@ -264,6 +276,7 @@ export function PopupMenu({
   testID?: string;
   minWidth?: number;
   flip?: boolean;
+  anchor?: "start" | "end";
 }) {
   const [room, setRoom] = useState<Size>({ width: 0, height: 0 });
   const [width, setWidth] = useState<number | null>(null);
@@ -288,7 +301,8 @@ export function PopupMenu({
   // Taller than the window, it fits the window and its rows scroll.
   const full = menuHeight(kinds);
   const height = menuFits(full, room.height);
-  const at = placeMenu({ x, y }, { width: width ?? minWidth, height }, room, flip);
+  const drawn = width ?? minWidth;
+  const at = placeMenu({ x: anchor === "end" ? x - drawn : x, y }, { width: drawn, height }, room, flip);
   return (
     <View
       occlude

@@ -47,6 +47,8 @@ export interface Snapshot {
   folder: Neighbours & { dir: string; files: readonly string[] };
   /** Small copies of the folder's pictures, by name, for the page strip. */
   folderThumbs: ReadonlyMap<string, string>;
+  /** Their shapes (height over width), by name, once their small copies are made. */
+  folderShapes: ReadonlyMap<string, number>;
   pdf: PdfState | null;
   /** Something the person asked for is being done (opening, rotating). */
   busy: boolean;
@@ -76,6 +78,7 @@ export const CLOSED = {
   canTurn: false,
   folder: EMPTY_FOLDER,
   folderThumbs: new Map(),
+  folderShapes: new Map(),
   pdf: null,
   busy: false,
   note: null,

@@ -25,7 +25,7 @@ export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, placeMenu, rowTop } from "./menu-place.ts";
 export { Notice, type NoticeProps } from "./notice.tsx";
-export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpOrigin } from "./popup-button.tsx";
+export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { LOADING_DELAY_MS, Loading, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";
 export { clampFraction, spinnerMarkup, spokeOpacities, sweepOffset } from "./progress-math.ts";
 export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";

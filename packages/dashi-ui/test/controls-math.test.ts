@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buttonLook } from "../src/button-look.ts";
 import { isHeld } from "../src/control-state.tsx";
 import { litAfter, MENU, menuFits, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
-import { popUpOrigin } from "../src/popup-button.tsx";
+import { popUpMenuWidth, popUpOrigin } from "../src/popup-button.tsx";
 import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, sweepOffset } from "../src/progress-math.ts";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/sheet.tsx";
 import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
@@ -135,6 +135,13 @@ describe("menus", () => {
     const at = popUpOrigin(button, rows, 3);
     expect(at.y + rowTop(rows, 3) + MENU.row / 2).toBe(button.y + button.height / 2);
     expect(at.x).toBeLessThan(button.x);
+    // Its right edge is the button's: it is wider only by the ticks' room to the left.
+    expect(at.x + popUpMenuWidth(button)).toBe(button.x + button.width);
+  });
+  test("a menu hung by its right edge ends where it was hung, slid in when it would run off the left", () => {
+    const room = { width: 800, height: 600 };
+    expect(placeMenu({ x: 780 - 158, y: 40 }, { width: 158, height: 200 }, room).x + 158).toBe(780);
+    expect(placeMenu({ x: 100 - 158, y: 40 }, { width: 158, height: 200 }, room, false).x).toBe(MENU.margin);
   });
 });
 

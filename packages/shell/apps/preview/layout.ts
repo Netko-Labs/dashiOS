@@ -10,7 +10,7 @@
 
 import type { Size } from "./dimensions.ts";
 
-/** Room around the column and between pages. */
+/** Room around the column and between pages (a fitted picture keeps the same, zoom.ts FIT_MARGIN). */
 export const MARGIN = 16;
 export const PAGE_GAP = 12;
 /** How far past the screen pages are still drawn (and rendered ahead), in screens. */

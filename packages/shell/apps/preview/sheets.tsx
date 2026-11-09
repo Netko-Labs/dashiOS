@@ -55,7 +55,8 @@ export function InfoSheet({ name, rows, onClose }: { name: string; rows: readonl
       <Group testID="info-sheet:rows">
         {rows.map(([label, value]) => (
           <Row key={label} label={label}>
-            <View style={{ flexShrink: 1, maxWidth: 280 }}>
+            {/* Two thirds of the row, from a zero basis: a long value wraps there and the row grows with it. */}
+            <View testID={`info-sheet:${label}`} style={{ flex: 2, minWidth: 0 }}>
               <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "right" }}>{value}</Text>
             </View>
           </Row>
@@ -88,38 +89,41 @@ export function OpenWithSheet({
       ) : handlers.length === 0 ? (
         <Text style={{ fontSize: 12, color: colors.textMuted }}>No other app opens this kind of file.</Text>
       ) : (
-        // One Tab stop; ↑ and ↓ move between the apps, Return opens with the one that has the keyboard (KB-1).
-        <View focusGroup style={{ flexDirection: "column", gap: 2, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
-          {handlers.map((handler) => (
-            <View
-              key={handler.id}
-              testID={`open-with:${handler.id}`}
-              focusable
-              accessibilityRole="button"
-              accessibilityLabel={handler.name}
-              onPress={() => onPick(handler)}
-              style={{
-                height: 30,
-                flexShrink: 0,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 8,
-                borderRadius: 6,
-                // A wash under the pointer, never kombu (CO-2).
-                hoverBackgroundColor: colors.button,
-              }}
-            >
-              <Image source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
-                  {handler.name}
-                </Text>
+        // A card on the heading's edge, as Info's and Export's rows are. One Tab stop; ↑ and ↓ move between the
+        // apps, Return opens with the one that has the keyboard (KB-1).
+        <Group testID="open-with:card">
+          <View focusGroup style={{ flexDirection: "column", gap: 2, padding: 4, maxHeight: 280, overflow: "scroll" }} testID="open-with:list">
+            {handlers.map((handler) => (
+              <View
+                key={handler.id}
+                testID={`open-with:${handler.id}`}
+                focusable
+                accessibilityRole="button"
+                accessibilityLabel={handler.name}
+                onPress={() => onPick(handler)}
+                style={{
+                  height: 30,
+                  flexShrink: 0,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingHorizontal: 8,
+                  borderRadius: 6,
+                  // A wash under the pointer, never kombu (CO-2).
+                  hoverBackgroundColor: colors.button,
+                }}
+              >
+                <Image source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+                    {handler.name}
+                  </Text>
+                </View>
+                {handler.isDefault && <Text style={{ fontSize: 11, color: colors.textMuted }}>Default</Text>}
               </View>
-              {handler.isDefault && <Text style={{ fontSize: 11, color: colors.textMuted }}>Default</Text>}
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        </Group>
       )}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 6 }}>
         <Button label="Cancel" testID="open-with:cancel" onPress={onClose} />

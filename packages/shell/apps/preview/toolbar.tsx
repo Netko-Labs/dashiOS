@@ -66,8 +66,9 @@ function Tool({ tool, props }: { tool: ToolId; props: ToolbarProps }) {
         <>
           <ToolbarButton glyph={glyphs.ZOOM_OUT} testID="zoom-out" tooltip="Zoom out" disabled={!hasPicture} onPress={props.onZoomOut} />
           {props.zoomLabel !== "" && (
+            // Centred between − and +, as the PDF's "3 / 12" is between the arrows.
             <View testID="zoom-level" style={{ minWidth: 46, alignItems: "center" }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text, textAlign: "center" }}>
                 {props.zoomLabel}
               </Text>
             </View>
