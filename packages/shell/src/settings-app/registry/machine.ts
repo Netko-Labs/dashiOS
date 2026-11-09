@@ -39,6 +39,14 @@ export const MACHINE_ROWS = [
 
   { id: "sound/output-volume", glyph: VOLUME, title: "Output volume", keywords: ["volume", "loudness", "speakers"], kind: "value" },
   { id: "sound/output-mute", glyph: MUTE, title: "Mute", name: "Mute output", keywords: ["mute", "silence"], kind: "switch" },
+  {
+    id: "sound/apps",
+    title: "Apps",
+    name: "App volumes",
+    detail: "Each app's volume, and where it plays.",
+    keywords: ["app volume", "volume mixer", "mixer", "per app volume", "play on", "app output"],
+    kind: "value",
+  },
   { id: "sound/input-volume", glyph: MIC, title: "Input volume", keywords: ["microphone volume", "mic level", "gain"], kind: "value" },
   { id: "sound/input-mute", glyph: MIC_OFF, title: "Mute", name: "Mute input", keywords: ["mute microphone", "mute mic"], kind: "switch" },
   {
@@ -47,6 +55,13 @@ export const MACHINE_ROWS = [
     title: "Input level",
     detail: "Speak to see the meter move. Nothing is recorded.",
     keywords: ["microphone test", "mic test"],
+    kind: "value",
+  },
+  {
+    id: "sound/using-microphone",
+    title: "Using the microphone",
+    name: "Apps using the microphone",
+    keywords: ["microphone in use", "who is recording", "recording", "mic indicator"],
     kind: "value",
   },
   {

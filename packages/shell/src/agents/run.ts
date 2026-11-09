@@ -135,6 +135,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       return desktop.setSoundOutput(call, ctx);
     case "set_volume":
       return desktop.setVolume(call, ctx);
+    case "set_app_volume":
+      return desktop.setAppVolume(call, ctx);
     case "get_power":
       return desktop.getPower(ctx);
     case "set_power_profile":

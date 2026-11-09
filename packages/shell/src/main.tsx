@@ -151,6 +151,7 @@ import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { Software } from "./software/manager.ts";
 import { standIn } from "./software/stand-in.ts";
 import { checkPath, openSoftwareUpdates, UpdateCheck } from "./software/update-check.ts";
+import { startAppMixer } from "./sound/apps/index.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
@@ -824,8 +825,12 @@ const chargeLimit = (): number | null => {
   const target = chargeTarget(settingsStore.getSnapshot().data.power, new Date()).percent;
   return target !== null && target < 100 ? target : null;
 };
+// The apps' sound: one pw-dump --monitor for the session, for Control Center, Settings, the
+// microphone indicator and agents (sound/apps/). A development run reads the host, never writes.
+const mixer = startAppMixer({ compositor, apps, entries: () => catalog, installed: installedApp, standIn: wifi.fake });
 // The menu bar's menus, Control Center and the battery panel (menus/, control-center/, battery/).
 const menus = startMenus({
+  mixer,
   layout: controlLayout,
   appletControls,
   chargeLimit,
@@ -1045,6 +1050,7 @@ const menuBars = new MenuBars({
         {...(output === undefined ? {} : { output })}
         runs={handoffShell.service.runs}
         installed={installedApp}
+        mixer={mixer}
         onTip={(tip) => barTips.show(tip)}
         reduceMotion={() => reduceMotion}
         accessible={() => launcherAccessible}
@@ -1761,6 +1767,7 @@ const quit = () => {
     ["screenshot selection", () => captureArea?.close()],
     ["displays", stopDisplays],
     ["overview", stopOverview],
+    ["sound watch", () => mixer.stop()],
     ["gestures", stopGestures],
     ["spaces", () => spaces?.close()],
     ["full-screen desktops", stopFullscreenDesktops],

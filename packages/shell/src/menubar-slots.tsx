@@ -26,7 +26,7 @@ export interface SystemSlotsInput extends Pick<SystemSnapshot, "battery" | "netw
   popover: Popover | null;
   clock: string;
   colors: Palette;
-  on: { battery: (bounds?: Bounds) => void; controlCenter: () => void; wifi: () => void; clock: () => void };
+  on: { battery: (bounds?: Bounds) => void; controlCenter: () => void; wifi: () => void; sound: () => void; clock: () => void };
 }
 
 export function systemSlots({ battery, network, volume, batteryPercent, sound, dnd, popover, clock, colors, on }: SystemSlotsInput): StatusSlot[] {
@@ -78,7 +78,8 @@ export function systemSlots({ battery, network, volume, batteryPercent, sound, d
             goes: GOES.sound,
             inArea: true,
             node: (
-              <StatusItem testID="status-volume" onPress={on.controlCenter}>
+              // The speaker opens Control Center on its Sound page: the outputs and each app's volume.
+              <StatusItem testID="status-volume" onPress={on.sound}>
                 <Svg markup={speakerGlyph(volume.level, volume.muted)} size={15} color={colors.text} />
               </StatusItem>
             ),

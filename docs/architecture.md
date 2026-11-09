@@ -220,6 +220,35 @@ Settings › Battery & Power's "On battery" group names what Dashi lowers when
 unplugged, the graphics card and the refresh rate, one row each, with a
 button to the pane where each is chosen.
 
+## Sound
+
+The shell talks to PipeWire through PipeWire's and WirePlumber's own tools,
+separate MIT programs, with structured arguments only; it links nothing.
+
+- **The outputs, inputs and their volumes** (`src/sound/backend.ts`,
+  `levels.ts`): `pw-dump` (or `wpctl status`) lists them, `wpctl
+  set-default`, `set-volume -l 1.0` and `set-mute` change them; the pages
+  read them again every 3 s while they are open, and the menu bar's speaker
+  every 3 s (`src/system/store.ts`).
+- **The apps' sound** (`src/sound/apps/`): one `pw-dump --monitor` for the
+  session (`watch.ts`), restarted after 1, 2, then 5 s if it exits. It prints
+  every object once, then only the objects that change, whole, so the shell
+  keeps a map by id (`graph-map.ts`) and parses streams from it
+  (`streams.ts`: a stream's client, its links to a device, its Props, the
+  "default" metadata's `target.object`). Streams are named as the Dock
+  names apps (`identity.ts`, on `src/process-apps/`): a Flatpak by its portal
+  id, else the client's process (the socket's pid for a native client, the
+  claimed pid for a Pulse one) and its parents, by itself or by its window;
+  else its `application.name`. Dashi's own streams (Settings' level meter,
+  the recorder, event sounds) are not rows. One row per app (`rows.ts`);
+  `wpctl set-volume`/`set-mute` on each of its streams, and
+  `pw-metadata <id> target.object <node.name>` to send it to an output
+  (`commands.ts`). WirePlumber remembers each app's volume and mute (per
+  `application.name`); Dashi keeps nothing. The store (`store.ts`) feeds
+  Control Center's Sound page, Settings › Sound, the menu bar's microphone
+  indicator and agents (`get_sound`, `set_app_volume`). On a development
+  run the host is read and never written: changes stay in memory.
+
 ## Channels
 
 | Between | Channel | Doc |

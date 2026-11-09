@@ -8,7 +8,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { useGrow } from "../shared/controls/motion.ts";
 import { useControlColors } from "../shared/controls/palette.ts";
@@ -125,6 +125,8 @@ export interface PageRowProps {
   label: string;
   /** A glyph on the row's knob; a row without one is plain text. */
   glyph?: string;
+  /** An app's icon on the knob, in place of a glyph (a file's path). */
+  icon?: string;
   /** Words at the right ("Hotspot", "Connected", "Now"). */
   detail?: string | null;
   /** Small glyphs at the right (a lock, the signal). */
@@ -134,7 +136,7 @@ export interface PageRowProps {
   onPress?: () => void;
 }
 
-export function PageRow({ testID, label, glyph, detail, trailing, checked = false, onPress }: PageRowProps) {
+export function PageRow({ testID, label, glyph, icon, detail, trailing, checked = false, onPress }: PageRowProps) {
   const colors = useControlColors();
   const ink = checked ? colors.onInk : colors.offInk;
   return (
@@ -148,13 +150,13 @@ export function PageRow({ testID, label, glyph, detail, trailing, checked = fals
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        paddingLeft: glyph ? 6 : 16,
+        paddingLeft: glyph || icon ? 6 : 16,
         paddingRight: 14,
         borderRadius: checked ? 18 : 24,
         backgroundColor: checked ? colors.on : colors.off,
       }}
     >
-      {glyph && (
+      {(glyph || icon) && (
         <View
           style={{
             width: 36,
@@ -165,7 +167,7 @@ export function PageRow({ testID, label, glyph, detail, trailing, checked = fals
             backgroundColor: checked ? colors.knobOn : colors.knobOff,
           }}
         >
-          <Svg markup={glyph} size={16} color={ink} />
+          {icon ? <Image source={icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyph ?? ""} size={16} color={ink} />}
         </View>
       )}
       <View style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>

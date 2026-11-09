@@ -117,6 +117,13 @@ export interface Palette {
   agentWash: string;
   /** The menu bar pill while the screen is being shared: ume, washed; its dot is `ume`. */
   captureWash: string;
+  /**
+   * An app is using the microphone: the menu bar's pill (its glyph, on the
+   * wash) and the dot on Control Center's and Settings' rows. Orange, apart
+   * from the red of a screen being seen; a glyph, 3:1 at least on the bar.
+   */
+  microphone: string;
+  microphoneWash: string;
 }
 
 export const lightColors: Palette = {
@@ -170,6 +177,8 @@ export const lightColors: Palette = {
   agentInk: "#3B2A8A",
   agentWash: "#6E56CF24",
   captureWash: "#D0596F24",
+  microphone: "#B85A12",
+  microphoneWash: "#E07A2A29",
 };
 
 /**
@@ -227,6 +236,8 @@ export const darkColors: Palette = {
   agentInk: "#cfc6f7",
   agentWash: "#8B76E83d",
   captureWash: "#E8798F3d",
+  microphone: "#F0954A",
+  microphoneWash: "#F0954A3d",
 };
 
 /** The palette for the Dark Mode switch. */
