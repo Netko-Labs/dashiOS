@@ -29,8 +29,8 @@ const CRUMBS_SHOWN = 4;
 const STATUS_FROM = 420;
 /** The least the field gets in a narrow window: the magnifier and the current folder, cut. */
 const MIN_WIDTH = 96;
-/** What the field takes besides its crumbs: its padding (4 and 8), the magnifier (22), the gaps between its parts, and the least of its empty end (24). */
-const FIELD_CHROME = 64;
+/** What the field takes besides its crumbs: its padding (4 and 8), the magnifier (22) and the gaps between its parts. */
+const FIELD_CHROME = 40;
 
 /** The crumbs to draw: all of a short path; else the first, “…” (for the folders folded), and the last few. */
 export function foldCrumbs<T>(segments: readonly T[], shown: number = CRUMBS_SHOWN): Array<{ segment: T; folded: boolean }> {
@@ -172,7 +172,8 @@ function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
           />
         ))}
       </View>
-      <View testID="omnibox:edit" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 24 }} />
+      {/* The empty end is a search too, but the whole field already is one: in a narrow window it gives its room to the crumbs. */}
+      <View testID="omnibox:edit" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 0 }} />
       {showsStatus && (
         <View testID="status" style={{ flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
