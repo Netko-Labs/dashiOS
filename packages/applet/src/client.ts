@@ -105,6 +105,12 @@ export interface AppletsClientOptions {
   dev?: boolean;
   /** Each message, both ways, for `dashi-applet dev`'s log. */
   onMessage?(direction: "in" | "out", line: string): void;
+  /**
+   * The applet's own process (defineApplet sets it): waiting for the shell
+   * to come back (a session or shell restart) keeps it running. Without it,
+   * as in an app's client, the wait never holds the process up.
+   */
+  keepAlive?: boolean;
   connect?(path: string, handlers: SocketHandlers): void;
   exists?(path: string): boolean;
   later?(fn: () => void, ms: number): () => void;
@@ -131,6 +137,11 @@ function bunConnect(path: string, handlers: SocketHandlers): void {
 function unrefTimeout(fn: () => void, ms: number): () => void {
   const timer = setTimeout(fn, ms);
   timer.unref?.();
+  return () => clearTimeout(timer);
+}
+
+function refTimeout(fn: () => void, ms: number): () => void {
+  const timer = setTimeout(fn, ms);
   return () => clearTimeout(timer);
 }
 
@@ -179,7 +190,7 @@ export class AppletsClient {
   constructor(private readonly options: AppletsClientOptions) {
     this.connect = options.connect ?? bunConnect;
     this.exists = options.exists ?? existsSync;
-    this.later = options.later ?? unrefTimeout;
+    this.later = options.later ?? (options.keepAlive ? refTimeout : unrefTimeout);
     this.now = options.now ?? Date.now;
   }
 
@@ -351,12 +362,25 @@ export class AppletsClient {
   close(): void {
     this.closed = true;
     this.cancelRetry?.();
+    this.cancelRetry = null;
     this.socket?.end();
     this.socket = null;
   }
 
+  /** Tries again a little later, longer each time: the shell may be restarting (its socket gone for a moment). */
+  private retry(): void {
+    if (this.closed || this.cancelRetry) return;
+    const wait = RETRY_MS[Math.min(this.retries++, RETRY_MS.length - 1)] ?? 15000;
+    this.cancelRetry = this.later(() => {
+      this.cancelRetry = null;
+      this.start();
+    }, wait);
+  }
+
   private start(): void {
-    if (this.closed || this.connecting || this.socket || this.lines.size === 0 || !this.available || this.options.path === null) return;
+    if (this.closed || this.connecting || this.socket || this.lines.size === 0 || this.options.path === null) return;
+    // No shell listening yet (a session starting or restarting): wait for one, rather than give up.
+    if (!this.available) return this.retry();
     this.connecting = true;
     const lines = new Lines();
     let done = false;
@@ -392,9 +416,7 @@ export class AppletsClient {
           this.views.delete(seq);
           this.commands?.onViewDismiss?.(seq);
         }
-        if (this.closed) return;
-        const wait = RETRY_MS[Math.min(this.retries++, RETRY_MS.length - 1)] ?? 15000;
-        this.cancelRetry = this.later(() => this.start(), wait);
+        this.retry();
       },
     });
   }

@@ -152,3 +152,60 @@ test("a version 1 client (no manifest) never says hello and can't ask for popove
   expect(client.requestPopover("timer", { width: 200, height: 100 })).toBe(false);
   expect(client.show({ id: "t2", title: "T", label: "x", menu: [{ type: "submenu", label: "S", items: [{ id: "a", label: "A" }] }] })).toBe(false);
 });
+
+test("the shell's socket gone for a while (a session restarting): the client keeps trying until it is back", () => {
+  const manifest = parseManifest(ASUS);
+  if ("error" in manifest) throw new Error(manifest.error);
+  const shell = fakeShell();
+  let listening = true;
+  const client = new AppletsClient({
+    path: "/run/x.sock",
+    manifest,
+    connect: shell.connect,
+    exists: () => listening,
+    later: (fn) => {
+      shell.later.push(fn);
+      return () => {};
+    },
+  });
+  client.show({ id: "asus", title: "ASUS Control", label: "54°" });
+  listening = false;
+  shell.drop();
+  shell.sent.length = 0;
+  // Twice no socket: it waits again each time, never gives up.
+  shell.retry();
+  expect(shell.later).toHaveLength(1);
+  shell.retry();
+  expect(shell.later).toHaveLength(1);
+  expect(shell.sent).toEqual([]);
+  listening = true;
+  shell.retry();
+  expect(shell.sent.map((message) => (message as { type: string }).type)).toEqual(["hello", "applet"]);
+  // Closed: no more tries.
+  client.close();
+  shell.drop();
+  expect(shell.later).toHaveLength(0);
+});
+
+/** Whether a process with a client waiting for a shell that isn't there is still running after a while. */
+async function stillRunning(keepAlive: boolean): Promise<boolean> {
+  const client = new URL("../src/client.ts", import.meta.url).pathname;
+  const manifest = JSON.stringify(ASUS);
+  const code = `
+    import { AppletsClient } from ${JSON.stringify(client)};
+    import { parseManifest } from ${JSON.stringify(new URL("../src/manifest.ts", import.meta.url).pathname)};
+    const manifest = parseManifest(${manifest});
+    const client = new AppletsClient({ path: "/nonexistent/dashi-applets.sock", manifest, keepAlive: ${keepAlive} });
+    client.show({ id: "asus", title: "ASUS Control", label: "54°" });
+  `;
+  const proc = Bun.spawn([process.execPath, "-e", code], { stdout: "ignore", stderr: "ignore" });
+  const ended = await Promise.race([proc.exited.then(() => true), new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))]);
+  proc.kill();
+  await proc.exited;
+  return !ended;
+}
+
+test("an applet's process waits for the shell to come back; an app's client never holds its process up", async () => {
+  expect(await stillRunning(true)).toBe(true);
+  expect(await stillRunning(false)).toBe(false);
+});

@@ -39,6 +39,11 @@ export function vmCommand(appletDir: string, sdkDir: string, home = homedir()): 
   ].join(" && ");
 }
 
+/** What `dev` says when the applet's process ends without a reload or Ctrl+C. */
+export function stoppedLine(code: number | null): string {
+  return `✗ the applet stopped (exit code ${code ?? "none"}); it starts again when you save`;
+}
+
 async function forward(stream: ReadableStream<Uint8Array>, log: MessageLog): Promise<void> {
   const decoder = new TextDecoder();
   let pending = "";
@@ -94,6 +99,11 @@ export async function dev(dir: string, args: readonly string[]): Promise<number>
       stderr: "pipe",
     });
     if (child.stderr instanceof ReadableStream) void forward(child.stderr, log);
+    const started = child;
+    // It ended by itself (an error, or nothing left to do): say so, or the item just goes without a word.
+    void started.exited.then((code) => {
+      if (child === started) console.log(`  ${stoppedLine(code)}`);
+    });
   };
   const stop = async (): Promise<void> => {
     const running = child;
