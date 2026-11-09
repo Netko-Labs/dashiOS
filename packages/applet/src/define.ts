@@ -155,6 +155,8 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
       path: appletsSocketPath(),
       ...(manifest ? { manifest } : {}),
       dev: process.env.DASHI_APPLET_DEV === "1",
+      // An applet runs until it is stopped: a shell restart has it wait and connect again, not quit.
+      keepAlive: true,
       // `dashi-applet dev` shows each message (cli/log.ts reads these lines).
       ...(process.env.DASHI_APPLET_LOG === "1"
         ? { onMessage: (direction: "in" | "out", line: string) => console.error(`${LOG_MARK}${direction} ${line}`) }
@@ -347,6 +349,8 @@ function commandHandlers<S>(
         placement,
         element: createElement(View),
         warm,
+        // The launcher keeps the keyboard, and closes the view on Esc.
+        keyboard: "on-demand",
         onClosed: () => {
           if (view?.seq === seq) view = null;
           client.dismissView(seq);

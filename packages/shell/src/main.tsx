@@ -39,6 +39,7 @@ import { sessionDeps, startAppearance } from "./appearance/index.ts";
 import { WindowStyleSync } from "./appearance/window-style.ts";
 import { AppletCommands } from "./applets/commands.ts";
 import { AppletControls } from "./applets/controls.ts";
+import { AppletPopovers, joinShellMenus } from "./applets/popovers.ts";
 import { AppletPower } from "./applets/power.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
@@ -751,6 +752,8 @@ const appletPower = new AppletPower();
 // Control Center's layout on this machine, and applets' controls in it (control-center/, applets/controls.ts).
 const controlLayout = new LayoutStore();
 const appletControls = new AppletControls({ layout: controlLayout.getSnapshot, subscribeLayout: controlLayout.subscribe });
+// One popover at a time: an applet's closes the shell's menus and another applet's, and a shell menu closes it (applets/popovers.ts).
+const appletPopovers = new AppletPopovers();
 const stopApplets = startApplets({
   compositor,
   extras,
@@ -759,6 +762,7 @@ const stopApplets = startApplets({
   commands: appletCommands,
   power: appletPower,
   controls: appletControls,
+  popovers: appletPopovers,
 });
 // Screen sharing's picker: xdg-desktop-portal-wlr runs dashi-share-picker, which asks here (share-picker/).
 const stopSharePicker = compositor
@@ -979,10 +983,13 @@ const stopHoldingForPopovers = menus.controller.subscribe(() => {
   fullscreenBars?.hold(menusUp());
   holdAppMenus();
 });
+// A shell menu or panel opening closes an applet's popover, and the other way round (applets/popovers.ts).
+const stopJoiningPopovers = joinShellMenus(appletPopovers, menus.controller);
 const stopHoldingForSheets = barHold.subscribe(holdAppMenus);
 const stopHoldingBars = (): void => {
   stopHoldingForPopovers();
   stopHoldingForSheets();
+  stopJoiningPopovers();
 };
 
 // The Dock sits on the primary screen (dock/start.tsx: the Dock or the taskbar). Unplug that screen
