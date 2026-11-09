@@ -1,7 +1,7 @@
 {
   "name": "@dashi/shell",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "Dashi's shell: the menu bar and the Dock, as Metal apps on layer-shell surfaces.",
   "scripts": {
