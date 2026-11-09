@@ -123,6 +123,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] The agents' panel: a connected agent's row says how long it has recorded or seen the screen, live (`agents/watch-clock.ts`)
 - [x] The wheel over an open menu (mirin's `occlude`), and Control Center's page rows by the keyboard (above)
 - [ ] Inside a bar menu, a screen reader hears the menu (role menu, rows menuitem) but not each row as ↑ ↓ light it: the highlight is not focus (S)
+- [ ] An arrow pressed at once after ⌃F2 (or a click on a title) can reach the window under the bar before the popover's surface has the keyboard (seen twice in review 58, on a session's first popover) (S)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
