@@ -152,7 +152,7 @@ import { configureMachineEnd, runClosers } from "./shutdown.ts";
 import { Software } from "./software/manager.ts";
 import { standIn } from "./software/stand-in.ts";
 import { checkPath, openSoftwareUpdates, UpdateCheck } from "./software/update-check.ts";
-import { startAppMixer } from "./sound/apps/index.ts";
+import { pipewireWatch, startAppMixer } from "./sound/apps/index.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
 import { followSuspension } from "./suspend.ts";
 import { centeredOn, type SwitcherApp, SwitcherController, SwitcherPanel, type SwitcherState, SwitcherStore } from "./switcher/index.ts";
@@ -378,8 +378,11 @@ const stopGestures =
       })
     : () => {};
 
+// PipeWire's objects: one pw-dump --monitor for the session, which the mixer, the outputs, the
+// levels, Control Center's slider and the bar's speaker all follow (sound/apps/watch.ts). It only reads.
+const pipewire = pipewireWatch();
 // Battery, network, and volume for the menu bar; the volume and brightness keys.
-const system = startSystem({ compositor, ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}) });
+const system = startSystem({ compositor, pipewire, ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}) });
 if (compositor && wallpaper) {
   const controller = new LiveWallpaperController({
     compositor,
@@ -833,10 +836,11 @@ const mirror = compositor ? new MirrorStore(compositor) : null;
 const stopMirror = mirror?.start();
 // The apps' sound: one pw-dump --monitor for the session, for Control Center, Settings, the
 // microphone indicator and agents (sound/apps/). A development run reads the host, never writes.
-const mixer = startAppMixer({ compositor, apps, entries: () => catalog, installed: installedApp, standIn: wifi.fake });
+const mixer = startAppMixer({ compositor, apps, entries: () => catalog, installed: installedApp, standIn: wifi.fake, pipewire });
 // The menu bar's menus, Control Center and the battery panel (menus/, control-center/, battery/).
 const menus = startMenus({
   mixer,
+  pipewire,
   // The bar's ring is spoken from the popover's surface (menus/popover.tsx).
   accessible: () => launcherAccessible,
   layout: controlLayout,

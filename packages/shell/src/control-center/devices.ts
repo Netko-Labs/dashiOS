@@ -5,13 +5,16 @@
  * error: a desktop with no Bluetooth still has a Control Center.
  *
  * Switches and sliders update the store at once and write behind: the
- * radios are read back afterwards, the sliders' writes coalesce.
+ * radios are read back afterwards, the sliders' writes coalesce. The volume
+ * also follows PipeWire as it changes (the session's `pw-dump --monitor`),
+ * so a change made elsewhere (a key, `wpctl`, another output) shows at once.
  */
 
 import { useSyncExternalStore } from "react";
 import { type Backlight, levelOf, readBacklight, setBrightness } from "../system/brightness.ts";
 import { run as defaultRun, hasProgram, type Run } from "../system/exec.ts";
 import { readVolume, setVolume, type Volume } from "../system/volume.ts";
+import { VolumeFollow } from "../system/volume-follow.ts";
 import { latestWins } from "./coalesce.ts";
 import { bluetoothRadio, nmcliRadio, type Radio } from "./radios.ts";
 
@@ -44,6 +47,8 @@ export interface DeviceDeps {
   brightnessChanged?: (level: number) => void;
   /** The volume after a slider change, for the menu bar's glyph. */
   volumeChanged?: (volume: Volume) => void;
+  /** Tells the output volume each time PipeWire changes (sound/apps/watch.ts). Returns the stop. */
+  followVolume?: (onVolume: (volume: Volume | null) => void) => () => void;
 }
 
 export class DeviceStore {
@@ -57,6 +62,9 @@ export class DeviceStore {
   private readonly adapter: Radio;
   private readonly writeBrightness = latestWins((level: number) => this.setBacklight(level));
   private readonly writeVolume = latestWins((level: number) => this.setSink(level));
+  /** PipeWire's word on the volume, held a moment after the slider set it. */
+  private readonly volumeFollow = new VolumeFollow((volume) => this.publish({ volume }));
+  private stopFollow: (() => void) | null = null;
 
   constructor(private readonly deps: DeviceDeps = {}) {
     this.run = deps.run ?? defaultRun;
@@ -70,6 +78,16 @@ export class DeviceStore {
   };
 
   getSnapshot = (): Devices => this.snapshot;
+
+  /** Follows the volume until the returned stop (with `followVolume`). */
+  start(): () => void {
+    this.stopFollow ??= this.deps.followVolume?.((volume) => this.volumeFollow.heard(volume)) ?? null;
+    return () => {
+      this.stopFollow?.();
+      this.stopFollow = null;
+      this.volumeFollow.stop();
+    };
+  }
 
   /** Reads everything again (Control Center just opened). */
   async refresh(): Promise<void> {
@@ -122,7 +140,9 @@ export class DeviceStore {
     const volume = this.snapshot.volume;
     if (!volume) return;
     if (volume.muted && level > 0) this.pendingUnmute = true;
-    this.publish({ volume: { level: Math.min(Math.max(level, 0), 1), muted: volume.muted && level <= 0 } });
+    const shown = { level: Math.min(Math.max(level, 0), 1), muted: volume.muted && level <= 0 };
+    this.volumeFollow.set(shown);
+    this.publish({ volume: shown });
     this.writeVolume(level);
   }
 

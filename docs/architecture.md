@@ -227,11 +227,15 @@ separate MIT programs, with structured arguments only; it links nothing.
 
 - **The outputs, inputs and their volumes** (`src/sound/backend.ts`,
   `levels.ts`): `pw-dump` (or `wpctl status`) lists them, `wpctl
-  set-default`, `set-volume -l 1.0` and `set-mute` change them; the pages
-  read them again every 3 s while they are open, and the menu bar's speaker
-  every 3 s (`src/system/store.ts`).
+  set-default`, `set-volume -l 1.0` and `set-mute` change them. Nothing
+  polls: the pages, Control Center's slider and the menu bar's speaker
+  (`src/system/store.ts`) follow the session's `pw-dump --monitor` (below),
+  so an output added or a volume changed elsewhere shows at once. For a
+  moment after a slider sets a volume, only a word that agrees is shown
+  (`src/system/volume-follow.ts`). Only where `pw-dump` is missing are the
+  pages and the speaker read every 3 s.
 - **The apps' sound** (`src/sound/apps/`): one `pw-dump --monitor` for the
-  session (`watch.ts`), restarted after 1, 2, then 5 s if it exits. It prints
+  session (`watch.ts`, `pipewireWatch`, shared by everything above), restarted after 1, 2, then 5 s if it exits. It prints
   every object once, then only the objects that change, whole, so the shell
   keeps a map by id (`graph-map.ts`) and parses streams from it
   (`streams.ts`: a stream's client, its links to a device, its Props, the

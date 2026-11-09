@@ -3,13 +3,18 @@
  * from `pw-dump` (or `wpctl status` where that is missing or unreadable), and
  * a default is set with `wpctl set-default`, structured arguments only.
  *
+ * With the session's watcher (apps/watch.ts) the lists follow PipeWire as it
+ * changes: an output plugged in, or the default changed elsewhere, shows at
+ * once, and nothing polls.
+ *
  * On a development run the list is still read from the host, but a default
  * is only remembered here, never made on the developer's machine (the same
  * rule as the radios, `control-center/radios.ts`).
  */
 
 import { run as defaultRun, type Run } from "../system/exec.ts";
-import { parseDump, type Side } from "./parse-dump.ts";
+import type { PipeWireWatch } from "./apps/watch.ts";
+import { devicesFrom, parseDump, type Side } from "./parse-dump.ts";
 import { parseStatus } from "./parse-status.ts";
 import type { AudioBackend, Output, SoundBackend } from "./types.ts";
 
@@ -21,11 +26,17 @@ async function listSide(run: Run, side: Side): Promise<Output[] | null> {
   return status === null ? null : parseStatus(status, side);
 }
 
-export function pipewireBackend(run: Run = defaultRun): AudioBackend {
-  return {
+export function pipewireBackend(run: Run = defaultRun, watch?: PipeWireWatch): AudioBackend {
+  const backend: AudioBackend = {
     list: () => listSide(run, "output"),
     listInputs: () => listSide(run, "input"),
     setDefault: async (id) => (await run(["wpctl", "set-default", String(id)])) !== null,
+  };
+  if (!watch?.available) return backend;
+  return {
+    ...backend,
+    follow: (onList) => watch.subscribe((objects) => onList(devicesFrom(objects, "output"))),
+    followInputs: (onList) => watch.subscribe((objects) => onList(devicesFrom(objects, "input"))),
   };
 }
 
@@ -37,14 +48,19 @@ export function pipewireBackend(run: Run = defaultRun): AudioBackend {
 export function shadowBackend(real: AudioBackend): AudioBackend {
   // A choice is remembered per side: an output id never names an input.
   const told: Record<Side, number | null> = { output: null, input: null };
-  const shadow = (list: Output[] | null, side: Side): Output[] | null => {
+  function shadow(list: Output[], side: Side): Output[];
+  function shadow(list: Output[] | null, side: Side): Output[] | null;
+  function shadow(list: Output[] | null, side: Side): Output[] | null {
     const chosen = told[side];
     if (list === null || chosen === null || !list.some((output) => output.id === chosen)) return list;
     return list.map((output) => ({ ...output, current: output.id === chosen }));
-  };
+  }
+  const { follow, followInputs } = real;
   return {
     list: async () => shadow(await real.list(), "output"),
     listInputs: async () => shadow(await real.listInputs(), "input"),
+    ...(follow ? { follow: (onList: (list: Output[]) => void) => follow((list) => onList(shadow(list, "output"))) } : {}),
+    ...(followInputs ? { followInputs: (onList: (list: Output[]) => void) => followInputs((list) => onList(shadow(list, "input"))) } : {}),
     setDefault: async (id) => {
       // The id is the side's whose list has it; the lists are the machine's, so ask them.
       const [outputs, inputs] = await Promise.all([real.list(), real.listInputs()]);
@@ -56,12 +72,13 @@ export function shadowBackend(real: AudioBackend): AudioBackend {
 }
 
 /** The backend a run gets: the machine's own, or the stand-in on a development run. */
-export function soundBackendFor(options: { standIn: boolean; run?: Run }): AudioBackend {
-  const real = pipewireBackend(options.run);
+export function soundBackendFor(options: { standIn: boolean; run?: Run; watch?: PipeWireWatch }): AudioBackend {
+  const real = pipewireBackend(options.run, options.watch);
   return options.standIn ? shadowBackend(real) : real;
 }
 
 /** The inputs of an audio backend as a `SoundBackend`, so a `SoundStore` can list and choose them. */
 export function inputsOf(audio: AudioBackend): SoundBackend {
-  return { list: () => audio.listInputs(), setDefault: (id) => audio.setDefault(id) };
+  const { followInputs } = audio;
+  return { list: () => audio.listInputs(), setDefault: (id) => audio.setDefault(id), ...(followInputs ? { follow: followInputs } : {}) };
 }

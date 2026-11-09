@@ -1,12 +1,14 @@
 /**
  * One long-lived `pw-dump --monitor` for the session: PipeWire's objects,
- * kept current as it reports changes (graph-map.ts), and handed on as a
- * parsed graph (streams.ts) a moment after each burst of changes. It sends
- * only changes, and nothing per audio tick. If it exits (PipeWire
- * restarted), it starts again after 1, 2, then 5 seconds, and until it is
- * back the graph is empty. pw-dump is PipeWire's own (MIT), run as a
- * separate program. Without it there is nothing to watch: `available` is
- * false.
+ * kept current as it reports changes (graph-map.ts), and handed to everyone
+ * who listens a moment after each burst of changes: the mixer (as a parsed
+ * graph, streams.ts), the outputs and inputs (sound/store.ts), the levels
+ * (sound/levels-store.ts), Control Center's slider and the menu bar's
+ * speaker. It sends only changes, and nothing per audio tick, so nothing
+ * polls. It runs while anyone listens. If it exits (PipeWire restarted), it
+ * starts again after 1, 2, then 5 seconds, and until it is back there are
+ * no objects. pw-dump is PipeWire's own (MIT), run as a separate program,
+ * and only reads. Without it there is nothing to watch: `available` is false.
  */
 
 import { type WatchOptions, watchLines } from "../../system/watch.ts";
@@ -20,6 +22,16 @@ export const EMPTY_GRAPH: Graph = { streams: [], outputs: [], defaultOutput: nul
 
 export type Follow = (onLine: (line: string) => void, onStart: () => void) => () => void;
 
+export type PipeWireObjects = readonly Record<string, unknown>[];
+
+/** PipeWire's objects, shared by everyone who follows them. */
+export interface PipeWireWatch {
+  /** Whether PipeWire can be watched here. */
+  readonly available: boolean;
+  /** `onObjects` hears every object after each change (and the current ones soon after it subscribes, if there are any yet). Returns the stop. */
+  subscribe(onObjects: (objects: PipeWireObjects) => void): () => void;
+}
+
 export interface GraphWatch {
   /** Whether PipeWire can be watched here. */
   readonly available: boolean;
@@ -32,39 +44,85 @@ const followPipeWire =
   (onLine, onStart) =>
     watchLines(["pw-dump", "--monitor", "--no-colors"], onLine, { restartMs: 1000, maxDelayMs: 5000, healthyMs: 10_000, onStart, ...options });
 
-export function pipewireGraph(options: { follow?: Follow; available?: boolean } = {}): GraphWatch {
+/** The session's one watcher: pw-dump runs from the first listener to the last one's stop. */
+export function pipewireWatch(options: { follow?: Follow; available?: boolean } = {}): PipeWireWatch {
   const available = options.available ?? Bun.which("pw-dump") !== null;
   const follow = options.follow ?? followPipeWire();
+  const listeners = new Set<(objects: PipeWireObjects) => void>();
+  const arrays = new JsonArrays();
+  const map = new GraphMap();
+  /** The objects as last told; null until the first dump settles. */
+  let told: PipeWireObjects | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let stopFollow: (() => void) | null = null;
+
+  const tell = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const objects = map.values();
+      told = objects;
+      for (const listener of [...listeners]) listener(objects);
+    }, SETTLE_MS);
+  };
+  const begin = () => {
+    stopFollow = follow(
+      (line) => {
+        let changed = false;
+        for (const array of arrays.push(line)) changed = map.apply(array) || changed;
+        if (changed) tell();
+      },
+      () => {
+        // A new pw-dump starts with a whole dump: what the last one said is gone.
+        arrays.reset();
+        map.clear();
+        tell();
+      },
+    );
+  };
+  const end = () => {
+    clearTimeout(timer);
+    stopFollow?.();
+    stopFollow = null;
+    arrays.reset();
+    map.clear();
+    told = null;
+  };
+
   return {
     available,
-    start(onGraph) {
+    subscribe(onObjects) {
       if (!available) return () => {};
-      const arrays = new JsonArrays();
-      const map = new GraphMap();
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const tell = () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => onGraph(parseGraph(map.values())), SETTLE_MS);
-      };
-      const stop = follow(
-        (line) => {
-          let changed = false;
-          for (const array of arrays.push(line)) changed = map.apply(array) || changed;
-          if (changed) tell();
-        },
-        () => {
-          // A new pw-dump starts with a whole dump: what the last one said is gone.
-          arrays.reset();
-          map.clear();
-          tell();
-        },
-      );
+      // Each subscription is its own entry, so the same function may listen twice.
+      const listener = (objects: PipeWireObjects) => onObjects(objects);
+      listeners.add(listener);
+      if (stopFollow === null) begin();
+      let first: ReturnType<typeof setTimeout> | undefined;
+      if (told !== null) {
+        const now = told;
+        first = setTimeout(() => {
+          if (listeners.has(listener) && told === now) listener(now);
+        }, 0);
+      }
       return () => {
-        clearTimeout(timer);
-        stop();
+        clearTimeout(first);
+        if (!listeners.delete(listener)) return;
+        if (listeners.size === 0) end();
       };
     },
   };
+}
+
+/** The mixer's view of the watcher: the objects parsed as streams and outputs. */
+export function graphOf(watch: PipeWireWatch): GraphWatch {
+  return {
+    available: watch.available,
+    start: (onGraph) => watch.subscribe((objects) => onGraph(parseGraph(objects))),
+  };
+}
+
+/** A watcher of its own, as a graph (tests; the session shares one through `graphOf`). */
+export function pipewireGraph(options: { follow?: Follow; available?: boolean } = {}): GraphWatch {
+  return graphOf(pipewireWatch(options));
 }
 
 /** A graph that never changes: for a test, or a run with sound off. */

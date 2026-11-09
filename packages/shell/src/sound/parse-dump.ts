@@ -3,9 +3,13 @@
  * node whose media.class is Audio/Sink; the default is named by the "default"
  * metadata's `default.audio.sink`, by node.name. The dump is parsed strictly:
  * it must be a JSON array, and a sink needs an integer id and a label. Other
- * objects (streams, sources, devices, clients) are ignored.
+ * objects (streams, sources, devices, clients) are ignored. The same
+ * reading works on the watcher's objects (apps/watch.ts): `devicesFrom` and
+ * `defaultVolume`.
  */
 
+import type { Volume } from "../system/volume.ts";
+import { volumeOf } from "./apps/streams.ts";
 import { outputKind } from "./kind.ts";
 import type { Output } from "./types.ts";
 
@@ -48,26 +52,24 @@ function defaultName(metadata: unknown, key: string): string | undefined {
 
 /** The outputs (or inputs) in the dump's order, with the default marked; null if the text is not a dump. */
 export function parseDump(text: string, side: Side = "output"): Output[] | null {
-  const { mediaClasses, defaultKey } = SIDES[side];
-  const isSide = (mediaClass: unknown): boolean => (mediaClasses as readonly unknown[]).includes(mediaClass);
   let dump: unknown;
   try {
     dump = JSON.parse(text);
   } catch {
     return null;
   }
-  if (!Array.isArray(dump)) return null;
-  const objects: unknown[] = dump;
+  return Array.isArray(dump) ? devicesFrom(dump, side) : null;
+}
 
+/** The outputs (or inputs) among PipeWire's objects (a dump, or the watcher's), in their order, with the default marked. */
+export function devicesFrom(objects: readonly unknown[], side: Side = "output"): Output[] {
+  const { mediaClasses, defaultKey } = SIDES[side];
+  const isSide = (mediaClass: unknown): boolean => (mediaClasses as readonly unknown[]).includes(mediaClass);
   const sinks: Array<{ name: string | undefined; output: Output }> = [];
-  let defaultNodeName: string | undefined;
+  const defaultNodeName = defaultOf(objects, defaultKey);
   for (const object of objects) {
     if (!isRecord(object)) continue;
     const props = propsOf(object);
-    if (object.type === "PipeWire:Interface:Metadata") {
-      if (textProp(props, "metadata.name") === "default") defaultNodeName ??= defaultName(object.metadata, defaultKey);
-      continue;
-    }
     if (object.type !== "PipeWire:Interface:Node" || !isSide(props["media.class"])) continue;
     const id = object.id;
     const name = textProp(props, "node.name");
@@ -78,4 +80,24 @@ export function parseDump(text: string, side: Side = "output"): Output[] | null 
     sinks.push({ name, output: { id, label, current: false, kind } });
   }
   return sinks.map(({ name, output }) => ({ ...output, current: name !== undefined && name === defaultNodeName }));
+}
+
+function defaultOf(objects: readonly unknown[], key: string): string | undefined {
+  for (const object of objects) {
+    if (!isRecord(object) || object.type !== "PipeWire:Interface:Metadata" || textProp(propsOf(object), "metadata.name") !== "default") continue;
+    const name = defaultName(object.metadata, key);
+    if (name !== undefined) return name;
+  }
+  return undefined;
+}
+
+/** The default output's (or input's) volume, as `wpctl get-volume @DEFAULT_AUDIO_SINK@` reads it; null without one. */
+export function defaultVolume(objects: readonly unknown[], side: Side): Volume | null {
+  const name = defaultOf(objects, SIDES[side].defaultKey);
+  if (name === undefined) return null;
+  const node = objects.find(
+    (object): object is Record<string, unknown> =>
+      isRecord(object) && object.type === "PipeWire:Interface:Node" && textProp(propsOf(object), "node.name") === name,
+  );
+  return node && isRecord(node.info) ? volumeOf(node.info) : null;
 }

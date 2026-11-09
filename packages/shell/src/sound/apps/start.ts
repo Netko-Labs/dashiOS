@@ -12,7 +12,7 @@ import { heldControl, pipewireControl } from "./commands.ts";
 import { streamOwners } from "./owners.ts";
 import { readProcess } from "./proc-look.ts";
 import { AppMixer } from "./store.ts";
-import { pipewireGraph } from "./watch.ts";
+import { graphOf, type PipeWireWatch, pipewireWatch } from "./watch.ts";
 
 export interface MixerOptions {
   compositor: Pick<Compositor, "windows"> | null;
@@ -23,6 +23,8 @@ export interface MixerOptions {
   installed: (appId: string) => Entry | undefined;
   /** A development run: changes stay in memory. */
   standIn: boolean;
+  /** The session's watcher (shared with the outputs and levels); a watcher of its own without it. */
+  pipewire?: PipeWireWatch;
 }
 
 export function startAppMixer(options: MixerOptions): AppMixer {
@@ -44,7 +46,7 @@ export function startAppMixer(options: MixerOptions): AppMixer {
   };
   let mixer: AppMixer | null = null;
   const owner = streamOwners({ catalog: () => catalogFrom(options.entries()), read: (pid) => readProcess(pid), windows, onChange: () => mixer?.refresh() });
-  mixer = new AppMixer({ graph: pipewireGraph(), control: options.standIn ? heldControl() : pipewireControl(), owner });
+  mixer = new AppMixer({ graph: graphOf(options.pipewire ?? pipewireWatch()), control: options.standIn ? heldControl() : pipewireControl(), owner });
   mixer.start();
   return mixer;
 }

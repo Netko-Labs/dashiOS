@@ -7,4 +7,14 @@ export { type AppRecording, type AppSound, type MicIndicator, type MixerRows, mi
 export { type MixerOptions, startAppMixer } from "./start.ts";
 export { AppMixer, type AppMixerOptions, HOLD_MS, LINGER_MS, type MixerState, useMicWords, useMixer } from "./store.ts";
 export { type Graph, levelOf, type MixerOutput, parseGraph, type Stream, type StreamDevice } from "./streams.ts";
-export { EMPTY_GRAPH, type Follow, fixedGraph, type GraphWatch, pipewireGraph } from "./watch.ts";
+export {
+  EMPTY_GRAPH,
+  type Follow,
+  fixedGraph,
+  type GraphWatch,
+  graphOf,
+  type PipeWireObjects,
+  type PipeWireWatch,
+  pipewireGraph,
+  pipewireWatch,
+} from "./watch.ts";
