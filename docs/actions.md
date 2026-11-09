@@ -331,7 +331,11 @@ Allow, Allow Once (this connection) and Always Allow (kept in
 `~/.local/state/dashi/agents/sites.json` by the agent's grant key). A site
 covers its subdomains; a refusal holds for the connection; a sheet nobody
 answered remembers nothing. Revoking an agent, or its "Use websites", in
-Settings forgets its sites.
+Settings forgets its sites. The person can allow sites ahead of time, for
+every agent: Settings › Agents, "Sites agents may use" (Add… and Remove;
+`person` in the same `sites.json`), so an agent left alone (an unattended
+demo) opens and reads them with no sheet. Only Settings adds to that list:
+an agent's Always Allow is kept for that agent alone.
 
 **Nothing secret leaves the page.** The reader (`page/node.ts`,
 `page/read.ts`, pure and tested with made-up trees) never reads the value

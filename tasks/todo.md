@@ -59,6 +59,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [x] Agents from the launcher, leftovers (M; `fix/0.5-agents-leftovers`): a shell that restarts picks its runs up again (each run's `run.json` record beside its streams, the `dashi-task-*` units still running, the streams read again; the bridge connects again through the tasks' socket folder, `dashi-mcp.d/`); "turn on dark mode" and "set volume to 30" find the setting before Hand it off (`launcher/ranking/commands.ts`), and Space types on in such words; Codex 0.167.0 and OpenCode 1.19.5 take the flags Dashi gives (`--help`, and a run started signed out); Codex's "Reconnecting…" errors no longer end a run. VM: review 31
 - [ ] Agents from the launcher, left: a real harness signed in (none is in the VM); a question waiting when the shell restarts is lost with its call (the harness hears an error) (S)
 - [x] OpenCode with no account printed no event and never exited, so its card waited at "starting": a turn silent for 30 s now asks on its card ("OpenCode isn't signed in", Sign In…, Keep Waiting, Stop; `agents/handoff/quiet.ts`), and a sign-in or limit error reads plainly (`night/0.5-leftovers`)
+- [x] Sites allowed ahead of time, for an unattended demo (review 50): Settings › Agents' "Sites agents may use" (Add…, Remove; `person` in `sites.json`); every agent opens them with no sheet; no agent adds to it (`night/0.5-leftovers`)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)
 - [ ] Tab, Home and End reaching the input method mid-composition (S)

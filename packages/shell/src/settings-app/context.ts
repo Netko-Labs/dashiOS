@@ -2,6 +2,7 @@ import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/presence.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
+import type { SiteGrants } from "../agents/sites.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { FlagsStore } from "../control-center/flags.ts";
 import type { PrivacyStore } from "../privacy/store.ts";
@@ -16,6 +17,9 @@ import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
 
 /** What the panes read and change; the shell hands these in once (start.tsx). */
+/** The person's list of sites agents may use, as Settings edits it. */
+export type AheadSites = Pick<SiteGrants, "subscribe" | "ahead" | "allowAhead" | "forgetAhead">;
+
 export interface PaneContext {
   /** settings.json. */
   settings: SettingsStore;
@@ -26,6 +30,8 @@ export interface PaneContext {
   region: RegionStore;
   /** The agents' kept answers; revoking one also cuts it off in a live session. */
   grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
+  /** The sites agents may use without asking, the person's list (Settings › Agents). */
+  sites?: AheadSites;
   /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */

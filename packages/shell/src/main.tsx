@@ -639,6 +639,8 @@ const settingsApp = startSettingsApp({
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  // The person's own list of sites agents may use (Settings › Agents); without the agents' server, none to keep.
+  ...(agents ? { sites: agents.sites } : {}),
   ...(privacy ? { privacy: privacy.store } : {}),
   answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
