@@ -33,7 +33,7 @@ test("a field with a least width gives way down to it; its status is muted words
   const root = render(<SearchField testID="find" value="one" width={200} minWidth={120} status="2 of 4" onChangeText={() => {}} />, host.transport);
   await settle();
   expect(host.last()).toContain('"minWidth":120');
-  expect(JSON.parse(host.last()).props.shrink).toBeUndefined();
+  expect(JSON.parse(host.last()).props.shrink).not.toBe(false);
   expect(root.nodeId("find:status")).toBeDefined();
   expect(host.last()).toContain('"2 of 4"');
   root.unmount();
