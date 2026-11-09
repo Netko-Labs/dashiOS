@@ -1,8 +1,13 @@
-/** Notes' sheets: a name for a folder, and the questions that can't be taken back. */
+/**
+ * Notes' sheets: a name for a folder, and the questions that can't be taken
+ * back. All of them are the one alert frame (UI-5): the glyph's tile, the
+ * question, the message, then the name field when there is one, and the
+ * buttons, so a name and a confirmation share their width, title and insets.
+ */
 
-import { Button, ConfirmSheet, Sheet, TextField, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AlertSheet, ConfirmSheet, TextField } from "@dashi/ui";
 import { useState } from "react";
+import { FOLDER, FOLDER_PLUS } from "./glyphs.ts";
 import { untitled } from "./names.ts";
 
 export type SheetState =
@@ -15,6 +20,7 @@ export type SheetState =
 function NameSheet({
   title,
   message,
+  glyph,
   initial,
   confirmLabel,
   onSubmit,
@@ -22,26 +28,29 @@ function NameSheet({
 }: {
   title: string;
   message?: string;
+  glyph: string;
   initial: string;
   confirmLabel: string;
   onSubmit: (name: string) => void;
   onCancel: () => void;
 }) {
-  const colors = useColors();
   const [name, setName] = useState(initial);
   const submit = (): void => {
     if (name.trim() !== "") onSubmit(name);
   };
   return (
-    <Sheet testID="name-sheet" width={340}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-      {message !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted }}>{message}</Text>}
+    <AlertSheet
+      testID="name-sheet"
+      question={title}
+      {...(message !== undefined ? { message } : {})}
+      glyph={glyph}
+      buttons={[
+        { label: "Cancel", testID: "name-sheet:cancel", onPress: onCancel, cancel: true },
+        { label: confirmLabel, testID: "name-sheet:ok", onPress: submit, kind: "primary", disabled: name.trim() === "" },
+      ]}
+    >
       <TextField testID="name-field" value={name} onChangeText={setName} autoFocus onSubmit={submit} onKeyPress={(key) => key === "Escape" && onCancel()} />
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="name-sheet:cancel" onPress={onCancel} />
-        <Button label={confirmLabel} testID="name-sheet:ok" primary onPress={submit} />
-      </View>
-    </Sheet>
+    </AlertSheet>
   );
 }
 
@@ -66,11 +75,21 @@ export function NotesSheet({
   };
   switch (sheet.kind) {
     case "new-folder":
-      return <NameSheet title="New folder" initial="" confirmLabel="Create" onCancel={onClose} onSubmit={(name) => done(() => actions.createFolder(name))()} />;
+      return (
+        <NameSheet
+          title="New folder"
+          glyph={FOLDER_PLUS}
+          initial=""
+          confirmLabel="Create"
+          onCancel={onClose}
+          onSubmit={(name) => done(() => actions.createFolder(name))()}
+        />
+      );
     case "rename-folder":
       return (
         <NameSheet
           title="Rename folder"
+          glyph={FOLDER}
           message={`Enter a new name for “${sheet.name}”.`}
           initial={sheet.name}
           confirmLabel="Rename"

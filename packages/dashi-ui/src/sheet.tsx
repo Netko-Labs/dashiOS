@@ -134,6 +134,7 @@ export function MenuList({
   onChoose,
   testID = "menu",
   minWidth = MENU.minWidth,
+  maxWidth,
   lit,
   onLit,
   maxHeight,
@@ -143,6 +144,8 @@ export function MenuList({
   onChoose?: () => void;
   testID?: string;
   minWidth?: number;
+  /** At most this wide, edge included: a longer label ends in an ellipsis (a folder's long name). */
+  maxWidth?: number;
   /** The row drawn in kombu, by its place among the drawn rows, when the owner moves it with keys too (`PopupMenu`). */
   lit?: number | null;
   onLit?: (row: number | null) => void;
@@ -219,6 +222,7 @@ export function MenuList({
       accessibilityRole="menu"
       style={{
         minWidth,
+        ...(maxWidth !== undefined ? { maxWidth } : {}),
         ...(maxHeight !== undefined ? { height: maxHeight } : {}),
         flexDirection: "column",
         borderRadius: 9,
@@ -266,6 +270,7 @@ export function PopupMenu({
   onClose,
   testID = "menu",
   minWidth = MENU.minWidth,
+  maxWidth,
   flip = true,
   anchor = "start",
 }: {
@@ -275,6 +280,8 @@ export function PopupMenu({
   onClose: () => void;
   testID?: string;
   minWidth?: number;
+  /** At most this wide: longer labels end in an ellipsis. */
+  maxWidth?: number;
   flip?: boolean;
   anchor?: "start" | "end";
 }) {
@@ -325,6 +332,7 @@ export function PopupMenu({
           onChoose={onClose}
           testID={testID}
           minWidth={minWidth}
+          {...(maxWidth !== undefined ? { maxWidth } : {})}
           lit={lit}
           onLit={setLit}
           {...(height < full ? { maxHeight: height } : {})}

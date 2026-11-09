@@ -110,7 +110,7 @@ test("Esc in Find with nothing found in the note gives the keyboard to the list"
   model.dispose();
 });
 
-type Field = Props & { focusNextOnSubmit?: boolean; value?: string };
+type Field = Props & { focusNextOnSubmit?: boolean; multiline?: boolean; submitOnEnter?: boolean; value?: string };
 
 test("Return in the title hands the keyboard to the body in the host; the list row follows the typed title at once", async () => {
   store.create({ title: "Groceries", body: "eggs" });
@@ -122,6 +122,9 @@ test("Return in the title hands the keyboard to the body in the host; the list r
   const title = (): Field | null => inputProps(host.trees.at(-1), window.nodeId("title"));
   // The host moves the keyboard as Return goes down, before any key after it is read.
   expect(title()?.focusNextOnSubmit).toBe(true);
+  // A long title wraps (review 54, still 07), and Return still submits rather than breaking it.
+  expect(title()?.multiline).toBe(true);
+  expect(title()?.submitOnEnter).toBe(true);
   const body = window.nodeId("body");
   host.emit({ type: "change", nodeId: window.nodeId("title") as string, value: "Shopping" });
   await settle();

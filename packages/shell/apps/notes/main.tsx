@@ -5,6 +5,7 @@
  */
 
 import { runApp } from "../kit/index.ts";
+import { NOTES_MIN_SIZE } from "./layout.ts";
 import { NotesModel } from "./model.ts";
 import { defaultRoot, NotesStore } from "./store.ts";
 import { NOTES_SIZE, type NotesHost, NotesWindow } from "./view.tsx";
@@ -30,7 +31,7 @@ const host: NotesHost = { scroll: () => {}, press: () => {}, openLink };
 
 const app = runApp(
   // Edit's rows act on the field with the keyboard themselves (Cut, Copy, Paste, Select All as its keys), and its Undo is the note's.
-  { id: "dev.dashi.notes", title: "Notes", size: NOTES_SIZE, textChordsToFields: false },
+  { id: "dev.dashi.notes", title: "Notes", size: NOTES_SIZE, minSize: NOTES_MIN_SIZE, textChordsToFields: false },
   <NotesWindow model={model} host={host} />,
 );
 host.scroll = (testID, dy) => {

@@ -157,6 +157,11 @@ export class NotesModel {
     });
   }
 
+  /** The person has read the error (its notice's x). */
+  dismissError(): void {
+    if (this.state.error !== null) this.set({ error: null });
+  }
+
   /** The person has read the notice (a conflict copy was saved). */
   dismissNotice(): void {
     if (this.state.notice !== null) this.set({ notice: null });

@@ -8,23 +8,28 @@
  * field has Metal's caret and selection, and the window keeps them
  * (`selection`), so Format, Undo and Find can put the caret back where it
  * belongs. Metal lays a multiline field out at its minimum height, so a
- * hidden copy of the text, each line at its size, measures it; typing at
- * the end scrolls the view to its end once the layout catches up. A deleted
- * note is the same page, read-only, with Restore.
+ * hidden copy of the text, each line at its size, measures it (the title's
+ * too: it wraps, and Return still hands the keyboard to the body); typing at
+ * the end scrolls the view to its end once the layout catches up. The line
+ * over the note says its date in the longest form that fits on one line. A
+ * deleted note is the same page in the same place and weight, read-only; the
+ * line over it says it is deleted, and the toolbar has Restore.
  */
 
-import { Button, EmptyState, useColors, useSurface } from "@dashi/ui";
+import { Button, EmptyState, type Palette, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { findMatches } from "./find.ts";
 import type { Selection } from "./format.ts";
 import { NOTE } from "./glyphs.ts";
+import { type DateForm, fitLine } from "./layout.ts";
 import type { Row } from "./list.ts";
 import { BODY_SIZE, lineSizes, lookOf, type Pressable, TITLE_SIZE } from "./look.ts";
 import { markup } from "./markup.ts";
 import type { Draft } from "./model.ts";
 import { untitled } from "./names.ts";
-import { editedLine } from "./text.ts";
+import { KEEP_DAYS } from "./store.ts";
+import { daysLeft, editedLine } from "./text.ts";
 
 export interface EditorProps {
   draft: Draft | null;
@@ -46,16 +51,90 @@ export interface EditorProps {
   onLeave: () => void;
   /** After text was added at the end: scroll the view to its end. */
   follow: () => void;
-  onRestore: () => void;
   onNew: () => void;
   /** Bumped to hand the keyboard to the body (Enter in the list, Find Next, a format command); the title's Return moves it in the host. */
   bodyFocus: number;
   /** What the page says when the list is empty: nothing at all, nothing here, no matches. */
   empty: { title: string; message: string; canCreate: boolean };
   hasNotes: boolean;
-  formatDate: (time: number) => string;
+  /** A date in one of its forms, for the line over the note. */
+  formatDate: (time: number, form: DateForm) => string;
   /** The open note's words, shown after its date. */
   words?: number;
+  /** Now, for a deleted note's days left. */
+  now: number;
+}
+
+/** The page's inset: the note's words, its title and the line over it share one left edge. */
+const GUTTER = 28;
+const DATE_FORMS: readonly DateForm[] = ["long", "medium", "short"];
+
+/** The line over the note: one line, centred, muted. */
+function MetaLine({ text, colors }: { text: string; colors: Palette }) {
+  return (
+    <View testID="meta" style={{ flexShrink: 0 }}>
+      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** The title: it wraps as the body does (a hidden copy measures it), and Return hands the keyboard to the body. */
+function Title({
+  value,
+  fieldKey,
+  autoFocus,
+  readOnly,
+  onChange,
+  onLeave,
+}: {
+  value: string;
+  fieldKey: string;
+  autoFocus: boolean;
+  readOnly: boolean;
+  onChange: (title: string) => void;
+  onLeave: () => void;
+}) {
+  const colors = useColors();
+  const [measured, setMeasured] = useState(0);
+  const [refused, setRefused] = useState(0);
+  const height = Math.max(TITLE_SIZE + 12, Math.ceil(measured) + 4);
+  return (
+    <View style={{ position: "relative", flexShrink: 0, width: "100%", height }}>
+      <View
+        testID="title-measure"
+        onLayout={(bounds) => setMeasured(bounds.height)}
+        style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0, flexDirection: "column" }}
+      >
+        <Text style={{ fontSize: TITLE_SIZE }}>{value === "" ? " " : value}</Text>
+      </View>
+      <TextInput
+        key={fieldKey}
+        testID="title"
+        multiline
+        // One paragraph that wraps: Return submits, and the host hands the keyboard to the body
+        // before the app hears of it, so what is typed right after is the body's, however fast.
+        submitBehavior="submit"
+        focusNextOnSubmit
+        value={value}
+        valueRevision={refused}
+        placeholder={readOnly ? "" : "Title"}
+        autoFocus={autoFocus}
+        onChangeText={(title) => (readOnly ? setRefused((n) => n + 1) : onChange(title.replace(/\n/g, " ")))}
+        onKeyPress={(key) => key === "Escape" && onLeave()}
+        style={{
+          width: "100%",
+          height,
+          fontSize: TITLE_SIZE,
+          padding: 0,
+          color: colors.text,
+          placeholderColor: colors.textDisabled,
+          backgroundColor: "#00000000",
+        }}
+      />
+    </View>
+  );
 }
 
 /** The body: the live Markdown field, with the copy that measures it. */
@@ -141,10 +220,16 @@ function Page({
 }
 
 export function Editor(props: EditorProps) {
-  const { draft, row, selection, query, session, focusTitle, onEdit, onLeave, follow, onRestore, onNew, bodyFocus, empty, hasNotes, formatDate, words } = props;
+  const { draft, row, selection, query, session, focusTitle, onEdit, onLeave, follow, onNew, bodyFocus, empty, hasNotes, formatDate, words, now } = props;
   const colors = useColors();
   const surface = useSurface();
   const [height, setHeight] = useState(480);
+  const [width, setWidth] = useState(0);
+  const room = width > 0 ? width - 2 * GUTTER : Number.POSITIVE_INFINITY;
+  const measure = (bounds: { width: number; height: number }): void => {
+    setHeight(bounds.height);
+    setWidth(bounds.width);
+  };
   // The body asks for the keyboard only in the render that bumped `bodyFocus`, not each time it is mounted again.
   const applied = useRef(bodyFocus);
   const wantsFocus = bodyFocus !== applied.current;
@@ -178,16 +263,13 @@ export function Editor(props: EditorProps) {
   };
 
   if (row?.deleted) {
+    const days = daysLeft(row.deletedAt, now, KEEP_DAYS);
+    const left = `${days} ${days === 1 ? "day" : "days"} left`;
     return (
-      <View testID="editor" style={{ flex: 1, backgroundColor: surface.card, flexDirection: "column" }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 12, paddingHorizontal: 24, backgroundColor: colors.button }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>This note is in Recently Deleted. Restore it to edit it.</Text>
-          </View>
-          <Button label="Restore" testID="restore-banner" primary onPress={onRestore} />
-        </View>
-        <ScrollView style={{ flex: 1, padding: 28, flexDirection: "column", gap: 10 }}>
-          <Text style={{ fontSize: TITLE_SIZE, fontWeight: "bold", color: colors.text }}>{untitled(row.title)}</Text>
+      <ScrollView testID="editor" onLayout={measure} style={{ flex: 1, backgroundColor: surface.card }}>
+        <View style={{ padding: GUTTER, paddingTop: 16, gap: 10, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+          <MetaLine text={fitLine(room, [`In Recently Deleted · ${left} · Restore it to edit it`, `In Recently Deleted · ${left}`, left])} colors={colors} />
+          <Title value={untitled(row.title)} fieldKey={`deleted-title:${row.id}`} autoFocus={false} readOnly onChange={() => {}} onLeave={onLeave} />
           <Page
             body={row.body}
             selection={{ start: 0, end: 0 }}
@@ -202,8 +284,8 @@ export function Editor(props: EditorProps) {
             onLeave={onLeave}
             onMeasured={() => {}}
           />
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -226,33 +308,23 @@ export function Editor(props: EditorProps) {
   }
 
   return (
-    <ScrollView testID="editor" onLayout={(b) => setHeight(b.height)} style={{ flex: 1, backgroundColor: surface.card }}>
-      <View style={{ padding: 28, paddingTop: 16, gap: 10, flexDirection: "column", flexShrink: 0, minHeight: height }}>
-        <View style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>{editedLine(formatDate(row.modified), words)}</Text>
-        </View>
-        <View style={{ flexShrink: 0, height: TITLE_SIZE + 12 }}>
-          <TextInput
-            key={`title:${session}`}
-            testID="title"
-            value={draft.title}
-            placeholder="Title"
-            autoFocus={focusTitle}
-            onChangeText={(title) => onEdit({ title: title.replace(/\n/g, " ") })}
-            // Return hands the keyboard to the body in the host, before the app hears of it:
-            // what is typed right after is the body's, however fast it comes.
-            focusNextOnSubmit
-            onKeyPress={(key) => key === "Escape" && onLeave()}
-            style={{
-              height: TITLE_SIZE + 12,
-              fontSize: TITLE_SIZE,
-              padding: 0,
-              color: colors.text,
-              placeholderColor: colors.textDisabled,
-              backgroundColor: "#00000000",
-            }}
-          />
-        </View>
+    <ScrollView testID="editor" onLayout={measure} style={{ flex: 1, backgroundColor: surface.card }}>
+      <View style={{ padding: GUTTER, paddingTop: 16, gap: 10, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+        <MetaLine
+          text={fitLine(
+            room,
+            DATE_FORMS.map((form) => editedLine(formatDate(row.modified, form), words)),
+          )}
+          colors={colors}
+        />
+        <Title
+          value={draft.title}
+          fieldKey={`title:${session}`}
+          autoFocus={focusTitle}
+          readOnly={false}
+          onChange={(title) => onEdit({ title })}
+          onLeave={onLeave}
+        />
         <Page
           body={draft.body}
           selection={selection}
