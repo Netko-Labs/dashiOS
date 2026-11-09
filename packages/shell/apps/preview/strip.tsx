@@ -24,8 +24,8 @@ export const UNKNOWN_SHAPE = 0.75;
  * menu's Sidebar still shows it). The thumbnails keep the strip's margins.
  */
 export const STRIP = { share: 0.2, least: 132, most: 200, hideBelow: 480, margins: 50 } as const;
-/** How far the rows fade under the window controls once the strip is scrolled, in bands. */
-const FADE = { bands: 5, band: 3 } as const;
+/** How far the rows fade under the window controls once the strip is scrolled: 16, in 1-pt bands (thinner than a pixel step shows). */
+const FADE = { bands: 16, band: 1 } as const;
 /** The label under a thumbnail, the gap between rows, and the room above the first and below the last. */
 const LABEL = 18;
 const GAP = 10;
