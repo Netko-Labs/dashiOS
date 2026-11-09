@@ -19,9 +19,9 @@ import { type Bounds, type KeyDownInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { type Clipboard, type CloseReason, useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
 import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
-import { GRID_TOP, Grid, MARGIN } from "./grid.tsx";
+import { GRID_INSET, Grid } from "./grid.tsx";
 import { type Cell, FONT_SIZE, lineHeightFor, stepFontSize } from "./line.tsx";
-import { terminalMenus } from "./menus.ts";
+import { tabLabel, terminalMenus } from "./menus.ts";
 import { localFolder, tabName } from "./naming.ts";
 import { terminalPalette } from "./palette.ts";
 import { gridFor } from "./screen.ts";
@@ -83,6 +83,8 @@ function Terminal({
   /** Closing something that still runs a program: the question on screen. */
   const [asking, setAsking] = useState<CloseQuestion | null>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  /** The tab strip's count was pressed: the menu of every tab, under it. */
+  const [tabsMenuAt, setTabsMenuAt] = useState<{ x: number; y: number } | null>(null);
   /** Bumped when a sheet goes, so the grid (mounted again) takes the keyboard back. */
   const [gridFocus, setGridFocus] = useState(0);
   const bounds = useRef<Bounds | null>(null);
@@ -261,11 +263,31 @@ function Terminal({
       ]}
     />
   ) : undefined;
+  const tabsMenu = tabsMenuAt ? (
+    <PopupMenu
+      testID="terminal-tabs-menu"
+      x={tabsMenuAt.x}
+      y={tabsMenuAt.y}
+      // Under the count, slid back inside the window rather than flipped over the tabs.
+      flip={false}
+      onClose={() => {
+        setTabsMenuAt(null);
+        refocus();
+      }}
+      // The View menu's tab rows, here too: the same names, the same keys.
+      items={tabs.list.map((tab, index) => ({
+        label: tabLabel(names[index] ?? "Terminal"),
+        checked: tab.id === tabs.active,
+        ...(index < 8 ? { keys: `❖${index + 1}` } : index === tabs.list.length - 1 ? { keys: "❖9" } : {}),
+        onPress: () => setTabs((current) => selectTab(current, tab.id)),
+      }))}
+    />
+  ) : undefined;
 
   return (
     <AppWindow
       title={windowTitle}
-      overlay={sheet ?? menu}
+      overlay={sheet ?? menu ?? tabsMenu}
       center={
         tabs.list.length > 1 ? (
           <TabStrip
@@ -273,6 +295,7 @@ function Terminal({
             active={tabs.active}
             onSelect={(id) => setTabs((current) => selectTab(current, id))}
             onClose={requestCloseTab}
+            onMore={(at) => setTabsMenuAt({ x: at.x, y: at.y + at.height + 4 })}
           />
         ) : undefined
       }
@@ -300,12 +323,12 @@ function Terminal({
           }}
         />
       ) : (
-        // Before the first tab: the area its grid will have, inside the grid's margin.
+        // Before the first tab: the area its grid will have, inside the grid's margins.
         <View
           testID="terminal-starting"
           style={{ flex: 1, backgroundColor: palette.ground }}
           onLayout={(area) => {
-            bounds.current = { ...area, width: area.width - MARGIN, height: area.height - GRID_TOP };
+            bounds.current = { ...area, width: area.width - GRID_INSET.width, height: area.height - GRID_INSET.height };
             fit();
           }}
         />

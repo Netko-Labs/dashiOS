@@ -39,11 +39,23 @@ export interface TerminalMenuContext {
   };
 }
 
-/** A menu label's limit is 80 characters; a long title is cut with an ellipsis. */
-const LABEL = 60;
+/**
+ * A tab's row: at most 36 characters, so the row and its ❖ key stay inside
+ * the menu bar's dropdown (360 at most) with no second cut. A longer name is cut in the
+ * middle, its start and its end kept: two tabs of one long folder differ
+ * at the end ("…-2026", "…-2027"), and a command at its start.
+ */
+export const TAB_LABEL = 36;
 
-function tabLabel(title: string): string {
-  return title.length > LABEL ? `${title.slice(0, LABEL - 1)}…` : title;
+export function tabLabel(title: string): string {
+  const chars = Array.from(title);
+  if (chars.length <= TAB_LABEL) return title;
+  const tail = Math.floor((TAB_LABEL - 1) / 3);
+  const head = TAB_LABEL - 1 - tail;
+  return `${chars.slice(0, head).join("").trimEnd()}…${chars
+    .slice(chars.length - tail)
+    .join("")
+    .trimStart()}`;
 }
 
 export function terminalMenus(context: TerminalMenuContext): { menus: MenuSpec[]; run: (id: string) => void } {

@@ -51,7 +51,8 @@ function Row<A>({
       onHoverChange={enabled ? onHover : undefined}
       onPress={enabled ? () => entry.action && onChoose(entry.action) : undefined}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1 }}>
+      {/* The label gives way (an ellipsis) at the panel's widest; the key never leaves the panel. */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 1, minWidth: 0 }}>
         {gutter && (
           <View style={{ width: DROPDOWN.gutter - 4, flexShrink: 0, alignItems: "center" }}>
             {entry.checked && <Svg markup={CHECK} size={12} color={ink} />}
@@ -61,7 +62,11 @@ function Row<A>({
           {entry.label}
         </Text>
       </View>
-      {entry.keys && <Shortcut keys={entry.keys} color={keysInk} size={12} />}
+      {entry.keys && (
+        <View style={{ flexShrink: 0 }}>
+          <Shortcut keys={entry.keys} color={keysInk} size={12} />
+        </View>
+      )}
     </View>
   );
 }
