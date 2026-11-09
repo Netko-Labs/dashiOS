@@ -12,12 +12,11 @@ import { useFiles, useFilesState } from "./context.ts";
 import { dragPaths } from "./drag.ts";
 import { useDropTarget } from "./drop.ts";
 import { FileIcon } from "./file-icon.tsx";
-import { middleEllipsis } from "./format.ts";
 import { LINK_BADGE } from "./glyphs.ts";
 import { iconFor, previewFor, thumbnails } from "./icons.ts";
 import type { FileItem } from "./items.ts";
 import { RenameField } from "./rename-field.tsx";
-import { tileName } from "./tile-name.ts";
+import { fitMiddle, tileName } from "./tile-name.ts";
 
 const TILE_WIDTH = 104;
 const TILE_HEIGHT = 98;
@@ -28,9 +27,20 @@ const ROW_GAP = 4;
 const PADDING = 10;
 /** The room a name has on each of its two lines under a tile, in ems of its 12 px type: 84 px. */
 const NAME_ROOM = (TILE_WIDTH - 20) / 12;
+/** A name's two lines (15 each) and its 1 px above and below: a search result's path sits under them, at one height in a row. */
+const NAME_HEIGHT = 32;
+/** The room the "where" line has, in ems of its 10 px type: 90 px. */
+const WHERE_ROOM = (TILE_WIDTH - 14) / 10;
 
 /** How many tiles fit across `width`. */
 export const columnsFor = (width: number): number => Math.max(1, Math.floor((width - 2 * PADDING) / TILE_WIDTH));
+
+/** The grid's side inset at `width`: the padding, and half of what the whole tiles leave, so the rows sit in the middle. */
+export const gridInset = (width: number): number =>
+  width <= 0 ? PADDING : PADDING + Math.max(0, Math.floor((width - 2 * PADDING - columnsFor(width) * TILE_WIDTH) / 2));
+
+/** A search result's folder, its middle taken out once to fit under the tile (never cut again at its end). */
+export const whereLine = (where: string): string => fitMiddle(where, WHERE_ROOM);
 
 function Tile({
   item,
@@ -112,7 +122,7 @@ function Tile({
         {renaming ? (
           <RenameField item={item} width={TILE_WIDTH - 10} />
         ) : (
-          <View style={{ maxWidth: TILE_WIDTH - 10, paddingHorizontal: 5, paddingVertical: 1 }}>
+          <View style={{ maxWidth: TILE_WIDTH - 10, paddingHorizontal: 5, paddingVertical: 1, ...(item.where !== undefined ? { height: NAME_HEIGHT } : {}) }}>
             <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
               {tileName(item.name, NAME_ROOM)}
             </Text>
@@ -120,7 +130,7 @@ function Tile({
         )}
         {item.where !== undefined && (
           <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
-            {middleEllipsis(item.where, 18)}
+            {whereLine(item.where)}
           </Text>
         )}
       </View>
@@ -153,7 +163,10 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
       {items.length === 0 ? (
         empty
       ) : (
-        <ScrollView testID="grid:rows" style={{ flex: 1, flexDirection: "column", padding: PADDING, gap: ROW_GAP }}>
+        <ScrollView
+          testID="grid:rows"
+          style={{ flex: 1, flexDirection: "column", paddingVertical: PADDING, paddingHorizontal: gridInset(width), gap: ROW_GAP }}
+        >
           {rows.map((row) => (
             <View key={row[0]?.path} style={{ flexDirection: "row", flexShrink: 0, height, gap: 0 }}>
               {row.map((item) => (

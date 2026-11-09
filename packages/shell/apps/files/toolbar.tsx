@@ -1,4 +1,10 @@
-/** The toolbar's controls: back and forward before the omnibox; view switch, new folder, and the menu after it. (⇧-click and ❖-click select several: no select mode.) */
+/**
+ * The toolbar's controls: back and forward before the omnibox; view switch,
+ * new folder, and the menu after it. In the Trash, Empty is a glyph in New
+ * Folder's slot, so the toolbar keeps its shape in every place. A narrow
+ * window (`compact`, chrome.ts) leaves both to the "…" menu, which has them.
+ * (⇧-click and ❖-click select several: no select mode.)
+ */
 
 import { ToolbarButton, useColors, useSurface } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
@@ -54,7 +60,16 @@ export function ViewSwitch() {
   );
 }
 
-export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onMenu: (point: { x: number; y: number }) => void }) {
+export function Controls({
+  onNewFolder,
+  onMenu,
+  compact = false,
+}: {
+  onNewFolder: () => void;
+  onMenu: (point: { x: number; y: number }) => void;
+  /** A narrow window: New Folder and Empty are in "…" only. */
+  compact?: boolean;
+}) {
   const colors = useColors();
   const { actions } = useFiles();
   const ops = useFilesOps();
@@ -62,16 +77,16 @@ export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onM
   return (
     <>
       <ViewSwitch />
-      {state.location.kind === "trash" ? (
+      {compact ? null : state.location.kind === "trash" ? (
         <ToolbarButton
           glyph={sidebarGlyph("trash")}
           testID="empty-trash"
-          label="Empty"
+          tooltip="Empty Trash"
           disabled={state.items.length === 0}
           onPress={actions.confirmEmptyTrash}
         />
       ) : (
-        <ToolbarButton glyph={FOLDER_PLUS} testID="new-folder" disabled={!ops.writable} onPress={onNewFolder} />
+        <ToolbarButton glyph={FOLDER_PLUS} testID="new-folder" tooltip="New folder" disabled={!ops.writable} onPress={onNewFolder} />
       )}
       <View
         testID="more"
@@ -79,7 +94,15 @@ export function Controls({ onNewFolder, onMenu }: { onNewFolder: () => void; onM
         accessibilityRole="button"
         accessibilityLabel="More"
         onPress={(event) => onMenu({ x: (event.bounds?.x ?? 0) - 150, y: (event.bounds?.y ?? 0) + (event.bounds?.height ?? 28) + 4 })}
-        style={{ height: 28, minWidth: 32, borderRadius: 7, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+        style={{
+          height: 28,
+          minWidth: 32,
+          flexShrink: 0,
+          borderRadius: 7,
+          alignItems: "center",
+          justifyContent: "center",
+          hoverBackgroundColor: colors.button,
+        }}
       >
         <Svg markup={MORE} size={16} color={colors.textMuted} />
       </View>

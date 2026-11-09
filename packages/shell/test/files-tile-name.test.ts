@@ -13,12 +13,24 @@ test("a name breaks after spaces, hyphens and underscores, or before a dot, neve
   expect(tileName("Quarterly report.pdf", ROOM)).toBe("Quarterly\nreport.pdf");
 });
 
-test("a part too wide for a line, or a name too long for two, loses its middle and keeps its extension", () => {
+test("a part too wide for a line breaks between letters and fills the second line before it loses its middle", () => {
+  // Review 54 (07): "AVery…nal.md" sat on one line while the second was empty.
   const one = tileName("supercalifragilisticexpialidocious.txt", ROOM);
-  expect(one).not.toContain("\n");
-  expect(one).toContain("…");
-  expect(one.endsWith(".txt")).toBe(true);
-  expect(textWidth(one)).toBeLessThanOrEqual(ROOM);
+  const [first, second] = one.split("\n");
+  expect(one.split("\n")).toHaveLength(2);
+  expect("supercalifragilisticexpialidocious.txt".startsWith(first ?? "")).toBe(true);
+  expect(second).toContain("…");
+  expect(second?.endsWith(".txt")).toBe(true);
+  for (const line of one.split("\n")) expect(textWidth(line)).toBeLessThanOrEqual(ROOM);
+  const long = tileName("AVeryLongFileNameWithoutAnySpacesAtAllThatCannotWrapNormal.md", ROOM);
+  expect(long.split("\n")[0]?.startsWith("AVery")).toBe(true);
+  expect(long.endsWith(".md")).toBe(true);
+  // A short unbreakable tail fits whole on the second line, with no ellipsis.
+  expect(tileName("abcdefghijklmnopqrstu.md", ROOM)).not.toContain("…");
+  expect(tileName("abcdefghijklmnopqrstu.md", ROOM).replace("\n", "")).toBe("abcdefghijklmnopqrstu.md");
+});
+
+test("a name too long for two lines loses the middle of its second and keeps its extension", () => {
   const two = tileName("the minutes of the meeting about the budget for next year.txt", ROOM);
   const lines = two.split("\n");
   expect(lines).toHaveLength(2);

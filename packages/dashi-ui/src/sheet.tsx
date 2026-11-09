@@ -197,11 +197,14 @@ export function MenuList({
           focusRingColor: colors.focusRing,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
-          <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
-            {item.label}
-          </Text>
+        {/* Every row keeps the tick's column at its full width, so all the labels start on one edge. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1, minWidth: 0 }}>
+          {ticks && <View style={{ width: 12, flexShrink: 0 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+              {item.label}
+            </Text>
+          </View>
         </View>
         {item.keys !== undefined && <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />}
       </View>

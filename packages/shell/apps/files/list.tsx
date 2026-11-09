@@ -2,14 +2,14 @@
 
 import { type Column, Table, useColors, useDark } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useFiles, useFilesState } from "./context.ts";
 import { dragPaths } from "./drag.ts";
 import { FileIcon } from "./file-icon.tsx";
 import { iconFor } from "./icons.ts";
 import type { FileItem } from "./items.ts";
 import { RenameField } from "./rename-field.tsx";
-import { columnMode, fileColumns } from "./sort.ts";
+import { columnMode, fileColumns, fitColumns } from "./sort.ts";
 
 const ROW = 26;
 
@@ -20,11 +20,13 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
   const dark = useDark();
   const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
   const mode = columnMode(state);
+  // The list's width: a narrow one shows fewer columns, Name last to go (sort.ts).
+  const [width, setWidth] = useState(0);
   const cut = new Set(state.clipboard?.cut ? state.clipboard.paths : []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `cut` is made from the clipboard each render; the clipboard says when it changed
   const columns = useMemo<Column<FileItem>[]>(
     () =>
-      fileColumns(mode).map((column) =>
+      fitColumns(fileColumns(mode), width).map((column) =>
         column.key === "name"
           ? {
               ...column,
@@ -56,13 +58,16 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
       ),
     // The cut set is read at draw time through the closure; a new clipboard is a new state and a new render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, colors, state.clipboard, state.renaming],
+    [mode, width, colors, state.clipboard, state.renaming],
   );
   return (
     <View
       testID="list:frame"
       style={{ flex: 1, minHeight: 0 }}
-      onLayout={(bounds) => store.setLayout({ columns: 1, page: Math.max(1, Math.floor(bounds.height / ROW) - 2) })}
+      onLayout={(bounds) => {
+        if (Math.round(bounds.width) !== width) setWidth(Math.round(bounds.width));
+        store.setLayout({ columns: 1, page: Math.max(1, Math.floor(bounds.height / ROW) - 2) });
+      }}
     >
       <Table
         testID="list"

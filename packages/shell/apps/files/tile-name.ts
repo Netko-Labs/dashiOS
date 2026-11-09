@@ -2,10 +2,12 @@
  * A name under an icon, in at most two lines: broken where a reader breaks
  * a name (after a space, a hyphen or an underscore, before a dot), never
  * inside a word. "confidential.pdf" reads "confidential" over ".pdf", not
- * "confidential.p" over "df". A part too wide for a line, or a name too
- * long for two, loses its middle to an ellipsis instead, so its start and
- * its extension stay. Widths are estimated per letter in ems (the tile
- * can't measure every name before drawing it), on the generous side. Pure.
+ * "confidential.p" over "df". A part too wide for a whole line (a name with
+ * no spaces) breaks between letters and goes on into the second line, and a
+ * name too long for two lines loses the middle of its last line to an
+ * ellipsis, so its start and its extension stay. Widths are estimated per
+ * letter in ems (the tile can't measure every name before drawing it), on
+ * the generous side. Pure.
  */
 
 /** Rough advance widths, in ems, of the UI font's letters. */
@@ -42,6 +44,14 @@ export function nameParts(name: string): string[] {
   return name.split(/(?<=[\s\-_])|(?<=.)(?=\.)/u).filter((part) => part !== "");
 }
 
+/** The longest start of `text` that fits `room` ems (at least one letter). */
+function fittingStart(text: string, room: number): string {
+  const chars = [...text];
+  let end = 1;
+  while (end < chars.length && textWidth(chars.slice(0, end + 1).join("")) <= room) end++;
+  return chars.slice(0, end).join("");
+}
+
 /** `name` as lines that each fit `room` ems, at most `lines` of them, joined by line breaks. */
 export function tileName(name: string, room: number, lines = 2): string {
   const parts = nameParts(name);
@@ -55,14 +65,21 @@ export function tileName(name: string, room: number, lines = 2): string {
       line += part;
       continue;
     }
-    // A part wider than a whole line can't break at a boundary: the name loses its middle instead.
-    if (line === "") return fitMiddle(name, room);
+    // A part wider than a whole line can't break at a boundary: it breaks between letters, and the rest goes on.
+    if (line === "" && textWidth(part.trimEnd()) > room) {
+      const head = fittingStart(part, room);
+      out.push(head);
+      parts[at] = part.slice(head.length);
+      if (out.length === lines - 1) break;
+      at--;
+      continue;
+    }
     out.push(line.trimEnd());
     line = "";
     if (out.length === lines - 1) break;
     at--;
   }
-  if (at >= parts.length) return [...out, line].join("\n");
+  if (at >= parts.length) return [...out, line].filter((each) => each !== "").join("\n");
   // The last line takes what is left, its middle cut when it is too long.
   const rest = parts.slice(at).join("");
   return [...out, fitMiddle(rest, room)].join("\n");

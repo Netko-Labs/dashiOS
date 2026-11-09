@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useAppMenus } from "../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
 import { BrowserKeys, Listing } from "./browser.tsx";
+import { chromeFor, RAIL_WIDTH } from "./chrome.ts";
 import { looksLikeUriList, parseUriList } from "./clipboard.ts";
 import { ConflictSheet } from "./conflict-sheet.tsx";
 import { Files, type WindowActions } from "./context.ts";
@@ -50,6 +51,9 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [focus, setFocus] = useState(0);
+  // The window's width: a narrow one gives the sidebar a rail and the toolbar fewer buttons (chrome.ts).
+  const [width, setWidth] = useState(0);
+  const chrome = chromeFor(width);
   // The omnibox's text while it is being edited (null: the crumbs), and the folders it offers.
   const [editing, setEditingText] = useState<string | null>(null);
   const [editSession, setEditSession] = useState(0);
@@ -226,36 +230,44 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
+      {/* The window's root reports no bounds of its own (Metal records a view's from its parent): its one child does. */}
       <View style={{ flex: 1 }}>
-        <AppWindow
-          title={title}
-          leading={<Leading />}
-          center={
-            <Omnibox
-              editing={editing}
-              session={editSession}
-              onEdit={setEditing}
-              onDone={() => {
-                setEditing(null);
-                refocus();
-              }}
-              onSuggest={setSuggestions}
-            />
-          }
-          toolbar={<Controls onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
-          sidebar={<Sidebar />}
-          notice={<Footer />}
-          overlay={overlay}
+        <View
+          testID="files-window"
+          onLayout={(bounds) => setWidth((now) => (now === Math.round(bounds.width) ? now : Math.round(bounds.width)))}
+          style={{ flex: 1 }}
         >
-          {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
-          <Listing
-            // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
-            onBackgroundMenu={(point) => {
-              store.select([]);
-              setMenu({ ...point, kind: "background" });
-            }}
-          />
-        </AppWindow>
+          <AppWindow
+            title={title}
+            leading={<Leading />}
+            center={
+              <Omnibox
+                editing={editing}
+                session={editSession}
+                onEdit={setEditing}
+                onDone={() => {
+                  setEditing(null);
+                  refocus();
+                }}
+                onSuggest={setSuggestions}
+              />
+            }
+            toolbar={<Controls compact={chrome.compact} onNewFolder={actions.newFolder} onMenu={(point) => setMenu({ ...point, kind: "actions" })} />}
+            sidebar={<Sidebar rail={chrome.rail} />}
+            {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+            notice={<Footer />}
+            overlay={overlay}
+          >
+            {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
+            <Listing
+              // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
+              onBackgroundMenu={(point) => {
+                store.select([]);
+                setMenu({ ...point, kind: "background" });
+              }}
+            />
+          </AppWindow>
+        </View>
       </View>
     </Files.Provider>
   );

@@ -25,7 +25,8 @@ export function conflictQuestion(conflict: Conflict, folderName: string): string
 export function conflictMessage(conflict: Conflict): string {
   const kind = conflict.existing.folder ? "folder" : "file";
   const verb = conflict.mode === "copy" ? "copying" : "moving";
-  return `Replace it with the one you’re ${verb}? The ${kind} there now goes to the Trash.`;
+  // A no-break space holds "the Trash." together, so its last word never stands alone on a line.
+  return `Replace it with the one you’re ${verb}? The ${kind} there now goes to the\u00a0Trash.`;
 }
 
 /**

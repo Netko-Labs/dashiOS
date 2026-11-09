@@ -174,3 +174,47 @@ test("a steady table holds still while the pointer is over the list and just aft
   expect(order()).toEqual([20, 30, 10]);
   root.unmount();
 });
+
+interface Drawn {
+  type: string;
+  props: Record<string, unknown>;
+  children?: unknown[];
+}
+const isDrawn = (child: unknown): child is Drawn => typeof child === "object" && child !== null && "props" in child;
+function findDrawn(node: Drawn, id: string): Drawn | undefined {
+  if (node.props.id === id) return node;
+  return (node.children ?? []).map((child) => (isDrawn(child) ? findDrawn(child, id) : undefined)).find(Boolean);
+}
+
+test("a right-aligned column's title ends on its figures' edge, its sort arrow before it; the list ends with an inset", async () => {
+  const host = fakeHost();
+  const columns = [
+    { key: "name", title: "Name", text: (row: Proc) => String(row.pid) },
+    { key: "cpu", title: "Size", width: 88, align: "right" as const, text: (row: Proc) => String(row.cpu) },
+  ];
+  const root = render(
+    <Table
+      testID="t"
+      columns={columns}
+      rows={[{ pid: 1, cpu: 2 }]}
+      rowKey={(row) => row.pid}
+      selected={null}
+      onSelect={() => {}}
+      sort={{ key: "cpu", ascending: true }}
+      onSort={() => {}}
+    />,
+    host.transport,
+  );
+  await settle();
+  const tree = JSON.parse(host.last()) as Drawn;
+  const header = findDrawn(tree, root.nodeId("t:sort:cpu") ?? "");
+  const kids = (header?.children ?? []).filter(isDrawn);
+  expect(kids.map((kid) => kid.type)).toEqual(["svg", "text"]);
+  // A bare title: not one that fills the cell (which would sit at its left).
+  expect(kids[1]?.props.truncate).toBeUndefined();
+  expect(header?.props.justify).toBe("end");
+  const name = findDrawn(tree, root.nodeId("t:sort:name") ?? "");
+  expect((name?.children ?? []).filter(isDrawn).map((kid) => kid.type)).toEqual(["text"]);
+  expect(findDrawn(tree, root.nodeId("t:rows") ?? "")?.props.paddingBottom).toBe(8);
+  root.unmount();
+});
