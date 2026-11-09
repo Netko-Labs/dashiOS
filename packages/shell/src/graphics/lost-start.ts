@@ -5,6 +5,7 @@
  * is offloaded to it (gpu-env.ts), each one that asked being told in a word.
  */
 
+import { iconPath } from "../apps.ts";
 import { markCardLost } from "../gpu-env.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import type { NotifyInput } from "../notifications/types.ts";
@@ -13,7 +14,7 @@ import { LOST_NOTICE, LostCardWatch } from "./lost-card.ts";
 
 const notice = (summary: string, body: string, actions: NotifyInput["actions"] = []): NotifyInput => ({
   appName: "Graphics",
-  appIcon: "",
+  appIcon: iconPath("settings"),
   summary,
   body,
   actions,
