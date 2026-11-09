@@ -379,7 +379,8 @@ function CountsChip({ text }: { text: string }) {
       testID="counts"
       style={{
         position: "absolute",
-        right: 16,
+        // On the toolbar's right edge (its 12 of padding), so the chip ends under the Find field.
+        right: 12,
         bottom: 12,
         height: 24,
         paddingHorizontal: 10,
