@@ -71,8 +71,10 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
 };
 
 /** The window part of a host's options. */
-function pick({ title, appId, width, height, surface, titleBar }: NativeHostOptions): NativeWindowOptions {
-  return { title, appId, width, height, surface, titleBar };
+function pick({ title, appId, width, height, minWidth, minHeight, surface, titleBar }: NativeHostOptions): NativeWindowOptions {
+  // The least size goes only when it is asked for: a host from before mirin's `open` took it refuses the whole line.
+  const least = minWidth !== undefined && minHeight !== undefined ? { minWidth, minHeight } : {};
+  return { title, appId, width, height, ...least, surface, titleBar };
 }
 
 export type NavigationKey = "Escape" | "ArrowUp" | "ArrowDown";
