@@ -48,25 +48,9 @@ export function sheetBodyRoom(windowHeight: number, top: number, rest: number): 
 /**
  * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
  * shadow): `Sheet` hangs one from a window; a surface of its own (the
- * shell's applet consent) shows one with no window to hang from. With
- * `fit`, a window narrower than its `width` makes it narrower. A sheet that
- * can outgrow a short window caps its own scrolling body (`sheetBodyRoom`),
- * so its buttons stay in reach.
+ * shell's applet consent) shows one with no window to hang from.
  */
-export function SheetCard({
-  children,
-  testID,
-  width = 380,
-  marginTop = 0,
-  fit = false,
-}: {
-  children: ReactNode;
-  testID: string;
-  width?: number;
-  marginTop?: number;
-  /** In a row (`Sheet`'s): at most `width`, and never wider than the room the row leaves. */
-  fit?: boolean;
-}) {
+export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
   const colors = useColors();
   const surface = useSurface();
   return (
@@ -77,9 +61,7 @@ export function SheetCard({
       focusTrap
       accessibilityRole="dialog"
       style={{
-        // Fit: a row's item that shrinks, so its width is a number when its content is measured (a
-        // percentage width would measure it unwrapped, and a scrolling body would come out short).
-        ...(fit ? { width, flexShrink: 1 as const, minWidth: 0 } : { width }),
+        width,
         marginTop,
         flexDirection: "column",
         gap: 10,
@@ -96,16 +78,26 @@ export function SheetCard({
   );
 }
 
+/** A sheet's width in a window `room` wide (0: not laid out yet): its own, or the window's less SHEET_MARGIN a side. */
+export function sheetWidth(width: number, room: number): number {
+  return room > 0 ? Math.max(0, Math.min(width, room - 2 * SHEET_MARGIN)) : width;
+}
+
 export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
+  // The window's width, so a narrow one gets a narrower card: a number, so its content is measured at it.
+  const [room, setRoom] = useState(0);
   return (
-    // The card hangs under the toolbar and never runs past the window: SHEET_MARGIN from its sides
-    // and foot, so in a small window the body scrolls and the buttons stay in reach.
+    // The card hangs under the toolbar, SHEET_MARGIN in from a narrow window's sides. A sheet that can
+    // outgrow a short window caps its scrolling body (`sheetBodyRoom`), so its buttons stay in reach.
     <View
       occlude
       testID={`${testID}:scrim`}
+      onLayout={(bounds) => {
+        if (Math.round(bounds.width) !== room) setRoom(Math.round(bounds.width));
+      }}
       style={{
         position: "absolute",
         left: 0,
@@ -114,8 +106,6 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
         bottom: 0,
         flexDirection: "column",
         alignItems: "center",
-        paddingHorizontal: SHEET_MARGIN,
-        paddingBottom: SHEET_MARGIN,
         backgroundColor: dark ? SCRIM.dark : SCRIM.light,
         focusRingColor: colors.focusRing,
       }}
@@ -129,11 +119,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "center" }}>
-        <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8} fit>
-          {children}
-        </SheetCard>
-      </View>
+      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(inset.top, 0) + 8}>
+        {children}
+      </SheetCard>
     </View>
   );
 }

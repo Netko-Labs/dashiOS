@@ -45,6 +45,7 @@ export {
   SheetCard,
   type SheetProps,
   sheetBodyRoom,
+  sheetWidth,
   tidyEntries,
 } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";

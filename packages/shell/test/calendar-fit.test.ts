@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { sheetBodyRoom } from "@dashi/ui";
+import { sheetBodyRoom, sheetWidth } from "@dashi/ui";
 import { CALENDAR_LEAST, CONTROLS_COMPACT, chromeFor, RAIL_WIDTH, SIDEBAR_FULL, toolbarRoom } from "../apps/calendar/chrome.ts";
 import { over } from "../apps/calendar/colors.ts";
 import { blockParts, TIME_BESIDE_FROM } from "../apps/calendar/event-block.tsx";
@@ -118,4 +118,10 @@ test("the event sheet's form scrolls within what a short window leaves", () => {
   expect(sheetBodyRoom(401, 38, 40)).toBe(401 - 46 - 16 - 42 - 40);
   // Never less than a few rows.
   expect(sheetBodyRoom(200, 38, 40)).toBe(96);
+});
+
+test("a sheet keeps 16 from a narrow window's sides", () => {
+  expect(sheetWidth(520, 1097)).toBe(520);
+  expect(sheetWidth(520, 521)).toBe(489);
+  expect(sheetWidth(520, 0)).toBe(520);
 });
