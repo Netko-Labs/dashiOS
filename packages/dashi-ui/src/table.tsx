@@ -181,7 +181,9 @@ export function Table<T, K extends string | number>({
                 style={{
                   ...cellBox(column.width, column.align),
                   gap: 3,
+                  // The divider takes its 1 from the padding, so a title starts on its values' edge.
                   borderLeftWidth: index > 0 ? 1 : 0,
+                  ...(index > 0 ? { paddingLeft: PAD / 2 - 1 } : {}),
                   borderColor: colors.separator,
                   hoverBackgroundColor: colors.button,
                 }}

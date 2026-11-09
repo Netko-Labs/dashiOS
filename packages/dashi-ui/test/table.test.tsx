@@ -263,3 +263,34 @@ test("a right-aligned column's title ends on its figures' edge, its sort arrow b
   expect(findDrawn(tree, root.nodeId("t:rows") ?? "")?.props.paddingBottom).toBe(8);
   root.unmount();
 });
+
+test("a header title starts on its values' edge: a divider takes its 1 from the cell's padding", async () => {
+  const host = fakeHost();
+  const columns = [
+    { key: "name", title: "Name", text: (row: Proc) => String(row.pid) },
+    { key: "when", title: "Date Modified", width: 150, text: (row: Proc) => String(row.cpu) },
+  ];
+  const root = render(
+    <Table
+      testID="t"
+      columns={columns}
+      rows={[{ pid: 1, cpu: 2 }]}
+      rowKey={(row) => row.pid}
+      selected={null}
+      onSelect={() => {}}
+      sort={null}
+      onSort={() => {}}
+    />,
+    host.transport,
+  );
+  await settle();
+  const tree = JSON.parse(host.last()) as Drawn;
+  const inset = (id: string): number => {
+    const props = findDrawn(tree, root.nodeId(id) ?? "")?.props ?? {};
+    return Number(props.paddingLeft ?? props.paddingX ?? 0) + Number(props.borderLeft ?? 0);
+  };
+  // The body's cells are inset PAD / 2 (5); so is every title, the divider included.
+  expect(inset("t:sort:name")).toBe(5);
+  expect(inset("t:sort:when")).toBe(5);
+  root.unmount();
+});
