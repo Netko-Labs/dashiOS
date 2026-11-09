@@ -10,7 +10,7 @@ import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
-import { litAfter, MENU, type MenuRowKind, menuFits, menuHeight, menuMaxWidth, placeMenu, type Size } from "./menu-place.ts";
+import { hungHeight, litAfter, MENU, type MenuRowKind, menuFits, menuHeight, menuMaxWidth, placeMenu, type Size } from "./menu-place.ts";
 import { MenuLine, MenuRow } from "./menu-row.tsx";
 import { useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
@@ -269,7 +269,8 @@ export function MenuList({
  * than the window is as wide as it allows, its labels ending in an
  * ellipsis. With
  * `anchor` "end", `x` is where its right edge goes (a menu hung from a
- * toolbar's "…" at the window's right), at the width it is drawn.
+ * toolbar's "…" at the window's right), at the width it is drawn, and it
+ * keeps under the button, its rows scrolling, while four rows fit there.
  */
 export function PopupMenu({
   x,
@@ -315,7 +316,8 @@ export function PopupMenu({
   const kinds = rows.map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
   // Taller than the window, it fits the window and its rows scroll.
   const full = menuHeight(kinds);
-  const height = menuFits(full, room.height);
+  // Hung from a button, it keeps under the button and scrolls rather than slide up over it.
+  const height = anchor === "end" ? hungHeight(full, y, room.height) : menuFits(full, room.height);
   const widest = menuMaxWidth(maxWidth, room.width);
   const drawn = width ?? minWidth;
   const at = placeMenu({ x: anchor === "end" ? x - drawn : x, y }, { width: drawn, height }, room, flip);

@@ -59,6 +59,23 @@ export function menuFits(height: number, room: number): number {
   return room <= 0 ? height : Math.min(height, Math.max(room - 2 * MENU.margin, MENU.row + 2 * (MENU.padding + MENU.edge)));
 }
 
+/** A menu hung from a button keeps under it while this many rows fit there; fewer, and it slides up over the button. */
+export const HUNG_ROWS = 4;
+
+/**
+ * How tall a menu hung under a button (`anchor` "end": a toolbar's or a
+ * pill row's "More") is drawn when its top is at `top` in a window `room`
+ * tall: the room under the button, less the margin, its rows scrolling, so
+ * it never slides up over the button that opened it; its own height when
+ * that fits, and `menuFits`' when not even HUNG_ROWS rows fit under it.
+ */
+export function hungHeight(height: number, top: number, room: number): number {
+  if (room <= 0) return height;
+  const under = Math.floor(room - top - MENU.margin);
+  if (height <= under) return height;
+  return under >= HUNG_ROWS * MENU.row + 2 * (MENU.padding + MENU.edge) ? under : menuFits(height, room);
+}
+
 /**
  * The most a menu may be wide in a window `room` wide (0: not known yet):
  * its own cap, if any, and never wider than the window less 6 a side, so a

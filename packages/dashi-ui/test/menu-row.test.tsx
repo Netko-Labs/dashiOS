@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { MENU, menuLabelLeft, menuMaxWidth } from "../src/menu-place.ts";
+import { HUNG_ROWS, hungHeight, MENU, menuFits, menuLabelLeft, menuMaxWidth } from "../src/menu-place.ts";
 import { MenuRow } from "../src/menu-row.tsx";
 import { Shortcut } from "../src/shortcut.tsx";
 import { fakeHost, settle } from "./host.ts";
@@ -74,5 +74,26 @@ describe("menuMaxWidth", () => {
   test("before the window is known, only its own cap", () => {
     expect(menuMaxWidth(undefined, 0)).toBeUndefined();
     expect(menuMaxWidth(280, 0)).toBe(280);
+  });
+});
+
+// 0.6 menus: in a 300-tall Files window, "…"'s menu didn't fit under the button and slid up over it.
+describe("hungHeight", () => {
+  const rows = (count: number): number => count * MENU.row + 2 * (MENU.padding + MENU.edge);
+
+  test("a menu that fits under its button keeps its height", () => {
+    expect(hungHeight(rows(5), 40, 600)).toBe(rows(5));
+  });
+
+  test("one that doesn't is as tall as the room under the button, and scrolls", () => {
+    expect(hungHeight(rows(11), 32, 300)).toBe(300 - 32 - MENU.margin);
+  });
+
+  test(`with fewer than ${HUNG_ROWS} rows' room under it, it fits the window as any menu does`, () => {
+    expect(hungHeight(rows(11), 250, 300)).toBe(menuFits(rows(11), 300));
+  });
+
+  test("before the window is known, its own height", () => {
+    expect(hungHeight(rows(11), 32, 0)).toBe(rows(11));
   });
 });
