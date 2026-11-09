@@ -34,6 +34,8 @@ export interface CompositorWindow {
    * Absent once it has, and for X11 windows.
    */
   configuring?: { width: number; height: number };
+  /** The smallest outer frame its app allows, title bar included (xdg `set_min_size`, X11's size hints). Absent without one, and from older compositors. */
+  minSize?: { width: number; height: number };
   /** The compositor's title bar height (0 when the app draws its own). */
   titleBar: number;
   /**
@@ -215,7 +217,8 @@ export function parseWindowIcon(value: unknown): WindowIcon | null {
 
 export function parseWindow(value: unknown): CompositorWindow | null {
   if (!isRecord(value)) return null;
-  const { id, appId, title, pid, focused, state, frame, configuring, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf, parent } = value;
+  const { id, appId, title, pid, focused, state, frame, configuring, minSize, titleBar, attention, x11, fullscreen, space, icon, toplevel, sheetOf, parent } =
+    value;
   if (!isNumber(id) || typeof appId !== "string" || typeof title !== "string") return null;
   if (typeof focused !== "boolean") return null;
   if (state !== "normal" && state !== "minimized" && state !== "hidden") return null;
@@ -228,6 +231,7 @@ export function parseWindow(value: unknown): CompositorWindow | null {
     state,
     frame: parseFrame(frame),
     ...withSize(configuring),
+    ...withLeast(minSize),
     titleBar: isNumber(titleBar) ? titleBar : 0,
     ...(attention === true ? { attention } : {}),
     ...(x11 === true ? { x11 } : {}),
@@ -244,10 +248,20 @@ const isWindowId = (value: unknown): value is number => isNumber(value) && Numbe
 
 const withIcon = (icon: WindowIcon | null): { icon?: WindowIcon } => (icon ? { icon } : {});
 
-const withSize = (value: unknown): { configuring?: { width: number; height: number } } =>
+const sizeOf = (value: unknown): { width: number; height: number } | null =>
   isRecord(value) && isNumber(value.width) && isNumber(value.height) && value.width > 0 && value.height > 0
-    ? { configuring: { width: value.width, height: value.height } }
-    : {};
+    ? { width: value.width, height: value.height }
+    : null;
+
+const withSize = (value: unknown): { configuring?: { width: number; height: number } } => {
+  const size = sizeOf(value);
+  return size ? { configuring: size } : {};
+};
+
+const withLeast = (value: unknown): { minSize?: { width: number; height: number } } => {
+  const size = sizeOf(value);
+  return size ? { minSize: size } : {};
+};
 
 export function parseEvent(value: unknown): CompositorEvent | null {
   if (!isRecord(value)) return null;

@@ -24,6 +24,7 @@ import {
   dragZones,
   fitFrame,
   frameUnderPointer,
+  keepLeast,
   type Output,
   placeNew,
   type Rect,
@@ -169,7 +170,7 @@ export class Arranger {
       const usable = usableFor(frame, this.outputs);
       if (!usable) continue;
       const tile = this.arranged.get(window.id)?.tile ?? null;
-      const fitted = tile ? tileFrame(tile, usable) : fitFrame(frame, usable);
+      const fitted = keepLeast(tile ? tileFrame(tile, usable) : fitFrame(frame, usable), window.minSize, usable);
       if (!sameRect(fitted, frame)) await this.frame(window.id, fitted, tile);
     }
   }
@@ -194,10 +195,15 @@ export class Arranger {
   /**
    * Ask for a frame (Fill also tells the app it is maximized; a tile says so for its
    * shadow, appearance/window-style.ts). Its size shows in `configuring` until the app has drawn it.
+   * Never smaller than the app allows (`minSize`): a half too narrow for System Settings
+   * takes its least width, grown away from the screen's edge.
    */
   private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
     const kind = tile === "fill" ? { maximized: true } : tile ? { tiled: true } : {};
-    await this.compositor.request("frame", { window: id, ...frame, ...kind });
+    const least = (await this.compositor.windows()).find((window) => window.id === id)?.minSize;
+    const usable = usableFor(frame, this.outputs);
+    const kept = usable ? keepLeast(frame, least, usable) : frame;
+    await this.compositor.request("frame", { window: id, ...kept, ...kind });
   }
 
   /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */
