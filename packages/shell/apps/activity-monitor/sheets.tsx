@@ -3,29 +3,46 @@
  * so a Return meant for something else can't end anything, UI-6), "still
  * running" (offered when a quit app outlives `STILL_RUNNING_MS`), the refusal,
  * and Inspect (what a process is: its command line, parent, start, state).
+ * A name in a question is cut in the middle to keep the question on one line
+ * (`nameFor`), never broken mid-word; Inspect's facts scroll inside a window
+ * too short for them, its Done always in reach.
  */
 
-import { AlertSheet, glyphs, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
-import { formatBytes, formatCpuTime, formatPercent, formatState } from "./format.ts";
+import { ALERT_WINDOW, AlertSheet, alertWordsWidth, glyphs, useColors } from "@dashi/ui";
+import { ScrollView, Text, View } from "@mirinjs/metal";
+import { formatBytes, formatCpuTime, formatPercent, formatState, middleCut } from "./format.ts";
 import type { Line } from "./lines.ts";
 import type { QuitSignal } from "./policy.ts";
+
+/**
+ * `name` cut in the middle to fit, with `around` characters of question
+ * beside it ("Quit “”?" is 8), on the one line of a sheet `width` wide.
+ */
+export function nameFor(name: string, width: number, around: number): string {
+  // alertWordsWidth is the words' width in a sheet: its padding (20, as AlertWindow's 18 and a little) and the tile beside them.
+  return middleCut(name, Math.max(Math.floor(alertWordsWidth(width) / ALERT_WINDOW.question.char) - around, 12));
+}
+
+const QUIT_WIDTH = 420;
+const NOTICE_WIDTH = 400;
+const INSPECT_WIDTH = 480;
 
 export function QuitSheet({ line, onAnswer }: { line: Line; onAnswer: (signal: QuitSignal | null) => void }) {
   const app = line.kind === "app";
   return (
     <AlertSheet
       testID="quit-sheet"
-      width={420}
-      question={`Quit “${line.name}”?`}
-      message={`${app ? `${line.name} will close` : "It will be asked to close"}. Force quit ends it immediately, and anything unsaved is lost.`}
+      width={QUIT_WIDTH}
+      question={`Quit “${nameFor(line.name, QUIT_WIDTH, 8)}”?`}
+      message={`${app ? "The app will close" : "It will be asked to close"}. Force quit ends it immediately, and anything unsaved is lost.`}
       glyph={glyphs.STOP}
       tone="danger"
       buttons={[
         { label: "Cancel", testID: "quit-sheet:cancel", onPress: () => onAnswer(null), cancel: true },
         { label: "Force quit", testID: "quit-sheet:force", onPress: () => onAnswer("SIGKILL"), kind: "danger" },
         // Esc cancels; Return presses nothing here, so a Return meant for something else can't end a process.
-        { label: "Quit", testID: "quit-sheet:quit", onPress: () => onAnswer("SIGTERM"), kind: "primary", isDefault: false },
+        // So no button wears the default's kombu either: Quit is in ink, like Cancel.
+        { label: "Quit", testID: "quit-sheet:quit", onPress: () => onAnswer("SIGTERM"), isDefault: false },
       ]}
     />
   );
@@ -35,8 +52,8 @@ export function StillRunningSheet({ name, onAnswer }: { name: string; onAnswer: 
   return (
     <AlertSheet
       testID="still-running-sheet"
-      width={400}
-      question={`“${name}” is still running.`}
+      width={NOTICE_WIDTH}
+      question={`“${nameFor(name, NOTICE_WIDTH, 21)}” is still running.`}
       message="Force quit ends it immediately, and anything unsaved is lost."
       glyph={glyphs.WARNING}
       tone="danger"
@@ -53,8 +70,8 @@ export function RefusedSheet({ name, reason, onClose }: { name: string; reason: 
   return (
     <AlertSheet
       testID="refused-sheet"
-      width={400}
-      question={`“${name}” can’t be quit from here.`}
+      width={NOTICE_WIDTH}
+      question={`“${nameFor(name, NOTICE_WIDTH, 30)}” can’t be quit from here.`}
       message={reason}
       glyph={glyphs.INFO}
       buttons={[{ label: "OK", testID: "refused-sheet:ok", onPress: onClose, kind: "primary" }]}
@@ -76,8 +93,22 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** What a line is, in words: Inspect (❖I, Return, a double click). */
-export function InspectSheet({ line, parentName, onClose }: { line: Line; parentName: string | null; onClose: () => void }) {
+/**
+ * The most Inspect's facts may take in a window `windowHeight` tall whose
+ * sheets hang `top` from its top: the rest is the sheet's frame, its one-line
+ * question (and message), and Done, which must stay in the window.
+ */
+export function factsRoom(windowHeight: number, top: number, hasMessage: boolean): number {
+  const hang = top + 8; // Sheet's marginTop
+  const card = 20 * 2; // SheetCard's padding
+  const words = 17 + (hasMessage ? 4 + 16 : 0) + 4 + 6; // the question, the message, the gap and margin over the facts
+  const buttons = 10 + 6 + 28; // the gap over the button row, its margin, a button
+  const under = 8; // room under the sheet
+  return Math.max(Math.floor(windowHeight - hang - card - words - buttons - under), 80);
+}
+
+/** What a line is, in words: Inspect (❖I, Return, a double click). `maxFacts` bounds the facts, which scroll past it. */
+export function InspectSheet({ line, parentName, onClose, maxFacts }: { line: Line; parentName: string | null; onClose: () => void; maxFacts: number }) {
   const process = line.process;
   const facts: Array<[string, string]> = [];
   if (line.kind === "app") facts.push(["Processes", String(line.members.length)]);
@@ -99,15 +130,17 @@ export function InspectSheet({ line, parentName, onClose }: { line: Line; parent
   return (
     <AlertSheet
       testID="inspect-sheet"
-      width={480}
-      question={line.name}
-      message={line.kind === "app" && line.members.length > 1 ? `${line.name} and its helpers, added up.` : undefined}
+      width={INSPECT_WIDTH}
+      question={nameFor(line.name, INSPECT_WIDTH, 0)}
+      message={line.kind === "app" && line.members.length > 1 ? "The app and its helpers, added up." : undefined}
       glyph={glyphs.INFO}
       buttons={[{ label: "Done", testID: "inspect-sheet:done", onPress: onClose, kind: "primary" }]}
     >
-      {facts.map(([label, value]) => (
-        <Fact key={label} label={label} value={value} />
-      ))}
+      <ScrollView testID="inspect-sheet:facts" style={{ maxHeight: maxFacts, flexDirection: "column", gap: 8 }}>
+        {facts.map(([label, value]) => (
+          <Fact key={label} label={label} value={value} />
+        ))}
+      </ScrollView>
     </AlertSheet>
   );
 }
