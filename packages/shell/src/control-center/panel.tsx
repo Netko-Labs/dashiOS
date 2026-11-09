@@ -80,7 +80,7 @@ const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "righ
 export function ControlCenterPanel(props: ControlCenterProps) {
   const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
-  const edge = usePanelEdge();
+  const edge = usePanelEdge(GRID.padding);
   const saved = useLayout(props.layout);
   /** The layout being edited; null outside edit mode. */
   const [editDraft, setDraft] = useState<Layout | null>(null);
@@ -166,10 +166,9 @@ export function ControlCenterPanel(props: ControlCenterProps) {
         ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
         width: GRID.width,
         flexDirection: "column",
-        padding: GRID.padding,
         borderRadius: GRID.radius,
         backgroundColor: colors.surface,
-        ...(embedded ? {} : { shadow: "xl" as const, ...edge }),
+        ...(embedded ? { padding: GRID.padding } : { shadow: "xl" as const, ...edge }),
       }}
     >
       {page !== "main" ? (
