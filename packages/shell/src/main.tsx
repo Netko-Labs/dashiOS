@@ -951,11 +951,16 @@ configureMachineEnd({
       resident: false,
     }),
 });
-// A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar.
+// A menu open on the revealed bar keeps it there (fullscreen.ts), and keeps the app's menus in the bar;
+// so does the keyboard in the bar (⌃F2, menus/bar-keys.ts), with nothing open yet.
 // So does a shell sheet that took the keyboard for the app in front (bar-hold.ts): the bar keeps its menus.
-const holdAppMenus = (): void => appMenus.hold(menus.controller.getSnapshot().popover !== null || barHold.getSnapshot());
+const menusUp = (): boolean => {
+  const { popover, bar } = menus.controller.getSnapshot();
+  return popover !== null || bar !== undefined;
+};
+const holdAppMenus = (): void => appMenus.hold(menusUp() || barHold.getSnapshot());
 const stopHoldingForPopovers = menus.controller.subscribe(() => {
-  fullscreenBars?.hold(menus.controller.getSnapshot().popover !== null);
+  fullscreenBars?.hold(menusUp());
   holdAppMenus();
 });
 const stopHoldingForSheets = barHold.subscribe(holdAppMenus);
