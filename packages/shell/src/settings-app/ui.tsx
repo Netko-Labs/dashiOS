@@ -29,6 +29,16 @@ export { Spot } from "./spot.tsx";
 /** A page's content is at most this wide, centered in a wider window (LA-2). */
 export const PAGE_MAX_WIDTH = 720;
 
+/**
+ * A line pulled 4 closer to the card above it. It keeps the default
+ * `flexShrink`: mirin's layout (taffy 0.9) sizes a column wrongly when a
+ * child with `flexShrink: 0` has a negative margin, shrinking it by the
+ * margin times the child's height, so the page lost its scroll range
+ * (Settings' layout rules, test/settings-scroll.test.tsx). In a page,
+ * whose height is its content's, nothing shrinks anyway.
+ */
+export const TUCK = { marginTop: -4 } as const;
+
 /** Settings' surfaces, from Control Center's tokens: a text field or a sunk list sits on the window's color. */
 export function useSurface(): Surface {
   const colors = useControlColors();
@@ -85,16 +95,18 @@ export function Hero({ children, testID, padding = 14 }: { children: ReactNode; 
 /** A row whose label is data, not a setting (a login, a device); a form's field. Settings' own rows are `Setting`s. */
 export { Row as FormRow, Row as Item, Row, type RowProps } from "./row.tsx";
 
-/** A heading over cards, or a sentence under them; `keys` draws a shortcut after it ("⌥❖D"). */
+/**
+ * A heading over cards, or a sentence under them (tucked 4 closer to the
+ * card, `TUCK`); `keys` draws a shortcut after it ("⌥❖D").
+ */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useControlColors();
   return (
     <View
       style={{
-        flexShrink: 0,
+        ...(above ? { flexShrink: 0, marginTop: 6 } : TUCK),
         paddingLeft: 10,
         paddingRight: 10,
-        marginTop: above ? 6 : -4,
         ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
       }}
     >
@@ -224,7 +236,12 @@ export function Page({ title, detail, children }: { title: string; detail?: stri
           }}
           style={{ flex: 1, flexDirection: "column", paddingLeft: PAGE.margin, paddingRight: PAGE.margin, paddingBottom: PAGE.margin }}
         >
-          <View style={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, alignSelf: "center", flexDirection: "column", gap: PAGE_GAP }}>
+          {/* Never shorter than its content: the scroll range is this column's height, and in a narrow window
+              mirin's layout guesses a row of wrapped pills shorter than it is, so a shrinking column lost its last lines. */}
+          <View
+            testID={`${testID}:content`}
+            style={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, alignSelf: "center", flexShrink: 0, flexDirection: "column", gap: PAGE_GAP }}
+          >
             {unsaved && (
               <View testID="settings-error" style={{ paddingLeft: 10, paddingRight: 10 }}>
                 <Text style={{ fontSize: 12, color: critical }}>

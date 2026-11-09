@@ -188,7 +188,8 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     // No `surface`: an ordinary window with the compositor's window controls: over the content (the
     // unified title bar, see view.tsx) where the compositor can draw them so, else in a title bar.
     current.surface = openOverlay(
-      { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, width: SETTINGS_WINDOW.width, height: SETTINGS_WINDOW.height, titleBar: "unified" },
+      // Its least size holds on a host started for it; the warm one's window can't take one yet (mirin's `open` has no minimum size).
+      { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, ...SETTINGS_WINDOW, titleBar: "unified" },
       <SettingsWindow ctx={ctx} nav={nav} spots={spots} find={find} />,
       () => {
         // The window went (its close button, or its host died): forget the session.

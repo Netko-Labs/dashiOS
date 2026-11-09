@@ -28,6 +28,15 @@ export interface Size {
 }
 
 /**
+ * How tall the menu is drawn in a window `room` tall: its own height, or
+ * the window less a margin above and below when it is taller, its rows
+ * then scrolling (0 when the window is not known yet: its own height).
+ */
+export function menuFits(height: number, room: number): number {
+  return room <= 0 ? height : Math.min(height, Math.max(room - 2 * MENU.margin, MENU.row + 2 * (MENU.padding + MENU.edge)));
+}
+
+/**
  * The menu's top-left for one opened at `at`, `size` big, in a window `room` big
  * (0 when not known yet: nothing to keep inside). With `flip`, a menu that
  * would run off the right or the bottom opens to the left of or above the

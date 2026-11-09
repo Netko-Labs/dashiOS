@@ -20,8 +20,13 @@ export function useCardRow(knob: boolean): void {
   useLayoutEffect(() => card?.report(token.current, knob), [card, knob]);
 }
 
-/** The page's measures: the title row, the side margins, a card's corners, a row's height and knob. */
-export const PAGE = { title: 56, margin: 22, cardRadius: 24, heroRadius: 28, row: 56, knob: 40 } as const;
+/**
+ * The page's measures: the title row, the side margins, a card's corners, a
+ * row's height and knob, and the least width a row's words keep beside its
+ * control (in a narrow window the control's pills wrap first, so the words
+ * never break letter by letter).
+ */
+export const PAGE = { title: 56, margin: 22, cardRadius: 24, heroRadius: 28, row: 56, knob: 40, words: 120 } as const;
 
 export interface RowProps {
   label: string;
@@ -41,7 +46,7 @@ export function Row({ label, detail, glyph, children, stack, below, testID }: Ro
   const colors = useControlColors();
   useCardRow(glyph !== undefined);
   const words = (
-    <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
+    <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: PAGE.words }}>
       <Text style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
       {detail !== undefined && detail !== "" && <Text style={{ fontSize: 11.5, color: colors.muted }}>{detail}</Text>}
     </View>
