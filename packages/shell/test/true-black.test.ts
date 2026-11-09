@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { contrastRatio, darkColors, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, TRUE_BLACK } from "@dashi/ui";
 import { DARK_TERMINAL } from "../apps/terminal/palette.ts";
 import { gtkColors } from "../src/appearance/gtk-colors.ts";
+import { BATTERY_PANEL } from "../src/battery/panel.tsx";
+import { GRID } from "../src/control-center/layout.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, panelEdge } from "../src/shared/controls/palette.ts";
 
 // Dark is true black everywhere Dashi draws (docs/design.html, "Tokens"):
@@ -41,8 +43,17 @@ describe("Control Center's and Settings' controls on true black", () => {
   });
 
   test("a floating panel takes a hairline on black, where its shadow does nothing, and nothing in Light", () => {
-    expect(panelEdge(true)).toEqual({ borderWidth: 1, borderColor: TRUE_BLACK.edge });
-    expect(panelEdge(false)).toEqual({});
+    expect(panelEdge(true, 21)).toEqual({ padding: 20, borderWidth: 1, borderColor: TRUE_BLACK.edge });
+    expect(panelEdge(false, 21)).toEqual({ padding: 21 });
+  });
+
+  // The rows of Control Center's pages are sized from GRID.width less the
+  // padding, so a hairline that added to the padding cut their right ends.
+  test("the hairline comes out of the padding: the content box is Light's in Dark", () => {
+    for (const padding of [GRID.padding, BATTERY_PANEL.padding]) {
+      const dark = panelEdge(true, padding);
+      expect(dark.padding + (dark.borderWidth ?? 0)).toBe(padding);
+    }
   });
 
   test("Light is as it was", () => {

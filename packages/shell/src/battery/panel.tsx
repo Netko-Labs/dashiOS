@@ -84,7 +84,7 @@ function Line({ row, last, onApp }: { row: PowerRow; last: boolean; onApp: (app:
 
 export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction, onSettings }: BatteryPanelProps) {
   const colors = useControlColors();
-  const edge = usePanelEdge();
+  const edge = usePanelEdge(BATTERY_PANEL.padding);
   const clock = useClockPrefs();
   const rows = use
     ? wattRows({ battery, watts: use.watts, floor: idleFloor(use.samples), apps: use.apps, significant: use.significant, adapter: use.adapter })
@@ -97,7 +97,6 @@ export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction
       style={{
         width: BATTERY_PANEL.width,
         flexDirection: "column",
-        padding: BATTERY_PANEL.padding,
         borderRadius: BATTERY_PANEL.radius,
         backgroundColor: colors.surface,
         shadow: "xl",

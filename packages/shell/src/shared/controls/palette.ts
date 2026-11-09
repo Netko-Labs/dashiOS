@@ -98,15 +98,27 @@ export function useControlColors(): ControlPalette {
   return controlPalette(useDark());
 }
 
-/** What a floating panel adds at its edge: nothing in Light, where its shadow separates it; a 1 px hairline on true black, where a shadow has nothing to darken. */
+/**
+ * A floating panel's edge and padding: in Light, only the padding, since its
+ * shadow separates it; on true black, where a shadow has nothing to darken, a
+ * 1 px hairline as well. The hairline is a border, so it takes its width out of
+ * the padding: the content box is the same in both modes, and the rows that
+ * are sized from the panel's width (`GRID.width - 2 * GRID.padding`) still fit
+ * it instead of being cut at their right end.
+ */
 export interface PanelEdge {
+  padding: number;
   borderWidth?: number;
   borderColor?: string;
 }
 
-export const panelEdge = (dark: boolean): PanelEdge => (dark ? { borderWidth: 1, borderColor: DARK_CONTROLS.line } : {});
+/** The hairline's width on true black. */
+export const PANEL_EDGE_WIDTH = 1;
 
-/** The edge of Control Center and the battery panel in the mode in use. */
-export function usePanelEdge(): PanelEdge {
-  return panelEdge(useDark());
+export const panelEdge = (dark: boolean, padding: number): PanelEdge =>
+  dark ? { padding: padding - PANEL_EDGE_WIDTH, borderWidth: PANEL_EDGE_WIDTH, borderColor: DARK_CONTROLS.line } : { padding };
+
+/** The edge and padding of Control Center and the battery panel in the mode in use. */
+export function usePanelEdge(padding: number): PanelEdge {
+  return panelEdge(useDark(), padding);
 }
