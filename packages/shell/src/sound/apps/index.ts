@@ -5,6 +5,6 @@ export { type OwnerOptions, streamOwners } from "./owners.ts";
 export { parseStatLine, readProcess } from "./proc-look.ts";
 export { type AppRecording, type AppSound, type MicIndicator, type MixerRows, micIndicator, type Owner, playOnLabel, rowsFrom } from "./rows.ts";
 export { type MixerOptions, startAppMixer } from "./start.ts";
-export { AppMixer, type AppMixerOptions, HOLD_MS, LINGER_MS, type MixerState, useMixer } from "./store.ts";
+export { AppMixer, type AppMixerOptions, HOLD_MS, LINGER_MS, type MixerState, useMicWords, useMixer } from "./store.ts";
 export { type Graph, levelOf, type MixerOutput, parseGraph, type Stream, type StreamDevice } from "./streams.ts";
 export { EMPTY_GRAPH, type Follow, fixedGraph, type GraphWatch, pipewireGraph } from "./watch.ts";

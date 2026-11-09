@@ -12,23 +12,23 @@ import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import { MICROPHONE } from "../settings-app/glyphs-machine.ts";
-import type { MicIndicator } from "./apps/index.ts";
 
 /** A pill 20 tall, radius 10, 7 in; the glyph 13. */
 export const MIC_PILL = { height: 20, padding: 7, glyph: 13 } as const;
 
 export interface MicPillProps {
-  state: MicIndicator;
+  /** What it says, "Signal is using the microphone."; none draws nothing. */
+  words: string;
   /** With the pill's right edge in the bar. */
   onPress: (right: number) => void;
   /** Show or take down the bar's tooltip under the pill. */
   onTip?: (tip: { text: string; bounds: Bounds } | null) => void;
 }
 
-export function MicPill({ state, onPress, onTip }: MicPillProps) {
+export function MicPill({ words, onPress, onTip }: MicPillProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
-  if (!state.on) return null;
+  if (words === "") return null;
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   return (
     <View
@@ -41,9 +41,9 @@ export function MicPill({ state, onPress, onTip }: MicPillProps) {
         const at = box(bounds);
         onPress(at.x + at.width);
       }}
-      onHoverChange={(hovered, bounds) => onTip?.(hovered ? { text: state.words, bounds: box(bounds) } : null)}
+      onHoverChange={(hovered, bounds) => onTip?.(hovered ? { text: words, bounds: box(bounds) } : null)}
       accessibilityRole="button"
-      accessibilityLabel={state.words}
+      accessibilityLabel={words}
       style={{
         flexShrink: 0,
         flexDirection: "row",

@@ -41,7 +41,7 @@ import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
-import { type AppMixer, micIndicator, useMixer } from "./sound/apps/index.ts";
+import { type AppMixer, useMicWords } from "./sound/apps/index.ts";
 import { MicPill } from "./sound/mic-pill.tsx";
 import { type SystemStore, useSystem } from "./system/store.ts";
 import { type ToplevelStore, usePortalDialogs, useToplevels } from "./toplevels.ts";
@@ -157,7 +157,7 @@ export function MenuBar({
   // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).
   const capturing = useScreenCapture(capture) && recording.kind === "idle";
   const allExtras = useExtras(extras);
-  const mic = micIndicator(useMixer(mixer).recording);
+  const micWords = useMicWords(mixer);
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
   // Banners stop while Do Not Disturb is on; the moon says why, as on a Mac.
@@ -265,7 +265,7 @@ export function MenuBar({
         ]),
     ...(recorder && recordingPill(recording, mark.kind !== "none") ? [{ key: "recording", goes: null, node: <RecordingButton recorder={recorder} /> }] : []),
     // Never hidden either: an app using the microphone.
-    ...(mic.on ? [{ key: "microphone", goes: null, node: <MicPill state={mic} onPress={openSound} onTip={tip} /> }] : []),
+    ...(micWords !== "" ? [{ key: "microphone", goes: null, node: <MicPill words={micWords} onPress={openSound} onTip={tip} /> }] : []),
     ...systemSlots({
       ...{ battery, network, volume },
       batteryPercent: menuBar.batteryPercent === true,

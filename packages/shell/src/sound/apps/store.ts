@@ -17,7 +17,7 @@
 import { useSyncExternalStore } from "react";
 import { clampLevel, isNodeName, type MixerControl } from "./commands.ts";
 import type { AppRecording, AppSound, Owner } from "./rows.ts";
-import { rowsFrom } from "./rows.ts";
+import { micIndicator, rowsFrom } from "./rows.ts";
 import type { Graph, MixerOutput } from "./streams.ts";
 import { EMPTY_GRAPH, type GraphWatch } from "./watch.ts";
 
@@ -235,6 +235,11 @@ export class AppMixer {
 
 const QUIET: MixerState = { available: false, apps: [], recording: [], outputs: [] };
 const NEVER = () => () => {};
+
+/** What the microphone indicator says ("" while no app records from a microphone): the menu bar redraws only when it changes. */
+export function useMicWords(store: AppMixer | undefined): string {
+  return useSyncExternalStore(store?.subscribe ?? NEVER, () => (store ? micIndicator(store.getSnapshot().recording).words : ""));
+}
 
 /** The mixer's state; without a mixer, no apps. */
 export function useMixer(store: AppMixer | undefined): MixerState {
