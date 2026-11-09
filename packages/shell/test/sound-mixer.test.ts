@@ -28,6 +28,7 @@ import {
   streamOwners,
   volumeCommands,
 } from "../src/sound/apps/index.ts";
+import { parseDump } from "../src/sound/parse-dump.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 
 const HELIUM = { id: "helium", name: "Helium", icon: "/icons/helium.png", exec: ["/opt/helium/helium", "%U"] };
@@ -91,6 +92,13 @@ describe("parseGraph: pw-dump as streams", () => {
   test("a stream without a Props param is at full volume, unmuted", () => {
     const bare = { ...node(5, { "media.class": "Stream/Output/Audio" }), info: { state: "running", props: { "media.class": "Stream/Output/Audio" } } };
     expect(parseGraph([bare]).streams[0]).toMatchObject({ level: 1, muted: false, device: null });
+  });
+});
+
+describe("the devices' list", () => {
+  test("a virtual source (a null microphone, a noise filter) is an input", () => {
+    expect(parseDump(JSON.stringify(vmGraph()), "input")).toEqual([{ id: 62, label: "Microphone", current: true, kind: "speaker" }]);
+    expect(parseDump(JSON.stringify(vmGraph()), "output")?.map((output) => output.label)).toEqual(["Speakers", "Headphones"]);
   });
 });
 

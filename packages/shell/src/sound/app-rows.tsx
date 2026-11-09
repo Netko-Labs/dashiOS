@@ -87,8 +87,8 @@ function AppSlider({ app, onLevel }: { app: AppSound; onLevel: (level: number) =
   );
 }
 
-/** The mute knob: the speaker on the row's color; muted, the crossed speaker on ink. */
-export function MuteKnob({ testID, muted, size, onPress }: { testID: string; muted: boolean; size: number; onPress: () => void }) {
+/** The mute knob: the speaker on `ground` (the row's color unless said); muted, the crossed speaker on ink. */
+export function MuteKnob({ testID, muted, size, ground, onPress }: { testID: string; muted: boolean; size: number; ground?: string; onPress: () => void }) {
   const colors = useControlColors();
   return (
     <View
@@ -104,7 +104,7 @@ export function MuteKnob({ testID, muted, size, onPress }: { testID: string; mut
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: muted ? colors.fill : colors.off,
+        backgroundColor: muted ? colors.fill : (ground ?? colors.off),
         focusRingColor: colors.focus,
       }}
     >

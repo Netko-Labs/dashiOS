@@ -19,8 +19,8 @@ import { PAGE, useCardRow } from "../row.tsx";
 import { Spot } from "../spot.tsx";
 import { Caption, Group, Note } from "../ui.tsx";
 
-/** The row's measures: the slider 210 wide, the mute button 36, "Play on" a pill 28 tall. */
-export const APPS_CARD = { slider: 210, mute: 36, pill: 28, icon: 24 } as const;
+/** The row's measures: the slider 210 wide, the mute button 36, "Play on" a pill 28 tall and 128 wide, so the sliders line up. */
+export const APPS_CARD = { slider: 210, mute: 36, pill: 28, pillWidth: 128, icon: 24 } as const;
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
@@ -80,10 +80,11 @@ function PlayOn({ app, outputs, onChoose }: { app: AppSound; outputs: readonly M
       }}
       style={{
         height: APPS_CARD.pill,
-        maxWidth: 140,
+        width: APPS_CARD.pillWidth,
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: 4,
         paddingLeft: 12,
         paddingRight: 10,
@@ -127,7 +128,13 @@ function AppRow({ app, mixer, outputs }: { app: AppSound; mixer: AppMixer; outpu
           format={(level) => (app.muted ? "Muted" : `${Math.round(level * 100)}%`)}
           onChange={(level) => void mixer.setLevel(app.key, level)}
         />
-        <MuteKnob testID={`sound-app-mute:${app.key}`} muted={app.muted} size={APPS_CARD.mute} onPress={() => void mixer.setMuted(app.key, !app.muted)} />
+        <MuteKnob
+          testID={`sound-app-mute:${app.key}`}
+          muted={app.muted}
+          size={APPS_CARD.mute}
+          ground={colors.knobRest}
+          onPress={() => void mixer.setMuted(app.key, !app.muted)}
+        />
         <PlayOn app={app} outputs={outputs} onChoose={(output) => void mixer.setOutput(app.key, output)} />
       </View>
     </View>
