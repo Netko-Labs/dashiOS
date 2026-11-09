@@ -4,7 +4,7 @@
  * glyphs, each named by its tooltip with its count (layout.ts).
  */
 
-import { rowLook, SelectionBar, SidebarItem, SidebarSection, useColors, useTooltip } from "@dashi/ui";
+import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarItem, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { FOLDER, FOLDER_PLUS, NOTES, TRASH } from "./glyphs.ts";
 import type { Source } from "./list.ts";
@@ -52,7 +52,7 @@ function Place({
       }}
       onHoverChange={tip.onHoverChange}
       style={{
-        height: 32,
+        height: SIDEBAR_ROW_HEIGHT,
         flexShrink: 0,
         alignItems: "center",
         justifyContent: "center",
@@ -62,7 +62,7 @@ function Place({
         focusRingColor: colors.focusRing,
       }}
     >
-      {selected && <SelectionBar rowHeight={32} />}
+      {selected && <SelectionBar rowHeight={SIDEBAR_ROW_HEIGHT} />}
       <Svg markup={glyph} size={16} color={look.glyph} />
       {tip.node}
     </View>
@@ -139,7 +139,7 @@ export function Sidebar({
         }}
         onHoverChange={newFolderTip.onHoverChange}
         style={{
-          height: 30,
+          height: SIDEBAR_ROW_HEIGHT,
           flexShrink: 0,
           flexDirection: "row",
           alignItems: "center",
