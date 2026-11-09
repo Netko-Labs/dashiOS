@@ -6,6 +6,7 @@
  * Graphics Settings….
  */
 
+import { iconPath } from "../apps.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import { CloseReason, type NotifyInput } from "../notifications/types.ts";
 import type { GraphicsDeps } from "./controller.ts";
@@ -31,7 +32,8 @@ export function graphicsNoticePlace(notifications: NotificationStore, act: Graph
     id = notifications.notify(
       {
         appName: "Graphics",
-        appIcon: "",
+        // Settings' icon: the notices are the system's, and Graphics Settings… opens it.
+        appIcon: iconPath("settings"),
         ...input,
         urgency: "normal",
         expireTimeout: -1,
