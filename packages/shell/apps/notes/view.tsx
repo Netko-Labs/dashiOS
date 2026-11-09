@@ -20,7 +20,7 @@ import { Editor } from "./editor.tsx";
 import { findMatches } from "./find.ts";
 import type { FormatCommand } from "./formats.ts";
 import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "./glyphs.ts";
-import { type DateForm, notesLayout, RAIL_WIDTH, SEARCH_MIN } from "./layout.ts";
+import { type DateForm, notesLayout, noticeWidth, RAIL_WIDTH, SEARCH_MIN } from "./layout.ts";
 import { type Row, type Source, withDraft } from "./list.ts";
 import { notesMenus } from "./menus.ts";
 import type { NotesModel } from "./model.ts";
@@ -387,7 +387,7 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
             />
             {notice && (
               <View testID="note-notice" style={{ position: "absolute", left: 8, right: 8, bottom: 14, alignItems: "center" }}>
-                {notice}
+                <View style={{ maxWidth: noticeWidth(windowWidth), flexDirection: "column" }}>{notice}</View>
               </View>
             )}
           </View>

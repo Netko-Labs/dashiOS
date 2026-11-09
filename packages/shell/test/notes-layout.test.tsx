@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, RAIL_WIDTH } from "../apps/notes/layout.ts";
+import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, noticeWidth, RAIL_WIDTH } from "../apps/notes/layout.ts";
 import { NotesModel } from "../apps/notes/model.ts";
 import { NotesStore } from "../apps/notes/store.ts";
 import { NotesWindow } from "../apps/notes/view.tsx";
@@ -19,6 +19,17 @@ test("the furniture gives way before the note: a rail below 800, a narrower list
   // At the least size the note still has a column to write in.
   const least = notesLayout(NOTES_MIN_SIZE.width);
   expect(NOTES_MIN_SIZE.width - RAIL_WIDTH - least.listWidth).toBeGreaterThanOrEqual(240);
+});
+
+test("a notice at the note's foot is never wider than the note's column", () => {
+  expect(noticeWidth(0)).toBe(560);
+  expect(noticeWidth(1400)).toBe(560);
+  // 980: 980 - 200 - 276 = 504 of column, less 8 a side.
+  expect(noticeWidth(980)).toBe(488);
+  // 700: the rail; 700 - 56 - 276 = 368.
+  expect(noticeWidth(700)).toBe(352);
+  // The least size: the notice's own least width.
+  expect(noticeWidth(520)).toBe(240);
 });
 
 test("the line over a note takes the longest form that fits on one line", () => {

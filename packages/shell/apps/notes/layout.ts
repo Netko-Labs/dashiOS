@@ -38,6 +38,23 @@ export function notesLayout(width: number): NotesLayout {
   return { rail: width < RAIL_BELOW, listWidth: narrow ? LIST_NARROW : LIST_WIDTH, compact: narrow };
 }
 
+/** The sidebar's full width (`@dashi/ui`'s SIDEBAR_WIDTH). */
+const SIDEBAR = 200;
+/** A notice's own bounds (`@dashi/ui`'s Notice). */
+const NOTICE = { min: 240, max: 560 } as const;
+
+/**
+ * The widest a notice at the note's foot gets in a window `width` wide: the
+ * note's column less 8 at each side, so it never reaches over the list (at
+ * the least size, a notice's own least width, 240).
+ */
+export function noticeWidth(width: number): number {
+  if (width <= 0) return NOTICE.max;
+  const layout = notesLayout(width);
+  const column = width - (layout.rail ? RAIL_WIDTH : SIDEBAR) - layout.listWidth;
+  return Math.max(NOTICE.min, Math.min(NOTICE.max, column - 16));
+}
+
 /** How long a date is said: "November 9, 2026 at 1:24 AM", "Nov 9, 2026, 1:24 AM", "Nov 9". */
 export type DateForm = "long" | "medium" | "short";
 
