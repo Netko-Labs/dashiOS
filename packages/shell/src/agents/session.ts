@@ -19,7 +19,7 @@ import { type RunContext, type ToolResult, toolError } from "./context.ts";
 import type { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LOCKED_WHILE_RUNNING } from "./lock.ts";
-import { connectionHarness, strongest, watchingOf } from "./mark.ts";
+import { connectionHarness, watchingOf } from "./mark.ts";
 import type { AgentMask } from "./mask.ts";
 import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
@@ -28,6 +28,7 @@ import { runCall } from "./run.ts";
 import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
 import { type SiteAnswer, SiteConsent, type SiteGrants } from "./sites.ts";
 import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall, scopeOf } from "./tools/index.ts";
+import { WatchClock } from "./watch-clock.ts";
 
 /** How long a finished action stays in the menu bar before "Idle". */
 const SETTLE_MS = 3_000;
@@ -117,10 +118,8 @@ export class Session {
   private browserTab: number | null = null;
   /** When it connected. */
   private readonly since = Date.now();
-  /** Calls running now that the menu bar's red dot shows (recording, seeing the screen, its pointer), by kind. */
-  private readonly watchingNow = new Map<Watching, number>();
-  /** The last such call to end: the dot stays as long as its words do (`SETTLE_MS`). */
-  private watchedLast: { kind: Watching; at: number } | null = null;
+  /** Calls running now that the menu bar's red dot shows (recording, seeing the screen, its pointer), and since when; one that ended stays as long as its words do (`SETTLE_MS`). */
+  private readonly watched = new WatchClock(SETTLE_MS);
 
   constructor(
     readonly id: number,
@@ -176,28 +175,25 @@ export class Session {
       harness: connectionHarness(this.peer.name, this.claims),
       since: this.since,
       waiting: this.asking || this.confirming > 0,
-      watching: this.watching(),
+      ...this.watchingNow(),
     };
   }
 
-  /** The strongest kind of watching going on now, else the last one for a moment after it ended. */
-  private watching(now = Date.now()): Watching | null {
-    let most: Watching | null = null;
-    for (const [kind, count] of this.watchingNow) if (count > 0) most = strongest(most, kind);
-    if (most) return most;
-    return this.watchedLast && now - this.watchedLast.at < SETTLE_MS ? this.watchedLast.kind : null;
+  /** The strongest kind of watching going on now (else the last one, for a moment after it ended), and since when. */
+  private watchingNow(): Pick<AgentInfo, "watching" | "watchingSince"> {
+    const watched = this.watched.now(Date.now());
+    return watched ? { watching: watched.kind, watchingSince: watched.since } : { watching: null };
   }
 
   private watchStart(kind: Watching | null): void {
     if (!kind) return;
-    this.watchingNow.set(kind, (this.watchingNow.get(kind) ?? 0) + 1);
+    this.watched.start(kind, Date.now());
     this.ctx.publish();
   }
 
   private watchEnd(kind: Watching | null): void {
     if (!kind) return;
-    this.watchingNow.set(kind, Math.max(0, (this.watchingNow.get(kind) ?? 1) - 1));
-    this.watchedLast = { kind, at: Date.now() };
+    this.watched.end(kind, Date.now());
     this.ctx.publish();
     // The dot goes once the moment is over, whatever else happens meanwhile.
     setTimeout(() => {

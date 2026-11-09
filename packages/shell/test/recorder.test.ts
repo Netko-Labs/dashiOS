@@ -3,9 +3,9 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorder/command.ts";
-import { elapsedText } from "../src/recorder/indicator.tsx";
 import { type RecorderProcess, ScreenRecorder } from "../src/recorder/recorder.ts";
 import { stopsRecording } from "../src/recorder/start.ts";
+import { elapsedText } from "../src/shared/time/elapsed.ts";
 
 describe("recordingName", () => {
   test("the Mac's name, a copy number for one taken", () => {

@@ -9,7 +9,8 @@
 
 import { Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { type AgentEntry, accessWords, discGlyph } from "./agents/mark.ts";
+import { useEffect, useState } from "react";
+import { type AgentEntry, accessWords, discGlyph, watchTime } from "./agents/mark.ts";
 
 /** A connected agent's row: its glyph on a round shiso tile. */
 const TILE = 32;
@@ -22,9 +23,27 @@ export function originWords(entry: Pick<AgentEntry, "agent">): string {
   return agent.detail ? `from ${agent.detail}` : "";
 }
 
-/** The access chip: red while it watches, amber while it waits on the person, shiso otherwise. */
-export function AccessChip({ entry, extra }: { entry: Pick<AgentEntry, "watching" | "phase" | "kind">; extra?: string }) {
+/** The time now, again every second while `ticking` (and the component is on screen); else it holds still. */
+function useSeconds(ticking: boolean): number {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!ticking) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [ticking]);
+  return now;
+}
+
+/**
+ * The access chip: red while it watches, amber while it waits on the
+ * person, shiso otherwise. While it records or sees the screen, how long
+ * it has: "Recording the screen · 2:14", once a second while the panel is open.
+ */
+export function AccessChip({ entry }: { entry: Pick<AgentEntry, "watching" | "watchingSince" | "phase" | "kind"> }) {
   const colors = useColors();
+  const timed = watchTime(entry, 0) !== null;
+  const time = watchTime(entry, useSeconds(timed));
   const [wash, ink] = entry.watching
     ? [colors.captureWash, colors.criticalInk]
     : entry.phase === "waiting"
@@ -36,7 +55,7 @@ export function AccessChip({ entry, extra }: { entry: Pick<AgentEntry, "watching
       style={{ flexShrink: 0, height: 16, paddingLeft: 6, paddingRight: 6, borderRadius: 6, justifyContent: "center", backgroundColor: wash }}
     >
       <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: ink }}>
-        {extra ? `${accessWords(entry)} · ${extra}` : accessWords(entry)}
+        {time ? `${accessWords(entry)} · ${time}` : accessWords(entry)}
       </Text>
     </View>
   );
