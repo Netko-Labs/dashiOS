@@ -64,7 +64,7 @@ export function SheetCard({
   testID: string;
   width?: number;
   marginTop?: number;
-  /** In a window (`Sheet`): at most `width`, and never wider than the room its parent leaves. */
+  /** In a row (`Sheet`'s): at most `width`, and never wider than the room the row leaves. */
   fit?: boolean;
 }) {
   const colors = useColors();
@@ -77,7 +77,9 @@ export function SheetCard({
       focusTrap
       accessibilityRole="dialog"
       style={{
-        ...(fit ? { width: "100%" as const, maxWidth: width } : { width }),
+        // Fit: a row's item that shrinks, so its width is a number when its content is measured (a
+        // percentage width would measure it unwrapped, and a scrolling body would come out short).
+        ...(fit ? { width, flexShrink: 1 as const, minWidth: 0 } : { width }),
         marginTop,
         flexDirection: "column",
         gap: 10,
@@ -127,9 +129,11 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8} fit>
-        {children}
-      </SheetCard>
+      <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "center" }}>
+        <SheetCard testID={testID} width={width} marginTop={Math.max(inset.top, 0) + 8} fit>
+          {children}
+        </SheetCard>
+      </View>
     </View>
   );
 }
