@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { evaluate, hasOperation, repeatOf, tokenize } from "../apps/calculator/expression.ts";
 import { fromField } from "../apps/calculator/field.ts";
 import { keyForChar } from "../apps/calculator/keys.ts";
-import { fieldWidth, keySide, MIN_SIZE, openingSize, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/layout.ts";
+import { GAP, KEY, keypadLayout, keySide, leastSize, MIN_SIZE, openingSize, PAD, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/layout.ts";
 import { EMPTY_LINE, equals, type Line, liveResult, negate, recall, tidy, typeChar } from "../apps/calculator/line.ts";
 import { EN_US, numberLocale } from "../apps/calculator/locale.ts";
 import { calculatorMenus } from "../apps/calculator/menus.ts";
@@ -198,14 +198,37 @@ describe("window size (LA-3)", () => {
     expect(sizeWithTape({ width: 300, height: 500 }, false)).toEqual({ width: 274, height: 500 });
   });
 
+  test("while the tape shows the window never gets narrower than the keypad and the tape (review 17, 18)", () => {
+    expect(leastSize(false)).toEqual(MIN_SIZE);
+    expect(leastSize(true)).toEqual({ width: 498, height: 440 });
+    // Shown from the narrow and tall window: the tape's room on the size the window has, not a stale one (review 21).
+    expect(sizeWithTape({ width: 274, height: 627 }, true)).toEqual({ width: 498, height: 627 });
+    // Hidden at the least with the tape: the keypad's own least, the height kept (review 19).
+    expect(sizeWithTape({ width: 498, height: 646 }, false)).toEqual({ width: 274, height: 646 });
+  });
+
   test("the keys grow with the window", () => {
     expect(keySide(274, 440)).toBe(54);
     expect(keySide(600, 900)).toBeGreaterThan(54);
   });
 
-  test("the line is as wide as its text, until it needs all the room", () => {
-    expect(fieldWidth("12", 40, 246)).toBeLessThan(100);
-    expect(fieldWidth("1,234,567,890,123 + 1", 22, 246)).toBe(246);
+  test("the keys stay square; the grid is centred and the display takes the spare height (review 16, 20, 21, 22)", () => {
+    const grid = (side: number): number => side * 4 + GAP * 3;
+    // The smallest: keys 54, the usual 14 around.
+    expect(keypadLayout(274, 440)).toEqual({ side: KEY, inset: PAD, height: KEY * 5 + GAP * 4 + PAD });
+    // Tiled left with the tape (539 × 646): the keypad's column is 315 wide; width decides, 64 × 64 keys, not 64 × 94.
+    const tiled = keypadLayout(539 - TAPE_WIDTH, 646);
+    expect(tiled.side).toBe(64);
+    expect(646 - tiled.height).toBeGreaterThan(116);
+    expect(tiled.inset * 2 + grid(tiled.side)).toBeLessThanOrEqual(539 - TAPE_WIDTH);
+    // Narrow and tall (274 × 627): width decides; the display takes what the keys leave.
+    const tall = keypadLayout(274, 627);
+    expect(tall.side).toBe(KEY);
+    expect(627 - tall.height).toBeGreaterThan(116);
+    // Filled with the tape (1097 × 658): keys 97, the grid centred with as much on each side.
+    const full = keypadLayout(1097 - TAPE_WIDTH, 658);
+    expect(full.side).toBe(97);
+    expect(Math.abs(1097 - TAPE_WIDTH - grid(full.side) - full.inset * 2)).toBeLessThanOrEqual(1);
   });
 });
 

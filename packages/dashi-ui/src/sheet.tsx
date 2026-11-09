@@ -150,6 +150,7 @@ export function MenuList({
   maxHeight?: number;
 }) {
   const colors = useColors();
+  const surface = useSurface();
   const rows = tidyEntries(items);
   const ticks = rows.some((row) => !isSeparator(row) && row.checked !== undefined);
   const [ownLit, setOwnLit] = useState<number | null>(null);
@@ -219,7 +220,8 @@ export function MenuList({
         flexDirection: "column",
         padding: MENU.padding,
         borderRadius: 9,
-        backgroundColor: colors.menu,
+        // Solid: a menu in a window is one layer over the work, and nothing blurs what is under it (the line's 40 pt digits read through glass).
+        backgroundColor: surface.card,
         borderWidth: MENU.edge,
         borderColor: colors.separator,
         shadow: "xl",

@@ -3,7 +3,9 @@
  * field (KB-6), with what it works out to under it; the keypad below, which
  * types into the line as the keyboard does; and, when shown, the tape beside
  * it (View ▸ Show Tape), which widens the window rather than squeezing the
- * keys. The display is also where the window is grabbed, under the window
+ * keys, and the window's least size with it. The keys stay square; the
+ * display takes the height they leave, and the line, its result and the keys
+ * share one right edge. The display is also where the window is grabbed, under the window
  * controls. Numbers are written the way the person's region writes them
  * (locale.ts). The tape, whether it shows, and the window's size are
  * remembered (store.ts).
@@ -15,7 +17,7 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { type Clipboard, type Size, systemClipboard, useAppMenus } from "../kit/index.ts";
 import { copyNumber, fitFontSize } from "./format.ts";
 import { Keypad } from "./keypad.tsx";
-import { DISPLAY, fieldWidth, GAP, keySide, LINE_LARGEST, LINE_SMALLEST, MIN_SIZE, PAD, sizeWithTape, TAPE_WIDTH } from "./layout.ts";
+import { DISPLAY, GAP, keypadLayout, LINE_LARGEST, LINE_SMALLEST, leastSize, openingSize, sizeWithTape, TAPE_WIDTH } from "./layout.ts";
 import { liveResult, selectedText } from "./line.ts";
 import { type NumberLocale, useNumberLocale } from "./locale.ts";
 import { calculatorMenus } from "./menus.ts";
@@ -40,8 +42,8 @@ export interface CalculatorWindowProps {
   locale?: NumberLocale;
   /** What the last launch left: the tape, whether it showed, the window's size. */
   remembered?: Remembered;
-  /** Asks for a window size: the tape widens the window when it shows. */
-  resizeWindow?: (size: Size) => void;
+  /** Asks for a window size and the least it may be made: the tape widens both when it shows. */
+  resizeWindow?: (size: Size, least: Size) => void;
   /** Keeps what is remembered; the state file by default. */
   remember?: (remembered: Remembered) => void;
 }
@@ -62,8 +64,8 @@ export function CalculatorWindow({
   const locale = given ?? followed;
   const [state, dispatch] = useReducer(calculate, remembered.tape, initialState);
   const [showsTape, setShowsTape] = useState(remembered.showsTape);
-  const [size, setSize] = useState<Size>(remembered.size ?? MIN_SIZE);
-  const [room, setRoom] = useState(MIN_SIZE.width - PAD * 2);
+  // What the window opened at, until the window says (the root's layout, on every change).
+  const [size, setSize] = useState<Size>(() => openingSize(remembered.size, remembered.showsTape));
   const [menu, setMenu] = useState<MenuAt | null>(null);
   // A new field asks for the keyboard (autoFocus): how the line takes it back after a menu.
   const [fieldKey, setFieldKey] = useState(0);
@@ -116,7 +118,7 @@ export function CalculatorWindow({
   const toggleTape = (): void => {
     const next = !showsTape;
     setShowsTape(next);
-    resizeWindow?.(sizeWithTape(size, next));
+    resizeWindow?.(sizeWithTape(size, next), leastSize(next));
   };
   const clearTape = (): void => dispatch({ type: "clear-tape" });
   const { menus, run } = calculatorMenus({
@@ -146,7 +148,9 @@ export function CalculatorWindow({
     setFieldKey((key) => key + 1);
   };
   const keypadWidth = size.width - (showsTape ? TAPE_WIDTH : 0);
-  const side = keySide(keypadWidth, size.height);
+  const keys = keypadLayout(keypadWidth, size.height);
+  // The line's room: the column less the keys' inset each side, so it ends where the keys do.
+  const room = Math.max(LINE_SMALLEST, keypadWidth - keys.inset * 2);
   const fontSize = fitFontSize(line.text || "0", room, LINE_LARGEST, LINE_SMALLEST);
   const words = resultWords(state.notice ? { kind: "notice", notice: state.notice } : outcome, locale);
   // The words under the line fit the display on their one row: smaller when they are long, never cut.
@@ -154,6 +158,7 @@ export function CalculatorWindow({
 
   return (
     <View
+      testID="calculator"
       onLayout={(bounds) => {
         const next = { width: Math.round(bounds.width), height: Math.round(bounds.height) };
         setSize((old) => (old.width === next.width && old.height === next.height ? old : next));
@@ -164,7 +169,6 @@ export function CalculatorWindow({
         <View
           testID="display"
           dragRegion
-          onLayout={(bounds) => setRoom(Math.max(LINE_SMALLEST, Math.round(bounds.width) - PAD * 2))}
           onContextMenu={(point) =>
             setMenu({
               x: point.x,
@@ -176,14 +180,14 @@ export function CalculatorWindow({
             })
           }
           style={{
-            height: DISPLAY,
-            flexShrink: 0,
+            flex: 1,
+            minHeight: DISPLAY,
             flexDirection: "column",
             justifyContent: "flex-end",
             alignItems: "flex-end",
             gap: 2,
-            paddingLeft: PAD,
-            paddingRight: PAD,
+            paddingLeft: keys.inset,
+            paddingRight: keys.inset,
             paddingTop: inset.top,
             paddingBottom: GAP,
           }}
@@ -202,7 +206,9 @@ export function CalculatorWindow({
             onSubmitEditing={() => dispatch({ type: "equals", locale })}
             onKeyPress={(key) => dispatch(key === "Escape" ? { type: "clear" } : { type: "recall", step: key === "ArrowUp" ? 1 : -1, locale })}
             style={{
-              width: fieldWidth(line.text, fontSize, room),
+              // All the room, the text at its right edge: it ends where the result and the keys do, and a long line scrolls to the caret.
+              width: "100%",
+              textAlign: "right",
               height: Math.round(fontSize * 1.25),
               fontSize,
               padding: 0,
@@ -227,7 +233,7 @@ export function CalculatorWindow({
             </Text>
           </View>
         </View>
-        <Keypad locale={locale} side={side} lit={state.lit} onKey={(id) => dispatch({ type: "key", id, locale })} />
+        <Keypad locale={locale} layout={keys} lit={state.lit} onKey={(id) => dispatch({ type: "key", id, locale })} />
       </View>
       {showsTape && (
         <Tape

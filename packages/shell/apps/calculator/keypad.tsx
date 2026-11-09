@@ -1,17 +1,18 @@
 /**
- * The keypad: a grid of rounded squares that fills the column below the
- * display, so the keys grow with the window. Digits on the card ground,
- * functions and operators on a quiet wash, and kombu only where it means
- * something (CO-2): =, the one primary key. A key deepens while it is held
- * (UI-4), and flashes when the keyboard types it, so typing shows on the keys
- * too. The keys type into the expression line as the keyboard does.
+ * The keypad: a grid of rounded squares under the display, centred in its
+ * column; the keys grow with the window and stay square (`keypadLayout`).
+ * Digits on the card ground, functions and operators on a quiet wash, and =,
+ * the one primary key, in ink (the Expressive fill): kombu means on (CO-2),
+ * and = turns nothing on. A key deepens while it is held (UI-4), and flashes
+ * when the keyboard types it, so typing shows on the keys too. The keys type
+ * into the expression line as the keyboard does.
  */
 
 import { type Palette, type Surface, useColors, useSurface } from "@dashi/ui";
 import { type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { KeyId } from "./keys.ts";
-import { GAP, keyFontSize, PAD } from "./layout.ts";
+import { COLUMNS, GAP, type KeypadLayout, keyFontSize, ROWS } from "./layout.ts";
 import type { NumberLocale } from "./locale.ts";
 
 /** What a screen reader says for a key whose label is a symbol. */
@@ -42,7 +43,7 @@ interface Looks {
   digit: KeyLook;
   /** C, ±, % and the operators. */
   quiet: KeyLook;
-  /** =. */
+  /** =: ink, the ground's color for its label. */
   strong: KeyLook;
 }
 
@@ -51,7 +52,7 @@ function looksFrom(colors: Palette, surface: Surface): Looks {
   return {
     digit: { ground: surface.card, hover: surface.field, pressed: colors.pressed, ink: colors.text, edge: colors.separator },
     quiet: { ground: colors.button, hover: colors.separator, pressed: colors.pressed, ink: colors.text },
-    strong: { ground: colors.selection, hover: colors.selectionHover, pressed: colors.selectionPressed, ink: "#ffffff" },
+    strong: { ground: colors.text, hover: colors.text, pressed: colors.textMuted, ink: surface.window },
   };
 }
 
@@ -120,27 +121,30 @@ function Key({ spec, look, side, lit, onPress }: { spec: KeySpec; look: KeyLook;
 
 export interface KeypadProps {
   locale: NumberLocale;
-  /** A key's side as laid out (`keySide`), for its type. */
-  side: number;
+  /** The keys' side and the grid's inset (`keypadLayout`). */
+  layout: KeypadLayout;
   /** The key the keyboard just typed, lit for a moment. */
   lit: KeyId | null;
   onKey: (id: KeyId) => void;
 }
 
-export function Keypad({ locale, side, lit, onKey }: KeypadProps) {
+export function Keypad({ locale, layout, lit, onKey }: KeypadProps) {
   const looks = looksFrom(useColors(), useSurface());
+  const { side, inset, height } = layout;
   return (
     <View
       testID="keypad"
       style={{
-        flex: 1,
+        height,
+        flexShrink: 0,
         display: "grid",
-        gridTemplateColumns: ["1fr", "1fr", "1fr", "1fr"],
-        gridTemplateRows: ["1fr", "1fr", "1fr", "1fr", "1fr"],
+        // Square tracks: the keys keep their shape at every size; the column's spare width is the inset.
+        gridTemplateColumns: Array.from({ length: COLUMNS }, () => side),
+        gridTemplateRows: Array.from({ length: ROWS }, () => side),
         gap: GAP,
-        paddingLeft: PAD,
-        paddingRight: PAD,
-        paddingBottom: PAD,
+        paddingLeft: inset,
+        paddingRight: inset,
+        paddingBottom: height - (side * ROWS + GAP * (ROWS - 1)),
       }}
     >
       {keySpecs(locale).map((spec) => (

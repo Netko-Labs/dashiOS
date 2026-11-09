@@ -1,13 +1,12 @@
 /**
  * The Calculator's measures (LA-3): the keypad's grid at its smallest, which
  * sets the window's minimum; the tape beside it, which widens the window by
- * its own width; and sizes that grow with the keys when the window does (a
- * zoomed Calculator is a bigger keypad, not a small one in an empty field).
- * Pure.
+ * its own width and the minimum with it; and square keys that grow with the
+ * window (a zoomed Calculator is a bigger keypad, not stretched keys), the
+ * spare height going to the display. Pure.
  */
 
 import type { Size } from "../kit/index.ts";
-import { textEms } from "./format.ts";
 
 /** A key's side at the smallest. */
 export const KEY = 54;
@@ -28,17 +27,23 @@ export const MIN_SIZE: Size = {
   height: DISPLAY + KEY * ROWS + GAP * (ROWS - 1) + PAD,
 };
 
-/** The size to open at: the one last seen, never under the minimum (with the tape's room when it shows). */
+/** The smallest window with the tape shown or not: the tape sits beside the keypad at its smallest, never over it. */
+export function leastSize(showsTape: boolean): Size {
+  return { width: MIN_SIZE.width + (showsTape ? TAPE_WIDTH : 0), height: MIN_SIZE.height };
+}
+
+/** The size to open at: the one last seen, never under the least (with the tape's room when it shows). */
 export function openingSize(remembered: Size | null, showsTape: boolean): Size {
-  const least = { width: MIN_SIZE.width + (showsTape ? TAPE_WIDTH : 0), height: MIN_SIZE.height };
+  const least = leastSize(showsTape);
   if (!remembered) return least;
   return { width: Math.max(least.width, remembered.width), height: Math.max(least.height, remembered.height) };
 }
 
-/** The window after the tape shows or hides: wider or narrower by the tape, never under the minimum. */
+/** The window after the tape shows or hides: wider or narrower by the tape, never under the least. */
 export function sizeWithTape(size: Size, showsTape: boolean): Size {
-  const width = showsTape ? size.width + TAPE_WIDTH : Math.max(MIN_SIZE.width, size.width - TAPE_WIDTH);
-  return { width, height: size.height };
+  const least = leastSize(showsTape);
+  const width = showsTape ? size.width + TAPE_WIDTH : size.width - TAPE_WIDTH;
+  return { width: Math.max(least.width, width), height: Math.max(least.height, size.height) };
 }
 
 /** A key's side for a keypad column `width` wide in a window `height` tall: the smaller of a key's width and height. */
@@ -48,21 +53,34 @@ export function keySide(width: number, height: number): number {
   return Math.max(KEY, Math.floor(Math.min(across, down)));
 }
 
+/**
+ * The keypad in a column `width` wide and a window `height` tall: square
+ * keys of `side`, the grid centred across the column (`inset` each side, the
+ * display's too, so the line, its result and the keys share one right edge),
+ * and the display taking the height the keys leave.
+ */
+export interface KeypadLayout {
+  side: number;
+  inset: number;
+  /** The grid's own height, with the margin under it. */
+  height: number;
+}
+
+export function keypadLayout(width: number, height: number): KeypadLayout {
+  const side = keySide(width, height);
+  const across = side * COLUMNS + GAP * (COLUMNS - 1);
+  return {
+    side,
+    inset: Math.max(PAD, Math.floor((width - across) / 2)),
+    height: side * ROWS + GAP * (ROWS - 1) + PAD,
+  };
+}
+
 /** The keys' type for a key `side` px: 24 for a digit at the smallest, growing with the key, 44 at most. */
 export function keyFontSize(side: number): number {
   return Math.min(44, Math.round(24 * (side / KEY)));
 }
 
-/** The expression line's type: as large as fits, from 40 down to 22 (past that the line scrolls). */
+/** The expression line's type: as large as fits, from 40 down to 22 (past that the line scrolls to the caret). */
 export const LINE_LARGEST = 40;
 export const LINE_SMALLEST = 22;
-
-/**
- * The field's width for `text` at `fontSize` in a display `room` px wide:
- * the text's own width (with room for the caret), so the line ends at the
- * keypad's right edge; all the room once the text needs it, when it scrolls.
- */
-export function fieldWidth(text: string, fontSize: number, room: number): number {
-  const wanted = Math.ceil((textEms(text || "0") + 0.5) * fontSize);
-  return Math.max(fontSize, Math.min(room, wanted));
-}

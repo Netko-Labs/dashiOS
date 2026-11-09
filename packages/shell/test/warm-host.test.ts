@@ -31,6 +31,7 @@ function fakeHosts() {
       unlock() {},
       setTitle() {},
       setSize() {},
+      setMinSize() {},
       open: (window) => record.opened.push(window),
     };
   };

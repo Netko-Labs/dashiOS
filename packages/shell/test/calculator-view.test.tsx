@@ -119,7 +119,30 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
   await calc.press("key:1");
   await calc.press("key:plus");
   await calc.emit({ type: "press", nodeId: calc.node("tape-clear") });
-  expect(calc.tree()).toContain("Sums you work out show up here.");
+  expect(calc.tree()).toContain("Your sums show up here.");
+  calc.root.unmount();
+});
+
+test("the window's size comes from its layout: square keys, centred, and one right edge for the line (review 16, 22)", async () => {
+  const calc = await mount({ tape: [], showsTape: true, size: null });
+  // Tiled to fill the screen after it opened at 498 × 440: the root hears it.
+  await calc.emit({ type: "resize", nodeId: calc.node("calculator"), bounds: { x: 0, y: 0, width: 1097, height: 658 } });
+  const tree = JSON.parse(calc.tree());
+  const keypad = findView(tree, (node) => node.props?.id === calc.node("keypad"));
+  expect(keypad?.props?.gridTemplateColumns ?? keypad?.props?.gridColumns).toBeDefined();
+  const tracks = JSON.stringify(keypad?.props);
+  expect(tracks).toContain("97");
+  expect(tracks).not.toContain("fr");
+  // The line takes the display's width with its text at the right edge, where the result and the keys end.
+  const line = findView(tree, (node) => node.props?.id === calc.node("line"));
+  expect(line?.props?.align).toBe("right");
+  expect(line?.props?.widthPercent).toBe(1);
+  // = is ink, not kombu: kombu means on.
+  const equals = findView(tree, (node) => node.props?.id === calc.node("key:equals"));
+  expect(equals?.props?.background).toBe("#1d1d1f");
+  // And the size it remembers is the window's.
+  await settle(450);
+  expect(calc.kept.at(-1)?.size).toEqual({ width: 1097, height: 658 });
   calc.root.unmount();
 });
 
