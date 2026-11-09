@@ -7,7 +7,7 @@
  * its sidebar, and a knob's resting circle (docs/design.html "Settings").
  */
 
-import { useDark } from "@dashi/ui";
+import { TRUE_BLACK, useDark } from "@dashi/ui";
 
 export interface ControlPalette {
   /** The panel. */
@@ -64,29 +64,49 @@ export const LIGHT_CONTROLS: ControlPalette = {
   lit: "#1d183017",
 };
 
+/**
+ * Dark is true black (TRUE_BLACK in @dashi/ui): the panel and Settings'
+ * window are the black ground itself, the sidebar the first lift, off tiles
+ * and cards the second; the panel's edge is a hairline (`line`), since its
+ * shadow has nothing to darken on black. Green, its ink and the purple ring
+ * are as they were.
+ */
 export const DARK_CONTROLS: ControlPalette = {
-  surface: "#1c1a22",
-  off: "#2b2834",
-  offInk: "#ebe7f3",
+  surface: TRUE_BLACK.ground,
+  off: TRUE_BLACK.raised,
+  offInk: TRUE_BLACK.ink,
   on: "#86d3b6",
   onInk: "#0b2a20",
   knobOn: "#0b2a201f",
   knobOff: "#ffffff0d",
-  fill: "#ebe7f3",
-  fillInk: "#1c1a22",
-  text: "#ebe7f3",
-  muted: "#ebe7f38c",
-  line: "#ffffff1a",
-  chip: "#1c1a22",
+  fill: TRUE_BLACK.ink,
+  fillInk: TRUE_BLACK.ground,
+  text: TRUE_BLACK.ink,
+  muted: `${TRUE_BLACK.ink}99`,
+  line: TRUE_BLACK.edge,
+  chip: TRUE_BLACK.ground,
   focus: "#6e56cf",
-  window: "#1a1820",
-  sidebar: "#211e28",
+  window: TRUE_BLACK.ground,
+  sidebar: TRUE_BLACK.lift,
   knobRest: "#ffffff1a",
-  lit: "#ebe7f31f",
+  lit: `${TRUE_BLACK.ink}1f`,
 };
 
 export const controlPalette = (dark: boolean): ControlPalette => (dark ? DARK_CONTROLS : LIGHT_CONTROLS);
 
 export function useControlColors(): ControlPalette {
   return controlPalette(useDark());
+}
+
+/** What a floating panel adds at its edge: nothing in Light, where its shadow separates it; a 1 px hairline on true black, where a shadow has nothing to darken. */
+export interface PanelEdge {
+  borderWidth?: number;
+  borderColor?: string;
+}
+
+export const panelEdge = (dark: boolean): PanelEdge => (dark ? { borderWidth: 1, borderColor: DARK_CONTROLS.line } : {});
+
+/** The edge of Control Center and the battery panel in the mode in use. */
+export function usePanelEdge(): PanelEdge {
+  return panelEdge(useDark());
 }

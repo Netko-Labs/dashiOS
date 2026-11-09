@@ -4,7 +4,7 @@
  * start. The clock ticks every second.
  */
 
-import { Avatar, LOGIN_FOCUS_RING, LoginScreen, type PowerAction } from "@dashi/ui";
+import { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type PowerAction } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { formatDay, formatTime } from "./clock.ts";
@@ -12,8 +12,8 @@ import type { LoginState } from "./greetd/login.ts";
 import type { Session } from "./sessions.ts";
 import type { User } from "./users.ts";
 
-const TEXT = "#f5f5f7";
-const MUTED = "#f5f5f7b3";
+const TEXT = LOGIN_INK;
+const MUTED = LOGIN_MUTED;
 
 export interface LoginStore {
   subscribe(listener: () => void): () => void;
@@ -127,7 +127,7 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
 export function Backdrop(): ReactNode {
   const now = useNow();
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: "#140e22b8" }}>
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN_GROUND }}>
       <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{formatDay(now)}</Text>
         <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{formatTime(now)}</Text>
@@ -141,7 +141,7 @@ function UserPicker(props: { day: string; time: string; users: User[]; onPick: (
   return (
     <View
       testID="greeter-users"
-      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: "#140e22b8", focusRingColor: LOGIN_FOCUS_RING }}
+      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN_GROUND, focusRingColor: LOGIN_FOCUS_RING }}
     >
       <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>

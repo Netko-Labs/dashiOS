@@ -5,7 +5,7 @@
  * the event there (the days it would cover are washed in its color).
  */
 
-import { useColors, useDark } from "@dashi/ui";
+import { TRUE_BLACK, useColors, useDark } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
@@ -21,8 +21,12 @@ import { InlineTitle } from "./inline-title.tsx";
 import { chipCapacity, fitChips, MONTH_CHIP_HEIGHT, monthGrid, onDay } from "./layout.ts";
 import type { Occurrence } from "./types.ts";
 
-/** Days outside the month, sunk below the window's ground in both modes (design.html CO-8). */
-export const OUTSIDE_WASH = { light: "#0000000a", dark: "#00000038" } as const;
+/**
+ * Days outside the month (design.html CO-8): sunk below the window's ground
+ * in Light. Dark's ground is true black, with nothing below it, so there they
+ * take the first lift instead: told apart, without a gray wash.
+ */
+export const OUTSIDE_WASH = { light: "#0000000a", dark: TRUE_BLACK.lift } as const;
 
 export interface MonthViewProps {
   anchor: Day;

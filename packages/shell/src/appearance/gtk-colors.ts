@@ -5,8 +5,8 @@
  * warning, success, and error pairs. Setting those in the person's gtk.css
  * re-colors every GNOME app at once, so Files or Text Editor beside a
  * Dashi-decorated window read as one desktop: the headerbar is the very color
- * comp/src/theme.rs paints a title bar (#EEEBE4 / #2C2C2E active, #F6F4EF /
- * #242426 inactive), the accent is the shell's kombu (theme.ts `selection`),
+ * comp's render/titlebar.rs paints a title bar (#EEEBE4 / #141417 active,
+ * #F6F4EF / #0B0B0D inactive), the accent is the shell's kombu (theme.ts `selection`),
  * and destructive is ume.
  *
  * Two spellings, because versions differ: `@define-color window_bg_color`
@@ -15,7 +15,7 @@
  * there; both are written so a version that reads only one still follows).
  */
 
-import { lightColors } from "@dashi/ui";
+import { TRUE_BLACK as BLACK, lightColors } from "@dashi/ui";
 import { CORNER_RADIUS, DEFAULT_CORNERS } from "../corners.ts";
 
 /** What the block depends on: Dark Mode and the Appearance setting's window corners. */
@@ -83,30 +83,35 @@ const LIGHT: NamedColors = {
   thumbnail_fg_color: "#1D1D1F",
 };
 
-/** Graphite, as comp's DARK title bar (#2C2C2E, #242426) and the shell's #F5F5F7 ink. */
+/**
+ * True black (TRUE_BLACK in @dashi/ui): the window and the view are the
+ * black ground, a headerbar and a sidebar the raised step comp paints a
+ * focused title bar (#141417), the first lift when unfocused (#0B0B0D);
+ * cards, dialogs and popovers the raised step; the ink 92% white.
+ */
 const DARK: NamedColors = {
   ...STATUS,
-  window_bg_color: "#1F1F21",
-  window_fg_color: "#F5F5F7",
-  view_bg_color: "#19191A",
-  view_fg_color: "#F5F5F7",
-  headerbar_bg_color: "#2C2C2E",
-  headerbar_fg_color: "rgba(245, 245, 247, 0.9)",
-  headerbar_backdrop_color: "#242426",
-  sidebar_bg_color: "#2C2C2E",
-  sidebar_fg_color: "#F5F5F7",
-  sidebar_backdrop_color: "#242426",
-  secondary_sidebar_bg_color: "#262628",
-  secondary_sidebar_fg_color: "#F5F5F7",
-  secondary_sidebar_backdrop_color: "#232325",
-  card_bg_color: "rgba(255, 255, 255, 0.08)",
-  card_fg_color: "#F5F5F7",
-  dialog_bg_color: "#2C2C2E",
-  dialog_fg_color: "#F5F5F7",
-  popover_bg_color: "#2C2C2E",
-  popover_fg_color: "#F5F5F7",
-  thumbnail_bg_color: "#2C2C2E",
-  thumbnail_fg_color: "#F5F5F7",
+  window_bg_color: BLACK.ground,
+  window_fg_color: BLACK.ink,
+  view_bg_color: BLACK.ground,
+  view_fg_color: BLACK.ink,
+  headerbar_bg_color: BLACK.raised,
+  headerbar_fg_color: "rgba(236, 236, 238, 0.92)",
+  headerbar_backdrop_color: BLACK.lift,
+  sidebar_bg_color: BLACK.raised,
+  sidebar_fg_color: BLACK.ink,
+  sidebar_backdrop_color: BLACK.lift,
+  secondary_sidebar_bg_color: BLACK.lift,
+  secondary_sidebar_fg_color: BLACK.ink,
+  secondary_sidebar_backdrop_color: BLACK.lift,
+  card_bg_color: BLACK.raised,
+  card_fg_color: BLACK.ink,
+  dialog_bg_color: BLACK.raised,
+  dialog_fg_color: BLACK.ink,
+  popover_bg_color: BLACK.raised,
+  popover_fg_color: BLACK.ink,
+  thumbnail_bg_color: BLACK.raised,
+  thumbnail_fg_color: BLACK.ink,
 };
 
 export function gtkColors(dark: boolean): NamedColors {

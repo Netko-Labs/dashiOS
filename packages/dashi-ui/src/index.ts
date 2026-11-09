@@ -22,7 +22,7 @@ export * as glyphs from "./glyphs.ts";
 export { CHECK, CHEVRON_DOWN, CHEVRON_UP, CHEVRON_UP_DOWN, CLEAR, CLOSE, INFO, LOCK, RESTART, SEARCH, SHUT_DOWN, SLEEP, STOP, WARNING } from "./glyphs.ts";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
-export { Avatar, LOGIN_FOCUS_RING, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
+export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, placeMenu, rowTop } from "./menu-place.ts";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpOrigin } from "./popup-button.tsx";
@@ -75,6 +75,7 @@ export {
   TINT_VALUES,
   TINTS,
   type TintName,
+  TRUE_BLACK,
   tintFor,
   useColors,
   useDark,

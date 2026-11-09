@@ -24,10 +24,10 @@ import { CORNER_OPTIONS } from "../registry/look.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Hero, Page, Setting, Spot } from "../ui.tsx";
 
-/** A theme's picture: its surface, a bar, and a card, in that theme's own tokens. */
+/** A theme's picture: its surface, a bar, and a card, in that theme's own tokens. Dark's bar is a hairline's white on the black, as the menu bar's edge reads there. */
 const THEME = {
   light: { ground: LIGHT_CONTROLS.surface, bar: "#d9d1e6", card: LIGHT_CONTROLS.off },
-  dark: { ground: DARK_CONTROLS.surface, bar: "#3a3644", card: DARK_CONTROLS.off },
+  dark: { ground: DARK_CONTROLS.surface, bar: DARK_CONTROLS.line, card: DARK_CONTROLS.off },
 } as const;
 
 type Theme = (typeof THEME)[keyof typeof THEME];

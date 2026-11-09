@@ -13,6 +13,8 @@
  * darker, not lighter, so they stay readable.
  */
 
+import { TRUE_BLACK } from "@dashi/ui";
+
 export interface TerminalPalette {
   ground: string;
   ink: string;
@@ -65,9 +67,10 @@ export const LIGHT_TERMINAL: TerminalPalette = {
   ],
 };
 
+/** Dark is true black: the window's ground and Dashi's 92% ink (TRUE_BLACK in @dashi/ui). */
 export const DARK_TERMINAL: TerminalPalette = {
-  ground: "#1c1c1e",
-  ink: "#e8e8ea",
+  ground: TRUE_BLACK.ground,
+  ink: TRUE_BLACK.ink,
   cursor: "#5fae95",
   ansi: [
     "#3a3a3d",

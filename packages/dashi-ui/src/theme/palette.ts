@@ -173,25 +173,50 @@ export const lightColors: Palette = {
 };
 
 /**
- * macOS's dark look: translucent graphite glass, #f5f5f7 ink, hairlines of
- * white. The accent and shiso stay (brighter shiso ink, for contrast on glass).
+ * True black (AMOLED), Dark Mode's steps: the ground every window and page
+ * paints, two near-black lifts for what sits on it (a sidebar, a field and a
+ * stripe on `lift`; a card, a tile, a menu and a title bar on `raised`), the
+ * ink at 92% white, and the hairlines (white at 10% between rows, 12% at an
+ * edge) that stand in for shadows, which have nothing to darken on black.
+ * Every Dark ground in Dashi comes from these: the palette and surfaces
+ * below, Control Center's and Settings' controls, GTK's colors, Terminal,
+ * and the compositor's title bars (`titlebar.rs`, checked by a test).
+ */
+export const TRUE_BLACK = {
+  ground: "#000000",
+  lift: "#0b0b0d",
+  raised: "#141417",
+  ink: "#ececee",
+  hairline: "#ffffff1a",
+  edge: "#ffffff1f",
+} as const;
+
+const { ground: BLACK, lift: LIFT, raised: RAISED, ink: INK, hairline: HAIRLINE, edge: EDGE } = TRUE_BLACK;
+
+/**
+ * True black: the ground is #000000, and what sits on it lifts by the
+ * near-black steps above, edged in white hairlines. Muted ink is 60% of the
+ * ink. Glass over the wallpaper (the menu bar, the Dock) is black, never a
+ * smoky gray; glass that holds text over windows (the launcher, menus, the
+ * on-screen display) is a lift, nearly opaque. The accent, ume, broth, moss
+ * and shiso keep their jobs and their Dark inks.
  */
 export const darkColors: Palette = {
-  text: "#f5f5f7",
-  textMuted: "#f5f5f799",
-  textDisabled: "#f5f5f755",
-  menuBar: "#1e1e1ecc",
-  menuBarEdge: "#ffffff1f",
-  dock: "#1e1e1e99",
-  dockBorder: "#ffffff26",
+  text: INK,
+  textMuted: `${INK}99`,
+  textDisabled: `${INK}55`,
+  menuBar: `${BLACK}e6`,
+  menuBarEdge: EDGE,
+  dock: `${BLACK}cc`,
+  dockBorder: EDGE,
   hover: "#ffffff1a",
-  separator: "#ffffff1a",
-  dot: "#f5f5f7cc",
-  launcher: "#1e1e1ef5",
-  menu: "#232325f7",
-  osd: "#1e1e1ee0",
-  osdOn: "#f5f5f7d9",
-  osdOff: "#f5f5f726",
+  separator: HAIRLINE,
+  dot: `${INK}cc`,
+  launcher: `${LIFT}f5`,
+  menu: `${RAISED}f7`,
+  osd: `${LIFT}e6`,
+  osdOn: `${INK}d9`,
+  osdOff: `${INK}26`,
   batteryLow: "#E8798F",
   selection: "#357A64",
   selectionHover: "#2F6E5A",
@@ -199,13 +224,13 @@ export const darkColors: Palette = {
   selectionWash: "#3E8A7238",
   textSelection: "#3E8A7280",
   selectionBar: "#3E8A72",
-  onSelection: "#f5f5f7",
+  onSelection: INK,
   focusRing: "#3E8A72",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
-  controlEdge: "#f5f5f766",
+  controlEdge: `${INK}66`,
   pressed: "#ffffff3d",
-  checkbox: "#f5f5f766",
+  checkbox: `${INK}66`,
   critical: "#E8798F",
   ume: "#E8798F",
   umeFill: "#B8475C",

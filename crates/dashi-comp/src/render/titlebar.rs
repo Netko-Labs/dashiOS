@@ -173,15 +173,18 @@ fn palette(dark: bool, active: bool) -> Palette {
             text: Rgba::hex(0x9b9890),
             idle_light: INACTIVE_LIGHT,
         },
+        // True black (the shell's TRUE_BLACK, @dashi/ui palette.ts): the
+        // raised step when focused, the first lift when not, over a black
+        // seam; the window under it is the black ground.
         (true, true) => Palette {
-            bar: Rgba::hex(0x2c2c2e),
-            line: Rgba::hex(0x1c1c1e),
-            text: Rgba::hex(0xe6e6e8),
+            bar: Rgba::hex(0x141417),
+            line: Rgba::hex(0x000000),
+            text: Rgba::hex(0xececee),
             idle_light: INACTIVE_DARK,
         },
         (true, false) => Palette {
-            bar: Rgba::hex(0x242426),
-            line: Rgba::hex(0x18181a),
+            bar: Rgba::hex(0x0b0b0d),
+            line: Rgba::hex(0x000000),
             text: Rgba::hex(0x8a8a8f),
             idle_light: INACTIVE_DARK,
         },
