@@ -44,9 +44,10 @@ const SIDEBAR = 200;
 const NOTICE = { min: 240, max: 560 } as const;
 
 /**
- * The widest a notice at the note's foot gets in a window `width` wide: the
- * note's column less 8 at each side, so it never reaches over the list (at
- * the least size, a notice's own least width, 240).
+ * How wide a notice at the note's foot is in a window `width` wide: the
+ * note's column less 8 at each side, at most 560, so it never reaches over
+ * the list (at the least size, a notice's own least width, 240). A set width,
+ * not a cap: its words are measured at the width they wrap to.
  */
 export function noticeWidth(width: number): number {
   if (width <= 0) return NOTICE.max;

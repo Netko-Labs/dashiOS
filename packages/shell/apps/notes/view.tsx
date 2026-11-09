@@ -387,7 +387,7 @@ export function NotesWindow({ model, host }: { model: NotesModel; host: NotesHos
             />
             {notice && (
               <View testID="note-notice" style={{ position: "absolute", left: 8, right: 8, bottom: 14, alignItems: "center" }}>
-                <View style={{ maxWidth: noticeWidth(windowWidth), flexDirection: "column" }}>{notice}</View>
+                <View style={{ width: noticeWidth(windowWidth), flexDirection: "column" }}>{notice}</View>
               </View>
             )}
           </View>
