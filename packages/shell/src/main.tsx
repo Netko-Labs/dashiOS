@@ -58,6 +58,7 @@ import { controlFlags, LayoutStore, setControlMotion } from "./control-center/in
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { AutoRefresh, rateOnPower } from "./display-config/auto-refresh.ts";
 import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
+import { MirrorStore } from "./display-config/mirror.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
 import { parseScreens, startDisplays } from "./displays.ts";
 import {
@@ -638,6 +639,8 @@ const settingsApp = startSettingsApp({
   flags,
   // The kept agent answers the sessions use; a fresh read of the file with no agents.
   grants: agents?.grants ?? new Grants(),
+  // The person's own list of sites agents may use (Settings › Agents); without the agents' server, none to keep.
+  ...(agents ? { sites: agents.sites } : {}),
   ...(privacy ? { privacy: privacy.store } : {}),
   answers: () => askAgents?.status ?? null,
   lock: () => lockScreen?.lock(),
@@ -824,6 +827,9 @@ const chargeLimit = (): number | null => {
   const target = chargeTarget(settingsStore.getSnapshot().data.power, new Date()).percent;
   return target !== null && target < 100 ? target : null;
 };
+// Mirroring the screens: Control Center's tile (display-config/mirror.ts).
+const mirror = compositor ? new MirrorStore(compositor) : null;
+const stopMirror = mirror?.start();
 // The menu bar's menus, Control Center and the battery panel (menus/, control-center/, battery/).
 const menus = startMenus({
   // The bar's ring is spoken from the popover's surface (menus/popover.tsx).
@@ -831,6 +837,7 @@ const menus = startMenus({
   layout: controlLayout,
   appletControls,
   chargeLimit,
+  ...(mirror ? { mirror } : {}),
   battery: {
     system: system.store,
     monitor: batteryMonitor,
@@ -1844,6 +1851,7 @@ const quit = () => {
     ["lost card watch", () => lostCard.close()],
     ["laptop", () => laptop.close()],
     ["refresh rate", stopAutoRefresh],
+    ["mirroring", () => stopMirror?.()],
     ["tray", () => void tray.then((running) => running?.close())],
     ["dock animation targets", stopAnimationTargets],
     ["dock controller", () => dock.close()],

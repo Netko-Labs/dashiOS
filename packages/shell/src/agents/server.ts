@@ -38,6 +38,8 @@ import type { Call } from "./tools/index.ts";
 export interface Agents {
   /** The kept answers; System Settings lists and revokes them through this one. */
   readonly grants: Grants;
+  /** The sites agents may use without asking; Settings › Agents edits the person's list through this one. */
+  readonly sites: SiteGrants;
   /** Cut one agent off (the pill's stop square). */
   stop(id: number): void;
   /** Cut every agent off (⌃❖Esc). */
@@ -190,6 +192,7 @@ export function startAgents({
     console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
     return {
       grants,
+      sites,
       desktop,
       runAsPerson,
       frontPage: () => frontPage(browser.current()),
@@ -269,6 +272,7 @@ export function startAgents({
 
   return {
     grants,
+    sites,
     desktop,
     runAsPerson,
     frontPage: () => frontPage(browser.current()),

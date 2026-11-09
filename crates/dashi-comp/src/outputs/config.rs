@@ -42,6 +42,7 @@ impl Dashi {
         self.space
             .outputs()
             .cloned()
+            .chain(self.mirrors.targets().cloned())
             .chain(self.disabled_outputs.iter().cloned())
             .collect()
     }
@@ -177,6 +178,10 @@ impl Dashi {
         } = change;
         if let Some(vrr) = vrr {
             self.vrr_modes.insert(output.name(), vrr);
+        }
+        // Turned on or off, or moved, a screen that mirrors shows its own desktop again first.
+        if enabled.is_some() || position.is_some() {
+            self.unmirror_for_config(&output);
         }
         if let Some(mode) = mode {
             self.backend.set_mode(&output, mode)?;

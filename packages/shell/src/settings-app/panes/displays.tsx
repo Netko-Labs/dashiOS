@@ -19,7 +19,8 @@ import { Text, View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { type DeviceStore, useDevices } from "../../control-center/devices.ts";
 import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refresh.ts";
-import { type Mode, type Monitor, ratesOf, sizeLabel } from "../../display-config/monitors.ts";
+import { mirrorSource } from "../../display-config/mirror.ts";
+import { type Mode, type Monitor, monitorLabel, ratesOf, sizeLabel } from "../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../displays.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { selectedRef } from "../../wallpaper/catalog.ts";
@@ -31,7 +32,7 @@ import { SUN } from "../knob-glyphs.ts";
 import { describeSchedule } from "../night.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import type { SettingsStore } from "../store.ts";
-import { Button, Caption, Choices, Group, Hero, Note, Page, Setting, Slider } from "../ui.tsx";
+import { Button, Caption, Choices, Group, Hero, Note, Page, Setting, Slider, Switch } from "../ui.tsx";
 import { ArrangementView } from "./arrangement.tsx";
 import { OffScreenCard, ScreenDetails, X11AppsSection } from "./display-cards.tsx";
 import { DisplayHero } from "./display-hero.tsx";
@@ -115,6 +116,20 @@ function NightShiftRow({ settings }: { settings: SettingsStore }) {
   return <Setting id="displays/night-shift" detail={describeSchedule(nightShift.from, nightShift.to)} control="night-switch" />;
 }
 
+/** Mirroring: the other displays show the built-in one (the main one without it), as Control Center's tile does. */
+function MirrorRow({ monitors, store }: { monitors: readonly Monitor[]; store: ScreensStore }) {
+  const mirrored = monitors.find((monitor) => monitor.mirrorOf !== undefined);
+  const sourceName = mirrored?.mirrorOf ?? mirrorSource(monitors);
+  const source = monitors.find((monitor) => monitor.name === sourceName);
+  if (!source) return null;
+  const label = monitorLabel(source);
+  return (
+    <Setting id="displays/mirror" detail={mirrored ? `The others show ${label}` : `The others would show ${label}`}>
+      <Switch testID="displays-mirror-switch" on={mirrored !== undefined} onChange={(on) => void store.setMirroring(on)} />
+    </Setting>
+  );
+}
+
 /** The picture the hero's screens show: the wallpaper's tile, else the default one. */
 function useWallpaperPicture(settings: SettingsStore): string {
   const { wallpaper } = useSettings(settings).data;
@@ -181,6 +196,7 @@ export function DisplaysPane({
           <Setting id="displays/arrange" detail={several ? `${on.length} displays connected` : "One display connected"}>
             <Button testID="displays-arrange-button" label={arranging ? "Done" : "Arrange"} disabled={!several} onPress={() => setArranging((now) => !now)} />
           </Setting>
+          {several && <MirrorRow monitors={state.monitors} store={screens} />}
         </Group>
       )}
       {monitor?.mode && <ScreenDetails monitor={monitor} store={screens} canTurnOff={several} />}

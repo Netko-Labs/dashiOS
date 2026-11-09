@@ -5,6 +5,11 @@
  * kept (sites.json beside grants.json, by the same agent key), "Don't Allow"
  * holds for the connection, and the agent is told. A site covers its
  * subdomains: allowing bodytech.com.co allows www. and login. too.
+ *
+ * The person may also allow sites ahead of time, for every agent (Settings ›
+ * Agents, "Sites agents may use"; sites.json's `person`), so an agent left to
+ * work alone (an unattended demo) opens them with no sheet. Only Settings
+ * writes that list: no agent's answer or tool adds to it.
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -27,6 +32,26 @@ export function siteOf(url: string): string | null {
 /** Whether allowing `allowed` covers `site`: the same, or a subdomain of it. */
 export const covers = (allowed: string, site: string): boolean => site === allowed || site.endsWith(`.${allowed}`);
 
+/** A site the person typed: an address ("https://www.bodytech.com.co/clases") or a host ("bodytech.com.co"); null when it is neither. */
+export function siteFromInput(text: string): string | null {
+  const words = text.trim();
+  if (!words || /\s/.test(words)) return null;
+  const site = siteOf(words.includes("://") ? words : `https://${words}`);
+  // A host needs a dot (or is localhost): "bodytech" alone is a typo, not a site.
+  return site && (site.includes(".") || site === "localhost") ? site : null;
+}
+
+/** sites.json's `person`: `{site: since}`; anything unreadable is left out. */
+export function parsePersonSites(value: unknown): Map<string, number> {
+  const person = typeof value === "object" && value !== null ? (value as Record<string, unknown>).person : null;
+  const out = new Map<string, number>();
+  if (typeof person !== "object" || person === null || Array.isArray(person)) return out;
+  for (const [site, since] of Object.entries(person)) {
+    if (siteOf(`https://${site}/`) === site) out.set(site, typeof since === "number" ? since : 0);
+  }
+  return out;
+}
+
 /** sites.json read: `{version: 1, agents: {key: {site: since}}}`; anything else is nothing kept. */
 export function parseSiteGrants(value: unknown): Map<string, Map<string, number>> {
   const out = new Map<string, Map<string, number>>();
@@ -46,6 +71,10 @@ export function parseSiteGrants(value: unknown): Map<string, Map<string, number>
 /** The sites agents may always use, kept across connections. */
 export class SiteGrants {
   private readonly byAgent: Map<string, Map<string, number>>;
+  /** The person's own list, for every agent (Settings › Agents). */
+  private readonly person: Map<string, number>;
+  private aheadSnapshot: readonly string[] = [];
+  private readonly listeners = new Set<() => void>();
 
   /** `path` null keeps them in memory only (tests). */
   constructor(private readonly path: string | null = join(stateDir(), "sites.json")) {
@@ -56,10 +85,39 @@ export class SiteGrants {
       // Nothing kept yet.
     }
     this.byAgent = parseSiteGrants(read);
+    this.person = parsePersonSites(read);
+    this.aheadSnapshot = [...this.person.keys()];
   }
 
   has(key: string, site: string): boolean {
-    return [...(this.byAgent.get(key)?.keys() ?? [])].some((allowed) => covers(allowed, site));
+    return [...(this.byAgent.get(key)?.keys() ?? []), ...this.person.keys()].some((allowed) => covers(allowed, site));
+  }
+
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  /** The sites the person allowed ahead of time, in the order added. */
+  ahead = (): readonly string[] => this.aheadSnapshot;
+
+  /** Allow a site for every agent ahead of time (Settings only). */
+  allowAhead(site: string, now: number = Math.floor(Date.now() / 1000)): void {
+    if (this.person.has(site)) return;
+    this.person.set(site, now);
+    this.aheadChanged();
+  }
+
+  /** Take a site off the person's list: agents ask for it again. */
+  forgetAhead(site: string): void {
+    if (!this.person.delete(site)) return;
+    this.aheadChanged();
+  }
+
+  private aheadChanged(): void {
+    this.aheadSnapshot = [...this.person.keys()];
+    this.save();
+    for (const listener of this.listeners) listener();
   }
 
   sites(key: string): string[] {
@@ -85,7 +143,7 @@ export class SiteGrants {
     const agents = Object.fromEntries([...this.byAgent].map(([key, sites]) => [key, Object.fromEntries(sites)]));
     try {
       mkdirSync(dirname(this.path), { recursive: true });
-      writeFileSync(this.path, JSON.stringify({ version: 1, agents }));
+      writeFileSync(this.path, JSON.stringify({ version: 1, agents, person: Object.fromEntries(this.person) }));
     } catch (error) {
       console.error("dashi-shell: could not save agents' sites:", error);
     }

@@ -36,6 +36,9 @@ pub(crate) struct View<'a> {
     pub output: &'a Output,
     pub cursor: bool,
     pub only: Option<Window>,
+    /// The scale title bars are drawn at, when not the view's (a mirror's
+    /// picture keeps its source's, so they aren't drawn again each frame).
+    pub decor_scale: Option<i32>,
 }
 
 /// A whole screen, as it is shown.
@@ -49,6 +52,10 @@ where
     R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
+    // A screen that mirrors another shows that one's picture (outputs/mirror.rs).
+    if state.mirrors.of(output).is_some() {
+        return super::mirror::mirror_elements(state, renderer, output, with_cursor);
+    }
     let Some(area) = state.space.output_geometry(output) else {
         return Vec::new();
     };
@@ -62,10 +69,12 @@ where
             output,
             cursor: with_cursor,
             only: None,
+            decor_scale: None,
         },
     )
 }
 
+/// What `view` shows: an area of the space at a scale, with one output's layers.
 pub(crate) fn view_elements<R>(
     state: &mut Dashi,
     renderer: &mut R,
@@ -81,7 +90,7 @@ where
     };
     let scale = view.scale;
     let origin = view.area.loc;
-    state.refresh_decorations(scale.x.ceil() as i32);
+    state.refresh_decorations(view.decor_scale.unwrap_or(scale.x.ceil() as i32));
 
     let mut elements = Vec::new();
     if view.cursor {

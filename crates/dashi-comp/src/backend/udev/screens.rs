@@ -163,6 +163,7 @@ pub(super) fn connector_disconnected(state: &mut Dashi, node: DrmNode, crtc: crt
     let Some(screen) = removed else { return false };
     tracing::info!(name = screen.output.name(), "screen removed");
     state.space.unmap_output(&screen.output);
+    state.mirror_output_gone(&screen.output);
     dh.remove_global::<Dashi>(screen.global);
     true
 }

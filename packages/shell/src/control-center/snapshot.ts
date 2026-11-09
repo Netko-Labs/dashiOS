@@ -3,12 +3,13 @@
  * read from the stores the panel is given: the radios and sliders
  * (devices.ts), the switches (flags.ts), the network and the battery
  * (system/store.ts), Bluetooth's devices, and the laptop's power modes,
- * keyboard light and graphics card.
+ * keyboard light and graphics card, and whether the screens mirror.
  */
 
 import { useSyncExternalStore } from "react";
 import { batteryTime } from "../battery/panel-numbers.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
+import { type MirrorStore, useMirror } from "../display-config/mirror.ts";
 import { cardState, type GraphicsController, shownMode } from "../graphics/controller.ts";
 import { GRAPHICS_LABEL } from "../graphics/policy.ts";
 import type { Laptop } from "../laptop/start.ts";
@@ -34,6 +35,8 @@ export interface SnapshotSources {
   laptop?: Laptop;
   /** The charge limit in percent now; null without one. */
   chargeLimit?: () => number | null;
+  /** Mirroring the screens; without it there is no Mirroring tile. */
+  mirror?: MirrorStore;
 }
 
 /** The graphics tile's words, as the laptop row had them. */
@@ -62,6 +65,7 @@ export function useControlSnapshot(sources: SnapshotSources): ControlSnapshot {
   const graphics = useStore(sources.laptop?.graphics ?? null);
   const light = machine?.laptop ? keyboardLight(machine) : null;
   const limit = sources.chargeLimit?.() ?? null;
+  const mirror = useMirror(sources.mirror);
   return {
     wifi: devices.wifi,
     network: network ? (network.kind === "wifi" ? { kind: "wifi", ssid: network.ssid, bars: network.bars } : network) : null,
@@ -77,5 +81,6 @@ export function useControlSnapshot(sources: SnapshotSources): ControlSnapshot {
     graphics: graphicsTile(sources.laptop?.graphics, graphics),
     battery: battery ? { percent: battery.percent, charging: battery.state === "charging", limit, time: batteryTime(battery, limit) } : null,
     hotspot: devices.hotspot,
+    mirroring: sources.mirror && mirror.screens >= 2 ? mirror.on : null,
   };
 }

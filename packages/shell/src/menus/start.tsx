@@ -17,6 +17,7 @@ import type { BluetoothSetup } from "../bluetooth/select.ts";
 import { BluetoothStore } from "../bluetooth/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { type AppletTileSource, type ControlCenterProps, controlFlags, DeviceStore, LayoutStore, radiosFor } from "../control-center/index.ts";
+import type { MirrorStore } from "../display-config/mirror.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type Entry, launchEntry, loadEntries } from "../entries.ts";
 import type { Laptop } from "../laptop/start.ts";
@@ -102,6 +103,8 @@ export interface MenusOptions {
   appletControls?: AppletTileSource;
   /** The charge limit in percent now, or null (the battery row's and panel's tick). */
   chargeLimit?: () => number | null;
+  /** Mirroring the screens (display-config/mirror.ts), for Control Center's Mirroring tile. */
+  mirror?: MirrorStore;
   /** The battery panel's stores and rows (battery/popover.tsx); without them the battery item opens nothing. */
   battery?: Omit<BatteryPopoverSources, "onApp" | "onAction" | "onSettings" | "chargeLimit">;
   /** System Settings at a pane ("network", "battery", "control-center"). */
@@ -243,6 +246,7 @@ export function startMenus(options: MenusOptions): Menus {
     layout,
     ...(options.appletControls ? { applets: options.appletControls } : {}),
     chargeLimit,
+    ...(options.mirror ? { mirror: options.mirror } : {}),
     onSettings: (pane) => {
       controller.close();
       options.openSettingsPane?.(pane);

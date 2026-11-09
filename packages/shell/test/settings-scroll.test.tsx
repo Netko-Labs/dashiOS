@@ -221,9 +221,9 @@ test("a row's words keep their least width beside a control, so in a narrow wind
 
 test("the window's least size: the sidebar beside the widest row that can't fold, and a page's title over the tallest hero", () => {
   const widestRow = 8 + PAGE.knob + 12 + PAGE.words + 12 + INK_SLIDER.width + 16;
-  // 4 to spare for a fractional scale's rounding.
-  expect(SETTINGS_WINDOW.minWidth).toBe(SIDEBAR.width + 2 * PAGE.margin + widestRow + 4);
-  expect(SETTINGS_WINDOW.minWidth).toBe(748);
+  // Nothing to spare: at its words' least width a slider's row keeps its height (mirin's taffy fork).
+  expect(SETTINGS_WINDOW.minWidth).toBe(SIDEBAR.width + 2 * PAGE.margin + widestRow);
+  expect(SETTINGS_WINDOW.minWidth).toBe(744);
   expect(SETTINGS_WINDOW.minHeight).toBeGreaterThanOrEqual(PAGE.title + 207 + PAGE.margin);
   expect(SETTINGS_WINDOW.minWidth).toBeLessThan(SETTINGS_WINDOW.width);
   expect(SETTINGS_WINDOW.minHeight).toBeLessThan(SETTINGS_WINDOW.height);

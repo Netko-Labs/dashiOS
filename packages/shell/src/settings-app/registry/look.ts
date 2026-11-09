@@ -224,6 +224,13 @@ export const LOOK_ROWS = [
     kind: "action",
   },
   {
+    id: "displays/mirror",
+    title: "Mirror displays",
+    detail: "The other displays show the built-in one.",
+    keywords: ["mirroring", "screen mirroring", "duplicate", "same picture", "projector", "presentation"],
+    kind: "switch",
+  },
+  {
     id: "displays/main-display",
     glyph: MENUBAR,
     title: "Main display",

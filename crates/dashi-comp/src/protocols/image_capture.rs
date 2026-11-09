@@ -385,6 +385,7 @@ impl Dashi {
             output: &output,
             cursor: session_data.cursor,
             only,
+            decor_scale: None,
         };
         let mut picture = match backend::capture(self, &view) {
             Ok(picture) => picture,

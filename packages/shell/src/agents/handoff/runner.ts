@@ -13,6 +13,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { lastErrors } from "./quiet.ts";
 import { isRunId, parseRecord, type RunRecord, runningUnits } from "./records.ts";
 
 /** One turn to start. */
@@ -37,6 +38,8 @@ export interface TaskRunner {
   save(record: RunRecord): void;
   /** A turn's stream as it is now, whole; null when there is none. */
   readTurn(run: string, turn: number): TurnRead | null;
+  /** What the harness wrote to its errors in a turn so far (the end of it); empty when nothing. */
+  readErrors?(run: string, turn: number): string;
   /** The runs on disk and the units still running: what a shell that starts picks up again. */
   found(): FoundRuns;
 }
@@ -210,6 +213,9 @@ export function systemdRunner(options: { runtime: string; bun: string; task: str
       } catch (error) {
         console.error(`dashi-shell: couldn't keep run ${record.id}'s record:`, error);
       }
+    },
+    readErrors(run, turn) {
+      return lastErrors(readText(`${filesOf(run, turn).stream}.err`) ?? "");
     },
     readTurn(run, turn) {
       const { stream } = filesOf(run, turn);

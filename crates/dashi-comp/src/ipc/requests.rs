@@ -196,6 +196,7 @@ pub(crate) fn handle(
         "overview" => state.overview_request(params),
         // Live pictures the shell places (render/thumbnails/).
         "space-previews" => done(state.set_space_previews(params)),
+        "mirror" => done(state.set_mirror(params)),
         "window-thumbnails" => done(state.set_window_thumbnails(params)),
         "spaces" => {
             let count = match params.get("count") {
@@ -397,7 +398,7 @@ fn applet_clients(
     Ok(json!({}))
 }
 
-/// `capture {path, window?, rect?, cursor?, mask?}`: only the shell may.
+/// `capture {path, window?, rect?, output?, cursor?, mask?}`: only the shell may.
 fn capture(
     state: &mut Dashi,
     connection: ConnectionId,
@@ -442,6 +443,30 @@ fn capture(
             output,
             None,
         )
+    } else if let Some(name) = params.get("output") {
+        let name = name.as_str().ok_or("`output` must be a screen's name")?;
+        let mirrored = state.mirrors.targets().find(|o| o.name() == name).cloned();
+        if let Some(target) = mirrored {
+            // What a mirroring screen shows: its source's picture, at its own pixels.
+            if mask.is_some() {
+                return Err("a screen that mirrors another can't be masked".into());
+            }
+            let cursor = params.get("cursor").and_then(Value::as_bool) == Some(true);
+            let picture = backend::capture_mirror(state, &target, cursor)?;
+            render::capture::save_png(&path, &picture)?;
+            return Ok(json!({ "width": picture.width, "height": picture.height, "scale": 1.0 }));
+        }
+        let output = state
+            .space
+            .outputs()
+            .find(|o| o.name() == name)
+            .cloned()
+            .ok_or_else(|| format!("no screen {name:?}"))?;
+        (
+            state.space.output_geometry(&output).ok_or("no screen")?,
+            output,
+            None,
+        )
     } else {
         let output = state.output_under_pointer().ok_or("no screen")?;
         (
@@ -459,6 +484,7 @@ fn capture(
         output: &output,
         cursor,
         only,
+        decor_scale: None,
     };
     let mut picture = backend::capture(state, &view)?;
     if let Some(name) = &mask {

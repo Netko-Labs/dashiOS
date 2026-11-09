@@ -46,7 +46,9 @@ const sameMode = (a: Mode | undefined, b: Mode | undefined): boolean =>
  * with a default scale, the lid applied; only what differs from now. Null
  * when everything already is as wanted.
  */
-export function planRestore(monitors: readonly Monitor[], saved: SavedLayout | undefined, options: RestoreOptions): ConfigRequest | null {
+export function planRestore(all: readonly Monitor[], saved: SavedLayout | undefined, options: RestoreOptions): ConfigRequest | null {
+  // A monitor that mirrors another is left as it is: moving it would end its mirroring (mirror.ts).
+  const monitors = all.filter((monitor) => monitor.mirrorOf === undefined);
   const wanted = (monitor: Monitor): SavedMonitor | undefined => saved?.monitors[identityOf(monitor)];
   // On by the arrangement (a monitor nobody saved is on).
   const onBySaved = (monitor: Monitor): boolean => wanted(monitor)?.enabled ?? true;
@@ -88,18 +90,21 @@ export function planRestore(monitors: readonly Monitor[], saved: SavedLayout | u
 
 /** The request that puts every monitor back exactly as it is now. */
 export function configOf(monitors: readonly Monitor[]): ConfigRequest {
-  const outputs = monitors.map((monitor): MonitorConfig => {
-    if (!monitor.enabled || !monitor.mode) return { name: monitor.name, enabled: false };
-    return {
-      name: monitor.name,
-      enabled: true,
-      ...(monitor.frame ? { position: { x: monitor.frame.x, y: monitor.frame.y } } : {}),
-      mode: monitor.mode,
-      rotation: monitor.rotation,
-      flipped: monitor.flipped,
-      scale: monitor.scale,
-    };
-  });
+  // One that mirrors is left mirroring: turning it on or moving it would end that.
+  const outputs = monitors
+    .filter((monitor) => monitor.mirrorOf === undefined)
+    .map((monitor): MonitorConfig => {
+      if (!monitor.enabled || !monitor.mode) return { name: monitor.name, enabled: false };
+      return {
+        name: monitor.name,
+        enabled: true,
+        ...(monitor.frame ? { position: { x: monitor.frame.x, y: monitor.frame.y } } : {}),
+        mode: monitor.mode,
+        rotation: monitor.rotation,
+        flipped: monitor.flipped,
+        scale: monitor.scale,
+      };
+    });
   const primary = monitors.find((monitor) => monitor.primary && monitor.enabled)?.name;
   return { outputs, ...(primary !== undefined ? { primary } : {}) };
 }
@@ -115,7 +120,10 @@ export function layoutOf(monitors: readonly Monitor[], previous: SavedLayout | u
     const identity = identityOf(monitor);
     const before = previous?.monitors[identity];
     const byLid = lidClosed && monitor.builtIn && !monitor.enabled;
-    if (monitor.enabled && monitor.mode && monitor.frame) {
+    // Mirroring is for now: its place on the desk is kept for when it stops.
+    if (monitor.mirrorOf !== undefined) {
+      if (before) kept[identity] = before;
+    } else if (monitor.enabled && monitor.mode && monitor.frame) {
       kept[identity] = {
         enabled: true,
         x: monitor.frame.x,

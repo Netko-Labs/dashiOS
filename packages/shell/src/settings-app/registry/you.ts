@@ -172,6 +172,13 @@ export const YOU_ROWS = [
   { id: "agents/model", title: "Model", name: "The agent's model", keywords: ["model"], kind: "choice" },
   { id: "agents/history", title: "History", name: "What agents did", keywords: ["agent history", "undo", "activity"], kind: "value" },
   {
+    id: "agents/sites",
+    title: "Sites agents may use",
+    detail: "Agents open these without asking first. Only you can add to it.",
+    keywords: ["websites", "allow sites", "allowed sites", "unattended", "demo", "always allow"],
+    kind: "value",
+  },
+  {
     id: "agents/permissions",
     title: "What agents may do",
     name: "Agents and their permissions",

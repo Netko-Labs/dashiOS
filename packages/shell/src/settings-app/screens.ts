@@ -7,6 +7,7 @@
 
 import type { Compositor } from "../compositor.ts";
 import type { ApplyResult, DisplayManager } from "../display-config/manager.ts";
+import { mirrorRequests } from "../display-config/mirror.ts";
 import { type Mode, type Monitor, parseMonitors, type Rotation, type VrrMode } from "../display-config/monitors.ts";
 import { toWire } from "../display-config/plan.ts";
 import { parseScreens, SCALES, type ScreenInfo } from "../displays.ts";
@@ -156,6 +157,18 @@ export class ScreensStore {
 
   setEnabled(name: string, enabled: boolean): Promise<boolean> {
     return this.change((displays) => displays.setEnabled(name, enabled));
+  }
+
+  /** The other screens show the built-in one (display-config/mirror.ts), or each its own again. A refusal is shown. */
+  async setMirroring(on: boolean): Promise<void> {
+    if (!this.compositor) return;
+    try {
+      for (const request of mirrorRequests(this.snapshot.monitors, on)) await this.compositor.request("mirror", request);
+      this.set({ ...this.snapshot, error: null });
+    } catch (error) {
+      this.set({ ...this.snapshot, error: message(error) });
+    }
+    await this.refresh();
   }
 
   /** Move screens to these places (points); the compositor keeps them apart and touching. */

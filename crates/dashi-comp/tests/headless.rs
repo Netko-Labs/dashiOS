@@ -1678,3 +1678,115 @@ fn portal_parents_and_sheets_are_checked() {
             .contains("parent")
     );
 }
+
+/// The screens by name, from an `outputs` answer.
+fn screen_named(ipc: &mut Ipc, name: &str) -> Value {
+    let outputs = ipc.request("outputs", json!({}))["result"]["outputs"].clone();
+    outputs
+        .as_array()
+        .and_then(|list| list.iter().find(|o| o["name"] == name).cloned())
+        .unwrap_or(Value::Null)
+}
+
+#[test]
+fn a_screen_mirrors_another_and_comes_back_where_it_was() {
+    let compositor = Compositor::start_with(&[], &[("DASHI_HEADLESS_SCREENS", "2")]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let second = screen_named(&mut ipc, "HEADLESS-2");
+    assert_eq!(
+        second["frame"],
+        json!({ "x": 1920, "y": 0, "width": 1280, "height": 1024 })
+    );
+    assert_eq!(second["mirrorOf"], Value::Null);
+
+    // Mistakes change nothing.
+    for (params, words) in [
+        (
+            json!({ "output": "HEADLESS-2", "source": "HEADLESS-2" }),
+            "itself",
+        ),
+        (json!({ "output": "HEADLESS-2", "source": "nope" }), "nope"),
+        (json!({ "output": "nope", "source": "HEADLESS-1" }), "nope"),
+        (json!({ "source": "HEADLESS-1" }), "output"),
+        (json!({ "output": "HEADLESS-2", "source": 3 }), "source"),
+    ] {
+        let error = ipc.request("mirror", params.clone())["error"].clone();
+        assert!(
+            error.as_str().is_some_and(|e| e.contains(words)),
+            "{params}: {error}"
+        );
+    }
+    assert!(ipc.events.is_empty());
+
+    assert_eq!(
+        ipc.request(
+            "mirror",
+            json!({ "output": "HEADLESS-2", "source": "HEADLESS-1" })
+        )["result"],
+        json!({})
+    );
+    assert_eq!(ipc.events, vec![json!({ "event": "outputs-changed" })]);
+    let second = screen_named(&mut ipc, "HEADLESS-2");
+    assert_eq!(second["mirrorOf"], "HEADLESS-1");
+    assert_eq!(second["enabled"], true, "still on: it shows the first");
+    assert_eq!(second["frame"], Value::Null, "no desktop of its own");
+    assert_eq!(second["primary"], false);
+    // The first can't mirror the screen that mirrors it.
+    assert!(
+        ipc.request(
+            "mirror",
+            json!({ "output": "HEADLESS-1", "source": "HEADLESS-2" })
+        )["error"]
+            .is_string()
+    );
+    ipc.events.clear();
+    assert_eq!(
+        ipc.request("mirror", json!({ "output": "HEADLESS-2", "source": null }))["result"],
+        json!({})
+    );
+    assert_eq!(ipc.events, vec![json!({ "event": "outputs-changed" })]);
+    let second = screen_named(&mut ipc, "HEADLESS-2");
+    assert_eq!(second["mirrorOf"], Value::Null);
+    assert_eq!(
+        second["frame"],
+        json!({ "x": 1920, "y": 0, "width": 1280, "height": 1024 })
+    );
+    // Stopping twice is no error.
+    assert_eq!(
+        ipc.request("mirror", json!({ "output": "HEADLESS-2", "source": null }))["result"],
+        json!({})
+    );
+}
+
+#[test]
+fn an_arrangement_that_moves_a_mirroring_screen_ends_its_mirroring() {
+    let compositor = Compositor::start_with(&[], &[("DASHI_HEADLESS_SCREENS", "2")]);
+    let mut ipc = compositor.connect();
+    ipc.request(
+        "mirror",
+        json!({ "output": "HEADLESS-2", "source": "HEADLESS-1" }),
+    );
+    // A scale alone leaves it mirroring.
+    assert_eq!(
+        ipc.request(
+            "outputs-config",
+            json!({ "outputs": [{ "name": "HEADLESS-2", "scale": 1.0 }] })
+        )["result"],
+        json!({})
+    );
+    assert_eq!(
+        screen_named(&mut ipc, "HEADLESS-2")["mirrorOf"],
+        "HEADLESS-1"
+    );
+    assert_eq!(
+        ipc.request(
+            "outputs-config",
+            json!({ "outputs": [{ "name": "HEADLESS-2", "position": { "x": 0, "y": 1080 } }] })
+        )["result"],
+        json!({})
+    );
+    let second = screen_named(&mut ipc, "HEADLESS-2");
+    assert_eq!(second["mirrorOf"], Value::Null);
+    assert_eq!(second["frame"]["y"], 1080);
+}

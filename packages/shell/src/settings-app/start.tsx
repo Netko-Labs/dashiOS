@@ -22,7 +22,7 @@ import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
-import type { PaneContext } from "./context.ts";
+import type { AheadSites, PaneContext } from "./context.ts";
 import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
 import { FindFocus } from "./find.ts";
 import { loadLayouts } from "./layouts.ts";
@@ -57,6 +57,8 @@ export interface SettingsAppOptions {
   region: RegionStore;
   flags: FlagsStore;
   grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
+  /** The sites agents may use without asking (Settings › Agents). */
+  sites?: AheadSites;
   /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
@@ -146,6 +148,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
       flags: options.flags,
       screens,
       grants: options.grants,
+      ...(options.sites ? { sites: options.sites } : {}),
       ...(options.privacy ? { privacy: options.privacy } : {}),
       ...(options.passwords ? { passwords: options.passwords } : {}),
       ...answersOf(options),

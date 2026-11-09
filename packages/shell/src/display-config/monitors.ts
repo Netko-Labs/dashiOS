@@ -50,6 +50,8 @@ export interface Monitor {
   flipped: boolean;
   /** Variable refresh rate: whether the screen can, whether it does now, and the person's choice. */
   vrr: MonitorVrr;
+  /** The screen whose picture it shows (IPC `mirror`); absent while it shows its own desktop. It has no frame then. */
+  mirrorOf?: string;
 }
 
 /** Variable refresh rate: off, on, or only while a window is full screen there. */
@@ -123,6 +125,7 @@ export function parseMonitors(answer: unknown): Monitor[] {
         rotation: isRotation(transform?.rotation) ? transform.rotation : 0,
         flipped: transform?.flipped === true,
         vrr: parseVrr(output.vrr),
+        ...(typeof output.mirrorOf === "string" && output.mirrorOf !== "" ? { mirrorOf: output.mirrorOf } : {}),
       },
     ];
   });

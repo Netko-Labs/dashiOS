@@ -258,6 +258,7 @@ fn serve(
         output: &data.output,
         cursor: data.cursor,
         only: None,
+        decor_scale: None,
     };
     let mut picture = match backend::capture(state, &view) {
         Ok(picture) => picture,

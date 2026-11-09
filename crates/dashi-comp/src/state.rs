@@ -85,6 +85,8 @@ pub(crate) struct Dashi {
     pub layer_motion: crate::wm::LayerMotion,
     /// Screens turned off in Displays (not in the space).
     pub disabled_outputs: Vec<smithay::output::Output>,
+    /// Screens showing another's picture (`mirror`; not in the space).
+    pub mirrors: crate::outputs::Mirrors,
     /// Touchpad and mouse settings (input/settings.rs), for devices plugged in later too.
     pub input_settings: crate::input::settings::InputSettings,
     /// Variable refresh rate per screen name, as the shell chose (outputs/vrr.rs).
@@ -287,6 +289,7 @@ impl Dashi {
             motion: Default::default(),
             layer_motion: Default::default(),
             disabled_outputs: Vec::new(),
+            mirrors: Default::default(),
             primary_output: None,
             vrr_modes: Default::default(),
             input_settings: Default::default(),
