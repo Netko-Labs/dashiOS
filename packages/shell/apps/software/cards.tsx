@@ -1,7 +1,8 @@
 /**
  * An app in a list: its icon, name, a line about it, who made it, and the
  * state chip; a click (or Return) opens its page. Cards sit in a grid that
- * fits its width (2 columns below 900 px, 3 below 1300, then 4), one Tab
+ * fits its width (1 column below 600 px, so a narrow window keeps every
+ * card's words; 2 below 900, 3 below 1300, then 4), one Tab
  * stop whose arrows move from card to card. Each card follows its own app's
  * state, so a progress tick redraws one card, not the grid.
  */
@@ -11,7 +12,6 @@ import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { AppSummary } from "../../src/software/flathub-types.ts";
 import { StateChip } from "./chip.tsx";
-import { fitText } from "./format.ts";
 import { useAppState } from "./hooks.ts";
 import { VerifiedBadge } from "./marks.tsx";
 import { appChip } from "./model.ts";
@@ -21,6 +21,7 @@ import { askReasons, isProprietary } from "./trust-words.ts";
 
 /** How many columns a grid `width` px wide holds. */
 export function columnsFor(width: number): number {
+  if (width < 600) return 1;
   if (width < 900) return 2;
   if (width < 1300) return 3;
   return 4;
@@ -35,8 +36,6 @@ export function AppCard({ app }: { app: AppSummary }) {
   // Get… when its page's Get asks first: closed code is in the list's answer; far reach is known once its page was read.
   const read = catalog.detailsRead(app.id);
   const asks = isProprietary(app.license) || (read !== null && askReasons(read).length > 0);
-  // Metal cuts a line that runs out of room but draws no ellipsis, so the lines are fitted to the column's width here.
-  const [room, setRoom] = useState(180);
   return (
     <View
       testID={`card:${app.id}`}
@@ -58,7 +57,8 @@ export function AppCard({ app }: { app: AppSummary }) {
       }}
     >
       <AppIcon url={app.icon} name={app.name} size={52} />
-      <View onLayout={(bounds) => setRoom(bounds.width)} style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
+      {/* Each line ends in an ellipsis where it runs out of room (numberOfLines 1). */}
+      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 }}>
           <View style={{ flexShrink: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
@@ -68,11 +68,11 @@ export function AppCard({ app }: { app: AppSummary }) {
           {app.verified && <VerifiedBadge size={12} />}
         </View>
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-          {fitText(app.summary || app.developer || "", room, 12)}
+          {app.summary || app.developer || ""}
         </Text>
         {app.developer !== null && app.summary !== "" && (
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-            {fitText(app.developer, room, 11)}
+            {app.developer}
           </Text>
         )}
       </View>

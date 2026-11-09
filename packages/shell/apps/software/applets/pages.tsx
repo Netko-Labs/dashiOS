@@ -11,7 +11,7 @@ import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { StoreApplet } from "../../../src/applet-store/merge.ts";
 import { APPLETS, OFFLINE } from "../glyphs.ts";
 import { useReportStale } from "../hooks.ts";
-import { AppIcon, useActions } from "../parts.tsx";
+import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
 import { CATEGORY_LABELS } from "./words.ts";
@@ -73,7 +73,7 @@ export function AppletsPage() {
   );
 }
 
-/** One installed applet on Installed: its icon, version and maker (or why it is off), its page, Remove…. */
+/** One installed applet on Installed: its icon, version and maker (or why it is off), its page, Remove…; an app's row geometry (`ROW`), so the two lists line up. */
 function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry: StoreApplet | undefined }) {
   const colors = useColors();
   const actions = useActions();
@@ -95,7 +95,7 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
   return (
     <View
       testID={`installed:${applet.manifest.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 56, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
     >
       <View
         focusable
@@ -104,7 +104,7 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
         onPress={() => actions.openApplet(applet.manifest.id)}
         style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
       >
-        <AppIcon url={entry?.icon ?? null} name={applet.manifest.name} size={36} source="applets" />
+        <AppIcon url={entry?.icon ?? null} name={applet.manifest.name} size={ROW.icon} source="applets" />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
             {applet.manifest.name}

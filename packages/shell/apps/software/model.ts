@@ -119,12 +119,18 @@ export function appChip(state: AppState, asks = false): Chip {
 /** Where an app is installed, in words. */
 export const whereInstalled = (app: InstalledApp): string => (app.installation === "user" ? "Installed for you" : "Installed for everyone");
 
-/** "Installing VLC 42% · 2 waiting": the queue in one line, for the toolbar; null when it is empty. */
-export function queueLine(operations: readonly Operation[]): string | null {
+/**
+ * "Installing VLC 42% · 2 waiting": the queue in one line, for the toolbar;
+ * null when it is empty. `short`, for a narrow toolbar: "Installing 42%",
+ * the name and the waiting count given up first (the rows still say them),
+ * so the progress keeps its room.
+ */
+export function queueLine(operations: readonly Operation[], { short = false }: { short?: boolean } = {}): string | null {
   const running = operations.find((operation) => operation.status === "running");
   const waiting = operations.filter((operation) => operation.status === "queued").length;
   if (!running && waiting === 0) return null;
-  const head = running ? busyLabel(running, running.kind === "system-update" ? "the system" : running.name) : null;
+  const head = running ? busyLabel(running, short ? undefined : running.kind === "system-update" ? "the system" : running.name) : null;
   const tail = waiting > 0 ? `${waiting} waiting` : null;
+  if (short) return head ?? tail;
   return [head, tail].filter((part): part is string => part !== null).join(" · ");
 }

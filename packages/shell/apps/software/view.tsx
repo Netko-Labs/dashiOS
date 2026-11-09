@@ -8,11 +8,13 @@
  * it searches Flathub and the applets at once. Every install, removal and
  * update starts from a click here, on one queue; a question is asked first
  * where something is taken away, the system is changed, an app reaches far,
- * or an applet asks for something new.
+ * or an applet asks for something new. In a narrow window the toolbar row
+ * gives way in a set order (toolbar-fit.ts).
  */
 
 import type { InstalledApplet } from "@dashi/applet";
 import { AppWindow, SearchField, ToolbarButton } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { StoreApplet } from "../../src/applet-store/merge.ts";
 import { AppletConsentSheet } from "../../src/applets/consent-sheet.tsx";
@@ -33,9 +35,11 @@ import { useServices } from "./services.ts";
 import { type Answer, type Ask, FailureSheet, Question } from "./sheets.tsx";
 import { SoftwareSidebar } from "./sidebar.tsx";
 import { StaleChip, ToolbarChip } from "./states.tsx";
+import { CHIP_MAX_WIDTH, isCompact, SEARCH_MIN_WIDTH, SEARCH_WIDTH } from "./toolbar-fit.ts";
 import { appTrust, askReasons } from "./trust-words.ts";
 
-export const SOFTWARE_SIZE = { width: 1020, height: 700 } as const;
+/** 640 tall, so it opens whole on a screen as short as 686 points under the menu bar (a 1366 × 768 laptop at 1.1×, the VM). */
+export const SOFTWARE_SIZE = { width: 1020, height: 640 } as const;
 
 const SEARCH_DELAY_MS = 300;
 
@@ -55,6 +59,9 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const reportStale = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
   // Bumped when a sheet closes, so the search field takes the keyboard back.
   const [focus, setFocus] = useState(0);
+  // The page's width (the window less its sidebar): under 600 the toolbar is compact.
+  const [pageWidth, setPageWidth] = useState(820);
+  const compact = isCompact(pageWidth);
 
   useEffect(() => {
     void store.refreshInstalled().then(() => store.checkUpdates());
@@ -177,16 +184,17 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   });
   useAppMenus(menus, run);
 
-  const activity = queueLine(state.operations);
+  const activity = queueLine(state.operations, { short: compact });
   const running = state.operations.find((operation) => operation.status === "running");
   const leading = canGoBack(nav) ? <ToolbarButton testID="back" glyph={BACK} tooltip="Back" onPress={goBack} /> : undefined;
   const toolbar = (
     <>
-      {stale > 0 && <StaleChip />}
+      {stale > 0 && <StaleChip short={compact} />}
       {activity !== null && (
         <ToolbarChip
           testID="activity"
           text={activity}
+          maxWidth={CHIP_MAX_WIDTH}
           onPress={() => (running?.id === undefined ? go({ kind: "updates" }) : actions[running.subject === "applet" ? "openApplet" : "openApp"](running.id))}
         />
       )}
@@ -194,7 +202,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
         <ToolbarButton
           testID="check-updates"
           glyph={REFRESH}
-          label={state.checking ? "Checking…" : "Check for Updates"}
+          {...(compact ? { tooltip: "Check for Updates" } : { label: state.checking ? "Checking…" : "Check for Updates" })}
           disabled={state.checking}
           onPress={() => {
             void store.checkUpdates(true);
@@ -202,14 +210,17 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
           }}
         />
       )}
-      {nav.page.kind === "applets" && <ToolbarButton testID="catalogs" glyph={APPLETS} label="Catalogs…" onPress={() => setCatalogs(true)} />}
+      {nav.page.kind === "applets" && (
+        <ToolbarButton testID="catalogs" glyph={APPLETS} {...(compact ? { tooltip: "Catalogs…" } : { label: "Catalogs…" })} onPress={() => setCatalogs(true)} />
+      )}
       <SearchField
         key={focus}
         testID="search"
         value={query}
         onChangeText={setQuery}
-        placeholder={filtering ? "Search installed" : "Search apps and applets"}
-        width={210}
+        placeholder={compact ? "Search" : filtering ? "Search installed" : "Search apps and applets"}
+        width={SEARCH_WIDTH}
+        minWidth={SEARCH_MIN_WIDTH}
         autoFocus
         onSubmit={(text) => !filtering && setNav((now) => search(now, text))}
       />
@@ -249,14 +260,24 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   return (
     <ActionsContext.Provider value={actions}>
       <StaleContext.Provider value={reportStale}>
-        <AppWindow title="Software" leading={leading} sidebar={<SoftwareSidebar nav={nav} updates={updateCount} go={go} />} toolbar={toolbar} overlay={overlay}>
-          <PageView
-            nav={nav}
-            query={query}
-            onRestart={() => enqueue({ kind: "restart" })}
-            onUpdateSystem={askSystem}
-            onSeeAll={(where) => setNav((now) => push(now, where === "applets" ? { kind: "applets" } : { kind: "collection", id: where }))}
-          />
+        <AppWindow
+          title="Software"
+          leading={leading}
+          // Compact: the window's name gives way to the controls (the sidebar says where you are).
+          {...(compact ? { center: <View style={{ flex: 1 }} /> } : {})}
+          sidebar={<SoftwareSidebar nav={nav} updates={updateCount} go={go} />}
+          toolbar={toolbar}
+          overlay={overlay}
+        >
+          <View testID="page-room" onLayout={(bounds) => setPageWidth(bounds.width)} style={{ flex: 1, minHeight: 0, flexDirection: "column" }}>
+            <PageView
+              nav={nav}
+              query={query}
+              onRestart={() => enqueue({ kind: "restart" })}
+              onUpdateSystem={askSystem}
+              onSeeAll={(where) => setNav((now) => push(now, where === "applets" ? { kind: "applets" } : { kind: "collection", id: where }))}
+            />
+          </View>
         </AppWindow>
       </StaleContext.Provider>
     </ActionsContext.Provider>

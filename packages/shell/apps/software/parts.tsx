@@ -9,6 +9,15 @@ import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
 import type { Installation } from "../../src/software/ids.ts";
 import { useImage } from "./hooks.ts";
 
+/**
+ * One row geometry for every app and applet in a list (Installed, Updates,
+ * the applets): the icon, the row's least height, and the inset of its
+ * content from the card's outer edge (the card's 1 px edge and the row's 12
+ * of padding). Section headings and the About text use the same inset, so
+ * a heading's button ends where the rows' buttons do.
+ */
+export const ROW = { icon: 44, minHeight: 60, inset: 13 } as const;
+
 /** What a click asks for; the window provides it (and the sheets that come first). */
 export interface Actions {
   openApp(id: string): void;
@@ -55,9 +64,25 @@ export function AppIcon({
 }) {
   const downloaded = useImage(file ? null : (url ?? null), source);
   const path = file ?? downloaded;
-  if (path) return <Image source={path} style={{ width: size, height: size, borderRadius: size * 0.22 }} />;
+  // An icon keeps its size in a row short of room: the words beside it give way.
+  if (path)
+    return (
+      <View style={{ width: size, height: size, flexShrink: 0 }}>
+        <Image source={path} style={{ width: size, height: size, borderRadius: size * 0.22 }} />
+      </View>
+    );
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.22, alignItems: "center", justifyContent: "center", backgroundColor: tintFor(name) }}>
+    <View
+      style={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        borderRadius: size * 0.22,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: tintFor(name),
+      }}
+    >
       <Text style={{ fontSize: Math.round(size * 0.46), fontWeight: "semibold", color: "#ffffffee" }}>{([...name.trim()][0] ?? "?").toUpperCase()}</Text>
     </View>
   );

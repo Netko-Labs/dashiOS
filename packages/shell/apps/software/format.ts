@@ -47,16 +47,3 @@ export async function findLocalIcon(
   }
   return null;
 }
-
-/**
- * `text` cut with an ellipsis to fit `width` pixels at `size` (an estimate of
- * Metal's text width: about half the font size per character), at a word
- * boundary when one is near. Metal cuts overflowing lines but draws no ellipsis.
- */
-export function fitText(text: string, width: number, size: number): string {
-  const chars = Math.max(Math.floor(width / (size * 0.5)), 4);
-  if (text.length <= chars) return text;
-  const cut = text.slice(0, chars - 1);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > chars * 0.6 ? cut.slice(0, space) : cut).trimEnd()}…`;
-}
