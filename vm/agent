@@ -21,9 +21,11 @@ and every vm/agent run connects one, so its screenshots show the mark and
 the status items one place to the left of where they are with no agent
 connected. A QMP click made after the run ends (qmp.py click) lands one
 item off (aimed at the newest applet's item, the leftmost, it hits empty
-bar and nothing happens). `pointer` clicks
-inside the session, after a screenshot that brought the mark (and gave
-the screen's size), so it lands where that screenshot shows.
+bar and nothing happens). The mark shows a moment after an agent's first
+call, so a run's very first screenshot may not have it yet. `pointer`
+clicks inside the session, once the mark is there, and saves the screen
+as the click met it (vm/images/pointer.png): aim from a screenshot taken
+the same way (a batch: `screenshot {}`, `sleep 1.5`, `screenshot {}`).
 
 Images go to PNG (screenshot) or vm/images/agent-N.png, one path per line.
 Env: DASHI_AGENT_CMD overrides the server command (default: vm/vm mcp), so
@@ -48,6 +50,8 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(HERE))
 CLIENT = {"name": "dashi-vm-agent", "title": "vm/agent (Dashi development)", "version": "0.1.0"}
 TIMEOUT_S = 120
+# How long the menu bar takes to show the agents' mark once an agent has called a tool.
+MARK_SETTLES_S = 1.5
 
 
 class Session:
@@ -136,14 +140,20 @@ class Pointer:
 
     def ready(self) -> None:
         if self.size is None:
-            # A screenshot first: the call brings the agents' mark into the bar (as in every
-            # screenshot), and its size is the scale the coordinates are in.
+            # A call first brings the agents' mark into the bar (it shows a moment after an
+            # agent connects); then the screen as the click will meet it, saved, whose size
+            # is the scale the coordinates are in.
+            self.session.request("tools/call", {"name": "screenshot", "arguments": {}})
+            time.sleep(MARK_SETTLES_S)
             result = self.session.request("tools/call", {"name": "screenshot", "arguments": {}})
             image = next((item for item in result.get("content", []) if item.get("type") == "image"), None)
             if image is None:
                 raise SystemExit("vm/agent: pointer: the screenshot came back without a picture")
-            self.size = png_size(base64.b64decode(image["data"]))
-            time.sleep(0.5)
+            data = base64.b64decode(image["data"])
+            self.size = png_size(data)
+            IMAGES.mkdir(exist_ok=True)
+            (IMAGES / "pointer.png").write_bytes(data)
+            print(IMAGES / "pointer.png")
         if self.qmp is None:
             from qmp import Qmp
 

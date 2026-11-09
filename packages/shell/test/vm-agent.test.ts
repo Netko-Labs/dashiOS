@@ -49,7 +49,7 @@ async function run(args: string[], stdin = ""): Promise<{ code: number; mcp: See
     stdin: new TextEncoder().encode(stdin),
     stdout: "ignore",
     stderr: "pipe",
-    env: { PATH: process.env.PATH ?? "/usr/bin:/bin", DASHI_AGENT_CMD: `${process.execPath} ${FAKE_MCP} ${log}`, DASHI_AGENT_QMP: qmpPath },
+    env: { PATH: process.env.PATH ?? "/usr/bin:/bin", HOME: dir, DASHI_AGENT_CMD: `${process.execPath} ${FAKE_MCP} ${log}`, DASHI_AGENT_QMP: qmpPath },
   });
   const code = await child.exited;
   server.stop(true);
@@ -65,7 +65,9 @@ const inputs = (qmp: (Seen & { arguments: unknown })[]) => qmp.filter((each) => 
 test("pointer clicks inside the session, after a screenshot, at that screenshot's pixels", async () => {
   const { code, mcp, qmp } = await run(["pointer", "961", "25"]);
   expect(code).toBe(0);
-  const shot = mcp.find((each) => each.what === "call screenshot");
+  // Two screenshots: the first brings the agents' mark, the second is the screen the click meets.
+  expect(mcp.filter((each) => each.what === "call screenshot")).toHaveLength(2);
+  const shot = mcp.findLast((each) => each.what === "call screenshot");
   const end = mcp.find((each) => each.what === "end");
   const events = inputs(qmp);
   expect(shot).toBeDefined();
@@ -91,7 +93,7 @@ test("pointer clicks inside the session, after a screenshot, at that screenshot'
 test("a batch mixes tool calls with pointer, key and sleep lines in one session", async () => {
   const { code, mcp, qmp } = await run(["batch", "-"], "screenshot {}\npointer 100 25 right\nkey esc\nlist_windows\n");
   expect(code).toBe(0);
-  expect(mcp.map((each) => each.what)).toEqual(["call screenshot", "call screenshot", "call list_windows", "end"]);
+  expect(mcp.map((each) => each.what)).toEqual(["call screenshot", "call screenshot", "call screenshot", "call list_windows", "end"]);
   expect(inputs(qmp).map((each) => each.arguments)).toContainEqual({ events: [{ type: "btn", data: { down: true, button: "right" } }] });
   expect(qmp.find((each) => each.what === "send-key")?.arguments).toMatchObject({ keys: [{ type: "qcode", data: "esc" }] });
 });
