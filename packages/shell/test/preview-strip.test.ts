@@ -197,6 +197,8 @@ describe("a picture at fit", () => {
     const portrait = { width: 900, height: 1600 };
     const scale = fitScale(portrait, fitArea(area));
     expect(portrait.height * scale).toBeCloseTo(area.height - FIT_MARGIN * 2);
+    // 18: the toolbar's inset after the strip, so a fitted page or picture starts under the title.
+    expect(FIT_MARGIN).toBe(18);
     expect(fitScale({ width: 100, height: 100 }, fitArea(area))).toBe(1);
     expect(fitArea({ width: 0, height: 0 })).toEqual({ width: 0, height: 0 });
     expect(fitArea({ width: 20, height: 20 })).toEqual({ width: 1, height: 1 });

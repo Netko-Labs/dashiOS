@@ -7,6 +7,7 @@
  */
 
 import type { Size } from "./dimensions.ts";
+import { MARGIN } from "./layout.ts";
 
 export type ZoomMode = { kind: "fit" } | { kind: "scale"; scale: number };
 
@@ -23,7 +24,7 @@ export const STEPS: readonly number[] = [0.02, 0.05, 0.1, 0.17, 0.25, 0.33, 0.5,
 export const FIT: ZoomMode = { kind: "fit" };
 
 /** The room a picture keeps around it when fitted: a PDF's page margin (layout.ts), so it never touches the toolbar or the window's edge. */
-export const FIT_MARGIN = 16;
+export const FIT_MARGIN = MARGIN;
 
 /** The area a fitted picture fills: `area` less FIT_MARGIN on every side (never less than a pixel). */
 export const fitArea = (area: Size): Size =>
