@@ -6,7 +6,7 @@
 
 import { type App, appFor, iconPath } from "../../apps.ts";
 import type { Compositor } from "../../compositor.ts";
-import type { Entry } from "../../entries.ts";
+import { cachedIcon, type Entry } from "../../entries.ts";
 import { type AppIdentity, catalogFrom } from "../../process-apps/index.ts";
 import { heldControl, pipewireControl } from "./commands.ts";
 import { streamOwners } from "./owners.ts";
@@ -45,7 +45,19 @@ export function startAppMixer(options: MixerOptions): AppMixer {
     );
   };
   let mixer: AppMixer | null = null;
-  const owner = streamOwners({ catalog: () => catalogFrom(options.entries()), read: (pid) => readProcess(pid), windows, onChange: () => mixer?.refresh() });
+  const generic = iconPath("generic");
+  // An app no entry names gets the icon its stream names, from the icon theme (once per client: owners.ts).
+  const icon = (name: string): string | null => {
+    const path = cachedIcon(name);
+    return path === generic ? null : path;
+  };
+  const owner = streamOwners({
+    catalog: () => catalogFrom(options.entries()),
+    read: (pid) => readProcess(pid),
+    windows,
+    icon,
+    onChange: () => mixer?.refresh(),
+  });
   mixer = new AppMixer({ graph: graphOf(options.pipewire ?? pipewireWatch()), control: options.standIn ? heldControl() : pipewireControl(), owner });
   mixer.start();
   return mixer;

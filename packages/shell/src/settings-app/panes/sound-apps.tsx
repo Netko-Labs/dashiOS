@@ -15,6 +15,7 @@ import { InkSlider } from "../../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../../shared/controls/palette.ts";
 import { MuteKnob } from "../../sound/app-rows.tsx";
 import { type AppMixer, type AppRecording, type AppSound, type MixerOutput, playOnLabel, useMixer } from "../../sound/apps/index.ts";
+import { appSpot } from "../find.ts";
 import { PAGE, useCardRow } from "../row.tsx";
 import { Spot } from "../spot.tsx";
 import { Caption, Group, Note } from "../ui.tsx";
@@ -152,7 +153,12 @@ export function AppsCard({ mixer }: { mixer: AppMixer }) {
         {state.apps.length === 0 ? (
           <Note testID="sound-apps-none">No apps are playing sound.</Note>
         ) : (
-          state.apps.map((app) => <AppRow key={app.key} app={app} mixer={mixer} outputs={state.outputs} />)
+          state.apps.map((app) => (
+            // Each row has its own Spot: Settings' search finds the app by its name (find.ts).
+            <Spot key={app.key} id={appSpot(app.key)}>
+              <AppRow app={app} mixer={mixer} outputs={state.outputs} />
+            </Spot>
+          ))
         )}
       </Group>
     </Spot>

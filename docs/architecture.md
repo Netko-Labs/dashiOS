@@ -243,7 +243,9 @@ separate MIT programs, with structured arguments only; it links nothing.
   names apps (`identity.ts`, on `src/process-apps/`): a Flatpak by its portal
   id, else the client's process (the socket's pid for a native client, the
   claimed pid for a Pulse one) and its parents, by itself or by its window;
-  else its `application.name`. Dashi's own streams (Settings' level meter,
+  else its `application.name`. An app no desktop entry names gets the icon
+  its stream names (`application.icon_name`) from the icon theme. Settings'
+  search finds each app by name, at its row in Sound's Apps card. Dashi's own streams (Settings' level meter,
   the recorder, event sounds) are not rows. One row per app (`rows.ts`);
   `wpctl set-volume`/`set-mute` on each of its streams, and
   `pw-metadata <id> target.object <node.name>` to send it to an output

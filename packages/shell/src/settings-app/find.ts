@@ -15,6 +15,9 @@
  * listed only when the words find it and not its setting, and then once.
  * A row's result carries its own glyph (its pane's when it has none) and
  * the name of the pane it is in.
+ *
+ * Rows that come and go are found too (`LiveRow`): each app playing sound
+ * by its name ("Helium" finds its row in Sound's Apps card).
  */
 
 import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
@@ -34,6 +37,25 @@ export interface Found {
   /** The pane a row is in, by its title, said after the row; absent for a pane. */
   where?: string;
 }
+
+/** A row that is there only for now (an app playing sound): found by its name, opened at its own Spot. */
+export interface LiveRow {
+  pane: PaneId;
+  /** The row's part after the pane ("apps/helium"): its Spot's. */
+  row: string;
+  label: string;
+  /** Other words it answers to. */
+  keywords: readonly string[];
+}
+
+/** Each app with a row in Sound's Apps card, as a live row (sound-apps.tsx gives each its Spot, `appSpot`). */
+export const appRows = (apps: readonly { key: string; name: string }[]): LiveRow[] =>
+  apps.map((app) => ({ pane: "sound", row: rowPlace({ id: appSpot(app.key) }).row, label: app.name, keywords: ["app volume", "playing"] }));
+
+/** The Spot of an app's row in Sound's Apps card. */
+export const appSpot = (key: string): AppSpotId => `sound/apps/${key}`;
+
+export type AppSpotId = `sound/apps/${string}`;
 
 /** How many results the sidebar lists. */
 export const FOUND_MOST = 40;
@@ -71,7 +93,7 @@ const rowWords = (row: RowDef, pane: PaneInfo): string[] => [
  * empty query. `shown` leaves out the panes this machine doesn't list (no
  * graphics card, no Graphics).
  */
-export function findSettings(query: string, shown: (pane: PaneInfo) => boolean = () => true): Found[] {
+export function findSettings(query: string, shown: (pane: PaneInfo) => boolean = () => true, live: readonly LiveRow[] = []): Found[] {
   const text = query.trim().toLowerCase();
   const typed = words(text);
   if (typed.length === 0) return [];
@@ -107,6 +129,20 @@ export function findSettings(query: string, shown: (pane: PaneInfo) => boolean =
     if (!kept || (each.whole && !kept.whole) || (each.whole === kept.whole && each.rank < kept.rank)) settings.set(setting, each);
   }
   for (const { whole: _whole, ...each } of settings.values()) found.push(each);
+  for (const row of live) {
+    const pane = panes.get(row.pane);
+    if (!pane || !matches(typed, [...words(row.label), ...row.keywords.flatMap(words), ...words(pane.title)])) continue;
+    found.push({
+      id: `${pane.id}/${row.row}`,
+      pane: pane.id,
+      row: row.row,
+      label: row.label,
+      glyph: pane.glyph,
+      where: pane.title,
+      rank: rank(row.label, text, false),
+      order: order++,
+    });
+  }
   // A pane's own switch, named as the pane ("Bluetooth"), is the pane's result: one setting, listed once.
   return found
     .filter(

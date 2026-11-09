@@ -12,7 +12,12 @@
  *    walks them. A browser's audio service is its browser's child.
  * 3. The name it gives itself (application.name), never a binary's.
  *
- * Pure but for `read`, which reads a process's facts from /proc.
+ * An app no desktop entry names (no entry's icon, only the generic one)
+ * gets the icon the stream names (`application.icon_name`), looked up in
+ * the icon theme as an entry's icon is, if there is one.
+ *
+ * Pure but for `read`, which reads a process's facts from /proc, and
+ * `icon`, which looks in the icon theme.
  */
 
 import type { AppCatalog, AppIdentity, ProcessFacts } from "../../process-apps/index.ts";
@@ -30,7 +35,12 @@ export interface IdentityDeps {
   read: (pid: number) => ProcessLook | null;
   /** The app whose window this process owns, if any (the Dock's name for it). */
   windowOwner?: (pid: number) => AppIdentity | null;
+  /** A theme icon's file by its name (`application.icon_name`), or null when the theme has none. */
+  icon?: (name: string) => string | null;
 }
+
+/** An icon's name as a theme names it: never a path. */
+export const isIconName = (name: string): boolean => /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/.test(name) && !name.includes("..");
 
 /** An app no entry or process names, as the microphone indicator says it. */
 export const UNKNOWN_APP = "An app";
@@ -83,10 +93,21 @@ export function processApp(pid: number, deps: IdentityDeps): AppIdentity | null 
 
 /** The app a stream belongs to. */
 export function streamApp(stream: Stream, deps: IdentityDeps): AppIdentity {
+  return withStreamIcon(namedApp(stream, deps), stream, deps);
+}
+
+function namedApp(stream: Stream, deps: IdentityDeps): AppIdentity {
   if (stream.portalAppId) return flatpakApp(stream.portalAppId, deps.catalog);
   const pid = streamPid(stream);
   const found = pid === null ? null : processApp(pid, deps);
   if (found) return found;
   const name = stream.appName;
   return name ? { key: `sound:${name}`, name, icon: deps.catalog.genericIcon } : { key: "sound:unknown", name: UNKNOWN_APP, icon: deps.catalog.genericIcon };
+}
+
+/** The generic icon gives way to the one the stream names, when the theme has it. */
+function withStreamIcon(app: AppIdentity, stream: Stream, deps: IdentityDeps): AppIdentity {
+  if (app.icon !== deps.catalog.genericIcon || stream.iconName === null || !deps.icon || !isIconName(stream.iconName)) return app;
+  const icon = deps.icon(stream.iconName);
+  return icon ? { ...app, icon } : app;
 }
