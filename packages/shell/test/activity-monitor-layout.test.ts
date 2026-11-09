@@ -1,10 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { COLUMNS, fitColumns, NAME_MIN } from "../apps/activity-monitor/columns.ts";
 import { middleCut } from "../apps/activity-monitor/format.ts";
-import { factsRoom, nameFor } from "../apps/activity-monitor/sheets.tsx";
+import { factsRoom, questionFor } from "../apps/activity-monitor/sheets.tsx";
 import { graphWidth, SUMMARY_BRIEF_HEIGHT, SUMMARY_HEIGHT, summaryHeight } from "../apps/activity-monitor/summary.tsx";
 import { briefFigures } from "../apps/activity-monitor/summary-figures.ts";
-import { TOOLBAR_MIN_WIDTH, TOOLBAR_STEPS, type ToolbarFit, toolbarFit, toolbarRoom, toolbarWidth } from "../apps/activity-monitor/toolbar-fit.ts";
+import {
+  SEARCH_CHROME,
+  TOOLBAR,
+  TOOLBAR_MIN_WIDTH,
+  TOOLBAR_STEPS,
+  type ToolbarFit,
+  toolbarFit,
+  toolbarRoom,
+  toolbarWidth,
+} from "../apps/activity-monitor/toolbar-fit.ts";
 import { VIEW_LABELS, viewLabel } from "../apps/activity-monitor/view-menus.tsx";
 
 // Review 54 (Activity Monitor): the layout in a small or narrow window.
@@ -33,6 +42,11 @@ describe("toolbar", () => {
     const fit = toolbarFit(toolbarRoom(TOOLBAR_MIN_WIDTH, LEADING));
     expect(toolbarWidth(fit)).toBeLessThanOrEqual(toolbarRoom(TOOLBAR_MIN_WIDTH, LEADING));
     expect(toolbarWidth(fit)).toBeLessThanOrEqual(toolbarRoom(539, LEADING));
+  });
+
+  test("the field holds a 14-letter name beside its clear button", () => {
+    // "NetworkManager" was 107 pt in the VM; at 160 its first letter scrolled under the field's edge.
+    expect(TOOLBAR.search - SEARCH_CHROME).toBeGreaterThanOrEqual(110);
   });
 
   test("with an ordinary title bar there is no inset to clear", () => {
@@ -106,11 +120,19 @@ describe("sheets", () => {
 
   test("the quit question keeps a long name on its one line, cut in the middle", () => {
     const name = "alex-kim-quarterly-report-renderer-for-the-whole-design-team";
-    const cut = nameFor(name, 420, 8);
-    expect(cut).toContain("…");
-    expect(cut.startsWith("alex-kim")).toBe(true);
-    expect(cut.endsWith("design-team")).toBe(true);
-    expect(nameFor("Files", 420, 8)).toBe("Files");
+    const quit = (cut: string): string => `Quit “${cut}”?`;
+    const question = questionFor(name, 420, quit);
+    expect(question).toContain("…");
+    expect(question.startsWith("Quit “alex-kim")).toBe(true);
+    expect(question.endsWith("design-team”?")).toBe(true);
+    expect(questionFor("Files", 420, quit)).toBe("Quit “Files”?");
+  });
+
+  test("a name that fits the refusal's one line is not cut", () => {
+    // "NetworkManager" was cut to "Networ…anager" in a 400 pt sheet: its words were counted as 30, not 27.
+    const refused = (cut: string): string => `“${cut}” can’t be quit from here.`;
+    expect(questionFor("NetworkManager", 400, refused)).toBe("“NetworkManager” can’t be quit from here.");
+    expect(questionFor("alex-kim-quarterly-report-renderer-for-the-whole-design-team", 400, refused)).toContain("…");
   });
 
   test("Inspect's facts leave Done inside a 400 pt window", () => {

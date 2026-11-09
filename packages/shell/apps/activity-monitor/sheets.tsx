@@ -4,7 +4,7 @@
  * running" (offered when a quit app outlives `STILL_RUNNING_MS`), the refusal,
  * and Inspect (what a process is: its command line, parent, start, state).
  * A name in a question is cut in the middle to keep the question on one line
- * (`nameFor`), never broken mid-word; Inspect's facts scroll inside a window
+ * (`questionFor`), never broken mid-word; Inspect's facts scroll inside a window
  * too short for them, its Done always in reach.
  */
 
@@ -15,12 +15,14 @@ import type { Line } from "./lines.ts";
 import type { QuitSignal } from "./policy.ts";
 
 /**
- * `name` cut in the middle to fit, with `around` characters of question
- * beside it ("Quit “”?" is 8), on the one line of a sheet `width` wide.
+ * The question `ask` makes of `name`, the name cut in the middle to keep it
+ * on the one line of a sheet `width` wide. The words around the name are
+ * counted from `ask` itself, so a question's wording and its cut never part.
  */
-export function nameFor(name: string, width: number, around: number): string {
+export function questionFor(name: string, width: number, ask: (name: string) => string): string {
+  const around = [...ask("")].length;
   // alertWordsWidth is the words' width in a sheet: its padding (20, as AlertWindow's 18 and a little) and the tile beside them.
-  return middleCut(name, Math.max(Math.floor(alertWordsWidth(width) / ALERT_WINDOW.question.char) - around, 12));
+  return ask(middleCut(name, Math.max(Math.floor(alertWordsWidth(width) / ALERT_WINDOW.question.char) - around, 12)));
 }
 
 const QUIT_WIDTH = 420;
@@ -33,7 +35,7 @@ export function QuitSheet({ line, onAnswer }: { line: Line; onAnswer: (signal: Q
     <AlertSheet
       testID="quit-sheet"
       width={QUIT_WIDTH}
-      question={`Quit “${nameFor(line.name, QUIT_WIDTH, 8)}”?`}
+      question={questionFor(line.name, QUIT_WIDTH, (name) => `Quit “${name}”?`)}
       message={`${app ? "The app will close" : "It will be asked to close"}. Force quit ends it immediately, and anything unsaved is lost.`}
       glyph={glyphs.STOP}
       tone="danger"
@@ -53,7 +55,7 @@ export function StillRunningSheet({ name, onAnswer }: { name: string; onAnswer: 
     <AlertSheet
       testID="still-running-sheet"
       width={NOTICE_WIDTH}
-      question={`“${nameFor(name, NOTICE_WIDTH, 21)}” is still running.`}
+      question={questionFor(name, NOTICE_WIDTH, (cut) => `“${cut}” is still running.`)}
       message="Force quit ends it immediately, and anything unsaved is lost."
       glyph={glyphs.WARNING}
       tone="danger"
@@ -71,7 +73,7 @@ export function RefusedSheet({ name, reason, onClose }: { name: string; reason: 
     <AlertSheet
       testID="refused-sheet"
       width={NOTICE_WIDTH}
-      question={`“${nameFor(name, NOTICE_WIDTH, 30)}” can’t be quit from here.`}
+      question={questionFor(name, NOTICE_WIDTH, (cut) => `“${cut}” can’t be quit from here.`)}
       message={reason}
       glyph={glyphs.INFO}
       buttons={[{ label: "OK", testID: "refused-sheet:ok", onPress: onClose, kind: "primary" }]}
@@ -131,7 +133,7 @@ export function InspectSheet({ line, parentName, onClose, maxFacts }: { line: Li
     <AlertSheet
       testID="inspect-sheet"
       width={INSPECT_WIDTH}
-      question={nameFor(line.name, INSPECT_WIDTH, 0)}
+      question={questionFor(line.name, INSPECT_WIDTH, (name) => name)}
       message={line.kind === "app" && line.members.length > 1 ? "The app and its helpers, added up." : undefined}
       glyph={glyphs.INFO}
       buttons={[{ label: "Done", testID: "inspect-sheet:done", onPress: onClose, kind: "primary" }]}

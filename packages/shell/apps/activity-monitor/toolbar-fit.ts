@@ -22,12 +22,16 @@ export const TOOLBAR = {
   icon: 32,
   /** The view button at its longest label, "All processes ▼" (it keeps that width for every label). */
   viewLabel: 100,
-  search: 160,
+  /** The search field: its text gets this less `SEARCH_CHROME`, room for "NetworkManager" (107 pt in the VM) beside the clear button. */
+  search: 168,
   /** The segmented control's padding and the gaps between its segments. */
   tabsChrome: 4 + 2 * (TABS.length - 1),
   /** After the controls: the toolbar's right padding. */
   end: 12,
 } as const;
+
+/** A SearchField's own room around its text (dashi-ui fields.tsx): padding 12, the magnifier 13, two gaps 8, the clear button 18, the input's padding 4. */
+export const SEARCH_CHROME = 55;
 
 export interface ToolbarFit {
   title: boolean;
