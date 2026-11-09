@@ -86,12 +86,8 @@ where
         .zip(mirror_bars(picture, size))
         .filter(|(_, rect)| rect.size.w > 0 && rect.size.h > 0)
         .map(|(buffer, rect)| {
-            // Drawn at the screen's scale (the picture's): the bar's own size is in its points.
-            let points = (
-                (f64::from(rect.size.w) / scale).ceil() as i32,
-                (f64::from(rect.size.h) / scale).ceil() as i32,
-            );
-            buffer.update(points, MIRROR_BAR);
+            // A solid element is sized where it is made (scale 1: its pixels), not by the screen's scale.
+            buffer.update(rect.size.to_logical(1), MIRROR_BAR);
             DashiElement::Solid(SolidColorRenderElement::from_buffer(
                 buffer,
                 rect.loc,
