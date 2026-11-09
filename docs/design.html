@@ -797,7 +797,7 @@
     </table>
     <ol class="rules">
       <li id="cc-1"><b class="rid">CC-1</b><div>Green only means on. Adding is ink ("+"), a chosen page row is green because it is on, nothing else in the panel is green.</div></li>
-      <li id="cc-2"><b class="rid">CC-2</b><div>A tile for something the machine lacks is never shown, never a dead switch; its place in the layout is kept for when it comes back.<span class="tags"><code>catalog.ts</code> (<code>isThere</code>) · Mirroring is drawn (the two-screen glyph) but has no tile until the compositor can mirror</span></div></li>
+      <li id="cc-2"><b class="rid">CC-2</b><div>A tile for something the machine lacks is never shown, never a dead switch; its place in the layout is kept for when it comes back.<span class="tags"><code>catalog.ts</code> (<code>isThere</code>) · Mirroring (the two-screen glyph) is there only with two screens or more; on, the others show the built-in one, letterboxed (<code>display-config/mirror.ts</code>, IPC <code>mirror</code>)</span></div></li>
       <li id="cc-3"><b class="rid">CC-3</b><div>An applet's control is drawn by Dashi, in Dashi's shapes and tokens; an applet that isn't running shows its last state at half opacity, and a press starts it (docs/applets.md, Version 5).</div></li>
       <li id="cc-4"><b class="rid">CC-4</b><div>The battery panel's watts add up: the apps, then everything else, then the total, in tenths. A figure that isn't measured leaves its row out. The apps' share is an estimate (the draw above the week's floor, split by processor time) and says so in <code>battery/panel-numbers.ts</code>.</div></li>
     </ol>

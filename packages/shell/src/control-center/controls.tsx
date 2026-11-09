@@ -68,6 +68,8 @@ export function useControls(actions: ControlActions): Controls {
         return flags.toggle("night");
       case "hotspot":
         return void devices.setHotspot(snapshot.hotspot !== true);
+      case "mirror":
+        return void actions.mirror?.set(snapshot.mirroring !== true);
       case "power":
         if (snapshot.power) laptop?.modes.choose(powerToggle(snapshot.power));
         return;

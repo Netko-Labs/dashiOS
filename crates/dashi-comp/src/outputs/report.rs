@@ -62,6 +62,7 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         .unwrap_or_else(|| output.current_transform());
     let (rotation, flipped) = rotation_of(transform);
     let frame = state.space.output_geometry(output);
+    let mirror_of = state.mirrors.source_of(output);
     let vrr = state.backend.vrr_report(output);
     let usable = frame.map(|frame| {
         let mut zone = layer_map_for_output(output).non_exclusive_zone();
@@ -73,8 +74,9 @@ fn describe(state: &Dashi, output: &Output, primary: bool) -> Value {
         "make": properties.make,
         "model": properties.model,
         "serial": output.user_data().get::<crate::backend::udev::Serial>().map(|s| s.0.clone()).unwrap_or_default(),
-        "enabled": frame.is_some(),
-        "lit": frame.is_some(),
+        "enabled": frame.is_some() || mirror_of.is_some(),
+        "lit": frame.is_some() || mirror_of.is_some(),
+        "mirrorOf": mirror_of,
         "primary": primary,
         "physicalMm": { "width": properties.size.w, "height": properties.size.h },
         "scale": output.current_scale().fractional_scale(),

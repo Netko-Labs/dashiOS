@@ -58,8 +58,9 @@ export function parseScreens(answer: unknown): ScreenInfo[] {
   return outputs.flatMap((output: unknown): ScreenInfo[] => {
     if (typeof output !== "object" || output === null) return [];
     const { name, mode, physicalMm, scale, transform, enabled } = output as Record<string, unknown>;
-    // A monitor that is plugged in but off shows nothing: not a screen.
+    // A monitor that is plugged in but off shows nothing, and one that mirrors another shows that one: not a screen of its own.
     if (enabled === false) return [];
+    if (typeof (output as Record<string, unknown>).mirrorOf === "string") return [];
     const pixels = typeof mode === "object" && mode !== null ? (mode as Record<string, unknown>) : {};
     const size = typeof physicalMm === "object" && physicalMm !== null ? (physicalMm as Record<string, unknown>) : {};
     const width = number(pixels.width);

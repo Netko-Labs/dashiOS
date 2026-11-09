@@ -11,7 +11,7 @@ import { ETHERNET, SUN, speakerGlyph, wifiGlyph } from "../glyphs.ts";
 import { graphicsGlyph, keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
 import { MODE_LABEL, MODE_SHORT, type Mode, type ModeChoice } from "../power/modes/types.ts";
 import type { Bars } from "../system/network.ts";
-import { BATTERY, BLUETOOTH, BOLT, CONTRAST, HOTSPOT, MOON, PADLOCK, SUNSET } from "./glyphs.ts";
+import { BATTERY, BLUETOOTH, BOLT, CONTRAST, HOTSPOT, MIRROR, MOON, PADLOCK, SUNSET } from "./glyphs.ts";
 import type { Layout, TileSize } from "./layout.ts";
 
 /**
@@ -54,6 +54,7 @@ export const SYSTEM_CONTROLS: readonly ControlInfo[] = [
   { id: "night", title: "Night Shift", kind: "toggle", sizes: ["round", "wide"] },
   { id: "graphics", title: "Graphics", kind: "page", sizes: ["wide", "round"], page: "graphics" },
   { id: "hotspot", title: "Hotspot", kind: "toggle", sizes: ["round", "wide"] },
+  { id: "mirror", title: "Mirroring", kind: "toggle", sizes: ["round", "wide"] },
 ];
 
 /**
@@ -97,6 +98,8 @@ export interface ControlSnapshot {
   battery: { percent: number; charging: boolean; limit: number | null; time: string | null } | null;
   /** Personal Hotspot; null without Wi-Fi to share. */
   hotspot: boolean | null;
+  /** The other screens show the built-in one (display-config/mirror.ts); null with one screen. */
+  mirroring: boolean | null;
 }
 
 /** What a tile shows. */
@@ -136,6 +139,8 @@ export function isThere(id: string, snap: ControlSnapshot): boolean {
       return snap.graphics !== null;
     case "hotspot":
       return snap.hotspot !== null;
+    case "mirror":
+      return snap.mirroring !== null;
     default:
       return false;
   }
@@ -207,6 +212,8 @@ export function tileState(id: string, snap: ControlSnapshot): TileState | null {
     }
     case "hotspot":
       return { title, detail: onOff(snap.hotspot === true), glyph: HOTSPOT, on: snap.hotspot === true };
+    case "mirror":
+      return { title, detail: onOff(snap.mirroring === true), glyph: MIRROR, on: snap.mirroring === true };
     default:
       return null;
   }

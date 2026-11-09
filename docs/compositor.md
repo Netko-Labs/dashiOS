@@ -74,8 +74,10 @@ crates/dashi-comp/src/
                     graphics card let go while nothing needs it (sleep.rs; its
                     state machine lifecycle.rs, probes probe.rs, buffers
                     imports.rs, a card gone while open gone.rs)
-    winit.rs        nested in another compositor's window
-    headless.rs     no screens: IPC and protocol tests
+    winit.rs        nested in another compositor's window (a second, virtual
+                    screen beside it with DASHI_NESTED_SCREEN=WxH)
+    headless.rs     no screens drawn: IPC and protocol tests (more than one
+                    with DASHI_HEADLESS_SCREENS=N)
   handlers/         one module per Wayland protocol (or family): compositor,
                     xdg_shell, layer_shell, seat (clipboard, primary selection,
                     data-control, drag and drop: the drag icon rides under
@@ -93,7 +95,8 @@ crates/dashi-comp/src/
   render/           scene, one window's elements (windows.rs), title bars, cursor,
                     capture, presentation (present.rs), rounded corners (rounded.rs),
                     depth between windows (depth/: `window-style`), live pictures the shell places
-                    (thumbnails/: `space-previews`, `window-thumbnails`)
+                    (thumbnails/: `space-previews`, `window-thumbnails`), a screen showing
+                    another's picture (mirror.rs: `mirror`)
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
@@ -102,7 +105,7 @@ crates/dashi-comp/src/
                     keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager
   ipc/              socket, framing, requests
-  outputs/          `outputs`, `output`, `outputs-config`, VRR modes
+  outputs/          `outputs`, `output`, `outputs-config`, VRR modes, `mirror` (mirror.rs)
   session/          the session client, trust, lock, idle, agent input
   wallpaper/        pictures, video (GStreamer), live looks
 ```

@@ -32,6 +32,7 @@ pub(super) fn abandon(state: &mut Dashi, node: DrmNode, name: &str) {
     for screen in device.screens.values() {
         tracing::info!(name = screen.output.name(), "screen removed with its GPU");
         state.space.unmap_output(&screen.output);
+        state.mirror_output_gone(&screen.output);
         dh.remove_global::<Dashi>(screen.global.clone());
     }
     tracing::warn!(

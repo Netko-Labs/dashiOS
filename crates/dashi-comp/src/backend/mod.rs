@@ -14,7 +14,7 @@ use smithay::{backend::allocator::dmabuf::Dmabuf, wayland::dmabuf::ImportNotifie
 use crate::{
     render::{
         View,
-        capture::{Picture, render_view},
+        capture::{Picture, render_mirror, render_view},
     },
     state::Dashi,
 };
@@ -101,6 +101,24 @@ pub(crate) fn import_dmabuf(state: &mut Dashi, dmabuf: Dmabuf, notifier: ImportN
     } else {
         notifier.failed();
     }
+}
+
+/// A screen that mirrors another, offscreen as it shows now (`capture {output}`).
+pub(crate) fn capture_mirror(
+    state: &mut Dashi,
+    output: &smithay::output::Output,
+    cursor: bool,
+) -> Result<Picture, String> {
+    let mut backend = std::mem::take(&mut state.backend);
+    let result = match &mut backend {
+        Backend::Winit(data) => render_mirror(state, data.renderer(), output, cursor),
+        Backend::Udev(data) => {
+            data.with_renderer(|renderer| render_mirror(state, renderer, output, cursor))
+        }
+        Backend::Headless | Backend::None => Err("nothing renders here (headless)".into()),
+    };
+    state.backend = backend;
+    result
 }
 
 /// Render `view` offscreen with the backend's renderer (`capture`).
