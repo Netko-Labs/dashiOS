@@ -5,6 +5,7 @@ import { over } from "../apps/calendar/colors.ts";
 import { blockParts, TIME_BESIDE_FROM } from "../apps/calendar/event-block.tsx";
 import { shortViewTitle, viewTitle } from "../apps/calendar/format.ts";
 import { placeDay, weekDays } from "../apps/calendar/layout.ts";
+import { popoverOrigin } from "../apps/calendar/popover.tsx";
 import { RESULTS_WIDTH, resultsPlace } from "../apps/calendar/search-results.tsx";
 import type { Occurrence } from "../apps/calendar/types.ts";
 
@@ -124,4 +125,11 @@ test("a sheet keeps 16 from a narrow window's sides", () => {
   expect(sheetWidth(520, 1097)).toBe(520);
   expect(sheetWidth(520, 521)).toBe(489);
   expect(sheetWidth(520, 0)).toBe(520);
+});
+
+test("the popover stays inside a short window at its drawn height", () => {
+  // The small window's content (38 down, 363 tall); the popover measured 163 tall, pressed on an event at 300.
+  const at = popoverOrigin({ x: 120, y: 300, width: 400, height: 70 }, { x: 56, y: 38, width: 465, height: 363 }, 163);
+  expect(at.y + 163).toBeLessThanOrEqual(38 + 363 - 8);
+  expect(at.y).toBe(230);
 });
