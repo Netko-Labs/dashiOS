@@ -85,9 +85,11 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
                 overflow: "hidden",
               }}
             >
-              <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
-                {weekdayShort(day, prefs)}
-              </Text>
+              <View style={{ flexShrink: 1, minWidth: 0 }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
+                  {weekdayShort(day, prefs)}
+                </Text>
+              </View>
               {/* Today is an ink mark: green means "on". */}
               <View
                 style={{
@@ -101,9 +103,7 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
                   backgroundColor: isToday ? colors.text : day === state.selected && days.length > 1 ? colors.button : "#00000000",
                 }}
               >
-                <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>
-                  {dayNumber(day)}
-                </Text>
+                <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
               </View>
             </View>
           );

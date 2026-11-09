@@ -32,9 +32,7 @@ export function FormRow({ label, children, pills }: { label: string; children: R
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
       <View style={{ width: 62, height: line, flexShrink: 0, alignItems: "flex-end", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-          {label}
-        </Text>
+        <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0, minHeight: line, flexDirection: "row", alignItems: "flex-start", gap: 6, flexWrap: "wrap" }}>{children}</View>
     </View>
