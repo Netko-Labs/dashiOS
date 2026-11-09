@@ -6,7 +6,7 @@
  * without anyone touching it; the first row is live.
  */
 
-import { Appearance, ShowStates, useColors, useDark, useSurface } from "@dashi/ui";
+import { Appearance, type Palette, ShowStates, useColors, useDark, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { columnsFor, type Mode } from "./pages.ts";
@@ -107,6 +107,15 @@ export function States({ states = CONTROL_STATES, children }: { states?: readonl
       ))}
     </View>
   );
+}
+
+/**
+ * Draws `children` with the colors of the panel it is in. An exhibit's
+ * children are made by the page, outside the panels, so a page's own
+ * `useColors()` gives the window's mode: a Dark panel would get Light ink.
+ */
+export function Inked({ children }: { children: (colors: Palette) => ReactNode }): ReactNode {
+  return children(useColors());
 }
 
 /** A labeled line inside an exhibit (a token's name and value, a measure). */

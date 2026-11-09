@@ -136,12 +136,20 @@ function MoreSegment({ testID, more, disabled }: { testID: string; more: MorePil
   );
 }
 
+/** How a row of pills was laid out: whether it took more than one line, and how wide it was. */
+export interface PillsLaid {
+  wrapped: boolean;
+  width: number;
+}
+
 /**
  * Told, as the pills are laid out, whether they had to wrap onto a second
- * line: a Settings row then puts them under its words instead (row.tsx),
- * where they have the card's width and keep one line.
+ * line and how wide they were: a Settings row then puts them under its words
+ * instead (row.tsx), where they have the card's width and keep one line. The
+ * width comes in the same event as the wrap, so a row never pairs it with a
+ * width of its own from another layout.
  */
-export const PillsWrapped = createContext<((wrapped: boolean) => void) | null>(null);
+export const PillsWrapped = createContext<((laid: PillsLaid) => void) | null>(null);
 
 /** Whether a row of pills `height` tall took more than one line. */
 export const pillsWrapped = (height: number): boolean => height > SEGMENTED.height + 2 * SEGMENTED.padding + 1;
@@ -159,7 +167,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
       testID={testID}
       focusGroup
       accessibilityRole="group"
-      {...(report ? { onLayout: (laid: { height: number }) => report(pillsWrapped(laid.height)) } : {})}
+      {...(report ? { onLayout: (laid: { width: number; height: number }) => report({ wrapped: pillsWrapped(laid.height), width: laid.width }) } : {})}
       style={{
         flexDirection: "row",
         flexWrap: "wrap",

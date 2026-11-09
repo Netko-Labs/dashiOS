@@ -9,7 +9,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
-import { PillsWrapped } from "../shared/controls/inputs.tsx";
+import { type PillsLaid, PillsWrapped } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { Knob } from "../shared/controls/parts.tsx";
 import { CardRowsContext } from "./edge.ts";
@@ -43,42 +43,41 @@ export interface RowProps {
 }
 
 /**
- * Whether a row's pills go under its words: once they wrapped beside them
- * at some width (`wrappedAt`), at that width and under; past it they are
- * tried beside the words again. Pure.
+ * Whether a row's pills go under its words: when the room beside the words
+ * (`room`) is less than the pills' width on one line (`natural`, once
+ * known). Pure.
  */
-export function pillsUnder(width: number, wrappedAt: number | null): boolean {
-  return wrappedAt !== null && width <= wrappedAt;
+export function pillsUnder(room: number, natural: number | null): boolean {
+  return natural !== null && room < natural;
+}
+
+/** The room a row `width` wide leaves its control beside the words: its insets, the knob and its gap, the words' least width and the gap after them. */
+export function roomBeside(width: number, knob: boolean): number {
+  const inset = (knob ? PAGE.knobInset + PAGE.knob + 12 : PAGE.inset) + PAGE.inset;
+  return width - inset - PAGE.words - 12;
 }
 
 /**
- * Pills that wrap beside a row's words go under them instead: the row
- * hears it from the pills (`PillsWrapped`) and remembers the width it
- * happened at, so a narrow window never shows a pill alone on a second line.
+ * Pills that wrap beside a row's words go under them instead, so a narrow
+ * window never shows a pill alone on a second line. The row learns the
+ * pills' one-line width from the pills themselves (`PillsWrapped`): laid on
+ * one line, their width; wrapped, more than the width they were squeezed to.
+ * It compares that with the room its own width leaves, so the choice never
+ * depends on which layout event came first: the pills' comes before their
+ * row's (mirin reports a parent's children after laying them out), and a
+ * wrap paired with the row's last width remembered a wider window's width,
+ * keeping the pills under at full screen.
  */
-function useWrapFit(): { under: boolean; onWidth: (width: number) => void; report: (wrapped: boolean) => void } {
+function useWrapFit(knob: boolean): { under: boolean; onWidth: (width: number) => void; report: (laid: PillsLaid) => void } {
   const [width, setWidth] = useState(0);
-  const [wrappedAt, setWrappedAt] = useState<number | null>(null);
-  const under = pillsUnder(width, wrappedAt);
-  const latest = useRef({ width, under });
-  latest.current = { width, under };
-  // Pills can be laid out before the row has told its width: the wrap waits for it.
-  const pending = useRef(false);
+  const [natural, setNatural] = useState<number | null>(null);
+  const under = width > 0 && pillsUnder(roomBeside(width, knob), natural);
   return {
     under,
-    onWidth: (laid) => {
-      const rounded = Math.round(laid);
-      if (rounded === latest.current.width) return;
-      setWidth(rounded);
-      if (pending.current) {
-        pending.current = false;
-        setWrappedAt(rounded);
-      }
-    },
-    report: (wrapped) => {
-      const now = latest.current;
-      pending.current = wrapped && now.width === 0;
-      if (wrapped && !now.under && now.width > 0) setWrappedAt(now.width);
+    onWidth: (laid) => setWidth(Math.round(laid)),
+    report: ({ wrapped, width: pills }) => {
+      const wide = Math.ceil(pills);
+      setNatural((known) => (wrapped ? Math.max(known ?? 0, wide + 1) : wide));
     },
   };
 }
@@ -87,7 +86,7 @@ function useWrapFit(): { under: boolean; onWidth: (width: number) => void; repor
 export function Row({ label, detail, glyph, children, stack: asked, below, testID }: RowProps) {
   const colors = useControlColors();
   useCardRow(glyph !== undefined);
-  const fit = useWrapFit();
+  const fit = useWrapFit(glyph !== undefined);
   const stack = asked === true || fit.under;
   const words = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: PAGE.words }}>
@@ -120,7 +119,10 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
     >
       {top}
       {stack && children !== undefined && children !== null && children !== false && (
-        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{children}</View>
+        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>
+          {/* Under the words, the pills still tell their one-line width, so the row knows when they fit beside again. */}
+          {asked === true ? children : <PillsWrapped.Provider value={fit.report}>{children}</PillsWrapped.Provider>}
+        </View>
       )}
       {below !== undefined && below !== null && below !== false && (
         <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{below}</View>

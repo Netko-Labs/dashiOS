@@ -15,14 +15,12 @@ import {
   Table,
   TINTS,
   Tile,
-  useColors,
 } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Caption, Exhibit, PageBody, States } from "../specimen.tsx";
+import { Caption, Exhibit, Inked, PageBody, States } from "../specimen.tsx";
 
 export function RowsPage() {
-  const colors = useColors();
   const [on, setOn] = useState(true);
   return (
     <PageBody>
@@ -33,7 +31,7 @@ export function RowsPage() {
             <Switch testID="group:switch" on={on} onChange={setOn} />
           </Row>
           <Row label="Charge limit">
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>80%</Text>
+            <Inked>{(colors) => <Text style={{ fontSize: 12, color: colors.textMuted }}>80%</Text>}</Inked>
           </Row>
         </Group>
         <GroupCaption>The battery lasts longest kept below full.</GroupCaption>
@@ -119,13 +117,12 @@ export function ListsPage() {
 const SHORTCUTS = ["❖N", "⇧❖Z", "⌃❖Q", "⌥❖Space", "❖⌫", "Esc"] as const;
 
 export function ShortcutsPage() {
-  const colors = useColors();
   return (
     <PageBody>
       <Exhibit title="Shortcut" note="Keys are drawn, never typed: fonts don't have ❖. Mac order: ⌃ ⌥ ⇧ ❖, then the key.">
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
           {SHORTCUTS.map((keys) => (
-            <Shortcut key={keys} keys={keys} color={colors.text} />
+            <Inked key={keys}>{(colors) => <Shortcut keys={keys} color={colors.text} />}</Inked>
           ))}
         </View>
       </Exhibit>
@@ -134,7 +131,7 @@ export function ShortcutsPage() {
           {Object.entries(glyphs).map(([name, markup]) => (
             // As wide as the longest name (CHEVRON_UP_DOWN), so no name runs past its cell into the card's edge.
             <View key={name} style={{ width: 124, flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <Svg markup={markup} size={18} color={colors.text} />
+              <Inked>{(colors) => <Svg markup={markup} size={18} color={colors.text} />}</Inked>
               <Caption>{name}</Caption>
             </View>
           ))}

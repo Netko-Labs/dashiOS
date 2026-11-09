@@ -6,7 +6,7 @@
 
 import { contrastRatio, type Palette, type Surface, TEXT_SIZES, TINT_ORDER, TINTS, useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { Exhibit, PageBody } from "../specimen.tsx";
+import { Exhibit, Inked, PageBody } from "../specimen.tsx";
 
 /** A chip of `color` on the card, its name, its value, and (for an ink) its contrast on the window. */
 function Swatch({ name, color, ratio }: { name: string; color: string; ratio?: number }) {
@@ -77,21 +77,24 @@ export function GroundsPage() {
 }
 
 export function TintsPage() {
-  const colors = useColors();
   return (
     <PageBody>
       <Exhibit title="Tints" note="Color that only tells things apart, never a job color, in the order a list takes them. White reads on every one.">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {TINT_ORDER.map((name) => (
-            <View key={name} style={{ width: 72, flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: TINTS[name] }}>
-                <Text style={{ fontSize: 15, fontWeight: "bold", color: "#ffffff" }}>{name.slice(0, 1).toUpperCase()}</Text>
-              </View>
-              <Text style={{ fontSize: 11, color: colors.text }}>{name}</Text>
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: "monospace" }}>{TINTS[name]}</Text>
+        <Inked>
+          {(colors) => (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+              {TINT_ORDER.map((name) => (
+                <View key={name} style={{ width: 72, flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <View style={{ width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: TINTS[name] }}>
+                    <Text style={{ fontSize: 15, fontWeight: "bold", color: "#ffffff" }}>{name.slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: colors.text }}>{name}</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: "monospace" }}>{TINTS[name]}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          )}
+        </Inked>
       </Exhibit>
     </PageBody>
   );
@@ -109,27 +112,32 @@ const SCALE: ReadonlyArray<{ size: number; weight: "normal" | "semibold" | "bold
 ];
 
 export function TypePage() {
-  const colors = useColors();
   return (
     <PageBody>
       <Exhibit title="Type scale" note="Weights are 400, 600 and 700 only, and no size is fractional.">
-        {SCALE.map((step) => (
-          <View key={`${step.size}:${step.weight}`} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={{ width: 70, flexShrink: 0 }}>
-              <Text
-                style={{ fontSize: 11, color: colors.textMuted }}
-              >{`${step.size} ${step.weight === "normal" ? "Regular" : step.weight === "bold" ? "Bold" : "SemiBold"}`}</Text>
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: step.size, fontWeight: step.weight, color: colors.text }}>
-                {step.job}
-              </Text>
-            </View>
-          </View>
-        ))}
+        <Inked>
+          {(colors) =>
+            SCALE.map((step) => (
+              <View key={`${step.size}:${step.weight}`} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ width: 70, flexShrink: 0 }}>
+                  <Text
+                    style={{ fontSize: 11, color: colors.textMuted }}
+                  >{`${step.size} ${step.weight === "normal" ? "Regular" : step.weight === "bold" ? "Bold" : "SemiBold"}`}</Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={{ fontSize: step.size, fontWeight: step.weight, color: colors.text }}>
+                    {step.job}
+                  </Text>
+                </View>
+              </View>
+            ))
+          }
+        </Inked>
       </Exhibit>
       <Exhibit title="Text size" note="Settings › Appearance › Text size multiplies every size by one of these.">
-        <Text style={{ fontSize: 12, color: colors.text }}>{TEXT_SIZES.map((size) => `${Math.round(size * 100)}%`).join(" · ")}</Text>
+        <Inked>
+          {(colors) => <Text style={{ fontSize: 12, color: colors.text }}>{TEXT_SIZES.map((size) => `${Math.round(size * 100)}%`).join(" · ")}</Text>}
+        </Inked>
       </Exhibit>
     </PageBody>
   );
