@@ -35,12 +35,23 @@ export const SCRIM = { light: "#00000026", dark: "#0000008c" } as const;
 export const SHEET_MARGIN = 16;
 
 /**
+ * The most a sheet's scrolling body may take in a window `windowHeight`
+ * tall, besides `rest` (its buttons, gaps and other rows): the sheet hangs 8
+ * under the toolbar (`top`, the title bar's inset), keeps SHEET_MARGIN from
+ * the foot, and has 20 of padding and 1 of edge above and below. Taffy can't
+ * size a scroll view by shrinking it, so a sheet caps its body with this.
+ */
+export function sheetBodyRoom(windowHeight: number, top: number, rest: number): number {
+  return Math.max(96, Math.floor(windowHeight - (top + 8) - SHEET_MARGIN - 2 * 21 - rest));
+}
+
+/**
  * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
  * shadow): `Sheet` hangs one from a window; a surface of its own (the
  * shell's applet consent) shows one with no window to hang from. With
- * `fit`, a window narrower or shorter than its `width` and its content
- * makes it give way: a body that scrolls (`flexShrink: 1, minHeight: 0`)
- * takes the cut, and its buttons stay.
+ * `fit`, a window narrower than its `width` makes it narrower. A sheet that
+ * can outgrow a short window caps its own scrolling body (`sheetBodyRoom`),
+ * so its buttons stay in reach.
  */
 export function SheetCard({
   children,
@@ -53,7 +64,7 @@ export function SheetCard({
   testID: string;
   width?: number;
   marginTop?: number;
-  /** In a window (`Sheet`): at most `width`, and never wider or taller than the room its parent leaves. */
+  /** In a window (`Sheet`): at most `width`, and never wider than the room its parent leaves. */
   fit?: boolean;
 }) {
   const colors = useColors();
@@ -66,7 +77,7 @@ export function SheetCard({
       focusTrap
       accessibilityRole="dialog"
       style={{
-        ...(fit ? { width: "100%" as const, maxWidth: width, flexShrink: 1 as const, minHeight: 0 } : { width }),
+        ...(fit ? { width: "100%" as const, maxWidth: width } : { width }),
         marginTop,
         flexDirection: "column",
         gap: 10,

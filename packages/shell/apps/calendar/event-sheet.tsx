@@ -7,7 +7,7 @@
  * need it: they are drawn, named, moved, and stretched on the grid.
  */
 
-import { Button, Choices, Sheet, Switch, TextField, useColors, useSurface } from "@dashi/ui";
+import { Button, Choices, Sheet, Switch, sheetBodyRoom, TextField, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { ClockPrefs } from "../../src/clock.ts";
@@ -28,7 +28,15 @@ export interface EventSheetProps {
   onSave: (draft: Draft) => void;
   onDelete: () => void;
   onCancel: () => void;
+  /** The window's height (0 before it is laid out): the form scrolls within what the window leaves. */
+  windowHeight?: number;
 }
+
+/** The form's most, in a tall window. */
+const FORM_MAX = 540;
+/** Under the form: the buttons (28, 2 above) and the gap before them; the problem's line (16 and a gap) when there is one. */
+const FOOTER = 10 + 2 + 28;
+const PROBLEM = 10 + 16;
 
 const REPEATS: ReadonlyArray<{ value: RepeatChoice; label: string }> = [
   { value: "none", label: "Never" },
@@ -44,9 +52,10 @@ const ENDS: ReadonlyArray<{ value: EndsChoice; label: string }> = [
 ];
 const UNITS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } as const;
 
-export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, editing, onSave, onDelete, onCancel }: EventSheetProps) {
+export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, editing, onSave, onDelete, onCancel, windowHeight = 0 }: EventSheetProps) {
   const colors = useColors();
   const surface = useSurface();
+  const inset = useTitleBarInset();
   const [draft, setDraft] = useState(initial);
   const change = (patch: Partial<Draft>): void => setDraft((current) => ({ ...current, ...patch }));
   const problem = problemWith(draft);
@@ -67,11 +76,12 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
     { value: "weekday", label: `On ${nthName(nthOf(draft.startDay), prefs)}` },
   ];
   const fields = { prefs, firstDay };
+  const formMax = windowHeight > 0 ? Math.min(FORM_MAX, sheetBodyRoom(windowHeight, inset.top, FOOTER + (problem !== null ? PROBLEM : 0))) : FORM_MAX;
 
   return (
     <Sheet testID="event-sheet" width={520} onCancel={onCancel}>
       {/* The form scrolls, and gives way first in a short window; the problem and the buttons stay in reach. */}
-      <ScrollView testID="event-form" style={{ flexShrink: 1, minHeight: 0, maxHeight: 540 }}>
+      <ScrollView testID="event-form" style={{ maxHeight: formMax }}>
         <View style={{ flexDirection: "column", gap: 10, paddingBottom: 2 }}>
           <FormRow label="Title">
             <TextField

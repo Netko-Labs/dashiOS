@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { sheetBodyRoom } from "@dashi/ui";
 import { CALENDAR_LEAST, CONTROLS_COMPACT, chromeFor, RAIL_WIDTH, SIDEBAR_FULL, toolbarRoom } from "../apps/calendar/chrome.ts";
 import { over } from "../apps/calendar/colors.ts";
 import { blockParts, TIME_BESIDE_FROM } from "../apps/calendar/event-block.tsx";
@@ -110,4 +111,11 @@ test("Find's answers hang under its field, inside the window", () => {
   expect(resultsPlace({ x: 400, y: 5, width: 120, height: 28 }, 539)).toEqual({ top: 39, left: 539 - 12 - RESULTS_WIDTH, width: RESULTS_WIDTH });
   // Before the field is laid out: under the toolbar at the right.
   expect(resultsPlace(null, 1097)).toEqual({ top: 42, left: 1097 - 12 - RESULTS_WIDTH, width: RESULTS_WIDTH });
+});
+
+test("the event sheet's form scrolls within what a short window leaves", () => {
+  // The small window (401 tall, toolbar 38): the sheet hangs at 46, keeps 16 from the foot, 42 of padding and edge, 40 of buttons.
+  expect(sheetBodyRoom(401, 38, 40)).toBe(401 - 46 - 16 - 42 - 40);
+  // Never less than a few rows.
+  expect(sheetBodyRoom(200, 38, 40)).toBe(96);
 });

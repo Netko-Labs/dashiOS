@@ -375,6 +375,7 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
         takeKeys();
       }}
       onCancel={closeOverlay}
+      windowHeight={area.y + area.height}
     />
   ) : sheet ? (
     <SheetLayer
