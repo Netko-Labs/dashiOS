@@ -171,7 +171,9 @@ function useChooserParts({ model, exists, answer }: ChooserViewProps) {
         testID="chooser:search"
         autoFocus={!saving}
         placeholder="Search"
+        // It shares the header's room, so a small window's sheet keeps it inside, clear of the edge.
         width={200}
+        minWidth={100}
         value={typedPath ?? files.query}
         onChangeText={search}
         onKeyPress={searchKeys}

@@ -51,13 +51,15 @@ export function toolbarInset(leading: number, sidebarWidth: number): number {
 
 /** The widest a window's title gets in its toolbar before it is cut. */
 const TITLE_MAX = 320;
+/** The room the title keeps before the toolbar's controls give any of theirs (a field that shrinks). */
+const TITLE_MIN = 96;
 
 export interface AppWindowProps {
   /** The window's name, on one line. */
   title: string;
   /**
    * A short word about it, after the title on the same line, muted ("All Notes — 3 notes").
-   * Never a second line: short of room, both are cut with an ellipsis.
+   * Never a second line: short of room, it is cut with an ellipsis first, then the title.
    */
   detail?: string;
   /** Controls at the toolbar's start, before the title (back and forward). */
@@ -126,25 +128,27 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
             >
               {leading}
               {center}
-              {center === undefined && inset.unified && (
-                // The title keeps its width (up to TITLE_MAX, then an ellipsis): the detail and the
-                // toolbar's own words give way first.
-                <View style={{ flexShrink: 1, flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ flexShrink: 0, maxWidth: TITLE_MAX }}>
+              {center === undefined && inset.unified ? (
+                // The title takes the room the controls leave, and the controls never move. The detail has
+                // only what the title leaves (it grows from nothing), so it is cut first; then the title,
+                // each with an ellipsis. Below TITLE_MIN a field that shrinks gives up its room instead.
+                <View testID="window-title" style={{ flex: 1, minWidth: TITLE_MIN, flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexShrink: 1, minWidth: 0, maxWidth: TITLE_MAX }}>
                     <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                       {title}
                     </Text>
                   </View>
                   {detail ? (
-                    <View testID="window-title-detail" style={{ flexShrink: 1, minWidth: 0 }}>
+                    <View testID="window-title-detail" style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
                         {` — ${detail}`}
                       </Text>
                     </View>
                   ) : null}
                 </View>
+              ) : (
+                center === undefined && <View style={{ flex: 1 }} />
               )}
-              {center === undefined && <View style={{ flex: 1 }} />}
               {toolbar}
             </View>
           )}

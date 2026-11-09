@@ -133,6 +133,7 @@ export function TextField({ value, onChangeText, testID, placeholder, width, aut
  * A search (the default, a list's filter) empties itself on the first Esc, as on the Mac.
  * A find (`variant="find"`, Find in a document) keeps its query on Esc and passes the key
  * on at once: the app hands the keyboard back to the document, the current match selected.
+ * `status` is a few muted words at its end, about what it found ("2 of 4").
  */
 export function SearchField({
   value,
@@ -145,6 +146,7 @@ export function SearchField({
   variant = "search",
   onKeyPress,
   onSubmit,
+  status,
 }: {
   value: string;
   onChangeText: (text: string) => void;
@@ -158,6 +160,8 @@ export function SearchField({
   variant?: "search" | "find";
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
   onSubmit?: (text: string) => void;
+  /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
+  status?: string | null;
 }) {
   const colors = useColors();
   return (
@@ -190,6 +194,13 @@ export function SearchField({
         }}
         style={{ flex: 1, height: 24, padding: 2, fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
       />
+      {status ? (
+        <View testID={`${testID}:status`} style={{ flexShrink: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+            {status}
+          </Text>
+        </View>
+      ) : null}
       {value !== "" && (
         <View testID={`${testID}:clear`} onPress={() => onChangeText("")} style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}>
           <Svg markup={CLEAR} size={13} color={colors.textMuted} />

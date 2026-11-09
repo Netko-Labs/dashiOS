@@ -75,9 +75,12 @@ test("an Untitled document is a draft, counted once typing pauses; the Save shee
   host.emit({ type: "change", nodeId: text, value: "hello there" });
   await settle();
   expect(model.getSnapshot().text).toBe("hello there");
-  expect(host.trees.at(-1)).toContain("Draft · 1 line · 0 words");
+  // The title row keeps the name and "Draft"; the counts wait in the chip at the text's foot (review 54).
+  expect(host.trees.at(-1)).toContain(' — Draft"');
+  expect(host.trees.at(-1)).toContain("1 line · 0 words");
+  expect(root.nodeId("counts")).toBeDefined();
   await new Promise((done) => setTimeout(done, 350));
-  expect(host.trees.at(-1)).toContain("Draft · 1 line · 2 words");
+  expect(host.trees.at(-1)).toContain("1 line · 2 words");
 
   // Save on an Untitled document asks where: Files' chooser, in the home folder, the name ready.
   const save = root.nodeId("save");
@@ -282,7 +285,10 @@ test("Find washes every match and selects the one it is on; the caret is held; l
   await settle();
   expect(text()?.highlights?.[1]).toEqual({ start: 8, end: 11, color: "#E5B13F99" });
   expect(text()?.selection).toEqual({ start: 8, end: 11 });
-  expect(host.trees.at(-1)).toContain("2 of 3 · line 2");
+  // Find's place is in its field, short enough for it.
+  expect(root.nodeId("find:status")).toBeDefined();
+  expect(host.trees.at(-1)).toContain("2 of 3");
+  expect(host.trees.at(-1)).not.toContain("line 2");
 
   // Where the input says the caret went is where it stays, through Undo's new text.
   host.emit({ type: "selection", nodeId: root.nodeId("text") as string, start: 4, end: 4 });

@@ -20,7 +20,7 @@ import { parseArgs } from "./args.ts";
 import { EditorModel } from "./model.ts";
 import { moveOldRecovery, RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./recovery.ts";
 import { VersionStore } from "./versions.ts";
-import { EDITOR_SIZE, EditorWindow } from "./view.tsx";
+import { EDITOR_MIN_SIZE, EDITOR_SIZE, EditorWindow } from "./view.tsx";
 import { type Launch, openWindow, windowCommand } from "./windows.ts";
 
 const args = parseArgs(Bun.argv.slice(2));
@@ -50,7 +50,7 @@ const DISK_CHECK_MS = 2000;
 
 const app = runApp(
   // Its Edit rows already act on whichever field has the keyboard, and its Undo is the document's.
-  { id: "dev.dashi.editor", title: "Text Editor", size: EDITOR_SIZE, host: launch.host, textChordsToFields: false },
+  { id: "dev.dashi.editor", title: "Text Editor", size: EDITOR_SIZE, minSize: EDITOR_MIN_SIZE, host: launch.host, textChordsToFields: false },
   <EditorWindow
     model={model}
     quit={(drop) => {

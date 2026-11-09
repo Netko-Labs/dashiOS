@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { lineCount, lineStart } from "../apps/editor/find.ts";
 import { EditorModel } from "../apps/editor/model.ts";
 import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/prefs.ts";
-import { findHighlights, findStatus, statusLine } from "../apps/editor/status.ts";
+import { countsLine, findHighlights, findPlace, titleDetail } from "../apps/editor/status.ts";
 import { gutterWidth } from "../apps/editor/text-area.tsx";
 import {
   AUTO_EVERY,
@@ -251,14 +251,18 @@ describe("versions", () => {
 });
 
 describe("the window's words and marks", () => {
-  test("Find's place and the muted words after the title", () => {
+  test("Find's place fits its field; the folder follows the title; the counts and an unusual encoding share the chip", () => {
     const find = { query: "one", caseSensitive: false, matches: [0, 8, 16], current: -1 };
-    expect(findStatus({ ...find, query: "" }, () => 1)).toBeNull();
-    expect(findStatus({ ...find, matches: [] }, () => 1)).toBe("Not found");
-    expect(findStatus(find, () => 1)).toBe("3 matches");
-    expect(findStatus({ ...find, current: 1 }, () => 40)).toBe("2 of 3 · line 40");
-    expect(statusLine({ folder: "~/Documents", place: "2 words", encoding: "utf-8", lineEnding: "lf" })).toBe("~/Documents · 2 words");
-    expect(statusLine({ folder: null, place: "2 words", encoding: "windows-1252", lineEnding: "crlf" })).toBe("Draft · 2 words · Western (Windows) · CRLF");
+    expect(findPlace({ ...find, query: "" })).toBeNull();
+    expect(findPlace({ ...find, matches: [] })).toBe("Not found");
+    expect(findPlace(find)).toBe("3 matches");
+    expect(findPlace({ ...find, matches: [0], current: -1 })).toBe("1 match");
+    expect(findPlace({ ...find, current: 1 })).toBe("2 of 3");
+    expect(titleDetail("~/Documents")).toBe("~/Documents");
+    expect(titleDetail(null)).toBe("Draft");
+    expect(countsLine({ counts: "2 words", encoding: "utf-8", lineEnding: "lf" })).toBe("2 words");
+    expect(countsLine({ counts: "2 words", encoding: "windows-1252", lineEnding: "crlf" })).toBe("2 words · Western (Windows) · CRLF");
+    expect(countsLine({ counts: "2 words", encoding: "utf-8", lineEnding: "crlf" })).toBe("2 words · UTF-8 · CRLF");
   });
 
   test("every match is highlighted, the current one deeper", () => {

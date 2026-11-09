@@ -54,7 +54,7 @@ function fittingStart(text: string, room: number): string {
 
 /** `name` as lines that each fit `room` ems, at most `lines` of them, joined by line breaks. */
 export function tileName(name: string, room: number, lines = 2): string {
-  const parts = nameParts(name);
+  const parts = keepExtension(nameParts(name));
   const out: string[] = [];
   let line = "";
   let at = 0;
@@ -83,4 +83,15 @@ export function tileName(name: string, room: number, lines = 2): string {
   // The last line takes what is left, its middle cut when it is too long.
   const rest = parts.slice(at).join("");
   return [...out, fitMiddle(rest, room)].join("\n");
+}
+
+/**
+ * `parts` with the extension kept on its last word ("meeting-" over "notes.txt", never "meeting-notes"
+ * over ".txt"), when the name has another place to break; "confidential.pdf" still breaks before its dot.
+ */
+export function keepExtension(parts: readonly string[]): string[] {
+  const last = parts.at(-1);
+  if (parts.length < 3 || last === undefined || !last.startsWith(".")) return [...parts];
+  if (!parts.slice(0, -2).some((part) => /[\s\-_]$/u.test(part))) return [...parts];
+  return [...parts.slice(0, -2), `${parts.at(-2)}${last}`];
 }
