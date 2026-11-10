@@ -9,8 +9,7 @@ use smithay::{
     utils::{Logical, Point, Rectangle, SERIAL_COUNTER, Size},
 };
 
-use super::geometry::frame_of;
-use super::windows::{Shown, WindowId, toplevel_surface};
+use super::{Shown, WindowId, frame_of, toplevel_surface};
 use crate::state::Dashi;
 
 /// The smallest frame a request may ask for; anything less is a mistake, not a window.

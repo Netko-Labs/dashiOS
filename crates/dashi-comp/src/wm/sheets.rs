@@ -10,8 +10,7 @@
 
 use smithay::utils::{Logical, Point};
 
-use super::geometry::frame_of;
-use super::windows::{WindowId, toplevel_surface};
+use super::{WindowId, frame_of, toplevel_surface};
 use crate::state::Dashi;
 
 impl Dashi {
