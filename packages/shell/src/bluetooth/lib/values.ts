@@ -5,9 +5,9 @@
  * the devices themselves, so they are cleaned before anything draws them.
  */
 
-import { propertyMap } from "../shared/dbus/index.ts";
-import { cleanText } from "../shared/io/text.ts";
-import type { AdapterReading, BluetoothReading, DeviceKind, RawDevice } from "./types.ts";
+import { propertyMap } from "../../shared/dbus/index.ts";
+import { cleanText } from "../../shared/io/text.ts";
+import type { AdapterReading, BluetoothReading, DeviceKind, RawDevice } from "../types.ts";
 
 export const ADAPTER_PATH = /^\/org\/bluez\/hci(\d{1,3})$/;
 export const DEVICE_PATH = /^\/org\/bluez\/hci\d{1,3}\/dev_[0-9A-Fa-f]{2}(?:_[0-9A-Fa-f]{2}){5}$/;

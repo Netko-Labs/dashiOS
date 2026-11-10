@@ -8,11 +8,11 @@
  * is made when first needed and made again if it dropped.
  */
 
-import { BUS_NAME, DBusConnection } from "../shared/dbus/index.ts";
+import { BUS_NAME, DBusConnection } from "../../shared/dbus/index.ts";
+import { classify, type Outcome } from "../failures.ts";
+import type { ActionResult, BluetoothBackend, BluetoothReading, PairingHandler, PairResult } from "../types.ts";
 import { AgentRegistration } from "./agent.ts";
 import { BLUEZ, BluezClient, OBJECT_MANAGER, PROPERTIES } from "./bluez-client.ts";
-import { classify, type Outcome } from "./failures.ts";
-import type { ActionResult, BluetoothBackend, BluetoothReading, PairingHandler, PairResult } from "./types.ts";
 import { adapterOf, DEVICE_PATH, IFACE, parseManagedObjects } from "./values.ts";
 
 export interface BluezOptions {

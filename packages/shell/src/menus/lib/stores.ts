@@ -3,8 +3,7 @@
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor } from "../../apps.ts";
 import { placedOutputs } from "../../arrange/index.ts";
-import { PairingPrompt } from "../../bluetooth/prompt.tsx";
-import { BluetoothStore } from "../../bluetooth/store.ts";
+import { BluetoothStore, PairingPrompt } from "../../bluetooth/index.ts";
 import { DeviceStore, radiosFor } from "../../control-center/index.ts";
 import { holdingBar } from "../../menubar/bar-hold.ts";
 import { openOverlay } from "../../overlay.tsx";

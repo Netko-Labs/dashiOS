@@ -9,7 +9,7 @@
 
 import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
-import type { BluetoothStore } from "../bluetooth/store.ts";
+import type { BluetoothStore } from "../bluetooth/index.ts";
 import type { DeviceStore } from "../control-center/index.ts";
 import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Laptop } from "../laptop/index.ts";

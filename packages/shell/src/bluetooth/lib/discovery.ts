@@ -5,7 +5,7 @@
  * when the minute is up it stops until the person asks again.
  */
 
-import type { BluetoothBackend } from "./types.ts";
+import type { BluetoothBackend } from "../types.ts";
 
 const DISCOVERY_MS = 60_000;
 

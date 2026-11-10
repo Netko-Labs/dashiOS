@@ -3,7 +3,7 @@
  * that turn up while it "searches", each with the pairing it asks for.
  */
 
-import type { RawDevice } from "./types.ts";
+import type { RawDevice } from "../types.ts";
 import { DEVICE_PATH, kindOf } from "./values.ts";
 
 /** What pairing asks of the person. */

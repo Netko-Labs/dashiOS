@@ -4,7 +4,7 @@
  * that could be. Pure, because the order is what the page promises.
  */
 
-import type { BluetoothDevice, RawDevice } from "./types.ts";
+import type { BluetoothDevice, RawDevice } from "../types.ts";
 
 /**
  * Signal strength is shown in steps this many dBm wide. A radio's reading

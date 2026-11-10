@@ -263,8 +263,8 @@
 1	packages/shell/src/battery/panel-numbers.ts
 1	packages/shell/src/battery/popover.tsx
 5	packages/shell/src/battery/start.ts
+1	packages/shell/src/bluetooth/lib/values.ts
 2	packages/shell/src/bluetooth/select.ts
-1	packages/shell/src/bluetooth/values.ts
 3	packages/shell/src/boot/apps.ts
 1	packages/shell/src/boot/desktop.ts
 3	packages/shell/src/boot/launcher.tsx
@@ -284,7 +284,6 @@
 4	packages/shell/src/control-center/devices.ts
 1	packages/shell/src/control-center/index.ts
 5	packages/shell/src/control-center/lib/laptop-pages.tsx
-1	packages/shell/src/control-center/lib/pages.tsx
 6	packages/shell/src/control-center/lib/snapshot.ts
 3	packages/shell/src/control-center/panel.tsx
 1	packages/shell/src/control-center/radios.ts
@@ -322,7 +321,7 @@
 5	packages/shell/src/menubar/lib/menubar-program-slots.tsx
 1	packages/shell/src/menubar/lib/menubar-slots.tsx
 1	packages/shell/src/menubar/menubar.tsx
-2	packages/shell/src/menus/lib/stores.ts
+1	packages/shell/src/menus/lib/stores.ts
 1	packages/shell/src/menus/model.ts
 3	packages/shell/src/menus/options.ts
 2	packages/shell/src/menus/session.ts
@@ -362,7 +361,6 @@
 2	packages/shell/src/settings-app/lib/panes/battery-hero.tsx
 5	packages/shell/src/settings-app/lib/panes/battery-laptop.tsx
 3	packages/shell/src/settings-app/lib/panes/battery.tsx
-1	packages/shell/src/settings-app/lib/panes/bluetooth.tsx
 1	packages/shell/src/settings-app/lib/panes/date-time.tsx
 3	packages/shell/src/settings-app/lib/panes/displays.tsx
 5	packages/shell/src/settings-app/lib/panes/graphics.tsx

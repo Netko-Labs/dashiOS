@@ -19,7 +19,6 @@
 1	packages/shell/src/applets/protocol.ts
 1	packages/shell/src/applets/server.ts
 1	packages/shell/src/apps.ts
-1	packages/shell/src/bluetooth/store.ts
 1	packages/shell/src/display-config/manager.ts
 1	packages/shell/src/shared/app-menus/protocol.ts
 4	packages/shell/src/shared/calendar/ics.ts

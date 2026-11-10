@@ -7,10 +7,10 @@
  */
 
 import { DBusConnection } from "../../shared/dbus/index.ts";
+import type { AccessPoint, JoinResult, KnownProfile, WifiBackend, WifiNetwork, WifiReading } from "../types.ts";
 import { IFACE, NM, NM_PATH, NmClient, SETTINGS_PATH } from "./nm-client.ts";
 import { joinNetwork } from "./nm-join.ts";
 import { parseAccessPoint, parseProfile } from "./nm-values.ts";
-import type { AccessPoint, JoinResult, KnownProfile, WifiBackend, WifiNetwork, WifiReading } from "../types.ts";
 
 export interface NetworkManagerOptions {
   /** How the system bus is reached (tests point it at a private bus). */

@@ -5,7 +5,7 @@ import type { AppMenuStore } from "../app-menus/index.ts";
 import type { App } from "../apps.ts";
 import type { Arranger } from "../arrange/index.ts";
 import type { BatteryPopoverSources } from "../battery/index.ts";
-import type { BluetoothSetup } from "../bluetooth/select.ts";
+import type { BluetoothSetup } from "../bluetooth/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { AppletTileSource, ControlCenterProps, LayoutStore } from "../control-center/index.ts";
 import type { MirrorStore } from "../display-config/mirror.ts";

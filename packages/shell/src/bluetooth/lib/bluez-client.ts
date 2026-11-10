@@ -4,7 +4,7 @@
  * Nothing here knows about device lists or pairing.
  */
 
-import { type DBusConnection, unwrap, Variant } from "../shared/dbus/index.ts";
+import { type DBusConnection, unwrap, Variant } from "../../shared/dbus/index.ts";
 
 export const BLUEZ = "org.bluez";
 export const BLUEZ_ROOT = "/org/bluez";
