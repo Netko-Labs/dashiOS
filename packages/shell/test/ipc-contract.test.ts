@@ -12,18 +12,23 @@ function sources(dir: string): string[] {
   });
 }
 
+/** The methods dashi-comp answers: its method table (ipc/table.rs). */
+function handledMethods(): Set<string> {
+  const table = readFileSync(join(repo, "crates/dashi-comp/src/ipc/table.rs"), "utf8");
+  return new Set([...table.matchAll(/\b(?:shell|granted|anyone)\("([a-z-]+)"|\bname: "([a-z-]+)"/g)].map((match) => match[1] ?? match[2] ?? ""));
+}
+
 // Two requests the shell sent went unanswered for a whole release: every
 // method the shell and the greeter send must be one dashi-comp answers.
 test("every IPC method the shell sends is one the compositor handles", () => {
-  const handled = new Set(
-    [...readFileSync(join(repo, "crates/dashi-comp/src/ipc/requests.rs"), "utf8").matchAll(/^ {8}"([a-z-]+)" =>/gm)].map((match) => match[1]),
-  );
+  const handled = handledMethods();
   const sent = new Set<string>();
   for (const dir of ["packages/shell/src", "packages/shell/apps", "packages/greeter/src"]) {
     for (const file of sources(join(repo, dir))) {
       for (const match of readFileSync(file, "utf8").matchAll(/\b(?:request|send)\("([a-z-]+)"/g)) sent.add(match[1] ?? "");
     }
   }
+  expect(handled.size).toBeGreaterThan(50);
   expect(sent.size).toBeGreaterThan(20);
   expect([...sent].filter((method) => !handled.has(method)).sort()).toEqual([]);
 });
@@ -38,10 +43,10 @@ const rustSources = (dir: string): string[] =>
   });
 
 test("the pictures' requests are answered and documented", () => {
-  const requests = readFileSync(join(repo, "crates/dashi-comp/src/ipc/requests.rs"), "utf8");
+  const handled = handledMethods();
   const doc = readFileSync(join(repo, "docs/compositor-ipc.md"), "utf8");
   for (const method of ["space-previews", "window-thumbnails"]) {
-    expect(requests).toContain(`        "${method}" =>`);
+    expect(handled.has(method)).toBe(true);
     expect(doc).toContain(`| \`${method}\` |`);
   }
 });
@@ -62,11 +67,11 @@ test("every event dashi-comp emits is documented and parsed by the shell", () =>
 // documented, handled, and sent by the shell, all three.
 test("capture-mask and input-origin are in the doc, the compositor, and the shell", () => {
   const doc = readFileSync(join(repo, "docs/compositor-ipc.md"), "utf8");
-  const handled = readFileSync(join(repo, "crates/dashi-comp/src/ipc/requests.rs"), "utf8");
+  const handled = handledMethods();
   const shell = ["packages/shell/src/agents/mask.ts", "packages/shell/src/agents/person.ts"].map((file) => readFileSync(join(repo, file), "utf8")).join("\n");
   for (const method of ["capture-mask", "input-origin"]) {
     expect(doc).toContain(`| \`${method}\` |`);
-    expect(handled).toContain(`"${method}" =>`);
+    expect(handled.has(method)).toBe(true);
     expect(shell).toContain(`"${method}"`);
   }
   // Every agent capture names its mask.

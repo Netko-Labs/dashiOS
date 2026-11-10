@@ -1,7 +1,7 @@
 //! `capture`: a screen, a rectangle of it, or one window, rendered offscreen
 //! the way it is shown and saved as a PNG for the shell (⇧❖3, ⇧❖4, an agent's
 //! look at the screen). Only the session's own client may ask
-//! (ipc/requests.rs); the file must be new, absolute, and end in `.png`.
+//! (ipc/table.rs); the file must be new, absolute, and end in `.png`.
 
 use std::{fs::OpenOptions, io::BufWriter, path::Path};
 
@@ -187,6 +187,8 @@ pub(crate) fn check_path(path: &str) -> Result<&Path, String> {
     Ok(path)
 }
 
+/// Encode and write `picture` (whole seconds for a big screen): off the event
+/// loop only (ipc/methods/capture.rs).
 #[expect(
     clippy::disallowed_methods,
     reason = "the PNG work itself: save_png is disallowed, so its callers carry the H12 marks"
@@ -204,6 +206,7 @@ pub(crate) fn save_png(path: &Path, picture: &Picture) -> Result<(), String> {
     );
     encoder.set_color(png::ColorType::Rgba);
     encoder.set_depth(png::BitDepth::Eight);
+    encoder.set_compression(png::Compression::Fast);
     let mut writer = encoder.write_header().map_err(|error| error.to_string())?;
     writer
         .write_image_data(&picture.rgba)

@@ -25,6 +25,7 @@ use crate::state::Dashi;
 
 impl Dashi {
     pub(crate) fn process_input_event<I: InputBackend>(&mut self, event: InputEvent<I>) {
+        self.wakes.poke();
         let deliberate = match &event {
             InputEvent::Keyboard { event } => {
                 event.state() == smithay::backend::input::KeyState::Pressed

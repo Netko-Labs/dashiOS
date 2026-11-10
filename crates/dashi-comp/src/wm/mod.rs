@@ -2,6 +2,7 @@
 //! to do with a window is the shell's decision; this carries it out.
 
 mod actions;
+mod by_scale;
 mod decor;
 mod edge_hold;
 mod fullscreen;

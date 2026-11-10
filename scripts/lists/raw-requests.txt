@@ -1,12 +1,11 @@
 # H8: raw compositor request("…") calls outside src/compositor.ts (count = calls). May only shrink.
 1	packages/shell/src/actions/start.ts
-2	packages/shell/src/active-screen.ts
+1	packages/shell/src/active-screen.ts
 5	packages/shell/src/agents/desktop/displays.ts
 2	packages/shell/src/agents/desktop/hands.ts
 2	packages/shell/src/agents/desktop/record.ts
 1	packages/shell/src/agents/desktop/secrets.ts
 3	packages/shell/src/agents/desktop/spaces.ts
-1	packages/shell/src/agents/lock.ts
 1	packages/shell/src/agents/mask.ts
 1	packages/shell/src/agents/person.ts
 2	packages/shell/src/agents/run.ts
@@ -14,7 +13,7 @@
 1	packages/shell/src/appearance/window-style.ts
 1	packages/shell/src/applets/grants.ts
 1	packages/shell/src/applets/start.tsx
-6	packages/shell/src/arrange.ts
+5	packages/shell/src/arrange.ts
 3	packages/shell/src/clipboard/expand.ts
 1	packages/shell/src/clipboard/paste.ts
 3	packages/shell/src/clipboard/start.ts
@@ -29,7 +28,6 @@
 2	packages/shell/src/idle.ts
 1	packages/shell/src/laptop/start.ts
 5	packages/shell/src/launcher/shell-host.ts
-1	packages/shell/src/lock/controller.tsx
 18	packages/shell/src/main.tsx
 13	packages/shell/src/menus/actions.ts
 5	packages/shell/src/menus/start.tsx
@@ -37,7 +35,6 @@
 4	packages/shell/src/overview/controller.ts
 1	packages/shell/src/pointer.ts
 3	packages/shell/src/portal-host/sheets.ts
-1	packages/shell/src/power/lockwatch.ts
 1	packages/shell/src/power/start.ts
 1	packages/shell/src/screen-capture.ts
 1	packages/shell/src/screenshots.ts
@@ -52,5 +49,5 @@
 1	packages/shell/src/suspend.ts
 5	packages/shell/src/switcher/controller.ts
 2	packages/shell/src/system/screen-dark.ts
-2	packages/shell/src/wallpaper/live/controller.ts
+1	packages/shell/src/wallpaper/live/controller.ts
 2	packages/shell/src/xwayland-scale.ts

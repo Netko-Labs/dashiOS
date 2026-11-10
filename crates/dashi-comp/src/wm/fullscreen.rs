@@ -62,7 +62,7 @@ impl Dashi {
                 entry.fullscreen = Some((output.name(), frame));
                 // Its title bar goes; a unified window's lights stay (wm/decor.rs).
                 if !entry.decor.drawn(true) {
-                    entry.title_image = None;
+                    entry.title_images.clear();
                 }
                 entry.tiled = false;
             }

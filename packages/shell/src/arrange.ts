@@ -16,7 +16,7 @@
  * the keys pressed one by one.
  */
 
-import { type Compositor, type CompositorEvent, type CompositorWindow, type Placing, parseFrame, parsePointer } from "./compositor.ts";
+import { type Compositor, type CompositorEvent, type CompositorWindow, type Placing, parseFrame } from "./compositor.ts";
 import {
   type Arrange,
   carryFrame,
@@ -128,7 +128,7 @@ export class Arranger {
   private async usableForNew(placing: number): Promise<Rect | null> {
     const first = this.outputs[0]?.usable ?? null;
     if (this.outputs.length < 2) return first;
-    const pointer = parsePointer(await this.compositor.request("session").catch(() => null));
+    const pointer = (await this.compositor.session().catch(() => null))?.pointer ?? null;
     // A zero-size frame at the pointer: the screen holding that point.
     if (pointer) return usableFor({ ...pointer, width: 0, height: 0 }, this.outputs);
     try {

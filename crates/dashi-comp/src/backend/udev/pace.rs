@@ -51,6 +51,7 @@ pub(super) fn schedule(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, aft
     let id = NEXT_TIMER.fetch_add(1, Ordering::Relaxed);
     let timer = Timer::from_duration(after);
     let inserted = state.loop_handle.insert_source(timer, move |_, _, state| {
+        state.wakes.frame_turn();
         // This timer is spent: render_screen must not remove it (another's stays).
         with_udev(state, |_, data| {
             if let Some(screen) = data

@@ -126,7 +126,7 @@ pub(crate) fn framed_window<R>(
     let sides = depth_of(state, renderer, window, placed, spot);
     let entry = state.windows.by_window(window);
     let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
-    let image = entry.and_then(|entry| entry.title_image.as_ref());
+    let image = entry.and_then(|entry| entry.title_images.get(state.decor_scale));
     let on_view = |at: Point<i32, Logical>| -> Point<i32, Physical> {
         (at - spot.origin).to_physical_precise_round(scale)
     };
@@ -204,7 +204,7 @@ pub(crate) fn overview_window<R>(
     let title = state
         .windows
         .by_window(window)
-        .and_then(|entry| entry.title_image.as_ref())
+        .and_then(|entry| entry.title_images.get(state.decor_scale))
         .filter(|image| image.shows(bar))
         .map(|image| {
             let own = image.size().to_f64();

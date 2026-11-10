@@ -87,8 +87,8 @@ test("settings.json keeps the highlight, off unless set", () => {
 });
 
 test("window-style is handled, documented, and sent", () => {
-  const handled = readFileSync(join(repo, "crates/dashi-comp/src/ipc/requests.rs"), "utf8");
+  const table = readFileSync(join(repo, "crates/dashi-comp/src/ipc/table.rs"), "utf8");
   const doc = readFileSync(join(repo, "docs/compositor-ipc.md"), "utf8");
-  expect(handled).toContain(`"window-style" =>`);
+  expect(table).toContain(`("window-style", chrome::window_style)`);
   expect(doc).toContain("| `window-style` |");
 });

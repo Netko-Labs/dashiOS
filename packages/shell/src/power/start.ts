@@ -32,7 +32,7 @@ import { SLEEP_LOCK, SleepGuard } from "./sleep.ts";
 
 export interface PowerOptions {
   /** For the lock state; without it nothing can be locked or waited for. */
-  compositor: Pick<Compositor, "on" | "request"> | null;
+  compositor: Pick<Compositor, "on" | "request" | "session"> | null;
   /** Raises the lock screen; null without a compositor. */
   lock: (() => void) | null;
   /** Opens the shut down sheet (the power key). */

@@ -53,7 +53,7 @@ shell's client:
   bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
-- **IPC (`ipc/`):** `requests`, `windows`, `outbox`, `dev`.
+- **IPC (`ipc/`):** `server` (the socket), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area), `params`, `grants` (`ipc-clients`).
 - Text in the compositor (title bars) with cosmic-text.
 
 ## Module Map
@@ -97,6 +97,7 @@ crates/dashi-comp/src/
                     depth between windows (depth/: `window-style`), live pictures the shell places
                     (thumbnails/: `space-previews`, `window-thumbnails`), a screen showing
                     another's picture (mirror.rs: `mirror`)
+  wakes.rs          what woke the event loop: whether idle screens may sleep
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
@@ -104,7 +105,8 @@ crates/dashi-comp/src/
   keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs), ❖-click (super_click.rs),
                     keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager
-  ipc/              socket, framing, requests
+  ipc/              socket, framing, who connected, the method table (who may ask what), methods/
+  background.rs     blocking work (PNG encoding, file IO) on a thread, back as a calloop event
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes, `mirror` (mirror.rs)
   session/          the session client, trust, lock, idle, agent input
   wallpaper/        pictures, video (GStreamer), live looks
@@ -236,6 +238,23 @@ Each milestone ends with the shell running on it in the VM.
   lets the frame go, and the screen draws again; a vblank that turns up later
   is ignored, or recognized by its timestamp as the old frame's. The nested
   (winit) backend has no such wait: each redraw asks for the next.
+- **Idle screens sleep (done, 0.7.0):** a lit screen that has nothing new to
+  draw used to look again every refresh, rebuilding its scene to learn that
+  nothing changed (every window's title bar walked, the elements diffed),
+  forever. Now a screen sleeps after 30 turns with nothing new since it last
+  drew or was poked (a client's request, input, IPC: what starts a fade),
+  looking once a second (and pacing its clients' frame callbacks so) until
+  something wakes the event loop (`wakes.rs`, `udev/frame.rs`). A poke wakes
+  it at once and keeps it looking for another 30 turns; any other wakeup (a
+  timer or a channel: a slide's or the overview's frame timer, a video frame,
+  the idle watch's tick every half second) makes it look once, and it sleeps
+  again at once if nothing changed. What moves by itself draws something new
+  each frame, so its screen stays awake while it runs. The nested (winit)
+  backend is unchanged.
+- **Title bars per scale (done, 0.7.0):** each window keeps its title bar
+  image per screen scale (`wm/by_scale.rs`, up to four), so two screens at
+  1× and 2× (or a capture at another scale) don't draw each other's out every
+  frame.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title

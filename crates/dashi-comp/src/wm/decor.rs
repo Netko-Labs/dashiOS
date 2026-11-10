@@ -66,7 +66,7 @@ impl Dashi {
         }
         let was_unified = entry.decor == Decor::Unified;
         entry.decor = decor;
-        entry.title_image = None;
+        entry.title_images.clear();
         if was_unified != (decor == Decor::Unified) {
             self.send_controls(surface);
         }
@@ -91,8 +91,11 @@ impl Dashi {
         }
     }
 
-    /// Draw again the title bars whose look changed (before a frame is rendered).
+    /// Draw again the title bars whose look changed at `scale` (before a
+    /// frame is rendered); the frame reads those (`decor_scale`).
     pub(crate) fn refresh_decorations(&mut self, scale: i32) {
+        let scale = scale.max(1);
+        self.decor_scale = scale;
         let focus = self
             .seat
             .get_keyboard()
@@ -102,7 +105,7 @@ impl Dashi {
         for entry in windows.entries_mut() {
             // Full screen, a title bar goes but a unified window's lights stay.
             if !entry.decor.drawn(entry.fullscreen.is_some()) {
-                entry.title_image = None;
+                entry.title_images.clear();
                 continue;
             }
             let surface = super::toplevel_surface(&entry.window);
@@ -113,18 +116,20 @@ impl Dashi {
                 active: focus.is_some() && focus == surface,
                 dark: style.dark,
                 radius: style.radius,
-                scale: scale.max(1),
+                scale,
                 hover: entry.hover,
             };
             if entry
-                .title_image
-                .as_ref()
+                .title_images
+                .get(scale)
                 .is_some_and(|image| image.look == look)
             {
                 continue;
             }
             let buffer = titlebar::draw(&look, text);
-            entry.title_image = Some(titlebar::Image { look, buffer });
+            entry
+                .title_images
+                .set(scale, titlebar::Image { look, buffer });
         }
     }
 }

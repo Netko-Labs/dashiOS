@@ -21,6 +21,7 @@ import { isCovered, type PauseReason, parseScreenAreas, pauseReason, type Screen
 
 export interface LiveHost {
   request: Compositor["request"];
+  session: Compositor["session"];
   windows(): Promise<CompositorWindow[]>;
   on(listener: (event: CompositorEvent) => void): () => void;
 }
@@ -73,12 +74,9 @@ export class LiveWallpaperController {
   async start(): Promise<void> {
     this.stopListening = this.options.compositor.on((event) => this.heard(event));
     await this.loadScreens();
-    try {
-      const session = await this.options.compositor.request("session");
-      this.locked = typeof session === "object" && session !== null && (session as { locked?: unknown }).locked === true;
-    } catch {
-      // An older compositor: not locked as far as we know; the `lock` event will say.
-    }
+    // Not known (no answer): not locked as far as we know; the `lock` event will say.
+    const session = await this.options.compositor.session().catch(() => null);
+    this.locked = session?.locked ?? false;
     this.settle();
   }
 
