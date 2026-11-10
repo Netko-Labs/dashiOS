@@ -10,7 +10,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { useSyncExternalStore } from "react";
-import { CODECS, type RecordTarget, recorderArgs, recordingDirectory, recordingName, WF_RECORDER } from "./command.ts";
+import { CODECS, recorderArgs, recordingDirectory, recordingName, WF_RECORDER } from "./lib/command.ts";
+import type { RecordTarget } from "./types.ts";
 
 /** Who started a recording: the person (⇧❖5's toolbar), or an agent (record_screen). */
 export type RecordedBy = "person" | "agent";

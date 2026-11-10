@@ -8,11 +8,9 @@
  */
 
 import { join } from "node:path";
+import type { RecordTarget } from "../types.ts";
 
 export const WF_RECORDER = "/usr/bin/wf-recorder";
-
-/** A screen by its output name, or an area in global logical pixels. */
-export type RecordTarget = { kind: "screen"; output: string } | { kind: "area"; x: number; y: number; width: number; height: number };
 
 export interface Codec {
   /** FFmpeg's encoder name. */

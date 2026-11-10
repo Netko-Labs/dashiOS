@@ -13,10 +13,9 @@
 import { useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
-import { CLOSE, CAPTURE_GLYPHS as GLYPHS, MICROPHONE } from "./glyphs.ts";
-
-export type CaptureMode = "screen" | "window" | "area" | "record-screen" | "record-area";
+import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
+import { CLOSE, CAPTURE_GLYPHS as GLYPHS, MICROPHONE } from "../glyphs.ts";
+import type { CaptureMode } from "../types.ts";
 
 /** What the button says for each mode. */
 export const ACTION: Record<CaptureMode, string> = {

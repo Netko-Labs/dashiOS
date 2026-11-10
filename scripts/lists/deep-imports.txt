@@ -246,10 +246,9 @@
 4	packages/shell/src/agents/desktop/notes.ts
 1	packages/shell/src/agents/desktop/notifications.ts
 1	packages/shell/src/agents/desktop/quit.ts
-1	packages/shell/src/agents/desktop/record.ts
 1	packages/shell/src/agents/desktop/settings.ts
 7	packages/shell/src/agents/desktop/software.ts
-5	packages/shell/src/agents/desktop/types.ts
+4	packages/shell/src/agents/desktop/types.ts
 1	packages/shell/src/agents/handoff/harness-icons.ts
 1	packages/shell/src/agents/mark.ts
 1	packages/shell/src/agents/run-apps.ts
@@ -318,7 +317,7 @@
 7	packages/shell/src/boot/look.ts
 8	packages/shell/src/boot/menus.tsx
 7	packages/shell/src/boot/notices.ts
-3	packages/shell/src/boot/overlays.tsx
+2	packages/shell/src/boot/overlays.tsx
 10	packages/shell/src/boot/parts.ts
 2	packages/shell/src/boot/session.ts
 6	packages/shell/src/boot/settings.ts
@@ -373,7 +372,7 @@
 3	packages/shell/src/launcher/agents/plan-view.tsx
 5	packages/shell/src/launcher/agents/rows.ts
 3	packages/shell/src/launcher/agents/task-mode.tsx
-4	packages/shell/src/launcher/command-glyphs.ts
+3	packages/shell/src/launcher/command-glyphs.ts
 2	packages/shell/src/launcher/mode.ts
 1	packages/shell/src/launcher/person-keys.ts
 1	packages/shell/src/launcher/props.ts
@@ -392,7 +391,7 @@
 1	packages/shell/src/lock/controller.tsx
 1	packages/shell/src/lock/screen.tsx
 16	packages/shell/src/main.tsx
-11	packages/shell/src/menubar-program-slots.tsx
+9	packages/shell/src/menubar-program-slots.tsx
 2	packages/shell/src/menubar-slots.tsx
 1	packages/shell/src/menubar.tsx
 1	packages/shell/src/menus/lib/popover.tsx
@@ -427,7 +426,6 @@
 1	packages/shell/src/region/start.ts
 1	packages/shell/src/region/store.ts
 1	packages/shell/src/region/systemd.ts
-1	packages/shell/src/screen-capture.tsx
 2	packages/shell/src/search-providers/client.ts
 2	packages/shell/src/search-providers/providers.ts
 1	packages/shell/src/settings-app/changes/words.ts
@@ -638,7 +636,6 @@
 2	packages/shell/test/calendar-target.test.ts
 2	packages/shell/test/calendar-undo.test.ts
 3	packages/shell/test/calendar-zones.test.ts
-3	packages/shell/test/capture-toolbar.test.tsx
 3	packages/shell/test/clipboard-history.test.ts
 3	packages/shell/test/clipboard-privacy.test.ts
 8	packages/shell/test/clipboard-snippets.test.ts
@@ -774,7 +771,7 @@
 1	packages/shell/test/ranking-locale.test.ts
 3	packages/shell/test/ranking-memory.test.ts
 2	packages/shell/test/ranking.test.ts
-8	packages/shell/test/recorder.test.ts
+5	packages/shell/test/recorder.test.ts
 3	packages/shell/test/refresh-rate-automatic.test.ts
 9	packages/shell/test/refresh-rate-view.test.tsx
 2	packages/shell/test/refresh-rate.test.ts

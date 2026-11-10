@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { outputsOf } from "../src/compositor/outputs.ts";
-import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorder/command.ts";
+import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorder/lib/command.ts";
 import { type RecorderProcess, ScreenRecorder } from "../src/recorder/recorder.ts";
 import { stopsRecording } from "../src/recorder/start.ts";
 import { elapsedText } from "../src/shared/time/elapsed.ts";

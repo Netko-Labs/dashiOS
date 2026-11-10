@@ -11,7 +11,7 @@
 import { LOGO } from "@dashi/ui";
 import { CLIPBOARD, SNIPPET } from "../clipboard/glyphs.ts";
 import { LOCK, MOON } from "../control-center/glyphs.ts";
-import { CAPTURE_GLYPHS } from "../recorder/glyphs.ts";
+import { CAPTURE_GLYPHS } from "../recorder/index.ts";
 import { KEYBOARD } from "../settings-app/glyphs.ts";
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;

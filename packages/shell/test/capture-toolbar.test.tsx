@@ -9,9 +9,9 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeHostTransport, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { OpenOverlay } from "../src/overlay.tsx";
+import { captureToolbar, SLOW_DRAW_MS } from "../src/recorder/lib/toolbar.tsx";
 import type { RecorderState } from "../src/recorder/recorder.ts";
 import { recordRefusal } from "../src/recorder/start.ts";
-import { captureToolbar, SLOW_DRAW_MS } from "../src/recorder/toolbar.tsx";
 import { settle } from "./support/time.ts";
 
 /** An overlay opener whose host draws (or doesn't) when the test says, and goes when closed or when it dies. */

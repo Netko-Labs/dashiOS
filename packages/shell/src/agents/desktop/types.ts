@@ -11,7 +11,7 @@ import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/index.ts";
 import type { MenuAction, WindowMenu } from "../../menus/index.ts";
 import type { NotificationStore } from "../../notifications/store.ts";
-import type { ScreenRecorder } from "../../recorder/recorder.ts";
+import type { ScreenRecorder } from "../../recorder/index.ts";
 import type { RegionDesktop } from "../../region/desktop.ts";
 import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";

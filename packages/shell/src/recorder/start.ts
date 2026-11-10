@@ -12,8 +12,8 @@ import { SHELL_SENDER } from "../notifications/store.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import { type AreaCapture, areaCapture, type CaptureScreen } from "../screenshot-area.tsx";
 import { takeScreenshot } from "../screenshots.ts";
+import { type CaptureToolbar, captureToolbar } from "./lib/toolbar.tsx";
 import { type RecorderState, ScreenRecorder } from "./recorder.ts";
-import { type CaptureToolbar, captureToolbar } from "./toolbar.tsx";
 
 export interface CaptureDeps {
   compositor: Pick<Compositor, "capture" | "windows">;
