@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { defaultAction, domKey } from "../browser-extension/src/page/keys.ts";
-import { browserWindowFor, viewportToWindow } from "../src/agents/desktop/browser-field.ts";
+import { browserWindowFor, viewportToWindow } from "../src/agents/desktop/lib/browser-field.ts";
 import { DENIED_SOCKETS, type SandboxEnv, sandboxArgs } from "../src/agents/sandbox.ts";
 import { checkField } from "../src/agents/secrets/field-check.ts";
 import { covers, parseSiteGrants, type SiteAnswer, SiteConsent, SiteGrants, siteOf } from "../src/agents/sites.ts";

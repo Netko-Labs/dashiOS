@@ -235,7 +235,6 @@
 1	packages/shell/src/agents/ask/plan.ts
 1	packages/shell/src/agents/ask/service.ts
 1	packages/shell/src/agents/ask/tasks.ts
-1	packages/shell/src/agents/context.ts
 6	packages/shell/src/agents/desktop/calendar.ts
 6	packages/shell/src/agents/desktop/files.ts
 1	packages/shell/src/agents/desktop/machine.ts
@@ -249,14 +248,8 @@
 1	packages/shell/src/agents/handoff/harness-icons.ts
 1	packages/shell/src/agents/mark.ts
 1	packages/shell/src/agents/run-apps.ts
-1	packages/shell/src/agents/run-screen.ts
-2	packages/shell/src/agents/run.ts
 1	packages/shell/src/agents/secrets/approvals.ts
-1	packages/shell/src/agents/secrets/broker.ts
 1	packages/shell/src/agents/secrets/vault.ts
-1	packages/shell/src/agents/server-person.ts
-2	packages/shell/src/agents/server.ts
-1	packages/shell/src/agents/session-types.ts
 1	packages/shell/src/agents/session-wire.ts
 1	packages/shell/src/agents/tokens/client.ts
 1	packages/shell/src/agents/tools/files.ts
@@ -612,7 +605,7 @@
 8	packages/shell/test/boot-pieces.test.ts
 1	packages/shell/test/boot-services.test.ts
 1	packages/shell/test/brightness.test.ts
-5	packages/shell/test/browser-agents.test.ts
+4	packages/shell/test/browser-agents.test.ts
 3	packages/shell/test/calculator-field.test.tsx
 10	packages/shell/test/calculator-line.test.ts
 3	packages/shell/test/calculator-locale.test.ts

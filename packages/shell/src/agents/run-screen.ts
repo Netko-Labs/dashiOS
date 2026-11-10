@@ -3,7 +3,7 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { type RunContext, type ToolResult, toolError } from "./context.ts";
-import { recordScreen } from "./desktop/record.ts";
+import { recordScreen } from "./desktop/index.ts";
 import { AGENT_MASK } from "./mask.ts";
 import type { Handlers } from "./run-types.ts";
 import { named, noWindow, subject } from "./subject.ts";

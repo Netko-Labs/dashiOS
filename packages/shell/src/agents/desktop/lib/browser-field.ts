@@ -8,14 +8,14 @@
  * never goes through the extension, and read_page says the field is filled.
  */
 
-import type { BrowserLink } from "../../browser/bridge.ts";
-import { type FieldReport, parseField, type TabInfo } from "../../browser/protocol.ts";
-import type { CompositorWindow } from "../../compositor.ts";
-import type { Focused, Placed, Rect } from "../atspi/tree.ts";
-import type { RunContext, ToolResult } from "../context.ts";
-import { toolError } from "../context.ts";
-import type { FieldInfo } from "../secrets/field-check.ts";
-import { chooseTab, NO_EXTENSION } from "./browser.ts";
+import type { BrowserLink } from "../../../browser/bridge.ts";
+import { type FieldReport, parseField, type TabInfo } from "../../../browser/protocol.ts";
+import type { CompositorWindow } from "../../../compositor.ts";
+import type { Focused, Placed, Rect } from "../../atspi/tree.ts";
+import type { RunContext, ToolResult } from "../../context.ts";
+import { toolError } from "../../context.ts";
+import type { FieldInfo } from "../../secrets/field-check.ts";
+import { chooseTab, NO_EXTENSION } from "../browser.ts";
 
 /** The browser's window that shows `tab`: its process's, by the tab's title when it has several. */
 export function browserWindowFor(windows: readonly CompositorWindow[], browserPid: number, tab: Pick<TabInfo, "title">): CompositorWindow | null {

@@ -9,7 +9,7 @@
 
 import type { Placed } from "../atspi/tree.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
-import type { Payload } from "../desktop/hands.ts";
+import type { Payload } from "../desktop/index.ts";
 import { checkField, type FieldInfo } from "./field-check.ts";
 import { findLogins, type Login, type LoginSource, loginKey, SOURCE_LABELS } from "./sources.ts";
 

@@ -14,7 +14,7 @@ import { payWith } from "../secrets/pay.ts";
 import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call, SecretTarget } from "../tools/index.ts";
-import { browserField } from "./browser-field.ts";
+import { browserField } from "./lib/browser-field.ts";
 
 /** How long a browser just woken (Atspi.wake) takes to publish its page: about a second in the VM's Helium. */
 const WOKEN_MS = 1200;

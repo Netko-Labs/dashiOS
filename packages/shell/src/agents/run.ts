@@ -8,9 +8,8 @@
  */
 
 import type { RunContext, ToolResult } from "./context.ts";
-import { browserCall } from "./desktop/browser.ts";
 import * as desktop from "./desktop/index.ts";
-import { handOver, listLogins, payCall, signInCall } from "./desktop/secrets.ts";
+import { browserCall, handOver, listLogins, payCall, signInCall } from "./desktop/index.ts";
 import { appHandlers } from "./run-apps.ts";
 import { desktopHandlers } from "./run-desktop.ts";
 import { documentHandlers } from "./run-documents.ts";
