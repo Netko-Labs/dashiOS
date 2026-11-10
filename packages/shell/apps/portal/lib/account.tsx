@@ -10,9 +10,9 @@
 
 import { AlertWindow, Avatar, alertWindowHeight, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { Account } from "../../src/shared/accounts/index.ts";
-import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
-import { fileUri } from "../../src/shared/files/index.ts";
+import type { Account } from "../../../src/shared/accounts/index.ts";
+import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
+import { fileUri } from "../../../src/shared/files/index.ts";
 import { appInfo } from "./apps.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
 import { PERSON } from "./ui/glyphs.ts";

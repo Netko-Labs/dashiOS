@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { TextField, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { type InterfaceSpec, Variant } from "../../src/shared/dbus/index.ts";
+import { type InterfaceSpec, Variant } from "../../../src/shared/dbus/index.ts";
 import { appInfo } from "./apps.ts";
 import { parseIcon } from "./notification.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";

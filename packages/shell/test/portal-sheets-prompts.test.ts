@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import type { NativeEvent } from "@mirinjs/metal";
-import { accessHeight, askOnScreen } from "../apps/portal/access.tsx";
-import { appInfo } from "../apps/portal/apps.ts";
-import { printOnScreen } from "../apps/portal/print/sheet.tsx";
+import { accessHeight, askOnScreen } from "../apps/portal/lib/access.tsx";
+import { appInfo } from "../apps/portal/lib/apps.ts";
+import { printOnScreen } from "../apps/portal/lib/print/sheet.tsx";
 import { showHere } from "./support/portal-sheets.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

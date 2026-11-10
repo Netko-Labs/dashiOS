@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { createElement } from "react";
-import type { ShellLink } from "../apps/portal/shell.ts";
-import { dialogWindows } from "../apps/portal/windows.ts";
+import type { ShellLink } from "../apps/portal/lib/shell.ts";
+import { dialogWindows } from "../apps/portal/lib/windows.ts";
 
 test("an app that gives up while the shell is asked about the sheet gets no dialog", async () => {
   const controller = new AbortController();

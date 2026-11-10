@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { ChooserModel } from "../apps/files/chooser/model.ts";
 import { ChooserView } from "../apps/files/chooser/view.tsx";
 import type { Env } from "../apps/files/env.ts";
-import { type ChooserAnswer, parseChooser } from "../apps/portal/file-chooser/options.ts";
+import { parseChooser } from "../apps/portal/lib/file-chooser/options.ts";
+import type { ChooserAnswer } from "../src/shared/files/index.ts";
 import { mount } from "./support/portal-sheets.ts";
 import { fakeClockEachTest, flush, settle, until } from "./support/time.ts";
 

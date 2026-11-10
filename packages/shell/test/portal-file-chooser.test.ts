@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
-import { encodeBytePath } from "../apps/portal/vardict.ts";
+import { chooserReply, parseChooser } from "../apps/portal/lib/file-chooser/options.ts";
+import { encodeBytePath } from "../apps/portal/lib/vardict.ts";
 import { type Variant, variant } from "../src/shared/dbus/index.ts";
 import { startFolder, startName } from "../src/shared/files/chooser/accept.ts";
 import { passes } from "../src/shared/files/chooser/filters.ts";

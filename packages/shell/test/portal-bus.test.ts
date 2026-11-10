@@ -5,12 +5,12 @@
  */
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { accessInterface } from "../apps/portal/access.tsx";
-import { appChooserInterface } from "../apps/portal/app-chooser/index.tsx";
-import { fileChooserInterface } from "../apps/portal/file-chooser/index.tsx";
-import { InhibitBackend } from "../apps/portal/inhibit.ts";
-import { Requests } from "../apps/portal/request.ts";
-import { settingsInterface, settingsTable } from "../apps/portal/settings.ts";
+import { accessInterface } from "../apps/portal/lib/access.tsx";
+import { appChooserInterface } from "../apps/portal/lib/app-chooser/chooser.tsx";
+import { fileChooserInterface } from "../apps/portal/lib/file-chooser/chooser.tsx";
+import { InhibitBackend } from "../apps/portal/lib/inhibit.ts";
+import { Requests } from "../apps/portal/lib/request.ts";
+import { settingsInterface, settingsTable } from "../apps/portal/lib/settings.ts";
 import { DBusConnection, FdService, Variant, variant } from "../src/shared/dbus/index.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
 import { until } from "./support/time.ts";

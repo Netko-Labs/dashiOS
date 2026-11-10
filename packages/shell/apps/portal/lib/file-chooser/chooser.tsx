@@ -7,11 +7,12 @@
  */
 
 import { existsSync } from "node:fs";
-import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
-import { ChooserView, type Env, openChooser } from "../../files/index.ts";
+import type { InterfaceSpec } from "../../../../src/shared/dbus/index.ts";
+import type { ChooserAnswer, ChooserMode, ChooserRequest } from "../../../../src/shared/files/index.ts";
+import { ChooserView, type Env, openChooser } from "../../../files/index.ts";
 import type { Requests } from "../request.ts";
 import type { ShowDialog } from "../windows.ts";
-import { type ChooserAnswer, type ChooserMode, type ChooserRequest, chooserReply, parseChooser } from "./options.ts";
+import { chooserReply, parseChooser } from "./options.ts";
 
 export const FILE_CHOOSER = "org.freedesktop.impl.portal.FileChooser";
 

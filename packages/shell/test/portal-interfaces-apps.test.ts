@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { alwaysUse, orderChoices, parseAppChooser, parseGioDefault, subjectOf } from "../apps/portal/app-chooser/choices.ts";
-import { installReply, launcherName, parseInstall } from "../apps/portal/dynamic-launcher.tsx";
-import { composeEmail, mailtoUri, parseDraft, thunderbirdCompose } from "../apps/portal/email.ts";
-import { NotificationBackend, notifyCall, parseIcon, parseNotification, withFdIcon } from "../apps/portal/notification.ts";
+import { alwaysUse, orderChoices, parseAppChooser, parseGioDefault, subjectOf } from "../apps/portal/lib/app-chooser/choices.ts";
+import { installReply, launcherName, parseInstall } from "../apps/portal/lib/dynamic-launcher.tsx";
+import { composeEmail, mailtoUri, parseDraft, thunderbirdCompose } from "../apps/portal/lib/email.ts";
+import { NotificationBackend, notifyCall, parseIcon, parseNotification, withFdIcon } from "../apps/portal/lib/notification.ts";
 import { type Variant, variant } from "../src/shared/dbus/index.ts";
 import { dict } from "./support/portal-interfaces.ts";
 

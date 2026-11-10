@@ -32,7 +32,7 @@ Requires:       wl-clipboard
 # the wlroots one shares the screen. GTK's is not needed.
 Requires:       xdg-desktop-portal
 Requires:       xdg-desktop-portal-wlr
-# The print sheet sends jobs to CUPS (apps/portal/print/).
+# The print sheet sends jobs to CUPS (apps/portal/lib/print/).
 Recommends:     cups
 # Preview: PDFs' pages, thumbnails and words (poppler), pictures Metal can't
 # draw as they are, rotation, export and print (ImageMagick); HEIC and AVIF

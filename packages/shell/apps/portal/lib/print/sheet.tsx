@@ -9,13 +9,13 @@
 import { Button, Choices, Group, MoreButton, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { variant } from "../../../src/shared/dbus/index.ts";
-import type { ChooseFiles } from "../file-chooser/index.tsx";
+import { variant } from "../../../../src/shared/dbus/index.ts";
+import type { ChooseFiles } from "../file-chooser/chooser.tsx";
 import { parseChooser } from "../file-chooser/options.ts";
 import { CheckBox, PortalFrame } from "../ui/frame.tsx";
 import type { ShowDialog } from "../windows.ts";
+import type { PrintDeps, SheetAnswer, SheetRequest } from "./backend.ts";
 import { defaultPrinter, listPrinters, printPdf } from "./cups.ts";
-import type { PrintDeps, SheetAnswer, SheetRequest } from "./index.ts";
 import { everydayMedia, jobOptions, MAX_COPIES, mediaLabel, type PrintChoice, parseCopies, parseRanges } from "./settings.ts";
 
 function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value: SheetAnswer) => void }) {

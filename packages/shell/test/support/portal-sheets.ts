@@ -2,7 +2,7 @@
 
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import type { ShowDialog } from "../../apps/portal/windows.ts";
+import type { ShowDialog } from "../../apps/portal/lib/windows.ts";
 
 interface Mounted {
   root: NativeRoot;

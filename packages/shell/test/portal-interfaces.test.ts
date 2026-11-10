@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { accessReply, parseAccess } from "../apps/portal/access.tsx";
-import { accountReply, parseAccountRequest } from "../apps/portal/account.tsx";
-import { InhibitBackend } from "../apps/portal/inhibit.ts";
-import { type Exporter, Requests } from "../apps/portal/request.ts";
-import { accentTriple, changedSettings, namespaceWanted, readAll, settingsInterface, settingsTable } from "../apps/portal/settings.ts";
-import type { ShellLink } from "../apps/portal/shell.ts";
+import { accessReply, parseAccess } from "../apps/portal/lib/access.tsx";
+import { accountReply, parseAccountRequest } from "../apps/portal/lib/account.tsx";
+import { InhibitBackend } from "../apps/portal/lib/inhibit.ts";
+import { type Exporter, Requests } from "../apps/portal/lib/request.ts";
+import { accentTriple, changedSettings, namespaceWanted, readAll, settingsInterface, settingsTable } from "../apps/portal/lib/settings.ts";
+import type { ShellLink } from "../apps/portal/lib/shell.ts";
 import { type ExportedObject, type InterfaceSpec, type Variant, variant } from "../src/shared/dbus/index.ts";
 import { dict } from "./support/portal-interfaces.ts";
 

@@ -6,7 +6,7 @@
  * monitor) lives until either side closes it.
  */
 
-import { DBusError, ERRORS, type ExportedObject, type InterfaceSpec, isObjectPath } from "../../src/shared/dbus/index.ts";
+import { DBusError, ERRORS, type ExportedObject, type InterfaceSpec, isObjectPath } from "../../../src/shared/dbus/index.ts";
 
 export const REQUEST = "org.freedesktop.impl.portal.Request";
 export const SESSION = "org.freedesktop.impl.portal.Session";

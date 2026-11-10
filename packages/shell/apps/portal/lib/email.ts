@@ -9,8 +9,8 @@
  *   options: address s, addresses as, cc as, bcc as, subject s, body s, attachments as
  */
 
-import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
-import { type Exec, exec, fileUri } from "../../src/shared/files/index.ts";
+import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
+import { type Exec, exec, fileUri } from "../../../src/shared/files/index.ts";
 import { parseGioDefault } from "./app-chooser/choices.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
 import { str, strings, vardict } from "./vardict.ts";

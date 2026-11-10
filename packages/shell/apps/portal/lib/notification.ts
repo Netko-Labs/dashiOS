@@ -12,7 +12,7 @@
 
 import { fstatSync, mkdirSync, readSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type InterfaceSpec, Variant, variant } from "../../src/shared/dbus/index.ts";
+import { type InterfaceSpec, Variant, variant } from "../../../src/shared/dbus/index.ts";
 import { cleanString, str, type Vardict, vardict } from "./vardict.ts";
 
 export const NOTIFICATION = "org.freedesktop.impl.portal.Notification";

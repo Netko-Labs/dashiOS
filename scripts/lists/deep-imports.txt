@@ -4,10 +4,7 @@
 1	packages/greeter/src/sessions.ts
 1	packages/greeter/src/view.tsx
 3	packages/greeter/test/greetd.test.ts
-1	packages/shell/apps/portal/access.tsx
-1	packages/shell/apps/portal/email.ts
-2	packages/shell/apps/portal/main.tsx
-1	packages/shell/apps/portal/print/sheet.tsx
+1	packages/shell/apps/portal/main.tsx
 1	packages/shell/test/actions-tools.test.ts
 1	packages/shell/test/agent-clipboard.test.ts
 1	packages/shell/test/agent-pay.test.ts
@@ -26,15 +23,6 @@
 1	packages/shell/test/file-manager.test.ts
 3	packages/shell/test/installer.test.ts
 1	packages/shell/test/onepassword.test.ts
-6	packages/shell/test/portal-bus.test.ts
-1	packages/shell/test/portal-file-chooser-model.test.ts
-2	packages/shell/test/portal-file-chooser.test.ts
-4	packages/shell/test/portal-interfaces-apps.test.ts
-6	packages/shell/test/portal-interfaces.test.ts
-6	packages/shell/test/portal-print.test.ts
-3	packages/shell/test/portal-sheets-prompts.test.ts
-1	packages/shell/test/portal-sheets-view.test.tsx
-2	packages/shell/test/portal-windows.test.ts
 1	packages/shell/test/ranking-memory.test.ts
 3	packages/shell/test/recorder.test.ts
 3	packages/shell/test/software-layout.test.ts
@@ -42,6 +30,4 @@
 4	packages/shell/test/software-trust.test.ts
 1	packages/shell/test/software-update-check.test.ts
 1	packages/shell/test/store-tints.test.ts
-1	packages/shell/test/support/portal-file-chooser.ts
-1	packages/shell/test/support/portal-sheets.ts
 4	packages/shell/test/support/software-view.tsx
