@@ -7,6 +7,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
+// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { firstPartyApps } from "./first-party.ts";
 import { chooseGpu, readCards } from "./gpu.ts";
 import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";

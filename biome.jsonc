@@ -13,6 +13,21 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      // H5 (docs/conventions.md, "Hard rules"): no import cycles. Today's are let
+      // through by a suppression comment scripts/check-biome.ts counts (scripts/lists/import-cycles.txt).
+      "nursery": {
+        "noImportCycles": "error"
+      },
+      "complexity": {
+        // H3: no function over 80 lines. Today's longer ones are in the overrides
+        // below, each file held at its longest (scripts/lists/long-functions.txt).
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": {
+            "maxLines": 80
+          }
+        }
+      },
       "correctness": {
         "noUnusedImports": "error",
         "useUniqueElementIds": "off",
@@ -134,5 +149,212 @@
       "!Cargo.lock",
       "!comp"
     ]
-  }
+  },
+  "overrides": [
+    // A test's describe block is not a function to split (H3).
+    { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    // H3 overrides: written by `bun scripts/check-biome.ts --shrink`; do not edit by hand.
+    {
+      "includes": ["packages/applet/src/define.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 99 } } } } }
+    },
+    {
+      "includes": ["packages/dashi-ui/src/slider.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 82 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/activity-monitor/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 233 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/calculator/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 162 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/calendar/event-sheet.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 126 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/calendar/month-view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 94 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/calendar/use-grid.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 148 } } } } }
+    },
+    { "includes": ["packages/shell/apps/calendar/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    {
+      "includes": ["packages/shell/apps/editor/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 240 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/files/chooser/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 164 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/files/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 202 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/installer/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 126 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/notes/editor.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 102 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/notes/menus.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 93 } } } } }
+    },
+    { "includes": ["packages/shell/apps/notes/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    {
+      "includes": ["packages/shell/apps/preview/document.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 129 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/preview/surface.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 95 } } } } }
+    },
+    { "includes": ["packages/shell/apps/preview/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    {
+      "includes": ["packages/shell/apps/software/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 206 } } } } }
+    },
+    {
+      "includes": ["packages/shell/apps/terminal/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 238 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/actions/start.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 109 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/agent-sheets.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 158 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/agents/ask/service.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 121 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/agents/handoff/questions.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 144 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/agents/handoff/runner.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 90 } } } } }
+    },
+    { "includes": ["packages/shell/src/agents/handoff/service.ts"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    {
+      "includes": ["packages/shell/src/agents/run.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 171 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/agents/server.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 169 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/bluetooth/agent.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 81 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/clipboard/start.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 129 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/compositor.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 130 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/control-center/controls.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 146 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/control-center/panel.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 104 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/dock/view.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 103 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/handoff-shell.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 92 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/laptop/start.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 163 } } } } }
+    },
+    { "includes": ["packages/shell/src/launcher.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    {
+      "includes": ["packages/shell/src/launcher/extensions.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 137 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/main.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 120 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/menubar-slots.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 90 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/menubar-status.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 98 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/menubar.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 212 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/menus/start.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 232 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/notifications/center.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 82 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/polkit/service.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 88 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/settings-app/machine-desktop.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 132 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/settings-app/panes/arrangement.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 81 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/settings-app/start.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 99 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/settings.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 122 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/setup/start.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 98 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/share-picker/start.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 88 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/shortcuts.ts"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 89 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/spaces/row.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 122 } } } } }
+    },
+    {
+      "includes": ["packages/shell/src/spaces/start.tsx"],
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 125 } } } } }
+    }
+    // H3 overrides end.
+  ]
 }

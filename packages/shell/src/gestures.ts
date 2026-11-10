@@ -10,6 +10,7 @@
 
 import type { Compositor, CompositorEvent } from "./compositor.ts";
 import type { SpacesState } from "./spaces/model.ts";
+// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { type SwipeStep, SwipeTracker } from "./spaces/swipe.ts";
 
 /** How far (logical pixels, summed) a swipe must travel to count. */

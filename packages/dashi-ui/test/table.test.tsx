@@ -101,7 +101,8 @@ test("a table that isn't steady follows its rows at once", async () => {
   await settle();
   expect(host.last().indexOf(id(2))).toBeLessThan(host.last().indexOf(id(1)));
   root.unmount();
-});
+  // H11 offender: waits on real time past the 2 s limit (bunfig.toml); the fake clock replaces this.
+}, 5_000);
 
 test("a steady table holds still while the pointer is over the list and just after a row is chosen; a sort shows at once", async () => {
   const host = fakeHost();
@@ -173,7 +174,8 @@ test("a steady table holds still while the pointer is over the list and just aft
   expect(sorted).toBe(1);
   expect(order()).toEqual([20, 30, 10]);
   root.unmount();
-});
+  // H11 offender: waits on real time past the 2 s limit (bunfig.toml); the fake clock replaces this.
+}, 5_000);
 
 test("a steady table shows a sort the app asks for at once, though the pointer is over the list", async () => {
   // Activity Monitor's tabs: ❖2 changes the sort from % CPU to Memory while the pointer rests on the rows.

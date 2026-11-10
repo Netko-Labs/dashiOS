@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Dashi's pre-push hook: the quick hard-rule checks (docs/conventions.md, "Hard
+# rules"; about 15 s). Turn it on once per checkout with
+#   git config core.hooksPath .githooks
+# CI runs the whole `bun run check` on every push.
+set -euo pipefail
+cd -- "$(git rev-parse --show-toplevel)"
+exec bun run check:fast
