@@ -315,7 +315,7 @@
 3	packages/shell/src/boot/keys.ts
 4	packages/shell/src/boot/launcher-view.tsx
 15	packages/shell/src/boot/launcher.tsx
-4	packages/shell/src/boot/look.ts
+1	packages/shell/src/boot/look.ts
 8	packages/shell/src/boot/menus.tsx
 7	packages/shell/src/boot/notices.ts
 3	packages/shell/src/boot/overlays.tsx
@@ -432,8 +432,8 @@
 2	packages/shell/src/search-providers/lib/client.ts
 2	packages/shell/src/search-providers/providers.ts
 1	packages/shell/src/settings-app/changes/words.ts
-8	packages/shell/src/settings-app/context.ts
-9	packages/shell/src/settings-app/data.ts
+7	packages/shell/src/settings-app/context.ts
+7	packages/shell/src/settings-app/data.ts
 1	packages/shell/src/settings-app/edit-menu.ts
 1	packages/shell/src/settings-app/find.ts
 1	packages/shell/src/settings-app/glyphs-machine.ts
@@ -457,7 +457,7 @@
 2	packages/shell/src/settings-app/panes/clipboard-parts.tsx
 3	packages/shell/src/settings-app/panes/control-center.tsx
 3	packages/shell/src/settings-app/panes/date-time.tsx
-6	packages/shell/src/settings-app/panes/displays.tsx
+4	packages/shell/src/settings-app/panes/displays.tsx
 7	packages/shell/src/settings-app/panes/graphics.tsx
 2	packages/shell/src/settings-app/panes/keyboard.tsx
 2	packages/shell/src/settings-app/panes/language-region.tsx
@@ -474,11 +474,8 @@
 2	packages/shell/src/settings-app/panes/sound.tsx
 1	packages/shell/src/settings-app/panes/speed-row.tsx
 3	packages/shell/src/settings-app/panes/tokens.tsx
-1	packages/shell/src/settings-app/panes/users.tsx
-3	packages/shell/src/settings-app/panes/wallpaper-live.tsx
-3	packages/shell/src/settings-app/panes/wallpaper.tsx
 1	packages/shell/src/settings-app/privacy-words.ts
-4	packages/shell/src/settings-app/registry/appearance.ts
+2	packages/shell/src/settings-app/registry/appearance.ts
 1	packages/shell/src/settings-app/registry/desktop.ts
 1	packages/shell/src/settings-app/registry/displays.ts
 1	packages/shell/src/settings-app/registry/input.ts
@@ -493,12 +490,12 @@
 1	packages/shell/src/settings-app/setting.tsx
 1	packages/shell/src/settings-app/sidebar-search.tsx
 1	packages/shell/src/settings-app/sidebar.tsx
-8	packages/shell/src/settings-app/start.tsx
+7	packages/shell/src/settings-app/start.tsx
 2	packages/shell/src/settings-app/store.ts
 2	packages/shell/src/settings-app/view.tsx
-3	packages/shell/src/settings-defaults.ts
-5	packages/shell/src/settings-schema.ts
-5	packages/shell/src/settings.ts
+2	packages/shell/src/settings-defaults.ts
+3	packages/shell/src/settings-schema.ts
+3	packages/shell/src/settings.ts
 3	packages/shell/src/setup/context.ts
 1	packages/shell/src/setup/extras/helper.ts
 1	packages/shell/src/setup/extras/plan.ts
@@ -551,7 +548,7 @@
 1	packages/shell/src/tray/dbusmenu.ts
 1	packages/shell/src/tray/props.ts
 1	packages/shell/src/wallpaper/catalog.ts
-3	packages/shell/src/wallpaper/chooser.ts
+2	packages/shell/src/wallpaper/chooser.ts
 1	packages/shell/src/wallpaper/live/controller.ts
 1	packages/shell/src/wallpaper/tiles.ts
 1	packages/shell/src/wifi/fake.ts
