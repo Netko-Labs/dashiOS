@@ -2,7 +2,7 @@
  * Starting a first-party app: one process per app (`bun apps/<name>/main.tsx
  * [host]`), one Metal host per window. `runApp` finds the host the way the
  * shell does, opens the window with the app's id (the Dock and the menu bar
- * name and draw it from that id, src/first-party.ts), follows Dark Mode, and
+ * name and draw it from that id, src/shared/apps/first-party.ts), follows Dark Mode, and
  * exits the process when the window goes: with `closeCode` when the person
  * closes it, with the code given to `quit` when the app does. A close from
  * outside (the close control, ❖W, ❖Q, the Dock's Quit, logging out) is a
@@ -14,9 +14,9 @@ import { existsSync } from "node:fs";
 import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, type TitleBarStyle } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { METAL_HOST } from "../../src/apps.ts";
 import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
-import { appNameEnv } from "../../src/metal-host.ts";
+import { METAL_HOST } from "../../src/shared/apps/index.ts";
+import { appNameEnv } from "../../src/shared/metal/host.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
 import { serveControl } from "./control.ts";
@@ -30,7 +30,7 @@ export interface Size {
 }
 
 export interface AppOptions {
-  /** `dev.dashi.<name>`: the window's app id, as listed in src/first-party.ts. */
+  /** `dev.dashi.<name>`: the window's app id, as listed in src/shared/apps/first-party.ts. */
   id: string;
   title: string;
   size: Size;

@@ -10,7 +10,7 @@ import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import type { Compositor } from "../compositor.ts";
 import { runPower } from "../menus/session.ts";
-import { spawnShellHost } from "../metal-host.ts";
+import { spawnShellHost } from "../shared/metal/host.ts";
 import { Attempts, type Verdict } from "./attempts.ts";
 import { accountPicture, checkPassword, displayName, lockedUser } from "./auth.ts";
 import { LockScreen } from "./screen.tsx";

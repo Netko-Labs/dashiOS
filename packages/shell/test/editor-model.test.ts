@@ -8,8 +8,8 @@ import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/prefs.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { defaultHandlers } from "../src/default-handlers.ts";
-import { EDITOR_MIME_TYPES, FIRST_PARTY } from "../src/first-party.ts";
 import { parseMenus } from "../src/shared/app-menus/protocol.ts";
+import { EDITOR_MIME_TYPES, FIRST_PARTY } from "../src/shared/apps/index.ts";
 
 let dir = "";
 let clock = 0;

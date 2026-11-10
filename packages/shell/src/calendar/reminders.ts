@@ -12,9 +12,9 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { iconPath } from "../apps.ts";
 import { type NotificationStore, SHELL_SENDER } from "../notifications/store.ts";
 import type { NotifyInput } from "../notifications/types.ts";
+import { iconPath } from "../shared/apps/index.ts";
 import { type Alert, alertMessage, alertsBetween } from "../shared/calendar/alerts.ts";
 import { dayPart, instantOf } from "../shared/calendar/dates.ts";
 import { writeAtomic } from "../shared/fs/atomic.ts";

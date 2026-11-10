@@ -11,7 +11,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { defaultHandlers, mergeDefaults, removeDefaults } from "../src/default-handlers.ts";
-import { FIRST_PARTY } from "../src/first-party.ts";
+import { FIRST_PARTY } from "../src/shared/apps/index.ts";
 
 const args = process.argv.slice(2);
 const remove = args[0] === "--remove";

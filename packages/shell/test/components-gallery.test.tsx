@@ -8,7 +8,7 @@ import { galleryMenus } from "../apps/components/menus.ts";
 import { columnsFor, PAGES, stepPage } from "../apps/components/pages.ts";
 import { GalleryWindow } from "../apps/components/view.tsx";
 import { enabledIds } from "../apps/kit/index.ts";
-import { dockDefaults, resolvePinned } from "../src/apps.ts";
+import { dockDefaults, resolvePinned } from "../src/shared/apps/index.ts";
 
 // The @dashi/ui gallery on a stand-in for the Metal host: every page draws, in both modes, and the keys and the mode control work.
 let dir = "";

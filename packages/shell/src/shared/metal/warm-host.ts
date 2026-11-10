@@ -7,7 +7,7 @@
  */
 
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
-import { shellHostOptions } from "./metal-host.ts";
+import { shellHostOptions } from "./host.ts";
 
 type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
 

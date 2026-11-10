@@ -7,7 +7,7 @@
  * own belongs to its nearest ancestor that has one (owners.ts).
  *
  * In order:
- * 1. Dashi's own apps: `bun …/apps/<dir>/main.tsx` (first-party.ts).
+ * 1. Dashi's own apps: `bun …/apps/<dir>/main.tsx` (shared/apps/first-party.ts).
  * 2. Dashi itself: the compositor, the session and the shell.
  * 3. Flatpaks: the `app-flatpak-<id>-<n>.scope` their processes run in.
  * 4. Other apps: the program a desktop entry runs, by its file name, or an

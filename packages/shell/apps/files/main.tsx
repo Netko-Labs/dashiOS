@@ -2,12 +2,12 @@
  * Files (dev.dashi.files): `bun apps/files/main.tsx [--host <path>] [--info] [folder or file or file:// URI…]`.
  * With a folder it opens there; with a file it opens the file's folder with
  * the file selected; with none, the home folder. This is what `gio open` runs
- * for `inode/directory` once Files is the default handler (first-party.ts).
+ * for `inode/directory` once Files is the default handler (src/shared/apps/first-party.ts).
  * A path is not the Metal host here: `--host` or DASHI_METAL_HOST says which.
  */
 
 import { statSync } from "node:fs";
-import { METAL_HOST } from "../../src/apps.ts";
+import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { systemEnv } from "./env.ts";

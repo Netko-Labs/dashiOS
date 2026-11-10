@@ -1,7 +1,7 @@
 /**
  * Desktop entries for Dashi's first-party apps. At the start of a real
  * session the shell writes `dev.dashi.<app>.desktop` into the person's
- * `$XDG_DATA_HOME/applications` for each one (first-party.ts), so other
+ * `$XDG_DATA_HOME/applications` for each one (shared/apps/first-party.ts), so other
  * launchers and file managers can list them and `gio open` / `xdg-open` can
  * start them with a file (Preview). The Exec line runs this Bun on the app's
  * main.tsx from the shell's folder (`Path=`: Bun reads the tsconfig there).
@@ -22,7 +22,7 @@ import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { desktopFields } from "./entries.ts";
-import { type FirstPartySpec, firstPartyApp } from "./first-party.ts";
+import { type FirstPartySpec, firstPartyApp } from "./shared/apps/index.ts";
 
 /** The key that marks a file as the shell's; only files with it set to true are ever replaced or removed. */
 export const MARKER_KEY = "X-Dashi-Managed";
@@ -64,7 +64,7 @@ export function execLine(argv: readonly string[], fieldCode?: string): string | 
 
 export interface EntryContext {
   bun: string;
-  /** The shell's folder with a trailing slash (first-party.ts `shellDir`). */
+  /** The shell's folder with a trailing slash (shared/apps/first-party.ts `shellDir`). */
   root: string;
   /** The Metal host binary, given to the app as `--host <path>` (a launcher's environment may not carry DASHI_METAL_HOST). */
   host?: string;

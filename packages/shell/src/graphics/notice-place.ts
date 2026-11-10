@@ -6,9 +6,9 @@
  * Graphics Settings….
  */
 
-import { iconPath } from "../apps.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import { CloseReason, type NotifyInput } from "../notifications/types.ts";
+import { iconPath } from "../shared/apps/index.ts";
 import type { GraphicsDeps } from "./controller.ts";
 import { listNames } from "./policy.ts";
 

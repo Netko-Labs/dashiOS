@@ -7,9 +7,8 @@
  * thread.
  */
 
-import { iconPath } from "../apps.ts";
 import { type Entry, loadEntries } from "../entries.ts";
-import { FIRST_PARTY, type FirstPartySpec } from "../first-party.ts";
+import { FIRST_PARTY, type FirstPartySpec, iconPath } from "../shared/apps/index.ts";
 import { type AppCatalog, type AppIdentity, programOf } from "./identity.ts";
 
 /** Dashi itself, as a row: the compositor, the session, the shell. */

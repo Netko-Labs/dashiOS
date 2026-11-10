@@ -1,7 +1,7 @@
 /**
  * Components (dev.dashi.components): `bun apps/components/main.tsx [host]`.
  * The @dashi/ui gallery, a developer's tool: in the launcher, not in a new
- * Dock (src/apps.ts). The pages are pages.ts, the exhibits exhibits/.
+ * Dock (src/shared/apps/pinned.ts). The pages are pages.ts, the exhibits exhibits/.
  */
 
 import { runApp } from "../kit/index.ts";

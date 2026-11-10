@@ -12,7 +12,7 @@ import { useState } from "react";
 import { SHEET_LAYERS } from "./agents/mask.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
 import { Button, opaque } from "./consent.tsx";
-import { spawnShellHost } from "./metal-host.ts";
+import { spawnShellHost } from "./shared/metal/host.ts";
 
 export const APPROVAL = { width: 460, height: 300 } as const;
 

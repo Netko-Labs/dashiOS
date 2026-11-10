@@ -8,23 +8,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { type DesktopAction, desktopActions } from "./actions/desktop-actions.ts";
-import {
-  type App,
-  displayName,
-  iconPath,
-  inTerminal,
-  type LaunchWatch,
-  launch,
-  resolvePinned,
-  SCREENSHOT_APP_ID,
-  SETTINGS_APP_ID,
-  SETUP_APP_ID,
-  shellApps,
-  shellEntryList,
-} from "./apps.ts";
-import { firstPartyApps, firstPartyKeywords } from "./first-party.ts";
+import { displayName, type LaunchWatch, launch, SCREENSHOT_APP_ID, SETTINGS_APP_ID, SETUP_APP_ID, shellApps, shellEntryList } from "./apps.ts";
 import { themeIcon } from "./icon-themes.ts";
 import { type Localized, localizedDesktop } from "./launcher/ranking/locale.ts";
+import { type App, firstPartyApps, firstPartyKeywords, iconPath, inTerminal, resolvePinned } from "./shared/apps/index.ts";
 
 export { calculate } from "./launcher-math.ts";
 
@@ -358,7 +345,7 @@ export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
   // foot.desktop), so it answers to that entry's id and command too.
   const entries: Entry[] = resolvePinned().map((app) => ({ ...app, keywords: pinnedKeywords(app) }));
   entries.push(...shellEntries());
-  // Dashi's own apps that run as their own process (first-party.ts); found by their words, not by "bun".
+  // Dashi's own apps that run as their own process (shared/apps/first-party.ts); found by their words, not by "bun".
   for (const app of firstPartyApps()) if (!entries.some((entry) => entry.id === app.id)) entries.push({ ...app, keywords: firstPartyKeywords(app.id) });
   const seen = new Set(entries.map((entry) => entry.id));
   const roots = iconRoots();

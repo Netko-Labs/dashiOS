@@ -11,8 +11,8 @@
  */
 
 import { readdirSync, readFileSync } from "node:fs";
-import { FIRST_PARTY } from "../../src/first-party.ts";
 import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "../../src/process-apps/index.ts";
+import { FIRST_PARTY } from "../../src/shared/apps/index.ts";
 import type { GpuCounters } from "./energy-proc.ts";
 import {
   type Counters,

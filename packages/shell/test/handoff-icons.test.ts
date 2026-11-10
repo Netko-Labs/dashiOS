@@ -4,9 +4,9 @@ import { CLAUDE_CODE_GLYPH, CODEX_GLYPH, harnessGlyph, harnessIconName, OPENCODE
 import { endedNotice } from "../src/agents/handoff/notices.ts";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import { markState, mergeAgents } from "../src/agents/mark.ts";
-import { iconPath } from "../src/apps.ts";
 import { handoffRow, runRow } from "../src/launcher/agents/handoff-rows.ts";
 import { SPARKLE } from "../src/settings-app/glyphs.ts";
+import { iconPath } from "../src/shared/apps/index.ts";
 
 describe("each harness's own mark", () => {
   test("Claude Code, Codex and OpenCode each have theirs; anything else is the agents' sparkle", () => {

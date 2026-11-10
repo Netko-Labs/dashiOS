@@ -7,8 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
-import { type App, iconPath } from "./apps.ts";
+import { type App, iconPath } from "./app.ts";
 
 export interface FirstPartySpec {
   /** `dev.dashi.<name>`: the app id its window reports (`runApp`'s `id`). */
@@ -160,7 +159,7 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
 ];
 
 /** The shell's folder, with a trailing slash. */
-export const shellDir = new URL("../", import.meta.url).pathname;
+export const shellDir = new URL("../../../", import.meta.url).pathname;
 
 /** The command that starts `spec`: this Bun on its main.tsx, from the shell's folder (its tsconfig and node_modules). */
 export function firstPartyApp(spec: FirstPartySpec, bun: string = process.execPath, root: string = shellDir): App {

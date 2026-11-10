@@ -35,7 +35,6 @@ import type { HarnessId } from "./agents/ask/answerer.ts";
 import { contextPrompt, NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
 import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
 import { cut } from "./agents/handoff/words.ts";
-import { iconPath } from "./apps.ts";
 import type { Entry } from "./entries.ts";
 import { fieldAccess, listAccess, pictureAccess, rowAccess } from "./launcher/access.ts";
 import type { AgentAct } from "./launcher/agents/acts.ts";
@@ -89,6 +88,7 @@ import {
 } from "./launcher/verbs.ts";
 import { WindowStrip } from "./launcher/window-strip.tsx";
 import type { WorldSnapshot } from "./launcher/world.ts";
+import { iconPath } from "./shared/apps/index.ts";
 import { useClockPrefs, usesHour24 } from "./shared/time/clock.ts";
 
 export type { FileRow } from "./launcher/rows.ts";

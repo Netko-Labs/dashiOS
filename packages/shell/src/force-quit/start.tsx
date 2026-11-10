@@ -5,11 +5,12 @@
  * answers for agents (`apps`, `end`), so one place owns what may be signalled.
  */
 
-import { displayName, iconPath } from "../apps.ts";
+import { displayName } from "../apps.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
 import { type Entry, loadEntries } from "../entries.ts";
 import { findEntry } from "../menus/launch.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
+import { iconPath } from "../shared/apps/index.ts";
 import { ForceQuitController } from "./controller.ts";
 import { isAlive, readProcStat, sendSignal } from "./kernel.ts";
 import { type AppGroup, appGroups, type Identity, protectedPids } from "./model.ts";

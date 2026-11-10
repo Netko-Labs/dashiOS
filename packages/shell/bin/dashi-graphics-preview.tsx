@@ -27,9 +27,9 @@ import type { CardwireGpu, CardwireMode, GraphicsBackend } from "../src/graphics
 import { GraphicsController } from "../src/graphics/controller.ts";
 import type { ProcessFds } from "../src/graphics/holders.ts";
 import { graphicsNoticePlace } from "../src/graphics/notice-place.ts";
-import { spawnShellHost } from "../src/metal-host.ts";
 import { BannerStack } from "../src/notifications/stack.tsx";
 import { NotificationStore } from "../src/notifications/store.ts";
+import { spawnShellHost } from "../src/shared/metal/host.ts";
 
 const args = process.argv.slice(2);
 const scene = args.find((arg) => !arg.startsWith("--") && Number.isNaN(Number(arg))) ?? "unplug";

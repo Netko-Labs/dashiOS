@@ -8,11 +8,11 @@
 import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { METAL_HOST } from "./apps.ts";
-import { spawnShellHost } from "./metal-host.ts";
-import { hostTakesLeast, WarmHost, windowFor } from "./warm-host.ts";
+import { METAL_HOST } from "./shared/apps/index.ts";
+import { spawnShellHost } from "./shared/metal/host.ts";
+import { hostTakesLeast, WarmHost, windowFor } from "./shared/metal/warm-host.ts";
 
-/** The spare host overlays open on (warm-host.ts). */
+/** The spare host overlays open on (shared/metal/warm-host.ts). */
 const warmHost = new WarmHost(METAL_HOST);
 /** Whether its `open` takes a least size; until that is known, it isn't sent. */
 let takesLeast = false;

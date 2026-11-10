@@ -142,7 +142,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   (`src/session/portal-files.ts`); an installed session removes them.
 - **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
   first-party apps are, one host per dialog, taken from a warm host
-  (`src/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
+  (`src/shared/metal/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
   Each is a sheet on the window that asked: xdg-desktop-portal passes that
   window as `wayland:HANDLE` (an xdg-foreign export) or `x11:XID`. mirin's
   host can't import a foreign handle itself, so the shell does the

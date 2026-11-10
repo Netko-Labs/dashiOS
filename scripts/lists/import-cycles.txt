@@ -1,11 +1,9 @@
 # H5: imports in a cycle, let through with a biome-ignore (count = ignores). May only shrink.
 1	packages/applet/src/controls.ts
 1	packages/applet/src/manifest.ts
-1	packages/shell/src/apps.ts
 1	packages/shell/src/display-config/monitors.ts
 2	packages/shell/src/display-config/plan.ts
 2	packages/shell/src/displays.ts
-1	packages/shell/src/first-party.ts
 1	packages/shell/src/gestures.ts
 1	packages/shell/src/menubars.ts
 1	packages/shell/src/spaces/swipe.ts

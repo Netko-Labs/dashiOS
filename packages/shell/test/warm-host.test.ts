@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { NativeHostOptions, NativeHostTransport, NativeWindowOptions } from "@mirinjs/metal";
 
-import { WarmHost, windowFor } from "../src/warm-host.ts";
+import { WarmHost, windowFor } from "../src/shared/metal/warm-host.ts";
 
 function fakeHosts() {
   const spawned: {

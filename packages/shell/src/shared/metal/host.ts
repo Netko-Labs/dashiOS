@@ -7,7 +7,7 @@
  */
 
 import { type NativeHostOptions, type NativeHostTransport, spawnNativeHost } from "@mirinjs/metal";
-import { METAL_HOST } from "./apps.ts";
+import { METAL_HOST } from "../apps/index.ts";
 
 /** What Orca says for the shell's surfaces. */
 export const SHELL_APP_NAME = "Dashi";
