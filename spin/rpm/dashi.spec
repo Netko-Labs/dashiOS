@@ -5,7 +5,7 @@ Name:           dashi
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        The Dashi desktop: session, shell, and apps
-License:        Apache-2.0 AND MIT AND Unlicense
+License:        MIT
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
@@ -92,10 +92,8 @@ cp -a packages/shell %{buildroot}%{_datadir}/dashi/shell
 rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/dashi/shell/test
 # Shared with the greeter: Bun finds them walking up from either.
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
-# The Anthropic SDK ships a Node migration CLI Dashi never runs; its shebang
-# would make rpm require /usr/bin/node. Dashi runs on Bun: no file here may
-# want Node, or the package would pull it in.
-rm -rf %{buildroot}%{_datadir}/dashi/node_modules/@anthropic-ai/sdk/bin
+# Dashi runs on Bun: no file here may want Node (a shebang would make rpm
+# require /usr/bin/node), or the package would pull it in.
 if grep -rlE '^#!.*\bnode\b' %{buildroot}%{_datadir}/dashi/node_modules; then
   echo "dashi.spec: files above have a Node shebang; drop them (Dashi runs on Bun)" >&2
   exit 1

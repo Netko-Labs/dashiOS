@@ -48,9 +48,11 @@ describe("licenses", () => {
     }
   });
 
-  test("dashi's License: names the Apache-2.0 code it bundles", () => {
+  test("dashi bundles only MIT code now the AI SDKs are gone, and its License: says so", () => {
     const spec = readFileSync(join(ROOT, "spin/rpm/dashi.spec"), "utf8");
-    expect(spec).toMatch(/^License:\s+.*\bApache-2\.0\b/m);
+    expect(spec).toMatch(/^License:\s+MIT$/m);
+    const bundled = readFileSync(join(ROOT, "spin/vendored-modules"), "utf8");
+    expect(bundled).not.toMatch(/anthropic|openai/);
   });
 
   test.skipIf(!Bun.which("cargo") || !existsSync(join(ROOT, "../mirin/crates/mirin-metal/Cargo.toml")))(

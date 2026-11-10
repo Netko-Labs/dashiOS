@@ -1,18 +1,7 @@
 # The npm packages spin/build-rpms copies from node_modules into the shell
 # (vendor/node_modules, installed under /usr/share/dashi/node_modules): the
-# runtime and the AI SDKs. spin/license-dependencies lists their licenses from
+# runtime. spin/license-dependencies lists their licenses from
 # this file, so a package added here is in the notices.
 react
 react-reconciler
 scheduler
-# The Anthropic SDK (the launcher's Claude answerer) and what it loads at run
-# time; json-schema-to-ts is types only.
-@anthropic-ai/sdk
-@opentelemetry/api
-standardwebhooks
-@stablelib/base64
-fast-sha256
-# OpenAI's SDK (the launcher's GPT answerer): the client needs nothing else at
-# run time; ws, zod and undici are optional peers for its realtime and helper
-# subpaths, which Dashi doesn't load.
-openai

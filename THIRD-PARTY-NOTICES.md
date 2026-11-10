@@ -17,7 +17,7 @@ notice texts those libraries ship. They are written from the lockfiles by
 | `dashi-secretd` | `spin/dashi-secretd/usr/share/licenses/dashi-secretd/` | the vault's crates |
 | `dashi-term` | `spin/dashi-term/usr/share/licenses/dashi-term/` | the terminal engine's crates |
 | `mirin-metal-host` | `spin/mirin-metal-host/usr/share/licenses/mirin-metal-host/` | mirin's Metal host and its crates |
-| `dashi` | `spin/dashi/usr/share/licenses/dashi/` | the npm packages bundled with the shell (`spin/vendored-modules`): React, the Anthropic and OpenAI SDKs (Apache-2.0), OpenTelemetry's API (Apache-2.0), `fast-sha256` (Unlicense) and the rest |
+| `dashi` | `spin/dashi/usr/share/licenses/dashi/` | the npm packages bundled with the shell (`spin/vendored-modules`): React, its reconciler and scheduler (MIT) |
 
 **Code adapted from other projects** keeps its authors' notice below, with the
 files it is in.
