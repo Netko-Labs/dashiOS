@@ -1,2 +1,1 @@
 # H8: raw compositor request("…") calls outside src/compositor.ts (count = calls). May only shrink.
-5	packages/shell/src/launcher/shell-host.ts
