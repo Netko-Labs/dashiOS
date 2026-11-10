@@ -8,13 +8,19 @@
  * they are data.
  */
 
+import { bool, num, optional } from "@dashi/shape";
 import { isProfileId, PROFILE_IDS } from "../../system/profiles.ts";
+import { arg, custom, tool } from "./args.ts";
 import { fail, type ToolDef } from "./define.ts";
 
 const name = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" && value.length <= 160 ? value.trim() : null);
 
+/** A volume level, 0 (silent) to 1 (full). */
+const level = optional(arg(num({ min: 0, max: 1 }), "`level` must be a number from 0 to 1.", "0 is silent, 1 is full."));
+const muted = optional(arg(bool(), "`muted` must be true or false.", "true to mute, false to unmute."));
+
 export const machineTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "get_network",
     title: "Read network settings",
     description:
@@ -22,10 +28,10 @@ export const machineTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_network" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "get_network" }),
+  }),
+  tool({
     name: "list_bluetooth_devices",
     title: "List Bluetooth devices",
     description:
@@ -33,10 +39,10 @@ export const machineTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "list_bluetooth_devices" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_bluetooth_devices" }),
+  }),
+  tool({
     name: "set_bluetooth_connection",
     title: "Connect or disconnect a Bluetooth device",
     description:
@@ -45,20 +51,17 @@ export const machineTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: {
-      device: { type: "string", description: "A device name from list_bluetooth_devices." },
-      connected: { type: "boolean", description: "true to connect, false to disconnect." },
+    args: {
+      device: custom(
+        { type: "string", description: "A device name from list_bluetooth_devices." },
+        name,
+        "`device` is required: a name from list_bluetooth_devices.",
+      ),
+      connected: arg(bool(), "`connected` must be true or false.", "true to connect, false to disconnect."),
     },
-    required: ["device", "connected"],
-    parse: (args) => {
-      const device = name(args.device);
-      if (device === null) return fail("`device` is required: a name from list_bluetooth_devices.");
-      return typeof args.connected === "boolean"
-        ? { name: "set_bluetooth_connection", device, connected: args.connected }
-        : fail("`connected` must be true or false.");
-    },
-  },
-  {
+    build: ({ device, connected }) => ({ name: "set_bluetooth_connection", device, connected }),
+  }),
+  tool({
     name: "get_sound",
     title: "Read sound settings",
     description:
@@ -66,10 +69,10 @@ export const machineTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_sound" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "get_sound" }),
+  }),
+  tool({
     name: "set_sound_output",
     title: "Choose the sound output",
     description: "Make an output device the default, by the name get_sound shows (for example the speakers or a headset). Sound then plays there.",
@@ -77,14 +80,12 @@ export const machineTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { device: { type: "string", description: "An output name from get_sound." } },
-    required: ["device"],
-    parse: (args) => {
-      const device = name(args.device);
-      return device === null ? fail("`device` is required: an output name from get_sound.") : { name: "set_sound_output", device };
+    args: {
+      device: custom({ type: "string", description: "An output name from get_sound." }, name, "`device` is required: an output name from get_sound."),
     },
-  },
-  {
+    build: ({ device }) => ({ name: "set_sound_output", device }),
+  }),
+  tool({
     name: "set_volume",
     title: "Set the volume or mute",
     description:
@@ -93,23 +94,23 @@ export const machineTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: {
-      target: { type: "string", enum: ["output", "input"], description: "Which device: the speakers (output) or the microphone (input). Default output." },
-      level: { type: "number", minimum: 0, maximum: 1, description: "0 is silent, 1 is full." },
-      muted: { type: "boolean", description: "true to mute, false to unmute." },
+    args: {
+      target: optional(
+        custom(
+          { type: "string", enum: ["output", "input"], description: "Which device: the speakers (output) or the microphone (input). Default output." },
+          (value) => (value === "output" || value === "input" ? value : null),
+          '`target` must be "output" or "input".',
+        ),
+      ),
+      level,
+      muted,
     },
-    parse: (args) => {
-      const target = args.target === undefined ? "output" : args.target === "output" || args.target === "input" ? args.target : null;
-      if (target === null) return fail('`target` must be "output" or "input".');
-      const level = args.level;
-      if (level !== undefined && !(typeof level === "number" && Number.isFinite(level) && level >= 0 && level <= 1))
-        return fail("`level` must be a number from 0 to 1.");
-      if (args.muted !== undefined && typeof args.muted !== "boolean") return fail("`muted` must be true or false.");
-      if (level === undefined && args.muted === undefined) return fail("Give `level` (0 to 1), `muted`, or both.");
-      return { name: "set_volume", target, ...(level === undefined ? {} : { level }), ...(args.muted === undefined ? {} : { muted: args.muted }) };
+    build: ({ target, level, muted }) => {
+      if (level === undefined && muted === undefined) return fail("Give `level` (0 to 1), `muted`, or both.");
+      return { name: "set_volume", target: target ?? "output", ...(level === undefined ? {} : { level }), ...(muted === undefined ? {} : { muted }) };
     },
-  },
-  {
+  }),
+  tool({
     name: "set_app_volume",
     title: "Set an app's volume",
     description:
@@ -118,33 +119,30 @@ export const machineTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: {
-      app: { type: "string", description: "An app's name from get_sound's apps." },
-      level: { type: "number", minimum: 0, maximum: 1, description: "0 is silent, 1 is full." },
-      muted: { type: "boolean", description: "true to mute, false to unmute." },
-      output: { type: "string", description: 'An output\'s name from get_sound, or "default".' },
+    args: {
+      app: custom({ type: "string", description: "An app's name from get_sound's apps." }, name, "`app` is required: an app's name from get_sound."),
+      level,
+      muted,
+      output: optional(
+        custom(
+          { type: "string", description: 'An output\'s name from get_sound, or "default".' },
+          name,
+          '`output` must be an output\'s name from get_sound, or "default".',
+        ),
+      ),
     },
-    required: ["app"],
-    parse: (args) => {
-      const app = name(args.app);
-      if (app === null) return fail("`app` is required: an app's name from get_sound.");
-      const level = args.level;
-      if (level !== undefined && !(typeof level === "number" && Number.isFinite(level) && level >= 0 && level <= 1))
-        return fail("`level` must be a number from 0 to 1.");
-      if (args.muted !== undefined && typeof args.muted !== "boolean") return fail("`muted` must be true or false.");
-      const output = args.output === undefined ? undefined : name(args.output);
-      if (output === null) return fail('`output` must be an output\'s name from get_sound, or "default".');
-      if (level === undefined && args.muted === undefined && output === undefined) return fail("Give `level` (0 to 1), `muted`, `output`, or several.");
+    build: ({ app, level, muted, output }) => {
+      if (level === undefined && muted === undefined && output === undefined) return fail("Give `level` (0 to 1), `muted`, `output`, or several.");
       return {
         name: "set_app_volume",
         app,
         ...(level === undefined ? {} : { level }),
-        ...(args.muted === undefined ? {} : { muted: args.muted }),
+        ...(muted === undefined ? {} : { muted }),
         ...(output === undefined ? {} : { output }),
       };
     },
-  },
-  {
+  }),
+  tool({
     name: "get_power",
     title: "Read battery and power settings",
     description:
@@ -152,10 +150,10 @@ export const machineTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_power" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "get_power" }),
+  }),
+  tool({
     name: "set_power_profile",
     title: "Change the power mode",
     description: `Set the power mode: ${PROFILE_IDS.join(", ")} (Low Power, Balanced, High Performance in Settings). Not every machine offers performance; get_power says which are available.`,
@@ -163,12 +161,16 @@ export const machineTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { profile: { type: "string", enum: [...PROFILE_IDS], description: "power-saver, balanced, or performance." } },
-    required: ["profile"],
-    parse: (args) =>
-      isProfileId(args.profile) ? { name: "set_power_profile", profile: args.profile } : fail(`\`profile\` must be one of: ${PROFILE_IDS.join(", ")}.`),
-  },
-  {
+    args: {
+      profile: custom(
+        { type: "string", enum: [...PROFILE_IDS], description: "power-saver, balanced, or performance." },
+        (value) => (isProfileId(value) ? value : null),
+        `\`profile\` must be one of: ${PROFILE_IDS.join(", ")}.`,
+      ),
+    },
+    build: ({ profile }) => ({ name: "set_power_profile", profile }),
+  }),
+  tool({
     name: "get_account",
     title: "Read the account",
     description:
@@ -176,7 +178,7 @@ export const machineTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_account" }),
-  },
+    args: {},
+    build: () => ({ name: "get_account" }),
+  }),
 ];
