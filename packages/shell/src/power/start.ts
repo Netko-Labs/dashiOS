@@ -15,7 +15,7 @@
  * window, it says so once and the rest of the shell goes on.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { compositorAbove, isRealSession } from "../menus/index.ts";
 import type { ConnectOptions } from "../shared/dbus/index.ts";
 import { type Clock, systemClock } from "./clock.ts";

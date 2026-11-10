@@ -5,12 +5,12 @@
  * checks that the three name the same set, H9).
  */
 
-import { AGENTS } from "./methods/agents.ts";
-import { CHROME } from "./methods/chrome.ts";
-import { SCREENS } from "./methods/screens.ts";
-import { SPACES } from "./methods/spaces.ts";
-import type { ParamsOf, ReplyOf } from "./methods/spec.ts";
-import { WINDOWS } from "./methods/windows.ts";
+import { AGENTS } from "./lib/methods/agents.ts";
+import { CHROME } from "./lib/methods/chrome.ts";
+import { SCREENS } from "./lib/methods/screens.ts";
+import { SPACES } from "./lib/methods/spaces.ts";
+import type { ParamsOf, ReplyOf } from "./lib/methods/spec.ts";
+import { WINDOWS } from "./lib/methods/windows.ts";
 
 export const METHODS = { ...WINDOWS, ...SCREENS, ...CHROME, ...SPACES, ...AGENTS };
 

@@ -4,32 +4,15 @@
  * what it hears back. Newline-delimited JSON; requests are answered by id.
  * The protocol is docs/compositor-ipc.md; every method is a typed method here
  * (`compositor.focus({ window })`), its params checked before they go and its
- * reply parsed as it comes, both with the shapes in src/compositor/ (H8).
+ * reply parsed as it comes, both with the shapes beside it (H8).
  */
 
 import { join } from "node:path";
 import { isRecord, maybe, must } from "@dashi/shape";
-import { EventShape } from "./compositor/events.ts";
-import { type Calls, camel, METHODS, type MethodName } from "./compositor/table.ts";
-import { FrameShape, GpuShape, IconShape, PointShape, WindowShape } from "./compositor/wire.ts";
-import type { CompositorEvent, CompositorWindow, Frame, Gpu, Point, WindowIcon } from "./compositor-types.ts";
-import { LineBuffer } from "./shared/io/lines.ts";
-
-export type {
-  AnimationTarget,
-  CompositorEvent,
-  CompositorWindow,
-  Frame,
-  Gpu,
-  Output,
-  Params,
-  Placing,
-  Point,
-  ScreenEdge,
-  Session,
-  SuperPhase,
-  WindowIcon,
-} from "./compositor-types.ts";
+import { LineBuffer } from "../shared/io/lines.ts";
+import { type CompositorEvent, EventShape } from "./events.ts";
+import { type Calls, camel, METHODS, type MethodName } from "./table.ts";
+import { type CompositorWindow, type Frame, FrameShape, type Gpu, GpuShape, IconShape, type Point, PointShape, type WindowIcon, WindowShape } from "./wire.ts";
 
 /** The pointer in an IPC `session` answer; null when it is missing, null, or not a pair of finite numbers. */
 export function parsePointer(answer: unknown): Point | null {

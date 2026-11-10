@@ -8,7 +8,7 @@
  * leaves a held one dark; external screens are never touched.
  */
 
-import type { Compositor, Output } from "../compositor.ts";
+import type { Compositor, Output } from "../compositor/index.ts";
 import { readBacklight } from "./brightness.ts";
 
 /** The compositor client's side this uses (and a test fakes). */

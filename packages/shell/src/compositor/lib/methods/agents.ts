@@ -5,7 +5,7 @@
  */
 
 import { bool, list, literal, nullable, num, obj, optional, str } from "@dashi/shape";
-import { WindowId } from "../wire.ts";
+import { WindowId } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
 const Capture = obj({

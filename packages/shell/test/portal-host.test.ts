@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { Placing } from "../src/compositor.ts";
+import type { Placing } from "../src/compositor/events.ts";
 import { isSheetTitle, PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../src/portal-host/index.ts";
 import { newLauncher } from "../src/portal-host/launchers.ts";
 import { PortalSheets, SHEET_TOPS, sheetTop } from "../src/portal-host/sheets.ts";

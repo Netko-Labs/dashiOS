@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { KEYMAP, SWITCHER_RULES, withSwitcher } from "../src/keymap/keymap.ts";
 import { ruleFor } from "../src/keymap/keymap-match.ts";
 import { SwitcherController } from "../src/switcher/controller.ts";

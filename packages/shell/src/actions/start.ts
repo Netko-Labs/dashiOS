@@ -14,7 +14,7 @@ import type { Agents } from "../agents/server.ts";
 import { TOOL_ACTIONS } from "../agents/tools/registry.ts";
 import { type AppMenuStore, ownerPids } from "../app-menus/index.ts";
 import type { Arrow } from "../arrange/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap/keymap.ts";
 import type { Arrange } from "../layout.ts";

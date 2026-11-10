@@ -1,7 +1,7 @@
 /** Session and windows (docs/compositor-ipc.md, "Session and windows"). */
 
 import { bool, lenientList, list, map, nullable, num, obj, optional, str } from "@dashi/shape";
-import { FrameShape, SessionShape, WindowId, WindowShape } from "../wire.ts";
+import { FrameShape, SessionShape, WindowId, WindowShape } from "../../wire.ts";
 import { Done, method, Nothing } from "./spec.ts";
 
 const OneWindow = obj({ window: WindowId });

@@ -16,7 +16,7 @@
  * pointer size (pointer.ts).
  */
 
-import type { Compositor, Output } from "./compositor.ts";
+import type { Compositor, Output } from "./compositor/index.ts";
 import { DEFAULT_POINTER_SIZE } from "./pointer.ts";
 
 /** How X11 apps meet a scaled screen: drawn at its pixels, or drawn at 1 and stretched. */

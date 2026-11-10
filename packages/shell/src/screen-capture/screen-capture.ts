@@ -21,7 +21,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { useSyncExternalStore } from "react";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 
 /** Where distributions install xdg-desktop-portal-wlr: Fedora's libexec, Arch's and Debian's lib. */
 export const PORTAL_CLIENTS: readonly string[] = ["/usr/libexec/xdg-desktop-portal-wlr", "/usr/lib/xdg-desktop-portal-wlr"];

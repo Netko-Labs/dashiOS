@@ -9,7 +9,7 @@
  * places screens, keeps them apart and touching, and runs the modes.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
 import type { LidSource } from "./lid.ts";
 import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";

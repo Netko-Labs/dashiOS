@@ -3,7 +3,7 @@
  * publish on, the store the bar reads, and the focus it follows.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { menusSocketPath } from "../shared/app-menus/protocol.ts";
 import { FocusFollower, ownerPids } from "./focus.ts";
 import { serveMenus } from "./lib/server.ts";

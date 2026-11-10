@@ -6,7 +6,7 @@
  * `ask` turns a compositor request into one of those.
  */
 
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { ONE_SPACE, parseSpaces } from "../model.ts";
 import { spaceLabels } from "../names.ts";
 import type { SpaceNames, SpacesState } from "../types.ts";

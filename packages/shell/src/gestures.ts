@@ -8,7 +8,7 @@
  * under the pointer.
  */
 
-import type { Compositor, CompositorEvent } from "./compositor.ts";
+import type { Compositor, CompositorEvent } from "./compositor/index.ts";
 import { type SpacesState, type SwipeStep, SwipeTracker } from "./spaces/index.ts";
 
 export interface GestureActions {

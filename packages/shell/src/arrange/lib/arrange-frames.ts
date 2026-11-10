@@ -5,7 +5,7 @@
  * or full screen. What Arranger remembers of a window is `Arranged`.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../../compositor/index.ts";
 import {
   carryFrame,
   dragZones,

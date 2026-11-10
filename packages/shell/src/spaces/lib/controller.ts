@@ -11,7 +11,7 @@
  * The Desktops as they are, and what listeners hear, are state.ts's.
  */
 
-import type { CompositorEvent } from "../../compositor.ts";
+import type { CompositorEvent } from "../../compositor/index.ts";
 import { bindingTarget, MAX_SPACES, parseSpaceBinding, parseSpaces } from "../model.ts";
 import { renamed, withoutSpace } from "../names.ts";
 import { desktopCount, desktopOrdinal, nearestDesktop, recoverSlots, type Slots, slotOf } from "./slots.ts";

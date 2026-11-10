@@ -8,7 +8,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type Monitor, monitorsOf } from "./monitors.ts";
 
 export interface MirrorState {

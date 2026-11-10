@@ -7,7 +7,7 @@
 import type { CaptureKind } from "../actions/index.ts";
 import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../apps.ts";
 import { placedOutputs } from "../arrange/index.ts";
-import type { Compositor, Frame } from "../compositor.ts";
+import type { Compositor, Frame } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import { withSwitcher } from "../keymap/keymap.ts";
 import { currentKeymap, idleKeymap } from "../keymap/keymap-state.ts";

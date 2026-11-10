@@ -9,7 +9,7 @@ import { homedir } from "node:os";
 import { type AgentStore, type Agents, NO_CONTEXT } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
 import { placedOutputs } from "../arrange/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type Entry, launchEntry } from "../entries.ts";
 import { primarySelection, readContext } from "../handoff-shell.tsx";
 import type { LauncherFiles, PictureRect, Presented } from "../launcher/index.ts";

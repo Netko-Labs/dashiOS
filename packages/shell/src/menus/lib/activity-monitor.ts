@@ -7,7 +7,7 @@
  */
 
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { launchEntry } from "../../entries.ts";
 import { windowToFront } from "../../front-window.ts";
 import type { EntryFor } from "../options.ts";

@@ -5,7 +5,7 @@
  * which keys act. Pure, so every rule is tested (test/switcher.test.ts).
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 
 /** One app in the switcher, with every window it has. */
 export interface AppGroup {

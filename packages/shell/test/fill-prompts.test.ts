@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { FillPrompts, PROMPT_MS } from "../src/agents/lib/fill-prompts.ts";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { flush } from "./support/time.ts";
 
 const win = (id: number, pid: number | null): CompositorWindow => ({ id, pid }) as CompositorWindow;

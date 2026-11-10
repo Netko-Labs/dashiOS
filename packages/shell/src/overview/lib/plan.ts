@@ -4,7 +4,7 @@
  * compositor.
  */
 
-import type { CompositorWindow, Frame } from "../../compositor.ts";
+import type { CompositorWindow, Frame } from "../../compositor/index.ts";
 import type { Output } from "../../layout.ts";
 import { layoutOverview, type Placed } from "./layout.ts";
 

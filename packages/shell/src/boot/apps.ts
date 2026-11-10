@@ -14,7 +14,7 @@ import { AppletPower } from "../applets/power.ts";
 import { popoverScreen, startApplets } from "../applets/start.tsx";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { LayoutStore } from "../control-center/index.ts";
 import { AttentionStore, DockController, matchEntry, PinStore } from "../dock/index.ts";
 import type { Entry } from "../entries.ts";

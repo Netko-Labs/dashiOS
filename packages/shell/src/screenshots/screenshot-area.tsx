@@ -9,7 +9,7 @@
 
 import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Output } from "../compositor.ts";
+import type { Output } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import { choosePrimary } from "../menubar/menubars.ts";
 import type { OpenOverlay } from "../overlay.tsx";

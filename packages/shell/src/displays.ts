@@ -10,8 +10,7 @@
  */
 
 import { defaultScale, isBuiltIn, SCALES } from "@dashi/ui";
-import { seenSize } from "./compositor/outputs.ts";
-import type { Compositor, Frame, Output } from "./compositor.ts";
+import { type Compositor, type Frame, type Output, seenSize } from "./compositor/index.ts";
 import { monitorsOf, type VrrMode } from "./display-config/monitors.ts";
 import { toWire } from "./display-config/plan.ts";
 

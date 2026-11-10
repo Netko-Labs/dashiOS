@@ -6,7 +6,7 @@ import { monitorMenus } from "../apps/activity-monitor/menus.ts";
 import { quitRefusal } from "../apps/activity-monitor/policy.ts";
 import { lineRefusal, sendQuit } from "../apps/activity-monitor/quit.ts";
 import type { ProcessRow } from "../apps/activity-monitor/sample.ts";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { energyArgs, openActivityMonitor } from "../src/menus/lib/activity-monitor.ts";
 import { isOpenArgs, parseShellMessage } from "../src/shared/app-menus/protocol.ts";
 import { energyImpact, gpuPercent, parseDrmFdinfo, parseWakeups, sumGpu } from "../src/shared/processes/energy-proc.ts";

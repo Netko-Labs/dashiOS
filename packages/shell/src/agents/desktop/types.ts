@@ -5,7 +5,7 @@
  * what the person would have made, and they see it happen.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import type { DisplayManager } from "../../display-config/manager.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/index.ts";

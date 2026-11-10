@@ -4,7 +4,7 @@
  * the menus, Control Center and the battery panel that show them.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { AutoRefresh, rateOnPower } from "../display-config/auto-refresh.ts";
 import { MirrorStore } from "../display-config/mirror.ts";
 import { bottomInset } from "../dock/index.ts";

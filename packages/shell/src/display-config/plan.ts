@@ -6,7 +6,7 @@
  * mechanism (it keeps screens apart and touching); everything chosen is here.
  */
 
-import type { Params } from "../compositor.ts";
+import type { Params } from "../compositor/index.ts";
 import { choosePrimary } from "../menubar/menubars.ts";
 import { identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";

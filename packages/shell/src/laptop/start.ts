@@ -10,7 +10,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphics/cardwire.ts";
 import { GraphicsController } from "../graphics/controller.ts";
 import type { LostCardStart } from "../graphics/lost-start.ts";

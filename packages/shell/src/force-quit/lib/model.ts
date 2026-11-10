@@ -4,7 +4,7 @@
  * scroll position sit. Pure, so it is tested without a compositor.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import type { AppGroup } from "../types.ts";
 
 export interface Identity {

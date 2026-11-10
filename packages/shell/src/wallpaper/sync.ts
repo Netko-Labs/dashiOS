@@ -6,7 +6,7 @@
  * request comes back as a `wallpaper` event; it keeps the built-in gradient.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type WallpaperChoice, wallpaperRequest } from "./catalog.ts";
 
 export class WallpaperSync {

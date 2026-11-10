@@ -1,7 +1,7 @@
 /** The battery monitor on the machine's own sources: /sys, /proc, the compositor's windows, the power-profiles daemon (tuned-ppd). */
 
 import { appFor } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { type AppCatalog, catalogFrom } from "../shared/processes/index.ts";
 import { readerMemory, readSnapshot, sysconf } from "../shared/processes/read.ts";

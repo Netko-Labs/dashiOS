@@ -9,7 +9,7 @@ import { activeScreen } from "../active-screen.ts";
 import { startAppearance } from "../appearance/index.ts";
 import { launch, ownApp } from "../apps.ts";
 import { type CalendarService, startCalendar } from "../calendar/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { controlFlags } from "../control-center/index.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { type FileManagerService, filesLaunch, serveFileManager } from "../file-manager.ts";

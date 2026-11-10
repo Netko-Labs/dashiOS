@@ -11,7 +11,7 @@
 
 import { join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";

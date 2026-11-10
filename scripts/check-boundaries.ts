@@ -7,7 +7,7 @@
 //                      cast pretends to check): IPC replies, D-Bus, files,
 //                      subprocesses. Parse it with a parser instead.
 //   H8  raw-requests   `request("method")` with a compositor IPC method
-//                      (docs/compositor-ipc.md) outside packages/shell/src/compositor.ts
+//                      (docs/compositor-ipc.md) outside packages/shell/src/compositor/client.ts
 //   H10 return-types   an exported function in a .ts file without a return type
 //                      (.tsx components are exempt)
 // Run: bun scripts/check-boundaries.ts [--shrink]
@@ -18,7 +18,7 @@ import { type Counts, isTest, type Outcome, ROOT, ratchet, read, report } from "
 
 /** The projects `bun run typecheck` checks. */
 const PROJECTS = ["packages/shape", "packages/dashi-ui", "packages/applet", "packages/greeter", "packages/shell", "packages/shell/browser-extension"];
-const COMPOSITOR = "packages/shell/src/compositor.ts";
+const COMPOSITOR = "packages/shell/src/compositor/client.ts";
 
 /** The request methods in docs/compositor-ipc.md's tables ("## Requests" up to "## Events"). */
 export function ipcMethods(doc: string): Set<string> {

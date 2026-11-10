@@ -8,7 +8,7 @@ import { checkField } from "../src/agents/secrets/field-check.ts";
 import { covers, parseSiteGrants, type SiteAnswer, SiteConsent, SiteGrants, siteOf } from "../src/agents/sites.ts";
 import { isBrowserHost } from "../src/browser/bridge.ts";
 import { parseField, parseFromBrowser } from "../src/browser/protocol.ts";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 
 describe("websites, one by one", () => {
   test("a page's site is its host without www, for web pages only", () => {

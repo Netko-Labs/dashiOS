@@ -7,7 +7,7 @@
 
 import { expect, test } from "bun:test";
 import type { Toplevel } from "@mirinjs/metal";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { DockController } from "../src/dock/controller.ts";
 import { dockLayout } from "../src/dock/layout.ts";
 import { buildDockMenu } from "../src/dock/lib/menu.ts";

@@ -1,8 +1,8 @@
 /** Screens, GPUs, and the wallpaper (docs/compositor-ipc.md, "Screens"). */
 
 import { bool, lenientList, list, literal, map, nullable, num, obj, optional, str } from "@dashi/shape";
-import { OutputsShape } from "../outputs.ts";
-import { GpuShape } from "../wire.ts";
+import { OutputsShape } from "../../outputs.ts";
+import { GpuShape } from "../../wire.ts";
 import { Done, method, Nothing } from "./spec.ts";
 
 const Mode = literal("fill", "fit", "center");

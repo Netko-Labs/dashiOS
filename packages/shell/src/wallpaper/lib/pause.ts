@@ -6,7 +6,7 @@
  * shader or video.
  */
 
-import type { CompositorWindow, Frame, Output } from "../../compositor.ts";
+import type { CompositorWindow, Frame, Output } from "../../compositor/index.ts";
 
 export type PauseReason = "locked" | "off" | "covered" | "battery";
 

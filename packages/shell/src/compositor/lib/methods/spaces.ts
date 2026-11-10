@@ -1,7 +1,7 @@
 /** Spaces, the overview, and live pictures (docs/compositor-ipc.md, "Spaces and overview", "Live pictures"). */
 
 import { bool, int, list, num, obj, optional, str } from "@dashi/shape";
-import { FrameShape, WindowId } from "../wire.ts";
+import { FrameShape, WindowId } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
 /** A Space's index, from 0. */

@@ -198,7 +198,7 @@
 1	packages/shell/apps/software/use-window-sheets.ts
 2	packages/shell/apps/software/window-overlay.tsx
 1	packages/shell/apps/terminal/engine.ts
-8	packages/shell/bin/dashi-graphics-preview.tsx
+7	packages/shell/bin/dashi-graphics-preview.tsx
 1	packages/shell/bin/dashi-open.ts
 10	packages/shell/bin/dashi-settings-preview.tsx
 1	packages/shell/bin/dashi-share-picker.ts
@@ -279,8 +279,7 @@
 6	packages/shell/src/calendar/lib/feed.ts
 4	packages/shell/src/calendar/lib/reminders.ts
 3	packages/shell/src/calendar/service.ts
-6	packages/shell/src/compositor-types.ts
-4	packages/shell/src/compositor.ts
+1	packages/shell/src/compositor/client.ts
 2	packages/shell/src/control-center/catalog.ts
 4	packages/shell/src/control-center/devices.ts
 1	packages/shell/src/control-center/index.ts
@@ -290,7 +289,7 @@
 3	packages/shell/src/control-center/panel.tsx
 1	packages/shell/src/control-center/radios.ts
 1	packages/shell/src/display-config/lid.ts
-2	packages/shell/src/displays.ts
+1	packages/shell/src/displays.ts
 1	packages/shell/src/dock/start.tsx
 1	packages/shell/src/entries.ts
 1	packages/shell/src/extensions/start.ts
@@ -500,8 +499,8 @@
 2	packages/shell/test/dialog-progress-list.test.ts
 3	packages/shell/test/dialog-text.test.ts
 7	packages/shell/test/dialog-view.test.tsx
-2	packages/shell/test/display-config.test.ts
-3	packages/shell/test/display-mirror.test.ts
+1	packages/shell/test/display-config.test.ts
+2	packages/shell/test/display-mirror.test.ts
 6	packages/shell/test/editor-autosave.test.ts
 6	packages/shell/test/editor-files.test.ts
 3	packages/shell/test/editor-model-menus.test.ts
@@ -531,7 +530,7 @@
 1	packages/shell/test/graphics-notice.test.ts
 6	packages/shell/test/graphics.test.ts
 3	packages/shell/test/installer.test.ts
-2	packages/shell/test/ipc-contract.test.ts
+1	packages/shell/test/ipc-contract.test.ts
 3	packages/shell/test/laptop.test.ts
 1	packages/shell/test/launcher-files.test.ts
 1	packages/shell/test/launcher-model-apps.test.ts
@@ -574,12 +573,11 @@
 1	packages/shell/test/ranking-fixture.ts
 1	packages/shell/test/ranking-locale.test.ts
 1	packages/shell/test/ranking-memory.test.ts
-5	packages/shell/test/recorder.test.ts
+4	packages/shell/test/recorder.test.ts
 3	packages/shell/test/refresh-rate-automatic.test.ts
-4	packages/shell/test/refresh-rate-view.test.tsx
+3	packages/shell/test/refresh-rate-view.test.tsx
 1	packages/shell/test/refresh-rate.test.ts
-2	packages/shell/test/screen-dark.test.ts
-1	packages/shell/test/screens-picked.test.ts
+1	packages/shell/test/screen-dark.test.ts
 1	packages/shell/test/settings-changes.test.ts
 2	packages/shell/test/settings-focus-view.test.tsx
 1	packages/shell/test/settings-nav.test.ts
@@ -627,4 +625,3 @@
 1	packages/shell/test/tints.test.ts
 3	packages/shell/test/true-black.test.ts
 1	packages/shell/test/warm-host.test.ts
-1	packages/shell/test/xwayland-scale.test.ts

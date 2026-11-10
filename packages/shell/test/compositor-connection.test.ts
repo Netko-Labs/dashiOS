@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { LockWatch } from "../src/agents/lock.ts";
-import { Compositor } from "../src/compositor.ts";
+import { Compositor } from "../src/compositor/client.ts";
 import { fakeClock, until } from "./support/time.ts";
 
 type Answer = (request: { id: number; method: string }) => unknown;

@@ -10,7 +10,8 @@ import { pasteChord } from "../src/clipboard/lib/paste.ts";
 import { snippetSections } from "../src/clipboard/lib/rows.ts";
 import { expand, keywordProblem, parseAdd, parseSnippets, SnippetStore } from "../src/clipboard/lib/snippets.ts";
 import { ClipboardWatch } from "../src/clipboard/lib/watch.ts";
-import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { type FakeRequest, fakeCompositor as typedCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";
 

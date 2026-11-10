@@ -6,7 +6,7 @@
  */
 
 import { basename } from "node:path";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type NotificationStore, SHELL_SENDER } from "../notifications/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import { type AreaCapture, areaCapture, type CaptureScreen, takeScreenshot } from "../screenshots/index.ts";

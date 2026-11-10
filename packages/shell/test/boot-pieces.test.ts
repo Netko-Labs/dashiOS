@@ -8,7 +8,7 @@ import { Screenshots, screenOf } from "../src/boot/overlays.tsx";
 import type { LateParts } from "../src/boot/parts.ts";
 import { Late, Services } from "../src/boot/services.ts";
 import { onScreen, Screens } from "../src/boot/session.ts";
-import type { Compositor } from "../src/compositor.ts";
+import type { Compositor } from "../src/compositor/client.ts";
 import { filesLaunch } from "../src/file-manager.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { SettingsStore } from "../src/settings-app/index.ts";

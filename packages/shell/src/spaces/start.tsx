@@ -9,7 +9,7 @@
  */
 
 import { placedOutputs } from "../arrange/index.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor/index.ts";
 import type { Output } from "../layout.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import type { OverviewExtras } from "../overview/index.ts";

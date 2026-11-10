@@ -13,7 +13,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { CompositorEvent, CompositorWindow } from "../../compositor.ts";
+import type { CompositorEvent, CompositorWindow } from "../../compositor/index.ts";
 import { type ClipboardHistory, copyId, type EntryKind, MAX_IMAGE_BYTES, MAX_TEXT_BYTES, type NewCopy } from "../history.ts";
 import type { FieldCheck } from "./fields.ts";
 import { imageSize } from "./images.ts";

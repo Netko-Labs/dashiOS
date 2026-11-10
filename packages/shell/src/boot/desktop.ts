@@ -5,7 +5,7 @@
  */
 
 import { Arranger } from "../arrange/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { DisplayManager, DisplayStore, keepSheet, watchLid } from "../display-config/index.ts";
 import { scaleForMonitor } from "../display-config/scale.ts";
 import { startDisplays } from "../displays.ts";

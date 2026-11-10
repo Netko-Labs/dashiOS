@@ -5,7 +5,7 @@
  */
 
 import { type AppearanceDeps, ChromeStyle, CornerFeed, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { IdlePolicy } from "../idle.ts";
 import { InputMethodRunner } from "../input-method.ts";

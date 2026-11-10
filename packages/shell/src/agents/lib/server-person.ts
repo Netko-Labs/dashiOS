@@ -1,7 +1,7 @@
 /** The person's own tool calls (the launcher, a key, a link): the code an agent's call runs, named "You", seeing what the person sees. */
 
 import type { BrowserBridge } from "../../browser/bridge.ts";
-import type { Compositor } from "../../compositor.ts";
+import type { Compositor } from "../../compositor/index.ts";
 import type { Arrange, Tile } from "../../layout.ts";
 import type { Question } from "../confirm.ts";
 import { type ToolResult, toolError } from "../context.ts";

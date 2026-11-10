@@ -7,7 +7,7 @@
  * with no window.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import type { AppGroup } from "../../force-quit/index.ts";
 import { clean } from "../../notifications/index.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";

@@ -1,6 +1,6 @@
 /** How tools talk about a window: look it up, and name it only as far as the agent may know it. */
 
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
 
 export async function named(compositor: Compositor, id: number): Promise<CompositorWindow | null> {

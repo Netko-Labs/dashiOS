@@ -16,7 +16,7 @@
  */
 
 import { darkColors, lightColors } from "@dashi/ui";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 
 /** One shadow, in logical pixels, as CSS `box-shadow` has it: black at `alpha`. */
 export interface ShadowLayer {

@@ -11,7 +11,7 @@
  */
 
 import type { AppCommand, Gate } from "./appearance/index.ts";
-import type { Compositor } from "./compositor.ts";
+import type { Compositor } from "./compositor/index.ts";
 import type { Run } from "./system/exec.ts";
 
 export const POINTER_SIZES = [24, 32, 40, 48] as const;

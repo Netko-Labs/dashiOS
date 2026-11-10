@@ -11,7 +11,7 @@
 
 import type { AnswerStatus } from "../agents/index.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/index.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";

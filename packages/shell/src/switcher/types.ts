@@ -4,7 +4,7 @@
  * open. The controller (controller.ts) makes these; the panel reads them.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 import type { Rect } from "../layout.ts";
 
 export interface SwitcherApp {

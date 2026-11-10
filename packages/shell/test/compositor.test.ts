@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseEvent, parseGpus, parseWindow, parseWindowIcon } from "../src/compositor.ts";
+import { parseEvent, parseGpus, parseWindow, parseWindowIcon } from "../src/compositor/client.ts";
 
 const window = {
   id: 3,

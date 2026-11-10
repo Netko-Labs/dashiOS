@@ -7,7 +7,7 @@
 
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { Output } from "../../compositor.ts";
+import type { Output } from "../../compositor/index.ts";
 import type { RecordTarget } from "../../recorder/index.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
 import { AGENT_MASK } from "../mask.ts";

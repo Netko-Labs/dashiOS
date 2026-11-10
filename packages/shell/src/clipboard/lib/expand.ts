@@ -8,7 +8,7 @@
  * before put back, whether or not the paste went in.
  */
 
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { TERMINALS } from "../../keymap/keymap.ts";
 import type { ClipEntry, HistorySnapshot } from "../history.ts";
 import type { FieldCheck } from "./fields.ts";

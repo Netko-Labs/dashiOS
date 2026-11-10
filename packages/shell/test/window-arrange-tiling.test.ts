@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { type CompositorWindow, parseEvent } from "../src/compositor.ts";
+import { parseEvent } from "../src/compositor/client.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { dragZones, keepLeast, type Rect, tileFrame } from "../src/layout.ts";
 import { files, OWN, rect, SCREEN, started, USABLE } from "./support/window-arrange.ts";
 

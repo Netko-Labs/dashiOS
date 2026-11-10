@@ -1,5 +1,5 @@
 import type { ActionContext, ActionDef } from "../../src/actions/types.ts";
-import type { CompositorWindow } from "../../src/compositor.ts";
+import type { CompositorWindow } from "../../src/compositor/wire.ts";
 
 export const run = async (action: ActionDef | undefined, args: Record<string, unknown> = {}, ctx: ActionContext = { window: null }) => {
   const checked = action?.check(args);

@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import pkg from "../../../package.json" with { type: "json" };
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor, iconPath } from "../../apps.ts";
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import { controlFlags, LayoutStore } from "../../control-center/index.ts";
 import { launchEntry } from "../../entries.ts";
 import { chooseNetwork } from "../../wifi/flow.ts";

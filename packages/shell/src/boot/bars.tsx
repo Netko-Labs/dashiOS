@@ -6,7 +6,7 @@
 
 import { joinShellMenus } from "../applets/popovers.ts";
 import { appFor } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
 import { barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";

@@ -13,7 +13,7 @@
  * blanked"); a mask that can't be set means no picture at all.
  */
 
-import type { CompositorWindow, Params } from "../compositor.ts";
+import type { CompositorWindow, Params } from "../compositor/index.ts";
 import { type Atspi, limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/index.ts";
 import { FillPrompts } from "./lib/fill-prompts.ts";
 

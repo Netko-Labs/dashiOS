@@ -12,7 +12,7 @@ the IPC socket with `subscribe`, `session`, `windows`, and `window-opened` /
 `window-closed`, and the `-c` session client; checked in the VM with foot,
 and by headless integration tests (`crates/dashi-comp/tests/`). The 0.1.0
 binary survives as a reference (outside the repo), and the shell's client,
-`packages/shell/src/compositor.ts`, is the contract the rewrite must keep:
+`packages/shell/src/compositor/client.ts`, is the contract the rewrite must keep:
 `docs/compositor-ipc.md`.
 
 ## What 0.1.0 Had

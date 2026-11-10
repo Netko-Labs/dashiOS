@@ -15,7 +15,7 @@
  *    bar), then gives up, saying how long to wait.
  */
 
-import type { Compositor, Params } from "../../compositor.ts";
+import type { Compositor, Params } from "../../compositor/index.ts";
 import { KEYMAP } from "../../keymap/keymap.ts";
 
 /** The person must have left a window (or the desktop, when borrowing) alone this long. */

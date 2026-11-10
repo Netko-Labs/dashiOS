@@ -1,6 +1,6 @@
 # dashi-comp IPC
 
-How the shell (TypeScript, `packages/shell/src/compositor.ts`) and the
+How the shell (TypeScript, `packages/shell/src/compositor/client.ts`) and the
 compositor (Rust, `crates/dashi-comp/src/ipc/`) talk. Both sides and this doc
 change in the same commit, and a test holds them to it (H9): `cargo test`
 writes one request, reply and event per method from the Rust types to

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { CompositorEvent } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
 import { type ShellActions, startShortcuts } from "../src/shortcuts.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";

@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import type { CompositorEvent } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
 import { IdlePolicy } from "../src/idle.ts";
 import { awakeLines, keepAwakeEntries } from "../src/inhibit/menu.ts";
 import { screenSaverInterface } from "../src/inhibit/screensaver.ts";

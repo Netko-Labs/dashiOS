@@ -6,7 +6,7 @@
 
 import { LockWatch } from "../agents/index.ts";
 import { type BluetoothSetup, chooseBluetooth } from "../bluetooth/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { LockController } from "../lock/index.ts";
 import { holdingBar } from "../menubar/index.ts";
 import { runPower } from "../menus/index.ts";

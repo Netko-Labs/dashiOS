@@ -11,7 +11,7 @@ import { homedir } from "node:os";
 import type { AgentStore, AnswerStatus, Grants, Passwords } from "../agents/index.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/index.ts";
 import type { RegionStore } from "../region/index.ts";

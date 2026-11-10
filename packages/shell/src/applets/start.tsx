@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
 import { watchKillSwitch } from "../applet-store/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";

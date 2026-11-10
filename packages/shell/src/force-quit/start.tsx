@@ -6,7 +6,7 @@
  */
 
 import { displayName } from "../apps.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor/index.ts";
 import { type Entry, loadEntries } from "../entries.ts";
 import { findEntry } from "../menus/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";

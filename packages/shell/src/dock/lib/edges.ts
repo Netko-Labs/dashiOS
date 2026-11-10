@@ -10,7 +10,7 @@
  * Which band, and what entering it means, is dock/presenter.ts's.
  */
 
-import type { Compositor } from "../../compositor.ts";
+import type { Compositor } from "../../compositor/index.ts";
 
 export interface EdgeClaim {
   /**

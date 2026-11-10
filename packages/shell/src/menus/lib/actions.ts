@@ -9,7 +9,7 @@
  * the keyboard back.
  */
 
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import type { Arrange } from "../../layout.ts";
 import { sameApp } from "../../shortcuts.ts";
 import type { EditCommand, MenuAction, PowerKind } from "../types.ts";
