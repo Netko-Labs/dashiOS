@@ -667,12 +667,11 @@
 2	packages/shell/test/ipc-contract.test.ts
 10	packages/shell/test/laptop.test.ts
 6	packages/shell/test/launcher-agents.test.tsx
-1	packages/shell/test/launcher-commands.test.ts
 1	packages/shell/test/launcher-files.test.ts
 3	packages/shell/test/launcher-glyphs.test.ts
 2	packages/shell/test/launcher-handoff.test.ts
 1	packages/shell/test/launcher-model-apps.test.ts
-3	packages/shell/test/launcher-model-search.test.ts
+2	packages/shell/test/launcher-model-search.test.ts
 2	packages/shell/test/launcher-ranking.test.ts
 1	packages/shell/test/launcher-sources.test.ts
 2	packages/shell/test/lost-card.test.ts
@@ -713,7 +712,7 @@
 2	packages/shell/test/preview-text.test.ts
 2	packages/shell/test/privacy.test.ts
 1	packages/shell/test/profiles.test.ts
-3	packages/shell/test/ranking-fixture.ts
+2	packages/shell/test/ranking-fixture.ts
 1	packages/shell/test/ranking-locale.test.ts
 1	packages/shell/test/ranking-memory.test.ts
 5	packages/shell/test/recorder.test.ts

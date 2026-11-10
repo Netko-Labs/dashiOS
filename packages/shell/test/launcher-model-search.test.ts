@@ -8,7 +8,7 @@ import { shellEntries } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, found, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
-import type { RankSignals } from "../src/launcher/ranking/item.ts";
+import type { RankSignals } from "../src/launcher/ranking/index.ts";
 import { app, list } from "./support/launcher-fixtures.ts";
 
 describe("did you mean", () => {
