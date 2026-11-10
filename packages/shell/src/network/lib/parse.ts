@@ -5,6 +5,8 @@
  * field that is not what it should be is left out, never guessed at.
  */
 
+import type { EthernetInfo, VpnConnection } from "../types.ts";
+
 /** One device of `nmcli -t dev show`, with the fields the Network pane needs. */
 export interface NetDevice {
   name: string;
@@ -18,21 +20,6 @@ export interface NetDevice {
   ipv4: string[];
   gateway: string | null;
   dns: string[];
-}
-
-export interface EthernetInfo {
-  name: string;
-  /** A cable is in and the profile is active. */
-  connected: boolean;
-  /** `Wired connection 1`; null when not connected. */
-  connection: string | null;
-  /** `192.168.1.23`, without the prefix. */
-  address: string | null;
-  /** The subnet mask, `255.255.255.0`. */
-  mask: string | null;
-  router: string | null;
-  dns: string[];
-  mac: string | null;
 }
 
 const IPV4 = /^(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)$/;
@@ -141,14 +128,6 @@ export function ethernetOf(devices: readonly NetDevice[]): EthernetInfo[] {
       };
     })
     .sort((a, b) => Number(b.connected) - Number(a.connected) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-}
-
-export interface VpnConnection {
-  uuid: string;
-  name: string;
-  /** NetworkManager's connection type: `vpn` (a plug-in) or `wireguard`. */
-  kind: "vpn" | "wireguard";
-  active: boolean;
 }
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

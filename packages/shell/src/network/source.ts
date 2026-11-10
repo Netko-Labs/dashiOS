@@ -7,7 +7,8 @@
  */
 
 import type { Run } from "../system/exec.ts";
-import { type EthernetInfo, ethernetOf, isConnectionUuid, parseDevices, parseVpns, type VpnConnection } from "./parse.ts";
+import { ethernetOf, isConnectionUuid, parseDevices, parseVpns } from "./lib/parse.ts";
+import type { EthernetInfo, VpnConnection } from "./types.ts";
 
 export interface NetInfo {
   ethernet: EthernetInfo[];
