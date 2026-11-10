@@ -1,5 +1,5 @@
 /**
- * Agents from the launcher, wired to the shell (main.tsx starts it): the
+ * Agents from the launcher, wired to the shell (boot/agents.ts starts it): the
  * service (agents/handoff/service.ts), its questions in the agents' panel
  * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
  * notifications, the launcher's side (launcher/agents/handoff-rows.ts), and

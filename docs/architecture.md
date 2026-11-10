@@ -48,7 +48,10 @@ systemd --user
 - **The shell** (`src/main.tsx`) is the desktop's logic: window placement,
   shortcuts, Spaces, the overview's plan, displays, power, network, Bluetooth,
   sound, notifications, accounts, polkit, Flathub, agents. Its UI is React,
-  each surface drawn by its own Metal host.
+  each surface drawn by its own Metal host. `main.tsx` is only the start-up
+  order: each piece starts in `src/boot/` and registers how it stops as it
+  starts (`boot/services.ts`), so on SIGTERM, or when its compositor or its
+  menu bar goes, the shell stops everything in the reverse order it started.
 - **Apps** (`apps/*`) are separate Bun processes on the app kit (`apps/kit`),
   each with a Metal window, a control socket, and menus served to the shell.
   A close from outside (the close control, ❖W, ❖Q, the Dock's Quit, logging

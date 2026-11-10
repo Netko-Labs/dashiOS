@@ -7,7 +7,7 @@
  * `STRIP.shown` at once, and only the ones on screen; the compositor blanks
  * a picture whole when an agent's capture mask covers its window. The rects
  * are sent again only when they change. Pure: the panel (window-strip.tsx)
- * draws the frames, and main.tsx puts the rects on the screen.
+ * draws the frames, and boot/launcher.tsx puts the rects on the screen.
  */
 
 import type { LauncherWindow } from "./items.ts";
