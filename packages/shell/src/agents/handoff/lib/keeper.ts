@@ -4,12 +4,12 @@
  * old, and, when a shell starts, the runs it picks up again.
  */
 
-import { ANSWERERS, type HarnessId } from "../ask/answerer.ts";
-import { TASK_GRANTED, TASK_REFUSED } from "./grants.ts";
+import { ANSWERERS, type HarnessId } from "../../ask/answerer.ts";
+import { TASK_GRANTED, TASK_REFUSED } from "../grants.ts";
+import type { HandoffDeps } from "../types.ts";
 import { replayRun, runsToPickUp } from "./pickup.ts";
 import { recordOf } from "./records.ts";
 import { streamOf, unitOf } from "./runner.ts";
-import type { HandoffDeps } from "./service-types.ts";
 
 export class RunKeeper {
   /** Runs with a folder on disk, whose record is kept there; the record last written for each. */

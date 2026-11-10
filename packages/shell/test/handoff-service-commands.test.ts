@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { TASK_PROMPT, taskCommand } from "../src/agents/handoff/commands.ts";
+import { TASK_PROMPT, taskCommand } from "../src/agents/handoff/lib/commands.ts";
+import { exitLine, serviceArgs, type TurnStart } from "../src/agents/handoff/lib/runner.ts";
 import { harnessOrder } from "../src/agents/handoff/order.ts";
-import { exitLine, serviceArgs, type TurnStart } from "../src/agents/handoff/runner.ts";
 import { taskOfCgroup } from "../src/agents/sandbox.ts";
 
 describe("the harnesses' command lines for a task", () => {

@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { harnessOfStream, parseRecord, requestOfPrompt, runningUnits, unitParts } from "../src/agents/handoff/records.ts";
-import { readStream, systemdRunner } from "../src/agents/handoff/runner.ts";
+import { harnessOfStream, parseRecord, requestOfPrompt, runningUnits, unitParts } from "../src/agents/handoff/lib/records.ts";
+import { readStream, systemdRunner } from "../src/agents/handoff/lib/runner.ts";
 
 const fixture = (name: string) => Bun.file(join(import.meta.dir, "fixtures", "handoff", name)).text();
 

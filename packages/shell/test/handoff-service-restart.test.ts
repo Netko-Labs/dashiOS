@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseRecord, type RunRecord } from "../src/agents/handoff/records.ts";
-import type { FoundRun, TurnRead } from "../src/agents/handoff/runner.ts";
+import { parseRecord, type RunRecord } from "../src/agents/handoff/lib/records.ts";
+import type { FoundRun, TurnRead } from "../src/agents/handoff/lib/runner.ts";
 import { helium, line, service } from "./support/handoff-service.ts";
 
 const fixtureLines = (name: string) =>

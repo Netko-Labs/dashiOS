@@ -1,11 +1,11 @@
 /** A turn that prints nothing for too long: its card asks what is likely wrong (sign in, keep waiting, or stop). */
 
-import { ANSWERERS, type HarnessId } from "../ask/answerer.ts";
-import { signInCommand } from "../ask/harness/catalog.ts";
-import { findHarness, HARNESSES, signedIn } from "../ask/harness/index.ts";
+import { ANSWERERS, type HarnessId } from "../../ask/answerer.ts";
+import { signInCommand } from "../../ask/harness/catalog.ts";
+import { findHarness, HARNESSES, signedIn } from "../../ask/harness/index.ts";
+import { isWorking } from "../run-view.ts";
+import type { HandoffDeps } from "../types.ts";
 import { QUIET_MS, quietQuestion, quietReason } from "./quiet.ts";
-import type { HandoffDeps } from "./service-types.ts";
-import { isWorking } from "./store.ts";
 
 export class QuietWatch {
   /** Each run's turn waiting for its first event, and the timer that asks once it has waited too long. */

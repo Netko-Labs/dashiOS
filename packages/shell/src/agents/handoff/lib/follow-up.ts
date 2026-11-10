@@ -13,7 +13,7 @@
  *   and the words together (`start-over`).
  */
 
-import { isWorking, type RunView } from "./store.ts";
+import { isWorking, type RunView } from "../run-view.ts";
 
 export type FollowUpRoute =
   | { kind: "restart"; session: string }

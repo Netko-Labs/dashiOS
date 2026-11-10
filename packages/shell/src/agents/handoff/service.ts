@@ -12,16 +12,13 @@ import { ANSWERERS } from "../ask/answerer.ts";
 import { hostFiles, shellPaths } from "../ask/harness/index.ts";
 import { settingWords } from "../ask/plan.ts";
 import { contextPrompt, GrantsMemory, grantsKind, TASK_GRANTED, TASK_REFUSED, taskGrants } from "./grants.ts";
-import { HarnessList } from "./harness-list.ts";
-import { RunKeeper } from "./keeper.ts";
-import { QuietWatch } from "./quiet-watch.ts";
-import { systemdRunner } from "./runner.ts";
-import type { Handoff, HandoffDeps, HandoffOptions } from "./service-types.ts";
+import { HarnessList } from "./lib/harness-list.ts";
+import { RunKeeper } from "./lib/keeper.ts";
+import { QuietWatch } from "./lib/quiet-watch.ts";
+import { systemdRunner } from "./lib/runner.ts";
+import { Turns } from "./lib/turns.ts";
 import { AgentRuns } from "./store.ts";
-import { Turns } from "./turns.ts";
-
-export { usesWords } from "./harness-list.ts";
-export type { Handoff, HandoffHarness, HandoffOptions, HandoffSettings, StartTask, TaskPolicy } from "./service-types.ts";
+import type { Handoff, HandoffDeps, HandoffOptions } from "./types.ts";
 
 /** A run's id: letters and digits only, as its scope's name needs (sandbox.ts `taskOfCgroup`). */
 const randomId = (): string => crypto.randomUUID().replace(/-/g, "").slice(0, 10);

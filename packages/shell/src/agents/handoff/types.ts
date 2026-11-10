@@ -6,8 +6,9 @@ import type { Undo } from "../ask/plan.ts";
 import type { Scope } from "../consent.ts";
 import type { Call } from "../tools/index.ts";
 import type { GrantsMemory, TaskContext } from "./grants.ts";
-import type { TaskRunner } from "./runner.ts";
-import type { AgentRuns, RunView } from "./store.ts";
+import type { TaskRunner } from "./lib/runner.ts";
+import type { RunView } from "./run-view.ts";
+import type { AgentRuns } from "./store.ts";
 
 /** What settings.json's `agents` says about handing off. */
 export interface HandoffSettings {

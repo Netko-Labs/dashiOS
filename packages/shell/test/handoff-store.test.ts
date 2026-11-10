@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { followUpPrompt, followUpRoute } from "../src/agents/handoff/follow-up.ts";
-import { AgentRuns, progressWords, RETAIN_MS, statusWords, summaryLines } from "../src/agents/handoff/store.ts";
+import { followUpPrompt, followUpRoute } from "../src/agents/handoff/lib/follow-up.ts";
+import { progressWords, RETAIN_MS, statusWords, summaryLines } from "../src/agents/handoff/run-view.ts";
+import { AgentRuns } from "../src/agents/handoff/store.ts";
 import { markState, mergeAgents } from "../src/agents/mark.ts";
 
 function clock(start = 1_000_000) {

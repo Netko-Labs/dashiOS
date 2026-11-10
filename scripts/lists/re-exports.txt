@@ -17,8 +17,6 @@
 1	packages/shell/src/agents/ask/claude.ts
 1	packages/shell/src/agents/ask/service.ts
 1	packages/shell/src/agents/ask/tasks.ts
-2	packages/shell/src/agents/handoff/service.ts
-1	packages/shell/src/agents/handoff/store.ts
 1	packages/shell/src/agents/sandbox.ts
 1	packages/shell/src/agents/session.ts
 1	packages/shell/src/applets/connection.ts

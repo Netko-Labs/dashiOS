@@ -7,7 +7,7 @@
 import type { NotifyInput } from "../../notifications/types.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { harnessIconName } from "./harness-icons.ts";
-import { type RunQuestion, type RunView, summaryLines } from "./store.ts";
+import { type RunQuestion, type RunView, summaryLines } from "./run-view.ts";
 import { cut } from "./words.ts";
 
 export const SHOW = "show";

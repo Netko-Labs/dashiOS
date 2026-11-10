@@ -12,8 +12,7 @@
  */
 
 import { elapsedText } from "../shared/time/elapsed.ts";
-import { harnessGlyph } from "./handoff/harness-icons.ts";
-import { currentStep, isWorking, type RunView } from "./handoff/store.ts";
+import { currentStep, harnessGlyph, isWorking, type RunView } from "./handoff/index.ts";
 import type { AgentInfo, Watching } from "./presence.ts";
 
 /** At most this many discs; the rest are "+N". */

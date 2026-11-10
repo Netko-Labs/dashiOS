@@ -227,7 +227,7 @@
 2	packages/shell/src/agent-overlays.tsx
 1	packages/shell/src/agent-sheet-views.tsx
 4	packages/shell/src/agent-sheets.tsx
-4	packages/shell/src/agents-panel.tsx
+2	packages/shell/src/agents-panel.tsx
 1	packages/shell/src/agents-rows.tsx
 1	packages/shell/src/agents/ask/ask-types.ts
 1	packages/shell/src/agents/ask/harness/plan-server.ts
@@ -344,7 +344,7 @@
 1	packages/shell/src/graphics/notice.ts
 1	packages/shell/src/graphics/policy.ts
 1	packages/shell/src/graphics/teller.ts
-9	packages/shell/src/handoff-shell.tsx
+4	packages/shell/src/handoff-shell.tsx
 1	packages/shell/src/hardware/laptop.ts
 1	packages/shell/src/keymap-state.ts
 3	packages/shell/src/laptop/charge.ts
@@ -671,16 +671,13 @@
 6	packages/shell/test/graphics.test.ts
 1	packages/shell/test/gtk-css.test.ts
 6	packages/shell/test/handoff-icons.test.ts
-1	packages/shell/test/handoff-questions-places.test.ts
 1	packages/shell/test/handoff-questions-sandbox.test.ts
 1	packages/shell/test/handoff-questions.test.ts
-6	packages/shell/test/handoff-quiet.test.ts
-2	packages/shell/test/handoff-records.test.ts
-4	packages/shell/test/handoff-service-commands.test.ts
-2	packages/shell/test/handoff-service-restart.test.ts
+4	packages/shell/test/handoff-quiet.test.ts
+2	packages/shell/test/handoff-service-commands.test.ts
 1	packages/shell/test/handoff-service.test.ts
 3	packages/shell/test/handoff-store.test.ts
-2	packages/shell/test/handoff-stream.test.ts
+1	packages/shell/test/handoff-stream.test.ts
 4	packages/shell/test/installer.test.ts
 2	packages/shell/test/ipc-contract.test.ts
 2	packages/shell/test/keymap-match.test.ts
@@ -808,7 +805,7 @@
 1	packages/shell/test/support/applet-catalogs.ts
 2	packages/shell/test/support/editor-model.ts
 3	packages/shell/test/support/handoff-questions.ts
-6	packages/shell/test/support/handoff-service.ts
+4	packages/shell/test/support/handoff-service.ts
 2	packages/shell/test/support/launcher-fixtures.ts
 1	packages/shell/test/support/portal-file-chooser.ts
 1	packages/shell/test/support/portal-sheets.ts

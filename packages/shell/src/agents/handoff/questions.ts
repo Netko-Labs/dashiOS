@@ -15,7 +15,7 @@
 
 import type { AgentUi, Allow, Answer, SignInAsk, SignInChoice } from "../presence.ts";
 import { DENY } from "../sheet-queue.ts";
-import { type Asked, type PanelDeps, TwoPlaces, type TwoPlacesOptions } from "./two-places.ts";
+import { type Asked, type PanelDeps, TwoPlaces, type TwoPlacesOptions } from "./lib/two-places.ts";
 
 export interface QuestionDeps extends PanelDeps {
   /** The run an MCP connection belongs to (its sandbox's scope), or null. */

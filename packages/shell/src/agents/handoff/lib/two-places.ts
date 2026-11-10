@@ -6,8 +6,9 @@
  * a fresh question on the card.
  */
 
+import type { RunQuestion, RunView } from "../run-view.ts";
+import type { AgentRuns } from "../store.ts";
 import { QuestionRoute, type RouteStep } from "./route.ts";
-import type { AgentRuns, RunQuestion, RunView } from "./store.ts";
 
 /** What the question needs of the launcher's runs and its panel. */
 export interface PanelDeps {

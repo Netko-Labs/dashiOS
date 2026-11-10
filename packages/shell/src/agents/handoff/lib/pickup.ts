@@ -8,10 +8,11 @@
  * the run's policy and what it was told.
  */
 
-import type { HarnessId } from "../ask/answerer.ts";
+import type { HarnessId } from "../../ask/answerer.ts";
+import { RETAIN_MS } from "../run-view.ts";
+import type { AgentRuns } from "../store.ts";
 import { harnessOfStream, type RunRecord, requestOfPrompt } from "./records.ts";
 import { type FoundRun, type FoundRuns, streamOf, type TaskRunner, unitOf } from "./runner.ts";
-import { type AgentRuns, RETAIN_MS } from "./store.ts";
 import { eventsOf } from "./stream.ts";
 
 /** A run to pick up: its record, and whether its turn still runs. */

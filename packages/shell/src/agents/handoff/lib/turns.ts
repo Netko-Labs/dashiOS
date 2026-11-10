@@ -5,15 +5,15 @@
  */
 
 import { join } from "node:path";
-import { ANSWERERS, type HarnessId } from "../ask/answerer.ts";
-import { findHarness, HARNESSES, harnessEnv } from "../ask/harness/index.ts";
-import { taskSocket } from "../sandbox.ts";
+import { ANSWERERS, type HarnessId } from "../../ask/answerer.ts";
+import { findHarness, HARNESSES, harnessEnv } from "../../ask/harness/index.ts";
+import { taskSocket } from "../../sandbox.ts";
+import type { HandoffDeps } from "../types.ts";
 import { TASK_PROMPT, taskCommand } from "./commands.ts";
 import { followUpPrompt, followUpRoute } from "./follow-up.ts";
 import type { RunKeeper } from "./keeper.ts";
 import { plainFailure } from "./quiet.ts";
 import type { QuietWatch } from "./quiet-watch.ts";
-import type { HandoffDeps } from "./service-types.ts";
 import { eventsOf } from "./stream.ts";
 
 export class Turns {

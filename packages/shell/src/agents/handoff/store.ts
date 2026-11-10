@@ -11,11 +11,9 @@
  */
 
 import type { Undo } from "../ask/plan.ts";
+import { type RunEvent, stepsPlanned } from "./lib/stream.ts";
 import { RETAIN_MS, type RunMessage, type RunQuestion, type RunStep, type RunView, type StartRun } from "./run-view.ts";
-import { type RunEvent, stepsPlanned } from "./stream.ts";
 import { stepWords } from "./words.ts";
-
-export * from "./run-view.ts";
 
 interface Run extends Omit<RunView, "steps" | "undos" | "messages"> {
   steps: RunStep[];

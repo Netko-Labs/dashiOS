@@ -9,7 +9,7 @@
  * (`turn-N.jsonl.err`) and whether it is signed in say which words.
  */
 
-import type { RunQuestion } from "./store.ts";
+import type { RunQuestion } from "../run-view.ts";
 
 /** How long a turn may print nothing before the person is asked. */
 export const QUIET_MS = 30_000;

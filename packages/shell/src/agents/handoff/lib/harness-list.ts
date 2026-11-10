@@ -1,9 +1,9 @@
 /** The installed harnesses on the "Hand it off" rows: which come first (Settings › Agents), and whether each is signed in. */
 
-import { ANSWERERS, HARNESS_IDS, type HarnessId } from "../ask/answerer.ts";
-import { findHarness, HARNESSES, signedIn } from "../ask/harness/index.ts";
-import { harnessOrder } from "./order.ts";
-import type { HandoffDeps, HandoffHarness } from "./service-types.ts";
+import { ANSWERERS, HARNESS_IDS, type HarnessId } from "../../ask/answerer.ts";
+import { findHarness, HARNESSES, signedIn } from "../../ask/harness/index.ts";
+import { harnessOrder } from "../order.ts";
+import type { HandoffDeps, HandoffHarness } from "../types.ts";
 
 /** The harnesses' words for their rows, mid-sentence: "your ChatGPT plan", "OpenCode's configured provider" (a name keeps its capital). */
 export function usesWords(id: HarnessId): string {

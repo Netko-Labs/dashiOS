@@ -11,12 +11,21 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ReactElement } from "react";
 import type { HarnessId } from "./agents/ask/answerer.ts";
-import { NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
-import { attentionNotice, endedNotice, FOLLOW_UP, logText, SHOW } from "./agents/handoff/notices.ts";
-import { routedUi } from "./agents/handoff/questions.ts";
-import { type Handoff, type HandoffOptions, startHandoff } from "./agents/handoff/service.ts";
-import { isWorking } from "./agents/handoff/store.ts";
-import { hostOf } from "./agents/handoff/words.ts";
+import {
+  attentionNotice,
+  endedNotice,
+  FOLLOW_UP,
+  type Handoff,
+  type HandoffOptions,
+  hostOf,
+  isWorking,
+  logText,
+  NO_CONTEXT,
+  routedUi,
+  SHOW,
+  startHandoff,
+  type TaskContext,
+} from "./agents/handoff/index.ts";
 import type { AgentStore, AgentUi } from "./agents/presence.ts";
 import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
 import type { HandoffSnapshot, LauncherHandoff } from "./launcher/agents/handoff-rows.ts";
