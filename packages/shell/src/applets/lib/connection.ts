@@ -17,7 +17,7 @@
 import { APPLET_LIMITS, type Applet, type AppletShellMessage, type Manifest, PROTOCOL, parseAppletMessage, wireMessage } from "@dashi/applet";
 import { nameApplet } from "../../apps.ts";
 import type { ExtraActions, ExtraMenuRow, ExtrasStore } from "../../extras/index.ts";
-import { LineBuffer } from "../../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/index.ts";
 import type { AppletCommands, CommandMessage } from "../commands.ts";
 import type { AppletControls } from "../controls.ts";
 import { type AppletPower, attachPower, mayChoosePower } from "../power.ts";

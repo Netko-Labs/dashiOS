@@ -8,7 +8,7 @@
 
 import net from "node:net";
 import { isRecord } from "@dashi/shape";
-import { LineBuffer } from "../../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/index.ts";
 import type { ProxyGrant } from "./server.ts";
 
 const ANSWER_MS = 10_000;

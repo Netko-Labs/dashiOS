@@ -7,7 +7,7 @@
  */
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
-import { LineBuffer } from "../../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/index.ts";
 import { choiceLine, isPickRequest, MAX_LINE, type ShareChoice } from "../protocol.ts";
 
 /** Ask the person; resolves with what they chose (null: declined). `abort` fires when the asker hangs up. */

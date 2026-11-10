@@ -5,7 +5,7 @@
  * errors carry dashi-secretd's words, which never hold one.
  */
 
-import { LineBuffer } from "../../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/index.ts";
 import { headersField, headersOf, parseToken } from "./lib/vault-token-items.ts";
 import type { NewToken, TokenChange, TokenSummary } from "./types.ts";
 

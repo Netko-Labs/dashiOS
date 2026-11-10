@@ -5,7 +5,7 @@
  * set apart. Pure, because the order is what the menu promises.
  */
 
-import { cleanText } from "../shared/io/text.ts";
+import { cleanText } from "../shared/io/index.ts";
 import { barsFor } from "../system/network.ts";
 import type { AccessPoint, JoinFailure, SavedNetwork, Security, WifiNetwork, WifiReading } from "./types.ts";
 

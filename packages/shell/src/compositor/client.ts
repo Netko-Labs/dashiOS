@@ -9,7 +9,7 @@
 
 import { join } from "node:path";
 import { isRecord, maybe, must } from "@dashi/shape";
-import { LineBuffer } from "../shared/io/lines.ts";
+import { LineBuffer } from "../shared/io/index.ts";
 import { type CompositorEvent, EventShape } from "./events.ts";
 import { type Calls, camel, METHODS, type MethodName } from "./table.ts";
 import { type CompositorWindow, type Frame, FrameShape, type Gpu, GpuShape, IconShape, type Point, PointShape, type WindowIcon, WindowShape } from "./wire.ts";

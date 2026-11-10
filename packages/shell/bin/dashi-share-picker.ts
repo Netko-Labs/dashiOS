@@ -12,7 +12,7 @@
  */
 
 import { MAX_LINE, parseAnswer, socketPath } from "../src/share-picker/protocol.ts";
-import { LineBuffer } from "../src/shared/io/lines.ts";
+import { LineBuffer } from "../src/shared/io/index.ts";
 
 const path = socketPath();
 if (!path) {

@@ -1,6 +1,6 @@
 /** One connection's line-framed JSON: lines in (a runaway client ends it), messages out, held when the socket is full. */
 
-import { LineBuffer } from "../../../shared/io/lines.ts";
+import { LineBuffer } from "../../../shared/io/index.ts";
 import type { Connection } from "./session-types.ts";
 
 /** A line longer than this (a runaway client) ends the connection. */

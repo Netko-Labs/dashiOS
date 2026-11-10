@@ -7,7 +7,7 @@
  * simply answered, and its sheet comes down.
  */
 
-import { LineBuffer } from "../../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/index.ts";
 import { VAULT_SOCKET, vaultCall } from "./vault.ts";
 
 export interface Question {

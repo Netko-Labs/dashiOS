@@ -7,7 +7,7 @@
  */
 
 import { DBusConnection, DBusError, propertyMap } from "../dbus/index.ts";
-import { cleanText } from "../io/text.ts";
+import { cleanText } from "../io/index.ts";
 import { iconProblem, nameProblem, parseAccount } from "./parse.ts";
 import type { Account, AccountsBackend, ChangeResult } from "./types.ts";
 

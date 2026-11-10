@@ -7,7 +7,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { LineBuffer } from "../../../src/shared/io/lines.ts";
+import { LineBuffer } from "../../../src/shared/io/index.ts";
 import { type EngineMessage, parseEngineLine } from "./screen.ts";
 
 /** What the app sends: crates/dashi-term/src/protocol.rs `Input`. */

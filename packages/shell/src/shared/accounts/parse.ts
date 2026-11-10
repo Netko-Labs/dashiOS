@@ -4,7 +4,7 @@
  * what goes the other way, a full name and a picture.
  */
 
-import { cleanText } from "../io/text.ts";
+import { cleanText } from "../io/index.ts";
 import { isPhotoPath } from "../settings/file.ts";
 import type { Account } from "./types.ts";
 
