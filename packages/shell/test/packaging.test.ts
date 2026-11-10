@@ -28,6 +28,7 @@ describe("systemd units", () => {
     for (const line of [
       "NoNewPrivileges=yes",
       "ProtectSystem=strict",
+      "ProtectKernelTunables=yes",
       "ReadWritePaths=/sys/class /sys/devices /sys/firmware/acpi",
       "PrivateNetwork=yes",
       "DevicePolicy=closed",
@@ -36,8 +37,6 @@ describe("systemd units", () => {
     ]) {
       expect(unit.split("\n")).toContain(line);
     }
-    // It writes /sys: a read-only /sys would break every knob.
-    expect(unit).not.toMatch(/^ProtectKernelTunables=yes/m);
   });
 });
 
