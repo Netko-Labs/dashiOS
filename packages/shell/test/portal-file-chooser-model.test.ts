@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ChooserModel, chooserShows, folderName, folderTrail } from "../apps/files/chooser/model.ts";
 import type { Env } from "../apps/files/env.ts";
-import type { FilesPrefs } from "../apps/files/prefs.ts";
+import type { FilesPrefs } from "../apps/files/lib/prefs.ts";
 import type { ChooserRequest } from "../apps/portal/file-chooser/options.ts";
 import { request } from "./support/portal-file-chooser.ts";
 import { until } from "./support/time.ts";

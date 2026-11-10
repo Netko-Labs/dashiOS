@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { Modifiers } from "@mirinjs/metal";
-import { isPlain, pick } from "../apps/files/selection.ts";
+import { isPlain, pick } from "../apps/files/lib/selection.ts";
 
 const shown = ["a", "b", "c", "d", "e"];
 const none: Modifiers = { shift: false, control: false, alt: false, super: false };

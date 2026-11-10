@@ -17,16 +17,12 @@ import { AppWindow, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo } from "react";
 import type { ChooserRequest } from "../../../src/shared/files/chooser/request.ts";
-import { Listing } from "../browser.tsx";
-import { Files } from "../context.ts";
 import type { Env } from "../env.ts";
-import { useChooserParts } from "./parts.tsx";
-import type { ChooserViewProps } from "./props.ts";
+import { Files } from "../lib/context.ts";
+import { Listing } from "../lib/views/browser.tsx";
+import { useChooserParts } from "./lib/parts.tsx";
 import { openChooser } from "./start.ts";
-
-// Where the chooser's other files and its tests look for them.
-export type { ChooserViewProps } from "./props.ts";
-export { isHiddenChord } from "./use-chooser-input.ts";
+import type { ChooserViewProps } from "./types.ts";
 
 /** The chooser as a whole window: the portal's (hung from the asking app) and `dashi-dialog`'s. */
 export function ChooserView(props: ChooserViewProps & { title: string }) {
