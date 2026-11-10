@@ -7,8 +7,8 @@
  * contents costs the compositor nothing.
  */
 
-import { CORNER_RADIUS, type CornerName } from "../corners.ts";
 import type { Requester } from "../settings.ts";
+import { CORNER_RADIUS, type CornerName } from "../shared/appearance/corners.ts";
 
 export class ChromeStyle {
   private dark: boolean | null = null;

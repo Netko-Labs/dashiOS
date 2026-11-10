@@ -287,7 +287,7 @@ const idle = compositor && !idleOff ? new IdlePolicy(compositor) : null;
 const chromeStyle = compositor ? new ChromeStyle(compositor) : null;
 // The depth between windows: shadows, the hairline, the optional ring (IPC `window-style`; appearance/window-style.ts).
 const windowStyle = compositor ? new WindowStyleSync(compositor) : null;
-// GTK apps round their own windows to the same radius (appearance/gtk-colors.ts).
+// GTK apps round their own windows to the same radius (shared/appearance/gtk-colors.ts).
 const gtkCorners = new CornerFeed();
 // The wallpaper behind the windows and the lock screen (IPC `wallpaper`; wallpaper/).
 const wallpaper = compositor ? new WallpaperSync(compositor) : null;

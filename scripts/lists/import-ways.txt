@@ -5,7 +5,6 @@
 1	packages/shell/apps/installer/view.tsx
 1	packages/shell/apps/portal/access.tsx
 2	packages/shell/apps/portal/file-chooser/index.tsx
-2	packages/shell/apps/portal/look.ts
-2	packages/shell/apps/portal/settings.ts
+1	packages/shell/apps/portal/look.ts
 1	packages/shell/apps/software/main.tsx
 1	packages/shell/apps/software/services.ts

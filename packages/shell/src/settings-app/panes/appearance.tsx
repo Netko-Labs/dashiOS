@@ -15,7 +15,7 @@
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { AUTO_DARK_FROM, AUTO_DARK_TO } from "../../appearance/auto.ts";
-import { DEFAULT_CORNERS, isCornerName } from "../../corners.ts";
+import { DEFAULT_CORNERS, isCornerName } from "../../shared/appearance/corners.ts";
 import { type FlagsStore, useFlags } from "../../shared/control-center/flags.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../../shared/controls/palette.ts";
 import { useSettings } from "../hooks.ts";

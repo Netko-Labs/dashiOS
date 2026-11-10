@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { contrastRatio, darkColors, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, TRUE_BLACK } from "@dashi/ui";
 import { DARK_TERMINAL } from "../apps/terminal/palette.ts";
-import { gtkColors } from "../src/appearance/gtk-colors.ts";
 import { BATTERY_PANEL } from "../src/battery/panel.tsx";
 import { GRID } from "../src/control-center/layout.ts";
+import { gtkColors } from "../src/shared/appearance/gtk-colors.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, panelEdge } from "../src/shared/controls/palette.ts";
 
 // Dark is true black everywhere Dashi draws (docs/design.html, "Tokens"):

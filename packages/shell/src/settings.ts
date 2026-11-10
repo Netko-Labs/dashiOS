@@ -43,7 +43,7 @@
  * `spaces.fullscreenDesktop` (default true) whether a full-screen window gets
  * a Desktop of its own, uncounted and unnamed here (spaces/fullscreen.ts).
  * `cornerRadius` is "none", "small", "medium" (the default), or "large", how
- * round every window is (corners.ts). `reduceMotion` turns the compositor's
+ * round every window is (shared/appearance/corners.ts). `reduceMotion` turns the compositor's
  * window animations off. `highlightActiveWindow` (default false) rings the
  * window with the keyboard in the accent color (appearance/window-style.ts). `pointerSize` is 24 (the default), 32, 40, or 48
  * points (pointer.ts); `textSize` is 1 (the default), 1.15, 1.3, or 1.5, what the
@@ -74,11 +74,11 @@
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
-import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
 import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
 import { DEFAULT_INPUT_METHOD, INPUT_METHODS, type InputMethodName } from "./input-method.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
+import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./shared/appearance/corners.ts";
 import { parseCatalogs } from "./shared/applet-store/catalogs.ts";
 import { settingsPath } from "./shared/settings/file.ts";
 import { parseSpaceNames, type SpaceNames } from "./spaces/names.ts";

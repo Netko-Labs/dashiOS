@@ -1,9 +1,9 @@
 /** The rows of Appearance, Wallpaper, Displays (Night Shift included), and Desktop & Dock. */
 
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
-import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../corners.ts";
 import { DOCK_STYLES } from "../../dock/settings.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
+import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../shared/appearance/corners.ts";
 import { DEFAULT_WALLPAPER_MODE } from "../../wallpaper/catalog.ts";
 import { DEFAULT_FRAME_RATE, FRAME_RATES } from "../../wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "../../xwayland-scale.ts";

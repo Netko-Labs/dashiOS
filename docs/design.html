@@ -452,7 +452,7 @@
     </ol>
 
     <h2>Typography</h2>
-    <p><strong>Inter</strong> everywhere (<code>INTERFACE_FAMILY</code>, <code>appearance/look.ts</code>), with Noto Sans for scripts Inter lacks and Noto Sans Mono for code. GTK apps get "Inter 11". The compositor's window titles are SemiBold 13. Every specimen below is editable.</p>
+    <p><strong>Inter</strong> everywhere (<code>INTERFACE_FAMILY</code>, <code>shared/appearance/look.ts</code>), with Noto Sans for scripts Inter lacks and Noto Sans Mono for code. GTK apps get "Inter 11". The compositor's window titles are SemiBold 13. Every specimen below is editable.</p>
     <div id="type-scale"></div>
     <ul class="small">
       <li>Weights: Regular for reading, SemiBold (600) for labels that head something, Bold (700) for titles and the menu bar's app name. No Light, except the boot splash's title.</li>
@@ -513,7 +513,7 @@
     </ol>
 
     <h2>Corners</h2>
-    <p>Windows Dashi frames are rounded at the person's choice, <em>Window corners</em> in Settings → Appearance: None 0, Small 8, <strong>Medium 12 (default)</strong>, Large 16 (<code>shell/src/corners.ts</code>). The compositor rounds the bottom under Dashi's title bar and all four corners of a unified window, with a shader. Try the pills above, or:</p>
+    <p>Windows Dashi frames are rounded at the person's choice, <em>Window corners</em> in Settings → Appearance: None 0, Small 8, <strong>Medium 12 (default)</strong>, Large 16 (<code>shell/src/shared/appearance/corners.ts</code>). The compositor rounds the bottom under Dashi's title bar and all four corners of a unified window, with a shader. Try the pills above, or:</p>
     <div class="controls-row">
       <label>Radius <input type="range" id="radius" min="0" max="20" value="12"> <span id="radius-label">12 px</span></label>
     </div>
