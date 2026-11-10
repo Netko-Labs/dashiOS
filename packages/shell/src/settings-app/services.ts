@@ -16,7 +16,7 @@ import type { Laptop } from "../laptop/index.ts";
 import { holdingBar } from "../menubar/bar-hold.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
-import { fakeLid, logindLid } from "../power/policy.ts";
+import { fakeLid, logindLid } from "../power/index.ts";
 import {
   type AppMixer,
   type AudioBackend,

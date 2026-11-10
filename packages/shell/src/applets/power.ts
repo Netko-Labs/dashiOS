@@ -12,8 +12,7 @@
  */
 
 import type { Manifest, PowerChoice, PowerState } from "@dashi/applet";
-import type { ModeSnapshot } from "../power/modes/store.ts";
-import { MODE_LABEL, type ModeChoice } from "../power/modes/types.ts";
+import { MODE_LABEL, type ModeChoice, type ModeSnapshot } from "../power/index.ts";
 
 /** What applets reach of the mode store: its snapshot, its changes, and a pick. */
 export interface ModeSource {

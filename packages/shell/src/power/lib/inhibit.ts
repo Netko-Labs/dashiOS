@@ -9,8 +9,8 @@
  * lock and keeps it held after the shell lets go.
  */
 
-import { closeFd, FdConnection, type FdConnectOptions } from "../shared/dbus/index.ts";
-import { LOGIND, MANAGER, MANAGER_PATH } from "./logind.ts";
+import { closeFd, FdConnection, type FdConnectOptions } from "../../shared/dbus/index.ts";
+import { LOGIND, MANAGER, MANAGER_PATH } from "../logind.ts";
 
 export interface InhibitRequest {
   /** What is inhibited: `sleep`, `handle-power-key`, and the other logind names, joined with colons. */

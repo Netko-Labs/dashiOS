@@ -5,7 +5,7 @@
  * hint follows it.
  */
 
-import type { Compositor } from "../compositor/index.ts";
+import type { Compositor } from "../../compositor/index.ts";
 import { type Clock, systemClock } from "./clock.ts";
 
 export class LockWatch {

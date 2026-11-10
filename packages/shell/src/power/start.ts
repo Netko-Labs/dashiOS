@@ -18,17 +18,17 @@
 import type { Compositor } from "../compositor/index.ts";
 import { compositorAbove, isRealSession } from "../menus/index.ts";
 import type { ConnectOptions } from "../shared/dbus/index.ts";
-import { type Clock, systemClock } from "./clock.ts";
-import { logindLocks, type TakeLock } from "./inhibit.ts";
-import { LockWatch } from "./lockwatch.ts";
-import { sayOnce } from "./log.ts";
+import { type Clock, systemClock } from "./lib/clock.ts";
+import { logindLocks, type TakeLock } from "./lib/inhibit.ts";
+import { LockWatch } from "./lib/lockwatch.ts";
+import { sayOnce } from "./lib/log.ts";
+import { POWER_KEY_LOCK, PowerKey } from "./lib/powerkey.ts";
+import { ScreenLock } from "./lib/screenlock.ts";
+import { watchSession } from "./lib/session.ts";
+import { DEFAULT_POWER_SETTINGS, type PowerSettings } from "./lib/settings.ts";
+import { SLEEP_LOCK, SleepGuard } from "./lib/sleep.ts";
 import { Logind } from "./logind.ts";
 import { powerOffReason } from "./nested.ts";
-import { POWER_KEY_LOCK, PowerKey } from "./powerkey.ts";
-import { ScreenLock } from "./screenlock.ts";
-import { watchSession } from "./session.ts";
-import { DEFAULT_POWER_SETTINGS, type PowerSettings } from "./settings.ts";
-import { SLEEP_LOCK, SleepGuard } from "./sleep.ts";
 
 export interface PowerOptions {
   /** For the lock state; without it nothing can be locked or waited for. */

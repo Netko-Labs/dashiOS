@@ -18,8 +18,8 @@
 import { useSyncExternalStore } from "react";
 import type { HardwareApi, Knob, KnobValue } from "../../hardware/index.ts";
 import { isProfileId, type ProfileId, type ProfileSource } from "../../system/profiles.ts";
+import { EchoGuard } from "../lib/guard.ts";
 import { type Effective, effectiveMode, type PowerSource } from "./automatic.ts";
-import { EchoGuard } from "./guard.ts";
 import { resolveRecipe } from "./recipes.ts";
 import type { PowerSection } from "./settings.ts";
 import { MODE_PROFILE, MODES, type Mode, type ModeChoice, modeOfProfile, nextMode, type Recipes } from "./types.ts";

@@ -10,10 +10,7 @@
 
 import { type GraphicsSnapshot, LOST_NOTICE } from "../graphics/index.ts";
 import type { MenuEntry } from "../menus/index.ts";
-import { chargeTarget } from "../power/battery-health.ts";
-import type { PowerSection } from "../power/modes/settings.ts";
-import type { ModeSnapshot } from "../power/modes/store.ts";
-import type { ModeChoice } from "../power/modes/types.ts";
+import { chargeTarget, type ModeChoice, type ModeSnapshot, type PowerSection } from "../power/index.ts";
 import type { LaptopSnapshot } from "./store.ts";
 
 export type LaptopAction = { kind: "mode"; choice: ModeChoice } | { kind: "full-charge" } | { kind: "quit-holder"; name: string } | { kind: "restart" };

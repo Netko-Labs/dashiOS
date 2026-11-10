@@ -12,8 +12,7 @@ import { join } from "node:path";
 import type { GraphicsController } from "../../graphics/index.ts";
 import type { HardwareApi } from "../../hardware/index.ts";
 import type { NotificationStore } from "../../notifications/index.ts";
-import { Logind } from "../../power/logind.ts";
-import type { ModeStore } from "../../power/modes/store.ts";
+import { Logind, type ModeStore } from "../../power/index.ts";
 import { writeJsonAtomic } from "../../settings-app/store.ts";
 
 export const RESET_NOTICE = {
