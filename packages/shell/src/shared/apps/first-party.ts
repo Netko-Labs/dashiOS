@@ -22,7 +22,7 @@ export interface FirstPartySpec {
   /**
    * The MIME types it opens, which makes it take a file on its command line
    * and puts a `MimeType=` line in the desktop entry the shell writes for it
-   * (desktop-entries.ts). Declared here so the entry, the launcher's "open
+   * (src/desktop-entries.ts). Declared here so the entry, the launcher's "open
    * with", and the installer's defaults all come from one list.
    */
   mimeTypes?: readonly string[];

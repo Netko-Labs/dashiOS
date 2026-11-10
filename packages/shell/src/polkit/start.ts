@@ -8,9 +8,8 @@
  */
 
 import { realpathSync } from "node:fs";
-import { resolveIcon } from "../entries.ts";
 import type { OpenOverlay } from "../overlay.tsx";
-import { iconPath } from "../shared/apps/index.ts";
+import { iconPath, resolveIcon } from "../shared/apps/index.ts";
 import { SYSTEM_BUS_PATH, socketPaths } from "../shared/dbus/address.ts";
 import { DBusConnection } from "../shared/dbus/index.ts";
 import { type LockSignal, PolkitController } from "./controller.ts";

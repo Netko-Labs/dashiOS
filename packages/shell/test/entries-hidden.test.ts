@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { matchEntry } from "../src/dock/layout.ts";
-import { type Entry, parseDesktopEntry, withDistinctNames } from "../src/entries.ts";
+import { type Entry, withDistinctNames } from "../src/entries.ts";
+import { parseDesktopEntry } from "../src/shared/apps/index.ts";
 
 const T3_HIDDEN = `[Desktop Entry]
 Type=Application

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { parseDesktopEntry } from "../src/entries.ts";
 import { dashiWords, languagesOf, localeKeys, localizedDesktop, messageLocales } from "../src/launcher/ranking/index.ts";
+import { parseDesktopEntry } from "../src/shared/apps/index.ts";
 
 const FILES = `[Desktop Entry]
 Type=Application

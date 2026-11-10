@@ -21,8 +21,7 @@
 import { lstatSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { desktopFields } from "./entries.ts";
-import { type FirstPartySpec, firstPartyApp } from "./shared/apps/index.ts";
+import { desktopFields, type FirstPartySpec, firstPartyApp } from "./shared/apps/index.ts";
 
 /** The key that marks a file as the shell's; only files with it set to true are ever replaced or removed. */
 export const MARKER_KEY = "X-Dashi-Managed";

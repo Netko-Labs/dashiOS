@@ -81,7 +81,6 @@
 318	packages/shell/src/bluetooth/store.ts
 576	packages/shell/src/compositor.ts
 307	packages/shell/src/display-config/manager.ts
-376	packages/shell/src/entries.ts
 1189	packages/shell/src/launcher.tsx
 313	packages/shell/src/launcher/extensions.ts
 314	packages/shell/src/launcher/ranking/rank.ts

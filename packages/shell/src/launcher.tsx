@@ -148,7 +148,7 @@ export interface LauncherProps {
   host?: LauncherHost;
   /** A link's action, waiting for Return. */
   presented?: Presented | null;
-  /** The person's languages, for Dashi's own words (ranking/locale.ts). */
+  /** The person's languages, for Dashi's own words (shared/locale/messages.ts). */
   languages?: readonly string[];
   /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
   typeAhead?: TypeAheadSource;

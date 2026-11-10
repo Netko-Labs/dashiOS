@@ -4,7 +4,7 @@
  * (file-icons.ts, IC-2), in Light or Dark, with a special folder's emblem.
  */
 
-import { dataDirs } from "../../src/entries.ts";
+import { dataDirs } from "../../src/shared/apps/index.ts";
 import { type Emblem, iconFile, iconKind } from "./file-icons.ts";
 import type { FileItem } from "./items.ts";
 import { type ThumbnailMaker, thumbnailMaker } from "./thumbnailer.ts";

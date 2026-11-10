@@ -72,7 +72,7 @@ import {
   startDock,
   TileStore,
 } from "./dock/index.ts";
-import { type Entry, fileIcon, launchEntry } from "./entries.ts";
+import { type Entry, launchEntry } from "./entries.ts";
 import { openTarget, startExtensions } from "./extensions/start.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
@@ -144,7 +144,7 @@ import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
 import { startSetupAssistant } from "./setup/start.tsx";
 import { startSharePicker } from "./share-picker/index.ts";
-import { dockDefaults, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
+import { dockDefaults, fileIcon, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
 import { systemClipboard } from "./shared/clipboard/clipboard.ts";
 import { connectDarkMode } from "./shared/control-center/flags.ts";
 import { Software } from "./shared/software/manager.ts";
@@ -1204,7 +1204,7 @@ const followPersonKeys = () => {
 };
 followPersonKeys();
 const stopFollowingPersonKeys = settingsStore.subscribe(followPersonKeys);
-/** The person's languages, for Dashi's own words in the launcher (launcher/ranking/locale.ts). */
+/** The person's languages, for Dashi's own words in the launcher (shared/locale/messages.ts). */
 const launcherLanguages = languagesOf(messageLocales(process.env));
 // Made once the action registry is (below): what the launcher lists besides the apps, and what its verbs reach.
 let launcherWorld: LauncherWorld | null = null;

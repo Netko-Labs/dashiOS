@@ -1,8 +1,8 @@
 /* biome-ignore-all lint/style/useNamingConvention: environment variable names, as the loaders spell them */
 import { expect, test } from "bun:test";
-import { parseDesktopEntry } from "../src/entries.ts";
 import type { Card } from "../src/gpu.ts";
 import { gpuEnvFor, gpuEnvs, MESA_EGL } from "../src/gpu-env.ts";
+import { parseDesktopEntry } from "../src/shared/apps/index.ts";
 
 const card = (name: string, driver: string): Card => ({ name, devnode: `/dev/dri/${name}`, driver, bootVga: false, connectors: [] });
 const amd = card("card1", "amdgpu");

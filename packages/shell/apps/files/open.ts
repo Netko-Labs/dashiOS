@@ -8,8 +8,7 @@
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { dataDirs, desktopFields, entryIcon } from "../../src/entries.ts";
-import { resolvePinned } from "../../src/shared/apps/index.ts";
+import { dataDirs, desktopFields, entryIcon, resolvePinned } from "../../src/shared/apps/index.ts";
 import { type Exec, exec } from "./exec.ts";
 import { normalizePath } from "./paths.ts";
 import { fileUri } from "./uri.ts";

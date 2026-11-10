@@ -107,7 +107,7 @@ export interface ItemSources {
   /** The registry's actions the person may use (`registry.list({ who: "person" })`). */
   actions?: readonly ActionDef[];
   windows?: readonly LauncherWindow[];
-  /** The person's languages (ranking/locale.ts `languagesOf`). */
+  /** The person's languages (shared/locale/messages.ts `languagesOf`). */
   languages?: readonly string[];
 }
 

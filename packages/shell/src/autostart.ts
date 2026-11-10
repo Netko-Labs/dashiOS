@@ -38,8 +38,7 @@ import { accessSync, closeSync, constants, openSync, readdirSync, readFileSync, 
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { launch as launchApp } from "./apps.ts";
-import { desktopFields, parseExec, splitList } from "./entries.ts";
-import { type App, iconPath } from "./shared/apps/index.ts";
+import { type App, desktopFields, iconPath, parseExec, splitList } from "./shared/apps/index.ts";
 
 /** The desktop name `OnlyShowIn` and `NotShowIn` are matched against. */
 export const DESKTOP = "Dashi";

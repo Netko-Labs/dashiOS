@@ -6,9 +6,10 @@
  * borrows their results, behind its own registry (docs/actions.md).
  */
 
-import { dataDirs, type Entry } from "../entries.ts";
+import type { Entry } from "../entries.ts";
 import type { SlowSource } from "../launcher/budget.ts";
 import type { SlowRow } from "../launcher/extension-rows.ts";
+import { dataDirs } from "../shared/apps/index.ts";
 import { DBusConnection } from "../shared/dbus/index.ts";
 import { type ProviderBus, providerSource } from "./client.ts";
 import { type ProviderInfo, readProviders } from "./ini.ts";

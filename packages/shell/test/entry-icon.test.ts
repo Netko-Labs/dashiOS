@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { appsFor } from "../apps/files/open.ts";
-import { entryIcon } from "../src/entries.ts";
+import { entryIcon } from "../src/shared/apps/index.ts";
 
 const pinned = [{ id: "helium", icon: "/usr/share/dashi/icons/browser.svg" }];
 const theme = (name: string): string => `/icons/hicolor/scalable/apps/${name}.svg`;
