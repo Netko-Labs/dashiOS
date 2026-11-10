@@ -17,7 +17,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { type DeviceStore, useDevices } from "../../control-center/devices.ts";
+import { DeviceStore, useDevices } from "../../control-center/devices.ts";
 import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refresh.ts";
 import { mirrorSource } from "../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorLabel, ratesOf, sizeLabel } from "../../display-config/monitors.ts";
@@ -47,9 +47,8 @@ function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScr
 
 const AUTOMATIC = "automatic";
 
-/** No device store (a test): no backlight. */
-const NO_DEVICE_READING = { wifi: null, bluetooth: null, brightness: null, volume: null, hotspot: null };
-const NO_DEVICES = { subscribe: () => () => {}, getSnapshot: () => NO_DEVICE_READING } as unknown as DeviceStore;
+/** No device store (a test): a store nobody refreshed, which reads nothing, so no backlight. */
+const NO_DEVICES = new DeviceStore();
 
 /** A rate as its pill says it: "120", "59.95". */
 const hertz = (refreshMhz: number): string => {
