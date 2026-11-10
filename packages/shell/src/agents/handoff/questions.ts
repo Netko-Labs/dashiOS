@@ -15,22 +15,12 @@
 
 import type { AgentUi, Allow, Answer, SignInAsk, SignInChoice } from "../presence.ts";
 import { DENY } from "../sheet-queue.ts";
-import { QuestionRoute, type RouteStep } from "./route.ts";
-import type { AgentRuns, RunQuestion, RunView } from "./store.ts";
+import { type Asked, type PanelDeps, TwoPlaces, type TwoPlacesOptions } from "./two-places.ts";
 
-export interface QuestionDeps {
+export interface QuestionDeps extends PanelDeps {
   /** The run an MCP connection belongs to (its sandbox's scope), or null. */
   taskOf(agent: number): string | null;
-  runs: AgentRuns;
-  /** Whether the panel is on screen now. */
-  panelOpen(): boolean;
-  /** Told each time the panel opens (true) or closes (false). */
-  onPanel(listener: (open: boolean) => void): () => void;
-  /** A question went up while the panel was closed: the notification. */
-  attention(run: RunView, question: RunQuestion): void;
 }
-
-type Asked = Omit<RunQuestion, "id">;
 
 /** The panel's question for a login: the first login, or the one "Other login…" moved to. */
 export function signInQuestion(ask: SignInAsk, index: number): Asked {
@@ -70,183 +60,114 @@ export const turnQuestion = (reason: string): Asked => ({
   needs: `needs you: ${reason}`,
 });
 
+/** Ask `asked` on run `task`'s card, and in the sheet whenever the panel is closed (two-places.ts); the first answer counts. */
+const both = <T>(deps: QuestionDeps, task: string, asked: Asked, options: TwoPlacesOptions<T>): Promise<T> => new TwoPlaces(deps, task, asked, options).ask();
+
+type Ask = Parameters<AgentUi["ask"]>[0];
+type Confirm = Parameters<AgentUi["confirm"]>[0];
+type SiteAsk = Parameters<AgentUi["allowSite"]>[0];
+type Turn = Parameters<AgentUi["turn"]>[0];
+
+function askScopes(ui: AgentUi, deps: QuestionDeps, task: string, ask: Ask, signal: AbortSignal | undefined): Promise<Answer> {
+  const needed = ask.scopes.filter((scope) => scope.needed);
+  const words = needed.map((scope) => scope.label.toLowerCase()).join(", ");
+  const asked: Asked = {
+    kind: "scopes",
+    title: `Let it ${words || "do more"}?`,
+    detail: needed[0]?.detail ?? "",
+    choices: [
+      { id: "once", label: "Allow for this task", primary: true },
+      { id: "deny", label: "Don't", danger: true },
+    ],
+    needs: "needs your OK",
+  };
+  return both<Answer>(deps, task, asked, {
+    sheet: (inner) => ui.ask(ask, inner),
+    fromPanel: (choice) => (choice === "once" ? { allow: "once", scopes: needed.map((scope) => scope.id) } : DENY),
+    refused: DENY,
+    signal,
+  });
+}
+
+function confirmAction(ui: AgentUi, deps: QuestionDeps, task: string, confirm: Confirm, signal: AbortSignal | undefined): Promise<boolean> {
+  const asked: Asked = {
+    kind: "confirm",
+    title: `${confirm.action}?`,
+    detail: confirm.detail,
+    choices: [
+      { id: "yes", label: confirm.action, ...(confirm.danger ? { danger: true as const } : { primary: true as const }) },
+      { id: "no", label: "Cancel" },
+    ],
+    needs: `needs your OK to ${confirm.summary}`,
+  };
+  return both<boolean>(deps, task, asked, { sheet: (inner) => ui.confirm(confirm, inner), fromPanel: (choice) => choice === "yes", refused: false, signal });
+}
+
+function allowSite(ui: AgentUi, deps: QuestionDeps, task: string, ask: SiteAsk, signal: AbortSignal | undefined): Promise<Allow> {
+  return both<Allow>(deps, task, siteQuestion(ask.site), {
+    sheet: (inner) => ui.allowSite(ask, inner),
+    fromPanel: (choice) => (choice === "once" || choice === "always" ? choice : "deny"),
+    refused: "deny",
+    signal,
+  });
+}
+
+function signIn(ui: AgentUi, deps: QuestionDeps, task: string, ask: SignInAsk, signal: AbortSignal | undefined): Promise<SignInChoice> {
+  let index = 0;
+  const login = () => ask.logins[index % Math.max(1, ask.logins.length)]?.key ?? null;
+  return both<SignInChoice>(deps, task, signInQuestion(ask, index), {
+    sheet: (inner) => ui.signIn(ask, inner),
+    fromPanel: (choice) => {
+      if (choice === "other") {
+        index += 1;
+        return "again";
+      }
+      const key = login();
+      if ((choice === "task" || choice === "once") && key) return { allow: choice, login: key };
+      return { allow: "deny", login: null };
+    },
+    refused: { allow: "deny", login: null },
+    signal,
+    again: () => signInQuestion(ask, index),
+  });
+}
+
+// The banner is the hand-over's sheet: up while the panel is closed; Done there or on the card.
+function handOver(ui: AgentUi, deps: QuestionDeps, task: string, turn: Turn, signal: AbortSignal | undefined): Promise<boolean> {
+  return both<boolean>(deps, task, turnQuestion(turn.reason), {
+    sheet: (inner) => ui.turn(turn, inner),
+    fromPanel: (choice) => choice === "done",
+    refused: false,
+    signal,
+  });
+}
+
 /**
  * The AgentUi the agents server uses: a task's questions in the panel (and
  * the sheets while it is closed), everyone else's in the sheets.
  */
 export function routedUi(ui: AgentUi, deps: QuestionDeps): AgentUi {
-  /**
-   * Ask `asked` on run `task`'s card, and in the sheet whenever the panel is
-   * closed (route.ts); the first answer counts. `fromPanel` maps a panel
-   * choice to the answer ("again": ask again, in `again`).
-   */
-  function both<T>(
-    task: string,
-    asked: Asked,
-    sheet: (signal: AbortSignal) => Promise<T>,
-    fromPanel: (choice: string) => T | "again",
-    refused: T,
-    signal: AbortSignal | undefined,
-    again?: () => Asked,
-  ): Promise<T> {
-    const route = new QuestionRoute();
-    let current = deps.runs.ask(task, asked);
-    let shown: AbortController | null = null;
-    let finish: (value: T) => void = () => {};
-    const result = new Promise<T>((resolve) => {
-      finish = resolve;
-    });
-
-    const apply = (step: RouteStep) => {
-      if (step.sheet === "hide" && shown) {
-        // Taken down, its answer (a "Don't Allow" from the queue) doesn't count.
-        shown.abort();
-        shown = null;
-      }
-      if (step.sheet === "show") {
-        const controller = new AbortController();
-        shown = controller;
-        void sheet(controller.signal).then(
-          (value) => {
-            if (controller.signal.aborted) return;
-            settle("sheet", value);
-          },
-          () => {},
-        );
-      }
-      if (step.notify) {
-        const run = deps.runs.get(task);
-        if (run) deps.attention(run, current.question);
-      }
-    };
-    const settle = (by: "panel" | "sheet" | "gone", value: T) => {
-      const { counts, step } = route.settle(by);
-      if (!counts) return;
-      apply(step);
-      offPanel();
-      signal?.removeEventListener("abort", onAbort);
-      // The card goes whichever place answered (a no-op when the panel did).
-      deps.runs.answer(task, current.question.id, null);
-      finish(value);
-    };
-    const listen = (question: { question: RunQuestion; answer: Promise<string | null> }) => {
-      void question.answer.then((choice) => {
-        if (question !== current) return;
-        if (choice === null) return settle("gone", refused);
-        const value = fromPanel(choice);
-        if (value !== "again") return settle("panel", value);
-        current = deps.runs.ask(task, again?.() ?? asked);
-        listen(current);
-      });
-    };
-    const onAbort = () => settle("gone", refused);
-    const offPanel = deps.onPanel((open) => {
-      if (open) return apply(route.panelOpened());
-      // Closed by an answer pressed in it: that answer is on its way, so no sheet.
-      if (deps.runs.isWaiting(task, current.question.id)) apply(route.panelClosed());
-    });
-    signal?.addEventListener("abort", onAbort, { once: true });
-    listen(current);
-    if (signal?.aborted) onAbort();
-    else apply(route.start(deps.panelOpen()));
-    return result;
-  }
-
   return {
     ...ui,
-    ask(ask, signal) {
+    ask: (ask, signal) => {
       const task = deps.taskOf(ask.agent);
-      if (!task) return ui.ask(ask, signal);
-      const needed = ask.scopes.filter((scope) => scope.needed);
-      const words = needed.map((scope) => scope.label.toLowerCase()).join(", ");
-      const asked: Asked = {
-        kind: "scopes",
-        title: `Let it ${words || "do more"}?`,
-        detail: needed[0]?.detail ?? "",
-        choices: [
-          { id: "once", label: "Allow for this task", primary: true },
-          { id: "deny", label: "Don't", danger: true },
-        ],
-        needs: "needs your OK",
-      };
-      return both<Answer>(
-        task,
-        asked,
-        (inner) => ui.ask(ask, inner),
-        (choice) => (choice === "once" ? { allow: "once", scopes: needed.map((scope) => scope.id) } : DENY),
-        DENY,
-        signal,
-      );
+      return task ? askScopes(ui, deps, task, ask, signal) : ui.ask(ask, signal);
     },
-    confirm(confirm, signal) {
+    confirm: (confirm, signal) => {
       const task = deps.taskOf(confirm.agent);
-      if (!task) return ui.confirm(confirm, signal);
-      const asked: Asked = {
-        kind: "confirm",
-        title: `${confirm.action}?`,
-        detail: confirm.detail,
-        choices: [
-          { id: "yes", label: confirm.action, ...(confirm.danger ? { danger: true as const } : { primary: true as const }) },
-          { id: "no", label: "Cancel" },
-        ],
-        needs: `needs your OK to ${confirm.summary}`,
-      };
-      return both<boolean>(
-        task,
-        asked,
-        (inner) => ui.confirm(confirm, inner),
-        (choice) => choice === "yes",
-        false,
-        signal,
-      );
+      return task ? confirmAction(ui, deps, task, confirm, signal) : ui.confirm(confirm, signal);
     },
-    allowSite(ask, signal) {
+    allowSite: (ask, signal) => {
       const task = deps.taskOf(ask.agent);
-      if (!task) return ui.allowSite(ask, signal);
-      return both<Allow>(
-        task,
-        siteQuestion(ask.site),
-        (inner) => ui.allowSite(ask, inner),
-        (choice) => (choice === "once" || choice === "always" ? choice : "deny"),
-        "deny",
-        signal,
-      );
+      return task ? allowSite(ui, deps, task, ask, signal) : ui.allowSite(ask, signal);
     },
-    signIn(ask, signal) {
+    signIn: (ask, signal) => {
       const task = deps.taskOf(ask.agent);
-      if (!task) return ui.signIn(ask, signal);
-      let index = 0;
-      const login = () => ask.logins[index % Math.max(1, ask.logins.length)]?.key ?? null;
-      return both<SignInChoice>(
-        task,
-        signInQuestion(ask, index),
-        (inner) => ui.signIn(ask, inner),
-        (choice) => {
-          if (choice === "other") {
-            index += 1;
-            return "again";
-          }
-          const key = login();
-          if ((choice === "task" || choice === "once") && key) return { allow: choice, login: key };
-          return { allow: "deny", login: null };
-        },
-        { allow: "deny", login: null },
-        signal,
-        () => signInQuestion(ask, index),
-      );
+      return task ? signIn(ui, deps, task, ask, signal) : ui.signIn(ask, signal);
     },
-    turn(turn, signal) {
+    turn: (turn, signal) => {
       const task = deps.taskOf(turn.agent);
-      if (!task) return ui.turn(turn, signal);
-      // The banner is the hand-over's sheet: up while the panel is closed; Done there or on the card.
-      return both<boolean>(
-        task,
-        turnQuestion(turn.reason),
-        (inner) => ui.turn(turn, inner),
-        (choice) => choice === "done",
-        false,
-        signal,
-      );
+      return task ? handOver(ui, deps, task, turn, signal) : ui.turn(turn, signal);
     },
   };
 }
