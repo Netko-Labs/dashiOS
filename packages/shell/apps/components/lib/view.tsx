@@ -10,7 +10,7 @@
 import { AppWindow, KeySink, Segmented, SidebarItem, SidebarSection } from "@dashi/ui";
 import { ScrollView } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus } from "../../kit/index.ts";
 import { ButtonsPage, FieldsPage, PickersPage, SwitchesPage } from "./exhibits/controls.tsx";
 import { AlertsPage, MenusPage, NoticesPage, ProgressPage } from "./exhibits/feedback.tsx";
 import { ListsPage, RowsPage, ShortcutsPage } from "./exhibits/structure.tsx";

@@ -3,7 +3,7 @@
  * drawn in (the toolbar's Light, Dark, Both) and the next and previous page.
  */
 
-import type { MenuSpec } from "../kit/index.ts";
+import type { MenuSpec } from "../../kit/index.ts";
 import { MODES, type Mode, PAGES, type PageId, stepPage } from "./pages.ts";
 
 export interface GalleryMenuContext {
