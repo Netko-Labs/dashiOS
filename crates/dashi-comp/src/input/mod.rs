@@ -10,6 +10,7 @@ mod follow;
 mod gestures;
 mod resize_edges;
 pub(crate) mod settings;
+mod under;
 
 pub(crate) use claims::Claims;
 

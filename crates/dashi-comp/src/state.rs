@@ -6,10 +6,7 @@
 use std::{ffi::OsString, sync::Arc, time::Instant};
 
 use smithay::{
-    desktop::{
-        PopupManager, Space, Window, WindowSurfaceType, layer_map_for_output,
-        utils::surface_primary_scanout_output,
-    },
+    desktop::{PopupManager, Space, Window},
     input::{Seat, SeatState, pointer::CursorImageStatus},
     reexports::{
         calloop::{Interest, LoopHandle, LoopSignal, Mode, PostAction, generic::Generic},
@@ -19,14 +16,13 @@ use smithay::{
             protocol::wl_surface::WlSurface,
         },
     },
-    utils::{Logical, Point},
     wayland::{
         compositor::{CompositorClientState, CompositorState},
         dmabuf::{DmabufGlobal, DmabufState},
         output::OutputManagerState,
         selection::data_device::DataDeviceState,
         shell::{
-            wlr_layer::{Layer, WlrLayerShellState},
+            wlr_layer::WlrLayerShellState,
             xdg::{XdgShellState, decoration::XdgDecorationState},
         },
         shm::ShmState,
@@ -342,143 +338,6 @@ impl Dashi {
             xwayland: Default::default(),
             seat,
         })
-    }
-
-    /// The surface under `pos`, and where that surface's origin is: the
-    /// overlay and top layers, then windows, then the bottom and background layers.
-    pub(crate) fn surface_under(
-        &self,
-        pos: Point<f64, Logical>,
-    ) -> Option<(WlSurface, Point<f64, Logical>)> {
-        let window = || {
-            self.space
-                .element_under(pos)
-                .and_then(|(window, location)| {
-                    window
-                        .surface_under(pos - location.to_f64(), WindowSurfaceType::ALL)
-                        .map(|(surface, at)| (surface, (at + location).to_f64()))
-                })
-        };
-        if self.lock.locked {
-            let output = self.space.output_under(pos).next()?;
-            let origin = self.space.output_geometry(output)?.loc;
-            let lock = self.lock_surface_on(output)?;
-            return smithay::desktop::utils::under_from_surface_tree(
-                lock.wl_surface(),
-                pos - origin.to_f64(),
-                (0, 0),
-                WindowSurfaceType::ALL,
-            )
-            .map(|(surface, at)| (surface, (at + origin).to_f64()));
-        }
-        let Some(output) = self.space.output_under(pos).next() else {
-            return window();
-        };
-        let Some(origin) = self.space.output_geometry(output).map(|g| g.loc) else {
-            return window();
-        };
-        // The layer map's lock is taken for each look and let go before anything
-        // else that takes it (decoration_at does): a second lock would deadlock.
-        // A surface the shell limited (IPC `input-region`) lets the pointer
-        // through outside its rects, to whatever is under it (layer_regions.rs).
-        let in_layer = |layer: Layer| {
-            let layers = layer_map_for_output(output);
-            let local = pos - origin.to_f64();
-            layers
-                .layers_on(layer)
-                .rev()
-                .find_map(|surface| self.layer_hit(&layers, surface, local))
-                .map(|(surface, at)| (surface, at + origin.to_f64()))
-        };
-        let top_shown = self.shows_top_layers(output);
-        if let Some(top) =
-            in_layer(Layer::Overlay).or_else(|| top_shown.then(|| in_layer(Layer::Top)).flatten())
-        {
-            return Some(top);
-        }
-        // The overview's windows are the overview's, not their clients'.
-        if self.overview.is_some() {
-            return None;
-        }
-        // A title bar or the traffic lights: nothing a client gets.
-        if self.decoration_at(pos).is_some() {
-            return None;
-        }
-        window()
-            .or_else(|| in_layer(Layer::Bottom))
-            .or_else(|| in_layer(Layer::Background))
-    }
-
-    /// A dark screen's turn (backend/udev/pace.rs): nothing is drawn, so no
-    /// surface gets it as its primary screen; every window on it hears, a
-    /// window opened since included, then the rest as `send_frames` tells them.
-    pub(crate) fn send_frames_dark(&self, output: &smithay::output::Output) {
-        let elapsed = self.start_time.elapsed();
-        for window in self.space.elements_for_output(output) {
-            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
-        }
-        self.send_frames(output);
-    }
-
-    /// Tell every client shown on `output` that a frame went out, so it draws the next.
-    pub(crate) fn send_frames(&self, output: &smithay::output::Output) {
-        self.send_preferred_scales(output);
-        let elapsed = self.start_time.elapsed();
-        // Surfaces another screen shows (or none) still hear about once a second.
-        let throttle = Some(std::time::Duration::from_secs(1));
-        self.space.elements().for_each(|window| {
-            window.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
-        });
-        // Off screen but in a live picture (render/thumbnails/): they draw on, at the screen's pace.
-        for window in self.pictured_off_screen() {
-            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
-        }
-        for layer in layer_map_for_output(output).layers() {
-            layer.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
-        }
-        if let Some(lock) = self.lock_surface_on(output) {
-            smithay::desktop::utils::send_frames_surface_tree(
-                lock.wl_surface(),
-                output,
-                elapsed,
-                throttle,
-                |_, _| Some(output.clone()),
-            );
-        }
-        if let smithay::input::pointer::CursorImageStatus::Surface(surface) = &self.cursor_status {
-            smithay::desktop::utils::send_frames_surface_tree(
-                surface,
-                output,
-                elapsed,
-                throttle,
-                |_, _| Some(output.clone()),
-            );
-        }
-    }
-
-    /// `at`, kept on a screen: the nearest point of the nearest screen when it leaves them.
-    pub(crate) fn clamp_to_screens(&self, at: Point<f64, Logical>) -> Point<f64, Logical> {
-        let screens: Vec<_> = self
-            .space
-            .outputs()
-            .filter_map(|o| self.space.output_geometry(o))
-            .collect();
-        if screens.iter().any(|g| g.to_f64().contains(at)) || screens.is_empty() {
-            return at;
-        }
-        screens
-            .iter()
-            .map(|g| {
-                let g = g.to_f64();
-                let x = at.x.clamp(g.loc.x, g.loc.x + g.size.w - 1.0);
-                let y = at.y.clamp(g.loc.y, g.loc.y + g.size.h - 1.0);
-                Point::from((x, y))
-            })
-            .min_by(|a, b| {
-                let d = |p: &Point<f64, Logical>| (p.x - at.x).powi(2) + (p.y - at.y).powi(2);
-                d(a).total_cmp(&d(b))
-            })
-            .unwrap_or(at)
     }
 
     /// After each turn of the loop: settle the space and send what is queued.

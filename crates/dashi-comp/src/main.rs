@@ -4,6 +4,7 @@
 mod backend;
 mod background;
 mod cli;
+mod frames;
 mod handlers;
 mod input;
 mod ipc;
