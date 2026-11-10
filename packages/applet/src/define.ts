@@ -40,7 +40,7 @@ function clientFor(manifest: Manifest | null): AppletsClient {
     dev: process.env.DASHI_APPLET_DEV === "1",
     // An applet runs until it is stopped: a shell restart has it wait and connect again, not quit.
     keepAlive: true,
-    // `dashi-applet dev` shows each message (cli/log.ts reads these lines).
+    // `dashi-applet dev` shows each message (cli/lib/log.ts reads these lines).
     ...(process.env.DASHI_APPLET_LOG === "1" ? { onMessage: (direction: "in" | "out", line: string) => console.error(`${LOG_MARK}${direction} ${line}`) } : {}),
   });
 }

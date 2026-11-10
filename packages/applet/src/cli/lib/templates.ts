@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 
 /** The SDK's folder (packages/applet), and the UI packages beside it. */
 export function sdkPaths(): { applet: string; ui: string; metal: string } {
-  const applet = join(import.meta.dir, "../..");
+  const applet = join(import.meta.dir, "../../..");
   const packages = dirname(applet);
   return {
     applet,

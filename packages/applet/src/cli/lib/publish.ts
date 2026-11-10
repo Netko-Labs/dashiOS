@@ -17,9 +17,9 @@
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { trustedComment } from "../catalog.ts";
-import { type Packed, pack } from "../package.ts";
-import { parsePublicKey, publicKeyLine, sign, verify } from "../signing/minisign.ts";
+import { trustedComment } from "../../catalog.ts";
+import { type Packed, pack } from "../../package.ts";
+import { parsePublicKey, publicKeyLine, sign, verify } from "../../signing/minisign.ts";
 
 const git = (cwd: string, ...args: string[]): { ok: boolean; out: string } => {
   const result = Bun.spawnSync(["git", "-C", cwd, ...args], { stdout: "pipe", stderr: "pipe" });

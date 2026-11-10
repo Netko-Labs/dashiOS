@@ -9,10 +9,10 @@
 import { existsSync, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative } from "node:path";
-import { LOG_MARK } from "../define.ts";
-import { readManifest } from "../manifest.ts";
-import { appletsSocketPath } from "../protocol.ts";
-import { dedupeInstalled } from "../singletons.ts";
+import { LOG_MARK } from "../../define.ts";
+import { readManifest } from "../../manifest.ts";
+import { appletsSocketPath } from "../../protocol.ts";
+import { dedupeInstalled } from "../../singletons.ts";
 import { MessageLog } from "./log.ts";
 import { sdkPaths } from "./templates.ts";
 

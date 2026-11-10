@@ -19,9 +19,9 @@ import { appletsRoot, installFiles } from "../installed.ts";
 import { readManifest } from "../manifest.ts";
 import { sha256, unpack } from "../package.ts";
 import { generateKeys } from "../signing/minisign.ts";
-import { dev } from "./dev.ts";
-import { packTo, publish, signatureNote } from "./publish.ts";
-import { templateFiles } from "./templates.ts";
+import { dev } from "./lib/dev.ts";
+import { packTo, publish, signatureNote } from "./lib/publish.ts";
+import { templateFiles } from "./lib/templates.ts";
 
 const USAGE = "dashi-applet new NAME | dev [--vm] | pack [--sign KEY] | publish [--catalog DIR] [--sign KEY] | keygen | install FILE | check";
 

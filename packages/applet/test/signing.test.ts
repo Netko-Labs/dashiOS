@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { signatureNote } from "../src/cli/publish.ts";
+import { signatureNote } from "../src/cli/lib/publish.ts";
 import {
   type CatalogIndex,
   generateKeys,
