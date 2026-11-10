@@ -8,7 +8,7 @@
  * tools look today.
  *
  * The launcher's answerer runs in the shell, not in an agent's sandbox, so
- * the key reaches the Anthropic client here and nowhere else: never logged,
+ * the key reaches the request here and nowhere else: never logged,
  * never shown, never sent to the model, never in an agent's environment
  * (agents started through dashi-agent hold `dashi:anthropic` instead).
  */

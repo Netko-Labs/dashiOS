@@ -533,14 +533,15 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   `agents.localModel` and `agents.gptModel`. A harness answers through plan
   mode (below). A local model is Ollama on
   `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
-  only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), through the
-  official SDK (`@anthropic-ai/sdk`, `agents/ask/claude.ts`):
+  only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), over `fetch`
+  with no SDK (`agents/ask/claude.ts` on `agents/ask/http.ts`: a timeout and
+  one retry; the key as `Authorization: Bearer`, `anthropic-version: 2026-10-21`):
   `claude-opus-5-5` at `output_config.effort: "low"`, thinking left as the
   model has it, `tool_choice: auto` with strict tools (`agents/ask/strict.ts`;
   the system prompt asks for the calls), server-side fallbacks on
   (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`), a
   refusal read before anything else and a reply cut off at `max_tokens`
-  never taken as a plan, and the SDK's typed errors for a refused key, a
+  never taken as a plan, and the status of an error for a refused key, a
   rate limit or an outage. The key comes from the vault's token item
   `anthropic` for that host (`VaultTokens.forHost("anthropic", "api.anthropic.com")`,
   `agents/ask/keys.ts`; "Tokens that stay home", docs/secrets.md) or else
@@ -548,10 +549,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   the shell's own process only, for each request, and is dropped: never
   logged, shown, sent to the model, or put in a sandbox. Settings learns
   where it is from the token list, without asking for the token. GPT is
-  OpenAI's Chat Completions on `api.openai.com/v1` only, through the
-  official SDK (`openai`, `agents/ask/gpt.ts`; the base URL fixed whatever
-  `OPENAI_BASE_URL` says, organization and project never read from the
-  session, `store: false`): the model is `agents.gptModel`, else the most
+  OpenAI's Chat Completions on `api.openai.com/v1` only, over `fetch`
+  with no SDK (`agents/ask/gpt.ts` on `agents/ask/http.ts`; the base URL fixed
+  whatever `OPENAI_BASE_URL` says, organization and project never sent,
+  `store: false`): the model is `agents.gptModel`, else the most
   capable chat model the key's `/v1/models` lists (`agents/ask/gpt-models.ts`:
   by generation, a full model over its mini and nano, an alias over its
   snapshots; audio, realtime, image, search, embedding and Responses-only
@@ -561,7 +562,7 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   before the action's check (strict holds per call; with several calls in
   one reply OpenAI doesn't promise it, so the check is what decides). A
   refusal, a content filter or a reply cut at its length is never a plan,
-  and the SDK's typed errors say what went wrong (a refused key, no such
+  and the status of an error says what went wrong (a refused key, no such
   model, no credit left, busy, offline). Its key is the vault's token item
   `openai` for `api.openai.com`, else `OPENAI_API_KEY`, handled as Claude's
   is. No other network path, but a harness's own (plan mode).

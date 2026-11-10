@@ -10,11 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
     "@dashi/applet": "workspace:*",
     "@dashi/ui": "workspace:*",
     "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
-    "openai": "^7.52.0",
     "react": "^19.2.0"
   },
   "devDependencies": {

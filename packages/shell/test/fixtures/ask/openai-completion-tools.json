@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-AbCdEf123",
+  "object": "chat.completion",
+  "created": 1767225600,
+  "model": "gpt-5.1-2025-11-13",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "annotations": [],
+        "tool_calls": [
+          { "id": "call_Zx81", "type": "function", "function": { "name": "set_setting", "arguments": "{\"name\":\"dark_mode\",\"value\":true}" } },
+          { "id": "call_Zx82", "type": "function", "function": { "name": "set_volume", "arguments": "{\"target\":\"output\",\"level\":null,\"muted\":true}" } }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": { "prompt_tokens": 540, "completion_tokens": 62, "total_tokens": 602 },
+  "service_tier": "default"
+}
