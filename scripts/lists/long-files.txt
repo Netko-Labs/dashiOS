@@ -92,7 +92,7 @@
 416	packages/shell/src/menubar.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
-423	packages/shell/src/menus/start.tsx
+420	packages/shell/src/menus/start.tsx
 313	packages/shell/src/notifications/store.ts
 372	packages/shell/src/settings-app/registry/look.ts
 355	packages/shell/src/settings-app/sidebar.tsx

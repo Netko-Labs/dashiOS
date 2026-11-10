@@ -39,7 +39,6 @@ import { basename, dirname, join } from "node:path";
 import { isTextSize, UndoStack } from "@dashi/ui";
 import { type AnswererChoice, type HarnessId, isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
-import { type CatalogSetting, isCatalogList } from "../applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName } from "../corners.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
@@ -49,6 +48,7 @@ import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
+import { type CatalogSetting, isCatalogList } from "../shared/applet-store/catalogs.ts";
 import { type Check, dig, isBoolean, isRaw, numberIn, oneOf, type Raw, readFields } from "../shared/settings/fields.ts";
 import { settingsPath } from "../shared/settings/path.ts";
 import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/settings/region.ts";
@@ -197,7 +197,7 @@ export interface ClipboardSettings {
   snippetsInTerminals?: boolean;
 }
 
-/** `applets`: the applet catalogs the person added beside Dashi's (applet-store/catalogs.ts; Software › Menu bar applets › Catalogs…). */
+/** `applets`: the applet catalogs the person added beside Dashi's (shared/applet-store/catalogs.ts; Software › Menu bar applets › Catalogs…). */
 export interface AppletsSettings {
   catalogs?: readonly CatalogSetting[];
 }

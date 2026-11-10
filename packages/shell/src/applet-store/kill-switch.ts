@@ -9,13 +9,13 @@
  */
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
+import type { Catalog } from "../shared/applet-store/catalog.ts";
+import { keyFrom, storeCacheDir } from "../shared/applet-store/catalog.ts";
+import { CatalogSet, readSavedCatalogs } from "../shared/applet-store/catalog-set.ts";
+import { dashiCatalog } from "../shared/applet-store/catalogs.ts";
+import { AppletInstaller } from "../shared/applet-store/installer.ts";
+import { DASHI_INDEX_KEY } from "../shared/applet-store/keys.ts";
 import { settingsPath } from "../shared/settings/path.ts";
-import type { Catalog } from "./catalog.ts";
-import { keyFrom, storeCacheDir } from "./catalog.ts";
-import { CatalogSet, readSavedCatalogs } from "./catalog-set.ts";
-import { dashiCatalog } from "./catalogs.ts";
-import { AppletInstaller } from "./installer.ts";
-import { DASHI_INDEX_KEY } from "./keys.ts";
 
 const FIRST_MS = 3 * 60_000;
 const EVERY_MS = 24 * 60 * 60_000;

@@ -56,7 +56,7 @@ export interface Desktop {
   region: RegionDesktop;
   /** The Setup Assistant: showing it is all an agent can do with it. */
   setup: { open(page?: PageId): void };
-  /** The app catalog and the package tools; absent means the real ones (software/). */
+  /** The app catalog and the package tools; absent means the real ones (shared/software/). */
   software?: SoftwareBackend;
   /** Show the lock screen. */
   lock(): void;

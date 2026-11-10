@@ -4,9 +4,9 @@ import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
-import type { StoreApplet } from "../../src/applet-store/merge.ts";
-import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
-import type { Installation } from "../../src/software/ids.ts";
+import type { StoreApplet } from "../../src/shared/applet-store/merge.ts";
+import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
+import type { Installation } from "../../src/shared/software/ids.ts";
 import { useImage } from "./hooks.ts";
 
 /**

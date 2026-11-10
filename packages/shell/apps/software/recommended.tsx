@@ -1,14 +1,14 @@
 /**
  * "Recommended for Dashi" on Discover: the apps the Setup Assistant offers
- * (src/software/recommended.ts), as cards with the usual Get / Open pill.
+ * (src/shared/software/recommended.ts), as cards with the usual Get / Open pill.
  * The list is local, so the cards show at once, offline too. The catalog
  * (cached for hours) adds each card's icon, publisher and verified mark;
  * the name and the line stay Dashi's own, which are written to fit a card.
  */
 
-import type { Flathub } from "../../src/software/flathub.ts";
-import type { AppSummary } from "../../src/software/flathub-types.ts";
-import { RECOMMENDED_APPS, type RecommendedApp } from "../../src/software/recommended.ts";
+import type { Flathub } from "../../src/shared/software/flathub.ts";
+import type { AppSummary } from "../../src/shared/software/flathub-types.ts";
+import { RECOMMENDED_APPS, type RecommendedApp } from "../../src/shared/software/recommended.ts";
 import { CardGrid } from "./cards.tsx";
 import { useLoad } from "./hooks.ts";
 import { useServices } from "./services.ts";

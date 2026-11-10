@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { Banner, bannerHeight, buttonsFor } from "../src/notifications/banner.tsx";
 import { NotificationStore } from "../src/notifications/store.ts";
-import type { FlatpakUpdate } from "../src/software/flatpak-parse.ts";
+import type { FlatpakUpdate } from "../src/shared/software/flatpak-parse.ts";
 import { openSoftwareUpdates, UpdateCheck } from "../src/software/update-check.ts";
 
 // The daily update notice, clicked: from the banner (or its Show button, or the notification center)

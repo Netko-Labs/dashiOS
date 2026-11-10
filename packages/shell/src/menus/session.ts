@@ -22,8 +22,8 @@
 
 import { readFileSync } from "node:fs";
 import type { MachineAction } from "../power/machine.ts";
+import { spawnDetached } from "../shared/process/detached.ts";
 import { powerAfterApps } from "../shutdown.ts";
-import { spawnDetached } from "./launch.ts";
 import type { PowerKind } from "./model.ts";
 
 export const COMPOSITOR = "dashi-comp";

@@ -17,9 +17,9 @@ import { appsFor, defaultChoices, type ExtrasHardware, stepsFor } from "../src/s
 import { type AppInstaller, ExtrasStore } from "../src/setup/extras/store.ts";
 import { installingContinueLabel, OFFLINE_NOTICE, runNotice, runSummary, stepLine } from "../src/setup/extras/words.ts";
 import { Flow, type Machine, pagesFor } from "../src/setup/flow.ts";
-import type { InstalledApp } from "../src/software/flatpak-parse.ts";
-import type { OnProgress, Outcome } from "../src/software/manager.ts";
-import { RECOMMENDED_APPS } from "../src/software/recommended.ts";
+import type { InstalledApp } from "../src/shared/software/flatpak-parse.ts";
+import type { OnProgress, Outcome } from "../src/shared/software/manager.ts";
+import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
 
 describe("parseEvent", () => {
   test("reads every event the helper sends", () => {

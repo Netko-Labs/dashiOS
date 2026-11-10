@@ -4,12 +4,12 @@ import { appletChip } from "../apps/software/applets/words.ts";
 import { appChip, chipLabel, type Operation, queueLine } from "../apps/software/model.ts";
 import { failureOf } from "../apps/software/store.ts";
 import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from "../apps/software/trust-words.ts";
-import { splitAsks, trustLine } from "../src/applets/consent-sheet.tsx";
 import { PORTAL_TABLES } from "../src/privacy/portal-grants.ts";
-import { plainFailure } from "../src/software/failure-words.ts";
-import { parseReleases, parseSizes, parseStats } from "../src/software/flathub-parse.ts";
-import type { AppDetails } from "../src/software/flathub-types.ts";
-import { cannotReach, describeReach, type FlatpakPermissions, parsePermissions } from "../src/software/flatpak-permissions.ts";
+import { splitAsks, trustLine } from "../src/shared/applet-store/consent-sheet.tsx";
+import { plainFailure } from "../src/shared/software/failure-words.ts";
+import { parseReleases, parseSizes, parseStats } from "../src/shared/software/flathub-parse.ts";
+import type { AppDetails } from "../src/shared/software/flathub-types.ts";
+import { cannotReach, describeReach, type FlatpakPermissions, parsePermissions } from "../src/shared/software/flatpak-permissions.ts";
 
 const none: FlatpakPermissions = { shared: [], sockets: [], devices: [], filesystems: [], sessionBus: { talk: [], own: [] }, systemBus: { talk: [], own: [] } };
 

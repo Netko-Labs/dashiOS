@@ -1,6 +1,14 @@
+export {
+  APPLET_CONSENT,
+  AppletConsentCard,
+  AppletConsentSheet,
+  abilityLines,
+  commandsLine,
+  splitAsks,
+  trustLine,
+} from "../shared/applet-store/consent-sheet.tsx";
 export { AppletCommands, type AppletCommandsOptions, type CommandPeer, commandAddress } from "./commands.ts";
 export { type AppletContext, sameManifest } from "./connection.ts";
-export { APPLET_CONSENT, AppletConsentCard, AppletConsentSheet, abilityLines, commandsLine, splitAsks, trustLine } from "./consent-sheet.tsx";
 export { AppletGrants } from "./grants.ts";
 export {
   appletDataRoot,

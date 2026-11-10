@@ -30,8 +30,6 @@
 1	packages/shell/src/agents/tokens/server.ts
 2	packages/shell/src/agents/tools/input.ts
 1	packages/shell/src/app-menus/server.ts
-1	packages/shell/src/applet-store/catalogs.ts
-2	packages/shell/src/applet-store/machine.ts
 1	packages/shell/src/applets/commands.ts
 1	packages/shell/src/applets/controls.ts
 1	packages/shell/src/applets/server.ts
@@ -46,6 +44,8 @@
 1	packages/shell/src/session/parent.ts
 1	packages/shell/src/settings-app/panes/displays.tsx
 1	packages/shell/src/settings-app/store.ts
+1	packages/shell/src/shared/applet-store/catalogs.ts
+2	packages/shell/src/shared/applet-store/machine.ts
 2	packages/shell/src/shared/calendar/event.ts
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/calendar/zones.ts
@@ -57,7 +57,7 @@
 1	packages/shell/src/shared/notes/sidecar.ts
 1	packages/shell/src/shared/notes/store.ts
 1	packages/shell/src/shared/portal/file-chooser.ts
-1	packages/shell/src/software/run.ts
+1	packages/shell/src/shared/software/run.ts
 1	packages/shell/src/spaces/controller.ts
 1	packages/shell/src/spaces/view.ts
 1	packages/shell/src/wallpaper/live/controller.ts

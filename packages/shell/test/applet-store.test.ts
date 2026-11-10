@@ -3,11 +3,11 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateKeys, type IndexApplet, type KeyPair, readInstalled, scanInstalled, sha256, sign, trustedComment, writeTar } from "@dashi/applet";
-import { Catalog, CatalogError } from "../src/applet-store/catalog.ts";
-import { AppletInstaller, statusOf } from "../src/applet-store/installer.ts";
 import { applyKillSwitch } from "../src/applet-store/kill-switch.ts";
-import { hardwareNames, parseBusctlString, readMachine } from "../src/applet-store/machine.ts";
-import { type CatalogLoad, mergeCatalogs, type StoreApplet, skippedCount } from "../src/applet-store/merge.ts";
+import { Catalog, CatalogError } from "../src/shared/applet-store/catalog.ts";
+import { AppletInstaller, statusOf } from "../src/shared/applet-store/installer.ts";
+import { hardwareNames, parseBusctlString, readMachine } from "../src/shared/applet-store/machine.ts";
+import { type CatalogLoad, mergeCatalogs, type StoreApplet, skippedCount } from "../src/shared/applet-store/merge.ts";
 
 // Throwaway keys for this run only.
 const dashi = generateKeys();

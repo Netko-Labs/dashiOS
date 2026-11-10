@@ -7,8 +7,8 @@
 import { Button, EmptyState, glyphs, Loading } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import type { Answer, CategoryId, Collection, Flathub } from "../../src/software/flathub.ts";
-import type { AppSummary, Page } from "../../src/software/flathub-types.ts";
+import type { Answer, CategoryId, Collection, Flathub } from "../../src/shared/software/flathub.ts";
+import type { AppSummary, Page } from "../../src/shared/software/flathub-types.ts";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { CardGrid } from "./cards.tsx";
 import { SectionHeader } from "./heading.tsx";

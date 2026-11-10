@@ -8,7 +8,7 @@
 import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
-import type { StoreApplet } from "../../../src/applet-store/merge.ts";
+import type { StoreApplet } from "../../../src/shared/applet-store/merge.ts";
 import { APPLETS, OFFLINE } from "../glyphs.ts";
 import { useReportStale } from "../hooks.ts";
 import { AppIcon, ROW, useActions } from "../parts.tsx";

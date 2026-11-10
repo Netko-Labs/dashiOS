@@ -6,4 +6,4 @@
 1	packages/shell/bin/dashi-browser-pack.ts
 1	packages/shell/src/agents/handoff/runner.ts
 1	packages/shell/src/agents/sandbox.ts
-1	packages/shell/src/applet-store/machine.ts
+1	packages/shell/src/shared/applet-store/machine.ts

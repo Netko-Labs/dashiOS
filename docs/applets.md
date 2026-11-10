@@ -390,7 +390,7 @@ Before an applet runs for the first time, and after an update that asks for
 more, Dashi lists its permissions in those words, what it adds to the
 launcher ("Adds 3 commands to the launcher"), and what it can't do ("It
 can't read your files or use the network."), once
-(`src/applets/consent-sheet.tsx`, on `@dashi/ui`'s sheet with the applet's icon, who vouches for it, and for an update only what is new up front). Software asks as it gets one; the
+(`src/shared/applet-store/consent-sheet.tsx`, on `@dashi/ui`'s sheet with the applet's icon, who vouches for it, and for an update only what is new up front). Software asks as it gets one; the
 shell asks for one that arrived another way (`dashi-applet install`). The
 answer is kept in its `install.json`: the permissions' names, and
 `launcher.commands` for its commands (`consentNames`, `src/installed.ts`),
@@ -688,7 +688,7 @@ checks them; signing with real keys is the `minisign` tool's).
 
 - **Dashi's index key**: made once with `minisign -G` (encrypted with a
   passphrase), kept offline by the maintainers. Its public half is in the
-  store (`packages/shell/src/applet-store/keys.ts`, read by Software); its secret half, with the
+  store (`packages/shell/src/shared/applet-store/keys.ts`, read by Software); its secret half, with the
   passphrase, is the catalog's GitHub Actions secrets `DASHI_INDEX_KEY` and
   `DASHI_INDEX_KEY_PASSWORD`, used only by the job that signs the index on
   `main`. Rotating it is a Dashi update that ships the new public key beside
@@ -724,7 +724,7 @@ the settings store (`src/settings-app/store.ts`, section `applets`):
 { "applets": { "catalogs": [{ "name": "Team Applets", "url": "https://applets.example.com/index.json", "key": "RWQ…" }] } }
 ```
 
-and read as untrusted, entry by entry (`src/applet-store/catalogs.ts`,
+and read as untrusted, entry by entry (`src/shared/applet-store/catalogs.ts`,
 `parseCatalogs`): a bad entry, a second one with the same address, Dashi's
 own address, and any past the 16th are left out (the shell logs why).
 
@@ -738,7 +738,7 @@ own address, and any past the 16th are left out (the shell logs why).
   (`hostsFor`, `allowedFor`). A version, icon, or screenshot elsewhere is left
   out of the list (an applet with no version left, entirely); a local
   package only from a catalog that is itself a local file.
-- **Listing** merges every catalog's applets (`src/applet-store/merge.ts`).
+- **Listing** merges every catalog's applets (`src/shared/applet-store/merge.ts`).
   Each remembers its catalog; one from an added catalog says "From <name>" on
   its row and page and is never shown as reviewed: Dashi's review mark is
   Dashi's catalog's alone. The same id in two catalogs: Dashi's wins in the

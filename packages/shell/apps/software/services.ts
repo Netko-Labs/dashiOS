@@ -9,23 +9,23 @@
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
 import { createContext, useContext } from "react";
-import { hostsFor, keyFrom, storeCacheDir } from "../../src/applet-store/catalog.ts";
-import { CatalogSet, readSavedCatalogs } from "../../src/applet-store/catalog-set.ts";
-import { dashiCatalog } from "../../src/applet-store/catalogs.ts";
-import { StoreImages } from "../../src/applet-store/images.ts";
-import { AppletInstaller } from "../../src/applet-store/installer.ts";
-import { DASHI_INDEX_KEY } from "../../src/applet-store/keys.ts";
-import { readMachine } from "../../src/applet-store/machine.ts";
-import { spawnDetached } from "../../src/menus/launch.ts";
 import { SettingsStore } from "../../src/settings-app/store.ts";
+import { hostsFor, keyFrom, storeCacheDir } from "../../src/shared/applet-store/catalog.ts";
+import { CatalogSet, readSavedCatalogs } from "../../src/shared/applet-store/catalog-set.ts";
+import { dashiCatalog } from "../../src/shared/applet-store/catalogs.ts";
+import { StoreImages } from "../../src/shared/applet-store/images.ts";
+import { AppletInstaller } from "../../src/shared/applet-store/installer.ts";
+import { DASHI_INDEX_KEY } from "../../src/shared/applet-store/keys.ts";
+import { readMachine } from "../../src/shared/applet-store/machine.ts";
+import { spawnDetached } from "../../src/shared/process/detached.ts";
 import { settingsPath } from "../../src/shared/settings/path.ts";
-import { ImageCache, JsonCache } from "../../src/software/cache.ts";
-import { Flathub } from "../../src/software/flathub.ts";
-import { Images } from "../../src/software/images.ts";
-import { Software } from "../../src/software/manager.ts";
-import { displayUrl } from "../../src/software/parse-values.ts";
-import { cacheRoot } from "../../src/software/paths.ts";
-import { standIn } from "../../src/software/stand-in.ts";
+import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
+import { Flathub } from "../../src/shared/software/flathub.ts";
+import { Images } from "../../src/shared/software/images.ts";
+import { Software } from "../../src/shared/software/manager.ts";
+import { displayUrl } from "../../src/shared/software/parse-values.ts";
+import { cacheRoot } from "../../src/shared/software/paths.ts";
+import { standIn } from "../../src/shared/software/stand-in.ts";
 import { AppletStore } from "./applets/store.ts";
 import { SoftwareStore } from "./store.ts";
 

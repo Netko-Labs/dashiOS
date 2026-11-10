@@ -3,8 +3,11 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type CatalogIndex, generateKeys, type IndexApplet, type KeyPair, readInstalled, sha256, sign, trustedComment, writeTar } from "@dashi/applet";
-import { CATALOG_HOSTS, Catalog, hostsFor } from "../src/applet-store/catalog.ts";
-import { CatalogSet, readSavedCatalogs } from "../src/applet-store/catalog-set.ts";
+import { applyKillSwitch } from "../src/applet-store/kill-switch.ts";
+import { parseSettings } from "../src/settings.ts";
+import { SettingsStore } from "../src/settings-app/store.ts";
+import { CATALOG_HOSTS, Catalog, hostsFor } from "../src/shared/applet-store/catalog.ts";
+import { CatalogSet, readSavedCatalogs } from "../src/shared/applet-store/catalog-set.ts";
 import {
   allowedFor,
   type CatalogSetting,
@@ -14,12 +17,9 @@ import {
   isCatalogList,
   keyLineOf,
   parseCatalogs,
-} from "../src/applet-store/catalogs.ts";
-import { AppletInstaller, statusOf } from "../src/applet-store/installer.ts";
-import { applyKillSwitch } from "../src/applet-store/kill-switch.ts";
-import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, storeEntries } from "../src/applet-store/merge.ts";
-import { parseSettings } from "../src/settings.ts";
-import { SettingsStore } from "../src/settings-app/store.ts";
+} from "../src/shared/applet-store/catalogs.ts";
+import { AppletInstaller, statusOf } from "../src/shared/applet-store/installer.ts";
+import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, storeEntries } from "../src/shared/applet-store/merge.ts";
 
 // Throwaway keys for this run only.
 const dashiKey = generateKeys();

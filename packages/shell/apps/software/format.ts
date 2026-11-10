@@ -3,7 +3,7 @@
 import { access } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
+import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
 
 /** "just now", "5 minutes ago", "2 hours ago", "yesterday". */
 export function ago(at: number | null, now: number): string {

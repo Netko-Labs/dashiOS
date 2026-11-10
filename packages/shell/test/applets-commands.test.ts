@@ -2,12 +2,12 @@ import { expect, test } from "bun:test";
 import { type Manifest, parseManifest } from "@dashi/applet";
 import type { Outcome, Shown } from "../src/actions/types.ts";
 import { AppletCommands, type CommandTimers, commandAddress } from "../src/applets/commands.ts";
-import { abilityLines, commandsLine } from "../src/applets/consent-sheet.tsx";
 import { AppletGrants } from "../src/applets/grants.ts";
 import { sameManifest } from "../src/applets/index.ts";
 import { systemdUnits, UNIT_LIMITS } from "../src/applets/launcher.ts";
 import { AppletConnection } from "../src/applets/server.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
+import { abilityLines, commandsLine } from "../src/shared/applet-store/consent-sheet.tsx";
 
 const MANIFEST = {
   id: "dev.example.weather",

@@ -6,7 +6,7 @@
  * an injectable `Runner`; nothing here shows UI or asks anyone anything.
  */
 
-import { spawnDetached } from "../menus/launch.ts";
+import { spawnDetached } from "../process/detached.ts";
 import * as cmd from "./flatpak-cmd.ts";
 import { type FlatpakUpdate, failureMessage, type InstalledApp, parseList, parseProgress, parseUpdates } from "./flatpak-parse.ts";
 import { type Installation, isAppId } from "./ids.ts";
