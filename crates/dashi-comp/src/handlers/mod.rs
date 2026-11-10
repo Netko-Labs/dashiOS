@@ -15,4 +15,5 @@ pub(crate) mod surface;
 pub(crate) mod sync;
 pub(crate) mod text;
 pub(crate) mod toplevel_meta;
+mod xdg_commit;
 mod xdg_shell;
