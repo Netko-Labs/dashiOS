@@ -17,6 +17,7 @@ import { Flathub } from "../src/software/flathub.ts";
 import { Images } from "../src/software/images.ts";
 import { Software } from "../src/software/manager.ts";
 import type { Runner } from "../src/software/run.ts";
+import { settle } from "./support/time.ts";
 
 // Software's window on a stand-in for the Metal host: Flathub from fixtures, flatpak and pkcon faked
 // (nothing is installed anywhere), and the applets from a test catalog signed with throwaway keys.
@@ -31,8 +32,6 @@ afterAll(() => {
   if (runtime === undefined) delete process.env.XDG_RUNTIME_DIR;
   else process.env.XDG_RUNTIME_DIR = runtime;
 });
-
-const settle = (ms = 40): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 const WIDE = "com.example.Wide";
 

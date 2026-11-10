@@ -3,10 +3,9 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { SCOPES } from "../src/agents/consent.ts";
 import type { Allow, Ask } from "../src/agents/presence.ts";
 import { ConsentSheet } from "../src/consent.tsx";
+import { settle } from "./support/time.ts";
 
 // The agents' consent sheet on a stand-in for the Metal host: every other permission in view once opened, and ticks.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 test("Other permissions opens every one of them at once, a tick each, and the answer carries the ticks", async () => {
   const ask: Ask = {

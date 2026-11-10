@@ -7,6 +7,7 @@ import { type Row, withDraft } from "../apps/notes/list.ts";
 import { NotesModel } from "../apps/notes/model.ts";
 import { NotesStore } from "../apps/notes/store.ts";
 import { NotesWindow } from "../apps/notes/view.tsx";
+import { settle } from "./support/time.ts";
 
 // The window on a stand-in for the Metal host: the trees it was sent, and events sent back as the host would.
 let runtime: string | undefined;
@@ -46,8 +47,6 @@ function fakeHost() {
   };
   return { transport, trees, emit };
 }
-
-const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 type Props = { id?: string; autofocus?: boolean; selection?: { start: number; end: number } };
 type Node = { type: string; props: Props; children?: unknown[] };

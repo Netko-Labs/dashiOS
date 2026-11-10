@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test";
 import { PointerSync, pointerCommands } from "../src/pointer.ts";
 import { parseSettings } from "../src/settings.ts";
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+import { settle } from "./support/time.ts";
 
 function sync(gateOn: boolean) {
   const requests: [string, unknown][] = [];

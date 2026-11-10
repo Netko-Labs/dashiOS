@@ -7,6 +7,7 @@ import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, noticeWi
 import { NotesModel } from "../apps/notes/model.ts";
 import { NotesStore } from "../apps/notes/store.ts";
 import { NotesWindow } from "../apps/notes/view.tsx";
+import { settle } from "./support/time.ts";
 
 // Review 54 (Notes): a small window left the note 45 pt wide, the Move menu opened far from its
 // button, the error covered the list, and a new source kept the old one's scroll.
@@ -70,7 +71,6 @@ function find(node: Node, test: (node: Node) => boolean): Node | undefined {
   if (test(node)) return node;
   return (node.children ?? []).map((child) => (isNode(child) ? find(child, test) : undefined)).find(Boolean);
 }
-const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 function mount(model: NotesModel) {
   const trees: string[] = [];

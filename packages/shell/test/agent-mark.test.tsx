@@ -12,6 +12,7 @@ import { AgentMark } from "../src/agent-mark.tsx";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
 import { accessWords, agentRecording, connectionHarness, markState, mergeAgents, recordingPill, watchingOf } from "../src/agents/mark.ts";
+import { settle } from "./support/time.ts";
 
 const connection = (id: number, extra: Partial<AgentInfo> = {}): AgentInfo => ({
   id,
@@ -165,7 +166,6 @@ describe("recordings", () => {
 });
 
 describe("the drawn mark", () => {
-  const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
   function host() {
     const trees: string[] = [];
     const listeners: ((event: NativeEvent) => void)[] = [];

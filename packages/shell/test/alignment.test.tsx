@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { PAGE, pillsUnder, roomBeside, Row as SettingsRow } from "../src/settings-app/row.tsx";
 import { titleLine } from "../src/settings-app/ui.tsx";
 import { pillsWrapped, SEGMENTED, Segmented } from "../src/shared/controls/inputs.tsx";
+import { settle } from "./support/time.ts";
 
 // Shared edges (review 0.6 04-align-b): one line for the lights, the search
 // and the title; one left edge for a list's labels and a card's captions;
@@ -108,7 +109,6 @@ test("pills squeezed while the window narrows go back beside the words when it w
     </SettingsRow>,
     transport,
   );
-  const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
   const laid = async (testID: string, width: number, height: number): Promise<void> => {
     const nodeId = root.nodeId(testID);
     if (!nodeId) throw new Error(`no ${testID}`);

@@ -3,6 +3,7 @@ import { Arranger } from "../src/arrange.ts";
 import { type Compositor, type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
 import { carryFrame, centerFrame, dragZones, frameUnderPointer, keepLeast, type Rect, TILES, tileFrame } from "../src/layout.ts";
 import { arrowStep, screenToward } from "../src/tiling.ts";
+import { settle } from "./support/time.ts";
 
 /** The VM's screen: 1646 × 937 points, the menu bar (28) and the Dock (65 + 6) leaving 838 between them. */
 const SCREEN: Rect = { x: 0, y: 0, width: 1646, height: 937 };
@@ -363,8 +364,6 @@ describe("the events", () => {
 });
 
 describe("full screen and back", () => {
-  const settle = () => new Promise((done) => setTimeout(done, 20));
-
   test("leaving gives back the frame from before, and the screens unchanged fit nothing", async () => {
     const { arranger, frames, window } = await started();
     await arranger.control(7, true);

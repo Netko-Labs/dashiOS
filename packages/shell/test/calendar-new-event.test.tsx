@@ -7,6 +7,7 @@ import { HOUR_HEIGHT, revealOffset } from "../apps/calendar/layout.ts";
 import { CalendarModel } from "../apps/calendar/model.ts";
 import { CalendarStore } from "../apps/calendar/store.ts";
 import { CalendarWindow } from "../apps/calendar/view.tsx";
+import { settle } from "./support/time.ts";
 
 // The + button and naming in place, on a stand-in for the Metal host.
 
@@ -15,7 +16,6 @@ let model: CalendarModel;
 let root: NativeRoot;
 let listeners: ((event: NativeEvent) => void)[] = [];
 let scrolls: [string, number][] = [];
-const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 const id = (testID: string): string => root.nodeId(testID) ?? "";
 const emit = async (event: NativeEvent): Promise<void> => {
   for (const listener of listeners) listener(event);

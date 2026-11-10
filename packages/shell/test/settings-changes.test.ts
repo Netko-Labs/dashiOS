@@ -9,6 +9,7 @@ import { changeLine, describeChanges, parseEntries } from "../src/settings-app/c
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
 import { settingRow } from "../src/settings-app/registry/index.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { settle as tick } from "./support/time.ts";
 
 let root = "";
 let store: SettingsStore;
@@ -23,8 +24,6 @@ beforeEach(() => {
   });
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
-
-const tick = (ms = 0): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 const stores = () => ({ settings: store, flags });
 
 test("each change says what, from what, to what, and who: you, or the agent acting", async () => {

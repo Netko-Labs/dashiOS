@@ -6,6 +6,7 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { type CommandHooks, copy } from "../apps/preview/commands.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { pngSize, Viewer } from "../apps/preview/viewer.ts";
+import { settle } from "./support/time.ts";
 
 // Pictures in Preview: the folder's filmstrip, a rotation that sticks, the recent files, and Copy.
 
@@ -25,8 +26,6 @@ afterAll(() => {
   else process.env.XDG_RUNTIME_DIR = runtime;
   rmSync(dir, { recursive: true, force: true });
 });
-
-const settle = (ms = 40): Promise<void> => new Promise((done) => setTimeout(done, ms));
 async function until(what: () => boolean, ms = 4_000): Promise<void> {
   const end = Date.now() + ms;
   while (!what()) {

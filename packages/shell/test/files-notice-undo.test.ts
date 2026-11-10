@@ -8,6 +8,9 @@ import type { FileItem } from "../apps/files/items.ts";
 import { folderAt } from "../apps/files/location.ts";
 import { Operations } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 let root = "";
 let home = "";
@@ -39,7 +42,6 @@ function files(noticeFadeMs = 20): { store: FilesStore; ops: Operations; folder:
 }
 
 const item = (path: string): FileItem => ({ path }) as FileItem;
-const settle = (ms = 60): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "files-notice-"));
@@ -59,7 +61,7 @@ test("the Trash notice keeps its Undo past the fade, so a late click still lands
   expect(notice?.undoStep).toBe(ops.undo.state.undoStep as number);
   // Long past the fade of a notice that only informs: it was here that the notice
   // went as Undo was clicked, and the click fell through to the files.
-  await settle();
+  await settle(100);
   expect(store.getSnapshot().notice?.id).toBe(notice?.id as number);
   await ops.undoStep("undo");
   expect(existsSync(join(folder, "a.txt"))).toBe(true);
@@ -70,7 +72,7 @@ test("the Trash notice keeps its Undo past the fade, so a late click still lands
 test("a notice that only informs still fades", async () => {
   const { store } = files();
   store.say("Copied “a.txt” for pasting in Files.");
-  await settle();
+  await settle(100);
   expect(store.getSnapshot().notice).toBeNull();
   store.stop();
 });

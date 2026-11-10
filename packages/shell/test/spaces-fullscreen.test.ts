@@ -9,6 +9,7 @@ import { edgeHoldTarget } from "../src/spaces/edge.ts";
 import { FullscreenDesktops } from "../src/spaces/fullscreen.ts";
 import { spaceLabels } from "../src/spaces/names.ts";
 import { desktopCount, desktopOrdinal, fitSlots, insertionPoint, nearestDesktop, originOf, recoverSlots, type Slots } from "../src/spaces/slots.ts";
+import { fakeClock, settle } from "./support/time.ts";
 
 const SCREEN: Rect = { x: 0, y: 0, width: 1646, height: 937 };
 const USABLE: Rect = { x: 0, y: 28, width: 1646, height: 838 };
@@ -180,11 +181,11 @@ function fakeCompositor(windows: Window[], count = 1) {
           const carried = state.windows.find((each) => each.id === params.carry);
           if (params.carry !== undefined && (carried?.space ?? -1) !== state.current) throw new Error("not on the Space that shows");
           // The slide ends a little later; a carried window lands on the new Space then.
-          setTimeout(() => {
+          setImmediate(() => {
             state.current = params.space as number;
             if (carried) moved(carried, state.current);
             spaceEvent(previous);
-          }, 5);
+          });
           return answer();
         }
         case "fullscreen":
@@ -209,8 +210,6 @@ function fakeCompositor(windows: Window[], count = 1) {
     moves: () => requests.filter(([method]) => method.startsWith("space-") || method === "fullscreen").map(([method, params]) => [method, params]),
   };
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 40));
 const SETTINGS: SpacesSettings = { count: 2, switchOnActivate: true, fullscreenDesktop: true };
 
 /** The Spaces controller and the full-screen Desktops on a fake, settings applied. */
@@ -279,15 +278,16 @@ describe("a full-screen window's own Desktop", () => {
     const game = fake.state.windows.find((each) => each.id === 1);
     if (!game) throw new Error("no window 1");
     game.configuring = { width: 1646, height: 937 };
-    const drew = setTimeout(() => {
-      game.configuring = undefined;
-    }, 60);
-    const began = Date.now();
-    await toggle(1, true);
-    clearTimeout(drew);
-    const switched = fake.requests.findIndex(([method]) => method === "space-switch");
-    expect(switched).toBeGreaterThan(-1);
-    expect(Date.now() - began).toBeGreaterThanOrEqual(60);
+    const clock = fakeClock();
+    const carried = toggle(1, true);
+    // The app is still drawing: the window waits where it is.
+    await clock.advance(100, 10);
+    expect(fake.requests.some(([method]) => method === "space-switch")).toBe(false);
+    game.configuring = undefined;
+    await clock.advance(100, 10);
+    await carried;
+    clock.restore();
+    expect(fake.requests.some(([method]) => method === "space-switch")).toBe(true);
   });
 
   test("its dialogs come along, and go back with it", async () => {

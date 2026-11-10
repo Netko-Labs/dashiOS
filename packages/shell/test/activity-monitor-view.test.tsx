@@ -6,6 +6,7 @@ import { type NativeEvent, type NativeRoot, type NativeTransport, render } from 
 import { Monitor } from "../apps/activity-monitor/monitor.ts";
 import type { ProcessSample, Snapshot } from "../apps/activity-monitor/read.ts";
 import { type MonitorActions, MonitorWindow } from "../apps/activity-monitor/view.tsx";
+import { settle } from "./support/time.ts";
 
 // Activity Monitor's window on a stand-in for the Metal host: who has the keyboard, ← and → on the list, Esc on Inspect.
 
@@ -19,8 +20,6 @@ afterAll(() => {
   if (runtime === undefined) delete process.env.XDG_RUNTIME_DIR;
   else process.env.XDG_RUNTIME_DIR = runtime;
 });
-
-const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 const TERMINAL = { key: "dev.dashi.terminal", name: "Terminal", icon: "/icons/terminal.svg" };
 

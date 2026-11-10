@@ -8,6 +8,9 @@ import { PICTURES_SETTLE_MS, PictureSender } from "../src/launcher/picture-sende
 import type { PictureRect } from "../src/launcher/pictures.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
 import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The windows' live pictures under a row, and the rows at a bigger text size.
 

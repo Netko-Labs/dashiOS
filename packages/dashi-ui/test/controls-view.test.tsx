@@ -13,6 +13,9 @@ import { Appearance, setAppearanceSource, useColors } from "../src/theme/appeara
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { AppWindow } from "../src/window.tsx";
 import { fakeHost, settle } from "./host.ts";
+import { fakeClockEachTest } from "./support/time.ts";
+
+fakeClockEachTest();
 
 const noop = (): void => {};
 

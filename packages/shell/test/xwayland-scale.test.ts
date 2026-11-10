@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { CompositorEvent } from "../src/compositor.ts";
 import { outputScales, startXwaylandScaling, type XwaylandChoice, xResources, xwaylandScale } from "../src/xwayland-scale.ts";
+import { settle } from "./support/time.ts";
 
 test("Xwayland takes the largest screen scale, never below 1", () => {
   expect(xwaylandScale([1, 1.75])).toBe(1.75);
@@ -32,7 +33,6 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
       return () => {};
     },
   };
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
   const choice: XwaylandChoice = { scaling: "sharp", pointerSize: 24 };
   const scaling = startXwaylandScaling({
     compositor: compositor as never,

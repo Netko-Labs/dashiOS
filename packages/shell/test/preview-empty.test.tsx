@@ -9,6 +9,7 @@ import { otherMime } from "../apps/preview/kinds.ts";
 import { previewMenus } from "../apps/preview/menus.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
+import { settle } from "./support/time.ts";
 
 // Preview's empty window on a stand-in for the Metal host: what it offers, and a file dropped on it.
 let dir = "";
@@ -27,7 +28,6 @@ afterAll(() => {
 
 /** A 1 × 1 PNG. */
 const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 40));
 
 function mount() {
   const listeners: ((event: NativeEvent) => void)[] = [];

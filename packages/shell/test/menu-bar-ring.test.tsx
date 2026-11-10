@@ -10,6 +10,7 @@ import { type Bounds, type NativeEvent, type NativeTransport, render, View } fro
 import { useState } from "react";
 import { StatusSide, type StatusSlot } from "../src/menubar-status.tsx";
 import type { BarStop } from "../src/menus/bar-keys.ts";
+import { settle } from "./support/time.ts";
 
 interface Node {
   props?: Record<string, unknown>;
@@ -67,7 +68,6 @@ test("stops in the row's order, '…' among them; the ring inside the focused it
     );
   }
   const root = render(<Side />, transport);
-  const settle = () => new Promise((done) => setTimeout(done, 20));
   await settle();
   const emit = (event: NativeEvent) => {
     for (const listener of listeners) listener(event);

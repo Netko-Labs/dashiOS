@@ -3,6 +3,9 @@ import { LauncherKeys } from "../src/launcher/keys.ts";
 import type { LauncherProps } from "../src/launcher.tsx";
 import { FILE_DELAY_MS } from "../src/launcher.tsx";
 import { app, deferredFiles, file, mount as mountWith, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The launcher's wave 1 behavior, mounted on a stand-in for the Metal host (launcher-harness.tsx).
 

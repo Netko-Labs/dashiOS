@@ -3,6 +3,7 @@ import type { NativeEvent, NativeHostTransport } from "@mirinjs/metal";
 import { View } from "@mirinjs/metal";
 import { createElement } from "react";
 import { openPopoverWindow, popoverSurface } from "../src/popover.tsx";
+import { settle } from "./support/time.ts";
 
 const PLACEMENT = { x: 10, y: 20, width: 300, height: 160, namespace: "dashi.applet.dev.example.weather", output: null };
 
@@ -33,8 +34,6 @@ function fakeHost() {
   };
   return { host, tree, emit, closed: () => closed };
 }
-
-const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 30));
 
 test("a popover takes the keyboard as the shell's menus do; a launcher view leaves it to the launcher", () => {
   expect(popoverSurface(PLACEMENT)).toMatchObject({ role: "layer", keyboard: "exclusive" });

@@ -12,6 +12,9 @@ import { plainFailure, quietQuestion, quietReason } from "../src/agents/handoff/
 import type { TaskRunner } from "../src/agents/handoff/runner.ts";
 import { startHandoff, usesWords } from "../src/agents/handoff/service.ts";
 import { statusWords } from "../src/agents/handoff/store.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 test("silence reads as signed out unless it is signed in; its errors say better", () => {
   expect(quietReason("", null)).toBe("signed-out");
@@ -74,8 +77,6 @@ function quietService(errors = "") {
   });
   return { handoff, stopped, watchers, signedIn };
 }
-
-const settle = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test("a fake OpenCode that prints nothing: its card asks, and Sign In… opens Terminal and stops it", async () => {
   const { handoff, stopped, signedIn } = quietService();

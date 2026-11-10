@@ -4,11 +4,10 @@ import { Banner, bannerHeight, buttonsFor } from "../src/notifications/banner.ts
 import { NotificationStore } from "../src/notifications/store.ts";
 import type { FlatpakUpdate } from "../src/software/flatpak-parse.ts";
 import { openSoftwareUpdates, UpdateCheck } from "../src/software/update-check.ts";
+import { settle } from "./support/time.ts";
 
 // The daily update notice, clicked: from the banner (or its Show button, or the notification center)
 // through the store and the update check to the shell's openWith, as main.tsx wires it.
-
-const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 async function posted(windows: { id: number; appId: string }[] = []) {
   const store = new NotificationStore({ schedule: () => () => {} });

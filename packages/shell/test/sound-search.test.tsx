@@ -13,8 +13,9 @@ import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { AppMixer, fixedGraph, heldControl, isIconName, parseGraph, type Stream, streamApp, streamOwners, useAppNames } from "../src/sound/apps/index.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
-const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
+fakeClockEachTest();
 
 const HELIUM = { id: "helium", name: "Helium", icon: "/icons/helium.png", exec: ["/opt/helium/helium", "%U"] };
 const catalog = catalogFrom([HELIUM], []);

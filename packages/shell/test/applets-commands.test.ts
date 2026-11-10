@@ -8,6 +8,7 @@ import { sameManifest } from "../src/applets/index.ts";
 import { systemdUnits, UNIT_LIMITS } from "../src/applets/launcher.ts";
 import { AppletConnection } from "../src/applets/server.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
+import { settle } from "./support/time.ts";
 
 const MANIFEST = {
   id: "dev.example.weather",
@@ -85,7 +86,6 @@ function harness() {
   };
   const conn = new AppletConnection(4242, wire, { extras, grants, commands });
   const send = (message: unknown) => conn.receive(new TextEncoder().encode(`${JSON.stringify(message)}\n`));
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
   const runs = () => written.filter((message) => message.type === "run");
   const action = (id: string) => {
     const found = commands.actions().find((each) => each.address === commandAddress("dev.example.weather", id));

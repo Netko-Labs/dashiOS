@@ -6,6 +6,7 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { EditorModel } from "../apps/editor/model.ts";
 import { DEFAULT_PREFS } from "../apps/editor/prefs.ts";
 import { EditorWindow } from "../apps/editor/view.tsx";
+import { settle } from "./support/time.ts";
 
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
 let dir = "";
@@ -45,8 +46,6 @@ function fakeHost() {
   };
   return { transport, trees, emit };
 }
-
-const settle = (ms = 30): Promise<void> => new Promise((done) => setTimeout(done, ms));
 const press = (nodeId: string): NativeEvent => ({ type: "press", nodeId });
 
 test("an Untitled document is a draft, counted once typing pauses; the Save sheet saves it", async () => {

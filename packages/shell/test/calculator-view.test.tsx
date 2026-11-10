@@ -10,6 +10,9 @@ import type { Remembered } from "../apps/calculator/store.ts";
 import { CalculatorWindow } from "../apps/calculator/view.tsx";
 import { resultWords } from "../apps/calculator/words.ts";
 import type { Clipboard, Size } from "../apps/kit/index.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
 let dir = "";
@@ -40,8 +43,6 @@ function findView(node: TreeNode, matches: (node: TreeNode) => boolean): TreeNod
   }
   return null;
 }
-
-const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 async function mount(remembered: Remembered, pasted = "Total: 1,234.50") {
   const trees: string[] = [];

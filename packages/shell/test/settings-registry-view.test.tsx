@@ -15,13 +15,12 @@ import { TrackpadPane } from "../src/settings-app/panes/trackpad.tsx";
 import { rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { settle } from "./support/time.ts";
 
 // Panes drawn from the registry, on a stand-in for the Metal host: every row is there, at its address, and its control works.
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-registry-view-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 async function mount(tree: ReactNode) {
   const listeners: ((event: NativeEvent) => void)[] = [];

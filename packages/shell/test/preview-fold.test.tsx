@@ -6,6 +6,7 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { FOLD_ORDER, foldTools, planToolbar, TITLE_FLOOR, TITLE_MAX, TOOLS, titleWidth, toolbarWidth, toolWidths } from "../apps/preview/fold.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
+import { settle } from "./support/time.ts";
 
 // Preview's toolbar in a narrow window: what doesn't fit folds into "…", the least important first, never cut.
 
@@ -97,7 +98,6 @@ afterAll(() => {
 });
 
 const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 40));
 
 test("in a narrow window the turns and Info are in “…”, not cut at the edge", async () => {
   const listeners: ((event: NativeEvent) => void)[] = [];
