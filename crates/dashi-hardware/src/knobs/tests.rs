@@ -1,7 +1,10 @@
 //! Each backend against the G14's captured tree (data/fixtures/ga403wr).
 
+use serde_json::json;
+
 use super::*;
 use crate::model::Model;
+use crate::sysfs::Sysfs;
 use crate::sysfs::testing::TempTree;
 
 fn g14() -> (TempTree, Sysfs, Vec<Found>) {

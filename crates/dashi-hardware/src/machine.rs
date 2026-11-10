@@ -2,19 +2,21 @@
 //! state, with the operations the service and the CLI share. It enforces
 //! ranges (every value is clamped) and knows nothing about policy or D-Bus.
 
-use std::collections::BTreeMap;
+mod error;
+mod slash;
+mod tuning;
 
 use serde_json::{Map, Value, json};
 
 use crate::fans::{self, Fan};
 use crate::knobs::{self, Found, Knob, SetError};
 use crate::model::{self, Dmi, Model};
-use crate::slash::{self, Bar};
-use crate::smu;
-use crate::state::{SavedTuning, State};
+use crate::slash::Bar;
+use crate::state::State;
 use crate::sysfs::Sysfs;
 
 pub(crate) use crate::knobs::Value as KnobValue;
+pub(crate) use error::OpError;
 
 /// A laptop chassis, by DMI type (docs/0.4.0.html): laptop, notebook,
 /// hand-held, sub-notebook, convertible, detachable.
@@ -27,34 +29,6 @@ pub(crate) struct Machine {
     fans: Vec<Fan>,
     slash: Option<Bar>,
     state: State,
-}
-
-/// The outcome of one request (the CLI prints it; the service maps it to a
-/// D-Bus reply or error).
-#[derive(Debug)]
-pub(crate) enum OpError {
-    /// No such knob or fan on this machine.
-    NotFound(String),
-    /// The value was the wrong type or outside what the knob takes.
-    Invalid(String),
-    /// A write failed.
-    Io(String),
-    /// The Curve Optimizer isn't available (the reason string).
-    Unavailable(String),
-    /// A device the model names isn't there (the Slash bar).
-    NoDevice(String),
-}
-
-impl std::fmt::Display for OpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OpError::NotFound(s) => write!(f, "{s} is not on this machine"),
-            OpError::Invalid(s) => write!(f, "{s}"),
-            OpError::Io(s) => write!(f, "{s}"),
-            OpError::Unavailable(s) => write!(f, "the Curve Optimizer is unavailable: {s}"),
-            OpError::NoDevice(s) => write!(f, "{s}"),
-        }
-    }
 }
 
 impl Machine {
@@ -240,176 +214,4 @@ impl Machine {
         }
         Ok(())
     }
-
-    // ---- The Slash bar ----
-
-    /// `Slash()`'s JSON.
-    pub(crate) fn slash_json(&self) -> Value {
-        match &self.slash {
-            Some(bar) => bar.describe(&self.sysfs, &self.state),
-            None => json!({"available": false, "reason": "not-in-database"}),
-        }
-    }
-
-    /// Set the bar (validated and clamped in `change`), save it, and return
-    /// `Slash()`'s JSON.
-    pub(crate) fn set_slash(&self, change: &slash::Change) -> Result<Value, OpError> {
-        let bar = self
-            .slash
-            .as_ref()
-            .ok_or_else(|| OpError::NoDevice("this machine has no Slash bar".into()))?;
-        bar.set(&self.sysfs, &self.state, change)
-            .map_err(|e| match e {
-                slash::SlashError::NoDevice => OpError::NoDevice(e.to_string()),
-                slash::SlashError::Io(_) => OpError::Io(e.to_string()),
-            })?;
-        Ok(self.slash_json())
-    }
-
-    /// Send the saved Slash settings again; whether anything was sent.
-    pub(crate) fn restore_slash(&self) -> bool {
-        let Some(bar) = &self.slash else {
-            return false;
-        };
-        match bar.restore(&self.sysfs, &self.state) {
-            Ok(sent) => sent,
-            Err(e) => {
-                eprintln!("dashi-hardware: {e}");
-                false
-            }
-        }
-    }
-
-    // ---- The Curve Optimizer ----
-
-    pub(crate) fn curve_optimizer_json(&self, tuning: &SavedTuning) -> Value {
-        let per_core: Vec<i32> = core_vector(tuning, smu::core_count(&self.sysfs));
-        smu::describe(
-            &self.sysfs,
-            self.model.as_ref(),
-            tuning.curve_all_core.unwrap_or(0),
-            &per_core,
-        )
-    }
-
-    /// Apply a Curve Optimizer offset now (does not save).
-    pub(crate) fn apply_curve_optimizer(
-        &self,
-        all_core: i32,
-        per_core: &[(u32, i32)],
-    ) -> Result<(), OpError> {
-        let (mut co, cap) = smu::CurveOptimizer::probe(
-            &self.sysfs,
-            self.model.as_ref(),
-            smu::make_smn(&self.sysfs),
-        )
-        .map_err(|r| OpError::Unavailable(r.reason().to_owned()))?;
-        let in_range = |v: i32| (cap.range.0..=cap.range.1).contains(&v);
-        if per_core.is_empty() {
-            if !in_range(all_core) {
-                return Err(OpError::Invalid(format!(
-                    "{all_core} is outside {}..{}",
-                    cap.range.0, cap.range.1
-                )));
-            }
-            co.set_all_core(all_core).map_err(OpError::Io)
-        } else {
-            if !cap.per_core {
-                return Err(OpError::Invalid("this chip has no per-core offsets".into()));
-            }
-            for (core, offset) in per_core {
-                if !in_range(*offset) {
-                    return Err(OpError::Invalid(format!(
-                        "core {core}: {offset} is outside {}..{}",
-                        cap.range.0, cap.range.1
-                    )));
-                }
-                co.set_per_core(*core, *offset).map_err(OpError::Io)?;
-            }
-            Ok(())
-        }
-    }
-
-    // ---- Saved tuning and the boot guard ----
-
-    /// Re-apply the saved Slash settings (always: they are lights), and the
-    /// saved power limits, GPU limits and Curve Optimizer only after a clean
-    /// boot (docs/hardware.md). Returns `{applied, reason, slash}`.
-    pub(crate) fn apply_saved_tuning(&self) -> Value {
-        let slash = self.restore_slash();
-        let mut result = self.apply_saved_limits();
-        if let Value::Object(map) = &mut result {
-            map.insert("slash".into(), json!(slash));
-        }
-        result
-    }
-
-    fn apply_saved_limits(&self) -> Value {
-        let tuning = self.state.saved_tuning();
-        if tuning.is_empty() {
-            return json!({"applied": false, "reason": "nothing-saved"});
-        }
-        if !self.state.last_boot().clean_boot {
-            return json!({"applied": false, "reason": "unclean-boot"});
-        }
-        let mut applied = Vec::new();
-        for (name, value) in &tuning.knobs {
-            if let Ok(found) = self.knob(name)
-                && let Some(parsed) = KnobValue::from_json(found.knob.kind(), value)
-                && found.set(&self.sysfs, parsed).is_ok()
-            {
-                applied.push(name.clone());
-            }
-        }
-        let per_core: Vec<(u32, i32)> = tuning
-            .curve_per_core
-            .iter()
-            .map(|(core, offset)| (*core, *offset))
-            .collect();
-        let co_ok = if tuning.curve_all_core.is_some() || !per_core.is_empty() {
-            self.apply_curve_optimizer(tuning.curve_all_core.unwrap_or(0), &per_core)
-                .is_ok()
-        } else {
-            true
-        };
-        json!({"applied": true, "reason": "", "knobs": applied, "curveOptimizer": co_ok})
-    }
-
-    /// `BootGuard()`: the last boot's record (the boot/clean units set it).
-    pub(crate) fn boot_guard(&self) -> Value {
-        let guard = self.state.last_boot();
-        json!({"cleanBoot": guard.clean_boot, "failedBoots": guard.failed_boots, "reset": guard.reset})
-    }
-
-    /// Build a `SavedTuning` from the current values of the tunable knobs and
-    /// the given Curve Optimizer offsets, for `ConfirmTuning` to save.
-    pub(crate) fn tuning_snapshot(
-        &self,
-        all_core: Option<i32>,
-        per_core: &[(u32, i32)],
-    ) -> SavedTuning {
-        let mut knobs = BTreeMap::new();
-        for found in &self.knobs {
-            if found.knob.action() == knobs::Action::Tune
-                && found.knob != Knob::GpuMux
-                && let Some(value) = found.read(&self.sysfs)
-            {
-                knobs.insert(found.knob.name().to_owned(), value.json());
-            }
-        }
-        SavedTuning {
-            knobs,
-            curve_all_core: all_core,
-            curve_per_core: per_core.iter().copied().collect(),
-        }
-    }
-}
-
-fn core_vector(tuning: &SavedTuning, cores: u32) -> Vec<i32> {
-    if tuning.curve_per_core.is_empty() {
-        return Vec::new();
-    }
-    (0..cores)
-        .map(|core| tuning.curve_per_core.get(&core).copied().unwrap_or(0))
-        .collect()
 }
