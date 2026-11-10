@@ -248,7 +248,7 @@ function noticeFiles(dir: string): { name: string; text: string }[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && NOTICE_FILE.test(entry.name))
-    .map((entry) => ({ name: entry.name, text: readFileSync(join(dir, entry.name), "utf8").replace(/\r\n/g, "\n").trimEnd() }))
+    .map((entry) => ({ name: entry.name, text: readFileSync(join(dir, entry.name), "utf8").replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "").trimEnd() }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
