@@ -12,12 +12,12 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../notifications/index.ts";
-import { iconPath } from "../shared/apps/index.ts";
-import { type Alert, alertMessage, alertsBetween } from "../shared/calendar/alerts.ts";
-import { dayPart, instantOf } from "../shared/calendar/dates.ts";
-import { writeAtomic } from "../shared/fs/atomic.ts";
-import { type ClockPrefs, clockPrefs } from "../shared/time/clock.ts";
+import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../../notifications/index.ts";
+import { iconPath } from "../../shared/apps/index.ts";
+import { type Alert, alertMessage, alertsBetween } from "../../shared/calendar/alerts.ts";
+import { dayPart, instantOf } from "../../shared/calendar/dates.ts";
+import { writeAtomic } from "../../shared/fs/atomic.ts";
+import { type ClockPrefs, clockPrefs } from "../../shared/time/clock.ts";
 import type { CalendarFeed } from "./feed.ts";
 
 export const APP_ID = "dev.dashi.calendar";

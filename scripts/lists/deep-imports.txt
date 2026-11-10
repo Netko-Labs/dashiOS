@@ -277,8 +277,8 @@
 3	packages/shell/src/boot/system.ts
 1	packages/shell/src/browser/bridge.ts
 1	packages/shell/src/calendar/bridge.ts
-6	packages/shell/src/calendar/feed.ts
-4	packages/shell/src/calendar/reminders.ts
+6	packages/shell/src/calendar/lib/feed.ts
+4	packages/shell/src/calendar/lib/reminders.ts
 3	packages/shell/src/calendar/service.ts
 6	packages/shell/src/compositor-types.ts
 4	packages/shell/src/compositor.ts
