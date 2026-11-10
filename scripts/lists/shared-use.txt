@@ -1,0 +1,1 @@
+# H20: a shared/ concern with fewer than two sibling modules using it (count = users it lacks, +2 for a catch-all name), or a file loose in shared/ (2). May only shrink.
