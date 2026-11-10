@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { LockWatch } from "../src/agents/lock.ts";
 import { Compositor } from "../src/compositor.ts";
+import { fakeClock, until } from "./support/time.ts";
 
 type Answer = (request: { id: number; method: string }) => unknown;
 
@@ -58,11 +59,23 @@ async function connected(answer: Answer, timeoutMs = 5000): Promise<{ compositor
 
 test("a request with no reply gives up after its time", async () => {
   const { compositor } = await connected(() => undefined, 50);
-  await expect(compositor.request("windows")).rejects.toThrow("dashi-comp: no reply to windows");
-  // Its own time, when it says one.
-  const started = performance.now();
-  await expect(compositor.request("outputs", {}, 120)).rejects.toThrow("no reply to outputs");
-  expect(performance.now() - started).toBeGreaterThanOrEqual(100);
+  const clock = fakeClock();
+  stops.push(clock.restore);
+  let windows: unknown = null;
+  compositor.request("windows").catch((error) => {
+    windows = error;
+  });
+  await clock.advance(50);
+  expect(String(windows)).toContain("dashi-comp: no reply to windows");
+  // Its own time, when it says one: not given up a moment before it.
+  let outputs: unknown = null;
+  compositor.request("outputs", {}, 120).catch((error) => {
+    outputs = error;
+  });
+  await clock.advance(119);
+  expect(outputs).toBeNull();
+  await clock.advance(1);
+  expect(String(outputs)).toContain("no reply to outputs");
 });
 
 test("when the compositor goes, what waits is rejected and what comes later is refused at once", async () => {
@@ -78,8 +91,11 @@ test("when the compositor goes, what waits is rejected and what comes later is r
 
 test("a reply in time is not cut short by its timer", async () => {
   const { compositor } = await connected(() => ({ windows: [] }), 100);
+  const clock = fakeClock();
+  stops.push(clock.restore);
   expect(await compositor.windows()).toEqual([]);
-  await Bun.sleep(150);
+  // Past the first request's time: its timer was cleared with the reply.
+  await clock.advance(150);
   expect(await compositor.windows()).toEqual([]);
 });
 
@@ -97,12 +113,14 @@ test("a session answer without the lock state is not understood", async () => {
 
 test("agents stay locked out until the compositor says the screen is unlocked", async () => {
   const unknown = await connected(() => session);
-  expect(new LockWatch(unknown.compositor).isLocked).toBe(true);
-  await Bun.sleep(20);
-  expect(new LockWatch(unknown.compositor).isLocked).toBe(true);
+  const unsure = new LockWatch(unknown.compositor);
+  expect(unsure.isLocked).toBe(true);
+  // Replies come in order: once this one is in, the watch has had its answer.
+  await unknown.compositor.session();
+  expect(unsure.isLocked).toBe(true);
 
   const open = await connected(() => ({ ...session, locked: false }));
   const watch = new LockWatch(open.compositor);
-  await Bun.sleep(20);
+  await until(() => !watch.isLocked, "the watch to hear the screen is unlocked");
   expect(watch.isLocked).toBe(false);
 });
