@@ -22,11 +22,14 @@ async function passwordField(node: A11yNode, depth = 0): Promise<A11yNode | null
   return null;
 }
 
+/** A node's D-Bus path, when it has one. */
+const pathOf = (node: A11yNode): string | undefined => ("path" in node && typeof node.path === "string" ? node.path : undefined);
+
 /** A node's D-Bus path, its address and whether it shows. */
 async function describe(node: A11yNode): Promise<string> {
   const states = await node.states().catch(() => null);
   const url = await node.url().catch(() => null);
-  return `${(node as unknown as { path?: string }).path} ${url} ${states ? (hasState(states, STATE.SHOWING) ? "showing" : "hidden") : "no states"}`;
+  return `${pathOf(node)} ${url} ${states ? (hasState(states, STATE.SHOWING) ? "showing" : "hidden") : "no states"}`;
 }
 
 const atspi = await Atspi.connect();
@@ -63,8 +66,7 @@ for (const doc of before) {
   console.log(`the old document now: ${await describe(doc)}`);
   const parent = await doc.parent?.().catch(() => null);
   const kids = parent ? await parent.children().catch(() => []) : [];
-  const path = (n: A11yNode) => (n as unknown as { path?: string }).path;
-  console.log(`its parent ${parent ? path(parent) : null} has ${kids.map(path).join(" ")}`);
+  console.log(`its parent ${parent ? pathOf(parent) : null} has ${kids.map(pathOf).join(" ")}`);
 }
 atspi.close();
 process.exit(0);

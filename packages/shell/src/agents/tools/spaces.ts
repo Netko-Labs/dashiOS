@@ -1,18 +1,16 @@
 /** Spaces: the desktops side by side, which one shows, and putting a window on another. Agents number them from 1, as people see them ("Desktop 1"). */
 
 import { MAX_SPACES } from "../../spaces/model.ts";
-import { fail, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
+import { tool, wholeArg, windowId } from "./args.ts";
+import type { ToolDef } from "./define.ts";
 
-const spaceProp = { type: "integer", minimum: 1, maximum: MAX_SPACES, description: "A Space's number from list_spaces: 1 is Desktop 1." };
+const SPACE_SAYS = `\`space\` must be a Space number from list_spaces, 1 to ${MAX_SPACES}.`;
 
-/** The `space` argument, 1-based, to the compositor's 0-based index. */
-function spaceArg(value: unknown): number | null {
-  const space = whole(value, 1, MAX_SPACES);
-  return space === null ? null : space - 1;
-}
+/** The `space` argument, 1-based as agents count (the compositor's index is 0-based). */
+const spaceNumber = wholeArg(1, MAX_SPACES, SPACE_SAYS, "A Space's number from list_spaces: 1 is Desktop 1.");
 
 export const spaceTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "list_spaces",
     title: "List Spaces",
     description:
@@ -20,10 +18,10 @@ export const spaceTools: readonly ToolDef[] = [
     scope: "see",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "list_spaces" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_spaces" }),
+  }),
+  tool({
     name: "switch_space",
     title: "Switch to a Space",
     description: "Show another Space, as ⌃→ or a three-finger swipe does: its windows slide in and the front one gets the keyboard.",
@@ -31,14 +29,10 @@ export const spaceTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { space: spaceProp },
-    required: ["space"],
-    parse: (args) => {
-      const space = spaceArg(args.space);
-      return space === null ? fail(`\`space\` must be a Space number from list_spaces, 1 to ${MAX_SPACES}.`) : { name: "switch_space", space };
-    },
-  },
-  {
+    args: { space: spaceNumber },
+    build: ({ space }) => ({ name: "switch_space", space: space - 1 }),
+  }),
+  tool({
     name: "move_window_to_space",
     title: "Move a window to a Space",
     description:
@@ -47,13 +41,7 @@ export const spaceTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { window: windowProp, space: spaceProp },
-    required: ["window", "space"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const space = spaceArg(args.space);
-      return space === null ? fail(`\`space\` must be a Space number from list_spaces, 1 to ${MAX_SPACES}.`) : { name: "move_window_to_space", window, space };
-    },
-  },
+    args: { window: windowId, space: spaceNumber },
+    build: ({ window, space }) => ({ name: "move_window_to_space", window, space: space - 1 }),
+  }),
 ];

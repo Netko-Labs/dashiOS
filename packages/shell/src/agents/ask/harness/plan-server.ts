@@ -20,7 +20,7 @@ import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
 import { LineBuffer } from "../../../shared/io/lines.ts";
 import * as mcp from "../../mcp.ts";
-import { peerPid } from "../../peer.ts";
+import { peerPid, socketFd } from "../../peer.ts";
 import type { ModelCall, PlanTool } from "../answerer.ts";
 import { MAX_STEPS, oneLine } from "../plan.ts";
 
@@ -180,8 +180,8 @@ export function servePlan(path: string, recorder: PlanRecorder, accept: (pid: nu
     socket: {
       open(socket) {
         socket.data = { lines: new LineBuffer(), outbox: [] };
-        const fd = (socket as unknown as { fd?: number }).fd;
-        if (!accept(typeof fd === "number" ? peerPid(fd) : null)) socket.terminate();
+        const fd = socketFd(socket);
+        if (!accept(fd !== null ? peerPid(fd) : null)) socket.terminate();
       },
       data(socket, chunk) {
         const lines = socket.data.lines.push(chunk);

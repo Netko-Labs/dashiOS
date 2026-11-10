@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { setAppearanceSource } from "@dashi/ui";
 import { SETTINGS_APP_ID } from "../src/apps.ts";
 import { startBatteryMonitor } from "../src/battery/index.ts";
-import type { GraphicsController } from "../src/graphics/controller.ts";
+import type { GraphicsController, GraphicsSnapshot } from "../src/graphics/controller.ts";
 import { hardwareClient, shadowHardware } from "../src/hardware/client.ts";
 import type { Laptop } from "../src/laptop/start.ts";
 import { LaptopStore } from "../src/laptop/store.ts";
@@ -73,8 +73,10 @@ void hardware
     modes.setMachine(machine ? { knobs: machine.knobs, recipes: parseRecipes(machine.recipes) } : null);
   });
 void profiles.read().then((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
-const NO_CARD = { hasCard: false, switchable: false, lost: null, choice: "automatic" };
-const graphics = { subscribe: () => () => {}, getSnapshot: () => NO_CARD } as unknown as GraphicsController;
+/** The parts of `T` this preview uses; another pane may find the rest missing. */
+const stub = <T extends object>(parts: Partial<T>): T => parts as T;
+const NO_CARD = stub<GraphicsSnapshot>({ hasCard: false, switchable: false, lost: null, choice: "automatic" });
+const graphics = stub<GraphicsController>({ subscribe: () => () => {}, getSnapshot: () => NO_CARD });
 const laptop: Laptop = { store, modes, graphics, run() {}, setLight: (level) => void store.set("kbd-backlight", level), close() {} };
 
 const battery = startBatteryMonitor({ compositor: null, apps: [] });
@@ -85,16 +87,16 @@ battery.subscribe(() => {
 const energy = new EnergyStore({ battery: () => readBatteryDetails(), profiles, lid: fakeLid() });
 
 // Only what the panes shown here read; another pane may find a service missing.
-const services = { battery, laptop, refresh: null, energy } as unknown as PaneServices;
+const services = stub<PaneServices>({ battery, laptop, refresh: null, energy });
 const nav = new Nav();
 nav.select(pane);
-const ctx = {
+const ctx = stub<PaneContext>({
   settings,
   flags,
   services,
   show: (to: string) => isPaneId(to) && nav.select(to),
   home: process.env.HOME ?? "",
-} as unknown as PaneContext;
+});
 
 const focus = new RowFocus();
 let handle: ReturnType<typeof openOverlay> | null = null;

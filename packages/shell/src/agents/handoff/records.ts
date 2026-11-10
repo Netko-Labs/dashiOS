@@ -103,9 +103,10 @@ export function parseRecord(text: string): RunRecord | null {
   if (typeof value.request !== "string" || started === null || turn === null) return null;
   if (typeof value.unit !== "string" || typeof value.log !== "string") return null;
   const messages = Array.isArray(value.messages)
-    ? value.messages.flatMap((each): RunMessage[] =>
-        isRaw(each) && typeof each.text === "string" && time(each.at) !== null ? [{ text: each.text, at: each.at as number }] : [],
-      )
+    ? value.messages.flatMap((each): RunMessage[] => {
+        const at = isRaw(each) ? time(each.at) : null;
+        return isRaw(each) && typeof each.text === "string" && at !== null ? [{ text: each.text, at }] : [];
+      })
     : [];
   return {
     v: RECORD_VERSION,

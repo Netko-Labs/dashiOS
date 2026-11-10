@@ -1,6 +1,7 @@
 /** The menu bar's menus for a window: Dashi's, and those its app published (app-menus/). */
 
-import { fail, parseWindowId, type ToolDef, windowArg, windowProp } from "./define.ts";
+import { custom, optionalWindowId, tool, windowId } from "./args.ts";
+import type { ToolDef } from "./define.ts";
 
 /** Longer than any title or label the bar takes (shared/app-menus/protocol.ts). */
 const MAX_NAME = 200;
@@ -12,7 +13,7 @@ const name = (value: unknown): string | null => {
 };
 
 export const menuTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "list_menus",
     title: "List a window's menus",
     description:
@@ -23,14 +24,10 @@ export const menuTools: readonly ToolDef[] = [
     scope: "see",
     readOnly: true,
     destructive: false,
-    properties: { window: windowProp },
-    parse: (args) => {
-      if (args.window === undefined) return { name: "list_menus", window: null };
-      const window = parseWindowId(args.window);
-      return window === null ? fail(`\`${String(args.window)}\` is not a window id; ids look like "w3".`) : { name: "list_menus", window };
-    },
-  },
-  {
+    args: { window: optionalWindowId },
+    build: ({ window }) => ({ name: "list_menus", window: window ?? null }),
+  }),
+  tool({
     name: "choose_menu_item",
     title: "Choose a menu item",
     description:
@@ -40,20 +37,15 @@ export const menuTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: true,
-    properties: {
-      window: windowProp,
-      menu: { type: "string", description: 'A menu title from list_menus, like "File".' },
-      item: { type: "string", description: 'An item label from list_menus, like "New Window".' },
+    args: {
+      window: windowId,
+      menu: custom({ type: "string", description: 'A menu title from list_menus, like "File".' }, name, "`menu` is required: a menu title from list_menus."),
+      item: custom(
+        { type: "string", description: 'An item label from list_menus, like "New Window".' },
+        name,
+        "`item` is required: an item label from list_menus.",
+      ),
     },
-    required: ["window", "menu", "item"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const menu = name(args.menu);
-      if (menu === null) return fail("`menu` is required: a menu title from list_menus.");
-      const item = name(args.item);
-      if (item === null) return fail("`item` is required: an item label from list_menus.");
-      return { name: "choose_menu_item", window, menu, item };
-    },
-  },
+    build: ({ window, menu, item }) => ({ name: "choose_menu_item", window, menu, item }),
+  }),
 ];

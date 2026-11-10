@@ -153,33 +153,9 @@
   },
   "overrides": [
     // A test's describe block is not a function to split (H3).
-    { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
+    { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } }
     // H3 overrides: written by `bun scripts/check-biome.ts --shrink`; do not edit by hand.
-    {
-      "includes": ["packages/shell/src/actions/start.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 109 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/agents/ask/service.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 121 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/agents/handoff/questions.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 144 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/agents/handoff/runner.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 90 } } } } }
-    },
-    { "includes": ["packages/shell/src/agents/handoff/service.ts"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
-    {
-      "includes": ["packages/shell/src/agents/run.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 171 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/agents/server.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 169 } } } } }
-    }
+
     // H3 overrides end.
   ]
 }

@@ -139,6 +139,87 @@ function listTaskUnits(): string {
   return listed.success ? listed.stdout.toString() : "";
 }
 
+/** Read a turn's stream as it grows: each line to `onLine`, and its exit line (the last) to `onExit`. Returns how to stop. */
+function watchStream(stream: string, onLine: (line: string) => void, onExit: (code: number | null) => void): () => void {
+  let offset = 0;
+  let pending = "";
+  let reading = false;
+  let ended = false;
+  const read = async () => {
+    if (reading || ended) return;
+    reading = true;
+    try {
+      const size = existsSync(stream) ? statSync(stream).size : 0;
+      if (size > offset) {
+        const text = await Bun.file(stream).slice(offset, size).text();
+        offset = size;
+        const lines = (pending + text).split("\n");
+        pending = lines.pop() ?? "";
+        for (const line of lines) {
+          if (ended) break;
+          const exit = exitLine(line);
+          if (exit) {
+            ended = true;
+            clearInterval(timer);
+            onExit(exit.code);
+          } else if (line.trim()) onLine(line);
+        }
+      }
+    } catch (error) {
+      console.error("dashi-shell: an agent's stream:", error);
+    } finally {
+      reading = false;
+    }
+  };
+  const timer = setInterval(() => void read(), POLL_MS);
+  void read();
+  return () => {
+    ended = true;
+    clearInterval(timer);
+  };
+}
+
+/** The turns of a run's folder, by number. */
+function turnsOf(dir: string): number[] {
+  try {
+    return readdirSync(dir).flatMap((name) => {
+      const found = /^turn-(\d{1,4})\.jsonl$/.exec(name);
+      return found ? [Number(found[1])] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** What is on disk of the runs, and which units still run. */
+function findRuns(runtime: string, listUnits: () => string): FoundRuns {
+  // The units first, so a run that ends meanwhile reads as ended from its stream.
+  const running = runningUnits(listUnits());
+  let names: string[] = [];
+  try {
+    names = readdirSync(runsDir(runtime));
+  } catch {
+    return { runs: [], running };
+  }
+  const runs = names.filter(isRunId).flatMap((id): FoundRun[] => {
+    const dir = join(runsDir(runtime), id);
+    const turns = turnsOf(dir);
+    if (turns.length === 0) return [];
+    const prompt = join(dir, "turn-1.prompt");
+    const record = readText(join(dir, "run.json"));
+    return [
+      {
+        id,
+        record: record === null ? null : parseRecord(record),
+        turn: Math.max(...turns),
+        prompt: readText(prompt) ?? "",
+        promptAt: existsSync(prompt) ? statSync(prompt).mtimeMs : 0,
+      },
+    ];
+  });
+  return { runs, running };
+}
+
 export function systemdRunner(options: { runtime: string; bun: string; task: string; listUnits?: () => string }): TaskRunner {
   const dirOf = (run: string) => join(runsDir(options.runtime), run);
   const filesOf = (run: string, turn: number) => ({ stream: streamOf(options.runtime, run, turn), prompt: join(dirOf(run), `turn-${turn}.prompt`) });
@@ -163,45 +244,7 @@ export function systemdRunner(options: { runtime: string; bun: string; task: str
     stop(run, turn) {
       Bun.spawn(["systemctl", "--user", "stop", "--no-block", unitOf(run, turn)], { stdio: ["ignore", "ignore", "ignore"] });
     },
-    watch(run, turn, onLine, onExit) {
-      const { stream } = filesOf(run, turn);
-      let offset = 0;
-      let pending = "";
-      let reading = false;
-      let ended = false;
-      const read = async () => {
-        if (reading || ended) return;
-        reading = true;
-        try {
-          const size = existsSync(stream) ? statSync(stream).size : 0;
-          if (size > offset) {
-            const text = await Bun.file(stream).slice(offset, size).text();
-            offset = size;
-            const lines = (pending + text).split("\n");
-            pending = lines.pop() ?? "";
-            for (const line of lines) {
-              if (ended) break;
-              const exit = exitLine(line);
-              if (exit) {
-                ended = true;
-                clearInterval(timer);
-                onExit(exit.code);
-              } else if (line.trim()) onLine(line);
-            }
-          }
-        } catch (error) {
-          console.error("dashi-shell: an agent's stream:", error);
-        } finally {
-          reading = false;
-        }
-      };
-      const timer = setInterval(() => void read(), POLL_MS);
-      void read();
-      return () => {
-        ended = true;
-        clearInterval(timer);
-      };
-    },
+    watch: (run, turn, onLine, onExit) => watchStream(filesOf(run, turn).stream, onLine, onExit),
     forget(run) {
       rmSync(dirOf(run), { recursive: true, force: true });
     },
@@ -224,41 +267,6 @@ export function systemdRunner(options: { runtime: string; bun: string; task: str
       if (text === null) return null;
       return { ...readStream(text), changed: statSync(stream).mtimeMs };
     },
-    found() {
-      // The units first, so a run that ends meanwhile reads as ended from its stream.
-      const running = runningUnits((options.listUnits ?? listTaskUnits)());
-      let names: string[] = [];
-      try {
-        names = readdirSync(runsDir(options.runtime));
-      } catch {
-        return { runs: [], running };
-      }
-      const runs = names.filter(isRunId).flatMap((id): FoundRun[] => {
-        const dir = dirOf(id);
-        const turns = (() => {
-          try {
-            return readdirSync(dir).flatMap((name) => {
-              const found = /^turn-(\d{1,4})\.jsonl$/.exec(name);
-              return found ? [Number(found[1])] : [];
-            });
-          } catch {
-            return [];
-          }
-        })();
-        if (turns.length === 0) return [];
-        const prompt = join(dir, "turn-1.prompt");
-        const record = readText(join(dir, "run.json"));
-        return [
-          {
-            id,
-            record: record === null ? null : parseRecord(record),
-            turn: Math.max(...turns),
-            prompt: readText(prompt) ?? "",
-            promptAt: existsSync(prompt) ? statSync(prompt).mtimeMs : 0,
-          },
-        ];
-      });
-      return { runs, running };
-    },
+    found: () => findRuns(options.runtime, options.listUnits ?? listTaskUnits),
   };
 }

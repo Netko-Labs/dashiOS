@@ -5,7 +5,7 @@
  * elements by the numbers it gave them.
  */
 
-import type { PressChord } from "../page/keys.ts";
+import { parseChords } from "../page/keys.ts";
 import { readFrame } from "../page/read.ts";
 import { click, field, fill, markFilled, press, Refusal, scroll, select } from "./actions.ts";
 import { DOC, DomNode, deepActive, elementOf, refOf, watchPasswordFields } from "./dom.ts";
@@ -37,7 +37,11 @@ function settle(): Promise<void> {
   });
 }
 
+const SCROLLS = ["up", "down", "top", "bottom"] as const;
+
 type Message = Record<string, unknown> & { op?: unknown };
+
+const isMessage = (value: unknown): value is Message => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function target(message: Message): Element {
   if (message.doc !== DOC) throw new Refusal("That number is from a page that has gone; read_page again.");
@@ -63,10 +67,13 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
       return { described: fill(target(message), String(message.text ?? "")) };
     case "select":
       return { described: select(target(message), String(message.value ?? "")) };
-    case "press":
-      return { did: press((Array.isArray(message.chords) ? message.chords : []) as PressChord[]) };
+    case "press": {
+      const chords = message.chords === undefined ? [] : parseChords(message.chords);
+      if (!chords) throw new Refusal("`chords` must be a list of keys with their modifiers.");
+      return { did: press(chords) };
+    }
     case "scroll": {
-      const how = ["up", "down", "top", "bottom"].includes(String(message.how)) ? (message.how as "up" | "down" | "top" | "bottom") : "down";
+      const how = SCROLLS.find((each) => each === message.how) ?? "down";
       const element = typeof message.ref === "number" ? target(message) : null;
       return scroll(how, typeof message.pages === "number" ? message.pages : 1, element);
     }
@@ -93,8 +100,8 @@ if (!globalThis.__dashiContent) {
   globalThis.__dashiContent = true;
   watchPasswordFields();
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
-    if (sender.id !== chrome.runtime.id || typeof message !== "object" || message === null) return undefined;
-    handle(message as Message).then(
+    if (sender.id !== chrome.runtime.id || !isMessage(message)) return undefined;
+    handle(message).then(
       (result) => respond({ ok: true, result }),
       (error: unknown) => respond({ ok: false, error: error instanceof Error ? error.message : String(error) }),
     );

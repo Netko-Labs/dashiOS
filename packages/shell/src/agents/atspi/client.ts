@@ -163,7 +163,8 @@ export class Atspi {
         CALL_MS,
       )
       .catch(() => [null]);
-    const value = typeof unwrap(pid) === "number" ? (pid as number) : null;
+    const raw = unwrap(pid);
+    const value = typeof raw === "number" ? raw : null;
     this.pids.set(name, value);
     return value;
   }

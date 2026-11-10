@@ -1,12 +1,14 @@
 /** The clipboard history: an agent sees it only when the person says yes, every time (scope "clipboard", never kept). */
 
-import { fail, type ToolDef, whole } from "./define.ts";
+import { optional } from "@dashi/shape";
+import { tool, wholeArg } from "./args.ts";
+import type { ToolDef } from "./define.ts";
 
 export const CLIPBOARD_DEFAULT = 10;
 export const CLIPBOARD_MAX = 50;
 
 export const clipboardTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "read_clipboard_history",
     title: "Read clipboard history",
     description:
@@ -15,13 +17,11 @@ export const clipboardTools: readonly ToolDef[] = [
     scope: "clipboard",
     readOnly: true,
     destructive: false,
-    properties: {
-      limit: { type: "integer", minimum: 1, maximum: CLIPBOARD_MAX, description: `How many copies, default ${CLIPBOARD_DEFAULT}.` },
+    args: {
+      limit: optional(
+        wholeArg(1, CLIPBOARD_MAX, `\`limit\` must be a whole number from 1 to ${CLIPBOARD_MAX}.`, `How many copies, default ${CLIPBOARD_DEFAULT}.`),
+      ),
     },
-    parse: (args) => {
-      if (args.limit === undefined) return { name: "read_clipboard_history", limit: CLIPBOARD_DEFAULT };
-      const limit = whole(args.limit, 1, CLIPBOARD_MAX);
-      return limit === null ? fail(`\`limit\` must be a whole number from 1 to ${CLIPBOARD_MAX}.`) : { name: "read_clipboard_history", limit };
-    },
-  },
+    build: ({ limit }) => ({ name: "read_clipboard_history", limit: limit ?? CLIPBOARD_DEFAULT }),
+  }),
 ];

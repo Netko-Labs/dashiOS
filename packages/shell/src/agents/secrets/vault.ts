@@ -6,6 +6,9 @@
  */
 
 import { LineBuffer } from "../../shared/io/lines.ts";
+import { headersField, headersOf, type NewToken, parseToken, type TokenChange, type TokenSummary } from "./vault-token-items.ts";
+
+export type { NewToken, TokenChange, TokenSummary } from "./vault-token-items.ts";
 
 export const VAULT_SOCKET = process.env.DASHI_SECRETD_SOCKET || "/run/dashi-secretd/socket";
 const TIMEOUT_MS = 10_000;
@@ -210,60 +213,6 @@ export class Vault {
     both.fill(0);
     return result;
   }
-}
-
-/** A token item as anyone may see it: no token (docs/secrets.md, "Tokens that stay home"). */
-export interface TokenSummary {
-  id: number;
-  /** Agents hold `dashi:<name>`. */
-  name: string;
-  hosts: string[];
-  /** Where the token may go, "Authorization: Bearer {}" first by default: the proxy swaps it in whichever the request sent. */
-  headers: string[];
-  lastUsed: number | null;
-}
-
-export interface NewToken {
-  name: string;
-  hosts: string[];
-  /** Unset: "Authorization: Bearer {}". */
-  headers?: string[];
-  token: string;
-}
-
-export interface TokenChange {
-  hosts?: string[];
-  headers?: string[];
-  /** Empty or absent keeps the token there. */
-  token?: string;
-}
-
-const DEFAULT_TOKEN_HEADER = "Authorization: Bearer {}";
-
-/** An item's headers from a reply: `headers`, else the one `header` an older dashi-secretd sends. */
-function headersOf(reply: Record<string, unknown>): string[] {
-  const listed = Array.isArray(reply.headers) ? reply.headers.filter((h): h is string => typeof h === "string") : [];
-  if (listed.length > 0) return listed;
-  return [typeof reply.header === "string" ? reply.header : DEFAULT_TOKEN_HEADER];
-}
-
-/** The headers as dashi-secretd takes them: one as `header` (as it always was), more as `headers`. */
-const headersField = (headers: readonly string[] | undefined): Record<string, unknown> =>
-  !headers || headers.length === 0 ? {} : headers.length === 1 ? { header: headers[0] } : { headers };
-
-function parseToken(value: unknown): TokenSummary | null {
-  if (typeof value !== "object" || value === null) return null;
-  const raw = value as Record<string, unknown>;
-  const { id, name, hosts, lastUsed } = raw;
-  if (typeof id !== "number" || typeof name !== "string" || !Array.isArray(hosts)) return null;
-  if (typeof raw.header !== "string" && !Array.isArray(raw.headers)) return null;
-  return {
-    id,
-    name,
-    hosts: hosts.filter((h): h is string => typeof h === "string"),
-    headers: headersOf(raw),
-    lastUsed: typeof lastUsed === "number" ? lastUsed : null,
-  };
 }
 
 /** The vault's token items, for Settings and the token proxy. */

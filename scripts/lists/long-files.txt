@@ -1,11 +1,1 @@
 # H2: files over 300 lines (count = lines). May only shrink; see scripts/ratchet.ts.
-321	packages/shell/src/agents/ask/harness/catalog.ts
-361	packages/shell/src/agents/ask/tasks.ts
-451	packages/shell/src/agents/handoff/service.ts
-408	packages/shell/src/agents/handoff/store.ts
-338	packages/shell/src/agents/run.ts
-318	packages/shell/src/agents/sandbox.ts
-320	packages/shell/src/agents/secrets/vault.ts
-537	packages/shell/src/agents/session.ts
-392	packages/shell/src/applets/connection.ts
-306	packages/shell/src/applets/controls.ts

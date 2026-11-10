@@ -30,7 +30,8 @@ export function strictSchema(schema: unknown): Schema {
     else if (key === "items") out.items = strictSchema(value);
     else if ((key === "anyOf" || key === "oneOf" || key === "allOf") && Array.isArray(value)) {
       const name = key === "allOf" ? "allOf" : "anyOf";
-      out[name] = [...((out[name] as Schema[] | undefined) ?? []), ...value.map(strictSchema)];
+      const before = out[name];
+      out[name] = [...(Array.isArray(before) ? before : []), ...value.map(strictSchema)];
     } else if ((key === "$defs" || key === "definitions") && isSchema(value)) {
       out.$defs = Object.fromEntries(Object.entries(value).map(([name, each]) => [name, strictSchema(each)]));
     } else if (key === "properties" && isSchema(value)) {

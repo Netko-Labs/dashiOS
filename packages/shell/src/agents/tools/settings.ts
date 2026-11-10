@@ -5,7 +5,9 @@
  * moment it is in the registry.
  */
 
+import { accept, shape } from "@dashi/shape";
 import { AGENT_ROWS, accepts, agentRow, rowName, type ValueSchema, wrongValue } from "../../settings-app/registry/index.ts";
+import { custom, tool } from "./args.ts";
 import { fail, type ToolDef } from "./define.ts";
 
 const NAMES = AGENT_ROWS.flatMap((row) => (row.agent ? [row.agent] : []));
@@ -32,17 +34,17 @@ const LINES = AGENT_ROWS.map(
 const STRINGS = [...new Set(AGENT_ROWS.flatMap((row) => (row.value?.schema.type === "string" ? row.value.schema.enum : [])))];
 
 export const settingsTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "get_settings",
     title: "Read settings",
     description: `What these rows of System Settings are now, by name: ${NAMES.join(", ")}. The Dock's are left out where there is no Dock. set_setting changes them.`,
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_settings" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "get_settings" }),
+  }),
+  tool({
     name: "set_setting",
     title: "Change a setting",
     description: `Change one row of System Settings by its name, to a value it takes. ${LINES.join(". ")}.`,
@@ -50,22 +52,24 @@ export const settingsTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: {
-      name: { type: "string", enum: NAMES },
-      value: {
-        oneOf: [{ type: "boolean" }, { type: "string", enum: STRINGS }, { type: "number" }],
-        description: "What the setting takes, as this tool's description lists it: true for on and false for off, one of its names, or a number.",
-      },
+    args: {
+      name: custom({ type: "string", enum: NAMES }, (value) => agentRow(value) ?? null, `\`name\` must be one of: ${NAMES.join(", ")}.`),
+      // What a value may be depends on the row; build asks the row.
+      value: shape<unknown>(
+        (value) => accept(value),
+        () => ({
+          oneOf: [{ type: "boolean" }, { type: "string", enum: STRINGS }, { type: "number" }],
+          description: "What the setting takes, as this tool's description lists it: true for on and false for off, one of its names, or a number.",
+        }),
+      ),
     },
-    required: ["name", "value"],
-    parse: (args) => {
-      const row = agentRow(args.name);
-      if (!row?.value || !row.agent) return fail(`\`name\` must be one of: ${NAMES.join(", ")}.`);
+    build: ({ name: row, value }) => {
+      if (!row.value || !row.agent) return fail(`\`name\` must be one of: ${NAMES.join(", ")}.`);
       const { schema } = row.value;
-      return accepts(schema, args.value) ? { name: "set_setting", setting: row.agent, value: args.value } : fail(wrongValue(schema));
+      return accepts(schema, value) ? { name: "set_setting", setting: row.agent, value } : fail(wrongValue(schema));
     },
-  },
-  {
+  }),
+  tool({
     name: "list_wifi_networks",
     title: "List Wi-Fi networks",
     description:
@@ -73,10 +77,10 @@ export const settingsTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "list_wifi_networks" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_wifi_networks" }),
+  }),
+  tool({
     name: "join_wifi",
     title: "Join a Wi-Fi network",
     description:
@@ -86,11 +90,16 @@ export const settingsTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { ssid: { type: "string", description: "A network name from list_wifi_networks." } },
-    required: ["ssid"],
-    parse: (args) => {
-      const ssid = typeof args.ssid === "string" ? args.ssid.trim() : "";
-      return ssid === "" || ssid.length > 128 ? fail("`ssid` is required: a network name from list_wifi_networks.") : { name: "join_wifi", ssid };
+    args: {
+      ssid: custom(
+        { type: "string", description: "A network name from list_wifi_networks." },
+        (value) => {
+          const ssid = typeof value === "string" ? value.trim() : "";
+          return ssid === "" || ssid.length > 128 ? null : ssid;
+        },
+        "`ssid` is required: a network name from list_wifi_networks.",
+      ),
     },
-  },
+    build: ({ ssid }) => ({ name: "join_wifi", ssid }),
+  }),
 ];

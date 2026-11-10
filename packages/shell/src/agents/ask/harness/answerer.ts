@@ -16,6 +16,7 @@
  */
 
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { ANSWERERS, AnswerError, type Answerer, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
 import { oneLine } from "../plan.ts";
 import type { HarnessSpec } from "./catalog.ts";
@@ -45,8 +46,8 @@ interface Kept {
   session: string | null;
 }
 const keptOf = (history: readonly unknown[]): Kept => {
-  const last = history.at(-1) as Partial<Kept> | undefined;
-  return { session: typeof last?.session === "string" ? last.session : null };
+  const last = history.at(-1);
+  return { session: isRecord(last) && typeof last.session === "string" ? last.session : null };
 };
 
 export interface HarnessOptions {
