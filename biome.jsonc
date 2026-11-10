@@ -227,10 +227,6 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 238 } } } } }
     },
     {
-      "includes": ["packages/shell/src/actions/start.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 109 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/agent-sheets.tsx"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 158 } } } } }
     },

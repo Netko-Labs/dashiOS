@@ -20,7 +20,6 @@
 285	packages/shell/apps/preview/view.tsx
 206	packages/shell/apps/software/view.tsx
 238	packages/shell/apps/terminal/view.tsx
-109	packages/shell/src/actions/start.ts
 158	packages/shell/src/agent-sheets.tsx
 121	packages/shell/src/agents/ask/service.ts
 144	packages/shell/src/agents/handoff/questions.ts

@@ -67,7 +67,6 @@
 451	packages/shell/src/agents/handoff/service.ts
 408	packages/shell/src/agents/handoff/store.ts
 338	packages/shell/src/agents/run.ts
-537	packages/shell/src/agents/session.ts
 394	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
 307	packages/shell/src/display-config/manager.ts
