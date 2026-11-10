@@ -5,6 +5,7 @@
  * window screenshot.
  */
 
+import { isRecord } from "@dashi/shape";
 import { type Args, fail, isCallError, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
 import { type Chord, parseKeys } from "./keys.ts";
 import type { Button, CallError, Point } from "./types.ts";
@@ -19,8 +20,8 @@ const POINT_HELP = "x and y are numbers, in logical pixels from the top left of 
 const number = (value: unknown, min: number, max: number): number | null =>
   typeof value === "number" && Number.isFinite(value) && value >= min && value <= max ? value : null;
 
-function point(args: Args | undefined, what: string): Point | CallError {
-  if (args === undefined || typeof args !== "object" || args === null || Array.isArray(args)) return fail(`\`${what}\` needs ${POINT_HELP}`);
+function point(args: unknown, what: string): Point | CallError {
+  if (!isRecord(args)) return fail(`\`${what}\` needs ${POINT_HELP}`);
   const extra = Object.keys(args).find((key) => key !== "x" && key !== "y");
   if (extra) return fail(`\`${what}\` has no \`${extra}\`; it is x and y.`);
   const x = number(args.x, -REACH, REACH);
@@ -122,9 +123,9 @@ export const inputTools: readonly ToolDef[] = [
     parse: (args) => {
       const window = windowArg(args);
       if (typeof window !== "number") return window;
-      const from = point(args.from as Args | undefined, "from");
+      const from = point(args.from, "from");
       if (isCallError(from)) return from;
-      const to = point(args.to as Args | undefined, "to");
+      const to = point(args.to, "to");
       if (isCallError(to)) return to;
       return { name: "drag", window, from, to };
     },

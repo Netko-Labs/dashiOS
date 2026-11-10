@@ -17,7 +17,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { logActivity } from "../consent.ts";
-import { peerPid } from "../peer.ts";
+import { peerPid, socketFd } from "../peer.ts";
 import { inAgentScope } from "../sandbox.ts";
 import { SandboxProxy, type TokenSource } from "./proxy.ts";
 import { makeAuthority } from "./x509.ts";
@@ -136,8 +136,8 @@ export function serveTokens({ path, tokens, peer = peerPid, cgroup = readCgroup 
     unix: path,
     socket: {
       open(socket) {
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peer(fd) : null;
+        const fd = socketFd(socket);
+        const pid = fd !== null ? peer(fd) : null;
         // The person's own dashi-agent only: never one started from inside a sandbox.
         if (pid === null || inAgentScope(cgroup(pid)) || open.size >= MAX_SANDBOXES) {
           socket.terminate();

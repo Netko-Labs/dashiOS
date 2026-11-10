@@ -23,7 +23,7 @@ import { Hands } from "./desktop/hands.ts";
 import type { Desktop } from "./desktop/index.ts";
 import { LOCKED, LockWatch } from "./lock.ts";
 import { AgentMask } from "./mask.ts";
-import { identify, peerPid } from "./peer.ts";
+import { identify, peerPid, socketFd } from "./peer.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
 import { runCall } from "./run.ts";
 import { isConfined, taskOfCgroup, taskSocket } from "./sandbox.ts";
@@ -210,8 +210,8 @@ export function startAgents({
   const handlers: Bun.SocketHandler<{ session?: Session }> = {
     open(socket) {
       // Bun sockets carry their fd; SO_PEERCRED says who is on the other end.
-      const fd = (socket as unknown as { fd?: number }).fd;
-      const pid = typeof fd === "number" ? peerPid(fd) : null;
+      const fd = socketFd(socket);
+      const pid = fd !== null ? peerPid(fd) : null;
       if (pid === null) {
         socket.terminate();
         return;

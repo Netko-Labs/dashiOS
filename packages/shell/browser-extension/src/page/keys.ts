@@ -7,10 +7,27 @@
  * submit a form by itself).
  */
 
+const MODS = ["super", "ctrl", "alt", "shift"] as const;
+
 export interface PressChord {
-  mods: ReadonlyArray<"super" | "ctrl" | "alt" | "shift">;
+  mods: ReadonlyArray<(typeof MODS)[number]>;
   /** An xkb keysym name: "Return", "Tab", "a". */
   key: string;
+}
+
+/** `value` as chords; null when it is not a list of them. */
+export function parseChords(value: unknown): PressChord[] | null {
+  if (!Array.isArray(value)) return null;
+  const chords: PressChord[] = [];
+  for (const each of value) {
+    if (typeof each !== "object" || each === null || !("key" in each) || !("mods" in each)) return null;
+    const { key, mods } = each;
+    if (typeof key !== "string" || !Array.isArray(mods)) return null;
+    const known = MODS.filter((mod) => mods.includes(mod));
+    if (known.length !== mods.length) return null;
+    chords.push({ key, mods: known });
+  }
+  return chords;
 }
 
 export type DefaultAction =

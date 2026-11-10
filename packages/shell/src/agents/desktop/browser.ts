@@ -6,6 +6,7 @@
  * the extension never sends one (browser-extension/src/page/).
  */
 
+import { isRecord } from "@dashi/shape";
 import type { BrowserLink } from "../../browser/bridge.ts";
 import { parseTab, type TabInfo } from "../../browser/protocol.ts";
 import { launchEntry, loadEntries } from "../../entries.ts";
@@ -112,8 +113,8 @@ async function onPage(
 }
 
 function loadWords(load: unknown): string {
-  if (typeof load !== "object" || load === null) return "";
-  const { loaded, error } = load as { loaded?: unknown; error?: unknown };
+  if (!isRecord(load)) return "";
+  const { loaded, error } = load;
   if (loaded === true) return "It loaded.";
   return error === "still loading" ? "It is still loading after 30 seconds." : `It didn't load${typeof error === "string" ? ` (${error})` : ""}.`;
 }
@@ -138,7 +139,7 @@ async function openUrl(call: Extract<Call, { name: "open_url" }>, ctx: RunContex
     const shown = about(tab, ctx);
     return text(`Tab ${tabId(tab)}: ${shown.url}${shown.title ? ` (“${shown.title}”)` : ""}. ${loadWords(result.load)} read_page to see it.`, {
       ...shown,
-      loaded: (result.load as { loaded?: unknown } | undefined)?.loaded === true,
+      loaded: isRecord(result.load) && result.load.loaded === true,
       ms: Date.now() - started,
     });
   } catch (error) {

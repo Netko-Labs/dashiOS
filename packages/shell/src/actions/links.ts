@@ -16,7 +16,7 @@
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { peerPid } from "../agents/peer.ts";
+import { peerPid, socketFd } from "../agents/peer.ts";
 import { LINKS_SOCKET } from "../shared/links/open-link.ts";
 import { MAX_ADDRESS } from "./address.ts";
 import type { Outcome } from "./types.ts";
@@ -75,8 +75,8 @@ export function serveLinks({ path, open, peer = peerPid }: LinkServerOptions): (
     unix: path,
     socket: {
       open(socket) {
-        const fd = (socket as unknown as { fd?: number }).fd;
-        if ((typeof fd === "number" ? peer(fd) : null) === null || connections >= MAX_CONNECTIONS) {
+        const fd = socketFd(socket);
+        if ((fd !== null ? peer(fd) : null) === null || connections >= MAX_CONNECTIONS) {
           socket.terminate();
           return;
         }

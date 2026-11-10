@@ -25,6 +25,7 @@ import {
   type Manifest,
   parseGlyph,
 } from "@dashi/applet";
+import { isRecord } from "@dashi/shape";
 import { type AppletTile, type AppletTileSource, appletTileKey, type TileAction } from "../control-center/applet-tiles.ts";
 import { PUZZLE } from "../control-center/glyphs.ts";
 import type { Layout } from "../control-center/layout.ts";
@@ -79,10 +80,10 @@ export function parseStates(text: string): Map<string, ControlState> {
   } catch {
     return out;
   }
-  if (typeof value !== "object" || value === null) return out;
+  if (!isRecord(value)) return out;
   for (const [key, entry] of Object.entries(value)) {
-    if (!key.startsWith("applet:") || typeof entry !== "object" || entry === null) continue;
-    const { on, detail, choice, value: number } = entry as Record<string, unknown>;
+    if (!key.startsWith("applet:") || !isRecord(entry)) continue;
+    const { on, detail, choice, value: number } = entry;
     out.set(key, {
       ...(typeof on === "boolean" ? { on } : {}),
       ...(typeof detail === "string" && detail.length <= CONTROL_LIMITS.detail ? { detail } : {}),

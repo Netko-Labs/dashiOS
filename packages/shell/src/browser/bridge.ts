@@ -9,7 +9,7 @@
 
 import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { peerPid } from "../agents/peer.ts";
+import { peerPid, socketFd } from "../agents/peer.ts";
 import { inAgentScope } from "../agents/sandbox.ts";
 import { LineBuffer } from "../shared/io/lines.ts";
 import { EXTENSION_ID } from "./native.ts";
@@ -110,8 +110,8 @@ export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): Brows
     unix: path,
     socket: {
       open(socket) {
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peerPid(fd) : null;
+        const fd = socketFd(socket);
+        const pid = fd !== null ? peerPid(fd) : null;
         if (pid === null || !isBrowserHost(read(`/proc/${pid}/cmdline`), read(`/proc/${pid}/cgroup`))) {
           socket.terminate();
           return;

@@ -19,6 +19,7 @@
  */
 
 import type { ActionDef, ActionState, Args, Outcome } from "../../actions/types.ts";
+import { realTimers } from "../../shared/time/real-timers.ts";
 import { AnswerError, type Answerer, type AnswererInfo, type AnswerFailure, type Turn } from "./answerer.ts";
 import type { HistoryLog, HistoryStep, StepOutcome } from "./history.ts";
 import { oneLine, planTools, resultFor, runnable, type Step, type StepState, settingWords, spokenWords, stepsFrom, type Undo } from "./plan.ts";
@@ -80,11 +81,6 @@ interface Task {
   leftNow: boolean;
   leaving: unknown;
 }
-
-const REAL_TIMERS: Required<TaskDeps>["timers"] = {
-  set: (callback, ms) => setTimeout(callback, ms),
-  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-};
 
 /** Tasks kept in memory (the history keeps the rest). */
 const KEEP = 20;
@@ -212,7 +208,7 @@ export class AskTasks {
         error instanceof AnswerError ? { kind: error.failure, text: error.message } : { kind: "failed", text: `${task.answerer.info.name} didn't answer.` };
       // In the history as the plan it would have been (a Retry that answers replaces the line), and out of Now in a while.
       this.keep(task, task.serial + 1, task.failure.text);
-      task.leaving = (this.deps.timers ?? REAL_TIMERS).set(() => this.leaveNow(task), FAILED_STAYS_MS);
+      task.leaving = (this.deps.timers ?? realTimers).set(() => this.leaveNow(task), FAILED_STAYS_MS);
     }
     this.publish();
   }
@@ -227,7 +223,7 @@ export class AskTasks {
 
   /** Asked again: back in "Now" while it is. */
   private stayInNow(task: Task): void {
-    if (task.leaving !== null) (this.deps.timers ?? REAL_TIMERS).clear(task.leaving);
+    if (task.leaving !== null) (this.deps.timers ?? realTimers).clear(task.leaving);
     task.leaving = null;
     task.leftNow = false;
   }

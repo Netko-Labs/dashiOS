@@ -7,6 +7,7 @@
  * was answered.
  */
 
+import { isRecord } from "@dashi/shape";
 import { type Actor, actingAs } from "../acting.ts";
 import type { BrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
@@ -269,8 +270,8 @@ export class Session {
     const { id, method, params } = incoming;
     switch (method) {
       case "initialize": {
-        const info = params.clientInfo as Record<string, unknown> | undefined;
-        const name = typeof info?.name === "string" ? info.name : null;
+        const info = params.clientInfo;
+        const name = isRecord(info) && typeof info.name === "string" ? info.name : null;
         // Control characters out, and short: it is shown on the sheet.
         this.claims = name ? name.replace(/\p{Cc}/gu, "").slice(0, 64) : null;
         // An agent over SSH is known by its name; its stored grants show up now. A launcher run has its card's only.

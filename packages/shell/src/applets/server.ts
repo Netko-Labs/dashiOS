@@ -15,7 +15,7 @@
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Manifest } from "@dashi/applet";
-import { peerPid } from "../agents/peer.ts";
+import { peerPid, socketFd } from "../agents/peer.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import { AppletConnection, type AppletContext } from "./connection.ts";
 
@@ -57,8 +57,8 @@ export function serveApplets({ path, peer = peerPid, maxConnections = MAX_CONNEC
     unix: path,
     socket: {
       open(socket) {
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peer(fd) : null;
+        const fd = socketFd(socket);
+        const pid = fd !== null ? peer(fd) : null;
         if (pid === null || connections.size >= maxConnections) {
           socket.terminate();
           return;
