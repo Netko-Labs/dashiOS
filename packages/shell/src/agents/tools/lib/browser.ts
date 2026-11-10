@@ -7,9 +7,9 @@
  */
 
 import { accept, type OptionalShape, optional, reject, type Shape, shape } from "@dashi/shape";
+import type { ToolDef } from "../define.ts";
+import { type Chord, parseKeys } from "../keys.ts";
 import { custom, tool } from "./args.ts";
-import type { ToolDef } from "./define.ts";
-import { type Chord, parseKeys } from "./keys.ts";
 
 const TAB_HELP = 'A tab id from list_tabs or open_url, like "t12" (default: the tab you used last, else the one in front).';
 

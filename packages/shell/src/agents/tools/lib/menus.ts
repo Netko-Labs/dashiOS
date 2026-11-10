@@ -1,7 +1,7 @@
 /** The menu bar's menus for a window: Dashi's, and those its app published (app-menus/). */
 
+import type { ToolDef } from "../define.ts";
 import { custom, optionalWindowId, tool, windowId } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 /** Longer than any title or label the bar takes (shared/app-menus/protocol.ts). */
 const MAX_NAME = 200;

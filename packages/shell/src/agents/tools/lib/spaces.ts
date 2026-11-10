@@ -1,8 +1,8 @@
 /** Spaces: the desktops side by side, which one shows, and putting a window on another. Agents number them from 1, as people see them ("Desktop 1"). */
 
-import { MAX_SPACES } from "../../spaces/model.ts";
+import { MAX_SPACES } from "../../../spaces/model.ts";
+import type { ToolDef } from "../define.ts";
 import { tool, wholeArg, windowId } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 const SPACE_SAYS = `\`space\` must be a Space number from list_spaces, 1 to ${MAX_SPACES}.`;
 

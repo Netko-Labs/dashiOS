@@ -12,25 +12,25 @@
 import { type McpTool, mcpListing, toolAction } from "../../actions/tools.ts";
 import type { ActionDef } from "../../actions/types.ts";
 import type { Scope } from "../consent.ts";
-import { browserTools } from "./browser.ts";
-import { calendarTools } from "./calendar.ts";
-import { clipboardTools } from "./clipboard.ts";
 import { checkToolArgs, type ToolDef } from "./define.ts";
 import { fileTools } from "./files.ts";
-import { inputTools } from "./input.ts";
-import { machineTools } from "./machine.ts";
-import { menuTools } from "./menus.ts";
-import { noteTools } from "./notes.ts";
-import { notificationTools } from "./notifications.ts";
-import { previewTools } from "./preview.ts";
-import { regionTools } from "./region.ts";
-import { screenTools } from "./screen.ts";
-import { secretTools } from "./secrets.ts";
-import { settingsTools } from "./settings.ts";
-import { softwareTools } from "./software.ts";
-import { spaceTools } from "./spaces.ts";
+import { browserTools } from "./lib/browser.ts";
+import { calendarTools } from "./lib/calendar.ts";
+import { clipboardTools } from "./lib/clipboard.ts";
+import { inputTools } from "./lib/input.ts";
+import { machineTools } from "./lib/machine.ts";
+import { menuTools } from "./lib/menus.ts";
+import { noteTools } from "./lib/notes.ts";
+import { notificationTools } from "./lib/notifications.ts";
+import { previewTools } from "./lib/preview.ts";
+import { regionTools } from "./lib/region.ts";
+import { screenTools } from "./lib/screen.ts";
+import { secretTools } from "./lib/secrets.ts";
+import { settingsTools } from "./lib/settings.ts";
+import { softwareTools } from "./lib/software.ts";
+import { spaceTools } from "./lib/spaces.ts";
+import { windowTools } from "./lib/windows.ts";
 import type { Call, CallError, ToolName } from "./types.ts";
-import { windowTools } from "./windows.ts";
 
 /** What the server tells agents when they connect. */
 export const INSTRUCTIONS =

@@ -1,8 +1,8 @@
 /** The clipboard history: an agent sees it only when the person says yes, every time (scope "clipboard", never kept). */
 
 import { optional } from "@dashi/shape";
+import type { ToolDef } from "../define.ts";
 import { tool, wholeArg } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 export const CLIPBOARD_DEFAULT = 10;
 export const CLIPBOARD_MAX = 50;

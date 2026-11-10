@@ -7,11 +7,11 @@
  */
 
 import { optional } from "@dashi/shape";
-import { parseAmount } from "../secrets/pay.ts";
+import { parseAmount } from "../../secrets/pay.ts";
+import { fail, type ToolDef } from "../define.ts";
+import type { CallError, SecretTarget } from "../types.ts";
 import { custom, tool, windowIdArg } from "./args.ts";
 import { refArg, tabArg } from "./browser.ts";
-import { fail, type ToolDef } from "./define.ts";
-import type { CallError, SecretTarget } from "./types.ts";
 
 /** A site as an agent may name it: a host, or an address whose host is taken. */
 export function parseSite(value: unknown): string | null {

@@ -7,9 +7,9 @@
  */
 
 import { optional } from "@dashi/shape";
-import { isAppId } from "../../shared/software/ids.ts";
+import { isAppId } from "../../../shared/software/ids.ts";
+import type { ToolDef } from "../define.ts";
 import { custom, tool, wholeArg } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 export const SEARCH_LIMIT = 10;
 export const SEARCH_MAX = 25;

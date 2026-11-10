@@ -12,8 +12,8 @@
  */
 
 import { int, type JsonSchema, type ObjOf, obj, optional, reject, type Shape, shape } from "@dashi/shape";
-import { fail, parseWindowId, type ToolDef, windowProp } from "./define.ts";
-import type { Call, CallError } from "./types.ts";
+import { fail, parseWindowId, type ToolDef, windowProp } from "../define.ts";
+import type { Call, CallError } from "../types.ts";
 
 type Fields = Parameters<typeof obj>[0];
 

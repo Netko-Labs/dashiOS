@@ -11,8 +11,7 @@ import type { CompositorWindow } from "../../compositor.ts";
 import { type KeyChord, resolveChord } from "../../keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
-import type { Call } from "../tools/index.ts";
-import { keySteps } from "../tools/index.ts";
+import { type Call, keySteps } from "../tools/index.ts";
 import { borrowsPersonSeat, type Payload, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;

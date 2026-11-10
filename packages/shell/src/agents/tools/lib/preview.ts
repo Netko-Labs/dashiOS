@@ -1,8 +1,8 @@
 /** Files: opening an image or a PDF in Preview. */
 
 import { isAbsolute, normalize } from "node:path";
+import type { ToolDef } from "../define.ts";
 import { custom, tool } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 /** Longest path accepted (Linux's PATH_MAX). */
 const PATH_MAX = 4096;

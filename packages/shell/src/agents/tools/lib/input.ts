@@ -6,10 +6,10 @@
  */
 
 import { isRecord, obj, optional } from "@dashi/shape";
+import { fail, type ToolDef } from "../define.ts";
+import { type Chord, parseKeys } from "../keys.ts";
+import type { Button } from "../types.ts";
 import { arg, custom, tool, wholeArg, windowId } from "./args.ts";
-import { fail, type ToolDef } from "./define.ts";
-import { type Chord, parseKeys } from "./keys.ts";
-import type { Button } from "./types.ts";
 
 /** Nothing real is further than this from a window's corner. */
 const REACH = 100_000;

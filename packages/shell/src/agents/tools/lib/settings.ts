@@ -6,9 +6,9 @@
  */
 
 import { accept, shape } from "@dashi/shape";
-import { AGENT_ROWS, accepts, agentRow, rowName, type ValueSchema, wrongValue } from "../../settings-app/registry/index.ts";
+import { AGENT_ROWS, accepts, agentRow, rowName, type ValueSchema, wrongValue } from "../../../settings-app/registry/index.ts";
+import { fail, type ToolDef } from "../define.ts";
 import { custom, tool } from "./args.ts";
-import { fail, type ToolDef } from "./define.ts";
 
 const NAMES = AGENT_ROWS.flatMap((row) => (row.agent ? [row.agent] : []));
 

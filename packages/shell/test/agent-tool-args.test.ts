@@ -6,8 +6,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { wholeArg } from "../src/agents/tools/args.ts";
 import { parseCall, TOOLS } from "../src/agents/tools/index.ts";
+import { wholeArg } from "../src/agents/tools/lib/args.ts";
 
 describe("tool arguments", () => {
   test("every tool's required arguments are listed, and the check refuses a call without them", () => {

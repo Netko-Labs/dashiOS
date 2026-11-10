@@ -6,9 +6,9 @@
  */
 
 import { optional } from "@dashi/shape";
-import { isNoteId } from "../../shared/notes/names.ts";
+import { isNoteId } from "../../../shared/notes/names.ts";
+import type { ToolDef } from "../define.ts";
 import { custom, tool, wholeArg } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 200;

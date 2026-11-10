@@ -9,9 +9,9 @@
  */
 
 import { bool, num, optional } from "@dashi/shape";
-import { isProfileId, PROFILE_IDS } from "../../system/profiles.ts";
+import { isProfileId, PROFILE_IDS } from "../../../system/profiles.ts";
+import { fail, type ToolDef } from "../define.ts";
 import { arg, custom, tool } from "./args.ts";
-import { fail, type ToolDef } from "./define.ts";
 
 const name = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" && value.length <= 160 ? value.trim() : null);
 

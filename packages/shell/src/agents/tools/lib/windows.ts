@@ -1,9 +1,9 @@
 /** Windows and apps: what is open, opening and arranging it, ending it, and locking the screen. */
 
 import { optional } from "@dashi/shape";
-import { ARRANGE } from "../../layout.ts";
+import { ARRANGE } from "../../../layout.ts";
+import { fail, type ToolDef, whole } from "../define.ts";
 import { custom, tool, windowId } from "./args.ts";
-import { fail, type ToolDef, whole } from "./define.ts";
 
 /** A process id: Linux allows up to 2^22, and 0 and 1 are never an app. */
 const PID_MAX = 4_194_304;

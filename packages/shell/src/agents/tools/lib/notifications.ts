@@ -1,8 +1,8 @@
 /** Notifications: reading what has come in, and taking it out of the notification center. */
 
 import { optional } from "@dashi/shape";
+import { type ToolDef, whole } from "../define.ts";
 import { custom, tool, wholeArg } from "./args.ts";
-import { type ToolDef, whole } from "./define.ts";
 
 export const DEFAULT_LIMIT = 20;
 export const MAX_LIMIT = 50;

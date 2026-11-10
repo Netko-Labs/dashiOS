@@ -1,11 +1,11 @@
 /** Date, time, and region for agents, and the Setup Assistant. All under the "settings" permission. */
 
 import { accept, bool, optional, reject, shape } from "@dashi/shape";
-import { isTimezoneName } from "../../region/timezones.ts";
-import { PAGES } from "../../setup/flow.ts";
-import { isFormatsLocale } from "../../shared/locale/locale.ts";
+import { isTimezoneName } from "../../../region/timezones.ts";
+import { PAGES } from "../../../setup/flow.ts";
+import { isFormatsLocale } from "../../../shared/locale/locale.ts";
+import type { ToolDef } from "../define.ts";
 import { arg, custom, tool } from "./args.ts";
-import type { ToolDef } from "./define.ts";
 
 export const regionTools: readonly ToolDef[] = [
   tool({
