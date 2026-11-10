@@ -10,10 +10,11 @@
  *   moves them only when the test says (Bun's `jest.useFakeTimers`).
  *   `setImmediate` stays real, so `flush()` works with the clock stopped.
  *
- * A test that needs the clock calls `const clock = fakeClock()` and
- * `afterEach(() => clock.restore())`.
+ * A test file that needs the clock in every test calls `fakeClockEachTest()`
+ * once at the top; one that needs it in a few calls `fakeClock()` in them and
+ * `clock.restore()` after.
  */
-import { jest, setSystemTime } from "bun:test";
+import { afterEach, beforeEach, jest, setSystemTime } from "bun:test";
 
 /** Turn the event loop `turns` times: every promise settles, and React's scheduled work runs. */
 export async function flush(turns = 5): Promise<void> {
@@ -65,5 +66,27 @@ export function fakeClock(start: number | Date = Date.UTC(2026, 10, 5, 8, 0, 0))
       jest.useRealTimers();
       setSystemTime();
     },
+  };
+}
+
+/** A fresh stopped clock for each test in the file, put right after it. */
+export function fakeClockEachTest(start?: number | Date): FakeClock {
+  let current: FakeClock | null = null;
+  const now = (): FakeClock => {
+    if (!current) throw new Error("the clock only runs inside a test");
+    return current;
+  };
+  beforeEach(() => {
+    current = fakeClock(start);
+  });
+  afterEach(() => {
+    current?.restore();
+    current = null;
+  });
+  return {
+    advance: (ms, step) => now().advance(ms, step),
+    now: () => now().now(),
+    pending: () => now().pending(),
+    restore: () => now().restore(),
   };
 }

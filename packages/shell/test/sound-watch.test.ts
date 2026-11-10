@@ -6,7 +6,7 @@
  * null` for one that went).
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { DeviceStore } from "../src/control-center/devices.ts";
 import { type Follow, pipewireWatch } from "../src/sound/apps/watch.ts";
@@ -19,17 +19,11 @@ import type { Run } from "../src/system/exec.ts";
 import { SystemStore } from "../src/system/store.ts";
 import { VolumeFollow } from "../src/system/volume-follow.ts";
 import { metadata, node, vmGraph } from "./fixtures/pw-graph.ts";
-import { type FakeClock, fakeClock } from "./support/time.ts";
+import { fakeClockEachTest } from "./support/time.ts";
 
 type Json = Record<string, unknown>;
-
-/** The watcher settles for 40 ms before it reads: the clock is stopped, and `settle` moves it past that. */
-let clock: FakeClock;
-beforeEach(() => {
-  clock = fakeClock();
-});
-afterEach(() => clock.restore());
-const settle = () => clock.advance(70);
+const clock = fakeClockEachTest();
+const settle = () => clock.advance(70); // longer than the watcher's 40 ms settle
 
 /** A pw-dump --monitor that prints what the test gives it, as it prints it (indented, line by line). */
 function monitor() {
