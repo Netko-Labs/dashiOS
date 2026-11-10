@@ -44,7 +44,7 @@ import type {
   SettingsData,
   SpacesSettings,
   WallpaperSettings,
-} from "./data.ts";
+} from "./types.ts";
 
 /** A program `screenSharing.clients` may name: an absolute path, no NUL. */
 export const isProgramPath = (value: unknown): value is string =>

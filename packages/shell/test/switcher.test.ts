@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CompositorWindow } from "../src/compositor.ts";
-import { KEYMAP, SWITCHER_RULES, withSwitcher } from "../src/keymap.ts";
-import { ruleFor } from "../src/keymap-match.ts";
+import { KEYMAP, SWITCHER_RULES, withSwitcher } from "../src/keymap/keymap.ts";
+import { ruleFor } from "../src/keymap/keymap-match.ts";
 import { SwitcherController } from "../src/switcher/controller.ts";
 import { type SwitcherState, switcherLayout, switcherSize } from "../src/switcher/index.ts";
 import { THUMB } from "../src/switcher/layout.ts";

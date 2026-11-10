@@ -12,7 +12,7 @@ import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
 import { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
 import type { CornerSource } from "./corner-feed.ts";
-import { gtkCssPath, syncGtkCss } from "./gtk-css.ts";
+import { gtkCssPath, syncGtkCss } from "./lib/gtk-css.ts";
 
 export interface AppearanceDeps {
   gate: Gate;

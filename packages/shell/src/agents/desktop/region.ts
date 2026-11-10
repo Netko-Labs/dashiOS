@@ -6,7 +6,7 @@
  * belongs to the person.
  */
 
-import { describeFailure } from "../../region/store.ts";
+import { describeFailure } from "../../region/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 

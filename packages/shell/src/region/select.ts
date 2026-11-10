@@ -7,9 +7,9 @@
  */
 
 import { isDevelopmentRun, type Nesting } from "../system/stand-in.ts";
-import type { RegionBackend } from "./backend.ts";
-import { FakeRegion, type FakeRegionOptions } from "./fake.ts";
-import { SystemdBackend } from "./systemd.ts";
+import type { RegionBackend } from "./lib/backend.ts";
+import { FakeRegion, type FakeRegionOptions } from "./lib/fake.ts";
+import { SystemdBackend } from "./lib/systemd.ts";
 
 export interface RegionSetup {
   backend: RegionBackend;

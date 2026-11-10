@@ -5,11 +5,11 @@
  * for agents.
  */
 
-import { INPUT_ROWS } from "./input.ts";
-import { LOOK_ROWS } from "./look.ts";
-import { MACHINE_ROWS } from "./machine.ts";
+import { INPUT_ROWS } from "./lib/input.ts";
+import { LOOK_ROWS } from "./lib/look.ts";
+import { MACHINE_ROWS } from "./lib/machine.ts";
+import { YOU_ROWS } from "./lib/you.ts";
 import type { RowDef } from "./types.ts";
-import { YOU_ROWS } from "./you.ts";
 
 const ALL = [...LOOK_ROWS, ...INPUT_ROWS, ...MACHINE_ROWS, ...YOU_ROWS] as const;
 

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { BRIDGE_UNIT, type KeyringDeps, startKeyring, VAULT_SOCKET } from "../src/session/keyring.ts";
+import { BRIDGE_UNIT, type KeyringDeps, startKeyring, VAULT_SOCKET } from "../src/session/lib/keyring.ts";
 
 function deps(options: { vault: boolean; bridgeFails?: boolean; gnome?: boolean }) {
   const ran: string[][] = [];

@@ -5,7 +5,7 @@ import { registerShellApp, SCREENSHOT_APP_ID } from "../src/apps.ts";
 import { clipboardActions } from "../src/clipboard/actions.ts";
 import { SNIPPETS_ADDRESS } from "../src/clipboard/scope.ts";
 import { shellEntries } from "../src/entries.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { launcherIndex } from "../src/launcher/items.ts";
 import type { RankSignals } from "../src/launcher/ranking/item.ts";
 import { buildSections, found, type ListInput, selectable } from "../src/launcher/rows.ts";

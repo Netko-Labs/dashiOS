@@ -8,13 +8,13 @@ import { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/index.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import type { Agents } from "../agents/server.ts";
-import { AutoAppearance } from "../appearance/auto.ts";
+import { AutoAppearance } from "../appearance/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
 import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "../settings-app/services.ts";
-import { type SetupAssistant, startSetupAssistant } from "../setup/start.tsx";
+import { type SetupAssistant, startSetupAssistant } from "../setup/index.ts";
 import type { Desktops } from "./desktop.ts";
 import type { Switches } from "./notices.ts";
 import type { LateParts } from "./parts.ts";
@@ -115,7 +115,7 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     flags: switches.flags,
     wifi: needs.system.wifiStore,
     system: needs.system.system.store,
-    // Its last page teaches ❖ (setup/pages/done.tsx): Try it opens the launcher.
+    // Its last page teaches ❖ (setup/lib/pages/done.tsx): Try it opens the launcher.
     openLauncher: () => late.get("launcher").show(),
     // Its Agents page lists the harnesses installed (agents/ask/choices.ts).
     answers: () => late.peek("askAgents")?.status ?? null,

@@ -11,8 +11,8 @@ import type { SlowSource } from "../launcher/budget.ts";
 import type { SlowRow } from "../launcher/extension-rows.ts";
 import { dataDirs } from "../shared/apps/index.ts";
 import { DBusConnection } from "../shared/dbus/index.ts";
-import { type ProviderBus, providerSource } from "./client.ts";
-import { type ProviderInfo, readProviders } from "./ini.ts";
+import { type ProviderBus, providerSource } from "./lib/client.ts";
+import { type ProviderInfo, readProviders } from "./lib/ini.ts";
 
 export interface SearchProvidersOptions {
   /** The data directories to look in (entries.ts `dataDirs`). */

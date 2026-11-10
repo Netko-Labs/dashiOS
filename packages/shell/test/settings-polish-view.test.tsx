@@ -6,8 +6,8 @@ import { type NativeEvent, type NativeRoot, type NativeTransport, render } from 
 import type { ReactNode } from "react";
 import { readHistory } from "../src/agents/ask/history.ts";
 import { DEFAULT_LEFT_OUT } from "../src/clipboard/privacy.ts";
-import { HistoryRow } from "../src/settings-app/panes/agents-answer.tsx";
-import { ClipboardSection } from "../src/settings-app/panes/clipboard-parts.tsx";
+import { HistoryRow } from "../src/settings-app/lib/panes/agents-answer.tsx";
+import { ClipboardSection } from "../src/settings-app/lib/panes/clipboard-parts.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { settle } from "./support/time.ts";
 

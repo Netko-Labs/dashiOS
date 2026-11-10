@@ -43,16 +43,9 @@
 1	packages/shell/src/menubar-status.tsx
 1	packages/shell/src/menubar.tsx
 2	packages/shell/src/notifications/store.ts
-2	packages/shell/src/settings-app/machine-desktop.ts
-1	packages/shell/src/settings-app/registry/look.ts
-2	packages/shell/src/settings-app/sidebar.tsx
-4	packages/shell/src/settings-app/store.ts
-4	packages/shell/src/settings-app/ui.tsx
-2	packages/shell/src/settings.ts
 1	packages/shell/src/shared/app-menus/protocol.ts
 4	packages/shell/src/shared/calendar/ics.ts
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/notes/store.ts
 1	packages/shell/src/spaces/controller.ts
 1	packages/shell/src/switcher/controller.ts
-1	packages/shell/src/wallpaper/chooser.ts

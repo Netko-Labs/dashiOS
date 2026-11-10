@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
 import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/selection.ts";
 

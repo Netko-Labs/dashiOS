@@ -2,8 +2,16 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CHECKOUT_UNIT, checkoutService, checkoutUnit, execWord, forgetCheckoutPortal, linkCheckoutPortal, STALE_UNITS } from "../src/session/portal-files.ts";
-import { startSessionTarget, stopSessionTarget, TARGET } from "../src/session/target.ts";
+import {
+  CHECKOUT_UNIT,
+  checkoutService,
+  checkoutUnit,
+  execWord,
+  forgetCheckoutPortal,
+  linkCheckoutPortal,
+  STALE_UNITS,
+} from "../src/session/lib/portal-files.ts";
+import { startSessionTarget, stopSessionTarget, TARGET } from "../src/session/lib/target.ts";
 
 /** A scratch home with a checkout's session dir; removed after `body`. */
 async function withCheckout(body: (paths: { session: string; data: string; config: string }) => void | Promise<void>): Promise<void> {

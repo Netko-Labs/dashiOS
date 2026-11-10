@@ -562,7 +562,7 @@ Authorization"), adds one (Anthropic key and OpenAI key fill in the host
 and every header their SDKs send the key in; Other: name, hosts, headers
 with commas between, token), changes one (Edit…: hosts, headers, a new
 token), and deletes one
-after a confirm sheet (`settings-app/panes/tokens.tsx`). The token is never
+after a confirm sheet (`settings-app/lib/panes/tokens.tsx`). The token is never
 shown again. Agents' pictures blank the pane like the rest of Passwords.
 
 ### The proxy

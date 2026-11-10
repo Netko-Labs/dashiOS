@@ -5,7 +5,7 @@
 
 import { statSync } from "node:fs";
 import { basename, extname } from "node:path";
-import { MAX_PHOTOS } from "../settings-app/store.ts";
+import { MAX_PHOTOS } from "../settings-app/sections.ts";
 import { isPhotoPath } from "../shared/settings/file.ts";
 import { BUNDLED, DEFAULT_WALLPAPER, thumbnailPath } from "./catalog.ts";
 

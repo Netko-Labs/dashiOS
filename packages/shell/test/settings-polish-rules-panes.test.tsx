@@ -4,19 +4,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { oneLeftEdge, onMixedCard } from "../src/settings-app/edge.ts";
-import { AboutPane } from "../src/settings-app/panes/about.tsx";
-import { AppearancePane } from "../src/settings-app/panes/appearance.tsx";
-import { ControlCenterPane } from "../src/settings-app/panes/control-center.tsx";
-import { DesktopDockPane } from "../src/settings-app/panes/desktop-dock.tsx";
-import { KeyboardPane } from "../src/settings-app/panes/keyboard.tsx";
-import { LockScreenPane } from "../src/settings-app/panes/lock-screen.tsx";
-import { MousePane } from "../src/settings-app/panes/mouse.tsx";
-import { NotificationsPane } from "../src/settings-app/panes/notifications.tsx";
-import { deviceList, SoundPane, showsInputControls } from "../src/settings-app/panes/sound.tsx";
-import { TrackpadPane } from "../src/settings-app/panes/trackpad.tsx";
+import { AppearancePane } from "../src/settings-app/appearance.tsx";
+import { ControlCenterPane } from "../src/settings-app/control-center.tsx";
+import { KeyboardPane } from "../src/settings-app/keyboard.tsx";
+import { oneLeftEdge, onMixedCard } from "../src/settings-app/lib/edge.ts";
+import { AboutPane } from "../src/settings-app/lib/panes/about.tsx";
+import { DesktopDockPane } from "../src/settings-app/lib/panes/desktop-dock.tsx";
+import { LockScreenPane } from "../src/settings-app/lib/panes/lock-screen.tsx";
+import { MousePane } from "../src/settings-app/lib/panes/mouse.tsx";
+import { NotificationsPane } from "../src/settings-app/lib/panes/notifications.tsx";
+import { deviceList, SoundPane, showsInputControls } from "../src/settings-app/lib/panes/sound.tsx";
+import { TrackpadPane } from "../src/settings-app/lib/panes/trackpad.tsx";
+import { PaneStoresContext } from "../src/settings-app/lib/setting.tsx";
 import type { PaneServices } from "../src/settings-app/services.ts";
-import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import { fakeMeter, LevelsStore, SoundStore } from "../src/sound/index.ts";
@@ -147,7 +147,8 @@ test("every pane drawn here keeps one left edge in each of its cards", async () 
 });
 
 test("the rule hears a card that mixes its edges", async () => {
-  const { Group, Item } = await import("../src/settings-app/ui.tsx");
+  const { Group } = await import("../src/settings-app/ui.tsx");
+  const { Row: Item } = await import("../src/settings-app/lib/row.tsx");
   const mixed: string[] = [];
   const stop = onMixedCard((card) => mixed.push(card));
   const view = await mount(

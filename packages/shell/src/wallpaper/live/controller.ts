@@ -15,9 +15,9 @@
 import type { Compositor, CompositorEvent, CompositorWindow } from "../../compositor.ts";
 import type { Battery } from "../../system/battery.ts";
 import type { WallpaperChoice } from "../catalog.ts";
+import { isCovered, type PauseReason, pauseReason, type ScreenArea, screenAreas } from "../lib/pause.ts";
 import type { WallpaperSync } from "../sync.ts";
 import { type LiveChoice, resolveLive } from "./choice.ts";
-import { isCovered, type PauseReason, pauseReason, type ScreenArea, screenAreas } from "./pause.ts";
 
 export interface LiveHost {
   outputs: Compositor["outputs"];

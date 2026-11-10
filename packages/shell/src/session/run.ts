@@ -8,12 +8,12 @@
  */
 
 import { existsSync } from "node:fs";
-import { captureWithTimeout, importSessionEnvironment, runWithTimeout } from "./environment.ts";
-import { startKeyring } from "./keyring.ts";
-import { watchCompositor } from "./parent.ts";
-import { Service, type ServiceDeps, type ServiceSpec } from "./service.ts";
-import { log, systemDeps } from "./system.ts";
-import { startSessionTarget, stopSessionTarget } from "./target.ts";
+import { captureWithTimeout, importSessionEnvironment, runWithTimeout } from "./lib/environment.ts";
+import { startKeyring } from "./lib/keyring.ts";
+import { watchCompositor } from "./lib/parent.ts";
+import { Service, type ServiceDeps, type ServiceSpec } from "./lib/service.ts";
+import { log, systemDeps } from "./lib/system.ts";
+import { startSessionTarget, stopSessionTarget } from "./lib/target.ts";
 
 const shellDir = new URL("../../", import.meta.url).pathname;
 

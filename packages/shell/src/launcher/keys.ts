@@ -18,7 +18,7 @@
  * of the time both move the caret in the field.
  */
 
-import type { Keymap, Rule } from "../keymap.ts";
+import type { Keymap, Rule } from "../keymap/keymap.ts";
 import { RECORD_BINDING, RECORD_RULES, type ReportedChord } from "./person-keys.ts";
 import type { ArrowsWanted } from "./pictures.ts";
 import type { Move } from "./selection.ts";

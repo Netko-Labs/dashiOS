@@ -2,8 +2,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { type ExtrasEvent, parseEvent } from "../src/setup/extras/events.ts";
-import { helperCommand } from "../src/setup/extras/helper.ts";
+import { type ExtrasEvent, parseEvent } from "../src/setup/lib/extras/events.ts";
+import { helperCommand } from "../src/setup/lib/extras/helper.ts";
 
 const SCRIPT = join(import.meta.dir, "../../../session/dashi-extras");
 

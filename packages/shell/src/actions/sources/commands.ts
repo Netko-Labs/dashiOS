@@ -6,7 +6,7 @@
  * here), on the window focused when they were asked.
  */
 
-import type { Keymap } from "../../keymap.ts";
+import type { Keymap } from "../../keymap/keymap.ts";
 import type { MenuAction } from "../../menus/index.ts";
 import { formatAddress } from "../address.ts";
 import { keyFor } from "../keys.ts";

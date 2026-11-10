@@ -8,7 +8,7 @@
 
 import { parseWindowId } from "../../agents/tools/define.ts";
 import type { CompositorWindow } from "../../compositor.ts";
-import type { Keymap } from "../../keymap.ts";
+import type { Keymap } from "../../keymap/keymap.ts";
 import type { Arrange } from "../../layout.ts";
 import { ARROWS, type Arrow } from "../../tiling.ts";
 import { formatAddress } from "../address.ts";

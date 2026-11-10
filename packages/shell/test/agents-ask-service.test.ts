@@ -10,8 +10,8 @@ import { TurnWatch } from "../src/agents/ask/now.ts";
 import { startAsk } from "../src/agents/ask/service.ts";
 import { AgentStore } from "../src/agents/presence.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
-import { keyWords, modelWords } from "../src/settings-app/panes/agents-answer.tsx";
-import { readSettings } from "../src/settings-app/store.ts";
+import { keyWords, modelWords } from "../src/settings-app/lib/panes/agents-answer.tsx";
+import { readSettings } from "../src/settings-app/sections.ts";
 import { flush, until } from "./support/time.ts";
 
 test("Settings › Agents says where Claude's key is and what model runs here", () => {

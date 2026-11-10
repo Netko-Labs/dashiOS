@@ -4,22 +4,19 @@
  * input method and X11 scaling, all applied from settings.json.
  */
 
-import { ChromeStyle } from "../appearance/chrome.ts";
-import { CornerFeed } from "../appearance/corner-feed.ts";
-import { type AppearanceDeps, sessionDeps } from "../appearance/follow.ts";
-import { WindowStyleSync } from "../appearance/window-style.ts";
+import { type AppearanceDeps, ChromeStyle, CornerFeed, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
 import type { Compositor } from "../compositor.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { IdlePolicy } from "../idle.ts";
 import { InputMethodRunner } from "../input-method.ts";
 import { DEFAULT_POINTER_SIZE, PointerSync } from "../pointer.ts";
 import { idleOffReason } from "../power/index.ts";
-import { type Settings, startSettings } from "../settings.ts";
+import { startSettings } from "../settings.ts";
+import type { Settings } from "../settings-defaults.ts";
 import type { System } from "../system/start.ts";
 import { TextSize } from "../text-size.ts";
-import type { WallpaperChoice } from "../wallpaper/catalog.ts";
+import { reportWallpaper, type WallpaperChoice, WallpaperSync } from "../wallpaper/index.ts";
 import { LiveWallpaperController } from "../wallpaper/live/controller.ts";
-import { reportWallpaper, WallpaperSync } from "../wallpaper/sync.ts";
 import { DEFAULT_X11_SCALING, type XwaylandChoice, type XwaylandScaling } from "../xwayland-scale.ts";
 import type { Desktops } from "./desktop.ts";
 import type { Services } from "./services.ts";

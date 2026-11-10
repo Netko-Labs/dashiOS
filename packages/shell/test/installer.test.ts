@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { helperCommand, installArgs, isLiveBoot, parseEvent } from "../apps/installer/helper.ts";
 import { type Account, accountProblem, advance, nextPage, overall, previousPage, START, suggestHostname, suggestUser } from "../apps/installer/model.ts";
 import { hasNvidia, parseDisks, sizeLabel } from "../apps/installer/probe.ts";
-import { liveInstaller } from "../src/setup/live.ts";
+import { liveInstaller } from "../src/setup/lib/live.ts";
 
 const LSBLK = {
   blockdevices: [

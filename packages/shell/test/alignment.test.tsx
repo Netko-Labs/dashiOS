@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { Caption, Group, ROW_INSET, Row, SidebarItem, TILE_SIZE } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { PAGE, pillsUnder, roomBeside, Row as SettingsRow } from "../src/settings-app/row.tsx";
+import { PAGE, pillsUnder, roomBeside, Row as SettingsRow } from "../src/settings-app/lib/row.tsx";
 import { titleLine } from "../src/settings-app/ui.tsx";
 import { pillsWrapped, SEGMENTED, Segmented } from "../src/shared/controls/inputs.tsx";
 import { settle } from "./support/time.ts";

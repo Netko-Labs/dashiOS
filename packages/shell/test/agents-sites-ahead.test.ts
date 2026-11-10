@@ -10,7 +10,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parsePersonSites, SiteConsent, SiteGrants, siteFromInput } from "../src/agents/sites.ts";
-import { siteToAdd } from "../src/settings-app/panes/agents-sites.tsx";
+import { siteToAdd } from "../src/settings-app/lib/panes/agents-sites.tsx";
 
 test("what the person types becomes a site: an address or a host, without www", () => {
   expect(siteFromInput("bodytech.com.co")).toBe("bodytech.com.co");

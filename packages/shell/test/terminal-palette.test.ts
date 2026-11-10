@@ -5,7 +5,7 @@ import { terminalMenus } from "../apps/terminal/menus.ts";
 import { ANSI_NAMES, contrast, DARK_TERMINAL, groundSide, LIGHT_TERMINAL, terminalPalette } from "../apps/terminal/palette.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 
 const AA = 4.5;
 

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { Vault } from "../src/agents/secrets/vault.ts";
-import { Payments } from "../src/settings-app/panes/payments.tsx";
+import { Payments } from "../src/settings-app/lib/panes/payments.tsx";
 import { settle } from "./support/time.ts";
 
 // Settings › Passwords' payments on a stand-in for the Metal host, over a vault of the test's.

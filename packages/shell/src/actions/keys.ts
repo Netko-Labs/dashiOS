@@ -4,7 +4,7 @@
  * address when its `bind` is one (docs/actions.md, "The keymap").
  */
 
-import type { Keymap } from "../keymap.ts";
+import type { Keymap } from "../keymap/keymap.ts";
 
 const GLYPHS: Readonly<Record<string, string>> = {
   Left: "←",

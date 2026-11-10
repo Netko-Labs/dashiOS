@@ -142,7 +142,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   next dialog runs the new code. A checkout's session links the files into
   the user's data folder instead and writes its own unit,
   `dashi-portal-checkout.service`, in `~/.config/systemd/user`
-  (`src/session/portal-files.ts`); an installed session removes them.
+  (`src/session/lib/portal-files.ts`); an installed session removes them.
 - **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
   first-party apps are, one host per dialog, taken from a warm host
   (`src/shared/metal/host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.

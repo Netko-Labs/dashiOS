@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { KEYMAP, LOCKED_RULES, withSwitcher } from "../src/keymap.ts";
-import { inClass, type KeyChord, resolveChord, resolveLocked, ruleFor } from "../src/keymap-match.ts";
-import { currentKeymap, idleKeymap } from "../src/keymap-state.ts";
+import { KEYMAP, LOCKED_RULES, withSwitcher } from "../src/keymap/keymap.ts";
+import { inClass, type KeyChord, resolveChord, resolveLocked, ruleFor } from "../src/keymap/keymap-match.ts";
+import { currentKeymap, idleKeymap } from "../src/keymap/keymap-state.ts";
 import { withLauncher } from "../src/launcher/keys.ts";
 import { withTyping } from "../src/launcher/type-ahead.ts";
 

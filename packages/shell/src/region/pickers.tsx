@@ -10,7 +10,7 @@ import { useState } from "react";
 import { useColors } from "../settings-app/colors.ts";
 import { Choices } from "../settings-app/ui.tsx";
 import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "../shared/locale/locale.ts";
-import { PickList, PickNote, PickRow, SearchField } from "./pick.tsx";
+import { PickList, PickNote, PickRow, SearchField } from "./lib/pick.tsx";
 import { describeZone, searchZones, type Zone, zoneAreas } from "./timezones.ts";
 
 /** A typed search shows at most this many zones; "Type more" says there are others. */

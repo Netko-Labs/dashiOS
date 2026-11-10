@@ -6,9 +6,9 @@
  * next opens.
  */
 
-import type { PermissionStore } from "./permission-store.ts";
+import type { PermissionStore } from "./lib/permission-store.ts";
+import type { SeenTimes } from "./lib/seen.ts";
 import { grantKey, type PortalGrant } from "./portal-grants.ts";
-import type { SeenTimes } from "./seen.ts";
 
 /** A grant with its date: since when, in seconds, or null when it isn't known. */
 export interface AppGrant extends PortalGrant {

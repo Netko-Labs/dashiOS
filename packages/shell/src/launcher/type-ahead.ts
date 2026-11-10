@@ -12,7 +12,7 @@
  * the session's own rules (the volume keys), which come before the catch-all.
  */
 
-import type { Keymap, Rule } from "../keymap.ts";
+import type { Keymap, Rule } from "../keymap/keymap.ts";
 import { LAUNCHER_RULES } from "./keys.ts";
 
 export const TYPE_BINDING = "launcher-type";
