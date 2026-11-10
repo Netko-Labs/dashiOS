@@ -8,8 +8,7 @@
  * action stays for Fn F5's and the agents' callers).
  */
 
-import type { GraphicsSnapshot } from "../graphics/controller.ts";
-import { LOST_NOTICE } from "../graphics/lost-card.ts";
+import { type GraphicsSnapshot, LOST_NOTICE } from "../graphics/index.ts";
 import type { MenuEntry } from "../menus/index.ts";
 import { chargeTarget } from "../power/battery-health.ts";
 import type { PowerSection } from "../power/modes/settings.ts";

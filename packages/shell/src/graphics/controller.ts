@@ -21,10 +21,10 @@ import type { GraphicsChoice } from "../power/modes/settings.ts";
 import { type CardPower, type GraphicsCard, readCardPower, readCardScreens } from "./card.ts";
 import type { AppPolicy, CardwireGpu, CardwireMode, GraphicsBackend } from "./cardwire.ts";
 import { groupHolders, type Holder, holdingProcesses, type ProcessFds, readCardWatts, readProcessFds } from "./holders.ts";
+import type { GraphicsNotice, GraphicsWhy } from "./lib/notice.ts";
+import { GraphicsTeller } from "./lib/teller.ts";
 import type { Loss } from "./lost-card.ts";
-import type { GraphicsNotice, GraphicsWhy } from "./notice.ts";
 import { decideGraphics, type GraphicsDecision, type GraphicsMode, listNames } from "./policy.ts";
-import { GraphicsTeller } from "./teller.ts";
 
 export const GRAPHICS_REFRESH_MS = 15_000;
 

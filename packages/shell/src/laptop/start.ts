@@ -11,10 +11,7 @@
 
 import { readFileSync } from "node:fs";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
-import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphics/cardwire.ts";
-import { GraphicsController } from "../graphics/controller.ts";
-import type { LostCardStart } from "../graphics/lost-start.ts";
-import { graphicsNoticePlace } from "../graphics/notice-place.ts";
+import { cardwireClient, type GraphicsBackend, GraphicsController, graphicsNoticePlace, type LostCardStart, shadowGraphics } from "../graphics/index.ts";
 import { detectLaptop, type HardwareApi, hardwareClient, shadowHardware } from "../hardware/index.ts";
 import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";

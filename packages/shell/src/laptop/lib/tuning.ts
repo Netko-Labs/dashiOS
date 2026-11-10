@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { GraphicsController } from "../../graphics/controller.ts";
+import type { GraphicsController } from "../../graphics/index.ts";
 import type { HardwareApi } from "../../hardware/index.ts";
 import type { NotificationStore } from "../../notifications/index.ts";
 import { Logind } from "../../power/logind.ts";

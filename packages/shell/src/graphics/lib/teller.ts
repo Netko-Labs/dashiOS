@@ -6,9 +6,9 @@
  * asks again later when that says to wait.
  */
 
-import type { Later } from "../display-config/steady.ts";
+import type { Later } from "../../display-config/steady.ts";
+import type { GraphicsMode } from "../policy.ts";
 import { decideNotice, type GraphicsNotice, type GraphicsWhy } from "./notice.ts";
-import type { GraphicsMode } from "./policy.ts";
 
 export interface TellerDeps {
   /** Posts the notice in graphics notices' one place (it replaces the last one). */

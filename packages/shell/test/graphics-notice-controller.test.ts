@@ -3,7 +3,7 @@ import type { GraphicsCard } from "../src/graphics/card.ts";
 import type { CardwireGpu, CardwireMode, GraphicsBackend } from "../src/graphics/cardwire.ts";
 import { GraphicsController } from "../src/graphics/controller.ts";
 import type { ProcessFds } from "../src/graphics/holders.ts";
-import { NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/notice.ts";
+import { NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/lib/notice.ts";
 import { graphicsNoticePlace } from "../src/graphics/notice-place.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import type { GraphicsChoice } from "../src/power/modes/settings.ts";

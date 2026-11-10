@@ -7,7 +7,7 @@
 import type { Compositor } from "../compositor/index.ts";
 import { AutoRefresh, MirrorStore, rateOnPower } from "../display-config/index.ts";
 import { bottomInset } from "../dock/index.ts";
-import { startLostCardWatch } from "../graphics/lost-start.ts";
+import { startLostCardWatch } from "../graphics/index.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
 import { type Laptop, laptopEntries, startLaptop } from "../laptop/index.ts";
 import { OverflowRow } from "../menubar/index.ts";
