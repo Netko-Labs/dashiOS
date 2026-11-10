@@ -7,7 +7,7 @@
  */
 
 import type { ExtraMenuRow } from "../extras/index.ts";
-import type { AllowSleep } from "../inhibit/menu.ts";
+import type { AllowSleep } from "../inhibit/index.ts";
 import type { LaptopAction } from "../laptop/menu.ts";
 import type { MenuEntry } from "./types.ts";
 
