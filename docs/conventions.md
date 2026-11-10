@@ -300,7 +300,22 @@ Imports between modules (H19):
 - A type-only import may name `types.ts` directly; it loads nothing.
 - Tests (in `test/`) import a module's public surface like any other file,
   and may also import its `lib/` files, so a private parser or hook gets its
-  own unit test. A test imports nothing else inside a module.
+  own unit test. A test imports nothing else inside a module. Exactly, as
+  `scripts/check-modules.ts` counts it, a test may import:
+  - a module's `index.ts`, and any file that `index.ts` re-exports by a
+    relative path outside `lib/` (its public files; for a nested module seen
+    from outside, the outer module's index decides);
+  - any file under any `lib/` of any module, nested modules' included (H18
+    leaves tests out too);
+  - a module of one file (a file outside every module folder).
+
+  It may not import a file at a module's top level that the index does not
+  re-export (an app's `main.tsx` included: an app has no index), nor a nested
+  module's public file the outer index does not re-export. These count:
+  static imports, `export … from`, type-only imports and `import("…")`.
+  `mock.module("…")` paths do not: a test may mock any file. The fix for a
+  test that needs a private helper of a public file is to move the helper to
+  `lib/`, not to export it from the index for the test.
 
 Rules for `shared/` (H20):
 
