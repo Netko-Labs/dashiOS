@@ -13,7 +13,7 @@
 import { placedOutputs } from "../arrange.ts";
 import type { Compositor, CompositorEvent } from "../compositor.ts";
 import { HARDWARE_BINDINGS } from "../system/keys.ts";
-import { planOverview } from "./plan.ts";
+import { planOverview } from "./lib/plan.ts";
 
 /** What the controller asks of the compositor. */
 export type OverviewCompositor = Pick<Compositor, "overview" | "focus" | "outputs" | "windows" | "on">;

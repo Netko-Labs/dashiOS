@@ -4,8 +4,8 @@
  * compositor.
  */
 
-import type { CompositorWindow, Frame } from "../compositor.ts";
-import type { Output } from "../layout.ts";
+import type { CompositorWindow, Frame } from "../../compositor.ts";
+import type { Output } from "../../layout.ts";
 import { layoutOverview, type Placed } from "./layout.ts";
 
 const contains = (frame: Frame, x: number, y: number) => x >= frame.x && x < frame.x + frame.width && y >= frame.y && y < frame.y + frame.height;

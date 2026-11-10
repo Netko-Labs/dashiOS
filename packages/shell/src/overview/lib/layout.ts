@@ -7,7 +7,7 @@
  * area; each row is centered, and so is the block.
  */
 
-import type { Rect } from "../layout.ts";
+import type { Rect } from "../../layout.ts";
 
 export interface OverviewWindow {
   id: number;

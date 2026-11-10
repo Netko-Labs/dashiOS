@@ -157,7 +157,7 @@ least that big (`src/arrange.ts`, `keepLeast`); an X11 window's `pid` is its own
 | `space-remove` | shell | `{space}` | `{count, current}`; its windows go to the Space on its left (the first's to the second), later Spaces move down one; refused for the last Space |
 | `space-switch` | granted | `{space, progress?, carry?: window}` | `{}`; `progress` follows a swipe. A window held in a move grab (dragged by its title bar, or an app's own move) goes along: it is put on the new Space (`window-space`), stays under the pointer while the Spaces slide, and is still held after. `carry` does the same for a window on the Space that shows (an error otherwise, and with `progress`): it stays where it is on screen while the Spaces slide under it, is put on the new Space as the slide ends, and has the keyboard there (the shell's full-screen Desktops, `src/spaces/fullscreen.ts`) |
 | `space-move` | granted | `{window, space}` | `{}` |
-| `overview` | shell | `{windows: plan}` to open (*see* `planOverview`, `src/overview/plan.ts`), `{duration?}` to close | `{}`; opening is refused while locked (it would take the lock screen's presses); locking closes it |
+| `overview` | shell | `{windows: plan}` to open (*see* `planOverview`, `src/overview/lib/plan.ts`), `{duration?}` to close | `{}`; opening is refused while locked (it would take the lock screen's presses); locking closes it |
 
 ### Live pictures
 
