@@ -4,7 +4,7 @@
  * delivers them. Nothing here knows about Wi-Fi lists or joining.
  */
 
-import type { DBusConnection } from "../shared/dbus/index.ts";
+import type { DBusConnection } from "../../shared/dbus/index.ts";
 import { propertyMap, unwrap } from "./nm-values.ts";
 
 export const NM = "org.freedesktop.NetworkManager";

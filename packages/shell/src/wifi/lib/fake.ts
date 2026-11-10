@@ -9,9 +9,9 @@
  * refused; any other is accepted.
  */
 
-import { barsFor, type Network } from "../system/network.ts";
-import { displayName, ssidKey } from "./networks.ts";
-import type { AccessPoint, JoinResult, KnownProfile, Security, WifiBackend, WifiNetwork, WifiRadio, WifiReading } from "./types.ts";
+import { barsFor, type Network } from "../../system/network.ts";
+import { displayName, ssidKey } from "../networks.ts";
+import type { AccessPoint, JoinResult, KnownProfile, Security, WifiBackend, WifiNetwork, WifiRadio, WifiReading } from "../types.ts";
 
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 

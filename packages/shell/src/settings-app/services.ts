@@ -27,8 +27,7 @@ import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
 import { systemBus } from "../system/system-bus.ts";
-import type { WifiStore } from "../wifi/store.ts";
-import type { WifiNetwork } from "../wifi/types.ts";
+import type { WifiNetwork, WifiStore } from "../wifi/index.ts";
 
 /** The stores Control Center runs, which the panes share (menus/start.tsx hands them over). */
 export interface SharedStores {

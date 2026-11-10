@@ -5,8 +5,7 @@
  * join from the Wi-Fi menu.
  */
 
-import { joinMessage } from "../../wifi/networks.ts";
-import type { WifiNetwork } from "../../wifi/types.ts";
+import { joinMessage, type WifiNetwork } from "../../wifi/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /**

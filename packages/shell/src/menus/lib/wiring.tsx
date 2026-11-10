@@ -7,7 +7,7 @@ import { appFor, iconPath } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor/index.ts";
 import { controlFlags, LayoutStore } from "../../control-center/index.ts";
 import { launchEntry } from "../../entries.ts";
-import { chooseNetwork } from "../../wifi/flow.ts";
+import { chooseNetwork } from "../../wifi/index.ts";
 import type { MenuController } from "../controller.ts";
 import { helpCommand, openHelp } from "../launch.ts";
 import { windowMenus } from "../model.ts";

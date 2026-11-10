@@ -5,11 +5,11 @@
  * file, not a log line.
  */
 
-import { DBusError } from "../shared/dbus/index.ts";
-import { canJoinNew, needsPassword, ssidFromKey } from "./networks.ts";
+import { DBusError } from "../../shared/dbus/index.ts";
+import { canJoinNew, needsPassword, ssidFromKey } from "../networks.ts";
 import { IFACE, NM, NM_PATH, type NmClient } from "./nm-client.ts";
 import { newProfile, withPassword } from "./nm-values.ts";
-import type { JoinResult, WifiNetwork } from "./types.ts";
+import type { JoinResult, WifiNetwork } from "../types.ts";
 
 /** NMDeviceState values the join watches the device for. */
 const DEVICE_NEED_AUTH = 60;

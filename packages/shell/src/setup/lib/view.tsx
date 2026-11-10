@@ -11,7 +11,7 @@ import { CONTRAST } from "../../control-center/glyphs.ts";
 import { wifiGlyph } from "../../glyphs.ts";
 import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../../settings-app/glyphs.ts";
 import { paneTitle } from "../../shared/settings/panes.ts";
-import { useWifi } from "../../wifi/store.ts";
+import { useWifi } from "../../wifi/index.ts";
 import { PAGE_INFO, type PageId } from "../flow.ts";
 import type { SetupContext } from "./context.ts";
 import { DOWNLOAD, PACKAGE } from "./extras/glyphs.ts";
