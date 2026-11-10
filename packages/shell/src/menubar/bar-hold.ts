@@ -10,7 +10,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { OpenOverlay, OverlayHandle } from "./overlay.tsx";
+import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 
 /** After a sheet closes, how long the window is given to get the keyboard back before the bar follows focus again. */
 export const SETTLE_MS = 250;

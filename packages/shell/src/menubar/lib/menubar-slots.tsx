@@ -9,12 +9,13 @@
 
 import type { Palette } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
-import { MOON } from "./control-center/index.ts";
-import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "./glyphs.ts";
+import { MOON } from "../../control-center/index.ts";
+import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "../../glyphs.ts";
+import type { Popover } from "../../menus/index.ts";
+import type { SystemSnapshot } from "../../system/store.ts";
 import { GOES } from "./menubar-fit.ts";
-import { StatusItem, type StatusSlot } from "./menubar-status.tsx";
-import type { Popover } from "./menus/index.ts";
-import type { SystemSnapshot } from "./system/store.ts";
+import { StatusItem } from "./menubar-items.tsx";
+import type { StatusSlot } from "./menubar-status.tsx";
 
 export interface SystemSlotsInput extends Pick<SystemSnapshot, "battery" | "network" | "volume"> {
   /** settings.json `menuBar.batteryPercent`. */

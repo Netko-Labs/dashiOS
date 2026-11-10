@@ -7,9 +7,9 @@
 import { MORE, useColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
+import type { BarMenuId } from "../../menus/index.ts";
+import { useControlColors } from "../../shared/controls/palette.ts";
 import { MORE_WIDTH } from "./menubar-fit.ts";
-import type { BarMenuId } from "./menus/index.ts";
-import { useControlColors } from "./shared/controls/palette.ts";
 
 /** "…"'s name for a screen reader. */
 export const MORE_LABEL = "More menu bar items";

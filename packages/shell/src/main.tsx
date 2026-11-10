@@ -31,7 +31,7 @@ import { Late, Services } from "./boot/services.ts";
 import { connectCompositor, guardProcess, Screens, startLogin, startStores } from "./boot/session.ts";
 import { startSettingsApps, startSettingsWindows } from "./boot/settings.ts";
 import { chooseRadios, startGuards, startSystemStores } from "./boot/system.ts";
-import { pickPrimary } from "./menubars.ts";
+import { pickPrimary } from "./menubar/index.ts";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { resolvePinned } from "./shared/apps/index.ts";
 

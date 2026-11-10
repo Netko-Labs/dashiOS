@@ -6,7 +6,7 @@
  * the app's own sheet, or, over the desktop, the dialog itself by its title.
  */
 
-import { isSheetTitle } from "./shared/portal-host/protocol.ts";
+import { isSheetTitle } from "../../shared/portal-host/protocol.ts";
 
 export const DESKTOP = "Desktop";
 

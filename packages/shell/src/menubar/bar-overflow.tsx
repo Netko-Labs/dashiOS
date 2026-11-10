@@ -8,12 +8,12 @@
 
 import { useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
-import { MOON } from "./control-center/index.ts";
-import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
-import { ExtraItem, TILE } from "./extras/view.tsx";
-import { networkGlyph, speakerGlyph } from "./glyphs.ts";
-import { KeyCatcher } from "./overlay.tsx";
-import { type SystemStore, useSystem } from "./system/store.ts";
+import { MOON } from "../control-center/index.ts";
+import { type ExtrasStore, type MenuBarExtra, useExtras } from "../extras/index.ts";
+import { ExtraItem, TILE } from "../extras/view.tsx";
+import { networkGlyph, speakerGlyph } from "../glyphs.ts";
+import { KeyCatcher } from "../overlay.tsx";
+import { type SystemStore, useSystem } from "../system/store.ts";
 
 export const OVERFLOW = { padding: 6, gap: 4, radius: 12 } as const;
 

@@ -17,7 +17,7 @@ import type { Bounds } from "@mirinjs/metal";
 import type { AnimationTarget, Compositor, CompositorWindow, Frame, Output } from "../compositor.ts";
 import { screensOf } from "../displays.ts";
 import type { Entry } from "../entries.ts";
-import { pickPrimary } from "../menubars.ts";
+import { pickPrimary } from "../menubar/menubars.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import { appKey } from "./layout.ts";
 import type { DockSettings } from "./settings.ts";

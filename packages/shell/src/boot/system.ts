@@ -5,10 +5,10 @@
  */
 
 import { LockWatch } from "../agents/lock.ts";
-import { holdingBar } from "../bar-hold.ts";
 import { type BluetoothSetup, chooseBluetooth } from "../bluetooth/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { LockController } from "../lock/index.ts";
+import { holdingBar } from "../menubar/index.ts";
 import { runPower } from "../menus/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { type Polkit, startPolkit } from "../polkit/index.ts";

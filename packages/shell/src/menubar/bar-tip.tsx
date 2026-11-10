@@ -8,9 +8,9 @@
 
 import { TOOLTIP_DELAY_MS, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { BarTip } from "./menubar.tsx";
-import type { OpenOverlay, OverlayHandle } from "./overlay.tsx";
-import { MENU_BAR_HEIGHT } from "./theme.ts";
+import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
+import { MENU_BAR_HEIGHT } from "../theme.ts";
+import type { BarTip } from "./lib/menubar-program-slots.tsx";
 
 /** The surface's height: the tip (22) and room for its shadow. */
 const HEIGHT = 34;

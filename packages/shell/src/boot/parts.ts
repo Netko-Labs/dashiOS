@@ -18,7 +18,7 @@ import type { Extensions } from "../extensions/start.ts";
 import type { FullscreenBars } from "../fullscreen.ts";
 import type { Laptop } from "../laptop/start.ts";
 import type { LauncherHost, LauncherWorld } from "../launcher/index.ts";
-import type { MenuBars } from "../menubars.ts";
+import type { MenuBars } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import type { OverviewController } from "../overview/index.ts";

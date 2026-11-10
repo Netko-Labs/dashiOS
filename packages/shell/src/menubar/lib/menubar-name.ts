@@ -4,10 +4,10 @@
  */
 
 import { useRef } from "react";
-import { type App, appFor } from "./apps.ts";
-import { barHold, useBarHeld } from "./bar-hold.ts";
+import { type App, appFor } from "../../apps.ts";
+import { type ToplevelStore, usePortalDialogs, useToplevels } from "../../toplevels.ts";
+import { barHold, useBarHeld } from "../bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
-import { type ToplevelStore, usePortalDialogs, useToplevels } from "./toplevels.ts";
 
 /** `frozenName` is the name an open menu holds (menus/), or null. */
 export function useBarName(
