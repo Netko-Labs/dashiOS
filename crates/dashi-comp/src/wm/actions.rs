@@ -9,7 +9,8 @@ use smithay::{
     utils::{Logical, Point, Rectangle, SERIAL_COUNTER, Size},
 };
 
-use super::windows::{Shown, WindowId, frame_of, toplevel_surface};
+use super::geometry::frame_of;
+use super::windows::{Shown, WindowId, toplevel_surface};
 use crate::state::Dashi;
 
 /// The smallest frame a request may ask for; anything less is a mistake, not a window.
@@ -50,7 +51,7 @@ impl Dashi {
         at: Point<i32, Logical>,
         activate: bool,
     ) {
-        let bar = super::windows::bar_of(self, window);
+        let bar = super::geometry::bar_of(self, window);
         self.space
             .map_element(window.clone(), (at.x, at.y + bar), activate);
         x11_follow(window, (at.x, at.y + bar).into());
@@ -202,7 +203,7 @@ impl Dashi {
         }
         if space != self.spaces.current {
             // Back, but on a Space that is not shown: it waits there, in front.
-            let bar = super::windows::bar_of(self, &window);
+            let bar = super::geometry::bar_of(self, &window);
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
@@ -243,7 +244,7 @@ impl Dashi {
 
     /// Size and place a window by its outer frame (title bar included).
     fn apply_frame(&mut self, window: &Window, frame: Rectangle<i32, Logical>, maximized: bool) {
-        let bar = super::windows::bar_of(self, window);
+        let bar = super::geometry::bar_of(self, window);
         if let Some(entry) = self.windows.by_window_mut(window) {
             entry.maximized = maximized;
             entry.tiled = false;
@@ -297,7 +298,7 @@ impl Dashi {
         let Some(window) = self.windows.get(id).map(|entry| entry.window.clone()) else {
             return;
         };
-        let bar = super::windows::bar_of(self, &window);
+        let bar = super::geometry::bar_of(self, &window);
         if let Some(entry) = self.windows.get_mut(id) {
             if entry.shown == Shown::Normal {
                 entry.away_at = Some((at.x, at.y + bar).into());

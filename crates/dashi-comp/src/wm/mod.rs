@@ -6,6 +6,7 @@ mod by_scale;
 mod decor;
 mod edge_hold;
 mod fullscreen;
+mod geometry;
 mod layer_motion;
 mod motion;
 mod overview;
@@ -26,7 +27,7 @@ mod sheets;
 mod windows;
 
 pub(crate) use actions::valid_frame;
+pub(crate) use geometry::{frame_of, frame_to_be};
 pub(crate) use windows::{
-    Shown, WindowId, Windows, frame_of, frame_to_be, names, rect_json, toplevel_surface,
-    window_id_for_surface,
+    Shown, WindowId, Windows, names, rect_json, toplevel_surface, window_id_for_surface,
 };

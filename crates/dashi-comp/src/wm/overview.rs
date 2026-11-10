@@ -18,7 +18,8 @@ use smithay::{
     utils::{Logical, Point, Rectangle},
 };
 
-use super::windows::{WindowId, frame_of};
+use super::geometry::frame_of;
+use super::windows::WindowId;
 use crate::state::Dashi;
 
 const OPENING: Duration = Duration::from_millis(220);

@@ -13,7 +13,8 @@ use smithay::{
     utils::{Logical, Point, Rectangle, Size},
 };
 
-use super::windows::{Shown, WindowId, frame_of};
+use super::geometry::frame_of;
+use super::windows::{Shown, WindowId};
 use crate::state::Dashi;
 
 /// The shell's claim on the top edge, and where it brought the bars out.

@@ -59,7 +59,7 @@ impl Dashi {
             .map(|x11| x11.geometry().loc)
             .filter(|at| at.x != 0 || at.y != 0);
         let mut size = window.geometry().size;
-        size.h += super::windows::bar_of(self, &window);
+        size.h += super::geometry::bar_of(self, &window);
         let parent = super::windows::parent_of(self, &window);
         self.ipc.emit(
             "window-placing",
@@ -125,7 +125,7 @@ impl Dashi {
         };
         let window = entry.window.clone();
         let mut size = window.geometry().size;
-        size.h += super::windows::bar_of(self, &window);
+        size.h += super::geometry::bar_of(self, &window);
         let area = self
             .usable_under_pointer()
             .unwrap_or_else(|| Rectangle::from_size((1280, 800).into()));
@@ -152,7 +152,7 @@ impl Dashi {
             self.map_frame_at(&window, at, !locked);
         } else {
             // Waiting on its Space, where the slide there draws it.
-            let bar = super::windows::bar_of(self, &window);
+            let bar = super::geometry::bar_of(self, &window);
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
