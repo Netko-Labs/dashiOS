@@ -1,4 +1,4 @@
-import type { OutputKind } from "./types.ts";
+import type { OutputKind } from "../types.ts";
 
 export interface KindHints {
   /** PipeWire's node.name, such as `bluez_output.…` (`bluez_input.…` for a microphone) or `alsa_output.….hdmi-stereo`. */

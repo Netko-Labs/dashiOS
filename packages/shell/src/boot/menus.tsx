@@ -18,7 +18,7 @@ import { powerOffReason } from "../power/nested.ts";
 import type { App } from "../shared/apps/index.ts";
 import { setControlMotion } from "../shared/controls/index.ts";
 import { isPaneId } from "../shared/settings/panes.ts";
-import { startAppMixer } from "../sound/apps/index.ts";
+import { startAppMixer } from "../sound/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { Catalog, Programs } from "./apps.ts";
 import type { Arranging, Desktops } from "./desktop.ts";

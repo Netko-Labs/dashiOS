@@ -6,9 +6,9 @@
  * section at all is not a status listing (null).
  */
 
+import type { Output } from "../types.ts";
 import { outputKind } from "./kind.ts";
 import type { Side } from "./parse-dump.ts";
-import type { Output } from "./types.ts";
 
 /** Colour codes, in case the listing was not piped. */
 const ESCAPE = /\u001b\[[0-9;]*[A-Za-z]/g;

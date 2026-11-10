@@ -4,7 +4,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { parseCmdline } from "../../shared/processes/index.ts";
+import { parseCmdline } from "../../../shared/processes/index.ts";
 import type { ProcessLook } from "./identity.ts";
 
 function read(path: string): string | null {

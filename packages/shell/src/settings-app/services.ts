@@ -17,9 +17,19 @@ import { holdingBar } from "../menubar/bar-hold.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { fakeLid, logindLid } from "../power/policy.ts";
-import type { AppMixer, PipeWireWatch } from "../sound/apps/index.ts";
-import { fakeMeter, inputsOf, type LevelMeter, LevelsStore, pipewireMeter, SoundStore, shadowLevels, wpctlLevels } from "../sound/index.ts";
-import type { AudioBackend } from "../sound/types.ts";
+import {
+  type AppMixer,
+  type AudioBackend,
+  fakeMeter,
+  inputsOf,
+  type LevelMeter,
+  LevelsStore,
+  type PipeWireWatch,
+  pipewireMeter,
+  SoundStore,
+  shadowLevels,
+  wpctlLevels,
+} from "../sound/index.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { EnergyStore } from "../system/energy.ts";
 import { run } from "../system/exec.ts";

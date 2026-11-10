@@ -3,7 +3,7 @@
  * answers nothing, the speakers, headphones and microphone as the monitor prints them, and the settle.
  */
 
-import { type Follow, pipewireWatch } from "../../src/sound/apps/watch.ts";
+import { type Follow, pipewireWatch } from "../../src/sound/apps/index.ts";
 import type { Run } from "../../src/system/exec.ts";
 import { metadata, node } from "../fixtures/pw-graph.ts";
 import type { FakeClock } from "./time.ts";

@@ -1,7 +1,6 @@
 /** Starts the system services the shell shows: the status store and the hardware keys. */
 
-import type { PipeWireWatch } from "../sound/apps/watch.ts";
-import { followOutputVolume } from "../sound/levels.ts";
+import { followOutputVolume, type PipeWireWatch } from "../sound/index.ts";
 import { watchCharger } from "./charger.ts";
 import { HardwareKeys } from "./keys.ts";
 import type { Network } from "./network.ts";

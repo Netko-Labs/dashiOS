@@ -16,7 +16,7 @@ import { type Power, startPower } from "../power/index.ts";
 import { type Privacy, startPrivacy } from "../privacy/index.ts";
 import { type ScreenCapture, ScreenCaptureStore, startScreenCapture } from "../screen-capture/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
-import { type PipeWireWatch, pipewireWatch } from "../sound/apps/index.ts";
+import { type PipeWireWatch, pipewireWatch } from "../sound/index.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";
 import { type System, startSystem } from "../system/start.ts";
 import { chooseWifi, type WifiSetup, WifiStore } from "../wifi/index.ts";

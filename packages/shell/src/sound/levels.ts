@@ -10,8 +10,8 @@
 
 import { run as defaultRun, type Run } from "../system/exec.ts";
 import { readVolume, SINK, SOURCE, type Volume } from "../system/volume.ts";
-import type { PipeWireWatch } from "./apps/watch.ts";
-import { defaultVolume, type Side } from "./parse-dump.ts";
+import type { PipeWireWatch } from "./apps/index.ts";
+import { defaultVolume, type Side } from "./lib/parse-dump.ts";
 
 /** The default output's and input's volumes. */
 export interface SideVolumes {

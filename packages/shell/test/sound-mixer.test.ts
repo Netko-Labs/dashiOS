@@ -5,8 +5,11 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { GraphMap, JsonArrays, type ProcessLook, parseGraph, rowsFrom, streamOwners } from "../src/sound/apps/index.ts";
-import { parseDump } from "../src/sound/parse-dump.ts";
+import { parseGraph, rowsFrom } from "../src/sound/apps/index.ts";
+import { GraphMap, JsonArrays } from "../src/sound/apps/lib/graph-map.ts";
+import type { ProcessLook } from "../src/sound/apps/lib/identity.ts";
+import { streamOwners } from "../src/sound/apps/lib/owners.ts";
+import { parseDump } from "../src/sound/lib/parse-dump.ts";
 import { link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { catalog } from "./support/sound-mixer.ts";
 import { fakeClockEachTest } from "./support/time.ts";

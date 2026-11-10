@@ -11,7 +11,10 @@ import { AppsCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
 import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { catalogFrom } from "../src/shared/processes/index.ts";
-import { AppMixer, fixedGraph, heldControl, isIconName, parseGraph, type Stream, streamApp, streamOwners, useAppNames } from "../src/sound/apps/index.ts";
+import { AppMixer, fixedGraph, parseGraph, type Stream, useAppNames } from "../src/sound/apps/index.ts";
+import { heldControl } from "../src/sound/apps/lib/commands.ts";
+import { isIconName, streamApp } from "../src/sound/apps/lib/identity.ts";
+import { streamOwners } from "../src/sound/apps/lib/owners.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

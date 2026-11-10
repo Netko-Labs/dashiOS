@@ -13,9 +13,9 @@
  */
 
 import { run as defaultRun, type Run } from "../system/exec.ts";
-import type { PipeWireWatch } from "./apps/watch.ts";
-import { devicesFrom, parseDump, type Side } from "./parse-dump.ts";
-import { parseStatus } from "./parse-status.ts";
+import type { PipeWireWatch } from "./apps/index.ts";
+import { devicesFrom, parseDump, type Side } from "./lib/parse-dump.ts";
+import { parseStatus } from "./lib/parse-status.ts";
 import type { AudioBackend, Output, SoundBackend } from "./types.ts";
 
 async function listSide(run: Run, side: Side): Promise<Output[] | null> {

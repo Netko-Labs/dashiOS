@@ -1,6 +1,6 @@
 /** Sound as agents reach it: the outputs and inputs, volumes, and each app's level, mute and output. */
 
-import { type AppSound, playOnLabel } from "../../sound/apps/index.ts";
+import { type AppSound, playOnLabel } from "../../sound/index.ts";
 import { type AppReading, type MachineDesktop, pickByName } from "../machine-reading.ts";
 import type { PaneServices } from "../services.ts";
 import type { SettingsStore } from "../store.ts";

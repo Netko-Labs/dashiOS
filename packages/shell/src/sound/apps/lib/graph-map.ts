@@ -15,7 +15,7 @@
  * (`takeMetadata`) and watch.ts reads that object again whole.
  */
 
-import { isRecord } from "./streams.ts";
+import { isRecord } from "../streams.ts";
 
 /** Whole top-level JSON arrays out of the lines of a stream. */
 export class JsonArrays {

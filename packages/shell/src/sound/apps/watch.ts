@@ -17,7 +17,7 @@
 
 import { run as defaultRun } from "../../system/exec.ts";
 import { type WatchOptions, watchLines } from "../../system/watch.ts";
-import { GraphMap, JsonArrays } from "./graph-map.ts";
+import { GraphMap, JsonArrays } from "./lib/graph-map.ts";
 import { type Graph, parseGraph } from "./streams.ts";
 
 /** A burst of updates (a stream starting links several ports) is told once. */

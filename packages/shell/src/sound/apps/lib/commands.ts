@@ -8,7 +8,7 @@
  * the store keeps the change in memory, as the output volume's stand-in does.
  */
 
-import { run as defaultRun, type Run } from "../../system/exec.ts";
+import { run as defaultRun, type Run } from "../../../system/exec.ts";
 
 const isNodeId = (id: number): boolean => Number.isSafeInteger(id) && id >= 0;
 

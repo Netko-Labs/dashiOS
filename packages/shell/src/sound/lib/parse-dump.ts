@@ -8,10 +8,10 @@
  * `defaultVolume`.
  */
 
-import type { Volume } from "../system/volume.ts";
-import { volumeOf } from "./apps/streams.ts";
+import type { Volume } from "../../system/volume.ts";
+import { volumeOf } from "../apps/index.ts";
+import type { Output } from "../types.ts";
 import { outputKind } from "./kind.ts";
-import type { Output } from "./types.ts";
 
 type Props = Record<string, unknown>;
 

@@ -4,7 +4,9 @@
  */
 
 import { catalogFrom } from "../../src/shared/processes/index.ts";
-import { type GraphWatch, type MixerControl, type ProcessLook, parseGraph, type Stream, streamApp } from "../../src/sound/apps/index.ts";
+import { type GraphWatch, parseGraph, type Stream } from "../../src/sound/apps/index.ts";
+import type { MixerControl } from "../../src/sound/apps/lib/commands.ts";
+import { type ProcessLook, streamApp } from "../../src/sound/apps/lib/identity.ts";
 
 const HELIUM = { id: "helium", name: "Helium", icon: "/icons/helium.png", exec: ["/opt/helium/helium", "%U"] };
 const LOLLYPOP = { id: "org.gnome.Lollypop", name: "Lollypop", icon: "/icons/lollypop.png", exec: ["flatpak", "run", "org.gnome.Lollypop"] };

@@ -4,18 +4,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import {
-  AppMixer,
-  fixedGraph,
-  heldControl,
-  type MixerControl,
-  moveCommands,
-  muteCommands,
-  parseGraph,
-  parseStatLine,
-  playOnLabel,
-  volumeCommands,
-} from "../src/sound/apps/index.ts";
+import { AppMixer, fixedGraph, parseGraph, playOnLabel } from "../src/sound/apps/index.ts";
+import { heldControl, type MixerControl, moveCommands, muteCommands, volumeCommands } from "../src/sound/apps/lib/commands.ts";
+import { parseStatLine } from "../src/sound/apps/lib/proc-look.ts";
 import { vmGraph } from "./fixtures/pw-graph.ts";
 import { owner, pushedGraph, recordingControl } from "./support/sound-mixer.ts";
 import { fakeClockEachTest, flush, settle } from "./support/time.ts";

@@ -19,7 +19,9 @@ import { PaneStoresContext } from "../src/settings-app/lib/setting.tsx";
 import type { PaneServices } from "../src/settings-app/services.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
-import { fakeMeter, LevelsStore, SoundStore } from "../src/sound/index.ts";
+import { LevelsStore } from "../src/sound/levels-store.ts";
+import { fakeMeter } from "../src/sound/meter.ts";
+import { SoundStore } from "../src/sound/store.ts";
 import type { Output } from "../src/sound/types.ts";
 import { settle } from "./support/time.ts";
 

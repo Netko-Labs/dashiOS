@@ -7,10 +7,10 @@
  * and the rows are made again when they change who something is.
  */
 
-import { type AppCatalog, type AppIdentity, DASHI_KEY } from "../../shared/processes/index.ts";
+import { type AppCatalog, type AppIdentity, DASHI_KEY } from "../../../shared/processes/index.ts";
+import type { Owner } from "../rows.ts";
+import type { Stream } from "../streams.ts";
 import { type IdentityDeps, streamApp, streamPid } from "./identity.ts";
-import type { Owner } from "./rows.ts";
-import type { Stream } from "./streams.ts";
 
 export interface OwnerOptions {
   /** The installed apps, read when first needed. */

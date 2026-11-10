@@ -9,9 +9,9 @@ import type { Compositor } from "../../compositor/index.ts";
 import type { Entry } from "../../entries.ts";
 import { type App, cachedIcon, iconPath } from "../../shared/apps/index.ts";
 import { type AppIdentity, catalogFrom } from "../../shared/processes/index.ts";
-import { heldControl, pipewireControl } from "./commands.ts";
-import { streamOwners } from "./owners.ts";
-import { readProcess } from "./proc-look.ts";
+import { heldControl, pipewireControl } from "./lib/commands.ts";
+import { streamOwners } from "./lib/owners.ts";
+import { readProcess } from "./lib/proc-look.ts";
 import { AppMixer } from "./store.ts";
 import { graphOf, type PipeWireWatch, pipewireWatch } from "./watch.ts";
 
