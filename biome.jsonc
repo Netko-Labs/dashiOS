@@ -277,10 +277,6 @@
     },
     { "includes": ["packages/shell/src/launcher.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
     {
-      "includes": ["packages/shell/src/main.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 120 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/menus/start.tsx"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 230 } } } } }
     },

@@ -76,7 +76,6 @@
 318	packages/shell/src/bluetooth/store.ts
 307	packages/shell/src/display-config/manager.ts
 1189	packages/shell/src/launcher.tsx
-1902	packages/shell/src/main.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
 420	packages/shell/src/menus/start.tsx

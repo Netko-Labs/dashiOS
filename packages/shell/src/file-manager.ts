@@ -13,6 +13,8 @@
  * activation token, handed to Files so its window may take the focus.
  */
 
+import { homedir } from "node:os";
+import type { App } from "./shared/apps/index.ts";
 import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, requestName } from "./shared/dbus/index.ts";
 
 export const SERVICE = "org.freedesktop.FileManager1";
@@ -60,6 +62,29 @@ export function filesRequests(kind: ShowKind, uris: readonly string[]): string[]
 
 /** How the shell opens one Files window: its arguments, and the caller's activation token (may be empty). */
 export type OpenFiles = (args: readonly string[], startup: string) => void;
+
+/**
+ * How Files is started for one window: its command line with `args` after it, and the caller's
+ * activation token (when there is one) so its window may take the focus. Null without a Files to run.
+ */
+export function filesLaunch(files: App | undefined, args: readonly string[], startup: string): App | null {
+  if (!files?.exec) return null;
+  return {
+    ...files,
+    exec: [...files.exec, ...args],
+    ...(startup !== "" ? { env: { ...files.env, XDG_ACTIVATION_TOKEN: startup, DESKTOP_STARTUP_ID: startup } } : {}),
+  };
+}
+
+/** Opens a file or folder in its default app, as Files would. */
+export function openFile(url: string): void {
+  const opener = Bun.which("gio") ? ["gio", "open", url] : ["xdg-open", url];
+  try {
+    Bun.spawn(opener, { cwd: homedir(), stdin: "ignore", stdout: "ignore", stderr: "ignore", detached: true });
+  } catch (error) {
+    console.error("dashi-shell: could not open a file:", error);
+  }
+}
 
 export function fileManagerInterface(open: OpenFiles): InterfaceSpec {
   const method = (kind: ShowKind) => ({
