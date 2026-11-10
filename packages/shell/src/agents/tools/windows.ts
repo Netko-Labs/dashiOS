@@ -1,15 +1,15 @@
 /** Windows and apps: what is open, opening and arranging it, ending it, and locking the screen. */
 
+import { optional } from "@dashi/shape";
 import { ARRANGE } from "../../layout.ts";
-import { fail, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
+import { custom, tool, windowId } from "./args.ts";
+import { fail, type ToolDef, whole } from "./define.ts";
 
 /** A process id: Linux allows up to 2^22, and 0 and 1 are never an app. */
 const PID_MAX = 4_194_304;
 
-const oneWindow = { window: windowProp };
-
 export const windowTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "list_windows",
     title: "List windows",
     description:
@@ -17,20 +17,20 @@ export const windowTools: readonly ToolDef[] = [
     scope: "see",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "list_windows" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_windows" }),
+  }),
+  tool({
     name: "list_apps",
     title: "List apps",
     description: "Installed apps (desktop entries): id, name, and whether it is running.",
     scope: "see",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "list_apps" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_apps" }),
+  }),
+  tool({
     name: "launch_app",
     title: "Open an app",
     description:
@@ -38,56 +38,46 @@ export const windowTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: { app: { type: "string", description: 'An app id like "org.gnome.TextEditor", or a name like "Text Editor".' } },
-    required: ["app"],
-    parse: (args) => {
-      const app = typeof args.app === "string" ? args.app.trim() : "";
-      return app ? { name: "launch_app", app } : fail("`app` is required: an id or name from list_apps.");
+    args: {
+      app: custom(
+        { type: "string", description: 'An app id like "org.gnome.TextEditor", or a name like "Text Editor".' },
+        (value) => (typeof value === "string" ? value.trim() || null : null),
+        "`app` is required: an id or name from list_apps.",
+      ),
     },
-  },
-  {
+    build: ({ app }) => ({ name: "launch_app", app }),
+  }),
+  tool({
     name: "focus_window",
     title: "Bring a window forward",
     description: "Raise a window and give it the keyboard, restoring it if minimized or hidden.",
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: oneWindow,
-    required: ["window"],
-    parse: (args) => {
-      const window = windowArg(args);
-      return typeof window === "number" ? { name: "focus_window", window } : window;
-    },
-  },
-  {
+    args: { window: windowId },
+    build: ({ window }) => ({ name: "focus_window", window }),
+  }),
+  tool({
     name: "minimize_window",
     title: "Minimize a window",
     description: "Minimize a window to the Dock.",
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: oneWindow,
-    required: ["window"],
-    parse: (args) => {
-      const window = windowArg(args);
-      return typeof window === "number" ? { name: "minimize_window", window } : window;
-    },
-  },
-  {
+    args: { window: windowId },
+    build: ({ window }) => ({ name: "minimize_window", window }),
+  }),
+  tool({
     name: "close_window",
     title: "Close a window",
     description: "Ask a window to close, as its close button does. The app may ask the person to save first.",
     scope: "act",
     readOnly: false,
     destructive: true,
-    properties: oneWindow,
-    required: ["window"],
-    parse: (args) => {
-      const window = windowArg(args);
-      return typeof window === "number" ? { name: "close_window", window } : window;
-    },
-  },
-  {
+    args: { window: windowId },
+    build: ({ window }) => ({ name: "close_window", window }),
+  }),
+  tool({
     name: "tile_window",
     title: "Arrange a window",
     description:
@@ -96,16 +86,17 @@ export const windowTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { window: windowProp, tile: { type: "string", enum: ARRANGE } },
-    required: ["window", "tile"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const tile = ARRANGE.find((candidate) => candidate === args.tile);
-      return tile ? { name: "tile_window", window, tile } : fail(`\`tile\` must be one of: ${ARRANGE.join(", ")}.`);
+    args: {
+      window: windowId,
+      tile: custom(
+        { type: "string", enum: ARRANGE },
+        (value) => ARRANGE.find((candidate) => candidate === value) ?? null,
+        `\`tile\` must be one of: ${ARRANGE.join(", ")}.`,
+      ),
     },
-  },
-  {
+    build: ({ window, tile }) => ({ name: "tile_window", window, tile }),
+  }),
+  tool({
     name: "force_quit_app",
     title: "Force quit an app",
     description:
@@ -116,21 +107,24 @@ export const windowTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: true,
-    properties: {
-      window: windowProp,
-      pid: { type: "integer", minimum: 2, description: "The process id of one of its windows, from list_windows." },
+    args: {
+      window: optional(windowId),
+      // The listing says "from 2"; the top of a process id is the check's.
+      pid: optional(
+        custom(
+          { type: "integer", minimum: 2, description: "The process id of one of its windows, from list_windows." },
+          (value) => whole(value, 2, PID_MAX),
+          "`pid` must be a process id from list_windows.",
+        ),
+      ),
     },
-    parse: (args) => {
-      if ((args.window === undefined) === (args.pid === undefined)) return fail("Give `window` or `pid`, one of them.");
-      if (args.window !== undefined) {
-        const window = windowArg(args);
-        return typeof window === "number" ? { name: "force_quit_app", target: { window } } : window;
-      }
-      const pid = whole(args.pid, 2, PID_MAX);
-      return pid === null ? fail("`pid` must be a process id from list_windows.") : { name: "force_quit_app", target: { pid } };
+    build: ({ window, pid }) => {
+      if (window !== undefined && pid === undefined) return { name: "force_quit_app", target: { window } };
+      if (pid !== undefined && window === undefined) return { name: "force_quit_app", target: { pid } };
+      return fail("Give `window` or `pid`, one of them.");
     },
-  },
-  {
+  }),
+  tool({
     name: "lock_screen",
     title: "Lock the screen",
     description: "Lock the screen, as the person would. Every tool is refused until they unlock it with their password; agents cannot unlock it.",
@@ -138,7 +132,7 @@ export const windowTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: {},
-    parse: () => ({ name: "lock_screen" }),
-  },
+    args: {},
+    build: () => ({ name: "lock_screen" }),
+  }),
 ];

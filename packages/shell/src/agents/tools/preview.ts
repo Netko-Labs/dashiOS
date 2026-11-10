@@ -1,7 +1,8 @@
 /** Files: opening an image or a PDF in Preview. */
 
 import { isAbsolute, normalize } from "node:path";
-import { fail, type ToolDef } from "./define.ts";
+import { custom, tool } from "./args.ts";
+import type { ToolDef } from "./define.ts";
 
 /** Longest path accepted (Linux's PATH_MAX). */
 const PATH_MAX = 4096;
@@ -14,7 +15,7 @@ export function previewPath(value: unknown): string | null {
 }
 
 export const previewTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "open_in_preview",
     title: "Open a file in Preview",
     description:
@@ -23,11 +24,13 @@ export const previewTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: { path: { type: "string", description: "An absolute path, like /home/me/Pictures/photo.jpg." } },
-    required: ["path"],
-    parse: (args) => {
-      const path = previewPath(args.path);
-      return path === null ? fail("`path` is required: an absolute path to an image or a PDF, on one line.") : { name: "open_in_preview", path };
+    args: {
+      path: custom(
+        { type: "string", description: "An absolute path, like /home/me/Pictures/photo.jpg." },
+        previewPath,
+        "`path` is required: an absolute path to an image or a PDF, on one line.",
+      ),
     },
-  },
+    build: ({ path }) => ({ name: "open_in_preview", path }),
+  }),
 ];
