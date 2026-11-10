@@ -56,6 +56,7 @@ install -Dm0644 usr/share/dashi/finish-install.ks %{buildroot}%{_datadir}/dashi/
 install -Dm0755 usr/libexec/livesys/sessions.d/livesys-dashi %{buildroot}%{_libexecdir}/livesys/sessions.d/livesys-dashi
 
 %files
+%license LICENSE
 %config(noreplace) %{_sysconfdir}/anaconda/conf.d/90-dashi.conf
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/installer-browser

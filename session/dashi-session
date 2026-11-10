@@ -107,7 +107,7 @@ if command -v flatpak >/dev/null 2>&1; then
       *) data=$dir:$data ;;
     esac
   done
-  export XDG_DATA_DIRS=$data
+  export XDG_DATA_DIRS="$data"
 fi
 
 # Toolkits that default to X11 or guess wrong. GDK_BACKEND is left alone: GTK
@@ -172,7 +172,7 @@ if [ "$print_only" = 1 ]; then
   echo "layout:      $layout"
   echo "compositor:  $comp"
   echo "client (-c): $client"
-  echo "metal host:  ${DASHI_METAL_HOST:-(the shell's default)}"
+  echo "metal host:  ${DASHI_METAL_HOST:-(the shell default)}"
   echo "nested:      $nested"
   echo "log:         ${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}/dashi/dashi.log (linked from $XDG_RUNTIME_DIR/dashi.log)"
   env | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|DESKTOP_SESSION|MOZ_ENABLE_WAYLAND|QT_QPA_PLATFORM|QT_QPA_PLATFORMTHEME|GTK_USE_PORTAL|GDK_DEBUG|SDL_VIDEODRIVER|_JAVA_AWT_WM_NONREPARENTING|ELECTRON_OZONE_PLATFORM_HINT|GDK_BACKEND|DASHI_[A-Z_]*)=' | sort | sed 's/^/env:         /'
@@ -210,6 +210,6 @@ if [ "$nested" != 1 ] && [ -z "${DASHI_DRM_DEVICE:-}" ]; then
     export DASHI_DRM_DEVICE
   fi
 fi
-echo "gpu:        ${DASHI_DRM_DEVICE:-(the compositor's own choice)}"
+echo "gpu:        ${DASHI_DRM_DEVICE:-(chosen by the compositor)}"
 
 exec "$comp" -c "$client"

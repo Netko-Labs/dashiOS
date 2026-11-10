@@ -25,6 +25,7 @@ the "dashi" Plymouth theme shown while the system boots.
 cp -a spin/dashi-logos/usr %{buildroot}/
 
 %files
+%license LICENSE
 %{_datadir}/icons/hicolor/*/apps/dashi-logo-icon.*
 %{_datadir}/pixmaps/dashi-logo.png
 %{_datadir}/plymouth/themes/dashi

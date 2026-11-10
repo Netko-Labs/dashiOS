@@ -16,12 +16,12 @@ case $display in /*) ;; *) display=$outer/$display ;; esac
 
 dir=$outer/dashi-nested
 mkdir -p "$dir" && chmod 700 "$dir"
-newest=$(ls -t "$repo"/target/*/dashi-comp 2>/dev/null | head -1)
-export DASHI_COMP=${DASHI_COMP:-$newest}
+newest=$(find "$repo"/target -maxdepth 2 -name dashi-comp -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+export DASHI_COMP="${DASHI_COMP:-$newest}"
 [ -x "$DASHI_COMP" ] || { echo "nested-session: no dashi-comp build (cargo build -p dashi-comp)" >&2; exit 1; }
-export DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unix:path=$outer/bus}
-export XDG_RUNTIME_DIR=$dir XDG_STATE_HOME=$dir/state WAYLAND_DISPLAY=$display
-export DASHI_METAL_HOST=${DASHI_METAL_HOST:-/usr/libexec/dashi/mirin-metal-host}
-export DASHI_BUN=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$outer/bus}"
+export XDG_RUNTIME_DIR="$dir" XDG_STATE_HOME="$dir"/state WAYLAND_DISPLAY="$display"
+export DASHI_METAL_HOST="${DASHI_METAL_HOST:-/usr/libexec/dashi/mirin-metal-host}"
+export DASHI_BUN="${DASHI_BUN:-/usr/libexec/dashi/bin/bun}"
 unset DISPLAY DASHI_COMP_SOCKET
 exec "$repo/session/dashi-session" "$@"

@@ -37,6 +37,7 @@ install -Dm0644 spin/dashi-helium/etc/chromium/policies/managed/dashi.json %{bui
 install -Dm0644 spin/dashi-helium/etc/chromium/native-messaging-hosts/dev.dashi.browser.json %{buildroot}%{_sysconfdir}/chromium/native-messaging-hosts/dev.dashi.browser.json
 
 %files
+%license LICENSE
 /opt/helium/initial_preferences
 %dir %{_datadir}/dashi/browser
 %{_datadir}/dashi/browser/dashi-browser.crx

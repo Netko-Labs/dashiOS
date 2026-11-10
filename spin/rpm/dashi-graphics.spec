@@ -55,6 +55,7 @@ echo "enable cardwired.service" > %{buildroot}%{_presetdir}/80-dashi-graphics.pr
 %systemd_postun cardwired.service
 
 %files
+%license LICENSE
 %{_presetdir}/80-dashi-graphics.preset
 
 %changelog

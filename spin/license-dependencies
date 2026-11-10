@@ -1,0 +1,326 @@
+#!/usr/bin/env bun
+/**
+ * spin/license-dependencies: the LICENSE.dependencies file each package ships,
+ * written from the lockfiles so nobody keeps it by hand.
+ *
+ *   spin/license-dependencies            write them all
+ *   spin/license-dependencies --check    change nothing; exit 1 if one is out of date
+ *
+ * A Rust package's file lists every crate linked into it (the normal
+ * dependencies of its crate on any platform, not build-only or test-only ones)
+ * with its SPDX license, then the license and notice files the crates carry,
+ * each text once, with the crates that carry it. MIT and Apache-2.0 ask for
+ * those notices to travel with the binary. A JavaScript package's file does the
+ * same for the packages build-rpms copies into the shell (spin/vendored-modules).
+ *
+ * `--check` also compares each spec's `License:` tag with what the dependencies
+ * need (spin/rpm/<package>.spec): the project's MIT, plus the permissive licenses
+ * the dependencies are used under (an `A OR B` takes the one already needed,
+ * never a copyleft one). A dependency that can only be had under a copyleft or
+ * restricted license fails the run: Dashi stays MIT (docs/conventions.md).
+ *
+ * It reads the crates' sources from Cargo's registry, so run `cargo fetch` first
+ * if they are not there. mirin's file needs ../mirin.
+ */
+
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
+
+const ROOT = resolve(import.meta.dir, "..");
+
+interface RustTarget {
+  kind: "rust";
+  /** The Cargo.toml, relative to ROOT. */
+  manifest: string;
+  /** The package whose dependencies are listed. */
+  crate: string;
+  /** The file written, relative to ROOT. */
+  out: string;
+  /** The spec whose License: tag it must agree with. */
+  spec: string;
+}
+interface JsTarget {
+  kind: "js";
+  out: string;
+  spec: string;
+}
+
+const LICENSES = "usr/share/licenses";
+export const TARGETS: (RustTarget | JsTarget)[] = [
+  { kind: "rust", manifest: "Cargo.toml", crate: "dashi-comp", out: `spin/dashi-comp/${LICENSES}/dashi-comp/LICENSE.dependencies`, spec: "spin/rpm/dashi-comp.spec" },
+  { kind: "rust", manifest: "Cargo.toml", crate: "dashi-hardware", out: `spin/dashi-hardware/${LICENSES}/dashi-hardware/LICENSE.dependencies`, spec: "spin/rpm/dashi-hardware.spec" },
+  { kind: "rust", manifest: "Cargo.toml", crate: "dashi-secretd", out: `spin/dashi-secretd/${LICENSES}/dashi-secretd/LICENSE.dependencies`, spec: "spin/rpm/dashi-secretd.spec" },
+  { kind: "rust", manifest: "crates/dashi-term/Cargo.toml", crate: "dashi-term", out: `spin/dashi-term/${LICENSES}/dashi-term/LICENSE.dependencies`, spec: "spin/rpm/dashi-term.spec" },
+  { kind: "rust", manifest: "../mirin/crates/mirin-metal/Cargo.toml", crate: "mirin-metal", out: `spin/mirin-metal-host/${LICENSES}/mirin-metal-host/LICENSE.dependencies`, spec: "spin/rpm/mirin-metal-host.spec" },
+  { kind: "js", out: `spin/dashi/${LICENSES}/dashi/LICENSE.dependencies`, spec: "spin/rpm/dashi.spec" },
+];
+
+const NOTICE_FILE = /^(licen[cs]e|copying|notice|unlicense|copyright)([-._].*)?$/i;
+
+interface Entry {
+  /** name-version */
+  id: string;
+  license: string;
+  /** Directory of the package's sources. */
+  dir: string;
+}
+
+// --- Rust ------------------------------------------------------------------
+
+interface CargoPackage {
+  id: string;
+  name: string;
+  version: string;
+  license: string | null;
+  license_file: string | null;
+  source: string | null;
+  manifest_path: string;
+}
+interface CargoNode {
+  id: string;
+  deps: { pkg: string; dep_kinds: { kind: string | null }[] }[];
+}
+interface CargoMetadata {
+  packages: CargoPackage[];
+  workspace_members: string[];
+  resolve: { nodes: CargoNode[] };
+}
+
+function cargoMetadata(manifest: string): CargoMetadata {
+  const result = Bun.spawnSync(["cargo", "metadata", "--format-version", "1", "--locked", "--manifest-path", manifest], {
+    cwd: ROOT,
+    stdout: "pipe",
+    stderr: "pipe",
+    maxBuffer: 256 * 1024 * 1024,
+  });
+  if (result.exitCode !== 0) throw new Error(`cargo metadata ${manifest}: ${result.stderr.toString().trim()}`);
+  return JSON.parse(result.stdout.toString()) as CargoMetadata;
+}
+
+function rustEntries(target: RustTarget): Entry[] {
+  const meta = cargoMetadata(join(ROOT, target.manifest));
+  const byId = new Map(meta.packages.map((pkg) => [pkg.id, pkg]));
+  const nodes = new Map(meta.resolve.nodes.map((node) => [node.id, node]));
+  const root = meta.packages.find((pkg) => pkg.name === target.crate && meta.workspace_members.includes(pkg.id));
+  if (!root) throw new Error(`${target.crate} is not in ${target.manifest}`);
+  const members = new Set(meta.workspace_members);
+
+  // Normal dependencies only (kind null): what is linked, not what builds or tests it.
+  const seen = new Set<string>([root.id]);
+  const queue = [root.id];
+  while (queue.length > 0) {
+    const node = nodes.get(queue.pop() as string);
+    for (const dep of node?.deps ?? []) {
+      if (!dep.dep_kinds.some((kind) => kind.kind === null) || seen.has(dep.pkg)) continue;
+      seen.add(dep.pkg);
+      queue.push(dep.pkg);
+    }
+  }
+  const entries: Entry[] = [];
+  for (const id of seen) {
+    const pkg = byId.get(id);
+    // The tree's own crates are Dashi's (or mirin's) and carry the project's license.
+    if (!pkg || members.has(id)) continue;
+    entries.push({
+      id: `${pkg.name}-${pkg.version}`,
+      license: pkg.license ?? (pkg.license_file ? `see ${basename(pkg.license_file)}` : "unknown"),
+      dir: dirname(pkg.manifest_path),
+    });
+  }
+  return entries;
+}
+
+// --- JavaScript ------------------------------------------------------------
+
+/** The package names build-rpms copies into the shell (one per line; # starts a comment). */
+export function vendoredModules(): string[] {
+  return readFileSync(join(ROOT, "spin/vendored-modules"), "utf8")
+    .split("\n")
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter((line) => line !== "");
+}
+
+function jsEntries(): Entry[] {
+  const bunDir = join(ROOT, "node_modules/.bun");
+  const entries: Entry[] = [];
+  for (const name of vendoredModules()) {
+    const prefix = `${name.replace("/", "+")}@`;
+    const dir = readdirSync(bunDir)
+      .filter((entry) => entry.startsWith(prefix))
+      .sort()[0];
+    if (!dir) throw new Error(`${name} is not installed (run bun install)`);
+    const packageDir = join(bunDir, dir, "node_modules", name);
+    const manifest = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")) as { version: string; license?: string };
+    entries.push({ id: `${name}-${manifest.version}`, license: manifest.license ?? "unknown", dir: packageDir });
+  }
+  // Dashi's own packages are MIT and ship in the same tree; mirin's Metal runtime has its own entry in mirin-metal-host.
+  return entries;
+}
+
+// --- SPDX ------------------------------------------------------------------
+
+/** Licenses a dependency may be used under. Anything else is copyleft, restricted or unknown to us. */
+const PERMISSIVE = new Set([
+  "MIT",
+  "MIT-0",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "Unlicense",
+  "0BSD",
+  "CC0-1.0",
+  "BSL-1.0",
+  "NCSA",
+  "OFL-1.1",
+  "MPL-2.0", // used unmodified, as a library (docs/conventions.md)
+]);
+
+/** The ways an SPDX expression can be satisfied: each alternative is the set of licenses it needs. */
+export function alternatives(expression: string): Set<string>[] {
+  const tokens = expression.replace(/\s*\/\s*/g, " OR ").match(/\(|\)|[^\s()]+/g) ?? [];
+  let at = 0;
+  const parseOr = (): Set<string>[] => {
+    let result = parseAnd();
+    while (tokens[at] === "OR") {
+      at++;
+      result = [...result, ...parseAnd()];
+    }
+    return result;
+  };
+  const parseAnd = (): Set<string>[] => {
+    let result = parseAtom();
+    while (tokens[at] === "AND") {
+      at++;
+      const right = parseAtom();
+      result = result.flatMap((left) => right.map((other) => new Set([...left, ...other])));
+    }
+    return result;
+  };
+  const parseAtom = (): Set<string>[] => {
+    const token = tokens[at++];
+    if (token === "(") {
+      const inner = parseOr();
+      at++; // ")"
+      return inner;
+    }
+    if (token === undefined) throw new Error(`bad license expression: ${expression}`);
+    if (tokens[at] === "WITH") {
+      at++;
+      return [new Set([`${token} WITH ${tokens[at++]}`])];
+    }
+    return [new Set([token])];
+  };
+  return parseOr();
+}
+
+/** The licenses a package set needs: the one alternative of each dependency that adds the fewest. */
+export function neededLicenses(entries: Entry[]): { licenses: string[]; problems: string[] } {
+  const needed = new Set<string>(["MIT"]); // Dashi's own code
+  const problems: string[] = [];
+  const choices: { id: string; options: Set<string>[] }[] = [];
+  for (const entry of entries) {
+    const options = alternatives(entry.license).filter((option) => [...option].every((id) => PERMISSIVE.has(id)));
+    if (options.length === 0) problems.push(`${entry.id}: ${entry.license} (no permissive way to use it)`);
+    else if (options.length === 1) for (const id of options[0] as Set<string>) needed.add(id);
+    else choices.push({ id: entry.id, options });
+  }
+  for (const { options } of choices) {
+    const cost = (option: Set<string>): number => [...option].filter((id) => !needed.has(id)).length;
+    const best = [...options].sort((a, b) => cost(a) - cost(b))[0] as Set<string>;
+    for (const id of best) needed.add(id);
+  }
+  return { licenses: [...needed].sort(), problems };
+}
+
+function specLicense(spec: string): string[] {
+  const line = readFileSync(join(ROOT, spec), "utf8").match(/^License:\s*(.+)$/m)?.[1] ?? "";
+  return [...new Set(line.split(/\s+AND\s+/).map((id) => id.trim()))].sort();
+}
+
+// --- Output ----------------------------------------------------------------
+
+function noticeFiles(dir: string): { name: string; text: string }[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && NOTICE_FILE.test(entry.name))
+    .map((entry) => ({ name: entry.name, text: readFileSync(join(dir, entry.name), "utf8").replace(/\r\n/g, "\n").replace(/[ \t]+$/gm, "").trimEnd() }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function render(title: string, entries: Entry[]): string {
+  const sorted = [...entries].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const lines = [
+    `# ${title}: the libraries linked or bundled, and their licenses.`,
+    "# Written by spin/license-dependencies from the lockfile; edit nothing here.",
+    "",
+    ...sorted.map((entry) => `${entry.id}: ${entry.license}`),
+  ];
+  // Each distinct text once, with every package that carries it.
+  const texts = new Map<string, { name: string; text: string; ids: string[] }>();
+  const bare: string[] = [];
+  for (const entry of sorted) {
+    const files = noticeFiles(entry.dir);
+    if (files.length === 0) bare.push(entry.id);
+    for (const file of files) {
+      const key = createHash("sha256").update(file.text).digest("hex");
+      const known = texts.get(key);
+      if (known) known.ids.push(entry.id);
+      else texts.set(key, { name: file.name, text: file.text, ids: [entry.id] });
+    }
+  }
+  lines.push("", "# Notices", "");
+  if (bare.length > 0) {
+    lines.push(`# These packages carry no license file in their sources; their license is the one named above: ${bare.join(", ")}`, "");
+  }
+  for (const { name, text, ids } of texts.values()) {
+    lines.push("=".repeat(78), `${name}: ${ids.join(", ")}`, "=".repeat(78), "", text, "");
+  }
+  return `${lines.join("\n")}`;
+}
+
+function generate(target: RustTarget | JsTarget): { text: string; entries: Entry[] } {
+  const entries = target.kind === "rust" ? rustEntries(target) : jsEntries();
+  const title = target.kind === "rust" ? target.crate : "dashi (the shell's runtime packages)";
+  return { text: render(title, entries), entries };
+}
+
+if (import.meta.main) {
+  const check = process.argv.includes("--check");
+  let stale = 0;
+  for (const target of TARGETS) {
+    const path = join(ROOT, target.out);
+    const { text, entries } = generate(target);
+    const current = existsSync(path) ? readFileSync(path, "utf8") : null;
+    if (current === text) {
+      console.log(`ok       ${target.out}`);
+    } else if (check) {
+      console.log(`STALE    ${target.out}`);
+      stale++;
+    } else {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, text);
+      console.log(`wrote    ${target.out}`);
+    }
+  }
+  // The spec's License: tag says what the package holds.
+  let wrong = 0;
+  for (const target of TARGETS) {
+    const { licenses, problems } = neededLicenses(generate(target).entries);
+    for (const problem of problems) {
+      console.error(`NOT PERMISSIVE  ${target.spec}: ${problem}`);
+      wrong++;
+    }
+    const tag = specLicense(target.spec);
+    if (tag.join(" AND ") !== licenses.join(" AND ")) {
+      console.error(`LICENSE TAG     ${target.spec}: has "${tag.join(" AND ")}", the dependencies need "${licenses.join(" AND ")}"`);
+      wrong++;
+    }
+  }
+  if (stale > 0) console.error("license-dependencies: run spin/license-dependencies and commit the result");
+  if (stale > 0 || wrong > 0) process.exit(1);
+}

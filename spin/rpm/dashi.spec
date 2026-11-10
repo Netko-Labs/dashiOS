@@ -5,7 +5,7 @@ Name:           dashi
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        The Dashi desktop: session, shell, and apps
-License:        MIT
+License:        Apache-2.0 AND MIT AND Unlicense
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 BuildArch:      noarch
@@ -130,6 +130,9 @@ install -Dm0644 session/dashi-mimeapps.list %{buildroot}%{_datadir}/applications
 install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 
 %files
+%license LICENSE
+%license THIRD-PARTY-NOTICES.md
+%license spin/dashi/usr/share/licenses/dashi/LICENSE.dependencies
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp

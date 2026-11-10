@@ -90,7 +90,9 @@ if [ $1 -eq 0 ] && [ -f %{_sysconfdir}/zshrc ]; then
 fi
 
 %files
-%{_datadir}/licenses/dashi-release
+%license LICENSE
+%license %{_datadir}/licenses/dashi-release/Fedora-Legal-README.txt
+%license %{_datadir}/licenses/dashi-release/LICENSE.fedora-release
 %{_prefix}/lib/os-release
 %{_prefix}/lib/dashi-release
 %{_prefix}/lib/fedora-release

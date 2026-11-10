@@ -9,7 +9,7 @@ Name:           dashi-comp
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        Dashi's Wayland compositor
-License:        MIT
+License:        Apache-2.0 AND BSD-3-Clause AND ISC AND MIT AND Unicode-3.0 AND Zlib
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -48,16 +48,17 @@ cargo build --release --locked -p dashi-comp
 
 %install
 install -Dm0755 %{cargo_target}/release/dashi-comp %{buildroot}%{_bindir}/dashi-comp
-install -d %{buildroot}%{_datadir}/licenses/%{name}
-cp -a spin/dashi-comp/usr/share/licenses/dashi-comp/. %{buildroot}%{_datadir}/licenses/%{name}/
 
 %check
 export CARGO_TARGET_DIR=%{cargo_target}
 cargo test --release --locked -p dashi-comp
 
 %files
+%license LICENSE
+%license THIRD-PARTY-NOTICES.md
+%license spin/dashi-comp/usr/share/licenses/dashi-comp/LICENSE.dependencies
+%license spin/dashi-comp/usr/share/licenses/dashi-comp/LICENSE-smithay.txt
 %{_bindir}/dashi-comp
-%{_datadir}/licenses/%{name}
 
 %changelog
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 0.2.0

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # spin/build-rpms: Dashi's packages from this checkout, with rpmbuild. Run it
 # on any Fedora 44 machine set up for it (the laptop is; the VM works too,
-# slower): it needs a clean tree (the packages are built from HEAD),
-# `bun install` done at the root (the shell's runtime packages are copied
-# from node_modules), ../mirin checked out, and the build dependencies the
-# specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
+# slower): it needs a clean tree and `bun install` done at the root (the
+# shell's runtime packages are copied from node_modules), ../mirin checked
+# out, and the build dependencies the specs name (`sudo dnf builddep spin/rpm/*.spec`, with the pejedev/dashi
 # COPR enabled for libghostty-vt-devel 1.4).
 #
 #   spin/build-rpms [package...|all]   default: dashi dashi-comp dashi-hardware dashi-secretd dashi-greeter dashi-release dashi-live
@@ -12,6 +11,13 @@
 #   downloads Bun's release, with spectool)
 #
 # The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
+# ~/rpmbuild/SRPMS/<snapshot>.manifest (and latest.manifest) names this run's source RPMs.
+#
+# What is built is what is committed: Dashi's HEAD and mirin's HEAD, each taken
+# with `git archive`, so an untracked file or an uncommitted change in either
+# tree cannot get in. Dashi's tree must be clean (tracked files); a dirty mirin
+# is built at its HEAD, and says so. vendor/MIRIN_COMMIT names the commit the
+# packages really hold.
 set -euo pipefail
 
 repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
@@ -45,40 +51,45 @@ trap 'rm -rf "$stage"' EXIT
 # here is Bun's isolated layout of symlinks).
 name=dashi-$snapshot
 git archive --format=tar --prefix="$name/" HEAD | tar -x -C "$stage"
-modules=$stage/$name/vendor/node_modules
+src=$stage/$name
+modules=$src/vendor/node_modules
 mkdir -p "$modules/@mirinjs" "$modules/@dashi"
-copy_module() { # <installed package dir> <destination>
-  [ -d "$1" ] || { echo "build-rpms: missing $1 (run bun install)" >&2; exit 1; }
-  cp -rL "$1" "$2"
+# copy_module <destination> <installed package dir>...: the first dir that
+# exists (the arguments are one glob, expanded by the caller).
+copy_module() {
+  [ -d "$2" ] || { echo "build-rpms: missing ${2##*/} (run bun install)" >&2; exit 1; }
+  cp -rL "$2" "$1"
 }
 bun_dir="$repo/node_modules/.bun"
-copy_module "$(ls -d "$bun_dir"/react@*/node_modules/react | head -1)" "$modules/react"
-copy_module "$(ls -d "$bun_dir"/react-reconciler@*/node_modules/react-reconciler | head -1)" "$modules/react-reconciler"
-copy_module "$(ls -d "$bun_dir"/scheduler@*/node_modules/scheduler | head -1)" "$modules/scheduler"
-# The Anthropic SDK (the launcher's Claude answerer) and what it loads at run time; json-schema-to-ts is types only.
-mkdir -p "$modules/@anthropic-ai" "$modules/@opentelemetry" "$modules/@stablelib"
-copy_module "$(ls -d "$bun_dir"/@anthropic-ai+sdk@*/node_modules/@anthropic-ai/sdk | head -1)" "$modules/@anthropic-ai/sdk"
-copy_module "$(ls -d "$bun_dir"/@opentelemetry+api@*/node_modules/@opentelemetry/api | head -1)" "$modules/@opentelemetry/api"
-copy_module "$(ls -d "$bun_dir"/standardwebhooks@*/node_modules/standardwebhooks | head -1)" "$modules/standardwebhooks"
-copy_module "$(ls -d "$bun_dir"/@stablelib+base64@*/node_modules/@stablelib/base64 | head -1)" "$modules/@stablelib/base64"
-copy_module "$(ls -d "$bun_dir"/fast-sha256@*/node_modules/fast-sha256 | head -1)" "$modules/fast-sha256"
-# OpenAI's SDK (the launcher's GPT answerer): the client needs nothing else at run time; ws, zod and undici are
-# optional peers for its realtime and helper subpaths, which Dashi doesn't load.
-copy_module "$(ls -d "$bun_dir"/openai@*/node_modules/openai | head -1)" "$modules/openai"
+# The packages in spin/vendored-modules, from Bun's install (licenses: spin/license-dependencies).
+while read -r module; do
+  module=${module%%#*}
+  module=${module// /}
+  [ -n "$module" ] || continue
+  mkdir -p "$modules/$(dirname "$module")"
+  copy_module "$modules/$module" "$bun_dir/${module//\//+}"@*/node_modules/"$module"
+done < "$src/spin/vendored-modules"
+# Dashi's own packages come from the archive above, never from the working tree.
+mkdir -p "$modules/@dashi/ui" "$modules/@dashi/applet"
+cp -r "$src/packages/dashi-ui/src" "$src/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
+cp -r "$src/packages/applet/src" "$src/packages/applet/package.json" "$src/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
+# mirin's @mirinjs/metal, from mirin's HEAD.
+mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
+if [ -n "$(git -C "$mirin" status --porcelain)" ]; then
+  echo "build-rpms: warning: $mirin has uncommitted changes; they are not in the packages (mirin $mirin_sha is)" >&2
+fi
+git -C "$mirin" archive --format=tar --prefix=mirin/ HEAD packages/mirin-metal/src packages/mirin-metal/package.json LICENSE | tar -x -C "$stage"
 mkdir -p "$modules/@mirinjs/metal"
-cp -r "$mirin/packages/mirin-metal/src" "$mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
-[ -f "$mirin/LICENSE" ] && cp "$mirin/LICENSE" "$modules/@mirinjs/metal/"
-mkdir -p "$modules/@dashi/ui"
-cp -r "$repo/packages/dashi-ui/src" "$repo/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
-mkdir -p "$modules/@dashi/applet"
-cp -r "$repo/packages/applet/src" "$repo/packages/applet/package.json" "$repo/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
-git -C "$mirin" rev-parse --short=7 HEAD > "$stage/$name/vendor/MIRIN_COMMIT"
+cp -r "$stage/mirin/packages/mirin-metal/src" "$stage/mirin/packages/mirin-metal/package.json" "$modules/@mirinjs/metal/"
+[ ! -f "$stage/mirin/LICENSE" ] || cp "$stage/mirin/LICENSE" "$modules/@mirinjs/metal/"
+rm -rf "$stage/mirin"
+echo "$mirin_sha" > "$src/vendor/MIRIN_COMMIT"
 # Dashi's browser extension, signed (dashi-helium installs it): the key never
 # leaves this machine and is never in the repository (docs/actions.md, "Websites").
 extension_key=${DASHI_EXTENSION_KEY:-$HOME/.config/dashi-build/browser-extension.pem}
 if [ -f "$extension_key" ]; then
-  bun "$repo/packages/shell/bin/dashi-browser-pack.ts" --key "$extension_key" --out "$stage/$name/vendor/browser" >/dev/null
-  rm -rf "$stage/$name/vendor/browser/unpacked"
+  bun "$src/packages/shell/bin/dashi-browser-pack.ts" --key "$extension_key" --out "$src/vendor/browser" >/dev/null
+  rm -rf "$src/vendor/browser/unpacked"
 elif [[ " ${packages[*]} " == *" dashi-helium "* ]]; then
   echo "build-rpms: dashi-helium needs the extension's key at $extension_key (or set DASHI_EXTENSION_KEY)" >&2
   exit 1
@@ -86,13 +97,13 @@ fi
 tar -C "$stage" -czf "$top/SOURCES/$name.tar.gz" "$name"
 
 # mirin's source, for mirin-metal-host: its HEAD, as Dashi's tree pins it by commit.
-mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
 mirin_snapshot="0.1.0~beta.$(stamp "$mirin").$mirin_sha"
 mirin_name=mirin-$mirin_snapshot
 if [[ " ${packages[*]} " == *" mirin-metal-host "* ]]; then
   git -C "$mirin" archive --format=tar.gz --prefix="$mirin_name/" -o "$top/SOURCES/$mirin_name.tar.gz" HEAD
 fi
 
+touch "$stage/started"
 for package in "${packages[@]}"; do
   spec=$repo/spin/rpm/$package.spec
   [ -f "$spec" ] || { echo "build-rpms: no spec for $package" >&2; exit 1; }
@@ -116,9 +127,15 @@ for package in "${packages[@]}"; do
     --define "_topdir $top" \
     --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
 done
+# What this run built, as one set: spin/copr-publish sends exactly these source
+# RPMs, never whatever else the shared SRPMS folder holds.
+manifest=$top/SRPMS/$snapshot.manifest
+find "$top"/SRPMS -maxdepth 1 -name '*.src.rpm' -newer "$stage/started" -printf '%f\n' | sort > "$manifest"
+cp "$manifest" "$top/SRPMS/latest.manifest"
+echo "build-rpms: $(wc -l < "$manifest") source RPMs in $manifest"
 # No file may belong to two of Dashi's packages (the newest build of each):
 # dnf refuses such a pair, and the image build would fail far later.
-newest=$(ls -t "$top"/RPMS/*/*.rpm | grep -v -- '-debug' | while read -r rpm; do
+newest=$(find "$top"/RPMS -name '*.rpm' ! -name '*-debug*' -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2- | while read -r rpm; do
   printf '%s %s\n' "$(rpm -qp --qf '%{NAME}' "$rpm" 2>/dev/null)" "$rpm"
 done | awk '!seen[$1]++ {print $2}')
 clashes=$(for rpm in $newest; do

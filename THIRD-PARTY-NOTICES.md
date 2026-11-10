@@ -1,8 +1,26 @@
 # Third-party notices
 
-Dashi is MIT (`LICENSE`). Code in this repository adapted from other projects
-keeps its authors' notices here. Libraries Dashi depends on carry their own
-licenses in their packages (crates.io, npm, the distribution).
+Dashi is MIT (`LICENSE`), and stays MIT. Two kinds of other people's work are
+in the packages, and each travels with its package as `%license` files under
+`/usr/share/licenses/<package>/`.
+
+**Libraries Dashi links or bundles.** Each package's `LICENSE.dependencies`
+lists every library in it with its license, then carries the license and
+notice texts those libraries ship. They are written from the lockfiles by
+`spin/license-dependencies` (`--check` fails when one is stale or a package's
+`License:` tag does not match its dependencies); nothing is kept by hand.
+
+| Package | Its `LICENSE.dependencies` is in | Covers |
+| --- | --- | --- |
+| `dashi-comp` | `spin/dashi-comp/usr/share/licenses/dashi-comp/` | the compositor's crates |
+| `dashi-hardware` | `spin/dashi-hardware/usr/share/licenses/dashi-hardware/` | the hardware helper's crates |
+| `dashi-secretd` | `spin/dashi-secretd/usr/share/licenses/dashi-secretd/` | the vault's crates |
+| `dashi-term` | `spin/dashi-term/usr/share/licenses/dashi-term/` | the terminal engine's crates |
+| `mirin-metal-host` | `spin/mirin-metal-host/usr/share/licenses/mirin-metal-host/` | mirin's Metal host and its crates |
+| `dashi` | `spin/dashi/usr/share/licenses/dashi/` | the npm packages bundled with the shell (`spin/vendored-modules`): React, the Anthropic and OpenAI SDKs (Apache-2.0), OpenTelemetry's API (Apache-2.0), `fast-sha256` (Unlicense) and the rest |
+
+**Code adapted from other projects** keeps its authors' notice below, with the
+files it is in.
 
 ## smithay (MIT)
 

@@ -10,7 +10,7 @@ Name:           dashi-term
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        Dashi's terminal engine, on Ghostty's terminal core
-License:        MIT
+License:        MIT AND Unicode-3.0
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 ExclusiveArch:  x86_64
@@ -40,6 +40,8 @@ export CARGO_TARGET_DIR=%{cargo_target}-term
 cargo test --release --locked --manifest-path crates/dashi-term/Cargo.toml
 
 %files
+%license LICENSE
+%license spin/dashi-term/usr/share/licenses/dashi-term/LICENSE.dependencies
 %{_libexecdir}/dashi/dashi-term
 
 %changelog
