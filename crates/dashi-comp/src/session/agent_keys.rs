@@ -15,12 +15,20 @@
 
 use smithay::{
     backend::input::KeyState,
-    input::keyboard::{FilterResult, KeyboardHandle, Keycode},
+    input::{
+        Seat,
+        keyboard::{FilterResult, KeyboardHandle, Keycode, xkb},
+    },
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
     utils::SERIAL_COUNTER,
+    wayland::input_method::InputMethodSeat,
 };
 
+use super::agent_input::{KeyMove, KeyStep};
 use crate::state::Dashi;
+
+/// The longest text typed in one request.
+const MAX_TEXT: usize = 4096;
 
 /// How an agent's key reaches the window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,6 +95,82 @@ impl Dashi {
                 }
             }
         }
+    }
+}
+
+impl Dashi {
+    /// Type `steps` into `surface` on `seat`: text as its keys, named keys down, up, or both.
+    pub(super) fn agent_keys(
+        &mut self,
+        seat: &Seat<Dashi>,
+        surface: WlSurface,
+        steps: &[KeyStep],
+    ) -> Result<(), String> {
+        let Some(keyboard) = seat.get_keyboard() else {
+            return Err("the seat has no keyboard".into());
+        };
+        if keyboard.current_focus().as_ref() != Some(&surface) {
+            if seat == &self.seat {
+                // The person's seat, borrowed: its keyboard follows the lock's rule (session/lock.rs).
+                self.set_keyboard_focus(Some(surface.clone()), SERIAL_COUNTER.next_serial());
+            } else {
+                keyboard.set_focus(self, Some(surface.clone()), SERIAL_COUNTER.next_serial());
+            }
+        }
+        let time = self.start_time.elapsed().as_millis() as u32;
+        // Past the person's input method, while it holds the keyboard (session/agent_keys.rs).
+        let route = key_route(seat.input_method().keyboard_grabbed());
+        let send = |state: &mut Dashi, code: Keycode, down: bool| {
+            state.agent_key(&keyboard, &surface, route, code, down, time);
+        };
+        for step in steps {
+            if let Some(text) = &step.text {
+                if text.chars().count() > MAX_TEXT {
+                    return Err("too much text at once".into());
+                }
+                for ch in text.chars() {
+                    let name = xkb::keysym_get_name(xkb::utf32_to_keysym(ch as u32));
+                    let Some((code, shift)) = self.keycode_named(&name) else {
+                        continue;
+                    };
+                    let shift_code = shift
+                        .then(|| self.keycode_named("Shift_L"))
+                        .flatten()
+                        .map(|(c, _)| c);
+                    if let Some(shift) = shift_code {
+                        send(self, shift, true);
+                    }
+                    send(self, code, true);
+                    send(self, code, false);
+                    if let Some(shift) = shift_code {
+                        send(self, shift, false);
+                    }
+                }
+                continue;
+            }
+            let name = step
+                .name
+                .as_deref()
+                .ok_or("a key step needs text or a name")?;
+            let (code, _) = self
+                .keycode_named(name)
+                .ok_or_else(|| format!("no key {name:?} on this keyboard"))?;
+            match step.state {
+                Some(KeyMove::Down) => {
+                    send(self, code, true);
+                    self.agent.pressed_keys.push(code);
+                }
+                Some(KeyMove::Up) => {
+                    send(self, code, false);
+                    self.agent.pressed_keys.retain(|c| *c != code);
+                }
+                None => {
+                    send(self, code, true);
+                    send(self, code, false);
+                }
+            }
+        }
+        Ok(())
     }
 }
 
