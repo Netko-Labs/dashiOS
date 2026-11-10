@@ -16,11 +16,11 @@
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { KeyCatcher } from "../overlay.tsx";
-import type { Desktops } from "./controller.ts";
-import { ROW } from "./model.ts";
+import { KeyCatcher } from "../../overlay.tsx";
+import { ROW } from "./row-layout.ts";
 import { at, CLOSE, RenameField, RowAdd, RowClose, RowName, RowPictures, useNamePress } from "./row-parts.tsx";
 import { rowShape, SHELF_HEIGHT } from "./shelf.ts";
+import type { Desktops } from "./state.ts";
 
 interface Store<T> {
   subscribe(listener: () => void): () => void;

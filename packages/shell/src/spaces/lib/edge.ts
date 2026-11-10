@@ -10,9 +10,9 @@
  * takes the held window along.
  */
 
-import type { ScreenEdge } from "../compositor.ts";
-import type { Output } from "../layout.ts";
-import type { SpacesState } from "./model.ts";
+import type { ScreenEdge } from "../../compositor.ts";
+import type { Output } from "../../layout.ts";
+import type { SpacesState } from "../types.ts";
 import type { Slots } from "./slots.ts";
 
 export interface EdgeHold {

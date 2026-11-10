@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import type { Rect } from "./model.ts";
+import type { Rect } from "./row-layout.ts";
 import { lifted } from "./shelf.ts";
 
 /** The × on a name: its size, and how far it hangs over the name's corner. */

@@ -84,7 +84,7 @@ export interface MenuContext {
   canOpenHelp: boolean;
   /** The menus the focused app published (app-menus/); absent or null with none. */
   app?: PublishedMenus | null;
-  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. `fullscreen` says which are full-screen windows' own (spaces/slots.ts). */
+  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. `fullscreen` says which are full-screen windows' own (spaces/lib/slots.ts). */
   desktops?: { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
   /** How the focused window is arranged (arrange.ts): a tile or Fill; absent or null at its own frame. */
   arrangement?: Tile | null;

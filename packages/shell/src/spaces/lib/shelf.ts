@@ -6,7 +6,8 @@
  * pictures (start.tsx, `space-previews`), and what a drop lands on.
  */
 
-import { MAX_SPACES, type Rect, ROW, type RowLayout, rowLayout } from "./model.ts";
+import { MAX_SPACES } from "../model.ts";
+import { type Rect, ROW, type RowLayout, rowLayout } from "./row-layout.ts";
 
 /** The opened row: pictures this high (at most), the name under each, and its margins. */
 export const SHELF = { picture: 112, top: 14, below: 6, label: 26, bottom: 12, gap: 18, lift: 6 } as const;

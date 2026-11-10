@@ -6,9 +6,10 @@
  * `ask` turns a compositor request into one of those.
  */
 
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { ONE_SPACE, parseSpaces, type SpacesState } from "./model.ts";
-import { type SpaceNames, spaceLabels } from "./names.ts";
+import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import { ONE_SPACE, parseSpaces } from "../model.ts";
+import { spaceLabels } from "../names.ts";
+import type { SpaceNames, SpacesState } from "../types.ts";
 import { desktopCount, fitSlots, type Slots } from "./slots.ts";
 
 /** What settings.json says about Spaces (settings.ts). */

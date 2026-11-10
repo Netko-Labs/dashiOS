@@ -9,7 +9,7 @@
  * Desktop, skipping them. Pure, so the rules are tested.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../../compositor.ts";
 
 /** Per Space: the window it is the full-screen Desktop of, or null. */
 export type Slots = readonly (number | null)[];

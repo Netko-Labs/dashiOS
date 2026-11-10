@@ -15,7 +15,7 @@ import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../setti
 import type { CornerName } from "../shared/appearance/corners.ts";
 import type { CatalogSetting } from "../shared/applet-store/catalogs.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/clock.ts";
-import type { SpaceNames } from "../spaces/names.ts";
+import type { SpaceNames } from "../spaces/types.ts";
 import type { WallpaperMode } from "../wallpaper/catalog.ts";
 import type { FrameRate, LiveShader, WallpaperKind } from "../wallpaper/live/choice.ts";
 import type { X11Scaling } from "../xwayland-scale.ts";

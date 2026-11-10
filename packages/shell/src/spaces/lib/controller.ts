@@ -11,13 +11,11 @@
  * The Desktops as they are, and what listeners hear, are state.ts's.
  */
 
-import type { CompositorEvent } from "../compositor.ts";
-import { bindingTarget, MAX_SPACES, parseSpaceBinding, parseSpaces } from "./model.ts";
-import { renamed, withoutSpace } from "./names.ts";
+import type { CompositorEvent } from "../../compositor.ts";
+import { bindingTarget, MAX_SPACES, parseSpaceBinding, parseSpaces } from "../model.ts";
+import { renamed, withoutSpace } from "../names.ts";
 import { desktopCount, desktopOrdinal, nearestDesktop, recoverSlots, type Slots, slotOf } from "./slots.ts";
 import { DesktopsState, type Naming, type SpacesCompositor, type SpacesSettings } from "./state.ts";
-
-export type { Desktops, Naming, SpacesCompositor, SpacesSettings } from "./state.ts";
 
 export class SpacesController extends DesktopsState {
   /** The full-screen Desktops found at the first settings (a restart of the shell). */

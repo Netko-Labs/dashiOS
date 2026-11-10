@@ -5,8 +5,9 @@
 
 import type { Compositor, CompositorWindow } from "../../src/compositor.ts";
 import type { Rect } from "../../src/layout.ts";
-import { SpacesController, type SpacesSettings } from "../../src/spaces/controller.ts";
 import { FullscreenDesktops } from "../../src/spaces/fullscreen.ts";
+import { SpacesController } from "../../src/spaces/lib/controller.ts";
+import type { SpacesSettings } from "../../src/spaces/lib/state.ts";
 import { listening, fakeCompositor as over } from "./compositor.ts";
 import { settle } from "./time.ts";
 

@@ -9,7 +9,7 @@
 
 import type { ActionDef } from "../actions/types.ts";
 import type { CompositorWindow } from "../compositor.ts";
-import { spaceLabel } from "../spaces/model.ts";
+import { spaceLabel } from "../spaces/index.ts";
 import { groupByApp } from "../switcher/model.ts";
 import { type LauncherWindow, windowAddress } from "./items.ts";
 
