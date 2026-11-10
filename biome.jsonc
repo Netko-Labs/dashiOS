@@ -156,10 +156,6 @@
     { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
     // H3 overrides: written by `bun scripts/check-biome.ts --shrink`; do not edit by hand.
     {
-      "includes": ["packages/dashi-ui/src/slider.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 82 } } } } }
-    },
-    {
       "includes": ["packages/shell/apps/activity-monitor/view.tsx"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 233 } } } } }
     },
