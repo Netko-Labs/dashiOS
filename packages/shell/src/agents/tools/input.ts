@@ -5,10 +5,11 @@
  * window screenshot.
  */
 
-import { isRecord } from "@dashi/shape";
-import { type Args, fail, isCallError, type ToolDef, whole, windowArg, windowProp } from "./define.ts";
+import { isRecord, obj, optional } from "@dashi/shape";
+import { arg, custom, tool, wholeArg, windowId } from "./args.ts";
+import { fail, type ToolDef } from "./define.ts";
 import { type Chord, parseKeys } from "./keys.ts";
-import type { Button, CallError, Point } from "./types.ts";
+import type { Button } from "./types.ts";
 
 /** Nothing real is further than this from a window's corner. */
 const REACH = 100_000;
@@ -20,37 +21,52 @@ const POINT_HELP = "x and y are numbers, in logical pixels from the top left of 
 const number = (value: unknown, min: number, max: number): number | null =>
   typeof value === "number" && Number.isFinite(value) && value >= min && value <= max ? value : null;
 
-function point(args: unknown, what: string): Point | CallError {
-  if (!isRecord(args)) return fail(`\`${what}\` needs ${POINT_HELP}`);
-  const extra = Object.keys(args).find((key) => key !== "x" && key !== "y");
-  if (extra) return fail(`\`${what}\` has no \`${extra}\`; it is x and y.`);
-  const x = number(args.x, -REACH, REACH);
-  const y = number(args.y, -REACH, REACH);
-  return x === null || y === null ? fail(`\`${what}\`: ${POINT_HELP}`) : { x, y };
-}
+/** A number a pointer can be at: finite, and within `REACH` of the window's corner. */
+const reach = (value: unknown): number | null => number(value, -REACH, REACH);
 
-const xyProps = {
-  x: { type: "number", description: "Pixels from the left of the window's content." },
-  y: { type: "number", description: "Pixels from the top of the window's content." },
-};
-
-const pointProp = (description: string) => ({
-  type: "object",
-  description,
-  properties: xyProps,
-  required: ["x", "y"],
-  additionalProperties: false,
-});
+const X = { type: "number", description: "Pixels from the left of the window's content." };
+const Y = { type: "number", description: "Pixels from the top of the window's content." };
 
 /** `x` and `y` as arguments of their own (click, scroll). */
-function atPoint(args: Args): Point | CallError {
-  const x = number(args.x, -REACH, REACH);
-  const y = number(args.y, -REACH, REACH);
-  return x === null || y === null ? fail(`\`x\` and \`y\` are required: ${POINT_HELP}`) : { x, y };
+const at = {
+  x: custom(X, reach, `\`x\` and \`y\` are required: ${POINT_HELP}`),
+  y: custom(Y, reach, `\`x\` and \`y\` are required: ${POINT_HELP}`),
+};
+
+/** A point as one argument (drag): `{x, y}`, described as `description`. */
+const pointArg = (what: string, description: string) =>
+  arg(
+    obj({ x: custom(X, reach, `\`${what}\`: ${POINT_HELP}`), y: custom(Y, reach, `\`${what}\`: ${POINT_HELP}`) }),
+    (given) => {
+      if (!isRecord(given)) return `\`${what}\` needs ${POINT_HELP}`;
+      const extra = Object.keys(given).find((key) => key !== "x" && key !== "y");
+      return extra ? `\`${what}\` has no \`${extra}\`; it is x and y.` : `\`${what}\`: ${POINT_HELP}`;
+    },
+    description,
+  );
+
+const SCROLL_SAYS = "`dx` and `dy` are numbers from -10000 to 10000.";
+
+/** Control characters other than Enter and Tab are not text: press_keys sends keys. */
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f]/;
+
+/** What typing `given` is refused for. */
+function typingSays(given: unknown): string {
+  if (typeof given !== "string" || given === "") return "`text` is required: what to type.";
+  if (given.length > MAX_TEXT) return `\`text\` is at most ${MAX_TEXT} characters; type it in pieces.`;
+  return "`text` holds a control character; use press_keys for keys like Escape.";
+}
+
+/** What pressing `given` is refused for. */
+function keysSays(given: unknown): string {
+  if (typeof given !== "string") return '`keys` is required: chords like "❖S" or "⌥←".';
+  const chords = parseKeys(given);
+  return typeof chords === "string" ? chords : "`keys` is not chords.";
 }
 
 export const inputTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "click",
     title: "Click in a window",
     description:
@@ -59,26 +75,21 @@ export const inputTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: {
-      window: windowProp,
-      ...xyProps,
-      button: { type: "string", enum: BUTTONS },
-      count: { type: "integer", minimum: 1, maximum: 3 },
+    args: {
+      window: windowId,
+      ...at,
+      button: optional(
+        custom(
+          { type: "string", enum: BUTTONS },
+          (value) => BUTTONS.find((candidate) => candidate === value) ?? null,
+          `\`button\` must be one of: ${BUTTONS.join(", ")}.`,
+        ),
+      ),
+      count: optional(wholeArg(1, 3, "`count` must be 1, 2, or 3.")),
     },
-    required: ["window", "x", "y"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const at = atPoint(args);
-      if (isCallError(at)) return at;
-      const button = args.button === undefined ? "left" : BUTTONS.find((candidate) => candidate === args.button);
-      if (button === undefined) return fail(`\`button\` must be one of: ${BUTTONS.join(", ")}.`);
-      const count = args.count === undefined ? 1 : whole(args.count, 1, 3);
-      if (count === null) return fail("`count` must be 1, 2, or 3.");
-      return { name: "click", window, ...at, button, count };
-    },
-  },
-  {
+    build: ({ window, x, y, button, count }) => ({ name: "click", window, x, y, button: button ?? "left", count: count ?? 1 }),
+  }),
+  tool({
     name: "scroll",
     title: "Scroll in a window",
     description:
@@ -86,26 +97,17 @@ export const inputTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: {
-      window: windowProp,
-      ...xyProps,
-      dx: { type: "number", description: "Horizontal pixels; positive scrolls right." },
-      dy: { type: "number", description: "Vertical pixels; positive scrolls down." },
+    args: {
+      window: windowId,
+      ...at,
+      dx: optional(
+        custom({ type: "number", description: "Horizontal pixels; positive scrolls right." }, (value) => number(value, -10_000, 10_000), SCROLL_SAYS),
+      ),
+      dy: optional(custom({ type: "number", description: "Vertical pixels; positive scrolls down." }, (value) => number(value, -10_000, 10_000), SCROLL_SAYS)),
     },
-    required: ["window", "x", "y"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const at = atPoint(args);
-      if (isCallError(at)) return at;
-      const dx = args.dx === undefined ? 0 : number(args.dx, -10_000, 10_000);
-      const dy = args.dy === undefined ? 0 : number(args.dy, -10_000, 10_000);
-      if (dx === null || dy === null) return fail("`dx` and `dy` are numbers from -10000 to 10000.");
-      if (dx === 0 && dy === 0) return fail("Give a nonzero `dx` or `dy`.");
-      return { name: "scroll", window, ...at, dx, dy };
-    },
-  },
-  {
+    build: ({ window, x, y, dx = 0, dy = 0 }) => (dx === 0 && dy === 0 ? fail("Give a nonzero `dx` or `dy`.") : { name: "scroll", window, x, y, dx, dy }),
+  }),
+  tool({
     name: "drag",
     title: "Drag in a window",
     description:
@@ -114,23 +116,10 @@ export const inputTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: {
-      window: windowProp,
-      from: pointProp("Where the press happens."),
-      to: pointProp("Where the button is let go."),
-    },
-    required: ["window", "from", "to"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      const from = point(args.from, "from");
-      if (isCallError(from)) return from;
-      const to = point(args.to, "to");
-      if (isCallError(to)) return to;
-      return { name: "drag", window, from, to };
-    },
-  },
-  {
+    args: { window: windowId, from: pointArg("from", "Where the press happens."), to: pointArg("to", "Where the button is let go.") },
+    build: ({ window, from, to }) => ({ name: "drag", window, from, to }),
+  }),
+  tool({
     name: "type_text",
     title: "Type text",
     description:
@@ -140,20 +129,17 @@ export const inputTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: { window: windowProp, text: { type: "string", minLength: 1, maxLength: MAX_TEXT } },
-    required: ["window", "text"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      if (typeof args.text !== "string" || args.text === "") return fail("`text` is required: what to type.");
-      if (args.text.length > MAX_TEXT) return fail(`\`text\` is at most ${MAX_TEXT} characters; type it in pieces.`);
-      // Control characters other than Enter and Tab are not text: press_keys sends keys.
-      // eslint-disable-next-line no-control-regex
-      if (/[\u0000-\u0008\u000b-\u001f\u007f]/.test(args.text)) return fail("`text` holds a control character; use press_keys for keys like Escape.");
-      return { name: "type_text", window, text: args.text };
+    args: {
+      window: windowId,
+      text: custom(
+        { type: "string", minLength: 1, maxLength: MAX_TEXT },
+        (value) => (typeof value === "string" && value !== "" && value.length <= MAX_TEXT && !CONTROL.test(value) ? value : null),
+        typingSays,
+      ),
     },
-  },
-  {
+    build: ({ window, text }) => ({ name: "type_text", window, text }),
+  }),
+  tool({
     name: "press_keys",
     title: "Press keys",
     description:
@@ -163,14 +149,17 @@ export const inputTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: { window: windowProp, keys: { type: "string", description: 'Chords like "❖S" or "⌥← ⌥←".' } },
-    required: ["window", "keys"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      if (typeof args.keys !== "string") return fail('`keys` is required: chords like "❖S" or "⌥←".');
-      const chords: Chord[] | string = parseKeys(args.keys);
-      return typeof chords === "string" ? fail(chords) : { name: "press_keys", window, keys: args.keys.trim(), chords };
+    args: {
+      window: windowId,
+      keys: custom<{ keys: string; chords: Chord[] }>(
+        { type: "string", description: 'Chords like "❖S" or "⌥← ⌥←".' },
+        (value) => {
+          const chords = typeof value === "string" ? parseKeys(value) : "";
+          return typeof value === "string" && typeof chords !== "string" ? { keys: value.trim(), chords } : null;
+        },
+        keysSays,
+      ),
     },
-  },
+    build: ({ window, keys }) => ({ name: "press_keys", window, keys: keys.keys, chords: keys.chords }),
+  }),
 ];
