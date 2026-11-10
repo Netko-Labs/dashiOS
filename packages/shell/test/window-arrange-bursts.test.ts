@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import type { Arranger } from "../src/arrange.ts";
+import type { Arranger } from "../src/arrange/arrange.ts";
 import { tileFrame } from "../src/layout.ts";
 import { files, rect, started, USABLE } from "./support/window-arrange.ts";
 

@@ -3,7 +3,7 @@
  * that answers frames and full screen (a lagging app when asked), and the window the tests arrange.
  */
 
-import { Arranger } from "../../src/arrange.ts";
+import { Arranger } from "../../src/arrange/arrange.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../../src/compositor.ts";
 import type { Rect } from "../../src/layout.ts";
 import { fakeCompositor, listening } from "./compositor.ts";

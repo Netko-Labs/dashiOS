@@ -8,7 +8,7 @@
  * capture ended.
  */
 
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { centeredOn } from "../switcher/index.ts";

@@ -6,7 +6,7 @@
 
 import type { CaptureKind } from "../actions/sources/commands.ts";
 import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../apps.ts";
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, Frame } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import { withSwitcher } from "../keymap.ts";

@@ -3,7 +3,7 @@
 import type { ReactElement } from "react";
 import type { AppMenuStore } from "../app-menus/store.ts";
 import type { App } from "../apps.ts";
-import type { Arranger } from "../arrange.ts";
+import type { Arranger } from "../arrange/index.ts";
 import type { BatteryPopoverSources } from "../battery/popover.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";

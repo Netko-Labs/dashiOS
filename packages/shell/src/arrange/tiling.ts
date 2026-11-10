@@ -8,7 +8,7 @@
  * arrange.ts carries the steps out.
  */
 
-import type { Rect, Tile } from "./layout.ts";
+import type { Rect, Tile } from "../layout.ts";
 
 export type Arrow = "left" | "right" | "up" | "down";
 export const ARROWS: readonly Arrow[] = ["left", "right", "up", "down"];

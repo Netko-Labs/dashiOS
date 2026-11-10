@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { arrowStep, screenToward } from "../src/arrange/tiling.ts";
 import { carryFrame, centerFrame, dragZones, frameUnderPointer, TILES, tileFrame } from "../src/layout.ts";
-import { arrowStep, screenToward } from "../src/tiling.ts";
 import { rect, SCREEN, USABLE } from "./support/window-arrange.ts";
 
 describe("tile frames", () => {

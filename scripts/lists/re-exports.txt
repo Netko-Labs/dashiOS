@@ -27,7 +27,6 @@
 1	packages/shell/src/applets/protocol.ts
 1	packages/shell/src/applets/server.ts
 1	packages/shell/src/apps.ts
-1	packages/shell/src/arrange.ts
 1	packages/shell/src/bluetooth/store.ts
 3	packages/shell/src/compositor-types.ts
 1	packages/shell/src/compositor.ts

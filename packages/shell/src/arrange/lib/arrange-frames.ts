@@ -5,7 +5,7 @@
  * or full screen. What Arranger remembers of a window is `Arranged`.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow, Placing, Output as Screen } from "./compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../../compositor.ts";
 import {
   carryFrame,
   dragZones,
@@ -20,18 +20,11 @@ import {
   type Tile,
   tileFrame,
   usableFor,
-} from "./layout.ts";
-import { type Arrow, arrowStep, screenToward } from "./tiling.ts";
+} from "../../layout.ts";
+import { type Arrow, arrowStep, screenToward } from "../tiling.ts";
 
 /** How long the pointer rests in a drag zone before its preview shows. */
 export const DWELL_MS = 150;
-
-/** The screens that say where they are and what is usable (src/compositor/outputs.ts). */
-export function placedOutputs(screens: readonly Screen[]): Output[] {
-  return screens.flatMap((screen) =>
-    screen.frame && screen.usable ? [{ name: screen.name, frame: screen.frame, usable: screen.usable, scale: screen.scale }] : [],
-  );
-}
 
 /** A window the shell arranged: how, and the frame it had before (what Back gives back). */
 export interface Arranged {

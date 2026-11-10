@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { Arranger } from "../src/arrange.ts";
+import { Arranger } from "../src/arrange/arrange.ts";
 import type { Compositor } from "../src/compositor.ts";
 import { FullscreenDesktops } from "../src/spaces/fullscreen.ts";
 import { SpacesController } from "../src/spaces/lib/controller.ts";

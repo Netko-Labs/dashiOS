@@ -3,7 +3,7 @@
 import { ownerPids } from "../../app-menus/focus.ts";
 import type { AppMenuStore } from "../../app-menus/store.ts";
 import { appFor } from "../../apps.ts";
-import { placedOutputs } from "../../arrange.ts";
+import { placedOutputs } from "../../arrange/index.ts";
 import { PairingPrompt } from "../../bluetooth/prompt.tsx";
 import { BluetoothStore } from "../../bluetooth/store.ts";
 import { DeviceStore, radiosFor } from "../../control-center/index.ts";

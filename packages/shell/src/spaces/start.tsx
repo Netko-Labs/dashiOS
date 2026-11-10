@@ -8,7 +8,7 @@
  * screen's side (edge.ts, from the compositor's `edge-hold`).
  */
 
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
 import type { Output } from "../layout.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";

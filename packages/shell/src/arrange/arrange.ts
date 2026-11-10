@@ -16,6 +16,8 @@
  * the keys pressed one by one.
  */
 
+import type { Compositor, Placing } from "../compositor.ts";
+import { type Arrange, centerFrame, fitFrame, type Output, type Rect, sameOutputs, type Tile, tileFrame, usableFor } from "../layout.ts";
 import {
   type ArrangeContext,
   type Arranged,
@@ -28,15 +30,11 @@ import {
   type FullscreenDesktopsHook,
   fitWindows,
   fullscreenWindow,
-  placedOutputs,
   placeWindow,
   zonesOf,
-} from "./arrange-frames.ts";
-import type { Compositor, Placing } from "./compositor.ts";
-import { type Arrange, centerFrame, fitFrame, type Output, type Rect, sameOutputs, type Tile, tileFrame, usableFor } from "./layout.ts";
+} from "./lib/arrange-frames.ts";
+import { placedOutputs } from "./outputs.ts";
 import type { Arrow } from "./tiling.ts";
-
-export { type FullscreenDesktopsHook, placedOutputs } from "./arrange-frames.ts";
 
 export class Arranger {
   private outputs: Output[] = [];

@@ -10,7 +10,7 @@ import { NO_CONTEXT } from "../agents/handoff/grants.ts";
 import type { AgentStore } from "../agents/index.ts";
 import type { Agents } from "../agents/server.ts";
 import { appFor } from "../apps.ts";
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { type Entry, launchEntry } from "../entries.ts";
 import { primarySelection, readContext } from "../handoff-shell.tsx";
