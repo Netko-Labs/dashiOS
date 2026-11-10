@@ -8,9 +8,9 @@
  */
 
 import { bool, optional } from "@dashi/shape";
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../../shared/files/agent.ts";
-import type { ToolDef } from "./define.ts";
-import { arg, custom, tool, wholeArg } from "./lib/args.ts";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../../../shared/files/agent.ts";
+import type { ToolDef } from "../define.ts";
+import { arg, custom, tool, wholeArg } from "./args.ts";
 
 const MAX_QUERY = 200;
 const PATH_MAX = 4096;

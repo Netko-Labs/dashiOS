@@ -241,8 +241,8 @@
 1	packages/shell/src/agents/secrets/approvals.ts
 1	packages/shell/src/agents/secrets/vault.ts
 1	packages/shell/src/agents/tokens/client.ts
-1	packages/shell/src/agents/tools/files.ts
 2	packages/shell/src/agents/tools/lib/calendar.ts
+1	packages/shell/src/agents/tools/lib/files.ts
 1	packages/shell/src/agents/tools/lib/machine.ts
 1	packages/shell/src/agents/tools/lib/notes.ts
 3	packages/shell/src/agents/tools/lib/region.ts
