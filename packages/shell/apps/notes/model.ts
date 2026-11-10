@@ -25,99 +25,23 @@
  * put the caret where it belongs.
  */
 
-import { UndoStack, type UndoState } from "@dashi/ui";
 import type { NotesStore } from "../../src/shared/notes/store.ts";
-import { serializeNote } from "../../src/shared/notes/text.ts";
-import type { DeletedNote, Note } from "../../src/shared/notes/types.ts";
-import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
 import { plainError } from "./errors.ts";
-import { currentMatch, findMatches, nextMatch } from "./find.ts";
-import { continueList, type Selection, toggleCheck } from "./format.ts";
-import { caretAfter, FORMAT_NAMES, type FormatCommand, formatted } from "./formats.ts";
-import { neighbor, type Row, type Source, step, visibleRows } from "./list.ts";
+import { neighbor, type Source, step } from "./list.ts";
+import { NotesSaving } from "./saving.ts";
+import { fingerprint, SAVE_MS } from "./state.ts";
 
-export const SAVE_MS = 600;
+// The state and the names the window and the other files use, from state.ts.
+export { type Draft, type NotesState, SAVE_MS } from "./state.ts";
 
-/** A step of typing, as Undo puts it back: the text and where the caret was. */
-interface TextState {
-  draft: Draft;
-  selection: Selection;
-}
-
-export interface Draft {
-  title: string;
-  body: string;
-}
-
-export interface NotesState {
-  notes: Note[];
-  folders: string[];
-  deleted: DeletedNote[];
-  source: Source;
-  query: string;
-  /** A note id (or, in Recently Deleted, a file name). */
-  selected: string | null;
-  draft: Draft | null;
-  /** The body's caret and selection (offsets into `draft.body`). */
-  selection: Selection;
-  /** Changes whenever the editor's fields must start over (another note opened, a file changed under it). */
-  session: number;
-  /** The title field asks for the keyboard (a new note). */
-  focusTitle: boolean;
-  /** The last thing that went wrong, for a line in the window. */
-  error: string | null;
-  /** Something the person should know that isn't an error (a conflict copy was saved); cleared when another note opens. */
-  notice: string | null;
-}
-
-const fingerprint = (draft: Draft): string => serializeNote({ ...draft, heading: false });
-
-export class NotesModel {
-  private state: NotesState = {
-    notes: [],
-    folders: [],
-    deleted: [],
-    source: { kind: "all" },
-    query: "",
-    selected: null,
-    draft: null,
-    selection: { start: 0, end: 0 },
-    session: 0,
-    focusTitle: false,
-    error: null,
-    notice: null,
-  };
-  private readonly listeners = new Set<() => void>();
-  /** Edit › Undo and Redo: deleted notes. */
-  readonly undo = new UndoStack();
-  /** Edit › Undo and Redo: what was typed in the open note, before `undo`. */
-  readonly textUndo = new UndoStack();
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  /** What the open note holds on disk as far as we know: the editor is clean when its draft matches. */
-  private onDisk = "";
-
-  constructor(
-    readonly store: NotesStore,
-    private readonly saveMs: number = SAVE_MS,
-  ) {
+export class NotesModel extends NotesSaving {
+  constructor(store: NotesStore, saveMs: number = SAVE_MS) {
+    super(store, saveMs);
     this.reload();
     this.select(this.rows()[0]?.id ?? null);
   }
 
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
-
-  getSnapshot = (): NotesState => this.state;
-
-  rows(): Row[] {
-    return visibleRows(this.state.notes, this.state.deleted, this.state.source, this.state.query);
-  }
-
-  get dirty(): boolean {
-    return this.timer !== null;
-  }
+  // Looking
 
   // Looking
 
@@ -171,118 +95,7 @@ export class NotesModel {
     if (id) this.select(id);
   }
 
-  // Writing
-
-  edit(change: Partial<Draft>): void {
-    const { draft, selected, selection } = this.state;
-    if (!draft || !selected || this.isDeleted()) return;
-    // Enter at the end of a list item starts the next one, the caret after its marker.
-    const caret = selection.start === selection.end ? selection.start : -1;
-    const continued = change.body === undefined ? null : continueList(draft.body, change.body, caret);
-    const next = { title: change.title ?? draft.title, body: continued?.body ?? change.body ?? draft.body };
-    if (next.title === draft.title && next.body === draft.body) return;
-    const after = continued?.selection ?? caretAfter(draft.body, next.body, selection);
-    // A run of typing is one step for Undo; a new line starts the next.
-    const newLine = next.body.split("\n").length !== draft.body.split("\n").length;
-    this.record({ draft, selection }, { draft: next, selection: after }, "Typing", newLine ? undefined : "typing");
-    this.set({ draft: next, selection: after });
-    this.later();
-  }
-
-  /** The body's caret moved or its selection changed (the field says so). */
-  setSelection(selection: Selection): void {
-    const { start, end } = this.state.selection;
-    if (selection.start !== start || selection.end !== end) this.set({ selection });
-  }
-
-  /** Format › Bold, Italic, Checklist…: the open note's body, changed where the selection is. */
-  format(command: FormatCommand): void {
-    const { draft, selection } = this.state;
-    if (!draft || !this.state.selected || this.isDeleted()) return;
-    const edited = formatted(draft.body, selection, command);
-    if (edited.body === draft.body) return;
-    const next = { ...draft, body: edited.body };
-    this.record({ draft, selection }, { draft: next, selection: edited.selection }, FORMAT_NAMES[command]);
-    this.set({ draft: next, selection: edited.selection });
-    this.later();
-  }
-
-  /** Ticks or unticks the checklist item on `line` of the body, and saves it at once; the caret stays. */
-  toggleCheck(line: number): void {
-    const { draft, selection } = this.state;
-    if (!draft || this.isDeleted()) return;
-    const body = toggleCheck(draft.body, line);
-    if (body === draft.body) return;
-    const next = { ...draft, body };
-    this.record({ draft, selection }, { draft: next, selection }, "Checkbox");
-    this.set({ draft: next });
-    this.flush();
-  }
-
-  /** Edit › Find Next and Find Previous: selects the next place in the body that holds the search's words; false when none does. */
-  /** Leaving Find: the match the selection is on stays selected, else the next one is; false when the note has none. */
-  findCurrent(): boolean {
-    const { draft, query, selection } = this.state;
-    const match = draft ? currentMatch(findMatches(draft.body, query), selection) : null;
-    if (match) this.set({ selection: match });
-    return match !== null;
-  }
-
-  findNext(step: 1 | -1): boolean {
-    const { draft, query, selection } = this.state;
-    const match = draft ? nextMatch(findMatches(draft.body, query), selection, step) : null;
-    if (match) this.set({ selection: match });
-    return match !== null;
-  }
-
-  /** What Edit › Undo and Redo show: the typing's step first, else the notes' (a deleted note). */
-  undoState(): UndoState {
-    const text = this.textUndo.state;
-    const notes = this.undo.state;
-    return {
-      canUndo: text.canUndo || notes.canUndo,
-      canRedo: text.canRedo || notes.canRedo,
-      undoName: text.canUndo ? text.undoName : notes.undoName,
-      redoName: text.canRedo ? text.redoName : notes.redoName,
-      busy: text.busy || notes.busy,
-      undoStep: text.canUndo ? text.undoStep : notes.undoStep,
-    };
-  }
-
-  /** Writes what is typed, unless the file changed under it (conflict.ts). */
-  flush(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
-    const { draft, selected } = this.state;
-    if (!draft || !selected || this.isDeleted()) return;
-    const mine = fingerprint(draft);
-    const current = this.readFresh(selected);
-    const disk = current ? fingerprint(current) : null;
-    switch (saveOutcome({ base: this.onDisk, disk, mine })) {
-      case "nothing":
-        // Nothing typed since it was read or last written: leave the file (and its modified time) alone.
-        return;
-      case "same":
-        this.onDisk = mine;
-        return;
-      case "theirs":
-        if (current) this.adopt(current);
-        return;
-      case "conflict":
-        if (current) this.keepBoth(draft, current);
-        return;
-      case "ours":
-        break;
-    }
-    try {
-      const saved = this.store.save(selected, draft, { rename: false });
-      this.onDisk = fingerprint(saved);
-      // Only this note changed: it is updated in place, without reading the whole folder again.
-      this.set({ notes: this.state.notes.map((note) => (note.id === saved.id ? saved : note)), selected: saved.id, error: null });
-    } catch (error) {
-      this.set({ error: plainError(error, "save") });
-    }
-  }
+  // Notes and folders
 
   /** A new note in the open folder (the default folder from All Notes or a search). */
   newNote(): void {
@@ -311,19 +124,8 @@ export class NotesModel {
     if (trashed !== null) this.pushDelete(trashed);
   }
 
-  /** Edit › Undo or Redo (the typing's step first); a step that fails says why in the window. */
-  async undoStep(way: "undo" | "redo"): Promise<void> {
-    const text = this.textUndo.state;
-    const stack = (way === "undo" ? text.canUndo : text.canRedo) ? this.textUndo : this.undo;
-    try {
-      await (way === "undo" ? stack.undo() : stack.redo());
-    } catch (error) {
-      this.set({ error: plainError(error, "change") });
-    }
-  }
-
   /** A note went to Recently Deleted as `name`: Undo restores and opens it, Redo deletes it again. */
-  private pushDelete(name: string): void {
+  protected pushDelete(name: string): void {
     let trashed = name;
     let id: string | null = null;
     this.undo.push({
@@ -440,124 +242,11 @@ export class NotesModel {
   dispose(): void {
     this.flush();
     this.settleName();
-    this.listeners.clear();
-  }
-
-  // Internals
-
-  /** The note as its file holds it now, or null when it can't be read (gone, unreadable). */
-  private readFresh(id: string): Note | null {
-    try {
-      return this.store.read(id);
-    } catch {
-      return null;
-    }
-  }
-
-  /** The editor takes the file's version of the open note (what was typed before it can't be undone into it). */
-  private adopt(note: Note): void {
-    this.onDisk = fingerprint(note);
-    this.textUndo.clear();
-    const clamp = (at: number): number => Math.min(at, note.body.length);
-    const selection = { start: clamp(this.state.selection.start), end: clamp(this.state.selection.end) };
-    this.set({ draft: { title: note.title, body: note.body }, selection, session: this.state.session + 1 });
-  }
-
-  /** Records a change of the open note's text for Edit › Undo; steps with the same `joins`, close together, are one. */
-  private record(before: TextState, after: TextState, name: string, joins?: string): void {
-    this.textUndo.push({
-      name,
-      ...(joins !== undefined ? { joins } : {}),
-      undo: () => this.restore(before),
-      do: () => this.restore(after),
-    });
-  }
-
-  /** Puts the open note's text back as a step had it. */
-  private restore(text: TextState): void {
-    if (!this.state.draft || this.isDeleted()) return;
-    this.set({ draft: text.draft, selection: text.selection });
-    this.later();
-  }
-
-  /**
-   * Both the file and the typing changed: the file's version stays the note,
-   * and the typing becomes a new note beside it, "Title (conflict)", in the
-   * same folder. The editor goes on with that copy, so what is on screen
-   * doesn't change under the person's fingers, and the window says so.
-   */
-  private keepBoth(draft: Draft, current: Note): void {
-    const title = conflictTitle(draft.title || current.title);
-    let copy: Note;
-    try {
-      copy = this.store.create({ folder: current.folder, title, body: draft.body });
-    } catch (error) {
-      // Nothing is written over: the typing stays in the editor, unsaved, and the line says why.
-      this.set({ error: plainError(error, "save") });
-      return;
-    }
-    this.onDisk = fingerprint(copy);
-    this.refresh();
-    this.set({ selected: copy.id, draft: { title: copy.title, body: draft.body }, error: null, notice: conflictNotice(copy.title) });
-  }
-
-  /** The open row is in Recently Deleted (its ids are file names there, not note ids). */
-  private isDeleted(): boolean {
-    return this.state.source.kind === "trash";
-  }
-
-  /** `id`, as it is after the open note's pending typing is saved (which can rename it). */
-  private settle(id: string | null): string | null {
-    if (id !== null && id === this.state.selected) {
-      this.flush();
-      return this.state.selected;
-    }
-    return id;
-  }
-
-  /** Before the open note is left: save it, and drop a new note nothing was typed in. */
-  private leave(): void {
-    const { selected, draft } = this.state;
-    this.flush();
-    if (selected && draft && !this.isDeleted() && draft.title.trim() === "" && draft.body.trim() === "") {
-      try {
-        if (this.store.discardIfEmpty(selected)) this.refresh();
-      } catch {
-        // Already gone.
-      }
-    }
-    this.settleName();
-  }
-
-  /** The open note's file takes its title's name, once it is left: saves while typing don't rename it (store.ts `save`). */
-  private settleName(): void {
-    const { selected } = this.state;
-    if (!selected || this.isDeleted() || !this.state.notes.some((note) => note.id === selected)) return;
-    try {
-      const id = this.store.settleName(selected);
-      if (id === selected) return;
-      this.refresh();
-      this.set({ selected: id });
-    } catch {
-      // Gone, or the name is taken by something we can't move over: it keeps the name it has.
-    }
-  }
-
-  private later(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.flush(), this.saveMs);
-  }
-
-  private flushAsNew(draft: Draft): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
-    const note = this.attempt(() => this.store.create({ folder: "", title: draft.title, body: draft.body }));
-    this.refresh();
-    if (note) this.set({ selected: note.id });
+    this.clearListeners();
   }
 
   /** Runs a store change that takes the open note out of the list, and moves on to its neighbor. */
-  private drop(id: string, action: () => unknown): void {
+  protected drop(id: string, action: () => unknown): void {
     const after = neighbor(this.rows(), id);
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -565,28 +254,5 @@ export class NotesModel {
     this.refresh();
     this.set({ selected: null, draft: null });
     this.select(after === id ? null : after);
-  }
-
-  private attempt<T>(action: () => T): T | null {
-    try {
-      return action();
-    } catch (error) {
-      this.set({ error: plainError(error, "change") });
-      return null;
-    }
-  }
-
-  private refresh(): void {
-    try {
-      const { notes, folders, deleted } = this.store.scan();
-      this.set({ notes, folders, deleted });
-    } catch (error) {
-      this.set({ error: plainError(error, "read") });
-    }
-  }
-
-  private set(change: Partial<NotesState>): void {
-    this.state = { ...this.state, ...change };
-    for (const listener of this.listeners) listener();
   }
 }
