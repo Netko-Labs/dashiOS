@@ -29,7 +29,13 @@ export function arg<T>(of: Shape<T>, says: Says, description?: string): Shape<T>
       const parsed = of.parse(value);
       return parsed.ok ? parsed : reject(said(says, value));
     },
-    () => ({ ...of.schema(), ...(description === undefined ? {} : { description }) }),
+    () => {
+      const schema = of.schema();
+      if (description === undefined) return schema;
+      // An object's description comes right after its type, as the listing has always put it.
+      const { type, ...rest } = schema;
+      return schema.type === "object" ? { type, description, ...rest } : { ...schema, description };
+    },
   );
 }
 
