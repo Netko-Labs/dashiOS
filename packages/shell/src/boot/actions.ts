@@ -17,8 +17,7 @@ import { type Extensions, openTarget, startExtensions } from "../extensions/star
 import { openFile } from "../file-manager.ts";
 import { windowToFront } from "../front-window.ts";
 import { currentKeymap } from "../keymap-state.ts";
-import { shellLauncherHost } from "../launcher/shell-host.ts";
-import { desktopWord, LauncherWorld } from "../launcher/world.ts";
+import { desktopWord, LauncherWorld, shellLauncherHost } from "../launcher/index.ts";
 import type { Menus } from "../menus/index.ts";
 import { type App, iconPath } from "../shared/apps/index.ts";
 import type { AgentBasics } from "./agents.ts";

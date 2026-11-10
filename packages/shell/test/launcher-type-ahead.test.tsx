@@ -4,8 +4,8 @@ import type { Entry } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { idleKeymap } from "../src/keymap-state.ts";
 import { LAUNCHER_RULES } from "../src/launcher/keys.ts";
+import { Launcher } from "../src/launcher/launcher.tsx";
 import { applyEdits, TYPE_BINDING, TypeAhead, type Typed, typedFrom, withTypeAheadOnTap, withTyping } from "../src/launcher/type-ahead.ts";
-import { Launcher } from "../src/launcher.tsx";
 import { settle } from "./support/time.ts";
 
 const text = (value: string): Typed => ({ kind: "text", text: value });

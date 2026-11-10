@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { calculate, type Entry } from "../src/entries.ts";
-import { buildSections, filesStateFor, placeholderFor, selectable } from "../src/launcher/rows.ts";
+import type { Entry } from "../src/entries.ts";
+import { calculate } from "../src/launcher/lib/math.ts";
+import { buildSections, placeholderFor, selectable } from "../src/launcher/lib/rows.ts";
+import { filesStateFor } from "../src/launcher/sections.ts";
 import { app, file, list } from "./support/launcher-fixtures.ts";
 
 const pane = (name: string): Entry => ({ id: `dev.dashi.settings/${name.toLowerCase()}`, name, icon: "/i.svg", glyph: "<svg/>", keywords: [], shell: true });

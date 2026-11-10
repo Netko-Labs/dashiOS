@@ -8,7 +8,7 @@
  */
 
 import { KEYMAP, type Keymap, type Rule, withRules } from "./keymap.ts";
-import { withTypeAheadOnTap } from "./launcher/type-ahead.ts";
+import { withTypeAheadOnTap } from "./launcher/index.ts";
 
 let machineRules: readonly Rule[] = [];
 let personRules: readonly Rule[] = [];

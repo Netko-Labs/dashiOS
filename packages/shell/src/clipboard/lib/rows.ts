@@ -8,8 +8,7 @@
  * the copies and says, when it happened, how many were not kept and why.
  */
 
-import type { Row } from "../../launcher/row-model.ts";
-import type { Section } from "../../launcher/rows.ts";
+import type { Row, Section } from "../../launcher/index.ts";
 import { CLIPBOARD, FILES, SNIPPET } from "../glyphs.ts";
 import type { ClipEntry, HistorySnapshot, Skip } from "../history.ts";
 import type { SkipReason } from "./privacy.ts";

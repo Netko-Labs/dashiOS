@@ -4,8 +4,8 @@ import { arrangeActions } from "../src/actions/sources/windows.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 import { clipboardActions } from "../src/clipboard/lib/actions.ts";
 import { KEYMAP } from "../src/keymap.ts";
-import { ADDRESS_GLYPHS, COMMAND_GLYPHS, commandGlyph } from "../src/launcher/command-glyphs.ts";
-import { launcherItems } from "../src/launcher/items.ts";
+import { ADDRESS_GLYPHS, COMMAND_GLYPHS, commandGlyph } from "../src/launcher/lib/command-glyphs.ts";
+import { launcherItems } from "../src/launcher/lib/items.ts";
 import { actionRow } from "../src/launcher/row-model.ts";
 
 const ICONS = { app: () => undefined, dashi: "/gear.svg" };

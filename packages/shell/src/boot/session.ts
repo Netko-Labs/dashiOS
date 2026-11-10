@@ -14,7 +14,7 @@ import { monitorsOf } from "../display-config/index.ts";
 import { screensOf } from "../displays.ts";
 import { DockPrefs, resolveDock } from "../dock/index.ts";
 import { idleKeymap } from "../keymap-state.ts";
-import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
+import { LAUNCHER_MOTION } from "../launcher/index.ts";
 import { chooseRegion, startRegion } from "../region/index.ts";
 import type { RegionRuntime } from "../region/start.ts";
 import { SettingsStore } from "../settings-app/index.ts";

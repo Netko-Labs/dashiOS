@@ -8,9 +8,10 @@
 
 import type { ActionDef, Args, Outcome, PickRow, Shown } from "../actions/types.ts";
 import { realTimers, type SlowSnapshot, type SlowSource, SlowSources, type Timers } from "./budget.ts";
-import { outsideIcon, type SlowRow } from "./extension-rows.ts";
-import type { LauncherItem } from "./items.ts";
-import type { RowIcon } from "./rows.ts";
+import { outsideIcon } from "./lib/extension-rows.ts";
+import type { LauncherItem } from "./lib/items.ts";
+import type { RowIcon } from "./row-model.ts";
+import type { SlowRow } from "./types.ts";
 
 /**
  * What lasts the session: the providers (and how often each was late), and

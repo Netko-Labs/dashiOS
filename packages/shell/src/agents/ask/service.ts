@@ -2,7 +2,7 @@
  * The launcher's agents, put together (main.tsx starts it): the answerer
  * Settings names, the Ask tasks, the "Your turn" banners, the agents
  * connected over MCP, and the history, as the one store the launcher reads
- * (launcher/agents/rows.ts `LauncherAgents`) and the few reads Settings ›
+ * (launcher/agent-rows.ts `LauncherAgents`) and the few reads Settings ›
  * Agents needs (`AnswerStatus`).
  *
  * The only network it adds is the chosen answerer's own: Anthropic's API for
@@ -12,7 +12,7 @@
  * person asks.
  */
 
-import type { LauncherAgents } from "../../launcher/agents/rows.ts";
+import type { LauncherAgents } from "../../launcher/index.ts";
 import { HARNESS_IDS } from "./answerer.ts";
 import type { AnswerStatus, Ask, AskOptions, HarnessHost } from "./ask-types.ts";
 import { chosenAnswerer } from "./chosen-answerer.ts";

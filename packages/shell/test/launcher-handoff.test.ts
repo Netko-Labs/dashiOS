@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { attentionNotice, endedNotice, logText } from "../src/agents/handoff/notices.ts";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
+import { ASK_ROW } from "../src/launcher/agent-rows.ts";
 import {
   type HandoffSnapshot,
   handoffHints,
@@ -11,11 +12,10 @@ import {
   runsToList,
   showsContext,
   withHandoff,
-} from "../src/launcher/agents/handoff-rows.ts";
-import { ASK_ROW } from "../src/launcher/agents/rows.ts";
+} from "../src/launcher/handoff-rows.ts";
 import { extraRules, LauncherKeys, NO_EXTRA_KEYS } from "../src/launcher/keys.ts";
 import type { Row } from "../src/launcher/row-model.ts";
-import type { Section } from "../src/launcher/rows.ts";
+import type { Section } from "../src/launcher/sections.ts";
 
 const harnesses: HandoffSnapshot["harnesses"] = [
   { id: "claude-code", name: "Claude Code", uses: "your Claude subscription", signedIn: true },

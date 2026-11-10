@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { RadioSource } from "../src/actions/sources/radios.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
-import { actionKind, entryAddress, type LauncherItem, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/items.ts";
+import { actionKind, entryAddress, type LauncherItem, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/lib/items.ts";
+import { buildSections, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
 import { aliasIndex } from "../src/launcher/person-keys.ts";
 import { rank } from "../src/launcher/ranking/index.ts";
-import { actionRow, windowRow } from "../src/launcher/row-model.ts";
-import { buildSections, fileNameMatches, type ListInput, selectable, shortFolder } from "../src/launcher/rows.ts";
+import { actionRow, fileNameMatches, shortFolder, windowRow } from "../src/launcher/row-model.ts";
 import { desktopWord, launcherWindows } from "../src/launcher/world.ts";
 import { action, app, darkMode, ICONS, window } from "./support/launcher-fixtures.ts";
 

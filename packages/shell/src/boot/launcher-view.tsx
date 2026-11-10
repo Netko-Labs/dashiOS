@@ -6,11 +6,8 @@
 
 import type { Entry } from "../entries.ts";
 import { openFile } from "../file-manager.ts";
-import type { Presented } from "../launcher/host.ts";
-import type { PictureRect } from "../launcher/pictures.ts";
-import type { LauncherPrefs } from "../launcher/prefs.ts";
-import type { RankingMemory } from "../launcher/ranking/index.ts";
-import { LAUNCHER, Launcher, type LauncherFiles } from "../launcher.tsx";
+import type { RankingMemory } from "../launcher/index.ts";
+import { LAUNCHER, Launcher, type LauncherFiles, type LauncherPrefs, type PictureRect, type Presented } from "../launcher/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import type { RecentApps } from "../recents.ts";
 import { recentEntries } from "../recents.ts";

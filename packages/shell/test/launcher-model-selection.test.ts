@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { KEYMAP } from "../src/keymap.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
-import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/selection.ts";
+import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/lib/selection.ts";
 
 describe("selection by id", () => {
   const ids = ["a", "b", "c", "d", "e", "f", "g"];

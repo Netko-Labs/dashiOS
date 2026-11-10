@@ -21,7 +21,7 @@ import { createApprovalUi } from "../approval-sheet.tsx";
 import type { Compositor } from "../compositor.ts";
 import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
-import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
+import { LAUNCHER_MOTION } from "../launcher/index.ts";
 import type { Notifications } from "../notifications/index.ts";
 import { regionDesktop } from "../region/desktop.ts";
 import type { SettingsStore } from "../settings-app/index.ts";

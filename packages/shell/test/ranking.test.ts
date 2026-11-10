@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildIndex, fold, prepare, rank } from "../src/launcher/ranking/index.ts";
-import { fuzzyScore, withinOneEdit } from "../src/launcher/ranking/match.ts";
+import { fuzzyScore, withinOneEdit } from "../src/launcher/ranking/lib/match.ts";
 
 describe("folding", () => {
   test("case and accents fold; letters that don't decompose are spelled out", () => {

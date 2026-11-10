@@ -5,7 +5,7 @@
  *
  * - the shell's own surfaces, through @dashi/ui's text-size source
  *   (`useTextSize`): the launcher's field and rows grow with it, and fewer
- *   rows fit (launcher/measures.ts), so nothing is clipped;
+ *   rows fit (launcher/lib/measures.ts), so nothing is clipped;
  * - GTK apps: `org.gnome.desktop.interface text-scaling-factor`, only where
  *   the shell may change what apps read (appearance/apps.ts), as the
  *   pointer's size does (pointer.ts).

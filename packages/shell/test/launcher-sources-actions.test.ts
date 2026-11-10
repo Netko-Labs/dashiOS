@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { ok, ready } from "../src/actions/types.ts";
 import { KEYMAP } from "../src/keymap.ts";
-import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "../src/launcher/editing.ts";
-import { launcherIndex } from "../src/launcher/items.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
+import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "../src/launcher/lib/editing.ts";
+import { launcherIndex } from "../src/launcher/lib/items.ts";
+import { buildSections, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
 import {
   aliasIndex,
   chordWhen,
@@ -18,7 +19,6 @@ import {
   withKey,
 } from "../src/launcher/person-keys.ts";
 import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
-import { buildSections, type ListInput, selectable } from "../src/launcher/rows.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
 import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
 import type { LauncherSettings } from "../src/settings-app/store.ts";

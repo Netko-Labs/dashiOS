@@ -1,13 +1,12 @@
 /**
- * The launcher's two clipboard scopes (launcher/scope.ts): the history
+ * The launcher's two clipboard scopes (launcher/types.ts): the history
  * ("Clipboard ›", ⌥❖V) and the snippets ("Snippets ›"). ↩ pastes into the
  * window that had the keyboard before the launcher opened, ❖C copies, and
  * the action list (❖K) has Pin, Delete and Clear History; the snippets'
  * field adds one (";addr Calle de la Luna 12" and ↩).
  */
 
-import type { LauncherScope, ScopeResult } from "../../launcher/scope.ts";
-import { KEYS, type Verb } from "../../launcher/verbs.ts";
+import { KEYS, type LauncherScope, type ScopeResult, type Verb } from "../../launcher/index.ts";
 import { CLIPBOARD, SNIPPET } from "../glyphs.ts";
 import type { ClipboardHistory, ClipEntry } from "../history.ts";
 import { historySections, snippetSections } from "./rows.ts";

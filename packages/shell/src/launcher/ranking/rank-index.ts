@@ -5,8 +5,8 @@
  */
 
 import { charMask, type Folded, prepare } from "./fold.ts";
-import { INTENTS, type Intents } from "./intents.ts";
 import { RANK_KINDS, type RankItem } from "./item.ts";
+import { INTENTS, type Intents } from "./lib/intents.ts";
 
 export interface Prepared<T extends RankItem> {
   item: T;

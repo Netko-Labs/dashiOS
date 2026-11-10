@@ -11,10 +11,8 @@
 
 import { bitCount, charMask, type Folded, prepare } from "./fold.ts";
 import type { RankItem, RankSignals } from "./item.ts";
-import { type Hit, type MatchKind, matchKeyword, matchName, matchTypo, TIER } from "./match.ts";
+import { type Hit, type MatchKind, matchKeyword, matchName, matchTypo, TIER } from "./lib/match.ts";
 import type { Prepared, RankIndex } from "./rank-index.ts";
-
-export { buildIndex, type RankIndex } from "./rank-index.ts";
 
 export interface RankResult<T extends RankItem> {
   item: T;

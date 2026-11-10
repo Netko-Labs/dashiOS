@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AppIndex, nearestExisting } from "../src/launcher/app-index.ts";
 import { failureNotice, LaunchFailures, RETRY } from "../src/launcher/failures.ts";
-import type { FileRow } from "../src/launcher/rows.ts";
+import type { FileRow } from "../src/launcher/row-model.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { parseRecents, RecentApps, recentEntries, remember } from "../src/recents.ts";
 import { FileSearch, RETRY_MS } from "../src/shared/files/file-search.ts";

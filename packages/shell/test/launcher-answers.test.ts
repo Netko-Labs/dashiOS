@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { aheadOf } from "../src/launcher/answers/clock.ts";
-import { type AnswerContext, answerFor, RATES } from "../src/launcher/answers/index.ts";
-import { canonicalNumber, canonicalNumbers, numberStyle } from "../src/launcher/answers/numbers.ts";
-import { convert, unitNamed } from "../src/launcher/answers/units.ts";
-import { instantAt, offsetMinutes, zoneNamed } from "../src/launcher/answers/zones.ts";
-import { buildSections, filesStateFor, type ListInput, selectable } from "../src/launcher/rows.ts";
+import { aheadOf } from "../src/launcher/lib/answers/clock.ts";
+import { type AnswerContext, answerFor, RATES } from "../src/launcher/lib/answers/index.ts";
+import { canonicalNumber, canonicalNumbers, numberStyle } from "../src/launcher/lib/answers/numbers.ts";
+import { convert, unitNamed } from "../src/launcher/lib/answers/units.ts";
+import { instantAt, offsetMinutes, zoneNamed } from "../src/launcher/lib/answers/zones.ts";
+import { buildSections, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
+import { filesStateFor } from "../src/launcher/sections.ts";
 
 // Thursday 5 November 2026, 12:41 in Lisbon (UTC+0 in winter).
 const NOW = Date.UTC(2026, 10, 5, 12, 41);

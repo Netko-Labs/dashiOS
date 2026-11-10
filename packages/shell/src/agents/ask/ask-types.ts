@@ -1,7 +1,7 @@
 /** What the launcher's agents are given and what they offer: the settings read, how harnesses run, and the stores they come to. */
 
 import type { ActionDef, ActionState, Args, Outcome } from "../../actions/types.ts";
-import type { LauncherAgents } from "../../launcher/agents/rows.ts";
+import type { LauncherAgents } from "../../launcher/index.ts";
 import type { AgentStore } from "../presence.ts";
 import type { AnswererChoice } from "./answerer.ts";
 import type { Fetch } from "./claude.ts";

@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { TEXT_SIZES } from "@dashi/ui";
 import { KEYMAP } from "../src/keymap.ts";
 import { fieldAccess, rowAccess, spokenRow } from "../src/launcher/access.ts";
-import type { LauncherWindow } from "../src/launcher/items.ts";
 import { LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
-import { measuresFor, STANDARD, SURFACE, tallest } from "../src/launcher/measures.ts";
+import type { LauncherWindow } from "../src/launcher/lib/items.ts";
+import { measuresFor, STANDARD, SURFACE, tallest } from "../src/launcher/lib/measures.ts";
 import {
   arrowsWanted,
   launcherOrigin,
@@ -17,7 +17,7 @@ import {
   stepPictures,
   trimForPictures,
 } from "../src/launcher/pictures.ts";
-import type { Row } from "../src/launcher/rows.ts";
+import type { Row } from "../src/launcher/row-model.ts";
 import { textSizeCommands } from "../src/text-size.ts";
 
 // Newcomers and access (docs/betterments.html): text size, the screen reader's words, and the windows' live pictures.

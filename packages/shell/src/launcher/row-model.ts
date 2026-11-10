@@ -10,10 +10,10 @@ import type { ActionState } from "../actions/types.ts";
 import type { Entry } from "../entries.ts";
 import type { FileHit } from "../shared/files/file-search.ts";
 import { PANES } from "../shared/settings/panes.ts";
-import type { AgentAct } from "./agents/acts.ts";
-import { commandGlyph } from "./command-glyphs.ts";
-import { outsideIcon } from "./extension-rows.ts";
-import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
+import type { AgentAct } from "./lib/agents/acts.ts";
+import { commandGlyph } from "./lib/command-glyphs.ts";
+import { outsideIcon } from "./lib/extension-rows.ts";
+import { isPane, type LauncherItem, type LauncherWindow } from "./lib/items.ts";
 import { prepare } from "./ranking/fold.ts";
 
 /** A file row: its hit and the icon resolved for it. */

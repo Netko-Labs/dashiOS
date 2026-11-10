@@ -32,7 +32,7 @@ export type ActionState = boolean | string | number | null;
 /**
  * How it went: a line to show (or copy), or why not. A command from outside
  * Dashi (an applet's, a script's) may ask the launcher to keep going: `show`
- * (launcher/extensions.ts): its answer as a row, rows to pick from, or a view
+ * (launcher/lib/extensions.ts): its answer as a row, rows to pick from, or a view
  * it draws itself. Anyone else reads `text`.
  */
 export type Outcome = { ok: true; text: string; show?: Shown } | { ok: false; error: string };
@@ -102,7 +102,7 @@ export interface ActionDef {
    * Who outside Dashi supplied it, as its row says ("Weather", "Your scripts"):
    * an applet, a script, a search provider. Such a row never outranks an
    * exact app or setting match, never wears Dashi's glyphs, and never takes
-   * a first-party name (launcher/items.ts).
+   * a first-party name (launcher/lib/items.ts).
    */
   from?: string;
   /** The MCP tool it is for agents; only these are in `tools/list`. */

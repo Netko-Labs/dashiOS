@@ -3,7 +3,7 @@
  * command glyphs (16 × 16, round ends): the screen, the front window and an
  * area to capture, the two ways to record, the microphone, and close. The
  * launcher's Screenshot of the Screen and Screenshot of an Area rows wear
- * the screen's and the area's (launcher/command-glyphs.ts).
+ * the screen's and the area's (launcher/lib/command-glyphs.ts).
  */
 
 import type { CaptureMode } from "./types.ts";
