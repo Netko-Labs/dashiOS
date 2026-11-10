@@ -391,7 +391,7 @@
 1	packages/shell/src/launcher/verbs.ts
 1	packages/shell/src/local-search.ts
 1	packages/shell/src/lock/controller.tsx
-1	packages/shell/src/lock/screen.tsx
+1	packages/shell/src/lock/lib/screen.tsx
 16	packages/shell/src/main.tsx
 11	packages/shell/src/menubar-program-slots.tsx
 2	packages/shell/src/menubar-slots.tsx

@@ -6,7 +6,7 @@
 
 import { LoginScreen, type PowerAction } from "@dashi/ui";
 import { type ReactNode, useEffect, useState } from "react";
-import { formatLongDay, formatTimeBare, useClockPrefs } from "../shared/time/clock.ts";
+import { formatLongDay, formatTimeBare, useClockPrefs } from "../../shared/time/clock.ts";
 import type { Verdict } from "./attempts.ts";
 
 export type LockPower = PowerAction;
