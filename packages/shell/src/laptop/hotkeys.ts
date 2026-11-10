@@ -13,6 +13,9 @@
 
 import type { Hotkeys } from "../hardware/describe.ts";
 import type { Rule } from "../keymap.ts";
+import type { ModeStore } from "../power/modes/store.ts";
+import type { OsdController } from "../system/osd-state.ts";
+import { keyboardLight, type LaptopStore } from "./store.ts";
 
 /** Kernel key names (linux/input-event-codes.h) to xkb keysyms (xkeyboard-config's evdev keycodes, symbols/inet). */
 export const KERNEL_KEYSYMS: Readonly<Record<string, string>> = {
@@ -77,4 +80,39 @@ export function nextLightLevel(level: number, max: number, step: "cycle" | "up" 
   if (step === "up") return Math.min(max, level + 1);
   if (step === "down") return Math.max(0, level - 1);
   return level >= max ? 0 : level + 1;
+}
+
+/** The keyboard light: set to a level (0 is off), or stepped through its cycle with the on-screen display. */
+export function keyboardLights(store: LaptopStore, osd: OsdController): { setLight(level: number): void; stepLight(step: "cycle" | "up" | "down"): void } {
+  const setLight = (level: number) => {
+    const light = keyboardLight(store.getSnapshot());
+    if (!light) return;
+    const next = Math.max(0, Math.min(light.max, Math.round(level)));
+    void store.set("kbd-backlight", next);
+  };
+  const stepLight = (step: "cycle" | "up" | "down") => {
+    const light = keyboardLight(store.getSnapshot());
+    if (!light) return;
+    const next = nextLightLevel(light.level, light.max, step);
+    setLight(next);
+    osd.show({ kind: "keyboard-light", level: next, max: light.max });
+  };
+  return { setLight, stepLight };
+}
+
+/** The laptop's keys the compositor reports: the mode, the light, the ROG key. Resolves to whether one was ours. */
+export function machineKeyHandler(parts: {
+  modes: ModeStore;
+  stepLight(step: "cycle" | "up" | "down"): void;
+  openSettings(pane: "battery"): void;
+}): (name: string) => Promise<boolean> {
+  return async (name) => {
+    if (!LAPTOP_BINDING_NAMES.has(name)) return false;
+    if (name === LAPTOP_BINDINGS.mode) parts.modes.cycle();
+    else if (name === LAPTOP_BINDINGS.lighting) parts.stepLight("cycle");
+    else if (name === LIGHT_STEP_BINDINGS.up) parts.stepLight("up");
+    else if (name === LIGHT_STEP_BINDINGS.down) parts.stepLight("down");
+    else if (name === LAPTOP_BINDINGS.rog) parts.openSettings("battery");
+    return true;
+  };
 }
