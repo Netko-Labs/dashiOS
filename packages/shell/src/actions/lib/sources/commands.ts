@@ -6,14 +6,11 @@
  * here), on the window focused when they were asked.
  */
 
-import type { Keymap } from "../../keymap.ts";
-import type { MenuAction } from "../../menus/index.ts";
-import { formatAddress } from "../address.ts";
-import { keyFor } from "../keys.ts";
-import { type ActionDef, type ActionKind, ok, ready } from "../types.ts";
-
-/** A screenshot: the whole screen (⇧❖3), an area dragged out (⇧❖4), or the toolbar that also records (⇧❖5). */
-export type CaptureKind = "screen" | "area" | "toolbar";
+import type { Keymap } from "../../../keymap.ts";
+import type { MenuAction } from "../../../menus/index.ts";
+import { formatAddress } from "../../address.ts";
+import { keyFor } from "../../keys.ts";
+import { type ActionDef, type ActionKind, type CaptureKind, ok, ready } from "../../types.ts";
 
 /** Carries a screenshot out (main.tsx: screenshots.ts, screenshot-area.tsx, recorder/); `window` is the one focused when it was asked. */
 export type RunCapture = (what: CaptureKind, window: number | null) => Promise<void>;

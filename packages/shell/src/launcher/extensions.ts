@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { Outcome, PickRow } from "../actions/types.ts";
+import type { Outcome, PickRow } from "../actions/index.ts";
 import type { SlowSnapshot } from "./budget.ts";
 import { argRow, pickSection, resultRow, type SlowRow, slowSections, viewRows } from "./extension-rows.ts";
 import {

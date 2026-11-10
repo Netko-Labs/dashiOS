@@ -8,7 +8,7 @@
 
 import { TextSelectionLook } from "@dashi/ui";
 import { render } from "@mirinjs/metal";
-import type { PersonQuestion } from "./actions/confirm-sheet.tsx";
+import type { PersonQuestion } from "./actions/index.ts";
 import { closeOverlay, createStoppedNotes, createTurns } from "./agent-overlays.tsx";
 import { allowSiteSheet, askSheet, confirmSheet, personSheet, type Sheet, signInSheet } from "./agent-sheet-views.tsx";
 import type { AgentUi, Answer } from "./agents/index.ts";
@@ -31,7 +31,7 @@ export interface AgentUiOptions {
 /** The sheet queue's id for the person's own questions (agents' connections count from 1). */
 export const PERSON_SHEETS = 0;
 
-/** What else the queue shows: the person's own questions (actions/run.ts), answered by their press only. */
+/** What else the queue shows: the person's own questions (actions/lib/run.ts), answered by their press only. */
 export interface PersonSheets {
   confirmPerson(question: PersonQuestion, signal?: AbortSignal): Promise<boolean>;
 }

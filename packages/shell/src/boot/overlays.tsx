@@ -4,7 +4,7 @@
  * selection, ⇧❖5's toolbar and the recorder).
  */
 
-import type { CaptureKind } from "../actions/sources/commands.ts";
+import type { CaptureKind } from "../actions/index.ts";
 import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../apps.ts";
 import { placedOutputs } from "../arrange.ts";
 import type { Compositor, Frame } from "../compositor.ts";

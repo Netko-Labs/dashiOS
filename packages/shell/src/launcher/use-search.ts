@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { Outcome } from "../actions/types.ts";
+import type { Outcome } from "../actions/index.ts";
 import { NO_CONTEXT, type TaskContext } from "../agents/handoff/grants.ts";
 import type { Entry } from "../entries.ts";
 import { iconPath } from "../shared/apps/index.ts";

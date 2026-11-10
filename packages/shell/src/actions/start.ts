@@ -25,15 +25,15 @@ import { isPaneId } from "../shared/settings/panes.ts";
 import type { Arrow } from "../tiling.ts";
 import { withArgs } from "./address.ts";
 import { type PersonQuestion, personTitle } from "./confirm-sheet.tsx";
-import { copyAddress } from "./copy.ts";
-import { linksSocketPath, serveLinks } from "./links.ts";
+import { copyAddress } from "./lib/copy.ts";
+import { linksSocketPath, serveLinks } from "./lib/links.ts";
+import { type Origin, type RunDeps, runAction } from "./lib/run.ts";
+import { AppSource } from "./lib/sources/apps.ts";
+import { commandActions, type RunCapture } from "./lib/sources/commands.ts";
+import { MenuSource } from "./lib/sources/menus.ts";
+import { settingsActions } from "./lib/sources/settings.ts";
+import { WindowSource } from "./lib/sources/windows.ts";
 import { ActionRegistry, fixedSource, mayUse } from "./registry.ts";
-import { type Origin, type RunDeps, runAction } from "./run.ts";
-import { AppSource } from "./sources/apps.ts";
-import { commandActions, type RunCapture } from "./sources/commands.ts";
-import { MenuSource } from "./sources/menus.ts";
-import { settingsActions } from "./sources/settings.ts";
-import { WindowSource } from "./sources/windows.ts";
 import { type ActionContext, type ActionDef, type ActionSource, type Args, failed, type Outcome } from "./types.ts";
 
 export interface ActionsOptions {
@@ -47,7 +47,7 @@ export interface ActionsOptions {
   /** The installed apps (the shell's catalog). */
   entries(): readonly Entry[];
   launch(entry: Entry): number | null;
-  /** Bring a running app's window forward (sources/apps.ts); whether it did. */
+  /** Bring a running app's window forward (lib/sources/apps.ts); whether it did. */
   activate?(entry: Entry): Promise<boolean>;
   appMenus: Pick<AppMenuStore, "published" | "onPublished" | "select">;
   /** What the menu bar calls a window's app. */
@@ -60,7 +60,7 @@ export interface ActionsOptions {
   } | null;
   /** A Dashi menu row's action (menus/start.tsx `run`). */
   runMenu(action: MenuAction): Promise<void>;
-  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (sources/commands.ts); none without a compositor. */
+  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (lib/sources/commands.ts); none without a compositor. */
   capture?: RunCapture;
   openSettings(pane: PaneId, row?: string): void;
   keymap: Keymap;

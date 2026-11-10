@@ -29,6 +29,9 @@ export type Args = Record<string, unknown>;
 /** What a toggle or a pick is now: shown on its row. */
 export type ActionState = boolean | string | number | null;
 
+/** A screenshot: the whole screen (⇧❖3), an area dragged out (⇧❖4), or the toolbar that also records (⇧❖5). */
+export type CaptureKind = "screen" | "area" | "toolbar";
+
 /**
  * How it went: a line to show (or copy), or why not. A command from outside
  * Dashi (an applet's, a script's) may ask the launcher to keep going: `show`

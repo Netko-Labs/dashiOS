@@ -44,7 +44,7 @@ export interface Agents {
   readonly desktop: Desktop;
   /**
    * Carry out a tool's call for the person (the launcher, a key, a link:
-   * actions/run.ts): the same code an agent's call runs, named as "you",
+   * actions/lib/run.ts): the same code an agent's call runs, named as "you",
    * seeing what the person sees. A tool that asks every time asks `confirm`,
    * the person's own sheet. Nothing runs while the screen is locked.
    */

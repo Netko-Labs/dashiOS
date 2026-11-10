@@ -5,7 +5,7 @@
  */
 
 import type { ReactElement } from "react";
-import { PersonConfirmSheet, type PersonQuestion } from "./actions/confirm-sheet.tsx";
+import { PersonConfirmSheet, type PersonQuestion } from "./actions/index.ts";
 import type { Allow, Answer, Ask } from "./agents/index.ts";
 import type { Confirm, SignInAsk, SignInChoice, SiteAsk } from "./agents/presence.ts";
 import { DENY, type QueuedSheet } from "./agents/sheet-queue.ts";

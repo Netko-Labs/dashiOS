@@ -6,10 +6,10 @@
  * launcher.
  */
 
-import type { Entry } from "../../entries.ts";
-import type { DesktopAction } from "../../shared/apps/index.ts";
-import { formatAddress, isSegment } from "../address.ts";
-import { type ActionDef, type ActionSource, failed, ok, ready } from "../types.ts";
+import type { Entry } from "../../../entries.ts";
+import type { DesktopAction } from "../../../shared/apps/index.ts";
+import { formatAddress, isSegment } from "../../address.ts";
+import { type ActionDef, type ActionSource, failed, ok, ready } from "../../types.ts";
 
 export interface AppDeps {
   entries(): readonly Entry[];

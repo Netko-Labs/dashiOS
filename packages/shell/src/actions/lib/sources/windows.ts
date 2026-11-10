@@ -6,14 +6,14 @@
  * found by, never obeyed.
  */
 
-import { parseWindowId } from "../../agents/tools/define.ts";
-import type { CompositorWindow } from "../../compositor.ts";
-import type { Keymap } from "../../keymap.ts";
-import type { Arrange } from "../../layout.ts";
-import { ARROWS, type Arrow } from "../../tiling.ts";
-import { formatAddress } from "../address.ts";
-import { keyFor } from "../keys.ts";
-import { type ActionDef, type ActionSource, type Args, failed, invalid, ok, ready } from "../types.ts";
+import { parseWindowId } from "../../../agents/tools/define.ts";
+import type { CompositorWindow } from "../../../compositor.ts";
+import type { Keymap } from "../../../keymap.ts";
+import type { Arrange } from "../../../layout.ts";
+import { ARROWS, type Arrow } from "../../../tiling.ts";
+import { formatAddress } from "../../address.ts";
+import { keyFor } from "../../keys.ts";
+import { type ActionDef, type ActionSource, type Args, failed, invalid, ok, ready } from "../../types.ts";
 
 export interface WindowDeps {
   windows(): Promise<readonly CompositorWindow[]>;

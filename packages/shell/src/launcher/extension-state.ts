@@ -6,7 +6,7 @@
  * opened (its pick, its view, its words) and the steps in and out of it.
  */
 
-import type { ActionDef, Args, Outcome, PickRow, Shown } from "../actions/types.ts";
+import type { ActionDef, Args, Outcome, PickRow, Shown } from "../actions/index.ts";
 import { realTimers, type SlowSnapshot, type SlowSource, SlowSources, type Timers } from "./budget.ts";
 import { outsideIcon, type SlowRow } from "./extension-rows.ts";
 import type { LauncherItem } from "./items.ts";

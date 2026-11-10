@@ -7,7 +7,7 @@
  * edits the apps left out (settings.json `clipboard`).
  */
 
-import type { ActionContext, ActionSource } from "../actions/types.ts";
+import type { ActionContext, ActionSource } from "../actions/index.ts";
 import type { ClipboardCopy } from "../agents/desktop/types.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { LauncherScope } from "../launcher/scope.ts";

@@ -13,8 +13,7 @@
  *   as the person, through the registry's runner.
  */
 
-import type { ActionDef, Outcome, PickRow } from "../actions/types.ts";
-import { ready } from "../actions/types.ts";
+import { type ActionDef, type Outcome, type PickRow, ready } from "../actions/index.ts";
 import type { SlowSnapshot } from "./budget.ts";
 import type { LauncherItem } from "./items.ts";
 import { ROW_HEIGHT } from "./row-view.tsx";

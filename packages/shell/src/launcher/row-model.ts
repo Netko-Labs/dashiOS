@@ -6,7 +6,7 @@
  * its kind, or the key that does it, or its control.
  */
 
-import type { ActionState } from "../actions/types.ts";
+import type { ActionState } from "../actions/index.ts";
 import type { Entry } from "../entries.ts";
 import type { FileHit } from "../shared/files/file-search.ts";
 import { PANES } from "../shared/settings/panes.ts";

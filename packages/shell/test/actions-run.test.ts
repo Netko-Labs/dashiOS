@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { personTitle } from "../src/actions/confirm-sheet.tsx";
-import { addressText, copyAddress } from "../src/actions/copy.ts";
-import { parseLinkRequest, replyLine, serveLinks } from "../src/actions/links.ts";
-import { linkDecision, type RunDeps, runAction } from "../src/actions/run.ts";
+import { addressText, copyAddress } from "../src/actions/lib/copy.ts";
+import { parseLinkRequest, replyLine, serveLinks } from "../src/actions/lib/links.ts";
+import { linkDecision, type RunDeps, runAction } from "../src/actions/lib/run.ts";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 

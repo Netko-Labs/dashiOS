@@ -4,7 +4,7 @@
  * step of its own; `perform` picks one by the effect's kind.
  */
 
-import type { Outcome } from "../actions/types.ts";
+import type { Outcome } from "../actions/index.ts";
 import type { AgentAct } from "./agents/acts.ts";
 import type { Mode } from "./mode.ts";
 import type { LauncherProps } from "./props.ts";

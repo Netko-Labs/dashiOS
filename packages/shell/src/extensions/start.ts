@@ -13,10 +13,7 @@
  * the applets' connections) and calls this once the registry is up.
  */
 
-import { actionsInterface } from "../actions/dbus.ts";
-import type { ActionRegistry } from "../actions/registry.ts";
-import { ScriptSource, scriptsDir } from "../actions/sources/scripts.ts";
-import type { Outcome } from "../actions/types.ts";
+import { type ActionRegistry, actionsInterface, type Outcome, ScriptSource, scriptsDir } from "../actions/index.ts";
 import type { AppletCommands } from "../applets/commands.ts";
 import type { Entry } from "../entries.ts";
 import { ExtensionSession } from "../launcher/extensions.ts";

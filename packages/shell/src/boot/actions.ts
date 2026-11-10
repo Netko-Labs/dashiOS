@@ -5,8 +5,7 @@
  * lists and reaches, dashi:// links shown in the launcher, and the keymap.
  */
 
-import { type Actions, startActions } from "../actions/index.ts";
-import { RadioSource } from "../actions/sources/radios.ts";
+import { type Actions, RadioSource, startActions } from "../actions/index.ts";
 import { isVaultWindow } from "../agents/secrets/vault-view.ts";
 import type { Agents } from "../agents/server.ts";
 import { appFor } from "../apps.ts";

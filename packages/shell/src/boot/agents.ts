@@ -4,8 +4,7 @@
  * and Ask in the launcher.
  */
 
-import { formatAddress } from "../actions/address.ts";
-import type { startActions } from "../actions/index.ts";
+import { formatAddress, type startActions } from "../actions/index.ts";
 import { createAgentUi } from "../agent-sheets.tsx";
 import { modelKeys, vaultTokenSource } from "../agents/ask/keys.ts";
 import { TurnWatch } from "../agents/ask/now.ts";

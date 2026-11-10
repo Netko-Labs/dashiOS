@@ -4,7 +4,7 @@
  * ⇥, and Return on a plan. Kept here so the launcher's own code only wires it.
  */
 
-import type { Outcome } from "../../actions/types.ts";
+import type { Outcome } from "../../actions/index.ts";
 import type { TaskView } from "../../agents/ask/tasks.ts";
 import type { Row } from "../row-model.ts";
 import type { AgentAct } from "./acts.ts";

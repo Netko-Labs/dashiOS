@@ -7,7 +7,7 @@
  * changes (a switch flipped from Control Center flips in the row).
  */
 
-import type { ActionDef } from "../actions/types.ts";
+import type { ActionDef } from "../actions/index.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import { spaceLabel } from "../spaces/model.ts";
 import { groupByApp } from "../switcher/model.ts";

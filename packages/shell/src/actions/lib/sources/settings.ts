@@ -13,7 +13,7 @@
  * row and lights it up (`place`); with `?value=…` it sets it.
  */
 
-import { parseCall } from "../../agents/tools/registry.ts";
+import { parseCall } from "../../../agents/tools/registry.ts";
 import {
   accepts,
   changedWords,
@@ -25,11 +25,11 @@ import {
   type SettingValue,
   type ValueSchema,
   wrongValue,
-} from "../../settings-app/registry/index.ts";
-import { PANE_KEYWORDS } from "../../settings-app/search.ts";
-import { PANES } from "../../shared/settings/panes.ts";
-import { formatAddress } from "../address.ts";
-import { type ActionContext, type ActionDef, type ActionKind, type ActionState, failed, invalid, type Outcome, ok, ready } from "../types.ts";
+} from "../../../settings-app/registry/index.ts";
+import { PANE_KEYWORDS } from "../../../settings-app/search.ts";
+import { PANES } from "../../../shared/settings/panes.ts";
+import { formatAddress } from "../../address.ts";
+import { type ActionContext, type ActionDef, type ActionKind, type ActionState, failed, invalid, type Outcome, ok, ready } from "../../types.ts";
 
 export interface SettingsDeps {
   /** What a row holds now; null where it holds no value (no Dock, no stores). */

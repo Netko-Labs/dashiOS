@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { RadioSource } from "../src/actions/sources/radios.ts";
+import { RadioSource } from "../src/actions/radios.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { actionKind, entryAddress, type LauncherItem, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/items.ts";
 import { aliasIndex } from "../src/launcher/person-keys.ts";

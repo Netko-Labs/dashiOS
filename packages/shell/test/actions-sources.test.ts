@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { appActions } from "../src/actions/lib/sources/apps.ts";
+import { WindowSource, windowAction } from "../src/actions/lib/sources/windows.ts";
 import { ActionRegistry } from "../src/actions/registry.ts";
-import { appActions } from "../src/actions/sources/apps.ts";
-import { WindowSource, windowAction } from "../src/actions/sources/windows.ts";
 import type { Entry } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { desktopActions, desktopFields, parseDesktopEntry, parseExec } from "../src/shared/apps/index.ts";

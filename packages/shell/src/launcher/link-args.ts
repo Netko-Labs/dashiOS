@@ -5,7 +5,7 @@
  * from a link, shown, never obeyed.
  */
 
-import type { ActionDef, Args } from "../actions/types.ts";
+import type { ActionDef, Args } from "../actions/index.ts";
 
 /** The longest a shown value is, in characters. */
 const MAX_VALUE = 32;

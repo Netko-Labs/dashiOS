@@ -14,9 +14,9 @@
  * opens Settings at the row.
  */
 
-import { mayUse } from "./registry.ts";
-import type { ActionContext, ActionDef, Args, Outcome } from "./types.ts";
-import { failed } from "./types.ts";
+import { mayUse } from "../registry.ts";
+import type { ActionContext, ActionDef, Args, Outcome } from "../types.ts";
+import { failed } from "../types.ts";
 
 /** Who asked: the person themselves (the launcher), a key the person bound (never logged: the activity log is not a keylogger), or a link from outside. */
 export type Origin = "person" | "key" | "link";

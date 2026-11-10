@@ -7,8 +7,8 @@
  * Agents have their own Wi-Fi and Bluetooth tools; these are the person's.
  */
 
-import { formatAddress } from "../address.ts";
-import { type ActionDef, type ActionSource, failed, invalid, ok, ready } from "../types.ts";
+import { formatAddress } from "./address.ts";
+import { type ActionDef, type ActionSource, failed, invalid, ok, ready } from "./types.ts";
 
 export interface RadioDeps {
   /** The radios now; null when the machine has none (or it can't be asked). */

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { runAction } from "../src/actions/lib/run.ts";
+import { arrangeActions } from "../src/actions/lib/sources/windows.ts";
 import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
-import { runAction } from "../src/actions/run.ts";
-import { arrangeActions } from "../src/actions/sources/windows.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { type KeyChord, resolveChord } from "../src/keymap-match.ts";

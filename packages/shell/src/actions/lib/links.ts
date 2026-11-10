@@ -16,10 +16,10 @@
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { peerPid, socketFd } from "../agents/peer.ts";
-import { LINKS_SOCKET } from "../shared/links/open-link.ts";
-import { MAX_ADDRESS } from "./address.ts";
-import type { Outcome } from "./types.ts";
+import { peerPid, socketFd } from "../../agents/peer.ts";
+import { LINKS_SOCKET } from "../../shared/links/open-link.ts";
+import { MAX_ADDRESS } from "../address.ts";
+import type { Outcome } from "../types.ts";
 
 /** Bytes in the one request line; more ends the connection. */
 const MAX_LINE = MAX_ADDRESS + 64;

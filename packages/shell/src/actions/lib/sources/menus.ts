@@ -10,11 +10,11 @@
  * (`destructive`), never chooses it.
  */
 
-import type { AppMenuStore } from "../../app-menus/store.ts";
-import type { CompositorWindow } from "../../compositor.ts";
-import type { PublishedMenus } from "../../shared/app-menus/protocol.ts";
-import { formatAddress, isSegment } from "../address.ts";
-import { type ActionDef, type ActionSource, failed, ok, ready } from "../types.ts";
+import type { AppMenuStore } from "../../../app-menus/store.ts";
+import type { CompositorWindow } from "../../../compositor.ts";
+import type { PublishedMenus } from "../../../shared/app-menus/protocol.ts";
+import { formatAddress, isSegment } from "../../address.ts";
+import { type ActionDef, type ActionSource, failed, ok, ready } from "../../types.ts";
 
 export interface MenuDeps {
   store: Pick<AppMenuStore, "published" | "onPublished" | "select">;

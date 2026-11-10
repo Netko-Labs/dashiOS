@@ -5,7 +5,7 @@
  */
 
 import type { Dispatch, SetStateAction } from "react";
-import type { Outcome } from "../actions/types.ts";
+import type { Outcome } from "../actions/index.ts";
 import type { TaskContext } from "../agents/handoff/grants.ts";
 import type { Entry } from "../entries.ts";
 import type { HandoffSnapshot } from "./agents/handoff-rows.ts";
