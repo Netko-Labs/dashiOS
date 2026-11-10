@@ -4,7 +4,7 @@
  * request by id, so a slow look can't be taken for a later one.
  */
 
-import type { Snapshot } from "../../../src/shared/processes/read.ts";
+import type { Snapshot } from "../../../src/shared/processes/index.ts";
 import type { LookReply, LookRequest, LookWants } from "./sampler.ts";
 
 export class Sampler {

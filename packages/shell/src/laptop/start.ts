@@ -17,7 +17,7 @@ import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import { type GraphicsChoice, MODE_LABEL, ModeStore, type PowerSection, type PowerSource, parseRecipes } from "../power/index.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import { parseStat } from "../shared/processes/kernel.ts";
+import { statParent } from "../shared/processes/index.ts";
 import type { Battery } from "../system/battery.ts";
 import type { OsdController } from "../system/osd-state.ts";
 import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
@@ -86,7 +86,7 @@ function cardHolders(
       } catch {
         return null;
       }
-      const parsed = parseStat(stat);
+      const parsed = statParent(stat);
       if (!parsed) return null;
       at = parsed.ppid;
     }

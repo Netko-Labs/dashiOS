@@ -40,7 +40,7 @@ export function readProcStat(pid: number): string | null {
 }
 
 /** `pid (comm) S ppid …` from /proc/<pid>/stat; comm may hold spaces and parentheses. */
-export function parseStat(text: string): { comm: string; ppid: number } | null {
+export function statParent(text: string): { comm: string; ppid: number } | null {
   const open = text.indexOf("(");
   const close = text.lastIndexOf(")");
   if (open < 0 || close < open) return null;
@@ -65,7 +65,7 @@ export function protectedPids(self: number, readStat: (pid: number) => string | 
   const protectedSet = new Set<number>([0, 1, self]);
   let pid = self;
   for (let depth = 0; depth < MAX_DEPTH && pid > 1; depth++) {
-    const stat = parseStat(readStat(pid) ?? "");
+    const stat = statParent(readStat(pid) ?? "");
     if (!stat) break;
     protectedSet.add(stat.ppid);
     pid = stat.ppid;

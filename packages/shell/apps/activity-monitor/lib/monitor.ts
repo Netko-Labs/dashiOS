@@ -16,8 +16,7 @@
  * fresh look.
  */
 
-import type { Counters, MemInfo, NetCounters } from "../../../src/shared/processes/proc.ts";
-import type { Snapshot } from "../../../src/shared/processes/read.ts";
+import type { Counters, MemInfo, NetCounters, Snapshot } from "../../../src/shared/processes/index.ts";
 import { type CpuSplit, cpuSplit, type ProcessRow, processRows, pushHistory, type RowContext, rates, SMOOTHING } from "./sample.ts";
 import type { LookWants } from "./sampler.ts";
 

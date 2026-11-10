@@ -20,8 +20,7 @@
  * `icon`, which looks in the icon theme.
  */
 
-import type { AppCatalog, AppIdentity, ProcessFacts } from "../../../shared/processes/index.ts";
-import { DASHI_KEY, flatpakId, identify } from "../../../shared/processes/index.ts";
+import { type AppCatalog, type AppIdentity, DASHI_KEY, flatpakId, identify, type ProcessFacts } from "../../../shared/processes/index.ts";
 import type { Stream } from "../streams.ts";
 
 /** What the walk reads of a process. */

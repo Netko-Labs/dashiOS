@@ -3,8 +3,7 @@
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { App } from "../shared/apps/index.ts";
-import { type AppCatalog, catalogFrom } from "../shared/processes/index.ts";
-import { readerMemory, readSnapshot, sysconf } from "../shared/processes/read.ts";
+import { type AppCatalog, catalogFrom, readerMemory, readSnapshot, sysconf } from "../shared/processes/index.ts";
 import { readPowerSupplies } from "../system/battery.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { powerProfiles } from "../system/profiles.ts";

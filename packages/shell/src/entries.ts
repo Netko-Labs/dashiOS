@@ -23,7 +23,8 @@ import {
   resolvePinned,
 } from "./shared/apps/index.ts";
 import type { Localized } from "./shared/locale/index.ts";
-import { type AppCatalog, catalogFrom } from "./shared/processes/index.ts";
+import { catalogFrom } from "./shared/processes/catalog.ts";
+import type { AppCatalog } from "./shared/processes/identity.ts";
 
 export interface Entry extends App {
   /** Other words people search for ("browser" for Firefox). */

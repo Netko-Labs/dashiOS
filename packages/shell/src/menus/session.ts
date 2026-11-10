@@ -23,7 +23,7 @@
 import { readFileSync } from "node:fs";
 import type { MachineAction } from "../power/machine.ts";
 import { spawnDetached } from "../shared/apps/index.ts";
-import { parseStat } from "../shared/processes/kernel.ts";
+import { statParent } from "../shared/processes/kernel.ts";
 import { powerAfterApps } from "../shutdown.ts";
 import type { PowerKind } from "./types.ts";
 
@@ -36,7 +36,7 @@ const MAX_DEPTH = 16;
 export function findAncestor(comm: string, start: number, readStat: (pid: number) => string | null): number | null {
   let pid = start;
   for (let depth = 0; depth < MAX_DEPTH && pid > 1; depth++) {
-    const stat = parseStat(readStat(pid) ?? "");
+    const stat = statParent(readStat(pid) ?? "");
     if (!stat) return null;
     if (depth > 0 && stat.comm === comm) return pid;
     pid = stat.ppid;

@@ -8,9 +8,7 @@
  * `onOpen` (args.ts).
  */
 
-import { protectedPids, readProcStat, sendSignal } from "../../src/shared/processes/kernel.ts";
-import { parseStat } from "../../src/shared/processes/proc.ts";
-import { readUsers, sysconf } from "../../src/shared/processes/read.ts";
+import { parseStat, protectedPids, readProcStat, readUsers, sendSignal, sysconf } from "../../src/shared/processes/index.ts";
 import { menusClient, onWindowVisibility, runApp, systemClipboard } from "../kit/index.ts";
 import { parseOpenArgs } from "./lib/args.ts";
 import { Monitor } from "./lib/monitor.ts";
