@@ -110,7 +110,6 @@
 1	packages/shell/apps/files/lib/window-keys.ts
 1	packages/shell/apps/files/lib/wording.ts
 2	packages/shell/apps/files/main.tsx
-2	packages/shell/apps/kit/menus.ts
 1	packages/shell/apps/notes/lib/errors.ts
 1	packages/shell/apps/notes/lib/find.ts
 1	packages/shell/apps/notes/lib/hooks/use-note-actions.ts
@@ -173,7 +172,6 @@
 2	packages/shell/apps/software/use-window-actions.ts
 1	packages/shell/apps/software/use-window-sheets.ts
 2	packages/shell/apps/software/window-overlay.tsx
-1	packages/shell/src/actions/lib/sources/menus.ts
 6	packages/shell/src/agents/desktop/calendar.ts
 5	packages/shell/src/agents/desktop/files.ts
 4	packages/shell/src/agents/desktop/notes.ts
@@ -183,10 +181,6 @@
 1	packages/shell/src/agents/tools/lib/files.ts
 1	packages/shell/src/agents/tools/lib/notes.ts
 1	packages/shell/src/agents/tools/lib/software.ts
-1	packages/shell/src/app-menus/lib/server.ts
-1	packages/shell/src/app-menus/shortcut.ts
-1	packages/shell/src/app-menus/start.ts
-1	packages/shell/src/app-menus/store.ts
 6	packages/shell/src/applet-store/kill-switch.ts
 1	packages/shell/src/applets/start.tsx
 1	packages/shell/src/boot/launcher.tsx
@@ -198,10 +192,7 @@
 1	packages/shell/src/launcher/row-model.ts
 1	packages/shell/src/launcher/sections.ts
 1	packages/shell/src/local-search.ts
-1	packages/shell/src/menus/model.ts
-1	packages/shell/src/menus/types.ts
 1	packages/shell/src/notifications/lib/month-card.tsx
-1	packages/shell/src/settings-app/lib/edit-menu.ts
 1	packages/shell/src/settings-app/sections.ts
 1	packages/shell/src/settings-app/types.ts
 1	packages/shell/src/settings.ts
@@ -215,10 +206,8 @@
 2	packages/shell/src/shared/applet-store/images.ts
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/notes/store.ts
-1	packages/shell/src/sheet.tsx
 2	packages/shell/src/software/update-check.ts
 1	packages/shell/test/actions-tools.test.ts
-1	packages/shell/test/activity-monitor-apps.test.ts
 1	packages/shell/test/agent-clipboard.test.ts
 1	packages/shell/test/agent-pay.test.ts
 2	packages/shell/test/agent-secrets-session.test.ts
@@ -248,7 +237,6 @@
 2	packages/shell/test/dialog-progress-list.test.ts
 3	packages/shell/test/dialog-text.test.ts
 7	packages/shell/test/dialog-view.test.tsx
-1	packages/shell/test/editor-model-menus.test.ts
 1	packages/shell/test/entry-icon.test.ts
 1	packages/shell/test/file-manager.test.ts
 1	packages/shell/test/files-browser.test.ts
@@ -260,7 +248,6 @@
 3	packages/shell/test/installer.test.ts
 1	packages/shell/test/launcher-files.test.ts
 1	packages/shell/test/launcher-model-apps.test.ts
-1	packages/shell/test/menus-typing.test.ts
 1	packages/shell/test/notes-conflict.test.ts
 1	packages/shell/test/notes-edited-line.test.ts
 1	packages/shell/test/notes-layout.test.tsx
@@ -279,10 +266,8 @@
 1	packages/shell/test/portal-sheets-view.test.tsx
 2	packages/shell/test/portal-windows.test.ts
 1	packages/shell/test/preview-empty.test.tsx
-1	packages/shell/test/preview-instance.test.ts
 1	packages/shell/test/ranking-memory.test.ts
 3	packages/shell/test/recorder.test.ts
-1	packages/shell/test/settings-undo.test.ts
 1	packages/shell/test/setup-extras-plan.test.ts
 2	packages/shell/test/setup-extras-store.test.ts
 1	packages/shell/test/sheet-fields.test.tsx

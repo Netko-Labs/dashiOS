@@ -9,7 +9,7 @@ import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import type { OverlayHandle } from "../overlay.tsx";
-import type { PublishedMenus } from "../shared/app-menus/protocol.ts";
+import type { PublishedMenus } from "../shared/app-menus/index.ts";
 import type { BarStop } from "./bar-keys.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
 

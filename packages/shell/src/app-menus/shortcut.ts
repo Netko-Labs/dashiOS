@@ -7,7 +7,7 @@
  * "❖n" or "❖ N".
  */
 
-import type { AppMenu } from "../shared/app-menus/protocol.ts";
+import type { AppMenu } from "../shared/app-menus/index.ts";
 
 export interface PressedChord {
   /** The unshifted key's xkb keysym name: "n", "comma", "BackSpace". */

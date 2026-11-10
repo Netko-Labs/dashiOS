@@ -12,7 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { type AppMenu, enabledItem, isOpenArgs, type PublishedMenus, type ShellMessage } from "../shared/app-menus/protocol.ts";
+import { type AppMenu, enabledItem, isOpenArgs, type PublishedMenus, type ShellMessage } from "../shared/app-menus/index.ts";
 import { isTextShortcut, itemForShortcut } from "./shortcut.ts";
 
 /** One app's end of the channel. */

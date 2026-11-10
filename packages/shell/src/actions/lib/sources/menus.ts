@@ -12,7 +12,7 @@
 
 import type { AppMenuStore } from "../../../app-menus/index.ts";
 import type { CompositorWindow } from "../../../compositor/index.ts";
-import type { PublishedMenus } from "../../../shared/app-menus/protocol.ts";
+import type { PublishedMenus } from "../../../shared/app-menus/index.ts";
 import { formatAddress, isSegment } from "../../address.ts";
 import { type ActionDef, type ActionSource, failed, ok, ready } from "../../types.ts";
 

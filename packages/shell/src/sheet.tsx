@@ -9,7 +9,7 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { KeyCatcher } from "./overlay.tsx";
-import type { PublishedMenus } from "./shared/app-menus/protocol.ts";
+import type { PublishedMenus } from "./shared/app-menus/index.ts";
 
 /** The card's size: five columns; its height fits the longest (MAX_ROWS rows). The surface adds a margin for the corners and shadow. */
 export const SHEET = { width: 860, height: 380 } as const;

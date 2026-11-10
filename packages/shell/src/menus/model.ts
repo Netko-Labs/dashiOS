@@ -8,7 +8,7 @@
 
 import type { CompositorWindow } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import type { AppMenu, PublishedMenus } from "../shared/app-menus/protocol.ts";
+import type { AppMenu, PublishedMenus } from "../shared/app-menus/index.ts";
 import { sameApp } from "../shortcuts.ts";
 import type { AppMenuKey, BarMenuId, EditCommand, MenuAction, MenuContext, MenuEntry, MenuId, WindowMenu } from "./types.ts";
 

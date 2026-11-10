@@ -133,9 +133,6 @@ export const STANDARD_TITLES: Readonly<Record<string, string>> = { file: "File",
 /** Menus that stay the shell's. */
 export const RESERVED_MENUS: ReadonlySet<string> = new Set(["dashi", "window", "help"]);
 
-/** A message, or part of one, that was refused, and why (shared with applets/protocol.ts). */
-export { isRefusal, type Refusal, refuse } from "@dashi/shape";
-
 const id = (value: unknown, what: string): string | Refusal => kitId(value, what, LIMITS.id);
 
 export function parseRow(value: unknown, where: string): AppMenuRow | Refusal {

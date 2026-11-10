@@ -4,7 +4,7 @@
  */
 
 import type { Compositor } from "../compositor/index.ts";
-import { menusSocketPath } from "../shared/app-menus/protocol.ts";
+import { menusSocketPath } from "../shared/app-menus/index.ts";
 import { FocusFollower, ownerPids } from "./focus.ts";
 import { serveMenus } from "./lib/server.ts";
 import { AppMenuStore } from "./store.ts";
