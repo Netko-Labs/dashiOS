@@ -71,6 +71,14 @@ Biome's import cycles keep theirs as `biome-ignore lint/nursery/noImportCycles`
 comments, which Biome reports once they are stale. A list's header says what
 its count means.
 
+A listed file you move with `git mv` keeps its entry without a hand edit: the
+check names the new path, and `--shrink` (or `bun scripts/list-rename.ts`, for
+every list at once) carries the entry there at the same count. It reads git's
+rename detection, staged or committed; for a move git did not see, give the
+pair: `bun scripts/list-rename.ts OLD NEW`. It never adds an entry. Biome's
+per-function overrides for H3 (`biome.jsonc`) are written by `bun
+scripts/check-biome.ts --shrink`, which also follows the file.
+
 ## Source Of Truth
 
 - `docs/architecture.md`: process model, the session, IPC, how the pieces

@@ -5,9 +5,9 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import { TILE_SIZE, Tile } from "./controls.tsx";
 import { rowLook, SelectionBar } from "./selection.tsx";
 import { useColors } from "./theme/index.ts";
+import { TILE_SIZE, Tile } from "./tile.tsx";
 
 export interface SidebarItemProps {
   label: string;

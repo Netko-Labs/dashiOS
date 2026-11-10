@@ -15,160 +15,20 @@
  *   });
  */
 
-import { existsSync } from "node:fs";
+import { ControlSender } from "./client-controls.ts";
+import type { AppletHandlers, AppletSpec, AppletsClientOptions, CommandHandlers, ControlHandlers } from "./client-types.ts";
+import { Wire } from "./client-wire.ts";
 import type { CommandResult, CommandRow } from "./commands.ts";
-import { CONTROL_LIMITS, CONTROLS_PROTOCOL, type ControlAction, type ControlUpdate } from "./controls.ts";
-import { type Manifest, manifestJson } from "./manifest.ts";
-import type { MenuRowSpec } from "./menu.ts";
+import { CONTROLS_PROTOCOL, type ControlUpdate } from "./controls.ts";
+import { manifestJson } from "./manifest.ts";
 import { POWER_PROTOCOL, type PowerChoice, type PowerState } from "./power.ts";
-import { type AppletShellMessage, type Placement, PROTOCOL, parseApplet, parseAppletShellMessage } from "./protocol.ts";
-
-/** What an applet shows; the shell's limits and rules are in docs/applets.md. */
-export interface AppletSpec {
-  id: string;
-  title: string;
-  /** SVG markup drawn in the menu bar's text color, as Dashi's own glyphs (16 × 16 reads best). */
-  glyph?: string;
-  /** An absolute path to a PNG or SVG drawn as it is. */
-  icon?: string;
-  /** Short text beside the picture, or alone. */
-  label?: string;
-  tooltip?: string;
-  menu?: readonly MenuRowSpec[];
-  /** What a click does: open the menu (the default with a menu) or call `onActivate`. */
-  click?: "activate" | "menu";
-  attention?: boolean;
-}
-
-/** Where a popover goes, and the namespace its layer surface takes. */
-export type PopoverPlacement = Placement & { namespace: string };
-
-export interface AppletHandlers {
-  /** A click, with where it was on the screen (for a popover or a window of your own to open near). */
-  onActivate?(x: number, y: number): void;
-  onSelect?(item: string): void;
-  /** The shell placed the popover asked for with `requestPopover`. */
-  onPopover?(placement: PopoverPlacement): void;
-  /** The popover must close (a click outside it, the item clicked again, the shell gone). */
-  onDismiss?(): void;
-}
-
-/** The shell ran one of the manifest's commands (protocol 3). */
-export interface CommandRun {
-  seq: number;
-  command: string;
-  args: Record<string, string | number | boolean>;
-  /** A pick command asked for its rows for what is typed. */
-  query?: string;
-  /** A pick command's row was chosen. */
-  item?: string;
-}
-
-/** What answers the launcher's commands: each run gets a `result`, `items`, or `requestView` (client methods). */
-export interface CommandHandlers {
-  onRun(run: CommandRun): void;
-  /** Where a view asked for with `requestView` goes. */
-  onView?(seq: number, placement: PopoverPlacement): void;
-  /** The view of run `seq` must close (the launcher moved on or closed). */
-  onViewDismiss?(seq: number): void;
-}
-
-/** What Control Center does with the applet's controls (protocol 5). */
-export interface ControlHandlers {
-  /** One was pressed. */
-  onAction(action: { id: string } & ControlAction): void;
-  /** Which of them the person has in Control Center now (keep those up to date). */
-  onShown?(shown: readonly string[]): void;
-}
-
-/** The time between two sends of one control's state: 4 a second. */
-export const CONTROL_SPACING_MS = 1000 / CONTROL_LIMITS.updatesPerSecond;
-
-/** A connection as the client uses it (Bun's socket, or a test's). */
-export interface ClientSocket {
-  write(data: Uint8Array): number;
-  end(): void;
-}
-
-export interface SocketHandlers {
-  open(socket: ClientSocket): void;
-  data(chunk: Uint8Array): void;
-  drain(): void;
-  close(): void;
-}
-
-export interface AppletsClientOptions {
-  path: string | null;
-  /** applet.json: given, the client says hello and speaks version 2. */
-  manifest?: Manifest;
-  /** Marks the applet as in development (the bar shows a "dev" badge). */
-  dev?: boolean;
-  /** Each message, both ways, for `dashi-applet dev`'s log. */
-  onMessage?(direction: "in" | "out", line: string): void;
-  /**
-   * The applet's own process (defineApplet sets it): waiting for the shell
-   * to come back (a session or shell restart) keeps it running. Without it,
-   * as in an app's client, the wait never holds the process up.
-   */
-  keepAlive?: boolean;
-  connect?(path: string, handlers: SocketHandlers): void;
-  exists?(path: string): boolean;
-  later?(fn: () => void, ms: number): () => void;
-  /** Milliseconds, for spacing control updates (tests). */
-  now?(): number;
-}
-
-const RETRY_MS = [500, 1000, 2000, 4000, 8000, 15000] as const;
-
-function bunConnect(path: string, handlers: SocketHandlers): void {
-  void Bun.connect({
-    unix: path,
-    socket: {
-      open: (socket) => handlers.open(socket),
-      data: (_socket, data) => handlers.data(data),
-      drain: () => handlers.drain(),
-      close: () => handlers.close(),
-      error: () => handlers.close(),
-      connectError: () => handlers.close(),
-    },
-  }).catch(() => handlers.close());
-}
-
-function unrefTimeout(fn: () => void, ms: number): () => void {
-  const timer = setTimeout(fn, ms);
-  timer.unref?.();
-  return () => clearTimeout(timer);
-}
-
-function refTimeout(fn: () => void, ms: number): () => void {
-  const timer = setTimeout(fn, ms);
-  return () => clearTimeout(timer);
-}
-
-/** Splits a byte stream into lines. */
-class Lines {
-  private pending = "";
-  private readonly decoder = new TextDecoder();
-
-  push(chunk: Uint8Array): string[] {
-    this.pending += this.decoder.decode(chunk, { stream: true });
-    const lines = this.pending.split("\n");
-    this.pending = lines.pop() ?? "";
-    return lines.filter((line) => line.trim() !== "");
-  }
-}
+import { type AppletShellMessage, PROTOCOL, parseApplet, parseAppletShellMessage } from "./protocol.ts";
 
 export class AppletsClient {
-  private socket: ClientSocket | null = null;
-  private connecting = false;
   private readonly lines = new Map<string, string>();
   private readonly handlers = new Map<string, AppletHandlers>();
   /** Popovers asked for or open, by applet id. */
   private readonly popovers = new Set<string>();
-  private unsent = new Uint8Array();
-  private retries = 0;
-  private cancelRetry: (() => void) | null = null;
-  private closed = false;
   private commands: CommandHandlers | null = null;
   /** The protocol the shell answered with; 0 before its welcome. */
   private shellProtocol = 0;
@@ -177,28 +37,30 @@ export class AppletsClient {
   /** Dashi's power mode as the shell last said it (protocol 4, `power.mode`); null when it doesn't. */
   private power: PowerState | null = null;
   private readonly powerListeners = new Set<(state: PowerState | null) => void>();
-  /** Each control's whole state as last given, sent again on every welcome. */
-  private readonly controlStates = new Map<string, ControlUpdate>();
-  /** When each control's state last went, and whether a newer one waits for its turn. */
-  private readonly controlSends = new Map<string, { at: number; waiting: (() => void) | null }>();
+  private readonly controls: ControlSender;
   private controlHandlers: ControlHandlers | null = null;
   private shown: readonly string[] = [];
-  private readonly connect: NonNullable<AppletsClientOptions["connect"]>;
-  private readonly exists: NonNullable<AppletsClientOptions["exists"]>;
-  private readonly later: NonNullable<AppletsClientOptions["later"]>;
+  private readonly wire: Wire;
 
   constructor(private readonly options: AppletsClientOptions) {
-    this.connect = options.connect ?? bunConnect;
-    this.exists = options.exists ?? existsSync;
-    this.later = options.later ?? (options.keepAlive ? refTimeout : unrefTimeout);
-    this.now = options.now ?? Date.now;
+    this.wire = new Wire(options, {
+      wanted: () => this.lines.size > 0,
+      opened: () => this.opened(),
+      line: (line) => this.receive(line),
+      lost: () => this.lost(),
+    });
+    const now = options.now ?? Date.now;
+    this.controls = new ControlSender({
+      ready: () => this.wire.connected && this.drawsControls,
+      write: (line) => this.wire.write(line),
+      later: (fn, ms) => this.wire.later(fn, ms),
+      now,
+    });
   }
-
-  private readonly now: () => number;
 
   /** Whether the shell is listening (a Dashi session). */
   get available(): boolean {
-    return this.options.path !== null && this.exists(this.options.path);
+    return this.wire.available;
   }
 
   /** Whether this client speaks version 2 (it has a manifest). */
@@ -217,8 +79,8 @@ export class AppletsClient {
     const line = `${JSON.stringify({ type: "applet", applet: spec })}\n`;
     if (this.lines.get(spec.id) === line) return true;
     this.lines.set(spec.id, line);
-    if (this.socket) this.write(line);
-    else this.start();
+    if (this.wire.connected) this.wire.write(line);
+    else this.wire.start();
     return true;
   }
 
@@ -226,21 +88,21 @@ export class AppletsClient {
     if (this.popovers.has(id)) this.dismiss(id);
     this.handlers.delete(id);
     if (!this.lines.delete(id)) return;
-    if (this.socket) this.write(`${JSON.stringify({ type: "remove", id })}\n`);
+    if (this.wire.connected) this.wire.write(`${JSON.stringify({ type: "remove", id })}\n`);
   }
 
   /** Ask for a popover under the item `id`; the placement comes to `onPopover`. Needs a manifest (version 2). */
   requestPopover(id: string, size: { width: number; height: number }): boolean {
-    if (this.version < 2 || !this.lines.has(id) || !this.socket) return false;
+    if (this.version < 2 || !this.lines.has(id) || !this.wire.connected) return false;
     this.popovers.add(id);
-    this.write(`${JSON.stringify({ type: "popover", id, width: Math.round(size.width), height: Math.round(size.height) })}\n`);
+    this.wire.write(`${JSON.stringify({ type: "popover", id, width: Math.round(size.width), height: Math.round(size.height) })}\n`);
     return true;
   }
 
   /** The applet closed its popover (Esc, a choice made in it). */
   dismiss(id: string): void {
     if (!this.popovers.delete(id)) return;
-    if (this.socket) this.write(`${JSON.stringify({ type: "dismiss", id })}\n`);
+    if (this.wire.connected) this.wire.write(`${JSON.stringify({ type: "dismiss", id })}\n`);
   }
 
   isPopoverOpen(id: string): boolean {
@@ -296,9 +158,9 @@ export class AppletsClient {
   /** Ask Dashi for Automatic or a mode, as a pick in Control Center; false when Dashi doesn't offer it here (`powerMode` is null) or lacks that mode. */
   choosePowerMode(choice: PowerChoice): boolean {
     const power = this.power;
-    if (!this.socket || this.shellProtocol < POWER_PROTOCOL || !power) return false;
+    if (!this.wire.connected || this.shellProtocol < POWER_PROTOCOL || !power) return false;
     if (choice !== "automatic" && !power.available.includes(choice)) return false;
-    this.write(`${JSON.stringify({ type: "power", choice })}\n`);
+    this.wire.write(`${JSON.stringify({ type: "power", choice })}\n`);
     return true;
   }
 
@@ -315,8 +177,7 @@ export class AppletsClient {
       console.error(`dashi applets: there is no control “${update.id}” in applet.json`);
       return false;
     }
-    this.controlStates.set(update.id, { ...this.controlStates.get(update.id), ...update });
-    this.sendControl(update.id);
+    this.controls.update(update);
     return true;
   }
 
@@ -335,20 +196,6 @@ export class AppletsClient {
     return this.shown;
   }
 
-  private sendControl(id: string): void {
-    if (!this.socket || !this.drawsControls) return;
-    const sent = this.controlSends.get(id);
-    if (sent?.waiting) return;
-    const wait = sent ? sent.at + CONTROL_SPACING_MS - this.now() : 0;
-    const send = (): void => {
-      const state = this.controlStates.get(id);
-      this.controlSends.set(id, { at: this.now(), waiting: null });
-      if (state && this.socket && this.drawsControls) this.write(`${JSON.stringify({ type: "control", ...state })}\n`);
-    };
-    if (wait <= 0) return send();
-    this.controlSends.set(id, { at: sent?.at ?? 0, waiting: this.later(send, wait) });
-  }
-
   private setPower(state: PowerState | null): void {
     if (state === this.power || JSON.stringify(state) === JSON.stringify(this.power)) return;
     this.power = state;
@@ -356,69 +203,35 @@ export class AppletsClient {
   }
 
   private answer(message: Record<string, unknown>): void {
-    if (this.socket && this.runsCommands) this.write(`${JSON.stringify(message)}\n`);
+    if (this.wire.connected && this.runsCommands) this.wire.write(`${JSON.stringify(message)}\n`);
   }
 
   close(): void {
-    this.closed = true;
-    this.cancelRetry?.();
-    this.cancelRetry = null;
-    this.socket?.end();
-    this.socket = null;
+    this.wire.close();
   }
 
-  /** Tries again a little later, longer each time: the shell may be restarting (its socket gone for a moment). */
-  private retry(): void {
-    if (this.closed || this.cancelRetry) return;
-    const wait = RETRY_MS[Math.min(this.retries++, RETRY_MS.length - 1)] ?? 15000;
-    this.cancelRetry = this.later(() => {
-      this.cancelRetry = null;
-      this.start();
-    }, wait);
+  /** Connected: say hello (with a manifest), then send every applet again. */
+  private opened(): void {
+    const { manifest, dev } = this.options;
+    if (manifest)
+      this.wire.write(`${JSON.stringify({ type: "hello", protocol: PROTOCOL, manifest: manifestJson(manifest), ...(dev ? { dev: true } : {}) })}\n`);
+    for (const line of this.lines.values()) this.wire.write(line);
   }
 
-  private start(): void {
-    if (this.closed || this.connecting || this.socket || this.lines.size === 0 || this.options.path === null) return;
-    // No shell listening yet (a session starting or restarting): wait for one, rather than give up.
-    if (!this.available) return this.retry();
-    this.connecting = true;
-    const lines = new Lines();
-    let done = false;
-    this.connect(this.options.path, {
-      open: (socket) => {
-        this.connecting = false;
-        this.socket = socket;
-        this.retries = 0;
-        this.unsent = new Uint8Array();
-        const { manifest, dev } = this.options;
-        if (manifest) this.write(`${JSON.stringify({ type: "hello", protocol: PROTOCOL, manifest: manifestJson(manifest), ...(dev ? { dev: true } : {}) })}\n`);
-        for (const line of this.lines.values()) this.write(line);
-      },
-      data: (chunk) => {
-        for (const line of lines.push(chunk)) this.receive(line);
-      },
-      drain: () => this.flush(),
-      close: () => {
-        if (done) return;
-        done = true;
-        this.connecting = false;
-        this.socket = null;
-        this.shellProtocol = 0;
-        this.setPower(null);
-        for (const sent of this.controlSends.values()) sent.waiting?.();
-        this.controlSends.clear();
-        // The shell that placed them is gone.
-        for (const id of [...this.popovers]) {
-          this.popovers.delete(id);
-          this.handlers.get(id)?.onDismiss?.();
-        }
-        for (const seq of [...this.views]) {
-          this.views.delete(seq);
-          this.commands?.onViewDismiss?.(seq);
-        }
-        this.retry();
-      },
-    });
+  /** The shell is gone: what it placed is dismissed. */
+  private lost(): void {
+    this.shellProtocol = 0;
+    this.setPower(null);
+    this.controls.drop();
+    // The shell that placed them is gone.
+    for (const id of [...this.popovers]) {
+      this.popovers.delete(id);
+      this.handlers.get(id)?.onDismiss?.();
+    }
+    for (const seq of [...this.views]) {
+      this.views.delete(seq);
+      this.commands?.onViewDismiss?.(seq);
+    }
   }
 
   private receive(line: string): void {
@@ -431,7 +244,7 @@ export class AppletsClient {
     switch (message.type) {
       case "welcome":
         this.shellProtocol = message.protocol;
-        for (const id of this.controlStates.keys()) this.sendControl(id);
+        this.controls.sendAll();
         return;
       case "controls":
         if (!this.drawsControls) return;
@@ -483,21 +296,5 @@ export class AppletsClient {
         if (this.popovers.delete(message.id)) this.handlers.get(message.id)?.onDismiss?.();
         return;
     }
-  }
-
-  private write(line: string): void {
-    this.options.onMessage?.("out", line.trimEnd());
-    const bytes = new TextEncoder().encode(line);
-    const joined = new Uint8Array(this.unsent.byteLength + bytes.byteLength);
-    joined.set(this.unsent);
-    joined.set(bytes, this.unsent.byteLength);
-    this.unsent = joined;
-    this.flush();
-  }
-
-  private flush(): void {
-    if (!this.socket || this.unsent.byteLength === 0) return;
-    const written = Math.max(this.socket.write(this.unsent), 0);
-    this.unsent = this.unsent.subarray(written);
   }
 }

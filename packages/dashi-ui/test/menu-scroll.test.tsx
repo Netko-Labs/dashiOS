@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { MENU, menuHeight } from "../src/menu-place.ts";
-import { PopupMenu } from "../src/sheet.tsx";
+import { PopupMenu } from "../src/popup-menu.tsx";
 import { fakeHost, settle } from "./host.ts";
 
 // A menu with more choices than the window has room for (Settings' "More…" in a short window)

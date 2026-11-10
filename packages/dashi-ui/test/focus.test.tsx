@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { render, View, type WindowKeyInfo } from "@mirinjs/metal";
-import { Button } from "../src/controls.tsx";
+import { Button } from "../src/button.tsx";
 import { Segmented } from "../src/fields.tsx";
 import { KeySink } from "../src/key-sink.tsx";
 import { type KeyInput, keyInputFor } from "../src/keys.ts";

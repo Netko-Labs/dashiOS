@@ -11,7 +11,7 @@ import { setAppearanceSource, useSurface } from "@dashi/ui";
 import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost, View } from "@mirinjs/metal";
 import type { ReactElement, ReactNode } from "react";
 import { appearance } from "./appearance.ts";
-import type { PopoverPlacement } from "./client.ts";
+import type { PopoverPlacement } from "./client-types.ts";
 import type { WarmHost } from "./warm-host.ts";
 
 /** The Metal host: the session's (`DASHI_METAL_HOST`, which the sandbox sets), else the installed one. */

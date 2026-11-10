@@ -4,8 +4,8 @@
  */
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
-import type { Choice } from "./controls.tsx";
 import { CLEAR, SEARCH } from "./glyphs.ts";
 import { useColors, useSurface } from "./theme/index.ts";
 

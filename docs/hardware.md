@@ -231,7 +231,7 @@ saved only once confirmed.
 
 `dashi-hardware.service` runs as root, because what it writes is root's, but it
 sees little else. `systemd-analyze security` scores it 1.4 (it was 7.5), and
-`spin/check-units` (run by the tests) fails the build above 5.0. Each
+`scripts/check-units.ts` (H17, run by `bun run check` and the tests) fails the build above 5.0. Each
 setting, and what it leaves open:
 
 | Setting | Why it is safe here |

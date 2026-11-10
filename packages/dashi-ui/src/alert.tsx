@@ -14,8 +14,8 @@
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { ALERT_WINDOW } from "./alert-size.ts";
+import { Button } from "./button.tsx";
 import type { ButtonKind } from "./button-look.ts";
-import { Button } from "./controls.tsx";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
 import { Sheet } from "./sheet.tsx";

@@ -50,6 +50,53 @@ export interface SliderProps {
   focused?: boolean;
 }
 
+/** A setting's bar: the thin track, the filled part of it, and the white knob. */
+function PlainBar({ height, width, left }: { height: number; width: number; left: number }) {
+  const colors = useColors();
+  return (
+    <>
+      <View
+        style={{ position: "absolute", left: 0, top: (height - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          top: (height - TRACK) / 2,
+          width: left + KNOB / 2,
+          height: TRACK,
+          borderRadius: TRACK / 2,
+          backgroundColor: colors.selection,
+        }}
+      />
+      <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }} />
+    </>
+  );
+}
+
+/** Control Center's bar: a tall track whose white fill carries the glyph. */
+function GlyphBar({ glyph, width, left }: { glyph: string; width: number; left: number }) {
+  const colors = useColors();
+  return (
+    <View style={{ width, height: BAR, borderRadius: BAR / 2, backgroundColor: colors.track, overflow: "hidden" }}>
+      <View
+        style={{
+          width: left + BAR,
+          height: BAR,
+          borderRadius: BAR / 2,
+          backgroundColor: "#ffffff",
+          flexDirection: "row",
+          alignItems: "center",
+          paddingLeft: 7,
+        }}
+      >
+        {/* Ink on the white fill in both modes. */}
+        <Svg markup={glyph} size={14} color={lightColors.text} />
+      </View>
+    </View>
+  );
+}
+
 export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChange, onCommit, glyph, disabled, focused }: SliderProps) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
@@ -98,42 +145,7 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
       }
       style={{ width, height, position: "relative", opacity: state.opacity }}
     >
-      {glyph === undefined ? (
-        <>
-          <View
-            style={{ position: "absolute", left: 0, top: (height - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              left: 0,
-              top: (height - TRACK) / 2,
-              width: left + KNOB / 2,
-              height: TRACK,
-              borderRadius: TRACK / 2,
-              backgroundColor: colors.selection,
-            }}
-          />
-          <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }} />
-        </>
-      ) : (
-        <View style={{ width, height: BAR, borderRadius: BAR / 2, backgroundColor: colors.track, overflow: "hidden" }}>
-          <View
-            style={{
-              width: left + BAR,
-              height: BAR,
-              borderRadius: BAR / 2,
-              backgroundColor: "#ffffff",
-              flexDirection: "row",
-              alignItems: "center",
-              paddingLeft: 7,
-            }}
-          >
-            {/* Ink on the white fill in both modes. */}
-            <Svg markup={glyph} size={14} color={lightColors.text} />
-          </View>
-        </View>
-      )}
+      {glyph === undefined ? <PlainBar height={height} width={width} left={left} /> : <GlyphBar glyph={glyph} width={width} left={left} />}
       {!disabled && (
         <StepKeys
           testID={testID}
