@@ -3,6 +3,7 @@
 
 pub(crate) mod canvas;
 pub(crate) mod capture;
+pub(crate) mod capture_file;
 pub(crate) mod cursor;
 pub(crate) mod depth;
 mod drawn;

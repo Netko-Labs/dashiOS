@@ -24,7 +24,7 @@ pub(crate) fn capture(state: &mut Dashi, ask: &Ask) -> Result<(), String> {
         None | Some(Value::Null) => None,
         Some(_) => Some(text(params, "mask")?.to_owned()),
     };
-    let path = render::capture::check_path(text(params, "path")?)?.to_owned();
+    let path = render::capture_file::check_path(text(params, "path")?)?.to_owned();
     let (area, output, only) = if params.contains_key("window") {
         let id = window(params)?;
         let window = state
@@ -120,7 +120,7 @@ fn save_later(
         clippy::disallowed_methods,
         reason = "runs on the capture worker thread (background::run), off the loop"
     )]
-    let save = move || render::capture::save_png(&path, &picture);
+    let save = move || render::capture_file::save_png(&path, &picture);
     background::run(
         &state.loop_handle,
         "capture",
