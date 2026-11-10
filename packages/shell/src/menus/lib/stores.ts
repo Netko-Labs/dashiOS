@@ -1,7 +1,6 @@
 /** What the menus own: the stores Control Center and Settings' machine panes run (devices, Wi-Fi, sound, Bluetooth), and the sheets that ask for a Wi-Fi password, a pairing answer, or a power action. */
 
-import { ownerPids } from "../../app-menus/focus.ts";
-import type { AppMenuStore } from "../../app-menus/store.ts";
+import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor } from "../../apps.ts";
 import { placedOutputs } from "../../arrange/index.ts";
 import { PairingPrompt } from "../../bluetooth/prompt.tsx";

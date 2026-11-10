@@ -6,7 +6,7 @@ import { enabledIds } from "../apps/kit/index.ts";
 import { keyAction } from "../apps/preview/keys.ts";
 import { keptTurns, MAX_RECENTS, MemoryStore, memoryPath, parseMemory, withRecent, withTurns } from "../apps/preview/memory.ts";
 import { type PreviewMenuContext, previewMenus, recentLabels } from "../apps/preview/menus.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { until } from "./support/time.ts";
 

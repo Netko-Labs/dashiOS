@@ -1,7 +1,7 @@
 /** What the menus are given to run (start.tsx), and what they give back. */
 
 import type { ReactElement } from "react";
-import type { AppMenuStore } from "../app-menus/store.ts";
+import type { AppMenuStore } from "../app-menus/index.ts";
 import type { App } from "../apps.ts";
 import type { Arranger } from "../arrange/index.ts";
 import type { BatteryPopoverSources } from "../battery/popover.tsx";

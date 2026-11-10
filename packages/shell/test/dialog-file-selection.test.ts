@@ -3,7 +3,7 @@ import { parseArgs } from "../apps/dialog/args.ts";
 import { prepare } from "../apps/dialog/cli.ts";
 import { parseFileFilter, selectionOutput, selectionRequest } from "../apps/dialog/file-selection.ts";
 import { specFrom } from "../apps/dialog/spec.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { isTextShortcut } from "../src/app-menus/shortcut.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 import { fakeCompositor } from "./support/compositor.ts";

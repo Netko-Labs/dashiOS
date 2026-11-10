@@ -9,7 +9,7 @@
  * (volume, brightness, media) are system/keys.ts's.
  */
 
-import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
+import { chordText, type PressedChord } from "./app-menus/index.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
 import { takeScreenshot } from "./screenshots/index.ts";
 import type { SwitcherController } from "./switcher/index.ts";

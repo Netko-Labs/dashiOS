@@ -7,7 +7,7 @@ import { parseQuickAdd } from "../apps/calendar/lib/quickadd.ts";
 import { searchEvents } from "../apps/calendar/lib/search.ts";
 import { dateOrder, formatDayText, parseDayText, parseTimeText } from "../apps/calendar/lib/timetext.ts";
 import { keyAction } from "../apps/calendar/lib/window-keys.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { makeEvent } from "../src/shared/calendar/event.ts";
 import type { Occurrence } from "../src/shared/calendar/types.ts";

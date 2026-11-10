@@ -10,7 +10,7 @@
  * (`destructive`), never chooses it.
  */
 
-import type { AppMenuStore } from "../../../app-menus/store.ts";
+import type { AppMenuStore } from "../../../app-menus/index.ts";
 import type { CompositorWindow } from "../../../compositor.ts";
 import type { PublishedMenus } from "../../../shared/app-menus/protocol.ts";
 import { formatAddress, isSegment } from "../../address.ts";

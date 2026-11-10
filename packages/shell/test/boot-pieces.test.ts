@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { AppMenus } from "../src/app-menus/index.ts";
+import type { AppMenus } from "../src/app-menus/start.ts";
 import { appQuitting, appShortcut } from "../src/boot/apps.ts";
 import { machineEndNotice } from "../src/boot/bars.tsx";
 import { startArranging, startDesktops, startOverview } from "../src/boot/desktop.ts";

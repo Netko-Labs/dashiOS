@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { editorMenus, type MenuContext } from "../apps/editor/menus.ts";
 import type { EditorPrefs } from "../apps/editor/prefs.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { parseMenus } from "../src/shared/app-menus/protocol.ts";
 import { editorModel as model } from "./support/editor-model.ts";

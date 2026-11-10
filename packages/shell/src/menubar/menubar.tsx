@@ -16,7 +16,7 @@
 import { LOGO, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { type AppMenuStore, useAppMenus } from "../app-menus/store.ts";
+import { type AppMenuStore, useAppMenus } from "../app-menus/index.ts";
 import type { App } from "../apps.ts";
 import { type BarMenuId, barMenus, titleStop, useMenus } from "../menus/index.ts";
 import { formatClock } from "../shared/time/clock.ts";

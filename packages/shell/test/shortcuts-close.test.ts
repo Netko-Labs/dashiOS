@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { resolveChord } from "../src/keymap/keymap-match.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 import { fakeCompositor } from "./support/compositor.ts";

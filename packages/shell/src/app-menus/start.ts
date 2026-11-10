@@ -6,7 +6,7 @@
 import type { Compositor } from "../compositor.ts";
 import { menusSocketPath } from "../shared/app-menus/protocol.ts";
 import { FocusFollower, ownerPids } from "./focus.ts";
-import { serveMenus } from "./server.ts";
+import { serveMenus } from "./lib/server.ts";
 import { AppMenuStore } from "./store.ts";
 
 /** After a popover closes, how long the window is given to get the keyboard back before focus is asked again. */

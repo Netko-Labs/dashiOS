@@ -238,8 +238,7 @@
 1	packages/shell/src/agents/tools/lib/region.ts
 1	packages/shell/src/agents/tools/lib/software.ts
 1	packages/shell/src/agents/tools/types.ts
-1	packages/shell/src/app-menus/index.ts
-2	packages/shell/src/app-menus/server.ts
+2	packages/shell/src/app-menus/lib/server.ts
 1	packages/shell/src/app-menus/shortcut.ts
 1	packages/shell/src/app-menus/start.ts
 1	packages/shell/src/app-menus/store.ts

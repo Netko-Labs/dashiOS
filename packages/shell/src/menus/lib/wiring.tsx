@@ -2,8 +2,7 @@
 
 import type { ReactElement } from "react";
 import pkg from "../../../package.json" with { type: "json" };
-import { ownerPids } from "../../app-menus/focus.ts";
-import type { AppMenuStore } from "../../app-menus/store.ts";
+import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor, iconPath } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor.ts";
 import { controlFlags, LayoutStore } from "../../control-center/index.ts";

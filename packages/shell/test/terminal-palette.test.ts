@@ -3,7 +3,7 @@ import { closeCopy, stillRunning } from "../apps/terminal/closing.ts";
 import { lookFor } from "../apps/terminal/line.tsx";
 import { terminalMenus } from "../apps/terminal/menus.ts";
 import { ANSI_NAMES, contrast, DARK_TERMINAL, groundSide, LIGHT_TERMINAL, terminalPalette } from "../apps/terminal/palette.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { KEYMAP } from "../src/keymap/keymap.ts";
 

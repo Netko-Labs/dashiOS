@@ -11,7 +11,7 @@
  */
 
 import { type UndoStack, undoMenuItems } from "@dashi/ui";
-import type { MenuOwner } from "../../app-menus/store.ts";
+import type { MenuOwner } from "../../app-menus/index.ts";
 import { type AppMenu, parseMenus } from "../../shared/app-menus/protocol.ts";
 
 export interface MenuHost {
