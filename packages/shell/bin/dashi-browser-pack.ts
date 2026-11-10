@@ -55,8 +55,8 @@ async function bundle(entry: string, format: "esm" | "iife"): Promise<Uint8Array
 
 const files = [
   { path: "manifest.json", data: new TextEncoder().encode(`${JSON.stringify(manifest, null, 2)}\n`) },
-  { path: "background.js", data: await bundle("src/background/index.ts", "esm") },
-  { path: "content.js", data: await bundle("src/content/index.ts", "iife") },
+  { path: "background.js", data: await bundle("src/background/main.ts", "esm") },
+  { path: "content.js", data: await bundle("src/content/main.ts", "iife") },
 ];
 const out = resolve(values.out);
 mkdirSync(out, { recursive: true });
