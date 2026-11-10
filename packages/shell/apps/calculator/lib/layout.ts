@@ -6,7 +6,7 @@
  * spare height going to the display. Pure.
  */
 
-import type { Size } from "../kit/index.ts";
+import type { Size } from "../../kit/index.ts";
 
 /** A key's side at the smallest. */
 export const KEY = 54;

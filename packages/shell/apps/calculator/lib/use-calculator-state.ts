@@ -7,7 +7,7 @@
  */
 
 import { type Dispatch, type SetStateAction, useEffect, useReducer, useRef, useState } from "react";
-import type { Size } from "../kit/index.ts";
+import type { Size } from "../../kit/index.ts";
 import { openingSize } from "./layout.ts";
 import type { NumberLocale } from "./locale.ts";
 import { type CalcAction, type CalcState, calculate, initialState } from "./state.ts";

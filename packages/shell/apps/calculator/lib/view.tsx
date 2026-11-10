@@ -15,7 +15,7 @@
 import { PopupMenu, useSurface, useTitleBarInset } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
-import { type Clipboard, type Size, systemClipboard } from "../kit/index.ts";
+import { type Clipboard, type Size, systemClipboard } from "../../kit/index.ts";
 import { CalculatorDisplay } from "./display.tsx";
 import { copyNumber } from "./format.ts";
 import { Keypad } from "./keypad.tsx";

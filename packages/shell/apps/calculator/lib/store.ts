@@ -10,7 +10,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Size } from "../kit/index.ts";
+import type { Size } from "../../kit/index.ts";
 import type { TapeEntry } from "./line.ts";
 
 /** Sums the tape keeps; older ones fall off its top. */

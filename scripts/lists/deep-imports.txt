@@ -9,7 +9,7 @@
 3	packages/shell/apps/activity-monitor/sample.ts
 1	packages/shell/apps/activity-monitor/sampler.ts
 1	packages/shell/apps/activity-monitor/sampling.ts
-3	packages/shell/apps/calculator/locale.ts
+3	packages/shell/apps/calculator/lib/locale.ts
 5	packages/shell/apps/calendar/lib/draft.ts
 5	packages/shell/apps/calendar/lib/edits.ts
 2	packages/shell/apps/calendar/lib/event-changes.ts
@@ -485,10 +485,6 @@
 2	packages/shell/test/battery-status.test.ts
 1	packages/shell/test/brightness.test.ts
 1	packages/shell/test/browser-agents.test.ts
-3	packages/shell/test/calculator-field.test.tsx
-10	packages/shell/test/calculator-line.test.ts
-3	packages/shell/test/calculator-locale.test.ts
-6	packages/shell/test/calculator-view.test.tsx
 3	packages/shell/test/calendar-edits.test.ts
 1	packages/shell/test/calendar-fit.test.ts
 2	packages/shell/test/calendar-grid-view.test.tsx

@@ -4,7 +4,7 @@
  * (`Clipboard`); copying shows "Copied" under the line for a moment.
  */
 
-import { type Clipboard, type Size, useAppMenus } from "../kit/index.ts";
+import { type Clipboard, type Size, useAppMenus } from "../../kit/index.ts";
 import { copyNumber } from "./format.ts";
 import { leastSize, sizeWithTape } from "./layout.ts";
 import { selectedText } from "./line.ts";

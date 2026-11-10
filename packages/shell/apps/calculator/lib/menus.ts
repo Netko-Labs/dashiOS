@@ -9,7 +9,7 @@
  * against the enabled rows (app-menus/shortcut.ts).
  */
 
-import { enabledIds, type MenuSpec } from "../kit/index.ts";
+import { enabledIds, type MenuSpec } from "../../kit/index.ts";
 
 export interface CalculatorMenuContext {
   /** Text is selected in the line. */
