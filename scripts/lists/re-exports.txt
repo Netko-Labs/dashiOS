@@ -1,3 +1,1 @@
 # H19: re-exports (`export … from`) outside an index.ts, keeping an old import path alive (count = re-export statements; a file a package's exports name is exempt). May only shrink.
-1	packages/shell/apps/kit/applet.ts
-1	packages/shell/apps/kit/menus.ts

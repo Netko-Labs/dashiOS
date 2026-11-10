@@ -19,8 +19,6 @@ import { useEffect, useRef } from "react";
 import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/shared/app-menus/index.ts";
 import { LineBuffer } from "../../src/shared/io/index.ts";
 
-export type { MenuItemSpec, MenuSpec } from "../../src/shared/app-menus/index.ts";
-
 /** What the client needs of a socket. */
 export interface MenuSocket {
   write(data: Uint8Array): number;

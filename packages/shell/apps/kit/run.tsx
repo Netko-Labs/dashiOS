@@ -19,7 +19,7 @@ import { connectDarkMode } from "../../src/shared/control-center/index.ts";
 import { appNameEnv, onWindowTyping } from "../../src/shared/metal/index.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
-import { serveControl } from "./control.ts";
+import { serveControl } from "./lib/control.ts";
 import { menusClient } from "./menus.ts";
 import { setProcessName } from "./name.ts";
 
