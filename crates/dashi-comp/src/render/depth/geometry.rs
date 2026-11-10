@@ -2,9 +2,13 @@
 //! casts, how far it reaches (the damage it can cause), the inside of the
 //! frame that never needs drawing, and the focus cross-fade.
 
-use std::time::{Duration, Instant};
+mod focus;
+mod pixels;
 
 use smithay::utils::{Physical, Rectangle};
+
+pub(crate) use focus::{Focus, fade};
+pub(crate) use pixels::{bands, holes, outward};
 
 use super::style::{Layer, Shadow, Style};
 
@@ -116,95 +120,11 @@ pub(crate) fn extent<K>(frame: Rectangle<f64, K>, shadow: &Shadow, ring: f64) ->
         .fold(grow(frame, ring + 1.0), |all, cast| all.merge(cast))
 }
 
-/// The rect in whole pixels that covers all of `rect`.
-pub(crate) fn outward(rect: Rectangle<f64, Physical>) -> Rectangle<i32, Physical> {
-    let (x0, y0) = (rect.loc.x.floor(), rect.loc.y.floor());
-    let x1 = (rect.loc.x + rect.size.w).ceil();
-    let y1 = (rect.loc.y + rect.size.h).ceil();
-    Rectangle::new(
-        (x0 as i32, y0 as i32).into(),
-        ((x1 - x0) as i32, (y1 - y0) as i32).into(),
-    )
-}
-
-/// The inside of a frame with rounded corners that a line `band` wide along
-/// its edge (0: just the edge's antialiasing) never reaches: a plus, the
-/// frame less its corners and edge. Element-local, like `frame`.
-pub(crate) fn holes(
-    frame: Rectangle<i32, Physical>,
-    radius: f64,
-    band: f64,
-) -> Vec<Rectangle<i32, Physical>> {
-    let edge = band.max(0.0).ceil() as i32 + 1;
-    let corner = (radius.max(band)).ceil() as i32 + 1;
-    let shrink = |dx: i32, dy: i32| {
-        let (w, h) = (frame.size.w - 2 * dx, frame.size.h - 2 * dy);
-        (w > 0 && h > 0)
-            .then(|| Rectangle::new((frame.loc.x + dx, frame.loc.y + dy).into(), (w, h).into()))
-    };
-    [shrink(corner, edge), shrink(edge, corner)]
-        .into_iter()
-        .flatten()
-        .collect()
-}
-
-/// The parts of `area` outside `holes`: what is drawn, and what is damaged
-/// when the look changes.
-pub(crate) fn bands(
-    area: Rectangle<i32, Physical>,
-    holes: &[Rectangle<i32, Physical>],
-) -> Vec<Rectangle<i32, Physical>> {
-    area.subtract_rects(holes.iter().copied())
-}
-
-/// A window's focus as drawn: moving from `from` to `to` (0 unfocused, 1
-/// focused) since `since`, eased over the style's fade.
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct Focus {
-    from: f64,
-    to: f64,
-    since: Instant,
-}
-
-impl Focus {
-    pub(crate) fn settled(focused: bool, now: Instant) -> Self {
-        let at = if focused { 1.0 } else { 0.0 };
-        Self {
-            from: at,
-            to: at,
-            since: now,
-        }
-    }
-
-    pub(crate) fn value(&self, now: Instant, length: Duration) -> f64 {
-        let e = fade(now.saturating_duration_since(self.since), length);
-        self.from + (self.to - self.from) * e
-    }
-
-    /// Focus is now `focused`: a change starts from where the last one is.
-    pub(crate) fn follow(&mut self, focused: bool, now: Instant, length: Duration) {
-        let to = if focused { 1.0 } else { 0.0 };
-        if to != self.to {
-            self.from = self.value(now, length);
-            self.to = to;
-            self.since = now;
-        }
-    }
-}
-
-/// How far a focus change has come, eased (ease-out cubic) from 0 to 1.
-pub(crate) fn fade(elapsed: Duration, length: Duration) -> f64 {
-    if length.is_zero() {
-        return 1.0;
-    }
-    let t = (elapsed.as_secs_f64() / length.as_secs_f64()).clamp(0.0, 1.0);
-    1.0 - (1.0 - t).powi(3)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use smithay::utils::Logical;
+
+    use super::*;
 
     fn layer(y: f64, blur: f64, spread: f64, alpha: f64) -> Layer {
         Layer {
@@ -214,10 +134,6 @@ mod tests {
             spread,
             alpha,
         }
-    }
-
-    fn rect(x: i32, y: i32, w: i32, h: i32) -> Rectangle<i32, Physical> {
-        Rectangle::new((x, y).into(), (w, h).into())
     }
 
     #[test]
@@ -313,81 +229,5 @@ mod tests {
         assert_eq!(small[0].blur, 10.0);
         assert_eq!(small[0].spread, -2.0);
         assert_eq!(small[0].alpha, 0.4);
-    }
-
-    #[test]
-    fn outward_covers_every_touched_pixel() {
-        let r = outward(Rectangle::new((1.5, -0.25).into(), (2.0, 1.0).into()));
-        assert_eq!(r, rect(1, -1, 3, 2));
-        let whole = outward(Rectangle::new((2.0, 3.0).into(), (4.0, 5.0).into()));
-        assert_eq!(whole, rect(2, 3, 4, 5));
-    }
-
-    #[test]
-    fn holes_leave_the_corners_and_edges() {
-        let frame = rect(10, 20, 200, 100);
-        let holes = holes(frame, 12.0, 0.0);
-        assert_eq!(holes, vec![rect(23, 21, 174, 98), rect(11, 33, 198, 74)]);
-        // No corner pixel and no edge pixel is in a hole.
-        for hole in &holes {
-            assert!(!hole.contains((10, 20)));
-            assert!(!hole.contains((22, 32)));
-            assert!(!hole.contains((209, 119)));
-            assert!(frame.contains_rect(*hole));
-        }
-        // A line inside the frame keeps its band clear too.
-        let edged = super::holes(frame, 0.0, 1.0);
-        assert_eq!(edged[0], rect(12, 22, 196, 96));
-        // A frame too small for a hole has none.
-        assert!(super::holes(rect(0, 0, 20, 20), 12.0, 1.0).is_empty());
-    }
-
-    #[test]
-    fn bands_are_the_area_less_the_holes() {
-        let area = rect(0, 0, 300, 200);
-        let frame = rect(50, 40, 200, 100);
-        let holes = holes(frame, 10.0, 0.0);
-        let bands = bands(area, &holes);
-        let drawn: i64 = bands.iter().map(|b| i64::from(b.size.w * b.size.h)).sum();
-        let hidden: i64 = 178 * 98 + 198 * 78 - 178 * 78;
-        assert_eq!(drawn, 300 * 200 - hidden);
-        for band in &bands {
-            assert!(area.contains_rect(*band));
-            assert!(holes.iter().all(|hole| !hole.overlaps(*band)));
-        }
-    }
-
-    #[test]
-    fn focus_cross_fades_from_where_it_is() {
-        let length = Duration::from_millis(150);
-        let start = Instant::now();
-        let mut focus = Focus::settled(false, start);
-        assert_eq!(focus.value(start, length), 0.0);
-        focus.follow(true, start, length);
-        assert_eq!(focus.value(start, length), 0.0);
-        assert_eq!(focus.value(start + length, length), 1.0);
-        // Focus goes back halfway: it fades down from where it got to, no jump.
-        let midway = start + Duration::from_millis(50);
-        let reached = focus.value(midway, length);
-        focus.follow(false, midway, length);
-        assert_eq!(focus.value(midway, length), reached);
-        assert_eq!(focus.value(midway + length, length), 0.0);
-        // The same focus again changes nothing.
-        let later = midway + length;
-        focus.follow(false, later, length);
-        assert_eq!(focus.value(later, length), 0.0);
-        // Without a fade (Reduce Motion), it is there at once.
-        focus.follow(true, later, Duration::ZERO);
-        assert_eq!(focus.value(later, Duration::ZERO), 1.0);
-    }
-
-    #[test]
-    fn fades_ease_out() {
-        let length = Duration::from_millis(150);
-        assert_eq!(fade(Duration::ZERO, length), 0.0);
-        assert_eq!(fade(length, length), 1.0);
-        assert_eq!(fade(Duration::from_secs(5), length), 1.0);
-        assert!(fade(Duration::from_millis(75), length) > 0.5);
-        assert_eq!(fade(Duration::ZERO, Duration::ZERO), 1.0);
     }
 }
