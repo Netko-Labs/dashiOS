@@ -1,2 +1,2 @@
-export { startForceQuit } from "./start.tsx";
-export type { AppGroup, ForceQuit } from "./types.ts";
+export { type ForceQuit, startForceQuit } from "./start.tsx";
+export type { AppGroup } from "./types.ts";
