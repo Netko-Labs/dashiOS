@@ -1,9 +1,6 @@
 # H2: files over 300 lines (count = lines). May only shrink; see scripts/ratchet.ts.
 517	crates/dashi-comp/src/backend/udev/lifecycle.rs
-415	crates/dashi-comp/src/backend/udev/mod.rs
 307	crates/dashi-comp/src/handlers/xdg_shell.rs
-301	crates/dashi-comp/src/input/mod.rs
-596	crates/dashi-comp/src/ipc/requests.rs
 496	crates/dashi-comp/src/keys/handler.rs
 819	crates/dashi-comp/src/keys/keymap.rs
 428	crates/dashi-comp/src/protocols/image_capture.rs
@@ -18,13 +15,13 @@
 337	crates/dashi-comp/src/render/titlebar.rs
 349	crates/dashi-comp/src/render/windows.rs
 423	crates/dashi-comp/src/session/agent.rs
-538	crates/dashi-comp/src/state.rs
+409	crates/dashi-comp/src/state.rs
 373	crates/dashi-comp/src/wallpaper/mod.rs
 363	crates/dashi-comp/src/wm/actions.rs
 444	crates/dashi-comp/src/wm/grabs/resize_grab.rs
 357	crates/dashi-comp/src/wm/overview.rs
 363	crates/dashi-comp/src/wm/spaces.rs
-402	crates/dashi-comp/src/wm/windows.rs
+349	crates/dashi-comp/src/wm/windows.rs
 318	crates/dashi-comp/src/xwayland/wm.rs
 1794	crates/dashi-comp/tests/headless.rs
 427	crates/dashi-comp/tests/lock.rs
