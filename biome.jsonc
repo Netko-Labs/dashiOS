@@ -256,32 +256,8 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 169 } } } } }
     },
     {
-      "includes": ["packages/shell/src/bluetooth/agent.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 81 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/clipboard/start.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 128 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/control-center/controls.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 146 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/control-center/panel.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 104 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/dock/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 103 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/handoff-shell.tsx"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 92 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/laptop/start.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 163 } } } } }
     },
     { "includes": ["packages/shell/src/launcher.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
     {
@@ -305,48 +281,8 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 212 } } } } }
     },
     {
-      "includes": ["packages/shell/src/menus/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 230 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/notifications/center.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 82 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/polkit/service.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 88 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/settings-app/machine-desktop.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 132 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/settings-app/panes/arrangement.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 81 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/settings-app/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 99 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/setup/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 98 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/share-picker/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 88 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/shortcuts.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 89 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/spaces/row.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 122 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/spaces/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 125 } } } } }
     }
     // H3 overrides end.
   ]
