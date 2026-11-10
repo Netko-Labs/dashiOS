@@ -320,9 +320,9 @@
 1	packages/shell/src/local-search.ts
 1	packages/shell/src/lock/controller.tsx
 1	packages/shell/src/lock/lib/screen.tsx
-2	packages/shell/src/menubar/bar-overflow.tsx
+1	packages/shell/src/menubar/bar-overflow.tsx
 1	packages/shell/src/menubar/lib/bar-name.ts
-6	packages/shell/src/menubar/lib/menubar-program-slots.tsx
+5	packages/shell/src/menubar/lib/menubar-program-slots.tsx
 1	packages/shell/src/menubar/lib/menubar-slots.tsx
 1	packages/shell/src/menubar/menubar.tsx
 1	packages/shell/src/menus/lib/popover.tsx

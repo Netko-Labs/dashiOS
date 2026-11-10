@@ -5,7 +5,7 @@
  * pixmap that does not add up is skipped.
  */
 
-import type { ExtraIcon, MenuBarExtra } from "../extras/types.ts";
+import type { ExtraIcon, MenuBarExtra } from "../extras/index.ts";
 import { clean, plainBody } from "../notifications/index.ts";
 import { propertyMap } from "../shared/dbus/index.ts";
 import { type Pixmap, parsePixmaps } from "./png.ts";

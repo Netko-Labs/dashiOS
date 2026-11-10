@@ -22,8 +22,7 @@ import {
   useAgents,
 } from "../../agents/index.ts";
 import { useRuns } from "../../agents-panel.tsx";
-import { type ExtrasStore, type MenuBarExtra, useExtras } from "../../extras/index.ts";
-import { ExtraItem } from "../../extras/view.tsx";
+import { ExtraItem, type ExtrasStore, type MenuBarExtra, useExtras } from "../../extras/index.ts";
 import { extraEntries, type MenuController, type Popover } from "../../menus/index.ts";
 import { RecordingButton, type ScreenRecorder } from "../../recorder/index.ts";
 import { CapturePill, type ScreenCaptureStore, useScreenCapture } from "../../screen-capture/index.ts";

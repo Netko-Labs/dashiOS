@@ -10,7 +10,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import type { ExtraIcon } from "../extras/types.ts";
+import type { ExtraIcon } from "../extras/index.ts";
 import { dataDirs, themeIcon } from "../shared/apps/index.ts";
 import { argbToRgba, encodePng, type Pixmap, PREFERRED_SIDE, pickPixmap } from "./png.ts";
 import type { IconSource } from "./props.ts";
