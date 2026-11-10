@@ -446,7 +446,6 @@
 3	packages/shell/test/files-undo.test.ts
 1	packages/shell/test/focus-stops-view.test.tsx
 3	packages/shell/test/installer.test.ts
-1	packages/shell/test/ipc-contract.test.ts
 1	packages/shell/test/launcher-files.test.ts
 1	packages/shell/test/launcher-model-apps.test.ts
 1	packages/shell/test/launcher-ranking.test.ts
