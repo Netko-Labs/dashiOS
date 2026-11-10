@@ -15,22 +15,9 @@ import type { LidSource } from "./lid.ts";
 import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
 import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
+import { type AskToKeep, askToKeep, later } from "./trial.ts";
 
-/** How long a trial lasts before the old arrangement returns. */
-export const KEEP_SECONDS = 15;
-
-/** The question put to the person. */
-export interface KeepAsk {
-  /** What changed, in a few words: "Resolution of Dell U2720Q". */
-  summary: string;
-  /** When the trial ends (ms since the epoch), so the sheet's countdown matches. */
-  deadline: number;
-  /** The person's answer: true keeps the change. */
-  answer(keep: boolean): void;
-}
-
-/** Shows the question; returns the way to take it away. */
-export type AskToKeep = (ask: KeepAsk) => () => void;
+export { type AskToKeep, KEEP_SECONDS, type KeepAsk } from "./trial.ts";
 
 export interface ApplyResult {
   /** The change stands. False: it was refused, or the person did not keep it. */
@@ -69,11 +56,6 @@ export interface ModeChange {
   /** The screens whose mode was set. */
   names: readonly string[];
 }
-
-const later = (fn: () => void, ms: number): (() => void) => {
-  const timer = setTimeout(fn, ms);
-  return () => clearTimeout(timer);
-};
 
 export class DisplayManager {
   private queue: Promise<unknown> = Promise.resolve();
@@ -269,25 +251,7 @@ export class DisplayManager {
   private trial(summary: string): Promise<boolean> {
     const ask = this.options.ask;
     if (!ask) return Promise.resolve(true);
-    const now = this.options.now ?? Date.now;
-    const schedule = this.options.later ?? later;
-    return new Promise<boolean>((resolve) => {
-      let take = (): void => {};
-      let cancel = (): void => {};
-      let settled = false;
-      const finish = (keep: boolean): void => {
-        console.error("KEEP finish", keep, new Error().stack?.split("\n").slice(2, 5).join("|"));
-        if (settled) return;
-        settled = true;
-        cancel();
-        take();
-        resolve(keep);
-      };
-      take = ask({ summary, deadline: now() + KEEP_SECONDS * 1000, answer: finish });
-      // The sheet may have answered while it opened.
-      if (settled) take();
-      else cancel = schedule(() => finish(false), KEEP_SECONDS * 1000);
-    });
+    return askToKeep(ask, summary, this.options.now ?? Date.now, this.options.later ?? later);
   }
 
   private serial<T>(job: () => Promise<T>): Promise<T> {
