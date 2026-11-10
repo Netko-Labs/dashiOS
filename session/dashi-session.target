@@ -5,7 +5,7 @@
 # libadwaita, no file chooser, no screen sharing).
 [Unit]
 Description=Dashi session
-Documentation=file://README.md
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/main/docs/architecture.md
 BindsTo=graphical-session.target
 Wants=graphical-session-pre.target
 After=graphical-session-pre.target

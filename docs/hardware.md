@@ -227,6 +227,33 @@ a row clear it (`reset: true`, which the shell shows once). Values that can
 freeze the machine are applied with a countdown (`confirmWithin`) first, and
 saved only once confirmed.
 
+## The service's sandbox
+
+`dashi-hardware.service` runs as root, because what it writes is root's, but it
+sees little else. `systemd-analyze security` scores it 1.6 (it was 7.5), and
+`spin/check-units` (run by the tests) fails the build above 5.0. Each
+setting, and what it leaves open:
+
+| Setting | Why it is safe here |
+| --- | --- |
+| `ProtectSystem=strict`, `ReadWritePaths=/sys/class /sys/devices /sys/firmware/acpi`, `StateDirectory=` | Everything is read-only except sysfs (firmware attributes, platform profile, power supply, LEDs, hwmon, cpufreq, the PCI config file the SMU is reached through, and the legacy `firmware/acpi/platform_profile`) and `/var/lib/dashi-hardware`. |
+| `DevicePolicy=closed`, `DeviceAllow=char-hidraw rw` | The Slash bar's `/dev/hidrawN`, and no other device. |
+| `PrivateNetwork=yes`, `RestrictAddressFamilies=AF_UNIX` | The system bus is a path socket, which a private network still reaches. |
+| `NoNewPrivileges`, `CapabilityBoundingSet=CAP_SYS_RAWIO CAP_DAC_OVERRIDE`, `SystemCallFilter=@system-service` less `@privileged @resources`, `MemoryDenyWriteExecute`, `LockPersonality`, `RestrictSUIDSGID`, `SystemCallArchitectures=native` | No other capability, no privileged or resource-limit call, no new executable memory. |
+| `ProtectHome`, `PrivateTmp`, `ProtectProc=invisible`, `ProcSubset=pid`, `ProtectKernelModules`, `ProtectKernelLogs`, `ProtectClock`, `ProtectHostname`, `ProtectControlGroups`, `RestrictNamespaces`, `RestrictRealtime`, `UMask=0077`, `LimitCORE=0` | Nothing it needs. |
+
+`ProtectKernelTunables` is left off: it would make `/sys` read-only, and
+`/sys` is what the service writes. The two capabilities are the part that
+only the real laptop can settle: the kernel's sysfs PCI config writes and
+attribute files are root-owned and mode 0644, so neither should be needed,
+but that was not proven on a G14 (`spin/check-units` and the VM check the
+sandbox, not the SMU). If both can go (try `CapabilityBoundingSet=` on the
+laptop, then `set`, `fan-curve` and `co` each once), the score drops to 1.1.
+
+`dashi-hardware-boot.service` and `-clean.service` read sysfs and write the
+state file, so they have no capabilities, no devices, and a read-only `/sys`
+(0.9 each).
+
 ## The CLI
 
 `dashi-hardware describe | get KNOB | set KNOB VALUE | co [--per-core a,b,…] VALUE | fan-curve FAN [POINTS] | slash [set KEY=VALUE… | restore] | boot-guard`,
