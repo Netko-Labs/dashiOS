@@ -7,13 +7,15 @@
  */
 
 import type { Bounds, WindowKeyInfo } from "@mirinjs/metal";
-import { useRef, useState } from "react";
-import { type Day, dayPart } from "../../src/shared/calendar/dates.ts";
+import { useState } from "react";
+import type { Day } from "../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../src/shared/calendar/types.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
-import { isSameTimes } from "./drag.ts";
+import { useDoubleClick } from "./double-click.ts";
 import { type Drag, useGesture } from "./gesture.ts";
-import { asksScope, dropName, halfHour, movedInput, newEventMinutes, refOf } from "./grid-edits.ts";
+import { finishDrag } from "./grid-drop.ts";
+import { asksScope, halfHour, newEventMinutes, refOf } from "./grid-edits.ts";
+import { gridHandlers } from "./grid-handlers.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { runKey } from "./key-actions.ts";
 import type { CalendarModel, CalendarState } from "./model.ts";
@@ -21,9 +23,6 @@ import type { SheetState } from "./sheets.tsx";
 import type { Target } from "./target.ts";
 import { usePending } from "./use-pending.ts";
 import { usePicked } from "./use-picked.ts";
-
-/** How soon a second click on the same day or half hour makes an event there. */
-export const DOUBLE_CLICK_MS = 450;
 
 export interface GridOptions {
   model: CalendarModel;
@@ -62,7 +61,7 @@ export function useGrid(options: GridOptions): Grid {
   const { model, state, occurrences, prefs, firstDay, destination } = options;
   const [popover, setPopover] = useState<Grid["popover"]>(null);
   const [reveal, setReveal] = useState<GridState["reveal"]>(null);
-  const lastClick = useRef<{ day: Day; minutes: number | null; at: number } | null>(null);
+  const isSecondClick = useDoubleClick();
   const { picked, pickedKey, pick, slot, setSlot } = usePicked(occurrences);
   const named = usePending({
     model,
@@ -76,26 +75,7 @@ export function useGrid(options: GridOptions): Grid {
     takeKeys: options.takeKeys,
   });
 
-  /** A drag let go: a new event drawn, or one moved or stretched. */
-  const onDrop = (drag: Drag): void => {
-    const preview = drag.preview;
-    if (!preview) return;
-    if (drag.kind === "create") {
-      if (destination === null || (destination.reveal && !model.reveal(destination.calendarId))) return;
-      model.select(drag.day);
-      named.set({ calendarId: destination.calendarId, start: preview.start, end: preview.end, allDay: false, title: "" });
-      return;
-    }
-    const occurrence = drag.occurrence;
-    if (!occurrence || isSameTimes(occurrence, preview)) return;
-    const input = movedInput(occurrence, preview);
-    const name = dropName(occurrence, preview);
-    pick(occurrence);
-    model.select(dayPart(preview.start));
-    if (asksScope(occurrence)) {
-      options.ask({ kind: "scope", action: "change", ref: refOf(occurrence), title: occurrence.event.title, input, name, allowThis: true });
-    } else model.changeOccurrence(refOf(occurrence), input, "all", { name });
-  };
+  const onDrop = (drag: Drag): void => finishDrag(drag, { model, destination, name: named.set, pick, ask: options.ask });
 
   /** A click on an empty day or half hour picks it; a second click on it soon after makes an event there. */
   const clickDay = (day: Day, minutes: number | null): void => {
@@ -103,12 +83,7 @@ export function useGrid(options: GridOptions): Grid {
     pick(null);
     model.select(day);
     setSlot(minutes);
-    const now = Date.now();
-    const last = lastClick.current;
-    if (last && last.day === day && last.minutes === minutes && now - last.at < DOUBLE_CLICK_MS) {
-      lastClick.current = null;
-      named.start(day, minutes);
-    } else lastClick.current = { day, minutes, at: now };
+    if (isSecondClick(day, minutes)) named.start(day, minutes);
     options.takeKeys();
   };
 
@@ -137,28 +112,7 @@ export function useGrid(options: GridOptions): Grid {
     if (minutes !== null) setReveal((last) => ({ minutes, count: (last?.count ?? 0) + 1 }));
   };
 
-  const handlers: GridHandlers = {
-    begin(start, geometry) {
-      // A press elsewhere on the grid saves the event being named, as it is.
-      if (named.isNaming()) named.save();
-      setPopover(null);
-      gesture.begin(start, geometry);
-    },
-    track: (info) => gesture.track(info),
-    clickDay,
-    open(occurrence, bounds) {
-      if (gesture.justDragged()) return;
-      if (named.isNaming()) named.save();
-      model.dismissMessages();
-      pick(occurrence);
-      model.select(dayPart(occurrence.start));
-      setPopover({ occurrence, bounds });
-    },
-    showDay: (day) => model.goTo(day, "day"),
-    pendingTitle: (title) => named.set((now) => (now ? { ...now, title } : now)),
-    savePending: named.save,
-    dropPending: named.drop,
-  };
+  const handlers = gridHandlers({ model, gesture, named, clickDay, pick, setPopover });
 
   const onKey = (key: WindowKeyInfo): void =>
     runKey(key, {
