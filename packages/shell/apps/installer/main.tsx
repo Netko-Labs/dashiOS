@@ -6,8 +6,8 @@
  */
 
 import { runApp } from "../kit/index.ts";
-import { isDryRun } from "./helper.ts";
-import { INSTALLER_SIZE, InstallerWindow } from "./view.tsx";
+import { isDryRun } from "./lib/helper.ts";
+import { INSTALLER_SIZE, InstallerWindow } from "./lib/view.tsx";
 
 const app = runApp(
   { id: "dev.dashi.installer", title: "Install Dashi", size: INSTALLER_SIZE },

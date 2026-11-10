@@ -12,7 +12,7 @@
 import { LOGO, ProgressBar, Row, Switch, TextField, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { Button, Caption, Group, Note, useSurface } from "../../src/settings-app/ui.tsx";
+import { Button, Caption, Group, Note, useSurface } from "../../../src/settings-app/ui.tsx";
 import { HEADINGS } from "./headings.ts";
 import { STEPS } from "./helper.ts";
 import { accountProblem, type FormPage, nextPage, overall, type Page, type Progress, previousPage, STEP_LABELS } from "./model.ts";

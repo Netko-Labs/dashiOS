@@ -12,11 +12,11 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { LineSplitter } from "../../src/shared/io/index.ts";
+import { LineSplitter } from "../../../src/shared/io/index.ts";
 
 export const HELPER_PATH = "/usr/libexec/dashi/dashi-install";
 /** spin/dashi-live's copy in a checkout, from packages/shell/apps/installer. */
-const CHECKOUT_HELPER = join(import.meta.dir, "../../../../spin/dashi-live/usr/libexec/dashi/dashi-install");
+const CHECKOUT_HELPER = join(import.meta.dir, "../../../../../spin/dashi-live/usr/libexec/dashi/dashi-install");
 
 /** dashi-install's steps, in order. */
 export const STEPS = ["check", "partition", "copy", "configure", "account", "bootloader", "finish"] as const;
