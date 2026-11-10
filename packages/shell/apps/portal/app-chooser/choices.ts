@@ -9,7 +9,7 @@
  * with the same merge the installer uses (src/shared/apps/default-handlers.ts).
  */
 
-import { mergeDefaults } from "../../../src/shared/apps/default-handlers.ts";
+import { mergeDefaults } from "../../../src/shared/apps/index.ts";
 import { cleanString, str, vardict } from "../vardict.ts";
 
 export const SHORT_LIST = 4;

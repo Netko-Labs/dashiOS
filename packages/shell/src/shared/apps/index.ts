@@ -1,3 +1,4 @@
+export { defaultHandlers, mergeDefaults, removeDefaults } from "./default-handlers.ts";
 export {
   type DesktopAction,
   type DesktopEntry,

@@ -129,7 +129,6 @@
 1	packages/shell/apps/notes/main.tsx
 1	packages/shell/apps/portal/access.tsx
 1	packages/shell/apps/portal/account.tsx
-1	packages/shell/apps/portal/app-chooser/choices.ts
 1	packages/shell/apps/portal/app-chooser/chooser.tsx
 3	packages/shell/apps/portal/email.ts
 3	packages/shell/apps/portal/file-chooser/options.ts
@@ -174,7 +173,6 @@
 2	packages/shell/apps/software/use-window-actions.ts
 1	packages/shell/apps/software/use-window-sheets.ts
 2	packages/shell/apps/software/window-overlay.tsx
-1	packages/shell/bin/default-handlers.ts
 1	packages/shell/src/actions/lib/sources/menus.ts
 6	packages/shell/src/agents/desktop/calendar.ts
 5	packages/shell/src/agents/desktop/files.ts
@@ -251,7 +249,6 @@
 3	packages/shell/test/dialog-text.test.ts
 7	packages/shell/test/dialog-view.test.tsx
 1	packages/shell/test/editor-model-menus.test.ts
-1	packages/shell/test/editor-model.test.ts
 1	packages/shell/test/entry-icon.test.ts
 1	packages/shell/test/file-manager.test.ts
 1	packages/shell/test/files-browser.test.ts
