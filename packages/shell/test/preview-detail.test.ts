@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { detailChoices, fitDetail, textWidth } from "../apps/preview/detail.ts";
+import { detailChoices, fitDetail, textWidth } from "../apps/preview/lib/detail.ts";
 
 const image = { size: { width: 3200, height: 1800 }, folder: { index: 2, count: 12 }, pdf: null };
 

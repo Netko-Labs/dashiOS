@@ -2,10 +2,10 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { exportImageArgs, thumbnailArgs, turnPngArgs } from "../apps/preview/convert.ts";
-import { exportFile, exportFormats, exportName, printablePdf, qpdfRotateArgs, type Source } from "../apps/preview/output.ts";
-import { answerIn, outcomeOf, parseDefaultPrinter, responseRule } from "../apps/preview/print.ts";
-import type { RunOptions, RunResult } from "../apps/preview/tools.ts";
+import { exportImageArgs, thumbnailArgs, turnPngArgs } from "../apps/preview/lib/convert.ts";
+import { exportFile, exportFormats, exportName, printablePdf, qpdfRotateArgs, type Source } from "../apps/preview/lib/output.ts";
+import { answerIn, outcomeOf, parseDefaultPrinter, responseRule } from "../apps/preview/lib/print.ts";
+import type { RunOptions, RunResult } from "../apps/preview/lib/tools.ts";
 import { MessageType } from "../src/shared/dbus/index.ts";
 
 // What leaves Preview: Export, the PDF Print hands over (output.ts), and the print dialog's answer (print.ts).

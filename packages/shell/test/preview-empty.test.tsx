@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { enabledIds } from "../apps/kit/index.ts";
-import { droppedFile } from "../apps/preview/drop.ts";
-import { previewMenus } from "../apps/preview/menus.ts";
-import { PreviewWindow } from "../apps/preview/view.tsx";
-import { Viewer } from "../apps/preview/viewer.ts";
+import { droppedFile } from "../apps/preview/lib/drop.ts";
+import { previewMenus } from "../apps/preview/lib/menus.ts";
+import { Viewer } from "../apps/preview/lib/viewer.ts";
+import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { otherMime } from "../src/shared/files/kinds.ts";
 import { settle } from "./support/time.ts";
 
