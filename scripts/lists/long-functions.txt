@@ -33,7 +33,6 @@
 104	packages/shell/src/control-center/panel.tsx
 103	packages/shell/src/dock/view.tsx
 163	packages/shell/src/laptop/start.ts
-969	packages/shell/src/launcher.tsx
 230	packages/shell/src/menus/start.tsx
 82	packages/shell/src/notifications/center.tsx
 88	packages/shell/src/polkit/service.ts
