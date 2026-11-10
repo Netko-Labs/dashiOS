@@ -13,7 +13,7 @@ import { DEFAULT_POINTER_SIZE, PointerSync } from "../pointer.ts";
 import { idleOffReason } from "../power/index.ts";
 import { startSettings } from "../settings.ts";
 import type { Settings } from "../settings-defaults.ts";
-import type { System } from "../system/start.ts";
+import type { System } from "../system/index.ts";
 import { TextSize } from "../text-size.ts";
 import { reportWallpaper, type WallpaperChoice, WallpaperSync } from "../wallpaper/index.ts";
 import { LiveWallpaperController } from "../wallpaper/live/controller.ts";

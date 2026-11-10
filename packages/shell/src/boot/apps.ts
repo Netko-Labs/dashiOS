@@ -24,7 +24,7 @@ import { openOverlay } from "../overlay.tsx";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "../portal-host/index.ts";
 import { startSharePicker } from "../share-picker/index.ts";
 import { type App, dockDefaults } from "../shared/apps/index.ts";
-import { mayServeTray } from "../system/stand-in.ts";
+import { mayServeTray } from "../system/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { startTray } from "../tray/index.ts";
 import type { Arranging, Desktops } from "./desktop.ts";

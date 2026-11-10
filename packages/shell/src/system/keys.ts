@@ -6,7 +6,7 @@
 
 import { levelOf, stepBrightness } from "./brightness.ts";
 import { run as defaultRun, type Run } from "./exec.ts";
-import { isMediaKey, pressMedia } from "./media.ts";
+import { isMediaKey, pressMedia } from "./lib/media.ts";
 import type { OsdState } from "./osd-state.ts";
 import { SOURCE, stepVolume, toggleMute, type Volume } from "./volume.ts";
 

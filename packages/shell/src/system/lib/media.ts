@@ -1,6 +1,6 @@
 /** The media keys, through `playerctl` (MPRIS): whichever player is current. */
 
-import { hasProgram, type Run } from "./exec.ts";
+import { hasProgram, type Run } from "../exec.ts";
 
 export type MediaKey = "media-play-pause" | "media-play" | "media-pause" | "media-next" | "media-previous";
 

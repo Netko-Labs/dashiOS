@@ -5,8 +5,8 @@
  * that stays on power, show nothing.
  */
 
-import type { Battery } from "./battery.ts";
-import type { OsdState } from "./osd-state.ts";
+import type { Battery } from "../battery.ts";
+import type { OsdState } from "../osd-state.ts";
 
 const onPower = (battery: Battery): boolean => battery.state !== "discharging";
 
