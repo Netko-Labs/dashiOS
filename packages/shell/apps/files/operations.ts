@@ -9,71 +9,28 @@
  * ("name 2"), or Skip, for one item or all of them.
  */
 
-import { lstat } from "node:fs/promises";
-import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
 import type { FileItem } from "../../src/shared/files/items.ts";
-import { INODE_DIRECTORY, type MimeIndex, mimeOf } from "../../src/shared/files/mime.ts";
 import { appsFor, type OpenWithApp, openWith } from "../../src/shared/files/open.ts";
-import { copyInto, duplicate, freeName, makeFolder, moveInto, NEW_FOLDER_NAME, OpError, renamePath } from "../../src/shared/files/ops.ts";
+import { duplicate, freeName, makeFolder, NEW_FOLDER_NAME, OpError, renamePath } from "../../src/shared/files/ops.ts";
 import { baseName, isInside, parentOf } from "../../src/shared/files/paths.ts";
-import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "../../src/shared/files/trashops.ts";
 import { compress } from "./archive.ts";
+import type { Answer, Conflict } from "./conflicts.ts";
 import { type DropKeys, dropChoice } from "./drag.ts";
 import { eject, mount } from "./drives.ts";
-import { formatCount } from "./format.ts";
+import type { JobHost } from "./job-host.ts";
 import { Jobs } from "./jobs.ts";
 import type { Volume } from "./mounts.ts";
-import { measure } from "./size.ts";
 import type { FilesStore } from "./store.ts";
-import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv, withReplaced } from "./undoable.ts";
+import { runTransfer } from "./transfer.ts";
+import { deleteForeverJob, emptyTrashJob, putBackJob, trashFiles } from "./trash-jobs.ts";
+import { copyAction, newFolderAction, renameAction, type UndoEnv } from "./undoable.ts";
+import { quote, what } from "./wording.ts";
 
-const quote = (name: string): string => `“${name}”`;
+// What a name collision is answered with (PA-3), from conflicts.ts.
+export type { Answer, Conflict, Resolution, Side } from "./conflicts.ts";
 
-/** "3 items" or "“a.txt”". */
-const what = (paths: readonly string[]): string => (paths.length === 1 ? quote(baseName(paths[0] as string)) : formatCount(paths.length));
-
-/** What a name collision is answered with (PA-3). */
-export type Resolution = "replace" | "keep-both" | "skip";
-
-/** One side of a collision, as the sheet shows it. */
-export interface Side {
-  path: string;
-  folder: boolean;
-  mime: string;
-  size: number;
-  mtime: number;
-}
-
-export interface Conflict {
-  mode: "copy" | "move";
-  /** What is coming in. */
-  incoming: Side;
-  /** What is there now, under the same name. */
-  existing: Side;
-  /** The folder it is going into. */
-  dest: string;
-  /** How many items are still to go after this one (for "Apply to all"). */
-  remaining: number;
-}
-
-/** The person's answer: what to do, and whether for the rest of this copy or move too. */
-export interface Answer {
-  resolution: Resolution;
-  all: boolean;
-}
-
-async function sideOf(path: string, index: MimeIndex): Promise<Side | null> {
-  try {
-    const info = await lstat(path);
-    const folder = info.isDirectory();
-    return { path, folder, mime: folder ? INODE_DIRECTORY : mimeOf(index, baseName(path)), size: info.size, mtime: info.mtimeMs };
-  } catch {
-    return null;
-  }
-}
-
-export class Operations {
+export class Operations implements JobHost {
   readonly jobs = new Jobs();
   /** What Edit › Undo takes back: Files' writes, newest last. */
   readonly undo = new UndoStack();
@@ -84,7 +41,7 @@ export class Operations {
    */
   ask: ((conflict: Conflict) => Promise<Answer>) | null = null;
 
-  constructor(private readonly store: FilesStore) {
+  constructor(readonly store: FilesStore) {
     store.renamer = (path, name) => this.rename(path, name);
     // A notice's Undo is for its own step: once Undo would take back another
     // (it was undone, or a rename or a new folder came after), the notice goes.
@@ -94,7 +51,7 @@ export class Operations {
     });
   }
 
-  private get undoEnv(): UndoEnv {
+  get undoEnv(): UndoEnv {
     const { trash, home, run } = this.store.env;
     return {
       trash,
@@ -173,73 +130,9 @@ export class Operations {
     if (source.cut) this.store.patch({ clipboard: null });
   }
 
-  /** What is already at the name `path` would take in `dest`; null when it is free, or it is the item itself (a copy into its own folder). */
-  private async taken(path: string, dest: string): Promise<Side | null> {
-    const target = join(dest, baseName(path));
-    return target === path ? null : sideOf(target, this.store.env.mime);
-  }
-
   /** Copy or move `paths` into `dest` as a job. Also what a drop would call. A taken name asks first (PA-3). */
-  async transfer(paths: readonly string[], dest: string, mode: "copy" | "move"): Promise<string[]> {
-    const created: string[] = [];
-    const moves: Array<{ from: string; to: string }> = [];
-    /** What went to the Trash to make room (Replace): Undo puts it back. */
-    const replaced: string[] = [];
-    const verb = mode === "copy" ? "Copying" : "Moving";
-    // An answer with "Apply to all" stands for the rest of this copy or move.
-    let standing: Answer | null = null;
-    await this.jobs
-      .run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
-        if (mode === "copy") {
-          let total = 0;
-          for (const path of paths) total += (await measure(path, ctx.signal)).bytes;
-          job.total = total;
-        }
-        const failures: string[] = [];
-        for (const [index, path] of paths.entries()) {
-          try {
-            let resolution: Resolution = "keep-both";
-            const existing = await this.taken(path, dest);
-            if (existing && standing?.all) resolution = standing.resolution;
-            else if (existing && this.ask) {
-              const incoming = await sideOf(path, this.store.env.mime);
-              if (incoming) {
-                standing = await this.ask({ mode, incoming, existing, dest, remaining: paths.length - index - 1 });
-                resolution = standing.resolution;
-              }
-            }
-            if (resolution === "skip") continue;
-            if (resolution === "replace") {
-              const target = join(dest, baseName(path));
-              if (isInside(target, path)) throw new OpError(`${quote(baseName(target))} can’t be replaced by something inside it.`);
-              const out = await trashPaths([target], ctx, this.store.env.run);
-              const failed = out.failed[0];
-              if (failed) throw new OpError(`${quote(baseName(target))} couldn’t be moved to the Trash: ${failed.reason}`);
-              replaced.push(target);
-            }
-            const made = mode === "copy" ? await copyInto(path, dest, ctx) : await moveInto(path, dest, ctx);
-            if (made) created.push(made);
-            if (made && mode === "move") moves.push({ from: path, to: made });
-          } catch (error) {
-            if (!(error instanceof OpError)) throw error;
-            failures.push(`${quote(baseName(path))}: ${error.message}`);
-          }
-          if (mode === "move") ctx.advance(1);
-        }
-        if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
-        const went = mode === "copy" ? created : moves.map((move) => move.from);
-        if (went.length === 0) return paths.length === 1 ? `Skipped ${what(paths)}.` : "Skipped them all.";
-        return `${mode === "copy" ? "Copied" : "Moved"} ${what(went)}${replaced.length > 0 ? `, replacing ${formatCount(replaced.length)}` : ""}.`;
-      })
-      .then((job) => {
-        // What was moved or copied before a failure or a Cancel can be taken back too, with what it replaced.
-        const moved = mode === "move" && moves.length > 0;
-        const copied = mode === "copy" && created.length > 0;
-        if (moved) this.undo.push(withReplaced(moveAction(moves, this.undoEnv), replaced, this.undoEnv));
-        if (copied) this.undo.push(withReplaced(copyAction("Copy", created, this.undoEnv), replaced, this.undoEnv));
-        this.finished(job.state, job.message, created, moved || copied);
-      });
-    return created;
+  transfer(paths: readonly string[], dest: string, mode: "copy" | "move"): Promise<string[]> {
+    return runTransfer(this, paths, dest, mode);
   }
 
   async duplicateSelection(): Promise<void> {
@@ -310,64 +203,19 @@ export class Operations {
   }
 
   private async trashFiles(paths: readonly string[]): Promise<void> {
-    if (paths.length === 0) return;
-    const { home, dirs } = this.store.env;
-    for (const path of paths) {
-      const reason = protectedReason(
-        path,
-        home,
-        dirs.map((dir) => dir.path),
-      );
-      if (reason) {
-        this.store.say(reason, true);
-        return;
-      }
-    }
-    const trashed: string[] = [];
-    const job = await this.jobs.run(`Moving ${what(paths)} to the Trash`, paths.length, async (ctx) => {
-      const result = await trashPaths(paths, ctx, this.store.env.run);
-      trashed.push(...result.trashed);
-      if (result.failed.length > 0) {
-        const first = result.failed[0] as { path: string; reason: string };
-        throw new OpError(`${quote(baseName(first.path))} couldn’t be moved to the Trash: ${first.reason}`);
-      }
-      return `Moved ${what(paths)} to the Trash.`;
-    });
-    if (trashed.length > 0) this.undo.push(trashAction(trashed, this.undoEnv));
-    this.finished(job.state, job.message, [], trashed.length > 0);
-    this.store.select([]);
-    this.store.reload();
+    await trashFiles(this, paths);
   }
 
   async emptyTrash(): Promise<void> {
-    const job = await this.jobs.run("Emptying the Trash", null, async () => {
-      await emptyTrash(this.store.env.trash, this.store.env.run);
-      return "The Trash is empty.";
-    });
-    this.finished(job.state, job.message, []);
-    this.store.reload();
+    await emptyTrashJob(this);
   }
 
   async putBack(items: readonly FileItem[] = this.store.selectedItems()): Promise<void> {
-    const job = await this.jobs.run(`Putting back ${what(this.paths(items))}`, null, async () => {
-      for (const item of items) await putBack(item.path, this.store.env.trash, this.store.env.home);
-      return `Put back ${what(this.paths(items))}.`;
-    });
-    this.finished(job.state, job.message, []);
-    this.store.reload();
+    await putBackJob(this, items);
   }
 
   async deleteForever(items: readonly FileItem[] = this.store.selectedItems()): Promise<void> {
-    const job = await this.jobs.run(`Deleting ${what(this.paths(items))}`, items.length, async (ctx) => {
-      for (const item of items) {
-        await deleteForever(item.path, this.store.env.trash);
-        ctx.advance(1);
-      }
-      return `Deleted ${what(this.paths(items))}.`;
-    });
-    this.finished(job.state, job.message, []);
-    this.store.select([]);
-    this.store.reload();
+    await deleteForeverJob(this, items);
   }
 
   // --- Archive, open with, volumes ---------------------------------------------------
@@ -423,7 +271,7 @@ export class Operations {
   // --- Outcomes ----------------------------------------------------------------------
 
   /** `undoable`: a step was just pushed, and the notice offers Undo for it (and only it). */
-  private finished(state: string, message: string | null, created: readonly string[], undoable = false): void {
+  finished(state: string, message: string | null, created: readonly string[], undoable = false): void {
     if (state === "cancelled") this.store.say("Cancelled.");
     else if (state === "failed") this.store.say(message ?? "Something went wrong.", true);
     else if (message) this.store.say(message, false, undoable ? this.undo.state.undoStep : null);

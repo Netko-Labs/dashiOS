@@ -4,7 +4,7 @@
  * indented; a process no app started on its own, by its name.
  */
 
-import { CHEVRON_DOWN, useColors } from "@dashi/ui";
+import { CHEVRON_DOWN, type Column, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { Line } from "./lines.ts";
 
@@ -14,6 +14,11 @@ const CHEVRON_RIGHT =
 
 const INDENT = 18;
 const ICON = 16;
+
+/** The name column of a tab: the same column, its cell the name cell. */
+export function namedColumn(column: Column<Line>, onToggle: (line: Line) => void): Column<Line> {
+  return { ...column, cell: (line, chosen) => <NameCell line={line} selected={chosen} onToggle={onToggle} /> };
+}
 
 export function NameCell({ line, selected, onToggle }: { line: Line; selected: boolean; onToggle: (line: Line) => void }) {
   const colors = useColors();

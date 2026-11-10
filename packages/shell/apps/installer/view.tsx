@@ -2,46 +2,32 @@
  * The Installer's window: a page at a time in the Setup Assistant's frame
  * (a heading, the page, Back and Continue along the bottom). Welcome, the
  * disk, the account, the options (NVIDIA's driver), a last look, then the
- * install itself and Restart. model.ts holds the rules; helper.ts runs it.
+ * install itself and Restart. model.ts holds the rules; helper.ts runs it;
+ * use-installer.ts is the wizard's state; rows.tsx and headings.ts are the
+ * parts the pages use. The pages live here because they and the frame use the
+ * Settings kit (src/settings-app/ui.tsx), which only this file may import
+ * (import-ways).
  */
 
-import { CHECK, LOGO, ProgressBar, Row, Switch, TextField, useColors, WARNING } from "@dashi/ui";
+import { LOGO, ProgressBar, Row, Switch, TextField, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Button, Caption, Group, Note, useSurface } from "../../src/settings-app/ui.tsx";
-import { type InstallChoice, isDryRun, runInstall, STEPS } from "./helper.ts";
-import {
-  type Account,
-  accountProblem,
-  advance,
-  type FormPage,
-  nextPage,
-  overall,
-  type Page,
-  type Progress,
-  previousPage,
-  START,
-  STEP_LABELS,
-  suggestHostname,
-  suggestUser,
-} from "./model.ts";
-import { type Disk, type Machine, probeMachine, sizeLabel } from "./probe.ts";
+import { HEADINGS } from "./headings.ts";
+import { STEPS } from "./helper.ts";
+import { accountProblem, type FormPage, nextPage, overall, type Page, type Progress, previousPage, STEP_LABELS } from "./model.ts";
+import { sizeLabel } from "./probe.ts";
+import { DiskRow, Field, StepRow } from "./rows.tsx";
+import { useInstaller, type Wizard } from "./use-installer.ts";
 
 export const INSTALLER_SIZE = { width: 720, height: 600 };
 
 /** A line under a card starts where Settings' captions do (`Caption`), 10 in from the card's edge. */
 const CAPTION_INSET = 10;
 
-const HEADINGS: Record<Page, { title: string; subtitle: string }> = {
-  welcome: { title: "Install Dashi", subtitle: "Put Dashi on this computer. It takes about ten minutes." },
-  disk: { title: "Choose a Disk", subtitle: "Dashi takes the whole disk you choose." },
-  account: { title: "Create Your Account", subtitle: "You sign in with it, and it can change the system." },
-  options: { title: "Drivers and Kernel", subtitle: "What Dashi sets up for this computer's hardware." },
-  confirm: { title: "Ready to Install", subtitle: "Check your choices. Nothing has been changed yet." },
-  installing: { title: "Installing Dashi", subtitle: "Keep the computer on and the USB drive in." },
-  done: { title: "Dashi Is Installed", subtitle: "Restart and remove the USB drive to start using it." },
-  failed: { title: "Dashi Wasn't Installed", subtitle: "Something went wrong. The disk may be partly erased." },
-};
+interface PageProps {
+  wizard: Wizard;
+}
 
 function Frame({ page, children, footer }: { page: Page; children: ReactNode; footer: ReactNode }) {
   const colors = useColors();
@@ -83,71 +69,6 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
   );
 }
 
-function DiskRow({ disk, chosen, onChoose }: { disk: Disk; chosen: boolean; onChoose: () => void }) {
-  const colors = useColors();
-  const detail = disk.unavailable ?? [sizeLabel(disk.bytes), disk.removable ? "removable" : "", disk.path].filter(Boolean).join(" · ");
-  return (
-    <View
-      testID={`installer-disk:${disk.path}`}
-      onPress={disk.unavailable ? undefined : onChoose}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        padding: 12,
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: chosen ? colors.selection : "transparent",
-        opacity: disk.unavailable ? 0.5 : 1,
-      }}
-    >
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 8,
-          borderWidth: 1.5,
-          borderColor: chosen ? colors.selection : colors.textMuted,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {chosen && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.selection }} />}
-      </View>
-      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>{disk.name}</Text>
-        <Text style={{ fontSize: 11, color: disk.unavailable ? colors.critical : colors.textMuted }}>{detail}</Text>
-      </View>
-    </View>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 10 }}>
-      <View style={{ width: 150 }}>
-        <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function StepRow({ label, mark }: { label: string; mark: "waiting" | "running" | "done" | "failed" }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, paddingHorizontal: 12 }}>
-      <View style={{ width: 16, alignItems: "center" }}>
-        {mark === "done" && <Svg markup={CHECK} size={13} color={colors.selection} />}
-        {mark === "failed" && <Svg markup={WARNING} size={13} color={colors.critical} />}
-        {mark === "running" && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.selection }} />}
-      </View>
-      <Text style={{ fontSize: 13, color: mark === "waiting" ? colors.textMuted : colors.text }}>{label}</Text>
-    </View>
-  );
-}
-
 function ProgressSteps({ progress }: { progress: Progress }) {
   return (
     <Group testID="installer-steps">
@@ -170,206 +91,186 @@ function ProgressSteps({ progress }: { progress: Progress }) {
   );
 }
 
-export function InstallerWindow({ restart }: { restart: () => void }) {
-  const colors = useColors();
-  const [page, setPage] = useState<Page>("welcome");
-  const [machine, setMachine] = useState<Machine | null>(null);
-  const [disk, setDisk] = useState<string | null>(null);
-  const [account, setAccount] = useState<Account>({ fullName: "", user: "", password: "", confirm: "", hostname: "dashi" });
-  // Typed by hand, the account and computer names stop following the full name.
-  const named = useRef({ user: false, hostname: false });
-  const [nvidia, setNvidia] = useState(false);
-  const [progress, setProgress] = useState<Progress>(START);
-  const dryRun = useRef(isDryRun()).current;
+function backButton(wizard: Wizard, from: FormPage) {
+  return <Button testID="installer-back" label="Back" onPress={() => wizard.setPage(previousPage(from))} />;
+}
 
-  useEffect(() => {
-    void probeMachine().then((found) => {
-      setMachine(found);
-      setNvidia(found.nvidia);
-      const usable = found.disks.filter((each) => !each.unavailable);
-      if (usable.length === 1) setDisk(usable[0]?.path ?? null);
-    });
-  }, []);
-
-  const chosen = machine?.disks.find((each) => each.path === disk) ?? null;
-  const setName = (fullName: string) =>
-    setAccount((was) => {
-      const user = named.current.user ? was.user : suggestUser(fullName);
-      return { ...was, fullName, user, hostname: named.current.hostname ? was.hostname : suggestHostname(user) };
-    });
-
-  const install = () => {
-    if (!chosen) return;
-    setPage("installing");
-    setProgress(START);
-    const choice: InstallChoice = { disk: chosen.path, user: account.user, fullName: account.fullName.trim(), hostname: account.hostname, nvidia };
-    const password = account.password;
-    // The password leaves the form as soon as it is on its way.
-    setAccount((was) => ({ ...was, password: "", confirm: "" }));
-    let latest = START;
-    void runInstall(choice, password, dryRun, (event) => {
-      latest = advance(latest, event);
-      setProgress(latest);
-    }).then((code) => {
-      if (latest.ok === true && code === 0) setPage("done");
-      else {
-        if (!latest.failed) {
-          const message = code === null ? "The installer couldn't start (pkexec or dashi-install is missing)." : "The installer stopped without saying why.";
-          latest = { ...latest, failed: { step: latest.step ?? "check", message } };
-          setProgress(latest);
-        }
-        setPage("failed");
-      }
-    });
-  };
-
-  const back = (from: FormPage) => <Button testID="installer-back" label="Back" onPress={() => setPage(previousPage(from))} />;
-  const next = (from: FormPage, disabled = false, label = "Continue", danger = false) => (
+function continueButton(wizard: Wizard, from: FormPage, disabled = false, label = "Continue", danger = false) {
+  return (
     <Button
       testID="installer-continue"
       label={label}
       primary={!danger}
       danger={danger}
       disabled={disabled}
-      onPress={() => (from === "confirm" ? install() : setPage(nextPage(from)))}
+      onPress={() => (from === "confirm" ? wizard.install() : wizard.setPage(nextPage(from)))}
     />
   );
+}
 
-  switch (page) {
-    case "welcome": {
-      const blocked = machine !== null && !machine.uefi;
-      return (
-        <Frame page={page} footer={next("welcome", machine === null || blocked)}>
-          {blocked ? (
-            <Note testID="installer-no-uefi">
-              This computer started without UEFI. Dashi's installer needs it: turn off Legacy or CSM boot in the firmware settings and start from the USB drive
-              again.
-            </Note>
-          ) : (
-            <Note>Dashi erases the disk you choose and puts a fresh system on it, with your account. Your other disks are left alone.</Note>
-          )}
-          {/* Centred, as the welcome's other words are. */}
-          {dryRun && <Note>This is a practice run: the computer didn't start from the Dashi USB drive, so nothing will be erased.</Note>}
-        </Frame>
-      );
-    }
+function WelcomePage({ wizard }: PageProps) {
+  const { machine, dryRun } = wizard;
+  const blocked = machine !== null && !machine.uefi;
+  return (
+    <Frame page="welcome" footer={continueButton(wizard, "welcome", machine === null || blocked)}>
+      {blocked ? (
+        <Note testID="installer-no-uefi">
+          This computer started without UEFI. Dashi's installer needs it: turn off Legacy or CSM boot in the firmware settings and start from the USB drive
+          again.
+        </Note>
+      ) : (
+        <Note>Dashi erases the disk you choose and puts a fresh system on it, with your account. Your other disks are left alone.</Note>
+      )}
+      {/* Centred, as the welcome's other words are. */}
+      {dryRun && <Note>This is a practice run: the computer didn't start from the Dashi USB drive, so nothing will be erased.</Note>}
+    </Frame>
+  );
+}
+
+function DiskPage({ wizard }: PageProps) {
+  const { machine, disk, chosen } = wizard;
+  return (
+    <Frame page="disk" footer={[backButton(wizard, "disk"), continueButton(wizard, "disk", !chosen)]}>
+      <Group testID="installer-disks">
+        {machine?.disks.length ? (
+          machine.disks.map((each) => <DiskRow key={each.path} disk={each} chosen={each.path === disk} onChoose={() => wizard.setDisk(each.path)} />)
+        ) : (
+          <Note>No disks were found.</Note>
+        )}
+      </Group>
+      <Caption>Everything on the chosen disk is erased: other systems, files, and partitions.</Caption>
+    </Frame>
+  );
+}
+
+function AccountPage({ wizard }: PageProps) {
+  const colors = useColors();
+  const { account } = wizard;
+  const problem = accountProblem(account);
+  const typed = account.fullName !== "" || account.password !== "";
+  return (
+    <Frame page="account" footer={[backButton(wizard, "account"), continueButton(wizard, "account", problem !== null)]}>
+      <Group testID="installer-account">
+        <Field label="Full name">
+          <TextField testID="installer-full-name" value={account.fullName} autoFocus placeholder="Your name" onChangeText={wizard.setName} />
+        </Field>
+        <Field label="Account name">
+          <TextField testID="installer-user" value={account.user} onChangeText={wizard.setUser} />
+        </Field>
+        <Field label="Password">
+          <TextField testID="installer-password" value={account.password} secure onChangeText={(password) => wizard.edit({ password })} />
+        </Field>
+        <Field label="Confirm password">
+          <TextField testID="installer-confirm" value={account.confirm} secure onChangeText={(confirm) => wizard.edit({ confirm })} />
+        </Field>
+        <Field label="Computer name">
+          <TextField testID="installer-hostname" value={account.hostname} onChangeText={wizard.setHostname} />
+        </Field>
+      </Group>
+      {typed && problem && (
+        <View testID="installer-account-problem" style={{ paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
+          <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
+        </View>
+      )}
+    </Frame>
+  );
+}
+
+function OptionsPage({ wizard }: PageProps) {
+  const { machine, nvidia } = wizard;
+  return (
+    <Frame page="options" footer={[backButton(wizard, "options"), continueButton(wizard, "options")]}>
+      <Group>
+        <Row
+          label="Install NVIDIA's graphics driver"
+          detail={
+            machine?.nvidia
+              ? "This computer has NVIDIA graphics. The driver is built during the install, so Dashi starts on it."
+              : "No NVIDIA graphics were found. Turn this on only for a card you will add."
+          }
+        >
+          <Switch testID="installer-nvidia" on={nvidia} onChange={wizard.setNvidia} />
+        </Row>
+        <Row
+          label={machine?.cachyos ? "CachyOS kernel" : "Fedora kernel"}
+          detail={
+            machine?.cachyos
+              ? "Tuned for responsiveness and games. It will be the only kernel on this computer."
+              : "CachyOS's kernel can't start this computer (Secure Boot is on, or the processor is older), so Fedora's is the default."
+          }
+        />
+      </Group>
+    </Frame>
+  );
+}
+
+function ConfirmPage({ wizard }: PageProps) {
+  const { chosen, account, nvidia } = wizard;
+  return (
+    <Frame page="confirm" footer={[backButton(wizard, "confirm"), continueButton(wizard, "confirm", !chosen, "Erase and Install", true)]}>
+      <Group testID="installer-summary">
+        <Row label="Disk" detail={chosen ? `${chosen.name} · ${sizeLabel(chosen.bytes)} · ${chosen.path}` : "None"} />
+        <Row label="Account" detail={`${account.fullName.trim()} (${account.user})`} />
+        <Row label="Computer name" detail={account.hostname} />
+        <Row label="NVIDIA driver" detail={nvidia ? "Installed" : "Not installed"} />
+      </Group>
+      <Caption>{`Everything on ${chosen?.name ?? "the disk"} will be erased. This can't be undone.`}</Caption>
+    </Frame>
+  );
+}
+
+function InstallingPage({ wizard }: PageProps) {
+  const { progress } = wizard;
+  return (
+    <Frame page="installing" footer={null}>
+      <ProgressBar testID="installer-bar" size="regular" value={overall(progress)} />
+      <ProgressSteps progress={progress} />
+    </Frame>
+  );
+}
+
+function DonePage({ wizard, restart }: PageProps & { restart: () => void }) {
+  const { progress, dryRun } = wizard;
+  return (
+    <Frame page="done" footer={<Button testID="installer-restart" label="Restart" primary onPress={restart} />}>
+      <ProgressSteps progress={progress} />
+      {dryRun && <Caption>A practice run: nothing was installed, and Restart only closes this window.</Caption>}
+    </Frame>
+  );
+}
+
+function FailedPage({ wizard }: PageProps) {
+  const colors = useColors();
+  const { progress, dryRun } = wizard;
+  return (
+    <Frame page="failed" footer={<Button testID="installer-retry" label="Start Over" primary onPress={() => wizard.setPage("welcome")} />}>
+      <ProgressSteps progress={progress} />
+      <View testID="installer-failure" style={{ flexShrink: 0, paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
+        <Text style={{ fontSize: 12, color: colors.critical }}>{progress.failed?.message ?? "The install stopped."}</Text>
+      </View>
+      {!dryRun && <Caption>What the installer's tools said is in /var/log/dashi-install.log.</Caption>}
+    </Frame>
+  );
+}
+
+export function InstallerWindow({ restart }: { restart: () => void }) {
+  const wizard = useInstaller();
+  switch (wizard.page) {
+    case "welcome":
+      return <WelcomePage wizard={wizard} />;
     case "disk":
-      return (
-        <Frame page={page} footer={[back("disk"), next("disk", !chosen)]}>
-          <Group testID="installer-disks">
-            {machine?.disks.length ? (
-              machine.disks.map((each) => <DiskRow key={each.path} disk={each} chosen={each.path === disk} onChoose={() => setDisk(each.path)} />)
-            ) : (
-              <Note>No disks were found.</Note>
-            )}
-          </Group>
-          <Caption>Everything on the chosen disk is erased: other systems, files, and partitions.</Caption>
-        </Frame>
-      );
-    case "account": {
-      const problem = accountProblem(account);
-      const typed = account.fullName !== "" || account.password !== "";
-      return (
-        <Frame page={page} footer={[back("account"), next("account", problem !== null)]}>
-          <Group testID="installer-account">
-            <Field label="Full name">
-              <TextField testID="installer-full-name" value={account.fullName} autoFocus placeholder="Your name" onChangeText={setName} />
-            </Field>
-            <Field label="Account name">
-              <TextField
-                testID="installer-user"
-                value={account.user}
-                onChangeText={(user) => {
-                  named.current.user = true;
-                  setAccount((was) => ({ ...was, user, hostname: named.current.hostname ? was.hostname : suggestHostname(user) }));
-                }}
-              />
-            </Field>
-            <Field label="Password">
-              <TextField testID="installer-password" value={account.password} secure onChangeText={(password) => setAccount((was) => ({ ...was, password }))} />
-            </Field>
-            <Field label="Confirm password">
-              <TextField testID="installer-confirm" value={account.confirm} secure onChangeText={(confirm) => setAccount((was) => ({ ...was, confirm }))} />
-            </Field>
-            <Field label="Computer name">
-              <TextField
-                testID="installer-hostname"
-                value={account.hostname}
-                onChangeText={(hostname) => {
-                  named.current.hostname = true;
-                  setAccount((was) => ({ ...was, hostname }));
-                }}
-              />
-            </Field>
-          </Group>
-          {typed && problem && (
-            <View testID="installer-account-problem" style={{ paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
-              <Text style={{ fontSize: 12, color: colors.critical }}>{problem}</Text>
-            </View>
-          )}
-        </Frame>
-      );
-    }
+      return <DiskPage wizard={wizard} />;
+    case "account":
+      return <AccountPage wizard={wizard} />;
     case "options":
-      return (
-        <Frame page={page} footer={[back("options"), next("options")]}>
-          <Group>
-            <Row
-              label="Install NVIDIA's graphics driver"
-              detail={
-                machine?.nvidia
-                  ? "This computer has NVIDIA graphics. The driver is built during the install, so Dashi starts on it."
-                  : "No NVIDIA graphics were found. Turn this on only for a card you will add."
-              }
-            >
-              <Switch testID="installer-nvidia" on={nvidia} onChange={setNvidia} />
-            </Row>
-            <Row
-              label={machine?.cachyos ? "CachyOS kernel" : "Fedora kernel"}
-              detail={
-                machine?.cachyos
-                  ? "Tuned for responsiveness and games. It will be the only kernel on this computer."
-                  : "CachyOS's kernel can't start this computer (Secure Boot is on, or the processor is older), so Fedora's is the default."
-              }
-            />
-          </Group>
-        </Frame>
-      );
+      return <OptionsPage wizard={wizard} />;
     case "confirm":
-      return (
-        <Frame page={page} footer={[back("confirm"), next("confirm", !chosen, "Erase and Install", true)]}>
-          <Group testID="installer-summary">
-            <Row label="Disk" detail={chosen ? `${chosen.name} · ${sizeLabel(chosen.bytes)} · ${chosen.path}` : "None"} />
-            <Row label="Account" detail={`${account.fullName.trim()} (${account.user})`} />
-            <Row label="Computer name" detail={account.hostname} />
-            <Row label="NVIDIA driver" detail={nvidia ? "Installed" : "Not installed"} />
-          </Group>
-          <Caption>{`Everything on ${chosen?.name ?? "the disk"} will be erased. This can't be undone.`}</Caption>
-        </Frame>
-      );
+      return <ConfirmPage wizard={wizard} />;
     case "installing":
-      return (
-        <Frame page={page} footer={null}>
-          <ProgressBar testID="installer-bar" size="regular" value={overall(progress)} />
-          <ProgressSteps progress={progress} />
-        </Frame>
-      );
+      return <InstallingPage wizard={wizard} />;
     case "done":
-      return (
-        <Frame page={page} footer={<Button testID="installer-restart" label="Restart" primary onPress={restart} />}>
-          <ProgressSteps progress={progress} />
-          {dryRun && <Caption>A practice run: nothing was installed, and Restart only closes this window.</Caption>}
-        </Frame>
-      );
+      return <DonePage wizard={wizard} restart={restart} />;
     case "failed":
-      return (
-        <Frame page={page} footer={<Button testID="installer-retry" label="Start Over" primary onPress={() => setPage("welcome")} />}>
-          <ProgressSteps progress={progress} />
-          <View testID="installer-failure" style={{ flexShrink: 0, paddingLeft: CAPTION_INSET, paddingRight: CAPTION_INSET }}>
-            <Text style={{ fontSize: 12, color: colors.critical }}>{progress.failed?.message ?? "The install stopped."}</Text>
-          </View>
-          {!dryRun && <Caption>What the installer's tools said is in /var/log/dashi-install.log.</Caption>}
-        </Frame>
-      );
+      return <FailedPage wizard={wizard} />;
   }
 }

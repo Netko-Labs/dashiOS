@@ -7,6 +7,7 @@
  * root and boot filesystems are shown but never unmounted from here.
  */
 
+import { isRecord } from "@dashi/shape";
 import { isInside } from "../../src/shared/files/paths.ts";
 
 export interface MountEntry {
@@ -66,12 +67,12 @@ export function parseLsblk(json: string): BlockDevice[] {
   } catch {
     return [];
   }
-  const roots = (value as { blockdevices?: unknown } | null)?.blockdevices;
+  const roots = isRecord(value) ? value.blockdevices : undefined;
   if (!Array.isArray(roots)) return [];
   const out: BlockDevice[] = [];
   const visit = (node: unknown, depth: number): void => {
-    if (typeof node !== "object" || node === null || depth > 8) return;
-    const item = node as Record<string, unknown>;
+    if (!isRecord(node) || depth > 8) return;
+    const item = node;
     const path = str(item.path);
     const name = str(item.name);
     if (path && name && /^\/dev\/(?!.*\.\.)[\w./-]+$/.test(path)) {

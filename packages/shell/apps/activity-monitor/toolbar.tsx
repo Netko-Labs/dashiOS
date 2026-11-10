@@ -7,10 +7,12 @@
  */
 
 import { glyphs, SearchField, Segmented, ToolbarButton } from "@dashi/ui";
+import { submitSelection } from "./lines.ts";
 import type { ViewChoices } from "./menus.ts";
 import { TABS } from "./menus.ts";
 import type { Tab } from "./monitor.ts";
 import { TOOLBAR, type ToolbarFit, tabsWidth } from "./toolbar-fit.ts";
+import type { MonitorModel } from "./use-monitor-window.ts";
 import { ViewButton } from "./view-menus.tsx";
 
 export interface MonitorToolbarProps {
@@ -36,6 +38,37 @@ export interface MonitorToolbarProps {
     onLeave: () => void;
     onSubmit: () => void;
   };
+}
+
+/** The toolbar as the window's model wires it: the tabs, the view button, Quit… and the search. */
+export function MonitorBar({ model }: { model: MonitorModel }) {
+  const { fit, tab, chooseTab, view, query, setQuery, sheets, listing, keyboard, keys } = model;
+  const { selectedLine } = listing;
+  return (
+    <MonitorToolbar
+      fit={fit}
+      tab={tab}
+      onTab={chooseTab}
+      view={view}
+      onViewMenu={(x, y) => sheets.setMenu({ kind: "view", x, y })}
+      quit={selectedLine ? { name: selectedLine.name, refusal: sheets.refusal } : null}
+      onQuit={() => sheets.quit()}
+      search={{
+        key: keyboard.focus.field,
+        value: query,
+        onChange: setQuery,
+        // Not under a sheet: it asks again when the sheet closes.
+        focused: keyboard.focus.owner === "field" && sheets.sheet === null,
+        onOpen: keyboard.toField,
+        onArrow: keys.move,
+        onLeave: keyboard.toList,
+        onSubmit: () => {
+          listing.setSelected(submitSelection(listing.keys, selectedLine?.key ?? null));
+          keyboard.toList();
+        },
+      }}
+    />
+  );
 }
 
 export function MonitorToolbar({ fit, tab, onTab, view, onViewMenu, quit, onQuit, search }: MonitorToolbarProps) {

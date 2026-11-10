@@ -5,14 +5,17 @@
  * arrives. A drag across the text selects it, as in a reader; the bar at the
  * right edge shows where you are and drags too. Metal has no scroll offset
  * to set, so the scroll is ours: the pages sit in absolutely placed boxes
- * inside a clipped view (document.ts does the arithmetic).
+ * inside a clipped view (document.ts does the arithmetic). The page cards and
+ * the bar are their own components below; the drag's state stays with the
+ * surface, so it outlives a bar that comes and goes.
  */
 
 import { useColors, useSurface } from "@dashi/ui";
 import { Image, View } from "@mirinjs/metal";
-import { useRef } from "react";
-import { type DocumentView, LINE_PX, type PagePoint } from "./document.ts";
+import { type MutableRefObject, useRef } from "react";
+import { type DocumentView, LINE_PX } from "./document.ts";
 import { visiblePages } from "./layout.ts";
+import type { PagePoint } from "./pdf-view.ts";
 import type { PdfState } from "./snapshot.ts";
 import { selectedOnPage, selectionBoxes, turnBox } from "./text.ts";
 import { turned } from "./zoom.ts";
@@ -22,15 +25,15 @@ const BAR = { width: 7, least: 28, inset: 3 } as const;
 /** A drag that moved less than this is a click (it lets go of the selection). */
 const CLICK_SLOP = 3;
 
+type Box = DocumentView["layout"]["boxes"][number];
+
 export function DocumentSurface({ pdf, doc, turns, ground }: { pdf: PdfState; doc: DocumentView; turns: number; ground: string }) {
-  const colors = useColors();
   const surface = useSurface();
-  const { layout, scroll, area, scale } = doc;
+  const { layout, scroll, area } = doc;
   const drag = useRef<{ x: number; y: number; anchor: PagePoint | null; moved: boolean } | null>(null);
   const bar = useRef<{ y: number; scroll: number } | null>(null);
 
   const shown = visiblePages(layout.boxes, scroll.y, area.height, 0.25);
-  const range = doc.range;
 
   // The bar: as long as the screen is a share of the document, as far down as the scroll is.
   const track = Math.max(0, area.height - BAR.inset * 2);
@@ -67,72 +70,97 @@ export function DocumentSurface({ pdf, doc, turns, ground }: { pdf: PdfState; do
       {shown.map((page) => {
         const box = layout.boxes[page - 1];
         if (!box) return null;
-        const render = pdf.renders.get(page);
-        const words = pdf.texts.get(page);
-        const span = range && words ? selectedOnPage(range, page, words.words.length) : null;
-        const plain = turned(pdf.sizes[page - 1] ?? { width: box.width, height: box.height }, turns);
-        return (
-          <View
-            key={page}
-            testID={`page:${page}`}
-            style={{
-              position: "absolute",
-              left: box.left - scroll.x,
-              top: box.top - scroll.y,
-              width: box.width,
-              height: box.height,
-              // Paper before the page is drawn: the card ground with a hairline, quiet in both modes. The drawn
-              // page fills the box whole, so the hairline goes with the paper (a border would inset the picture).
-              backgroundColor: surface.card,
-              ...(render ? {} : { borderWidth: 1, borderColor: colors.separator }),
-            }}
-          >
-            {render && <Image source={render.source} resizeMode="contain" style={{ width: box.width, height: box.height }} />}
-            {span &&
-              words &&
-              selectionBoxes(words.words, span).map((each, index) => {
-                const turnedBox = turnBox(each, plain, turns);
-                return (
-                  <View
-                    // One box per selected line, in order: redrawn whole as the selection changes.
-                    key={index}
-                    testID={`selection:${page}:${index}`}
-                    style={{
-                      position: "absolute",
-                      left: turnedBox.x0 * scale,
-                      top: turnedBox.y0 * scale,
-                      width: Math.max(1, (turnedBox.x1 - turnedBox.x0) * scale),
-                      height: Math.max(1, (turnedBox.y1 - turnedBox.y0) * scale),
-                      backgroundColor: colors.textSelection,
-                    }}
-                  />
-                );
-              })}
-          </View>
-        );
+        return <PageCard key={page} page={page} box={box} pdf={pdf} doc={doc} turns={turns} paper={surface.card} />;
       })}
-      {barLength > 0 && (
-        <View
-          testID="document:bar"
-          onPointer={(event) => {
-            if (event.phase === "down") bar.current = { y: event.y, scroll: scroll.y };
-            else if (event.phase === "move" && bar.current) {
-              const per = (layout.height - area.height) / Math.max(1, track - barLength);
-              doc.scrollToTop(bar.current.scroll + (event.y - bar.current.y) * per);
-            } else if (event.phase === "up") bar.current = null;
-          }}
-          style={{
-            position: "absolute",
-            right: BAR.inset,
-            top: barTop,
-            width: BAR.width,
-            height: barLength,
-            borderRadius: BAR.width / 2,
-            backgroundColor: colors.track,
-            hoverBackgroundColor: colors.pressed,
-          }}
-        />
-      )}
+      {barLength > 0 && <ScrollBar doc={doc} bar={bar} track={track} barLength={barLength} barTop={barTop} />}
     </View>
+  );
+}
+
+/** One page: its render, or a quiet card until it arrives, and the selected words drawn over it. */
+function PageCard({ page, box, pdf, doc, turns, paper }: { page: number; box: Box; pdf: PdfState; doc: DocumentView; turns: number; paper: string }) {
+  const colors = useColors();
+  const { scroll, scale, range } = doc;
+  const render = pdf.renders.get(page);
+  const words = pdf.texts.get(page);
+  const span = range && words ? selectedOnPage(range, page, words.words.length) : null;
+  const plain = turned(pdf.sizes[page - 1] ?? { width: box.width, height: box.height }, turns);
+  return (
+    <View
+      testID={`page:${page}`}
+      style={{
+        position: "absolute",
+        left: box.left - scroll.x,
+        top: box.top - scroll.y,
+        width: box.width,
+        height: box.height,
+        // Paper before the page is drawn: the card ground with a hairline, quiet in both modes. The drawn
+        // page fills the box whole, so the hairline goes with the paper (a border would inset the picture).
+        backgroundColor: paper,
+        ...(render ? {} : { borderWidth: 1, borderColor: colors.separator }),
+      }}
+    >
+      {render && <Image source={render.source} resizeMode="contain" style={{ width: box.width, height: box.height }} />}
+      {span &&
+        words &&
+        selectionBoxes(words.words, span).map((each, index) => {
+          const turnedBox = turnBox(each, plain, turns);
+          return (
+            <View
+              // One box per selected line, in order: redrawn whole as the selection changes.
+              key={index}
+              testID={`selection:${page}:${index}`}
+              style={{
+                position: "absolute",
+                left: turnedBox.x0 * scale,
+                top: turnedBox.y0 * scale,
+                width: Math.max(1, (turnedBox.x1 - turnedBox.x0) * scale),
+                height: Math.max(1, (turnedBox.y1 - turnedBox.y0) * scale),
+                backgroundColor: colors.textSelection,
+              }}
+            />
+          );
+        })}
+    </View>
+  );
+}
+
+/** The bar at the right edge: dragged, it scrolls the surface to where the bar is. */
+function ScrollBar({
+  doc,
+  bar,
+  track,
+  barLength,
+  barTop,
+}: {
+  doc: DocumentView;
+  bar: MutableRefObject<{ y: number; scroll: number } | null>;
+  track: number;
+  barLength: number;
+  barTop: number;
+}) {
+  const colors = useColors();
+  const { layout, area, scroll } = doc;
+  return (
+    <View
+      testID="document:bar"
+      onPointer={(event) => {
+        if (event.phase === "down") bar.current = { y: event.y, scroll: scroll.y };
+        else if (event.phase === "move" && bar.current) {
+          const per = (layout.height - area.height) / Math.max(1, track - barLength);
+          doc.scrollToTop(bar.current.scroll + (event.y - bar.current.y) * per);
+        } else if (event.phase === "up") bar.current = null;
+      }}
+      style={{
+        position: "absolute",
+        right: BAR.inset,
+        top: barTop,
+        width: BAR.width,
+        height: barLength,
+        borderRadius: BAR.width / 2,
+        backgroundColor: colors.track,
+        hoverBackgroundColor: colors.pressed,
+      }}
+    />
   );
 }

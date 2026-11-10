@@ -14,75 +14,19 @@
  * Untitled document has no file: it is kept as a draft (recovery.ts).
  */
 
-import { type Encoding, encodeText, type LineEnding } from "./codec.ts";
+import { encodeText } from "./codec.ts";
+import { EditorDocument } from "./document.ts";
 import { readDocument, type Stamp, sameStamp, stampOf, writeDocument } from "./files.ts";
-import { findMatches, matchAtOrAfter, replaceAll, stepMatch } from "./find.ts";
-import { History } from "./history.ts";
 import { displayName } from "./names.ts";
-import { DEFAULT_PREFS, type EditorPrefs, readPrefs, samePrefs, stepFontSize, writePrefs } from "./prefs.ts";
+import { readPrefs, writePrefs } from "./prefs.ts";
 import type { Recovery } from "./recovery.ts";
+import { type AutosaveResult, isDirty, type ModelOptions, NO_FIND, type Notice, type SaveResult } from "./state.ts";
 import { AUTO_EVERY, type Version, type VersionStore } from "./versions.ts";
 
-export interface Notice {
-  text: string;
-  tone: "info" | "error";
-}
+// The state and the names the window and the other files use, from state.ts.
+export { type AutosaveResult, type Conflict, type EditorState, type FindState, isDirty, type ModelOptions, type Notice, type SaveResult } from "./state.ts";
 
-export interface FindState {
-  query: string;
-  caseSensitive: boolean;
-  /** Where each match starts. */
-  matches: readonly number[];
-  /** The match shown, -1 before one is. */
-  current: number;
-}
-
-/** The file changed on disk while there were changes here (`changed`), or it isn't there any more (`gone`). */
-export type Conflict = "changed" | "gone";
-
-export interface EditorState {
-  path: string | null;
-  text: string;
-  /** The text as it is in the file (as opened or last written). */
-  saved: string;
-  encoding: Encoding;
-  lineEnding: LineEnding;
-  /** Bumped when another document comes into the window: the input starts over. */
-  session: number;
-  notice: Notice | null;
-  conflict: Conflict | null;
-  canUndo: boolean;
-  canRedo: boolean;
-  /** What Edit's Undo and Redo name ("Typing", "Replace All"), null when nothing. */
-  undoName: string | null;
-  redoName: string | null;
-  prefs: EditorPrefs;
-  find: FindState;
-  /** The offset Find wants scrolled into view; `seq` changes with each jump. */
-  reveal: { offset: number; seq: number } | null;
-}
-
-export type SaveResult = "saved" | "needs-path" | "conflict" | "failed";
-export type AutosaveResult = "saved" | "clean" | "draft" | "conflict" | "failed";
-
-export interface ModelOptions {
-  /** View settings: where they are read from and written to. */
-  loadPrefs?: () => EditorPrefs;
-  savePrefs?: (prefs: EditorPrefs) => void;
-  /** Where earlier versions are kept (main.tsx gives the person's); none without it. */
-  versions?: VersionStore | null;
-  now?: () => number;
-}
-
-export const isDirty = (state: EditorState): boolean => state.text !== state.saved;
-
-const NO_FIND: FindState = { query: "", caseSensitive: false, matches: [], current: -1 };
-
-export class EditorModel {
-  private readonly listeners = new Set<() => void>();
-  private readonly history = new History();
-  private readonly loadPrefs: () => EditorPrefs;
-  private readonly savePrefs: (prefs: EditorPrefs) => void;
+export class EditorModel extends EditorDocument {
   private readonly versions: VersionStore | null;
   private readonly now: () => number;
   /** The file as it was read or last written; null without a file. */
@@ -94,38 +38,33 @@ export class EditorModel {
    * are written over the file: it may have changed since they were kept.
    */
   private held = false;
-  private state: EditorState;
 
   constructor(options: ModelOptions = {}) {
-    this.loadPrefs = options.loadPrefs ?? readPrefs;
-    this.savePrefs = options.savePrefs ?? writePrefs;
+    const loadPrefs = options.loadPrefs ?? readPrefs;
+    super(
+      {
+        path: null,
+        text: "",
+        saved: "",
+        encoding: "utf-8",
+        lineEnding: "lf",
+        session: 0,
+        notice: null,
+        conflict: null,
+        canUndo: false,
+        canRedo: false,
+        undoName: null,
+        redoName: null,
+        prefs: loadPrefs(),
+        find: NO_FIND,
+        reveal: null,
+      },
+      loadPrefs,
+      options.savePrefs ?? writePrefs,
+    );
     this.versions = options.versions ?? null;
     this.now = options.now ?? Date.now;
-    this.state = {
-      path: null,
-      text: "",
-      saved: "",
-      encoding: "utf-8",
-      lineEnding: "lf",
-      session: 0,
-      notice: null,
-      conflict: null,
-      canUndo: false,
-      canRedo: false,
-      undoName: null,
-      redoName: null,
-      prefs: this.loadPrefs(),
-      find: NO_FIND,
-      reveal: null,
-    };
   }
-
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
-
-  getSnapshot = (): EditorState => this.state;
 
   /** An Untitled document nobody has typed in: opening a file can take its place. */
   get isPristine(): boolean {
@@ -203,16 +142,6 @@ export class EditorModel {
     this.history.record(this.state.text, text, this.now(), joinable, name);
     this.held = false;
     this.replaceText(text);
-  }
-
-  undo(): void {
-    const text = this.history.undo(this.state.text);
-    if (text !== null) this.replaceText(text);
-  }
-
-  redo(): void {
-    const text = this.history.redo(this.state.text);
-    if (text !== null) this.replaceText(text);
   }
 
   /**
@@ -310,70 +239,6 @@ export class EditorModel {
     return true;
   }
 
-  dismissNotice(): void {
-    if (this.state.notice) this.set({ notice: null });
-  }
-
-  setQuery(query: string): void {
-    this.set(this.findFor(this.state.text, { ...this.state.find, query, current: -1 }));
-  }
-
-  setCaseSensitive(caseSensitive: boolean): void {
-    this.set(this.findFor(this.state.text, { ...this.state.find, caseSensitive, current: -1 }));
-  }
-
-  /** Shows the next (`step` 1) or previous match and asks the window to scroll to it; false when there is none. */
-  findNext(step: 1 | -1): boolean {
-    const { find } = this.state;
-    const current = stepMatch(find.matches.length, find.current, step);
-    if (current < 0) return false;
-    this.set({ find: { ...find, current } });
-    this.reveal(find.matches[current] as number);
-    return true;
-  }
-
-  /** Asks the window to scroll `offset` into view. */
-  reveal(offset: number): void {
-    this.set({ reveal: { offset, seq: (this.state.reveal?.seq ?? 0) + 1 } });
-  }
-
-  /** Replaces every match (one Undo step); how many there were. */
-  replaceAll(replacement: string): number {
-    const { query, caseSensitive } = this.state.find;
-    const result = replaceAll(this.state.text, query, replacement, { caseSensitive });
-    if (result.count > 0) {
-      this.edit(result.text, false, "Replace All");
-      this.set({ notice: { text: `Replaced ${result.count} ${result.count === 1 ? "match" : "matches"}.`, tone: "info" } });
-    }
-    return result.count;
-  }
-
-  setMonospace(monospace: boolean): void {
-    this.setPrefs({ ...this.state.prefs, monospace });
-  }
-
-  setLineNumbers(lineNumbers: boolean): void {
-    this.setPrefs({ ...this.state.prefs, lineNumbers });
-  }
-
-  /** Bigger (1), Smaller (-1), or the default size (0). */
-  stepFontSize(step: 1 | -1 | 0): void {
-    const fontSize = step === 0 ? DEFAULT_PREFS.fontSize : stepFontSize(this.state.prefs.fontSize, step);
-    this.setPrefs({ ...this.state.prefs, fontSize });
-  }
-
-  /** Another window changed the View settings: this one follows, writing nothing. */
-  reloadPrefs(): void {
-    const prefs = this.loadPrefs();
-    if (!samePrefs(prefs, this.state.prefs)) this.set({ prefs });
-  }
-
-  private setPrefs(prefs: EditorPrefs): void {
-    if (samePrefs(prefs, this.state.prefs)) return;
-    this.set({ prefs });
-    this.savePrefs(prefs);
-  }
-
   /** Whether the file is as it was read or last written; when it isn't, the conflict says how. */
   private checkStamp(path: string): boolean {
     const now = stampOf(path);
@@ -415,31 +280,5 @@ export class EditorModel {
     // An autosave says nothing; a notice it would replace stays.
     this.set({ path, saved: this.state.text, encoding, conflict: null, notice: notice ?? (reason === "auto" ? this.state.notice : null) });
     return true;
-  }
-
-  private replaceText(text: string): void {
-    const find = this.state.find;
-    // The match shown stays the one at (or after) where it was.
-    const at = find.current >= 0 ? (find.matches[find.current] ?? 0) : -1;
-    const next = this.findFor(text, find);
-    const current = at >= 0 ? matchAtOrAfter(next.find.matches, at) : -1;
-    this.set({ text, notice: null, ...this.undoNames(), find: { ...next.find, current } });
-  }
-
-  /** The Undo state (which changes with every new text). */
-  private undoNames(): Pick<EditorState, "canUndo" | "canRedo" | "undoName" | "redoName"> {
-    const { canUndo, canRedo, undoName, redoName } = this.history;
-    return { canUndo, canRedo, undoName, redoName };
-  }
-
-  /** `find` with its matches in `text`, and the Undo state. */
-  private findFor(text: string, find: FindState): Pick<EditorState, "find" | "canUndo" | "canRedo" | "undoName" | "redoName"> {
-    const matches = findMatches(text, find.query, { caseSensitive: find.caseSensitive });
-    return { find: { ...find, matches, current: Math.min(find.current, matches.length - 1) }, ...this.undoNames() };
-  }
-
-  private set(change: Partial<EditorState>): void {
-    this.state = { ...this.state, ...change };
-    for (const listener of this.listeners) listener();
   }
 }
