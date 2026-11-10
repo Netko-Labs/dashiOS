@@ -11,13 +11,11 @@
 
 import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
+import { type AskToKeep, askToKeep, later } from "./lib/trial.ts";
 import type { LidSource } from "./lid.ts";
 import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
 import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
-import { type AskToKeep, askToKeep, later } from "./trial.ts";
-
-export { type AskToKeep, KEEP_SECONDS, type KeepAsk } from "./trial.ts";
 
 export interface ApplyResult {
   /** The change stands. False: it was refused, or the person did not keep it. */

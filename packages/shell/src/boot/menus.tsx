@@ -5,8 +5,7 @@
  */
 
 import type { Compositor } from "../compositor/index.ts";
-import { AutoRefresh, rateOnPower } from "../display-config/auto-refresh.ts";
-import { MirrorStore } from "../display-config/mirror.ts";
+import { AutoRefresh, MirrorStore, rateOnPower } from "../display-config/index.ts";
 import { bottomInset } from "../dock/index.ts";
 import { startLostCardWatch } from "../graphics/lost-start.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";

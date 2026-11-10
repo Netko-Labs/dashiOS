@@ -12,7 +12,7 @@ import type { AppMenus } from "../app-menus/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { Clipboard } from "../clipboard/index.ts";
 import type { CompositorWindow } from "../compositor/index.ts";
-import type { AutoRefresh } from "../display-config/auto-refresh.ts";
+import type { AutoRefresh } from "../display-config/index.ts";
 import type { Entry } from "../entries.ts";
 import type { Extensions } from "../extensions/index.ts";
 import type { FullscreenBars } from "../fullscreen.ts";

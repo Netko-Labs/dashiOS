@@ -8,7 +8,7 @@ import type { BatteryPopoverSources } from "../battery/index.ts";
 import type { BluetoothSetup } from "../bluetooth/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { AppletTileSource, ControlCenterProps, LayoutStore } from "../control-center/index.ts";
-import type { MirrorStore } from "../display-config/mirror.ts";
+import type { MirrorStore } from "../display-config/index.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Entry } from "../entries.ts";
 import type { Laptop } from "../laptop/index.ts";
