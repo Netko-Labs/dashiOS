@@ -14,14 +14,14 @@
  * - "history" lists what agents did, grouped by task.
  */
 
-import { type AnswererInfo, ago, type HistoryEntry, type NowItem } from "../agents/index.ts";
-import { SPARKLE } from "../settings-app/glyphs.ts";
-import type { AgentAct } from "./lib/agents/acts.ts";
-import { fold } from "./ranking/fold.ts";
-import type { Row } from "./row-model.ts";
-import type { Section } from "./sections.ts";
-import type { LauncherAgentsSnapshot } from "./types.ts";
-import type { Hint, Verb } from "./verbs.ts";
+import { type AnswererInfo, ago, type HistoryEntry, type NowItem } from "../../../agents/index.ts";
+import { SPARKLE } from "../../../settings-app/glyphs.ts";
+import { fold } from "../../ranking/fold.ts";
+import type { Row } from "../../row-model.ts";
+import type { Section } from "../../sections.ts";
+import type { LauncherAgentsSnapshot } from "../../types.ts";
+import type { Hint, Verb } from "../../verbs.ts";
+import type { AgentAct } from "./acts.ts";
 
 /** Words that start a request rather than name a thing. */
 const VERBS = new Set(

@@ -54,7 +54,7 @@ export type LauncherCommand =
   | { kind: "tab" }
   /** ← or →, while they are the launcher's (the windows' live pictures). */
   | { kind: "arrow"; to: "left" | "right" }
-  /** ⌥1–9: another harness for the words ("Hand it off"; agents/handoff-rows.ts). */
+  /** ⌥1–9: another harness for the words ("Hand it off"; launcher/lib/agents/handoff-rows.ts). */
   | { kind: "option-pick"; digit: number }
   /** ❖⌫ on a run's row: stop it. */
   | { kind: "stop" }

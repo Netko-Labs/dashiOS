@@ -6,12 +6,12 @@
 
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import { contextPrompt, type HarnessId } from "../../agents/index.ts";
-import { SET_UP_ROW } from "../agent-rows.ts";
 import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
 import type { LauncherScope, ScopeResult } from "../types.ts";
 import { type Effect, historyId, type Verb } from "../verbs.ts";
 import type { AgentAct } from "./agents/acts.ts";
+import { SET_UP_ROW } from "./agents/agent-rows.ts";
 import { type AgentHandlers, agentHandlers } from "./agents/handlers.ts";
 import { chosenContext } from "./agents/handoff-views.tsx";
 import type { ModeLists } from "./mode.ts";

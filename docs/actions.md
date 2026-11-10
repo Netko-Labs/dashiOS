@@ -677,7 +677,7 @@ from the launcher and back when it's done or needs the person (the 0.5.0
 design, dashi-0.5.0-review/mockups.html sections 1 to 3). Code:
 `agents/handoff/` (the service, the store of runs, the stream parsers, the
 grants, the questions, the follow-ups), `bin/dashi-task.ts`,
-`launcher/handoff-rows.ts` and `launcher/lib/agents/handoff-views.tsx` (the rows, the
+`launcher/lib/agents/handoff-rows.ts` and `launcher/lib/agents/handoff-views.tsx` (the rows, the
 context chips, the grants card), `agents/mark.ts` and `agent-mark.tsx` (the
 menu bar's agent mark), `agents-panel.tsx` and `agents-rows.tsx` (its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).

@@ -4,7 +4,7 @@ import { CLAUDE_CODE_GLYPH, CODEX_GLYPH, harnessGlyph, harnessIconName, OPENCODE
 import { endedNotice } from "../src/agents/handoff/notices.ts";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import { markState, mergeAgents } from "../src/agents/mark.ts";
-import { handoffRow, runRow } from "../src/launcher/handoff-rows.ts";
+import { handoffRow, runRow } from "../src/launcher/lib/agents/handoff-rows.ts";
 import { SPARKLE } from "../src/settings-app/glyphs.ts";
 import { iconPath } from "../src/shared/apps/index.ts";
 

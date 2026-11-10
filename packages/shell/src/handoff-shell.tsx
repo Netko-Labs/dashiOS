@@ -2,7 +2,7 @@
  * Agents from the launcher, wired to the shell (boot/agents.ts starts it): the
  * service (agents/handoff/service.ts), its questions in the agents' panel
  * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
- * notifications, the launcher's side (launcher/handoff-rows.ts), and
+ * notifications, the launcher's side (launcher/lib/agents/handoff-rows.ts), and
  * the context chips' source: the window in front and the selection when
  * the launcher opens.
  */

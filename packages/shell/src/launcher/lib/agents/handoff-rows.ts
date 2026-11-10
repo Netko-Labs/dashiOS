@@ -13,14 +13,14 @@
  *   ⇥ talks to it, ❖⌫ stops it.
  */
 
-import { cut, type HandoffHarness, type HarnessId, harnessGlyph, isWorking, progressWords, type RunView, statusWords } from "../agents/index.ts";
+import { cut, type HandoffHarness, type HarnessId, harnessGlyph, isWorking, progressWords, type RunView, statusWords } from "../../../agents/index.ts";
+import { commandCore } from "../../ranking/commands.ts";
+import { fold } from "../../ranking/fold.ts";
+import type { Row } from "../../row-model.ts";
+import type { Section } from "../../sections.ts";
+import type { HandoffSnapshot } from "../../types.ts";
+import type { Hint } from "../../verbs.ts";
 import { ASK_ROW, readsLikeSentence } from "./agent-rows.ts";
-import { commandCore } from "./ranking/commands.ts";
-import { fold } from "./ranking/fold.ts";
-import type { Row } from "./row-model.ts";
-import type { Section } from "./sections.ts";
-import type { HandoffSnapshot } from "./types.ts";
-import type { Hint } from "./verbs.ts";
 
 /** Verbs a task starts with, beyond the request verbs Ask knows (rows.ts). */
 const TASK_VERBS = new Set(

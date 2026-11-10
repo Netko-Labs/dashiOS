@@ -14,7 +14,7 @@
 
 import type { ActionDef, Args } from "../actions/index.ts";
 import type { Entry } from "../entries.ts";
-import { agentVerbs } from "./agent-rows.ts";
+import { agentVerbs } from "./lib/agents/agent-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./lib/items.ts";
 import { startsWithCommand } from "./ranking/commands.ts";
 import { type FileRow, type Row, type RowAction, shownName } from "./row-model.ts";

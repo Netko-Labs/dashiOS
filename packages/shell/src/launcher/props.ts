@@ -77,7 +77,7 @@ export interface LauncherReach {
 export interface LauncherAgentProps {
   /** Agents: Ask, the plan, Now, history (launcher/lib/agents/); without it the launcher knows none. */
   agents?: LauncherAgents;
-  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/handoff-rows.ts). */
+  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/lib/agents/handoff-rows.ts). */
   handoff?: LauncherHandoff;
   /** The window in front when the launcher opened, and what was selected: the context chips (filled in as it opens). */
   context?: Store<TaskContext>;

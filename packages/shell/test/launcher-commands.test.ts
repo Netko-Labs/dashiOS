@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
 import type { Entry } from "../src/entries.ts";
-import { withHandoff } from "../src/launcher/handoff-rows.ts";
+import { withHandoff } from "../src/launcher/lib/agents/handoff-rows.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, type ListInput } from "../src/launcher/lib/rows.ts";
 import { commandCore, startsWithCommand } from "../src/launcher/ranking/index.ts";

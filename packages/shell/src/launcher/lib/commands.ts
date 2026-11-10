@@ -5,13 +5,13 @@
  */
 
 import { useEffect, useRef } from "react";
-import { harnessByDigit } from "../handoff-rows.ts";
 import { type ExtraKeys, type LauncherCommand, NO_EXTRA_KEYS } from "../keys.ts";
 import { chordWhen } from "../person-keys.ts";
 import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
 import { applyEdits } from "../type-ahead.ts";
 import { KEYS, spaceFlips } from "../verbs.ts";
+import { harnessByDigit } from "./agents/handoff-rows.ts";
 import { chosenContext } from "./agents/handoff-views.tsx";
 import { aliasToKeep, mayKeep } from "./editing.ts";
 import type { ModeLists } from "./mode.ts";

@@ -5,7 +5,7 @@
  * the whole words find nothing, the launcher looks again for what is left
  * once the command's verb (and an article) in front and a value at the end
  * ("to 30", "50%", "on") are taken off (rows.ts `found`); and a hand-off
- * defers to what that finds (agents/handoff-rows.ts). Only for a short
+ * defers to what that finds (launcher/lib/agents/handoff-rows.ts). Only for a short
  * command: what is left is three words at most, so a real task ("find me a
  * hotel in SF next week and add it to my calendar") stays a task. Pure;
  * English verbs, folded.
