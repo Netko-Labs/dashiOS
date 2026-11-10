@@ -19,7 +19,7 @@ export interface App {
   env?: Readonly<Record<string, string>>;
   /** Working directory; Bun apps read their tsconfig and bunfig from it. */
   cwd?: string;
-  /** Its desktop entry asks for the discrete GPU (`PrefersNonDefaultGPU`; gpu-env.ts). */
+  /** Its desktop entry asks for the discrete GPU (`PrefersNonDefaultGPU`; gpu/gpu-env.ts). */
   gpu?: "discrete";
 }
 

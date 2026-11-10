@@ -6,8 +6,7 @@
 
 import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
-import { chooseGpu, readCards } from "./gpu.ts";
-import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
+import { chooseGpu, type GpuEnvs, gpuEnvs, launchEnvFor, readCards } from "./gpu/index.ts";
 import { type App, firstPartyApps, iconPath } from "./shared/apps/index.ts";
 
 /** The shell launches and names `App`s, drawn with the shared app list's icons: the type and `iconPath` come with it. */
@@ -150,7 +149,7 @@ export function canLaunch(app: App): boolean {
  */
 let gpuEnvsHere: GpuEnvs | null = null;
 
-/** This machine's GPU environments for apps (gpu-env.ts), read on the first launch. */
+/** This machine's GPU environments for apps (gpu/gpu-env.ts), read on the first launch. */
 function machineGpuEnvs(): GpuEnvs {
   if (!gpuEnvsHere) {
     const cards = readCards();

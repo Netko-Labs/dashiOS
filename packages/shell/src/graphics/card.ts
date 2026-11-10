@@ -8,7 +8,7 @@
 
 import { readdirSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { type Card, chooseGpu, readCards } from "../gpu.ts";
+import { type Card, chooseGpu, readCards } from "../gpu/index.ts";
 
 /** Kernel drivers of graphics cards (as opposed to a laptop's built-in GPU). */
 const DISCRETE_DRIVERS = new Set(["nvidia", "nouveau"]);

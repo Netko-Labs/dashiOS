@@ -2,10 +2,10 @@
  * The lost-card watch, started: on a two-GPU machine it follows the kernel
  * log for the graphics card (lost-card.ts); when the card falls off the bus
  * it says so once, in a notification with Restart…, and from then on no app
- * is offloaded to it (gpu-env.ts), each one that asked being told in a word.
+ * is offloaded to it (gpu/gpu-env.ts), each one that asked being told in a word.
  */
 
-import { markCardLost } from "../gpu-env.ts";
+import { markCardLost } from "../gpu/index.ts";
 import type { NotificationStore, NotifyInput } from "../notifications/index.ts";
 import { iconPath } from "../shared/apps/index.ts";
 import { type GraphicsCard, readGraphicsCard } from "./card.ts";

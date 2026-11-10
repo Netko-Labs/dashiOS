@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import { chooseGpu, readCards } from "../../../gpu.ts";
+import { chooseGpu, readCards } from "../../../gpu/index.ts";
 import { cardState, useGraphics } from "../../../graphics/controller.ts";
 import { LOST_NOTICE } from "../../../graphics/lost-card.ts";
 import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../../graphics/policy.ts";
