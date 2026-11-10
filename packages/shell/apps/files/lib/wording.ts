@@ -2,7 +2,7 @@
  * How Files names what it works on in the footer: “a.txt” or 3 items.
  */
 
-import { baseName } from "../../../src/shared/files/paths.ts";
+import { baseName } from "../../../src/shared/files/index.ts";
 import { formatCount } from "./format.ts";
 
 export const quote = (name: string): string => `“${name}”`;

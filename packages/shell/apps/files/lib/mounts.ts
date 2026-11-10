@@ -8,7 +8,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import { isInside } from "../../../src/shared/files/paths.ts";
+import { isInside } from "../../../src/shared/files/index.ts";
 
 export interface MountEntry {
   mountPoint: string;

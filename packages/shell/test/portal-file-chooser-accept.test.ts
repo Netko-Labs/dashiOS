@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { accept, type Standing } from "../src/shared/files/chooser/accept.ts";
-import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../src/shared/files/chooser/filters.ts";
+import { filterExtension, globRegex, mimeMatches, nameProblem, passes, untakenName, withExtension } from "../src/shared/files/chooser/filters.ts";
 import { request } from "./support/portal-file-chooser.ts";
 
 test("filters: globs ignore case, classes work, MIME families match", () => {
@@ -29,8 +29,8 @@ test("save names: problems, free names, the filter's extension", () => {
   expect(nameProblem("..")).not.toBeNull();
   expect(nameProblem("Report.pdf")).toBeNull();
   const taken = new Set(["a.txt", "a 2.txt"]);
-  expect(freeName("a.txt", (name) => taken.has(name))).toBe("a 3.txt");
-  expect(freeName("README", (name) => name === "README")).toBe("README 2");
+  expect(untakenName("a.txt", (name) => taken.has(name))).toBe("a 3.txt");
+  expect(untakenName("README", (name) => name === "README")).toBe("README 2");
   expect(filterExtension({ name: "PNG", patterns: [{ kind: "glob", pattern: "*.png" }] })).toBe(".png");
   expect(filterExtension({ name: "Images", patterns: [{ kind: "mime", pattern: "image/*" }] })).toBeNull();
   expect(withExtension("cat.jpg", ".png")).toBe("cat.png");

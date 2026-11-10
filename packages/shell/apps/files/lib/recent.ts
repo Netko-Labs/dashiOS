@@ -1,6 +1,6 @@
 /** Recent files from the desktop's shared history, `recently-used.xbel` (what GTK, KDE, and the file choosers write). */
 
-import { fileUri, parseFileUri } from "../../../src/shared/files/uri.ts";
+import { fileUri, parseFileUri } from "../../../src/shared/files/index.ts";
 
 export interface RecentFile {
   path: string;

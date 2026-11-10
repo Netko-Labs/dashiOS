@@ -10,8 +10,7 @@
  */
 
 import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
-import { type Exec, exec } from "../../src/shared/files/exec.ts";
-import { fileUri } from "../../src/shared/files/uri.ts";
+import { type Exec, exec, fileUri } from "../../src/shared/files/index.ts";
 import { parseGioDefault } from "./app-chooser/choices.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";
 import { str, strings, vardict } from "./vardict.ts";

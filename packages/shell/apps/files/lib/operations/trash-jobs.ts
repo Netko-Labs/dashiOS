@@ -4,10 +4,7 @@
  * be taken back.
  */
 
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import { OpError } from "../../../../src/shared/files/ops.ts";
-import { baseName } from "../../../../src/shared/files/paths.ts";
-import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "../../../../src/shared/files/trashops.ts";
+import { baseName, deleteForever, emptyTrash, type FileItem, OpError, protectedReason, putBack, trashPaths } from "../../../../src/shared/files/index.ts";
 import { quote, what } from "../wording.ts";
 import type { JobHost } from "./job-host.ts";
 import { trashAction } from "./undoable.ts";

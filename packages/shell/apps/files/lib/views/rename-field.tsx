@@ -9,8 +9,7 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { TextInput } from "@mirinjs/metal";
 import { useState } from "react";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import { splitName } from "../../../../src/shared/files/paths.ts";
+import { type FileItem, splitName } from "../../../../src/shared/files/index.ts";
 import { useFiles } from "../context.ts";
 
 /** What the field selects when it opens: the stem, so the extension stays (a folder's whole name). */

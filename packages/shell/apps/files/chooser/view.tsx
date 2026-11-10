@@ -16,7 +16,7 @@ import { existsSync } from "node:fs";
 import { AppWindow, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo } from "react";
-import type { ChooserRequest } from "../../../src/shared/files/chooser/request.ts";
+import type { ChooserRequest } from "../../../src/shared/files/index.ts";
 import type { Env } from "../env.ts";
 import { Files } from "../lib/context.ts";
 import { Listing } from "../lib/views/browser.tsx";

@@ -6,7 +6,7 @@
 
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
-import { freeName } from "../../../src/shared/files/chooser/filters.ts";
+import { untakenName } from "../../../src/shared/files/index.ts";
 
 export const UNTITLED = "Untitled";
 
@@ -48,7 +48,7 @@ export function suggestedSavePath(path: string | null, home: string = homedir(),
   return tildePath(
     join(
       folder,
-      freeName(`${UNTITLED}.txt`, (name) => taken(join(folder, name))),
+      untakenName(`${UNTITLED}.txt`, (name) => taken(join(folder, name))),
     ),
     home,
   );

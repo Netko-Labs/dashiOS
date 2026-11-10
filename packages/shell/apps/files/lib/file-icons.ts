@@ -12,8 +12,7 @@
 
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Category, categoryOf, INODE_DIRECTORY } from "../../../src/shared/files/mime.ts";
-import { cacheHome } from "../../../src/shared/files/xdg.ts";
+import { type Category, cacheHome, categoryOf, INODE_DIRECTORY } from "../../../src/shared/files/index.ts";
 import { sidebarGlyph } from "./glyphs.ts";
 import type { GlyphName } from "./location.ts";
 

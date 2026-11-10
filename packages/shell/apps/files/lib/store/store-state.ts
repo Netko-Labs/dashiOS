@@ -4,7 +4,7 @@
  */
 
 import type { SortState } from "@dashi/ui";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../../src/shared/files/index.ts";
 import type { Env } from "../../env.ts";
 import type { Location } from "../location.ts";
 import type { Volume } from "../mounts.ts";

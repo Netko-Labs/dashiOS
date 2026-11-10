@@ -1,7 +1,6 @@
 /** Where a Files window is looking, and the sidebar's list of places. */
 
-import { baseName, crumbs, isInside } from "../../../src/shared/files/paths.ts";
-import type { UserDirName } from "../../../src/shared/files/xdg.ts";
+import { baseName, crumbs, isInside, type UserDirName } from "../../../src/shared/files/index.ts";
 
 export type Location = { kind: "folder"; path: string } | { kind: "recents" } | { kind: "trash" };
 

@@ -8,8 +8,7 @@
 
 import { statSync } from "node:fs";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
-import { expandHome, normalizePath, parentOf } from "../../src/shared/files/paths.ts";
-import { parseFileUri } from "../../src/shared/files/uri.ts";
+import { expandHome, normalizePath, parentOf, parseFileUri } from "../../src/shared/files/index.ts";
 import { runApp } from "../kit/index.ts";
 import { systemEnv } from "./env.ts";
 import { parseArgs } from "./lib/args.ts";

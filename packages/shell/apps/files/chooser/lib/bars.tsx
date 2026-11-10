@@ -7,7 +7,7 @@
 
 import { AlertSheet, Button, glyphs, Note, PopUpButton, SearchField, Switch, TextField, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { filterExtension, withExtension } from "../../../../src/shared/files/chooser/filters.ts";
+import { filterExtension, withExtension } from "../../../../src/shared/files/index.ts";
 import { BACK, FOLDER_PLUS, sidebarGlyph } from "../../lib/glyphs.ts";
 import { ViewSwitch } from "../../lib/views/toolbar.tsx";
 import { type ChooserModel, folderName, folderTrail } from "../model.ts";

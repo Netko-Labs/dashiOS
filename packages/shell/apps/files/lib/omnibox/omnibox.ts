@@ -5,7 +5,7 @@
  */
 
 import { readdirSync } from "node:fs";
-import { expandHome } from "../../../../src/shared/files/paths.ts";
+import { expandHome } from "../../../../src/shared/files/index.ts";
 
 export type Intent = "path" | "search";
 

@@ -11,7 +11,7 @@
 
 import type { SortState } from "@dashi/ui";
 import type { Modifiers } from "@mirinjs/metal";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../../src/shared/files/index.ts";
 import type { Env } from "../../env.ts";
 import { loadVolumes } from "../drives.ts";
 import { type Emblems, folderEmblems } from "../icons.ts";

@@ -11,12 +11,21 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { accept, type Outcome, type Picked } from "../../../src/shared/files/chooser/accept.ts";
-import { passes } from "../../../src/shared/files/chooser/filters.ts";
-import type { ChooserAnswer, ChooserRequest, Filter } from "../../../src/shared/files/chooser/request.ts";
-import type { FileItem } from "../../../src/shared/files/items.ts";
-import { freeName, makeFolder, NEW_FOLDER_NAME, renamePath } from "../../../src/shared/files/ops.ts";
-import { parentOf } from "../../../src/shared/files/paths.ts";
+import {
+  accept,
+  type ChooserAnswer,
+  type ChooserRequest,
+  type FileItem,
+  type Filter,
+  freeName,
+  makeFolder,
+  NEW_FOLDER_NAME,
+  type Outcome,
+  type Picked,
+  parentOf,
+  passes,
+  renamePath,
+} from "../../../src/shared/files/index.ts";
 import type { Env } from "../env.ts";
 import { folderAt, type Location } from "../lib/location.ts";
 import { type FilesPrefs, readPrefs } from "../lib/prefs.ts";

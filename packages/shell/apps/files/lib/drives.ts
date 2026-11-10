@@ -1,7 +1,7 @@
 /** Volumes on this machine: read from the kernel and lsblk, mounted and ejected with udisksctl. */
 
 import { readFile, statfs } from "node:fs/promises";
-import { type Exec, exec } from "../../../src/shared/files/exec.ts";
+import { type Exec, exec } from "../../../src/shared/files/index.ts";
 import { ejectCommands, mountCommand, mountedAt, parseLsblk, parseMountinfo, type Volume, volumesFrom } from "./mounts.ts";
 
 const LSBLK = ["lsblk", "-J", "-b", "-o", "NAME,PATH,LABEL,UUID,SIZE,FSTYPE,MOUNTPOINTS,RM,HOTPLUG,TYPE,MODEL,PKNAME,RO"];

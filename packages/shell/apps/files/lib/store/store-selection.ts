@@ -5,7 +5,7 @@
  */
 
 import type { Modifiers } from "@mirinjs/metal";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../../src/shared/files/index.ts";
 import { isPlain, type Layout, navigate, pick, type Step } from "../selection.ts";
 import { findByPrefix } from "../sort.ts";
 import type { StoreHost } from "./store-state.ts";

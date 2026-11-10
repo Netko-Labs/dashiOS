@@ -4,8 +4,7 @@
  * leaving the place takes the older one down.
  */
 
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import { searchComputer, searchFolder } from "../../../../src/shared/files/search.ts";
+import { type FileItem, searchComputer, searchFolder } from "../../../../src/shared/files/index.ts";
 import type { SearchScope, StoreHost } from "./store-state.ts";
 
 const SEARCH_DELAY_MS = 180;

@@ -14,7 +14,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileUri } from "../../../src/shared/files/uri.ts";
+import { fileUri } from "../../../src/shared/files/index.ts";
 import { parseThumbnailer, type ThumbnailerSpec, thumbnailerArgv } from "./thumbnailer-spec.ts";
 import { thumbName } from "./thumbs.ts";
 

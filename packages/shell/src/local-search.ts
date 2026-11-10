@@ -15,7 +15,7 @@ import { existsSync, read } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { closeFd, FdService, pipePair, variant } from "./shared/dbus/index.ts";
-import type { FileHit } from "./shared/files/file-search.ts";
+import type { FileHit } from "./shared/files/index.ts";
 
 export const LOCAL_SEARCH = {
   name: "org.freedesktop.LocalSearch3",

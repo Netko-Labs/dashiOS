@@ -1,7 +1,6 @@
 /** A chooser for a request on this machine: Files' view of it, started where the request says (accept.ts `startFolder`). */
 
-import { startFolder, startName } from "../../../src/shared/files/chooser/accept.ts";
-import type { ChooserRequest } from "../../../src/shared/files/chooser/request.ts";
+import { type ChooserRequest, startFolder, startName } from "../../../src/shared/files/index.ts";
 import type { Env } from "../env.ts";
 import { systemEnv } from "../env.ts";
 import { ChooserModel, type ChooserOptions } from "./model.ts";

@@ -6,8 +6,7 @@
 
 import { TINTS, useDark } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import { splitName } from "../../../../src/shared/files/paths.ts";
+import { type FileItem, splitName } from "../../../../src/shared/files/index.ts";
 import { iconKind } from "../file-icons.ts";
 import { type Emblems, iconFor } from "../icons.ts";
 

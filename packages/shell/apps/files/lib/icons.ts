@@ -5,8 +5,7 @@
  */
 
 import { dataDirs } from "../../../src/shared/apps/index.ts";
-import type { FileItem } from "../../../src/shared/files/items.ts";
-import type { UserDirName } from "../../../src/shared/files/xdg.ts";
+import type { FileItem, UserDirName } from "../../../src/shared/files/index.ts";
 import { type Emblem, iconFile, iconKind } from "./file-icons.ts";
 import { type ThumbnailMaker, thumbnailMaker } from "./thumbnailer.ts";
 import { findThumbnail } from "./thumbs.ts";

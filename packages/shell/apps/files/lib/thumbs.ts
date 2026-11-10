@@ -8,7 +8,7 @@
 
 import { closeSync, existsSync, openSync, readSync } from "node:fs";
 import { join } from "node:path";
-import { fileUri } from "../../../src/shared/files/uri.ts";
+import { fileUri } from "../../../src/shared/files/index.ts";
 
 export type ThumbSize = "normal" | "large" | "x-large" | "xx-large";
 

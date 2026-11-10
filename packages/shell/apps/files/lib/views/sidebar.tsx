@@ -9,7 +9,7 @@
 
 import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { isInside } from "../../../../src/shared/files/paths.ts";
+import { isInside } from "../../../../src/shared/files/index.ts";
 import { useFiles, useFilesState } from "../context.ts";
 import { mount } from "../drives.ts";
 import { useDropTarget } from "../drop.ts";

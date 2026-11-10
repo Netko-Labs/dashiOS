@@ -3,7 +3,7 @@
  * the field codes (%i %u %o %s), and the types it makes pictures of.
  */
 
-import { fileUri } from "../../../src/shared/files/uri.ts";
+import { fileUri } from "../../../src/shared/files/index.ts";
 
 /** One `.thumbnailer` file: its command (with %i %u %o %s) and the types it makes pictures of. */
 export interface ThumbnailerSpec {

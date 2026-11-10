@@ -9,9 +9,18 @@
 import { existsSync } from "node:fs";
 import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { type Exec, exec } from "../../../../src/shared/files/exec.ts";
-import { Cancelled, type OpContext, OpError } from "../../../../src/shared/files/ops.ts";
-import { baseName, checkName, parentOf, splitName, uniqueName } from "../../../../src/shared/files/paths.ts";
+import {
+  baseName,
+  Cancelled,
+  checkName,
+  type Exec,
+  exec,
+  type OpContext,
+  OpError,
+  parentOf,
+  splitName,
+  uniqueName,
+} from "../../../../src/shared/files/index.ts";
 import type { Archiver } from "../../types.ts";
 
 export function findArchiver(which: (program: string) => string | null = (program) => Bun.which(program)): Archiver | null {

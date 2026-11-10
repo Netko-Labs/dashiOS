@@ -4,8 +4,7 @@
  */
 
 import { lstat } from "node:fs/promises";
-import { INODE_DIRECTORY, type MimeIndex, mimeOf } from "../../../../src/shared/files/mime.ts";
-import { baseName } from "../../../../src/shared/files/paths.ts";
+import { baseName, INODE_DIRECTORY, type MimeIndex, mimeOf } from "../../../../src/shared/files/index.ts";
 
 /** What a name collision is answered with (PA-3). */
 export type Resolution = "replace" | "keep-both" | "skip";

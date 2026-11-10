@@ -10,10 +10,21 @@
  */
 
 import { UndoStack } from "@dashi/ui";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import { appsFor, type OpenWithApp, openWith } from "../../../../src/shared/files/open.ts";
-import { duplicate, freeName, makeFolder, NEW_FOLDER_NAME, OpError, renamePath } from "../../../../src/shared/files/ops.ts";
-import { baseName, isInside, parentOf } from "../../../../src/shared/files/paths.ts";
+import {
+  appsFor,
+  baseName,
+  duplicate,
+  type FileItem,
+  freeName,
+  isInside,
+  makeFolder,
+  NEW_FOLDER_NAME,
+  OpError,
+  type OpenWithApp,
+  openWith,
+  parentOf,
+  renamePath,
+} from "../../../../src/shared/files/index.ts";
 import { type DropKeys, dropChoice } from "../drag.ts";
 import { eject, mount } from "../drives.ts";
 import type { Volume } from "../mounts.ts";

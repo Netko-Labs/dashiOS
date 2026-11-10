@@ -1,10 +1,18 @@
 /** What a Files window (and the chooser) needs from the machine, gathered once so tests can swap each part. */
 
 import { homedir, userInfo } from "node:os";
-import { type Exec, exec } from "../../src/shared/files/exec.ts";
-import { type MimeIndex, systemMimeIndex } from "../../src/shared/files/mime.ts";
-import type { TrashPlaces } from "../../src/shared/files/trashops.ts";
-import { cacheHome, trashFilesDir, trashInfoDir, type UserDirName, userDirs } from "../../src/shared/files/xdg.ts";
+import {
+  cacheHome,
+  type Exec,
+  exec,
+  type MimeIndex,
+  systemMimeIndex,
+  type TrashPlaces,
+  trashFilesDir,
+  trashInfoDir,
+  type UserDirName,
+  userDirs,
+} from "../../src/shared/files/index.ts";
 import { systemFiles } from "./lib/clipboard.ts";
 import { findArchiver } from "./lib/operations/archive.ts";
 import { readRecents } from "./lib/recent-file.ts";

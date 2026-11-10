@@ -5,7 +5,7 @@
  */
 
 import { INFO } from "@dashi/ui";
-import { MIN_QUERY } from "../shared/files/file-search.ts";
+import { MIN_QUERY } from "../shared/files/index.ts";
 import { answerFor } from "./lib/answers/index.ts";
 import { type FileRow, fileNameMatches, fileRow, type Row } from "./row-model.ts";
 

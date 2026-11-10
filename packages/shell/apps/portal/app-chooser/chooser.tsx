@@ -14,7 +14,7 @@ import { glyphs, rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
-import { exec } from "../../../src/shared/files/exec.ts";
+import { exec } from "../../../src/shared/files/index.ts";
 import { appInfo } from "../apps.ts";
 import { handlePath, type Requests, Response, type ResponseCode } from "../request.ts";
 import { CheckBox, PortalFrame } from "../ui/frame.tsx";

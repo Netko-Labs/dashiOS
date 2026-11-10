@@ -6,8 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import type { FileItem } from "../../../src/shared/files/items.ts";
-import type { OpenWithApp } from "../../../src/shared/files/open.ts";
+import type { FileItem, OpenWithApp } from "../../../src/shared/files/index.ts";
 import type { Answer, Conflict } from "./operations/conflicts.ts";
 import type { Operations } from "./operations/operations.ts";
 

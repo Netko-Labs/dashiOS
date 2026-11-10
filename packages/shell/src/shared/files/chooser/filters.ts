@@ -61,7 +61,7 @@ export function nameProblem(name: string): string | null {
 }
 
 /** `name` with ` 2`, ` 3`, … before its extension until `taken` says no: for SaveFiles into a folder that has them. */
-export function freeName(name: string, taken: (name: string) => boolean): string {
+export function untakenName(name: string, taken: (name: string) => boolean): string {
   if (!taken(name)) return name;
   const dot = name.lastIndexOf(".");
   const [stem, ext] = dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ""];

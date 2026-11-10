@@ -5,7 +5,7 @@
  */
 
 import { join } from "node:path";
-import { freeName, nameProblem } from "./filters.ts";
+import { nameProblem, untakenName } from "./filters.ts";
 import type { ChooserRequest } from "./request.ts";
 
 export interface Picked {
@@ -52,7 +52,7 @@ export function accept(request: ChooserRequest, standing: Standing, exists: (pat
   if (request.mode === "save-files") {
     const used = new Set<string>();
     const paths = request.files.map((name) => {
-      const free = freeName(name, (candidate) => used.has(candidate) || exists(join(folder, candidate)));
+      const free = untakenName(name, (candidate) => used.has(candidate) || exists(join(folder, candidate)));
       used.add(free);
       return join(folder, free);
     });

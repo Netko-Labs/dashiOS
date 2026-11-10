@@ -8,12 +8,11 @@
  * current_name. Results: uris, choices `a(ss)`, current_filter.
  */
 
-import type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter } from "../../../src/shared/files/chooser/request.ts";
-import { fileUri } from "../../../src/shared/files/uri.ts";
+import { type Choice, type ChooserAnswer, type ChooserMode, type ChooserRequest, type Filter, fileUri } from "../../../src/shared/files/index.ts";
 import { Response, type ResponseCode } from "../request.ts";
 import { bool, bytePath, cleanString, results, str, type Vardict, vardict } from "../vardict.ts";
 
-export type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter, PatternKind } from "../../../src/shared/files/chooser/request.ts";
+export type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter, PatternKind } from "../../../src/shared/files/index.ts";
 
 const MAX_FILTERS = 64;
 const MAX_PATTERNS = 64;

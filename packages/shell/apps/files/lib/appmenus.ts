@@ -8,7 +8,7 @@
  */
 
 import { type UndoState, undoMenuItems } from "@dashi/ui";
-import { mayOpen } from "../../../src/shared/files/open.ts";
+import { mayOpen } from "../../../src/shared/files/index.ts";
 import type { MenuSpec } from "../../kit/index.ts";
 import type { WindowActions } from "./context.ts";
 import { favorites } from "./location.ts";

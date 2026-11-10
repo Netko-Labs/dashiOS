@@ -3,7 +3,7 @@
  * the ones before), up to the enclosing folder, and the arrows' step back.
  */
 
-import { parentOf } from "../../../../src/shared/files/paths.ts";
+import { parentOf } from "../../../../src/shared/files/index.ts";
 import { folderAt, type Location, sameLocation } from "../location.ts";
 import type { StoreHost } from "./store-state.ts";
 

@@ -7,7 +7,7 @@
 
 import { useUndo } from "@dashi/ui";
 import { useEffect, useMemo, useRef } from "react";
-import type { FileItem } from "../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../src/shared/files/index.ts";
 import { useAppMenus } from "../../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
 import type { WindowActions } from "./context.ts";

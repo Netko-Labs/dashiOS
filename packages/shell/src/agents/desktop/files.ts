@@ -6,11 +6,18 @@
 
 import { homedir, userInfo } from "node:os";
 import { clean } from "../../notifications/index.ts";
-import { type AgentPolicy, listFolder as list, openForAgent, planTrash, searchFor, trashForAgent } from "../../shared/files/agent.ts";
-import { systemMimeIndex } from "../../shared/files/mime.ts";
-import { OPEN_TIMEOUT_MS } from "../../shared/files/open.ts";
-import { quietContext } from "../../shared/files/ops.ts";
-import { userDirs } from "../../shared/files/xdg.ts";
+import {
+  type AgentPolicy,
+  listFolder as list,
+  OPEN_TIMEOUT_MS,
+  openForAgent,
+  planTrash,
+  quietContext,
+  searchFor,
+  systemMimeIndex,
+  trashForAgent,
+  userDirs,
+} from "../../shared/files/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 function currentPolicy(): AgentPolicy {

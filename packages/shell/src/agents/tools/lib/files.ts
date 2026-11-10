@@ -8,7 +8,7 @@
  */
 
 import { bool, optional } from "@dashi/shape";
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../../../shared/files/agent.ts";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../../../shared/files/index.ts";
 import type { ToolDef } from "../define.ts";
 import { arg, custom, tool, wholeArg } from "./args.ts";
 

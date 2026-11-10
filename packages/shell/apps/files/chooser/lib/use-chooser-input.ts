@@ -6,7 +6,7 @@
 
 import type { WindowKeyInfo } from "@mirinjs/metal";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import type { ChooserAnswer } from "../../../../src/shared/files/chooser/request.ts";
+import type { ChooserAnswer } from "../../../../src/shared/files/index.ts";
 import type { BrowserKey } from "../../lib/keys.ts";
 import { intentOf } from "../../lib/omnibox/omnibox.ts";
 import { recordRecents } from "../../lib/recent-file.ts";

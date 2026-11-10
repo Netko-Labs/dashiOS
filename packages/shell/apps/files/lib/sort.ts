@@ -1,7 +1,7 @@
 /** Sorting a listing: folders stay on top, whatever the column, as in most file managers. */
 
 import { type Column, type SortState, sortRows } from "@dashi/ui";
-import { type FileItem, kindText } from "../../../src/shared/files/items.ts";
+import { type FileItem, kindText } from "../../../src/shared/files/index.ts";
 import { formatDate, formatSize } from "./format.ts";
 
 export type FileColumn = Column<FileItem>;

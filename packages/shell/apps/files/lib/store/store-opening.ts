@@ -5,10 +5,16 @@
  */
 
 import { statSync } from "node:fs";
-import { describeError, type FileItem } from "../../../../src/shared/files/items.ts";
-import { mayOpen, openWithDefault } from "../../../../src/shared/files/open.ts";
-import { expandHome, normalizePath, parentOf } from "../../../../src/shared/files/paths.ts";
-import { parseFileUri } from "../../../../src/shared/files/uri.ts";
+import {
+  describeError,
+  expandHome,
+  type FileItem,
+  mayOpen,
+  normalizePath,
+  openWithDefault,
+  parentOf,
+  parseFileUri,
+} from "../../../../src/shared/files/index.ts";
 import { folderAt } from "../location.ts";
 import type { StoreHost } from "./store-state.ts";
 

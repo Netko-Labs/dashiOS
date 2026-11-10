@@ -4,7 +4,7 @@
  * selection; and text that is a list of files pasted, or a name to jump to.
  */
 
-import type { FileItem } from "../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../src/shared/files/index.ts";
 import { looksLikeUriList, parseUriList } from "./clipboard.ts";
 import type { WindowActions } from "./context.ts";
 import type { BrowserKey } from "./keys.ts";

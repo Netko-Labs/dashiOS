@@ -5,9 +5,7 @@
  */
 
 import { type FSWatcher, watch } from "node:fs";
-import { type FileItem, itemAt, readFolder } from "../../../../src/shared/files/items.ts";
-import { parentOf, tilde } from "../../../../src/shared/files/paths.ts";
-import { listTrash } from "../../../../src/shared/files/trashops.ts";
+import { type FileItem, itemAt, listTrash, parentOf, readFolder, tilde } from "../../../../src/shared/files/index.ts";
 import { space } from "../drives.ts";
 import type { Location } from "../location.ts";
 import type { StoreHost } from "./store-state.ts";

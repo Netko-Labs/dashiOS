@@ -9,7 +9,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { useMemo } from "react";
-import { chooserRequest } from "../../../../src/shared/files/chooser/request.ts";
+import { chooserRequest } from "../../../../src/shared/files/index.ts";
 import { AppChooser } from "../../../files/index.ts";
 import { resolveInput, suggestedSavePath } from "../names.ts";
 import type { SheetState } from "./sheets.tsx";

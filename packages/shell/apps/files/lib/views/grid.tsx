@@ -8,7 +8,7 @@
 import { useColors, useDark } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
+import type { FileItem } from "../../../../src/shared/files/index.ts";
 import { useFiles, useFilesState } from "../context.ts";
 import { dragPaths } from "../drag.ts";
 import { useDropTarget } from "../drop.ts";

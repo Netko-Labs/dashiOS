@@ -3,8 +3,7 @@
 import { Button, Group, Sheet, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { FileItem } from "../../../../src/shared/files/items.ts";
-import type { OpenWithApp } from "../../../../src/shared/files/open.ts";
+import type { FileItem, OpenWithApp } from "../../../../src/shared/files/index.ts";
 import { formatCount, formatDate, formatSize } from "../format.ts";
 import { type ItemInfo, loadInfo } from "../info.ts";
 import { measure } from "../size.ts";

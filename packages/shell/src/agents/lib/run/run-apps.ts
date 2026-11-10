@@ -5,7 +5,7 @@ import type { CompositorWindow } from "../../../compositor/index.ts";
 import { type Entry, launchEntry, loadEntries } from "../../../entries.ts";
 import { windowToFront } from "../../../front-window.ts";
 import type { Tile } from "../../../layout.ts";
-import { kindOf } from "../../../shared/files/kinds.ts";
+import { kindOf } from "../../../shared/files/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../../context.ts";
 import { descendsFrom } from "../../peer.ts";
 import type { Handlers } from "./run-types.ts";

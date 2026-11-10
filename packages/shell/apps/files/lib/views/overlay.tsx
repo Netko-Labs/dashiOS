@@ -5,7 +5,7 @@
 
 import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
-import { baseName } from "../../../../src/shared/files/paths.ts";
+import { baseName } from "../../../../src/shared/files/index.ts";
 import type { WindowActions } from "../context.ts";
 import { formatCount } from "../format.ts";
 import { actionMenu, backgroundMenu, itemMenu } from "../menus.ts";

@@ -5,9 +5,7 @@
  */
 
 import { join } from "node:path";
-import { copyInto, moveInto, OpError } from "../../../../src/shared/files/ops.ts";
-import { baseName, isInside } from "../../../../src/shared/files/paths.ts";
-import { trashPaths } from "../../../../src/shared/files/trashops.ts";
+import { baseName, copyInto, isInside, moveInto, OpError, trashPaths } from "../../../../src/shared/files/index.ts";
 import { formatCount } from "../format.ts";
 import { measure } from "../size.ts";
 import { quote, what } from "../wording.ts";

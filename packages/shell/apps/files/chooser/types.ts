@@ -3,7 +3,7 @@
  * save would replace it), and where the answer goes.
  */
 
-import type { ChooserAnswer } from "../../../src/shared/files/chooser/request.ts";
+import type { ChooserAnswer } from "../../../src/shared/files/index.ts";
 import type { ChooserModel } from "./model.ts";
 
 export interface ChooserViewProps {

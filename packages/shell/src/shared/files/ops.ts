@@ -17,7 +17,7 @@ import { chmod, copyFile, lstat, mkdir, open, readdir, readlink, rm, stat, symli
 import { join } from "node:path";
 import { isErrno } from "./errno.ts";
 import { describeError } from "./items.ts";
-import { renameNoReplace } from "./noreplace.ts";
+import { renameNoReplace } from "./lib/noreplace.ts";
 import { baseName, checkName, copyName, isInside, normalizePath, parentOf, uniqueName } from "./paths.ts";
 
 export class Cancelled extends Error {
