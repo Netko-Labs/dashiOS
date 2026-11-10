@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { initialTicks, listOutput, rowsFrom, shownColumns } from "../apps/dialog/list.ts";
-import { applyProgressLine, endProgress, initialProgress, parseProgressLine, timeRemaining } from "../apps/dialog/progress.ts";
+import { initialTicks, listOutput, rowsFrom, shownColumns } from "../apps/dialog/lib/list.ts";
+import { applyProgressLine, endProgress, initialProgress, parseProgressLine, timeRemaining } from "../apps/dialog/lib/progress.ts";
 
 describe("progress lines", () => {
   test("numbers, text, pulsate, and anything else", () => {

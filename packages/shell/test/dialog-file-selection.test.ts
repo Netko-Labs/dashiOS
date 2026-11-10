@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { parseArgs } from "../apps/dialog/args.ts";
-import { prepare } from "../apps/dialog/cli.ts";
-import { parseFileFilter, selectionOutput, selectionRequest } from "../apps/dialog/file-selection.ts";
-import { specFrom } from "../apps/dialog/spec.ts";
+import { parseArgs } from "../apps/dialog/lib/args.ts";
+import { prepare } from "../apps/dialog/lib/cli.ts";
+import { parseFileFilter, selectionOutput, selectionRequest } from "../apps/dialog/lib/file-selection.ts";
+import { specFrom } from "../apps/dialog/lib/spec.ts";
 import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { isTextShortcut } from "../src/app-menus/shortcut.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";

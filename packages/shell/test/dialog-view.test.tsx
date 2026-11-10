@@ -1,13 +1,13 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { parseArgs } from "../apps/dialog/args.ts";
-import { CalendarDialog } from "../apps/dialog/calendar.tsx";
-import { EntryDialog, PasswordDialog } from "../apps/dialog/entry.tsx";
-import type { Answer } from "../apps/dialog/frame.tsx";
-import { ListDialog } from "../apps/dialog/list-view.tsx";
-import { MessageDialog } from "../apps/dialog/message.tsx";
-import { type DialogSpec, specFrom } from "../apps/dialog/spec.ts";
+import { parseArgs } from "../apps/dialog/lib/args.ts";
+import { CalendarDialog } from "../apps/dialog/lib/calendar.tsx";
+import { EntryDialog, PasswordDialog } from "../apps/dialog/lib/entry.tsx";
+import type { Answer } from "../apps/dialog/lib/frame.tsx";
+import { ListDialog } from "../apps/dialog/lib/list-view.tsx";
+import { MessageDialog } from "../apps/dialog/lib/message.tsx";
+import { type DialogSpec, specFrom } from "../apps/dialog/lib/spec.ts";
 import { settle } from "./support/time.ts";
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */

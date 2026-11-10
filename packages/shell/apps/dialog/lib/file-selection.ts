@@ -9,7 +9,7 @@
  */
 
 import { isAbsolute, join } from "node:path";
-import { type ChooserRequest, chooserRequest, type Filter } from "../../src/shared/files/index.ts";
+import { type ChooserRequest, chooserRequest, type Filter } from "../../../src/shared/files/index.ts";
 
 export interface FileSelectionOptions {
   filename: string | null;

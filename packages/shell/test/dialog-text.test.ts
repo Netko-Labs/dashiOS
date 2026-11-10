@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { addDays, daysIn, formatDate, monthCells } from "../apps/dialog/date-format.ts";
-import { compressEscapes, decodeEntities, displayText, splitMessage, stripMarkup } from "../apps/dialog/markup.ts";
-import { LineSplitter } from "../apps/dialog/stdin.ts";
+import { addDays, daysIn, formatDate, monthCells } from "../apps/dialog/lib/date-format.ts";
+import { compressEscapes, decodeEntities, displayText, splitMessage, stripMarkup } from "../apps/dialog/lib/markup.ts";
+import { LineSplitter } from "../apps/dialog/lib/stdin.ts";
 
 describe("markup", () => {
   test("C escapes, as g_strcompress reads them", () => {

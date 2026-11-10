@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { parseArgs } from "../apps/dialog/args.ts";
-import { prepare, ZENITY_VERSION } from "../apps/dialog/cli.ts";
-import { dialogSize, lineCount } from "../apps/dialog/size.ts";
-import { type DialogSpec, specFrom } from "../apps/dialog/spec.ts";
+import { parseArgs } from "../apps/dialog/lib/args.ts";
+import { prepare, ZENITY_VERSION } from "../apps/dialog/lib/cli.ts";
+import { dialogSize, lineCount } from "../apps/dialog/lib/size.ts";
+import { type DialogSpec, specFrom } from "../apps/dialog/lib/spec.ts";
 
 const NOW = new Date(2026, 10, 3);
 
