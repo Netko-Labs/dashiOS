@@ -2,7 +2,7 @@
  * How long an agent has been recording or seeing the screen: the session's
  * clock of its calls (agents/watch-clock.ts), the time a row's chip says
  * (agents/mark.ts `watchTime`), and the chip ticking once a second while
- * the agents' panel shows it (agents-rows.tsx).
+ * the agents' panel shows it (agents-panel/lib/agents-rows.tsx).
  */
 
 import { describe, expect, test } from "bun:test";
@@ -11,7 +11,7 @@ import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
 import { WatchClock } from "../src/agents/lib/watch-clock.ts";
 import { mergeAgents, watchTime } from "../src/agents/mark.ts";
-import { AccessChip } from "../src/agents-rows.tsx";
+import { AccessChip } from "../src/agents-panel/lib/agents-rows.tsx";
 import { fakeClock, flush } from "./support/time.ts";
 
 const SETTLE = 3_000;

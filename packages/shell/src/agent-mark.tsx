@@ -6,7 +6,7 @@
  * while one sees or records the screen or uses its own pointer; and, only
  * while one needs the person, an amber pill that says "Waiting for you".
  * Pointing at it shows who and what in a tooltip under the bar; a click
- * opens the agents' panel (agents-panel.tsx).
+ * opens the agents' panel (agents-panel/agents-panel.tsx).
  */
 
 import { useColors } from "@dashi/ui";

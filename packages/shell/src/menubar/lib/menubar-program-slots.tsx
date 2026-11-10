@@ -21,7 +21,7 @@ import {
   recordingPill,
   useAgents,
 } from "../../agents/index.ts";
-import { useRuns } from "../../agents-panel.tsx";
+import { useRuns } from "../../agents-panel/index.ts";
 import { ExtraItem, type ExtrasStore, type MenuBarExtra, useExtras } from "../../extras/index.ts";
 import { extraEntries, type MenuController, type Popover } from "../../menus/index.ts";
 import { RecordingButton, type ScreenRecorder } from "../../recorder/index.ts";
@@ -53,7 +53,7 @@ export interface StatusSources {
   settings: SettingsStore;
   /** The screen this bar is on (an output name); its popovers open there. Absent when the screen is unknown. */
   output?: string;
-  /** Agents from the launcher: with the connected ones, the mark and its panel (agents-panel.tsx). */
+  /** Agents from the launcher: with the connected ones, the mark and its panel (agents-panel/agents-panel.tsx). */
   runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
   /** The apps' sound: the microphone indicator while one records (sound/apps/). */
   mixer?: AppMixer;

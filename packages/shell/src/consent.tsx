@@ -1,7 +1,7 @@
 /**
  * What the person sees of agents: the consent sheet (who is asking, what it
  * may do) and the note after a stop. Who is connected and what each does is
- * the menu bar's agent mark and its panel (agent-mark.tsx, agents-panel.tsx). Agents get their own color, shiso;
+ * the menu bar's agent mark and its panel (agent-mark.tsx, agents-panel/agents-panel.tsx). Agents get their own color, shiso;
  * kombu stays the person's (docs/agents.html, Experience).
  *
  * The sheet never takes the keyboard on its own: a stray Enter while the

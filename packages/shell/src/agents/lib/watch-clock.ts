@@ -5,7 +5,7 @@
  * and end; one that ended lingers `settleMs`, so the dot and its words
  * don't flicker between a run of screenshots, and a call of the same kind
  * starting meanwhile goes on with the time it had (the agents' panel says
- * "Seeing the screen · 2:14", agents-rows.tsx). Pure: the caller says what
+ * "Seeing the screen · 2:14", agents-panel/lib/agents-rows.tsx). Pure: the caller says what
  * time it is.
  */
 

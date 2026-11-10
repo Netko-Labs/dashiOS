@@ -112,7 +112,7 @@ export interface AgentInfo {
   waiting?: boolean;
   /** It records or sees the screen, or uses its pointer and keys, now or a moment ago. */
   watching?: Watching | null;
-  /** Since when it has been doing what `watching` says (ms), for its row's time (agents-rows.tsx). */
+  /** Since when it has been doing what `watching` says (ms), for its row's time (agents-panel/lib/agents-rows.tsx). */
   watchingSince?: number;
 }
 

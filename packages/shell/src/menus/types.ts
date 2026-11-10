@@ -105,7 +105,7 @@ export type Popover =
   /** The battery panel (battery/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
   | { kind: "battery"; right: number | null }
   | { kind: "notification-center" }
-  /** The agents' panel under their mark (agents-panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
+  /** The agents' panel under their mark (agents-panel/agents-panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
   | { kind: "agents"; right: number; focus: string | null }
   /** A status item's menu (an extra's or the battery's), its right edge at `right` (screen pixels); `key` says whose. */
   | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] }

@@ -1,5 +1,5 @@
 /**
- * The agents' panel's other parts (agents-panel.tsx): a connected agent's
+ * The agents' panel's other parts (../agents-panel.tsx): a connected agent's
  * row (an MCP client, a remote agent) with its harness glyph, its name, the
  * access it has now as a chip, where it connects from, and Stop; the access
  * chip a run's card wears while it watches; and the footer's "Stop all".
@@ -10,7 +10,7 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { type AgentEntry, accessWords, discGlyph, watchTime } from "./agents/index.ts";
+import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
 
 /** A connected agent's row: its glyph on a round shiso tile. */
 const TILE = 32;

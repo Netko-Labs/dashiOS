@@ -117,7 +117,7 @@ export function PopoverRoot({
   onStatusChoose: (action: StatusMenuAction) => void;
   /** A status item's menu closed, chosen from or not (a tray icon's dbusmenu wants to know). */
   onStatusClosed?: (key: string) => void;
-  /** The agents' panel under their mark (agents-panel.tsx), drawn by its owner. */
+  /** The agents' panel under their mark (agents-panel/agents-panel.tsx), drawn by its owner. */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
   /** The battery panel's stores and what its rows do (battery/popover.tsx). */
   battery?: BatteryPopoverSources;

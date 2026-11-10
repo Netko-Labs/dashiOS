@@ -679,7 +679,7 @@ design, dashi-0.5.0-review/mockups.html sections 1 to 3). Code:
 grants, the questions, the follow-ups), `bin/dashi-task.ts`,
 `launcher/lib/agents/handoff-rows.ts` and `launcher/lib/agents/handoff-views.tsx` (the rows, the
 context chips, the grants card), `agents/mark.ts` and `agent-mark.tsx` (the
-menu bar's agent mark), `agents-panel.tsx` and `agents-rows.tsx` (its
+menu bar's agent mark), `agents-panel/agents-panel.tsx` and `agents-panel/lib/agents-rows.tsx` (its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).
 Tests: `test/launcher-handoff.test.ts`, `test/launcher-commands.test.ts`,
 `test/handoff-*.test.ts` (the streams from `test/fixtures/handoff/`, no
@@ -799,7 +799,7 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   its connection watches, its tile has the red dot and an access chip
   ("Recording the screen"); a finished run stays an hour, with Undo for
   each settings change it made. A connected agent is a row
-  (`agents-rows.tsx`): its glyph, its name, an access chip ("Recording the
+  (`agents-panel/lib/agents-rows.tsx`): its glyph, its name, an access chip ("Recording the
   screen", "Seeing the screen", "Using its pointer", "Waiting for you",
   "Connected"), where it's from ("“claude-ai”, connected over SSH", "from
   ~/.local/bin/claude") and Stop, which cuts it off as ⌃❖Esc does, with

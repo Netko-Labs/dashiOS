@@ -1,7 +1,7 @@
 /**
  * Agents from the launcher, wired to the shell (boot/agents.ts starts it): the
  * service (agents/handoff/service.ts), its questions in the agents' panel
- * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
+ * (agents/handoff/questions.ts), the panel itself (agents-panel/agents-panel.tsx), the
  * notifications, the launcher's side (launcher/lib/agents/handoff-rows.ts), and
  * the context chips' source: the window in front and the selection when
  * the launcher opens.
@@ -28,7 +28,7 @@ import {
   startHandoff,
   type TaskContext,
 } from "./agents/index.ts";
-import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
+import { AgentsPanel, type PanelActions } from "./agents-panel/index.ts";
 import type { HandoffSnapshot, LauncherHandoff, Store } from "./launcher/index.ts";
 import type { MenuController } from "./menus/index.ts";
 import { type NotificationStore, SHELL_SENDER } from "./notifications/index.ts";

@@ -5,7 +5,7 @@
  * steps (never a transcript), the question it waits on (answered here, not
  * in a sheet over the person's work), Show (the whole log in its own
  * window), Stop, and for an hour after it ends, Undo where its changes can
- * be put back. An agent connected from outside is a row (agents-rows.tsx):
+ * be put back. An agent connected from outside is a row (lib/agents-rows.tsx):
  * what it may see or do now, where it's from, Stop. "Stop all" stops them
  * all, as ⌃❖Esc does.
  */
@@ -25,9 +25,9 @@ import {
   progressWords,
   type RunQuestion,
   type RunView,
-} from "./agents/index.ts";
-import { AccessChip, ConnectionRow, StopAllFooter, TileDot } from "./agents-rows.tsx";
-import { KeyCatcher } from "./overlay.tsx";
+} from "../agents/index.ts";
+import { KeyCatcher } from "../overlay.tsx";
+import { AccessChip, ConnectionRow, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
 
 export const AGENTS_PANEL = { width: 380, padding: 6, radius: 12 } as const;
 

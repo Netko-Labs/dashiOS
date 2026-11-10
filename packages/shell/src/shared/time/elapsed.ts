@@ -2,7 +2,7 @@
  * How long something has been going, as a timer shows it: the person's own
  * recording in the menu bar (recorder/indicator.tsx) and an agent that
  * records or sees the screen, in its row of the agents' panel
- * (agents-rows.tsx).
+ * (agents-panel/lib/agents-rows.tsx).
  */
 
 /** "0:07", "12:34", "1:02:03". */

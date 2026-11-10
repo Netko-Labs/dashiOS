@@ -215,7 +215,7 @@ describe("the drawn mark", () => {
 
 describe("the panel", () => {
   test("a connected agent is a row with its access, where it's from, and Stop; runs keep their cards; Stop all", async () => {
-    const { AgentsPanel } = await import("../src/agents-panel.tsx");
+    const { AgentsPanel } = await import("../src/agents-panel/agents-panel.tsx");
     const trees: string[] = [];
     const listeners: ((event: NativeEvent) => void)[] = [];
     const transport: NativeTransport = {

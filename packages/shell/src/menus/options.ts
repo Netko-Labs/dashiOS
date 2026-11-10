@@ -66,7 +66,7 @@ export interface MenusOptions {
   runStatus(action: StatusMenuAction): void;
   /** A status item's menu closed. */
   statusClosed?(key: string): void;
-  /** The agents' panel under their mark (agents-panel.tsx). */
+  /** The agents' panel under their mark (agents-panel/agents-panel.tsx). */
   agentsPanel?: (props: { right: number; focus: string | null; close: () => void }) => ReactElement;
   /** "…"'s row of the status items that didn't fit (bar-overflow.tsx). */
   overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void; escape: () => void }) => ReactElement;
