@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { contrastRatio, darkColors, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, TRUE_BLACK } from "@dashi/ui";
-import { DARK_TERMINAL } from "../apps/terminal/palette.ts";
+import { DARK_TERMINAL } from "../apps/terminal/lib/palette.ts";
 import { BATTERY_PANEL } from "../src/battery/panel.tsx";
 import { GRID } from "../src/control-center/layout.ts";
 import { gtkColors } from "../src/shared/appearance/gtk-colors.ts";

@@ -6,8 +6,8 @@
 
 import type { Bounds } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import type { Tabs } from "../tabs.ts";
 import { TabStrip } from "./tab-strip.tsx";
-import type { Tabs } from "./tabs.ts";
 
 export interface TitleCenterInput {
   tabs: Tabs;

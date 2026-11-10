@@ -7,7 +7,7 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { LineBuffer } from "../../src/shared/io/lines.ts";
+import { LineBuffer } from "../../../src/shared/io/lines.ts";
 import { type EngineMessage, parseEngineLine } from "./screen.ts";
 
 /** What the app sends: crates/dashi-term/src/protocol.rs `Input`. */
@@ -38,9 +38,9 @@ export interface EngineOptions {
   command?: readonly string[] | null;
 }
 
-/** The shell integration's scripts, beside this file; `DASHI_TERMINAL_INTEGRATION=0` starts shells without them. */
+/** The shell integration's scripts, in the app's integration/ folder; `DASHI_TERMINAL_INTEGRATION=0` starts shells without them. */
 export function integrationDir(env: Record<string, string | undefined> = process.env): string | null {
-  return env.DASHI_TERMINAL_INTEGRATION === "0" ? null : join(import.meta.dir, "integration");
+  return env.DASHI_TERMINAL_INTEGRATION === "0" ? null : join(import.meta.dir, "../integration");
 }
 
 export interface Engine {
@@ -60,7 +60,7 @@ const RUNNING_WAIT = 400;
 
 /** Where dashi-term is: `DASHI_TERM`, the installed one, or this checkout's build. */
 export function engineBinary(env: Record<string, string | undefined> = process.env, exists: (path: string) => boolean = existsSync): string | null {
-  const candidates = [env.DASHI_TERM, "/usr/libexec/dashi/dashi-term", join(import.meta.dir, "../../../../crates/dashi-term/target/release/dashi-term")];
+  const candidates = [env.DASHI_TERM, "/usr/libexec/dashi/dashi-term", join(import.meta.dir, "../../../../../crates/dashi-term/target/release/dashi-term")];
   return candidates.find((path): path is string => typeof path === "string" && path !== "" && exists(path)) ?? null;
 }
 

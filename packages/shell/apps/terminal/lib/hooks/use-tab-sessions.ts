@@ -6,10 +6,10 @@
  */
 
 import { useRef, useState } from "react";
-import type { Clipboard } from "../kit/index.ts";
-import type { TerminalPalette } from "./palette.ts";
-import { type Sessions, useSessions } from "./sessions.ts";
-import { NO_TABS, type Tabs } from "./tabs.ts";
+import type { Clipboard } from "../../../kit/index.ts";
+import type { TerminalPalette } from "../palette.ts";
+import { type Sessions, useSessions } from "../sessions.ts";
+import { NO_TABS, type Tabs } from "../tabs.ts";
 
 export interface TabSessions {
   tabs: Tabs;

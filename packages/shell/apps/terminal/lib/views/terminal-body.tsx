@@ -6,13 +6,13 @@
  */
 
 import { type KeyDownInfo, Text, View } from "@mirinjs/metal";
-import type { EngineInput } from "./engine.ts";
+import type { EngineInput } from "../engine.ts";
+import { type GridSize, PROBE } from "../hooks/use-grid-size.ts";
+import type { TerminalPalette } from "../palette.ts";
+import type { ScreenStore } from "../store.ts";
+import type { Tab } from "../tabs.ts";
 import { Grid } from "./grid.tsx";
 import { lineHeightFor } from "./line.tsx";
-import type { TerminalPalette } from "./palette.ts";
-import type { ScreenStore } from "./store.ts";
-import type { Tab } from "./tabs.ts";
-import { type GridSize, PROBE } from "./use-grid-size.ts";
 
 export interface TerminalBodyProps {
   front: Tab | undefined;

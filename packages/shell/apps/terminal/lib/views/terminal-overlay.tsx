@@ -6,11 +6,11 @@
 
 import { ConfirmSheet, MENU_SEPARATOR, PopupMenu } from "@dashi/ui";
 import type { ReactNode } from "react";
-import { closeCopy } from "./closing.ts";
-import { tabLabel } from "./menus.ts";
-import type { Tabs } from "./tabs.ts";
-import type { Closing } from "./use-closing.ts";
-import type { TerminalMenuActions } from "./use-terminal-menus.ts";
+import { closeCopy } from "../closing.ts";
+import type { Closing } from "../hooks/use-closing.ts";
+import type { TerminalMenuActions } from "../hooks/use-terminal-menus.ts";
+import { tabLabel } from "../menus.ts";
+import type { Tabs } from "../tabs.ts";
 
 export interface Point {
   x: number;

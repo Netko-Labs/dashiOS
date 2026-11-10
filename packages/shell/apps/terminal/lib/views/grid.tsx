@@ -15,10 +15,10 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, type KeyDownInfo, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { TerminalPalette } from "../palette.ts";
+import { cellAt, cellText, type Screen, scrolledBack } from "../screen.ts";
+import { type ScreenStore, useScreen } from "../store.ts";
 import { type Cell, color, Line, type Look, lookFor } from "./line.tsx";
-import type { TerminalPalette } from "./palette.ts";
-import { cellAt, cellText, type Screen, scrolledBack } from "./screen.ts";
-import { type ScreenStore, useScreen } from "./store.ts";
 
 /**
  * The margin left of the grid, where the marks go, and the same on the

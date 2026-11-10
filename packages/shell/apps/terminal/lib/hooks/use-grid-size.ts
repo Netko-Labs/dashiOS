@@ -8,10 +8,10 @@
 
 import type { Bounds } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { GRID_INSET } from "./grid.tsx";
-import { type Cell, lineHeightFor } from "./line.tsx";
-import { gridFor } from "./screen.ts";
-import type { Sessions } from "./sessions.ts";
+import { gridFor } from "../screen.ts";
+import type { Sessions } from "../sessions.ts";
+import { GRID_INSET } from "../views/grid.tsx";
+import { type Cell, lineHeightFor } from "../views/line.tsx";
 
 /** The probe's text: its width over ten M's is one cell. */
 export const PROBE = "M".repeat(10);

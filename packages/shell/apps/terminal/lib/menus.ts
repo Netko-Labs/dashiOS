@@ -8,7 +8,7 @@
  * (app-menus/shortcut.ts), so ❖C copies while Ctrl+C still reaches the program.
  */
 
-import { enabledIds, type MenuItemSpec, type MenuSpec } from "../kit/index.ts";
+import { enabledIds, type MenuItemSpec, type MenuSpec } from "../../kit/index.ts";
 
 export interface TerminalMenuContext {
   /** Something is selected and the clipboard can be written (wl-copy is installed). */

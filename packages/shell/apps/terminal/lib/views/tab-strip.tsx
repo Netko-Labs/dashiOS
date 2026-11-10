@@ -14,7 +14,7 @@
 import { CLOSE, useColors, useTooltip } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { fitTabs, MORE_WIDTH, TAB_GAP, TAB_MAX } from "./strip-fit.ts";
+import { fitTabs, MORE_WIDTH, TAB_GAP, TAB_MAX } from "../strip-fit.ts";
 
 /** A tab as the strip draws it. */
 export interface StripTab {

@@ -5,12 +5,12 @@
  * `useAppMenus`, so the shell's ❖ chords reach them.
  */
 
-import { type Clipboard, useAppMenus } from "../kit/index.ts";
-import type { Engine } from "./engine.ts";
-import { FONT_SIZE, stepFontSize } from "./line.tsx";
-import { terminalMenus } from "./menus.ts";
-import type { Sessions } from "./sessions.ts";
-import { showIndex, stepTab, type Tab, type Tabs } from "./tabs.ts";
+import { type Clipboard, useAppMenus } from "../../../kit/index.ts";
+import type { Engine } from "../engine.ts";
+import { terminalMenus } from "../menus.ts";
+import type { Sessions } from "../sessions.ts";
+import { showIndex, stepTab, type Tab, type Tabs } from "../tabs.ts";
+import { FONT_SIZE, stepFontSize } from "../views/line.tsx";
 import type { Closing } from "./use-closing.ts";
 
 export interface TerminalMenuActions {

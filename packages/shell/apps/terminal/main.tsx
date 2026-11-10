@@ -8,8 +8,8 @@
  */
 
 import { hostBinary, runApp, systemClipboard } from "../kit/index.ts";
-import { engineBinary, splitCommand } from "./engine.ts";
-import { TERMINAL_SIZE, TerminalWindow } from "./view.tsx";
+import { engineBinary, splitCommand } from "./lib/engine.ts";
+import { TERMINAL_SIZE, TerminalWindow } from "./lib/views/view.tsx";
 
 /** A window opened from another starts its first shell where that one's front tab is. */
 const FOLDER_VAR = "DASHI_TERMINAL_FOLDER";

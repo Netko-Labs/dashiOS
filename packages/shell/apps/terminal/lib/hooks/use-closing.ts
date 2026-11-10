@@ -7,9 +7,9 @@
  */
 
 import { useState } from "react";
-import { type CloseReason, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
-import { type CloseQuestion, stillRunning } from "./closing.ts";
-import type { Sessions } from "./sessions.ts";
+import { type CloseReason, useCloseRequest, useCloseWithdrawn } from "../../../kit/index.ts";
+import { type CloseQuestion, stillRunning } from "../closing.ts";
+import type { Sessions } from "../sessions.ts";
 
 export interface Closing {
   /** The question on screen, if one is asked. */

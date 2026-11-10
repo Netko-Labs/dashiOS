@@ -197,7 +197,7 @@
 2	packages/shell/apps/software/use-window-actions.ts
 1	packages/shell/apps/software/use-window-sheets.ts
 2	packages/shell/apps/software/window-overlay.tsx
-1	packages/shell/apps/terminal/engine.ts
+1	packages/shell/apps/terminal/lib/engine.ts
 8	packages/shell/bin/dashi-graphics-preview.tsx
 1	packages/shell/bin/dashi-open.ts
 13	packages/shell/bin/dashi-settings-preview.tsx
@@ -618,14 +618,7 @@
 13	packages/shell/test/support/software-view.tsx
 1	packages/shell/test/support/sound-mixer.ts
 2	packages/shell/test/support/sound-watch.ts
-2	packages/shell/test/terminal-engine.test.ts
-5	packages/shell/test/terminal-naming.test.ts
-4	packages/shell/test/terminal-palette.test.ts
-1	packages/shell/test/terminal-screen.test.ts
-2	packages/shell/test/terminal-strip.test.ts
-1	packages/shell/test/terminal-tabs.test.ts
-1	packages/shell/test/terminal-view.test.tsx
 1	packages/shell/test/tints.test.ts
-3	packages/shell/test/true-black.test.ts
+2	packages/shell/test/true-black.test.ts
 1	packages/shell/test/warm-host.test.ts
 1	packages/shell/test/xwayland-scale.test.ts

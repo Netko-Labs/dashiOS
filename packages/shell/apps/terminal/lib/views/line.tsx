@@ -10,8 +10,8 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { memo } from "react";
-import type { TerminalPalette } from "./palette.ts";
-import type { Span } from "./screen.ts";
+import type { TerminalPalette } from "../palette.ts";
+import type { Span } from "../screen.ts";
 
 export const FONT_SIZE = 13;
 export const LINE_HEIGHT = 18;

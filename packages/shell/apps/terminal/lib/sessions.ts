@@ -8,7 +8,7 @@
  */
 
 import { useRef } from "react";
-import type { Clipboard } from "../kit/index.ts";
+import type { Clipboard } from "../../kit/index.ts";
 import { type Engine, type EngineInput, integrationDir, startEngine } from "./engine.ts";
 import { renamed } from "./naming.ts";
 import type { TerminalPalette } from "./palette.ts";

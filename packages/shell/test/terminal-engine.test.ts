@@ -2,8 +2,8 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { startEngine } from "../apps/terminal/engine.ts";
-import type { EngineMessage } from "../apps/terminal/screen.ts";
+import { startEngine } from "../apps/terminal/lib/engine.ts";
+import type { EngineMessage } from "../apps/terminal/lib/screen.ts";
 import { fakeClock, until } from "./support/time.ts";
 
 // A stand-in for dashi-term: it answers `running` with what it is told to,

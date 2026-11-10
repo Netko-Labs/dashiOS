@@ -6,9 +6,9 @@
  */
 
 import { useEffect } from "react";
-import type { TerminalPalette } from "./palette.ts";
-import { colorsMessage, type Sessions } from "./sessions.ts";
-import type { Tabs } from "./tabs.ts";
+import type { TerminalPalette } from "../palette.ts";
+import { colorsMessage, type Sessions } from "../sessions.ts";
+import type { Tabs } from "../tabs.ts";
 
 export interface WindowLifecycleInput {
   sessions: Sessions;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { TAB_LABEL, tabLabel } from "../apps/terminal/menus.ts";
-import { fitTabs, MORE_WIDTH, TAB_GAP, TAB_MIN } from "../apps/terminal/strip-fit.ts";
+import { TAB_LABEL, tabLabel } from "../apps/terminal/lib/menus.ts";
+import { fitTabs, MORE_WIDTH, TAB_GAP, TAB_MIN } from "../apps/terminal/lib/strip-fit.ts";
 
 describe("the tab strip's fit", () => {
   test("every tab shows while each keeps its least width, and before the strip is measured", () => {
