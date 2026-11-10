@@ -39,7 +39,7 @@ export interface HardwareDeps {
 
 export class HardwareKeys {
   private queue: Promise<unknown> = Promise.resolve();
-  /** The laptop's own keys (laptop/hotkeys.ts), handed in once the machine is known. */
+  /** The laptop's own keys (laptop/lib/hotkeys.ts), handed in once the machine is known. */
   private machineKeys: ((name: string) => Promise<boolean>) | null = null;
 
   constructor(private readonly deps: HardwareDeps) {}

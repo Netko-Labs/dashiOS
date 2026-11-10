@@ -1,7 +1,7 @@
 /**
  * The shell's end of the applets channel (protocol.ts): sockets only this
  * user can reach (mode 0600 in the runtime directory). As with the app menus
- * (app-menus/server.ts), who connected is the kernel's word (SO_PEERCRED),
+ * (app-menus/lib/server.ts), who connected is the kernel's word (SO_PEERCRED),
  * and a connection whose peer can't be told is closed at once.
  *
  * `$XDG_RUNTIME_DIR/dashi-applets.sock` is everyone's: any program of this

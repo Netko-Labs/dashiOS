@@ -83,7 +83,7 @@ export function shellApps(): App[] {
   return SHELL_APPS.filter((app) => shellOpeners.has(app.id)).map((app) => ({ ...app }));
 }
 
-/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/connection.ts). */
+/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/lib/connection.ts). */
 const appletNames = new Map<string, string>();
 
 /** An applet said who it is: its windows are called by its manifest's name. */
