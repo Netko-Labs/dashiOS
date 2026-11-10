@@ -4,7 +4,8 @@
 #   - CLAUDE.md and AGENTS.md are the same file but for their title line, and
 #     AGENTS.md names every hard rule (H1 to H20);
 #   - every version agrees: the Rust crates, the packages, the browser
-#     extension and spin/build-rpms.
+#     extension and spin/build-rpms;
+#   - no tracked file holds a merge's conflict markers.
 # Run: tools/check-repo
 set -euo pipefail
 cd -- "$(dirname -- "$(readlink -f -- "$0")")/.."
@@ -20,6 +21,14 @@ generated=$(git ls-files | grep -E '(^|/)(__pycache__|node_modules|target|dist)/
 if [ -n "$generated" ]; then
 	fail "generated files are tracked (git rm --cached them, and ignore them):"
 	while read -r file; do echo "  $file" >&2; done <<<"$generated"
+fi
+
+# Conflict markers a merge left (git writes <<<<<<<, ||||||| and >>>>>>> at a
+# line's start, each followed by a space and a name, or alone).
+markers=$(git grep -nIE '^(<{7}|\|{7}|>{7})( |$)' || true)
+if [ -n "$markers" ]; then
+	fail "conflict markers in tracked files (finish the merge):"
+	while read -r line; do echo "  $line" >&2; done <<<"$markers"
 fi
 
 # The two entry files.

@@ -75,7 +75,7 @@ only shrink, so fix offenders, never add them, and trim the list
 - H11: tests never wait on real time; 2 s per test.
 - H12: Rust: no `unwrap()` outside tests, every `unsafe` documented, no blocking file or PNG work on dashi-comp's loop.
 - H13: every shell script passes `bash -n` and shellcheck.
-- H14: nothing generated is committed; `CLAUDE.md` and `AGENTS.md` match; versions match.
+- H14: nothing generated is committed; no conflict markers; `CLAUDE.md` and `AGENTS.md` match; versions match.
 - H15: every dependency's licence is on the allowed list, or listed with its reason.
 - H16: heavy libraries (the AI SDKs) never load at shell start; the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them).
 - H17: a system service scores 5.0 or better on `systemd-analyze security`.
