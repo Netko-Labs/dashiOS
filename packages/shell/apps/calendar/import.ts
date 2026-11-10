@@ -43,7 +43,7 @@ export function writeIcsFile(path: string, text: string): string {
   try {
     writeNew(target, text);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new CalendarError("A file of that name is there already.");
+    if (error instanceof Error && "code" in error && error.code === "EEXIST") throw new CalendarError("A file of that name is there already.");
     throw new CalendarError("The file couldn't be written there.");
   }
   return target;

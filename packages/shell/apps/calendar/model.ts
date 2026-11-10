@@ -11,94 +11,43 @@
 
 import { UndoStack } from "@dashi/ui";
 
-import { addDays, type Day, dayOf, type Local } from "../../src/shared/calendar/dates.ts";
+import type { Day } from "../../src/shared/calendar/dates.ts";
 import type { EventInput } from "../../src/shared/calendar/event.ts";
 import { busyDays, occurrencesIn } from "../../src/shared/calendar/recurrence.ts";
 import { readSidecar, writeSidecar } from "../../src/shared/calendar/sidecar.ts";
 import type { CalendarStore } from "../../src/shared/calendar/store.ts";
 import { type CalEvent, type Calendar, CalendarError, type Occurrence } from "../../src/shared/calendar/types.ts";
 import { changeOccurrence, deleteOccurrence, duplicateOf, type EditResult, type Scope } from "./edits.ts";
-import { type EventChange, eventStep } from "./history.ts";
-import { step, type View, viewDays, viewRange } from "./layout.ts";
+import { rememberChanges, writeChange } from "./event-changes.ts";
+import type { EventChange } from "./history.ts";
+import { type View, viewRange } from "./layout.ts";
+import { type CalendarState, NOTICE_FADE_MS, type OccurrenceRef } from "./state.ts";
+import { CalendarWindowState } from "./window-state.ts";
 
-export interface CalendarState {
-  calendars: Calendar[];
-  /** Files that could not be read, and events kept but not shown. */
-  problems: string[];
-  /** Calendar ids the person has turned off. */
-  hidden: string[];
-  view: View;
-  /** The day the view is on (any day of the month or week shown). */
-  anchor: Day;
-  /** The day picked (a click, the arrows): where New Event and Return make one. Always one the view shows. */
-  selected: Day;
-  today: Day;
-  /** The last thing that went wrong, for a line in the window. */
-  error: string | null;
-  /** The last thing that went well and is worth saying (an import). */
-  notice: string | null;
-}
+// The state and the names the window and the other files use, from state.ts.
+export { type CalendarState, NOTICE_FADE_MS, type OccurrenceRef } from "./state.ts";
 
-/** One time of an event, as the window names it to the model. */
-export interface OccurrenceRef {
-  calendarId: string;
-  uid: string;
-  /** Null for an event that happens once. */
-  recurrenceId: Local | null;
-}
-
-/** How long a notice that only informs stays (Files' `NOTICE_FADE_MS`). */
-export const NOTICE_FADE_MS = 5000;
-
-export class CalendarModel {
-  private state: CalendarState;
-  private readonly listeners = new Set<() => void>();
+export class CalendarModel extends CalendarWindowState {
   private cache: { key: string; occurrences: Occurrence[] } | null = null;
   private busyCache: { key: string; days: Set<Day> } | null = null;
   /** Edit › Undo and Redo: changes to events. */
   readonly undo = new UndoStack();
 
-  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
-
   constructor(
     readonly store: CalendarStore,
-    private readonly clock: () => Date = () => new Date(),
+    clock: () => Date = () => new Date(),
     start?: { view?: View; day?: Day },
-    /** How long a notice that only informs stays (errors stay until dismissed). */
-    private readonly noticeFadeMs = NOTICE_FADE_MS,
+    noticeFadeMs: number = NOTICE_FADE_MS,
   ) {
-    const today = dayOf(clock());
-    const day = start?.day ?? today;
-    this.state = { calendars: [], problems: [], hidden: [], view: start?.view ?? "month", anchor: day, selected: day, today, error: null, notice: null };
+    super(clock, start, noticeFadeMs);
     this.reload();
   }
 
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
-
-  getSnapshot = (): CalendarState => this.state;
-
-  private set(change: Partial<CalendarState>): void {
-    if (change.notice !== undefined && change.notice !== this.state.notice) this.fadeNotice(change.notice);
-    this.state = { ...this.state, ...change };
+  protected override changed(change: Partial<CalendarState>): void {
     if (change.calendars !== undefined || change.hidden !== undefined || change.view !== undefined || change.anchor !== undefined) {
       this.cache = null;
       if (change.calendars !== undefined || change.hidden !== undefined) this.busyCache = null;
     }
-    for (const listener of [...this.listeners]) listener();
-  }
-
-  /** A notice that only informs ("Imported 6 events…") goes after a while, as Files' do; a newer one starts its own time. */
-  private fadeNotice(notice: string | null): void {
-    if (this.noticeTimer) clearTimeout(this.noticeTimer);
-    this.noticeTimer = null;
-    if (notice === null) return;
-    this.noticeTimer = setTimeout(() => {
-      this.noticeTimer = null;
-      if (this.state.notice === notice) this.set({ notice: null });
-    }, this.noticeFadeMs);
   }
 
   /** Reads the folder again. */
@@ -135,50 +84,6 @@ export class CalendarModel {
       this.reload();
       return undefined;
     }
-  }
-
-  dismissMessages(): void {
-    if (this.state.error !== null || this.state.notice !== null) this.set({ error: null, notice: null });
-  }
-
-  /** Midnight passed: Today moves. */
-  tick(): void {
-    const today = dayOf(this.clock());
-    if (today !== this.state.today) this.set({ today });
-  }
-
-  // ---- Where the view is -------------------------------------------------------
-
-  setView(view: View): void {
-    if (view !== this.state.view) this.set({ view, anchor: this.state.selected });
-  }
-
-  /** Shows `day`, in `view` when one is given, and picks it. */
-  goTo(day: Day, view?: View): void {
-    this.set({ anchor: day, selected: day, ...(view ? { view } : {}) });
-  }
-
-  goToday(): void {
-    const today = dayOf(this.clock());
-    this.set({ anchor: today, selected: today, today });
-  }
-
-  step(direction: -1 | 1): void {
-    const anchor = step(this.state.view, this.state.anchor, direction);
-    this.set({ anchor, selected: anchor });
-  }
-
-  /** Picks a day the view shows. */
-  select(day: Day): void {
-    if (day !== this.state.selected) this.set({ selected: day });
-  }
-
-  /** Moves the picked day by `days` (the arrows), taking the view along when it leaves it. */
-  moveSelection(days: number, firstDay: number): void {
-    const selected = addDays(this.state.selected, days);
-    const shown = viewDays(this.state.view, this.state.anchor, firstDay);
-    const inView = this.state.view === "month" ? selected.slice(0, 7) === this.state.anchor.slice(0, 7) : shown.includes(selected);
-    this.set(inView ? { selected } : { selected, anchor: selected });
   }
 
   // ---- What is shown ---------------------------------------------------------------
@@ -293,26 +198,7 @@ export class CalendarModel {
       return false;
     }
     const changes: EventChange[] = [];
-    const done = this.attempt(what, () => {
-      const result = edit(before.event);
-      const whole = ref.recurrenceId === null || scope === "all";
-      const home = options.moveTo !== undefined && whole ? options.moveTo : ref.calendarId;
-      if (result.event) {
-        // The new place first, so a failure never loses the event.
-        this.store.put(home, result.event);
-        if (home !== ref.calendarId) this.store.delete(ref.calendarId, ref.uid);
-        changes.push({ before, after: { calendarId: home, event: result.event } });
-      } else {
-        this.store.delete(ref.calendarId, ref.uid);
-        changes.push({ before, after: null });
-      }
-      if (result.added) {
-        const where = options.moveTo ?? ref.calendarId;
-        this.store.put(where, result.added);
-        changes.push({ before: null, after: { calendarId: where, event: result.added } });
-      }
-      return true;
-    });
+    const done = this.attempt(what, () => writeChange(this.store, { ref, before, edit, scope, options }, changes));
     // What was written before a failure is still taken back by Undo.
     this.remember(changes, options.name);
     return done === true;
@@ -335,14 +221,7 @@ export class CalendarModel {
   }
 
   private remember(changes: readonly EventChange[], name?: string): void {
-    const steps = changes.filter((change) => change.before || change.after);
-    const first = steps[0];
-    if (!first) return;
-    const reload = (): void => this.reload();
-    if (steps.length === 1) return this.undo.push(eventStep(first, this.store, reload, name));
-    this.undo.group(name ?? eventStep(first, this.store, reload).name, () => {
-      for (const change of steps) this.undo.push(eventStep(change, this.store, reload));
-    });
+    rememberChanges(this.undo, this.store, () => this.reload(), changes, name);
   }
 
   createCalendar(name: string, color?: string): Calendar | undefined {
@@ -372,13 +251,5 @@ export class CalendarModel {
     const there = result.duplicates > 0 ? ` ${result.duplicates} ${result.duplicates === 1 ? "was" : "were"} there already.` : "";
     const skipped = result.skipped > 0 ? ` ${result.skipped} couldn't be shown and ${result.skipped === 1 ? "is" : "are"} kept in the file.` : "";
     this.set({ notice: `Imported ${count} into “${result.calendar.name}”.${there}${skipped}` });
-  }
-
-  fail(message: string): void {
-    this.set({ error: message });
-  }
-
-  say(message: string): void {
-    this.set({ notice: message, error: null });
   }
 }
