@@ -63,7 +63,6 @@
 383	packages/shell/apps/preview/view.tsx
 360	packages/shell/apps/preview/viewer.ts
 353	packages/shell/apps/terminal/view.tsx
-357	packages/shell/src/agents/ask/tasks.ts
 394	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
 307	packages/shell/src/display-config/manager.ts
