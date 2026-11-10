@@ -1,0 +1,86 @@
+# H1 (docs/conventions.md, "Hard rules"): every check on every push and pull
+# request. `bun run check` is the same command people run locally.
+#
+# mirin is checked out beside the repository (`../mirin`, where package.json's
+# `file:` dependency points). Its branch: the one named like this branch with
+# `/` turned into `-` (v07/tooling -> v07-tooling) when mirin has it, otherwise
+# the one in .mirin-branch (the release's). mirin is public: no token needed.
+name: check
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    container: fedora:44
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: always
+      XDG_RUNTIME_DIR: /tmp/xdg-runtime
+    steps:
+      - name: Install the tools and the crates' libraries
+        run: |
+          dnf -y install --setopt=install_weak_deps=False \
+            git unzip jq ShellCheck systemd dnf-plugins-core \
+            rust cargo clippy rustfmt gcc pkgconf-pkg-config \
+            mesa-libEGL-devel mesa-libgbm-devel libinput-devel libseat-devel \
+            systemd-devel libxkbcommon-devel \
+            gstreamer1-devel gstreamer1-plugins-base-devel
+          # dashi-term links libghostty-vt, which Dashi's COPR builds.
+          dnf -y copr enable pejedev/dashi
+          dnf -y install libghostty-vt-devel
+          mkdir -m 700 -p "$XDG_RUNTIME_DIR"
+
+      - uses: actions/checkout@v4
+        with:
+          path: dashiOS
+
+      - name: Pick mirin's branch
+        id: mirin
+        working-directory: dashiOS
+        run: |
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          want="${branch//\//-}"
+          if git ls-remote --exit-code --heads https://github.com/Netko-Labs/mirin.git "$want" >/dev/null; then
+            ref="$want"
+          else
+            ref="$(cat .mirin-branch)"
+          fi
+          echo "mirin: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Netko-Labs/mirin
+          ref: ${{ steps.mirin.outputs.ref }}
+          path: mirin
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            dashiOS/target
+            dashiOS/crates/dashi-term/target
+          key: cargo-${{ hashFiles('dashiOS/Cargo.lock', 'dashiOS/crates/dashi-term/Cargo.lock') }}
+          restore-keys: cargo-
+
+      - name: bun install
+        working-directory: dashiOS
+        run: bun install --frozen-lockfile
+
+      - name: bun run check
+        working-directory: dashiOS
+        run: bun run check

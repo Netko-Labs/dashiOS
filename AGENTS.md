@@ -19,7 +19,8 @@ the same change.
   `@dashi/ui` for Dashi's own; app-local otherwise. See `docs/conventions.md`,
   "UI Components".
 - Runtime and package manager: Bun. Compositor: smithay on calloop.
-- mirin is a sibling checkout at `../mirin`, branch `feat/metal-linux`.
+- mirin is a sibling checkout at `../mirin`, on the branch that goes with
+  Dashi's (for a release branch, the one `.mirin-branch` names).
 
 ## Source Of Truth
 
@@ -48,9 +49,36 @@ the same change.
   measure, or a motion updates them in the same commit.
 - `tasks/todo.md` - the current plan and its checkpoints.
 
-The shared code-style and structure rules live in:
+The shared code-style and structure rules live in `docs/conventions.md`. Read
+it before changing code (an agent that expands includes gets it here):
 
 @docs/conventions.md
+
+## Hard Rules
+
+A machine checks these on every push (`docs/conventions.md`, "Hard rules", has
+each check and how to run it alone). `bun run check` runs them all, as CI does.
+Each starts from a list of today's offenders in `scripts/lists/`: the list may
+only shrink, so fix offenders, never add them, and trim the list
+(`bun scripts/<check>.ts --shrink`) when you fix one.
+
+- H1: every check runs on every push (CI, and `.githooks/pre-push` for the fast ones).
+- H2: no file over 300 lines; a listed file may not grow.
+- H3: no function over 80 lines (tests exempt).
+- H4: imports go one way, apps → `apps/kit` → `src/shared`; `src` never imports `apps`, an app never imports another.
+- H5: no import cycles.
+- H6: an `index.ts` only re-exports; entry points are `main.ts`.
+- H7: outside data is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on `unknown`.
+- H8: the compositor is asked only through `src/compositor.ts`'s typed methods.
+- H9: the IPC has one definition in both languages and the doc (checked from 0.7's typed IPC on).
+- H10: exported functions in `.ts` have return types (`.tsx` components exempt).
+- H11: tests never wait on real time; 2 s per test.
+- H12: Rust: no `unwrap()` outside tests, every `unsafe` documented, no blocking file or PNG work on dashi-comp's loop.
+- H13: every shell script passes `bash -n` and shellcheck.
+- H14: nothing generated is committed; `CLAUDE.md` and `AGENTS.md` match; versions match.
+- H15: every dependency's licence is on the allowed list, or listed with its reason.
+- H16: heavy libraries (the AI SDKs) never load at shell start; the start-up module count has a ceiling.
+- H17: a system service scores 5.0 or better on `systemd-analyze security`.
 
 Keep `CLAUDE.md` and `AGENTS.md` equivalent. If one changes, update the other in
 the same change.
@@ -73,6 +101,8 @@ the same change.
   firmware attributes, power profiles, the charge limit, fans, the SMU; the
   model database is `data/models/`, a captured laptop `data/fixtures/`.
 - `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
+- `crates/dashi-term` - the terminal engine on libghostty-vt; a Cargo workspace of its own
+  (its own `Cargo.lock`), checked like the others.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell
   (`src/main.tsx`), system services, first-party apps (`apps/*`, on `apps/kit`),
   and Dashi's Helium extension (`browser-extension/`, docs/actions.md "Websites").
@@ -84,15 +114,21 @@ the same change.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).
 - `docs/` - architecture, compositor, IPC, and convention docs.
+- `data/` - the hardware model database (`data/models/`) and captured fixtures (`data/fixtures/`).
+- `scripts/` - the hard-rule checks behind `bun run check`, and their lists (`scripts/lists/`);
+  `tools/check-repo`; `.githooks/pre-push`; CI in `.github/workflows/check.yml`.
 
 ## Commands
 
 - Install dependencies: `bun install` (at the root; `../mirin` must be checked out)
+- Every check: `bun run check` (what CI runs); the quick ones: `bun run check:fast`.
+  Pre-push hook: `git config core.hooksPath .githooks` once per checkout.
 - Typecheck: `bun run typecheck`
 - Tests: `bun run test`
 - Lint/format: `bun run fmt-lint` (fix: `bun run fmt-lint:fix`)
 - Rust: `cargo build --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`,
-  `cargo fmt --all --check`, `cargo test --workspace`
+  `cargo fmt --all --check`, `cargo test --workspace`; the same three in `crates/dashi-term`
+  (its own workspace)
 - Metal host (in mirin): `cd ../mirin/crates/mirin-metal && cargo build --release --bin mirin-metal-host`
 - Packages: `spin/build-rpms [package...|all]` on the laptop (set up with
   `sudo dnf builddep spin/rpm/*.spec`; no VM needed), from a clean HEAD; RPMs in
@@ -123,17 +159,21 @@ the same change.
 ## Verification
 
 - Start with the smallest relevant check, then broaden when shared contracts
-  (IPC, `@dashi/ui`'s surface) or platform behavior are affected.
+  (IPC, `@dashi/ui`'s surface) or platform behavior are affected. Before you
+  push: `bun run check` (or at least `bun run check:fast`).
 - Docs-only changes: `git diff --check`.
-- TypeScript: `bun run typecheck`, the relevant `bun run test`, `bun run fmt-lint`.
-- Rust: `cargo fmt --all --check`, clippy with `-D warnings`, build, tests.
+- TypeScript: `bun run typecheck`, the relevant `bun run test`, `bun run fmt-lint`,
+  and the hard-rule scripts (`docs/conventions.md`, "Verification").
+- Rust: `cargo fmt --all --check`, clippy with `-D warnings`, build, tests;
+  `crates/dashi-term` too.
 - Compositor, shell, and UI behavior: check it in the VM.
 - If a command cannot be run, record the reason and the remaining risk in the
   handoff.
 
 ## Git Rules
 
-- Branch off `main` before committing; commit at logical checkpoints.
+- Branch from the current release branch, `release/X.Y.0`, and merge back into
+  it; `main` gets releases only. Commit at logical checkpoints.
 - Push branches as you go. Open a PR when asked.
 - Never force-push, amend, rebase, squash, reset, or discard shared/user changes
   unless explicitly requested.
