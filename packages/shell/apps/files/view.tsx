@@ -8,49 +8,30 @@
  * the Trash, Space peeks, ⌫ goes back, and typing jumps to a name.
  */
 
-import { AppWindow, ConfirmSheet, type MenuEntry, PopupMenu, useUndo } from "@dashi/ui";
+import { AppWindow } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { FileItem } from "../../src/shared/files/items.ts";
-import type { OpenWithApp } from "../../src/shared/files/open.ts";
-import { baseName } from "../../src/shared/files/paths.ts";
-import { useAppMenus } from "../kit/index.ts";
-import { chooseMenu, menuSpecs } from "./appmenus.ts";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { BrowserKeys, Listing } from "./browser.tsx";
 import { chromeFor, RAIL_WIDTH } from "./chrome.ts";
-import { looksLikeUriList, parseUriList } from "./clipboard.ts";
-import { ConflictSheet } from "./conflict-sheet.tsx";
-import { Files, type WindowActions } from "./context.ts";
+import { Files } from "./context.ts";
 import { Footer } from "./footer.tsx";
-import { formatCount } from "./format.ts";
-import type { BrowserKey } from "./keys.ts";
 import { locationTitle } from "./location.ts";
-import { actionMenu, backgroundMenu, itemMenu } from "./menus.ts";
-import { editText, Omnibox, SuggestionList, type Suggestions } from "./omnibox.tsx";
-import type { Answer, Conflict, Operations } from "./operations.ts";
-import { Peek } from "./peek.tsx";
-import { InfoSheet, OpenWithSheet } from "./sheets.tsx";
+import { Omnibox, type Suggestions } from "./omnibox.tsx";
+import type { Operations } from "./operations.ts";
+import { filesOverlay } from "./overlay.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import type { FilesStore } from "./store.ts";
 import { Controls, Leading } from "./toolbar.tsx";
+import { useOverlays } from "./use-overlays.ts";
+import { useWindowActions } from "./use-window-actions.ts";
+import { runBrowserKey } from "./window-keys.ts";
 
 export const FILES_SIZE = { width: 1000, height: 660 } as const;
 
-type Sheet =
-  | { kind: "info"; item: FileItem }
-  | { kind: "open-with"; item: FileItem; apps: OpenWithApp[] | null }
-  | { kind: "empty-trash" }
-  | { kind: "delete"; items: FileItem[] }
-  | { kind: "conflict"; conflict: Conflict; answer: (answer: Answer) => void }
-  | { kind: "peek" };
-
-type MenuState = { x: number; y: number; kind: "item" | "background" | "actions" };
-
 export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Operations; info?: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
-  const [sheet, setSheet] = useState<Sheet | null>(null);
-  const [menu, setMenu] = useState<MenuState | null>(null);
-  const [focus, setFocus] = useState(0);
+  const overlays = useOverlays(ops);
+  const { sheet, menu, setSheet, setMenu, refocus } = overlays;
   // The window's width: a narrow one gives the sidebar a rail and the toolbar fewer buttons (chrome.ts).
   const [width, setWidth] = useState(0);
   const chrome = chromeFor(width);
@@ -62,179 +43,8 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
     setEditingText(text);
   }, []);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
-
-  const refocus = useCallback(() => setFocus((n) => n + 1), []);
-  const close = useCallback(() => {
-    setSheet(null);
-    setMenu(null);
-    refocus();
-  }, [refocus]);
-
-  // A copy or a move onto a taken name asks here (PA-3), one collision at a time.
-  useEffect(() => {
-    ops.ask = (conflict) =>
-      new Promise<Answer>((resolve) =>
-        setSheet({
-          kind: "conflict",
-          conflict,
-          answer: (answer) => {
-            close();
-            resolve(answer);
-          },
-        }),
-      );
-    return () => {
-      ops.ask = null;
-    };
-  }, [ops, close]);
-
-  const find = (path: string): FileItem | undefined => store.visible().find((item) => item.path === path);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `find` reads the store's latest list when called; the store is what changes
-  const actions = useMemo<WindowActions>(
-    () => ({
-      // Renaming happens on the name itself (rename-field.tsx).
-      rename: (path) => store.startRename(path),
-      info: (path) => {
-        const item = find(path);
-        if (item) setSheet({ kind: "info", item });
-      },
-      openWith: (path) => {
-        const item = find(path);
-        if (!item) return;
-        setSheet({ kind: "open-with", item, apps: null });
-        void ops.appsFor(item).then((apps) => setSheet((now) => (now?.kind === "open-with" && now.item.path === item.path ? { ...now, apps } : now)));
-      },
-      // "untitled folder" at once, its name a field (no sheet).
-      newFolder: () => void ops.newFolder(),
-      goToFolder: () => setEditing(editText(store.getSnapshot().location, store.env.home)),
-      find: () => setEditing(store.getSnapshot().query),
-      confirmEmptyTrash: () => setSheet({ kind: "empty-trash" }),
-      confirmDelete: (paths) => setSheet({ kind: "delete", items: paths.flatMap((path) => find(path) ?? []) }),
-      menu: (point, kind) => setMenu({ ...point, kind }),
-      refocus,
-    }),
-    [store, ops, refocus],
-  );
-
-  // The menu bar's File, Edit, View, and Go are Files' own while it is in front; Edit's Undo names the last write.
-  const undo = useUndo(ops.undo);
-  useAppMenus(menuSpecs(state, store, ops, undo), (id) => chooseMenu(id, store, ops, actions));
-
-  // `--info` (the file manager service's ShowItemProperties): Get Info for that item once the folder is listed.
-  const infoShown = useRef(info === undefined);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: waits for the listing; the sheet opens once
-  useEffect(() => {
-    if (infoShown.current || state.loading || info === undefined) return;
-    infoShown.current = true;
-    actions.info(info);
-  }, [state.loading, state.items]);
-  const deps = { store, ops, actions };
-  const menuItems = (kind: MenuState["kind"]): MenuEntry[] =>
-    kind === "item" ? itemMenu(deps, store.selectedItems()) : kind === "background" ? backgroundMenu(deps) : actionMenu(deps);
-
-  const onKey = (key: BrowserKey): void => {
-    const selected = store.selectedItems();
-    switch (key.kind) {
-      case "text": {
-        if (key.text.length > 1 && looksLikeUriList(key.text) && ops.writable && state.location.kind === "folder") {
-          void ops.transfer(parseUriList(key.text), state.location.path, "copy");
-        } else if (key.text.trim() !== "") {
-          store.typeAhead(key.text);
-        }
-        return;
-      }
-      case "open":
-        return store.openSelection();
-      case "enclosing":
-        return store.goUp();
-      case "back":
-        return store.goBack();
-      case "rename":
-        if (selected.length === 1 && state.location.kind !== "trash") store.startRename((selected[0] as FileItem).path);
-        return;
-      case "trash":
-        if (selected.length === 0) return;
-        if (state.location.kind === "trash") return actions.confirmDelete(selected.map((item) => item.path));
-        return void ops.trash(selected);
-      case "peek":
-        if (selected.length > 0) setSheet({ kind: "peek" });
-        return;
-      case "clear":
-        return store.select([]);
-      case "move":
-        return;
-    }
-  };
-
-  const overlay = (() => {
-    if (sheet?.kind === "conflict") {
-      const dest = sheet.conflict.dest;
-      return <ConflictSheet conflict={sheet.conflict} folderName={dest === store.env.home ? "Home" : baseName(dest)} onAnswer={sheet.answer} />;
-    }
-    if (sheet?.kind === "peek") return <Peek onClose={close} />;
-    if (sheet?.kind === "info") return <InfoSheet item={sheet.item} home={store.env.home} onClose={close} />;
-    if (sheet?.kind === "open-with")
-      return (
-        <OpenWithSheet
-          item={sheet.item}
-          apps={sheet.apps}
-          onCancel={close}
-          onChoose={(app) => {
-            void ops.openWith(app, sheet.item);
-            close();
-          }}
-        />
-      );
-    if (sheet?.kind === "empty-trash") {
-      return (
-        <ConfirmSheet
-          testID="empty-trash"
-          title="Empty the Trash?"
-          message={`${formatCount(state.items.length)} will be deleted for good.`}
-          confirmLabel="Empty Trash"
-          danger
-          onCancel={close}
-          onConfirm={() => {
-            void ops.emptyTrash();
-            close();
-          }}
-        />
-      );
-    }
-    if (sheet?.kind === "delete") {
-      const names = sheet.items.length === 1 ? `“${sheet.items[0]?.name}”` : formatCount(sheet.items.length);
-      return (
-        <ConfirmSheet
-          testID="delete-forever"
-          title={`Delete ${names} immediately?`}
-          message="You can’t undo this."
-          confirmLabel="Delete"
-          danger
-          onCancel={close}
-          onConfirm={() => {
-            void ops.deleteForever(sheet.items);
-            close();
-          }}
-        />
-      );
-    }
-    if (menu) {
-      // The menu keeps itself inside the window, flipped at the pointer when it would run off (PA-9).
-      // "…"'s hangs by its right edge under the button, at the width it is drawn.
-      return (
-        <PopupMenu
-          testID="menu"
-          x={menu.x}
-          y={menu.y}
-          items={menuItems(menu.kind)}
-          onClose={close}
-          {...(menu.kind === "actions" ? { anchor: "end" as const } : {})}
-        />
-      );
-    }
-    if (suggestions) return <SuggestionList suggestions={suggestions} home={store.env.home} />;
-    return undefined;
-  })();
+  const actions = useWindowActions({ store, ops, state, overlays, setEditing, info });
+  const overlay = filesOverlay({ store, ops, actions, state, overlays, suggestions });
 
   const title = state.found !== null ? "Search Results" : locationTitle(state.location, store.env.home);
 
@@ -275,7 +85,9 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
             notice={<Footer />}
             overlay={overlay}
           >
-            {!sheet && !menu && editing === null && state.renaming === null && <BrowserKeys focusKey={focus} onKey={onKey} />}
+            {!sheet && !menu && editing === null && state.renaming === null && (
+              <BrowserKeys focusKey={overlays.focus} onKey={(key) => runBrowserKey(key, { store, ops, actions, peek: () => setSheet({ kind: "peek" }) })} />
+            )}
             <Listing
               // A right-click on an item opens the item's menu only (Metal gives it to the innermost view).
               onBackgroundMenu={(point) => {
