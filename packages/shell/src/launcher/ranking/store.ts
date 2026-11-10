@@ -12,6 +12,7 @@ import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "no
 import { dirname, join } from "node:path";
 import { recentsPath } from "../../recents.ts";
 import type { RankSignals } from "./item.ts";
+import { MAX_FILE_BYTES } from "./lib/constants.ts";
 import {
   decayed,
   emptyMemory,
@@ -26,8 +27,6 @@ import {
   serializeMemory,
 } from "./lib/memory.ts";
 
-/** A file larger than this is not ours (the bounds keep a real one far under it). */
-export const MAX_FILE_BYTES = 1 << 20;
 const WRITE_DELAY_MS = 2000;
 
 export function rankingPath(env: Record<string, string | undefined> = process.env): string {

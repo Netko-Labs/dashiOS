@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { RankingMemory, rankEntries, rankingPath } from "../src/launcher/ranking/index.ts";
+import { MAX_FILE_BYTES } from "../src/launcher/ranking/lib/constants.ts";
 import {
   emptyMemory,
   MAX_OPENED,
@@ -17,7 +18,6 @@ import {
   recordPick,
   serializeMemory,
 } from "../src/launcher/ranking/lib/memory.ts";
-import { MAX_FILE_BYTES } from "../src/launcher/ranking/store.ts";
 import { index } from "./ranking-fixture.ts";
 import { fakeClock } from "./support/time.ts";
 
