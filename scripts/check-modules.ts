@@ -6,10 +6,14 @@
 //                      helper); lib/ is never in a package's exports or bin; lib/ holds no main.ts
 //   H19 deep-imports   from outside a module, import its index.ts or a file its index.ts
 //                      re-exports (tests may also import its lib/)
+//   H19 re-exports     only an index.ts (or a file a package's exports name) re-exports: no file
+//                      keeps an old import path alive
 //   H20 shared-use     a shared/ concern is used by two sibling modules or more (count: how many
 //                      it lacks), sits in a folder named for its concern, and is never a catch-all
 // Run: bun scripts/check-modules.ts [--shrink]
 
+import { join, normalize } from "node:path";
+import ts from "typescript";
 import { buildGraph, crossedModule, type Graph, inside, libOwner, outsideUsers, publicFiles } from "./modules.ts";
 import { type Counts, isTest, type Outcome, ratchet, read, repoFiles, report } from "./ratchet.ts";
 
@@ -109,6 +113,32 @@ export function sharedUse(graph: Graph): Counts {
   return found;
 }
 
+/** Files a package's `exports` name: a package's facades, which may re-export. */
+function exportedFiles(all: string[]): Set<string> {
+  const files = new Set<string>();
+  for (const manifest of all.filter((file) => /^packages\/[^/]+\/package\.json$/.test(file))) {
+    const folder = manifest.slice(0, -"package.json".length);
+    for (const path of entryPaths(Bun.JSONC.parse(read(manifest)))) files.add(normalize(join(folder, path)));
+  }
+  return files;
+}
+
+/** H19: re-exports (`export … from`) outside an index.ts and a package's facades: old paths kept alive. */
+export function reExports(graph: Graph, facades: Set<string>): Counts {
+  const found: Counts = new Map();
+  for (const file of graph.files) {
+    if (/(^|\/)index\.tsx?$/.test(file) || facades.has(file)) continue;
+    const count = reExportCount(file, read(file));
+    if (count > 0) found.set(file, count);
+  }
+  return found;
+}
+
+export function reExportCount(file: string, text: string): number {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  return source.statements.filter((statement) => ts.isExportDeclaration(statement) && statement.moduleSpecifier !== undefined).length;
+}
+
 export function checkModules(all: string[]): Outcome[] {
   const graph = buildGraph(all);
   const lib = libImports(graph);
@@ -116,6 +146,7 @@ export function checkModules(all: string[]): Outcome[] {
   return [
     ratchet("lib-imports", lib, "imports of another module's lib/, or lib/ as an entry"),
     ratchet("deep-imports", deepImports(graph), "imports past a module's index.ts"),
+    ratchet("re-exports", reExports(graph, exportedFiles(all)), "re-exports outside an index.ts"),
     ratchet("shared-use", sharedUse(graph), "shared/ code missing a second user, or not in a concern folder"),
   ];
 }

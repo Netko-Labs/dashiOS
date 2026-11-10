@@ -1,6 +1,6 @@
 // H18 to H20 (scripts/check-modules.ts) on a small made-up tree, and the move tool's rewrite.
 import { describe, expect, test } from "bun:test";
-import { deepImports, entryPaths, libImports, sharedUse } from "../check-modules.ts";
+import { deepImports, entryPaths, libImports, reExportCount, sharedUse } from "../check-modules.ts";
 import { compare, runtimeSpecifiers } from "../entry-weight.ts";
 import type { Graph } from "../modules.ts";
 import { crossedModule, libOwner, moduleChain, topModule } from "../modules.ts";
@@ -78,6 +78,13 @@ describe("H19 deep imports", () => {
       }),
     );
     expect(Object.fromEntries(found)).toEqual({ "packages/shell/test/a.test.ts": 1, [`${S}/dock/a.ts`]: 2 });
+  });
+});
+
+describe("H19 re-exports", () => {
+  test("counts `export … from`, not a local export", () => {
+    const text = 'export { a } from "./a.ts";\nexport type { B } from "./b.ts";\nexport * from "./c.ts";\nexport const d = 1;\nexport { d as e };\n';
+    expect(reExportCount("x.ts", text)).toBe(3);
   });
 });
 

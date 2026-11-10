@@ -53,7 +53,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them). | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
 | H17 | A system service Dashi ships scores 5.0 or better on `systemd-analyze security`. | `scripts/check-units.ts` (`unit-exposure`) | `bun scripts/check-units.ts` |
 | H18 | Only a module's own files import its `lib/` (a test may, to test a private helper). `lib/` is never in a package's `exports` or `bin`, and holds no `main.ts`. | `scripts/check-modules.ts` (`lib-imports`) | `bun scripts/check-modules.ts` |
-| H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`. | `scripts/check-modules.ts` (`deep-imports`) | `bun scripts/check-modules.ts` |
+| H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`. Only an `index.ts` (or a file a package's `exports` names) re-exports: no file keeps an old import path alive. | `scripts/check-modules.ts` (`deep-imports`, `re-exports`) | `bun scripts/check-modules.ts` |
 | H20 | A `shared/` concern is used by two sibling modules or more, and sits in a folder named for its concern: no loose files in `shared/`, no `utils/` or `helpers/`. | `scripts/check-modules.ts` (`shared-use`) | `bun scripts/check-modules.ts` |
 
 ### The lists
@@ -263,8 +263,9 @@ file. `scripts/modules.ts` says the same in code. A module looks like this:
   module's `index.ts`.
 - An app's public surface is its entry point, `main.tsx`: nothing imports an
   app (H4), so it has no `index.ts`, and its other files are in `lib/`.
-- No file re-exports another's names to keep an old import path alive. When a
-  name moves, its importers move with it; only `index.ts` re-exports.
+- No file re-exports another's names to keep an old import path alive (H19).
+  When a name moves, its importers move with it; only `index.ts` re-exports,
+  and a file a package's `exports` names (`@dashi/applet/protocol`).
 
 Rules for `lib/` (H18):
 
