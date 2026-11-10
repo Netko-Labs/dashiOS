@@ -1,6 +1,6 @@
 /** The rows of Displays, Night Shift included. */
 
-import { DISPLAY, MENUBAR, NIGHT_SHIFT, POWER, RESOLUTION, ROTATE, SCALE, SUN, WAVE } from "../../../shared/settings/knob-glyphs.ts";
+import { DISPLAY, MENUBAR, NIGHT_SHIFT, POWER, RESOLUTION, ROTATE, SCALE, SUN, WAVE } from "../../../shared/settings/index.ts";
 import { DEFAULT_X11_SCALING } from "../../../xwayland-scale.ts";
 import { DEFAULT_WARMTH, WARMTH } from "../../lib/night.ts";
 import type { ChoiceOption, RowDef } from "../types.ts";

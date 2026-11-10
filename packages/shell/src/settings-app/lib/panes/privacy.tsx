@@ -13,7 +13,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { byApp } from "../../../privacy/portal-grants.ts";
 import type { AppGrant, AppGrants } from "../../../privacy/store.ts";
-import { paneTitle } from "../../../shared/settings/panes.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { useClockPrefs } from "../../../shared/time/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";

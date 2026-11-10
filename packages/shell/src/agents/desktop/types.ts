@@ -16,7 +16,7 @@ import type { RegionDesktop } from "../../region/index.ts";
 import type { MachineDesktop } from "../../settings-app/machine-reading.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import type { PageId } from "../../setup/index.ts";
-import type { FlagsStore } from "../../shared/control-center/flags.ts";
+import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
 import type { SoftwareBackend } from "./software.ts";
 

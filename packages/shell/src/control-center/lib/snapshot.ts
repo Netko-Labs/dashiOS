@@ -15,7 +15,7 @@ import { GRAPHICS_LABEL } from "../../graphics/policy.ts";
 import type { Laptop } from "../../laptop/start.ts";
 import { keyboardLight, type LaptopSnapshot, lightLabel } from "../../laptop/store.ts";
 import type { ModeSnapshot } from "../../power/modes/store.ts";
-import { type FlagsStore, useFlags } from "../../shared/control-center/flags.ts";
+import { type FlagsStore, useFlags } from "../../shared/control-center/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";
 import type { ControlSnapshot } from "../catalog.ts";
 import { type DeviceStore, useDevices } from "../devices.ts";

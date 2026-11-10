@@ -1,7 +1,7 @@
 /** The rows of Control Center and Desktop & Dock. */
 
 import { DOCK_STYLES } from "../../../dock/settings.ts";
-import { DESKTOPS, DISPLAY, DOCK, GRID, IMAGE, SCROLL, SLIDERS } from "../../../shared/settings/knob-glyphs.ts";
+import { DESKTOPS, DISPLAY, DOCK, GRID, IMAGE, SCROLL, SLIDERS } from "../../../shared/settings/index.ts";
 import type { ChoiceOption, RowDef } from "../types.ts";
 import { choiceSchema, dockSetting, storedSwitch } from "../values.ts";
 

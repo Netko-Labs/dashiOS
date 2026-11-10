@@ -28,7 +28,7 @@ import { RecordingButton, type ScreenRecorder } from "../../recorder/index.ts";
 import { CapturePill, type ScreenCaptureStore, useScreenCapture } from "../../screen-capture/index.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
-import { controlFlags, useFlags } from "../../shared/control-center/flags.ts";
+import { controlFlags, useFlags } from "../../shared/control-center/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/index.ts";
 import { type AppMixer, MicPill, useMicWords } from "../../sound/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";

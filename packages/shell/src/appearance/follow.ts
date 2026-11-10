@@ -6,9 +6,8 @@
 
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { DEFAULT_STYLE, type GtkStyle } from "../shared/appearance/gtk-colors.ts";
-import { type AppLook, detectLook, realProbes } from "../shared/appearance/look.ts";
-import type { FlagsStore } from "../shared/control-center/flags.ts";
+import { type AppLook, DEFAULT_STYLE, detectLook, type GtkStyle, realProbes } from "../shared/appearance/index.ts";
+import type { FlagsStore } from "../shared/control-center/index.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
 import { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
 import type { CornerSource } from "./corner-feed.ts";

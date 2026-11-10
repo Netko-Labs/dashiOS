@@ -27,7 +27,7 @@ import {
   wrongValue,
 } from "../../../settings-app/registry/index.ts";
 import { PANE_KEYWORDS } from "../../../settings-app/search.ts";
-import { PANES } from "../../../shared/settings/panes.ts";
+import { PANES } from "../../../shared/settings/index.ts";
 import { formatAddress } from "../../address.ts";
 import { type ActionContext, type ActionDef, type ActionKind, type ActionState, failed, invalid, type Outcome, ok, ready } from "../../types.ts";
 

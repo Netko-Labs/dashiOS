@@ -17,7 +17,7 @@ import { CHECK } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { speakerGlyph } from "../../../glyphs.ts";
-import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../../../shared/settings/knob-glyphs.ts";
+import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../../../shared/settings/index.ts";
 import { type LevelMeter, type SoundState, type SoundStore, useLevels, useSound } from "../../../sound/index.ts";
 import type { Volume } from "../../../system/volume.ts";
 import { useColors } from "../../colors.ts";

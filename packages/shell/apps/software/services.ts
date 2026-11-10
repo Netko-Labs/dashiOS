@@ -18,7 +18,7 @@ import { AppletInstaller } from "../../src/shared/applet-store/installer.ts";
 import { DASHI_INDEX_KEY } from "../../src/shared/applet-store/keys.ts";
 import { readMachine } from "../../src/shared/applet-store/machine.ts";
 import { spawnDetached } from "../../src/shared/apps/index.ts";
-import { settingsPath } from "../../src/shared/settings/file.ts";
+import { settingsPath } from "../../src/shared/settings/index.ts";
 import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
 import { Flathub } from "../../src/shared/software/flathub.ts";
 import { Images } from "../../src/shared/software/images.ts";

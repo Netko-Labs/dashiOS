@@ -39,7 +39,7 @@ import { basename, dirname, join } from "node:path";
 import { UndoStack } from "@dashi/ui";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
-import { type Check, isRaw, type Raw, settingsPath } from "../shared/settings/file.ts";
+import { type Check, isRaw, type Raw, settingsPath } from "../shared/settings/index.ts";
 import { changesPath } from "./lib/changes/file.ts";
 import { ChangeLog, type Change as LoggedChange } from "./lib/changes/log.ts";
 import { describeChanges } from "./lib/changes/words.ts";

@@ -16,7 +16,7 @@ import type { Notifications } from "../notifications/index.ts";
 import { chargeTarget, powerOffReason } from "../power/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { setControlMotion } from "../shared/controls/index.ts";
-import { isPaneId } from "../shared/settings/panes.ts";
+import { isPaneId } from "../shared/settings/index.ts";
 import { startAppMixer } from "../sound/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { Catalog, Programs } from "./apps.ts";

@@ -8,7 +8,7 @@
  */
 
 import { COMPOSITOR, findAncestor, isNested } from "../menus/index.ts";
-import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../shared/appearance/look.ts";
+import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../shared/appearance/index.ts";
 
 /** One program and its arguments; never a shell string. */
 export type AppCommand = readonly string[];

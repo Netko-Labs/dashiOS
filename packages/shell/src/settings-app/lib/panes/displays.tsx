@@ -23,7 +23,7 @@ import { mirrorSource } from "../../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorLabel, ratesOf, sizeLabel } from "../../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../../displays.ts";
 import type { Laptop } from "../../../laptop/start.ts";
-import { SUN } from "../../../shared/settings/knob-glyphs.ts";
+import { SUN } from "../../../shared/settings/index.ts";
 import { selectedRef } from "../../../wallpaper/catalog.ts";
 import { wallpaperTiles } from "../../../wallpaper/tiles.ts";
 import { useColors } from "../../colors.ts";

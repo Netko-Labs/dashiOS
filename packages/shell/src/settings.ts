@@ -93,9 +93,9 @@ import {
   TOUCHPAD,
   WALLPAPER,
 } from "./settings-schema.ts";
-import { DEFAULT_CORNERS } from "./shared/appearance/corners.ts";
+import { DEFAULT_CORNERS } from "./shared/appearance/index.ts";
 import { parseCatalogs } from "./shared/applet-store/catalogs.ts";
-import { settingsPath } from "./shared/settings/file.ts";
+import { settingsPath } from "./shared/settings/index.ts";
 import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "./wallpaper/catalog.ts";
 import { RETIRED_KEYS, RETIRED_KINDS } from "./wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "./xwayland-scale.ts";

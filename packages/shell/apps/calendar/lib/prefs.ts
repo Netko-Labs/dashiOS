@@ -8,7 +8,7 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { useEffect, useState } from "react";
-import { settingsPath } from "../../../src/shared/settings/file.ts";
+import { settingsPath } from "../../../src/shared/settings/index.ts";
 import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS, firstDayIndex, readRegionSettings } from "../../../src/shared/time/index.ts";
 
 export interface RegionPrefs {

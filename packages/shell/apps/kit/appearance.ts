@@ -9,7 +9,7 @@
 
 import { existsSync, readFileSync, statSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
-import { controlFlags, type Flags, type FlagsStore, flagsPath, parseFlags } from "../../src/shared/control-center/flags.ts";
+import { controlFlags, type Flags, type FlagsStore, flagsPath, parseFlags } from "../../src/shared/control-center/index.ts";
 
 /** How often the file is looked at when it (or its folder) can't be watched yet. */
 const POLL_MS = 1000;

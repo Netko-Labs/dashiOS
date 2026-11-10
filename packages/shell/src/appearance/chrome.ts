@@ -8,7 +8,7 @@
  */
 
 import type { Compositor } from "../compositor/index.ts";
-import { CORNER_RADIUS, type CornerName } from "../shared/appearance/corners.ts";
+import { CORNER_RADIUS, type CornerName } from "../shared/appearance/index.ts";
 
 export class ChromeStyle {
   private dark: boolean | null = null;

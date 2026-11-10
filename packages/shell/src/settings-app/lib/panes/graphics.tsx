@@ -14,7 +14,7 @@ import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../../graphics/policy.ts";
 import type { Laptop } from "../../../laptop/start.ts";
 import { useLaptop } from "../../../laptop/store.ts";
 import type { GraphicsChoice } from "../../../power/modes/settings.ts";
-import { GPU } from "../../../shared/settings/knob-glyphs.ts";
+import { GPU } from "../../../shared/settings/index.ts";
 import { Button, Caption, Choices, Group, Note, Page, Switch } from "../../ui.tsx";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";

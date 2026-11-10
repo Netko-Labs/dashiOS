@@ -18,7 +18,7 @@ import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
 import { chooseRegion, type RegionRuntime, startRegion } from "../region/index.ts";
 import { SettingsStore } from "../settings-app/index.ts";
 import { installedSpecs, METAL_HOST, shellDir } from "../shared/apps/index.ts";
-import { connectDarkMode } from "../shared/control-center/flags.ts";
+import { connectDarkMode } from "../shared/control-center/index.ts";
 import { followSuspension } from "../suspend.ts";
 import { ToplevelStore } from "../toplevels.ts";
 import type { Services } from "./services.ts";

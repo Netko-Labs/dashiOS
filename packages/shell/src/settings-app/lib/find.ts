@@ -20,7 +20,7 @@
  * by its name ("Helium" finds its row in Sound's Apps card).
  */
 
-import { PANES, type PaneId, type PaneInfo } from "../../shared/settings/panes.ts";
+import { PANES, type PaneId, type PaneInfo } from "../../shared/settings/index.ts";
 import { type RowDef, rowName, rowPlace, SETTINGS_ROWS } from "../registry/index.ts";
 import { PANE_KEYWORDS } from "../search.ts";
 

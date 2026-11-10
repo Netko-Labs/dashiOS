@@ -20,7 +20,7 @@
 
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "../../shared/appearance/gtk-colors.ts";
+import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "../../shared/appearance/index.ts";
 
 export const BEGIN = "/* >>> dashi window buttons (managed by Dashi; edit outside this block) */";
 export const END = "/* <<< dashi window buttons */";

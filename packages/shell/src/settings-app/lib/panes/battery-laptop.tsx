@@ -15,7 +15,7 @@ import { chargeTarget } from "../../../power/battery-health.ts";
 import { type BoostChoice, CHARGE_LIMIT_MIN, type EppChoice } from "../../../power/modes/settings.ts";
 import { useModes } from "../../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../../power/modes/types.ts";
-import { PLUG } from "../../../shared/settings/knob-glyphs.ts";
+import { PLUG } from "../../../shared/settings/index.ts";
 import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";

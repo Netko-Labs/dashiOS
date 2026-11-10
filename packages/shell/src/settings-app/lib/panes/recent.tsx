@@ -7,8 +7,8 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
-import { type FlagsStore, useFlags } from "../../../shared/control-center/flags.ts";
-import { isPaneId } from "../../../shared/settings/panes.ts";
+import { type FlagsStore, useFlags } from "../../../shared/control-center/index.ts";
+import { isPaneId } from "../../../shared/settings/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
 import { findRow, rowPlace } from "../../registry/index.ts";

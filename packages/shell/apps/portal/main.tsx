@@ -11,8 +11,8 @@
  *   bun apps/portal/main.tsx      (session/dashi-portal runs this)
  */
 
-import { AccountsServiceBackend } from "../../src/shared/accounts/backend.ts";
-import { connectDarkMode } from "../../src/shared/control-center/flags.ts";
+import { AccountsServiceBackend } from "../../src/shared/accounts/index.ts";
+import { connectDarkMode } from "../../src/shared/control-center/index.ts";
 import { DBusConnection, FdService, type InterfaceSpec, type Variant } from "../../src/shared/dbus/index.ts";
 import { PORTAL_BACKEND } from "../../src/shared/portal-host/index.ts";
 import { setProcessName } from "../kit/name.ts";

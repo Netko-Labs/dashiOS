@@ -16,7 +16,7 @@ import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/index.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import type { FlagsStore } from "../shared/control-center/flags.ts";
+import type { FlagsStore } from "../shared/control-center/index.ts";
 import { Software } from "../shared/software/manager.ts";
 import { standIn } from "../shared/software/stand-in.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";

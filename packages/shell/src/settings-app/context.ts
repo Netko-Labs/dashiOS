@@ -2,8 +2,8 @@ import type { AgentStore, AnswerStatus, Grants, Passwords, SiteGrants } from "..
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
-import type { FlagsStore } from "../shared/control-center/flags.ts";
-import type { PaneId } from "../shared/settings/panes.ts";
+import type { FlagsStore } from "../shared/control-center/index.ts";
+import type { PaneId } from "../shared/settings/index.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { ControlCenterEditor } from "./control-center.tsx";
 import type { XkbLayouts } from "./layouts.ts";

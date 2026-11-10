@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Compositor } from "./compositor/index.ts";
-import type { FlagsStore } from "./control-center/index.ts";
+import type { FlagsStore } from "./shared/control-center/index.ts";
 
 export interface Tint {
   red: number;

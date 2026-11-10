@@ -17,7 +17,7 @@
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useContext, useEffect, useRef } from "react";
 import { useControlColors } from "../../shared/controls/palette.ts";
-import { type PaneId, paneGroups, SIDEBAR_PANES } from "../../shared/settings/panes.ts";
+import { type PaneId, paneGroups, SIDEBAR_PANES } from "../../shared/settings/index.ts";
 import { SpotContext, scrollFor } from "../spot.tsx";
 import type { Found } from "./find.ts";
 import { SIDEBAR, topBand } from "./sidebar-measures.ts";

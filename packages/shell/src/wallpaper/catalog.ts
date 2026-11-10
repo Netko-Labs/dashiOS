@@ -8,7 +8,7 @@
  */
 
 import { join } from "node:path";
-import { isPhotoPath } from "../shared/settings/file.ts";
+import { isPhotoPath } from "../shared/settings/index.ts";
 import { type FrameRate, type LiveKeys, type LiveShader, resolveLive } from "./live/choice.ts";
 
 export const WALLPAPER_MODES = ["fill", "fit", "center"] as const;

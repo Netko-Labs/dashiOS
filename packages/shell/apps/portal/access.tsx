@@ -18,7 +18,7 @@ import { AlertWindow, alertWindowHeight, Button, glyphs } from "@dashi/ui";
 import { useState } from "react";
 import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
 import { type LinkAnswer, openLink } from "../../src/shared/links/index.ts";
-import { paneTitle } from "../../src/shared/settings/panes.ts";
+import { paneTitle } from "../../src/shared/settings/index.ts";
 import { type AppInfo, appInfo } from "./apps.ts";
 import { type Choice, parseChoices } from "./file-chooser/options.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";

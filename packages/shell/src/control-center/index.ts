@@ -1,4 +1,3 @@
-export { controlFlags, FlagsStore } from "../shared/control-center/flags.ts";
 export { type AppletTile, type AppletTileSource, appletTileKey, isAppletTile, type TileAction } from "./applet-tiles.ts";
 export { type ControlPage, isThere, percentText } from "./catalog.ts";
 export { type Controls, useControls } from "./controls.tsx";

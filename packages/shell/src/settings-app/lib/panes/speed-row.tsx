@@ -1,7 +1,7 @@
 /** The speed rows the Trackpad and Mouse panes share: sliders from slow to fast, for tracking and for scrolling. */
 
 import { scrollSpeedAt, scrollSpeedPosition } from "../../../scroll-speed.ts";
-import { POINTER, SCROLL } from "../../../shared/settings/knob-glyphs.ts";
+import { POINTER, SCROLL } from "../../../shared/settings/index.ts";
 import type { SettingId } from "../../registry/index.ts";
 import { Slider } from "../../ui.tsx";
 import { type Range, SCROLL_POSITION, SPEED } from "../controls.ts";

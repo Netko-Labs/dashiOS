@@ -2,7 +2,7 @@ import type { AnswerStatus } from "../../agents/index.ts";
 import type { RegionStore } from "../../region/index.ts";
 import type { XkbLayouts } from "../../settings-app/layouts.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
-import type { FlagsStore } from "../../shared/control-center/flags.ts";
+import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { WifiNetwork, WifiStore } from "../../wifi/index.ts";
 import type { Flow } from "../flow.ts";
 import type { ExtrasStore } from "./extras/store.ts";

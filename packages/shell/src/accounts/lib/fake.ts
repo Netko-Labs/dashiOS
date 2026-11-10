@@ -5,8 +5,15 @@
  * and the new one must be at least eight characters.
  */
 
-import { iconProblem, nameProblem } from "../../shared/accounts/parse.ts";
-import type { Account, AccountsBackend, ChangeResult, PasswordChanger, PasswordResult } from "../../shared/accounts/types.ts";
+import {
+  type Account,
+  type AccountsBackend,
+  type ChangeResult,
+  iconProblem,
+  nameProblem,
+  type PasswordChanger,
+  type PasswordResult,
+} from "../../shared/accounts/index.ts";
 
 export class FakeAccounts implements AccountsBackend, PasswordChanger {
   private account: Account = {

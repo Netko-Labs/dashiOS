@@ -7,8 +7,8 @@
  */
 
 import type { DockPrefs } from "../../dock/prefs.ts";
-import type { FlagsStore } from "../../shared/control-center/flags.ts";
-import type { PaneId } from "../../shared/settings/panes.ts";
+import type { FlagsStore } from "../../shared/control-center/index.ts";
+import type { PaneId } from "../../shared/settings/index.ts";
 import type { SettingsStore } from "../store.ts";
 
 /** What a row is: a switch, one of a few choices, a value (a number, a text, a reading), or something to do (a button). */

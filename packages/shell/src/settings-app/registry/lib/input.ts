@@ -2,21 +2,7 @@
 
 import { DEFAULT_INPUT_METHOD } from "../../../input-method.ts";
 import { SCROLL_SPEED_DEFAULT, SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../../../scroll-speed.ts";
-import {
-  CLICK,
-  CLIPBOARD,
-  CURVE,
-  HISTORY,
-  KEYBOARD,
-  MOUSE,
-  POINTER,
-  REPEAT,
-  SCROLL,
-  SHIELD,
-  TAP,
-  TERMINAL,
-  TRACKPAD,
-} from "../../../shared/settings/knob-glyphs.ts";
+import { CLICK, CLIPBOARD, CURVE, HISTORY, KEYBOARD, MOUSE, POINTER, REPEAT, SCROLL, SHIELD, TAP, TERMINAL, TRACKPAD } from "../../../shared/settings/index.ts";
 import { DEFAULTS, REPEAT_DELAY, REPEAT_RATE, SPEED } from "../../lib/controls.ts";
 import type { ChoiceOption, RowDef } from "../types.ts";
 import { storedChoice, storedNumber, storedSwitch } from "../values.ts";

@@ -2,8 +2,8 @@
 
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../pointer.ts";
-import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../shared/appearance/corners.ts";
-import { BATTERY, CONTRAST, CORNER, DISPLAY, IMAGE, MOON, MOTION, POINTER, RING, TEXT, VIDEO } from "../../shared/settings/knob-glyphs.ts";
+import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "../../shared/appearance/index.ts";
+import { BATTERY, CONTRAST, CORNER, DISPLAY, IMAGE, MOON, MOTION, POINTER, RING, TEXT, VIDEO } from "../../shared/settings/index.ts";
 import { DEFAULT_WALLPAPER_MODE } from "../../wallpaper/catalog.ts";
 import { DEFAULT_FRAME_RATE, FRAME_RATES } from "../../wallpaper/live/choice.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";

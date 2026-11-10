@@ -13,7 +13,7 @@ import { readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
 import { localeFromEnv, toBcp47 } from "../../../src/shared/locale/index.ts";
-import { settingsPath } from "../../../src/shared/settings/file.ts";
+import { settingsPath } from "../../../src/shared/settings/index.ts";
 import { readRegionSettings } from "../../../src/shared/time/index.ts";
 
 export interface NumberLocale {

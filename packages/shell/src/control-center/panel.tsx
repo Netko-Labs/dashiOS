@@ -15,7 +15,7 @@ import { type KeyDownInfo, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
-import type { FlagsStore } from "../shared/control-center/flags.ts";
+import type { FlagsStore } from "../shared/control-center/index.ts";
 import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
 import type { AppMixer, SoundStore } from "../sound/index.ts";
 import type { SystemStore } from "../system/store.ts";

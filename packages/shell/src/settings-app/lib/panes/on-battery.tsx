@@ -16,7 +16,7 @@ import { GRAPHICS_LABEL } from "../../../graphics/policy.ts";
 import type { Laptop } from "../../../laptop/start.ts";
 import { TextLink } from "../../../shared/controls/inputs.tsx";
 import { useControlColors } from "../../../shared/controls/palette.ts";
-import { type PaneId, paneTitle } from "../../../shared/settings/panes.ts";
+import { type PaneId, paneTitle } from "../../../shared/settings/index.ts";
 import { Spot } from "../../spot.tsx";
 import { Setting } from "../setting.tsx";
 

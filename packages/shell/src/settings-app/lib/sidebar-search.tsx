@@ -3,7 +3,7 @@
 import { Svg, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { useControlColors } from "../../shared/controls/palette.ts";
-import { SEARCH } from "../../shared/settings/knob-glyphs.ts";
+import { SEARCH } from "../../shared/settings/index.ts";
 import { SIDEBAR } from "./sidebar-measures.ts";
 
 export interface SearchProps {

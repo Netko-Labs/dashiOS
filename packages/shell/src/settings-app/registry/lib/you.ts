@@ -21,7 +21,7 @@ import {
   REFRESH,
   SPARK,
   USER,
-} from "../../../shared/settings/knob-glyphs.ts";
+} from "../../../shared/settings/index.ts";
 import type { ChoiceOption, RowDef } from "../types.ts";
 import { flag, storedChoice, storedSwitch } from "../values.ts";
 

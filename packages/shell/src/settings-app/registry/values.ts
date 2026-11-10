@@ -6,7 +6,7 @@
  */
 
 import { DOCK_DEFAULTS, type DockSettings } from "../../dock/settings.ts";
-import type { Flags } from "../../shared/control-center/flags.ts";
+import type { Flags } from "../../shared/control-center/index.ts";
 import type { Change, SectionName } from "../sections.ts";
 import type { SettingsData } from "../types.ts";
 import type { Binding, ChoiceOption, RegistryStores, RowDef, SettingValue, ValueSchema } from "./types.ts";

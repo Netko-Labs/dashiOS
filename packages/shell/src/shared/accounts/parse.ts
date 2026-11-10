@@ -5,7 +5,7 @@
  */
 
 import { cleanText } from "../io/index.ts";
-import { isPhotoPath } from "../settings/file.ts";
+import { isPhotoPath } from "../settings/index.ts";
 import type { Account } from "./types.ts";
 
 /** `PasswordMode`: 0 regular, 1 set at next login, 2 none. */

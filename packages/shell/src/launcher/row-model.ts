@@ -9,7 +9,7 @@
 import type { ActionState } from "../actions/index.ts";
 import type { Entry } from "../entries.ts";
 import type { FileHit } from "../shared/files/file-search.ts";
-import { PANES } from "../shared/settings/panes.ts";
+import { PANES } from "../shared/settings/index.ts";
 import type { AgentAct } from "./lib/agents/acts.ts";
 import { commandGlyph } from "./lib/command-glyphs.ts";
 import { outsideIcon } from "./lib/extension-rows.ts";

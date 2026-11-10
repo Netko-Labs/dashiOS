@@ -8,7 +8,7 @@
  */
 
 import { inSchedule } from "../night-shift.ts";
-import type { Flags } from "../shared/control-center/flags.ts";
+import type { Flags } from "../shared/control-center/index.ts";
 
 /** Minutes since midnight: dark from here... */
 export const AUTO_DARK_FROM = 19 * 60;

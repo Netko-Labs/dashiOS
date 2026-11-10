@@ -13,7 +13,7 @@ import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Laptop } from "../laptop/start.ts";
-import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../shared/settings/knob-glyphs.ts";
+import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../shared/settings/index.ts";
 import { useColors } from "./colors.ts";
 import { useSettings } from "./hooks.ts";
 import { layoutName, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "./layouts.ts";

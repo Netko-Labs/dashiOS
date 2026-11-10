@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isFormatsLocale, localeFromEnv, toBcp47 } from "../locale/index.ts";
-import { isBoolean, isRaw, oneOf, readFields } from "../settings/file.ts";
+import { isBoolean, isRaw, oneOf, readFields } from "../settings/index.ts";
 
 export interface ClockPrefs {
   /** The BCP 47 tag the formats follow (`de-DE`). */

@@ -10,7 +10,8 @@
 
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { type Account, initialsOf, nameProblem, useAccount } from "../../../accounts/index.ts";
+import { useAccount } from "../../../accounts/index.ts";
+import { type Account, initialsOf, nameProblem } from "../../../shared/accounts/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";

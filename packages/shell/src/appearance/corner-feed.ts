@@ -4,7 +4,7 @@
  * starts: whoever reads the settings calls `set`, and the follower subscribes.
  */
 
-import { CORNER_RADIUS, type CornerName, DEFAULT_CORNERS } from "../shared/appearance/corners.ts";
+import { CORNER_RADIUS, type CornerName, DEFAULT_CORNERS } from "../shared/appearance/index.ts";
 
 export interface CornerSource {
   subscribe: (listener: () => void) => () => void;

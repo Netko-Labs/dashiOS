@@ -15,7 +15,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
 import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
 import { controlMenuHighlight, useControlColors } from "../shared/controls/palette.ts";
-import type { Nav, PaneId } from "../shared/settings/panes.ts";
+import type { Nav, PaneId } from "../shared/settings/index.ts";
 import { type AppMixer, useAppNames } from "../sound/index.ts";
 import { AppearancePane } from "./appearance.tsx";
 import type { PaneContext } from "./context.ts";

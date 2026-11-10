@@ -10,7 +10,7 @@ import { useState, useSyncExternalStore } from "react";
 import { CONTRAST } from "../../control-center/glyphs.ts";
 import { wifiGlyph } from "../../glyphs.ts";
 import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../../settings-app/glyphs.ts";
-import { paneTitle } from "../../shared/settings/panes.ts";
+import { paneTitle } from "../../shared/settings/index.ts";
 import { useWifi } from "../../wifi/index.ts";
 import { PAGE_INFO, type PageId } from "../flow.ts";
 import type { SetupContext } from "./context.ts";
