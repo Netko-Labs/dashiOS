@@ -19,9 +19,9 @@
  * fetching and files are the store's and the shell's.
  */
 
+import { isRefusal, list, optionalBoolean, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 import { compareVersions, dashiSatisfies, isAppletId, type Manifest, parseManifest } from "./manifest.ts";
 import { sha256 } from "./package.ts";
-import { isRefusal, list, optionalBoolean, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { parsePublicKey, verify } from "./signing/minisign.ts";
 
 export const INDEX_FORMAT = 1;

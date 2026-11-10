@@ -20,6 +20,9 @@
       "bin": {
         "dashi-applet": "./src/cli/main.ts",
       },
+      "dependencies": {
+        "@dashi/shape": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "@types/react": "^19.2.0",
@@ -58,11 +61,20 @@
         "typescript": "^5.9.0",
       },
     },
+    "packages/shape": {
+      "name": "@dashi/shape",
+      "version": "0.7.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.9.0",
+      },
+    },
     "packages/shell": {
       "name": "@dashi/shell",
       "version": "0.7.0",
       "dependencies": {
         "@dashi/applet": "workspace:*",
+        "@dashi/shape": "workspace:*",
         "@dashi/ui": "workspace:*",
         "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
         "react": "^19.2.0",
@@ -96,6 +108,8 @@
     "@dashi/applet": ["@dashi/applet@workspace:packages/applet"],
 
     "@dashi/greeter": ["@dashi/greeter@workspace:packages/greeter"],
+
+    "@dashi/shape": ["@dashi/shape@workspace:packages/shape"],
 
     "@dashi/shell": ["@dashi/shell@workspace:packages/shell"],
 

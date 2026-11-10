@@ -92,7 +92,6 @@
 355	packages/shell/src/settings-app/sidebar.tsx
 663	packages/shell/src/settings-app/store.ts
 484	packages/shell/src/settings.ts
-313	packages/shell/src/shared/app-menus/protocol.ts
 386	packages/shell/src/shared/calendar/ics.ts
 305	packages/shell/src/shared/calendar/store.ts
 328	packages/shell/src/shared/dbus/connection.ts

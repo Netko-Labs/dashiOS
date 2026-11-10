@@ -110,6 +110,8 @@ the same change.
 - `packages/dashi-ui` - `@dashi/ui`: Dashi's own components and palettes.
 - `packages/applet` - `@dashi/applet`: the applet SDK (client, popovers, manifest,
   packages, signatures, the `dashi-applet` CLI; `docs/applets.md`).
+- `packages/shape` - `@dashi/shape`: the one parser for outside data (a shape is
+  the parser, the type and a JSON Schema; `docs/conventions.md`, "TypeScript").
 - `session/` - `dashi-session`, `dashi-greeter`, `dashi-mcp`, `dashi-agent` (the agent sandbox), `dashi-browser-host`, `dashi-dialog`, `dashi-applet`, session target, portal/mime config.
 - `spin/` - packaging and image files, by package.
 - `vm/` - the development VM (`vm/vm`).

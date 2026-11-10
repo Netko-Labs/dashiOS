@@ -17,7 +17,7 @@
  * - `view`: the applet's own Metal host draws its answer where the launcher's rows were.
  */
 
-import { id, isRefusal, list, type Refusal, record, refuse, text } from "./parse.ts";
+import { id, isRefusal, list, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 export const COMMAND_MODES = ["instant", "pick", "view"] as const;
 export type CommandMode = (typeof COMMAND_MODES)[number];

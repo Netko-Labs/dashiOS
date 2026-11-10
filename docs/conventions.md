@@ -131,6 +131,7 @@ packages/
   greeter/          @dashi/greeter: the login screen (greetd's greeter)
   dashi-ui/         @dashi/ui: Dashi's own components and palettes
   applet/           @dashi/applet: the applet SDK and the dashi-applet CLI (docs/applets.md)
+  shape/            @dashi/shape: the one parser for outside data (shapes: parser, type, JSON Schema)
 data/
   models/           the hardware model database (data/models/*.json, schema.json)
   fixtures/         captured hardware for tests (a laptop's sysfs, the capture script)
@@ -208,8 +209,13 @@ Rust uses named modules instead of `lib/` or `shared/`: `state.rs`,
 - Prefer `??`, `??=`, spread, `.map`/`.filter`, `Set`, and `Map` over sentinel
   logic and lookup loops. Prefer positive predicates (`isReady`, `hasWindow`).
 - Parse JSON, IPC frames, D-Bus replies, config, and subprocess output with
-  structured parsers; avoid ad hoc string manipulation. `JSON.parse(…) as T` is
-  a cast, not a parse (H7).
+  `@dashi/shape` (`packages/shape`), the one parser for outside data: a shape
+  gives the parser (a typed value, or a refusal naming the field), the type
+  (`Infer<typeof S>`, never written by hand beside it) and a JSON Schema.
+  Avoid ad hoc string manipulation, and private `isRecord`s: use the shape's.
+  Lists refuse at the first bad entry (`list`) unless losing one is harmless
+  (`lenientList`, things on screen). `JSON.parse(…) as T` is a cast, not a
+  parse (H7).
 - Ask the compositor through `src/compositor.ts`'s typed methods, never a raw
   `request("…")` (H8).
 - Account for out-of-order async resolution: IPC requests, D-Bus calls, and

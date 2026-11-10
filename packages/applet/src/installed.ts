@@ -21,9 +21,9 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRefusal, refuse } from "@dashi/shape";
 import { isAppletId, type Manifest, readManifest } from "./manifest.ts";
 import type { Unpacked } from "./package.ts";
-import { isRefusal, refuse } from "./parse.ts";
 import { permissionName } from "./permissions.ts";
 
 export interface InstallRecord {

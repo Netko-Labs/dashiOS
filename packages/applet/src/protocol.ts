@@ -40,11 +40,11 @@
 
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "@dashi/shape/kit";
 import { COMMAND_LIMITS, type CommandResult, type CommandRow, parseResult, parseRows } from "./commands.ts";
 import { type ControlAction, type ControlUpdate, parseControlAction, parseControlUpdate, parseShown } from "./controls.ts";
 import { type Manifest, parseManifest } from "./manifest.ts";
 import { type AppletMenuRow, parseMenu } from "./menu.ts";
-import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "./parse.ts";
 import { type PowerChoice, type PowerState, parsePowerAsk, parsePowerState } from "./power.ts";
 
 export const PROTOCOL = 5;
