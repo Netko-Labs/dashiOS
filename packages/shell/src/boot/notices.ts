@@ -20,7 +20,7 @@ import type { RegistryStores } from "../settings-app/registry/index.ts";
 import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { Software } from "../shared/software/manager.ts";
 import { standIn } from "../shared/software/stand-in.ts";
-import { checkPath, openSoftwareUpdates, UpdateCheck } from "../software/update-check.ts";
+import { checkPath, openSoftwareUpdates, UpdateCheck } from "../software/index.ts";
 import { BatteryAlerts } from "../system/battery-alerts.ts";
 import type { System } from "../system/start.ts";
 import type { ToplevelStore } from "../toplevels.ts";
