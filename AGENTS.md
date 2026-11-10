@@ -113,7 +113,8 @@ the same change.
   while an agent is connected. `.mcp.json` offers the same server to
   Claude Code as `dashi-vm`. The first call of each kind asks for consent on the
   VM's screen; allow it there once ("Always Allow"). `vm/vm ipc METHOD JSON` sends one
-  compositor request (setting the VM's mode, say).
+  compositor request from outside the session: only the methods anyone may
+  ask (`session`, `outputs`, `gpus`; docs/compositor-ipc.md, "Who may ask").
 - Start the VM as its own user unit, so it outlives the shell that started it:
   `systemd-run --user --unit=dashi-vm --collect vm/vm desktop`.
 - VM screenshots: QEMU reads the screen with `DASHI_VM_GPU=none`; with the default
