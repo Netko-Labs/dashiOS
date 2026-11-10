@@ -9,7 +9,7 @@ import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { useColors } from "../settings-app/colors.ts";
 import { Choices } from "../settings-app/ui.tsx";
-import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "./locale.ts";
+import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "../shared/locale/locale.ts";
 import { PickList, PickNote, PickRow, SearchField } from "./pick.tsx";
 import { describeZone, searchZones, type Zone, zoneAreas } from "./timezones.ts";
 

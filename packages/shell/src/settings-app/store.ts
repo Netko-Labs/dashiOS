@@ -49,8 +49,8 @@ import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
-import { isFormatsLocale } from "../region/locale.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
+import { isFormatsLocale } from "../shared/locale/locale.ts";
 import { parseSpaceNames, type SpaceNames } from "../spaces/names.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {

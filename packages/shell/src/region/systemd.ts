@@ -9,8 +9,8 @@
 
 import { DBusConnection, DBusError } from "../shared/dbus/index.ts";
 import { propertyMap, unwrap } from "../shared/dbus/properties.ts";
+import { parseInstalledLocales } from "../shared/locale/locale.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
-import { parseInstalledLocales } from "./locale.ts";
 import { isTimezoneName } from "./timezones.ts";
 
 export const TIMEDATE = { name: "org.freedesktop.timedate1", path: "/org/freedesktop/timedate1" } as const;

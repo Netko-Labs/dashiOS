@@ -8,8 +8,8 @@
 import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
-import { weekdayNames } from "../../src/region/week.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
+import { weekdayNames } from "../../src/shared/time/week.ts";
 import { EventChip, MoreChip } from "./chips.tsx";
 import { tint } from "./colors.ts";
 import { addMinutes, type Day, dayPart, monthOf } from "./dates.ts";

@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { localeFromEnv, toBcp47 } from "./region/locale.ts";
+import { localeFromEnv, toBcp47 } from "../locale/locale.ts";
 
 export interface ClockPrefs {
   /** The BCP 47 tag the formats follow (`de-DE`). */
@@ -16,7 +16,7 @@ export interface ClockPrefs {
   hour24: boolean | undefined;
   /** Whether the menu bar's clock shows the date before the time. */
   showDate: boolean;
-  /** The first day of the week the person chose; undefined follows the locale (region/week.ts). */
+  /** The first day of the week the person chose; undefined follows the locale (week.ts). */
   firstWeekday?: "sunday" | "monday" | "saturday";
 }
 

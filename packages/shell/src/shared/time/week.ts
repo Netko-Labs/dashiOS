@@ -4,7 +4,7 @@
  * the person's first day. Pure.
  */
 
-import { type ClockPrefs, formatLongDay, formatTime } from "../clock.ts";
+import { type ClockPrefs, formatLongDay, formatTime } from "./clock.ts";
 
 export type FirstWeekday = "sunday" | "monday" | "saturday";
 

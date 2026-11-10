@@ -8,7 +8,7 @@
 import { TextField, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { type ClockPrefs, usesHour24 } from "../../src/clock.ts";
+import { type ClockPrefs, usesHour24 } from "../../src/shared/time/clock.ts";
 import { addDays, type Day } from "./dates.ts";
 import { clock, weekdayShort } from "./format.ts";
 import { CALENDAR } from "./glyphs.ts";

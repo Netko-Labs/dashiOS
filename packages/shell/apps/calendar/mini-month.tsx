@@ -3,8 +3,8 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
-import { weekdayNames } from "../../src/region/week.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
+import { weekdayNames } from "../../src/shared/time/week.ts";
 import { addDays, addMonths, type Day, firstOfMonth, monthOf, startOfWeek } from "./dates.ts";
 import { monthTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT } from "./glyphs.ts";

@@ -8,7 +8,7 @@
 
 import { useColors, useSurface } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { over, tint } from "./colors.ts";
 import type { DragKind } from "./drag.ts";
 import { clock, titleOf } from "./format.ts";

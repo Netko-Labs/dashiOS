@@ -11,9 +11,9 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
-import { useClockPrefs } from "../../clock.ts";
 import { byApp } from "../../privacy/portal-grants.ts";
 import type { AppGrant, AppGrants } from "../../privacy/store.ts";
+import { useClockPrefs } from "../../shared/time/clock.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries, useSettings } from "../hooks.ts";
 import { paneTitle } from "../panes.ts";

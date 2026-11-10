@@ -8,9 +8,9 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { useEffect, useState } from "react";
-import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS } from "../../src/clock.ts";
-import { firstDayIndex } from "../../src/region/week.ts";
 import { readSettings, settingsPath } from "../../src/settings-app/store.ts";
+import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS } from "../../src/shared/time/clock.ts";
+import { firstDayIndex } from "../../src/shared/time/week.ts";
 
 export interface RegionPrefs {
   clock: ClockPrefs;

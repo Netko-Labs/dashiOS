@@ -6,7 +6,7 @@
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { dayPart } from "./dates.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { clock, shortDay, titleOf } from "./format.ts";

@@ -7,7 +7,7 @@
 
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { tint } from "./colors.ts";
 import { addDays, type Day, dayPart, type Local, minuteOfDay } from "./dates.ts";
 import { minutesFor } from "./drag.ts";

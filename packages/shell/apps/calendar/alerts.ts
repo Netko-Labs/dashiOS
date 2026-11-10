@@ -4,7 +4,7 @@
  * (src/calendar/reminders.ts) decide when to look and what to post, from this.
  */
 
-import { type ClockPrefs, formatTime } from "../../src/clock.ts";
+import { type ClockPrefs, formatTime } from "../../src/shared/time/clock.ts";
 import { addDays, addMinutes, dayOf, dayPart, instantOf, type Local, localOf } from "./dates.ts";
 import { occurrencesOf } from "./recurrence.ts";
 import type { Calendar } from "./types.ts";

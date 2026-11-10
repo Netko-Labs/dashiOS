@@ -10,7 +10,7 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { AllDayStrip } from "./allday-strip.tsx";
 import type { Day } from "./dates.ts";
 import { DayColumn } from "./day-column.tsx";

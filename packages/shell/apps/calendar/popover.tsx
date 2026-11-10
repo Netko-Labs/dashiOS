@@ -8,7 +8,7 @@
 import { Button, useColors, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { alertLabel, repeatSummary, timeSpan, titleOf } from "./format.ts";
 import type { Calendar, Occurrence } from "./types.ts";
 import { fromHere, hereZone, isZone, zoneCity } from "./zones.ts";

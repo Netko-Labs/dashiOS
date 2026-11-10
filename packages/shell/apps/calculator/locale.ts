@@ -12,8 +12,8 @@
 import { readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
-import { localeFromEnv, toBcp47 } from "../../src/region/locale.ts";
 import { readSettings, settingsPath } from "../../src/settings-app/store.ts";
+import { localeFromEnv, toBcp47 } from "../../src/shared/locale/locale.ts";
 
 export interface NumberLocale {
   /** The BCP 47 tag the separators come from ("de-DE"). */

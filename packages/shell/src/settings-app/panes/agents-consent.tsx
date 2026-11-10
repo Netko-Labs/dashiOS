@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
 import type { GrantEntry, Scope } from "../../agents/consent.ts";
 import type { AgentInfo } from "../../agents/presence.ts";
-import { useClockPrefs } from "../../clock.ts";
+import { useClockPrefs } from "../../shared/time/clock.ts";
 import type { ChangeEntry } from "../changes/index.ts";
 import { useColors } from "../colors.ts";
 import type { PaneContext } from "../context.ts";

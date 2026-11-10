@@ -8,7 +8,7 @@
 
 import type { Bounds, WindowKeyInfo } from "@mirinjs/metal";
 import { useRef, useState } from "react";
-import { type ClockPrefs, usesHour24 } from "../../src/clock.ts";
+import { type ClockPrefs, usesHour24 } from "../../src/shared/time/clock.ts";
 import { type Day, dayPart } from "./dates.ts";
 import { isSameTimes } from "./drag.ts";
 import { occurrenceKey } from "./event-block.tsx";

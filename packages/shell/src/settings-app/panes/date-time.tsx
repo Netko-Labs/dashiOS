@@ -7,10 +7,10 @@
  */
 
 import { Text, View } from "@mirinjs/metal";
-import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../clock.ts";
 import { TimezonePicker } from "../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../region/store.ts";
 import { describeZone } from "../../region/timezones.ts";
+import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../shared/time/clock.ts";
 import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";
