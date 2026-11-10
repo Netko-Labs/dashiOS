@@ -1,5 +1,5 @@
 /**
- * What the laptop adds to the battery panel (battery/panel.tsx): the charge
+ * What the laptop adds to the battery panel (battery/lib/panel.tsx): the charge
  * limit with a one-time full charge, and "Using the graphics card", each
  * holder with its estimated draw and Quit (or the card's lost state, with
  * Restart…). The power mode isn't here any more: it is Control Center's
@@ -8,13 +8,9 @@
  * action stays for Fn F5's and the agents' callers).
  */
 
-import type { GraphicsSnapshot } from "../graphics/controller.ts";
-import { LOST_NOTICE } from "../graphics/lost-card.ts";
+import { type GraphicsSnapshot, LOST_NOTICE } from "../graphics/index.ts";
 import type { MenuEntry } from "../menus/index.ts";
-import { chargeTarget } from "../power/battery-health.ts";
-import type { PowerSection } from "../power/modes/settings.ts";
-import type { ModeSnapshot } from "../power/modes/store.ts";
-import type { ModeChoice } from "../power/modes/types.ts";
+import { chargeTarget, type ModeChoice, type ModeSnapshot, type PowerSection } from "../power/index.ts";
 import type { LaptopSnapshot } from "./store.ts";
 
 export type LaptopAction = { kind: "mode"; choice: ModeChoice } | { kind: "full-charge" } | { kind: "quit-holder"; name: string } | { kind: "restart" };

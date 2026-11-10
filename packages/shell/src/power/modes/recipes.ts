@@ -8,7 +8,7 @@
  * are laid over it, so they too reach the hardware in the recipe's one write.
  */
 
-import type { Knob, KnobValue } from "../../hardware/describe.ts";
+import type { Knob, KnobValue } from "../../hardware/index.ts";
 import type { PowerSection } from "./settings.ts";
 import { type Column, isMode, MODES, type Mode, type Recipe, type Recipes } from "./types.ts";
 

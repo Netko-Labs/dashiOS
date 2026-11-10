@@ -5,7 +5,9 @@
 
 import { describe, expect, test } from "bun:test";
 import { DASHI_KEY } from "../src/shared/processes/index.ts";
-import { micIndicator, type ProcessLook, parseGraph, rowsFrom, type Stream, streamOwners } from "../src/sound/apps/index.ts";
+import { micIndicator, parseGraph, rowsFrom, type Stream } from "../src/sound/apps/index.ts";
+import type { ProcessLook } from "../src/sound/apps/lib/identity.ts";
+import { streamOwners } from "../src/sound/apps/lib/owners.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { catalog, owner } from "./support/sound-mixer.ts";
 import { fakeClockEachTest, flush } from "./support/time.ts";

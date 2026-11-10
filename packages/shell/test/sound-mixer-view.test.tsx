@@ -9,7 +9,9 @@ import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/m
 import { AppsCard, RecordingCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
 import { catalogFrom } from "../src/shared/processes/index.ts";
 import { AppSections, foldApps } from "../src/sound/app-rows.tsx";
-import { AppMixer, type AppSound, fixedGraph, heldControl, parseGraph, streamApp, useMicWords } from "../src/sound/apps/index.ts";
+import { AppMixer, type AppSound, fixedGraph, parseGraph, useMicWords } from "../src/sound/apps/index.ts";
+import { heldControl } from "../src/sound/apps/lib/commands.ts";
+import { streamApp } from "../src/sound/apps/lib/identity.ts";
 import { MicPill } from "../src/sound/mic-pill.tsx";
 import { vmGraph } from "./fixtures/pw-graph.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";

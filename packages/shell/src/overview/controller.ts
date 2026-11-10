@@ -11,7 +11,7 @@
  */
 
 import { placedOutputs } from "../arrange/index.ts";
-import type { Compositor, CompositorEvent } from "../compositor.ts";
+import type { Compositor, CompositorEvent } from "../compositor/index.ts";
 import { HARDWARE_BINDINGS } from "../system/keys.ts";
 import { planOverview } from "./lib/plan.ts";
 

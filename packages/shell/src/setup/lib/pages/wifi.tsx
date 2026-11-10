@@ -3,10 +3,7 @@ import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { LOCK } from "../../../control-center/glyphs.ts";
 import { wifiGlyph } from "../../../glyphs.ts";
-import { chooseNetwork } from "../../../wifi/flow.ts";
-import { joinMessage } from "../../../wifi/networks.ts";
-import { useWifi, type WifiStore } from "../../../wifi/store.ts";
-import type { WifiNetwork } from "../../../wifi/types.ts";
+import { chooseNetwork, joinMessage, useWifi, type WifiNetwork, type WifiStore } from "../../../wifi/index.ts";
 import type { SetupContext } from "../context.ts";
 
 function NetworkRow({ network, current, joining, onChoose }: { network: WifiNetwork; current: boolean; joining: boolean; onChoose: () => void }) {

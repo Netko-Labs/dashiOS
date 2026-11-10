@@ -3,7 +3,8 @@
  * compositor that keeps Spaces as dashi-comp does, with the controller and full screen on it.
  */
 
-import type { Compositor, CompositorWindow } from "../../src/compositor.ts";
+import type { Compositor } from "../../src/compositor/client.ts";
+import type { CompositorWindow } from "../../src/compositor/wire.ts";
 import type { Rect } from "../../src/layout.ts";
 import { FullscreenDesktops } from "../../src/spaces/fullscreen.ts";
 import { SpacesController } from "../../src/spaces/lib/controller.ts";

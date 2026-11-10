@@ -8,7 +8,7 @@
 
 import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { runPower } from "../menus/index.ts";
 import { spawnShellHost } from "../shared/metal/host.ts";
 import { Attempts, type Verdict } from "./lib/attempts.ts";

@@ -7,7 +7,7 @@
 import type { Toplevel } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { clickAction } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import type { App } from "../shared/apps/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";

@@ -7,10 +7,10 @@
  */
 
 import { join } from "node:path";
-import { SDK_VERSION } from "@dashi/applet";
+import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
-import { watchKillSwitch } from "../applet-store/kill-switch.ts";
-import type { Compositor } from "../compositor.ts";
+import { watchKillSwitch } from "../applet-store/index.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
@@ -18,16 +18,14 @@ import { APPLET_CONSENT, AppletConsentCard } from "../shared/applet-store/consen
 import { METAL_HOST } from "../shared/apps/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";
-import type { AppletContext } from "./connection.ts";
 import type { AppletControls } from "./controls.ts";
-import { AppletGrants } from "./grants.ts";
-import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
 import { AppletLauncher } from "./launcher.ts";
-import type { PopoverScreen } from "./placement.ts";
+import type { AppletContext } from "./lib/connection-context.ts";
+import { AppletGrants } from "./lib/grants.ts";
+import type { PopoverScreen } from "./lib/placement.ts";
+import { serveApplets } from "./lib/server.ts";
 import type { AppletPopovers } from "./popovers.ts";
 import type { AppletPower } from "./power.ts";
-import { appletsSocketPath, type Placement } from "./protocol.ts";
-import { serveApplets } from "./server.ts";
 
 export interface StartAppletsOptions {
   compositor: Compositor | null;

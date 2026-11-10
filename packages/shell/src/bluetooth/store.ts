@@ -10,13 +10,24 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { buildLists } from "./devices.ts";
-import { Discovery } from "./discovery.ts";
-import type { Action } from "./failures.ts";
-import { type BluetoothState, type BluetoothStoreOptions, type Busy, type Failed, INITIAL } from "./state.ts";
-import type { ActionResult, Answer, AskRequest, BluetoothBackend, BluetoothDevice, PairingHandler, PairResult, ShowRequest } from "./types.ts";
-
-export type { BluetoothState, BluetoothStoreOptions, Busy, Failed } from "./state.ts";
+import { buildLists } from "./lib/devices.ts";
+import { Discovery } from "./lib/discovery.ts";
+import { INITIAL } from "./lib/state.ts";
+import type {
+  Action,
+  ActionResult,
+  Answer,
+  AskRequest,
+  BluetoothBackend,
+  BluetoothDevice,
+  BluetoothState,
+  BluetoothStoreOptions,
+  Busy,
+  Failed,
+  PairingHandler,
+  PairResult,
+  ShowRequest,
+} from "./types.ts";
 
 const THROTTLE_MS = 400;
 

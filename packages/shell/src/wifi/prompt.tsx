@@ -5,7 +5,7 @@
 
 import { SHEET_SIZE } from "../menus/sheets.tsx";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
-import { PasswordSheet } from "./password.tsx";
+import { PasswordSheet } from "./lib/password.tsx";
 import type { WifiStore } from "./store.ts";
 import type { WifiNetwork } from "./types.ts";
 

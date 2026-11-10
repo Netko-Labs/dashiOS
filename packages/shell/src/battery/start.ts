@@ -1,7 +1,7 @@
 /** The battery monitor on the machine's own sources: /sys, /proc, the compositor's windows, the power-profiles daemon (tuned-ppd). */
 
 import { appFor } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { type AppCatalog, catalogFrom } from "../shared/processes/index.ts";
 import { readerMemory, readSnapshot, sysconf } from "../shared/processes/read.ts";
@@ -9,7 +9,7 @@ import { readPowerSupplies } from "../system/battery.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { powerProfiles } from "../system/profiles.ts";
 import { systemBus } from "../system/system-bus.ts";
-import { HistoryFile } from "./file.ts";
+import { HistoryFile } from "./lib/file.ts";
 import { BatteryMonitor } from "./monitor.ts";
 
 export interface BatteryMonitorOptions {

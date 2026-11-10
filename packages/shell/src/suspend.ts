@@ -8,7 +8,7 @@
  * when it shows again.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow } from "./compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "./compositor/index.ts";
 
 /** What the shell asks of the compositor here. */
 export interface SuspendTarget {

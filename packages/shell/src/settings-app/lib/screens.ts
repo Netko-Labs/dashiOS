@@ -5,7 +5,7 @@
  * it (displays.ts reads it back).
  */
 
-import type { Compositor } from "../../compositor.ts";
+import type { Compositor } from "../../compositor/index.ts";
 import type { ApplyResult, DisplayManager } from "../../display-config/manager.ts";
 import { mirrorRequests } from "../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorsOf, type Rotation, type VrrMode } from "../../display-config/monitors.ts";

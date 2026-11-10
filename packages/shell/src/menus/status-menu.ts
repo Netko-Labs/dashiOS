@@ -7,8 +7,8 @@
  */
 
 import type { ExtraMenuRow } from "../extras/index.ts";
-import type { AllowSleep } from "../inhibit/menu.ts";
-import type { LaptopAction } from "../laptop/menu.ts";
+import type { AllowSleep } from "../inhibit/index.ts";
+import type { LaptopAction } from "../laptop/index.ts";
 import type { MenuEntry } from "./types.ts";
 
 /** A chosen row: an extra's (its source carries it out), or one of the battery panel's. */

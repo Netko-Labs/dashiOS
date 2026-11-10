@@ -14,7 +14,7 @@
  */
 
 import type { Bounds } from "@mirinjs/metal";
-import type { AnimationTarget, Compositor, CompositorWindow, Frame, Output } from "../compositor.ts";
+import type { AnimationTarget, Compositor, CompositorWindow, Frame, Output } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import type { Entry } from "../entries.ts";
 import { pickPrimary } from "../menubar/menubars.ts";

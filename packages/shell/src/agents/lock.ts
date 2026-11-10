@@ -5,7 +5,7 @@
  * and nobody is asked anything (docs/agents.html, "Locked means stopped").
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 
 /** What a tool call is told while the screen is locked. */
 export const LOCKED = "The screen is locked. Nothing on the desktop can be seen or done until the person unlocks it.";

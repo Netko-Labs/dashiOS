@@ -5,10 +5,10 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { pipewireWatch } from "../src/sound/apps/watch.ts";
+import { pipewireWatch } from "../src/sound/apps/index.ts";
 import { pipewireBackend } from "../src/sound/backend.ts";
 import { followOutputVolume } from "../src/sound/levels.ts";
-import { defaultVolume, devicesFrom, parseDump } from "../src/sound/parse-dump.ts";
+import { defaultVolume, devicesFrom, parseDump } from "../src/sound/lib/parse-dump.ts";
 import { metadata, vmGraph } from "./fixtures/pw-graph.ts";
 import { defaults, headphones, type Json, mic, monitor, quietRun, speakers, watchSettle } from "./support/sound-watch.ts";
 import { fakeClockEachTest } from "./support/time.ts";

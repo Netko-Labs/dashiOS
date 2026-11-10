@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { outputsOf } from "../src/compositor/outputs.ts";
-import { builtinScreens, isBuiltin, ScreenDark } from "../src/system/screen-dark.ts";
+import { builtinScreens, isBuiltin, ScreenDark } from "../src/system/lib/screen-dark.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 
 const OUTPUTS = { outputs: [{ name: "eDP-1" }, { name: "DP-3" }, { name: "HDMI-A-1" }, { nope: 1 }] };

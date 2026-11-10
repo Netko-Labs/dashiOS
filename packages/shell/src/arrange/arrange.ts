@@ -16,7 +16,7 @@
  * the keys pressed one by one.
  */
 
-import type { Compositor, Placing } from "../compositor.ts";
+import type { Compositor, Placing } from "../compositor/index.ts";
 import { type Arrange, centerFrame, fitFrame, type Output, type Rect, sameOutputs, type Tile, tileFrame, usableFor } from "../layout.ts";
 import {
   type ArrangeContext,

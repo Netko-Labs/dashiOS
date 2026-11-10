@@ -1,7 +1,7 @@
 /** Apps and their windows: what is open, what is installed, and starting one (waiting for its first new window). */
 
 import { statSync } from "node:fs";
-import type { CompositorWindow } from "../../../compositor.ts";
+import type { CompositorWindow } from "../../../compositor/index.ts";
 import { type Entry, launchEntry, loadEntries } from "../../../entries.ts";
 import { windowToFront } from "../../../front-window.ts";
 import type { Tile } from "../../../layout.ts";

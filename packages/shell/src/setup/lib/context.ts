@@ -3,8 +3,7 @@ import type { RegionStore } from "../../region/index.ts";
 import type { XkbLayouts } from "../../settings-app/layouts.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import type { FlagsStore } from "../../shared/control-center/flags.ts";
-import type { WifiStore } from "../../wifi/store.ts";
-import type { WifiNetwork } from "../../wifi/types.ts";
+import type { WifiNetwork, WifiStore } from "../../wifi/index.ts";
 import type { Flow } from "../flow.ts";
 import type { ExtrasStore } from "./extras/store.ts";
 

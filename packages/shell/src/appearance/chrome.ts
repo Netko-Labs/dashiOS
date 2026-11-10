@@ -7,7 +7,7 @@
  * contents costs the compositor nothing.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { CORNER_RADIUS, type CornerName } from "../shared/appearance/corners.ts";
 
 export class ChromeStyle {

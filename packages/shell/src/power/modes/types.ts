@@ -4,7 +4,7 @@
  * columns: plugged in and on battery (the cable switches columns, not modes).
  */
 
-import type { KnobValue } from "../../hardware/describe.ts";
+import type { KnobValue } from "../../hardware/index.ts";
 import type { ProfileId } from "../../system/profiles.ts";
 
 export const MODES = ["low-power", "balanced", "performance"] as const;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { RadioSource } from "../src/actions/radios.ts";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { actionKind, entryAddress, type LauncherItem, type LauncherWindow, launcherIndex, launcherItems } from "../src/launcher/lib/items.ts";
 import { buildSections, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
 import { aliasIndex } from "../src/launcher/person-keys.ts";

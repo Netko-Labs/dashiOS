@@ -5,8 +5,8 @@
  * what the person would have made, and they see it happen.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
-import type { DisplayManager } from "../../display-config/manager.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import type { DisplayManager } from "../../display-config/index.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/index.ts";
 import type { MenuAction, WindowMenu } from "../../menus/index.ts";
@@ -17,7 +17,7 @@ import type { MachineDesktop } from "../../settings-app/machine-reading.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import type { PageId } from "../../setup/index.ts";
 import type { FlagsStore } from "../../shared/control-center/flags.ts";
-import type { WifiStore } from "../../wifi/store.ts";
+import type { WifiStore } from "../../wifi/index.ts";
 import type { SoftwareBackend } from "./software.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */

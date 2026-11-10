@@ -4,9 +4,8 @@
  * compositor, the arranger, the lock screen, and the system.
  */
 
-import { ownerPids } from "../app-menus/focus.ts";
-import { AppMenuStore } from "../app-menus/store.ts";
-import type { Compositor } from "../compositor.ts";
+import { AppMenuStore, ownerPids } from "../app-menus/index.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type Entry, loadEntries } from "../entries.ts";
 import { openOverlay } from "../overlay.tsx";
 import { MenuController } from "./controller.ts";

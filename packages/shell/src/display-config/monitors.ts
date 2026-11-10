@@ -8,7 +8,7 @@
  */
 
 import { isBuiltIn } from "@dashi/ui";
-import type { Frame, Output } from "../compositor.ts";
+import type { Frame, Output } from "../compositor/index.ts";
 
 export type Rotation = 0 | 90 | 180 | 270;
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];

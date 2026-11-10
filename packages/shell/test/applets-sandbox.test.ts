@@ -2,10 +2,9 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Manifest, parseManifest, permissionName } from "@dashi/applet";
-import { readInstalled } from "../src/applets/installed.ts";
+import { type Manifest, parseManifest, permissionName, readInstalled } from "@dashi/applet";
 import { AppletLauncher, type Units, userFolders } from "../src/applets/launcher.ts";
-import { busRules, HARDWARE_BUS_NAME, INSIDE, type SandboxPaths, sandboxPlan, unitName } from "../src/applets/sandbox.ts";
+import { busRules, HARDWARE_BUS_NAME, INSIDE, type SandboxPaths, sandboxPlan, unitName } from "../src/applets/lib/sandbox.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 
 const HOME = "/home/alex";

@@ -9,7 +9,7 @@
 
 import type { ActionContext, ActionSource } from "../actions/index.ts";
 import type { ClipboardCopy } from "../agents/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { LauncherScope } from "../launcher/index.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
 import { ClipboardHistory, type HistorySnapshot } from "./history.ts";

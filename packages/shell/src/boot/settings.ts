@@ -6,7 +6,7 @@
 
 import { type AgentStore, type Agents, Grants, type Passwords } from "../agents/index.ts";
 import { AutoAppearance } from "../appearance/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
 import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";

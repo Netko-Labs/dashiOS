@@ -8,7 +8,7 @@
 
 import { readFileSync } from "node:fs";
 import { parseStat } from "../agents/index.ts";
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 
 /** `pid`'s parent, from /proc; null when it is gone or init's. */
 export function parentPid(pid: number): number | null {

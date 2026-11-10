@@ -6,7 +6,7 @@ import { UndoStack } from "@dashi/ui";
 import { plainError } from "../apps/notes/lib/errors.ts";
 import { type MenuContext, notesMenus } from "../apps/notes/lib/menus.ts";
 import { NotesModel } from "../apps/notes/lib/model.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { NotesStore } from "../src/shared/notes/store.ts";
 import { NotesError } from "../src/shared/notes/types.ts";

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { decideNotice, type GraphicsChange, NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/notice.ts";
+import { decideNotice, type GraphicsChange, NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/lib/notice.ts";
 
 /** Unplugged, no notice before it, the new mode held long enough. */
 const unplugged: GraphicsChange = {

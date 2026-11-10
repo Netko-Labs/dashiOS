@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { linksEntry } from "../actions/index.ts";
 import { activeScreen } from "../active-screen.ts";
 import { startAutostart } from "../autostart.ts";
-import { Compositor } from "../compositor.ts";
+import { Compositor } from "../compositor/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "../desktop-entries.ts";
 import { monitorsOf } from "../display-config/index.ts";
 import { screensOf } from "../displays.ts";

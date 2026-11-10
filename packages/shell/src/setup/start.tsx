@@ -11,7 +11,7 @@
 
 import type { AnswerStatus } from "../agents/index.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/index.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";
@@ -21,8 +21,7 @@ import { Software } from "../shared/software/manager.ts";
 import { standIn } from "../shared/software/stand-in.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
-import { PasswordPrompt } from "../wifi/prompt.tsx";
-import type { WifiStore } from "../wifi/store.ts";
+import { PasswordPrompt, type WifiStore } from "../wifi/index.ts";
 import { Flow, type Machine, type PageId } from "./flow.ts";
 import type { SetupContext } from "./lib/context.ts";
 import { detectHardware } from "./lib/extras/hardware.ts";

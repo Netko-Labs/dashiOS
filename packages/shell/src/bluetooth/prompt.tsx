@@ -7,7 +7,7 @@
 
 import { SHEET_SIZE } from "../menus/sheets.tsx";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
-import { PairingSheet } from "./sheet.tsx";
+import { PairingSheet } from "./lib/sheet.tsx";
 import type { BluetoothStore } from "./store.ts";
 
 export class PairingPrompt {

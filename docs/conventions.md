@@ -42,7 +42,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H5 | No import cycles. | Biome `noImportCycles`; `scripts/check-biome.ts` (`import-cycles`) | `bun run fmt-lint`, `bun scripts/check-biome.ts` |
 | H6 | An `index.ts` only re-exports (`export … from`). An entry point is named `main.ts`, not `index.ts`. | `scripts/check-structure.ts` (`barrels`) | `bun scripts/check-structure.ts` |
 | H7 | Data from outside is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on a value typed `unknown` or `any` (IPC, D-Bus, files, subprocesses). | `scripts/check-boundaries.ts` (`json-casts`, `unknown-casts`) | `bun scripts/check-boundaries.ts` |
-| H8 | The compositor is asked only through `src/compositor.ts`'s typed methods: no raw `request("…")` with an IPC method anywhere else. | `scripts/check-boundaries.ts` (`raw-requests`) | `bun scripts/check-boundaries.ts` |
+| H8 | The compositor is asked only through `src/compositor/client.ts`'s typed methods: no raw `request("…")` with an IPC method anywhere else. | `scripts/check-boundaries.ts` (`raw-requests`) | `bun scripts/check-boundaries.ts` |
 | H9 | The IPC has one definition: every method is in `docs/compositor-ipc.md`, has a type in both languages, and says whether only the shell may call it. | `cargo test` (`ipc::fixtures`: one request, reply and event per method, written from the Rust types to `test/fixtures/ipc/`, failing until they are committed) and `bun test` (`packages/shell/test/ipc-contract.test.ts`: every fixture parses with the shell's shapes; the method table, the doc and `src/compositor/table.ts` name the same methods with the same who, and the same events) | `cargo test -p dashi-comp ipc::fixtures && bun test packages/shell/test/ipc-contract.test.ts` |
 | H10 | Exported functions in `.ts` files have explicit return types. Components in `.tsx` are exempt. | `scripts/check-boundaries.ts` (`return-types`) | `bun scripts/check-boundaries.ts` |
 | H11 | Tests never wait on real time: a fake clock, and 2 s per test at most (`bunfig.toml`). | `bunfig.toml` `timeout`; `scripts/check-structure.ts` (`test-sleeps`, `test-timeouts`) | `bun run test`, `bun scripts/check-structure.ts` |
@@ -379,7 +379,7 @@ packages/shell/src/menus/
   Lists refuse at the first bad entry (`list`) unless losing one is harmless
   (`lenientList`, things on screen). `JSON.parse(…) as T` is a cast, not a
   parse (H7).
-- Ask the compositor through `src/compositor.ts`'s typed methods, never a raw
+- Ask the compositor through `src/compositor/client.ts`'s typed methods, never a raw
   `request("…")` (H8).
 - Account for out-of-order async resolution: IPC requests, D-Bus calls, and
   sheets correlate by id or explicit state.

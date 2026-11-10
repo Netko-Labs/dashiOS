@@ -12,7 +12,7 @@
  * A burst of them is one look at the windows.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../../compositor/index.ts";
 import type { Battery } from "../../system/battery.ts";
 import type { WallpaperChoice } from "../catalog.ts";
 import { isCovered, type PauseReason, pauseReason, type ScreenArea, screenAreas } from "../lib/pause.ts";

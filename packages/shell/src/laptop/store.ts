@@ -7,8 +7,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { HardwareApi } from "../hardware/client.ts";
-import type { Knob, KnobValue, Machine } from "../hardware/describe.ts";
+import type { HardwareApi, Knob, KnobValue, Machine } from "../hardware/index.ts";
 
 export interface LaptopSnapshot {
   /** Laptop-only rows and panes show only when this is true. */

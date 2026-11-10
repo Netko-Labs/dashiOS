@@ -16,7 +16,7 @@ import { waitingCount } from "../agents/presence.ts";
 import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
 import { controlMenuHighlight, useControlColors } from "../shared/controls/palette.ts";
 import type { Nav, PaneId } from "../shared/settings/panes.ts";
-import { type AppMixer, useAppNames } from "../sound/apps/index.ts";
+import { type AppMixer, useAppNames } from "../sound/index.ts";
 import { AppearancePane } from "./appearance.tsx";
 import type { PaneContext } from "./context.ts";
 import { ControlCenterPane } from "./control-center.tsx";

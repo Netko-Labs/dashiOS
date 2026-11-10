@@ -9,8 +9,8 @@ import { View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import type { MenuEntry, StatusMenuAction } from "../menus/index.ts";
 import { type SystemStore, useSystem } from "../system/store.ts";
+import { BATTERY_PANEL, BatteryPanel } from "./lib/panel.tsx";
 import { type BatteryMonitor, useBatteryMonitor } from "./monitor.ts";
-import { BATTERY_PANEL, BatteryPanel } from "./panel.tsx";
 
 export interface BatteryPopoverSources {
   system: SystemStore;

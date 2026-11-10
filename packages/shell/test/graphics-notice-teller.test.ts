@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { type GraphicsNotice, NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/notice.ts";
-import { GraphicsTeller } from "../src/graphics/teller.ts";
+import { type GraphicsNotice, NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/lib/notice.ts";
+import { GraphicsTeller } from "../src/graphics/lib/teller.ts";
 import { fakeTime } from "./support/graphics-notice.ts";
 
 test("the teller: a cable wiggled three times in ten seconds gives one notice at most", () => {

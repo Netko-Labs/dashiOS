@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import type { HardwareApi } from "../src/hardware/client.ts";
 import type { Knob, KnobValue } from "../src/hardware/describe.ts";
+import { EchoGuard } from "../src/power/lib/guard.ts";
 import { automaticMode, effectiveMode } from "../src/power/modes/automatic.ts";
-import { EchoGuard } from "../src/power/modes/guard.ts";
 import { DEFAULT_RECIPES, parseRecipes, resolveRecipe } from "../src/power/modes/recipes.ts";
 import type { PowerSection } from "../src/power/modes/settings.ts";
 import { ModeStore } from "../src/power/modes/store.ts";

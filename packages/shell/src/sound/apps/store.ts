@@ -15,7 +15,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { clampLevel, isNodeName, type MixerControl } from "./commands.ts";
+import { clampLevel, isNodeName, type MixerControl } from "./lib/commands.ts";
 import type { AppRecording, AppSound, Owner } from "./rows.ts";
 import { micIndicator, rowsFrom } from "./rows.ts";
 import type { Graph, MixerOutput } from "./streams.ts";

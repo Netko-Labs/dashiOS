@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { extraEntries } from "../src/menus/status-menu.ts";
 import { formatMinutes, minutesLeft, type PowerSupply, summarizeBattery } from "../src/system/battery.ts";
-import { pluggedIn } from "../src/system/charger.ts";
+import { pluggedIn } from "../src/system/lib/charger.ts";
 
 const supply = (fields: Partial<PowerSupply>): PowerSupply => ({
   name: "BAT0",

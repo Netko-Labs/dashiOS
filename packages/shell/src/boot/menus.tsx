@@ -4,23 +4,20 @@
  * the menus, Control Center and the battery panel that show them.
  */
 
-import type { Compositor } from "../compositor.ts";
-import { AutoRefresh, rateOnPower } from "../display-config/auto-refresh.ts";
-import { MirrorStore } from "../display-config/mirror.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { AutoRefresh, MirrorStore, rateOnPower } from "../display-config/index.ts";
 import { bottomInset } from "../dock/index.ts";
-import { startLostCardWatch } from "../graphics/lost-start.ts";
+import { startLostCardWatch } from "../graphics/index.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
-import { laptopEntries } from "../laptop/menu.ts";
-import { type Laptop, startLaptop } from "../laptop/start.ts";
+import { type Laptop, laptopEntries, startLaptop } from "../laptop/index.ts";
 import { OverflowRow } from "../menubar/index.ts";
 import { extraEntries, type Menus, type StatusMenuAction, startMenus, useMenus } from "../menus/index.ts";
 import type { Notifications } from "../notifications/index.ts";
-import { chargeTarget } from "../power/battery-health.ts";
-import { powerOffReason } from "../power/nested.ts";
+import { chargeTarget, powerOffReason } from "../power/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { setControlMotion } from "../shared/controls/index.ts";
 import { isPaneId } from "../shared/settings/panes.ts";
-import { startAppMixer } from "../sound/apps/index.ts";
+import { startAppMixer } from "../sound/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { Catalog, Programs } from "./apps.ts";
 import type { Arranging, Desktops } from "./desktop.ts";

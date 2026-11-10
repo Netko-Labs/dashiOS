@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { busyWait, type Clock, Hands, PersonBusy, QUIET_MS, WAIT_MS } from "../src/agents/desktop/hands.ts";
 import { describePerson } from "../src/agents/desktop/input.ts";
-import type { CompositorEvent } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 
 /**

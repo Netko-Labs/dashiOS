@@ -8,7 +8,7 @@
  * the fill, for as long as it lives.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 
 /** How long after a filled field was last seen its window's popups stay blanked. */
 export const PROMPT_MS = 60_000;

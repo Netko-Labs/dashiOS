@@ -9,7 +9,7 @@
  * microphone's level meter (which would be a way to listen).
  */
 
-import { describeAction } from "../power/policy.ts";
+import { describeAction } from "../power/index.ts";
 import { describeBattery } from "../system/battery-details.ts";
 import { isProfileId, PROFILE_LABEL } from "../system/profiles.ts";
 import { DEFAULT_BLANK_AFTER } from "./lib/controls.ts";

@@ -2,13 +2,13 @@
 
 import type { ReactElement } from "react";
 import pkg from "../../../package.json" with { type: "json" };
-import { ownerPids } from "../../app-menus/focus.ts";
-import type { AppMenuStore } from "../../app-menus/store.ts";
-import { appFor, iconPath } from "../../apps.ts";
-import type { CompositorWindow } from "../../compositor.ts";
+import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
+import { appFor } from "../../apps.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import { controlFlags, LayoutStore } from "../../control-center/index.ts";
 import { launchEntry } from "../../entries.ts";
-import { chooseNetwork } from "../../wifi/flow.ts";
+import { iconPath } from "../../shared/apps/index.ts";
+import { chooseNetwork } from "../../wifi/index.ts";
 import type { MenuController } from "../controller.ts";
 import { helpCommand, openHelp } from "../launch.ts";
 import { windowMenus } from "../model.ts";

@@ -6,9 +6,8 @@
  * command line (apps/activity-monitor/lib/args.ts reads both).
  */
 
-import { ownerPids } from "../../app-menus/focus.ts";
-import type { AppMenuStore } from "../../app-menus/store.ts";
-import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
+import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { launchEntry } from "../../entries.ts";
 import { windowToFront } from "../../front-window.ts";
 import type { EntryFor } from "../options.ts";

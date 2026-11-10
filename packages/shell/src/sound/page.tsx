@@ -19,7 +19,7 @@ import { speakerGlyph } from "../glyphs.ts";
 import type { Volume } from "../system/volume.ts";
 import { AppSections } from "./app-rows.tsx";
 import { type AppMixer, useMixer } from "./apps/index.ts";
-import { DISPLAY, HEADPHONES } from "./glyphs.ts";
+import { DISPLAY, HEADPHONES } from "./lib/glyphs.ts";
 import { type SoundStore, useSound } from "./store.ts";
 import type { OutputKind } from "./types.ts";
 

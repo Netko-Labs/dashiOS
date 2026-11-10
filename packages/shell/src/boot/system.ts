@@ -6,7 +6,7 @@
 
 import { LockWatch } from "../agents/index.ts";
 import { type BluetoothSetup, chooseBluetooth } from "../bluetooth/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { LockController } from "../lock/index.ts";
 import { holdingBar } from "../menubar/index.ts";
 import { runPower } from "../menus/index.ts";
@@ -16,9 +16,8 @@ import { type Power, startPower } from "../power/index.ts";
 import { type Privacy, startPrivacy } from "../privacy/index.ts";
 import { type ScreenCapture, ScreenCaptureStore, startScreenCapture } from "../screen-capture/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
-import { type PipeWireWatch, pipewireWatch } from "../sound/apps/index.ts";
-import { isDevelopmentRun } from "../system/stand-in.ts";
-import { type System, startSystem } from "../system/start.ts";
+import { type PipeWireWatch, pipewireWatch } from "../sound/index.ts";
+import { isDevelopmentRun, type System, startSystem } from "../system/index.ts";
 import { chooseWifi, type WifiSetup, WifiStore } from "../wifi/index.ts";
 import { type Look, startLiveWallpaper } from "./look.ts";
 import type { LateParts } from "./parts.ts";

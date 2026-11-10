@@ -6,8 +6,8 @@
  */
 
 import { expect, test } from "bun:test";
+import type { CompositorEvent } from "../src/compositor/events.ts";
 import { outputsOf } from "../src/compositor/outputs.ts";
-import type { CompositorEvent } from "../src/compositor.ts";
 import { type ControlSnapshot, isThere, tileState } from "../src/control-center/catalog.ts";
 import { MirrorStore, mirrorRequests, mirrorSource, mirrorStateOf } from "../src/display-config/mirror.ts";
 import { monitorsOf } from "../src/display-config/monitors.ts";

@@ -6,11 +6,10 @@
  */
 
 import type { AnswererChoice, HarnessId } from "../agents/index.ts";
-import type { VrrMode } from "../display-config/monitors.ts";
-import type { RefreshChoice } from "../display-config/refresh-policy.ts";
+import type { RefreshChoice, VrrMode } from "../display-config/index.ts";
 import type { DockSettings } from "../dock/settings.ts";
 import type { InputMethodName } from "../input-method.ts";
-import type { GraphicsSettings, PowerSection } from "../power/modes/settings.ts";
+import type { GraphicsSettings, PowerSection } from "../power/index.ts";
 import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
 import type { CornerName } from "../shared/appearance/corners.ts";
 import type { CatalogSetting } from "../shared/applet-store/catalogs.ts";

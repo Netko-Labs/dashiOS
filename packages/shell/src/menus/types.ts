@@ -4,7 +4,7 @@
  * (controller.ts holds them).
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Arrange, Tile } from "../layout.ts";

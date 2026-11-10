@@ -24,7 +24,7 @@ import {
   watchApprovals,
 } from "../agents/index.ts";
 import { createApprovalUi } from "../approval-sheet.tsx";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
 import { LAUNCHER_MOTION } from "../launcher/resident.tsx";

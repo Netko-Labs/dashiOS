@@ -1,7 +1,7 @@
 /** What a connection is given and what it gives back: its context, a launcher run's policy and hooks, and the socket. */
 
 import type { BrowserBridge } from "../../../browser/bridge.ts";
-import type { Compositor } from "../../../compositor.ts";
+import type { Compositor } from "../../../compositor/index.ts";
 import type { Arrange, Tile } from "../../../layout.ts";
 import type { Undo } from "../../ask/index.ts";
 import type { Grants, Scope } from "../../consent.ts";

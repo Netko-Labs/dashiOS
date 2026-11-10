@@ -7,14 +7,10 @@
 
 import { AppCatalog } from "../app-catalog.ts";
 import { type AppMenus, startAppMenus } from "../app-menus/index.ts";
-import { AppletCommands } from "../applets/commands.ts";
-import { AppletControls } from "../applets/controls.ts";
-import { AppletPopovers } from "../applets/popovers.ts";
-import { AppletPower } from "../applets/power.ts";
-import { popoverScreen, startApplets } from "../applets/start.tsx";
+import { AppletCommands, AppletControls, AppletPopovers, AppletPower, popoverScreen, startApplets } from "../applets/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { LayoutStore } from "../control-center/index.ts";
 import { AttentionStore, DockController, matchEntry, PinStore } from "../dock/index.ts";
 import type { Entry } from "../entries.ts";
@@ -28,7 +24,7 @@ import { openOverlay } from "../overlay.tsx";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "../portal-host/index.ts";
 import { startSharePicker } from "../share-picker/index.ts";
 import { type App, dockDefaults } from "../shared/apps/index.ts";
-import { mayServeTray } from "../system/stand-in.ts";
+import { mayServeTray } from "../system/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { startTray } from "../tray/index.ts";
 import type { Arranging, Desktops } from "./desktop.ts";

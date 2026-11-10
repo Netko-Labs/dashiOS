@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { followSuspension, suspendChanges } from "../src/suspend.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";

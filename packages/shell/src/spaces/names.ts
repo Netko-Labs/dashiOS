@@ -7,7 +7,7 @@
  * first two by name, and how many more. Pure, so the rules are tested.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 import { desktopOrdinal, type Slots } from "./lib/slots.ts";
 import { MAX_SPACES, spaceLabel } from "./model.ts";
 import type { SpaceNames } from "./types.ts";

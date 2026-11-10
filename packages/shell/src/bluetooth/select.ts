@@ -10,9 +10,9 @@
 import { bluetoothRadio, type Radio } from "../control-center/index.ts";
 import { run } from "../system/exec.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
-import { BluezBackend } from "./bluez.ts";
-import { FakeBluetooth, type FakeBluetoothOptions } from "./fake.ts";
-import { bluezRadio } from "./radio.ts";
+import { BluezBackend } from "./lib/bluez.ts";
+import { FakeBluetooth, type FakeBluetoothOptions } from "./lib/fake.ts";
+import { bluezRadio } from "./lib/radio.ts";
 import type { BluetoothBackend } from "./types.ts";
 
 /** What the shell is wired to. */

@@ -6,7 +6,7 @@
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../lib/subject.ts";

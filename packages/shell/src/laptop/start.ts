@@ -10,20 +10,12 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphics/cardwire.ts";
-import { GraphicsController } from "../graphics/controller.ts";
-import type { LostCardStart } from "../graphics/lost-start.ts";
-import { graphicsNoticePlace } from "../graphics/notice-place.ts";
-import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
-import { detectLaptop } from "../hardware/laptop.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
+import { cardwireClient, type GraphicsBackend, GraphicsController, graphicsNoticePlace, type LostCardStart, shadowGraphics } from "../graphics/index.ts";
+import { detectLaptop, type HardwareApi, hardwareClient, shadowHardware } from "../hardware/index.ts";
 import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";
-import type { PowerSource } from "../power/modes/automatic.ts";
-import { parseRecipes } from "../power/modes/recipes.ts";
-import type { GraphicsChoice, PowerSection } from "../power/modes/settings.ts";
-import { ModeStore } from "../power/modes/store.ts";
-import { MODE_LABEL } from "../power/modes/types.ts";
+import { type GraphicsChoice, MODE_LABEL, ModeStore, type PowerSection, type PowerSource, parseRecipes } from "../power/index.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
 import { parseStat } from "../shared/processes/kernel.ts";
 import type { Battery } from "../system/battery.ts";
@@ -31,11 +23,11 @@ import type { OsdController } from "../system/osd-state.ts";
 import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import type { SystemStore } from "../system/store.ts";
 import { hardwareBus, systemBus } from "../system/system-bus.ts";
-import { ChargeKeeper } from "./charge.ts";
-import { keyboardLights, laptopKeyRules, machineKeyHandler } from "./hotkeys.ts";
+import { ChargeKeeper } from "./lib/charge.ts";
+import { keyboardLights, laptopKeyRules, machineKeyHandler } from "./lib/hotkeys.ts";
+import { followWake } from "./lib/tuning.ts";
 import type { LaptopAction } from "./menu.ts";
 import { keyboardLight, LaptopStore } from "./store.ts";
-import { followWake } from "./tuning.ts";
 
 export interface LaptopOptions {
   compositor: Compositor | null;

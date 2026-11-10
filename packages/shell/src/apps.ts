@@ -11,7 +11,6 @@ import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
 import { type App, firstPartyApps, iconPath } from "./shared/apps/index.ts";
 
 /** The shell launches and names `App`s, drawn with the shared app list's icons: the type and `iconPath` come with it. */
-export { type App, iconPath } from "./shared/apps/index.ts";
 
 /** The app id System Settings' window reports. */
 export const SETTINGS_APP_ID = "dev.dashi.settings";
@@ -84,7 +83,7 @@ export function shellApps(): App[] {
   return SHELL_APPS.filter((app) => shellOpeners.has(app.id)).map((app) => ({ ...app }));
 }
 
-/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/connection.ts). */
+/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/lib/connection.ts). */
 const appletNames = new Map<string, string>();
 
 /** An applet said who it is: its windows are called by its manifest's name. */

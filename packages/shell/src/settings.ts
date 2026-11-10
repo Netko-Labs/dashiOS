@@ -74,7 +74,7 @@
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
-import type { Compositor } from "./compositor.ts";
+import type { Compositor } from "./compositor/index.ts";
 import { resolveDock } from "./dock/settings.ts";
 import { DEFAULT_INPUT_METHOD } from "./input-method.ts";
 import { DEFAULT_POINTER_SIZE } from "./pointer.ts";

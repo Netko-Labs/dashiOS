@@ -28,7 +28,7 @@
  * windows and slides (`space-add {at}`, `space-move`, `place {space}`).
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../compositor/index.ts";
 import type { SpacesController } from "./lib/controller.ts";
 import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./lib/slots.ts";
 import { MAX_SPACES } from "./model.ts";

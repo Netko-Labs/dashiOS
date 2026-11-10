@@ -13,7 +13,7 @@
  * app's toolbar.
  */
 
-import type { Compositor, CompositorWindow, Placing } from "../compositor.ts";
+import type { Compositor, CompositorWindow, Placing } from "../compositor/index.ts";
 import { PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/protocol.ts";
 
 /** An expectation older than this is forgotten: the portal's window never came. */

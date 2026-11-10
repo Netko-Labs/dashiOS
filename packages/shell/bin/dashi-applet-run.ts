@@ -3,7 +3,7 @@
  * launcher (src/applets/launcher.ts) starts this as a systemd user unit,
  * outside the shell's own processes (so the compositor never takes the
  * applet for the shell), with a plan it wrote: the xdg-dbus-proxy to start
- * first, if any, and bubblewrap's arguments (src/applets/sandbox.ts). It
+ * first, if any, and bubblewrap's arguments (src/applets/lib/sandbox.ts). It
  * waits for the proxy's sockets, runs bubblewrap, and ends with it; the
  * proxy goes too.
  */

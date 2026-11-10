@@ -4,7 +4,9 @@
  */
 
 import { Arranger } from "../../src/arrange/arrange.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../../src/compositor.ts";
+import type { Compositor } from "../../src/compositor/client.ts";
+import type { CompositorEvent } from "../../src/compositor/events.ts";
+import type { CompositorWindow } from "../../src/compositor/wire.ts";
 import type { Rect } from "../../src/layout.ts";
 import { fakeCompositor, listening } from "./compositor.ts";
 import { flush } from "./time.ts";

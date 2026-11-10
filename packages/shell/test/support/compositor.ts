@@ -1,10 +1,11 @@
 /**
- * A compositor for tests: the typed methods (src/compositor.ts `callsOf`)
+ * A compositor for tests: the typed methods (src/compositor/client.ts `callsOf`)
  * over a fake `request`, so a test can answer by method name and see what
  * was sent, params checked and replies parsed as the real client does.
  */
 
-import { type Compositor, type CompositorEvent, callsOf } from "../../src/compositor.ts";
+import { type Compositor, callsOf } from "../../src/compositor/client.ts";
+import type { CompositorEvent } from "../../src/compositor/events.ts";
 
 export type FakeRequest = (method: string, params?: Record<string, unknown>) => Promise<unknown>;
 

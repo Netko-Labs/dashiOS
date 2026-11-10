@@ -10,7 +10,7 @@ import { useSyncExternalStore } from "react";
 import type { Volume } from "../system/volume.ts";
 import { VolumeFollow } from "../system/volume-follow.ts";
 import type { Levels, SideVolumes } from "./levels.ts";
-import type { Side } from "./parse-dump.ts";
+import type { Side } from "./lib/parse-dump.ts";
 
 export type LevelsState = SideVolumes;
 

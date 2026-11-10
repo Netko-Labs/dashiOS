@@ -1,13 +1,12 @@
 /** Starts the system services the shell shows: the status store and the hardware keys. */
 
-import type { PipeWireWatch } from "../sound/apps/watch.ts";
-import { followOutputVolume } from "../sound/levels.ts";
-import { watchCharger } from "./charger.ts";
+import { followOutputVolume, type PipeWireWatch } from "../sound/index.ts";
 import { HardwareKeys } from "./keys.ts";
+import { watchCharger } from "./lib/charger.ts";
+import { openOsdSurface } from "./lib/osd-panel.tsx";
+import { type ScreenHost, startScreenDark } from "./lib/screen-dark.ts";
 import type { Network } from "./network.ts";
-import { openOsdSurface } from "./osd-panel.tsx";
 import { OsdController } from "./osd-state.ts";
-import { type ScreenHost, startScreenDark } from "./screen-dark.ts";
 import { type SystemSources, SystemStore, systemSources } from "./store.ts";
 
 export interface System {

@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { Arranger } from "../src/arrange/arrange.ts";
-import type { Compositor } from "../src/compositor.ts";
+import type { Compositor } from "../src/compositor/client.ts";
 import { FullscreenDesktops } from "../src/spaces/fullscreen.ts";
 import { SpacesController } from "../src/spaces/lib/controller.ts";
 import { desk, fakeCompositor, SETTINGS, win } from "./support/spaces-fullscreen.ts";

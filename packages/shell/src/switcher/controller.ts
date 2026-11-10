@@ -9,7 +9,7 @@
  * before its step.
  */
 
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { switcherLayout, switcherSize } from "./layout.ts";
 import {
   type AppGroup,

@@ -12,7 +12,7 @@
  *     band, and the bar must not vanish under it).
  */
 
-import type { Compositor, CompositorEvent } from "./compositor.ts";
+import type { Compositor, CompositorEvent } from "./compositor/index.ts";
 
 /** What the bars need of the compositor. */
 export type BarsCompositor = Pick<Compositor, "bars" | "windows" | "on">;

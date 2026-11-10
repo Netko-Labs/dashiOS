@@ -15,11 +15,10 @@
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { consentNames, dashiSatisfies, FOLDERS, type Folder } from "@dashi/applet";
-import type { AppletContext } from "./connection.ts";
-import { type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "./installed.ts";
-import { type SandboxPaths, sandboxPlan, unitName } from "./sandbox.ts";
-import { appletSocketDir, ensureSocketDir, serveApplets } from "./server.ts";
+import { consentNames, dashiSatisfies, FOLDERS, type Folder, type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "@dashi/applet";
+import type { AppletContext } from "./lib/connection-context.ts";
+import { type SandboxPaths, sandboxPlan, unitName } from "./lib/sandbox.ts";
+import { appletSocketDir, ensureSocketDir, serveApplets } from "./lib/server.ts";
 
 /** What the launcher asks of systemd (`systemd-run --user`, `systemctl --user`). */
 export interface Units {

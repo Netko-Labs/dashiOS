@@ -10,7 +10,7 @@
 
 import type { BrowserLink } from "../../../browser/bridge.ts";
 import { type FieldReport, parseField, type TabInfo } from "../../../browser/protocol.ts";
-import type { CompositorWindow } from "../../../compositor.ts";
+import type { CompositorWindow } from "../../../compositor/index.ts";
 import type { Focused, Placed, Rect } from "../../atspi/index.ts";
 import type { RunContext, ToolResult } from "../../context.ts";
 import { toolError } from "../../context.ts";

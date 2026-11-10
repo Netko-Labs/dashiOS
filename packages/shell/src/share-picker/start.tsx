@@ -9,7 +9,7 @@
  */
 
 import { placedOutputs } from "../arrange/index.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { centeredOn } from "../switcher/index.ts";
 import { PICKER, pickerLayout } from "./lib/layout.ts";

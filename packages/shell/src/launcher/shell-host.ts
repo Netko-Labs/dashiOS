@@ -8,7 +8,7 @@
 import { dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Actions } from "../actions/index.ts";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap/keymap.ts";
 import { isPaneId, type PaneId } from "../shared/settings/panes.ts";

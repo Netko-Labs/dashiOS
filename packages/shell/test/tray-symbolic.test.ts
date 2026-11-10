@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { smallThemedFile, symbolicFile, TrayIcons } from "../src/tray/icon.ts";
+import { smallThemedFile, symbolicFile, TrayIcons } from "../src/tray/lib/icon.ts";
 
 const root = mkdtempSync(join(tmpdir(), "dashi-icons-"));
 afterAll(() => rmSync(root, { recursive: true, force: true }));

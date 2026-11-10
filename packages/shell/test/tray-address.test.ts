@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_ITEM_PATH, ItemRegistry, itemId, itemKey, nameGone, parseItemId, parseRegistration } from "../src/tray/address.ts";
+import { DEFAULT_ITEM_PATH, ItemRegistry, itemId, itemKey, nameGone, parseItemId, parseRegistration } from "../src/tray/lib/address.ts";
 
 describe("parseRegistration", () => {
   test("a bus name is an item at the default path", () => {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { AppMenus } from "../src/app-menus/index.ts";
+import type { AppMenus } from "../src/app-menus/start.ts";
 import { appQuitting, appShortcut } from "../src/boot/apps.ts";
 import { machineEndNotice } from "../src/boot/bars.tsx";
 import { startArranging, startDesktops, startOverview } from "../src/boot/desktop.ts";
@@ -8,7 +8,7 @@ import { Screenshots, screenOf } from "../src/boot/overlays.tsx";
 import type { LateParts } from "../src/boot/parts.ts";
 import { Late, Services } from "../src/boot/services.ts";
 import { onScreen, Screens } from "../src/boot/session.ts";
-import type { Compositor } from "../src/compositor.ts";
+import type { Compositor } from "../src/compositor/client.ts";
 import { filesLaunch } from "../src/file-manager.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { SettingsStore } from "../src/settings-app/index.ts";

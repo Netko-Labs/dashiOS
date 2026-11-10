@@ -8,7 +8,7 @@
 
 import { type Bounds, type NativeHostOptions, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
 import type { App } from "../shared/apps/index.ts";

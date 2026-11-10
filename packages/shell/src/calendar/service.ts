@@ -13,8 +13,8 @@ import { openInRunning, socketPath } from "../shared/calendar/instance.ts";
 import { defaultRoot } from "../shared/calendar/store.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { setCalendarBridge } from "./bridge.ts";
-import { CalendarFeed } from "./feed.ts";
-import { APP_ID, Reminders } from "./reminders.ts";
+import { CalendarFeed } from "./lib/feed.ts";
+import { APP_ID, Reminders } from "./lib/reminders.ts";
 
 export interface CalendarOptions {
   notifications: NotificationStore;

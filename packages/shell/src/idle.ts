@@ -15,7 +15,7 @@
  * once and carry on.
  */
 
-import type { Compositor, CompositorEvent } from "./compositor.ts";
+import type { Compositor, CompositorEvent } from "./compositor/index.ts";
 
 /** What apps hold (inhibit/store.ts): the screens may not blank; the computer may not sleep. */
 export interface IdleHolds {

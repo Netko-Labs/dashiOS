@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useSyncExternalStore } from "react";
-import type { BatteryMonitor, BatteryMonitorState } from "../../../battery/index.ts";
+import type { BatteryMonitor, BatteryMonitorState } from "../../../battery/monitor.ts";
 import type { Laptop } from "../../../laptop/start.ts";
 import { useLaptop } from "../../../laptop/store.ts";
 import { describeAction } from "../../../power/policy.ts";

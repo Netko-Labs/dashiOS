@@ -18,8 +18,8 @@ import { Button } from "../menus/sheets.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
-import { type BluetoothState, type BluetoothStore, type Busy, useBluetooth } from "./store.ts";
-import type { BluetoothDevice } from "./types.ts";
+import { type BluetoothStore, useBluetooth } from "./store.ts";
+import type { BluetoothDevice, BluetoothState, Busy } from "./types.ts";
 
 /** The list shows this many points of rows, then scrolls. */
 const LIST_HEIGHT = 380;

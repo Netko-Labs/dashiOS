@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { type A11yNode, focusedField, hasState, passwordFields, placeAgain, ROLE, STATE, toWindow } from "../src/agents/atspi/tree.ts";
 import { AGENT_MASK, AgentMask, FIELD_PAD, type FilledField, maskRequest, SHEET_LAYERS } from "../src/agents/mask.ts";
 import { answeredByPerson, PERSON_PRESS_MS, personAnswered } from "../src/agents/person.ts";
-import type { CompositorWindow } from "../src/compositor.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { DBusError, ERRORS } from "../src/shared/dbus/index.ts";
 import { bits, browser, tree } from "./fixtures/a11y-tree.ts";
 

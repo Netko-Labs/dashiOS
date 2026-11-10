@@ -1,23 +1,22 @@
 /** What the menus are given to run (start.tsx), and what they give back. */
 
 import type { ReactElement } from "react";
-import type { AppMenuStore } from "../app-menus/store.ts";
-import type { App } from "../apps.ts";
+import type { AppMenuStore } from "../app-menus/index.ts";
 import type { Arranger } from "../arrange/index.ts";
-import type { BatteryPopoverSources } from "../battery/popover.tsx";
-import type { BluetoothSetup } from "../bluetooth/select.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import type { BatteryPopoverSources } from "../battery/index.ts";
+import type { BluetoothSetup } from "../bluetooth/index.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { AppletTileSource, ControlCenterProps, LayoutStore } from "../control-center/index.ts";
-import type { MirrorStore } from "../display-config/mirror.ts";
+import type { MirrorStore } from "../display-config/index.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Entry } from "../entries.ts";
-import type { Laptop } from "../laptop/start.ts";
+import type { Laptop } from "../laptop/index.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import type { SharedStores } from "../settings-app/services.ts";
-import type { AppMixer, PipeWireWatch } from "../sound/apps/index.ts";
+import type { App } from "../shared/apps/index.ts";
+import type { AppMixer, PipeWireWatch } from "../sound/index.ts";
 import type { SystemStore } from "../system/store.ts";
-import type { WifiSetup } from "../wifi/select.ts";
-import type { WifiStore } from "../wifi/store.ts";
+import type { WifiSetup, WifiStore } from "../wifi/index.ts";
 import type { MenuController } from "./controller.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
 import type { MenuAction, PowerKind, WindowMenu } from "./types.ts";
