@@ -17,7 +17,7 @@
 2	packages/shell/bin/dashi-a11y-again.ts
 3	packages/shell/bin/dashi-applet-run.ts
 3	packages/shell/bin/dashi-settings-preview.tsx
-1	packages/shell/browser-extension/src/content/index.ts
+1	packages/shell/browser-extension/src/content/main.ts
 1	packages/shell/src/actions/links.ts
 1	packages/shell/src/agents/ask/harness/answerer.ts
 1	packages/shell/src/agents/ask/harness/plan-server.ts
