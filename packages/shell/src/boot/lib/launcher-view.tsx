@@ -4,21 +4,21 @@
  * agents, the run to talk to).
  */
 
-import type { Entry } from "../entries.ts";
-import { openFile } from "../file-manager.ts";
-import type { Presented } from "../launcher/host.ts";
-import type { PictureRect } from "../launcher/pictures.ts";
-import type { LauncherPrefs } from "../launcher/prefs.ts";
-import type { RankingMemory } from "../launcher/ranking/index.ts";
-import { LAUNCHER, Launcher, type LauncherFiles } from "../launcher.tsx";
-import type { OpenOverlay } from "../overlay.tsx";
-import type { RecentApps } from "../recents.ts";
-import { recentEntries } from "../recents.ts";
-import type { Handoff } from "./agents.ts";
-import type { LauncherKeyboard } from "./keys.ts";
-import type { LateParts } from "./parts.ts";
-import type { Late } from "./services.ts";
-import { onScreen } from "./session.ts";
+import type { Entry } from "../../entries.ts";
+import { openFile } from "../../file-manager.ts";
+import type { Presented } from "../../launcher/host.ts";
+import type { PictureRect } from "../../launcher/pictures.ts";
+import type { LauncherPrefs } from "../../launcher/prefs.ts";
+import type { RankingMemory } from "../../launcher/ranking/index.ts";
+import { LAUNCHER, Launcher, type LauncherFiles } from "../../launcher.tsx";
+import type { OpenOverlay } from "../../overlay.tsx";
+import type { RecentApps } from "../../recents.ts";
+import { recentEntries } from "../../recents.ts";
+import type { Handoff } from "../agents.ts";
+import type { LauncherKeyboard } from "../keys.ts";
+import type { LateParts } from "../parts.ts";
+import type { Late } from "../services.ts";
+import { onScreen } from "../session.ts";
 
 /** The launcher's surface: centered at the top, over everything, with the keyboard. */
 export function surfaceOptions(output: string | undefined): Parameters<OpenOverlay>[0] {

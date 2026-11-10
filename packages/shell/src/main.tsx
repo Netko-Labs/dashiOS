@@ -15,22 +15,50 @@
  * are in boot/parts.ts.
  */
 
-import { startRegistry } from "./boot/actions.ts";
-import { startAgentBasics, startAgentServer, startAskAgents, startHandoff } from "./boot/agents.ts";
-import { appQuitting, appShortcut, startCatalog, startKeepingAwake, startPickerAndTray, startPrograms } from "./boot/apps.ts";
-import { startBarHolds, startBars } from "./boot/bars.tsx";
-import { startArranging, startDesktops, startOverview } from "./boot/desktop.ts";
-import { startKeys } from "./boot/keys.ts";
-import { startLauncher } from "./boot/launcher.tsx";
-import { startLook } from "./boot/look.ts";
-import { startBarMenus, startMachine } from "./boot/menus.tsx";
-import { startNotices, startSpoken, startSwitches } from "./boot/notices.ts";
-import { closeOnLock, type OverlayKind, Screenshots, sheetOpener, startSwitcher } from "./boot/overlays.tsx";
-import type { LateParts } from "./boot/parts.ts";
-import { Late, Services } from "./boot/services.ts";
-import { connectCompositor, guardProcess, Screens, startLogin, startStores } from "./boot/session.ts";
-import { startSettingsApps, startSettingsWindows } from "./boot/settings.ts";
-import { chooseRadios, startGuards, startSystemStores } from "./boot/system.ts";
+import {
+  appQuitting,
+  appShortcut,
+  chooseRadios,
+  closeOnLock,
+  connectCompositor,
+  guardProcess,
+  Late,
+  type LateParts,
+  type OverlayKind,
+  Screens,
+  Screenshots,
+  Services,
+  sheetOpener,
+  startAgentBasics,
+  startAgentServer,
+  startArranging,
+  startAskAgents,
+  startBarHolds,
+  startBarMenus,
+  startBars,
+  startCatalog,
+  startDesktops,
+  startGuards,
+  startHandoff,
+  startKeepingAwake,
+  startKeys,
+  startLauncher,
+  startLogin,
+  startLook,
+  startMachine,
+  startNotices,
+  startOverview,
+  startPickerAndTray,
+  startPrograms,
+  startRegistry,
+  startSettingsApps,
+  startSettingsWindows,
+  startSpoken,
+  startStores,
+  startSwitcher,
+  startSwitches,
+  startSystemStores,
+} from "./boot/index.ts";
 import { pickPrimary } from "./menubars.ts";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { resolvePinned } from "./shared/apps/index.ts";

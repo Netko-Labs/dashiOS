@@ -313,8 +313,8 @@
 5	packages/shell/src/boot/apps.ts
 1	packages/shell/src/boot/desktop.ts
 3	packages/shell/src/boot/keys.ts
-4	packages/shell/src/boot/launcher-view.tsx
 15	packages/shell/src/boot/launcher.tsx
+4	packages/shell/src/boot/lib/launcher-view.tsx
 1	packages/shell/src/boot/look.ts
 8	packages/shell/src/boot/menus.tsx
 7	packages/shell/src/boot/notices.ts
@@ -392,7 +392,6 @@
 1	packages/shell/src/local-search.ts
 1	packages/shell/src/lock/controller.tsx
 1	packages/shell/src/lock/lib/screen.tsx
-16	packages/shell/src/main.tsx
 11	packages/shell/src/menubar-program-slots.tsx
 2	packages/shell/src/menubar-slots.tsx
 1	packages/shell/src/menubar.tsx
@@ -616,8 +615,6 @@
 3	packages/shell/test/battery-monitor.test.ts
 2	packages/shell/test/battery-panel.test.ts
 2	packages/shell/test/battery-status.test.ts
-8	packages/shell/test/boot-pieces.test.ts
-1	packages/shell/test/boot-services.test.ts
 1	packages/shell/test/brightness.test.ts
 7	packages/shell/test/browser-agents.test.ts
 2	packages/shell/test/browser-pinning.test.ts
