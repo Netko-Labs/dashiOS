@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Variant } from "../src/dbus/variant.ts";
+import { Variant } from "../src/shared/dbus/variant.ts";
 import { type LayoutNode, lazySubmenus, menuRows, parseLayoutReply, parseNode, parseRowId, stripMnemonic } from "../src/tray/dbusmenu.ts";
 
 type Props = Record<string, Variant>;

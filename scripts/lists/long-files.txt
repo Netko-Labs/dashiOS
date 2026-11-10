@@ -85,8 +85,6 @@
 400	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
 576	packages/shell/src/compositor.ts
-328	packages/shell/src/dbus/connection.ts
-349	packages/shell/src/dbus/fd-service.ts
 307	packages/shell/src/display-config/manager.ts
 389	packages/shell/src/entries.ts
 1189	packages/shell/src/launcher.tsx
@@ -103,6 +101,8 @@
 355	packages/shell/src/settings-app/sidebar.tsx
 717	packages/shell/src/settings-app/store.ts
 488	packages/shell/src/settings.ts
+328	packages/shell/src/shared/dbus/connection.ts
+349	packages/shell/src/shared/dbus/fd-service.ts
 348	packages/shell/src/spaces/controller.ts
 321	packages/shell/src/switcher/controller.ts
 409	packages/shell/test/actions-sources.test.ts

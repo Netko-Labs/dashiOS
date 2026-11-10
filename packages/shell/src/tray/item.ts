@@ -10,9 +10,9 @@
  * calls and the last answer always wins.
  */
 
-import type { DBusConnection } from "../dbus/connection.ts";
-import { DBusError } from "../dbus/errors.ts";
 import type { ExtraIcon, ExtraMenuRow, MenuBarExtra } from "../extras/types.ts";
+import type { DBusConnection } from "../shared/dbus/connection.ts";
+import { DBusError } from "../shared/dbus/errors.ts";
 import { type ItemAddress, itemKey } from "./address.ts";
 import { type MenuTarget, menuEvent, parseRowId, readMenu } from "./dbusmenu.ts";
 import type { TrayIcons } from "./icon.ts";

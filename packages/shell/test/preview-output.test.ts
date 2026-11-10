@@ -6,7 +6,7 @@ import { exportImageArgs, thumbnailArgs, turnPngArgs } from "../apps/preview/con
 import { exportFile, exportFormats, exportName, printablePdf, qpdfRotateArgs, type Source } from "../apps/preview/output.ts";
 import { answerIn, outcomeOf, parseDefaultPrinter, responseRule } from "../apps/preview/print.ts";
 import type { RunOptions, RunResult } from "../apps/preview/tools.ts";
-import { MessageType } from "../src/dbus/index.ts";
+import { MessageType } from "../src/shared/dbus/index.ts";
 
 // What leaves Preview: Export, the PDF Print hands over (output.ts), and the print dialog's answer (print.ts).
 

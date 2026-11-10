@@ -9,7 +9,7 @@ import type { Env } from "../apps/files/env.ts";
 import type { FilesPrefs } from "../apps/files/prefs.ts";
 import { type ChooserRequest, chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { encodeBytePath } from "../apps/portal/vardict.ts";
-import { type Variant, variant } from "../src/dbus/index.ts";
+import { type Variant, variant } from "../src/shared/dbus/index.ts";
 
 const pdfs: [string, Array<[number, string]>] = ["PDF documents", [[1, "application/pdf"]]];
 const notes: [string, Array<[number, string]>] = [

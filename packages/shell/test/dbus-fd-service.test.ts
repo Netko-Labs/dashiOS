@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { readSync, writeSync } from "node:fs";
-import { DBusConnection, FdConnection, FdService, MessageType, requestName } from "../src/dbus/index.ts";
-import { closeFd, pipePair } from "../src/dbus/libc.ts";
+import { DBusConnection, FdConnection, FdService, MessageType, requestName } from "../src/shared/dbus/index.ts";
+import { closeFd, pipePair } from "../src/shared/dbus/libc.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
 
 let bus: PrivateBus | null = null;

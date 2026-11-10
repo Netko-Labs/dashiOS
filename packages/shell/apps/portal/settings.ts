@@ -12,7 +12,7 @@
 
 import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../../src/appearance/apps.ts";
 import { ACCENT } from "../../src/appearance/gtk-colors.ts";
-import { DBusError, type InterfaceSpec, type Variant, variant } from "../../src/dbus/index.ts";
+import { DBusError, type InterfaceSpec, type Variant, variant } from "../../src/shared/dbus/index.ts";
 
 export const SETTINGS = "org.freedesktop.impl.portal.Settings";
 export const NOT_FOUND = "org.freedesktop.portal.Error.NotFound";

@@ -9,12 +9,12 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type GrantChange, Grants, parseGrants } from "../src/agents/consent.ts";
-import type { CallSpec } from "../src/dbus/index.ts";
 import { PermissionStore } from "../src/privacy/permission-store.ts";
 import { byApp, grantKey, grantsOf, PORTAL_TABLES, parsePermissions } from "../src/privacy/portal-grants.ts";
 import { parseSeen, reconcile, SeenTimes } from "../src/privacy/seen.ts";
 import { PrivacyStore } from "../src/privacy/store.ts";
 import { agentPermissions, appTitle, grantDetail, lastUsedWords, programTitle, sinceWords } from "../src/settings-app/privacy-words.ts";
+import type { CallSpec } from "../src/shared/dbus/index.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-privacy-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

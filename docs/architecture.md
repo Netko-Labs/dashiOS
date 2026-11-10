@@ -130,7 +130,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   by D-Bus activation (`org.freedesktop.impl.portal.desktop.dashi.service`,
   which starts the `dashi-portal` user unit); `dashi.portal` lists FileChooser,
   Settings, Access, AppChooser, Inhibit, Print, Notification, Account, Email
-  and DynamicLauncher. Its bus connection is an `FdService` (`src/dbus/fd-service.ts`:
+  and DynamicLauncher. Its bus connection is an `FdService` (`src/shared/dbus/fd-service.ts`:
   a worker thread blocks in `poll` and reads the socket with SCM_RIGHTS),
   because Print's document arrives as a file descriptor, which Bun's own
   sockets drop. The unit is `PartOf=graphical-session.target`, so the
@@ -277,7 +277,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
 | app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |
 | dashi-agent ↔ shell, token proxy | `$XDG_RUNTIME_DIR/dashi-tokens.sock`, one JSON line each way, held while the agent runs; then the sandbox's CONNECTs on its own `proxy.sock` | `docs/secrets.md` |
-| shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
+| shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/shared/dbus/` |
 | shell/applets ↔ dashi-hardware | D-Bus system bus: `dev.dashi.Hardware1` (polkit per method); the shell decides the mode, the helper writes | `docs/hardware.md`, `src/laptop/`, `src/power/modes/` |
 | shell ↔ cardwire | D-Bus system bus: `org.opengamingcollective.cardwire` (packaged as dashi-graphics); the shell decides the graphics policy | `docs/hardware.md` (cardwire), `src/graphics/` |
 | shell ↔ tuned-ppd | D-Bus system bus, the power-profiles API, on the shell's one kept system-bus connection (`src/system/system-bus.ts`) | `src/system/profiles.ts` |

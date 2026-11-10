@@ -1,14 +1,14 @@
 /**
  * timedated and localed on the system bus, through the shell's own D-Bus
- * (`../dbus`). Every write passes `interactive: true`, so when the person
+ * (`../shared/dbus`). Every write passes `interactive: true`, so when the person
  * is not allowed to change the setting outright, polkitd asks the shell's
  * authentication agent (`../polkit`), which shows the password sheet; no
  * password ever passes through here. The bus connection is made when first
  * needed and made again if it dropped.
  */
 
-import { DBusConnection, DBusError } from "../dbus/index.ts";
-import { propertyMap, unwrap } from "../dbus/properties.ts";
+import { DBusConnection, DBusError } from "../shared/dbus/index.ts";
+import { propertyMap, unwrap } from "../shared/dbus/properties.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
 import { parseInstalledLocales } from "./locale.ts";
 import { isTimezoneName } from "./timezones.ts";

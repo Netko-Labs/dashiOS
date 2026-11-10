@@ -6,8 +6,8 @@
  * shell's own polkit agent shows the password sheet.
  */
 
-import { DBusConnection, DBusError } from "../dbus/index.ts";
-import { propertyMap } from "../dbus/properties.ts";
+import { DBusConnection, DBusError } from "../shared/dbus/index.ts";
+import { propertyMap } from "../shared/dbus/properties.ts";
 import { cleanText } from "../system/text.ts";
 import { iconProblem, nameProblem, parseAccount } from "./parse.ts";
 import type { Account, AccountsBackend, ChangeResult } from "./types.ts";

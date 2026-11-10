@@ -9,7 +9,7 @@
  * is not claimed; sounds, persistence, and image data are not either.
  */
 
-import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../dbus/index.ts";
+import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../shared/dbus/index.ts";
 import { parseNotify } from "./parse.ts";
 import type { NotificationStore } from "./store.ts";
 import { CloseReason } from "./types.ts";

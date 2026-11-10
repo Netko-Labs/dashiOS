@@ -24,8 +24,8 @@
  * file is all Dashi knows of it.
  */
 
-import { type BusLike, getAllProperties, onPropertiesChanged, setProperty, unwrap } from "../dbus/properties.ts";
-import { variant } from "../dbus/variant.ts";
+import { type BusLike, getAllProperties, onPropertiesChanged, setProperty, unwrap } from "../shared/dbus/properties.ts";
+import { variant } from "../shared/dbus/variant.ts";
 
 export const CARDWIRE = "org.opengamingcollective.cardwire";
 const ROOT = "/org/opengamingcollective/cardwire";

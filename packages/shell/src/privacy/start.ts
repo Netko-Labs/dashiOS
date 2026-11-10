@@ -1,6 +1,6 @@
 /** The apps' permissions from login: the permission store on the session bus, followed, and its grants dated (store.ts). */
 
-import { DBusConnection } from "../dbus/index.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
 import { PermissionStore } from "./permission-store.ts";
 import { SeenTimes } from "./seen.ts";
 import { PrivacyStore } from "./store.ts";

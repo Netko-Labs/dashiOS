@@ -11,7 +11,7 @@
 import { AlertWindow, Avatar, alertWindowHeight, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Account } from "../../src/accounts/types.ts";
-import type { InterfaceSpec } from "../../src/dbus/index.ts";
+import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
 import { fileUri } from "../files/uri.ts";
 import { appInfo } from "./apps.ts";
 import { type Requests, Response, type ResponseCode } from "./request.ts";

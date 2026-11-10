@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { PROPERTIES } from "../src/dbus/properties.ts";
-import { Variant, variant } from "../src/dbus/variant.ts";
+import { PROPERTIES } from "../src/shared/dbus/properties.ts";
+import { Variant, variant } from "../src/shared/dbus/variant.ts";
 import { applyChange, type Profiles, parseProfiles, powerProfiles, shadowProfiles } from "../src/system/profiles.ts";
 import { FakeBus, settle } from "./fake-bus.ts";
 

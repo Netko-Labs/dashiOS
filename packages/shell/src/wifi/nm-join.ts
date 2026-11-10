@@ -5,7 +5,7 @@
  * file, not a log line.
  */
 
-import { DBusError } from "../dbus/index.ts";
+import { DBusError } from "../shared/dbus/index.ts";
 import { canJoinNew, needsPassword, ssidFromKey } from "./networks.ts";
 import { IFACE, NM, NM_PATH, type NmClient } from "./nm-client.ts";
 import { newProfile, withPassword } from "./nm-values.ts";

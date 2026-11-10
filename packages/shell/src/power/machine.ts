@@ -5,7 +5,7 @@
  * menus/session.ts asks that first and calls this only for a real session.
  */
 
-import type { ConnectOptions } from "../dbus/index.ts";
+import type { ConnectOptions } from "../shared/dbus/index.ts";
 import { Logind, type MachineMethod } from "./logind.ts";
 
 export type MachineAction = "sleep" | "restart" | "shutdown";

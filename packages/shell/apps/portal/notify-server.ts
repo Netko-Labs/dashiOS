@@ -4,7 +4,7 @@
  * and the signals it sends back about them.
  */
 
-import type { DBusConnection } from "../../src/dbus/index.ts";
+import type { DBusConnection } from "../../src/shared/dbus/index.ts";
 import type { NotificationBackend, NotificationServer } from "./notification.ts";
 
 const SERVICE = "org.freedesktop.Notifications";

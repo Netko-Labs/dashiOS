@@ -6,9 +6,9 @@
  * the shell's other bus services: with no session bus there is no tray.
  */
 
-import { BUS_NAME, BUS_PATH } from "../dbus/bus.ts";
-import { type ConnectOptions, DBusConnection, NameFlags, requestName } from "../dbus/index.ts";
 import type { ExtrasStore } from "../extras/store.ts";
+import { BUS_NAME, BUS_PATH } from "../shared/dbus/bus.ts";
+import { type ConnectOptions, DBusConnection, NameFlags, requestName } from "../shared/dbus/index.ts";
 import { nameGone } from "./address.ts";
 import { TrayHost } from "./host.ts";
 import { type TrayIconOptions, TrayIcons } from "./icon.ts";

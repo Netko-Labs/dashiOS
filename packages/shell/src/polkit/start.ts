@@ -9,10 +9,10 @@
 
 import { realpathSync } from "node:fs";
 import { iconPath } from "../apps.ts";
-import { SYSTEM_BUS_PATH, socketPaths } from "../dbus/address.ts";
-import { DBusConnection } from "../dbus/index.ts";
 import { resolveIcon } from "../entries.ts";
 import type { OpenOverlay } from "../overlay.tsx";
+import { SYSTEM_BUS_PATH, socketPaths } from "../shared/dbus/address.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
 import { type LockSignal, PolkitController } from "./controller.ts";
 import { findHelper } from "./helper.ts";
 import { PolkitPrompt } from "./prompt.tsx";

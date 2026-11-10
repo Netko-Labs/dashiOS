@@ -15,7 +15,7 @@
  * consent as `dashi-open`, logged as "you" in the activity log.
  */
 
-import { DBusError, ERRORS, type InterfaceSpec, Variant } from "../dbus/index.ts";
+import { DBusError, ERRORS, type InterfaceSpec, Variant } from "../shared/dbus/index.ts";
 import { withArgs } from "./address.ts";
 import { type ActionRegistry, mayUse } from "./registry.ts";
 import type { Args, Outcome } from "./types.ts";

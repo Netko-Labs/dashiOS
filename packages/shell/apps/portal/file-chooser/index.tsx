@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
-import type { InterfaceSpec } from "../../../src/dbus/index.ts";
+import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
 import { ChooserView, openChooser } from "../../files/chooser/index.ts";
 import type { Env } from "../../files/env.ts";
 import type { Requests } from "../request.ts";

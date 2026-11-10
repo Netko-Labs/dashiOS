@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { writeSync } from "node:fs";
-import { closeFd, FdService, pipePair, type Variant } from "../src/dbus/index.ts";
 import { FileSearch } from "../src/file-search.ts";
 import { BUDGET, LatestOnly, SUPERSEDED } from "../src/launcher/budget.ts";
 import {
@@ -15,6 +14,7 @@ import {
   rankFiles,
   readToEnd,
 } from "../src/local-search.ts";
+import { closeFd, FdService, pipePair, type Variant } from "../src/shared/dbus/index.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
 
 /** Rows in TinySPARQL's cursor format, as the endpoint writes them (host byte order; null is unbound). */

@@ -11,7 +11,7 @@ import { fileChooserInterface } from "../apps/portal/file-chooser/index.tsx";
 import { InhibitBackend } from "../apps/portal/inhibit.ts";
 import { Requests } from "../apps/portal/request.ts";
 import { settingsInterface, settingsTable } from "../apps/portal/settings.ts";
-import { DBusConnection, FdService, Variant, variant } from "../src/dbus/index.ts";
+import { DBusConnection, FdService, Variant, variant } from "../src/shared/dbus/index.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
 
 const NAME = "org.freedesktop.impl.portal.desktop.dashi";

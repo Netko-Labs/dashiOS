@@ -12,7 +12,7 @@
  */
 
 import { fstatSync, readSync, writeFileSync } from "node:fs";
-import { DBusError, ERRORS, type InterfaceSpec, Variant } from "../../../src/dbus/index.ts";
+import { DBusError, ERRORS, type InterfaceSpec, Variant } from "../../../src/shared/dbus/index.ts";
 import { type Requests, Response, type ResponseCode } from "../request.ts";
 import { cleanString, u32, vardict } from "../vardict.ts";
 import type { Printer } from "./cups.ts";

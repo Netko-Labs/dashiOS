@@ -9,7 +9,7 @@
  *   options: address s, addresses as, cc as, bcc as, subject s, body s, attachments as
  */
 
-import type { InterfaceSpec } from "../../src/dbus/index.ts";
+import type { InterfaceSpec } from "../../src/shared/dbus/index.ts";
 import { type Exec, exec } from "../files/exec.ts";
 import { fileUri } from "../files/uri.ts";
 import { parseGioDefault } from "./app-chooser/choices.ts";

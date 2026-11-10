@@ -5,8 +5,8 @@
  * (the Inhibit request answers so) and dialogs open as ordinary windows.
  */
 
-import { DBusConnection } from "../../src/dbus/index.ts";
 import { PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../../src/portal-host/protocol.ts";
+import { DBusConnection } from "../../src/shared/dbus/index.ts";
 
 export interface ShellLink {
   inhibit(appId: string, reason: string, flags: number): Promise<number>;

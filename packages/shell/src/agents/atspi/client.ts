@@ -5,9 +5,9 @@
  * process that owns it. tree.ts walks what this returns.
  */
 
-import { DBusConnection } from "../../dbus/index.ts";
-import { unwrap } from "../../dbus/properties.ts";
-import { variant } from "../../dbus/variant.ts";
+import { DBusConnection } from "../../shared/dbus/index.ts";
+import { unwrap } from "../../shared/dbus/properties.ts";
+import { variant } from "../../shared/dbus/variant.ts";
 import { type A11yNode, documents, limits, type Rect } from "./tree.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";

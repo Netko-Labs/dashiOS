@@ -5,7 +5,7 @@
  * so the window (view.tsx) only wires them to menus, buttons and keys.
  */
 
-import { chooseFile, chooseSaveFile } from "../../src/portal/file-chooser.ts";
+import { chooseFile, chooseSaveFile } from "../../src/shared/portal/file-chooser.ts";
 import type { Clipboard } from "../kit/index.ts";
 import { EXPORT_FORMATS, type ExportFormat } from "./convert.ts";
 import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";

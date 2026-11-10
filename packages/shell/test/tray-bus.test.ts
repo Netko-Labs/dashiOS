@@ -9,9 +9,9 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DBusConnection, getNameOwner, type InterfaceSpec, Variant } from "../src/dbus/index.ts";
 import { ExtrasStore } from "../src/extras/store.ts";
 import type { MenuBarExtra } from "../src/extras/types.ts";
+import { DBusConnection, getNameOwner, type InterfaceSpec, Variant } from "../src/shared/dbus/index.ts";
 import { startTray, type Tray, WATCHER, WATCHER_PATH } from "../src/tray/index.ts";
 
 const daemon = Bun.which("dbus-daemon");
