@@ -231,10 +231,6 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 158 } } } } }
     },
     {
-      "includes": ["packages/shell/src/agents/server.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 169 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/bluetooth/agent.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 81 } } } } }
     },
