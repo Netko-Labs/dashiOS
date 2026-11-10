@@ -10,7 +10,7 @@ import type { Ask } from "../agents/ask/service.ts";
 import type { Agents } from "../agents/server.ts";
 import type { AppMenus } from "../app-menus/index.ts";
 import type { BatteryMonitor } from "../battery/monitor.ts";
-import type { Clipboard } from "../clipboard/start.ts";
+import type { Clipboard } from "../clipboard/index.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Entry } from "../entries.ts";

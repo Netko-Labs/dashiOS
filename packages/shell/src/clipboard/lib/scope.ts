@@ -6,10 +6,10 @@
  * field adds one (";addr Calle de la Luna 12" and ↩).
  */
 
-import type { LauncherScope, ScopeResult } from "../launcher/scope.ts";
-import { KEYS, type Verb } from "../launcher/verbs.ts";
-import { CLIPBOARD, SNIPPET } from "./glyphs.ts";
-import type { ClipboardHistory, ClipEntry } from "./history.ts";
+import type { LauncherScope, ScopeResult } from "../../launcher/scope.ts";
+import { KEYS, type Verb } from "../../launcher/verbs.ts";
+import { CLIPBOARD, SNIPPET } from "../glyphs.ts";
+import type { ClipboardHistory, ClipEntry } from "../history.ts";
 import { historySections, snippetSections } from "./rows.ts";
 import { parseAdd, type SnippetStore } from "./snippets.ts";
 

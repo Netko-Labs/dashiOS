@@ -16,6 +16,8 @@
  * What is kept is chosen by type: an image, files, or text.
  */
 
+import { isLeftOut } from "../left-out.ts";
+
 /** The hint KDE's Klipper reads; its value is "secret" for a password. */
 export const PASSWORD_MANAGER_HINT = "x-kde-passwordManagerHint";
 
@@ -28,64 +30,6 @@ const CONCEALED = new Set([
   "x-kde-passwordmanagerhint-secret",
 ]);
 
-/** Password managers left out by default (KeePassXC, Bitwarden, 1Password, Seahorse), as app ids or programs. */
-export const DEFAULT_LEFT_OUT: readonly string[] = [
-  "org.keepassxc.KeePassXC",
-  "keepassxc",
-  "Bitwarden",
-  "bitwarden",
-  "com.bitwarden.desktop",
-  "1Password",
-  "1password",
-  "org.gnome.seahorse.Application",
-  "seahorse",
-];
-
-/** What a left-out entry is called in Settings (ids of one app share a name: they are one row). */
-export const LEFT_OUT_NAMES: Readonly<Record<string, string>> = {
-  "org.keepassxc.KeePassXC": "KeePassXC",
-  keepassxc: "KeePassXC",
-  Bitwarden: "Bitwarden",
-  bitwarden: "Bitwarden",
-  "com.bitwarden.desktop": "Bitwarden",
-  "1Password": "1Password",
-  "1password": "1Password",
-  "org.gnome.seahorse.Application": "Passwords and Keys",
-  seahorse: "Passwords and Keys",
-};
-
-const NAMES_FOLDED = new Map(Object.entries(LEFT_OUT_NAMES).map(([id, name]) => [id.toLowerCase(), name]));
-
-/** One app of the left-out list as Settings shows it: its name, and every id the list keeps for it. */
-export interface LeftOutApp {
-  name: string;
-  /** In the list's order; removing the app removes them all. */
-  ids: string[];
-}
-
-/**
- * The left-out list as Settings shows it: one row per app, in the order the
- * list first names it. Ids of the same app (KeePassXC's app id and its
- * program) are one row: by the names Dashi knows for password managers, else
- * by the installed app an id stands for (`installed`), else each id (in any
- * case) is its own.
- */
-export function leftOutApps(list: readonly string[], installed: (id: string) => { name: string } | undefined = () => undefined): LeftOutApp[] {
-  const apps = new Map<string, LeftOutApp>();
-  for (const id of list) {
-    const name = NAMES_FOLDED.get(id.toLowerCase()) ?? installed(id)?.name ?? id;
-    const app = apps.get(name.toLowerCase());
-    if (!app) apps.set(name.toLowerCase(), { name, ids: [id] });
-    else if (!app.ids.includes(id)) app.ids.push(id);
-  }
-  return [...apps.values()];
-}
-
-/** The left-out list without every id of `app`. */
-export function withoutApp(list: readonly string[], app: Pick<LeftOutApp, "ids">): string[] {
-  return list.filter((id) => !app.ids.includes(id));
-}
-
 /** Whether a copy's types alone say it is secret (the hint's value is read separately: `hintIsSecret`). */
 export function concealedByType(mimeTypes: readonly string[]): boolean {
   return mimeTypes.some((type) => CONCEALED.has(type.toLowerCase()));
@@ -97,13 +41,6 @@ export const hasPasswordHint = (mimeTypes: readonly string[]): boolean => mimeTy
 /** The hint's value read: "secret" (any case, with or without a line end) is a secret; so is a hint that could not be read. */
 export function hintIsSecret(value: string | null): boolean {
   return value === null || value.trim().toLowerCase() === "secret";
-}
-
-/** Whether the app a copy came from is one the history leaves out (app ids and program names, any case). */
-export function isLeftOut(app: { appId: string; program?: string | null }, list: readonly string[]): boolean {
-  const names = new Set(list.map((name) => name.toLowerCase()));
-  const candidates = [app.appId, app.program ?? ""].map((name) => name.toLowerCase()).filter(Boolean);
-  return candidates.some((name) => names.has(name));
 }
 
 /** What a copy is, by the type that will be read. */

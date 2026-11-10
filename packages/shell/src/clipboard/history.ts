@@ -12,8 +12,8 @@ import { createHash } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { extensionFor, type Size } from "./images.ts";
-import type { SkipReason } from "./privacy.ts";
+import { extensionFor, type Size } from "./lib/images.ts";
+import type { SkipReason } from "./lib/privacy.ts";
 
 export const MAX_ENTRIES = 200;
 export const MAX_AGE_MS = 7 * 24 * 3600 * 1000;

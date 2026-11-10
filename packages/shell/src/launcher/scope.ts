@@ -2,7 +2,7 @@
  * A launcher scope: the same panel narrowed to one source's rows, with a
  * chip naming it ("Clipboard ›"), its own placeholder, its rows' verbs and
  * keys, and its own hints at the field's end. The clipboard history (⌥❖V)
- * and snippets are scopes (clipboard/scope.ts). Choosing the action at a
+ * and snippets are scopes (clipboard/lib/scope.ts). Choosing the action at a
  * scope's `address` in the launcher enters it in place; a key or a link to
  * that address opens the launcher in it. Esc leaves it: back to the whole
  * launcher, or closed when it was opened for the scope alone.

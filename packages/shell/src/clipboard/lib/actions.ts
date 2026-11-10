@@ -9,7 +9,7 @@
  * which asks every time (agents/tools/clipboard.ts).
  */
 
-import { type ActionContext, type ActionDef, type ActionSource, failed, invalid, ok, ready } from "../actions/types.ts";
+import { type ActionContext, type ActionDef, type ActionSource, failed, invalid, ok, ready } from "../../actions/types.ts";
 import { HISTORY_ADDRESS, SNIPPETS_ADDRESS } from "./scope.ts";
 
 export interface ClipboardActionDeps {

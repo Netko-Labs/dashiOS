@@ -83,7 +83,7 @@ Added later by the shell (`boot/actions.ts`, `registry.add`):
 
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
-| `clipboard` | `dashi://clipboard/history` (⌥❖V), `dashi://clipboard/snippets`, `dashi://clipboard/clear`, `dashi://settings/keyboard/clipboard-history` | opens the launcher in the Clipboard or Snippets scope (chosen in the launcher, the scope is entered in place); Clear Clipboard History asks on the person's sheet every time; the history's switch (off deletes what was kept). The person's alone (`clipboard/actions.ts`) |
+| `clipboard` | `dashi://clipboard/history` (⌥❖V), `dashi://clipboard/snippets`, `dashi://clipboard/clear`, `dashi://settings/keyboard/clipboard-history` | opens the launcher in the Clipboard or Snippets scope (chosen in the launcher, the scope is entered in place); Clear Clipboard History asks on the person's sheet every time; the history's switch (off deletes what was kept). The person's alone (`clipboard/lib/actions.ts`) |
 
 Menu rows read "Notes › File › New Note" with the item's shortcut. Items an
 app keeps from agents (`agents: false`) are offered here, because the
@@ -385,7 +385,7 @@ is the first, ❖C the copy verb) and hints. A scope names the address that
 opens it; that action chosen in the launcher enters the scope in place, and
 Esc goes back to the search; opened by a key or a link (⌥❖V binds
 `dashi://clipboard/history`), Esc closes. The two scopes are the
-clipboard's (`clipboard/scope.ts`):
+clipboard's (`clipboard/lib/scope.ts`):
 
 - **Clipboard**: the history (`clipboard/`), pinned copies first, then
   newest first; ↩ pastes into the window under the launcher (its app's paste

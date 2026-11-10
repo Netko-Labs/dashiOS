@@ -118,7 +118,7 @@ export interface AgentsSettings {
 export interface ClipboardSettings {
   /** Copies kept for ⌥❖V; on unless set to false. */
   history?: boolean;
-  /** The apps whose copies are never kept (app ids or programs); clipboard/privacy.ts DEFAULT_LEFT_OUT unless set. */
+  /** The apps whose copies are never kept (app ids or programs); clipboard/left-out.ts DEFAULT_LEFT_OUT unless set. */
   leftOut?: readonly string[];
   /** Snippets expand in terminals too; off unless set. */
   snippetsInTerminals?: boolean;

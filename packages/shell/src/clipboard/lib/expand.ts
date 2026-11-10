@@ -8,10 +8,10 @@
  * before put back, whether or not the paste went in.
  */
 
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { TERMINALS } from "../keymap.ts";
+import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import { TERMINALS } from "../../keymap.ts";
+import type { ClipEntry, HistorySnapshot } from "../history.ts";
 import type { FieldCheck } from "./fields.ts";
-import type { ClipEntry, HistorySnapshot } from "./history.ts";
 import type { ClipboardIo } from "./io.ts";
 import { copyEntry, type PasteDeps, pasteChord } from "./paste.ts";
 import { expand, type SnippetStore } from "./snippets.ts";

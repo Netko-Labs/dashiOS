@@ -17,7 +17,7 @@ const ICONS = { calculator: "/calc.svg", files: "/files.svg", software: "/softwa
 /** The places the other action sources name (radios, clipboard): each is a row of the registry that says so. */
 test("a row another source lists is in the registry, marked as that source's", () => {
   const named: string[] = [];
-  for (const file of ["actions/sources/radios.ts", "clipboard/actions.ts"]) {
+  for (const file of ["actions/sources/radios.ts", "clipboard/lib/actions.ts"]) {
     const text = readFileSync(join(src, file), "utf8");
     for (const match of text.matchAll(/pane: "([^"]+)",\s*row: "([^"]+)"/g)) named.push(`${match[1]}/${match[2]}`);
   }

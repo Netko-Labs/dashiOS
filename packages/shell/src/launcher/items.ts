@@ -74,7 +74,7 @@ export function actionKind(action: ActionDef): RankKind | null {
     case "settings":
     case "controls":
       return action.place?.row !== undefined ? "setting" : null;
-    // Clipboard History and Snippets are commands; the history's switch is a setting (clipboard/actions.ts).
+    // Clipboard History and Snippets are commands; the history's switch is a setting (clipboard/lib/actions.ts).
     case "clipboard":
       return action.place?.row !== undefined ? "setting" : "command";
     // Open windows come with their apps' names (LauncherWindow); arranging the focused one is a command.

@@ -12,9 +12,9 @@
  * stay as typed.
  */
 
-import { Atspi } from "../agents/atspi/client.ts";
-import { fieldAt, focusedField, limits } from "../agents/atspi/tree.ts";
-import { DBusConnection, unwrap } from "../shared/dbus/index.ts";
+import { Atspi } from "../../agents/atspi/client.ts";
+import { fieldAt, focusedField, limits } from "../../agents/atspi/tree.ts";
+import { DBusConnection, unwrap } from "../../shared/dbus/index.ts";
 
 /** How long "accessibility is off" is believed before asking again. */
 const STATUS_MS = 30_000;

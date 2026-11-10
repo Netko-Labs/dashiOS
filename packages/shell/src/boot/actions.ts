@@ -10,7 +10,7 @@ import { RadioSource } from "../actions/sources/radios.ts";
 import { isVaultWindow } from "../agents/secrets/vault-view.ts";
 import type { Agents } from "../agents/server.ts";
 import { appFor } from "../apps.ts";
-import { type Clipboard, startClipboard } from "../clipboard/start.ts";
+import { type Clipboard, startClipboard } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { launchEntry } from "../entries.ts";
 import { type Extensions, openTarget, startExtensions } from "../extensions/start.ts";
