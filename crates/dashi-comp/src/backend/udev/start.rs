@@ -94,10 +94,10 @@ pub(crate) fn init(
                     if let Err(error) = device.manager.activate(false) {
                         tracing::warn!(%error, "a GPU did not come back");
                     }
-                    device
-                        .screens
-                        .values_mut()
-                        .for_each(|screen| screen.flip.clear());
+                    device.screens.values_mut().for_each(|screen| {
+                        screen.flip.clear();
+                        screen.planes.clear();
+                    });
                 }
                 data.devices.keys().copied().collect::<Vec<_>>()
             })

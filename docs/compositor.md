@@ -239,6 +239,22 @@ Each milestone ends with the shell running on it in the VM.
   lets the frame go, and the screen draws again; a vblank that turns up later
   is ignored, or recognized by its timestamp as the old frame's. The nested
   (winit) backend has no such wait: each redraw asks for the next.
+- **Refused frames (done, 0.7.0):** on an AMD laptop the display refused every
+  frame (the atomic commit failed with EINVAL, "Page flip commit failed")
+  while one window was up, 112 times a second for 15 s, and nothing new
+  reached the screen (review 12-flip). smithay 0.7 tests a plane's state only
+  when it looks different, so a state the driver refuses can get through
+  untested, and on a refusal it marks only a client buffer on the primary
+  plane as failed: one on an overlay or the cursor plane was tried again each
+  frame. Now a refusal steps down (`udev/planes.rs`): the next frame keeps only
+  the cursor plane, and the one after that, if refused too, uses no planes,
+  the cursor drawn into the picture. Every plane is tried again after 5 s
+  (doubling to a minute while retries are refused), or a second after a
+  refusal when the screen's windows change. The log has one warning when a
+  run starts ("the screen refused a frame: drawing with …", naming what was on
+  planes) and one summary when it ends ("planes back on", with the count, the
+  seconds, and what drew meanwhile). EBUSY, a flip still pending, is not a
+  refusal: the watchdog above handles it as before.
 - **Idle screens sleep (done, 0.7.0):** a lit screen that has nothing new to
   draw used to look again every refresh, rebuilding its scene to learn that
   nothing changed (every window's title bar walked, the elements diffed),

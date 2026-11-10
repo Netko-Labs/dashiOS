@@ -10,6 +10,7 @@ use super::watchdog::watch;
 use super::*;
 use crate::wakes::Woke;
 use flip::Vblank;
+use planes::Used;
 
 pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
     let crtcs = with_udev(state, |_, data| {
@@ -28,6 +29,8 @@ pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
 enum Turn {
     /// A frame is queued: its vblank draws the next.
     Queued,
+    /// The display refused the frame: draw it again, another way (planes.rs), next frame.
+    Refused,
     /// Nothing new, or it failed: look again in about a frame, or sleep
     /// (wakes.rs) until something wakes it, a second at most.
     Idle,
@@ -70,23 +73,32 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
             }
         };
         let elements = render::output_elements(state, &mut renderer, &output, true);
-        let turn = match screen.scanout.render_frame(
-            &mut renderer,
-            &elements,
-            BACKGROUND,
-            FrameFlags::DEFAULT,
-        ) {
+        let now = monotonic_now();
+        let flags = screen.planes.flags(now, || planes::scene(&elements));
+        let turn = match screen
+            .scanout
+            .render_frame(&mut renderer, &elements, BACKGROUND, flags)
+        {
             Ok(result) if !result.is_empty => {
+                let used = Used::of(&result);
                 match screen.scanout.queue_frame(Some(state.after_render(
                     &output,
                     &result.states,
                     screen.feedback.as_ref().map(|f| (&f.render, &f.scanout)),
                 ))) {
                     Ok(()) => {
-                        if screen.flip.queue(monotonic_now()) {
+                        if let Some(recovered) = screen.planes.taken(now) {
+                            planes::tell_recovered(&output, &recovered);
+                        }
+                        if screen.flip.queue(now) {
                             watch(&state.loop_handle, node, crtc);
                         }
                         Turn::Queued
+                    }
+                    Err(error) if planes::refused(&error) => {
+                        let refusal = screen.planes.refused(now, used, planes::scene(&elements));
+                        planes::tell_refused(&output, &refusal, used, &error);
+                        Turn::Refused
                     }
                     // Waiting out a stalled flip, the commits fail (busy) each frame: once is enough.
                     Err(error) if screen.flip.is_stalled() => {
@@ -124,6 +136,10 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
             } else {
                 schedule(state, node, crtc, frame_time(&output));
             }
+        }
+        Turn::Refused => {
+            state.send_frames(&output);
+            schedule(state, node, crtc, frame_time(&output));
         }
         Turn::Later => {
             state.send_frames(&output);
