@@ -98,7 +98,7 @@ export const LAUNCHER = { ...SURFACE, top: 120, field: 48, fieldText: 17, radius
 
 /**
  * Files are asked as soon as the rows are drawn: one question at a time over one
- * LocalSearch connection, a newer one replacing one still waiting (file-search.ts),
+ * LocalSearch connection, a newer one replacing one still waiting (shared/files/file-search.ts),
  * so typing never queues them up, and they have 80 ms to fill their slots (launcher/budget.ts).
  */
 export const FILE_DELAY_MS = 0;

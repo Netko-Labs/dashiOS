@@ -7,8 +7,8 @@
 import type { Dirent } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { searchFiles } from "../../src/file-search.ts";
 import { type Exec, exec } from "./exec.ts";
+import { searchFiles } from "./file-search.ts";
 import { type FileItem, itemAt } from "./items.ts";
 import type { MimeIndex } from "./mime.ts";
 import { tilde } from "./paths.ts";

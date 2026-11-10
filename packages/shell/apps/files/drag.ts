@@ -8,7 +8,7 @@
  */
 
 import { statSync } from "node:fs";
-import { parentOf } from "./paths.ts";
+import { parentOf } from "../../src/shared/files/paths.ts";
 
 export type DropMode = "move" | "copy";
 

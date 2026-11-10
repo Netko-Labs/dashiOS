@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sideLines } from "../apps/files/conflict-sheet.tsx";
 import type { Env } from "../apps/files/env.ts";
-import type { Exec } from "../apps/files/exec.ts";
 import { folderAt } from "../apps/files/location.ts";
 import { type Conflict, Operations, type Resolution } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
+import type { Exec } from "../src/shared/files/exec.ts";
 
 // PA-3: a copy or a move onto a taken name asks (Replace, Keep Both, Skip, for all), and Undo takes a Replace back.
 // New Folder takes a free name and renames in place.

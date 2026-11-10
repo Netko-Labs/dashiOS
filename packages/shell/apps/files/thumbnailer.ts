@@ -14,8 +14,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileUri } from "../../src/shared/files/uri.ts";
 import { thumbName } from "./thumbs.ts";
-import { fileUri } from "./uri.ts";
 
 /** One `.thumbnailer` file: its command (with %i %u %o %s) and the types it makes pictures of. */
 export interface ThumbnailerSpec {

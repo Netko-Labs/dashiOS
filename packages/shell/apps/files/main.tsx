@@ -8,15 +8,15 @@
 
 import { statSync } from "node:fs";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
+import { expandHome, normalizePath, parentOf } from "../../src/shared/files/paths.ts";
+import { parseFileUri } from "../../src/shared/files/uri.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { systemEnv } from "./env.ts";
 import { folderAt, type Location } from "./location.ts";
 import { Operations } from "./operations.ts";
-import { expandHome, normalizePath, parentOf } from "./paths.ts";
 import { readPrefs, writePrefs } from "./prefs.ts";
 import { FilesStore } from "./store.ts";
-import { parseFileUri } from "./uri.ts";
 import { FILES_SIZE, FilesWindow } from "./view.tsx";
 
 /**

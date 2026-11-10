@@ -76,7 +76,6 @@ import { type Entry, launchEntry } from "./entries.ts";
 import { openTarget, startExtensions } from "./extensions/start.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
-import { FileSearch, iconNamesFor } from "./file-search.ts";
 import { startForceQuit } from "./force-quit/index.ts";
 import { windowToFront } from "./front-window.ts";
 import { FullscreenBars } from "./fullscreen.ts";
@@ -147,6 +146,7 @@ import { startSharePicker } from "./share-picker/index.ts";
 import { dockDefaults, fileIcon, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
 import { systemClipboard } from "./shared/clipboard/clipboard.ts";
 import { connectDarkMode } from "./shared/control-center/flags.ts";
+import { FileSearch, iconNamesFor } from "./shared/files/file-search.ts";
 import { Software } from "./shared/software/manager.ts";
 import { standIn } from "./shared/software/stand-in.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
@@ -1110,7 +1110,7 @@ const onScreen = (output: string | undefined): { output?: string } => (output ==
 // The launcher (launcher.tsx). Nothing on a ❖ tap touches the disk: the apps are an index built
 // once and kept fresh by inotify (launcher/app-index.ts), the history is held in memory
 // (recents.ts), icons were resolved when the index was built, and file search knows
-// whether it can look (file-search.ts).
+// whether it can look (shared/files/file-search.ts).
 const appIndex = new AppIndex();
 const stopAppIndex = appIndex.start();
 const launcherRecents = new RecentApps();

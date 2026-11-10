@@ -12,20 +12,20 @@
 import { type FSWatcher, statSync, watch } from "node:fs";
 import type { SortState } from "@dashi/ui";
 import type { Modifiers } from "@mirinjs/metal";
+import { describeError, type FileItem, itemAt, readFolder } from "../../src/shared/files/items.ts";
+import { mayOpen, openWithDefault } from "../../src/shared/files/open.ts";
+import { expandHome, normalizePath, parentOf, tilde } from "../../src/shared/files/paths.ts";
+import { searchComputer, searchFolder } from "../../src/shared/files/search.ts";
+import { listTrash } from "../../src/shared/files/trashops.ts";
+import { parseFileUri } from "../../src/shared/files/uri.ts";
 import { loadVolumes, space } from "./drives.ts";
 import type { Env } from "./env.ts";
 import { type Emblems, folderEmblems } from "./icons.ts";
-import { describeError, type FileItem, itemAt, readFolder } from "./items.ts";
 import { folderAt, type Location, sameLocation } from "./location.ts";
 import type { Volume } from "./mounts.ts";
-import { mayOpen, openWithDefault } from "./open.ts";
-import { expandHome, normalizePath, parentOf, tilde } from "./paths.ts";
 import { DEFAULT_PREFS, type FilesPrefs } from "./prefs.ts";
-import { searchComputer, searchFolder } from "./search.ts";
 import { isPlain, type Layout, navigate, pick, type Step } from "./selection.ts";
 import { columnMode, DEFAULT_SORT, fileColumns, findByPrefix, sortItems } from "./sort.ts";
-import { listTrash } from "./trashops.ts";
-import { parseFileUri } from "./uri.ts";
 
 export type ViewMode = "icons" | "list";
 export type SearchScope = "folder" | "computer";

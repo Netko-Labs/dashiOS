@@ -7,7 +7,7 @@
  * root and boot filesystems are shown but never unmounted from here.
  */
 
-import { isInside } from "./paths.ts";
+import { isInside } from "../../src/shared/files/paths.ts";
 
 export interface MountEntry {
   mountPoint: string;

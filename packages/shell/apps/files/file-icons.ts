@@ -12,10 +12,10 @@
 
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { type Category, categoryOf, INODE_DIRECTORY } from "../../src/shared/files/mime.ts";
+import { cacheHome } from "../../src/shared/files/xdg.ts";
 import { sidebarGlyph } from "./glyphs.ts";
 import type { GlyphName } from "./location.ts";
-import { type Category, categoryOf, INODE_DIRECTORY } from "./mime.ts";
-import { cacheHome } from "./xdg.ts";
 
 /** The document categories with a glyph of their own, and the tint each wears (@dashi/ui TINTS). */
 export const CATEGORY_TINTS: Readonly<Record<Exclude<Category, "folder" | "other">, string>> = {

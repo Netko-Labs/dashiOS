@@ -9,9 +9,9 @@
 import { existsSync } from "node:fs";
 import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { type Exec, exec } from "./exec.ts";
-import { Cancelled, type OpContext, OpError } from "./ops.ts";
-import { baseName, checkName, parentOf, splitName, uniqueName } from "./paths.ts";
+import { type Exec, exec } from "../../src/shared/files/exec.ts";
+import { Cancelled, type OpContext, OpError } from "../../src/shared/files/ops.ts";
+import { baseName, checkName, parentOf, splitName, uniqueName } from "../../src/shared/files/paths.ts";
 
 export interface Archiver {
   tool: "zip" | "bsdtar";

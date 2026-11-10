@@ -8,8 +8,8 @@
  * current_name. Results: uris, choices `a(ss)`, current_filter.
  */
 
+import { fileUri } from "../../../src/shared/files/uri.ts";
 import type { Choice, ChooserAnswer, ChooserMode, ChooserRequest, Filter } from "../../files/chooser/request.ts";
-import { fileUri } from "../../files/uri.ts";
 import { Response, type ResponseCode } from "../request.ts";
 import { bool, bytePath, cleanString, results, str, type Vardict, vardict } from "../vardict.ts";
 

@@ -8,13 +8,13 @@
 import { useColors, useDark } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
+import type { FileItem } from "../../src/shared/files/items.ts";
 import { useFiles, useFilesState } from "./context.ts";
 import { dragPaths } from "./drag.ts";
 import { useDropTarget } from "./drop.ts";
 import { FileIcon } from "./file-icon.tsx";
 import { LINK_BADGE } from "./glyphs.ts";
 import { iconFor, previewFor, thumbnails } from "./icons.ts";
-import type { FileItem } from "./items.ts";
 import { RenameField } from "./rename-field.tsx";
 import { fitMiddle, tileName } from "./tile-name.ts";
 

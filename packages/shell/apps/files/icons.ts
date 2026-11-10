@@ -5,11 +5,11 @@
  */
 
 import { dataDirs } from "../../src/shared/apps/index.ts";
+import type { FileItem } from "../../src/shared/files/items.ts";
+import type { UserDirName } from "../../src/shared/files/xdg.ts";
 import { type Emblem, iconFile, iconKind } from "./file-icons.ts";
-import type { FileItem } from "./items.ts";
 import { type ThumbnailMaker, thumbnailMaker } from "./thumbnailer.ts";
 import { findThumbnail } from "./thumbs.ts";
-import type { UserDirName } from "./xdg.ts";
 
 /** Picture formats the renderer draws, and the biggest original worth decoding for a tile. */
 const DRAWABLE = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);

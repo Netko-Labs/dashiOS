@@ -9,14 +9,14 @@ import { closeSync, openSync, readSync } from "node:fs";
 import { Button, useColors, useSurface } from "@dashi/ui";
 import { Image, ScrollView, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
+import { type FileItem, kindText } from "../../src/shared/files/items.ts";
+import { categoryOf } from "../../src/shared/files/mime.ts";
+import { looksLikeText } from "../../src/shared/files/sniff.ts";
 import { useFiles, useFilesState } from "./context.ts";
 import { FileIcon } from "./file-icon.tsx";
 import { formatSize } from "./format.ts";
 import { previewFor } from "./icons.ts";
-import { type FileItem, kindText } from "./items.ts";
-import { categoryOf } from "./mime.ts";
 import type { Step } from "./selection.ts";
-import { looksLikeText } from "./sniff.ts";
 
 const TEXT_BYTES = 16 * 1024;
 

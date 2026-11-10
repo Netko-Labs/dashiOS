@@ -12,20 +12,20 @@
 import { lstat } from "node:fs/promises";
 import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
+import type { FileItem } from "../../src/shared/files/items.ts";
+import { INODE_DIRECTORY, type MimeIndex, mimeOf } from "../../src/shared/files/mime.ts";
+import { appsFor, type OpenWithApp, openWith } from "../../src/shared/files/open.ts";
+import { copyInto, duplicate, freeName, makeFolder, moveInto, NEW_FOLDER_NAME, OpError, renamePath } from "../../src/shared/files/ops.ts";
+import { baseName, isInside, parentOf } from "../../src/shared/files/paths.ts";
+import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "../../src/shared/files/trashops.ts";
 import { compress } from "./archive.ts";
 import { type DropKeys, dropChoice } from "./drag.ts";
 import { eject, mount } from "./drives.ts";
 import { formatCount } from "./format.ts";
-import type { FileItem } from "./items.ts";
 import { Jobs } from "./jobs.ts";
-import { INODE_DIRECTORY, type MimeIndex, mimeOf } from "./mime.ts";
 import type { Volume } from "./mounts.ts";
-import { appsFor, type OpenWithApp, openWith } from "./open.ts";
-import { copyInto, duplicate, freeName, makeFolder, moveInto, NEW_FOLDER_NAME, OpError, renamePath } from "./ops.ts";
-import { baseName, isInside, parentOf } from "./paths.ts";
 import { measure } from "./size.ts";
 import type { FilesStore } from "./store.ts";
-import { deleteForever, emptyTrash, protectedReason, putBack, trashPaths } from "./trashops.ts";
 import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv, withReplaced } from "./undoable.ts";
 
 const quote = (name: string): string => `“${name}”`;

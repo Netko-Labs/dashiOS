@@ -3,11 +3,11 @@
 import { type Column, Table, useColors, useDark } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
+import type { FileItem } from "../../src/shared/files/items.ts";
 import { useFiles, useFilesState } from "./context.ts";
 import { dragPaths } from "./drag.ts";
 import { FileIcon } from "./file-icon.tsx";
 import { iconFor } from "./icons.ts";
-import type { FileItem } from "./items.ts";
 import { RenameField } from "./rename-field.tsx";
 import { columnMode, fileColumns, fitColumns } from "./sort.ts";
 

@@ -6,10 +6,10 @@
 
 import { TINTS, useDark } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
+import type { FileItem } from "../../src/shared/files/items.ts";
+import { splitName } from "../../src/shared/files/paths.ts";
 import { iconKind } from "./file-icons.ts";
 import { type Emblems, iconFor } from "./icons.ts";
-import type { FileItem } from "./items.ts";
-import { splitName } from "./paths.ts";
 
 /** The label an unknown type's page shows: its extension, capitals, at most five letters; none without one. */
 export function extensionLabel(name: string): string | null {

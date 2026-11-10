@@ -8,7 +8,43 @@
  */
 
 import { basename, dirname } from "node:path";
-import { LatestOnly, SUPERSEDED } from "./launcher/budget.ts";
+
+/** What became of an ask that a newer one replaced before it ran. */
+export const SUPERSEDED: unique symbol = Symbol("superseded");
+
+/**
+ * One ask in flight at a time: an ask made while one runs waits for it and
+ * takes the place of any ask already waiting, which resolves `SUPERSEDED`
+ * without running. Typing "terminal" asks LocalSearch for "te", then for
+ * "terminal", and never for what was typed in between.
+ */
+export class LatestOnly<Query, Answer> {
+  private running = false;
+  private waiting: { query: Query; resolve: (answer: Answer | typeof SUPERSEDED) => void; reject: (error: unknown) => void } | null = null;
+
+  constructor(private readonly run: (query: Query) => Promise<Answer>) {}
+
+  ask(query: Query): Promise<Answer | typeof SUPERSEDED> {
+    return new Promise((resolve, reject) => {
+      this.waiting?.resolve(SUPERSEDED);
+      this.waiting = { query, resolve, reject };
+      this.next();
+    });
+  }
+
+  private next(): void {
+    if (this.running || !this.waiting) return;
+    const { query, resolve, reject } = this.waiting;
+    this.waiting = null;
+    this.running = true;
+    this.run(query)
+      .then(resolve, reject)
+      .finally(() => {
+        this.running = false;
+        this.next();
+      });
+  }
+}
 
 export interface FileHit {
   /** `file://` URL, as LocalSearch stores it. */

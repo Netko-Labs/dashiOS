@@ -7,9 +7,9 @@
  * `text/uri-list`. Metal has no clipboard API yet (src/shared/clipboard/clipboard.ts).
  */
 
-import { type Exec, exec } from "./exec.ts";
-import { normalizePath } from "./paths.ts";
-import { fileUri, parseFileUri } from "./uri.ts";
+import { type Exec, exec } from "../../src/shared/files/exec.ts";
+import { normalizePath } from "../../src/shared/files/paths.ts";
+import { fileUri, parseFileUri } from "../../src/shared/files/uri.ts";
 
 export const URI_LIST = "text/uri-list";
 export const GNOME_FILES = "x-special/gnome-copied-files";

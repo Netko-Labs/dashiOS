@@ -5,9 +5,7 @@
 1	packages/applet/src/warm-host.ts
 1	packages/shell/apps/calendar/import.ts
 3	packages/shell/apps/editor/files.ts
-1	packages/shell/apps/files/items.ts
 1	packages/shell/apps/files/mounts.ts
-1	packages/shell/apps/files/ops.ts
 4	packages/shell/apps/preview/memory.ts
 2	packages/shell/bin/dashi-a11y-again.ts
 3	packages/shell/bin/dashi-applet-run.ts
@@ -53,6 +51,8 @@
 5	packages/shell/src/shared/dbus/message.ts
 1	packages/shell/src/shared/dbus/object.ts
 1	packages/shell/src/shared/dbus/subscribe.ts
+1	packages/shell/src/shared/files/items.ts
+1	packages/shell/src/shared/files/ops.ts
 2	packages/shell/src/shared/locale/messages.ts
 1	packages/shell/src/shared/notes/sidecar.ts
 1	packages/shell/src/shared/notes/store.ts
