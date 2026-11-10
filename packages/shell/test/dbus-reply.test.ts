@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { int, list, str } from "@dashi/shape";
-import { ProtocolError, readReply, value, values, Variant, variantOf } from "../src/shared/dbus/index.ts";
+import { ProtocolError, readReply, Variant, value, values, variantOf } from "../src/shared/dbus/index.ts";
 
 describe("reading a D-Bus reply with a shape", () => {
   test("one value", () => {
