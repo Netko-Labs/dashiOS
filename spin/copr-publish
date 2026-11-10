@@ -1,30 +1,31 @@
 #!/usr/bin/env bash
-# spin/copr-publish: Dashi's packages to its COPR, from the source RPMs
-# spin/build-rpms made (~/rpmbuild/SRPMS). Publishing is the owner's: it needs
+# spin/copr-publish: Dashi's packages to its COPR, from the source RPMs one
+# spin/build-rpms run made (the set its manifest names, in ~/rpmbuild/SRPMS).
+# Nothing else in that shared folder is sent. Publishing is the owner's: it needs
 # copr-cli and their API token in ~/.config/copr
 # (https://copr.fedorainfracloud.org/api/). The first run creates the project.
 # Afterwards, set enabled=1 in spin/dashi-release/etc/yum.repos.d/dashi.repo
 # (owner and project must match) so installed systems update through dnf.
 #
-#   spin/copr-publish [owner/project]   default: pejedev/dashi
+#   spin/copr-publish [owner/project [manifest]]   default: pejedev/dashi, the last run's
+#                                                  (SRPMS/latest.manifest; or SRPMS/<snapshot>.manifest)
 set -euo pipefail
 
 project=${1:-pejedev/dashi}
 top=${RPMBUILD_TOP:-$HOME/rpmbuild}
 command -v copr-cli >/dev/null || { echo "copr-publish: install copr-cli" >&2; exit 1; }
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/copr" ] || { echo "copr-publish: no COPR token in ~/.config/copr" >&2; exit 1; }
-shopt -s nullglob
-all=("$top"/SRPMS/*.src.rpm)
-[ ${#all[@]} -gt 0 ] || { echo "copr-publish: no source RPMs in $top/SRPMS; run spin/build-rpms all" >&2; exit 1; }
-# SRPMS keeps every build: only the newest of each package is published.
+manifest=${2:-$top/SRPMS/latest.manifest}
+[ -f "$manifest" ] || { echo "copr-publish: no manifest at $manifest; run spin/build-rpms first" >&2; exit 1; }
+# The run's own source RPMs, each of which must exist.
 srpms=()
-declare -A seen=()
-while IFS= read -r srpm; do
-  name=$(rpm -qp --qf '%{NAME}' "$srpm" 2>/dev/null)
-  [ -n "${seen[$name]:-}" ] && continue
-  seen[$name]=1
-  srpms+=("$srpm")
-done < <(ls -t "${all[@]}")
+while IFS= read -r file; do
+  [ -n "$file" ] || continue
+  [ -f "$top/SRPMS/$file" ] || { echo "copr-publish: $manifest names $file, which is not in $top/SRPMS" >&2; exit 1; }
+  srpms+=("$top/SRPMS/$file")
+done < "$manifest"
+[ ${#srpms[@]} -gt 0 ] || { echo "copr-publish: $manifest is empty" >&2; exit 1; }
+echo "copr-publish: ${#srpms[@]} source RPMs from $manifest"
 
 # Cargo fetches crates while building (dashi-comp, mirin-metal-host): the
 # builders need the network. The CachyOS kernel, Helium, and RPM Fusion come

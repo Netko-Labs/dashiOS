@@ -11,6 +11,7 @@
 #   downloads Bun's release, with spectool)
 #
 # The RPMs land in ~/rpmbuild/RPMS; Cargo builds under ~/rpmbuild/cargo-target.
+# ~/rpmbuild/SRPMS/<snapshot>.manifest (and latest.manifest) names this run's source RPMs.
 #
 # What is built is what is committed: Dashi's HEAD and mirin's HEAD, each taken
 # with `git archive`, so an untracked file or an uncommitted change in either
@@ -102,6 +103,7 @@ if [[ " ${packages[*]} " == *" mirin-metal-host "* ]]; then
   git -C "$mirin" archive --format=tar.gz --prefix="$mirin_name/" -o "$top/SOURCES/$mirin_name.tar.gz" HEAD
 fi
 
+touch "$stage/started"
 for package in "${packages[@]}"; do
   spec=$repo/spin/rpm/$package.spec
   [ -f "$spec" ] || { echo "build-rpms: no spec for $package" >&2; exit 1; }
@@ -125,6 +127,12 @@ for package in "${packages[@]}"; do
     --define "_topdir $top" \
     --define "cargo_target ${CARGO_TARGET_DIR:-$top/cargo-target}"
 done
+# What this run built, as one set: spin/copr-publish sends exactly these source
+# RPMs, never whatever else the shared SRPMS folder holds.
+manifest=$top/SRPMS/$snapshot.manifest
+find "$top"/SRPMS -maxdepth 1 -name '*.src.rpm' -newer "$stage/started" -printf '%f\n' | sort > "$manifest"
+cp "$manifest" "$top/SRPMS/latest.manifest"
+echo "build-rpms: $(wc -l < "$manifest") source RPMs in $manifest"
 # No file may belong to two of Dashi's packages (the newest build of each):
 # dnf refuses such a pair, and the image build would fail far later.
 newest=$(find "$top"/RPMS -name '*.rpm' ! -name '*-debug*' -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2- | while read -r rpm; do
