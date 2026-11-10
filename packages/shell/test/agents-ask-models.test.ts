@@ -1,13 +1,9 @@
 import { expect, test } from "bun:test";
-import { AnswerError, type PlanTool } from "../src/agents/ask/answerer.ts";
+import { AnswerError } from "../src/agents/ask/answerer.ts";
 import { ANTHROPIC_HOST, claudeAnswerer, echoed, FALLBACK_BETA, type Fetch, readReply } from "../src/agents/ask/claude.ts";
-import { ANTHROPIC_TOKEN, keyPlace, modelKeys, vaultTokenSource } from "../src/agents/ask/keys.ts";
-import { isModelName, LOCAL_TOOLS, LOCAL_URL, localAnswerer, localModels, readLocalReply, toolsForRequest } from "../src/agents/ask/local.ts";
 import { strictSchema } from "../src/agents/ask/strict.ts";
+import { signal, TOOLS } from "./support/agents-ask-models.ts";
 
-const TOOLS: PlanTool[] = [
-  { name: "lock_screen", description: "Lock the screen", schema: { type: "object", properties: {}, required: [], additionalProperties: false } },
-];
 const KEY = "sk-test-not-a-real-key";
 
 /** A fetch that records what was asked and answers `body` with `status`. */
@@ -20,8 +16,6 @@ function recording(body: unknown, status = 200): Fetch & { calls: Array<{ url: s
   send.calls = calls;
   return send;
 }
-
-const signal = () => new AbortController().signal;
 
 const message = (content: unknown[], stopReason = "end_turn") => ({
   id: "msg_1",
@@ -202,104 +196,4 @@ test("strict schemas: objects closed, bounds dropped (the action's check still h
     additionalProperties: false,
   });
   expect(strictSchema(null)).toEqual({});
-});
-
-test("local: the loopback only, the model named or the first installed, and tool calls read with ids of their own", async () => {
-  expect(new URL(LOCAL_URL).hostname).toBe("127.0.0.1");
-  const calls: string[] = [];
-  const send: Fetch = async (url, init) => {
-    calls.push(url);
-    if (url.endsWith("/api/tags")) return Response.json({ models: [{ name: "qwen3:8b" }, { name: "bad name!" }] });
-    const body = JSON.parse(String(init.body));
-    expect(body.model).toBe("qwen3:8b");
-    expect(body.stream).toBe(false);
-    expect(body.messages[0].role).toBe("system");
-    expect(body.tools[0]).toEqual({ type: "function", function: { name: "lock_screen", description: "Lock the screen", parameters: TOOLS[0]?.schema } });
-    return Response.json({ message: { role: "assistant", content: "", tool_calls: [{ function: { name: "lock_screen", arguments: {} } }] } });
-  };
-  const local = localAnswerer({ model: () => null, fetch: send });
-  const { reply } = await local.turn([], { text: "lock up", results: [] }, TOOLS, signal());
-  expect(reply.calls).toEqual([{ id: "local-1-0", name: "lock_screen", input: {} }]);
-  expect(calls.every((url) => url.startsWith(LOCAL_URL))).toBe(true);
-  expect(await localModels(send)).toEqual(["qwen3:8b"]);
-  expect(readLocalReply({ message: { content: " Sure. " } }, 2)).toMatchObject({ text: "Sure.", calls: [] });
-});
-
-test("local: nothing running, nothing installed", async () => {
-  const down: Fetch = async () => {
-    throw new TypeError("connection refused");
-  };
-  expect(await localModels(down)).toBeNull();
-  await expect(localAnswerer({ model: () => null, fetch: down }).turn([], { text: "x", results: [] }, TOOLS, signal())).rejects.toMatchObject({
-    failure: "no-answer",
-  });
-  const empty: Fetch = async () => Response.json({ models: [] });
-  await expect(localAnswerer({ model: () => null, fetch: empty }).turn([], { text: "x", results: [] }, TOOLS, signal())).rejects.toMatchObject({
-    failure: "no-model",
-  });
-  expect(isModelName("llama3.2:3b")).toBe(true);
-  expect(isModelName("../../etc")).toBe(false);
-});
-
-test("Claude's key: the vault's token item for api.anthropic.com first, else ANTHROPIC_API_KEY, else none", async () => {
-  const asked: Array<[string, string]> = [];
-  const handed: Uint8Array[] = [];
-  const tokens = {
-    forHost: async (name: string, host: string) => {
-      asked.push([name, host]);
-      if (name !== ANTHROPIC_TOKEN || host !== ANTHROPIC_HOST) throw new Error("not for that host");
-      const token = new TextEncoder().encode("from-vault");
-      handed.push(token);
-      return { token, headers: ["x-api-key: {}", "Authorization: Bearer {}"] };
-    },
-    list: async () => [{ id: 1, name: ANTHROPIC_TOKEN, hosts: [ANTHROPIC_HOST], headers: ["x-api-key: {}"], lastUsed: null }],
-  };
-  const keys = modelKeys(vaultTokenSource(tokens), { ANTHROPIC_API_KEY: "from-env" });
-  expect(await keys.anthropic()).toEqual({ key: "from-vault", place: "vault" });
-  expect(asked).toEqual([["anthropic", "api.anthropic.com"]]);
-  // The vault's bytes are wiped once read.
-  expect(handed[0]?.every((byte) => byte === 0)).toBe(true);
-  // Settings learns where the key is without the vault handing it out.
-  expect(await keyPlace(keys)).toBe("vault");
-  expect(asked).toHaveLength(1);
-
-  // No such item (or it lists other hosts), or a locked vault: the session's key.
-  const other = {
-    forHost: async () => Promise.reject(new Error("no such token")),
-    list: async () => [{ id: 2, name: ANTHROPIC_TOKEN, hosts: ["api.example.com"], headers: ["x-api-key: {}"], lastUsed: null }],
-  };
-  expect(await modelKeys(vaultTokenSource(other), { ANTHROPIC_API_KEY: " from-env " }).anthropic()).toEqual({ key: "from-env", place: "environment" });
-  expect(await keyPlace(modelKeys(vaultTokenSource(other), { ANTHROPIC_API_KEY: "from-env" }))).toBe("environment");
-  expect(await modelKeys(null, { ANTHROPIC_API_KEY: " from-env " }).anthropic()).toEqual({ key: "from-env", place: "environment" });
-  const locked = { forHost: async () => Promise.reject(new Error("locked")), list: async () => Promise.reject(new Error("locked")) };
-  expect(await modelKeys(vaultTokenSource(locked), {}).anthropic()).toBeNull();
-  expect(await keyPlace(modelKeys(vaultTokenSource(locked), {}))).toBe("none");
-});
-
-test("local: only the tools the request names reach a small model, best first, and it isn't asked to think aloud", async () => {
-  const tool = (name: string, description: string): PlanTool => ({
-    name,
-    description,
-    schema: { type: "object", properties: {}, required: [], additionalProperties: false },
-  });
-  const tools = [
-    tool("list_windows", "The open windows."),
-    tool("lock_screen", "Lock the screen, as the person would."),
-    tool("set_setting", "Turn dark_mode or night_shift on or off."),
-    ...Array.from({ length: 40 }, (_, index) => tool(`other_${index}`, "Something else entirely.")),
-  ];
-  const picked = toolsForRequest("turn on dark mode and lock the screen", tools).map((each) => each.name);
-  expect(picked).toEqual(["lock_screen", "set_setting"]);
-  // Nothing matches: the first few, so the model can still say it can't.
-  expect(toolsForRequest("xyzzy", tools)).toHaveLength(LOCAL_TOOLS);
-
-  let body: Record<string, unknown> = {};
-  const send: Fetch = async (url, init) => {
-    if (url.endsWith("/api/tags")) return Response.json({ models: [{ name: "qwen3:1.7b" }] });
-    body = JSON.parse(String(init?.body));
-    return Response.json({ message: { role: "assistant", content: "ok" } });
-  };
-  await localAnswerer({ model: () => null, fetch: send }).turn([], { text: "lock the screen", results: [] }, tools, new AbortController().signal);
-  expect(body.think).toBe(false);
-  expect((body.tools as unknown[]).length).toBeLessThanOrEqual(LOCAL_TOOLS);
 });
